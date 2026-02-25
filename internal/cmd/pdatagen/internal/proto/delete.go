@@ -4,7 +4,7 @@
 package proto // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/proto"
 
 import (
-	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/tmplutil"
 )
 
 const deleteOther = `{{ if ne .oneOfGroup "" -}}
@@ -36,10 +36,10 @@ const deleteMessage = `{{ if .repeated -}}
 func (pf *Field) GenDelete() string {
 	tf := pf.getTemplateFields()
 	if pf.Type == TypeMessage {
-		return template.Execute(template.Parse("deleteMessage", []byte(deleteMessage)), tf)
+		return tmplutil.Execute(tmplutil.Parse("deleteMessage", []byte(deleteMessage)), tf)
 	}
 	if pf.OneOfGroup != "" {
-		return template.Execute(template.Parse("deleteOther", []byte(deleteOther)), tf)
+		return tmplutil.Execute(tmplutil.Parse("deleteOther", []byte(deleteOther)), tf)
 	}
 	return ""
 }

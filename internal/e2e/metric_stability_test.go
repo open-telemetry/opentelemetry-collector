@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
@@ -27,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/debugexporter"
+	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -39,25 +41,8 @@ import (
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
-func assertMetrics(t *testing.T, metricsAddr string, expectedMetrics map[string]bool) bool {
-	client := &http.Client{}
-	resp, err := client.Get(fmt.Sprintf("http://%s/metrics", metricsAddr))
-	if err != nil {
-		return false
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return false
-	}
-
-	defer resp.Body.Close()
-
-	reader := bufio.NewReader(resp.Body)
-	parser := expfmt.NewTextParser(model.UTF8Validation)
-	parsed, err := parser.TextToMetricFamilies(reader)
-	if err != nil {
-		return false
-	}
+func assertMetrics(t *testing.T, metricsPort string, expectedMetrics map[string]bool) bool {
+	parsed := readMetrics(t, metricsPort)
 
 	for metricName, metricFamily := range parsed {
 		if _, ok := expectedMetrics[metricName]; ok {
@@ -204,8 +189,12 @@ func testMetricStability(t *testing.T, configFile string, expectedMetrics map[st
 			return otelcol.Factories{
 				Receivers:  map[component.Type]receiver.Factory{otlpreceiver.NewFactory().Type(): otlpreceiver.NewFactory()},
 				Processors: map[component.Type]processor.Factory{batchprocessor.NewFactory().Type(): batchprocessor.NewFactory()},
-				Exporters:  map[component.Type]exporter.Factory{debugexporter.NewFactory().Type(): debugexporter.NewFactory()},
-				Telemetry:  otelconftelemetry.NewFactory(),
+				Exporters: map[component.Type]exporter.Factory{
+					debugexporter.NewFactory().Type(): debugexporter.NewFactory(),
+					// otlphttpexporter is needed because the test config files use otlphttp/fail exporter
+					otlphttpexporter.NewFactory().Type(): otlphttpexporter.NewFactory(),
+				},
+				Telemetry: otelconftelemetry.NewFactory(),
 			}, nil
 		},
 		ConfigProviderSettings: otelcol.ConfigProviderSettings{
@@ -230,22 +219,14 @@ func testMetricStability(t *testing.T, configFile string, expectedMetrics map[st
 			t.Logf("Collector stopped with error: %v", err)
 		}
 	}()
-
-	require.Eventually(t, func() bool {
-		resp, err := http.Get(fmt.Sprintf("http://localhost:%s/metrics", metricsPort))
-		if err != nil {
-			return false
-		}
-		resp.Body.Close()
-		return resp.StatusCode == http.StatusOK
-	}, 5*time.Second, 100*time.Millisecond, "collector failed to start")
+	waitMetricsReady(t, metricsPort)
 
 	for range 5 {
 		sendTestData(t, otelPort)
 	}
 
 	require.Eventually(t, func() bool {
-		return assertMetrics(t, "localhost:"+metricsPort, expectedMetrics)
+		return assertMetrics(t, metricsPort, expectedMetrics)
 	}, 10*time.Second, 200*time.Millisecond, "failed to verify metrics")
 }
 
@@ -366,4 +347,23 @@ func getFreePort(t *testing.T) string {
 	}
 	defer l.Close()
 	return strconv.Itoa(l.Addr().(*net.TCPAddr).Port)
+}
+
+func waitMetricsReady(t *testing.T, metricsPort string) {
+	require.EventuallyWithT(t, func(t *assert.CollectT) {
+		_ = readMetrics(t, metricsPort)
+	}, 10*time.Second, 100*time.Millisecond, "collector failed to start")
+}
+
+func readMetrics(t require.TestingT, metricsPort string) map[string]*dto.MetricFamily {
+	resp, err := http.Get(fmt.Sprintf("http://localhost:%s/metrics", metricsPort))
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	reader := bufio.NewReader(resp.Body)
+	parser := expfmt.NewTextParser(model.UTF8Validation)
+	parsed, err := parser.TextToMetricFamilies(reader)
+	require.NoError(t, err)
+	return parsed
 }

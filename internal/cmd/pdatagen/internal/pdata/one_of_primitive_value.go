@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/proto"
-	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/tmplutil"
 )
 
 const oneOfPrimitiveAccessorsTemplate = `// {{ .accessorFieldName }} returns the {{ .lowerFieldName }} associated with this {{ .structName }}.
@@ -70,23 +70,23 @@ func (opv *OneOfPrimitiveValue) GetOriginFieldName() string {
 }
 
 func (opv *OneOfPrimitiveValue) GenerateAccessors(ms *messageStruct, of *OneOfField) string {
-	t := template.Parse("oneOfPrimitiveAccessorsTemplate", []byte(oneOfPrimitiveAccessorsTemplate))
-	return template.Execute(t, opv.templateFields(ms, of))
+	t := tmplutil.Parse("oneOfPrimitiveAccessorsTemplate", []byte(oneOfPrimitiveAccessorsTemplate))
+	return tmplutil.Execute(t, opv.templateFields(ms, of))
 }
 
 func (opv *OneOfPrimitiveValue) GenerateTests(ms *messageStruct, of *OneOfField) string {
-	t := template.Parse("oneOfPrimitiveAccessorTestTemplate", []byte(oneOfPrimitiveAccessorTestTemplate))
-	return template.Execute(t, opv.templateFields(ms, of))
+	t := tmplutil.Parse("oneOfPrimitiveAccessorTestTemplate", []byte(oneOfPrimitiveAccessorTestTemplate))
+	return tmplutil.Execute(t, opv.templateFields(ms, of))
 }
 
 func (opv *OneOfPrimitiveValue) GenerateTestValue(ms *messageStruct, of *OneOfField) string {
-	t := template.Parse("oneOfPrimitiveSetTestTemplate", []byte(oneOfPrimitiveSetTestTemplate))
-	return template.Execute(t, opv.templateFields(ms, of))
+	t := tmplutil.Parse("oneOfPrimitiveSetTestTemplate", []byte(oneOfPrimitiveSetTestTemplate))
+	return tmplutil.Execute(t, opv.templateFields(ms, of))
 }
 
 func (opv *OneOfPrimitiveValue) GenerateType(ms *messageStruct, of *OneOfField) string {
-	t := template.Parse("oneOfPrimitiveCopyOrigTemplate", []byte(oneOfPrimitiveTypeTemplate))
-	return template.Execute(t, opv.templateFields(ms, of))
+	t := tmplutil.Parse("oneOfPrimitiveCopyOrigTemplate", []byte(oneOfPrimitiveTypeTemplate))
+	return tmplutil.Execute(t, opv.templateFields(ms, of))
 }
 
 func (opv *OneOfPrimitiveValue) toProtoField(ms *messageStruct, of *OneOfField) proto.FieldInterface {

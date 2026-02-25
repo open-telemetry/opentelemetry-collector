@@ -16,8 +16,7 @@ metrics:
     enabled: true
     description: Monotonic cumulative sum int metric enabled by default.
     extended_documentation: The metric will be become optional soon.
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       monotonic: true

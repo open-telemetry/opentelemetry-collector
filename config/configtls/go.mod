@@ -1,15 +1,15 @@
 module go.opentelemetry.io/collector/config/configtls
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20250903184740-5d135037bd4d
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/google/go-tpm v0.9.8
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/config/configopaque v1.50.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.144.0
-	go.opentelemetry.io/collector/internal/testutil v0.144.0
+	go.opentelemetry.io/collector/config/configopaque v1.52.0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.146.1
+	go.opentelemetry.io/collector/internal/testutil v0.146.1
 )
 
 require (
@@ -20,12 +20,12 @@ require (
 	github.com/hashicorp/go-version v1.8.0 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
-	github.com/knadh/koanf/v2 v2.3.0 // indirect
+	github.com/knadh/koanf/v2 v2.3.2 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/confmap v1.50.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.50.0 // indirect
+	go.opentelemetry.io/collector/confmap v1.52.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.52.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.1 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect

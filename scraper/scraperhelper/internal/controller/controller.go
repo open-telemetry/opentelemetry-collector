@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
@@ -91,9 +92,7 @@ func (sc *Controller[T]) Shutdown(ctx context.Context) error {
 // startScraping initiates a ticker that calls Scrape based on the configured
 // collection interval.
 func (sc *Controller[T]) startScraping() {
-	sc.wg.Add(1)
-	go func() {
-		defer sc.wg.Done()
+	sc.wg.Go(func() {
 		if sc.initialDelay > 0 {
 			select {
 			case <-time.After(sc.initialDelay):
@@ -120,13 +119,16 @@ func (sc *Controller[T]) startScraping() {
 				return
 			}
 		}
-	}()
+	})
 }
 
 func GetSettings(sType component.Type, rSet receiver.Settings) scraper.Settings {
+	id := component.NewID(sType)
+	telemetry := rSet.TelemetrySettings
+	telemetry.Logger = telemetry.Logger.With(zap.String("scraper", id.String()))
 	return scraper.Settings{
-		ID:                component.NewID(sType),
-		TelemetrySettings: rSet.TelemetrySettings,
+		ID:                id,
+		TelemetrySettings: telemetry,
 		BuildInfo:         rSet.BuildInfo,
 	}
 }

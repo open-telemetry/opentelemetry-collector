@@ -59,6 +59,24 @@ type Metadata struct {
 	FeatureGates []FeatureGate `mapstructure:"feature_gates"`
 }
 
+type Deprecated struct {
+	Since string `mapstructure:"since"`
+	Note  string `mapstructure:"note"`
+}
+
+func (d *Deprecated) validate() error {
+	if strings.TrimSpace(d.Since) == "" {
+		return errors.New("deprecated.since must be set")
+	}
+
+	// NOTE: note is optional, but if present, it must not be empty
+	if d.Note != "" && strings.TrimSpace(d.Note) == "" {
+		return errors.New("deprecated.note must not be empty")
+	}
+
+	return nil
+}
+
 func (md Metadata) GetCodeCovComponentID() string {
 	if md.Status.CodeCovComponentID != "" {
 		return md.Status.CodeCovComponentID
@@ -150,6 +168,7 @@ func (md *Metadata) validateEntities() error {
 	usedAttrs := make(map[AttributeName]string)
 	seenTypes := make(map[string]bool)
 
+	// First pass: collect entity types and validate basic entity properties
 	for _, entity := range md.Entities {
 		if entity.Type == "" {
 			errs = errors.Join(errs, errors.New("entity type cannot be empty"))
@@ -187,6 +206,31 @@ func (md *Metadata) validateEntities() error {
 			}
 		}
 	}
+
+	// Second pass: validate relationships
+	seenRelationships := make(map[string]string)
+	for _, entity := range md.Entities {
+		for _, rel := range entity.Relationships {
+			if rel.Type == "" {
+				errs = errors.Join(errs, fmt.Errorf(`entity "%v": relationship type cannot be empty`, entity.Type))
+				continue
+			}
+			if rel.Target == "" {
+				errs = errors.Join(errs, fmt.Errorf(`entity "%v": relationship target cannot be empty`, entity.Type))
+				continue
+			}
+			if !seenTypes[rel.Target] {
+				errs = errors.Join(errs, fmt.Errorf(`entity "%v": relationship target "%v" does not exist`, entity.Type, rel.Target))
+				continue
+			}
+			if seenRelationships[rel.Target] == entity.Type || seenRelationships[entity.Type] == rel.Target {
+				errs = errors.Join(errs, fmt.Errorf(`entity "%v": duplicate relationship to target "%v" (only one relationship allowed between two entities)`, entity.Type, rel.Target))
+				continue
+			}
+			seenRelationships[rel.Target] = entity.Type
+			seenRelationships[entity.Type] = rel.Target
+		}
+	}
 	return errs
 }
 
@@ -197,7 +241,8 @@ func (md *Metadata) validateMetricsAndEvents() error {
 		validateMetrics(md.Metrics, md.Attributes, usedAttrs, md.SemConvVersion),
 		validateMetrics(md.Telemetry.Metrics, md.Attributes, usedAttrs, md.SemConvVersion),
 		validateEvents(md.Events, md.Attributes, usedAttrs),
-		md.validateAttributes(usedAttrs))
+		md.validateAttributes(usedAttrs),
+		md.validateEntityAssociations())
 	return errs
 }
 
@@ -222,6 +267,36 @@ func (md *Metadata) validateAttributes(usedAttrs map[AttributeName]bool) error {
 	if len(unusedAttrs) > 0 {
 		errs = errors.Join(errs, fmt.Errorf("unused attributes: %v", unusedAttrs))
 	}
+	return errs
+}
+
+// validateEntityAssociations checks that if entities are defined, then each metric and event must be associated with an entity.
+func (md *Metadata) validateEntityAssociations() error {
+	var errs error
+	requireEntityAssociation := len(md.Entities) > 0
+	entityTypes := make(map[string]bool)
+	for _, entity := range md.Entities {
+		entityTypes[entity.Type] = true
+	}
+
+	for metricName, metric := range md.Metrics {
+		if requireEntityAssociation && metric.Entity == "" {
+			errs = errors.Join(errs, fmt.Errorf(`metric "%v": entity is required when entities are defined`, metricName))
+		}
+		if metric.Entity != "" && !entityTypes[metric.Entity] {
+			errs = errors.Join(errs, fmt.Errorf(`metric "%v": entity refers to undefined entity type: %v`, metricName, metric.Entity))
+		}
+	}
+
+	for eventName, event := range md.Events {
+		if requireEntityAssociation && event.Entity == "" {
+			errs = errors.Join(errs, fmt.Errorf(`event "%v": entity is required when entities are defined`, eventName))
+		}
+		if event.Entity != "" && !entityTypes[event.Entity] {
+			errs = errors.Join(errs, fmt.Errorf(`event "%v": entity refers to undefined entity type: %v`, eventName, event.Entity))
+		}
+	}
+
 	return errs
 }
 
@@ -605,13 +680,17 @@ type Signal struct {
 	SemanticConvention *SemanticConvention `mapstructure:"semantic_convention"`
 
 	// The stability level of the signal.
-	Stability Stability `mapstructure:"stability"`
+	Stability component.StabilityLevel `mapstructure:"stability"`
 
 	// Extended documentation of the signal. If specified, this will be appended to the description used in generated documentation.
 	ExtendedDocumentation string `mapstructure:"extended_documentation"`
 
 	// Attributes is the list of attributes that the signal emits.
 	Attributes []AttributeName `mapstructure:"attributes"`
+
+	// Entity is the type of entity this signal is associated with.
+	// Required when entities are defined.
+	Entity string `mapstructure:"entity"`
 }
 
 func (s Signal) HasConditionalAttributes(attrs map[AttributeName]Attribute) bool {
@@ -634,11 +713,22 @@ type Entity struct {
 	Identity []EntityAttributeRef `mapstructure:"identity"`
 	// Description contains references to resource attributes that describe the entity.
 	Description []EntityAttributeRef `mapstructure:"description"`
+	// Relationships defines how this entity relates to other entities (optional).
+	// Relationships should be defined only on one end. It is recommended to define
+	// relationships on entities with lower lifespan (higher churn).
+	Relationships []EntityRelationship `mapstructure:"relationships"`
 }
 
 type EntityAttributeRef struct {
 	// Ref is the reference to a resource attribute.
 	Ref AttributeName `mapstructure:"ref"`
+}
+
+type EntityRelationship struct {
+	// Type is the relationship type (e.g., "parent", "child", "peer").
+	Type string `mapstructure:"type"`
+	// Target is the entity type this entity relates to.
+	Target string `mapstructure:"target"`
 }
 
 // FeatureGateID represents the identifier for a feature gate.

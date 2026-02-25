@@ -259,7 +259,7 @@ func TestLoadMetadata(t *testing.T) {
 							Enabled:               true,
 							Description:           "Monotonic cumulative sum int metric enabled by default.",
 							ExtendedDocumentation: "The metric will be become optional soon.",
-							Stability:             Stability{Level: component.StabilityLevelDevelopment},
+							Stability:             component.StabilityLevelDeprecated,
 							Warnings: Warnings{
 								IfEnabledNotSet: "This metric will be disabled by default soon.",
 							},
@@ -271,12 +271,16 @@ func TestLoadMetadata(t *testing.T) {
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
 							Mono:                   Mono{Monotonic: true},
 						},
+						Deprecated: &Deprecated{
+							Since: "1.0.0",
+							Note:  "This metric will be removed",
+						},
 					},
 					"reaggregate.metric": {
 						Signal: Signal{
 							Enabled:     true,
 							Description: "Metric for testing spatial reaggregation",
-							Stability:   Stability{Level: component.StabilityLevelBeta},
+							Stability:   component.StabilityLevelBeta,
 							Attributes:  []AttributeName{"string_attr", "boolean_attr"},
 						},
 						Unit: strPtr("1"),
@@ -288,7 +292,7 @@ func TestLoadMetadata(t *testing.T) {
 						Signal: Signal{
 							Enabled:     true,
 							Description: "Metric for testing spatial reaggregation with required attributes",
-							Stability:   Stability{Level: component.StabilityLevelBeta},
+							Stability:   component.StabilityLevelBeta,
 							Attributes:  []AttributeName{"required_string_attr", "string_attr", "boolean_attr"},
 						},
 						Unit: strPtr("1"),
@@ -299,7 +303,7 @@ func TestLoadMetadata(t *testing.T) {
 					"system.cpu.time": {
 						Signal: Signal{
 							Enabled:               true,
-							Stability:             Stability{Level: component.StabilityLevelBeta},
+							Stability:             component.StabilityLevelBeta,
 							SemanticConvention:    &SemanticConvention{SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime"},
 							Description:           "Monotonic cumulative sum int metric enabled by default.",
 							ExtendedDocumentation: "The metric will be become optional soon.",
@@ -315,11 +319,15 @@ func TestLoadMetadata(t *testing.T) {
 						Signal: Signal{
 							Enabled:     false,
 							Description: "[DEPRECATED] Gauge double metric disabled by default.",
-							Stability:   Stability{Level: component.StabilityLevelDeprecated},
+							Stability:   component.StabilityLevelDeprecated,
 							Warnings: Warnings{
 								IfConfigured: "This metric is deprecated and will be removed soon.",
 							},
 							Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "conditional_string_attr"},
+						},
+						Deprecated: &Deprecated{
+							Since: "1.0.0",
+							Note:  "This metric will be removed",
 						},
 						Unit: strPtr("1"),
 						Gauge: &Gauge{
@@ -330,11 +338,15 @@ func TestLoadMetadata(t *testing.T) {
 						Signal: Signal{
 							Enabled:     false,
 							Description: "[DEPRECATED] Gauge double metric disabled by default.",
-							Stability:   Stability{Level: component.StabilityLevelDeprecated},
+							Stability:   component.StabilityLevelDeprecated,
 							Warnings: Warnings{
 								IfConfigured: "This metric is deprecated and will be removed soon.",
 							},
 							Attributes: []AttributeName{"string_attr", "boolean_attr"},
+						},
+						Deprecated: &Deprecated{
+							Since: "1.0.0",
+							Note:  "This metric will be removed",
 						},
 						Unit: strPtr(""),
 						Gauge: &Gauge{
@@ -347,10 +359,14 @@ func TestLoadMetadata(t *testing.T) {
 							Enabled:               true,
 							Description:           "[DEPRECATED] Non-monotonic delta sum double metric enabled by default.",
 							ExtendedDocumentation: "The metric will be removed soon.",
-							Stability:             Stability{Level: component.StabilityLevelDeprecated},
+							Stability:             component.StabilityLevelDeprecated,
 							Warnings: Warnings{
 								IfEnabled: "This metric is deprecated and will be removed soon.",
 							},
+						},
+						Deprecated: &Deprecated{
+							Since: "1.0.0",
+							Note:  "This metric will be removed",
 						},
 						Unit: strPtr("s"),
 						Sum: &Sum{
@@ -363,7 +379,7 @@ func TestLoadMetadata(t *testing.T) {
 						Signal: Signal{
 							Enabled:     true,
 							Description: "Monotonic cumulative sum int metric with string input_type enabled by default.",
-							Stability:   Stability{Level: component.StabilityLevelDevelopment},
+							Stability:   component.StabilityLevelDevelopment,
 							Attributes:  []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
 						},
 						Unit: strPtr("s"),
@@ -414,8 +430,12 @@ func TestLoadMetadata(t *testing.T) {
 						"batch_size_trigger_send": {
 							Signal: Signal{
 								Enabled:     true,
-								Stability:   Stability{Level: component.StabilityLevelDeprecated, From: "v0.110.0"},
+								Stability:   component.StabilityLevelDeprecated,
 								Description: "Number of times the batch was sent due to a size trigger",
+							},
+							Deprecated: &Deprecated{
+								Since: "1.5.0",
+								Note:  "This metric will be removed in favor of batch_send_trigger_size",
 							},
 							Unit: strPtr("{times}"),
 							Sum: &Sum{
@@ -426,7 +446,7 @@ func TestLoadMetadata(t *testing.T) {
 						"request_duration": {
 							Signal: Signal{
 								Enabled:     true,
-								Stability:   Stability{Level: component.StabilityLevelAlpha},
+								Stability:   component.StabilityLevelAlpha,
 								Description: "Duration of request",
 							},
 							Unit: strPtr("s"),
@@ -438,7 +458,7 @@ func TestLoadMetadata(t *testing.T) {
 						"process_runtime_total_alloc_bytes": {
 							Signal: Signal{
 								Enabled:     true,
-								Stability:   Stability{Level: component.StabilityLevelStable},
+								Stability:   component.StabilityLevelStable,
 								Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')",
 							},
 							Unit: strPtr("By"),
@@ -453,7 +473,7 @@ func TestLoadMetadata(t *testing.T) {
 						"queue_length": {
 							Signal: Signal{
 								Enabled:               true,
-								Stability:             Stability{Level: component.StabilityLevelAlpha},
+								Stability:             component.StabilityLevelAlpha,
 								Description:           "This metric is optional and therefore not initialized in NewTelemetryBuilder.",
 								ExtendedDocumentation: "For example this metric only exists if feature A is enabled.",
 							},
@@ -470,7 +490,7 @@ func TestLoadMetadata(t *testing.T) {
 							Signal: Signal{
 								Enabled:     true,
 								Description: "Queue capacity - sync gauge example.",
-								Stability:   Stability{Level: component.StabilityLevelDevelopment},
+								Stability:   component.StabilityLevelDevelopment,
 							},
 							Unit: strPtr("{items}"),
 							Gauge: &Gauge{
@@ -581,7 +601,7 @@ func TestLoadMetadata(t *testing.T) {
 		{
 			name:    "testdata/invalid_metric_stability.yaml",
 			want:    Metadata{},
-			wantErr: "decoding failed due to the following error(s):\n\n'metrics[default.metric]' decoding failed due to the following error(s):\n\n'stability' decoding failed due to the following error(s):\n\n'level' unsupported stability level: \"development42\"",
+			wantErr: "decoding failed due to the following error(s):\n\n'metrics[default.metric]' decoding failed due to the following error(s):\n\n'stability' unsupported stability level: \"development42\"",
 		},
 		{
 			name:    "testdata/invalid_metric_semconvref.yaml",
@@ -591,7 +611,12 @@ func TestLoadMetadata(t *testing.T) {
 		{
 			name:    "testdata/no_metric_stability.yaml",
 			want:    Metadata{},
-			wantErr: "decoding failed due to the following error(s):\n\n'metrics[default.metric]' decoding failed due to the following error(s):\n\n'stability' missing required field: `stability.level`",
+			wantErr: "metric \"default.metric\": missing required field: `stability.level`",
+		},
+		{
+			name:    "testdata/undeprecated_with_deprecation.yaml",
+			want:    Metadata{},
+			wantErr: "`stability` must be `deprecated` when specifying a `deprecated` field",
 		},
 		{
 			name:    "testdata/~~this file doesn't exist~~.yaml",
@@ -648,6 +673,46 @@ func TestLoadMetadata(t *testing.T) {
 					Class: "receiver",
 					Stability: map[component.StabilityLevel][]string{
 						component.StabilityLevelBeta: {"logs"},
+					},
+				},
+			},
+		},
+		{
+			name: "testdata/with_underscore_in_semconv_ref_anchor_tag.yaml",
+			want: Metadata{
+				Type:                 "metricreceiver",
+				GeneratedPackageName: "metadata",
+				SemConvVersion:       "1.38.0",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				ShortFolderName:      "testdata",
+				Tests:                Tests{Host: "newMdatagenNopHost()"},
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelDevelopment: {"logs"},
+						component.StabilityLevelBeta:        {"traces"},
+						component.StabilityLevelStable:      {"metrics"},
+					},
+					Distributions: []string{"contrib"},
+					Warnings:      []string{"Any additional information that should be brought to the consumer's attention"},
+				},
+				Metrics: map[MetricName]Metric{
+					"system.disk.io_time": {
+						Signal: Signal{
+							Enabled:     true,
+							Description: "Time disk spent activated..",
+							Stability:   component.StabilityLevelDevelopment,
+							SemanticConvention: &SemanticConvention{
+								SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemdiskio_time",
+							},
+						},
+						Unit: strPtr("s"),
+						Sum: &Sum{
+							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+							Mono:                   Mono{Monotonic: true},
+							MetricValueType:        MetricValueType{ValueType: pmetric.NumberDataPointValueTypeDouble},
+						},
 					},
 				},
 			},

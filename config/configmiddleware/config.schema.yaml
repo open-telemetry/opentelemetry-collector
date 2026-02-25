@@ -1,0 +1,9 @@
+$defs:
+  config:
+    description: Middleware defines the extension ID for a middleware component.
+    type: object
+    properties:
+      id:
+        description: ID specifies the name of the extension to use.
+        type: string
+        x-customType: go.opentelemetry.io/collector/component.ID
