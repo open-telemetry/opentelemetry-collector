@@ -14,11 +14,14 @@ func (ms Sample) switchDictionary(src, dst ProfilesDictionary) error {
 		}
 
 		attr := src.AttributeTable().At(int(v))
-		err := attr.switchDictionary(src, dst)
+		// Create a copy to avoid modifying the source AttributeTable in-place
+		attrCopy := NewKeyValueAndUnit()
+		attr.CopyTo(attrCopy)
+		err := attrCopy.switchDictionary(src, dst)
 		if err != nil {
 			return fmt.Errorf("couldn't switch dictionary for attribute %d: %w", i, err)
 		}
-		idx, err := SetAttribute(dst.AttributeTable(), attr)
+		idx, err := SetAttribute(dst.AttributeTable(), attrCopy)
 		if err != nil {
 			return fmt.Errorf("couldn't set attribute %d: %w", i, err)
 		}
@@ -43,12 +46,15 @@ func (ms Sample) switchDictionary(src, dst ProfilesDictionary) error {
 		}
 
 		stack := src.StackTable().At(int(ms.StackIndex()))
-		err := stack.switchDictionary(src, dst)
+		// Create a copy to avoid modifying the source StackTable in-place
+		stackCopy := NewStack()
+		stack.CopyTo(stackCopy)
+		err := stackCopy.switchDictionary(src, dst)
 		if err != nil {
 			return fmt.Errorf("couldn't switch stack dictionary: %w", err)
 		}
 
-		idx, err := SetStack(dst.StackTable(), stack)
+		idx, err := SetStack(dst.StackTable(), stackCopy)
 		if err != nil {
 			return fmt.Errorf("couldn't set stack: %w", err)
 		}
