@@ -89,6 +89,103 @@ func TestBaseExporterLogging(t *testing.T) {
 	require.NoError(t, bs.Shutdown(context.Background()))
 }
 
+func TestWithQueue_MetadataKeys(t *testing.T) {
+	t.Run("with MetadataKeys - configures partitioner and merge function", func(t *testing.T) {
+		qCfg := NewDefaultQueueConfig()
+		qCfg.Batch.GetOrInsertDefault().Partition.MetadataKeys = []string{"key1", "key2"}
+
+		be, err := NewBaseExporter(
+			exportertest.NewNopSettings(exportertest.NopType),
+			pipeline.SignalMetrics,
+			noopExport,
+			WithQueueBatchSettings(newFakeQueueBatch()),
+			WithQueue(configoptional.Some(qCfg)),
+		)
+		require.NoError(t, err)
+		assert.NotNil(t, be)
+
+		// Verify partitioner and merge function are configured
+		assert.NotNil(t, be.queueBatchSettings.Partitioner, "Partitioner should be set when MetadataKeys is provided")
+		assert.NotNil(t, be.queueBatchSettings.MergeCtx, "MergeCtx should be set when MetadataKeys is provided")
+	})
+
+	t.Run("without MetadataKeys - does not configure partitioner", func(t *testing.T) {
+		tests := []struct {
+			name         string
+			metadataKeys []string
+		}{
+			{"empty slice", []string{}},
+			{"nil", nil},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				qCfg := NewDefaultQueueConfig()
+				qCfg.Batch.GetOrInsertDefault().Partition.MetadataKeys = tt.metadataKeys
+
+				be, err := NewBaseExporter(
+					exportertest.NewNopSettings(exportertest.NopType),
+					pipeline.SignalMetrics,
+					noopExport,
+					WithQueueBatchSettings(newFakeQueueBatch()),
+					WithQueue(configoptional.Some(qCfg)),
+				)
+				require.NoError(t, err)
+				assert.NotNil(t, be)
+
+				// Verify partitioner and merge function are NOT configured
+				assert.Nil(t, be.queueBatchSettings.Partitioner, "Partitioner should not be set when MetadataKeys is %s", tt.name)
+				assert.Nil(t, be.queueBatchSettings.MergeCtx, "MergeCtx should not be set when MetadataKeys is %s", tt.name)
+			})
+		}
+	})
+
+	t.Run("error when custom partitioner already set and metadata_keys used", func(t *testing.T) {
+		qCfg := NewDefaultQueueConfig()
+		qCfg.Batch.GetOrInsertDefault().Partition.MetadataKeys = []string{"key1", "key2"}
+
+		// Set up queue batch settings with a custom partitioner already configured
+		customSettings := newFakeQueueBatch()
+		customPartitioner := queuebatch.NewPartitioner(
+			func(context.Context, request.Request) string {
+				return "custom"
+			},
+		)
+		customSettings.Partitioner = customPartitioner
+
+		_, err := NewBaseExporter(
+			exportertest.NewNopSettings(exportertest.NopType),
+			pipeline.SignalMetrics,
+			noopExport,
+			WithQueueBatchSettings(customSettings),
+			WithQueue(configoptional.Some(qCfg)),
+		)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "cannot use metadata_keys when a custom partitioner is already configured")
+	})
+
+	t.Run("error when custom merge function already set and metadata_keys used", func(t *testing.T) {
+		qCfg := NewDefaultQueueConfig()
+		qCfg.Batch.GetOrInsertDefault().Partition.MetadataKeys = []string{"key1", "key2"}
+
+		// Set up queue batch settings with a custom merge function already configured
+		customSettings := newFakeQueueBatch()
+		customSettings.MergeCtx = func(context.Context, context.Context) context.Context {
+			return context.Background()
+		}
+
+		_, err := NewBaseExporter(
+			exportertest.NewNopSettings(exportertest.NopType),
+			pipeline.SignalMetrics,
+			noopExport,
+			WithQueueBatchSettings(customSettings),
+			WithQueue(configoptional.Some(qCfg)),
+		)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "cannot use metadata_keys when a custom merge function is already configured")
+	})
+}
+
 func TestQueueRetryWithDisabledQueue(t *testing.T) {
 	tests := []struct {
 		name         string
