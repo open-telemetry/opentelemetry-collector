@@ -37,10 +37,10 @@ func newTestServerMiddleware(name string) component.Component {
 				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					// Append middleware name to the URL path
 					r.URL.Path += name + "/"
-					
+
 					// Call the next handler in the chain
 					handler.ServeHTTP(w, r)
-					
+
 					// Add middleware name to the response
 					_, _ = w.Write([]byte("\r\nserved by " + name))
 				}), nil
