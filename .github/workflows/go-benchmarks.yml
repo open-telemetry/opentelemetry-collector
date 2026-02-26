@@ -11,26 +11,42 @@ jobs:
   benchmarks:
     name: Run benchmarks
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        group:
+          - receiver
+          - processor
+          - exporter
+          - pkg
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
       - name: Setup Go
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
           go-version: stable
-          cache: false
-      - name: Cache Go
-        id: go-cache
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
+          cache: true
+          
+      - name: Calculate Modules
+        id: calc
+        run: |
+          if [ "${{ matrix.group }}" == "root" ]; then
+            echo "TARGET_MODULES=$(pwd)" >> $GITHUB_ENV
+          else
+            MODULES=$(find ./${{ matrix.group }} -mindepth 1 -maxdepth 2 -type f -name "go.mod" -exec dirname {} \; 2>/dev/null | sort | xargs echo -n || true)
+            if [ -z "$MODULES" ]; then
+              echo "SKIP_BENCH=true" >> $GITHUB_ENV
+              echo "No Go modules found in ${{ matrix.group }}, skipping this job."
+            else
+              echo "TARGET_MODULES=$MODULES" >> $GITHUB_ENV
+            fi
+          fi
+
       - name: Run the benchmarks
-        uses: CodSpeedHQ/action@4deb3275dd364fb96fb074c953133d29ec96f80f # v4.10.6
+        if: env.SKIP_BENCH != 'true'
+        uses: CodSpeedHQ/action@2ac572851726409c88c02a307f1ea2632a9ea59b # v4.11.0
         with:
           mode: walltime
-          run: make for-all-target TARGET="timebenchmark"
-          cache-instruments: false
+          run: make for-all-target TARGET="timebenchmark" GOMODULES="${{ env.TARGET_MODULES }}"
+          cache-instruments: true

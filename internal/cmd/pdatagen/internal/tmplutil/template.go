@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package template // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
+package tmplutil // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/tmplutil"
 
 import (
 	"strings"

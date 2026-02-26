@@ -20,15 +20,17 @@ components:
     - exporter/otlp_grpc
     - exporter/otlp_http
     - extension/memory_limiter
-    - extension/xextension
-    - extension/xextension
     - extension/zpages
     - pdata/pprofile
-    - pdata/xpdata
+    - pkg/client
+    - pkg/component
+    - pkg/component/componentstatus
+    - pkg/component/componenttest
     - pkg/config/configauth
     - pkg/config/configcompression
     - pkg/config/configgrpc
     - pkg/config/confighttp
+    - pkg/config/confighttp/xconfighttp
     - pkg/config/configmiddleware
     - pkg/config/confignet
     - pkg/config/configopaque
@@ -37,20 +39,50 @@ components:
     - pkg/config/configtelemetry
     - pkg/config/configtls
     - pkg/confmap
+    - pkg/connector
+    - pkg/connector/connectortest
+    - pkg/consumer
+    - pkg/consumer/consumererror
     - pkg/consumer/consumertest
+    - pkg/exporter
+    - pkg/exporter/exportertest
     - pkg/exporterhelper
+    - pkg/extension
+    - pkg/extension/extensiontest
+    - pkg/extensionauth
+    - pkg/extensionauth/extensionauthtest
+    - pkg/extensioncapabilities
+    - pkg/extensionmiddleware
+    - pkg/extensionmiddleware/extensionmiddlewaretest
+    - pkg/featuregate
+    - pkg/filter
     - pkg/otelcol
+    - pkg/otelcol/otelcoltest
     - pkg/pdata
+    - pkg/pipeline
+    - pkg/processor
+    - pkg/processor/processortest
     - pkg/processorhelper
     - pkg/queuebatch
+    - pkg/receiver
+    - pkg/receiver/receivertest
     - pkg/receiverhelper
     - pkg/scraper
+    - pkg/scraper/scrapertest
     - pkg/scraperhelper
     - pkg/service
+    - pkg/service/hostcapabilities
+    - pkg/service/telemetry/telemetrytest
+    - pkg/xconfmap
     - pkg/xconnector
     - pkg/xexporter
     - pkg/xexporterhelper
+    - pkg/xextension
+    - pkg/xextension/storage
+    - pkg/xpdata
+    - pkg/xpipeline
     - pkg/xprocessor
+    - pkg/xprocessorhelper
     - pkg/xreceiver
     - pkg/xscraper
     - pkg/xscraperhelper

@@ -133,6 +133,9 @@ func (m *metric{{ $name.Render }}) init() {
 	{{- if $metric.Attributes }}
 	m.data.{{ $metric.Data.Type }}().DataPoints().EnsureCapacity(m.capacity)
 	{{- end }}
+	{{- if $reag }}
+	m.aggDataPoints = m.aggDataPoints[:0]
+	{{- end }}
 }
 
 {{/* This function changed in a major way, so instead of gating individual lines of code the original is being included */}}

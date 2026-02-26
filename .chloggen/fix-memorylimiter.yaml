@@ -4,13 +4,13 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
-component: pkg/otelcol
+component: extension/memory_limiter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Order providers and converters in alphabetical order in the `components` subcommand."
+note: Add support for streaming services.
 
 # One or more tracking issues or pull requests related to the change
-issues: [14476]
+issues: [14634]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
