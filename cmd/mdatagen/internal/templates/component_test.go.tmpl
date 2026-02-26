@@ -7,6 +7,7 @@
 package {{ .Package }}
 
 import (
+	"encoding/json"
 	{{- if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) }}
 	"context"
 	{{- end }}
@@ -16,27 +17,47 @@ import (
 	{{- end }}
 
 	"github.com/stretchr/testify/require"
+	"go.yaml.in/yaml/v3"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap"
 	{{- if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) }}
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	{{- if isExporter }}
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	{{- end }}
 	{{- if isProcessor }}
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
+	{{ if supportsProfiles }}
+	"go.opentelemetry.io/collector/processor/xprocessor"
+	{{ end }}
 	{{- end }}
 	{{- if isReceiver }}
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	{{ if supportsProfiles }}
+	"go.opentelemetry.io/collector/receiver/xreceiver"
+	{{ end }}
 	{{- end }}
 	{{- if isScraper }}
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapertest"
+	{{ if supportsProfiles }}
+	"go.opentelemetry.io/collector/scraper/xscraper"
+	{{ end }}
 	{{- end }}
 	{{- if isExtension }}
 	"go.opentelemetry.io/collector/extension/extensiontest"
@@ -46,16 +67,14 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	{{ if or supportsLogsToProfiles supportsMetricsToProfiles supportsTracesToProfiles supportsProfilesToLogs supportsProfilesToMetrics supportsProfilesToTraces supportsProfilesToProfiles }}
+	"go.opentelemetry.io/collector/connector/xconnector"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
+	{{ end }}
 	"go.opentelemetry.io/collector/pipeline"
-	{{ if supportsProfiles }}
+	{{ if or supportsLogsToProfiles supportsMetricsToProfiles supportsTracesToProfiles supportsProfilesToLogs supportsProfilesToMetrics supportsProfilesToTraces supportsProfilesToProfiles }}
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
-	{{- end }}
-	{{- end }}
-	{{- if or isExporter isProcessor }}
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/pdata/ptrace"
+	{{ end }}
 	{{- end }}
 	{{- end }}
 )
@@ -68,6 +87,63 @@ func TestComponentFactoryType(t *testing.T) {
 
 func TestComponentConfigStruct(t *testing.T) {
 	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
+}
+
+func TestComponentConfigMarshal(t *testing.T) {
+	cfg := NewFactory().CreateDefaultConfig()
+	cm := confmap.New()
+	require.NoError(t, cm.Marshal(cfg))
+
+	data := cm.ToStringMap()
+	_, err := yaml.Marshal(data)
+	require.NoError(t, err)
+	_, err = json.Marshal(data)
+	require.NoError(t, err)
+
+	roundTrip := NewFactory().CreateDefaultConfig()
+	require.NoError(t, cm.Unmarshal(&roundTrip))
+	cmRoundTrip := confmap.New()
+	require.NoError(t, cmRoundTrip.Marshal(roundTrip))
+	roundTripAgain := NewFactory().CreateDefaultConfig()
+	require.NoError(t, cmRoundTrip.Unmarshal(&roundTripAgain))
+	cmRoundTripAgain := confmap.New()
+	require.NoError(t, cmRoundTripAgain.Marshal(roundTripAgain))
+	roundTripAgainMap := cmRoundTripAgain.ToStringMap()
+	roundTripThird := NewFactory().CreateDefaultConfig()
+	require.NoError(t, cmRoundTripAgain.Unmarshal(&roundTripThird))
+	cmRoundTripThird := confmap.New()
+	require.NoError(t, cmRoundTripThird.Marshal(roundTripThird))
+	require.Equal(t, roundTripAgainMap, cmRoundTripThird.ToStringMap())
+}
+
+func TestComponentConfigMarshalInvalid(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      map[string]any
+		expectedErr string
+	}{
+		{{- range $i, $cfg := .Tests.InvalidConfigs }}
+		{
+			name: {{- if $cfg.Name }}{{ printf "%q" $cfg.Name }}{{ else }}"invalid_config_{{ $i }}"{{ end }},
+			config: {{ printf "%#v" $cfg.Config }},
+			expectedErr: {{ printf "%q" $cfg.Error }},
+		},
+		{{- end }}
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			cm := confmap.NewFromStringMap(tt.config)
+			err := cm.Unmarshal(&cfg)
+			require.Error(t, err)
+			if tt.expectedErr != "" {
+				require.ErrorContains(t, err, tt.expectedErr)
+			}
+		})
+	}
 }
 
 {{ if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) -}}
