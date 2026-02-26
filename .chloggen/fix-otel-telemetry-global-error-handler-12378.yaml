@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: pkg/service
+note: Route OpenTelemetry internal errors through the collector logger so configured log encoding is preserved.
+issues: [12378]
+change_logs: [user]
