@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"regexp"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -527,6 +528,12 @@ func (mvt ValueType) Primitive() string {
 
 type SemanticConvention struct {
 	SemanticConventionRef string `mapstructure:"ref"`
+	// Package is the inferred semconv Go package name (e.g. "systemconv").
+	// This field is computed from the metric name, not user-specified.
+	Package string
+	// Type is the inferred semconv Go type name (e.g. "CPUTime").
+	// This field is computed from the metric name, not user-specified.
+	Type string
 }
 
 type Warnings struct {
@@ -702,6 +709,83 @@ func (s Signal) HasConditionalAttributes(attrs map[AttributeName]Attribute) bool
 	return false
 }
 
+func (s *SemanticConvention) HasSemConvType() bool {
+	return s != nil && s.Package != "" && s.Type != ""
+}
+
+func (s *SemanticConvention) ShouldUseSemConvValues() bool {
+	if s == nil || s.Type == "" {
+		return false
+	}
+	return true
+}
+
+func (s *SemanticConvention) ImportPath(semConvVersion string) string {
+	if s.Package == "" {
+		return ""
+	}
+	return fmt.Sprintf("go.opentelemetry.io/otel/semconv/%v/%s", semConvVersion, s.Package)
+}
+
+// inferSemConvTypes auto-populates Package and Type on any SemanticConvention
+// that has a ref URL, by inferring them from the metric name.
+func (md *Metadata) inferSemConvTypes() {
+	for name, m := range md.Metrics {
+		sc := m.SemanticConvention
+		if sc == nil || sc.SemanticConventionRef == "" {
+			continue
+		}
+		pkg, typeName, err := InferSemConvFromMetricName(string(name))
+		if err != nil {
+			// If inference fails, leave them empty; validation will catch it.
+			continue
+		}
+		sc.Package = pkg
+		sc.Type = typeName
+	}
+}
+
+// semconvAcronyms extends the golint acronyms with additional ones
+// used by the OTel semconv Go codegen that are not in the standard golint list.
+var semconvAcronyms = map[string]bool{
+	"IO": true,
+}
+
+// InferSemConvFromMetricName derives the semconv Go package and type name
+// from a dotted metric name. For example, "system.cpu.time" yields
+// package "systemconv" and type "CPUTime".
+func InferSemConvFromMetricName(metricName string) (pkg, typeName string, err error) {
+	parts := strings.Split(metricName, ".")
+	if len(parts) < 2 {
+		return "", "", fmt.Errorf("metric name %q must have at least 2 segments to infer semconv type", metricName)
+	}
+	pkg = parts[0] + "conv"
+
+	remaining := strings.Join(parts[1:], ".")
+	typeName, err = formatSemConvIdentifier(remaining)
+	return pkg, typeName, err
+}
+
+// formatSemConvIdentifier converts a dotted/underscored identifier into a
+// PascalCase Go identifier, applying both the standard golint acronyms and
+// the semconv-specific acronyms.
+func formatSemConvIdentifier(s string) (string, error) {
+	ident, err := FormatIdentifier(s, true)
+	if err != nil {
+		return "", err
+	}
+
+	// FormatIdentifier only knows about golint.Acronyms. We need to fix up
+	// any semconv-specific acronyms that it missed. We do this by scanning
+	// for Title-cased versions (e.g. "Io") and replacing them with the
+	// upper-case acronym (e.g. "IO") at word boundaries.
+	for acronym := range semconvAcronyms {
+		titleForm := strings.ToUpper(acronym[:1]) + strings.ToLower(acronym[1:])
+		ident = strings.ReplaceAll(ident, titleForm, acronym)
+	}
+	return ident, nil
+}
+
 type Entity struct {
 	// Type is the type of the entity.
 	Type string `mapstructure:"type"`
@@ -758,4 +842,32 @@ type FeatureGate struct {
 	ToVersion string `mapstructure:"to_version"`
 	// ReferenceURL is the URL with contextual information about the feature gate.
 	ReferenceURL string `mapstructure:"reference_url"`
+}
+
+type SemConvImport struct {
+	Package string
+	Alias   string
+}
+
+func (md Metadata) SemConvImports() []SemConvImport {
+	imports := make(map[string]SemConvImport)
+
+	for _, m := range md.Metrics {
+		if m.SemanticConvention != nil && m.SemanticConvention.Package != "" {
+			pkg := m.SemanticConvention.Package
+			imports[pkg] = SemConvImport{
+				Package: pkg,
+				Alias:   pkg,
+			}
+		}
+	}
+
+	result := make([]SemConvImport, 0, len(imports))
+	for _, imp := range imports {
+		result = append(result, imp)
+	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Package < result[j].Package
+	})
+	return result
 }

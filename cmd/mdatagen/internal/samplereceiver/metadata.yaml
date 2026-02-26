@@ -104,6 +104,10 @@ attributes:
     type: string
     requirement_level: conditionally_required
 
+  cpu:
+    description: Logical CPU number starting at 0.
+    type: string
+
   enum_attr:
     description: Attribute with a known set of string values.
     type: string
@@ -131,6 +135,11 @@ attributes:
   slice_attr:
     description: Attribute with a slice value.
     type: slice
+
+  state:
+    description: Breakdown of CPU usage by type.
+    type: string
+    enum: [idle, interrupt, nice, softirq, steal, system, user, wait]
 
   string_attr:
     description: Attribute with any string value.
@@ -284,8 +293,22 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [cpu, state]
     semantic_convention:
       ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime
+
+  system.memory.limit:
+    enabled: true
+    stability: development
+    description: Total bytes of memory available.
+    unit: By
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    # package and type are auto-inferred from the metric name
+    semantic_convention:
+      ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemmemorylimit
 
 telemetry:
   metrics:

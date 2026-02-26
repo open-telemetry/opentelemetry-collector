@@ -512,7 +512,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["system.cpu.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Monotonic cumulative sum int metric enabled by default.", ms.At(i).Description())
+						assert.Equal(t, metricSemConvSystemCPUTime.Description(), ms.At(i).Description())
 						assert.Equal(t, "s", ms.At(i).Unit())
 						assert.True(t, ms.At(i).Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -526,7 +526,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["system.cpu.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Monotonic cumulative sum int metric enabled by default.", ms.At(i).Description())
+						assert.Equal(t, metricSemConvSystemCPUTime.Description(), ms.At(i).Description())
 						assert.Equal(t, "s", ms.At(i).Unit())
 						assert.True(t, ms.At(i).Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -548,5 +548,15 @@ func TestMetricsBuilder(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestAttributeEnumAttrStringInvalid(t *testing.T) {
+	assert.Equal(t, "", AttributeEnumAttr(999).String())
+}
+
+func TestMapAttributeEnumAttr(t *testing.T) {
+	for str, val := range MapAttributeEnumAttr {
+		assert.Equal(t, str, val.String())
 	}
 }

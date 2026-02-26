@@ -9,6 +9,7 @@ import (
 	"time"
 
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	systemconv "go.opentelemetry.io/otel/semconv/v1.38.0/systemconv"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
@@ -74,7 +75,7 @@ var MetricsInfo = metricsInfo{
 		Name: "reaggregate.metric",
 	},
 	SystemCPUTime: metricInfo{
-		Name: "system.cpu.time",
+		Name: metricSemConvSystemCPUTime.Name(),
 	},
 }
 
@@ -671,11 +672,14 @@ type metricSystemCPUTime struct {
 	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
 }
 
+// metricSemConvSystemCPUTime provides access to the semantic convention type
+var metricSemConvSystemCPUTime = systemconv.CPUTime{}
+
 // init fills system.cpu.time metric with initial data.
 func (m *metricSystemCPUTime) init() {
-	m.data.SetName("system.cpu.time")
-	m.data.SetDescription("Monotonic cumulative sum int metric enabled by default.")
-	m.data.SetUnit("s")
+	m.data.SetName(metricSemConvSystemCPUTime.Name())
+	m.data.SetDescription(metricSemConvSystemCPUTime.Description())
+	m.data.SetUnit(metricSemConvSystemCPUTime.Unit())
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)

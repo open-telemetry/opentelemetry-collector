@@ -167,7 +167,9 @@ metrics:
       since:
       # Required: migration note
       note:
-    # Optional: the reference to a semantic convention
+    # Optional: the reference to a semantic convention.
+    # When ref is provided, package and type are auto-inferred from the metric name
+    # (e.g. "system.cpu.time" → package "systemconv", type "CPUTime").
     semantic_convention:
       ref:
 

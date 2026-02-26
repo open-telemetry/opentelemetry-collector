@@ -252,6 +252,23 @@ func TestLoadMetadata(t *testing.T) {
 						FullName:         "required_string_attr",
 						RequirementLevel: AttributeRequirementLevelRequired,
 					},
+					"cpu": {
+						Description: "Logical CPU number starting at 0.",
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName:         "cpu",
+						RequirementLevel: AttributeRequirementLevelRecommended,
+					},
+					"state": {
+						Description: "Breakdown of CPU usage by type.",
+						Enum:        []string{"idle", "interrupt", "nice", "softirq", "steal", "system", "user", "wait"},
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName:         "state",
+						RequirementLevel: AttributeRequirementLevelRecommended,
+					},
 				},
 				Metrics: map[MetricName]Metric{
 					"default.metric": {
@@ -302,9 +319,14 @@ func TestLoadMetadata(t *testing.T) {
 					},
 					"system.cpu.time": {
 						Signal: Signal{
-							Enabled:               true,
-							Stability:             component.StabilityLevelBeta,
-							SemanticConvention:    &SemanticConvention{SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime"},
+							Attributes: []AttributeName{"cpu", "state"},
+							Enabled:    true,
+							Stability:  component.StabilityLevelBeta,
+							SemanticConvention: &SemanticConvention{
+								SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime",
+								Package:               "systemconv",
+								Type:                  "CPUTime",
+							},
 							Description:           "Monotonic cumulative sum int metric enabled by default.",
 							ExtendedDocumentation: "The metric will be become optional soon.",
 						},
@@ -313,6 +335,24 @@ func TestLoadMetadata(t *testing.T) {
 							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
 							Mono:                   Mono{Monotonic: true},
+						},
+					},
+					"system.memory.limit": {
+						Signal: Signal{
+							Enabled:   true,
+							Stability: component.StabilityLevelDevelopment,
+							SemanticConvention: &SemanticConvention{
+								SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemmemorylimit",
+								Package:               "systemconv",
+								Type:                  "MemoryLimit",
+							},
+							Description: "Total bytes of memory available.",
+						},
+						Unit: strPtr("By"),
+						Sum: &Sum{
+							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
+							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+							Mono:                   Mono{Monotonic: false},
 						},
 					},
 					"optional.metric": {
@@ -609,6 +649,11 @@ func TestLoadMetadata(t *testing.T) {
 			wantErr: "metric \"default.metric\": invalid semantic-conventions URL: want https://github.com/open-telemetry/semantic-conventions/blob/v1.37.2/*#metric-defaultmetric, got \"https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime\"",
 		},
 		{
+			name:    "testdata/invalid_metric_semconvref_old_version.yaml",
+			want:    Metadata{},
+			wantErr: "metric \"default.metric\": semantic_convention requires sem_conv_version >= 1.32.0",
+		},
+		{
 			name:    "testdata/no_metric_stability.yaml",
 			want:    Metadata{},
 			wantErr: "metric \"default.metric\": missing required field: `stability.level`",
@@ -705,6 +750,8 @@ func TestLoadMetadata(t *testing.T) {
 							Stability:   component.StabilityLevelDevelopment,
 							SemanticConvention: &SemanticConvention{
 								SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemdiskio_time",
+								Package:               "systemconv",
+								Type:                  "DiskIOTime",
 							},
 						},
 						Unit: strPtr("s"),
