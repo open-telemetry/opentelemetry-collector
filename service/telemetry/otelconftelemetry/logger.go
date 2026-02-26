@@ -7,6 +7,7 @@ import (
 	"context"
 
 	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.opentelemetry.io/otel"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -55,6 +56,9 @@ func createLogger(
 	if err != nil {
 		return nil, nil, err
 	}
+	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
+		logger.Error("OpenTelemetry internal telemetry error", zap.Error(err))
+	}))
 
 	// The attributes in res.Attributes(), which are generated in telemetry.go,
 	// are added to logs exported through the LoggerProvider instantiated below.
