@@ -30,17 +30,9 @@ Before the release, make sure there are no open release blockers in [core](https
    -  🛑 **Do not move forward until this PR is merged.**
 
 2. Determine the version number that will be assigned to the release. Usually, we increment the minor version number and set the patch number to 0. In this document, we are using `v0.85.0` as the version to be released, following `v0.84.0`.
-   Check if stable modules have any changes since the last release by running the following:
-   - `make check-changes PREVIOUS_VERSION=v1.x.x MODSET=stable`.
-
-   If there are no changes, there is no need to release new version for stable
-   modules. If there are changes found but .chloggen directory doesn't have any
-   corresponding entries, add missing changelog entries. If the changes are
-   insignificant, consider not releasing a new version for stable modules.
 
 3. Manually run the action [Automation - Prepare Release](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/prepare-release.yml). This action will create an issue to track the progress of the release and a pull request to update the changelog and version numbers in the repo.
    - When prompted, enter the version numbers determined in Step 2, but do not include a leading `v`.
-   - If not intending to release stable modules, do not specify a version for `Release candidate version stable`.
    - While this PR is open all merging in Core is automatically halted via the `Merge freeze / Check` CI check.
    - If the PR needs updated in any way you can make the changes in a fork and PR those changes into the `prepare-release-prs/x` branch. You do not need to wait for the CI to pass in this prep-to-prep PR.
    -  🛑 **Do not move forward until this PR is merged.** 🛑
@@ -50,7 +42,7 @@ Before the release, make sure there are no open release blockers in [core](https
    ⚠️ If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector.git` in each command. ⚠️
 
    - `make push-tags MODSET=beta` for the beta modules group,
-   - `make push-tags MODSET=stable` for the stable modules group, only if there were changes since the last release.
+   - `make push-tags MODSET=stable` for the stable modules group.
 
    **Note**: Pushing the **beta** tags will automatically trigger the [Automation - Release Branch](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/release-branch.yml) GitHub Action, which will create the release branch (e.g. `release/v0.127.x`) from the commit that prepared the release. Pushing stable tags, if required, will not trigger creation of an additional release branch.
 

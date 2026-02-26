@@ -5,7 +5,7 @@ package pdata // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/int
 
 import (
 	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/proto"
-	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/tmplutil"
 )
 
 type baseStruct interface {
@@ -39,15 +39,15 @@ func (ms *messageStruct) getName() string {
 }
 
 func (ms *messageStruct) generate(packageInfo *PackageInfo) []byte {
-	return []byte(template.Execute(messageTemplate, ms.templateFields(packageInfo)))
+	return []byte(tmplutil.Execute(messageTemplate, ms.templateFields(packageInfo)))
 }
 
 func (ms *messageStruct) generateTests(packageInfo *PackageInfo) []byte {
-	return []byte(template.Execute(messageTestTemplate, ms.templateFields(packageInfo)))
+	return []byte(tmplutil.Execute(messageTestTemplate, ms.templateFields(packageInfo)))
 }
 
 func (ms *messageStruct) generateInternal(packageInfo *PackageInfo) []byte {
-	return []byte(template.Execute(messageInternalTemplate, ms.templateFields(packageInfo)))
+	return []byte(tmplutil.Execute(messageInternalTemplate, ms.templateFields(packageInfo)))
 }
 
 func (ms *messageStruct) getProtoMessage() *proto.Message {
