@@ -203,7 +203,7 @@ func WithQueue(cfg configoptional.Optional[queuebatch.Config]) Option {
 
 // WithQueueBatch enables queueing for an exporter.
 // This option should be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
-// If batch.MetadataKeys is set, it will automatically configure the partitioner and merge function
+// If batch.partition.MetadataKeys is set, it will automatically configure the partitioner and merge function
 // to partition batches based on the specified metadata keys.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
@@ -217,15 +217,15 @@ func WithQueueBatch(cfg configoptional.Optional[queuebatch.Config], set queuebat
 			return errors.New("`Settings.Encoding` must not be nil when persistent queue is enabled")
 		}
 		// Automatically configure partitioner if MetadataKeys is set
-		if cfg.Get().Batch.HasValue() && len(cfg.Get().Batch.Get().MetadataKeys) > 0 {
+		if cfg.Get().Batch.HasValue() && len(cfg.Get().Batch.Get().Partition.MetadataKeys) > 0 {
 			if set.Partitioner != nil {
 				return errors.New("cannot use metadata_keys when a custom partitioner is already configured")
 			}
 			if set.MergeCtx != nil {
 				return errors.New("cannot use metadata_keys when a custom merge function is already configured")
 			}
-			set.Partitioner = queuebatch.NewMetadataKeysPartitioner(cfg.Get().Batch.Get().MetadataKeys)
-			set.MergeCtx = queuebatch.NewMetadataKeysMergeCtx(cfg.Get().Batch.Get().MetadataKeys)
+			set.Partitioner = queuebatch.NewMetadataKeysPartitioner(cfg.Get().Batch.Get().Partition.MetadataKeys)
+			set.MergeCtx = queuebatch.NewMetadataKeysMergeCtx(cfg.Get().Batch.Get().Partition.MetadataKeys)
 		}
 		o.queueBatchSettings = set
 		o.queueCfg = cfg

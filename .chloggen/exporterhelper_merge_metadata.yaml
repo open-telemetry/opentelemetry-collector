@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/exporterhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add `metadata_keys` configuration to `sending_queue.batch` to partition batches by client metadata"
+note: "Add `metadata_keys` configuration to `sending_queue.batch.partition` to partition batches by client metadata"
 
 # One or more tracking issues or pull requests related to the change
 issues: [14139]
@@ -16,7 +16,7 @@ issues: [14139]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The `metadata_keys` configuration option is now available in the `sending_queue.batch` section for all exporters.
+  The `metadata_keys` configuration option is now available in the `sending_queue.batch.partition` section for all exporters.
   When specified, batches are partitioned based on the values of the listed metadata keys, allowing separate batching per metadata partition. This feature
   is automatically configured when using `exporterhelper.WithQueue()`.
 

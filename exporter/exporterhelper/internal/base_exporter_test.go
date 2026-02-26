@@ -92,7 +92,7 @@ func TestBaseExporterLogging(t *testing.T) {
 func TestWithQueue_MetadataKeys(t *testing.T) {
 	t.Run("with MetadataKeys - configures partitioner and merge function", func(t *testing.T) {
 		qCfg := NewDefaultQueueConfig()
-		qCfg.Batch.GetOrInsertDefault().MetadataKeys = []string{"key1", "key2"}
+		qCfg.Batch.GetOrInsertDefault().Partition.MetadataKeys = []string{"key1", "key2"}
 
 		be, err := NewBaseExporter(
 			exportertest.NewNopSettings(exportertest.NopType),
@@ -121,7 +121,7 @@ func TestWithQueue_MetadataKeys(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				qCfg := NewDefaultQueueConfig()
-				qCfg.Batch.GetOrInsertDefault().MetadataKeys = tt.metadataKeys
+				qCfg.Batch.GetOrInsertDefault().Partition.MetadataKeys = tt.metadataKeys
 
 				be, err := NewBaseExporter(
 					exportertest.NewNopSettings(exportertest.NopType),
@@ -142,7 +142,7 @@ func TestWithQueue_MetadataKeys(t *testing.T) {
 
 	t.Run("error when custom partitioner already set and metadata_keys used", func(t *testing.T) {
 		qCfg := NewDefaultQueueConfig()
-		qCfg.Batch.GetOrInsertDefault().MetadataKeys = []string{"key1", "key2"}
+		qCfg.Batch.GetOrInsertDefault().Partition.MetadataKeys = []string{"key1", "key2"}
 
 		// Set up queue batch settings with a custom partitioner already configured
 		customSettings := newFakeQueueBatch()
@@ -166,7 +166,7 @@ func TestWithQueue_MetadataKeys(t *testing.T) {
 
 	t.Run("error when custom merge function already set and metadata_keys used", func(t *testing.T) {
 		qCfg := NewDefaultQueueConfig()
-		qCfg.Batch.GetOrInsertDefault().MetadataKeys = []string{"key1", "key2"}
+		qCfg.Batch.GetOrInsertDefault().Partition.MetadataKeys = []string{"key1", "key2"}
 
 		// Set up queue batch settings with a custom merge function already configured
 		customSettings := newFakeQueueBatch()
