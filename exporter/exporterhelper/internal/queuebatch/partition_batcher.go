@@ -36,7 +36,7 @@ type partitionBatcher struct {
 	currentBatchMu sync.Mutex
 	currentBatch   *batch
 	timer          *time.Timer
-	stopped        bool
+	shutdownCh     chan struct{}
 	logger         *zap.Logger
 }
 
@@ -54,18 +54,15 @@ func newPartitionBatcher(
 		sizer:       sizer,
 		mergeCtx:    mergeCtx,
 		consumeFunc: next,
+		shutdownCh:  make(chan struct{}, 1),
 		logger:      logger,
 	}
 }
 
 func (qb *partitionBatcher) resetTimer() {
-	if qb.cfg.FlushTimeout <= 0 || qb.stopped {
-		return
+	if qb.cfg.FlushTimeout > 0 {
+		qb.timer.Reset(qb.cfg.FlushTimeout)
 	}
-	if qb.timer != nil {
-		qb.timer.Stop()
-	}
-	qb.timer = time.AfterFunc(qb.cfg.FlushTimeout, qb.flushCurrentBatchIfNotEmpty)
 }
 
 func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, done queue.Done) {
@@ -195,21 +192,28 @@ func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, do
 	}
 }
 
-// Start is called when the batcher is ready to process requests.
-// With time.AfterFunc, the timer is created lazily when data arrives.
+// Start starts the goroutine that reads from the queue and flushes asynchronously.
 func (qb *partitionBatcher) Start(context.Context, component.Host) error {
+	if qb.cfg.FlushTimeout <= 0 {
+		return nil
+	}
+	qb.timer = time.NewTimer(qb.cfg.FlushTimeout)
+	qb.stopWG.Go(func() {
+		for {
+			select {
+			case <-qb.shutdownCh:
+				return
+			case <-qb.timer.C:
+				qb.flushCurrentBatchIfNotEmpty()
+			}
+		}
+	})
 	return nil
 }
 
 // Shutdown ensures that queue and all Batcher are stopped.
 func (qb *partitionBatcher) Shutdown(context.Context) error {
-	qb.currentBatchMu.Lock()
-	qb.stopped = true
-	if qb.timer != nil {
-		qb.timer.Stop()
-	}
-	qb.currentBatchMu.Unlock()
-
+	close(qb.shutdownCh)
 	// Make sure execute one last flush if necessary.
 	qb.flushCurrentBatchIfNotEmpty()
 	qb.stopWG.Wait()
@@ -225,7 +229,9 @@ func (qb *partitionBatcher) flushCurrentBatchIfNotEmpty() {
 	}
 	batchToFlush := qb.currentBatch
 	qb.currentBatch = nil
-	// No need to reset timer here - a new timer will be created when new data arrives
+	// Reset timer while holding the lock to prevent data race with Consume() which
+	// also calls resetTimer() under the same lock.
+	qb.resetTimer()
 	qb.currentBatchMu.Unlock()
 
 	// flush() blocks until successfully started a goroutine for flushing.
