@@ -4,7 +4,7 @@
 package proto // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/proto"
 
 import (
-	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/tmplutil"
 )
 
 const copyOther = `{{ if .repeated -}}
@@ -50,7 +50,7 @@ const copyMessage = `{{ if .repeated -}}
 func (pf *Field) GenCopy() string {
 	tf := pf.getTemplateFields()
 	if pf.Type == TypeMessage {
-		return template.Execute(template.Parse("copyMessage", []byte(copyMessage)), tf)
+		return tmplutil.Execute(tmplutil.Parse("copyMessage", []byte(copyMessage)), tf)
 	}
-	return template.Execute(template.Parse("copyOther", []byte(copyOther)), tf)
+	return tmplutil.Execute(tmplutil.Parse("copyOther", []byte(copyOther)), tf)
 }

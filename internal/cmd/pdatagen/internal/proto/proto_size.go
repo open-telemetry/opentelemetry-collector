@@ -6,7 +6,7 @@ package proto // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/int
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/tmplutil"
 )
 
 const sizeProtoI8 = `{{ if .repeated -}}
@@ -136,19 +136,19 @@ func (pf *Field) GenSizeProto() string {
 	tf := pf.getTemplateFields()
 	switch pf.Type {
 	case TypeFixed64, TypeSFixed64, TypeDouble:
-		return template.Execute(template.Parse("sizeProtoI8", []byte(sizeProtoI8)), tf)
+		return tmplutil.Execute(tmplutil.Parse("sizeProtoI8", []byte(sizeProtoI8)), tf)
 	case TypeFixed32, TypeSFixed32, TypeFloat:
-		return template.Execute(template.Parse("sizeProtoI4", []byte(sizeProtoI4)), tf)
+		return tmplutil.Execute(tmplutil.Parse("sizeProtoI4", []byte(sizeProtoI4)), tf)
 	case TypeInt32, TypeInt64, TypeUint32, TypeUint64, TypeEnum:
-		return template.Execute(template.Parse("sizeProtoVarint", []byte(sizeProtoVarint)), tf)
+		return tmplutil.Execute(tmplutil.Parse("sizeProtoVarint", []byte(sizeProtoVarint)), tf)
 	case TypeBool:
-		return template.Execute(template.Parse("sizeProtoBool", []byte(sizeProtoBool)), tf)
+		return tmplutil.Execute(tmplutil.Parse("sizeProtoBool", []byte(sizeProtoBool)), tf)
 	case TypeBytes, TypeString:
-		return template.Execute(template.Parse("sizeProtoBytesString", []byte(sizeProtoBytesString)), tf)
+		return tmplutil.Execute(tmplutil.Parse("sizeProtoBytesString", []byte(sizeProtoBytesString)), tf)
 	case TypeMessage:
-		return template.Execute(template.Parse("sizeProtoMessage", []byte(sizeProtoMessage)), tf)
+		return tmplutil.Execute(tmplutil.Parse("sizeProtoMessage", []byte(sizeProtoMessage)), tf)
 	case TypeSInt32, TypeSInt64:
-		return template.Execute(template.Parse("sizeProtoSignedVarint", []byte(sizeProtoSignedVarint)), tf)
+		return tmplutil.Execute(tmplutil.Parse("sizeProtoSignedVarint", []byte(sizeProtoSignedVarint)), tf)
 	}
 	panic(fmt.Sprintf("unhandled case %T", pf.Type))
 }
