@@ -310,3 +310,32 @@ func TestRef_String(t *testing.T) {
 	ref := NewRef("go.opentelemetry.io/collector/config/confighttp.client_config")
 	require.Equal(t, "go.opentelemetry.io/collector/config/confighttp.client_config", ref.String())
 }
+
+func TestRef_Module_EmptyNamespace(t *testing.T) {
+	ref := NewRef("target_type")
+	require.Empty(t, ref.Module())
+}
+
+func TestRef_URL_UnsupportedNamespace(t *testing.T) {
+	ref := NewRef("unsupported.example.com/pkg/sub.config")
+	_, err := ref.URL("v1.0.0")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "unsupported namespace")
+}
+
+func TestRef_Validate_LocalRefMissingSchemaID(t *testing.T) {
+	ref := &Ref{schemaID: "", defName: "config", kind: Local}
+	err := ref.Validate()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing schema ID in local reference")
+}
+
+func TestNamespaceOf_FallbackLastSlash(t *testing.T) {
+	result := namespaceOf("com.example/some/path.type")
+	require.Equal(t, "com.example/some", result)
+}
+
+func TestNamespaceOf_NoSlash(t *testing.T) {
+	result := namespaceOf("noslash")
+	require.Empty(t, result)
+}

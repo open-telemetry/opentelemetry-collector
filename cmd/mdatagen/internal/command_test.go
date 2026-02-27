@@ -80,6 +80,7 @@ func TestRunContents(t *testing.T) {
 		wantConfigSchemaGenerated       bool
 		wantErr                         bool
 		wantOrderErr                    bool
+		wantRunErr                      bool
 		wantAttributes                  []string
 	}{
 		{
@@ -262,6 +263,10 @@ func TestRunContents(t *testing.T) {
 			wantComponentTestGenerated: true,
 			wantConfigSchemaGenerated:  true,
 		},
+		{
+			yml:        "with_invalid_config_ref.yaml",
+			wantRunErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.yml, func(t *testing.T) {
@@ -294,6 +299,11 @@ foo
 			if tt.wantOrderErr {
 				require.Error(t, err)
 				require.Contains(t, err.Error(), "metadata.yaml ordering check failed")
+				return
+			}
+			if tt.wantRunErr {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "failed to generate config files")
 				return
 			}
 			require.NoError(t, err)
@@ -461,6 +471,21 @@ func TestGenerateConfigFiles(t *testing.T) {
 			},
 			wantGen: true,
 		},
+		{
+			name: "invalid ref in config causes resolve error",
+			md: Metadata{
+				Type:        "test",
+				PackageName: "shortname",
+				Status: &Status{
+					Class: "receiver",
+				},
+				// A local ref without a definition name fails Validate() inside ResolveSchema
+				Config: &cfggen.ConfigMetadata{
+					Ref: "/config/configauth",
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -478,6 +503,22 @@ func TestGenerateConfigFiles(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGenerateConfigFiles_WriteError(t *testing.T) {
+	md := Metadata{
+		Type:        "test",
+		PackageName: "shortname",
+		Status: &Status{
+			Class: "receiver",
+		},
+		Config: &cfggen.ConfigMetadata{
+			Type: "object",
+		},
+	}
+	err := generateConfigFiles(md, "/nonexistent/path/that/does/not/exist")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to write config schema")
 }
 
 func TestRun(t *testing.T) {

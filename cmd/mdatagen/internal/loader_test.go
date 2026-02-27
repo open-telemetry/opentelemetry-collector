@@ -637,6 +637,11 @@ func TestLoadMetadata(t *testing.T) {
 			wantErr: "`stability` must be `deprecated` when specifying a `deprecated` field",
 		},
 		{
+			name:    "testdata/invalid_config.yaml",
+			want:    Metadata{},
+			wantErr: "config type must be \"object\", got \"string\"",
+		},
+		{
 			name:    "testdata/~~this file doesn't exist~~.yaml",
 			wantErr: "unable to read the file file:testdata/~~this file doesn't exist~~.yaml",
 		},

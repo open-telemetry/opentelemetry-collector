@@ -622,9 +622,6 @@ func TestResolver_ResolveSchema_NestedOriginPropagation(t *testing.T) {
 }
 
 func TestResolver_ResolveSchema_RelativeRefWithOrigin(t *testing.T) {
-	// A relative ref like ./internal/metadata.metrics_config inside a schema loaded
-	// from go.opentelemetry.io/collector/config/confighttp should resolve to
-	// go.opentelemetry.io/collector/config/confighttp/internal/metadata.metrics_config
 	metadataSchema := &ConfigMetadata{
 		Type: "object",
 		Defs: map[string]*ConfigMetadata{
@@ -651,8 +648,7 @@ func TestResolver_ResolveSchema_RelativeRefWithOrigin(t *testing.T) {
 
 	ml := &mockLoader{
 		schemas: map[string]*ConfigMetadata{
-			"go.opentelemetry.io/collector/config/confighttp.client_config": confighttpSchema,
-			// ./internal/metadata resolved against origin go.opentelemetry.io/collector/config/confighttp:
+			"go.opentelemetry.io/collector/config/confighttp.client_config":                    confighttpSchema,
 			"go.opentelemetry.io/collector/config/confighttp/internal/metadata.metrics_config": metadataSchema,
 		},
 	}
@@ -683,9 +679,6 @@ func TestResolver_ResolveSchema_RelativeRefWithOrigin(t *testing.T) {
 }
 
 func TestResolver_ResolveSchema_ParentRelativeRefWithOrigin(t *testing.T) {
-	// A parent-relative ref like ../configtls.tls_config inside a schema loaded
-	// from go.opentelemetry.io/collector/config/confighttp should resolve to
-	// go.opentelemetry.io/collector/config/configtls.tls_config
 	configtlsSchema := &ConfigMetadata{
 		Type: "object",
 		Defs: map[string]*ConfigMetadata{
@@ -713,8 +706,7 @@ func TestResolver_ResolveSchema_ParentRelativeRefWithOrigin(t *testing.T) {
 	ml := &mockLoader{
 		schemas: map[string]*ConfigMetadata{
 			"go.opentelemetry.io/collector/config/confighttp.client_config": confighttpSchema,
-			// ../configtls resolved against parent of go.opentelemetry.io/collector/config/confighttp:
-			"go.opentelemetry.io/collector/config/configtls.tls_config": configtlsSchema,
+			"go.opentelemetry.io/collector/config/configtls.tls_config":     configtlsSchema,
 		},
 	}
 
@@ -802,8 +794,221 @@ func TestResolver_ResolveSchema_LoaderError(t *testing.T) {
 	require.Nil(t, result)
 }
 
+func TestResolver_ResolveRef_InvalidRefFormat(t *testing.T) {
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: NewLoader(""),
+	}
+
+	src := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"bad": {
+				Ref: "/",
+			},
+		},
+	}
+	_, err := resolver.ResolveSchema(src)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "invalid reference format")
+}
+
+func TestResolver_LoadExternalRef_NilResult(t *testing.T) {
+	ml := &nilResultLoader{}
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: ml,
+	}
+
+	ref := NewRef("go.opentelemetry.io/collector/config/confighttp.client_config")
+	result, err := resolver.loadExternalRef(ref)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "no loader could resolve external reference")
+	require.Nil(t, result)
+}
+
+// nilResultLoader returns (nil, nil) for any ref.
+type nilResultLoader struct{}
+
+func (n *nilResultLoader) Load(_ Ref) (*ConfigMetadata, error) { return nil, nil }
+
+func TestResolver_LoadExternalRef_InternalResolutionError(t *testing.T) {
+	brokenSchema := &ConfigMetadata{
+		Type: "object",
+		Defs: map[string]*ConfigMetadata{
+			"config": {
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"field": {
+						Ref: "/",
+					},
+				},
+			},
+		},
+	}
+
+	ml := &mockLoader{
+		schemas: map[string]*ConfigMetadata{
+			"go.opentelemetry.io/collector/config/confighttp.config": brokenSchema,
+		},
+	}
+
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: ml,
+	}
+
+	ref := NewRef("go.opentelemetry.io/collector/config/confighttp.config")
+	result, err := resolver.loadExternalRef(ref)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to resolve internal references in external schema")
+	require.Nil(t, result)
+}
+
+func TestResolver_ResolveSchema_LocalRef(t *testing.T) {
+	localSchema := &ConfigMetadata{
+		Type: "object",
+		Defs: map[string]*ConfigMetadata{
+			"target": {
+				Type:        "object",
+				Description: "Local target",
+			},
+		},
+	}
+
+	ml := &mockLoader{
+		schemas: map[string]*ConfigMetadata{
+			"/config/localtype.target": localSchema,
+		},
+	}
+
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: ml,
+	}
+
+	src := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"local": {
+				Ref: "/config/localtype.target",
+			},
+		},
+	}
+
+	result, err := resolver.ResolveSchema(src)
+	require.NoError(t, err)
+	require.NotNil(t, result.Properties["local"])
+	require.Equal(t, "object", result.Properties["local"].Type)
+	require.Equal(t, "Local target", result.Properties["local"].Description)
+}
+
+func TestResolver_ResolveSchema_MapValueError(t *testing.T) {
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: &mockLoader{schemas: map[string]*ConfigMetadata{}},
+	}
+
+	src := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"field": {
+				// Ref to an unknown external schema → loader returns error
+				Ref: "go.opentelemetry.io/collector/missing/pkg.config",
+			},
+		},
+	}
+
+	_, err := resolver.ResolveSchema(src)
+	require.Error(t, err)
+}
+
+func TestResolver_ResolveSchema_AllOfError(t *testing.T) {
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: &mockLoader{schemas: map[string]*ConfigMetadata{}},
+	}
+
+	src := &ConfigMetadata{
+		Type: "object",
+		AllOf: []*ConfigMetadata{
+			{
+				Ref: "go.opentelemetry.io/collector/missing/pkg.config",
+			},
+		},
+	}
+
+	_, err := resolver.ResolveSchema(src)
+	require.Error(t, err)
+}
+
+func TestResolver_ResolveSchema_PtrFieldError(t *testing.T) {
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: &mockLoader{schemas: map[string]*ConfigMetadata{}},
+	}
+
+	src := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"body": {
+				Type: "string",
+				ContentSchema: &ConfigMetadata{
+					Ref: "/",
+				},
+			},
+		},
+	}
+
+	_, err := resolver.ResolveSchema(src)
+	require.Error(t, err)
+}
+
+func TestResolver_ResolveSchema_PointerFields(t *testing.T) {
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: NewLoader(""),
+	}
+
+	minItems := 1
+	maxItems := 10
+	src := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"tags": {
+				Type:     "array",
+				Items:    &ConfigMetadata{Type: "string"},
+				MinItems: &minItems,
+				MaxItems: &maxItems,
+			},
+		},
+	}
+
+	result, err := resolver.ResolveSchema(src)
+	require.NoError(t, err)
+	require.NotNil(t, result.Properties["tags"])
+	require.Equal(t, "array", result.Properties["tags"].Type)
+	require.NotNil(t, result.Properties["tags"].Items)
+	require.Equal(t, "string", result.Properties["tags"].Items.Type)
+}
+
 func TestResolver_ResolveSchema_ContentSchema(t *testing.T) {
-	// Test that ContentSchema (*ConfigMetadata pointer field) is recursively resolved
 	resolver := &Resolver{
 		pkgID:  "go.opentelemetry.io/collector/test/component",
 		class:  "receiver",
