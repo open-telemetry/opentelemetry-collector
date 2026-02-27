@@ -20,7 +20,6 @@ import (
 )
 
 const (
-	defaultVersion = "main"
 	schemaFileName = "config.schema.yaml"
 )
 
@@ -99,7 +98,10 @@ func (sl *schemaLoader) loadFromFile(filePath string) (*ConfigMetadata, error) {
 }
 
 func (sl *schemaLoader) loadFromHTTP(ref Ref, fileCacheDir string) (*ConfigMetadata, error) {
-	version := sl.refVersion(&ref)
+	version, err := sl.refVersion(&ref)
+	if err != nil {
+		return nil, err
+	}
 	filePath := filepath.Join(fileCacheDir, version, filepath.FromSlash(ref.SchemaID()), schemaFileName)
 	// check fs cache first
 	metadata, err := sl.loadFromFile(filePath)
@@ -168,21 +170,26 @@ func (sl *schemaLoader) persistToFile(filePath string, md *ConfigMetadata) error
 	return nil
 }
 
-func (sl *schemaLoader) refVersion(ref *Ref) string {
-	if v := ref.InlineVersion(); v != "" {
-		return v
-	}
-
+func (sl *schemaLoader) refVersion(ref *Ref) (string, error) {
 	// Try to resolve version via packages.Load (respects replace directives)
 	modulePath := ref.Module()
 	if modulePath != "" {
 		if version := sl.resolveModuleVersion(modulePath); version != "" {
-			return version
+			return version, nil
 		}
-	}
+		// attempt to "go get" the module to resolve version if not found locally
+		cmd := exec.Command("go", "get", modulePath) // #nosec G204
+		cmd.Dir = sl.cd
 
-	log.Printf("warning: could not resolve version for %s, falling back to %q", ref.CacheKey(), defaultVersion)
-	return defaultVersion
+		if err := cmd.Run(); err != nil {
+			return "", fmt.Errorf("failed to run `go get` for module %s: %w", modulePath, err)
+		}
+		if version := sl.resolveModuleVersion(modulePath); version != "" {
+			return version, nil
+		}
+		return "", fmt.Errorf("unable to resolve version for module %s after `go get`: %w", modulePath, ErrNotFound)
+	}
+	return "", fmt.Errorf("unknown module path for `%s` ref", ref)
 }
 
 func (sl *schemaLoader) resolveModuleVersion(importPath string) string {

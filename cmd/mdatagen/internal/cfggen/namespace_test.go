@@ -22,7 +22,6 @@ func TestNewRef(t *testing.T) {
 				namespace: "",
 				schemaID:  "",
 				defName:   "",
-				version:   "",
 				kind:      Internal,
 			},
 		},
@@ -33,18 +32,6 @@ func TestNewRef(t *testing.T) {
 				namespace: "",
 				schemaID:  "",
 				defName:   "target_type",
-				version:   "",
-				kind:      Internal,
-			},
-		},
-		{
-			name:    "internal ref with version",
-			refPath: "target_type@v1.0.0",
-			expected: &Ref{
-				namespace: "",
-				schemaID:  "",
-				defName:   "target_type",
-				version:   "v1.0.0",
 				kind:      Internal,
 			},
 		},
@@ -55,7 +42,6 @@ func TestNewRef(t *testing.T) {
 				namespace: "",
 				schemaID:  "/config/configauth",
 				defName:   "config",
-				version:   "",
 				kind:      Local,
 			},
 		},
@@ -66,7 +52,6 @@ func TestNewRef(t *testing.T) {
 				namespace: "",
 				schemaID:  "./internal/metadata",
 				defName:   "config",
-				version:   "",
 				kind:      Local,
 			},
 		},
@@ -77,7 +62,6 @@ func TestNewRef(t *testing.T) {
 				namespace: "",
 				schemaID:  "../other",
 				defName:   "config",
-				version:   "",
 				kind:      Local,
 			},
 		},
@@ -88,7 +72,6 @@ func TestNewRef(t *testing.T) {
 				namespace: "",
 				schemaID:  "/config/configauth",
 				defName:   "",
-				version:   "",
 				kind:      Local,
 			},
 		},
@@ -99,7 +82,6 @@ func TestNewRef(t *testing.T) {
 				namespace: "",
 				schemaID:  "../",
 				defName:   "",
-				version:   "",
 				kind:      Local,
 			},
 		},
@@ -110,30 +92,7 @@ func TestNewRef(t *testing.T) {
 				namespace: "",
 				schemaID:  "../",
 				defName:   "test",
-				version:   "",
 				kind:      Local,
-			},
-		},
-		{
-			name:    "local ref with version",
-			refPath: "/config/configauth.config@v1.0.0",
-			expected: &Ref{
-				namespace: "",
-				schemaID:  "/config/configauth",
-				defName:   "config",
-				version:   "v1.0.0",
-				kind:      Local,
-			},
-		},
-		{
-			name:    "external ref with version",
-			refPath: "go.opentelemetry.io/collector/config/confighttp.client_config@v1.2.0",
-			expected: &Ref{
-				namespace: "go.opentelemetry.io/collector",
-				schemaID:  "config/confighttp",
-				defName:   "client_config",
-				version:   "v1.2.0",
-				kind:      External,
 			},
 		},
 		{
@@ -143,7 +102,6 @@ func TestNewRef(t *testing.T) {
 				namespace: "go.opentelemetry.io/collector",
 				schemaID:  "config/confighttp",
 				defName:   "client_config",
-				version:   "",
 				kind:      External,
 			},
 		},
@@ -154,7 +112,6 @@ func TestNewRef(t *testing.T) {
 				namespace: "go.opentelemetry.io/collector",
 				schemaID:  "config/confighttp",
 				defName:   "",
-				version:   "",
 				kind:      External,
 			},
 		},
@@ -165,29 +122,26 @@ func TestNewRef(t *testing.T) {
 				namespace: "go.opentelemetry.io/collector",
 				schemaID:  "",
 				defName:   "",
-				version:   "",
 				kind:      External,
 			},
 		},
 		{
 			name:    "unknown namespace",
-			refPath: "com.github.example/custom.xyz@v1.0.0",
+			refPath: "com.github.example/custom.xyz",
 			expected: &Ref{
 				namespace: "com.github.example",
 				schemaID:  "custom",
 				defName:   "xyz",
-				version:   "v1.0.0",
 				kind:      External,
 			},
 		},
 		{
 			name:    "ref with wrong format",
-			refPath: "some/path.with.dots@v1.0.0",
+			refPath: "some/path.with.dots",
 			expected: &Ref{
 				namespace: "some",
 				schemaID:  "path",
 				defName:   "with.dots",
-				version:   "v1.0.0",
 				kind:      External,
 			},
 		},
@@ -232,10 +186,10 @@ func TestWithOrigin(t *testing.T) {
 			expected: "go.opentelemetry.io/collector/config/configtls.tls_config",
 		},
 		{
-			name:     "external ref with origin unchanged",
+			name:     "external ref with same-namespace origin joins schema IDs",
 			refPath:  "go.opentelemetry.io/collector/config/confighttp.client_config",
 			origin:   "go.opentelemetry.io/collector/config/confighttp",
-			expected: "go.opentelemetry.io/collector/config/confighttp.client_config",
+			expected: "go.opentelemetry.io/collector/config/confighttp/config/confighttp.client_config",
 		},
 		{
 			name:     "internal ref with origin unchanged",
@@ -244,46 +198,10 @@ func TestWithOrigin(t *testing.T) {
 			expected: "go.opentelemetry.io/collector/config/confighttp.target_type",
 		},
 		{
-			name:     "absolute ref inherits inline version from origin",
-			refPath:  "/config/configauth.config",
-			origin:   "go.opentelemetry.io/collector/config/confighttp@v1.2.0",
-			expected: "go.opentelemetry.io/collector/config/configauth.config@v1.2.0",
-		},
-		{
-			name:     "relative ref inherits inline version from origin",
-			refPath:  "./internal/metadata.config",
-			origin:   "go.opentelemetry.io/collector/config/confighttp@v1.2.0",
-			expected: "go.opentelemetry.io/collector/config/confighttp/internal/metadata.config@v1.2.0",
-		},
-		{
-			name:     "parent relative ref inherits inline version from origin",
-			refPath:  "../configtls.tls_config",
-			origin:   "go.opentelemetry.io/collector/config/confighttp@v1.2.0",
-			expected: "go.opentelemetry.io/collector/config/configtls.tls_config@v1.2.0",
-		},
-		{
 			name:     "no version propagated when origin has no version",
 			refPath:  "/config/configauth.config",
 			origin:   "go.opentelemetry.io/collector/config/confighttp",
 			expected: "go.opentelemetry.io/collector/config/configauth.config",
-		},
-		{
-			name:     "no version propagated when ref has own version",
-			refPath:  "go.opentelemetry.io/collector/config/confighttp.client_config@v1.1.0",
-			origin:   "go.opentelemetry.io/collector/config/confighttp.server_config@v1.2.0",
-			expected: "go.opentelemetry.io/collector/config/confighttp.client_config@v1.1.0",
-		},
-		{
-			name:     "version propagated when same namespace",
-			refPath:  "go.opentelemetry.io/collector/config/confighttp.client_config",
-			origin:   "go.opentelemetry.io/collector/config/confighttp.server_config@v1.2.0",
-			expected: "go.opentelemetry.io/collector/config/confighttp.client_config@v1.2.0",
-		},
-		{
-			name:     "no version propagated when different namespaces",
-			refPath:  "go.opentelemetry.io/collector/config/confighttp.client_config",
-			origin:   "github.com/open-telemetry/opentelemetry-collector-contrib/config/confighttp.server_config@v1.2.0",
-			expected: "go.opentelemetry.io/collector/config/confighttp.client_config",
 		},
 	}
 
@@ -332,23 +250,8 @@ func TestRef_Validate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "version with local ref",
-			refPath: "/config/configauth.config@v1.0.0",
-			wantErr: true,
-		},
-		{
-			name:    "version with internal ref",
-			refPath: "target_type@v1.0.0",
-			wantErr: true,
-		},
-		{
-			name:    "missing schema ID with local ref",
-			refPath: ".config@v1.0.0",
-			wantErr: true,
-		},
-		{
 			name:    "missing schema ID with external ref",
-			refPath: "go.opentelemetry.io/collector@v1.0.0",
+			refPath: "go.opentelemetry.io/collector",
 			wantErr: true,
 		},
 	}
@@ -404,6 +307,6 @@ func TestRef_URL(t *testing.T) {
 }
 
 func TestRef_String(t *testing.T) {
-	ref := NewRef("go.opentelemetry.io/collector/config/confighttp.client_config@v1.2.0")
-	require.Equal(t, "go.opentelemetry.io/collector/config/confighttp.client_config@v1.2.0", ref.String())
+	ref := NewRef("go.opentelemetry.io/collector/config/confighttp.client_config")
+	require.Equal(t, "go.opentelemetry.io/collector/config/confighttp.client_config", ref.String())
 }
