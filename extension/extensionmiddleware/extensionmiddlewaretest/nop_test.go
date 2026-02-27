@@ -14,6 +14,7 @@ import (
 )
 
 func TestNopClient(t *testing.T) {
+	testctx := context.Background()
 	client := NewNop()
 
 	httpClient, ok := client.(extensionmiddleware.HTTPClient)
@@ -21,7 +22,7 @@ func TestNopClient(t *testing.T) {
 	rtfunc, err := httpClient.GetHTTPRoundTripper(context.Background())
 	require.NoError(t, err)
 
-	rt, err := rtfunc(nil)
+	rt, err := rtfunc(testctx, nil)
 	require.NoError(t, err)
 	require.Nil(t, rt)
 
@@ -41,7 +42,7 @@ func TestNopServer(t *testing.T) {
 	hfunc, err := httpServer.GetHTTPHandler(testctx)
 	require.NoError(t, err)
 
-	handler, err := hfunc(nil)
+	handler, err := hfunc(testctx, nil)
 	require.NoError(t, err)
 	require.Nil(t, handler)
 

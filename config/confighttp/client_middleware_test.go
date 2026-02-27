@@ -32,8 +32,8 @@ type testClientMiddleware struct {
 func newTestClientMiddleware(name string) component.Component {
 	return &testClientMiddleware{
 		Extension: extensionmiddlewaretest.NewNop(),
-		GetHTTPRoundTripperFunc: func(_ context.Context) (func(http.RoundTripper) (http.RoundTripper, error), error) {
-			return func(transport http.RoundTripper) (http.RoundTripper, error) {
+		GetHTTPRoundTripperFunc: func(_ context.Context) (extensionmiddleware.WrapHTTPRoundTripperFunc, error) {
+			return func(_ context.Context, transport http.RoundTripper) (http.RoundTripper, error) {
 				return extensionmiddlewaretest.RoundTripperFunc(
 					func(req *http.Request) (*http.Response, error) {
 						resp, err := transport.RoundTrip(req)

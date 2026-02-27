@@ -32,8 +32,8 @@ type testServerMiddleware struct {
 func newTestServerMiddleware(name string) component.Component {
 	return &testServerMiddleware{
 		Extension: extensionmiddlewaretest.NewNop(),
-		GetHTTPHandlerFunc: func(_ context.Context) (func(handler http.Handler) (http.Handler, error), error) {
-			return func(handler http.Handler) (http.Handler, error) {
+		GetHTTPHandlerFunc: func(_ context.Context) (extensionmiddleware.WrapHTTPHandlerFunc, error) {
+			return func(_ context.Context, handler http.Handler) (http.Handler, error) {
 				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					// Append middleware name to the URL path
 					r.URL.Path += name + "/"

@@ -23,25 +23,23 @@ func TestGetHTTPRoundTripperFunc(t *testing.T) {
 		rtfunc, err := nilFunc.GetHTTPRoundTripper(testctx)
 		require.NoError(t, err)
 
-		rt, err := rtfunc(baseRT)
+		rt, err := rtfunc(testctx, baseRT)
 		require.NoError(t, err)
 		require.Equal(t, baseRT, rt)
 	})
 
 	t.Run("identity function", func(t *testing.T) {
-		identityFunc := GetHTTPRoundTripperFunc(func(_ context.Context) (func(http.RoundTripper) (http.RoundTripper, error), error) {
-			return identityRoundTripper, nil
-		})
+		identityFunc := GetHTTPRoundTripperFunc(nil)
 		rtfunc, err := identityFunc.GetHTTPRoundTripper(testctx)
 		require.NoError(t, err)
-		rt, err := rtfunc(baseRT)
+		rt, err := rtfunc(testctx, baseRT)
 		require.NoError(t, err)
 		require.Equal(t, baseRT, rt)
 	})
 
 	t.Run("error function", func(t *testing.T) {
 		expectedErr := errors.New("round tripper error")
-		errorFunc := GetHTTPRoundTripperFunc(func(_ context.Context) (func(http.RoundTripper) (http.RoundTripper, error), error) {
+		errorFunc := GetHTTPRoundTripperFunc(func(_ context.Context) (WrapHTTPRoundTripperFunc, error) {
 			return nil, expectedErr
 		})
 		rtfunc, err := errorFunc.GetHTTPRoundTripper(testctx)

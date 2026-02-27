@@ -9,7 +9,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 
 	"google.golang.org/grpc"
 
@@ -38,7 +37,7 @@ type Config struct {
 // returns the HTTP client wrapper function. If a middleware is not
 // found, an error is returned.  This should only be used by HTTP
 // clients.
-func (m Config) GetHTTPClientRoundTripper(ctx context.Context, extensions map[component.ID]component.Component) (func(http.RoundTripper) (http.RoundTripper, error), error) {
+func (m Config) GetHTTPClientRoundTripper(ctx context.Context, extensions map[component.ID]component.Component) (extensionmiddleware.WrapHTTPRoundTripperFunc, error) {
 	if ext, found := extensions[m.ID]; found {
 		if client, ok := ext.(extensionmiddleware.HTTPClient); ok {
 			return client.GetHTTPRoundTripper(ctx)
@@ -53,7 +52,7 @@ func (m Config) GetHTTPClientRoundTripper(ctx context.Context, extensions map[co
 // returns the http.Handler wrapper function. If a middleware is not
 // found, an error is returned.  This should only be used by HTTP
 // servers.
-func (m Config) GetHTTPServerHandler(ctx context.Context, extensions map[component.ID]component.Component) (func(http.Handler) (http.Handler, error), error) {
+func (m Config) GetHTTPServerHandler(ctx context.Context, extensions map[component.ID]component.Component) (extensionmiddleware.WrapHTTPHandlerFunc, error) {
 	if ext, found := extensions[m.ID]; found {
 		if server, ok := ext.(extensionmiddleware.HTTPServer); ok {
 			return server.GetHTTPHandler(ctx)

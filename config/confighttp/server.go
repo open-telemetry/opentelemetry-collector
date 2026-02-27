@@ -207,7 +207,7 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 		if err != nil {
 			return nil, err
 		}
-		handler, err = wrapper(handler)
+		handler, err = wrapper(ctx, handler)
 		// If we failed to construct a wrapper
 		if err != nil {
 			return nil, err

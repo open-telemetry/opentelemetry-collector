@@ -5,7 +5,6 @@ package extensionmiddlewaretest // import "go.opentelemetry.io/collector/extensi
 
 import (
 	"context"
-	"net/http"
 
 	"google.golang.org/grpc"
 
@@ -35,13 +34,13 @@ type baseExtension struct {
 // extensionmiddleware interface and always returns an error.
 func NewErr(err error) extension.Extension {
 	return &baseExtension{
-		GetHTTPRoundTripperFunc: func(context.Context) (func(http.RoundTripper) (http.RoundTripper, error), error) {
+		GetHTTPRoundTripperFunc: func(context.Context) (extensionmiddleware.WrapHTTPRoundTripperFunc, error) {
 			return nil, err
 		},
 		GetGRPCClientOptionsFunc: func() ([]grpc.DialOption, error) {
 			return nil, err
 		},
-		GetHTTPHandlerFunc: func(context.Context) (func(http.Handler) (http.Handler, error), error) {
+		GetHTTPHandlerFunc: func(context.Context) (extensionmiddleware.WrapHTTPHandlerFunc, error) {
 			return nil, err
 		},
 		GetGRPCServerOptionsFunc: func() ([]grpc.ServerOption, error) {

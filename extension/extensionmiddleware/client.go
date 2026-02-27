@@ -12,8 +12,12 @@ import (
 
 // HTTPClient is an interface for HTTP client middleware extensions.
 type HTTPClient interface {
-	// GetHTTPRoundTripper wraps the provided client RoundTripper.
-	GetHTTPRoundTripper(context.Context) (func(http.RoundTripper) (http.RoundTripper, error), error)
+	// GetHTTPRoundTripper initializes a client HTTP RoundTripper
+	// wrapper, this typically called when the Collector
+	// starts. If there is an error this returns a nil
+	// function. If the error is nil, the WrapHTTPRoundTripperFunc
+	// will never be nil.
+	GetHTTPRoundTripper(context.Context) (WrapHTTPRoundTripperFunc, error)
 }
 
 // GRPCClient is an interface for gRPC client middleware extensions.
@@ -25,11 +29,11 @@ type GRPCClient interface {
 var _ HTTPClient = (*GetHTTPRoundTripperFunc)(nil)
 
 // GetHTTPRoundTripperFunc is a function that implements HTTPClient.
-type GetHTTPRoundTripperFunc func(context.Context) (func(http.RoundTripper) (http.RoundTripper, error), error)
+type GetHTTPRoundTripperFunc func(context.Context) (WrapHTTPRoundTripperFunc, error)
 
-func (f GetHTTPRoundTripperFunc) GetHTTPRoundTripper(ctx context.Context) (func(base http.RoundTripper) (http.RoundTripper, error), error) {
+func (f GetHTTPRoundTripperFunc) GetHTTPRoundTripper(ctx context.Context) (WrapHTTPRoundTripperFunc, error) {
 	if f == nil {
-		return identityRoundTripper, nil
+		return func(_ context.Context, rt http.RoundTripper) (http.RoundTripper, error) { return rt, nil }, nil
 	}
 	return f(ctx)
 }
@@ -46,6 +50,6 @@ func (f GetGRPCClientOptionsFunc) GetGRPCClientOptions() ([]grpc.DialOption, err
 	return f()
 }
 
-func identityRoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
-	return base, nil
-}
+// WrapHTTPRoundTripperFunc is called to initialize a new instance of
+// HTTP client middleware.
+type WrapHTTPRoundTripperFunc = func(context.Context, http.RoundTripper) (http.RoundTripper, error)

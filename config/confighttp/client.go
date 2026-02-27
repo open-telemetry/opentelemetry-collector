@@ -210,7 +210,7 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 		if rerr != nil {
 			return nil, rerr
 		}
-		clientTransport, rerr = getClient(clientTransport)
+		clientTransport, rerr = getClient(ctx, clientTransport)
 		// If we failed to construct a wrapper
 		if rerr != nil {
 			return nil, rerr
