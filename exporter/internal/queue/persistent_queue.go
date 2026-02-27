@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"time"
 
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -20,45 +21,20 @@ import (
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
-// persistentQueue provides a persistent queue implementation backed by file storage extension
-//
-// Write index describes the position at which next item is going to be stored.
-// Read index describes which item needs to be read next.
-// When Write index = Read index, no elements are in the queue.
-//
-// The items currently dispatched by consumers are not deleted until the processing is finished.
-// Their list is stored under a separate key.
-//
-//	┌───────file extension-backed queue───────┐
-//	│                                         │
-//	│     ┌───┐     ┌───┐ ┌───┐ ┌───┐ ┌───┐   │
-//	│ n+1 │ n │ ... │ 4 │ │ 3 │ │ 2 │ │ 1 │   │
-//	│     └───┘     └───┘ └─x─┘ └─|─┘ └─x─┘   │
-//	│                       x     |     x     │
-//	└───────────────────────x─────|─────x─────┘
-//	   ▲              ▲     x     |     x
-//	   │              │     x     |     xxxx deleted
-//	   │              │     x     |
-//	 write          read    x     └── currently dispatched item
-//	 index          index   x
-//	                        xxxx deleted
+// persistentQueue provides a persistent LIFO queue implementation backed by file storage extension
 type persistentQueue[T any] struct {
-	// sizedChannel is used by the persistent queue for two purposes:
-	// 1. a communication channel notifying the consumer that a new item is available.
-	// 2. capacity control based on the size of the items.
 	*sizedChannel[permanentQueueEl]
 
 	set    PersistentQueueSettings[T]
 	logger *zap.Logger
 	client storage.Client
 
-	// isRequestSized indicates whether the queue is sized by the number of requests.
 	isRequestSized bool
 
-	// mu guards everything declared below.
 	mu                       sync.Mutex
 	readIndex                uint64
 	writeIndex               uint64
+	lifoConsumeIndex         uint64
 	currentlyDispatchedItems []uint64
 	refClient                int64
 	stopped                  bool
@@ -92,7 +68,7 @@ type PersistentQueueSettings[T any] struct {
 	ExporterSettings exporter.Settings
 }
 
-// NewPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
+// NewPersistentQueue creates a new LIFO queue backed by file storage
 func NewPersistentQueue[T any](set PersistentQueueSettings[T]) Queue[T] {
 	_, isRequestSized := set.Sizer.(*RequestSizer[T])
 	return &persistentQueue[T]{
@@ -102,7 +78,6 @@ func NewPersistentQueue[T any](set PersistentQueueSettings[T]) Queue[T] {
 	}
 }
 
-// Start starts the persistentQueue with the given number of consumers.
 func (pq *persistentQueue[T]) Start(ctx context.Context, host component.Host) error {
 	storageClient, err := toStorageClient(ctx, pq.set.StorageID, host, pq.set.ExporterSettings.ID, pq.set.DataType)
 	if err != nil {
@@ -114,10 +89,8 @@ func (pq *persistentQueue[T]) Start(ctx context.Context, host component.Host) er
 
 func (pq *persistentQueue[T]) initClient(ctx context.Context, client storage.Client) {
 	pq.client = client
-	// Start with a reference 1 which is the reference we use for the producer goroutines and initialization.
 	pq.refClient = 1
 	pq.initPersistentContiguousStorage(ctx)
-	// Make sure the leftover requests are handled
 	pq.retrieveAndEnqueueNotDispatchedReqs(ctx)
 }
 
@@ -151,27 +124,21 @@ func (pq *persistentQueue[T]) initPersistentContiguousStorage(ctx context.Contex
 		initQueueSize uint64
 	)
 
-	// Pre-allocate the communication channel with the size of the restored queue.
 	if initIndexSize > 0 {
 		initQueueSize = initIndexSize
-		// If the queue is sized by the number of requests, no need to read the queue size from storage.
 		if !pq.isRequestSized {
 			if restoredQueueSize, err := pq.restoreQueueSizeFromStorage(ctx); err == nil {
 				initQueueSize = restoredQueueSize
 			}
 		}
-
-		// Ensure the communication channel filled with evenly sized elements up to the total restored queue size.
 		initEls = make([]permanentQueueEl, initIndexSize)
 	}
 
 	pq.sizedChannel = newSizedChannel[permanentQueueEl](pq.set.Capacity, initEls, int64(initQueueSize))
 }
 
-// permanentQueueEl is the type of the elements passed to the sizedChannel by the persistentQueue.
 type permanentQueueEl struct{}
 
-// restoreQueueSizeFromStorage restores the queue size from storage.
 func (pq *persistentQueue[T]) restoreQueueSizeFromStorage(ctx context.Context) (uint64, error) {
 	val, err := pq.client.Get(ctx, queueSizeKey)
 	if err != nil {
@@ -188,9 +155,7 @@ func (pq *persistentQueue[T]) restoreQueueSizeFromStorage(ctx context.Context) (
 	return bytesToItemIndex(val)
 }
 
-// Consume applies the provided function on the head of queue.
-// The call blocks until there is an item available or the queue is stopped.
-// The function returns true when an item is consumed or false if the queue is stopped.
+// LIFO: Consume applies the provided function on the most recently added item (top of stack).
 func (pq *persistentQueue[T]) Consume(consumeFunc func(context.Context, T) error) bool {
 	for {
 		var (
@@ -199,8 +164,6 @@ func (pq *persistentQueue[T]) Consume(consumeFunc func(context.Context, T) error
 			consumed             bool
 		)
 
-		// If we are stopped we still process all the other events in the channel before, but we
-		// return fast in the `getNextItem`, so we will free the channel fast and get to the stop.
 		_, ok := pq.sizedChannel.pop(func(permanentQueueEl) int64 {
 			req, onProcessingFinished, consumed = pq.getNextItem(context.Background())
 			if !consumed {
@@ -219,7 +182,6 @@ func (pq *persistentQueue[T]) Consume(consumeFunc func(context.Context, T) error
 }
 
 func (pq *persistentQueue[T]) Shutdown(ctx context.Context) error {
-	// If the queue is not initialized, there is nothing to shut down.
 	if pq.client == nil {
 		return nil
 	}
@@ -228,25 +190,17 @@ func (pq *persistentQueue[T]) Shutdown(ctx context.Context) error {
 	defer pq.mu.Unlock()
 	backupErr := pq.backupQueueSize(ctx)
 	pq.sizedChannel.shutdown()
-	// Mark this queue as stopped, so consumer don't start any more work.
 	pq.stopped = true
 	return multierr.Combine(backupErr, pq.unrefClient(ctx))
 }
 
-// backupQueueSize writes the current queue size to storage. The value is used to recover the queue size
-// in case if the collector is killed.
 func (pq *persistentQueue[T]) backupQueueSize(ctx context.Context) error {
-	// No need to write the queue size if the queue is sized by the number of requests.
-	// That information is already stored as difference between read and write indexes.
 	if pq.isRequestSized {
 		return nil
 	}
-
 	return pq.client.Set(ctx, queueSizeKey, itemIndexToBytes(uint64(pq.Size())))
 }
 
-// unrefClient unrefs the client, and closes if no more references. Callers MUST hold the mutex.
-// This is needed because consumers of the queue may still process the requests while the queue is shutting down or immediately after.
 func (pq *persistentQueue[T]) unrefClient(ctx context.Context) error {
 	pq.refClient--
 	if pq.refClient == 0 {
@@ -255,16 +209,13 @@ func (pq *persistentQueue[T]) unrefClient(ctx context.Context) error {
 	return nil
 }
 
-// Offer inserts the specified element into this queue if it is possible to do so immediately
-// without violating capacity restrictions. If success returns no error.
-// It returns ErrQueueIsFull if no space is currently available.
 func (pq *persistentQueue[T]) Offer(ctx context.Context, req T) error {
+	pq.logger.Info("LIFO_DEBUG: Offer called")
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
 	return pq.putInternal(ctx, req)
 }
 
-// putInternal is the internal version that requires caller to hold the mutex lock.
 func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 	err := pq.sizedChannel.push(permanentQueueEl{}, pq.set.Sizer.Sizeof(req), func() error {
 		itemKey := getItemKey(pq.writeIndex)
@@ -275,7 +226,6 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 			return err
 		}
 
-		// Carry out a transaction where we both add the item and update the write index
 		ops := []storage.Operation{
 			storage.SetOperation(writeIndexKey, itemIndexToBytes(newIndex)),
 			storage.SetOperation(itemKey, reqBuf),
@@ -284,15 +234,19 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 			return storageErr
 		}
 
+		pq.lifoConsumeIndex = newIndex
 		pq.writeIndex = newIndex
+		pq.logger.Info("LIFO_DEBUG: Item offered to queue",
+			zap.Uint64("writeIndex", pq.writeIndex),
+			zap.Uint64("readIndex", pq.readIndex),
+			zap.Uint64("queueSize", pq.writeIndex-pq.readIndex),
+			zap.Int64("timestamp_ns", time.Now().UnixNano()))
 		return nil
 	})
 	if err != nil {
 		return err
 	}
 
-	// Back up the queue size to storage every 10 writes. The stored value is used to recover the queue size
-	// in case if the collector is killed. The recovered queue size is allowed to be inaccurate.
 	if (pq.writeIndex % 10) == 5 {
 		if err := pq.backupQueueSize(ctx); err != nil {
 			pq.logger.Error("Error writing queue size to storage", zap.Error(err))
@@ -302,9 +256,9 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 	return nil
 }
 
-// getNextItem pulls the next available item from the persistent storage along with a callback function that should be
-// called after the item is processed to clean up the storage. If no new item is available, returns false.
+// LIFO: getNextItem pulls the most recently added item from persistent storage.
 func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (T, func(error), bool) {
+	pq.logger.Info("LIFO_DEBUG: getNextItem called")
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
 
@@ -314,17 +268,33 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (T, func(error), 
 		return request, nil, false
 	}
 
-	if pq.readIndex == pq.writeIndex {
+	if pq.writeIndex == pq.readIndex {
 		return request, nil, false
 	}
 
-	index := pq.readIndex
-	// Increase here, so even if errors happen below, it always iterates
-	pq.readIndex++
+	// Check if queue is empty (all items consumed)
+	if pq.lifoConsumeIndex <= pq.readIndex {
+		pq.logger.Info("LIFO_DEBUG: Queue empty, all consumed",
+			zap.Uint64("lifoConsumeIndex", pq.lifoConsumeIndex),
+			zap.Uint64("readIndex", pq.readIndex))
+		return request, nil, false
+	}
+
+	// LIFO: Get the most recent unconsumed item
+	index := pq.lifoConsumeIndex - 1
+	pq.lifoConsumeIndex-- // Decrement LIFO pointer (NOT writeIndex!)
+
+	pq.logger.Info("LIFO_DEBUG: About to consume item",
+		zap.Uint64("indexBeingRetrieved", index),
+		zap.Uint64("lifoConsumeIndex", pq.lifoConsumeIndex),
+		zap.Uint64("writeIndex_before", pq.writeIndex),
+		zap.Uint64("readIndex", pq.readIndex),
+		zap.Uint64("remainingInQueue", pq.writeIndex-pq.readIndex-1),
+		zap.Int64("timestamp_ns", time.Now().UnixNano())) // ADD THIS LINE
 	pq.currentlyDispatchedItems = append(pq.currentlyDispatchedItems, index)
 	getOp := storage.GetOperation(getItemKey(index))
+
 	err := pq.client.Batch(ctx,
-		storage.SetOperation(readIndexKey, itemIndexToBytes(pq.readIndex)),
 		storage.SetOperation(currentlyDispatchedItemsKey, itemIndexArrayToBytes(pq.currentlyDispatchedItems)),
 		getOp)
 
@@ -334,21 +304,15 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (T, func(error), 
 
 	if err != nil {
 		pq.logger.Debug("Failed to dispatch item", zap.Error(err))
-		// We need to make sure that currently dispatched items list is cleaned
 		if err = pq.itemDispatchingFinish(ctx, index); err != nil {
 			pq.logger.Error("Error deleting item from queue", zap.Error(err))
 		}
-
 		return request, nil, false
 	}
 
-	// Increase the reference count, so the client is not closed while the request is being processed.
-	// The client cannot be closed because we hold the lock since last we checked `stopped`.
 	pq.refClient++
 	return request, func(consumeErr error) {
-		// Delete the item from the persistent storage after it was processed.
 		pq.mu.Lock()
-		// Always unref client even if the consumer is shutdown because we always ref it for every valid request.
 		defer func() {
 			if err = pq.unrefClient(ctx); err != nil {
 				pq.logger.Error("Error closing the storage client", zap.Error(err))
@@ -357,8 +321,6 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (T, func(error), 
 		}()
 
 		if experr.IsShutdownErr(consumeErr) {
-			// The queue is shutting down, don't mark the item as dispatched, so it's picked up again after restart.
-			// TODO: Handle partially delivered requests by updating their values in the storage.
 			return
 		}
 
@@ -366,22 +328,18 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (T, func(error), 
 			pq.logger.Error("Error deleting item from queue", zap.Error(err))
 		}
 
-		// Back up the queue size to storage on every 10 reads. The stored value is used to recover the queue size
-		// in case if the collector is killed. The recovered queue size is allowed to be inaccurate.
-		if (pq.readIndex % 10) == 0 {
+		if (pq.writeIndex % 10) == 0 {
 			if qsErr := pq.backupQueueSize(ctx); qsErr != nil {
-				pq.logger.Error("Error writing queue size to storage", zap.Error(err))
+				pq.logger.Error("Error writing queue size to storage", zap.Error(qsErr))
 			}
 		}
 
-		// Ensure the used size and the channel size are in sync.
 		pq.sizedChannel.syncSize()
 
 	}, true
 }
 
-// retrieveAndEnqueueNotDispatchedReqs gets the items for which sending was not finished, cleans the storage
-// and moves the items at the back of the queue.
+// LIFO: re-enqueue not dispatched items in reverse order
 func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Context) {
 	var dispatchedItems []uint64
 
@@ -410,6 +368,11 @@ func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Co
 		key := getItemKey(it)
 		retrieveBatch[i] = storage.GetOperation(key)
 		cleanupBatch[i] = storage.DeleteOperation(key)
+		pq.logger.Info("LIFO_DEBUG: Recovery re-enqueueing item",
+			zap.Int("loopIndex", len(retrieveBatch)-1-i),
+			zap.Uint64("itemOriginalIndex", dispatchedItems[len(retrieveBatch)-1-i]),
+			zap.Uint64("currentWriteIndex", pq.writeIndex),
+			zap.Int64("timestamp_ns", time.Now().UnixNano()))
 	}
 	retrieveErr := pq.client.Batch(ctx, retrieveBatch...)
 	cleanupErr := pq.client.Batch(ctx, cleanupBatch...)
@@ -424,13 +387,14 @@ func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Co
 	}
 
 	errCount := 0
-	for _, op := range retrieveBatch {
+	// LIFO: re-enqueue in reverse order
+	for i := len(retrieveBatch) - 1; i >= 0; i-- {
+		op := retrieveBatch[i]
 		if op.Value == nil {
 			pq.logger.Warn("Failed retrieving item", zap.String(zapKey, op.Key), zap.Error(errValueNotSet))
 			continue
 		}
 		req, err := pq.set.Unmarshaler(op.Value)
-		// If error happened or item is nil, it will be efficiently ignored
 		if err != nil {
 			pq.logger.Warn("Failed unmarshalling item", zap.String(zapKey, op.Key), zap.Error(err))
 			continue
@@ -449,7 +413,6 @@ func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Co
 	}
 }
 
-// itemDispatchingFinish removes the item from the list of currently dispatched items and deletes it from the persistent queue
 func (pq *persistentQueue[T]) itemDispatchingFinish(ctx context.Context, index uint64) error {
 	lenCDI := len(pq.currentlyDispatchedItems)
 	for i := 0; i < lenCDI; i++ {
@@ -463,22 +426,17 @@ func (pq *persistentQueue[T]) itemDispatchingFinish(ctx context.Context, index u
 	setOp := storage.SetOperation(currentlyDispatchedItemsKey, itemIndexArrayToBytes(pq.currentlyDispatchedItems))
 	deleteOp := storage.DeleteOperation(getItemKey(index))
 	if err := pq.client.Batch(ctx, setOp, deleteOp); err != nil {
-		// got an error, try to gracefully handle it
 		pq.logger.Warn("Failed updating currently dispatched items, trying to delete the item first",
 			zap.Error(err))
 	} else {
-		// Everything ok, exit
 		return nil
 	}
 
 	if err := pq.client.Batch(ctx, deleteOp); err != nil {
-		// Return an error here, as this indicates an issue with the underlying storage medium
 		return fmt.Errorf("failed deleting item from queue, got error from storage: %w", err)
 	}
 
 	if err := pq.client.Batch(ctx, setOp); err != nil {
-		// even if this fails, we still have the right dispatched items in memory
-		// at worst, we'll have the wrong list in storage, and we'll discard the nonexistent items during startup
 		return fmt.Errorf("failed updating currently dispatched items, but deleted item successfully: %w", err)
 	}
 
@@ -511,7 +469,6 @@ func bytesToItemIndex(buf []byte) (uint64, error) {
 	if buf == nil {
 		return uint64(0), errValueNotSet
 	}
-	// The sizeof uint64 in binary is 8.
 	if len(buf) < 8 {
 		return 0, errInvalidValue
 	}
@@ -533,7 +490,6 @@ func bytesToItemIndexArray(buf []byte) ([]uint64, error) {
 		return nil, nil
 	}
 
-	// The sizeof uint32 in binary is 4.
 	if len(buf) < 4 {
 		return nil, errInvalidValue
 	}
@@ -543,7 +499,6 @@ func bytesToItemIndexArray(buf []byte) ([]uint64, error) {
 	}
 
 	buf = buf[4:]
-	// The sizeof uint64 in binary is 8, so we need to have size*8 bytes.
 	if len(buf) < size*8 {
 		return nil, errInvalidValue
 	}
