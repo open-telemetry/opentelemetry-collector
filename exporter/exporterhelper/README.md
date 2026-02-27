@@ -56,6 +56,18 @@ Available `batch::sizer` options:
 
 - `items`: number of the smallest parts of each signal (spans, metric data points, log records);
 - `bytes`: the size of serialized data in bytes (the least performant option).
+
+- `parttion`: see below.
+
+The `batch::partition` configuration defines the partitioning of the batches.
+
+Available `batch::partition` options:
+
+- `metadata_keys`: a list of `client.Metadata` keys used to partition data into
+  separate batches. When empty, a single batcher instance is used. When set, one batcher will be used
+  per distinct combination of values for the listed metadata keys. Empty value and unset metadata are
+  treated as distinct cases. Entries are case-insensitive. Duplicated entries will trigger a validation error. Default is empty.
+
 ### Timeout
 
 - `timeout` (default = 5s): Time to wait per individual attempt to send data to a backend
