@@ -641,7 +641,7 @@ func TestLoadMetadata(t *testing.T) {
 		{
 			name:    "testdata/invalid_metric_semconvref.yaml",
 			want:    Metadata{},
-			wantErr: "metric \"default.metric\": invalid semantic-conventions URL: want https://github.com/open-telemetry/semantic-conventions/blob/v1.37.2/*#metric-defaultmetric, got \"https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime\"",
+			wantErr: "metric \"default.metric\": invalid semantic-conventions URL: want https://github.com/open-telemetry/semantic-conventions/blob/v1.37.2/*#metric-defaultmetric, got \"https://github.com/open-telemetry/semantic-conventions/blob/v1.37.2/docs/system/system-metrics.md#metric-systemcputime\"",
 		},
 		{
 			name:    "testdata/no_metric_stability.yaml",
@@ -652,6 +652,16 @@ func TestLoadMetadata(t *testing.T) {
 			name:    "testdata/undeprecated_with_deprecation.yaml",
 			want:    Metadata{},
 			wantErr: "`stability` must be `deprecated` when specifying a `deprecated` field",
+		},
+		{
+			name:    "testdata/invalid_metric_semconv_url_full.yaml",
+			want:    Metadata{},
+			wantErr: "metric \"default.metric\", use relative path for URL, not the full URL",
+		},
+		{
+			name:    "testdata/invalid_attribute_semconv_url_full.yaml",
+			want:    Metadata{},
+			wantErr: "attribute \"used_attr\", use relative path for URL, not the full URL",
 		},
 		{
 			name:    "testdata/~~this file doesn't exist~~.yaml",

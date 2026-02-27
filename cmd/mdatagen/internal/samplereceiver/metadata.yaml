@@ -141,7 +141,7 @@ attributes:
     type: string
     enum: [buffered, cached, inactive, free, slab_reclaimable, slab_unreclaimable, used]
     semantic_convention:
-      ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/registry/attributes/system.md#system-memory-state
+      ref: system.md#system-memory-state
 
   string_attr:
     description: Attribute with any string value.
@@ -297,7 +297,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [cpu]
     semantic_convention:
-      ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime
+      ref: system/system-metrics.md#metric-systemcputime
 
   system.memory.usage:
     enabled: true

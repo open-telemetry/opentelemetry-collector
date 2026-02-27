@@ -70,6 +70,8 @@ resource_attributes:
       # Should be used for deprecated optional resource_attributes that will be removed soon.
       if_configured:
     # Optional: the reference to a semantic convention
+    # Relative path to the semantic convention definition (e.g., "system.md#system-memory-state")
+    # The full URL is constructed using sem_conv_version: {base}/v{version}/docs/registry/attributes/{ref}
     semantic_convention:
       ref:
 
@@ -122,6 +124,8 @@ attributes:
     # - opt_in: the attribute is not included unless explicitly enabled in user config.
     requirement_level: <required|conditionally_required|recommended|opt_in>
     # Optional: the reference to a semantic convention
+    # Relative path to the semantic convention definition (e.g., "system.md#system-memory-state")
+    # The full URL is constructed using sem_conv_version: {base}/v{version}/docs/registry/attributes/{ref}
     semantic_convention:
       ref:
 
@@ -175,6 +179,8 @@ metrics:
       # Required: migration note
       note:
     # Optional: the reference to a semantic convention
+    # Relative path to the semantic convention definition (e.g., "system/system-metrics.md#metric-systemcputime")
+    # The full URL is constructed using sem_conv_version: {base}/v{version}/docs/{ref}
     semantic_convention:
       ref:
 
