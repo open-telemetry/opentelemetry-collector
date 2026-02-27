@@ -354,7 +354,7 @@ func TestMultiBatcher_ConcurrentConsumeRefCount(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(numGoroutines)
 
-	for i := 0; i < numGoroutines; i++ {
+	for range numGoroutines {
 		go func() {
 			defer wg.Done()
 			ba.Consume(ctx, &requesttest.FakeRequest{Items: 1}, done)
