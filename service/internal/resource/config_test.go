@@ -81,7 +81,8 @@ func TestNew(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := New(buildInfo, tt.resourceCfg)
+			res, err := New(buildInfo, tt.resourceCfg)
+			require.NoError(t, err)
 			got := make(map[string]string)
 			for _, attr := range res.Attributes() {
 				got[string(attr.Key)] = attr.Value.Emit()
@@ -90,11 +91,9 @@ func TestNew(t *testing.T) {
 			if tt.want["service.instance.id"] == randomUUIDSpecialValue {
 				assert.Contains(t, got, "service.instance.id")
 
-				// Check that the value is a valid UUID.
 				_, err := uuid.Parse(got["service.instance.id"])
 				require.NoError(t, err)
 
-				// Remove so that we can compare the rest of the map.
 				delete(got, "service.instance.id")
 				delete(tt.want, "service.instance.id")
 			}
@@ -116,44 +115,43 @@ func pdataFromSdk(res *sdkresource.Resource) pcommon.Resource {
 }
 
 func TestBuildResource(t *testing.T) {
-	buildInfo := component.NewDefaultBuildInfo()
+	defaultBuildInfo := component.NewDefaultBuildInfo()
 
-	// Check default config
 	var resMap map[string]*string
-	otelRes := New(buildInfo, resMap)
+	otelRes, err := New(defaultBuildInfo, resMap)
+	require.NoError(t, err)
 	res := pdataFromSdk(otelRes)
 
 	assert.Equal(t, 3, res.Attributes().Len())
 	value, ok := res.Attributes().Get("service.name")
 	assert.True(t, ok)
-	assert.Equal(t, buildInfo.Command, value.AsString())
+	assert.Equal(t, defaultBuildInfo.Command, value.AsString())
 	value, ok = res.Attributes().Get("service.version")
 	assert.True(t, ok)
-	assert.Equal(t, buildInfo.Version, value.AsString())
+	assert.Equal(t, defaultBuildInfo.Version, value.AsString())
 
 	_, ok = res.Attributes().Get("service.instance.id")
 	assert.True(t, ok)
 
-	// Check override by nil
 	resMap = map[string]*string{
 		"service.name":        nil,
 		"service.version":     nil,
 		"service.instance.id": nil,
 	}
-	otelRes = New(buildInfo, resMap)
+	otelRes, err = New(buildInfo, resMap)
+	require.NoError(t, err)
 	res = pdataFromSdk(otelRes)
 
-	// Attributes should not exist since we nil-ified all.
 	assert.Equal(t, 0, res.Attributes().Len())
 
-	// Check override values
 	strPtr := func(v string) *string { return &v }
 	resMap = map[string]*string{
 		"service.name":        strPtr("a"),
 		"service.version":     strPtr("b"),
 		"service.instance.id": strPtr("c"),
 	}
-	otelRes = New(buildInfo, resMap)
+	otelRes, err = New(buildInfo, resMap)
+	require.NoError(t, err)
 	res = pdataFromSdk(otelRes)
 
 	assert.Equal(t, 3, res.Attributes().Len())
@@ -166,4 +164,50 @@ func TestBuildResource(t *testing.T) {
 	value, ok = res.Attributes().Get("service.instance.id")
 	assert.True(t, ok)
 	assert.Equal(t, "c", value.AsString())
+}
+
+func TestDefaultAttributeValues(t *testing.T) {
+	t.Run("defaults included", func(t *testing.T) {
+		defaults, err := DefaultAttributeValues(buildInfo, nil)
+		require.NoError(t, err)
+		assert.Equal(t, buildInfo.Command, defaults["service.name"])
+		assert.Equal(t, buildInfo.Version, defaults["service.version"])
+		_, ok := defaults["service.instance.id"]
+		assert.True(t, ok)
+	})
+
+	t.Run("defaults removed", func(t *testing.T) {
+		removed := map[string]struct{}{
+			"service.name":        {},
+			"service.version":     {},
+			"service.instance.id": {},
+		}
+		defaults, err := DefaultAttributeValues(buildInfo, removed)
+		require.NoError(t, err)
+		assert.NotContains(t, defaults, "service.name")
+		assert.NotContains(t, defaults, "service.version")
+		assert.NotContains(t, defaults, "service.instance.id")
+	})
+
+	t.Run("uuid failure", func(t *testing.T) {
+		orig := newUUID
+		t.Cleanup(func() { newUUID = orig })
+		newUUID = func() (uuid.UUID, error) {
+			return uuid.UUID{}, assert.AnError
+		}
+
+		_, err := DefaultAttributeValues(buildInfo, nil)
+		require.ErrorContains(t, err, "failed to generate instance ID")
+	})
+}
+
+func TestNewUUIDFailure(t *testing.T) {
+	orig := newUUID
+	t.Cleanup(func() { newUUID = orig })
+	newUUID = func() (uuid.UUID, error) {
+		return uuid.UUID{}, assert.AnError
+	}
+
+	_, err := New(buildInfo, map[string]*string{})
+	require.ErrorContains(t, err, "failed to generate instance ID")
 }

@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
-	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/embedded"
 	"go.opentelemetry.io/otel/trace/noop"
@@ -45,9 +44,11 @@ func createTracerProvider(
 	}
 	otel.SetTextMapPropagator(propagator)
 
-	attrs := pcommonAttrsToOTelAttrs(set.Resource)
-	res := sdkresource.NewWithAttributes("", attrs...)
-	sdk, err := newSDK(ctx, res, config.OpenTelemetryConfiguration{
+	resCfg, err := resourceConfigWithDefaults(set.BuildInfo, &cfg.Resource)
+	if err != nil {
+		return nil, err
+	}
+	sdk, err := newSDK(ctx, &resCfg, config.OpenTelemetryConfiguration{
 		TracerProvider: &cfg.Traces.TracerProvider,
 	})
 	if err != nil {

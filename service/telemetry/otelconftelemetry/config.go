@@ -19,8 +19,11 @@ type Config struct {
 	// Resource specifies user-defined attributes to include with all emitted telemetry.
 	// Note that some attributes are added automatically (e.g. service.version) even
 	// if they are not specified here. In order to suppress such attributes the
-	// attribute must be specified in this map with null YAML value (nil string pointer).
-	Resource map[string]*string `mapstructure:"resource,omitempty"`
+	// attribute must be specified with a null value in the configuration.
+	//
+	// Supports both the declarative config resource schema and the legacy inline
+	// attribute map format for backward compatibility.
+	Resource migration.ResourceConfigV030 `mapstructure:"resource,omitempty"`
 }
 
 // LogsConfig defines the configurable settings for service telemetry logs.

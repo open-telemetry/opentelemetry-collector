@@ -8,7 +8,6 @@ import (
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
-	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -28,10 +27,12 @@ func createMeterProvider(
 		cfg.Metrics.Views = set.DefaultViews(cfg.Metrics.Level)
 	}
 
-	attrs := pcommonAttrsToOTelAttrs(set.Resource)
-	res := sdkresource.NewWithAttributes("", attrs...)
+	resCfg, err := resourceConfigWithDefaults(set.BuildInfo, &cfg.Resource)
+	if err != nil {
+		return nil, err
+	}
 	mpConfig := cfg.Metrics.MeterProvider
-	sdk, err := newSDK(ctx, res, config.OpenTelemetryConfiguration{
+	sdk, err := newSDK(ctx, &resCfg, config.OpenTelemetryConfiguration{
 		MeterProvider: &mpConfig,
 	})
 	if err != nil {

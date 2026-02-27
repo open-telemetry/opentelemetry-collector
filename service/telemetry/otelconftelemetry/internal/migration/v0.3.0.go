@@ -182,6 +182,173 @@ type LogsSamplingConfig struct {
 	Thereafter int `mapstructure:"thereafter"`
 }
 
+// ResourceConfigV030 represents the v0.3.0 resource configuration, with
+// backward-compatible support for the legacy map format.
+type ResourceConfigV030 struct {
+	config.Resource `mapstructure:",squash"`
+
+	removed map[string]struct{}
+}
+
+// Unmarshal supports both the declarative config resource schema and the
+// legacy inline map format used by the collector.
+func (c *ResourceConfigV030) Unmarshal(conf *confmap.Conf) error {
+	if conf == nil {
+		return nil
+	}
+
+	raw := conf.ToStringMap()
+	if raw == nil {
+		return nil
+	}
+
+	// Reset state for reuse across reloads.
+	c.Resource = config.Resource{}
+	c.removed = nil
+
+	if isDeclarativeResourceConfig(raw) {
+		declarative := declarativeConfigFromRaw(raw)
+		if err := declarative.Unmarshal(&c.Resource); err != nil {
+			return err
+		}
+		legacyAttrs, removed := legacyAttributesFromRaw(raw)
+		if len(legacyAttrs) > 0 {
+			c.Attributes = append(c.Attributes, legacyAttrs...)
+		}
+		if len(removed) > 0 {
+			c.removed = removed
+		}
+		return nil
+	}
+
+	var legacy map[string]*string
+	if err := conf.Unmarshal(&legacy); err != nil {
+		return err
+	}
+
+	attrs := make([]config.AttributeNameValue, 0, len(legacy))
+	removed := make(map[string]struct{})
+	for k, v := range legacy {
+		if v == nil {
+			removed[k] = struct{}{}
+			continue
+		}
+		attrs = append(attrs, config.AttributeNameValue{
+			Name:  k,
+			Value: *v,
+		})
+	}
+
+	c.Resource = config.Resource{
+		Attributes: attrs,
+	}
+	c.removed = removed
+	return nil
+}
+
+func declarativeConfigFromRaw(raw map[string]any) *confmap.Conf {
+	if raw == nil {
+		return confmap.New()
+	}
+	declarative := make(map[string]any)
+	for _, key := range []string{"attributes", "attributes_list", "detectors", "schema_url", "detection"} {
+		if value, ok := raw[key]; ok {
+			declarative[key] = value
+		}
+	}
+	return confmap.NewFromStringMap(declarative)
+}
+
+func (c ResourceConfigV030) IsRemoved(name string) bool {
+	if len(c.removed) == 0 {
+		return false
+	}
+	_, ok := c.removed[name]
+	return ok
+}
+
+func isDeclarativeResourceConfig(raw map[string]any) bool {
+	if raw == nil {
+		return false
+	}
+
+	hasDeclarative := false
+	for key := range raw {
+		switch key {
+		case "attributes", "attributes_list", "detectors", "schema_url", "detection":
+			// Known declarative schema keys.
+			hasDeclarative = true
+		default:
+			// Mixed keys are supported by treating unknown keys as legacy attributes.
+		}
+	}
+
+	if !hasDeclarative {
+		return false
+	}
+	if v, ok := raw["schema_url"]; ok && isString(v) && isPrimitiveOnlyConfig(raw) {
+		return false
+	}
+	return true
+}
+
+func isString(value any) bool {
+	_, ok := value.(string)
+	return ok
+}
+
+func isPrimitive(value any) bool {
+	switch value.(type) {
+	case string, bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
+		return true
+	default:
+		return false
+	}
+}
+
+func isPrimitiveOnlyConfig(raw map[string]any) bool {
+	if len(raw) != 1 {
+		return false
+	}
+	var value any
+	for _, v := range raw {
+		value = v
+	}
+	// We don't know the key, and maps have no positional access; with len == 1 this loop runs once to fetch the sole value.
+	return isPrimitive(value)
+}
+
+func legacyAttributesFromRaw(raw map[string]any) ([]config.AttributeNameValue, map[string]struct{}) {
+	if raw == nil {
+		return nil, nil
+	}
+	var attrs []config.AttributeNameValue
+	removed := make(map[string]struct{})
+	for key, value := range raw {
+		switch key {
+		case "attributes", "attributes_list", "detectors", "schema_url", "detection":
+			continue
+		default:
+		}
+		if value == nil {
+			removed[key] = struct{}{}
+			attrs = append(attrs, config.AttributeNameValue{
+				Name:  key,
+				Value: nil,
+			})
+			continue
+		}
+		attrs = append(attrs, config.AttributeNameValue{
+			Name:  key,
+			Value: value,
+		})
+	}
+	if len(removed) == 0 {
+		removed = nil
+	}
+	return attrs, removed
+}
+
 func (c *LogsConfigV030) Unmarshal(conf *confmap.Conf) error {
 	unmarshaled := *c
 	if err := conf.Unmarshal(c); err != nil {

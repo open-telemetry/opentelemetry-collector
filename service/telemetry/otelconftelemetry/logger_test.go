@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/service/internal/componentattribute"
 	"go.opentelemetry.io/collector/service/telemetry"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry/internal/migration"
 )
 
 const (
@@ -172,7 +173,7 @@ func TestCreateLoggerWithResource(t *testing.T) {
 	tests := []struct {
 		name           string
 		buildInfo      component.BuildInfo
-		resourceConfig map[string]*string
+		resourceConfig migration.ResourceConfigV030
 		wantFields     map[string]string
 		setConfig      func(cfg *Config)
 	}{
@@ -182,7 +183,7 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				Command: "mycommand",
 				Version: "1.0.0",
 			},
-			resourceConfig: map[string]*string{},
+			resourceConfig: migration.ResourceConfigV030{},
 			wantFields: map[string]string{
 				"service.name":        "mycommand",
 				"service.version":     "1.0.0",
@@ -195,8 +196,12 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				Command: "mycommand",
 				Version: "1.0.0",
 			},
-			resourceConfig: map[string]*string{
-				"service.name": ptr("custom-service"),
+			resourceConfig: migration.ResourceConfigV030{
+				Resource: config.Resource{
+					Attributes: []config.AttributeNameValue{
+						{Name: "service.name", Value: "custom-service"},
+					},
+				},
 			},
 			wantFields: map[string]string{
 				"service.name":        "custom-service",
@@ -210,8 +215,12 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				Command: "mycommand",
 				Version: "1.0.0",
 			},
-			resourceConfig: map[string]*string{
-				"service.version": ptr("2.0.0"),
+			resourceConfig: migration.ResourceConfigV030{
+				Resource: config.Resource{
+					Attributes: []config.AttributeNameValue{
+						{Name: "service.version", Value: "2.0.0"},
+					},
+				},
 			},
 			wantFields: map[string]string{
 				"service.name":        "mycommand",
@@ -225,8 +234,12 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				Command: "mycommand",
 				Version: "1.0.0",
 			},
-			resourceConfig: map[string]*string{
-				"custom.field": ptr("custom-value"),
+			resourceConfig: migration.ResourceConfigV030{
+				Resource: config.Resource{
+					Attributes: []config.AttributeNameValue{
+						{Name: "custom.field", Value: "custom-value"},
+					},
+				},
 			},
 			wantFields: map[string]string{
 				"service.name":        "mycommand",
@@ -238,7 +251,7 @@ func TestCreateLoggerWithResource(t *testing.T) {
 		{
 			name:           "resource with no attributes",
 			buildInfo:      component.BuildInfo{},
-			resourceConfig: nil,
+			resourceConfig: migration.ResourceConfigV030{},
 			wantFields: map[string]string{
 				// A random UUID is injected for service.instance.id by default
 				"service.instance.id": "", // Just check presence
@@ -250,7 +263,7 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				Command: "mycommand",
 				Version: "1.0.0",
 			},
-			resourceConfig: map[string]*string{},
+			resourceConfig: migration.ResourceConfigV030{},
 			wantFields:     map[string]string{},
 			setConfig: func(cfg *Config) {
 				cfg.Logs.DisableZapResource = true
@@ -415,10 +428,14 @@ func newOTLPLogger(t *testing.T, level zapcore.Level, handler func(plogotlp.Expo
 			// OutputPaths is empty, so logs are only
 			// written to the OTLP processor
 		},
-		Resource: map[string]*string{
-			"service.name":    ptr(service),
-			"service.version": ptr(version),
-			testAttribute:     ptr(testValue),
+		Resource: migration.ResourceConfigV030{
+			Resource: config.Resource{
+				Attributes: []config.AttributeNameValue{
+					{Name: "service.name", Value: service},
+					{Name: "service.version", Value: version},
+					{Name: testAttribute, Value: testValue},
+				},
+			},
 		},
 	}
 
@@ -463,10 +480,14 @@ func TestLogAttributeInjection(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	cfg := &Config{
-		Resource: map[string]*string{
-			"service.instance.id": nil,
-			"service.name":        nil,
-			"service.version":     nil,
+		Resource: migration.ResourceConfigV030{
+			Resource: config.Resource{
+				Attributes: []config.AttributeNameValue{
+					{Name: "service.instance.id", Value: nil},
+					{Name: "service.name", Value: nil},
+					{Name: "service.version", Value: nil},
+				},
+			},
 		},
 		Logs: LogsConfig{
 			Encoding: "json",
