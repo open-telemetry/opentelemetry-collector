@@ -19,7 +19,8 @@ import (
 )
 
 // partitionIdleTimeout is the duration after which an empty partition is removed.
-const partitionIdleTimeout = 30 * time.Second
+// TODO make this configurable.
+const partitionIdleTimeout = 3600 * time.Second
 
 var _ Batcher[request.Request] = (*partitionBatcher)(nil)
 
