@@ -153,9 +153,9 @@ func scrapeLogs(c *controller.Controller[scraper.Logs], nextConsumer consumer.Lo
 	}
 
 	logRecordCount := logs.LogRecordCount()
-	ctx = c.Obsrecv.StartMetricsOp(ctx)
+	ctx = c.Obsrecv.StartLogsOp(ctx)
 	err := nextConsumer.ConsumeLogs(ctx, logs)
-	c.Obsrecv.EndMetricsOp(ctx, "", logRecordCount, err)
+	c.Obsrecv.EndLogsOp(ctx, "", logRecordCount, err)
 }
 
 func scrapeMetrics(c *controller.Controller[scraper.Metrics], nextConsumer consumer.Metrics) {
