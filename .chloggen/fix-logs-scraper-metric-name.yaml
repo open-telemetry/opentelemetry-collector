@@ -7,7 +7,7 @@ change_type: 'bug_fix'
 component: pkg/scraperhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Log scrapers now emit log-appropriate internal telemetry
+note: Log scrapers now emit log-appropriate receiver telemetry
 
 # One or more tracking issues or pull requests related to the change
 issues: []
@@ -16,9 +16,11 @@ issues: []
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Log scrapers previously emitted the same internal telemetry as metric scrapers,
+  Log scrapers previously emitted the same receiver telemetry as metric scrapers,
   such as the otelcol_receiver_accepted_metric_points metric (instead of otelcol_receiver_accepted_log_records),
   or spans named receiver/myreceiver/MetricsReceived (instead of receiver/myreceiver/LogsReceived).
+
+  This did not affect scraper-specific spans and metrics.
 
 
 # Optional: The change log or logs in which this entry should be included.
