@@ -1,0 +1,7 @@
+package samplescraper
+
+import _ "go.opentelemetry.io/collector/scraper/scraperhelper"
+
+// This is temporary placeholder for the generated config file.
+// The actual content will be generated in upcoming PR.
+// Currently used only to satisfy required imports.
