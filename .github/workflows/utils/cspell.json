@@ -459,6 +459,8 @@
       "subpackages",
       "swiatekm",
       "syft",
+      "systemcputime",
+      "systemdiskio",
       "tailsampling",
       "tchannel",
       "telemetrygen",
