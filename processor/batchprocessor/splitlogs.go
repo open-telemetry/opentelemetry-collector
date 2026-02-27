@@ -31,6 +31,7 @@ func splitLogs(size int, src plog.Logs) plog.Logs {
 
 		destRl := dest.ResourceLogs().AppendEmpty()
 		srcRl.Resource().CopyTo(destRl.Resource())
+		destRl.SetSchemaUrl(srcRl.SchemaUrl())
 		srcRl.ScopeLogs().RemoveIf(func(srcIll plog.ScopeLogs) bool {
 			// If we are done skip everything else.
 			if totalCopiedLogRecords == size {
@@ -47,6 +48,7 @@ func splitLogs(size int, src plog.Logs) plog.Logs {
 
 			destIll := destRl.ScopeLogs().AppendEmpty()
 			srcIll.Scope().CopyTo(destIll.Scope())
+			destIll.SetSchemaUrl(srcIll.SchemaUrl())
 			srcIll.LogRecords().RemoveIf(func(srcMetric plog.LogRecord) bool {
 				// If we are done skip everything else.
 				if totalCopiedLogRecords == size {

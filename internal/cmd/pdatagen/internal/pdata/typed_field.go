@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/proto"
-	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/tmplutil"
 )
 
 const typedAccessorsTemplate = `// {{ .fieldName }} returns the {{ .lowerFieldName }} associated with this {{ .structName }}.
@@ -51,18 +51,18 @@ type TypedType struct {
 }
 
 func (ptf *TypedField) GenerateAccessors(ms *messageStruct) string {
-	t := template.Parse("typedAccessorsTemplate", []byte(typedAccessorsTemplate))
-	return template.Execute(t, ptf.templateFields(ms))
+	t := tmplutil.Parse("typedAccessorsTemplate", []byte(typedAccessorsTemplate))
+	return tmplutil.Execute(t, ptf.templateFields(ms))
 }
 
 func (ptf *TypedField) GenerateAccessorsTest(ms *messageStruct) string {
-	t := template.Parse("typedAccessorsTestTemplate", []byte(typedAccessorsTestTemplate))
-	return template.Execute(t, ptf.templateFields(ms))
+	t := tmplutil.Parse("typedAccessorsTestTemplate", []byte(typedAccessorsTestTemplate))
+	return tmplutil.Execute(t, ptf.templateFields(ms))
 }
 
 func (ptf *TypedField) GenerateTestValue(ms *messageStruct) string {
-	t := template.Parse("typedSetTestTemplate", []byte(typedSetTestTemplate))
-	return template.Execute(t, ptf.templateFields(ms))
+	t := tmplutil.Parse("typedSetTestTemplate", []byte(typedSetTestTemplate))
+	return tmplutil.Execute(t, ptf.templateFields(ms))
 }
 
 type ProtoTypedField struct {
