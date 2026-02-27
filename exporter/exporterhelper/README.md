@@ -57,7 +57,7 @@ Available `batch::sizer` options:
 - `items`: number of the smallest parts of each signal (spans, metric data points, log records);
 - `bytes`: the size of serialized data in bytes (the least performant option).
 
-- `parttion`: see below.
+- `partition`: see below.
 
 The `batch::partition` configuration defines the partitioning of the batches.
 
