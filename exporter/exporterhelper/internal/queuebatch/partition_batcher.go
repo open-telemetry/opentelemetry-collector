@@ -204,7 +204,7 @@ func (qb *partitionBatcher) Start(context.Context, component.Host) error {
 			case <-qb.shutdownCh:
 				return
 			case <-qb.timer.C:
-				qb.flushCurrentBatchIfNecessary()
+				qb.flushCurrentBatchIfNotEmpty()
 			}
 		}
 	})
@@ -215,13 +215,13 @@ func (qb *partitionBatcher) Start(context.Context, component.Host) error {
 func (qb *partitionBatcher) Shutdown(context.Context) error {
 	close(qb.shutdownCh)
 	// Make sure execute one last flush if necessary.
-	qb.flushCurrentBatchIfNecessary()
+	qb.flushCurrentBatchIfNotEmpty()
 	qb.stopWG.Wait()
 	return nil
 }
 
-// flushCurrentBatchIfNecessary sends out the current request batch if it is not nil
-func (qb *partitionBatcher) flushCurrentBatchIfNecessary() {
+// flushCurrentBatchIfNotEmpty sends out the current request batch if it is not nil
+func (qb *partitionBatcher) flushCurrentBatchIfNotEmpty() {
 	qb.currentBatchMu.Lock()
 	if qb.currentBatch == nil {
 		qb.currentBatchMu.Unlock()
