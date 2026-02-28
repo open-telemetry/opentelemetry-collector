@@ -227,6 +227,31 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 	}
 }
 
+func TestWithQueueBatchPayloadCodec(t *testing.T) {
+	qCfg := NewDefaultQueueConfig()
+	codec := prefixCodec{prefix: "codec:"}
+
+	be, err := NewBaseExporter(
+		exportertest.NewNopSettings(exportertest.NopType),
+		pipeline.SignalLogs,
+		noopExport,
+		WithQueueBatchPayloadCodec(codec),
+		WithQueueBatch(qCfg, newFakeQueueBatch()),
+	)
+	require.NoError(t, err)
+
+	encoded, err := be.queueBatchSettings.Encoding.Marshal(context.Background(), &requesttest.FakeRequest{})
+	require.NoError(t, err)
+	assert.Equal(t, "codec:mockRequest", string(encoded))
+
+	_, req, err := be.queueBatchSettings.Encoding.Unmarshal([]byte("codec:mockRequest"))
+	require.NoError(t, err)
+	assert.NotNil(t, req)
+
+	_, _, err = be.queueBatchSettings.Encoding.Unmarshal([]byte("bad:mockRequest"))
+	require.Error(t, err)
+}
+
 func errExport(context.Context, request.Request) error {
 	return errors.New("my error")
 }
@@ -249,4 +274,20 @@ func (f fakeEncoding) Marshal(context.Context, request.Request) ([]byte, error) 
 
 func (f fakeEncoding) Unmarshal([]byte) (context.Context, request.Request, error) {
 	return context.Background(), &requesttest.FakeRequest{}, nil
+}
+
+type prefixCodec struct {
+	prefix string
+}
+
+func (c prefixCodec) Encode(payload []byte) ([]byte, error) {
+	return append([]byte(c.prefix), payload...), nil
+}
+
+func (c prefixCodec) Decode(payload []byte) ([]byte, error) {
+	prefix := []byte(c.prefix)
+	if len(payload) < len(prefix) || string(payload[:len(prefix)]) != c.prefix {
+		return nil, errors.New("invalid payload prefix")
+	}
+	return payload[len(prefix):], nil
 }

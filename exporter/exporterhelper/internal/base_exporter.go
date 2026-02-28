@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
@@ -49,6 +50,12 @@ type BaseExporter struct {
 
 	queueBatchSettings queuebatch.Settings[request.Request]
 	queueCfg           configoptional.Optional[queuebatch.Config]
+	queuePayloadCodec  queuePayloadCodec
+}
+
+type queuePayloadCodec interface {
+	Encode([]byte) ([]byte, error)
+	Decode([]byte) ([]byte, error)
 }
 
 func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sender.SendFunc[request.Request], options ...Option) (*BaseExporter, error) {
@@ -213,6 +220,12 @@ func WithQueueBatch(cfg configoptional.Optional[queuebatch.Config], set queuebat
 			o.ExportFailureMessage += " Try enabling sending_queue to survive temporary failures."
 			return nil
 		}
+		if o.queuePayloadCodec != nil && set.Encoding != nil {
+			set.Encoding = payloadCodecEncoding{
+				encoding: set.Encoding,
+				codec:    o.queuePayloadCodec,
+			}
+		}
 		if cfg.Get().StorageID != nil && set.Encoding == nil {
 			return errors.New("`Settings.Encoding` must not be nil when persistent queue is enabled")
 		}
@@ -250,4 +263,35 @@ func WithQueueBatchSettings(set queuebatch.Settings[request.Request]) Option {
 		o.queueBatchSettings = set
 		return nil
 	}
+}
+
+// WithQueueBatchPayloadCodec wraps queue payload marshaling/unmarshaling.
+// Encode is applied after Marshal on enqueue, Decode before Unmarshal on dequeue.
+func WithQueueBatchPayloadCodec(codec queuePayloadCodec) Option {
+	return func(o *BaseExporter) error {
+		o.queuePayloadCodec = codec
+		return nil
+	}
+}
+
+type payloadCodecEncoding struct {
+	encoding queue.Encoding[request.Request]
+	codec    queuePayloadCodec
+}
+
+func (e payloadCodecEncoding) Marshal(ctx context.Context, req request.Request) ([]byte, error) {
+	payload, err := e.encoding.Marshal(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return e.codec.Encode(payload)
+}
+
+func (e payloadCodecEncoding) Unmarshal(payload []byte) (context.Context, request.Request, error) {
+	decoded, err := e.codec.Decode(payload)
+	if err != nil {
+		var req request.Request
+		return context.Background(), req, err
+	}
+	return e.encoding.Unmarshal(decoded)
 }
