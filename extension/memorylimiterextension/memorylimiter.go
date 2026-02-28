@@ -59,7 +59,6 @@ func (ml *memoryLimiterExtension) GetHTTPHandler(base http.Handler) (http.Handle
 	}), nil
 }
 
-
 func (ml *memoryLimiterExtension) GetGRPCServerOptions(_ context.Context) ([]grpc.ServerOption, error) {
 	return []grpc.ServerOption{
 		grpc.ChainUnaryInterceptor(
