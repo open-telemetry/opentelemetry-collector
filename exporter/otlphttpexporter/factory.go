@@ -6,6 +6,7 @@ package otlphttpexporter // import "go.opentelemetry.io/collector/exporter/otlph
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -45,7 +46,10 @@ func createDefaultConfig() component.Config {
 	clientConfig.WriteBufferSize = 512 * 1024
 
 	return &Config{
-		RetryConfig:  configretry.NewDefaultBackOffConfig(),
+		RetryConfig: RetryConfig{
+			BackOffConfig:     configretry.NewDefaultBackOffConfig(),
+			RetryableStatuses: []int{http.StatusTooManyRequests, http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout},
+		},
 		QueueConfig:  configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		Encoding:     EncodingProto,
 		ClientConfig: clientConfig,
@@ -97,7 +101,7 @@ func createTraces(
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
-		exporterhelper.WithRetry(oCfg.RetryConfig),
+		exporterhelper.WithRetry(oCfg.RetryConfig.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig))
 }
 
@@ -123,7 +127,7 @@ func createMetrics(
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
-		exporterhelper.WithRetry(oCfg.RetryConfig),
+		exporterhelper.WithRetry(oCfg.RetryConfig.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig))
 }
 
@@ -148,7 +152,7 @@ func createLogs(
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
-		exporterhelper.WithRetry(oCfg.RetryConfig),
+		exporterhelper.WithRetry(oCfg.RetryConfig.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig))
 }
 
@@ -174,6 +178,6 @@ func createProfiles(
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
-		exporterhelper.WithRetry(oCfg.RetryConfig),
+		exporterhelper.WithRetry(oCfg.RetryConfig.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig))
 }
