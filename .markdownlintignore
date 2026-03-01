@@ -1,0 +1,3 @@
+# Files with legacy formatting (avoid large mechanical diffs)
+CHANGELOG-API.md
+CHANGELOG.md
