@@ -37,13 +37,13 @@ func NewErr(err error) extension.Extension {
 		GetHTTPRoundTripperFunc: func(context.Context) (extensionmiddleware.WrapHTTPRoundTripperFunc, error) {
 			return nil, err
 		},
-		GetGRPCClientOptionsFunc: func() ([]grpc.DialOption, error) {
+		GetGRPCClientOptionsFunc: func(context.Context) ([]grpc.DialOption, error) {
 			return nil, err
 		},
 		GetHTTPHandlerFunc: func(context.Context) (extensionmiddleware.WrapHTTPHandlerFunc, error) {
 			return nil, err
 		},
-		GetGRPCServerOptionsFunc: func() ([]grpc.ServerOption, error) {
+		GetGRPCServerOptionsFunc: func(context.Context) ([]grpc.ServerOption, error) {
 			return nil, err
 		},
 	}

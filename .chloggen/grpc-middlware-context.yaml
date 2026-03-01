@@ -1,0 +1,9 @@
+change_type: bug_fix
+
+component: pkg/config/configmiddleware
+
+note: Add context.Context to gRPC middleware interface constructors. 
+
+issues: [14523]
+
+change_logs: [api]

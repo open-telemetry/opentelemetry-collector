@@ -28,7 +28,7 @@ func TestNopClient(t *testing.T) {
 
 	grpcClient, ok := client.(extensionmiddleware.GRPCClient)
 	require.True(t, ok)
-	grpcOpts, err := grpcClient.GetGRPCClientOptions()
+	grpcOpts, err := grpcClient.GetGRPCClientOptions(context.Background())
 	require.NoError(t, err)
 	require.Nil(t, grpcOpts)
 }
@@ -48,7 +48,7 @@ func TestNopServer(t *testing.T) {
 
 	grpcServer, ok := client.(extensionmiddleware.GRPCServer)
 	require.True(t, ok)
-	grpcOpts, err := grpcServer.GetGRPCServerOptions()
+	grpcOpts, err := grpcServer.GetGRPCServerOptions(context.Background())
 	require.NoError(t, err)
 	require.Nil(t, grpcOpts)
 }
