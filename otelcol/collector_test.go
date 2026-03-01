@@ -174,6 +174,70 @@ func TestCollectorReportError(t *testing.T) {
 	assert.Equal(t, StateClosed, col.GetState())
 }
 
+func TestCollectorShutdownWithFatalError(t *testing.T) {
+	factories, err := nopFactories()
+	require.NoError(t, err)
+
+	factory := newFatalOnShutdownExtensionFactory()
+	factories.Extensions[factory.Type()] = factory
+
+	col, err := NewCollector(CollectorSettings{
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-fatalerror.yaml")}),
+	})
+	require.NoError(t, err)
+
+	wg := startCollector(context.Background(), t, col)
+
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	col.Shutdown()
+
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		assert.Equal(t, StateClosed, col.GetState())
+	case <-time.After(10 * time.Second):
+		t.Fatal("collector shutdown deadlocked")
+	}
+}
+
+type fatalOnShutdownExtension struct {
+	component.StartFunc
+	host component.Host
+}
+
+func (e *fatalOnShutdownExtension) Start(_ context.Context, host component.Host) error {
+	e.host = host
+	return nil
+}
+
+func (e *fatalOnShutdownExtension) Shutdown(context.Context) error {
+	componentstatus.ReportStatus(e.host, componentstatus.NewFatalErrorEvent(errors.New("shutdown error")))
+	return nil
+}
+
+func newFatalOnShutdownExtensionFactory() extension.Factory {
+	return extension.NewFactory(
+		component.MustNewType("fatalonshutdown"),
+		func() component.Config {
+			return &struct{}{}
+		},
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
+			return &fatalOnShutdownExtension{}, nil
+		},
+		component.StabilityLevelStable,
+	)
+}
+
 // NewStatusWatcherExtensionFactory returns a component.ExtensionFactory to construct a status watcher extension.
 func NewStatusWatcherExtensionFactory(
 	onStatusChanged func(source *componentstatus.InstanceID, event *componentstatus.Event),
