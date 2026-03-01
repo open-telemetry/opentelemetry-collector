@@ -57,7 +57,7 @@ type Factories struct {
 // It returns a non-nil error when there are factories with duplicate type.
 // If a factory has a deprecated alias, the map will also contain an entry for the alias.
 func MakeFactoryMap[T component.Factory](factories ...T) (map[component.Type]T, error) {
-	fMap := map[component.Type]T{}
+	fMap := make(map[component.Type]T, len(factories))
 	for _, f := range factories {
 		if _, ok := fMap[f.Type()]; ok {
 			return fMap, fmt.Errorf("duplicate component factory %q", f.Type())
