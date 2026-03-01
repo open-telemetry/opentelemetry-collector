@@ -148,6 +148,20 @@ func TestGenerateInvalidOutputPath(t *testing.T) {
 	require.ErrorContains(t, err, "failed to create output path")
 }
 
+func TestOutputBinaryName(t *testing.T) {
+	t.Run("windows target adds exe", func(t *testing.T) {
+		t.Setenv("GOOS", "windows")
+		assert.Equal(t, "otelcorecol.exe", outputBinaryName("otelcorecol"))
+		assert.Equal(t, "otelcorecol.exe", outputBinaryName("otelcorecol.exe"))
+	})
+
+	t.Run("non-windows target does not add exe", func(t *testing.T) {
+		t.Setenv("GOOS", "linux")
+		assert.Equal(t, "otelcorecol", outputBinaryName("otelcorecol"))
+		assert.Equal(t, "otelcorecol.exe", outputBinaryName("otelcorecol.exe"))
+	})
+}
+
 func TestVersioning(t *testing.T) {
 	replaces := generateReplaces()
 	tests := []struct {
