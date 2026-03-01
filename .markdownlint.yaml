@@ -1,0 +1,41 @@
+# See https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+# and https://github.com/DavidAnson/markdownlint/blob/main/README.md
+
+# Default state for all rules
+default: true
+
+ul-style: false
+line-length: false
+heading-increment: false
+no-trailing-spaces: false
+no-hard-tabs: false
+no-multiple-blanks: false
+blanks-around-headings: false
+single-title: false
+no-duplicate-header:
+  siblings_only: true
+ol-prefix: false
+ul-indent: false
+commands-show-output: false
+list-marker-space: false
+blanks-around-fences: false
+blanks-around-lists: false
+blanks-around-tables: false
+no-inline-html: false
+fenced-code-language: false
+no-duplicate-heading: false
+no-bare-urls: false
+no-missing-space-atx: false
+no-blanks-blockquote: false
+no-space-in-emphasis: false
+no-space-in-code: false
+no-emphasis-as-heading: false
+descriptive-link-text: false
+first-line-h1: false
+emphasis-style: false
+single-trailing-newline: false
+link-fragments: false
+link-image-reference-definitions: false
+table-column-style: false
+no-trailing-punctuation: false
+no-alt-text: false

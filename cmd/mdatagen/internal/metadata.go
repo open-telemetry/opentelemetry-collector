@@ -85,6 +85,51 @@ func (md Metadata) GetCodeCovComponentID() string {
 	return strings.ReplaceAll(md.Status.Class+"_"+md.Type, "/", "_")
 }
 
+// GetIssueLabel returns the GitHub label used to associate issues with this component.
+//
+// Historically this has been computed as "<class>/<short-folder-name>".
+// For some components, the label follows a repo-relative path under the class
+// directory (for example "extension/storage/filestorage"). When possible, this
+// method derives that path from the module import path (PackageName) and falls
+// back to the legacy behavior when it can't.
+func (md Metadata) GetIssueLabel() string {
+	if md.Status == nil || md.Status.Class == "" {
+		return ""
+	}
+	class := md.Status.Class
+	short := md.ShortFolderName
+	if short == "" {
+		if md.PackageName != "" {
+			parts := strings.Split(md.PackageName, "/")
+			if last := parts[len(parts)-1]; last != "" {
+				short = last
+			}
+		}
+		if short == "" {
+			// Historical behavior for the (unexpected) empty-short-name case was
+			// effectively to emit a trailing slash (e.g. "pkg/"). Keep a stable
+			// non-empty label prefix to avoid template churn.
+			return class + "/"
+		}
+	}
+	// Default (legacy) behavior.
+	fallback := class + "/" + short
+	if md.PackageName == "" {
+		return fallback
+	}
+
+	parts := strings.Split(md.PackageName, "/")
+	idx := slices.Index(parts, class)
+	if idx < 0 || idx+1 >= len(parts) {
+		return fallback
+	}
+
+	rel := slices.Clone(parts[idx+1:])
+	// Ensure the label ends with the short folder name, matching historical suffix stripping.
+	rel[len(rel)-1] = short
+	return class + "/" + strings.Join(rel, "/")
+}
+
 func (md Metadata) HasEntities() bool {
 	return len(md.Entities) > 0
 }
