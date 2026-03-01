@@ -32,7 +32,7 @@
 | ---- | ----------- | ------ | -------- |
 {{- range $metric.Attributes }}
 {{- $attribute := . | attributeInfo }}
-| {{ $attribute.Name }} | {{ $attribute.Description }} |
+| {{ if $attribute.SemanticConvention }}[{{ $attribute.Name }}]({{ $attribute.SemanticConvention.SemanticConventionRef }}){{ else }}{{ $attribute.Name }}{{ end }} | {{ $attribute.Description }} |
 {{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} | {{ $attribute.RequirementLevel }} |
 {{- end }}
 
@@ -62,7 +62,7 @@
 | ---- | ----------- | ------ |
 {{- range $event.Attributes }}
 {{- $attribute := . | attributeInfo }}
-| {{ $attribute.Name }} | {{ $attribute.Description }} |
+| {{ if $attribute.SemanticConvention }}[{{ $attribute.Name }}]({{ $attribute.SemanticConvention.SemanticConventionRef }}){{ else }}{{ $attribute.Name }}{{ end }} | {{ $attribute.Description }} |
 {{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} |
 {{- end }}
 
@@ -110,7 +110,7 @@
 | ---- | ----------- | ------ |
 {{- range $metric.Attributes }}
 {{- $attribute := . | attributeInfo }}
-| {{ $attribute.Name }} | {{ $attribute.Description }} |
+| {{ if $attribute.SemanticConvention }}[{{ $attribute.Name }}]({{ $attribute.SemanticConvention.SemanticConventionRef }}){{ else }}{{ $attribute.Name }}{{ end }} | {{ $attribute.Description }} |
 {{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} |
 {{- end }}
 
@@ -223,7 +223,7 @@ events:
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
 {{- range $attributeName, $attribute := .ResourceAttributes }}
-| {{ $attributeName }} | {{ $attribute.Description }} |
+| {{ if $attribute.SemanticConvention }}[{{ $attributeName }}]({{ $attribute.SemanticConvention.SemanticConventionRef }}){{ else }}{{ $attributeName }}{{ end }} | {{ $attribute.Description }} |
 {{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} | {{ $attribute.Enabled }} |
 {{- end }}
 

@@ -104,6 +104,10 @@ attributes:
     type: string
     requirement_level: conditionally_required
 
+  cpu:
+    description: Logical CPU number starting at 0.
+    type: string
+
   enum_attr:
     description: Attribute with a known set of string values.
     type: string
@@ -131,6 +135,13 @@ attributes:
   slice_attr:
     description: Attribute with a slice value.
     type: slice
+
+  state:
+    description: Breakdown of memory usage by type.
+    type: string
+    enum: [buffered, cached, inactive, free, slab_reclaimable, slab_unreclaimable, used]
+    semantic_convention:
+      ref: system.md#system-memory-state
 
   string_attr:
     description: Attribute with any string value.
@@ -284,8 +295,20 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [cpu]
     semantic_convention:
-      ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime
+      ref: system/system-metrics.md#metric-systemcputime
+
+  system.memory.usage:
+    enabled: true
+    description: Bytes of memory in use.
+    unit: By
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: [state]
 
 telemetry:
   metrics:

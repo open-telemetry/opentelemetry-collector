@@ -54,6 +54,52 @@ var MapAttributeEnumAttr = map[string]AttributeEnumAttr{
 	"blue":  AttributeEnumAttrBlue,
 }
 
+// AttributeState specifies the value state attribute.
+type AttributeState int
+
+const (
+	_ AttributeState = iota
+	AttributeStateBuffered
+	AttributeStateCached
+	AttributeStateInactive
+	AttributeStateFree
+	AttributeStateSlabReclaimable
+	AttributeStateSlabUnreclaimable
+	AttributeStateUsed
+)
+
+// String returns the string representation of the AttributeState.
+func (av AttributeState) String() string {
+	switch av {
+	case AttributeStateBuffered:
+		return "buffered"
+	case AttributeStateCached:
+		return "cached"
+	case AttributeStateInactive:
+		return "inactive"
+	case AttributeStateFree:
+		return "free"
+	case AttributeStateSlabReclaimable:
+		return "slab_reclaimable"
+	case AttributeStateSlabUnreclaimable:
+		return "slab_unreclaimable"
+	case AttributeStateUsed:
+		return "used"
+	}
+	return ""
+}
+
+// MapAttributeState is a helper map of string to AttributeState attribute value.
+var MapAttributeState = map[string]AttributeState{
+	"buffered":           AttributeStateBuffered,
+	"cached":             AttributeStateCached,
+	"inactive":           AttributeStateInactive,
+	"free":               AttributeStateFree,
+	"slab_reclaimable":   AttributeStateSlabReclaimable,
+	"slab_unreclaimable": AttributeStateSlabUnreclaimable,
+	"used":               AttributeStateUsed,
+}
+
 var MetricsInfo = metricsInfo{
 	DefaultMetric: metricInfo{
 		Name: "default.metric",
@@ -79,6 +125,9 @@ var MetricsInfo = metricsInfo{
 	SystemCPUTime: metricInfo{
 		Name: "system.cpu.time",
 	},
+	SystemMemoryUsage: metricInfo{
+		Name: "system.memory.usage",
+	},
 }
 
 type metricsInfo struct {
@@ -90,6 +139,7 @@ type metricsInfo struct {
 	ReaggregateMetric             metricInfo
 	ReaggregateMetricWithRequired metricInfo
 	SystemCPUTime                 metricInfo
+	SystemMemoryUsage             metricInfo
 }
 
 type metricInfo struct {
@@ -809,10 +859,11 @@ func (m *metricSystemCPUTime) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cpuAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -820,6 +871,9 @@ func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "cpu") {
+		dp.Attributes().PutStr("cpu", cpuAttributeValue)
+	}
 
 	var s string
 	dps := m.data.Sum().DataPoints()
@@ -881,6 +935,97 @@ func newMetricSystemCPUTime(cfg MetricConfig) metricSystemCPUTime {
 	return m
 }
 
+type metricSystemMemoryUsage struct {
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+}
+
+// init fills system.memory.usage metric with initial data.
+func (m *metricSystemMemoryUsage) init() {
+	m.data.SetName("system.memory.usage")
+	m.data.SetDescription("Bytes of memory in use.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricSystemMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "state") {
+		dp.Attributes().PutStr("state", stateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemMemoryUsage) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemMemoryUsage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemMemoryUsage(cfg MetricConfig) metricSystemMemoryUsage {
+	m := metricSystemMemoryUsage{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -899,6 +1044,7 @@ type MetricsBuilder struct {
 	metricReaggregateMetric             metricReaggregateMetric
 	metricReaggregateMetricWithRequired metricReaggregateMetricWithRequired
 	metricSystemCPUTime                 metricSystemCPUTime
+	metricSystemMemoryUsage             metricSystemMemoryUsage
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -953,6 +1099,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricReaggregateMetric:             newMetricReaggregateMetric(mbc.Metrics.ReaggregateMetric),
 		metricReaggregateMetricWithRequired: newMetricReaggregateMetricWithRequired(mbc.Metrics.ReaggregateMetricWithRequired),
 		metricSystemCPUTime:                 newMetricSystemCPUTime(mbc.Metrics.SystemCPUTime),
+		metricSystemMemoryUsage:             newMetricSystemMemoryUsage(mbc.Metrics.SystemMemoryUsage),
 		resourceAttributeIncludeFilter:      make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:      make(map[string]filter.Filter),
 	}
@@ -1082,6 +1229,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricReaggregateMetric.emit(ils.Metrics())
 	mb.metricReaggregateMetricWithRequired.emit(ils.Metrics())
 	mb.metricSystemCPUTime.emit(ils.Metrics())
+	mb.metricSystemMemoryUsage.emit(ils.Metrics())
 
 	for _, op := range options {
 		op.apply(rm)
@@ -1154,8 +1302,13 @@ func (mb *MetricsBuilder) RecordReaggregateMetricWithRequiredDataPoint(ts pcommo
 }
 
 // RecordSystemCPUTimeDataPoint adds a data point to system.cpu.time metric.
-func (mb *MetricsBuilder) RecordSystemCPUTimeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSystemCPUTime.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordSystemCPUTimeDataPoint(ts pcommon.Timestamp, val int64, cpuAttributeValue string) {
+	mb.metricSystemCPUTime.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue)
+}
+
+// RecordSystemMemoryUsageDataPoint adds a data point to system.memory.usage metric.
+func (mb *MetricsBuilder) RecordSystemMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, stateAttributeValue AttributeState) {
+	mb.metricSystemMemoryUsage.recordDataPoint(mb.startTime, ts, val, stateAttributeValue.String())
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
