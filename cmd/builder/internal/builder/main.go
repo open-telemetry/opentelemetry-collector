@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"text/template"
 	"time"
@@ -115,11 +116,11 @@ func Compile(cfg *Config) error {
 	}
 
 	cfg.Logger.Info("Compiling")
-
 	ldflags := "-s -w" // we strip the symbols by default for smaller binaries
 	gcflags := ""
+	binaryName := outputBinaryName(cfg.Distribution.Name)
 
-	args := []string{"build", "-trimpath", "-o", cfg.Distribution.Name}
+	args := []string{"build", "-trimpath", "-o", binaryName}
 	if cfg.Distribution.DebugCompilation {
 		cfg.Logger.Info("Debug compilation is enabled, the debug symbols will be left on the resulting binary")
 		ldflags = cfg.LDFlags
@@ -146,9 +147,24 @@ func Compile(cfg *Config) error {
 	if _, err := runGoCommand(cfg, args...); err != nil {
 		return fmt.Errorf("%w: %s", errCompileFailed, err.Error())
 	}
-	cfg.Logger.Info("Compiled", zap.String("binary", fmt.Sprintf("%s/%s", cfg.Distribution.OutputPath, cfg.Distribution.Name)))
+	cfg.Logger.Info("Compiled", zap.String("binary", fmt.Sprintf("%s/%s", cfg.Distribution.OutputPath, binaryName)))
 
 	return nil
+}
+
+func outputBinaryName(name string) string {
+	goos := os.Getenv("GOOS")
+	if goos == "" {
+		goos = runtime.GOOS
+	}
+
+	if goos != "windows" {
+		return name
+	}
+	if strings.EqualFold(filepath.Ext(name), ".exe") {
+		return name
+	}
+	return name + ".exe"
 }
 
 // GetModules retrieves the go modules, updating go.mod and go.sum in the process
