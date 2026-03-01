@@ -522,7 +522,7 @@ func TestPartialSuccessUnsupportedContentType(t *testing.T) {
 				b, err := exportResponse.MarshalProto()
 				require.NoError(t, err)
 				err = handler(b, tt.contentType)
-				assert.NoError(t, err)
+				assert.ErrorContains(t, err, "unsupported partial success response content type")
 			})
 		}
 	}
