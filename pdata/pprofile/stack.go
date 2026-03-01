@@ -31,11 +31,14 @@ func (ms Stack) switchDictionary(src, dst ProfilesDictionary) error {
 		}
 
 		loc := src.LocationTable().At(int(v))
-		err := loc.switchDictionary(src, dst)
+		// Create a copy to avoid modifying the source LocationTable in-place
+		locCopy := NewLocation()
+		loc.CopyTo(locCopy)
+		err := locCopy.switchDictionary(src, dst)
 		if err != nil {
 			return fmt.Errorf("couldn't switch dictionary for location: %w", err)
 		}
-		idx, err := SetLocation(dst.LocationTable(), loc)
+		idx, err := SetLocation(dst.LocationTable(), locCopy)
 		if err != nil {
 			return fmt.Errorf("couldn't set location %d: %w", i, err)
 		}

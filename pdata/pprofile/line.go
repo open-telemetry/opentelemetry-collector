@@ -36,12 +36,15 @@ func (l Line) switchDictionary(src, dst ProfilesDictionary) error {
 		}
 
 		fn := src.FunctionTable().At(int(l.FunctionIndex()))
-		err := fn.switchDictionary(src, dst)
+		// Create a copy to avoid modifying the source FunctionTable in-place
+		fnCopy := NewFunction()
+		fn.CopyTo(fnCopy)
+		err := fnCopy.switchDictionary(src, dst)
 		if err != nil {
 			return fmt.Errorf("couldn't switch function dictionary: %w", err)
 		}
 
-		idx, err := SetFunction(dst.FunctionTable(), fn)
+		idx, err := SetFunction(dst.FunctionTable(), fnCopy)
 		if err != nil {
 			return fmt.Errorf("couldn't set function: %w", err)
 		}

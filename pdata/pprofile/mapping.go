@@ -35,11 +35,14 @@ func (ms Mapping) switchDictionary(src, dst ProfilesDictionary) error {
 		}
 
 		attr := src.AttributeTable().At(int(v))
-		err := attr.switchDictionary(src, dst)
+		// Create a copy to avoid modifying the source AttributeTable in-place
+		attrCopy := NewKeyValueAndUnit()
+		attr.CopyTo(attrCopy)
+		err := attrCopy.switchDictionary(src, dst)
 		if err != nil {
 			return fmt.Errorf("couldn't switch dictionary for attribute %d: %w", i, err)
 		}
-		idx, err := SetAttribute(dst.AttributeTable(), attr)
+		idx, err := SetAttribute(dst.AttributeTable(), attrCopy)
 		if err != nil {
 			return fmt.Errorf("couldn't set attribute %d: %w", i, err)
 		}
