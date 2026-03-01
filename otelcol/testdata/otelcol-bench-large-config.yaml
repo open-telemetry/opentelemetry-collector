@@ -1,0 +1,527 @@
+# Large config for benchmarking partial reload with actual configuration values.
+# Each component has many config fields to stress reflect.DeepEqual comparisons.
+receivers:
+  configurable:
+    endpoint: "localhost:4317"
+    timeout: 30
+    retry_count: 3
+    batch_size: 1000
+    enabled: true
+    compression: "gzip"
+    headers:
+      x-api-key: "key-0"
+      x-tenant-id: "tenant-0"
+    tags: ["prod", "us-east-1", "receiver-0"]
+    metadata:
+      name: "receiver-0"
+      version: "1.0.0"
+      environment: "production"
+      region: "us-east-1"
+    advanced:
+      buffer_size: 10000
+      flush_interval: 5000
+      max_connections: 100
+      keep_alive: true
+      protocol: "grpc"
+  configurable/r1:
+    endpoint: "localhost:4318"
+    timeout: 31
+    retry_count: 4
+    batch_size: 1001
+    enabled: true
+    compression: "zstd"
+    headers:
+      x-api-key: "key-1"
+      x-tenant-id: "tenant-1"
+    tags: ["prod", "us-east-1", "receiver-1"]
+    metadata:
+      name: "receiver-1"
+      version: "1.0.1"
+      environment: "production"
+      region: "us-east-1"
+    advanced:
+      buffer_size: 10001
+      flush_interval: 5001
+      max_connections: 101
+      keep_alive: true
+      protocol: "grpc"
+  configurable/r2:
+    endpoint: "localhost:4319"
+    timeout: 32
+    retry_count: 5
+    batch_size: 1002
+    enabled: true
+    compression: "gzip"
+    headers:
+      x-api-key: "key-2"
+      x-tenant-id: "tenant-2"
+    tags: ["prod", "us-east-1", "receiver-2"]
+    metadata:
+      name: "receiver-2"
+      version: "1.0.2"
+      environment: "production"
+      region: "us-east-1"
+    advanced:
+      buffer_size: 10002
+      flush_interval: 5002
+      max_connections: 102
+      keep_alive: true
+      protocol: "http"
+  configurable/r3:
+    endpoint: "localhost:4320"
+    timeout: 33
+    retry_count: 6
+    batch_size: 1003
+    enabled: true
+    compression: "none"
+    headers:
+      x-api-key: "key-3"
+      x-tenant-id: "tenant-3"
+    tags: ["prod", "us-west-2", "receiver-3"]
+    metadata:
+      name: "receiver-3"
+      version: "1.0.3"
+      environment: "production"
+      region: "us-west-2"
+    advanced:
+      buffer_size: 10003
+      flush_interval: 5003
+      max_connections: 103
+      keep_alive: false
+      protocol: "grpc"
+  configurable/r4:
+    endpoint: "localhost:4321"
+    timeout: 34
+    retry_count: 7
+    batch_size: 1004
+    enabled: true
+    compression: "gzip"
+    headers:
+      x-api-key: "key-4"
+      x-tenant-id: "tenant-4"
+    tags: ["prod", "us-west-2", "receiver-4"]
+    metadata:
+      name: "receiver-4"
+      version: "1.0.4"
+      environment: "production"
+      region: "us-west-2"
+    advanced:
+      buffer_size: 10004
+      flush_interval: 5004
+      max_connections: 104
+      keep_alive: true
+      protocol: "grpc"
+  configurable/r5:
+    endpoint: "localhost:4322"
+    timeout: 35
+    retry_count: 8
+    batch_size: 1005
+    enabled: true
+    compression: "zstd"
+    headers:
+      x-api-key: "key-5"
+      x-tenant-id: "tenant-5"
+    tags: ["staging", "eu-west-1", "receiver-5"]
+    metadata:
+      name: "receiver-5"
+      version: "1.0.5"
+      environment: "staging"
+      region: "eu-west-1"
+    advanced:
+      buffer_size: 10005
+      flush_interval: 5005
+      max_connections: 105
+      keep_alive: true
+      protocol: "http"
+  configurable/r6:
+    endpoint: "localhost:4323"
+    timeout: 36
+    retry_count: 9
+    batch_size: 1006
+    enabled: true
+    compression: "gzip"
+    headers:
+      x-api-key: "key-6"
+      x-tenant-id: "tenant-6"
+    tags: ["staging", "eu-west-1", "receiver-6"]
+    metadata:
+      name: "receiver-6"
+      version: "1.0.6"
+      environment: "staging"
+      region: "eu-west-1"
+    advanced:
+      buffer_size: 10006
+      flush_interval: 5006
+      max_connections: 106
+      keep_alive: true
+      protocol: "grpc"
+  configurable/r7:
+    endpoint: "localhost:4324"
+    timeout: 37
+    retry_count: 10
+    batch_size: 1007
+    enabled: true
+    compression: "none"
+    headers:
+      x-api-key: "key-7"
+      x-tenant-id: "tenant-7"
+    tags: ["staging", "eu-west-1", "receiver-7"]
+    metadata:
+      name: "receiver-7"
+      version: "1.0.7"
+      environment: "staging"
+      region: "eu-west-1"
+    advanced:
+      buffer_size: 10007
+      flush_interval: 5007
+      max_connections: 107
+      keep_alive: false
+      protocol: "grpc"
+  configurable/r8:
+    endpoint: "localhost:4325"
+    timeout: 38
+    retry_count: 11
+    batch_size: 1008
+    enabled: true
+    compression: "gzip"
+    headers:
+      x-api-key: "key-8"
+      x-tenant-id: "tenant-8"
+    tags: ["dev", "ap-south-1", "receiver-8"]
+    metadata:
+      name: "receiver-8"
+      version: "1.0.8"
+      environment: "development"
+      region: "ap-south-1"
+    advanced:
+      buffer_size: 10008
+      flush_interval: 5008
+      max_connections: 108
+      keep_alive: true
+      protocol: "http"
+  configurable/r9:
+    endpoint: "localhost:4326"
+    timeout: 39
+    retry_count: 12
+    batch_size: 1009
+    enabled: true
+    compression: "zstd"
+    headers:
+      x-api-key: "key-9"
+      x-tenant-id: "tenant-9"
+    tags: ["dev", "ap-south-1", "receiver-9"]
+    metadata:
+      name: "receiver-9"
+      version: "1.0.9"
+      environment: "development"
+      region: "ap-south-1"
+    advanced:
+      buffer_size: 10009
+      flush_interval: 5009
+      max_connections: 109
+      keep_alive: true
+      protocol: "grpc"
+  configurable/r10:
+    endpoint: "localhost:4327"
+    timeout: 40
+    retry_count: 13
+    batch_size: 1010
+    enabled: true
+    compression: "gzip"
+    headers:
+      x-api-key: "key-10"
+      x-tenant-id: "tenant-10"
+    tags: ["dev", "ap-south-1", "receiver-10"]
+    metadata:
+      name: "receiver-10"
+      version: "1.0.10"
+      environment: "development"
+      region: "ap-south-1"
+    advanced:
+      buffer_size: 10010
+      flush_interval: 5010
+      max_connections: 110
+      keep_alive: true
+      protocol: "grpc"
+
+processors:
+  configurable:
+    endpoint: "processor-0.local"
+    timeout: 100
+    retry_count: 2
+    batch_size: 5000
+    enabled: true
+    compression: "none"
+    headers:
+      x-processor-id: "proc-0"
+    tags: ["filter", "transform"]
+    metadata:
+      name: "processor-0"
+      version: "2.0.0"
+      environment: "production"
+      region: "us-east-1"
+    advanced:
+      buffer_size: 50000
+      flush_interval: 1000
+      max_connections: 50
+      keep_alive: true
+      protocol: "internal"
+  configurable/p1:
+    endpoint: "processor-1.local"
+    timeout: 101
+    retry_count: 3
+    batch_size: 5001
+    enabled: true
+    compression: "none"
+    headers:
+      x-processor-id: "proc-1"
+    tags: ["filter", "enrich"]
+    metadata:
+      name: "processor-1"
+      version: "2.0.1"
+      environment: "production"
+      region: "us-east-1"
+    advanced:
+      buffer_size: 50001
+      flush_interval: 1001
+      max_connections: 51
+      keep_alive: true
+      protocol: "internal"
+  configurable/p2:
+    endpoint: "processor-2.local"
+    timeout: 102
+    retry_count: 4
+    batch_size: 5002
+    enabled: true
+    compression: "none"
+    headers:
+      x-processor-id: "proc-2"
+    tags: ["sample", "aggregate"]
+    metadata:
+      name: "processor-2"
+      version: "2.0.2"
+      environment: "production"
+      region: "us-east-1"
+    advanced:
+      buffer_size: 50002
+      flush_interval: 1002
+      max_connections: 52
+      keep_alive: true
+      protocol: "internal"
+  configurable/p3:
+    endpoint: "processor-3.local"
+    timeout: 103
+    retry_count: 5
+    batch_size: 5003
+    enabled: true
+    compression: "none"
+    headers:
+      x-processor-id: "proc-3"
+    tags: ["batch", "retry"]
+    metadata:
+      name: "processor-3"
+      version: "2.0.3"
+      environment: "production"
+      region: "us-west-2"
+    advanced:
+      buffer_size: 50003
+      flush_interval: 1003
+      max_connections: 53
+      keep_alive: true
+      protocol: "internal"
+  configurable/p4:
+    endpoint: "processor-4.local"
+    timeout: 104
+    retry_count: 6
+    batch_size: 5004
+    enabled: true
+    compression: "none"
+    headers:
+      x-processor-id: "proc-4"
+    tags: ["memory", "limit"]
+    metadata:
+      name: "processor-4"
+      version: "2.0.4"
+      environment: "production"
+      region: "us-west-2"
+    advanced:
+      buffer_size: 50004
+      flush_interval: 1004
+      max_connections: 54
+      keep_alive: false
+      protocol: "internal"
+
+exporters:
+  configurable:
+    endpoint: "https://export-0.example.com:443"
+    timeout: 60
+    retry_count: 5
+    batch_size: 2000
+    enabled: true
+    compression: "gzip"
+    headers:
+      Authorization: "Bearer token-0"
+      x-exporter-id: "exp-0"
+    tags: ["primary", "us-east-1"]
+    metadata:
+      name: "exporter-0"
+      version: "3.0.0"
+      environment: "production"
+      region: "us-east-1"
+    advanced:
+      buffer_size: 20000
+      flush_interval: 10000
+      max_connections: 200
+      keep_alive: true
+      protocol: "https"
+  configurable/e1:
+    endpoint: "https://export-1.example.com:443"
+    timeout: 61
+    retry_count: 6
+    batch_size: 2001
+    enabled: true
+    compression: "zstd"
+    headers:
+      Authorization: "Bearer token-1"
+      x-exporter-id: "exp-1"
+    tags: ["secondary", "us-east-1"]
+    metadata:
+      name: "exporter-1"
+      version: "3.0.1"
+      environment: "production"
+      region: "us-east-1"
+    advanced:
+      buffer_size: 20001
+      flush_interval: 10001
+      max_connections: 201
+      keep_alive: true
+      protocol: "https"
+  configurable/e2:
+    endpoint: "https://export-2.example.com:443"
+    timeout: 62
+    retry_count: 7
+    batch_size: 2002
+    enabled: true
+    compression: "gzip"
+    headers:
+      Authorization: "Bearer token-2"
+      x-exporter-id: "exp-2"
+    tags: ["backup", "us-west-2"]
+    metadata:
+      name: "exporter-2"
+      version: "3.0.2"
+      environment: "production"
+      region: "us-west-2"
+    advanced:
+      buffer_size: 20002
+      flush_interval: 10002
+      max_connections: 202
+      keep_alive: true
+      protocol: "grpc"
+  configurable/e3:
+    endpoint: "https://export-3.example.com:443"
+    timeout: 63
+    retry_count: 8
+    batch_size: 2003
+    enabled: true
+    compression: "none"
+    headers:
+      Authorization: "Bearer token-3"
+      x-exporter-id: "exp-3"
+    tags: ["archive", "eu-west-1"]
+    metadata:
+      name: "exporter-3"
+      version: "3.0.3"
+      environment: "staging"
+      region: "eu-west-1"
+    advanced:
+      buffer_size: 20003
+      flush_interval: 10003
+      max_connections: 203
+      keep_alive: false
+      protocol: "https"
+  configurable/e4:
+    endpoint: "https://export-4.example.com:443"
+    timeout: 64
+    retry_count: 9
+    batch_size: 2004
+    enabled: true
+    compression: "gzip"
+    headers:
+      Authorization: "Bearer token-4"
+      x-exporter-id: "exp-4"
+    tags: ["debug", "ap-south-1"]
+    metadata:
+      name: "exporter-4"
+      version: "3.0.4"
+      environment: "development"
+      region: "ap-south-1"
+    advanced:
+      buffer_size: 20004
+      flush_interval: 10004
+      max_connections: 204
+      keep_alive: true
+      protocol: "https"
+
+extensions:
+  nop:
+
+connectors:
+  configurable/c1:
+    endpoint: "connector-1.internal"
+    timeout: 15
+    retry_count: 2
+    batch_size: 500
+    enabled: true
+    compression: "none"
+    headers:
+      x-connector-id: "conn-1"
+    tags: ["traces-to-metrics"]
+    metadata:
+      name: "connector-1"
+      version: "4.0.0"
+      environment: "production"
+      region: "us-east-1"
+    advanced:
+      buffer_size: 5000
+      flush_interval: 500
+      max_connections: 25
+      keep_alive: true
+      protocol: "internal"
+  configurable/c2:
+    endpoint: "connector-2.internal"
+    timeout: 16
+    retry_count: 3
+    batch_size: 501
+    enabled: true
+    compression: "none"
+    headers:
+      x-connector-id: "conn-2"
+    tags: ["traces-to-logs"]
+    metadata:
+      name: "connector-2"
+      version: "4.0.1"
+      environment: "production"
+      region: "us-west-2"
+    advanced:
+      buffer_size: 5001
+      flush_interval: 501
+      max_connections: 26
+      keep_alive: true
+      protocol: "internal"
+
+service:
+  extensions: [nop]
+  pipelines:
+    traces:
+      receivers: [configurable, configurable/r1, configurable/r2, configurable/r3, configurable/r4]
+      processors: [configurable, configurable/p1, configurable/p2, configurable/p3, configurable/p4]
+      exporters: [configurable, configurable/e1, configurable/e2, configurable/e3, configurable/e4, configurable/c1]
+    metrics:
+      receivers: [configurable/r5, configurable/r6, configurable/r7, configurable/r8, configurable/c1]
+      processors: [configurable, configurable/p1, configurable/p2]
+      exporters: [configurable, configurable/e1, configurable/e2, configurable/c2]
+    logs:
+      receivers: [configurable/r9, configurable/r10, configurable/c2]
+      processors: [configurable/p3, configurable/p4]
+      exporters: [configurable/e3, configurable/e4]

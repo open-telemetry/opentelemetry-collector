@@ -1,0 +1,33 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+extensions:
+  nop:
+  # Extra extension added to test full reload
+  nop/extra:
+
+connectors:
+  nop/con:
+
+service:
+  # Changed extensions list requires full reload
+  extensions: [nop, nop/extra]
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop, nop/con]
+    metrics:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]
+    logs:
+      receivers: [nop, nop/con]
+      processors: [nop]
+      exporters: [nop]
