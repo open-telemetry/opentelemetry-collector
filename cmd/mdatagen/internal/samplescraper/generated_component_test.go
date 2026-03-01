@@ -7,6 +7,8 @@ import (
 	"context"
 	"testing"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
@@ -92,4 +94,30 @@ func (mnh *mdatagenNopHost) GetExtensions() map[component.ID]component.Component
 
 func (mnh *mdatagenNopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
 	return nil
+}
+
+func TestExampleConfigs(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      string
+		description string
+	}{
+		{
+			name:        "Default Configuration",
+			description: "Basic configuration for the sample scraper with default metrics enabled.",
+			config: `sample:
+  collection_interval: 30s
+`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test that the example config is valid YAML
+			var config map[string]any
+			err := yaml.Unmarshal([]byte(tt.config), &config)
+			require.NoError(t, err, "Example config '%s' should be valid YAML: %s", tt.name, tt.description)
+			require.NotNil(t, config, "Example config '%s' should produce a non-nil config", tt.name)
+		})
+	}
 }

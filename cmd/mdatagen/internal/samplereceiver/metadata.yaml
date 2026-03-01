@@ -26,8 +26,8 @@ status:
     deprecated: [profiles]
   deprecation:
     profiles:
-      migration: "no migration needed"
-      date: "2025-02-05"
+      migration: 'no migration needed'
+      date: '2025-02-05'
   distributions: []
   unsupported_platforms: [freebsd, illumos]
   codeowners:
@@ -156,7 +156,7 @@ events:
 
   default.event.to_be_removed:
     enabled: true
-    description: "[DEPRECATED] Example to-be-removed event enabled by default."
+    description: '[DEPRECATED] Example to-be-removed event enabled by default.'
     extended_documentation: The event will be removed soon.
     warnings:
       if_enabled: This event is deprecated and will be removed soon.
@@ -165,9 +165,10 @@ events:
 
   default.event.to_be_renamed:
     enabled: false
-    description: "[DEPRECATED] Example event disabled by default."
+    description: '[DEPRECATED] Example event disabled by default.'
     extended_documentation: The event will be renamed soon.
-    attributes: [string_attr, boolean_attr, boolean_attr2, conditional_string_attr]
+    attributes:
+      [string_attr, boolean_attr, boolean_attr2, conditional_string_attr]
     warnings:
       if_configured: This event is deprecated and will be renamed soon.
 
@@ -201,7 +202,7 @@ metrics:
 
   default.metric.to_be_removed:
     enabled: true
-    description: "[DEPRECATED] Non-monotonic delta sum double metric enabled by default."
+    description: '[DEPRECATED] Non-monotonic delta sum double metric enabled by default.'
     extended_documentation: The metric will be removed soon.
     stability: deprecated
     deprecated:
@@ -238,7 +239,8 @@ metrics:
     unit: "1"
     gauge:
       value_type: double
-    attributes: [string_attr, boolean_attr, boolean_attr2, conditional_string_attr]
+    attributes:
+      [string_attr, boolean_attr, boolean_attr2, conditional_string_attr]
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
 
@@ -296,7 +298,7 @@ telemetry:
         since: "1.5.0"
         note: "This metric will be removed in favor of batch_send_trigger_size"
       description: Number of times the batch was sent due to a size trigger
-      unit: "{times}"
+      unit: '{times}'
       sum:
         value_type: int
         monotonic: true
@@ -321,7 +323,7 @@ telemetry:
       stability: alpha
       description: This metric is optional and therefore not initialized in NewTelemetryBuilder.
       extended_documentation: For example this metric only exists if feature A is enabled.
-      unit: "{items}"
+      unit: '{items}'
       optional: true
       gauge:
         async: true
