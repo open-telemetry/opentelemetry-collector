@@ -4,6 +4,7 @@
 package extensionmiddlewaretest
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -22,7 +23,7 @@ func TestErrClient(t *testing.T) {
 
 	grpcClient, ok := client.(extensionmiddleware.GRPCClient)
 	require.True(t, ok)
-	_, err = grpcClient.GetGRPCClientOptions()
+	_, err = grpcClient.GetGRPCClientOptions(context.Background())
 	require.Error(t, err)
 }
 
@@ -36,6 +37,6 @@ func TestErrServer(t *testing.T) {
 
 	grpcServer, ok := server.(extensionmiddleware.GRPCServer)
 	require.True(t, ok)
-	_, err = grpcServer.GetGRPCServerOptions()
+	_, err = grpcServer.GetGRPCServerOptions(context.Background())
 	require.Error(t, err)
 }
