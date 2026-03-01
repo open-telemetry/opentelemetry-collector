@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 	"go.opentelemetry.io/collector/component"
 )
 
@@ -76,8 +77,10 @@ func TestRunContents(t *testing.T) {
 		wantGoleakSetup                 bool
 		wantGoleakTeardown              bool
 		wantFeatureGatesGenerated       bool
+		wantConfigSchemaGenerated       bool
 		wantErr                         bool
 		wantOrderErr                    bool
+		wantRunErr                      bool
 		wantAttributes                  []string
 	}{
 		{
@@ -252,6 +255,18 @@ func TestRunContents(t *testing.T) {
 			wantEventsGenerated:        true,
 			wantLogsGenerated:          true,
 		},
+		{
+			yml:                        "with_config.yaml",
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantLogsGenerated:          true,
+			wantComponentTestGenerated: true,
+			wantConfigSchemaGenerated:  true,
+		},
+		{
+			yml:        "with_invalid_config_ref.yaml",
+			wantRunErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.yml, func(t *testing.T) {
@@ -284,6 +299,11 @@ foo
 			if tt.wantOrderErr {
 				require.Error(t, err)
 				require.Contains(t, err.Error(), "metadata.yaml ordering check failed")
+				return
+			}
+			if tt.wantRunErr {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "failed to generate config files")
 				return
 			}
 			require.NoError(t, err)
@@ -409,8 +429,96 @@ foo
 			} else {
 				require.NotContains(t, string(contents), "teardownFunc")
 			}
+
+			if tt.wantConfigSchemaGenerated {
+				require.FileExists(t, filepath.Join(tmpdir, "config.schema.json"))
+			} else {
+				require.NoFileExists(t, filepath.Join(tmpdir, "config.schema.json"))
+			}
 		})
 	}
+}
+
+func TestGenerateConfigFiles(t *testing.T) {
+	tests := []struct {
+		name    string
+		md      Metadata
+		wantErr bool
+		wantGen bool
+	}{
+		{
+			name: "nil config skips generation",
+			md: Metadata{
+				Type: "test",
+				Status: &Status{
+					Class: "receiver",
+				},
+				Config: nil,
+			},
+			wantGen: false,
+		},
+		{
+			name: "valid config generates schema file",
+			md: Metadata{
+				Type:        "test",
+				PackageName: "shortname",
+				Status: &Status{
+					Class: "receiver",
+				},
+				Config: &cfggen.ConfigMetadata{
+					Type: "object",
+				},
+			},
+			wantGen: true,
+		},
+		{
+			name: "invalid ref in config causes resolve error",
+			md: Metadata{
+				Type:        "test",
+				PackageName: "shortname",
+				Status: &Status{
+					Class: "receiver",
+				},
+				// A local ref without a definition name fails Validate() inside ResolveSchema
+				Config: &cfggen.ConfigMetadata{
+					Ref: "/config/configauth",
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpdir := t.TempDir()
+			err := generateConfigFiles(tt.md, tmpdir)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			if tt.wantGen {
+				require.FileExists(t, filepath.Join(tmpdir, "config.schema.json"))
+			} else {
+				require.NoFileExists(t, filepath.Join(tmpdir, "config.schema.json"))
+			}
+		})
+	}
+}
+
+func TestGenerateConfigFiles_WriteError(t *testing.T) {
+	md := Metadata{
+		Type:        "test",
+		PackageName: "shortname",
+		Status: &Status{
+			Class: "receiver",
+		},
+		Config: &cfggen.ConfigMetadata{
+			Type: "object",
+		},
+	}
+	err := generateConfigFiles(md, "/nonexistent/path/that/does/not/exist")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to write config schema")
 }
 
 func TestRun(t *testing.T) {
