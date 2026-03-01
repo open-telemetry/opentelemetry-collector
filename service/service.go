@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/service/internal/moduleinfo"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/internal/status"
+	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -105,6 +106,7 @@ type Service struct {
 	loggerShutdownFunc component.ShutdownFunc
 	meterProvider      telemetry.MeterProvider
 	tracerProvider     telemetry.TracerProvider
+	graphSettings      graph.Settings
 }
 
 // New creates a new Service, its telemetry, and Components.
@@ -265,6 +267,20 @@ func (srv *Service) Start(ctx context.Context) error {
 	return nil
 }
 
+// UpdateReceivers performs a partial reload of receiver components.
+// Only receivers that have been added, removed, or whose configuration or
+// pipeline membership changed are restarted. All other components remain
+// running without interruption.
+func (srv *Service) UpdateReceivers(ctx context.Context,
+	oldReceiverConfigs, newReceiverConfigs map[component.ID]component.Config,
+	receiverFactories map[component.Type]receiver.Factory,
+	pipelineConfigs pipelines.Config,
+) error {
+	srv.telemetrySettings.Logger.Info("Performing partial receiver reload")
+	srv.graphSettings.PipelineConfigs = pipelineConfigs
+	return srv.host.Pipelines.UpdateReceivers(ctx, srv.graphSettings, oldReceiverConfigs, newReceiverConfigs, receiverFactories, srv.host)
+}
+
 // Shutdown the service. Shutdown will do the following steps in order:
 // 1. Notify extensions that the pipeline is shutting down.
 // 2. Shutdown all pipelines.
@@ -322,8 +338,7 @@ func (srv *Service) initExtensions(ctx context.Context, cfg extensions.Config) e
 
 // Creates the pipeline graph.
 func (srv *Service) initGraph(ctx context.Context, cfg Config) error {
-	var err error
-	if srv.host.Pipelines, err = graph.Build(ctx, graph.Settings{
+	srv.graphSettings = graph.Settings{
 		Telemetry:        srv.telemetrySettings,
 		BuildInfo:        srv.buildInfo,
 		ReceiverBuilder:  srv.host.Receivers,
@@ -332,7 +347,9 @@ func (srv *Service) initGraph(ctx context.Context, cfg Config) error {
 		ConnectorBuilder: srv.host.Connectors,
 		PipelineConfigs:  cfg.Pipelines,
 		ReportStatus:     srv.host.Reporter.ReportStatus,
-	}); err != nil {
+	}
+	var err error
+	if srv.host.Pipelines, err = graph.Build(ctx, srv.graphSettings); err != nil {
 		return fmt.Errorf("failed to build pipelines: %w", err)
 	}
 	return nil
