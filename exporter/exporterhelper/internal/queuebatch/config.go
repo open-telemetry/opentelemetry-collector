@@ -38,6 +38,10 @@ type Config struct {
 	// See https://github.com/open-telemetry/opentelemetry-collector/issues/13822
 	StorageID *component.ID `mapstructure:"storage"`
 
+	// RequestMiddlewares defines a list of request middleware extensions (e.g. adaptive concurrency)
+	// that intercept export requests after they are pulled from the queue.
+	RequestMiddlewares []component.ID `mapstructure:"request_middlewares"`
+
 	// NumConsumers is the maximum number of concurrent consumers from the queue.
 	// This applies across all different optional configurations from above (e.g. wait_for_result, block_on_overflow, storage, etc.).
 	NumConsumers int `mapstructure:"num_consumers"`
@@ -62,7 +66,7 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 	return nil
 }
 
-// Validate checks if the Config is valid
+// Validate checks if the Config is valid.
 func (cfg *Config) Validate() error {
 	if cfg.NumConsumers <= 0 {
 		return errors.New("`num_consumers` must be positive")

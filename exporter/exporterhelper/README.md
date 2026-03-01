@@ -21,7 +21,7 @@ The following configuration options can be modified:
 - `sending_queue`
   - `enabled` (default = true)
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
-  - `wait_for_result` (default = false): determines if incoming requests are blocked until the request is processed or not.
+  - `wait_for_result` (default = false): Determines if incoming requests are blocked until the request is processed or not.
   - `block_on_overflow` (default = false): If true, blocks the request until the queue has space otherwise rejects the data immediately; ignored if `enabled` is `false`
   - `sizer` (default = requests): How the queue and batching is measured. Available options: 
     - `requests`: number of incoming batches of metrics, logs, traces (the most performant option);
