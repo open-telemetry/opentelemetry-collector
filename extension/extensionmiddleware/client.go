@@ -4,6 +4,7 @@
 package extensionmiddleware // import "go.opentelemetry.io/collector/extension/extensionmiddleware"
 
 import (
+	"context"
 	"net/http"
 
 	"google.golang.org/grpc"
@@ -18,7 +19,7 @@ type HTTPClient interface {
 // GRPCClient is an interface for gRPC client middleware extensions.
 type GRPCClient interface {
 	// GetGRPCClientOptions returns the gRPC dial options to use for client connections.
-	GetGRPCClientOptions() ([]grpc.DialOption, error)
+	GetGRPCClientOptions(context.Context) ([]grpc.DialOption, error)
 }
 
 var _ HTTPClient = (*GetHTTPRoundTripperFunc)(nil)
@@ -36,11 +37,11 @@ func (f GetHTTPRoundTripperFunc) GetHTTPRoundTripper(base http.RoundTripper) (ht
 var _ GRPCClient = (*GetGRPCClientOptionsFunc)(nil)
 
 // GetGRPCClientOptionsFunc is a function that implements GRPCClient.
-type GetGRPCClientOptionsFunc func() ([]grpc.DialOption, error)
+type GetGRPCClientOptionsFunc func(context.Context) ([]grpc.DialOption, error)
 
-func (f GetGRPCClientOptionsFunc) GetGRPCClientOptions() ([]grpc.DialOption, error) {
+func (f GetGRPCClientOptionsFunc) GetGRPCClientOptions(ctx context.Context) ([]grpc.DialOption, error) {
 	if f == nil {
 		return nil, nil
 	}
-	return f()
+	return f(ctx)
 }
