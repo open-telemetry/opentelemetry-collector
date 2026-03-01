@@ -58,6 +58,75 @@ func TestCollectorStartAsGoRoutine(t *testing.T) {
 	assert.Equal(t, StateClosed, col.GetState())
 }
 
+func TestCollectorShutdownBlocksUntilRunComplete(t *testing.T) {
+	set := CollectorSettings{
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              nopFactories,
+		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
+	}
+	col, err := NewCollector(set)
+	require.NoError(t, err)
+
+	// Start the collector in a goroutine.
+	startCollector(context.Background(), t, col)
+
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	// Shutdown should block until Run has completed all cleanup.
+	// After Shutdown returns, the state must be StateClosed.
+	col.Shutdown()
+	assert.Equal(t, StateClosed, col.GetState())
+}
+
+func TestCollectorShutdownBeforeRun(t *testing.T) {
+	set := CollectorSettings{
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              nopFactories,
+		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
+	}
+	col, err := NewCollector(set)
+	require.NoError(t, err)
+
+	// Calling Shutdown before Run should return immediately and not block.
+	done := make(chan struct{})
+	go func() {
+		col.Shutdown()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		// Shutdown returned promptly — correct behavior.
+	case <-time.After(2 * time.Second):
+		t.Fatal("Shutdown blocked when called before Run")
+	}
+}
+
+func TestCollectorShutdownCalledTwiceBlocks(t *testing.T) {
+	set := CollectorSettings{
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              nopFactories,
+		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
+	}
+	col, err := NewCollector(set)
+	require.NoError(t, err)
+
+	startCollector(context.Background(), t, col)
+
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	// Both Shutdown calls should block until Run finishes and then return.
+	col.Shutdown()
+	assert.Equal(t, StateClosed, col.GetState())
+
+	col.Shutdown()
+	assert.Equal(t, StateClosed, col.GetState())
+}
+
 func TestCollectorCancelContext(t *testing.T) {
 	set := CollectorSettings{
 		BuildInfo:              component.NewDefaultBuildInfo(),
@@ -145,7 +214,10 @@ func TestCollectorStateAfterConfigChange(t *testing.T) {
 	watcher(&confmap.ChangeEvent{})
 	unblock = <-shutdownRequests
 	assert.Equal(t, StateClosing, col.GetState())
-	col.Shutdown()
+	// Shutdown now blocks until Run completes, so call it asynchronously
+	// to avoid deadlock: the service shutdown is blocked on unblock which
+	// we close below.
+	go col.Shutdown()
 	close(unblock)
 
 	// After the config reload, the final shutdown should occur.
