@@ -181,7 +181,7 @@ func TestLogsScrapeController(t *testing.T) {
 				}
 
 				spans := tel.SpanRecorder.Ended()
-				assertReceiverSpan(t, spans)
+				assertLogsReceiverSpan(t, spans)
 				testhelper.AssertScraperSpan(t, test.scrapeErr, spans, "scraper/scraper/ScrapeLogs")
 				assertLogsScraperObsMetrics(t, tel, receiverID, component.MustNewID("scraper"), test.scrapeErr, sink)
 			}
@@ -292,7 +292,7 @@ func TestMetricsScrapeController(t *testing.T) {
 				}
 
 				spans := tel.SpanRecorder.Ended()
-				assertReceiverSpan(t, spans)
+				assertMetricsReceiverSpan(t, spans)
 				testhelper.AssertScraperSpan(t, test.scrapeErr, spans, "scraper/scraper/ScrapeMetrics")
 				assertMetricsScraperObsMetrics(t, tel, receiverID, component.MustNewID("scraper"), test.scrapeErr, sink)
 			}
@@ -378,10 +378,21 @@ func getExpectedShutdownErr(test scraperTestCase) error {
 	return errs
 }
 
-func assertReceiverSpan(t *testing.T, spans []sdktrace.ReadOnlySpan) {
+func assertMetricsReceiverSpan(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 	receiverSpan := false
 	for _, span := range spans {
 		if span.Name() == "receiver/receiver/MetricsReceived" {
+			receiverSpan = true
+			break
+		}
+	}
+	assert.True(t, receiverSpan)
+}
+
+func assertLogsReceiverSpan(t *testing.T, spans []sdktrace.ReadOnlySpan) {
+	receiverSpan := false
+	for _, span := range spans {
+		if span.Name() == "receiver/receiver/LogsReceived" {
 			receiverSpan = true
 			break
 		}
