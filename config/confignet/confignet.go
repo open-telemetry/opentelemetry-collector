@@ -84,6 +84,13 @@ type AddrConfig struct {
 
 	// DialerConfig contains options for connecting to an address.
 	DialerConfig DialerConfig `mapstructure:"dialer,omitempty"`
+
+	// ReusePort enables the SO_REUSEPORT socket option on the listener.
+	// This allows multiple server instances to bind to the same address/port.
+	// This is useful for horizontal scaling and zero-downtime restarts.
+	// Note: This option is only supported on Linux and Darwin-based operating systems.
+	ReusePort bool `mapstructure:"reuse_port,omitempty"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -103,11 +110,19 @@ func (na *AddrConfig) Dial(ctx context.Context) (net.Conn, error) {
 
 // Listen equivalent with net.ListenConfig's Listen for this address.
 func (na *AddrConfig) Listen(ctx context.Context) (net.Listener, error) {
-	lc := net.ListenConfig{}
+	lc, err := na.getListenConfig()
+	if err != nil {
+		return nil, err
+	}
 	return lc.Listen(ctx, string(na.Transport), na.Endpoint)
 }
 
 func (na *AddrConfig) Validate() error {
+	_, err := na.getListenConfig()
+	if err != nil {
+		return err
+	}
+
 	switch na.Transport {
 	case TransportTypeTCP,
 		TransportTypeTCP4,
