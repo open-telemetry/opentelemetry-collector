@@ -456,12 +456,39 @@ func TestMergeSplitMetricsBasedOnByteSize(t *testing.T) {
 			}())},
 			expectSplitError: true,
 		},
+		{
+			name:    "unsplittable_then_splittable_metric",
+			szt:     request.SizerTypeBytes,
+			maxSize: 1000,
+			mr1: newMetricsRequest(func() pmetric.Metrics {
+				md := testdata.GenerateMetrics(2)
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetDescription(string(make([]byte, 1001)))
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetDescription(string(make([]byte, 10)))
+				return md
+			}()),
+			mr2: nil,
+			expected: []request.Request{newMetricsRequest(func() pmetric.Metrics {
+				md := testdata.GenerateMetrics(2)
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetDescription(string(make([]byte, 10)))
+				// Remove the first metric (the oversized one) to get the expected output.
+				first := true
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(_ pmetric.Metric) bool {
+					if first {
+						first = false
+						return true
+					}
+					return false
+				})
+				return md
+			}())},
+			expectSplitError: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.mr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.mr2)
 			if tt.expectSplitError {
-				require.ErrorContains(t, err, "one datapoint size is greater than max size, dropping items:")
+				require.ErrorContains(t, err, "data points exceeded max size, the data points were dropped")
 			} else {
 				require.NoError(t, err)
 			}
