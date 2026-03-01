@@ -90,19 +90,19 @@ type metricInfo struct {
 
 {{ if getMetricConditionalAttributes .Attributes }}
 type MetricAttributeOption interface {
-	apply(pmetric.NumberDataPoint)
+	apply(pcommon.Map)
 }
 
-type metricAttributeOptionFunc func(pmetric.NumberDataPoint)
+type metricAttributeOptionFunc func(pcommon.Map)
 
-func (maof metricAttributeOptionFunc) apply(dp pmetric.NumberDataPoint) {
-	maof(dp)
+func (maof metricAttributeOptionFunc) apply(attrs pcommon.Map) {
+	maof(attrs)
 }
 
 {{ range getMetricConditionalAttributes .Attributes }}
 func With{{ .Render }}MetricAttribute({{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}) MetricAttributeOption {
-	return metricAttributeOptionFunc(func(dp pmetric.NumberDataPoint) {
-		{{- template "putAttribute" . }}
+	return metricAttributeOptionFunc(func(attrs pcommon.Map) {
+		{{- template "putAttributeMap" . }}
 	})
 }
 {{ end }}
@@ -113,7 +113,7 @@ type metric{{ $name.Render }} struct {
 	data                     pmetric.Metric // data buffer for generated metric.
 	config                   MetricConfig   // metric config provided by user.
 	capacity                 int            // max observed number of data points added to the metric.
-  {{- if $reag }}
+  {{- if and $reag (ne $metric.Data.Type "Histogram") }}
   aggDataPoints            []{{ $metric.Data.MetricValueType.BasicType }} // slice containing number of aggregated datapoints at each index 
   {{- end }}
 }
@@ -133,13 +133,13 @@ func (m *metric{{ $name.Render }}) init() {
 	{{- if $metric.Attributes }}
 	m.data.{{ $metric.Data.Type }}().DataPoints().EnsureCapacity(m.capacity)
 	{{- end }}
-	{{- if $reag }}
+	{{- if and $reag (ne $metric.Data.Type "Histogram") }}
 	m.aggDataPoints = m.aggDataPoints[:0]
 	{{- end }}
 }
 
 {{/* This function changed in a major way, so instead of gating individual lines of code the original is being included */}}
-{{- if $reag }}
+{{- if and $reag (ne $metric.Data.Type "Histogram") }}
 func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val {{ $metric.Data.MetricValueType.BasicType }}
 {{- range $metric.Attributes -}}{{- if not (attributeInfo .).IsConditional -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}{{ end }}{{- if $metric.HasConditionalAttributes $.Attributes -}}, options ...MetricAttributeOption{{- end -}}) {
 	if !m.config.Enabled {
@@ -157,7 +157,7 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 
 	{{- if $metric.HasConditionalAttributes $.Attributes }}
     for _, op := range options {
-        op.apply(dp)
+        op.apply(dp.Attributes())
     }
   {{- end }}
 
@@ -198,7 +198,27 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	dp := m.data.{{ $metric.Data.Type }}().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	{{- if eq $metric.Data.Type "Histogram" }}
+	dp.SetCount(1)
+	dp.SetSum(float64(val))
+	dp.SetMin(float64(val))
+	dp.SetMax(float64(val))
+	{{- if $metric.Histogram.Boundaries }}
+	dp.ExplicitBounds().FromRaw([]float64{ {{- range $i, $b := $metric.Histogram.Boundaries }}{{ if $i }}, {{ end }}{{ $b }}{{ end -}} })
+	bucketCounts := make([]uint64, {{ len $metric.Histogram.Boundaries }} + 1)
+	idx := len(bucketCounts) - 1
+	for i, b := range dp.ExplicitBounds().AsRaw() {
+		if float64(val) <= b {
+			idx = i
+			break
+		}
+	}
+	bucketCounts[idx]++
+	dp.BucketCounts().FromRaw(bucketCounts)
+	{{- end }}
+	{{- else }}
 	dp.Set{{ $metric.Data.MetricValueType }}Value(val)
+	{{- end }}
 	{{- range $metric.Attributes }}
     {{- if not (attributeInfo .).IsConditional -}}
 	{{- template "putAttribute" . -}}
@@ -207,7 +227,7 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 
 	{{- if $metric.HasConditionalAttributes $.Attributes }}
     for _, op := range options {
-        op.apply(dp)
+        op.apply(dp.Attributes())
     }
     {{- end }}
 }
@@ -222,7 +242,7 @@ func (m *metric{{ $name.Render }}) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metric{{ $name.Render }}) emit(metrics pmetric.MetricSlice) {
-  {{- if $reag }}
+  {{- if and $reag (ne $metric.Data.Type "Histogram") }}
   if m.config.Enabled && m.data.{{ $metric.Data.Type }}().DataPoints().Len() > 0 {
     if m.config.AggregationStrategy == AggregationStrategyAvg {
       for i, aggCount := range m.aggDataPoints {
@@ -387,17 +407,24 @@ func WithResource(res pcommon.Resource) ResourceMetricsOption {
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 	return resourceMetricsOptionFunc(func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
 			switch metrics.At(i).Type() {
 			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
+				dps := metrics.At(i).Gauge().DataPoints()
+				for j := 0; j < dps.Len(); j++ {
+					dps.At(j).SetStartTimestamp(start)
+				}
 			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
+				dps := metrics.At(i).Sum().DataPoints()
+				for j := 0; j < dps.Len(); j++ {
+					dps.At(j).SetStartTimestamp(start)
+				}
+			case pmetric.MetricTypeHistogram:
+				dps := metrics.At(i).Histogram().DataPoints()
+				for j := 0; j < dps.Len(); j++ {
+					dps.At(j).SetStartTimestamp(start)
+				}
 			}
 		}
 	})
