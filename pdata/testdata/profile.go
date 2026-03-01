@@ -24,10 +24,10 @@ func GenerateProfiles(profilesCount int) pprofile.Profiles {
 
 	attr := dic.AttributeTable().AppendEmpty()
 	attr.SetKeyStrindex(1)
-	attr.Value().SetStr("value")
+	attr.Value().SetStr("value-1")
 	attr2 := dic.AttributeTable().AppendEmpty()
-	attr.SetKeyStrindex(1)
-	attr2.Value().SetStr("value")
+	attr2.SetKeyStrindex(1)
+	attr2.Value().SetStr("value-2")
 
 	ss.EnsureCapacity(profilesCount)
 	for i := range profilesCount {

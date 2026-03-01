@@ -52,7 +52,7 @@ Profile #0
     Sample #0
         Values: [4]
         Attributes:
-             -> key: value
+             -> key: value-1
 Profile #1
     Profile ID     : 0202030405060708090a0b0c0d0e0f10
     Start time     : 2020-02-11 20:26:12.000000321 +0000 UTC
@@ -61,4 +61,4 @@ Profile #1
     Sample #0
         Values: [9]
         Attributes:
-             -> key: value
+             -> key: value-1
