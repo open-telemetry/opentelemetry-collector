@@ -4,6 +4,8 @@
 package normal
 
 import (
+	"fmt"
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -147,10 +149,15 @@ http.server.request.duration{http.response.status_code=200,http.request.method=G
 				dataPoint.Positive().BucketCounts().FromRaw([]uint64{40, 50, 60})
 				return metrics
 			}(),
-			expected: `ResourceMetrics #0
-ScopeMetrics #0
-http.server.request.duration{http.response.status_code=200,http.request.method=GET} count=1340 sum=99.573 min=0.017 max=8.13 le-0.9170040432046712=20 le-0.8408964152537146=10 zero=3 le1.189207115002721=40 le1.2968395546510096=50 le1.414213562373095=60
-`,
+			expected: func() string {
+				f := math.Ldexp(math.Ln2, -3)
+				return fmt.Sprintf("ResourceMetrics #0\nScopeMetrics #0\n"+
+					"http.server.request.duration{http.response.status_code=200,http.request.method=GET}"+
+					" count=1340 sum=99.573 min=0.017 max=8.13"+
+					" le%v=20 le%v=10 zero=3 le%v=40 le%v=50 le%v=60\n",
+					-math.Exp(-1*f), -math.Exp(-2*f),
+					math.Exp(2*f), math.Exp(3*f), math.Exp(4*f))
+			}(),
 		},
 		{
 			name: "exponential histogram with positive buckets only",
@@ -165,10 +172,12 @@ http.server.request.duration{http.response.status_code=200,http.request.method=G
 				dataPoint.Positive().BucketCounts().FromRaw([]uint64{1, 1})
 				return metrics
 			}(),
-			expected: `ResourceMetrics #0
-ScopeMetrics #0
-latency{} count=2 le2=1 le2.82842712474619=1
-`,
+			expected: func() string {
+				f := math.Ldexp(math.Ln2, -1)
+				return fmt.Sprintf("ResourceMetrics #0\nScopeMetrics #0\n"+
+					"latency{} count=2 le%v=1 le%v=1\n",
+					math.Exp(2*f), math.Exp(3*f))
+			}(),
 		},
 		{
 			name: "summary",
