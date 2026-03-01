@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"go/format"
 	"io/fs"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -305,8 +306,9 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 					}
 					return false
 				},
-				"stringsJoin":  strings.Join,
-				"stringsSplit": strings.Split,
+				"urlEncodeLabel": url.PathEscape,
+				"stringsJoin":    strings.Join,
+				"stringsSplit":   strings.Split,
 				"userLinks": func(elems []string) []string {
 					result := make([]string, len(elems))
 					for i, elem := range elems {

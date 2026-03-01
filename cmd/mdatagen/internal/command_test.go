@@ -677,6 +677,7 @@ Some info about a component
 					Codeowners:     tt.codeowners,
 					Deprecation:    tt.deprecation,
 				},
+				Label: tt.componentClass + "/foo",
 			}
 			tmpdir := t.TempDir()
 
