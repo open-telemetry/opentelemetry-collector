@@ -1055,6 +1055,26 @@ subdir/component subdir/component`
 	})
 }
 
+func TestGetComponentLabelFromRepo_ReturnsEmpty_WhenLabelsPathIsNotAFile(t *testing.T) {
+	repoRoot := t.TempDir()
+
+	// Make findRepoRoot succeed by creating ".github/component_labels.txt" path,
+	// but make it a DIRECTORY so os.ReadFile fails inside loadComponentLabels.
+	githubDir := filepath.Join(repoRoot, ".github")
+	require.NoError(t, os.MkdirAll(githubDir, 0o750))
+
+	labelsPath := filepath.Join(githubDir, "component_labels.txt")
+	require.NoError(t, os.MkdirAll(labelsPath, 0o750)) // <-- directory, not file
+
+	// Create component directory and a "metadata.yaml" path (file doesn't need to exist)
+	compDir := filepath.Join(repoRoot, "receiver", "filelog")
+	require.NoError(t, os.MkdirAll(compDir, 0o750))
+	mdPath := filepath.Join(compDir, "metadata.yaml")
+
+	got := getComponentLabelFromRepo(mdPath)
+	require.Empty(t, got)
+}
+
 func strPtr(s string) *string {
 	return &s
 }
