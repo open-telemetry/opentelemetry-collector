@@ -193,7 +193,7 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 
 	resp, err := e.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to make an HTTP request: %w", err)
+		return fmt.Errorf("failed to make an HTTP request to %s: %w", req.URL, err)
 	}
 
 	defer func() {
