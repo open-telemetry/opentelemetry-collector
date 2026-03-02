@@ -70,6 +70,8 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 		}
 	}
 
+	be.applyQueuePayloadCodec()
+
 	// Consumer Sender is always initialized.
 	be.firstSender = sender.NewSender(pusher)
 
@@ -267,6 +269,7 @@ func WithQueueBatchSettings(set queuebatch.Settings[request.Request]) Option {
 
 // WithQueueBatchPayloadCodec wraps queue payload marshaling/unmarshaling.
 // Encode is applied after Marshal on enqueue, Decode before Unmarshal on dequeue.
+// The codec is applied only when queue encoding is configured.
 func WithQueueBatchPayloadCodec(codec queuePayloadCodec) Option {
 	return func(o *BaseExporter) error {
 		o.queuePayloadCodec = codec
@@ -294,4 +297,20 @@ func (e payloadCodecEncoding) Unmarshal(payload []byte) (context.Context, reques
 		return context.Background(), req, err
 	}
 	return e.encoding.Unmarshal(decoded)
+}
+
+func (be *BaseExporter) applyQueuePayloadCodec() {
+	if be.queuePayloadCodec == nil || be.queueBatchSettings.Encoding == nil {
+		return
+	}
+
+	baseEncoding := be.queueBatchSettings.Encoding
+	if wrapped, ok := baseEncoding.(payloadCodecEncoding); ok {
+		baseEncoding = wrapped.encoding
+	}
+
+	be.queueBatchSettings.Encoding = payloadCodecEncoding{
+		encoding: baseEncoding,
+		codec:    be.queuePayloadCodec,
+	}
 }
