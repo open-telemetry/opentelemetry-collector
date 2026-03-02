@@ -69,6 +69,8 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 		}
 	}
 
+	be.applyQueuePayloadCodec()
+
 	// Consumer Sender is always initialized.
 	be.firstSender = sender.NewSender(pusher)
 
@@ -217,12 +219,6 @@ func WithQueueBatch(cfg queuebatch.Config, set queuebatch.Settings[request.Reque
 			o.ExportFailureMessage += " Try enabling sending_queue to survive temporary failures."
 			return nil
 		}
-		if o.queuePayloadCodec != nil && set.Encoding != nil {
-			set.Encoding = payloadCodecEncoding{
-				encoding: set.Encoding,
-				codec:    o.queuePayloadCodec,
-			}
-		}
 		if cfg.StorageID != nil && set.Encoding == nil {
 			return errors.New("`Settings.Encoding` must not be nil when persistent queue is enabled")
 		}
@@ -253,6 +249,7 @@ func WithQueueBatchSettings(set queuebatch.Settings[request.Request]) Option {
 
 // WithQueueBatchPayloadCodec wraps queue payload marshaling/unmarshaling.
 // Encode is applied after Marshal on enqueue, Decode before Unmarshal on dequeue.
+// The codec is applied only when queue encoding is configured.
 func WithQueueBatchPayloadCodec(codec queuePayloadCodec) Option {
 	return func(o *BaseExporter) error {
 		o.queuePayloadCodec = codec
@@ -280,4 +277,20 @@ func (e payloadCodecEncoding) Unmarshal(payload []byte) (context.Context, reques
 		return context.Background(), req, err
 	}
 	return e.encoding.Unmarshal(decoded)
+}
+
+func (be *BaseExporter) applyQueuePayloadCodec() {
+	if be.queuePayloadCodec == nil || be.queueBatchSettings.Encoding == nil {
+		return
+	}
+
+	baseEncoding := be.queueBatchSettings.Encoding
+	if wrapped, ok := baseEncoding.(payloadCodecEncoding); ok {
+		baseEncoding = wrapped.encoding
+	}
+
+	be.queueBatchSettings.Encoding = payloadCodecEncoding{
+		encoding: baseEncoding,
+		codec:    be.queuePayloadCodec,
+	}
 }
