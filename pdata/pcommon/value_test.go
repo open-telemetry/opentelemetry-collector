@@ -323,6 +323,11 @@ func TestValueAsString(t *testing.T) {
 			expected: "{\"arrKey\":[\"strOne\",\"strTwo\"],\"boolKey\":false,\"floatKey\":18.6,\"intKey\":7,\"mapKey\":{\"keyOne\":\"valOne\",\"keyTwo\":\"valTwo\"},\"nullKey\":null,\"strKey\":\"strVal\"}",
 		},
 		{
+			name:     "map_with_html_chars",
+			input:    generateTestValueMapWithHTMLChars(),
+			expected: "{\"key\":\"<b>html&value</b>\"}",
+		},
+		{
 			name:     "empty_array",
 			input:    NewValueSlice(),
 			expected: "[]",
@@ -331,6 +336,11 @@ func TestValueAsString(t *testing.T) {
 			name:     "simple_array",
 			input:    generateTestValueSlice(),
 			expected: "[\"strVal\",7,18.6,false,null]",
+		},
+		{
+			name:     "slice_with_html_chars",
+			input:    generateTestValueSliceWithHTMLChars(),
+			expected: "[\"<a>link</a>\",\"a]>b&c\"]",
 		},
 		{
 			name:     "empty",
@@ -854,4 +864,17 @@ func generateTestValueBytes() Value {
 	v := NewValueBytes()
 	v.Bytes().FromRaw([]byte("String bytes"))
 	return v
+}
+
+func generateTestValueMapWithHTMLChars() Value {
+	ret := NewValueMap()
+	ret.Map().PutStr("key", "<b>html&value</b>")
+	return ret
+}
+
+func generateTestValueSliceWithHTMLChars() Value {
+	ret := NewValueSlice()
+	ret.Slice().AppendEmpty().SetStr("<a>link</a>")
+	ret.Slice().AppendEmpty().SetStr("a]>b&c")
+	return ret
 }
