@@ -1055,20 +1055,23 @@ subdir/component subdir/component`
 	})
 }
 
-func TestGetComponentLabelFromRepo_ReturnsEmpty_WhenLabelsPathIsNotAFile(t *testing.T) {
+func TestGetComponentLabelFromRepo_ReturnsEmpty_WhenLabelsPathIsADirectory(t *testing.T) {
 	repoRoot := t.TempDir()
 
-	// Make findRepoRoot succeed by creating ".github/component_labels.txt" path,
-	// but make it a DIRECTORY so os.ReadFile fails inside loadComponentLabels.
+	// Make findRepoRoot succeed: it looks for ".github/component_labels.txt".
+	// But make that path a DIRECTORY so loadComponentLabels() fails (os.ReadFile error),
+	// which must trigger: `if err != nil { return "" }`
 	githubDir := filepath.Join(repoRoot, ".github")
 	require.NoError(t, os.MkdirAll(githubDir, 0o750))
 
 	labelsPath := filepath.Join(githubDir, "component_labels.txt")
-	require.NoError(t, os.MkdirAll(labelsPath, 0o750)) // <-- directory, not file
+	require.NoError(t, os.MkdirAll(labelsPath, 0o750)) // directory, not file
 
-	// Create component directory and a "metadata.yaml" path (file doesn't need to exist)
-	compDir := filepath.Join(repoRoot, "receiver", "filelog")
+	// Create a component directory inside the repo root
+	compDir := filepath.Join(repoRoot, "extension", "storage", "filestorageexample")
 	require.NoError(t, os.MkdirAll(compDir, 0o750))
+
+	// metadata.yaml doesn't need to exist; only the directory is used
 	mdPath := filepath.Join(compDir, "metadata.yaml")
 
 	got := getComponentLabelFromRepo(mdPath)

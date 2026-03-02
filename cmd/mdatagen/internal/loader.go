@@ -50,14 +50,14 @@ func LoadMetadata(filePath string) (Metadata, error) {
 	if err != nil {
 		return md, err
 	}
-	pn, err := packageName(filepath.Dir(filePath))
+	packageName, err := getPackageName(filepath.Dir(filePath))
 	if err != nil {
 		return md, fmt.Errorf("unable to determine package name: %w", err)
 	}
-	md.PackageName = pn
+	md.PackageName = packageName
 
 	if md.ScopeName == "" {
-		md.ScopeName = pn
+		md.ScopeName = packageName
 	}
 	if md.GeneratedPackageName == "" {
 		md.GeneratedPackageName = "metadata"
@@ -98,7 +98,7 @@ func shortFolderName(filePath string) string {
 	return parentFolder
 }
 
-func packageName(filePath string) (string, error) {
+func getPackageName(filePath string) (string, error) {
 	cmd := exec.Command("go", "list", "-f", "{{.ImportPath}}")
 	cmd.Dir = filePath
 	output, err := cmd.Output()
