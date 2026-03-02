@@ -153,12 +153,12 @@ func Compile(cfg *Config) error {
 }
 
 func outputBinaryName(name string) string {
-	goos := os.Getenv("GOOS")
-	if goos == "" {
+	goos, ok := os.LookupEnv("GOOS")
+	if !ok || goos == "" {
 		goos = runtime.GOOS
 	}
 
-	if goos != "windows" {
+	if !strings.EqualFold(goos, "windows") {
 		return name
 	}
 	if strings.EqualFold(filepath.Ext(name), ".exe") {
