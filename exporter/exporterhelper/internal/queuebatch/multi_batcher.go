@@ -81,6 +81,7 @@ func (mb *multiBatcher) getPartition(ctx context.Context, req request.Request) *
 		defer mb.lock.Unlock()
 		// Only remove if no one is holding a reference AND partition is empty
 		if newPB.isRemovable() {
+			_ = newPB.Shutdown(ctx)
 			mb.partitions.Remove(key)
 			return true // removed successfully
 		}
