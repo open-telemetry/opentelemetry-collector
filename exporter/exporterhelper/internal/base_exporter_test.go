@@ -61,6 +61,11 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 		WithRetry(configretry.NewDefaultBackOffConfig()),
 		WithQueueBatch(configoptional.Some(qCfg), queuebatch.Settings[request.Request]{}))
 	require.Error(t, err)
+
+	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
+		WithQueueBatchInMemoryEncoding(true),
+		WithQueueBatch(NewDefaultQueueConfig(), queuebatch.Settings[request.Request]{}))
+	require.ErrorContains(t, err, "`Settings.Encoding` must not be nil when in-memory encoding is enabled")
 }
 
 func TestBaseExporterLogging(t *testing.T) {
@@ -267,6 +272,43 @@ func TestWithQueueBatchPayloadCodec(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "codec:mockRequest", string(encoded))
 	})
+}
+
+func TestWithQueueBatchInMemoryEncoding(t *testing.T) {
+	qCfg := NewDefaultQueueConfig()
+
+	tests := []struct {
+		name    string
+		options []Option
+	}{
+		{
+			name: "option before queue",
+			options: []Option{
+				WithQueueBatchInMemoryEncoding(true),
+				WithQueueBatch(qCfg, newFakeQueueBatch()),
+			},
+		},
+		{
+			name: "option after queue",
+			options: []Option{
+				WithQueueBatch(qCfg, newFakeQueueBatch()),
+				WithQueueBatchInMemoryEncoding(true),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			be, err := NewBaseExporter(
+				exportertest.NewNopSettings(exportertest.NopType),
+				pipeline.SignalLogs,
+				noopExport,
+				tt.options...,
+			)
+			require.NoError(t, err)
+			assert.True(t, be.queueBatchSettings.UseEncodingForInMemory)
+		})
+	}
 }
 
 func errExport(context.Context, request.Request) error {

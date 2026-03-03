@@ -48,9 +48,10 @@ type BaseExporter struct {
 	timeoutCfg TimeoutConfig
 	retryCfg   configretry.BackOffConfig
 
-	queueBatchSettings queuebatch.Settings[request.Request]
-	queueCfg           configoptional.Optional[queuebatch.Config]
-	queuePayloadCodec  queuePayloadCodec
+	queueBatchSettings          queuebatch.Settings[request.Request]
+	queueCfg                    configoptional.Optional[queuebatch.Config]
+	queuePayloadCodec           queuePayloadCodec
+	queueUseEncodingForInMemory bool
 }
 
 type queuePayloadCodec interface {
@@ -71,6 +72,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 	}
 
 	be.applyQueuePayloadCodec()
+	be.applyInMemoryQueueEncoding()
 
 	// Consumer Sender is always initialized.
 	be.firstSender = sender.NewSender(pusher)
@@ -277,6 +279,15 @@ func WithQueueBatchPayloadCodec(codec queuePayloadCodec) Option {
 	}
 }
 
+// WithQueueBatchInMemoryEncoding enables queue encoding for in-memory queues.
+// When enabled, requests are marshaled before enqueue and unmarshaled after dequeue.
+func WithQueueBatchInMemoryEncoding(enabled bool) Option {
+	return func(o *BaseExporter) error {
+		o.queueUseEncodingForInMemory = enabled
+		return nil
+	}
+}
+
 type payloadCodecEncoding struct {
 	encoding queue.Encoding[request.Request]
 	codec    queuePayloadCodec
@@ -313,4 +324,12 @@ func (be *BaseExporter) applyQueuePayloadCodec() {
 		encoding: baseEncoding,
 		codec:    be.queuePayloadCodec,
 	}
+}
+
+func (be *BaseExporter) applyInMemoryQueueEncoding() {
+	if !be.queueUseEncodingForInMemory {
+		return
+	}
+
+	be.queueBatchSettings.UseEncodingForInMemory = true
 }
