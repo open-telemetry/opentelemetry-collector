@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -57,6 +58,8 @@ type Metadata struct {
 	PackageName string `mapstructure:"package_name"`
 	// FeatureGates that are managed by the component.
 	FeatureGates []FeatureGate `mapstructure:"feature_gates"`
+	// Config is the configuration schema for the component.
+	Config *cfggen.ConfigMetadata `mapstructure:"config"`
 }
 
 type Deprecated struct {
@@ -117,6 +120,10 @@ func (md *Metadata) Validate() error {
 	}
 
 	if err := md.validateFeatureGates(); err != nil {
+		errs = errors.Join(errs, err)
+	}
+
+	if err := md.validateConfig(); err != nil {
 		errs = errors.Join(errs, err)
 	}
 
@@ -241,7 +248,8 @@ func (md *Metadata) validateMetricsAndEvents() error {
 		validateMetrics(md.Metrics, md.Attributes, usedAttrs, md.SemConvVersion),
 		validateMetrics(md.Telemetry.Metrics, md.Attributes, usedAttrs, md.SemConvVersion),
 		validateEvents(md.Events, md.Attributes, usedAttrs),
-		md.validateAttributes(usedAttrs))
+		md.validateAttributes(usedAttrs),
+		md.validateEntityAssociations())
 	return errs
 }
 
@@ -266,6 +274,36 @@ func (md *Metadata) validateAttributes(usedAttrs map[AttributeName]bool) error {
 	if len(unusedAttrs) > 0 {
 		errs = errors.Join(errs, fmt.Errorf("unused attributes: %v", unusedAttrs))
 	}
+	return errs
+}
+
+// validateEntityAssociations checks that if entities are defined, then each metric and event must be associated with an entity.
+func (md *Metadata) validateEntityAssociations() error {
+	var errs error
+	requireEntityAssociation := len(md.Entities) > 0
+	entityTypes := make(map[string]bool)
+	for _, entity := range md.Entities {
+		entityTypes[entity.Type] = true
+	}
+
+	for metricName, metric := range md.Metrics {
+		if requireEntityAssociation && metric.Entity == "" {
+			errs = errors.Join(errs, fmt.Errorf(`metric "%v": entity is required when entities are defined`, metricName))
+		}
+		if metric.Entity != "" && !entityTypes[metric.Entity] {
+			errs = errors.Join(errs, fmt.Errorf(`metric "%v": entity refers to undefined entity type: %v`, metricName, metric.Entity))
+		}
+	}
+
+	for eventName, event := range md.Events {
+		if requireEntityAssociation && event.Entity == "" {
+			errs = errors.Join(errs, fmt.Errorf(`event "%v": entity is required when entities are defined`, eventName))
+		}
+		if event.Entity != "" && !entityTypes[event.Entity] {
+			errs = errors.Join(errs, fmt.Errorf(`event "%v": entity refers to undefined entity type: %v`, eventName, event.Entity))
+		}
+	}
+
 	return errs
 }
 
@@ -395,6 +433,13 @@ func (md *Metadata) validateFeatureGates() error {
 		}
 	}
 	return errs
+}
+
+func (md *Metadata) validateConfig() error {
+	if md.Config != nil {
+		return md.Config.Validate()
+	}
+	return nil
 }
 
 type AttributeName string
@@ -656,6 +701,10 @@ type Signal struct {
 
 	// Attributes is the list of attributes that the signal emits.
 	Attributes []AttributeName `mapstructure:"attributes"`
+
+	// Entity is the type of entity this signal is associated with.
+	// Required when entities are defined.
+	Entity string `mapstructure:"entity"`
 }
 
 func (s Signal) HasConditionalAttributes(attrs map[AttributeName]Attribute) bool {

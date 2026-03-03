@@ -10,12 +10,14 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 	"go.opentelemetry.io/collector/component"
 )
 
@@ -39,6 +41,23 @@ func TestCommandNoArgs(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestCommandErrorOutputOnce(t *testing.T) {
+	cmd, err := NewCommand()
+	require.NoError(t, err)
+
+	var stderr bytes.Buffer
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{"/nonexistent/path/metadata.yaml"})
+
+	err = cmd.Execute()
+	require.Error(t, err)
+	out := stderr.String()
+	require.NotEmpty(t, out)
+
+	msg := err.Error()
+	assert.Equal(t, 1, strings.Count(out, msg), out)
+}
+
 func TestRunContents(t *testing.T) {
 	tests := []struct {
 		yml                  string
@@ -58,8 +77,10 @@ func TestRunContents(t *testing.T) {
 		wantGoleakSetup                 bool
 		wantGoleakTeardown              bool
 		wantFeatureGatesGenerated       bool
+		wantConfigSchemaGenerated       bool
 		wantErr                         bool
 		wantOrderErr                    bool
+		wantRunErr                      bool
 		wantAttributes                  []string
 	}{
 		{
@@ -234,6 +255,18 @@ func TestRunContents(t *testing.T) {
 			wantEventsGenerated:        true,
 			wantLogsGenerated:          true,
 		},
+		{
+			yml:                        "with_config.yaml",
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantLogsGenerated:          true,
+			wantComponentTestGenerated: true,
+			wantConfigSchemaGenerated:  true,
+		},
+		{
+			yml:        "with_invalid_config_ref.yaml",
+			wantRunErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.yml, func(t *testing.T) {
@@ -268,6 +301,11 @@ foo
 				require.Contains(t, err.Error(), "metadata.yaml ordering check failed")
 				return
 			}
+			if tt.wantRunErr {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "failed to generate config files")
+				return
+			}
 			require.NoError(t, err)
 
 			// Documentation is generated when any of these features are present
@@ -279,13 +317,13 @@ foo
 				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_metrics_test.go"))
 				require.FileExists(t, filepath.Join(tmpdir, "documentation.md"))
 				if len(tt.wantAttributes) > 0 {
-					contents, err = os.ReadFile(filepath.Join(tmpdir, "documentation.md")) //nolint:gosec
+					contents, err = os.ReadFile(filepath.Clean(filepath.Join(tmpdir, "documentation.md")))
 					require.NoError(t, err)
 					for _, attr := range tt.wantAttributes {
 						require.Contains(t, string(contents), attr)
 					}
 				}
-				contents, err = os.ReadFile(filepath.Join(tmpdir, generatedPackageDir, "generated_metrics.go")) //nolint:gosec
+				contents, err = os.ReadFile(filepath.Clean(filepath.Join(tmpdir, generatedPackageDir, "generated_metrics.go")))
 				require.NoError(t, err)
 				if tt.wantMetricsContext {
 					require.Contains(t, string(contents), "\"context\"")
@@ -317,7 +355,7 @@ foo
 				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry.go"))
 				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry_test.go"))
 				require.FileExists(t, filepath.Join(tmpdir, "documentation.md"))
-				contents, err = os.ReadFile(filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry.go")) //nolint:gosec
+				contents, err = os.ReadFile(filepath.Clean(filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry.go")))
 				require.NoError(t, err)
 				if tt.wantMetricsContext {
 					require.Contains(t, string(contents), "\"context\"")
@@ -340,7 +378,7 @@ foo
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_status.go"))
 			}
 
-			contents, err = os.ReadFile(filepath.Join(tmpdir, "README.md")) //nolint:gosec
+			contents, err = os.ReadFile(filepath.Clean(filepath.Join(tmpdir, "README.md")))
 			require.NoError(t, err)
 			if tt.wantReadmeGenerated {
 				require.NotContains(t, string(contents), "foo")
@@ -350,7 +388,7 @@ foo
 
 			if tt.wantComponentTestGenerated {
 				require.FileExists(t, filepath.Join(tmpdir, "generated_component_test.go"))
-				contents, err = os.ReadFile(filepath.Join(tmpdir, "generated_component_test.go")) //nolint:gosec
+				contents, err = os.ReadFile(filepath.Clean(filepath.Join(tmpdir, "generated_component_test.go")))
 				require.NoError(t, err)
 				require.Contains(t, string(contents), "func Test")
 				_, err = parser.ParseFile(token.NewFileSet(), "", contents, parser.DeclarationErrors)
@@ -360,7 +398,7 @@ foo
 			}
 
 			require.FileExists(t, filepath.Join(tmpdir, "generated_package_test.go"))
-			contents, err = os.ReadFile(filepath.Join(tmpdir, "generated_package_test.go")) //nolint:gosec
+			contents, err = os.ReadFile(filepath.Clean(filepath.Join(tmpdir, "generated_package_test.go")))
 			require.NoError(t, err)
 			require.Contains(t, string(contents), "func TestMain")
 			_, err = parser.ParseFile(token.NewFileSet(), "", contents, parser.DeclarationErrors)
@@ -391,8 +429,96 @@ foo
 			} else {
 				require.NotContains(t, string(contents), "teardownFunc")
 			}
+
+			if tt.wantConfigSchemaGenerated {
+				require.FileExists(t, filepath.Join(tmpdir, "config.schema.json"))
+			} else {
+				require.NoFileExists(t, filepath.Join(tmpdir, "config.schema.json"))
+			}
 		})
 	}
+}
+
+func TestGenerateConfigFiles(t *testing.T) {
+	tests := []struct {
+		name    string
+		md      Metadata
+		wantErr bool
+		wantGen bool
+	}{
+		{
+			name: "nil config skips generation",
+			md: Metadata{
+				Type: "test",
+				Status: &Status{
+					Class: "receiver",
+				},
+				Config: nil,
+			},
+			wantGen: false,
+		},
+		{
+			name: "valid config generates schema file",
+			md: Metadata{
+				Type:        "test",
+				PackageName: "shortname",
+				Status: &Status{
+					Class: "receiver",
+				},
+				Config: &cfggen.ConfigMetadata{
+					Type: "object",
+				},
+			},
+			wantGen: true,
+		},
+		{
+			name: "invalid ref in config causes resolve error",
+			md: Metadata{
+				Type:        "test",
+				PackageName: "shortname",
+				Status: &Status{
+					Class: "receiver",
+				},
+				// A local ref without a definition name fails Validate() inside ResolveSchema
+				Config: &cfggen.ConfigMetadata{
+					Ref: "/config/configauth",
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpdir := t.TempDir()
+			err := generateConfigFiles(tt.md, tmpdir)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			if tt.wantGen {
+				require.FileExists(t, filepath.Join(tmpdir, "config.schema.json"))
+			} else {
+				require.NoFileExists(t, filepath.Join(tmpdir, "config.schema.json"))
+			}
+		})
+	}
+}
+
+func TestGenerateConfigFiles_WriteError(t *testing.T) {
+	md := Metadata{
+		Type:        "test",
+		PackageName: "shortname",
+		Status: &Status{
+			Class: "receiver",
+		},
+		Config: &cfggen.ConfigMetadata{
+			Type: "object",
+		},
+	}
+	err := generateConfigFiles(md, "/nonexistent/path/that/does/not/exist")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to write config schema")
 }
 
 func TestRun(t *testing.T) {
@@ -669,7 +795,7 @@ Some info about a component
 			require.NoError(t, err)
 
 			require.FileExists(t, filepath.Join(tmpdir, "README.md"))
-			got, err := os.ReadFile(filepath.Join(tmpdir, "README.md")) //nolint:gosec
+			got, err := os.ReadFile(filepath.Clean(filepath.Join(tmpdir, "README.md")))
 			require.NoError(t, err)
 			got = bytes.ReplaceAll(got, []byte("\r\n"), []byte("\n"))
 			expected, err := os.ReadFile(filepath.Join("testdata", tt.outputFile))
@@ -757,7 +883,7 @@ const (
 			err := generateFile("templates/status.go.tmpl",
 				filepath.Join(tmpdir, "generated_status.go"), tt.md, "metadata")
 			require.NoError(t, err)
-			actual, err := os.ReadFile(filepath.Join(tmpdir, "generated_status.go")) //nolint:gosec
+			actual, err := os.ReadFile(filepath.Clean(filepath.Join(tmpdir, "generated_status.go")))
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, string(actual))
 		})
@@ -843,7 +969,7 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 			err := generateFile("templates/telemetry.go.tmpl",
 				filepath.Join(tmpdir, "generated_telemetry.go"), tt.md, "metadata")
 			require.NoError(t, err)
-			actual, err := os.ReadFile(filepath.Join(tmpdir, "generated_telemetry.go")) //nolint:gosec
+			actual, err := os.ReadFile(filepath.Clean(filepath.Join(tmpdir, "generated_telemetry.go")))
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, string(actual))
 		})

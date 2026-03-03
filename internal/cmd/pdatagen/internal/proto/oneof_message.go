@@ -4,7 +4,7 @@
 package proto // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/proto"
 
 import (
-	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/tmplutil"
 )
 
 const oneOfMessageOrigOtherTemplate = `
@@ -37,9 +37,9 @@ func (pf *Field) GenOneOfMessages() string {
 	tf := pf.getTemplateFields()
 	if pf.OneOfGroup != "" {
 		if pf.Type == TypeMessage {
-			return template.Execute(template.Parse("oneOfMessageOrigMessageTemplate", []byte(oneOfMessageOrigMessageTemplate)), tf)
+			return tmplutil.Execute(tmplutil.Parse("oneOfMessageOrigMessageTemplate", []byte(oneOfMessageOrigMessageTemplate)), tf)
 		}
-		return template.Execute(template.Parse("oneOfMessageOrigOtherTemplate", []byte(oneOfMessageOrigOtherTemplate)), tf)
+		return tmplutil.Execute(tmplutil.Parse("oneOfMessageOrigOtherTemplate", []byte(oneOfMessageOrigOtherTemplate)), tf)
 	}
 	return ""
 }
