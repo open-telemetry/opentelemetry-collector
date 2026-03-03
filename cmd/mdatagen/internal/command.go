@@ -19,9 +19,9 @@ import (
 	"text/template"
 
 	"github.com/spf13/cobra"
+	"go.yaml.in/yaml/v3"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -59,6 +59,7 @@ func NewCommand() (*cobra.Command, error) {
 		Use:          "mdatagen",
 		Version:      ver,
 		SilenceUsage: true,
+		Args:         cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			return run(args[0])
 		},
@@ -78,7 +79,7 @@ func run(ymlPath string) error {
 	ymlDir := filepath.Dir(ymlPath)
 	packageName := filepath.Base(ymlDir)
 
-	raw, readErr := os.ReadFile(ymlPath) //nolint:gosec // G304: abs path is cleaned/validated above; safe to read
+	raw, readErr := os.ReadFile(filepath.Clean(ymlPath))
 	if readErr != nil {
 		return fmt.Errorf("failed reading %v: %w", ymlPath, readErr)
 	}
@@ -351,18 +352,26 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				"isCommand": func() bool {
 					return md.Status.Class == "cmd"
 				},
-				"supportsLogs":             func() bool { return md.supportsSignal("logs") },
-				"supportsMetrics":          func() bool { return md.supportsSignal("metrics") },
-				"supportsTraces":           func() bool { return md.supportsSignal("traces") },
-				"supportsLogsToLogs":       func() bool { return md.supportsSignal("logs_to_logs") },
-				"supportsLogsToMetrics":    func() bool { return md.supportsSignal("logs_to_metrics") },
-				"supportsLogsToTraces":     func() bool { return md.supportsSignal("logs_to_traces") },
-				"supportsMetricsToLogs":    func() bool { return md.supportsSignal("metrics_to_logs") },
-				"supportsMetricsToMetrics": func() bool { return md.supportsSignal("metrics_to_metrics") },
-				"supportsMetricsToTraces":  func() bool { return md.supportsSignal("metrics_to_traces") },
-				"supportsTracesToLogs":     func() bool { return md.supportsSignal("traces_to_logs") },
-				"supportsTracesToMetrics":  func() bool { return md.supportsSignal("traces_to_metrics") },
-				"supportsTracesToTraces":   func() bool { return md.supportsSignal("traces_to_traces") },
+				"supportsLogs":               func() bool { return md.supportsSignal("logs") },
+				"supportsMetrics":            func() bool { return md.supportsSignal("metrics") },
+				"supportsTraces":             func() bool { return md.supportsSignal("traces") },
+				"supportsProfiles":           func() bool { return md.supportsSignal("profiles") },
+				"supportsLogsToLogs":         func() bool { return md.supportsSignal("logs_to_logs") },
+				"supportsLogsToMetrics":      func() bool { return md.supportsSignal("logs_to_metrics") },
+				"supportsLogsToTraces":       func() bool { return md.supportsSignal("logs_to_traces") },
+				"supportsLogsToProfiles":     func() bool { return md.supportsSignal("logs_to_profiles") },
+				"supportsMetricsToLogs":      func() bool { return md.supportsSignal("metrics_to_logs") },
+				"supportsMetricsToMetrics":   func() bool { return md.supportsSignal("metrics_to_metrics") },
+				"supportsMetricsToTraces":    func() bool { return md.supportsSignal("metrics_to_traces") },
+				"supportsMetricsToProfiles":  func() bool { return md.supportsSignal("metrics_to_profiles") },
+				"supportsTracesToLogs":       func() bool { return md.supportsSignal("traces_to_logs") },
+				"supportsTracesToMetrics":    func() bool { return md.supportsSignal("traces_to_metrics") },
+				"supportsTracesToTraces":     func() bool { return md.supportsSignal("traces_to_traces") },
+				"supportsTracesToProfiles":   func() bool { return md.supportsSignal("traces_to_profiles") },
+				"supportsProfilesToLogs":     func() bool { return md.supportsSignal("profiles_to_logs") },
+				"supportsProfilesToMetrics":  func() bool { return md.supportsSignal("profiles_to_metrics") },
+				"supportsProfilesToTraces":   func() bool { return md.supportsSignal("profiles_to_traces") },
+				"supportsProfilesToProfiles": func() bool { return md.supportsSignal("profiles_to_profiles") },
 				"expectConsumerError": func() bool {
 					return md.Tests.ExpectConsumerError
 				},
@@ -386,7 +395,7 @@ func executeTemplate(tmplFile string, md Metadata, goPackage string) ([]byte, er
 func inlineReplace(tmplFile, outputFile string, md Metadata, start, end, goPackage string) error {
 	var readmeContents []byte
 	var err error
-	if readmeContents, err = os.ReadFile(outputFile); err != nil { //nolint:gosec
+	if readmeContents, err = os.ReadFile(filepath.Clean(outputFile)); err != nil {
 		return err
 	}
 

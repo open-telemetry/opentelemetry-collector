@@ -31,6 +31,18 @@ func WithIgnoreUnused() UnmarshalOption {
 	})
 }
 
+// WithForceUnmarshaler sets an option to run a top-level Unmarshal method,
+// even if the Conf being unmarshaled is already a parameter from an Unmarshal method.
+// To avoid infinite recursion, this should only be used when unmarshaling into
+// a different type from the current Unmarshaler.
+// For instance, this should be used in wrapper types such as configoptional.Optional
+// to ensure the inner type's Unmarshal method is called.
+func WithForceUnmarshaler() UnmarshalOption {
+	return UnmarshalOptionFunc(func(uo *UnmarshalOptions) {
+		uo.ForceUnmarshaler = true
+	})
+}
+
 // Decode decodes the contents of the Conf into the result argument, using a
 // mapstructure decoder with the following notable behaviors. Ensures that maps whose
 // values are nil pointer structs resolved to the zero value of the target struct (see
@@ -53,7 +65,7 @@ func Decode(input, result any, settings UnmarshalOptions, skipTopLevelUnmarshale
 			mapKeyStringToMapKeyTextUnmarshalerHookFunc(),
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.TextUnmarshallerHookFunc(),
-			unmarshalerHookFunc(result, skipTopLevelUnmarshaler),
+			unmarshalerHookFunc(result, skipTopLevelUnmarshaler && !settings.ForceUnmarshaler),
 			// after the main unmarshaler hook is called,
 			// we unmarshal the embedded structs if present to merge with the result:
 			unmarshalerEmbeddedStructsHookFunc(settings),
@@ -75,7 +87,10 @@ func Decode(input, result any, settings UnmarshalOptions, skipTopLevelUnmarshale
 
 // When a value has been loaded from an external source via a provider, we keep both the
 // parsed value and the original string value. This allows us to expand the value to its
-// original string representation when decoding into a string field, and use the original otherwise.
+// original string representation when decoding into a string field, and use the parsed value otherwise.
+//
+// Fields containing a pointer to a string will also be set to the original string representation,
+// except when the parsed value is nil (i.e. parsed from YAML `null`, `NULL`, `~`, the empty string, etc.)
 func useExpandValue() mapstructure.DecodeHookFuncType {
 	return func(
 		_ reflect.Type,
@@ -83,7 +98,26 @@ func useExpandValue() mapstructure.DecodeHookFuncType {
 		data any,
 	) (any, error) {
 		if exp, ok := data.(ExpandedValue); ok {
-			v := castTo(exp, to.Kind() == reflect.String)
+			var useOriginal bool
+			if NewExpandedValueSanitizer.IsEnabled() {
+				// Check if the target field is string, *string, **string, etc.
+				baseType := to
+				pointed := false
+				for baseType.Kind() == reflect.Pointer {
+					baseType = baseType.Elem()
+					pointed = true
+				}
+				useOriginal = baseType.Kind() == reflect.String
+
+				// If the parsed value is nil and the target is a pointer, use the parsed value.
+				if pointed && exp.Value == nil {
+					useOriginal = false
+				}
+			} else {
+				useOriginal = to.Kind() == reflect.String
+			}
+
+			v := castTo(exp, useOriginal)
 			// See https://github.com/open-telemetry/opentelemetry-collector/issues/10949
 			// If the `to.Kind` is not a string, then expandValue's original value is useless and
 			// the casted-to value will be nil. In that scenario, we need to use the default value of `to`'s kind.

@@ -1,0 +1,142 @@
+$defs:
+  client_config:
+    description: ClientConfig defines common settings for a gRPC client configuration.
+    type: object
+    properties:
+      auth:
+        description: Auth configuration for outgoing RPCs.
+        x-optional: true
+        $ref: go.opentelemetry.io/collector/config/configauth.config
+      authority:
+        description: WithAuthority parameter configures client to rewrite ":authority" header (godoc.org/google.golang.org/grpc#WithAuthority)
+        type: string
+      balancer_name:
+        description: Sets the balancer in grpclb_policy to discover the servers. Default is pick_first. https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
+        type: string
+      compression:
+        description: The compression key for supported compression types within collector.
+        $ref: go.opentelemetry.io/collector/config/configcompression.type
+      endpoint:
+        description: The target to which the exporter is going to send traces or metrics, using the gRPC protocol. The valid syntax is described at https://github.com/grpc/grpc/blob/master/doc/naming.md.
+        type: string
+      headers:
+        description: The headers associated with gRPC requests.
+        $ref: go.opentelemetry.io/collector/config/configopaque.map_list
+      keepalive:
+        description: The keepalive parameters for gRPC client. See grpc.WithKeepaliveParams. (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
+        x-optional: true
+        $ref: keepalive_client_config
+      middlewares:
+        description: Middlewares for the gRPC client.
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/config/configmiddleware.config
+      read_buffer_size:
+        description: ReadBufferSize for gRPC client. See grpc.WithReadBufferSize. (https://godoc.org/google.golang.org/grpc#WithReadBufferSize).
+        type: integer
+      tls:
+        description: TLS struct exposes TLS client configuration.
+        $ref: go.opentelemetry.io/collector/config/configtls.client_config
+      wait_for_ready:
+        description: WaitForReady parameter configures client to wait for ready state before sending data. (https://github.com/grpc/grpc/blob/master/doc/wait-for-ready.md)
+        type: boolean
+      write_buffer_size:
+        description: WriteBufferSize for gRPC gRPC. See grpc.WithWriteBufferSize. (https://godoc.org/google.golang.org/grpc#WithWriteBufferSize).
+        type: integer
+  keepalive_client_config:
+    description: 'KeepaliveClientConfig exposes the keepalive.ClientParameters to be used by the exporter. Refer to the original data-structure for the meaning of each parameter: https://godoc.org/google.golang.org/grpc/keepalive#ClientParameters'
+    type: object
+    properties:
+      permit_without_stream:
+        type: boolean
+      time:
+        type: string
+        x-customType: time.Duration
+        format: duration
+      timeout:
+        type: string
+        x-customType: time.Duration
+        format: duration
+  keepalive_enforcement_policy:
+    description: KeepaliveEnforcementPolicy allow configuration of the keepalive.EnforcementPolicy. The same default values as keepalive.EnforcementPolicy are applicable and get applied by the server. See https://godoc.org/google.golang.org/grpc/keepalive#EnforcementPolicy for details.
+    type: object
+    properties:
+      min_time:
+        type: string
+        x-customType: time.Duration
+        format: duration
+      permit_without_stream:
+        type: boolean
+  keepalive_server_config:
+    description: KeepaliveServerConfig is the configuration for keepalive.
+    type: object
+    properties:
+      enforcement_policy:
+        x-optional: true
+        $ref: keepalive_enforcement_policy
+      server_parameters:
+        x-optional: true
+        $ref: keepalive_server_parameters
+  keepalive_server_parameters:
+    description: KeepaliveServerParameters allow configuration of the keepalive.ServerParameters. The same default values as keepalive.ServerParameters are applicable and get applied by the server. See https://godoc.org/google.golang.org/grpc/keepalive#ServerParameters for details.
+    type: object
+    properties:
+      max_connection_age:
+        type: string
+        x-customType: time.Duration
+        format: duration
+      max_connection_age_grace:
+        type: string
+        x-customType: time.Duration
+        format: duration
+      max_connection_idle:
+        type: string
+        x-customType: time.Duration
+        format: duration
+      time:
+        type: string
+        x-customType: time.Duration
+        format: duration
+      timeout:
+        type: string
+        x-customType: time.Duration
+        format: duration
+  server_config:
+    description: ServerConfig defines common settings for a gRPC server configuration.
+    type: object
+    properties:
+      auth:
+        description: Auth for this receiver
+        x-optional: true
+        $ref: go.opentelemetry.io/collector/config/configauth.config
+      include_metadata:
+        description: Include propagates the incoming connection's metadata to downstream consumers.
+        type: boolean
+      keepalive:
+        description: Keepalive anchor for all the settings related to keepalive.
+        x-optional: true
+        $ref: keepalive_server_config
+      max_concurrent_streams:
+        description: MaxConcurrentStreams sets the limit on the number of concurrent streams to each ServerTransport. It has effect only for streaming RPCs.
+        type: integer
+        x-customType: uint32
+      max_recv_msg_size_mib:
+        description: MaxRecvMsgSizeMiB sets the maximum size (in MiB) of messages accepted by the server.
+        type: integer
+      middlewares:
+        description: Middlewares for the gRPC server.
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/config/configmiddleware.config
+      read_buffer_size:
+        description: ReadBufferSize for gRPC server. See grpc.ReadBufferSize. (https://godoc.org/google.golang.org/grpc#ReadBufferSize).
+        type: integer
+      tls:
+        description: Configures the protocol to use TLS. The default value is nil, which will cause the protocol to not use TLS.
+        x-optional: true
+        $ref: go.opentelemetry.io/collector/config/configtls.server_config
+      write_buffer_size:
+        description: WriteBufferSize for gRPC server. See grpc.WriteBufferSize. (https://godoc.org/google.golang.org/grpc#WriteBufferSize).
+        type: integer
+    allOf:
+      - $ref: go.opentelemetry.io/collector/config/confignet.addr_config

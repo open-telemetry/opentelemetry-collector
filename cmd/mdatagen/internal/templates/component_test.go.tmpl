@@ -47,6 +47,9 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pipeline"
+	{{ if supportsProfiles }}
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
+	{{- end }}
 	{{- end }}
 	{{- if or isExporter isProcessor }}
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -197,6 +200,14 @@ func TestComponentLifecycle(t *testing.T) {
 			},
 		},
 {{ end }}
+{{ if supportsProfiles }}
+		{
+			name: "profiles",
+			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error) {
+				return factory.(xprocessor.Factory).CreateProfiles(ctx, set, cfg, consumertest.NewNop())
+			},
+		},
+{{ end }}
 	}
 
 	cm, err := confmaptest.LoadConf("metadata.yaml")
@@ -292,6 +303,14 @@ func TestComponentLifecycle(t *testing.T) {
 			},
 		},
 {{ end }}
+{{ if supportsProfiles }}
+		{
+			name: "profiles",
+			createFn: func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
+				return factory.(xreceiver.Factory).CreateProfiles(ctx, set, cfg, consumertest.NewNop())
+			},
+		},
+{{ end }}
 	}
 
 	cm, err := confmaptest.LoadConf("metadata.yaml")
@@ -358,6 +377,14 @@ func TestComponentLifecycle(t *testing.T) {
 			name: "traces",
 			createFn: func(ctx context.Context, set scraper.Settings, cfg component.Config) (component.Component, error) {
 				return factory.CreateTraces(ctx, set, cfg)
+			},
+		},
+{{ end }}
+{{ if supportsProfiles }}
+		{
+			name: "profiles",
+			createFn: func(ctx context.Context, set scraper.Settings, cfg component.Config) (component.Component, error) {
+				return factory.(xscraper.Factory).CreateProfiles(ctx, set, cfg)
 			},
 		},
 {{ end }}
@@ -469,6 +496,15 @@ func TestComponentLifecycle(t *testing.T) {
 			},
 		},
 {{ end }}
+{{ if supportsLogsToProfiles }}
+		{
+			name: "logs_to_profiles",
+			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
+				router := connector.NewTracesRouter(map[pipeline.ID]xconsumer.Profiles{pipeline.NewID(xpipeline.SignalProfiles): consumertest.NewNop()})
+				return factory.(xconnector.Factory).CreateLogsToProfiles(ctx, set, cfg, router)
+			},
+		},
+{{ end }}
 {{ if supportsMetricsToLogs }}
 		{
 			name: "metrics_to_logs",
@@ -496,6 +532,15 @@ func TestComponentLifecycle(t *testing.T) {
 			},
 		},
 {{ end }}
+{{ if supportsMetricsToProfiles }}
+		{
+			name: "metrics_to_profiles",
+			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
+				router := connector.NewTracesRouter(map[pipeline.ID]xconsumer.Profiles{pipeline.NewID(xpipeline.SignalProfiles): consumertest.NewNop()})
+				return factory.(xconnector.Factory).CreateMetricsToTraces(ctx, set, cfg, router)
+			},
+		},
+{{ end }}
 {{ if supportsTracesToLogs }}
 		{
 			name: "traces_to_logs",
@@ -520,6 +565,51 @@ func TestComponentLifecycle(t *testing.T) {
 			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
 				router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{pipeline.NewID(pipeline.SignalTraces): consumertest.NewNop()})
 				return factory.CreateTracesToTraces(ctx, set, cfg, router)
+			},
+		},
+{{ end }}
+{{ if supportsTracesToProfiles }}
+		{
+			name: "traces_to_profiles",
+			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
+				router := connector.NewTracesRouter(map[pipeline.ID]xconsumer.Profiles{pipeline.NewID(xpipeline.SignalProfiles): consumertest.NewNop()})
+				return factory.(xconnector.Factory).CreateTracesToProfiles(ctx, set, cfg, router)
+			},
+		},
+{{ end }}
+{{ if supportsProfilesToLogs }}
+		{
+			name: "profiles_to_logs",
+			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
+				router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{pipeline.NewID(pipeline.SignalLogs): consumertest.NewNop()})
+				return factory.(xconnector.Factory).CreateProfilesToLogs(ctx, set, cfg, router)
+			},
+		},
+{{ end }}
+{{ if supportsProfilesToMetrics }}
+		{
+			name: "profiles_to_metrics",
+			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
+				router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{pipeline.NewID(pipeline.SignalMetrics): consumertest.NewNop()})
+				return factory.(xconnector.Factory).CreateProfilesToMetrics(ctx, set, cfg, router)
+			},
+		},
+{{ end }}
+{{ if supportsProfilesToTraces }}
+		{
+			name: "profiles_to_traces",
+			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
+				router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{pipeline.NewID(pipeline.SignalTraces): consumertest.NewNop()})
+				return factory.(xconnector.Factory).CreateProfilesToTraces(ctx, set, cfg, router)
+			},
+		},
+{{ end }}
+{{ if supportsProfilesToProfiles }}
+		{
+			name: "profiles_to_profiles",
+			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
+				router := xconnector.NewProfilesRouter(map[pipeline.ID]xconsumer.Profiles{pipeline.NewID(xpipeline.SignalProfiles): consumertest.NewNop()})
+				return factory.(xconnector.Factory).CreateProfilesToProfiles(ctx, set, cfg, router)
 			},
 		},
 {{ end }}

@@ -214,7 +214,7 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 		}
 	}
 
-	if err := conf.Unmarshal(&o.value); err != nil {
+	if err := conf.Unmarshal(&o.value, xconfmap.WithForceUnmarshaler()); err != nil {
 		return err
 	}
 

@@ -557,6 +557,10 @@ func (sc *ServerConfig) getGrpcServerOptions(
 	var uInterceptors []grpc.UnaryServerInterceptor
 	var sInterceptors []grpc.StreamServerInterceptor
 
+	// Add client info first, before auth.
+	uInterceptors = append(uInterceptors, enhanceWithClientInformation(sc.IncludeMetadata))
+	sInterceptors = append(sInterceptors, enhanceStreamWithClientInformation(sc.IncludeMetadata)) //nolint:contextcheck // context already handled
+
 	if sc.Auth.HasValue() {
 		authenticator, err := sc.Auth.Get().GetServerAuthenticator(ctx, extensions)
 		if err != nil {
@@ -574,10 +578,6 @@ func (sc *ServerConfig) getGrpcServerOptions(
 	}
 
 	// Enable OpenTelemetry observability plugin.
-
-	uInterceptors = append(uInterceptors, enhanceWithClientInformation(sc.IncludeMetadata))
-	sInterceptors = append(sInterceptors, enhanceStreamWithClientInformation(sc.IncludeMetadata)) //nolint:contextcheck // context already handled
-
 	opts = append(opts, grpc.StatsHandler(otelgrpc.NewServerHandler(otelOpts...)), grpc.ChainUnaryInterceptor(uInterceptors...), grpc.ChainStreamInterceptor(sInterceptors...))
 
 	// Apply middleware options. Note: OpenTelemetry could be registered as an extension.
