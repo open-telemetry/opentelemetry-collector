@@ -178,6 +178,16 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetStringResourceAttrToBeRemoved("string.resource.attr_to_be_removed-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricDefaultMetric.aggDataPoints)
+				assert.Empty(t, mb.metricDefaultMetricToBeRemoved.aggDataPoints)
+				assert.Empty(t, mb.metricMetricInputType.aggDataPoints)
+				assert.Empty(t, mb.metricOptionalMetric.aggDataPoints)
+				assert.Empty(t, mb.metricOptionalMetricEmptyUnit.aggDataPoints)
+				assert.Empty(t, mb.metricReaggregateMetric.aggDataPoints)
+				assert.Empty(t, mb.metricReaggregateMetricWithRequired.aggDataPoints)
+				assert.Empty(t, mb.metricSystemCPUTime.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

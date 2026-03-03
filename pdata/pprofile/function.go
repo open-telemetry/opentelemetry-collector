@@ -17,7 +17,7 @@ func (fn Function) Equal(val Function) bool {
 // dictionary to another.
 func (fn Function) switchDictionary(src, dst ProfilesDictionary) error {
 	if fn.NameStrindex() > 0 {
-		if src.StringTable().Len() < int(fn.NameStrindex()) {
+		if src.StringTable().Len() <= int(fn.NameStrindex()) {
 			return fmt.Errorf("invalid name index %d", fn.NameStrindex())
 		}
 
@@ -29,7 +29,7 @@ func (fn Function) switchDictionary(src, dst ProfilesDictionary) error {
 	}
 
 	if fn.SystemNameStrindex() > 0 {
-		if src.StringTable().Len() < int(fn.SystemNameStrindex()) {
+		if src.StringTable().Len() <= int(fn.SystemNameStrindex()) {
 			return fmt.Errorf("invalid system name index %d", fn.SystemNameStrindex())
 		}
 
@@ -41,7 +41,7 @@ func (fn Function) switchDictionary(src, dst ProfilesDictionary) error {
 	}
 
 	if fn.FilenameStrindex() > 0 {
-		if src.StringTable().Len() < int(fn.FilenameStrindex()) {
+		if src.StringTable().Len() <= int(fn.FilenameStrindex()) {
 			return fmt.Errorf("invalid filename index %d", fn.FilenameStrindex())
 		}
 

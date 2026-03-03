@@ -13,8 +13,7 @@ metrics:
   metric:
     enabled: true
     description: Description.
-    stability:
-      level: development
+    stability: development
     unit: s
     gauge:
       value_type: double

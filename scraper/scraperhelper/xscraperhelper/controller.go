@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
+	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/controller"
@@ -48,6 +49,19 @@ type optionFunc func(*controllerOptions)
 
 func (of optionFunc) apply(e *controllerOptions) {
 	of(e)
+}
+
+// AddProfilesScraper configures the xscraper.Profiles to be called with the specified options,
+// and at the specified collection interval.
+//
+// Observability information will be reported, and the scraped profiles
+// will be passed to the next consumer.
+func AddProfilesScraper(t component.Type, sc xscraper.Profiles) ControllerOption {
+	f := xscraper.NewFactory(t, nil,
+		xscraper.WithProfiles(func(context.Context, scraper.Settings, component.Config) (xscraper.Profiles, error) {
+			return sc, nil
+		}, component.StabilityLevelDevelopment))
+	return AddFactoryWithConfig(f, nil)
 }
 
 // AddFactoryWithConfig configures the scraper.Factory and associated config that

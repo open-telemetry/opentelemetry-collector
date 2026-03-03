@@ -1,0 +1,166 @@
+$defs:
+  auth_config:
+    type: object
+    properties:
+      request_params:
+        description: RequestParameters is a list of parameters that should be extracted from the request and added to the context. When a parameter is found in both the query string and the header, the value from the query string will be used.
+        type: array
+        items:
+          type: string
+    allOf:
+      - $ref: go.opentelemetry.io/collector/config/configauth.config
+  client_config:
+    description: ClientConfig defines settings for creating an HTTP client.
+    type: object
+    properties:
+      auth:
+        description: Auth configuration for outgoing HTTP calls.
+        x-optional: true
+        $ref: go.opentelemetry.io/collector/config/configauth.config
+      compression:
+        description: The compression key for supported compression types within collector.
+        $ref: go.opentelemetry.io/collector/config/configcompression.type
+      compression_params:
+        description: Advanced configuration options for the Compression
+        $ref: go.opentelemetry.io/collector/config/configcompression.compression_params
+      cookies:
+        description: Cookies configures the cookie management of the HTTP client.
+        x-optional: true
+        $ref: cookies_config
+      disable_keep_alives:
+        description: 'DisableKeepAlives, if true, disables HTTP keep-alives and will only use the connection to the server for a single HTTP request. WARNING: enabling this option can result in significant overhead establishing a new HTTP(S) connection for every request. Before enabling this option please consider whether changes to idle connection settings can achieve your goal.'
+        type: boolean
+      endpoint:
+        description: 'The target URL to send data to (e.g.: http://some.url:9411/v1/traces).'
+        type: string
+      force_attempt_http2:
+        description: 'Enabling ForceAttemptHTTP2 forces the HTTP transport to use the HTTP/2 protocol. By default, this is set to true. NOTE: HTTP/2 does not support settings such as MaxConnsPerHost, MaxIdleConnsPerHost and MaxIdleConns.'
+        type: boolean
+      headers:
+        description: Additional headers attached to each HTTP request sent by the client. Existing header values are overwritten if collision happens. Header values are opaque since they may be sensitive.
+        $ref: go.opentelemetry.io/collector/config/configopaque.map_list
+      http2_ping_timeout:
+        description: HTTP2PingTimeout if there's no response to the ping within the configured value, the connection will be closed. If not set or set to 0, it defaults to 15s.
+        type: string
+        x-customType: time.Duration
+        format: duration
+      http2_read_idle_timeout:
+        description: This is needed in case you run into https://github.com/golang/go/issues/59690 https://github.com/golang/go/issues/36026 HTTP2ReadIdleTimeout if the connection has been idle for the configured value send a ping frame for health check 0s means no health check will be performed.
+        type: string
+        x-customType: time.Duration
+        format: duration
+      idle_conn_timeout:
+        description: IdleConnTimeout is the maximum amount of time a connection will remain open before closing itself. By default, it is set to 90 seconds.
+        type: string
+        x-customType: time.Duration
+        format: duration
+      max_conns_per_host:
+        description: MaxConnsPerHost limits the total number of connections per host, including connections in the dialing, active, and idle states. Default is 0 (unlimited).
+        type: integer
+      max_idle_conns:
+        description: MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open. By default, it is set to 100. Zero means no limit.
+        type: integer
+      max_idle_conns_per_host:
+        description: MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connections the host can keep open. If zero, [net/http.DefaultMaxIdleConnsPerHost] is used.
+        type: integer
+      middlewares:
+        description: Middlewares are used to add custom functionality to the HTTP client. Middleware handlers are called in the order they appear in this list, with the first middleware becoming the outermost handler.
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/config/configmiddleware.config
+      proxy_url:
+        description: ProxyURL setting for the collector
+        type: string
+      read_buffer_size:
+        description: ReadBufferSize for HTTP client. See http.Transport.ReadBufferSize. Default is 0.
+        type: integer
+      timeout:
+        description: Timeout parameter configures `http.Client.Timeout`. Default is 0 (unlimited).
+        type: string
+        x-customType: time.Duration
+        format: duration
+      tls:
+        description: TLS struct exposes TLS client configuration.
+        $ref: go.opentelemetry.io/collector/config/configtls.client_config
+      write_buffer_size:
+        description: WriteBufferSize for HTTP client. See http.Transport.WriteBufferSize. Default is 0.
+        type: integer
+  cors_config:
+    description: CORSConfig configures a receiver for HTTP cross-origin resource sharing (CORS). See the underlying https://github.com/rs/cors package for details.
+    type: object
+    properties:
+      allowed_headers:
+        description: AllowedHeaders sets what headers will be allowed in CORS requests. The Accept, Accept-Language, Content-Type, and Content-Language headers are implicitly allowed. If no headers are listed, X-Requested-With will also be accepted by default. Include "*" to allow any request header.
+        type: array
+        items:
+          type: string
+      allowed_origins:
+        description: AllowedOrigins sets the allowed values of the Origin header for HTTP/JSON requests to an OTLP receiver. An origin may contain a wildcard (*) to replace 0 or more characters (e.g., "http://*.domain.com", or "*" to allow any origin).
+        type: array
+        items:
+          type: string
+      max_age:
+        description: MaxAge sets the value of the Access-Control-Max-Age response header. Set it to the number of seconds that browsers should cache a CORS preflight response for.
+        type: integer
+  server_config:
+    description: ServerConfig defines settings for creating an HTTP server.
+    type: object
+    properties:
+      auth:
+        description: Auth for this receiver
+        x-optional: true
+        $ref: auth_config
+      compression_algorithms:
+        description: 'CompressionAlgorithms configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]'
+        type: array
+        items:
+          type: string
+      cors:
+        description: CORS configures the server for HTTP cross-origin resource sharing (CORS).
+        x-optional: true
+        $ref: cors_config
+      endpoint:
+        description: Endpoint configures the listening address for the server.
+        type: string
+      idle_timeout:
+        description: IdleTimeout is the maximum amount of time to wait for the next request when keep-alives are enabled. If IdleTimeout is zero, the value of ReadTimeout is used. If both are zero, there is no timeout.
+        type: string
+        x-customType: time.Duration
+        format: duration
+      include_metadata:
+        description: IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers
+        type: boolean
+      keep_alives_enabled:
+        description: KeepAlivesEnabled controls whether HTTP keep-alives are enabled. By default, keep-alives are always enabled. Only very resource-constrained environments should disable them.
+        type: boolean
+      max_request_body_size:
+        description: 'MaxRequestBodySize sets the maximum request body size in bytes. Default: 20MiB.'
+        type: integer
+        x-customType: int64
+      middlewares:
+        description: Middlewares are used to add custom functionality to the HTTP server. Middleware handlers are called in the order they appear in this list, with the first middleware becoming the outermost handler.
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/config/configmiddleware.config
+      read_header_timeout:
+        description: ReadHeaderTimeout is the amount of time allowed to read request headers. The connection's read deadline is reset after reading the headers and the Handler can decide what is considered too slow for the body. If ReadHeaderTimeout is zero, the value of ReadTimeout is used. If both are zero, there is no timeout.
+        type: string
+        x-customType: time.Duration
+        format: duration
+      read_timeout:
+        description: ReadTimeout is the maximum duration for reading the entire request, including the body. A zero or negative value means there will be no timeout. Because ReadTimeout does not let Handlers make per-request decisions on each request body's acceptable deadline or upload rate, most users will prefer to use ReadHeaderTimeout. It is valid to use them both.
+        type: string
+        x-customType: time.Duration
+        format: duration
+      response_headers:
+        description: Additional headers attached to each HTTP response sent to the client. Header values are opaque since they may be sensitive.
+        $ref: go.opentelemetry.io/collector/config/configopaque.map_list
+      tls:
+        description: TLS struct exposes TLS client configuration.
+        x-optional: true
+        $ref: go.opentelemetry.io/collector/config/configtls.server_config
+      write_timeout:
+        description: WriteTimeout is the maximum duration before timing out writes of the response. It is reset whenever a new request's header is read. Like ReadTimeout, it does not let Handlers make decisions on a per-request basis. A zero or negative value means there will be no timeout.
+        type: string
+        x-customType: time.Duration
+        format: duration

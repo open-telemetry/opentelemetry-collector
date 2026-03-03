@@ -70,6 +70,8 @@ linters:
           deny:
             - pkg: "go.uber.org/atomic"
               desc: "Use 'sync/atomic' instead of go.uber.org/atomic"
+            - pkg: "gopkg.in/yaml.v3"
+              desc: "Use 'go.yaml.in/yaml/v3' instead of gopkg.in/yaml.v3"
             - pkg: "github.com/pkg/errors"
               desc: "Use 'errors' or 'fmt' instead of github.com/pkg/errors"
             - pkg: "github.com/hashicorp/go-multierror"

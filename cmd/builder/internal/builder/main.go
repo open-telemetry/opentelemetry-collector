@@ -158,7 +158,7 @@ func GetModules(cfg *Config) error {
 		return nil
 	}
 
-	if _, err := runGoCommand(cfg, "mod", "tidy", "-compat=1.24"); err != nil {
+	if _, err := runGoCommand(cfg, "mod", "tidy", "-compat=1.25"); err != nil {
 		return fmt.Errorf("failed to update go.mod: %w", err)
 	}
 
@@ -174,7 +174,7 @@ func GetModules(cfg *Config) error {
 	}
 
 	coreDepVersion, ok := dependencyVersions[otelcolPath]
-	betaVersion := semver.MajorMinor(defaultBetaOtelColVersion)
+	betaVersion := semver.MajorMinor(DefaultBetaOtelColVersion)
 	if !ok {
 		return fmt.Errorf("core collector %w: '%s'. %s", ErrDepNotFound, otelcolPath, skipStrictMsg)
 	}

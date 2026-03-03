@@ -108,6 +108,7 @@ func (m *metricDefaultMetric) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue string, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
@@ -209,6 +210,7 @@ func (m *metricDefaultMetricToBeRemoved) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricDefaultMetricToBeRemoved) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -296,6 +298,7 @@ func (m *metricMetricInputType) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricMetricInputType) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue string, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
@@ -396,6 +399,7 @@ func (m *metricOptionalMetric) init() {
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricOptionalMetric) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool, booleanAttr2AttributeValue bool) {
@@ -490,6 +494,7 @@ func (m *metricOptionalMetricEmptyUnit) init() {
 	m.data.SetUnit("")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricOptionalMetricEmptyUnit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
@@ -577,10 +582,11 @@ type metricReaggregateMetric struct {
 // init fills reaggregate.metric metric with initial data.
 func (m *metricReaggregateMetric) init() {
 	m.data.SetName("reaggregate.metric")
-	m.data.SetDescription("Metric for testing spacial reaggregation")
+	m.data.SetDescription("Metric for testing spatial reaggregation")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricReaggregateMetric) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
@@ -673,6 +679,7 @@ func (m *metricSystemCPUTime) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {

@@ -162,6 +162,14 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetStringResourceAttrToBeRemoved("string.resource.attr_to_be_removed-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricDefaultMetric.aggDataPoints)
+				assert.Empty(t, mb.metricDefaultMetricToBeRemoved.aggDataPoints)
+				assert.Empty(t, mb.metricMetricInputType.aggDataPoints)
+				assert.Empty(t, mb.metricOptionalMetric.aggDataPoints)
+				assert.Empty(t, mb.metricOptionalMetricEmptyUnit.aggDataPoints)
+				assert.Empty(t, mb.metricReaggregateMetric.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -450,7 +458,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["reaggregate.metric"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "Metric for testing spacial reaggregation", ms.At(i).Description())
+						assert.Equal(t, "Metric for testing spatial reaggregation", ms.At(i).Description())
 						assert.Equal(t, "1", ms.At(i).Unit())
 						dp := ms.At(i).Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
@@ -468,7 +476,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["reaggregate.metric"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "Metric for testing spacial reaggregation", ms.At(i).Description())
+						assert.Equal(t, "Metric for testing spatial reaggregation", ms.At(i).Description())
 						assert.Equal(t, "1", ms.At(i).Unit())
 						dp := ms.At(i).Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
