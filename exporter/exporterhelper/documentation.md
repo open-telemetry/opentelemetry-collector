@@ -133,3 +133,13 @@ Number of spans successfully sent to destination.
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | {spans} | Sum | Int | true | Alpha |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `exporter.PersistRequestContext` | alpha | controls whether context should be stored alongside requests in the persistent queue | v0.128.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/pull/13188) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

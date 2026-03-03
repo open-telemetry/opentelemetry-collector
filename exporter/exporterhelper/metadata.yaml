@@ -196,3 +196,10 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+
+feature_gates:
+  - id: exporter.PersistRequestContext
+    description: 'controls whether context should be stored alongside requests in the persistent queue'
+    stage: alpha
+    from_version: 'v0.128.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/pull/13188'
