@@ -7,6 +7,25 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.53.0/v0.147.0
+
+### 💡 Enhancements 💡
+
+- `pkg/exporterhelper`: Add `metadata_keys` configuration to `sending_queue.batch.partition` to partition batches by client metadata (#14139)
+  The `metadata_keys` configuration option is now available in the `sending_queue.batch.partition` section for all exporters.
+  When specified, batches are partitioned based on the values of the listed metadata keys, allowing separate batching per metadata partition. This feature
+  is automatically configured when using `exporterhelper.WithQueue()`.
+  
+- `pkg/xexporterhelper`: Add code structure to handle unbounded partitions in sending queue. (#14526)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/config/configmiddleware`: Add context.Context to gRPC middleware interface constructors. (#14523)
+- `pkg/extensionmiddleware`: Add context.Context to gRPC middleware interface constructors. (#14523)
+  This is a breaking API change for components that implement or use extensionmiddleware.
+
+<!-- previous-version -->
+
 ## v1.52.0/v0.146.1
 
 <!-- previous-version -->

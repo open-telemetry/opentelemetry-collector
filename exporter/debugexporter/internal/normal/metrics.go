@@ -6,6 +6,7 @@ package normal // import "go.opentelemetry.io/collector/exporter/debugexporter/i
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 
@@ -115,21 +116,39 @@ func writeExponentialHistogramDataPoints(metric pmetric.Metric) (lines []string)
 		dataPoint := metric.ExponentialHistogram().DataPoints().At(i)
 		dataPointAttributes := writeAttributes(dataPoint.Attributes())
 
-		var value string
-		value = fmt.Sprintf("count=%d", dataPoint.Count())
+		var value strings.Builder
+		fmt.Fprintf(&value, "count=%d", dataPoint.Count())
 		if dataPoint.HasSum() {
-			value += fmt.Sprintf(" sum=%v", dataPoint.Sum())
+			fmt.Fprintf(&value, " sum=%v", dataPoint.Sum())
 		}
 		if dataPoint.HasMin() {
-			value += fmt.Sprintf(" min=%v", dataPoint.Min())
+			fmt.Fprintf(&value, " min=%v", dataPoint.Min())
 		}
 		if dataPoint.HasMax() {
-			value += fmt.Sprintf(" max=%v", dataPoint.Max())
+			fmt.Fprintf(&value, " max=%v", dataPoint.Max())
 		}
 
-		// TODO display buckets
+		factor := math.Ldexp(math.Ln2, -int(dataPoint.Scale()))
 
-		dataPointLine := fmt.Sprintf("%s{%s} %s\n", metric.Name(), strings.Join(dataPointAttributes, ","), value)
+		negB := dataPoint.Negative()
+		for j := negB.BucketCounts().Len() - 1; j >= 0; j-- {
+			index := float64(negB.Offset()) + float64(j)
+			upperBound := -math.Exp(index * factor)
+			fmt.Fprintf(&value, " le%v=%d", upperBound, negB.BucketCounts().At(j))
+		}
+
+		if dataPoint.ZeroCount() != 0 {
+			fmt.Fprintf(&value, " zero=%d", dataPoint.ZeroCount())
+		}
+
+		posB := dataPoint.Positive()
+		for j := 0; j < posB.BucketCounts().Len(); j++ {
+			index := float64(posB.Offset()) + float64(j)
+			upperBound := math.Exp((index + 1) * factor)
+			fmt.Fprintf(&value, " le%v=%d", upperBound, posB.BucketCounts().At(j))
+		}
+
+		dataPointLine := fmt.Sprintf("%s{%s} %s\n", metric.Name(), strings.Join(dataPointAttributes, ","), value.String())
 		lines = append(lines, dataPointLine)
 	}
 	return lines

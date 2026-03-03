@@ -173,8 +173,6 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Core Release manager  | Contrib release manager | 'Releases' release manager |
 |------------|----------|-----------------------|-------------------------|----------------------------|
-| 2026-02-17 | v0.146.0 | [@evan-bradley][2]    | [@evan-bradley][2]      | [@evan-bradley][2]         |
-| 2026-03-02 | v0.147.0 | [@songy23][6]         | [@songy23][6]           | [@songy23][6]              |
 | 2026-03-16 | v0.148.0 | [@dmitryax][7]        | [@dmitryax][7]          | [@dmitryax][7]             |
 | 2026-03-30 | v0.149.0 | [@codeboten][8]       | [@codeboten][8]         | [@codeboten][8]            |
 | 2026-04-13 | v0.150.0 | [@dmathieu][12]       | [@andrzej-stencel][4]   | [@crobert-1][20]           |
@@ -185,6 +183,8 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2026-06-22 | v0.155.0 | [@jmacd][1]           | [@ArthurSens][11]       | [@TylerHelmuth][3]         |
 | 2026-07-06 | v0.156.0 | [@mx-psi][14]         | [@mx-psi][14]           | [@mx-psi][14]              |
 | 2026-07-20 | v0.157.0 | [@TylerHelmuth][3]    | [@TylerHelmuth][3]      | [@mowies][15]              |
+| 2026-08-03 | v0.158.0 | [@evan-bradley][2]    | [@evan-bradley][2]      | [@evan-bradley][2]         |
+| 2026-08-17 | v0.159.0 | [@songy23][6]         | [@songy23][6]           | [@songy23][6]              |
 
 [1]: https://github.com/jmacd
 [2]: https://github.com/evan-bradley

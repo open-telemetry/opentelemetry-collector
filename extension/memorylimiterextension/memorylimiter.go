@@ -49,7 +49,12 @@ func (ml *memoryLimiterExtension) MustRefuse() bool {
 	return ml.memLimiter.MustRefuse()
 }
 
-func (ml *memoryLimiterExtension) GetHTTPHandler(base http.Handler) (http.Handler, error) {
+// GetHTTPHandler implements extensionmiddleware.HTTPServer
+func (ml *memoryLimiterExtension) GetHTTPHandler(_ context.Context) (extensionmiddleware.WrapHTTPHandlerFunc, error) {
+	return ml.wrapHTTPHandler, nil
+}
+
+func (ml *memoryLimiterExtension) wrapHTTPHandler(_ context.Context, base http.Handler) (http.Handler, error) {
 	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
 		if ml.MustRefuse() {
 			http.Error(resp, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
@@ -59,7 +64,7 @@ func (ml *memoryLimiterExtension) GetHTTPHandler(base http.Handler) (http.Handle
 	}), nil
 }
 
-func (ml *memoryLimiterExtension) GetGRPCServerOptions() ([]grpc.ServerOption, error) {
+func (ml *memoryLimiterExtension) GetGRPCServerOptions(_ context.Context) ([]grpc.ServerOption, error) {
 	return []grpc.ServerOption{
 		grpc.ChainUnaryInterceptor(
 			func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
