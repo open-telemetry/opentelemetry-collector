@@ -9,14 +9,14 @@ require (
 	go.opentelemetry.io/collector/component v1.53.0
 	go.opentelemetry.io/collector/component/componenttest v0.147.0
 	go.opentelemetry.io/collector/confmap v1.53.0
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.52.0
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.53.0
 	go.opentelemetry.io/collector/connector v0.147.0
 	go.opentelemetry.io/collector/connector/connectortest v0.147.0
 	go.opentelemetry.io/collector/consumer v1.53.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.147.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.147.0
 	go.opentelemetry.io/collector/featuregate v1.53.0
-	go.opentelemetry.io/collector/filter v0.146.1
+	go.opentelemetry.io/collector/filter v0.147.0
 	go.opentelemetry.io/collector/pdata v1.53.0
 	go.opentelemetry.io/collector/pdata/xpdata v0.147.0
 	go.opentelemetry.io/collector/pipeline v1.53.0
@@ -27,7 +27,7 @@ require (
 	go.opentelemetry.io/collector/receiver/xreceiver v0.147.0
 	go.opentelemetry.io/collector/scraper v0.147.0
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.147.0
-	go.opentelemetry.io/collector/scraper/scrapertest v0.146.1
+	go.opentelemetry.io/collector/scraper/scrapertest v0.147.0
 	go.opentelemetry.io/collector/service/hostcapabilities v0.147.0
 	go.opentelemetry.io/otel v1.41.0
 	go.opentelemetry.io/otel/metric v1.41.0
