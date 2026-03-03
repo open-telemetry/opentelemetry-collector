@@ -5,10 +5,11 @@ package pcommon // import "go.opentelemetry.io/collector/pdata/pcommon"
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
+
+	json "github.com/goccy/go-json"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 )
@@ -401,14 +402,14 @@ func (v Value) AsString() string {
 		return strconv.FormatInt(v.Int(), 10)
 
 	case ValueTypeMap:
-		jsonStr, _ := json.Marshal(v.Map().AsRaw())
+		jsonStr, _ := json.MarshalWithOption(v.Map().AsRaw(), json.DisableHTMLEscape())
 		return string(jsonStr)
 
 	case ValueTypeBytes:
 		return base64.StdEncoding.EncodeToString(*v.Bytes().getOrig())
 
 	case ValueTypeSlice:
-		jsonStr, _ := json.Marshal(v.Slice().AsRaw())
+		jsonStr, _ := json.MarshalWithOption(v.Slice().AsRaw(), json.DisableHTMLEscape())
 		return string(jsonStr)
 
 	default:
