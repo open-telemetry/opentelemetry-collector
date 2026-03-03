@@ -1188,12 +1188,13 @@ func TestExport_ErrorShowsModifiedURL(t *testing.T) {
 	originalURL := "http://localhost:4318/v1/logs"
 	modifiedURL := "https://actual-destination.example.com/v1/logs"
 
-	mockTransport := &mockTransport{
+	transport := &mockTransport{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
-			parsedModified, _ := url.Parse(modifiedURL)
+			parsedModified, err := url.Parse(modifiedURL)
+			require.NoError(t, err)
 			req.URL = parsedModified
 
-			return nil, context.DeadlineExceeded
+			return nil, errors.New("we need an error logged")
 		},
 	}
 
