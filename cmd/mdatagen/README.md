@@ -58,6 +58,46 @@ Below are some more examples that can be used for reference:
 
 You can run `cd cmd/mdatagen && $(GOCMD) install .` to install the `mdatagen` tool in `GOBIN` and then run `mdatagen metadata.yaml` to generate documentation for a specific component or you can run `make generate` to generate documentation for all components.
 
+### Component Config Documentation
+
+The metadata generator supports automatic generation of configuration schemas for components. 
+This generates JSON Schema files that enable IDE autocompletion, validation, and documentation for component configuration.
+In the future it will also generate Go config structs and human-readable documentation for configuration options
+
+To define a configuration schema, add a `config` section to your `metadata.yaml`:
+
+```yaml
+type: myreceiver
+status:
+  class: receiver
+  stability:
+    beta: [metrics, traces]
+
+config:
+  type: object
+  properties:
+    endpoint:
+      type: string
+      description: The endpoint to listen on
+      default: "localhost:4317"
+    timeout:
+      type: string
+      format: duration
+      description: Request timeout duration
+      default: "30s"
+    tls:
+      $ref: go.opentelemetry.io/collector/config/configtls.server_config
+  required: [endpoint]
+```
+
+The `config` section is based on [JSON Schema standard](https://json-schema.org/) (draft 2020-12) and supports:
+
+- **Standard JSON Schema types**: string, number, integer, boolean, object, array, null
+- **Validation constraints**: minLength, maxLength, pattern, minimum, maximum, enum, etc.
+- **References**: Internal (`$ref: definition_name`), external (`$ref: package.path.type`), or relative (`$ref: ./internal/config.type`)
+- **Reusable definitions**: Define common schemas in `$defs` and reference them with `$ref`
+- **Schema composition**: Use `allOf` for complex configurations
+
 ### Feature Gates Documentation
 
 The metadata generator supports automatic documentation generation for feature gates used by components. Feature gates are documented by adding a `feature_gates` section to your `metadata.yaml`:

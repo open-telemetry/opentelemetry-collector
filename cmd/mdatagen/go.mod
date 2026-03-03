@@ -9,14 +9,14 @@ require (
 	go.opentelemetry.io/collector/component v1.53.0
 	go.opentelemetry.io/collector/component/componenttest v0.147.0
 	go.opentelemetry.io/collector/confmap v1.53.0
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.53.0
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.52.0
 	go.opentelemetry.io/collector/connector v0.147.0
 	go.opentelemetry.io/collector/connector/connectortest v0.147.0
 	go.opentelemetry.io/collector/consumer v1.53.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.147.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.147.0
 	go.opentelemetry.io/collector/featuregate v1.53.0
-	go.opentelemetry.io/collector/filter v0.147.0
+	go.opentelemetry.io/collector/filter v0.146.1
 	go.opentelemetry.io/collector/pdata v1.53.0
 	go.opentelemetry.io/collector/pdata/xpdata v0.147.0
 	go.opentelemetry.io/collector/pipeline v1.53.0
@@ -26,7 +26,8 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.147.0
 	go.opentelemetry.io/collector/receiver/xreceiver v0.147.0
 	go.opentelemetry.io/collector/scraper v0.147.0
-	go.opentelemetry.io/collector/scraper/scrapertest v0.147.0
+	go.opentelemetry.io/collector/scraper/scraperhelper v0.147.0
+	go.opentelemetry.io/collector/scraper/scrapertest v0.146.1
 	go.opentelemetry.io/collector/service/hostcapabilities v0.147.0
 	go.opentelemetry.io/otel v1.41.0
 	go.opentelemetry.io/otel/metric v1.41.0
@@ -36,6 +37,7 @@ require (
 	go.uber.org/zap v1.27.1
 	go.yaml.in/yaml/v3 v3.0.4
 	golang.org/x/text v0.34.0
+	golang.org/x/tools v0.41.0
 )
 
 require (
@@ -68,9 +70,12 @@ require (
 	go.opentelemetry.io/collector/pdata/testdata v0.147.0 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.147.0 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.147.0 // indirect
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.147.0 // indirect
 	go.opentelemetry.io/collector/service v0.147.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.41.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
+	golang.org/x/mod v0.32.0 // indirect
+	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260128011058-8636f8732409 // indirect
 	google.golang.org/grpc v1.79.1 // indirect
@@ -205,3 +210,7 @@ replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testut
 replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/componentalias
 
 replace go.opentelemetry.io/collector/config/confignet => ../../config/confignet
+
+replace go.opentelemetry.io/collector/receiver/receiverhelper => ../../receiver/receiverhelper
+
+replace go.opentelemetry.io/collector/scraper/scraperhelper => ../../scraper/scraperhelper
