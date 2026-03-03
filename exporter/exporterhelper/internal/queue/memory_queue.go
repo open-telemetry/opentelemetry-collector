@@ -30,28 +30,32 @@ type memoryQueue[T request.Request] struct {
 	component.StartFunc
 	refCounter ReferenceCounter[T]
 	sizer      request.Sizer
+	encoding   Encoding[T]
 	cap        int64
 
-	mu              sync.Mutex
-	hasMoreElements *sync.Cond
-	hasMoreSpace    *cond
-	items           *linkedQueue[T]
-	size            int64
-	stopped         bool
-	waitForResult   bool
-	blockOnOverflow bool
+	mu                     sync.Mutex
+	hasMoreElements        *sync.Cond
+	hasMoreSpace           *cond
+	items                  *linkedQueue[memoryQueueItem[T]]
+	size                   int64
+	stopped                bool
+	waitForResult          bool
+	blockOnOverflow        bool
+	useEncodingForInMemory bool
 }
 
 // newMemoryQueue creates a sized elements channel. Each element is assigned a size by the provided sizer.
 // capacity is the capacity of the queue.
 func newMemoryQueue[T request.Request](set Settings[T]) readableQueue[T] {
 	sq := &memoryQueue[T]{
-		refCounter:      set.ReferenceCounter,
-		sizer:           request.NewSizer(set.SizerType),
-		cap:             set.Capacity,
-		items:           &linkedQueue[T]{},
-		waitForResult:   set.WaitForResult,
-		blockOnOverflow: set.BlockOnOverflow,
+		refCounter:             set.ReferenceCounter,
+		sizer:                  request.NewSizer(set.SizerType),
+		encoding:               set.Encoding,
+		cap:                    set.Capacity,
+		items:                  &linkedQueue[memoryQueueItem[T]]{},
+		waitForResult:          set.WaitForResult,
+		blockOnOverflow:        set.BlockOnOverflow,
+		useEncodingForInMemory: set.UseEncodingForInMemory,
 	}
 	sq.hasMoreElements = sync.NewCond(&sq.mu)
 	sq.hasMoreSpace = newCond(&sq.mu)
@@ -76,11 +80,25 @@ func (mq *memoryQueue[T]) Offer(ctx context.Context, el T) error {
 		return errSizeTooLarge
 	}
 
+	if mq.useEncodingForInMemory {
+		return mq.offerEncoded(ctx, el, elSize)
+	}
+
 	if mq.refCounter != nil {
 		mq.refCounter.Ref(el)
 	}
 
-	done, err := mq.add(ctx, el, elSize)
+	storedCtx := ctx
+	if !mq.waitForResult {
+		// Prevent cancellation and deadline to propagate to the context stored in the queue.
+		// The grpc/http based receivers will cancel the request context after this function returns.
+		storedCtx = context.WithoutCancel(ctx)
+	}
+
+	done, err := mq.add(ctx, memoryQueueItem[T]{
+		ctx:     storedCtx,
+		request: el,
+	}, elSize)
 	if err != nil {
 		// Unref in case of an error since there will not be any async worker to pick it up.
 		if mq.refCounter != nil {
@@ -104,7 +122,39 @@ func (mq *memoryQueue[T]) Offer(ctx context.Context, el T) error {
 	return nil
 }
 
-func (mq *memoryQueue[T]) add(ctx context.Context, el T, elSize int64) (*blockingDone, error) {
+func (mq *memoryQueue[T]) offerEncoded(ctx context.Context, el T, elSize int64) error {
+	marshalCtx := ctx
+	if !mq.waitForResult {
+		// Keep the same context semantics as non-encoded in-memory queue path.
+		marshalCtx = context.WithoutCancel(ctx)
+	}
+
+	payload, err := mq.encoding.Marshal(marshalCtx, el)
+	if err != nil {
+		return err
+	}
+
+	done, err := mq.add(ctx, memoryQueueItem[T]{
+		payload: payload,
+	}, elSize)
+	if err != nil {
+		return err
+	}
+
+	if mq.waitForResult {
+		select {
+		case doneErr := <-done.ch:
+			blockingDonePool.Put(done)
+			return doneErr
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+
+	return nil
+}
+
+func (mq *memoryQueue[T]) add(ctx context.Context, el memoryQueueItem[T], elSize int64) (*blockingDone, error) {
 	mq.mu.Lock()
 	defer mq.mu.Unlock()
 
@@ -121,14 +171,7 @@ func (mq *memoryQueue[T]) add(ctx context.Context, el T, elSize int64) (*blockin
 	mq.size += elSize
 	done := blockingDonePool.Get().(*blockingDone)
 	done.reset(elSize, mq)
-
-	if !mq.waitForResult {
-		// Prevent cancellation and deadline to propagate to the context stored in the queue.
-		// The grpc/http based receivers will cancel the request context after this function returns.
-		ctx = context.WithoutCancel(ctx)
-	}
-
-	mq.items.push(ctx, el, done)
+	mq.items.push(el, done)
 	// Signal one consumer if any.
 	mq.hasMoreElements.Signal()
 	return done, nil
@@ -143,7 +186,16 @@ func (mq *memoryQueue[T]) Read(context.Context) (context.Context, T, Done, bool)
 
 	for {
 		if mq.items.hasElements() {
-			elCtx, el, done := mq.items.pop()
+			item, done := mq.items.pop()
+			if !mq.useEncodingForInMemory {
+				return item.ctx, item.request, done, true
+			}
+
+			elCtx, el, err := mq.encoding.Unmarshal(item.payload)
+			if err != nil {
+				mq.onDoneLocked(done.(*blockingDone), err)
+				continue
+			}
 			return elCtx, el, done, true
 		}
 
@@ -161,6 +213,10 @@ func (mq *memoryQueue[T]) Read(context.Context) (context.Context, T, Done, bool)
 func (mq *memoryQueue[T]) onDone(bd *blockingDone, err error) {
 	mq.mu.Lock()
 	defer mq.mu.Unlock()
+	mq.onDoneLocked(bd, err)
+}
+
+func (mq *memoryQueue[T]) onDoneLocked(bd *blockingDone, err error) {
 	mq.size -= bd.elSize
 	mq.hasMoreSpace.Signal()
 	if mq.waitForResult {
@@ -190,8 +246,13 @@ func (mq *memoryQueue[T]) Capacity() int64 {
 	return mq.cap
 }
 
+type memoryQueueItem[T request.Request] struct {
+	ctx     context.Context
+	request T
+	payload []byte
+}
+
 type node[T any] struct {
-	ctx  context.Context
 	data T
 	done Done
 	next *node[T]
@@ -202,8 +263,8 @@ type linkedQueue[T any] struct {
 	tail *node[T]
 }
 
-func (l *linkedQueue[T]) push(ctx context.Context, data T, done Done) {
-	n := &node[T]{ctx: ctx, data: data, done: done}
+func (l *linkedQueue[T]) push(data T, done Done) {
+	n := &node[T]{data: data, done: done}
 	// If tail is nil means list is empty so update both head and tail to point to same element.
 	if l.tail == nil {
 		l.head = n
@@ -218,7 +279,7 @@ func (l *linkedQueue[T]) hasElements() bool {
 	return l.head != nil
 }
 
-func (l *linkedQueue[T]) pop() (context.Context, T, Done) {
+func (l *linkedQueue[T]) pop() (T, Done) {
 	n := l.head
 	l.head = n.next
 	// If it gets to the last element, then update tail as well.
@@ -226,7 +287,7 @@ func (l *linkedQueue[T]) pop() (context.Context, T, Done) {
 		l.tail = nil
 	}
 	n.next = nil
-	return n.ctx, n.data, n.done
+	return n.data, n.done
 }
 
 type blockingDone struct {

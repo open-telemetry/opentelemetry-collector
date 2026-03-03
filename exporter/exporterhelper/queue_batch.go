@@ -47,6 +47,12 @@ func WithQueueBatchPayloadCodec(codec QueueBatchPayloadCodec) Option {
 	return internal.WithQueueBatchPayloadCodec(codec)
 }
 
+// WithQueueBatchInMemoryEncoding enables queue encoding for in-memory queues.
+// It marshals requests before enqueue and unmarshals requests after dequeue.
+func WithQueueBatchInMemoryEncoding(enabled bool) Option {
+	return internal.WithQueueBatchInMemoryEncoding(enabled)
+}
+
 var ErrQueueIsFull = queue.ErrQueueIsFull
 
 // NewDefaultQueueConfig returns the default config for QueueBatchConfig.

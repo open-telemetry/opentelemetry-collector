@@ -16,10 +16,11 @@ import (
 
 // Settings is a subset of the queuebatch.Settings that are needed when used within an Exporter.
 type Settings[T any] struct {
-	ReferenceCounter queue.ReferenceCounter[T]
-	Encoding         queue.Encoding[T]
-	Partitioner      Partitioner[T]
-	MergeCtx         func(context.Context, context.Context) context.Context
+	ReferenceCounter       queue.ReferenceCounter[T]
+	Encoding               queue.Encoding[T]
+	UseEncodingForInMemory bool
+	Partitioner            Partitioner[T]
+	MergeCtx               func(context.Context, context.Context) context.Context
 }
 
 // AllSettings defines settings for creating a QueueBatch.
@@ -57,17 +58,18 @@ func NewQueueBatch(
 	}
 
 	q, err := queue.NewQueue(queue.Settings[request.Request]{
-		SizerType:        cfg.Sizer,
-		Capacity:         cfg.QueueSize,
-		NumConsumers:     cfg.NumConsumers,
-		WaitForResult:    cfg.WaitForResult,
-		BlockOnOverflow:  cfg.BlockOnOverflow,
-		Signal:           set.Signal,
-		StorageID:        cfg.StorageID,
-		ReferenceCounter: set.ReferenceCounter,
-		Encoding:         set.Encoding,
-		ID:               set.ID,
-		Telemetry:        set.Telemetry,
+		SizerType:              cfg.Sizer,
+		Capacity:               cfg.QueueSize,
+		NumConsumers:           cfg.NumConsumers,
+		WaitForResult:          cfg.WaitForResult,
+		BlockOnOverflow:        cfg.BlockOnOverflow,
+		UseEncodingForInMemory: set.UseEncodingForInMemory,
+		Signal:                 set.Signal,
+		StorageID:              cfg.StorageID,
+		ReferenceCounter:       set.ReferenceCounter,
+		Encoding:               set.Encoding,
+		ID:                     set.ID,
+		Telemetry:              set.Telemetry,
 	}, b.Consume)
 	if err != nil {
 		return nil, err
