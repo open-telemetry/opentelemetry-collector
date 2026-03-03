@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -1173,4 +1174,43 @@ type badReader struct{}
 
 func (b badReader) Read([]byte) (int, error) {
 	return 0, errors.New("Bad read")
+}
+
+type mockTransport struct {
+	roundTripFunc func(req *http.Request) (*http.Response, error)
+}
+
+func (t *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	return t.roundTripFunc(req)
+}
+
+func TestExport_ErrorShowsModifiedURL(t *testing.T) {
+	originalURL := "http://localhost:4318/v1/logs"
+	modifiedURL := "https://actual-destination.example.com/v1/logs"
+
+	mockTransport := &mockTransport{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			parsedModified, _ := url.Parse(modifiedURL)
+			req.URL = parsedModified
+
+			return nil, context.DeadlineExceeded
+		},
+	}
+
+	client := &http.Client{Transport: mockTransport}
+
+	logger, _ := observer.New(zap.DebugLevel)
+	exp := &baseExporter{
+		client: client,
+		logger: zap.New(logger),
+		config: &Config{
+			Encoding: EncodingProto,
+		},
+	}
+
+	err := exp.export(context.Background(), originalURL, []byte("test data"), nil)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), modifiedURL, "Error message should contain the modified destination URL")
+	assert.NotContains(t, err.Error(), originalURL, "Error message should NOT contain the original placeholder URL")
 }
