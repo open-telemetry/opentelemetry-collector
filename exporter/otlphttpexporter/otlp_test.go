@@ -1188,6 +1188,7 @@ func TestExport_ErrorShowsModifiedURL(t *testing.T) {
 	originalURL := "http://localhost:4318/v1/logs"
 	modifiedURL := "https://actual-destination.example.com/v1/logs"
 
+<<<<<<< HEAD
 	transport := &mockTransport{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
 			parsedModified, err := url.Parse(modifiedURL)
@@ -1199,6 +1200,18 @@ func TestExport_ErrorShowsModifiedURL(t *testing.T) {
 	}
 
 	client := &http.Client{Transport: transport}
+=======
+	mockTransport := &mockTransport{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			parsedModified, _ := url.Parse(modifiedURL)
+			req.URL = parsedModified
+
+			return nil, context.DeadlineExceeded
+		},
+	}
+
+	client := &http.Client{Transport: mockTransport}
+>>>>>>> 726bc30ba (fix(otlphttpexporter): unwrap url.Error to show actual modified destination URL in error messages)
 
 	logger, _ := observer.New(zap.DebugLevel)
 	exp := &baseExporter{
