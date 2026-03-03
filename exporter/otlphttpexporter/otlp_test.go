@@ -1198,7 +1198,7 @@ func TestExport_ErrorShowsModifiedURL(t *testing.T) {
 		},
 	}
 
-	client := &http.Client{Transport: mockTransport}
+	client := &http.Client{Transport: transport}
 
 	logger, _ := observer.New(zap.DebugLevel)
 	exp := &baseExporter{
