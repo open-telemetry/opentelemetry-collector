@@ -22,6 +22,8 @@ import (
 	"go.yaml.in/yaml/v3"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 )
 
 const (
@@ -79,7 +81,7 @@ func run(ymlPath string) error {
 	ymlDir := filepath.Dir(ymlPath)
 	packageName := filepath.Base(ymlDir)
 
-	raw, readErr := os.ReadFile(ymlPath) //nolint:gosec // G304: abs path is cleaned/validated above; safe to read
+	raw, readErr := os.ReadFile(filepath.Clean(ymlPath))
 	if readErr != nil {
 		return fmt.Errorf("failed reading %v: %w", ymlPath, readErr)
 	}
@@ -219,6 +221,10 @@ func run(ymlPath string) error {
 		if err := generateFile(tmpl, dst, md, md.GeneratedPackageName); err != nil {
 			return err
 		}
+	}
+
+	if err := generateConfigFiles(md, ymlDir); err != nil {
+		return fmt.Errorf("failed to generate config files: %w", err)
 	}
 
 	return nil
@@ -395,7 +401,7 @@ func executeTemplate(tmplFile string, md Metadata, goPackage string) ([]byte, er
 func inlineReplace(tmplFile, outputFile string, md Metadata, start, end, goPackage string) error {
 	var readmeContents []byte
 	var err error
-	if readmeContents, err = os.ReadFile(outputFile); err != nil { //nolint:gosec
+	if readmeContents, err = os.ReadFile(filepath.Clean(outputFile)); err != nil {
 		return err
 	}
 
@@ -501,6 +507,22 @@ func validateYAMLKeyOrder(raw []byte) error {
 	} {
 		if err := validateMappingKeysSorted(&doc, p...); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func generateConfigFiles(md Metadata, mdDir string) error {
+	if md.Config != nil {
+		resolver := cfggen.NewResolver(md.PackageName, md.Status.Class, md.Type, mdDir)
+		resolvedSchema, err := resolver.ResolveSchema(md.Config)
+		if err != nil {
+			return fmt.Errorf("failed to resolve config schema: %w", err)
+		}
+
+		err = cfggen.WriteJSONSchema(mdDir, resolvedSchema)
+		if err != nil {
+			return fmt.Errorf("failed to write config schema: %w", err)
 		}
 	}
 	return nil

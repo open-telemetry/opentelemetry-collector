@@ -16,6 +16,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yaml.in/yaml/v3"
+
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 func TestToStringMapFlatten(t *testing.T) {
@@ -1013,7 +1015,10 @@ func TestRecursiveUnmarshaling(t *testing.T) {
 	require.Equal(t, "something", r.Foo)
 }
 
-func TestExpandedValue(t *testing.T) {
+func testExpandedValue(t *testing.T, newSanitizer bool) {
+	err := featuregate.GlobalRegistry().Set(NewExpandedValueSanitizer.ID(), newSanitizer)
+	require.NoError(t, err)
+
 	cm := NewFromStringMap(map[string]any{
 		"key": ExpandedValue{
 			Value:    0xdeadbeef,
@@ -1031,6 +1036,30 @@ func TestExpandedValue(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfgStr))
 	assert.Equal(t, "original", cfgStr.Key)
 
+	type ConfigStrPtr struct {
+		Key *string `mapstructure:"key"`
+	}
+
+	cfgStrPtr := ConfigStrPtr{}
+	if newSanitizer {
+		require.NoError(t, cm.Unmarshal(&cfgStrPtr))
+		if assert.NotNil(t, cfgStrPtr.Key) {
+			assert.Equal(t, "original", *cfgStrPtr.Key)
+		}
+	} else {
+		require.Error(t, cm.Unmarshal(&cfgStrPtr))
+	}
+
+	cfgMapStrPtr := map[string]*string{}
+	if newSanitizer {
+		require.NoError(t, cm.Unmarshal(&cfgMapStrPtr))
+		if assert.NotNil(t, cfgMapStrPtr["key"]) {
+			assert.Equal(t, "original", *cfgMapStrPtr["key"])
+		}
+	} else {
+		require.Error(t, cm.Unmarshal(&cfgMapStrPtr))
+	}
+
 	type ConfigInt struct {
 		Key int `mapstructure:"key"`
 	}
@@ -1043,6 +1072,39 @@ func TestExpandedValue(t *testing.T) {
 	}
 	cfgBool := ConfigBool{}
 	assert.Error(t, cm.Unmarshal(&cfgBool))
+}
+
+func TestExpandedValue(t *testing.T) {
+	before := NewExpandedValueSanitizer.IsEnabled()
+	t.Run("old sanitizer", func(t *testing.T) {
+		testExpandedValue(t, false)
+	})
+	t.Run("new sanitizer", func(t *testing.T) {
+		testExpandedValue(t, true)
+	})
+	err := featuregate.GlobalRegistry().Set(NewExpandedValueSanitizer.ID(), before)
+	require.NoError(t, err)
+}
+
+func TestExpandedValueNil(t *testing.T) {
+	cm := NewFromStringMap(map[string]any{
+		"key": ExpandedValue{
+			Value:    nil,
+			Original: "NULL",
+		},
+	})
+
+	type ConfigStrPtr struct {
+		Key *string `mapstructure:"key"`
+	}
+
+	cfgStrPtr := ConfigStrPtr{}
+	require.NoError(t, cm.Unmarshal(&cfgStrPtr))
+	assert.Nil(t, cfgStrPtr.Key)
+
+	cfgMapStrPtr := map[string]*string{}
+	require.NoError(t, cm.Unmarshal(&cfgMapStrPtr))
+	assert.Nil(t, cfgMapStrPtr["key"])
 }
 
 func TestSubExpandedValue(t *testing.T) {

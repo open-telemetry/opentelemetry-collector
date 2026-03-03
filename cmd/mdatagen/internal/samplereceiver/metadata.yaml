@@ -35,6 +35,20 @@ status:
   warnings:
     - Any additional information that should be brought to the consumer's attention
 
+config:
+  type: object
+  properties:
+    endpoint:
+      description: The endpoint to scrape metrics from.
+      type: string
+      default: "localhost:12345"
+    timeout:
+      description: Timeout for scraping metrics.
+      type: string
+      format: duration
+      default: 10s
+  required: [endpoint]
+
 resource_attributes:
   map.resource.attr:
     description: Resource attribute with a map value.
