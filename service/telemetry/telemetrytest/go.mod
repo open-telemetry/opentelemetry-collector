@@ -4,11 +4,11 @@ go 1.25.0
 
 require (
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.52.0
-	go.opentelemetry.io/collector/pdata v1.52.0
-	go.opentelemetry.io/collector/service v0.146.1
-	go.opentelemetry.io/otel/metric v1.40.0
-	go.opentelemetry.io/otel/trace v1.40.0
+	go.opentelemetry.io/collector/component v1.53.0
+	go.opentelemetry.io/collector/pdata v1.53.0
+	go.opentelemetry.io/collector/service v0.147.0
+	go.opentelemetry.io/otel/metric v1.41.0
+	go.opentelemetry.io/otel/trace v1.41.0
 	go.uber.org/zap v1.27.1
 )
 
@@ -33,10 +33,10 @@ require (
 	github.com/prometheus/otlptranslator v1.0.0 // indirect
 	github.com/prometheus/procfs v0.19.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.146.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.52.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.147.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.53.0 // indirect
 	go.opentelemetry.io/contrib/otelconf v0.18.0 // indirect
-	go.opentelemetry.io/otel v1.40.0 // indirect
+	go.opentelemetry.io/otel v1.41.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.16.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.16.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.40.0 // indirect
@@ -48,10 +48,10 @@ require (
 	go.opentelemetry.io/otel/exporters/stdout/stdoutlog v0.16.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.40.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.40.0 // indirect
-	go.opentelemetry.io/otel/log v0.16.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.40.0 // indirect
+	go.opentelemetry.io/otel/log v0.17.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.41.0 // indirect
 	go.opentelemetry.io/otel/sdk/log v0.16.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.40.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.41.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.9.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
