@@ -34,6 +34,19 @@ type QueueBatchEncoding[T any] interface {
 	Unmarshal([]byte) (context.Context, T, error)
 }
 
+// QueueBatchPayloadCodec transforms serialized queue payload bytes.
+// It can be used to add optional features such as compression for persistent sending queues.
+type QueueBatchPayloadCodec interface {
+	Encode([]byte) ([]byte, error)
+	Decode([]byte) ([]byte, error)
+}
+
+// WithQueueBatchPayloadCodec overrides the queue payload codec used by WithQueue/WithQueueBatch.
+// It wraps the existing queue encoding and applies Encode on enqueue and Decode on dequeue.
+func WithQueueBatchPayloadCodec(codec QueueBatchPayloadCodec) Option {
+	return internal.WithQueueBatchPayloadCodec(codec)
+}
+
 var ErrQueueIsFull = queue.ErrQueueIsFull
 
 // NewDefaultQueueConfig returns the default config for QueueBatchConfig.
