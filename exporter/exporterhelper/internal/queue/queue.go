@@ -65,20 +65,25 @@ type Queue[T any] interface {
 
 // Settings define internal parameters for a new Queue creation.
 type Settings[T request.Request] struct {
-	SizerType        request.SizerType
-	Capacity         int64
-	NumConsumers     int
-	WaitForResult    bool
-	BlockOnOverflow  bool
-	Signal           pipeline.Signal
-	StorageID        *component.ID
-	ReferenceCounter ReferenceCounter[T]
-	Encoding         Encoding[T]
-	ID               component.ID
-	Telemetry        component.TelemetrySettings
+	SizerType              request.SizerType
+	Capacity               int64
+	NumConsumers           int
+	WaitForResult          bool
+	BlockOnOverflow        bool
+	UseEncodingForInMemory bool
+	Signal                 pipeline.Signal
+	StorageID              *component.ID
+	ReferenceCounter       ReferenceCounter[T]
+	Encoding               Encoding[T]
+	ID                     component.ID
+	Telemetry              component.TelemetrySettings
 }
 
 func NewQueue[T request.Request](set Settings[T], next ConsumeFunc[T]) (Queue[T], error) {
+	if set.StorageID == nil && set.UseEncodingForInMemory && set.Encoding == nil {
+		return nil, errors.New("`Settings.Encoding` must not be nil when in-memory encoding is enabled")
+	}
+
 	q := newBaseQueue(set)
 	oq, err := newObsQueue(set, newAsyncQueue(q, set.NumConsumers, next, set.ReferenceCounter))
 	if err != nil {

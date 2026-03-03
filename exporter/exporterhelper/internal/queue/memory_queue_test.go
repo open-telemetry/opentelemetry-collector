@@ -13,6 +13,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -245,6 +247,85 @@ func BenchmarkMemoryQueueWaitForResult(b *testing.B) {
 	}
 	require.NoError(b, q.Shutdown(context.Background()))
 	assert.Equal(b, int64(b.N)*100, consumed.Load())
+}
+
+func TestMemoryQueueInMemoryEncodingRoundTrip(t *testing.T) {
+	set := newSettings(request.SizerTypeItems, 7)
+	set.UseEncodingForInMemory = true
+	q := newMemoryQueue[intRequest](set)
+	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, q.Offer(context.Background(), 3))
+
+	assert.True(t, consume(q, func(_ context.Context, el intRequest) error {
+		assert.EqualValues(t, 3, el)
+		return nil
+	}))
+
+	require.NoError(t, q.Shutdown(context.Background()))
+}
+
+func TestMemoryQueueInMemoryEncodingDecodeErrorWaitForResult(t *testing.T) {
+	set := newSettings(request.SizerTypeItems, 10)
+	set.NumConsumers = 1
+	set.WaitForResult = true
+	set.UseEncodingForInMemory = true
+	set.Encoding = decodeErrEncoding{}
+	set.ReferenceCounter = nil
+
+	var consumed atomic.Bool
+	q, err := NewQueue(set, func(context.Context, intRequest, Done) {
+		consumed.Store(true)
+	})
+	require.NoError(t, err)
+	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
+	require.ErrorContains(t, q.Offer(context.Background(), intRequest(1)), "decode failed")
+	assert.False(t, consumed.Load())
+	assert.EqualValues(t, 0, q.Size())
+	require.NoError(t, q.Shutdown(context.Background()))
+}
+
+func TestMemoryQueueInMemoryEncodingDecodeErrorAsync(t *testing.T) {
+	set := newSettings(request.SizerTypeItems, 10)
+	set.NumConsumers = 1
+	set.WaitForResult = false
+	set.UseEncodingForInMemory = true
+	set.Encoding = decodeErrEncoding{}
+	set.ReferenceCounter = nil
+	logger, observed := observer.New(zap.ErrorLevel)
+	set.Telemetry.Logger = zap.New(logger)
+
+	var consumed atomic.Bool
+	q, err := NewQueue(set, func(context.Context, intRequest, Done) {
+		consumed.Store(true)
+	})
+	require.NoError(t, err)
+	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, q.Offer(context.Background(), intRequest(1)))
+
+	require.Eventually(t, func() bool { return q.Size() == 0 }, time.Second, 10*time.Millisecond)
+	require.Eventually(t, func() bool { return observed.Len() > 0 }, time.Second, 10*time.Millisecond)
+	assert.False(t, consumed.Load())
+	assert.Equal(t, "Failed to decode in-memory queue item; dropping item", observed.All()[0].Message)
+	require.NoError(t, q.Shutdown(context.Background()))
+}
+
+func TestMemoryQueueInMemoryEncodingRequireEncoding(t *testing.T) {
+	set := newSettings(request.SizerTypeItems, 10)
+	set.UseEncodingForInMemory = true
+	set.Encoding = nil
+	q, err := NewQueue(set, func(context.Context, intRequest, Done) {})
+	require.ErrorContains(t, err, "`Settings.Encoding` must not be nil when in-memory encoding is enabled")
+	require.Nil(t, q)
+}
+
+type decodeErrEncoding struct{}
+
+func (decodeErrEncoding) Marshal(context.Context, intRequest) ([]byte, error) {
+	return []byte("x"), nil
+}
+
+func (decodeErrEncoding) Unmarshal([]byte) (context.Context, intRequest, error) {
+	return context.Background(), 0, errors.New("decode failed")
 }
 
 func consume[T any](q readableQueue[T], consumeFunc func(context.Context, T) error) bool {
