@@ -8,6 +8,8 @@ import (
 	"errors"
 	"sync"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
@@ -31,6 +33,7 @@ type memoryQueue[T request.Request] struct {
 	refCounter ReferenceCounter[T]
 	sizer      request.Sizer
 	encoding   Encoding[T]
+	logger     *zap.Logger
 	cap        int64
 
 	mu                     sync.Mutex
@@ -51,6 +54,7 @@ func newMemoryQueue[T request.Request](set Settings[T]) readableQueue[T] {
 		refCounter:             set.ReferenceCounter,
 		sizer:                  request.NewSizer(set.SizerType),
 		encoding:               set.Encoding,
+		logger:                 set.Telemetry.Logger,
 		cap:                    set.Capacity,
 		items:                  &linkedQueue[memoryQueueItem[T]]{},
 		waitForResult:          set.WaitForResult,
@@ -194,6 +198,9 @@ func (mq *memoryQueue[T]) Read(context.Context) (context.Context, T, Done, bool)
 			elCtx, el, err := mq.encoding.Unmarshal(item.payload)
 			if err != nil {
 				mq.onDoneLocked(done.(*blockingDone), err)
+				if mq.logger != nil {
+					mq.logger.Error("Failed to decode in-memory queue item; dropping item", zap.Error(err))
+				}
 				continue
 			}
 			return elCtx, el, done, true

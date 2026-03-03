@@ -13,6 +13,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -265,6 +267,31 @@ func TestMemoryQueueInMemoryEncodingDecodeErrorWaitForResult(t *testing.T) {
 	require.ErrorContains(t, q.Offer(context.Background(), intRequest(1)), "decode failed")
 	assert.False(t, consumed.Load())
 	assert.EqualValues(t, 0, q.Size())
+	require.NoError(t, q.Shutdown(context.Background()))
+}
+
+func TestMemoryQueueInMemoryEncodingDecodeErrorAsync(t *testing.T) {
+	set := newSettings(request.SizerTypeItems, 10)
+	set.NumConsumers = 1
+	set.WaitForResult = false
+	set.UseEncodingForInMemory = true
+	set.Encoding = decodeErrEncoding{}
+	set.ReferenceCounter = nil
+	logger, observed := observer.New(zap.ErrorLevel)
+	set.Telemetry.Logger = zap.New(logger)
+
+	var consumed atomic.Bool
+	q, err := NewQueue(set, func(context.Context, intRequest, Done) {
+		consumed.Store(true)
+	})
+	require.NoError(t, err)
+	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, q.Offer(context.Background(), intRequest(1)))
+
+	require.Eventually(t, func() bool { return q.Size() == 0 }, time.Second, 10*time.Millisecond)
+	require.Eventually(t, func() bool { return observed.Len() > 0 }, time.Second, 10*time.Millisecond)
+	assert.False(t, consumed.Load())
+	assert.Equal(t, "Failed to decode in-memory queue item; dropping item", observed.All()[0].Message)
 	require.NoError(t, q.Shutdown(context.Background()))
 }
 
