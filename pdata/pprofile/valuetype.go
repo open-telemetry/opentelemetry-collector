@@ -8,6 +8,9 @@ import "fmt"
 // switchDictionary updates the ValueType, switching its indices from one
 // dictionary to another.
 func (ms ValueType) switchDictionary(src, dst ProfilesDictionary) error {
+	src.state.AssertMutable()
+	dst.state.AssertMutable()
+
 	if ms.TypeStrindex() > 0 {
 		if src.StringTable().Len() <= int(ms.TypeStrindex()) {
 			return fmt.Errorf("invalid type index %d", ms.TypeStrindex())

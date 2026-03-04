@@ -16,6 +16,9 @@ func (ms KeyValueAndUnit) Equal(val KeyValueAndUnit) bool {
 // switchDictionary updates the KeyValueAndUnit, switching its indices from one
 // dictionary to another.
 func (ms KeyValueAndUnit) switchDictionary(src, dst ProfilesDictionary) error {
+	src.state.AssertMutable()
+	dst.state.AssertMutable()
+
 	if ms.KeyStrindex() > 0 {
 		if src.StringTable().Len() <= int(ms.KeyStrindex()) {
 			return fmt.Errorf("invalid key index %d", ms.KeyStrindex())

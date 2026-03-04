@@ -8,6 +8,9 @@ import "fmt"
 // switchDictionary updates the Sample, switching its indices from one
 // dictionary to another.
 func (ms Sample) switchDictionary(src, dst ProfilesDictionary) error {
+	src.state.AssertMutable()
+	dst.state.AssertMutable()
+
 	for i, v := range ms.AttributeIndices().All() {
 		if src.AttributeTable().Len() <= int(v) {
 			return fmt.Errorf("invalid attribute index %d", v)

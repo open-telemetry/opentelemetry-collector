@@ -23,6 +23,7 @@ func TestProfilesMergeTo(t *testing.T) {
 	assert.Equal(t, 3, dest.ResourceProfiles().Len())
 	assert.Equal(t, 0, src.ResourceProfiles().Len())
 	assert.True(t, src.IsReadOnly())
+	assert.True(t, src.Dictionary().state.IsReadOnly())
 }
 
 func TestProfilesMergeToSelf(t *testing.T) {

@@ -12,6 +12,9 @@ import (
 // switchDictionary updates the Profile, switching its indices from one
 // dictionary to another.
 func (ms Profile) switchDictionary(src, dst ProfilesDictionary) error {
+	src.state.AssertMutable()
+	dst.state.AssertMutable()
+
 	for i, v := range ms.AttributeIndices().All() {
 		if src.AttributeTable().Len() <= int(v) {
 			return fmt.Errorf("invalid attribute index %d", v)

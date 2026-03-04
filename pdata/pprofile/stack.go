@@ -25,6 +25,9 @@ func (ms Stack) Equal(val Stack) bool {
 // switchDictionary updates the Stack, switching its indices from one
 // dictionary to another.
 func (ms Stack) switchDictionary(src, dst ProfilesDictionary) error {
+	src.state.AssertMutable()
+	dst.state.AssertMutable()
+
 	for i, v := range ms.LocationIndices().All() {
 		if src.LocationTable().Len() <= int(v) {
 			return fmt.Errorf("invalid location index %d", v)

@@ -35,6 +35,9 @@ func (ms Profiles) SampleCount() int {
 // switchDictionary updates the Profiles, switching its indices from one
 // dictionary to another.
 func (ms Profiles) switchDictionary(src, dst ProfilesDictionary) error {
+	src.state.AssertMutable()
+	dst.state.AssertMutable()
+
 	for i, v := range ms.ResourceProfiles().All() {
 		err := v.switchDictionary(src, dst)
 		if err != nil {

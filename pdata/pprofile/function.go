@@ -16,6 +16,9 @@ func (fn Function) Equal(val Function) bool {
 // switchDictionary updates the Function, switching its indices from one
 // dictionary to another.
 func (fn Function) switchDictionary(src, dst ProfilesDictionary) error {
+	src.state.AssertMutable()
+	dst.state.AssertMutable()
+
 	if fn.NameStrindex() > 0 {
 		if src.StringTable().Len() <= int(fn.NameStrindex()) {
 			return fmt.Errorf("invalid name index %d", fn.NameStrindex())

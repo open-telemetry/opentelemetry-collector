@@ -8,6 +8,9 @@ import "fmt"
 // switchDictionary updates the ScopeProfiles, switching its indices from one
 // dictionary to another.
 func (ms ScopeProfiles) switchDictionary(src, dst ProfilesDictionary) error {
+	src.state.AssertMutable()
+	dst.state.AssertMutable()
+
 	for i, v := range ms.Profiles().All() {
 		err := v.switchDictionary(src, dst)
 		if err != nil {
