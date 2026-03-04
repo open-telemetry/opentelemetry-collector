@@ -12,9 +12,8 @@ import (
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-
+	Enabled             bool `mapstructure:"enabled"`
+	enabledSetByUser    bool
 	AggregationStrategy string   `mapstructure:"aggregation_strategy"`
 	EnabledAttributes   []string `mapstructure:"attributes"`
 	definedAttributes   []string
@@ -73,64 +72,56 @@ type MetricsConfig struct {
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		DefaultMetric: MetricConfig{
-			Enabled: true,
-
+			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
 			requiredAttributes:  []string{},
 			definedAttributes:   []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr", "conditional_int_attr", "conditional_string_attr", "opt_in_bool_attr"},
 			EnabledAttributes:   []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr", "conditional_int_attr", "conditional_string_attr"},
 		},
 		DefaultMetricToBeRemoved: MetricConfig{
-			Enabled: true,
-
+			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
 			requiredAttributes:  []string{},
 			definedAttributes:   []string{},
 			EnabledAttributes:   []string{},
 		},
 		MetricInputType: MetricConfig{
-			Enabled: true,
-
+			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
 			requiredAttributes:  []string{},
 			definedAttributes:   []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr"},
 			EnabledAttributes:   []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr"},
 		},
 		OptionalMetric: MetricConfig{
-			Enabled: false,
-
+			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
 			requiredAttributes:  []string{},
 			definedAttributes:   []string{"string_attr", "boolean_attr", "boolean_attr2", "conditional_string_attr"},
 			EnabledAttributes:   []string{"string_attr", "boolean_attr", "boolean_attr2", "conditional_string_attr"},
 		},
 		OptionalMetricEmptyUnit: MetricConfig{
-			Enabled: false,
-
+			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
 			requiredAttributes:  []string{},
 			definedAttributes:   []string{"string_attr", "boolean_attr"},
 			EnabledAttributes:   []string{"string_attr", "boolean_attr"},
 		},
 		ReaggregateMetric: MetricConfig{
-			Enabled: true,
-
+			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
 			requiredAttributes:  []string{},
 			definedAttributes:   []string{"string_attr", "boolean_attr"},
 			EnabledAttributes:   []string{"string_attr", "boolean_attr"},
 		},
 		ReaggregateMetricWithRequired: MetricConfig{
-			Enabled: true,
-
+			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
 			requiredAttributes:  []string{"required_string_attr"},
 			definedAttributes:   []string{"required_string_attr", "string_attr", "boolean_attr"},
 			EnabledAttributes:   []string{"required_string_attr", "string_attr", "boolean_attr"},
 		},
 		SystemCPUTime: MetricConfig{
-			Enabled: true,
-
+			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
 			requiredAttributes:  []string{},
 			definedAttributes:   []string{},

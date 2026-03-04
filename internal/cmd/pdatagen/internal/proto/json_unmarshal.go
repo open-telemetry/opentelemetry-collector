@@ -9,7 +9,7 @@ import (
 
 	"github.com/ettle/strcase"
 
-	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/tmplutil"
 )
 
 const unmarshalJSONPrimitive = `	case {{ .allJSONTags }}:
@@ -91,17 +91,17 @@ func (pf *Field) GenUnmarshalJSON() string {
 	tf["allJSONTags"] = allJSONTags(pf.Name)
 	switch pf.Type {
 	case TypeBytes:
-		return template.Execute(template.Parse("unmarshalJSONBytes", []byte(unmarshalJSONBytes)), tf)
+		return tmplutil.Execute(tmplutil.Parse("unmarshalJSONBytes", []byte(unmarshalJSONBytes)), tf)
 	case TypeMessage:
-		return template.Execute(template.Parse("unmarshalJSONMessage", []byte(unmarshalJSONMessage)), tf)
+		return tmplutil.Execute(tmplutil.Parse("unmarshalJSONMessage", []byte(unmarshalJSONMessage)), tf)
 	case TypeEnum:
-		return template.Execute(template.Parse("unmarshalJSONEnum", []byte(unmarshalJSONEnum)), tf)
+		return tmplutil.Execute(tmplutil.Parse("unmarshalJSONEnum", []byte(unmarshalJSONEnum)), tf)
 	case TypeDouble, TypeFloat,
 		TypeFixed64, TypeSFixed64, TypeFixed32, TypeSFixed32,
 		TypeInt32, TypeInt64, TypeUint32, TypeUint64,
 		TypeSInt32, TypeSInt64,
 		TypeBool, TypeString:
-		return template.Execute(template.Parse("unmarshalJSONPrimitive", []byte(unmarshalJSONPrimitive)), tf)
+		return tmplutil.Execute(tmplutil.Parse("unmarshalJSONPrimitive", []byte(unmarshalJSONPrimitive)), tf)
 	}
 	panic(fmt.Sprintf("unhandled case %T", pf.Type))
 }
