@@ -47,6 +47,100 @@ status:
 # This attribute should be set for metrics compliant with OTel Semantic Conventions.
 sem_conv_version: 1.9.0
 
+# Optional: JSON Schema based definition for the component's configuration structure.
+# This section defines the schema that could be used to generate:
+# - JSON Schema files that can be used for validation and documentation. (current)
+# - Go structs representing the configuration with appropriate types and validation tags. (future)
+# - Configuration reference documentation in the generated README files. (future)
+config:
+  # Optional: Description of the configuration schema.
+  description: string
+  # Optional: Additional comments for developers (not included in JSON output).
+  $comment: string
+  # Required: The type of the configuration object. Typically "object" for component configs.
+  type: <string|number|integer|boolean|object|array|null>
+  # Optional: Map of configuration properties that define the component's configuration fields.
+  properties:
+    <property.name>:
+      # Optional: Description of this configuration property.
+      description: string
+      # Optional: The JSON Schema type of this property.
+      type: <string|number|integer|boolean|object|array|null>
+      # Optional: Reference to another schema definition. Can be:
+      # - Internal reference: name of a type in $defs (e.g., "endpoint_config")
+      # - External reference: full package path with type (e.g., "go.opentelemetry.io/collector/config/confighttp.client_config")
+      # - Relative reference: local path (e.g., "./internal/metadata.config")
+      $ref: string
+      # Optional: Default value for this property if not specified.
+      default: any
+      # Optional: Example values for this property.
+      examples: [any]
+      # Optional: Indicates if this property is deprecated.
+      deprecated: bool
+      # Optional: For string types - allowed values.
+      enum: [string]
+      # Optional: Constant value - property must have exactly this value.
+      const: any
+      # Optional: For string types - regular expression pattern that the value must match.
+      pattern: string
+      # Optional: For string types - format specification (e.g., "uri", "email", "date-time", "duration").
+      format: string
+      # Optional: For string types - minimum length.
+      minLength: int
+      # Optional: For string types - maximum length.
+      maxLength: int
+      # Optional: For number/integer types - minimum value (inclusive).
+      minimum: number
+      # Optional: For number/integer types - maximum value (inclusive).
+      maximum: number
+      # Optional: For number/integer types - exclusive minimum value.
+      exclusiveMinimum: number
+      # Optional: For number/integer types - exclusive maximum value.
+      exclusiveMaximum: number
+      # Optional: For number types - value must be a multiple of this number.
+      multipleOf: number
+      # Optional: For object types - properties of the nested object.
+      properties: {} # Recursively follows same structure
+      # Optional: For object types - whether additional properties beyond those defined are allowed.
+      # Can be true, false, or an object schema defining the type of additional properties.
+      additionalProperties: <bool|object>
+      # Optional: For object types - minimum number of properties required.
+      minProperties: int
+      # Optional: For object types - maximum number of properties allowed.
+      maxProperties: int
+      # Optional: For array types - schema for array items.
+      items:
+        # Same structure as property definition
+        type: string
+        # ... other item properties
+      # Optional: For array types - minimum number of items.
+      minItems: int
+      # Optional: For array types - maximum number of items.
+      maxItems: int
+      # Optional: For array types - whether all items must be unique.
+      uniqueItems: bool
+      # Optional: All of these schemas must be satisfied (schema composition).
+      allOf:
+        - type: object
+          properties: {}
+      # Custom extension fields (not part of JSON Schema standard, used by mdatagen):
+      # Optional: Custom Go type name to use instead of generated type.
+      x-customType: string
+      # Optional: Whether this field should be a pointer in Go code.
+      x-pointer: bool
+      # Optional: Whether this field is optional in Go code (will use pointer or optional type).
+      x-optional: bool
+  # Optional: List of required property names. Properties in this list must be present in the config.
+  required: [string]
+  # Optional: Map of reusable schema definitions that can be referenced via $ref.
+  # These definitions are not directly part of the config but can be reused multiple times.
+  $defs:
+    <definition.name>:
+      # Same structure as property definition
+      type: object
+      properties: {}
+      # ... other schema properties
+
 # Optional: map of resource attribute definitions with the key being the attribute name.
 resource_attributes:
   <attribute.name>:

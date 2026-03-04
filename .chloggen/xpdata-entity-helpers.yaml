@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: pkg/xpdata
+component: pdata/xpdata
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: "Add `NewEntity` constructor, `Entity.CopyToResource`, and `EntityAttributeMap.All` to `pdata/xpdata/entity`"

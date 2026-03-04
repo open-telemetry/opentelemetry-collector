@@ -21,6 +21,32 @@ status:
   warnings:
     - Any additional information that should be brought to the consumer's attention
 
+config:
+  type: object
+  description: Configuration for the Sample Scraper.
+  allOf:
+    - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  $defs:
+    target:
+      type: object
+      properties:
+        http_client:
+          $ref: /config/confighttp.client_config
+        interval:
+          type: string
+          format: duration
+          x-optional: true
+  properties:
+    targets:
+      description: Targets configuration for the scraper.
+      x-pointer: true
+      type: array
+      items:
+        $ref: target
+    options:
+      x-customType: "com.github/test/options"
+      description: Custom options for the scraper.
+
 resource_attributes:
   map.resource.attr:
     description: Resource attribute with a map value.
