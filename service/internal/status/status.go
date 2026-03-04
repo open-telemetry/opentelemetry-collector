@@ -76,9 +76,7 @@ func newFSM(onTransition onTransitionFunc) *fsm {
 			componentstatus.StatusPermanentError: {
 				componentstatus.StatusStopping: {},
 			},
-			componentstatus.StatusFatalError: {
-				componentstatus.StatusFatalError: {},
-			},
+			componentstatus.StatusFatalError: {},
 			componentstatus.StatusStopping: {
 				componentstatus.StatusRecoverableError: {},
 				componentstatus.StatusPermanentError:   {},
