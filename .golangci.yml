@@ -57,7 +57,12 @@ linters:
       - std-error-handling
 
     # Excluding configuration per-path, per-linter, per-text and per-source
-    rules: []
+    rules:
+      # Generated protobuf conversion code triggers gosec G115 on int->uint64 casts.
+      - path: ^pdata/.+/pb\.go$
+        linters:
+          - gosec
+        text: "G115:"
 
     # Log a warning if an exclusion rule is unused.
     warn-unused: true

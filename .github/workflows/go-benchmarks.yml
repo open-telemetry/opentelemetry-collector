@@ -11,10 +11,11 @@ jobs:
   benchmarks:
     name: Run benchmarks
     runs-on: ubuntu-latest
+    env:
+      HAS_CODSPEED_TOKEN: ${{ secrets.CODSPEED_TOKEN != '' }}
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
       - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
       - name: Setup Go
         uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
         with:
@@ -28,9 +29,15 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
-      - name: Run the benchmarks
+      - name: Run the benchmarks (CodSpeed)
+        if: ${{ env.HAS_CODSPEED_TOKEN == 'true' }}
+        env:
+          CODSPEED_TOKEN: ${{ secrets.CODSPEED_TOKEN }}
         uses: CodSpeedHQ/action@346a2d8a8d9d38909abd0bc3d23f773110f076ad # v4.4.1
         with:
           mode: walltime
           run: make for-all-target TARGET="timebenchmark"
           cache-instruments: false
+      - name: Run the benchmarks (fallback)
+        if: ${{ env.HAS_CODSPEED_TOKEN != 'true' }}
+        run: make for-all-target TARGET="timebenchmark"

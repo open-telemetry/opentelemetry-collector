@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -184,4 +185,20 @@ func TestUnmarshal(t *testing.T) {
 			assert.NoError(t, xconfmap.Validate(cfg))
 		})
 	}
+}
+
+func TestUnmarshalIgnoresUnknownKeys(t *testing.T) {
+	cfg := newTestConfig()
+	cm := confmap.NewFromStringMap(map[string]any{
+		"enabled":         true,
+		"sizer":           "requests",
+		"num_consumers":   10,
+		"queue_size":      1000,
+		"batch":           map[string]any{"flush_timeout": "200ms", "min_size": 100},
+		"unknown_setting": true,
+	})
+
+	require.NoError(t, cfg.Unmarshal(cm))
+	require.Equal(t, int64(1000), cfg.QueueSize)
+	require.True(t, cfg.Batch.HasValue())
 }

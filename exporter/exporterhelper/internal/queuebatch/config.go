@@ -49,7 +49,7 @@ type Config struct {
 }
 
 func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
-	if err := conf.Unmarshal(cfg); err != nil {
+	if err := conf.Unmarshal(cfg, confmap.WithIgnoreUnused()); err != nil {
 		return err
 	}
 
