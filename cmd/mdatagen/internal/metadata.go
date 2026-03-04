@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -57,6 +58,8 @@ type Metadata struct {
 	PackageName string `mapstructure:"package_name"`
 	// FeatureGates that are managed by the component.
 	FeatureGates []FeatureGate `mapstructure:"feature_gates"`
+	// Config is the configuration schema for the component.
+	Config *cfggen.ConfigMetadata `mapstructure:"config"`
 }
 
 type Deprecated struct {
@@ -117,6 +120,10 @@ func (md *Metadata) Validate() error {
 	}
 
 	if err := md.validateFeatureGates(); err != nil {
+		errs = errors.Join(errs, err)
+	}
+
+	if err := md.validateConfig(); err != nil {
 		errs = errors.Join(errs, err)
 	}
 
@@ -426,6 +433,13 @@ func (md *Metadata) validateFeatureGates() error {
 		}
 	}
 	return errs
+}
+
+func (md *Metadata) validateConfig() error {
+	if md.Config != nil {
+		return md.Config.Validate()
+	}
+	return nil
 }
 
 type AttributeName string

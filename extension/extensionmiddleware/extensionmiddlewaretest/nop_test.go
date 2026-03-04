@@ -14,11 +14,15 @@ import (
 )
 
 func TestNopClient(t *testing.T) {
+	testctx := context.Background()
 	client := NewNop()
 
 	httpClient, ok := client.(extensionmiddleware.HTTPClient)
 	require.True(t, ok)
-	rt, err := httpClient.GetHTTPRoundTripper(nil)
+	rtfunc, err := httpClient.GetHTTPRoundTripper(context.Background())
+	require.NoError(t, err)
+
+	rt, err := rtfunc(testctx, nil)
 	require.NoError(t, err)
 	require.Nil(t, rt)
 
@@ -31,12 +35,16 @@ func TestNopClient(t *testing.T) {
 
 func TestNopServer(t *testing.T) {
 	client := NewNop()
+	testctx := context.Background()
 
 	httpServer, ok := client.(extensionmiddleware.HTTPServer)
 	require.True(t, ok)
-	rt, err := httpServer.GetHTTPHandler(nil)
+	hfunc, err := httpServer.GetHTTPHandler(testctx)
 	require.NoError(t, err)
-	require.Nil(t, rt)
+
+	handler, err := hfunc(testctx, nil)
+	require.NoError(t, err)
+	require.Nil(t, handler)
 
 	grpcServer, ok := client.(extensionmiddleware.GRPCServer)
 	require.True(t, ok)

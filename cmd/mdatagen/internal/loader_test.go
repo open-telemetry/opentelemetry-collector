@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -73,6 +74,23 @@ func TestLoadMetadata(t *testing.T) {
 					},
 					Warnings:             []string{"Any additional information that should be brought to the consumer's attention"},
 					UnsupportedPlatforms: []string{"freebsd", "illumos"},
+				},
+				Config: &cfggen.ConfigMetadata{
+					Type: "object",
+					Properties: map[string]*cfggen.ConfigMetadata{
+						"endpoint": {
+							Description: "The endpoint to scrape metrics from.",
+							Type:        "string",
+							Default:     "localhost:12345",
+						},
+						"timeout": {
+							Description: "Timeout for scraping metrics.",
+							Type:        "string",
+							Format:      "duration",
+							Default:     "10s",
+						},
+					},
+					Required: []string{"endpoint"},
 				},
 				ResourceAttributes: map[AttributeName]Attribute{
 					"string.resource.attr": {
@@ -617,6 +635,11 @@ func TestLoadMetadata(t *testing.T) {
 			name:    "testdata/undeprecated_with_deprecation.yaml",
 			want:    Metadata{},
 			wantErr: "`stability` must be `deprecated` when specifying a `deprecated` field",
+		},
+		{
+			name:    "testdata/invalid_config.yaml",
+			want:    Metadata{},
+			wantErr: "config type must be \"object\", got \"string\"",
 		},
 		{
 			name:    "testdata/~~this file doesn't exist~~.yaml",
