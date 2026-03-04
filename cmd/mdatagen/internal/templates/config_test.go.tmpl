@@ -31,7 +31,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					{{- range $name, $metric := .Metrics }}
-					{{- if $reag }}
+					{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}
 					{{ $name.Render }}: MetricConfig{
 						Enabled: true,
 						{{- if eq $metric.Data.Type "Sum" }}
@@ -60,7 +60,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					{{- range $name, $metric := .Metrics }}
-					{{- if $reag }}
+                    {{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}
 					{{ $name.Render }}: MetricConfig{
 						Enabled: false,
 						{{- if eq $metric.Data.Type "Sum" }}
