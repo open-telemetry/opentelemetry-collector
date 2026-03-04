@@ -69,6 +69,7 @@ configuration is provided, ocb will generate a default Collector.
 	}
 
 	cmd.AddCommand(initCommand())
+	cmd.AddCommand(createCommand())
 	cmd.AddCommand(versionCommand())
 
 	return cmd, nil
