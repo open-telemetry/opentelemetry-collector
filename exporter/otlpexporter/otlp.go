@@ -34,7 +34,6 @@ import (
 type baseExporter struct {
 	// Input configuration.
 	config *Config
-
 	// gRPC clients and connection.
 	traceExporter   ptraceotlp.GRPCClient
 	metricExporter  pmetricotlp.GRPCClient
@@ -62,7 +61,11 @@ func newExporter(cfg component.Config, set exporter.Settings) *baseExporter {
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *baseExporter) start(ctx context.Context, host component.Host) (err error) {
-	agentOpt := configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))
+	userAgent := e.config.ClientConfig.UserAgent
+	if userAgent == "" {
+		userAgent = e.userAgent
+	}
+	agentOpt := configgrpc.WithGrpcDialOption(grpc.WithUserAgent(userAgent))
 	if e.clientConn, err = e.config.ClientConfig.ToClientConn(ctx, host.GetExtensions(), e.settings, agentOpt); err != nil {
 		return err
 	}
