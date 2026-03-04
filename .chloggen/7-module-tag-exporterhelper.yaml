@@ -1,0 +1,5 @@
+change_type: enhancement
+component: pkg/exporterhelper
+note: Add CI workflow to auto-tag Sawmills exporterhelper module versions when exporter/exporterhelper changes are pushed/merged to main.
+issues: [7]
+change_logs: [user]

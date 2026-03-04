@@ -1,0 +1,95 @@
+name: Module Tag - exporterhelper
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - exporter/exporterhelper/**
+  workflow_dispatch:
+    inputs:
+      base_version:
+        description: Base semver (without v), e.g. 0.140.1
+        required: false
+        type: string
+
+concurrency:
+  group: module-tag-exporterhelper-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  tag-module:
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    env:
+      MODULE_PREFIX: exporter/exporterhelper
+      # Bootstrap fallback if no module tags exist yet.
+      DEFAULT_BASE_VERSION: "0.140.1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute and create next module tag
+        shell: bash
+        env:
+          INPUT_BASE_VERSION: ${{ github.event.inputs.base_version }}
+        run: |
+          set -euo pipefail
+
+          BASE_VERSION="${INPUT_BASE_VERSION}"
+          if [[ -z "${BASE_VERSION}" ]]; then
+            # Discover base semver from latest existing module tag.
+            readarray -t DISCOVERY_TAGS < <(git tag --list "${MODULE_PREFIX}/v*" --sort=-v:refname)
+            for TAG in "${DISCOVERY_TAGS[@]}"; do
+              if [[ "${TAG}" =~ ^${MODULE_PREFIX}/v([0-9]+\.[0-9]+\.[0-9]+)(-sawmills\.[0-9]+)?$ ]]; then
+                BASE_VERSION="${BASH_REMATCH[1]}"
+                break
+              fi
+            done
+          fi
+          if [[ -z "${BASE_VERSION}" ]]; then
+            if [[ ${#DISCOVERY_TAGS[@]} -eq 0 ]]; then
+              BASE_VERSION="${DEFAULT_BASE_VERSION}"
+            else
+              echo "Unable to derive base_version from existing module tags; pass workflow_dispatch input base_version."
+              exit 1
+            fi
+          fi
+          if [[ ! "${BASE_VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid base_version '${BASE_VERSION}'. Expected format: X.Y.Z"
+            exit 1
+          fi
+
+          TAG_PREFIX="${MODULE_PREFIX}/v${BASE_VERSION}-sawmills."
+
+          # Idempotency: do not create another tag if this commit was already tagged.
+          readarray -t CURRENT_COMMIT_TAGS < <(git tag --points-at "${GITHUB_SHA}" --list "${TAG_PREFIX}*")
+          if [[ ${#CURRENT_COMMIT_TAGS[@]} -gt 0 ]]; then
+            echo "Commit ${GITHUB_SHA} already has ${TAG_PREFIX}* tag. Nothing to do."
+            exit 0
+          fi
+
+          readarray -t MATCHING_TAGS < <(git tag --list "${TAG_PREFIX}*" --sort=-v:refname)
+          LAST_TAG="${MATCHING_TAGS[0]:-}"
+          if [[ -z "${LAST_TAG}" ]]; then
+            NEXT_INDEX=1
+          else
+            LAST_INDEX="${LAST_TAG##*.}"
+            if [[ ! "${LAST_INDEX}" =~ ^[0-9]+$ ]]; then
+              echo "Unexpected non-numeric tag suffix: ${LAST_INDEX} (tag: ${LAST_TAG})"
+              exit 1
+            fi
+            NEXT_INDEX=$((LAST_INDEX + 1))
+          fi
+
+          NEW_TAG="${TAG_PREFIX}${NEXT_INDEX}"
+
+          echo "Creating ${NEW_TAG} at ${GITHUB_SHA}"
+          GIT_COMMITTER_NAME="github-actions[bot]" \
+          GIT_COMMITTER_EMAIL="41898282+github-actions[bot]@users.noreply.github.com" \
+          git tag -a "${NEW_TAG}" "${GITHUB_SHA}" -m "Sawmills release ${NEW_TAG}"
+          git push origin "${NEW_TAG}"
