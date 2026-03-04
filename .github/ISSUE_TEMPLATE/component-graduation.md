@@ -16,7 +16,7 @@ This issue requests the graduation of a component to stable. Please review the [
 
 ## Signal Requirements
 
-- [ ] All supported signals are at beta stability or higher
+- [ ] All supported signals for signal types that are stable in the OpenTelemetry specification are at beta stability or higher
 - [ ] At least one signal is at stable stability
 
 ## Code Owner Requirements
