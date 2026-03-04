@@ -216,7 +216,11 @@ prepare-contrib:
 		$(addprefix -replace ,$(join $(ALL_MOD_PATHS:%=go.opentelemetry.io/collector%=),$(ALL_MOD_PATHS:%=$(CURDIR)%)))"
 	@$(MAKE) -j2 -C $(CONTRIB_PATH) gotidy
 
+ifneq ($(SKIP_GENERATE_CONTRIB),true)
 	@$(MAKE) generate-contrib
+else
+	@echo "Skipping generate-contrib"
+endif
 
 # Checks that the HEAD of the contrib repo checked out in CONTRIB_PATH compiles
 # against the current version of this repo.

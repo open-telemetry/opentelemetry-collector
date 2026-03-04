@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: pkg/exporterhelper
+note: Ignore unknown keys during queue config unmarshal so extended queue settings can coexist.
+issues: [8]

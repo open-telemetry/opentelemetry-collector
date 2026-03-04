@@ -64,7 +64,7 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 
 	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
 		WithQueueBatchInMemoryEncoding(true),
-		WithQueueBatch(NewDefaultQueueConfig(), queuebatch.Settings[request.Request]{}))
+		WithQueueBatch(configoptional.Some(NewDefaultQueueConfig()), queuebatch.Settings[request.Request]{}))
 	require.ErrorContains(t, err, "`Settings.Encoding` must not be nil when in-memory encoding is enabled")
 }
 
@@ -242,7 +242,7 @@ func TestWithQueueBatchPayloadCodec(t *testing.T) {
 			pipeline.SignalLogs,
 			noopExport,
 			WithQueueBatchPayloadCodec(codec),
-			WithQueueBatch(qCfg, newFakeQueueBatch()),
+			WithQueueBatch(configoptional.Some(qCfg), newFakeQueueBatch()),
 		)
 		require.NoError(t, err)
 
@@ -263,7 +263,7 @@ func TestWithQueueBatchPayloadCodec(t *testing.T) {
 			exportertest.NewNopSettings(exportertest.NopType),
 			pipeline.SignalLogs,
 			noopExport,
-			WithQueueBatch(qCfg, newFakeQueueBatch()),
+			WithQueueBatch(configoptional.Some(qCfg), newFakeQueueBatch()),
 			WithQueueBatchPayloadCodec(codec),
 		)
 		require.NoError(t, err)
@@ -285,13 +285,13 @@ func TestWithQueueBatchInMemoryEncoding(t *testing.T) {
 			name: "option before queue",
 			options: []Option{
 				WithQueueBatchInMemoryEncoding(true),
-				WithQueueBatch(qCfg, newFakeQueueBatch()),
+				WithQueueBatch(configoptional.Some(qCfg), newFakeQueueBatch()),
 			},
 		},
 		{
 			name: "option after queue",
 			options: []Option{
-				WithQueueBatch(qCfg, newFakeQueueBatch()),
+				WithQueueBatch(configoptional.Some(qCfg), newFakeQueueBatch()),
 				WithQueueBatchInMemoryEncoding(true),
 			},
 		},
