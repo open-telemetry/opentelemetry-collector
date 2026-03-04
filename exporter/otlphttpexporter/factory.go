@@ -10,6 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -75,6 +78,22 @@ func composeSignalURL(oCfg *Config, signalOverrideURL, signalName, signalVersion
 	}
 }
 
+func endpointAttributes(cfg *Config) []attribute.KeyValue {
+	endpointUrl, err := url.Parse(cfg.ClientConfig.Endpoint)
+	if err != nil {
+		// if the endpoint is not a URL, we treat it as the server address without extra information
+		return []attribute.KeyValue{semconv.ServerAddressKey.String(cfg.ClientConfig.Endpoint)}
+	}
+	out := []attribute.KeyValue{
+		semconv.ServerAddressKey.String(endpointUrl.Host),
+		semconv.URLPath(endpointUrl.Path),
+	}
+	if endpointUrl.Port() != "" {
+		out = append(out, semconv.ServerPortKey.String(endpointUrl.Port()))
+	}
+	return out
+}
+
 func createTraces(
 	ctx context.Context,
 	set exporter.Settings,
@@ -98,7 +117,9 @@ func createTraces(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
-		exporterhelper.WithQueue(oCfg.QueueConfig))
+		exporterhelper.WithQueue(oCfg.QueueConfig),
+		exporterhelper.WithAttrs(endpointAttributes(oCfg)...),
+	)
 }
 
 func createMetrics(
@@ -124,7 +145,9 @@ func createMetrics(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
-		exporterhelper.WithQueue(oCfg.QueueConfig))
+		exporterhelper.WithQueue(oCfg.QueueConfig),
+		exporterhelper.WithAttrs(endpointAttributes(oCfg)...),
+	)
 }
 
 func createLogs(
@@ -149,7 +172,9 @@ func createLogs(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
-		exporterhelper.WithQueue(oCfg.QueueConfig))
+		exporterhelper.WithQueue(oCfg.QueueConfig),
+		exporterhelper.WithAttrs(endpointAttributes(oCfg)...),
+	)
 }
 
 func createProfiles(
@@ -175,5 +200,7 @@ func createProfiles(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
-		exporterhelper.WithQueue(oCfg.QueueConfig))
+		exporterhelper.WithQueue(oCfg.QueueConfig),
+		exporterhelper.WithAttrs(endpointAttributes(oCfg)...),
+	)
 }
