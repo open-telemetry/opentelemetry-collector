@@ -2,8 +2,22 @@
 
 package samplescraper
 
-import _ "go.opentelemetry.io/collector/scraper/scraperhelper"
+import (
+	"time"
 
-// This is temporary placeholder for the generated config file.
-// The actual content will be generated in upcoming PR.
-// Currently used only to satisfy required imports.
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
+)
+
+type TargetsItem struct {
+	HTTPClient confighttp.ClientConfig                `mapstructure:"http_client"`
+	Interval   configoptional.Optional[time.Duration] `mapstructure:"interval"`
+}
+
+// Configuration for the Sample Scraper.
+type Config struct {
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	// Targets configuration for the scraper.
+	Targets *[]TargetsItem `mapstructure:"targets"`
+}

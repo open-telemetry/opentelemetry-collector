@@ -28,9 +28,6 @@
     }
   ],
   "properties": {
-    "options": {
-      "description": "Custom options for the scraper."
-    },
     "targets": {
       "description": "Targets configuration for the scraper.",
       "type": "array",
