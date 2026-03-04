@@ -99,5 +99,6 @@ components:
     - receiver/otlp
     - receiver/sample
     - receiver/sample
+    - receiver/sampleentity
     - scraper/sample
     - service/graph

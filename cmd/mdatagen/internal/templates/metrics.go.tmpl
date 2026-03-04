@@ -383,6 +383,14 @@ func WithResource(res pcommon.Resource) ResourceMetricsOption {
 	})
 }
 
+{{ if .HasEntities -}}
+func withResourceMoved(res pcommon.Resource) ResourceMetricsOption {
+	return resourceMetricsOptionFunc(func(rm pmetric.ResourceMetrics) {
+		res.MoveTo(rm.Resource())
+	})
+}
+{{- end }}
+
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
@@ -403,11 +411,26 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 	})
 }
 
+{{ range $ent := .Entities }}
+{{ $entityType := $ent.Type }}
+{{ $entityStructType := printf "%sEntity" (publicVar $entityType) }}
+{{ $builderType := printf "%sMetricsBuilder" (publicVar $entityType) }}
+
+// For{{ publicVar $entityType }} returns a {{ $builderType }} that restricts metric recording
+// to metrics belonging to the {{ $entityType }} entity.
+func (mb *MetricsBuilder) For{{ publicVar $entityType }}(e *{{ $entityStructType }}) *{{ $builderType }} {
+	return &{{ $builderType }}{mb: mb, entity: e}
+}
+{{ end }}
+
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
 // recording another set of data points as part of another resource. This function can be helpful when one scraper
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
 // just `Emit` function can be called instead.
 // Resource attributes should be provided as ResourceMetricsOption arguments.
+{{- if .HasEntities }}
+// Deprecated: Use the For<EntityType> methods to get entity-scoped builders and call Emit() on them instead.
+{{- end }}
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	{{- if .SemConvVersion }}
@@ -455,6 +478,9 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 
 {{ range $name, $metric := .Metrics -}}
 // Record{{ $name.Render }}DataPoint adds a data point to {{ $name }} metric.
+{{- if $metric.Entity }}
+// Deprecated: Use mb.For{{ publicVar $metric.Entity }}(entity).Record{{ $name.Render }}DataPoint(...) instead.
+{{- end }}
 func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 	{{- if $metric.Data.HasMetricInputType }}, inputVal {{ $metric.Data.MetricInputType.String }}
 	{{- else }}, val {{ $metric.Data.MetricValueType.BasicType }}
