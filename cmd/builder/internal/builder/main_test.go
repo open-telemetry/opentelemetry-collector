@@ -149,17 +149,28 @@ func TestGenerateInvalidOutputPath(t *testing.T) {
 }
 
 func TestOutputBinaryName(t *testing.T) {
-	t.Run("windows target adds exe", func(t *testing.T) {
-		t.Setenv("GOOS", "windows")
-		assert.Equal(t, "otelcorecol.exe", outputBinaryName("otelcorecol"))
-		assert.Equal(t, "otelcorecol.exe", outputBinaryName("otelcorecol.exe"))
-	})
-
-	t.Run("non-windows target does not add exe", func(t *testing.T) {
-		t.Setenv("GOOS", "linux")
-		assert.Equal(t, "otelcorecol", outputBinaryName("otelcorecol"))
-		assert.Equal(t, "otelcorecol.exe", outputBinaryName("otelcorecol.exe"))
-	})
+	for _, tt := range []struct {
+		name string
+		goos string
+		wantName string
+	}{
+		{
+			name: "on windows",
+			goos: "windows",
+			wantName: "otelcorecol.exe",
+		},
+		{
+			name: "on other OSes",
+			goos: "linux",
+			wantName: "otelcorecol",
+		},		
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("GOOS", tt.goos)
+			assert.Equal(t, tt.wantName, outputBinaryName("otelcorecol"))
+			assert.Equal(t, tt.wantName, outputBinaryName("otelcorecol.exe"))
+		})
+	}
 }
 
 func TestVersioning(t *testing.T) {
