@@ -163,27 +163,14 @@ func TestHostDetector(t *testing.T) {
 	assert.NotNil(t, attrs)
 }
 
-func TestEnvDetectorError(t *testing.T) {
+func TestSDKDetectorError(t *testing.T) {
 	ctx := context.Background()
 
-	detector := &envDetector{
+	detector := &sdkDetector{
 		newResource: func(_ context.Context, _ ...resource.Option) (*resource.Resource, error) {
 			return nil, assert.AnError
 		},
-	}
-
-	res, err := detector.Detect(ctx)
-	require.Error(t, err)
-	assert.Nil(t, res)
-}
-
-func TestHostDetectorError(t *testing.T) {
-	ctx := context.Background()
-
-	detector := &hostDetector{
-		newResource: func(_ context.Context, _ ...resource.Option) (*resource.Resource, error) {
-			return nil, assert.AnError
-		},
+		option: resource.WithFromEnv,
 	}
 
 	res, err := detector.Detect(ctx)

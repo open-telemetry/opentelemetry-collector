@@ -25,34 +25,28 @@ var detectorRegistry = map[string]DetectorFactory{
 }
 
 func newEnvDetector(_ context.Context) (resource.Detector, error) {
-	return &envDetector{newResource: resource.New}, nil
-}
-
-type envDetector struct {
-	newResource func(context.Context, ...resource.Option) (*resource.Resource, error)
-}
-
-// Detect returns resource information from environment variables.
-func (e *envDetector) Detect(ctx context.Context) (*resource.Resource, error) {
-	res, err := e.newResource(ctx, resource.WithFromEnv())
-	if err != nil {
-		return nil, err
-	}
-	// Strip schema URL to avoid conflicts - it will be set at the resource level.
-	return resource.New(ctx, resource.WithAttributes(res.Attributes()...))
+	return newSDKDetector(resource.WithFromEnv), nil
 }
 
 func newHostDetector(_ context.Context) (resource.Detector, error) {
-	return &hostDetector{newResource: resource.New}, nil
+	return newSDKDetector(resource.WithHost), nil
 }
 
-type hostDetector struct {
+func newSDKDetector(option func() resource.Option) resource.Detector {
+	return &sdkDetector{
+		newResource: resource.New,
+		option:      option,
+	}
+}
+
+type sdkDetector struct {
 	newResource func(context.Context, ...resource.Option) (*resource.Resource, error)
+	option      func() resource.Option
 }
 
-// Detect returns host resource information.
-func (h *hostDetector) Detect(ctx context.Context) (*resource.Resource, error) {
-	res, err := h.newResource(ctx, resource.WithHost())
+// Detect returns resource information from the configured SDK detector option.
+func (d *sdkDetector) Detect(ctx context.Context) (*resource.Resource, error) {
+	res, err := d.newResource(ctx, d.option())
 	if err != nil {
 		return nil, err
 	}
