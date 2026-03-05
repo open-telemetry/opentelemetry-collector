@@ -22,7 +22,6 @@ components:
     - extension/memory_limiter
     - extension/zpages
     - pdata/pprofile
-    - pdata/xpdata
     - pkg/client
     - pkg/component
     - pkg/component/componentstatus

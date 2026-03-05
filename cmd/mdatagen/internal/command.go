@@ -260,6 +260,15 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 					}
 					return atts
 				},
+				"hasAggregatableAttributes": func(ans []AttributeName) bool {
+					for _, an := range ans {
+						if md.Attributes[an].RequirementLevel == AttributeRequirementLevelRecommended ||
+							md.Attributes[an].RequirementLevel == AttributeRequirementLevelOptIn {
+							return true
+						}
+					}
+					return false
+				},
 				"getEventConditionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
 					seen := make(map[AttributeName]bool)
 					used := make([]AttributeName, 0)

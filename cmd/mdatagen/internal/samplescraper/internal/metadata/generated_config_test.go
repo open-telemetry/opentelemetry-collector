@@ -32,11 +32,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr"},
 					},
-					DefaultMetricToBeRemoved: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
+					DefaultMetricToBeRemoved: MetricConfig{Enabled: true},
 					MetricInputType: MetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
@@ -57,11 +53,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategyAvg,
 						EnabledAttributes:   []string{"string_attr", "boolean_attr"},
 					},
-					SystemCPUTime: MetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
+					SystemCPUTime: MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					MapResourceAttr:                  ResourceAttributeConfig{Enabled: true},
@@ -84,11 +76,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr"},
 					},
-					DefaultMetricToBeRemoved: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
+					DefaultMetricToBeRemoved: MetricConfig{Enabled: false},
 					MetricInputType: MetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
@@ -109,11 +97,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategyAvg,
 						EnabledAttributes:   []string{"string_attr", "boolean_attr"},
 					},
-					SystemCPUTime: MetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{},
-					},
+					SystemCPUTime: MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					MapResourceAttr:                  ResourceAttributeConfig{Enabled: false},
