@@ -232,7 +232,7 @@ func run(ymlPath string) error {
 }
 
 func getTemplateFuncMap(md Metadata) template.FuncMap {
-	return map[string]any{
+	return template.FuncMap{
 		"publicVar": func(s string) (string, error) {
 			return helpers.FormatIdentifier(s, true)
 		},
@@ -256,6 +256,15 @@ func getTemplateFuncMap(md Metadata) template.FuncMap {
 				}
 			}
 			return atts
+		},
+		"hasAggregatableAttributes": func(ans []AttributeName) bool {
+			for _, an := range ans {
+				if md.Attributes[an].RequirementLevel == AttributeRequirementLevelRecommended ||
+					md.Attributes[an].RequirementLevel == AttributeRequirementLevelOptIn {
+					return true
+				}
+			}
+			return false
 		},
 		"getEventConditionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
 			seen := make(map[AttributeName]bool)

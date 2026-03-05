@@ -29,23 +29,25 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	for _, val := range ms.EnabledAttributes {
-		if !slices.Contains(ms.definedAttributes, val) {
-			return fmt.Errorf("%v is not defined in metadata.yaml", val)
+	if len(ms.definedAttributes) > 0 {
+		for _, val := range ms.EnabledAttributes {
+			if !slices.Contains(ms.definedAttributes, val) {
+				return fmt.Errorf("%v is not defined in metadata.yaml", val)
+			}
 		}
-	}
 
-	for _, val := range ms.requiredAttributes {
-		if !slices.Contains(ms.EnabledAttributes, val) {
-			return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
+		for _, val := range ms.requiredAttributes {
+			if !slices.Contains(ms.EnabledAttributes, val) {
+				return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
+			}
 		}
-	}
 
-	if ms.AggregationStrategy != AggregationStrategySum &&
-		ms.AggregationStrategy != AggregationStrategyAvg &&
-		ms.AggregationStrategy != AggregationStrategyMin &&
-		ms.AggregationStrategy != AggregationStrategyMax {
-		return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+		if ms.AggregationStrategy != AggregationStrategySum &&
+			ms.AggregationStrategy != AggregationStrategyAvg &&
+			ms.AggregationStrategy != AggregationStrategyMin &&
+			ms.AggregationStrategy != AggregationStrategyMax {
+			return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+		}
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
@@ -72,60 +74,46 @@ type MetricsConfig struct {
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		DefaultMetric: MetricConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr", "conditional_int_attr", "conditional_string_attr", "opt_in_bool_attr"},
-			EnabledAttributes:   []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr", "conditional_int_attr", "conditional_string_attr"},
+			Enabled: true, AggregationStrategy: AggregationStrategySum,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr", "conditional_int_attr", "conditional_string_attr", "opt_in_bool_attr"},
+			EnabledAttributes:  []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr", "conditional_int_attr", "conditional_string_attr"},
 		},
 		DefaultMetricToBeRemoved: MetricConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{},
-			EnabledAttributes:   []string{},
+			Enabled: true,
 		},
 		MetricInputType: MetricConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr"},
-			EnabledAttributes:   []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr"},
+			Enabled: true, AggregationStrategy: AggregationStrategySum,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr"},
+			EnabledAttributes:  []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr"},
 		},
 		OptionalMetric: MetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{"string_attr", "boolean_attr", "boolean_attr2", "conditional_string_attr"},
-			EnabledAttributes:   []string{"string_attr", "boolean_attr", "boolean_attr2", "conditional_string_attr"},
+			Enabled: false, AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"string_attr", "boolean_attr", "boolean_attr2", "conditional_string_attr"},
+			EnabledAttributes:  []string{"string_attr", "boolean_attr", "boolean_attr2", "conditional_string_attr"},
 		},
 		OptionalMetricEmptyUnit: MetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{"string_attr", "boolean_attr"},
-			EnabledAttributes:   []string{"string_attr", "boolean_attr"},
+			Enabled: false, AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"string_attr", "boolean_attr"},
+			EnabledAttributes:  []string{"string_attr", "boolean_attr"},
 		},
 		ReaggregateMetric: MetricConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{"string_attr", "boolean_attr"},
-			EnabledAttributes:   []string{"string_attr", "boolean_attr"},
+			Enabled: true, AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes: []string{},
+			definedAttributes:  []string{"string_attr", "boolean_attr"},
+			EnabledAttributes:  []string{"string_attr", "boolean_attr"},
 		},
 		ReaggregateMetricWithRequired: MetricConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes:  []string{"required_string_attr"},
-			definedAttributes:   []string{"required_string_attr", "string_attr", "boolean_attr"},
-			EnabledAttributes:   []string{"required_string_attr", "string_attr", "boolean_attr"},
+			Enabled: true, AggregationStrategy: AggregationStrategyAvg,
+			requiredAttributes: []string{"required_string_attr"},
+			definedAttributes:  []string{"required_string_attr", "string_attr", "boolean_attr"},
+			EnabledAttributes:  []string{"required_string_attr", "string_attr", "boolean_attr"},
 		},
 		SystemCPUTime: MetricConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{},
-			EnabledAttributes:   []string{},
+			Enabled: true,
 		},
 	}
 }

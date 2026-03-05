@@ -109,11 +109,12 @@ func With{{ .Render }}MetricAttribute({{ .RenderUnexported }}AttributeValue {{ (
 {{ end }}
 
 {{ range $name, $metric := .Metrics -}}
+{{- $metricReag := and $reag (hasAggregatableAttributes $metric.Attributes) -}}
 type metric{{ $name.Render }} struct {
 	data                     pmetric.Metric // data buffer for generated metric.
 	config                   MetricConfig   // metric config provided by user.
 	capacity                 int            // max observed number of data points added to the metric.
-	{{- if $reag }}
+	{{- if $metricReag }}
 	aggDataPoints            []{{ $metric.Data.MetricValueType.BasicType }} // slice containing number of aggregated datapoints at each index
 	{{- end }}
 }
@@ -133,13 +134,13 @@ func (m *metric{{ $name.Render }}) init() {
 	{{- if $metric.Attributes }}
 	m.data.{{ $metric.Data.Type }}().DataPoints().EnsureCapacity(m.capacity)
 	{{- end }}
-	{{- if $reag }}
+	{{- if $metricReag }}
 	m.aggDataPoints = m.aggDataPoints[:0]
 	{{- end }}
 }
 
 {{/* This function changed in a major way, so instead of gating individual lines of code the original is being included */}}
-{{- if $reag }}
+{{- if $metricReag }}
 func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val {{ $metric.Data.MetricValueType.BasicType }}
 {{- range $metric.Attributes -}}{{- if not (attributeInfo .).IsConditional -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}{{ end }}{{- if $metric.HasConditionalAttributes $.Attributes -}}, options ...MetricAttributeOption{{- end -}}) {
 	if !m.config.Enabled {
@@ -222,7 +223,7 @@ func (m *metric{{ $name.Render }}) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metric{{ $name.Render }}) emit(metrics pmetric.MetricSlice) {
-	{{- if $reag }}
+	{{- if $metricReag }}
 	if m.config.Enabled && m.data.{{ $metric.Data.Type }}().DataPoints().Len() > 0 {
 		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
