@@ -87,6 +87,16 @@ entities:
     # All referenced attributes must be defined in the resource_attributes section.
     description:
       - ref: string
+    # Optional: array of relationships to other entities. Relationships should be defined on only
+    # one end to avoid bidirectional definitions. It is recommended to define relationships on
+    # entities with lower lifespan (higher churn). For example, a pod should define its relationship
+    # to a replicaset, rather than the replicaset defining its relationship to pods.
+    relationships:
+      - # Required: the type of the relationship (e.g., "controlled_by", "parent", "peer").
+        type: string
+        # Required: the target entity type this entity relates to. Must reference an entity
+        # defined in the same metadata.yaml file.
+        target: string
 
 # Optional: map of attribute definitions with the key being the attribute name and value
 # being described below.
@@ -145,12 +155,12 @@ metrics:
       input_type: string
     # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
     attributes: [string]
+    # Optional: the entity type this metric is associated with.
+    # Required when entities are defined in the entities section.
+    # Must reference an entity type defined in the entities section.
+    entity: string
     # Required: the metric stability
-    stability:
-      # Required: the level of stability
-      level: <development|alpha|beta|stable|deprecated>
-      # Optional: the version current stability was introduced
-      from:
+    stability: <development|alpha|beta|stable|deprecated>
     # Deprecation information for the metric. Required when stability is `deprecated`.
     deprecated:
       # Required: version when the metric was deprecated
@@ -182,6 +192,10 @@ events:
       if_configured:
     # Optional: array of attributes that were defined in the attributes section that are emitted by this event.
     attributes: [string]
+    # Optional: the entity type this event is associated with.
+    # Required when entities are defined in the entities section.
+    # Must reference an entity type defined in the entities section.
+    entity: string
 
 # Lifecycle tests generated for this component.
 tests:

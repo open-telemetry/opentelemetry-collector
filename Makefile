@@ -82,6 +82,10 @@ for-all:
 golint:
 	@$(MAKE) for-all-target TARGET="lint"
 
+.PHONY: gomodernize
+gomodernize:
+	@$(MAKE) for-all-target TARGET="modernize"
+
 .PHONY: goimpi
 goimpi:
 	@$(MAKE) for-all-target TARGET="impi"
@@ -221,7 +225,6 @@ check-contrib:
 .PHONY: generate-contrib
 generate-contrib:
 	@echo -e "\nGenerating files in contrib"
-	$(MAKE) -C $(CONTRIB_PATH) -B install-tools
 	$(MAKE) -C $(CONTRIB_PATH) generate GROUP=all
 
 # Restores contrib to its original state after running check-contrib.

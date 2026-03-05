@@ -61,6 +61,7 @@ Tier 3 platforms are currently:
 | Platform      | Owner(s)                                                                                                                                                       |
 |---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | darwin/amd64  | [@h0cheung](https://github.com/h0cheung)                                                                                                                       |
+| js/wasm       | [@evan-bradley](https://github.com/evan-bradley), [@mx-psi](https://github.com/mx-psi)                                                                         |
 | linux/386     | [@andrzej-stencel](https://github.com/andrzej-stencel)                                                                                                         |
 | linux/arm     | [@Wal8800](https://github.com/Wal8800), [@atoulme](https://github.com/atoulme)                                                                                 |
 | linux/ppc64le | [@IBM-Currency-Helper](https://github.com/IBM-Currency-Helper), [@adilhusain-s](https://github.com/adilhusain-s), [@seth-priya](https://github.com/seth-priya) |

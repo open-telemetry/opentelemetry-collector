@@ -42,7 +42,9 @@ extensions:
       stability:
         extension: Stable
 providers:
-    - scheme: nop
+    - scheme: env
+      module: go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3
+    - scheme: file
       module: go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3
 converters:
     - module: go.opentelemetry.io/collector/converter/testconverter v1.2.3

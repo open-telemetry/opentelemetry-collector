@@ -11,8 +11,7 @@ telemetry:
   metrics:
     processor_incoming_items:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Number of items passed to the processor.
       unit: "{items}"
       sum:
@@ -21,8 +20,7 @@ telemetry:
 
     processor_internal_duration:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Duration of time taken to process a batch of telemetry data through the processor.
       unit: s
       histogram:
@@ -31,8 +29,7 @@ telemetry:
 
     processor_outgoing_items:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Number of items emitted from the processor.
       unit: "{items}"
       sum:

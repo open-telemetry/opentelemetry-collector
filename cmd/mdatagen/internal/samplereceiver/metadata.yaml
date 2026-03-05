@@ -176,8 +176,7 @@ metrics:
     enabled: true
     description: Monotonic cumulative sum int metric enabled by default.
     extended_documentation: The metric will be become optional soon.
-    stability:
-      level: deprecated
+    stability: deprecated
     deprecated:
       since: "1.0.0"
       note: "This metric will be removed"
@@ -204,8 +203,7 @@ metrics:
     enabled: true
     description: "[DEPRECATED] Non-monotonic delta sum double metric enabled by default."
     extended_documentation: The metric will be removed soon.
-    stability:
-      level: deprecated
+    stability: deprecated
     deprecated:
       since: "1.0.0"
       note: "This metric will be removed"
@@ -220,8 +218,7 @@ metrics:
   metric.input_type:
     enabled: true
     description: Monotonic cumulative sum int metric with string input_type enabled by default.
-    stability:
-      level: development
+    stability: development
     unit: s
     sum:
       value_type: int
@@ -234,8 +231,7 @@ metrics:
   optional.metric:
     enabled: false
     description: "[DEPRECATED] Gauge double metric disabled by default."
-    stability:
-      level: deprecated
+    stability: deprecated
     deprecated:
       since: "1.0.0"
       note: "This metric will be removed"
@@ -249,8 +245,7 @@ metrics:
   optional.metric.empty_unit:
     enabled: false
     description: "[DEPRECATED] Gauge double metric disabled by default."
-    stability:
-      level: deprecated
+    stability: deprecated
     deprecated:
       since: "1.0.0"
       note: "This metric will be removed"
@@ -265,26 +260,23 @@ metrics:
     enabled: true
     description: Metric for testing spatial reaggregation
     unit: "1"
-    stability:
-      level: beta
+    stability: beta
     gauge:
-      value_type: double 
+      value_type: double
     attributes: [string_attr, boolean_attr]
 
   reaggregate.metric.with_required:
     enabled: true
     description: Metric for testing spatial reaggregation with required attributes
     unit: "1"
-    stability:
-      level: beta
+    stability: beta
     gauge:
-      value_type: double 
+      value_type: double
     attributes: [required_string_attr, string_attr, boolean_attr]
 
   system.cpu.time:
     enabled: true
-    stability:
-      level: beta
+    stability: beta
     description: Monotonic cumulative sum int metric enabled by default.
     extended_documentation: The metric will be become optional soon.
     unit: s
@@ -299,8 +291,7 @@ telemetry:
   metrics:
     batch_size_trigger_send:
       enabled: true
-      stability:
-        level: deprecated
+      stability: deprecated
       deprecated:
         since: "1.5.0"
         note: "This metric will be removed in favor of batch_send_trigger_size"
@@ -311,8 +302,7 @@ telemetry:
         monotonic: true
     process_runtime_total_alloc_bytes:
       enabled: true
-      stability:
-        level: stable
+      stability: stable
       description: Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')
       unit: By
       sum:
@@ -322,15 +312,13 @@ telemetry:
     queue_capacity:
       enabled: true
       description: Queue capacity - sync gauge example.
-      stability:
-        level: development
+      stability: development
       unit: "{items}"
       gauge:
         value_type: int
     queue_length:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: This metric is optional and therefore not initialized in NewTelemetryBuilder.
       extended_documentation: For example this metric only exists if feature A is enabled.
       unit: "{items}"
@@ -340,8 +328,7 @@ telemetry:
         value_type: int
     request_duration:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Duration of request
       unit: s
       histogram:
