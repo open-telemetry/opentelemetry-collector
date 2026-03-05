@@ -114,4 +114,4 @@ The number of requests performed.
 
 | Name | Description | Values | Semantic Convention |
 | ---- | ----------- | ------ | ------------------- |
-| outcome | The outcome of receiver requests | Str: ``success``, ``refused``, ``failure`` | |
+| outcome | The outcome of receiver requests | Str: ``success``, ``refused``, ``failure`` | - |

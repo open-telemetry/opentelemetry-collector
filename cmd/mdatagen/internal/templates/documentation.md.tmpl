@@ -33,7 +33,7 @@
 {{- range $metric.Attributes }}
 {{- $attribute := . | attributeInfo }}
 | {{ $attribute.Name }} | {{ $attribute.Description }} |
-{{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} | {{ $attribute.RequirementLevel }} |{{ if $attribute.SemanticConvention }} [{{ $attribute.Name }}]({{ $attribute.SemanticConvention.SemanticConventionRef }}) |{{ else }} |{{ end }}
+{{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} | {{ $attribute.RequirementLevel }} |{{ if $attribute.SemanticConvention }} [{{ $attribute.Name }}]({{ $attribute.SemanticConvention.SemanticConventionRef }}) |{{ else }} - |{{ end }}
 {{- end }}
 
 {{- end }}
@@ -63,7 +63,7 @@
 {{- range $event.Attributes }}
 {{- $attribute := . | attributeInfo }}
 | {{ $attribute.Name }} | {{ $attribute.Description }} |
-{{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} |{{ if $attribute.SemanticConvention }} [{{ $attribute.Name }}]({{ $attribute.SemanticConvention.SemanticConventionRef }}) |{{ else }} |{{ end }}
+{{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} |{{ if $attribute.SemanticConvention }} [{{ $attribute.Name }}]({{ $attribute.SemanticConvention.SemanticConventionRef }}) |{{ else }} - |{{ end }}
 {{- end }}
 
 {{- end }}
@@ -111,7 +111,7 @@
 {{- range $metric.Attributes }}
 {{- $attribute := . | attributeInfo }}
 | {{ $attribute.Name }} | {{ $attribute.Description }} |
-{{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} |{{ if $attribute.SemanticConvention }} [{{ $attribute.Name }}]({{ $attribute.SemanticConvention.SemanticConventionRef }}) |{{ else }} |{{ end }}
+{{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} |{{ if $attribute.SemanticConvention }} [{{ $attribute.Name }}]({{ $attribute.SemanticConvention.SemanticConventionRef }}) |{{ else }} - |{{ end }}
 {{- end }}
 
 {{- end }}
@@ -224,7 +224,7 @@ events:
 | ---- | ----------- | ------ | ------- | ------------------- |
 {{- range $attributeName, $attribute := .ResourceAttributes }}
 | {{ $attributeName }} | {{ $attribute.Description }} |
-{{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} | {{ $attribute.Enabled }} |{{ if $attribute.SemanticConvention }} [{{ $attributeName }}]({{ $attribute.SemanticConvention.SemanticConventionRef }}) |{{ else }} |{{ end }}
+{{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} | {{ $attribute.Enabled }} |{{ if $attribute.SemanticConvention }} [{{ $attributeName }}]({{ $attribute.SemanticConvention.SemanticConventionRef }}) |{{ else }} - |{{ end }}
 {{- end }}
 
 {{- end }}
