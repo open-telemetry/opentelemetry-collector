@@ -150,27 +150,25 @@ func TestGenerateInvalidOutputPath(t *testing.T) {
 
 func TestOutputBinaryName(t *testing.T) {
 	for _, tt := range []struct {
-		name      string
-		goos      string
-		inputName string
-		wantName  string
+		name string
+		goos string
+		want string
 	}{
 		{
-			name:      "on windows",
-			goos:      "windows",
-			inputName: "otelcorecol",
-			wantName:  "otelcorecol.exe",
+			name: "on windows",
+			goos: "windows",
+			want: "otelcorecol.exe",
 		},
 		{
-			name:      "on other OSes",
-			goos:      "linux",
-			inputName: "otelcorecol",
-			wantName:  "otelcorecol",
+			name: "on other OSes",
+			goos: "linux",
+			want: "otelcorecol",
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv("GOOS", tt.goos)
-			assert.Equal(t, tt.wantName, outputBinaryName(tt.inputName))
+			assert.Equal(t, tt.want, outputBinaryName("otelcorecol"))
+			assert.Equal(t, "otelcorecol.exe", outputBinaryName("otelcorecol.exe"))
 		})
 	}
 }
