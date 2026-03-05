@@ -41,23 +41,25 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	}
 
 	{{- if $reag }}
-	for _, val := range ms.EnabledAttributes {
-		if !slices.Contains(ms.definedAttributes, val) {
-			return fmt.Errorf("%v is not defined in metadata.yaml", val)
+	if len(ms.definedAttributes) > 0 {
+		for _, val := range ms.EnabledAttributes {
+			if !slices.Contains(ms.definedAttributes, val) {
+				return fmt.Errorf("%v is not defined in metadata.yaml", val)
+			}
 		}
-	}
 
-	for _, val := range ms.requiredAttributes {
-		if !slices.Contains(ms.EnabledAttributes, val) {
-			return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
+		for _, val := range ms.requiredAttributes {
+			if !slices.Contains(ms.EnabledAttributes, val) {
+				return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
+			}
 		}
-	}
 
-	if ms.AggregationStrategy != AggregationStrategySum && 
-		ms.AggregationStrategy != AggregationStrategyAvg &&
-		ms.AggregationStrategy != AggregationStrategyMin &&
-		ms.AggregationStrategy != AggregationStrategyMax {
-		return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+		if ms.AggregationStrategy != AggregationStrategySum &&
+			ms.AggregationStrategy != AggregationStrategyAvg &&
+			ms.AggregationStrategy != AggregationStrategyMin &&
+			ms.AggregationStrategy != AggregationStrategyMax {
+			return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+		}
 	}
 	{{- end }}
 
@@ -84,16 +86,16 @@ func DefaultMetricsConfig() MetricsConfig {
 		{{- range $name, $metric := .Metrics }}
 		{{ $name.Render }}: MetricConfig{
 			Enabled: {{ $metric.Enabled }},
-			{{- if $reag }}
-			{{- if eq $metric.Data.Type "Sum" }}
+			{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}
+			{{- if eq $metric.Data.Type "Sum" -}}
 			AggregationStrategy: AggregationStrategySum,
 			{{- end }}
-			{{- if eq $metric.Data.Type "Gauge" }}
+			{{- if eq $metric.Data.Type "Gauge" -}}
 			AggregationStrategy: AggregationStrategyAvg,
 			{{- end }}
-			requiredAttributes: []string{ {{- range $index, $element := (requiredAttributes $metric.Attributes) }}{{ if $index }}, {{ end }}"{{ $element }}"{{ end -}} },
-			definedAttributes:  []string{ {{- range $index, $element := $metric.Attributes -}}{{ if $index }}, {{ end }}"{{ (attributeInfo $element).Name }}"{{ end -}} },
-			EnabledAttributes:  []string{ {{- range $index, $element := (defaultAttributes $metric.Attributes) }}{{ if $index }}, {{ end }}"{{ $element }}"{{ end -}} },
+			requiredAttributes: []string{ {{- range $index, $element := (requiredAttributes $metric.Attributes) -}}{{ if $index }},{{ end }}"{{ $element }}"{{ end -}} },
+			definedAttributes: []string{ {{- range $index, $element := $metric.Attributes -}}{{ if $index }},{{ end }}"{{ (attributeInfo $element).Name }}"{{ end -}} },
+			EnabledAttributes: []string{ {{- range $index, $element := (defaultAttributes $metric.Attributes) -}}{{ if $index }},{{ end }}"{{ $element }}"{{ end -}} },
 			{{- end }}
 		},
 		{{- end }}
