@@ -44,10 +44,7 @@ func createTracerProvider(
 	}
 	otel.SetTextMapPropagator(propagator)
 
-	resCfg, err := resourceConfigWithDefaults(set.BuildInfo, &cfg.Resource)
-	if err != nil {
-		return nil, err
-	}
+	resCfg := resourceConfigFromSettings(set.Settings, cfg)
 	sdk, err := newSDK(ctx, &resCfg, config.OpenTelemetryConfiguration{
 		TracerProvider: &cfg.Traces.TracerProvider,
 	})

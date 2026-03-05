@@ -7,9 +7,7 @@ import (
 	"fmt"
 	"math"
 	"math/bits"
-	"net/url"
 	"strconv"
-	"strings"
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/attribute"
@@ -22,59 +20,10 @@ const maxInt64 = math.MaxInt64
 func pcommonResourceFromConfig(resCfg config.Resource) (pcommon.Resource, error) {
 	pcommonRes := pcommon.NewResource()
 	attrs := pcommonRes.Attributes()
-	merged, err := mergeResourceAttributes(resCfg.Attributes, resCfg.AttributesList)
-	if err != nil {
-		return pcommon.Resource{}, err
-	}
-	for _, attr := range merged {
+	for _, attr := range resCfg.Attributes {
 		putPcommonAttribute(attrs, attr.Name, attr.Value)
 	}
 	return pcommonRes, nil
-}
-
-func mergeResourceAttributes(attrs []config.AttributeNameValue, attrsList *string) ([]config.AttributeNameValue, error) {
-	listAttrs, err := parseAttributesList(attrsList)
-	if err != nil {
-		return nil, err
-	}
-	merged := make([]config.AttributeNameValue, 0, len(listAttrs)+len(attrs))
-	merged = append(merged, listAttrs...)
-	merged = append(merged, attrs...)
-	return merged, nil
-}
-
-func parseAttributesList(attrsList *string) ([]config.AttributeNameValue, error) {
-	if attrsList == nil {
-		return nil, nil
-	}
-	raw := strings.TrimSpace(*attrsList)
-	if raw == "" {
-		return nil, nil
-	}
-
-	pairs := strings.Split(raw, ",")
-	attrs := make([]config.AttributeNameValue, 0, len(pairs))
-	var invalid []string
-	for _, pair := range pairs {
-		key, val, found := strings.Cut(pair, "=")
-		if !found {
-			invalid = append(invalid, pair)
-			continue
-		}
-		name := strings.TrimSpace(key)
-		value, err := url.PathUnescape(strings.TrimSpace(val))
-		if err != nil {
-			value = val
-		}
-		attrs = append(attrs, config.AttributeNameValue{
-			Name:  name,
-			Value: value,
-		})
-	}
-	if len(invalid) > 0 {
-		return attrs, fmt.Errorf("resource attributes_list has missing value for %v", invalid)
-	}
-	return attrs, nil
 }
 
 func putPcommonAttribute(attrs pcommon.Map, name string, value any) {

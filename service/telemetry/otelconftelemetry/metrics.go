@@ -27,10 +27,7 @@ func createMeterProvider(
 		cfg.Metrics.Views = set.DefaultViews(cfg.Metrics.Level)
 	}
 
-	resCfg, err := resourceConfigWithDefaults(set.BuildInfo, &cfg.Resource)
-	if err != nil {
-		return nil, err
-	}
+	resCfg := resourceConfigFromSettings(set.Settings, cfg)
 	mpConfig := cfg.Metrics.MeterProvider
 	sdk, err := newSDK(ctx, &resCfg, config.OpenTelemetryConfiguration{
 		MeterProvider: &mpConfig,

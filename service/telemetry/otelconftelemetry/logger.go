@@ -22,10 +22,7 @@ func createLogger(
 	componentConfig component.Config,
 ) (*zap.Logger, component.ShutdownFunc, error) {
 	cfg := componentConfig.(*Config)
-	resCfg, err := resourceConfigWithDefaults(set.BuildInfo, &cfg.Resource)
-	if err != nil {
-		return nil, nil, err
-	}
+	resCfg := resourceConfigFromSettings(set.Settings, cfg)
 
 	attrs := pcommonAttrsToOTelAttrs(set.Resource)
 	res := sdkresource.NewWithAttributes("", attrs...)

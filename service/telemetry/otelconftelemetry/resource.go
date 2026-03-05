@@ -5,7 +5,7 @@ package otelconftelemetry // import "go.opentelemetry.io/collector/service/telem
 
 import (
 	"context"
-	"errors"
+	"sort"
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/attribute"
@@ -51,92 +51,82 @@ func resourceConfigWithDefaults(buildInfo component.BuildInfo, cfg *migration.Re
 		cfg = &migration.ResourceConfigV030{}
 	}
 
-	// NOTE: this function does not mutate cfg; it builds a derived resource config.
-
 	// Resource detectors are accepted in config for forward compatibility,
 	// but are not yet applied to build the resource.
-	resourceCfg := cfg.Resource
-	resourceCfg.Attributes = append([]config.AttributeNameValue(nil), cfg.Attributes...)
+	resourceCfg := config.Resource{
+		Attributes:     nil,
+		AttributesList: cfg.AttributesList,
+		Detectors:      cfg.Detectors,
+		SchemaUrl:      cfg.SchemaUrl,
+	}
 
 	if resourceCfg.SchemaUrl == nil {
 		resourceCfg.SchemaUrl = ptr(semconv.SchemaURL)
-		if cfg.Resource.SchemaUrl == nil {
-			cfg.Resource.SchemaUrl = resourceCfg.SchemaUrl
-		}
-	}
-
-	seen := make(map[string]struct{}, len(resourceCfg.Attributes))
-	explicitlyRemoved := make(map[string]struct{})
-	for _, attr := range resourceCfg.Attributes {
-		if attr.Name == "" {
-			return config.Resource{}, errors.New("resource attribute is missing name")
-		}
-		seen[attr.Name] = struct{}{}
-		if attr.Value == nil {
-			explicitlyRemoved[attr.Name] = struct{}{}
-		}
-	}
-
-	attrsList, err := parseAttributesList(resourceCfg.AttributesList)
-	if err != nil {
-		return config.Resource{}, err
-	}
-	for _, attr := range attrsList {
-		if attr.Name == "" {
-			return config.Resource{}, errors.New("resource attribute is missing name")
-		}
-		seen[attr.Name] = struct{}{}
 	}
 
 	removedDefaults := make(map[string]struct{})
-	for _, name := range []string{
-		string(semconv.ServiceNameKey),
-		string(semconv.ServiceVersionKey),
-		string(semconv.ServiceInstanceIDKey),
-	} {
-		if cfg.IsRemoved(name) {
-			removedDefaults[name] = struct{}{}
-			continue
-		}
-		if _, ok := explicitlyRemoved[name]; ok {
-			removedDefaults[name] = struct{}{}
+	for key, value := range cfg.LegacyAttributes {
+		if value == nil {
+			removedDefaults[key] = struct{}{}
 		}
 	}
 	defaults, err := defaultAttributeValues(buildInfo, removedDefaults)
 	if err != nil {
 		return config.Resource{}, err
 	}
+	// Attribute order matters: later entries overwrite earlier ones in the SDK.
+	// We rely on this behavior to prioritize declarative attributes over legacy ones,
+	// and legacy ones over defaults.
 	for _, name := range []string{
 		string(semconv.ServiceNameKey),
 		string(semconv.ServiceVersionKey),
 		string(semconv.ServiceInstanceIDKey),
 	} {
-		if _, ok := seen[name]; ok {
-			continue
-		}
 		if value, ok := defaults[name]; ok {
-			attr := config.AttributeNameValue{
+			resourceCfg.Attributes = append(resourceCfg.Attributes, config.AttributeNameValue{
 				Name:  name,
 				Value: value,
-			}
-			resourceCfg.Attributes = append(resourceCfg.Attributes, attr)
-			cfg.Resource.Attributes = append(cfg.Resource.Attributes, attr)
-			seen[name] = struct{}{}
+			})
 		}
 	}
 
-	filtered := make([]config.AttributeNameValue, 0, len(resourceCfg.Attributes))
-	for _, attr := range resourceCfg.Attributes {
-		if attr.Value == nil {
+	legacyKeys := make([]string, 0, len(cfg.LegacyAttributes))
+	for key := range cfg.LegacyAttributes {
+		legacyKeys = append(legacyKeys, key)
+	}
+	sort.Strings(legacyKeys)
+	for _, key := range legacyKeys {
+		value := cfg.LegacyAttributes[key]
+		if value == nil {
 			continue
 		}
-		filtered = append(filtered, attr)
+		resourceCfg.Attributes = append(resourceCfg.Attributes, config.AttributeNameValue{
+			Name:  key,
+			Value: value,
+		})
 	}
 
-	return config.Resource{
-		Attributes:     filtered,
-		AttributesList: resourceCfg.AttributesList,
-		Detectors:      resourceCfg.Detectors,
-		SchemaUrl:      resourceCfg.SchemaUrl,
-	}, nil
+	resourceCfg.Attributes = append(resourceCfg.Attributes, cfg.Attributes...)
+	return resourceCfg, nil
+}
+
+func resourceConfigFromSettings(set telemetry.Settings, cfg *Config) config.Resource {
+	resourceCfg := config.Resource{
+		SchemaUrl: cfg.Resource.SchemaUrl,
+	}
+	if resourceCfg.SchemaUrl == nil {
+		resourceCfg.SchemaUrl = ptr(semconv.SchemaURL)
+	}
+	if set.Resource == nil {
+		return resourceCfg
+	}
+
+	set.Resource.Attributes().Range(func(k string, v pcommon.Value) bool {
+		resourceCfg.Attributes = append(resourceCfg.Attributes, config.AttributeNameValue{
+			Name:  k,
+			Value: v.AsRaw(),
+		})
+		return true
+	})
+	return resourceCfg
 }

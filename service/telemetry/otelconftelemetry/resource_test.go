@@ -85,64 +85,11 @@ func TestCreateResource(t *testing.T) {
 
 		raw := res.Attributes().AsRaw()
 		assert.Equal(t, map[string]any{
-			"extra.attr":      "value",
-			"service.name":    "custom-service",
-			"service.version": "0.1.0",
+			"extra.attr":          "value",
+			"service.name":        "custom-service",
+			"service.version":     "0.1.0",
+			"service.instance.id": "<nil>",
 		}, raw)
-	})
-	t.Run("with attributes_list", func(t *testing.T) {
-		cfg := createDefaultConfig().(*Config)
-		list := "service.version=1.2.3,custom.attr=foo"
-		cfg.Resource.AttributesList = &list
-		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-		res, err := createResource(t.Context(), set, cfg)
-		require.NoError(t, err)
-
-		raw := res.Attributes().AsRaw()
-		assert.Equal(t, "1.2.3", raw["service.version"])
-		assert.Equal(t, "foo", raw["custom.attr"])
-		assert.Equal(t, "otelcol", raw["service.name"])
-		assert.Contains(t, raw, "service.instance.id")
-	})
-	t.Run("with attributes_list invalid pair", func(t *testing.T) {
-		cfg := createDefaultConfig().(*Config)
-		list := "invalidpair"
-		cfg.Resource.AttributesList = &list
-		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-		_, err := createResource(t.Context(), set, cfg)
-		require.ErrorContains(t, err, "resource attributes_list has missing value")
-	})
-	t.Run("with attributes_list empty name", func(t *testing.T) {
-		cfg := createDefaultConfig().(*Config)
-		list := "=value"
-		cfg.Resource.AttributesList = &list
-		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-		_, err := createResource(t.Context(), set, cfg)
-		require.ErrorContains(t, err, "resource attribute is missing name")
-	})
-	t.Run("with attributes_list invalid escape", func(t *testing.T) {
-		cfg := createDefaultConfig().(*Config)
-		list := "custom.attr=%ZZ"
-		cfg.Resource.AttributesList = &list
-		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-		res, err := createResource(t.Context(), set, cfg)
-		require.NoError(t, err)
-
-		raw := res.Attributes().AsRaw()
-		assert.Equal(t, "%ZZ", raw["custom.attr"])
-	})
-	t.Run("with attributes_list empty", func(t *testing.T) {
-		cfg := createDefaultConfig().(*Config)
-		list := "   "
-		cfg.Resource.AttributesList = &list
-		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-		res, err := createResource(t.Context(), set, cfg)
-		require.NoError(t, err)
-
-		raw := res.Attributes().AsRaw()
-		assert.Contains(t, raw, "service.name")
-		assert.Contains(t, raw, "service.version")
-		assert.Contains(t, raw, "service.instance.id")
 	})
 	t.Run("with custom schema_url", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
@@ -243,15 +190,6 @@ func TestCreateResource(t *testing.T) {
 		raw := res.Attributes().AsRaw()
 		assert.Equal(t, "(1+2i)", raw["complex.attr"])
 	})
-	t.Run("with empty attribute name", func(t *testing.T) {
-		cfg := createDefaultConfig().(*Config)
-		cfg.Resource.Attributes = []config.AttributeNameValue{
-			{Name: "", Value: "value"},
-		}
-		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-		_, err := createResource(t.Context(), set, cfg)
-		require.ErrorContains(t, err, "resource attribute is missing name")
-	})
 }
 
 func TestResourceConfigWithDefaults(t *testing.T) {
@@ -260,34 +198,6 @@ func TestResourceConfigWithDefaults(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotNil(t, resCfg.SchemaUrl)
 		assert.NotEmpty(t, resCfg.Attributes)
-	})
-
-	t.Run("attributes_list prevents default", func(t *testing.T) {
-		cfg := migration.ResourceConfigV030{}
-		list := "service.name=override"
-		cfg.AttributesList = &list
-		resCfg, err := resourceConfigWithDefaults(component.BuildInfo{Command: "cmd", Version: "1.0.0"}, &cfg)
-		require.NoError(t, err)
-
-		for _, attr := range resCfg.Attributes {
-			assert.NotEqual(t, "service.name", attr.Name)
-		}
-	})
-
-	t.Run("explicitly removed default", func(t *testing.T) {
-		cfg := migration.ResourceConfigV030{
-			Resource: config.Resource{
-				Attributes: []config.AttributeNameValue{
-					{Name: "service.version", Value: nil},
-				},
-			},
-		}
-		resCfg, err := resourceConfigWithDefaults(component.BuildInfo{Command: "cmd", Version: "1.0.0"}, &cfg)
-		require.NoError(t, err)
-
-		for _, attr := range resCfg.Attributes {
-			assert.NotEqual(t, "service.version", attr.Name)
-		}
 	})
 
 	t.Run("legacy removed default", func(t *testing.T) {
@@ -315,6 +225,15 @@ func TestResourceConfigWithDefaults(t *testing.T) {
 		_, err := resourceConfigWithDefaults(component.BuildInfo{Command: "cmd", Version: "1.0.0"}, &migration.ResourceConfigV030{})
 		require.ErrorContains(t, err, assert.AnError.Error())
 	})
+}
+
+func TestResourceConfigUnmarshalAttributesListUnsupported(t *testing.T) {
+	cfg := migration.ResourceConfigV030{}
+	conf := confmap.NewFromStringMap(map[string]any{
+		"attributes_list": "service.name=override",
+	})
+	err := cfg.Unmarshal(conf)
+	require.ErrorContains(t, err, "resource.attributes_list is not currently supported")
 }
 
 func TestPcommonValueToAttribute(t *testing.T) {

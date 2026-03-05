@@ -481,12 +481,10 @@ func TestLogAttributeInjection(t *testing.T) {
 
 	cfg := &Config{
 		Resource: migration.ResourceConfigV030{
-			Resource: config.Resource{
-				Attributes: []config.AttributeNameValue{
-					{Name: "service.instance.id", Value: nil},
-					{Name: "service.name", Value: nil},
-					{Name: "service.version", Value: nil},
-				},
+			LegacyAttributes: map[string]any{
+				"service.instance.id": nil,
+				"service.name":        nil,
+				"service.version":     nil,
 			},
 		},
 		Logs: LogsConfig{

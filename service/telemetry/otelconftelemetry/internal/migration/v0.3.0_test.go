@@ -9,7 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -60,20 +59,19 @@ func TestResourceConfigV030UnmarshalLegacyFormat(t *testing.T) {
 		})
 		var cfg ResourceConfigV030
 		require.NoError(t, cfg.Unmarshal(conf))
-		assert.Len(t, cfg.Attributes, 1)
-		assert.Equal(t, "service.name", cfg.Attributes[0].Name)
-		assert.Equal(t, "my-service", cfg.Attributes[0].Value)
+		assert.Empty(t, cfg.Attributes)
+		assert.Equal(t, "my-service", cfg.LegacyAttributes["service.name"])
 	})
 
-	t.Run("reserved key with primitive treated as legacy", func(t *testing.T) {
+	t.Run("schema_url declared", func(t *testing.T) {
 		conf := confmap.NewFromStringMap(map[string]any{
-			"schema_url": "legacy-value",
+			"schema_url": "https://opentelemetry.io/schemas/1.38.0",
 		})
 		var cfg ResourceConfigV030
 		require.NoError(t, cfg.Unmarshal(conf))
-		assert.Len(t, cfg.Attributes, 1)
-		assert.Equal(t, "schema_url", cfg.Attributes[0].Name)
-		assert.Equal(t, "legacy-value", cfg.Attributes[0].Value)
+		assert.Empty(t, cfg.Attributes)
+		require.NotNil(t, cfg.SchemaUrl)
+		assert.Equal(t, "https://opentelemetry.io/schemas/1.38.0", *cfg.SchemaUrl)
 	})
 
 	t.Run("no declarative keys", func(t *testing.T) {
@@ -82,9 +80,8 @@ func TestResourceConfigV030UnmarshalLegacyFormat(t *testing.T) {
 		})
 		var cfg ResourceConfigV030
 		require.NoError(t, cfg.Unmarshal(conf))
-		assert.Len(t, cfg.Attributes, 1)
-		assert.Equal(t, "custom.attr", cfg.Attributes[0].Name)
-		assert.Equal(t, "value", cfg.Attributes[0].Value)
+		assert.Empty(t, cfg.Attributes)
+		assert.Equal(t, "value", cfg.LegacyAttributes["custom.attr"])
 	})
 
 	t.Run("legacy with removed values", func(t *testing.T) {
@@ -94,8 +91,8 @@ func TestResourceConfigV030UnmarshalLegacyFormat(t *testing.T) {
 		})
 		var cfg ResourceConfigV030
 		require.NoError(t, cfg.Unmarshal(conf))
-		assert.Len(t, cfg.Attributes, 1)
 		assert.True(t, cfg.IsRemoved("service.name"))
+		assert.Equal(t, "value", cfg.LegacyAttributes["service.other"])
 	})
 
 	t.Run("legacy unmarshal error", func(t *testing.T) {
@@ -119,6 +116,7 @@ func TestResourceConfigV030UnmarshalDeclarativeFormat(t *testing.T) {
 		assert.Len(t, cfg.Attributes, 1)
 		assert.Equal(t, "service.name", cfg.Attributes[0].Name)
 		assert.Equal(t, "svc", cfg.Attributes[0].Value)
+		assert.Empty(t, cfg.LegacyAttributes)
 	})
 
 	t.Run("schema_url only", func(t *testing.T) {
@@ -127,9 +125,9 @@ func TestResourceConfigV030UnmarshalDeclarativeFormat(t *testing.T) {
 		})
 		var cfg ResourceConfigV030
 		require.NoError(t, cfg.Unmarshal(conf))
-		assert.Len(t, cfg.Attributes, 1)
-		assert.Equal(t, "schema_url", cfg.Attributes[0].Name)
-		assert.Equal(t, "https://opentelemetry.io/schemas/1.38.0", cfg.Attributes[0].Value)
+		assert.Empty(t, cfg.Attributes)
+		require.NotNil(t, cfg.SchemaUrl)
+		assert.Equal(t, "https://opentelemetry.io/schemas/1.38.0", *cfg.SchemaUrl)
 	})
 
 	t.Run("schema keys with legacy attributes", func(t *testing.T) {
@@ -141,8 +139,9 @@ func TestResourceConfigV030UnmarshalDeclarativeFormat(t *testing.T) {
 		})
 		var cfg ResourceConfigV030
 		require.NoError(t, cfg.Unmarshal(conf))
-		assert.Len(t, cfg.Attributes, 3)
+		assert.Len(t, cfg.Attributes, 1)
 		assert.True(t, cfg.IsRemoved("remove.attr"))
+		assert.Equal(t, "value", cfg.LegacyAttributes["legacy.attr"])
 	})
 
 	t.Run("declarative only with detectors", func(t *testing.T) {
@@ -177,67 +176,5 @@ func TestResourceConfigV030UnmarshalDeclarativeFormat(t *testing.T) {
 		})
 		var cfg ResourceConfigV030
 		require.Error(t, cfg.Unmarshal(conf))
-	})
-}
-
-func TestDeclarativeHelpers(t *testing.T) {
-	t.Run("declarative config from raw", func(t *testing.T) {
-		raw := map[string]any{
-			"schema_url":  "https://opentelemetry.io/schemas/1.38.0",
-			"attributes":  []any{map[string]any{"name": "service.name", "value": "svc"}},
-			"legacy.attr": "value",
-		}
-		conf := declarativeConfigFromRaw(raw)
-		var cfg config.Resource
-		require.NoError(t, conf.Unmarshal(&cfg))
-		assert.Len(t, cfg.Attributes, 1)
-	})
-	t.Run("declarative config from nil", func(t *testing.T) {
-		conf := declarativeConfigFromRaw(nil)
-		var cfg config.Resource
-		require.NoError(t, conf.Unmarshal(&cfg))
-		assert.Empty(t, cfg.Attributes)
-	})
-
-	t.Run("isDeclarativeResourceConfig cases", func(t *testing.T) {
-		assert.False(t, isDeclarativeResourceConfig(nil))
-		assert.False(t, isDeclarativeResourceConfig(map[string]any{}))
-		assert.False(t, isDeclarativeResourceConfig(map[string]any{"schema_url": "legacy"}))
-		assert.True(t, isDeclarativeResourceConfig(map[string]any{
-			"schema_url": "https://opentelemetry.io/schemas/1.38.0",
-			"attributes": []any{map[string]any{"name": "service.name", "value": "svc"}},
-		}))
-		assert.True(t, isDeclarativeResourceConfig(map[string]any{
-			"attributes_list": "service.name=svc",
-		}))
-	})
-
-	t.Run("isPrimitiveOnlyConfig", func(t *testing.T) {
-		assert.True(t, isPrimitiveOnlyConfig(map[string]any{"schema_url": "value"}))
-		assert.False(t, isPrimitiveOnlyConfig(map[string]any{"schema_url": map[string]any{}}))
-		assert.False(t, isPrimitiveOnlyConfig(map[string]any{"schema_url": "value", "other": "v"}))
-		assert.False(t, isPrimitiveOnlyConfig(map[string]any{}))
-	})
-
-	t.Run("isPrimitive", func(t *testing.T) {
-		assert.True(t, isPrimitive("value"))
-		assert.True(t, isPrimitive(true))
-		assert.True(t, isPrimitive(1))
-		assert.True(t, isPrimitive(1.2))
-		assert.False(t, isPrimitive(map[string]any{}))
-	})
-
-	t.Run("legacyAttributesFromRaw", func(t *testing.T) {
-		attrs, removed := legacyAttributesFromRaw(nil)
-		assert.Nil(t, attrs)
-		assert.Nil(t, removed)
-
-		attrs, removed = legacyAttributesFromRaw(map[string]any{
-			"schema_url":  "https://opentelemetry.io/schemas/1.38.0",
-			"legacy.attr": "value",
-			"remove.attr": nil,
-		})
-		assert.Len(t, attrs, 2)
-		assert.Contains(t, removed, "remove.attr")
 	})
 }
