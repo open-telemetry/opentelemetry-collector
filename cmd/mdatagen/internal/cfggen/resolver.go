@@ -72,7 +72,7 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 		if err != nil {
 			return fmt.Errorf("failed to resolve $ref %q: %w", current.Ref, err)
 		}
-		
+
 		// Preserve custom extensions defined on the reference node
 		customGoType := current.GoType
 		customIsPointer := current.IsPointer
@@ -80,10 +80,10 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 		customDescription := current.Description
 		customDefault := current.Default
 		customEnum := current.Enum
-		
+
 		// Copy the resolved node
 		newCurrent := *resolved
-		
+
 		// Restore custom extensions if they were explicitly set on the reference
 		if customGoType != "" {
 			newCurrent.GoType = customGoType
@@ -103,7 +103,7 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 		if len(customEnum) > 0 {
 			newCurrent.Enum = customEnum
 		}
-		
+
 		current = &newCurrent
 	}
 
