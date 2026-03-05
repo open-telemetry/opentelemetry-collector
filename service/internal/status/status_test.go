@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -231,9 +232,9 @@ func TestStatusFuncs(t *testing.T) {
 
 func TestStatusFuncsConcurrent(t *testing.T) {
 	ids := []*componentstatus.InstanceID{{}, {}, {}, {}}
-	count := 0
+	var count atomic.Int64
 	statusFunc := func(*componentstatus.InstanceID, *componentstatus.Event) {
-		count++
+		count.Add(1)
 	}
 	rep := NewReporter(statusFunc,
 		func(err error) {
@@ -256,7 +257,7 @@ func TestStatusFuncsConcurrent(t *testing.T) {
 	}
 
 	wg.Wait()
-	require.Equal(t, 8004, count)
+	require.Equal(t, int64(8004), count.Load())
 }
 
 func TestReportComponentOKIfStarting(t *testing.T) {
