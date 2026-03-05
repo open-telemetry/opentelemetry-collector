@@ -166,6 +166,7 @@ resource_attributes:
     # Optional: the reference to a semantic convention
     # Relative path to the semantic convention definition (e.g., "system.md#system-memory-state")
     # The full URL is constructed using sem_conv_version: {base}/v{version}/docs/registry/attributes/{ref}
+    # An example of a full url is: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/registry/attributes/system.md#system-memory-state
     semantic_convention:
       ref:
 
@@ -220,6 +221,7 @@ attributes:
     # Optional: the reference to a semantic convention
     # Relative path to the semantic convention definition (e.g., "system.md#system-memory-state")
     # The full URL is constructed using sem_conv_version: {base}/v{version}/docs/registry/attributes/{ref}
+    # An example of a full url is: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/registry/attributes/system.md#system-memory-state
     semantic_convention:
       ref:
 
@@ -275,6 +277,7 @@ metrics:
     # Optional: the reference to a semantic convention
     # Relative path to the semantic convention definition (e.g., "system/system-metrics.md#metric-systemcputime")
     # The full URL is constructed using sem_conv_version: {base}/v{version}/docs/{ref}
+    # An example of a full url is: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime
     semantic_convention:
       ref:
 
