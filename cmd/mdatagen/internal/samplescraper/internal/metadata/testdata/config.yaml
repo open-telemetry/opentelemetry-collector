@@ -6,7 +6,6 @@ all_set:
       attributes: ["string_attr","state","enum_attr","slice_attr","map_attr"]
     default.metric.to_be_removed:
       enabled: true
-      attributes: []
     metric.input_type:
       enabled: true
       attributes: ["string_attr","state","enum_attr","slice_attr","map_attr"]
@@ -21,7 +20,6 @@ all_set:
       attributes: ["string_attr","boolean_attr"]
     system.cpu.time:
       enabled: true
-      attributes: []
   resource_attributes:
     map.resource.attr:
       enabled: true
@@ -46,7 +44,6 @@ reaggregate_set:
       attributes: []
     default.metric.to_be_removed:
       enabled: true
-      attributes: []
     metric.input_type:
       enabled: true
       attributes: []
@@ -61,7 +58,6 @@ reaggregate_set:
       attributes: []
     system.cpu.time:
       enabled: true
-      attributes: []
   resource_attributes:
     map.resource.attr:
       enabled: true
@@ -86,7 +82,6 @@ none_set:
       attributes: ["string_attr","state","enum_attr","slice_attr","map_attr"]
     default.metric.to_be_removed:
       enabled: false
-      attributes: []
     metric.input_type:
       enabled: false
       attributes: ["string_attr","state","enum_attr","slice_attr","map_attr"]
@@ -101,7 +96,6 @@ none_set:
       attributes: ["string_attr","boolean_attr"]
     system.cpu.time:
       enabled: false
-      attributes: []
   resource_attributes:
     map.resource.attr:
       enabled: false
