@@ -218,6 +218,103 @@ func TestProfileSwitchDictionary(t *testing.T) {
 				return d
 			}(),
 		},
+		{
+			name: "Profile with various elements",
+			profile: func() Profile {
+				p := NewProfile()
+
+				p.SampleType().SetTypeStrindex(1)
+				p.SampleType().SetUnitStrindex(2)
+
+				p.PeriodType().SetTypeStrindex(3)
+				p.PeriodType().SetUnitStrindex(4)
+
+				p.AttributeIndices().Append(1)
+
+				return p
+			}(),
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				// Make sure we are conform with the protocol
+				d.MappingTable().AppendEmpty()
+				d.LocationTable().AppendEmpty()
+				d.FunctionTable().AppendEmpty()
+				d.LinkTable().AppendEmpty()
+				d.StringTable().Append("")
+				d.AttributeTable().AppendEmpty()
+				d.StackTable().AppendEmpty()
+
+				d.StringTable().Append("sample-type")    // 1
+				d.StringTable().Append("sample-unit")    // 2
+				d.StringTable().Append("period-type")    // 3
+				d.StringTable().Append("period-unit")    // 4
+				d.StringTable().Append("unrelated-1")    // 5
+				d.StringTable().Append("unrelated-2")    // 6
+				d.StringTable().Append("attribute-key")  // 7
+				d.StringTable().Append("attribute-unit") // 8
+
+				a := d.AttributeTable().AppendEmpty()
+				a.SetKeyStrindex(7)
+				a.Value().SetStr("AnyValue")
+				a.SetUnitStrindex(8)
+
+				return d
+			}(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				// Make sure we are conform with the protocol
+				d.MappingTable().AppendEmpty()
+				d.LocationTable().AppendEmpty()
+				d.FunctionTable().AppendEmpty()
+				d.LinkTable().AppendEmpty()
+				d.StringTable().Append("")
+				d.AttributeTable().AppendEmpty()
+				d.StackTable().AppendEmpty()
+
+				return d
+			}(),
+			wantProfile: func() Profile {
+				p := NewProfile()
+
+				p.AttributeIndices().Append(1)
+
+				// Order of entries depend on the order of
+				// processing in switchDictionary()
+				p.SampleType().SetTypeStrindex(5)
+				p.SampleType().SetUnitStrindex(6)
+
+				p.PeriodType().SetTypeStrindex(3)
+				p.PeriodType().SetUnitStrindex(4)
+
+				return p
+			}(),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				// Make sure we are conform with the protocol
+				d.MappingTable().AppendEmpty()
+				d.LocationTable().AppendEmpty()
+				d.FunctionTable().AppendEmpty()
+				d.LinkTable().AppendEmpty()
+				d.StringTable().Append("")
+				d.AttributeTable().AppendEmpty()
+				d.StackTable().AppendEmpty()
+
+				a := d.AttributeTable().AppendEmpty()
+				a.SetKeyStrindex(1)
+				a.SetUnitStrindex(2)
+				a.Value().SetStr("AnyValue")
+
+				// Order of entries depend on the order of
+				// processing in switchDictionary()
+				d.StringTable().Append("attribute-key")  // 1
+				d.StringTable().Append("attribute-unit") // 2
+				d.StringTable().Append("period-type")    // 3
+				d.StringTable().Append("period-unit")    // 4
+				d.StringTable().Append("sample-type")    // 5
+				d.StringTable().Append("sample-unit")    // 6
+				return d
+			}(),
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			profile := tt.profile
