@@ -191,12 +191,12 @@ func genTestFailingUnmarshalProtoValuesSample() map[string][]byte {
 		"invalid_field":                      {0x02},
 		"StackIndex/wrong_wire_type":         {0xc},
 		"StackIndex/missing_value":           {0x8},
-		"Values/wrong_wire_type":             {0x14},
-		"Values/missing_value":               {0x12},
-		"AttributeIndices/wrong_wire_type":   {0x1c},
-		"AttributeIndices/missing_value":     {0x1a},
-		"LinkIndex/wrong_wire_type":          {0x24},
-		"LinkIndex/missing_value":            {0x20},
+		"AttributeIndices/wrong_wire_type":   {0x14},
+		"AttributeIndices/missing_value":     {0x12},
+		"LinkIndex/wrong_wire_type":          {0x1c},
+		"LinkIndex/missing_value":            {0x18},
+		"Values/wrong_wire_type":             {0x24},
+		"Values/missing_value":               {0x22},
 		"TimestampsUnixNano/wrong_wire_type": {0x2c},
 		"TimestampsUnixNano/missing_value":   {0x2a},
 	}
@@ -206,9 +206,9 @@ func genTestEncodingValuesSample() map[string]*Sample {
 	return map[string]*Sample{
 		"empty":                   NewSample(),
 		"StackIndex/test":         {StackIndex: int32(13)},
-		"Values/test":             {Values: []int64{int64(0), int64(13)}},
 		"AttributeIndices/test":   {AttributeIndices: []int32{int32(0), int32(13)}},
 		"LinkIndex/test":          {LinkIndex: int32(13)},
+		"Values/test":             {Values: []int64{int64(0), int64(13)}},
 		"TimestampsUnixNano/test": {TimestampsUnixNano: []uint64{uint64(0), uint64(13)}},
 	}
 }
