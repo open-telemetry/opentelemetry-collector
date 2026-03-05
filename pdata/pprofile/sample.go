@@ -43,11 +43,6 @@ func (ms Sample) switchDictionary(src, dst ProfilesDictionary) error {
 		}
 
 		stack := src.StackTable().At(int(ms.StackIndex()))
-		err := stack.switchDictionary(src, dst)
-		if err != nil {
-			return fmt.Errorf("couldn't switch stack dictionary: %w", err)
-		}
-
 		idx, err := SetStack(dst.StackTable(), stack)
 		if err != nil {
 			return fmt.Errorf("couldn't set stack: %w", err)
