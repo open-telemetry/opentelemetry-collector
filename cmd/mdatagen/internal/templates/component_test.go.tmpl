@@ -16,6 +16,7 @@ import (
 	{{- end }}
 
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	{{- if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) }}
@@ -33,6 +34,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	{{- if supportsProfiles }}
+	"go.opentelemetry.io/collector/receiver/xreceiver"
+	{{- end }}
 	{{- end }}
 	{{- if isScraper }}
 	"go.opentelemetry.io/collector/scraper"
@@ -75,7 +79,7 @@ func TestComponentConfigStruct(t *testing.T) {
 func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
-	tests := []struct{
+	tests := []struct {
 		createFn func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error)
 		name string
 	}{
@@ -114,7 +118,7 @@ func TestComponentLifecycle(t *testing.T) {
 
 	for _, tt := range tests {
 		{{- if not .Tests.SkipShutdown }}
-		t.Run(tt.name + "-shutdown", func(t *testing.T) {
+		t.Run(tt.name+"-shutdown", func(t *testing.T) {
 			c, err := tt.createFn(context.Background(), exportertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
@@ -123,7 +127,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{{- end }}
 
 		{{- if not .Tests.SkipLifecycle }}
-		t.Run(tt.name + "-lifecycle", func(t *testing.T) {
+		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
 			c, err := tt.createFn(context.Background(), exportertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			host := {{ .Tests.Host }}
@@ -172,7 +176,7 @@ func TestComponentLifecycle(t *testing.T) {
 func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
-	tests := []struct{
+	tests := []struct {
 		createFn func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error)
 		name string
 	}{
@@ -219,7 +223,7 @@ func TestComponentLifecycle(t *testing.T) {
 
 	for _, tt := range tests {
 		{{- if not .Tests.SkipShutdown }}
-		t.Run(tt.name + "-shutdown", func(t *testing.T) {
+		t.Run(tt.name+"-shutdown", func(t *testing.T) {
 			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
@@ -228,7 +232,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{{- end }}
 
 		{{- if not .Tests.SkipLifecycle }}
-		t.Run(tt.name + "-lifecycle", func(t *testing.T) {
+		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
 			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			host := {{ .Tests.Host }}
@@ -275,7 +279,7 @@ func TestComponentLifecycle(t *testing.T) {
 func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
-	tests := []struct{
+	tests := []struct {
 		createFn func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error)
 		name string
 	}{
@@ -322,7 +326,7 @@ func TestComponentLifecycle(t *testing.T) {
 
 	for _, tt := range tests {
 		{{- if not .Tests.SkipShutdown }}
-		t.Run(tt.name + "-shutdown", func(t *testing.T) {
+		t.Run(tt.name+"-shutdown", func(t *testing.T) {
 			c, err := tt.createFn(context.Background(), receivertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
@@ -331,7 +335,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{{- end }}
 
 		{{- if not .Tests.SkipLifecycle }}
-		t.Run(tt.name + "-lifecycle", func(t *testing.T) {
+		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
 			firstRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			host := {{ .Tests.Host }}
@@ -352,7 +356,7 @@ func TestComponentLifecycle(t *testing.T) {
 func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
-	tests := []struct{
+	tests := []struct {
 		createFn func(ctx context.Context, set scraper.Settings, cfg component.Config) (component.Component, error)
 		name string
 	}{
@@ -399,7 +403,7 @@ func TestComponentLifecycle(t *testing.T) {
 
 	for _, tt := range tests {
 		{{- if not .Tests.SkipShutdown }}
-		t.Run(tt.name + "-shutdown", func(t *testing.T) {
+		t.Run(tt.name+"-shutdown", func(t *testing.T) {
 			c, err := tt.createFn(context.Background(), scrapertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
@@ -408,7 +412,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{{- end }}
 
 		{{- if not .Tests.SkipLifecycle }}
-		t.Run(tt.name + "-lifecycle", func(t *testing.T) {
+		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
 			firstRcvr, err := tt.createFn(context.Background(), scrapertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			host := {{ .Tests.Host }}
@@ -465,7 +469,7 @@ func TestComponentLifecycle(t *testing.T) {
 func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
-	tests := []struct{
+	tests := []struct {
 		createFn func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error)
 		name string
 	}{
@@ -624,7 +628,7 @@ func TestComponentLifecycle(t *testing.T) {
 
 	for _, tt := range tests {
 		{{- if not .Tests.SkipShutdown }}
-		t.Run(tt.name + "-shutdown", func(t *testing.T) {
+		t.Run(tt.name+"-shutdown", func(t *testing.T) {
 			c, err := tt.createFn(context.Background(), connectortest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
@@ -633,7 +637,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{{- end }}
 
 		{{- if not .Tests.SkipLifecycle }}
-		t.Run(tt.name + "-lifecycle", func(t *testing.T) {
+		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
 			firstConnector, err := tt.createFn(context.Background(), connectortest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			host := {{ .Tests.Host }}

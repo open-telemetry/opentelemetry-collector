@@ -1,13 +1,15 @@
 {{- define "putAttribute" -}}
-	{{- if eq (attributeInfo .).Type.Primitive "[]byte" }}
-	dp.Attributes().PutEmptyBytes("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
-	{{- else if eq (attributeInfo .).Type.Primitive "[]any" }}
-	dp.Attributes().PutEmptySlice("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
-	{{- else if eq (attributeInfo .).Type.Primitive "map[string]any" }}
-	dp.Attributes().PutEmptyMap("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
-	{{- else }}
-	dp.Attributes().Put{{ (attributeInfo .).Type }}("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue)
-	{{- end }}
+{{- $attr := .attr -}}
+{{- $tab := .tab -}}
+{{- if eq (attributeInfo $attr).Type.Primitive "[]byte" }}
+{{ $tab }}dp.Attributes().PutEmptyBytes("{{ (attributeInfo $attr).Name }}").FromRaw({{ $attr.RenderUnexported }}AttributeValue)
+{{- else if eq (attributeInfo $attr).Type.Primitive "[]any" }}
+{{ $tab }}dp.Attributes().PutEmptySlice("{{ (attributeInfo $attr).Name }}").FromRaw({{ $attr.RenderUnexported }}AttributeValue)
+{{- else if eq (attributeInfo $attr).Type.Primitive "map[string]any" }}
+{{ $tab }}dp.Attributes().PutEmptyMap("{{ (attributeInfo $attr).Name }}").FromRaw({{ $attr.RenderUnexported }}AttributeValue)
+{{- else }}
+{{ $tab }}dp.Attributes().Put{{ (attributeInfo $attr).Type }}("{{ (attributeInfo $attr).Name }}", {{ $attr.RenderUnexported }}AttributeValue)
+{{- end }}
 {{- end -}}
 
 {{- define "putMetricAttribute" -}}

@@ -10,7 +10,9 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
 
+	{{ if or .Metrics .Events -}}
 	"go.opentelemetry.io/collector/confmap"
+	{{ end -}}
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -39,7 +41,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						{{- else }}
 						AggregationStrategy: AggregationStrategyAvg,
 						{{- end }}
-						EnabledAttributes: []string{ {{- range $index, $element := $metric.Attributes -}}{{ if $index }},{{ end }}"{{ (attributeInfo $element).Name }}"{{ end -}} },
+						EnabledAttributes: []string{ {{- range $index, $element := $metric.Attributes -}}{{ if $index }}, {{ end }}"{{ (attributeInfo $element).Name }}"{{ end -}} },
 					},
 					{{- else }}
 					{{ $name.Render }}: MetricConfig{Enabled: true},
@@ -68,7 +70,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						{{- else }}
 						AggregationStrategy: AggregationStrategyAvg,
 						{{- end }}
-						EnabledAttributes: []string{ {{- range $index, $element := $metric.Attributes -}}{{ if $index }},{{ end }}"{{ (attributeInfo $element).Name }}"{{ end -}} },
+						EnabledAttributes: []string{ {{- range $index, $element := $metric.Attributes -}}{{ if $index }}, {{ end }}"{{ (attributeInfo $element).Name }}"{{ end -}} },
 					},
 					{{- else }}
 					{{ $name.Render }}: MetricConfig{Enabled: false},

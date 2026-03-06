@@ -5,7 +5,7 @@ package {{ .Package }}
 {{ $reag := .ReaggregationEnabled }}
 
 import (
-	{{- if $reag -}}
+	{{- if and $reag .Metrics }}
 	"fmt"
 	"slices"
 	{{- end }}
@@ -182,7 +182,7 @@ type ResourceAttributesConfig struct {
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		{{- range $name, $attr := .ResourceAttributes }}
-		{{ $name.Render }}: ResourceAttributeConfig {
+		{{ $name.Render }}: ResourceAttributeConfig{
 			Enabled: {{ $attr.Enabled }},
 		},
 		{{- end }}
@@ -200,7 +200,7 @@ type MetricsBuilderConfig struct {
 }
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig {
+	return MetricsBuilderConfig{
 		Metrics: DefaultMetricsConfig(),
 		{{- if .ResourceAttributes }}
 		ResourceAttributes: DefaultResourceAttributesConfig(),
@@ -219,7 +219,7 @@ type LogsBuilderConfig struct {
 }
 
 func DefaultLogsBuilderConfig() LogsBuilderConfig {
-	return LogsBuilderConfig {
+	return LogsBuilderConfig{
 		Events: DefaultEventsConfig(),
 		{{- if .ResourceAttributes }}
 		ResourceAttributes: DefaultResourceAttributesConfig(),

@@ -391,6 +391,20 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				"expectConsumerError": func() bool {
 					return md.Tests.ExpectConsumerError
 				},
+				"dict": func(pairs ...any) (map[string]any, error) {
+					if len(pairs)%2 != 0 {
+						return nil, fmt.Errorf("dict requires an even number of arguments")
+					}
+					m := make(map[string]any, len(pairs)/2)
+					for i := 0; i < len(pairs); i += 2 {
+						key, ok := pairs[i].(string)
+						if !ok {
+							return nil, fmt.Errorf("dict keys must be strings")
+						}
+						m[key] = pairs[i+1]
+					}
+					return m, nil
+				},
 				// ParseFS delegates the parsing of the files to `Glob`
 				// which uses the `\` as a special character.
 				// Meaning on windows based machines, the `\` needs to be replaced
@@ -448,10 +462,16 @@ func generateFile(tmplFile, outputFile string, md Metadata, goPackage string) er
 	}
 	var formatErr error
 	if strings.HasSuffix(outputFile, ".go") {
-		if formatted, err := format.Source(result); err == nil {
-			result = formatted
-		} else {
+		formatted, err := format.Source(result)
+		if err != nil {
 			formatErr = fmt.Errorf("failed formatting %s:%w", outputFile, err)
+		} else {
+			nr := normalizeGoSource(result)
+			no := normalizeGoSource(formatted)
+			if !bytes.Equal(nr, no) {
+				return fmt.Errorf("template %q produced output that is not gofmt-formatted for %q; fix the template indentation", tmplFile, outputFile)
+			}
+			result = formatted
 		}
 	}
 
@@ -460,6 +480,96 @@ func generateFile(tmplFile, outputFile string, md Metadata, goPackage string) er
 	}
 
 	return formatErr
+}
+
+// normalizeGoSource prepares Go source for structural comparison by removing
+// cosmetic differences that gofmt may introduce (blank lines, trailing spaces,
+// struct-field alignment, import ordering) while preserving indentation depth
+// and other semantically meaningful whitespace.
+func normalizeGoSource(b []byte) []byte {
+	var out []byte
+	// Split into import block and rest so we can sort imports independently.
+	lines := bytes.Split(b, []byte("\n"))
+	inImport := false
+	var importLines [][]byte
+	var nonImportLines [][]byte
+	for _, line := range lines {
+		trimmed := bytes.TrimSpace(line)
+		if bytes.Equal(trimmed, []byte("import (")) {
+			inImport = true
+			nonImportLines = append(nonImportLines, line)
+			continue
+		}
+		if inImport {
+			if bytes.Equal(trimmed, []byte(")")) {
+				inImport = false
+				slices.SortFunc(importLines, func(a, b []byte) int {
+					return bytes.Compare(importSortKey(a), importSortKey(b))
+				})
+				nonImportLines = append(nonImportLines, importLines...)
+				nonImportLines = append(nonImportLines, line)
+				importLines = nil
+				continue
+			}
+			if len(trimmed) == 0 {
+				// skip blank lines inside import block (goimports adds group separators)
+				continue
+			}
+			importLines = append(importLines, trimmed)
+			continue
+		}
+		if len(trimmed) == 0 {
+			// skip blank lines outside import blocks
+			continue
+		}
+		nonImportLines = append(nonImportLines, collapseSpaces(line))
+	}
+	out = bytes.Join(nonImportLines, []byte("\n"))
+	return out
+}
+
+// importSortKey extracts the import path string (between quotes) for sorting.
+func importSortKey(line []byte) []byte {
+	start := bytes.IndexByte(line, '"')
+	if start < 0 {
+		return line
+	}
+	end := bytes.LastIndexByte(line, '"')
+	if end <= start {
+		return line
+	}
+	return line[start+1 : end]
+}
+
+// collapseSpaces normalizes internal whitespace on a line: it preserves the
+// leading indentation (tab characters) but replaces any run of spaces or tabs
+// within the rest of the line with a single space.
+func collapseSpaces(line []byte) []byte {
+	// Count leading tabs.
+	i := 0
+	for i < len(line) && line[i] == '\t' {
+		i++
+	}
+	leading := line[:i]
+	rest := bytes.TrimRight(line[i:], " \t")
+	// Collapse internal whitespace runs to a single space.
+	var collapsed []byte
+	inSpace := false
+	for _, c := range rest {
+		if c == ' ' || c == '\t' {
+			if !inSpace {
+				collapsed = append(collapsed, ' ')
+				inSpace = true
+			}
+		} else {
+			collapsed = append(collapsed, c)
+			inSpace = false
+		}
+	}
+	out := make([]byte, 0, len(leading)+len(collapsed))
+	out = append(out, leading...)
+	out = append(out, collapsed...)
+	return out
 }
 
 func validateMappingKeysSorted(root *yaml.Node, path ...string) error {

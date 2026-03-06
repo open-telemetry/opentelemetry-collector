@@ -8,13 +8,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	{{- if or isReceiver isScraper isConnector }}
 	"go.opentelemetry.io/collector/{{ .Status.Class }}/{{ .Status.Class }}test"
 	{{- end }}
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
 )
 
 type testDataSet int
@@ -145,7 +146,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
 			{{- range $metric.Attributes -}}
 			{{- if not (attributeInfo .).IsConditional -}}
-				, {{- template "getAttributeValue" . -}}
+				, {{ template "getAttributeValue" . }}
 			{{- end -}}
 			{{- end -}}
 			{{- range $metric.Attributes -}}
@@ -160,9 +161,9 @@ func TestMetricsBuilder(t *testing.T) {
 				{{- range $metric.Attributes -}}
 				{{- if not (attributeInfo .).IsConditional -}}
 					{{- if (attributeInfo .).IsRequired -}}
-					, {{- template "getAttributeValue" . -}}
+					, {{ template "getAttributeValue" . }}
 					{{- else -}}
-					, {{- template "getAttributeValueTwo" . -}}
+					, {{ template "getAttributeValueTwo" . }}
 					{{- end -}}
 				{{- end -}}
 				{{- end -}}
