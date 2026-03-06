@@ -104,6 +104,22 @@ gogenerate:
 	@$(MAKE) for-all-target TARGET="generate"
 	$(MAKE) fmt
 
+.PHONY: check-generate-fmt
+check-generate-fmt:
+	cd cmd/mdatagen && $(GOCMD) install .
+	@TMP_DIR=$$(mktemp -d); \
+	echo '#!/bin/sh' > $$TMP_DIR/mdatagen; \
+	echo 'exec "$$(go env GOPATH)/bin/mdatagen" --noformat "$$@"' >> $$TMP_DIR/mdatagen; \
+	chmod +x $$TMP_DIR/mdatagen; \
+	PATH="$$TMP_DIR:$$PATH" $(MAKE) for-all-target TARGET="generate"; \
+	rm -rf $$TMP_DIR
+	@UNFORMATTED=$$(gofmt -l .); \
+	if [ -n "$$UNFORMATTED" ]; then \
+		echo "The following generated files are not gofmt-formatted (fix the template):"; \
+		echo "$$UNFORMATTED"; \
+		exit 1; \
+	fi
+
 .PHONY: govulncheck
 govulncheck:
 	@$(MAKE) for-all-target TARGET="vulncheck"

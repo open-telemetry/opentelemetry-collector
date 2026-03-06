@@ -305,7 +305,7 @@ foo
 			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry_test.go"), []byte("test"), 0o600))
 			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, generatedPackageDir, "generated_component_test.go"), []byte("test"), 0o600))
 
-			err = run(metadataFile)
+			err = run(metadataFile, false)
 			if tt.wantOrderErr {
 				require.Error(t, err)
 				require.Contains(t, err.Error(), "metadata.yaml ordering check failed")
@@ -528,7 +528,7 @@ func TestGenerateConfigFiles(t *testing.T) {
 
 			gitInit(t, root)
 			require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
-			err := generateConfigFiles(tt.md, tmpdir)
+			err := generateConfigFiles(tt.md, tmpdir, false)
 			if tt.wantErr {
 				require.Error(t, err)
 				return
@@ -551,7 +551,7 @@ func TestGenerateConfigGoStruct_RootPackageError(t *testing.T) {
 		Status:      &Status{Class: "receiver"},
 		Config:      &cfggen.ConfigMetadata{Type: "object"},
 	}
-	err := generateConfigGoStruct(md, t.TempDir())
+	err := generateConfigGoStruct(md, t.TempDir(), false)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unable to determine root package")
 }
@@ -564,7 +564,7 @@ func TestGenerateConfigFiles_GoStructError(t *testing.T) {
 		Status:      &Status{Class: "receiver"},
 		Config:      &cfggen.ConfigMetadata{Type: "object"},
 	}
-	err := generateConfigFiles(md, t.TempDir())
+	err := generateConfigFiles(md, t.TempDir(), false)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to generate config Go struct")
 }
@@ -580,7 +580,7 @@ func TestGenerateConfigFiles_WriteError(t *testing.T) {
 			Type: "object",
 		},
 	}
-	err := generateConfigFiles(md, "/nonexistent/path/that/does/not/exist")
+	err := generateConfigFiles(md, "/nonexistent/path/that/does/not/exist", false)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to write config schema")
 }
@@ -607,7 +607,7 @@ func TestRun(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := run(tt.args.ymlPath)
+			err := run(tt.args.ymlPath, false)
 			if !tt.wantErr {
 				require.NoError(t, err, "run()")
 			} else {
@@ -977,7 +977,7 @@ const (
 		t.Run(tt.name, func(t *testing.T) {
 			tmpdir := t.TempDir()
 			err := generateFile("templates/status.go.tmpl",
-				filepath.Join(tmpdir, "generated_status.go"), tt.md, "metadata")
+				filepath.Join(tmpdir, "generated_status.go"), tt.md, "metadata", false)
 			require.NoError(t, err)
 			actual, err := os.ReadFile(filepath.Clean(filepath.Join(tmpdir, "generated_status.go")))
 			require.NoError(t, err)
@@ -1063,7 +1063,7 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpdir := t.TempDir()
 			err := generateFile("templates/telemetry.go.tmpl",
-				filepath.Join(tmpdir, "generated_telemetry.go"), tt.md, "metadata")
+				filepath.Join(tmpdir, "generated_telemetry.go"), tt.md, "metadata", false)
 			require.NoError(t, err)
 			actual, err := os.ReadFile(filepath.Clean(filepath.Join(tmpdir, "generated_telemetry.go")))
 			require.NoError(t, err)
