@@ -3,6 +3,616 @@
   "$id": "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver",
   "title": "receiver/sample",
   "type": "object",
+  "allOf": [
+    {
+      "description": "MetricsBuilderConfig is a configuration for sample metrics builder.",
+      "type": "object",
+      "properties": {
+        "metrics": {
+          "description": "MetricsConfig provides config for sample metrics.",
+          "type": "object"
+        },
+        "resource_attributes": {
+          "description": "ResourceAttributesConfig provides config for sample resource attributes.",
+          "type": "object",
+          "properties": {
+            "map.resource.attr": {
+              "description": "ResourceAttributeConfig provides common config for a map.resource.attr resource attribute.",
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "events_exclude": {
+                  "description": "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "events_include": {
+                  "description": "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "metrics_exclude": {
+                  "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "metrics_include": {
+                  "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "optional.resource.attr": {
+              "description": "ResourceAttributeConfig provides common config for a optional.resource.attr resource attribute.",
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": false
+                },
+                "events_exclude": {
+                  "description": "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "events_include": {
+                  "description": "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "metrics_exclude": {
+                  "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "metrics_include": {
+                  "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "slice.resource.attr": {
+              "description": "ResourceAttributeConfig provides common config for a slice.resource.attr resource attribute.",
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "events_exclude": {
+                  "description": "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "events_include": {
+                  "description": "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "metrics_exclude": {
+                  "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "metrics_include": {
+                  "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "string.enum.resource.attr": {
+              "description": "ResourceAttributeConfig provides common config for a string.enum.resource.attr resource attribute.",
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "events_exclude": {
+                  "description": "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "events_include": {
+                  "description": "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "metrics_exclude": {
+                  "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "metrics_include": {
+                  "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "string.resource.attr": {
+              "description": "ResourceAttributeConfig provides common config for a string.resource.attr resource attribute.",
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "events_exclude": {
+                  "description": "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "events_include": {
+                  "description": "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "metrics_exclude": {
+                  "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "metrics_include": {
+                  "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "string.resource.attr_disable_warning": {
+              "description": "ResourceAttributeConfig provides common config for a string.resource.attr_disable_warning resource attribute.",
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "events_exclude": {
+                  "description": "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "events_include": {
+                  "description": "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "metrics_exclude": {
+                  "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "metrics_include": {
+                  "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "string.resource.attr_remove_warning": {
+              "description": "ResourceAttributeConfig provides common config for a string.resource.attr_remove_warning resource attribute.",
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": false
+                },
+                "events_exclude": {
+                  "description": "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "events_include": {
+                  "description": "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "metrics_exclude": {
+                  "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "metrics_include": {
+                  "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "string.resource.attr_to_be_removed": {
+              "description": "ResourceAttributeConfig provides common config for a string.resource.attr_to_be_removed resource attribute.",
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "events_exclude": {
+                  "description": "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "events_include": {
+                  "description": "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "metrics_exclude": {
+                  "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "metrics_include": {
+                  "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.",
+                  "type": "array",
+                  "items": {
+                    "description": "Config configures the matching behavior of a Filter.",
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
   "properties": {
     "endpoint": {
       "description": "The endpoint to scrape metrics from.",
