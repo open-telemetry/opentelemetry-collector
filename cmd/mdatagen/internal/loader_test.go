@@ -77,6 +77,11 @@ func TestLoadMetadata(t *testing.T) {
 				},
 				Config: &cfggen.ConfigMetadata{
 					Type: "object",
+					AllOf: []*cfggen.ConfigMetadata{
+						{
+							Ref: "./internal/metadata.metrics_builder_config",
+						},
+					},
 					Properties: map[string]*cfggen.ConfigMetadata{
 						"endpoint": {
 							Description: "The endpoint to scrape metrics from.",
