@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/metadata"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
@@ -155,7 +156,7 @@ var (
 )
 
 func NewAnyValue() *AnyValue {
-	if !UseProtoPooling.IsEnabled() {
+	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 		return &AnyValue{}
 	}
 	return protoPoolAnyValue.Get().(*AnyValue)
@@ -166,28 +167,28 @@ func DeleteAnyValue(orig *AnyValue, nullable bool) {
 		return
 	}
 
-	if !UseProtoPooling.IsEnabled() {
+	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 		orig.Reset()
 		return
 	}
 	switch ov := orig.Value.(type) {
 	case *AnyValue_StringValue:
-		if UseProtoPooling.IsEnabled() {
+		if metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov.StringValue = ""
 			ProtoPoolAnyValue_StringValue.Put(ov)
 		}
 	case *AnyValue_BoolValue:
-		if UseProtoPooling.IsEnabled() {
+		if metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov.BoolValue = false
 			ProtoPoolAnyValue_BoolValue.Put(ov)
 		}
 	case *AnyValue_IntValue:
-		if UseProtoPooling.IsEnabled() {
+		if metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov.IntValue = int64(0)
 			ProtoPoolAnyValue_IntValue.Put(ov)
 		}
 	case *AnyValue_DoubleValue:
-		if UseProtoPooling.IsEnabled() {
+		if metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov.DoubleValue = float64(0)
 			ProtoPoolAnyValue_DoubleValue.Put(ov)
 		}
@@ -200,7 +201,7 @@ func DeleteAnyValue(orig *AnyValue, nullable bool) {
 		ov.KvlistValue = nil
 		ProtoPoolAnyValue_KvlistValue.Put(ov)
 	case *AnyValue_BytesValue:
-		if UseProtoPooling.IsEnabled() {
+		if metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov.BytesValue = nil
 			ProtoPoolAnyValue_BytesValue.Put(ov)
 		}
@@ -227,7 +228,7 @@ func CopyAnyValue(dest, src *AnyValue) *AnyValue {
 	switch t := src.Value.(type) {
 	case *AnyValue_StringValue:
 		var ov *AnyValue_StringValue
-		if !UseProtoPooling.IsEnabled() {
+		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov = &AnyValue_StringValue{}
 		} else {
 			ov = ProtoPoolAnyValue_StringValue.Get().(*AnyValue_StringValue)
@@ -237,7 +238,7 @@ func CopyAnyValue(dest, src *AnyValue) *AnyValue {
 
 	case *AnyValue_BoolValue:
 		var ov *AnyValue_BoolValue
-		if !UseProtoPooling.IsEnabled() {
+		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov = &AnyValue_BoolValue{}
 		} else {
 			ov = ProtoPoolAnyValue_BoolValue.Get().(*AnyValue_BoolValue)
@@ -247,7 +248,7 @@ func CopyAnyValue(dest, src *AnyValue) *AnyValue {
 
 	case *AnyValue_IntValue:
 		var ov *AnyValue_IntValue
-		if !UseProtoPooling.IsEnabled() {
+		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov = &AnyValue_IntValue{}
 		} else {
 			ov = ProtoPoolAnyValue_IntValue.Get().(*AnyValue_IntValue)
@@ -257,7 +258,7 @@ func CopyAnyValue(dest, src *AnyValue) *AnyValue {
 
 	case *AnyValue_DoubleValue:
 		var ov *AnyValue_DoubleValue
-		if !UseProtoPooling.IsEnabled() {
+		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov = &AnyValue_DoubleValue{}
 		} else {
 			ov = ProtoPoolAnyValue_DoubleValue.Get().(*AnyValue_DoubleValue)
@@ -267,7 +268,7 @@ func CopyAnyValue(dest, src *AnyValue) *AnyValue {
 
 	case *AnyValue_ArrayValue:
 		var ov *AnyValue_ArrayValue
-		if !UseProtoPooling.IsEnabled() {
+		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov = &AnyValue_ArrayValue{}
 		} else {
 			ov = ProtoPoolAnyValue_ArrayValue.Get().(*AnyValue_ArrayValue)
@@ -278,7 +279,7 @@ func CopyAnyValue(dest, src *AnyValue) *AnyValue {
 
 	case *AnyValue_KvlistValue:
 		var ov *AnyValue_KvlistValue
-		if !UseProtoPooling.IsEnabled() {
+		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov = &AnyValue_KvlistValue{}
 		} else {
 			ov = ProtoPoolAnyValue_KvlistValue.Get().(*AnyValue_KvlistValue)
@@ -289,7 +290,7 @@ func CopyAnyValue(dest, src *AnyValue) *AnyValue {
 
 	case *AnyValue_BytesValue:
 		var ov *AnyValue_BytesValue
-		if !UseProtoPooling.IsEnabled() {
+		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov = &AnyValue_BytesValue{}
 		} else {
 			ov = ProtoPoolAnyValue_BytesValue.Get().(*AnyValue_BytesValue)
@@ -398,7 +399,7 @@ func (orig *AnyValue) UnmarshalJSON(iter *json.Iterator) {
 		case "stringValue", "string_value":
 			{
 				var ov *AnyValue_StringValue
-				if !UseProtoPooling.IsEnabled() {
+				if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 					ov = &AnyValue_StringValue{}
 				} else {
 					ov = ProtoPoolAnyValue_StringValue.Get().(*AnyValue_StringValue)
@@ -409,7 +410,7 @@ func (orig *AnyValue) UnmarshalJSON(iter *json.Iterator) {
 		case "boolValue", "bool_value":
 			{
 				var ov *AnyValue_BoolValue
-				if !UseProtoPooling.IsEnabled() {
+				if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 					ov = &AnyValue_BoolValue{}
 				} else {
 					ov = ProtoPoolAnyValue_BoolValue.Get().(*AnyValue_BoolValue)
@@ -420,7 +421,7 @@ func (orig *AnyValue) UnmarshalJSON(iter *json.Iterator) {
 		case "intValue", "int_value":
 			{
 				var ov *AnyValue_IntValue
-				if !UseProtoPooling.IsEnabled() {
+				if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 					ov = &AnyValue_IntValue{}
 				} else {
 					ov = ProtoPoolAnyValue_IntValue.Get().(*AnyValue_IntValue)
@@ -431,7 +432,7 @@ func (orig *AnyValue) UnmarshalJSON(iter *json.Iterator) {
 		case "doubleValue", "double_value":
 			{
 				var ov *AnyValue_DoubleValue
-				if !UseProtoPooling.IsEnabled() {
+				if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 					ov = &AnyValue_DoubleValue{}
 				} else {
 					ov = ProtoPoolAnyValue_DoubleValue.Get().(*AnyValue_DoubleValue)
@@ -442,7 +443,7 @@ func (orig *AnyValue) UnmarshalJSON(iter *json.Iterator) {
 		case "arrayValue", "array_value":
 			{
 				var ov *AnyValue_ArrayValue
-				if !UseProtoPooling.IsEnabled() {
+				if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 					ov = &AnyValue_ArrayValue{}
 				} else {
 					ov = ProtoPoolAnyValue_ArrayValue.Get().(*AnyValue_ArrayValue)
@@ -454,7 +455,7 @@ func (orig *AnyValue) UnmarshalJSON(iter *json.Iterator) {
 		case "kvlistValue", "kvlist_value":
 			{
 				var ov *AnyValue_KvlistValue
-				if !UseProtoPooling.IsEnabled() {
+				if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 					ov = &AnyValue_KvlistValue{}
 				} else {
 					ov = ProtoPoolAnyValue_KvlistValue.Get().(*AnyValue_KvlistValue)
@@ -466,7 +467,7 @@ func (orig *AnyValue) UnmarshalJSON(iter *json.Iterator) {
 		case "bytesValue", "bytes_value":
 			{
 				var ov *AnyValue_BytesValue
-				if !UseProtoPooling.IsEnabled() {
+				if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 					ov = &AnyValue_BytesValue{}
 				} else {
 					ov = ProtoPoolAnyValue_BytesValue.Get().(*AnyValue_BytesValue)
@@ -606,7 +607,7 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 			var ov *AnyValue_StringValue
-			if !UseProtoPooling.IsEnabled() {
+			if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 				ov = &AnyValue_StringValue{}
 			} else {
 				ov = ProtoPoolAnyValue_StringValue.Get().(*AnyValue_StringValue)
@@ -624,7 +625,7 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			var ov *AnyValue_BoolValue
-			if !UseProtoPooling.IsEnabled() {
+			if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 				ov = &AnyValue_BoolValue{}
 			} else {
 				ov = ProtoPoolAnyValue_BoolValue.Get().(*AnyValue_BoolValue)
@@ -642,7 +643,7 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			var ov *AnyValue_IntValue
-			if !UseProtoPooling.IsEnabled() {
+			if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 				ov = &AnyValue_IntValue{}
 			} else {
 				ov = ProtoPoolAnyValue_IntValue.Get().(*AnyValue_IntValue)
@@ -660,7 +661,7 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			var ov *AnyValue_DoubleValue
-			if !UseProtoPooling.IsEnabled() {
+			if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 				ov = &AnyValue_DoubleValue{}
 			} else {
 				ov = ProtoPoolAnyValue_DoubleValue.Get().(*AnyValue_DoubleValue)
@@ -679,7 +680,7 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 			var ov *AnyValue_ArrayValue
-			if !UseProtoPooling.IsEnabled() {
+			if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 				ov = &AnyValue_ArrayValue{}
 			} else {
 				ov = ProtoPoolAnyValue_ArrayValue.Get().(*AnyValue_ArrayValue)
@@ -702,7 +703,7 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 			var ov *AnyValue_KvlistValue
-			if !UseProtoPooling.IsEnabled() {
+			if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 				ov = &AnyValue_KvlistValue{}
 			} else {
 				ov = ProtoPoolAnyValue_KvlistValue.Get().(*AnyValue_KvlistValue)
@@ -725,7 +726,7 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 			var ov *AnyValue_BytesValue
-			if !UseProtoPooling.IsEnabled() {
+			if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 				ov = &AnyValue_BytesValue{}
 			} else {
 				ov = ProtoPoolAnyValue_BytesValue.Get().(*AnyValue_BytesValue)
