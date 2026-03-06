@@ -38,6 +38,14 @@ mentioned above, this audience also cares about Go API compatibility of Go modul
 impact to end-users. See the [Breaking changes](docs/coding-guidelines.md#breaking-changes) section
 in the coding guidelines for more information on how to perform changes affecting this audience.
 
+The [`docs/rfcs`](./docs/rfcs) area of the repository includes a number of internal design documents
+covering important sub-projects, internal redesign, and coding guidelines. For example,
+
+- [Component interface patterns](./docs/rfcs/component-interfaces.md)
+- [Automatic component-level telemetry](./docs/rfcs/component-universal-telemetry.md)
+- [Environment variables in configuration](./docs/rfcs/env-vars.md)
+- [Optional configuration type](./docs/rfcs/optional-config-type.md)
+
 ### Collector library users
 
 A third audience uses the OpenTelemetry Collector as a library to build their own distributions or other projects based
