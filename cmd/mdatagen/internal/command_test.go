@@ -543,6 +543,32 @@ func TestGenerateConfigFiles(t *testing.T) {
 	}
 }
 
+func TestGenerateConfigGoStruct_RootPackageError(t *testing.T) {
+	// tmpdir is not inside any git repo, so helpers.RootPackage fails
+	md := Metadata{
+		Type:        "test",
+		PackageName: "shortname",
+		Status:      &Status{Class: "receiver"},
+		Config:      &cfggen.ConfigMetadata{Type: "object"},
+	}
+	err := generateConfigGoStruct(md, t.TempDir())
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "unable to determine root package")
+}
+
+func TestGenerateConfigFiles_GoStructError(t *testing.T) {
+	// generateConfigGoStruct fails because tmpdir is not inside a git repo
+	md := Metadata{
+		Type:        "test",
+		PackageName: "shortname",
+		Status:      &Status{Class: "receiver"},
+		Config:      &cfggen.ConfigMetadata{Type: "object"},
+	}
+	err := generateConfigFiles(md, t.TempDir())
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to generate config Go struct")
+}
+
 func TestGenerateConfigFiles_WriteError(t *testing.T) {
 	md := Metadata{
 		Type:        "test",
