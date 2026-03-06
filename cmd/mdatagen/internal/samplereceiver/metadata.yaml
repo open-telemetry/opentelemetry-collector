@@ -37,6 +37,8 @@ status:
 
 config:
   type: object
+  allOf:
+    - $ref: ./internal/metadata.metrics_builder_config
   properties:
     endpoint:
       description: The endpoint to scrape metrics from.

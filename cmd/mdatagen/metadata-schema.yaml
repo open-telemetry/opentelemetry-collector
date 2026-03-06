@@ -1,6 +1,9 @@
 # Required: The type of the component - Usually the name. The type and class combined uniquely identify the component (eg. receiver/otlp) or subcomponent (eg. receiver/hostmetricsreceiver/cpu)
 type:
 
+# Optional: A deprecated type that is still available as an alias.
+deprecated_type: string
+
 # Optional: Human-readable display name for the component. Used as the title in generated README files.
 display_name: string
 

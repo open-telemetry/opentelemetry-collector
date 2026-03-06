@@ -22,6 +22,8 @@ const semConvURL = "https://github.com/open-telemetry/semantic-conventions/blob"
 type Metadata struct {
 	// Type of the component.
 	Type string `mapstructure:"type"`
+	// DeprecatedType of the component.
+	DeprecatedType string `mapstructure:"deprecated_type"`
 	// DisplayName is a human-readable display name for the component.
 	DisplayName string `mapstructure:"display_name"`
 	// Description is a brief description of the component.
