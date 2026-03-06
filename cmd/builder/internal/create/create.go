@@ -1,8 +1,11 @@
-package internal
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-import "github.com/spf13/cobra"
+package create
 
-func createCommand() *cobra.Command {
+import "github.com/spf13/cobra" // import "go.opentelemetry.io/collector/cmd/builder/internal/create"
+
+func CreateCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "[EXPERIMENTAL] Creates a custom collector repository based on the provided configuration",
