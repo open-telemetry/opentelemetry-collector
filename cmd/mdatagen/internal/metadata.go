@@ -782,7 +782,6 @@ func (md *Metadata) expandSemConvRefs() error {
 	for k, v := range md.Attributes {
 		if v.SemanticConvention != nil {
 			if strings.HasPrefix(v.SemanticConvention.SemanticConventionRef, "http") {
-				fmt.Printf("expandSemConvRefs: %s\n", v.SemanticConvention.SemanticConventionRef)
 				return fmt.Errorf("attribute %q, use relative path for URL, not the full URL", k)
 			}
 			url := fmt.Sprintf(
