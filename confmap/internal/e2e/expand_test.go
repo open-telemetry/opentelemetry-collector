@@ -99,6 +99,8 @@ func Test_EscapedEnvVars_DefaultScheme(t *testing.T) {
 			"key18": "here is 1 $",
 			"key19": "here are 2 $$",
 			"key20": "some expanded value came from nested expansion",
+			"key21": "default_value",
+			"key22": "${env:UNDEFINED_KEY:-${env:UNDEFINED_KEY}}",
 		},
 	}
 
