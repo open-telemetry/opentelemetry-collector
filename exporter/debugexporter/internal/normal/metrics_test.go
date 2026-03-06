@@ -4,6 +4,8 @@
 package normal
 
 import (
+	"fmt"
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -107,7 +109,7 @@ http.server.request.duration{http.response.status_code=200,http.request.method=G
 `,
 		},
 		{
-			name: "exponential histogram",
+			name: "exponential histogram without buckets",
 			input: func() pmetric.Metrics {
 				metrics := pmetric.NewMetrics()
 				metric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
@@ -125,6 +127,57 @@ http.server.request.duration{http.response.status_code=200,http.request.method=G
 ScopeMetrics #0
 http.server.request.duration{http.response.status_code=200,http.request.method=GET} count=1340 sum=99.573 min=0.017 max=8.13
 `,
+		},
+		{
+			name: "exponential histogram with buckets",
+			input: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				metric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+				metric.SetName("http.server.request.duration")
+				dataPoint := metric.SetEmptyExponentialHistogram().DataPoints().AppendEmpty()
+				dataPoint.Attributes().PutInt("http.response.status_code", 200)
+				dataPoint.Attributes().PutStr("http.request.method", "GET")
+				dataPoint.SetCount(1340)
+				dataPoint.SetSum(99.573)
+				dataPoint.SetMin(0.017)
+				dataPoint.SetMax(8.13)
+				dataPoint.SetScale(3)
+				dataPoint.SetZeroCount(3)
+				dataPoint.Negative().SetOffset(-2)
+				dataPoint.Negative().BucketCounts().FromRaw([]uint64{10, 20})
+				dataPoint.Positive().SetOffset(1)
+				dataPoint.Positive().BucketCounts().FromRaw([]uint64{40, 50, 60})
+				return metrics
+			}(),
+			expected: func() string {
+				f := math.Ldexp(math.Ln2, -3)
+				return fmt.Sprintf("ResourceMetrics #0\nScopeMetrics #0\n"+
+					"http.server.request.duration{http.response.status_code=200,http.request.method=GET}"+
+					" count=1340 sum=99.573 min=0.017 max=8.13"+
+					" le%v=20 le%v=10 zero=3 le%v=40 le%v=50 le%v=60\n",
+					-math.Exp(-1*f), -math.Exp(-2*f),
+					math.Exp(2*f), math.Exp(3*f), math.Exp(4*f))
+			}(),
+		},
+		{
+			name: "exponential histogram with positive buckets only",
+			input: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				metric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+				metric.SetName("latency")
+				dataPoint := metric.SetEmptyExponentialHistogram().DataPoints().AppendEmpty()
+				dataPoint.SetCount(2)
+				dataPoint.SetScale(1)
+				dataPoint.Positive().SetOffset(1)
+				dataPoint.Positive().BucketCounts().FromRaw([]uint64{1, 1})
+				return metrics
+			}(),
+			expected: func() string {
+				f := math.Ldexp(math.Ln2, -1)
+				return fmt.Sprintf("ResourceMetrics #0\nScopeMetrics #0\n"+
+					"latency{} count=2 le%v=1 le%v=1\n",
+					math.Exp(2*f), math.Exp(3*f))
+			}(),
 		},
 		{
 			name: "summary",

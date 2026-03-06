@@ -20,7 +20,7 @@ const unmarshalJSONPrimitive = `	case {{ .allJSONTags }}:
 {{ else if ne .oneOfGroup "" -}}
 	{
 		var ov *{{ .oneOfMessageName }}
-		if !UseProtoPooling.IsEnabled() {
+		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov = &{{ .oneOfMessageName }}{}
 		} else {
 			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
@@ -52,7 +52,7 @@ const unmarshalJSONMessage = `	case {{ .allJSONTags }}:
 {{ else if ne .oneOfGroup "" -}}
 	{
 		var ov *{{ .oneOfMessageName }}
-		if !UseProtoPooling.IsEnabled() {
+		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov = &{{ .oneOfMessageName }}{}
 		} else {
 			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
@@ -74,7 +74,7 @@ const unmarshalJSONBytes = `	case {{ .allJSONTags }}:
 {{ else if ne .oneOfGroup "" -}}
 	{
 		var ov *{{ .oneOfMessageName }}
-		if !UseProtoPooling.IsEnabled() {
+		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov = &{{ .oneOfMessageName }}{}
 		} else {
 			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})

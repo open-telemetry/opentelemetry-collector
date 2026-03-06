@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 	"go.opentelemetry.io/collector/component"
 )
 
@@ -76,8 +77,11 @@ func TestRunContents(t *testing.T) {
 		wantGoleakSetup                 bool
 		wantGoleakTeardown              bool
 		wantFeatureGatesGenerated       bool
+		wantConfigSchemaGenerated       bool
+		wantMetricsSchemaYamlGenerated  bool
 		wantErr                         bool
 		wantOrderErr                    bool
+		wantRunErr                      bool
 		wantAttributes                  []string
 	}{
 		{
@@ -110,12 +114,13 @@ func TestRunContents(t *testing.T) {
 			wantReadmeGenerated: true,
 		},
 		{
-			yml:                        "metrics_and_type.yaml",
-			wantMetricsGenerated:       true,
-			wantConfigGenerated:        true,
-			wantStatusGenerated:        true,
-			wantReadmeGenerated:        true,
-			wantComponentTestGenerated: true,
+			yml:                            "metrics_and_type.yaml",
+			wantMetricsGenerated:           true,
+			wantConfigGenerated:            true,
+			wantStatusGenerated:            true,
+			wantReadmeGenerated:            true,
+			wantComponentTestGenerated:     true,
+			wantMetricsSchemaYamlGenerated: true,
 		},
 		{
 			yml:                             "resource_attributes_only.yaml",
@@ -125,6 +130,7 @@ func TestRunContents(t *testing.T) {
 			wantReadmeGenerated:             true,
 			wantComponentTestGenerated:      true,
 			wantLogsGenerated:               true,
+			wantMetricsSchemaYamlGenerated:  true,
 		},
 		{
 			yml:                        "status_only.yaml",
@@ -213,12 +219,13 @@ func TestRunContents(t *testing.T) {
 			wantComponentTestGenerated: true,
 		},
 		{
-			yml:                        "async_metric.yaml",
-			wantMetricsGenerated:       true,
-			wantConfigGenerated:        true,
-			wantStatusGenerated:        true,
-			wantReadmeGenerated:        true,
-			wantComponentTestGenerated: true,
+			yml:                            "async_metric.yaml",
+			wantMetricsGenerated:           true,
+			wantConfigGenerated:            true,
+			wantStatusGenerated:            true,
+			wantReadmeGenerated:            true,
+			wantComponentTestGenerated:     true,
+			wantMetricsSchemaYamlGenerated: true,
 		},
 		{
 			yml:                        "custom_generated_package_name.yaml",
@@ -235,22 +242,36 @@ func TestRunContents(t *testing.T) {
 			wantFeatureGatesGenerated:  true,
 		},
 		{
-			yml:                        "with_conditional_attribute.yaml",
-			wantStatusGenerated:        true,
-			wantReadmeGenerated:        true,
-			wantMetricsGenerated:       true,
-			wantLogsGenerated:          true,
-			wantConfigGenerated:        true,
-			wantComponentTestGenerated: true,
+			yml:                            "with_conditional_attribute.yaml",
+			wantStatusGenerated:            true,
+			wantReadmeGenerated:            true,
+			wantMetricsGenerated:           true,
+			wantLogsGenerated:              true,
+			wantConfigGenerated:            true,
+			wantComponentTestGenerated:     true,
+			wantMetricsSchemaYamlGenerated: true,
 		},
 		{
-			yml:                        "events/basic_event.yaml",
+			yml:                            "events/basic_event.yaml",
+			wantStatusGenerated:            true,
+			wantReadmeGenerated:            true,
+			wantComponentTestGenerated:     true,
+			wantConfigGenerated:            true,
+			wantEventsGenerated:            true,
+			wantLogsGenerated:              true,
+			wantMetricsSchemaYamlGenerated: true,
+		},
+		{
+			yml:                        "with_config.yaml",
 			wantStatusGenerated:        true,
 			wantReadmeGenerated:        true,
-			wantComponentTestGenerated: true,
-			wantConfigGenerated:        true,
-			wantEventsGenerated:        true,
 			wantLogsGenerated:          true,
+			wantComponentTestGenerated: true,
+			wantConfigSchemaGenerated:  true,
+		},
+		{
+			yml:        "with_invalid_config_ref.yaml",
+			wantRunErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -284,6 +305,11 @@ foo
 			if tt.wantOrderErr {
 				require.Error(t, err)
 				require.Contains(t, err.Error(), "metadata.yaml ordering check failed")
+				return
+			}
+			if tt.wantRunErr {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "failed to generate config files")
 				return
 			}
 			require.NoError(t, err)
@@ -409,8 +435,118 @@ foo
 			} else {
 				require.NotContains(t, string(contents), "teardownFunc")
 			}
+
+			if tt.wantConfigSchemaGenerated {
+				require.FileExists(t, filepath.Join(tmpdir, "config.schema.json"))
+			} else {
+				require.NoFileExists(t, filepath.Join(tmpdir, "config.schema.json"))
+			}
+
+			schemaYamlPath := filepath.Join(tmpdir, generatedPackageDir, "config.schema.yaml")
+			if tt.wantMetricsSchemaYamlGenerated {
+				require.FileExists(t, schemaYamlPath)
+				contents, err = os.ReadFile(filepath.Clean(schemaYamlPath))
+				require.NoError(t, err)
+				require.Contains(t, string(contents), "# Code generated by mdatagen. DO NOT EDIT.")
+				require.Contains(t, string(contents), "$defs:")
+				if tt.wantMetricsGenerated {
+					require.Contains(t, string(contents), "metrics_config:")
+					require.Contains(t, string(contents), "metrics_builder_config:")
+				}
+				if tt.wantEventsGenerated {
+					require.Contains(t, string(contents), "events_config:")
+					require.Contains(t, string(contents), "logs_builder_config:")
+				}
+				if tt.wantResourceAttributesGenerated {
+					require.Contains(t, string(contents), "resource_attributes_config:")
+				}
+			} else {
+				require.NoFileExists(t, schemaYamlPath)
+			}
 		})
 	}
+}
+
+func TestGenerateConfigFiles(t *testing.T) {
+	tests := []struct {
+		name    string
+		md      Metadata
+		wantErr bool
+		wantGen bool
+	}{
+		{
+			name: "nil config skips generation",
+			md: Metadata{
+				Type: "test",
+				Status: &Status{
+					Class: "receiver",
+				},
+				Config: nil,
+			},
+			wantGen: false,
+		},
+		{
+			name: "valid config generates schema file",
+			md: Metadata{
+				Type:        "test",
+				PackageName: "shortname",
+				Status: &Status{
+					Class: "receiver",
+				},
+				Config: &cfggen.ConfigMetadata{
+					Type: "object",
+				},
+			},
+			wantGen: true,
+		},
+		{
+			name: "invalid ref in config causes resolve error",
+			md: Metadata{
+				Type:        "test",
+				PackageName: "shortname",
+				Status: &Status{
+					Class: "receiver",
+				},
+				// A local ref without a definition name fails Validate() inside ResolveSchema
+				Config: &cfggen.ConfigMetadata{
+					Ref: "/config/configauth",
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpdir := t.TempDir()
+			err := generateConfigFiles(tt.md, tmpdir)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			if tt.wantGen {
+				require.FileExists(t, filepath.Join(tmpdir, "config.schema.json"))
+			} else {
+				require.NoFileExists(t, filepath.Join(tmpdir, "config.schema.json"))
+			}
+		})
+	}
+}
+
+func TestGenerateConfigFiles_WriteError(t *testing.T) {
+	md := Metadata{
+		Type:        "test",
+		PackageName: "shortname",
+		Status: &Status{
+			Class: "receiver",
+		},
+		Config: &cfggen.ConfigMetadata{
+			Type: "object",
+		},
+	}
+	err := generateConfigFiles(md, "/nonexistent/path/that/does/not/exist")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to write config schema")
 }
 
 func TestRun(t *testing.T) {
@@ -764,6 +900,38 @@ var (
 
 const (
 	MetricsStability = component.StabilityLevelAlpha
+)
+`,
+		},
+		{
+			name: "foo component with deprecated type",
+			md: Metadata{
+				Type:           "foo",
+				DeprecatedType: "old_foo",
+				Status: &Status{
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelBeta: {"metrics"},
+					},
+					Distributions: []string{"contrib"},
+					Class:         "receiver",
+				},
+			},
+			expected: `// Code generated by mdatagen. DO NOT EDIT.
+
+package metadata
+
+import (
+	"go.opentelemetry.io/collector/component"
+)
+
+var (
+	Type           = component.MustNewType("foo")
+	DeprecatedType = component.MustNewType("old_foo")
+	ScopeName      = ""
+)
+
+const (
+	MetricsStability = component.StabilityLevelBeta
 )
 `,
 		},

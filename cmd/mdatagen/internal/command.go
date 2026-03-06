@@ -22,6 +22,8 @@ import (
 	"go.yaml.in/yaml/v3"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 )
 
 const (
@@ -186,6 +188,7 @@ func run(ymlPath string) error {
 		toGenerate[filepath.Join(tmplDir, "testdata", "config.yaml.tmpl")] = filepath.Join(testdataDir, "config.yaml")
 		toGenerate[filepath.Join(tmplDir, "config.go.tmpl")] = filepath.Join(codeDir, "generated_config.go")
 		toGenerate[filepath.Join(tmplDir, "config_test.go.tmpl")] = filepath.Join(codeDir, "generated_config_test.go")
+		toGenerate[filepath.Join(tmplDir, "config.schema.yaml.tmpl")] = filepath.Join(codeDir, "config.schema.yaml")
 	}
 
 	if len(md.ResourceAttributes) > 0 { // only generate resource files if resource attributes are configured
@@ -221,6 +224,10 @@ func run(ymlPath string) error {
 		}
 	}
 
+	if err := generateConfigFiles(md, ymlDir); err != nil {
+		return fmt.Errorf("failed to generate config files: %w", err)
+	}
+
 	return nil
 }
 
@@ -253,6 +260,15 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 						}
 					}
 					return atts
+				},
+				"hasAggregatableAttributes": func(ans []AttributeName) bool {
+					for _, an := range ans {
+						if md.Attributes[an].RequirementLevel == AttributeRequirementLevelRecommended ||
+							md.Attributes[an].RequirementLevel == AttributeRequirementLevelOptIn {
+							return true
+						}
+					}
+					return false
 				},
 				"getEventConditionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
 					seen := make(map[AttributeName]bool)
@@ -501,6 +517,22 @@ func validateYAMLKeyOrder(raw []byte) error {
 	} {
 		if err := validateMappingKeysSorted(&doc, p...); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func generateConfigFiles(md Metadata, mdDir string) error {
+	if md.Config != nil {
+		resolver := cfggen.NewResolver(md.PackageName, md.Status.Class, md.Type, mdDir)
+		resolvedSchema, err := resolver.ResolveSchema(md.Config)
+		if err != nil {
+			return fmt.Errorf("failed to resolve config schema: %w", err)
+		}
+
+		err = cfggen.WriteJSONSchema(mdDir, resolvedSchema)
+		if err != nil {
+			return fmt.Errorf("failed to write config schema: %w", err)
 		}
 	}
 	return nil

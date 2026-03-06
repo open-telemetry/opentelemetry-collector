@@ -13,7 +13,7 @@ The current verification process of the OpenTelemetry Collector includes unit an
 The cross compile supports the following targets:
 - darwin/amd64 and darwin/arm64
 - linux/amd64, linux/arm64, linux/386, linux/arm and linux/ppc64le
-- windows/amd64, windows/386. 
+- windows/amd64, windows/arm64 and windows/386.
 
 Except of the mentioned tests for linux/amd64 and windows/amd64, no other platforms are tested by the CI/CD tooling. 
 
@@ -68,5 +68,6 @@ Tier 3 platforms are currently:
 | linux/riscv64 | [@shanduur](https://github.com/shanduur)                                                                                                                       |
 | linux/s390x   | [@bwalk-at-ibm](https://github.com/bwalk-at-ibm), [@rrschulze](https://github.com/rrschulze)                                                                   |
 | windows/386   | [@pjanotti](https://github.com/pjanotti)                                                                                                                       |
+| windows/arm64 | [@pjanotti](https://github.com/pjanotti)                                                                                                                       |
 
 The proposed additional platform aix/ppc64 ([#19195](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/19195)) will be included into Tier 3 once it's added to the OpenTelemetry Collector as platform. 
