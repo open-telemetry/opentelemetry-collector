@@ -3,6 +3,8 @@
 package {{ .Package }}
 
 {{ $reag := .ReaggregationEnabled }}
+{{- $hasReagMetrics := false }}
+{{- range $name, $metric := .Metrics }}{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}{{- $hasReagMetrics = true }}{{- end }}{{- end }}
 
 import (
 	"testing"
@@ -79,10 +81,12 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
-			{{- if $reag }}
+			{{- if $hasReagMetrics }}
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			{{- range $name, $_ := .Metrics }}
+			{{- range $name, $metric := .Metrics }}
+			{{- if hasAggregatableAttributes $metric.Attributes }}
 			aggMap["{{ $name.Render }}"] = mb.metric{{ $name.Render }}.config.AggregationStrategy
+			{{- end }}
 			{{- end }}
 			{{- end }}
 
