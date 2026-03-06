@@ -126,29 +126,39 @@ func (r *reporter) ReportStatus(
 	ev *componentstatus.Event,
 ) {
 	r.mu.Lock()
-	defer r.mu.Unlock()
+	err := r.componentFSM(id).transition(ev)
+	r.mu.Unlock()
 
-	if err := r.componentFSM(id).transition(ev); err != nil {
+	if err != nil {
 		r.onInvalidTransition(err)
+		return
 	}
+	r.onStatusChange(id, ev)
 }
 
 func (r *reporter) ReportOKIfStarting(id *componentstatus.InstanceID) {
 	r.mu.Lock()
-	defer r.mu.Unlock()
 	fsm := r.componentFSM(id)
-	if fsm.current.Status() == componentstatus.StatusStarting {
-		if err := fsm.transition(componentstatus.NewEvent(componentstatus.StatusOK)); err != nil {
-			r.onInvalidTransition(err)
-		}
+	if fsm.current.Status() != componentstatus.StatusStarting {
+		r.mu.Unlock()
+		return
 	}
+	ev := componentstatus.NewEvent(componentstatus.StatusOK)
+	err := fsm.transition(ev)
+	r.mu.Unlock()
+
+	if err != nil {
+		r.onInvalidTransition(err)
+		return
+	}
+	r.onStatusChange(id, ev)
 }
 
 // Note: a lock must be acquired before calling this method.
 func (r *reporter) componentFSM(id *componentstatus.InstanceID) *fsm {
 	fsm, ok := r.fsmMap[id]
 	if !ok {
-		fsm = newFSM(func(ev *componentstatus.Event) { r.onStatusChange(id, ev) })
+		fsm = newFSM(func(*componentstatus.Event) {})
 		r.fsmMap[id] = fsm
 	}
 	return fsm

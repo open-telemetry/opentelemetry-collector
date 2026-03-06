@@ -4,9 +4,12 @@
 package status
 
 import (
+	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -229,9 +232,9 @@ func TestStatusFuncs(t *testing.T) {
 
 func TestStatusFuncsConcurrent(t *testing.T) {
 	ids := []*componentstatus.InstanceID{{}, {}, {}, {}}
-	count := 0
+	var count atomic.Int64
 	statusFunc := func(*componentstatus.InstanceID, *componentstatus.Event) {
-		count++
+		count.Add(1)
 	}
 	rep := NewReporter(statusFunc,
 		func(err error) {
@@ -254,7 +257,7 @@ func TestStatusFuncsConcurrent(t *testing.T) {
 	}
 
 	wg.Wait()
-	require.Equal(t, 8004, count)
+	require.Equal(t, int64(8004), count.Load())
 }
 
 func TestReportComponentOKIfStarting(t *testing.T) {
@@ -328,5 +331,62 @@ func TestReportComponentOKIfStarting(t *testing.T) {
 
 			require.Equal(t, tt.expectedStatuses, receivedStatuses)
 		})
+	}
+}
+
+func TestReporterDeadlockOnAsyncFatalError(t *testing.T) {
+	blockCh := make(chan error)
+
+	id1 := &componentstatus.InstanceID{} // Component A: starts its server asynchronously
+	id2 := &componentstatus.InstanceID{} // Component B: next component started by StartAll
+
+	onStatusChangeCalled := make(chan struct{})
+
+	rep := NewReporter(
+		func(_ *componentstatus.InstanceID, ev *componentstatus.Event) {
+			if ev.Status() == componentstatus.StatusFatalError {
+				close(onStatusChangeCalled)
+				// replicating deadlock condition.
+				blockCh <- ev.Err()
+			}
+		},
+		func(error) {},
+	)
+
+	var wg sync.WaitGroup
+	t.Cleanup(func() {
+		go func() { <-blockCh }()
+		wg.Wait()
+	})
+
+	// StartAll: Component A begins starting.
+	rep.ReportStatus(id1, componentstatus.NewEvent(componentstatus.StatusStarting))
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		rep.ReportStatus(id1, componentstatus.NewFatalErrorEvent(errors.New("port already in use")))
+	}()
+
+	select {
+	case <-onStatusChangeCalled:
+		// The FatalError goroutine now holds r.mu and is blocked on blockCh.
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for FatalError reporter to enter onStatusChange")
+	}
+
+	startAllDone := make(chan struct{})
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		rep.ReportStatus(id2, componentstatus.NewEvent(componentstatus.StatusStarting))
+		close(startAllDone)
+	}()
+
+	select {
+	case <-startAllDone:
+		// ReportStatus completed successfully.
+	case <-time.After(time.Second):
+		t.Fatal("deadlock: ReportStatus for second component blocked because onStatusChange held r.mu")
 	}
 }
