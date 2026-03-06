@@ -185,10 +185,34 @@ $defs:
             - "avg"
             - "min"
             - "max"
+          default: "sum"
         attributes:
           type: array
           items:
             type: string
+          default:
+            - "cpu"
+    system.memory.usage:
+      description: MetricConfig provides common config for a particular metric.
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          default: true
+        aggregation_strategy:
+          type: string
+          enum:
+            - "sum"
+            - "avg"
+            - "min"
+            - "max"
+          default: "sum"
+        attributes:
+          type: array
+          items:
+            type: string
+          default:
+            - "state"
   events_config:
     description: EventsConfig provides config for sample events.
     type: object

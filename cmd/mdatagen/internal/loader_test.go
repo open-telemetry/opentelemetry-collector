@@ -183,6 +183,14 @@ func TestLoadMetadata(t *testing.T) {
 				},
 
 				Attributes: map[AttributeName]Attribute{
+					"cpu": {
+						Description: "Logical CPU number starting at 0.",
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName:         "cpu",
+						RequirementLevel: AttributeRequirementLevelRecommended,
+					},
 					"enum_attr": {
 						Description:  "Attribute with a known set of string values.",
 						NameOverride: "",
@@ -275,6 +283,18 @@ func TestLoadMetadata(t *testing.T) {
 						FullName:         "required_string_attr",
 						RequirementLevel: AttributeRequirementLevelRequired,
 					},
+					"state": {
+						Description: "Breakdown of memory usage by type.",
+						Enum:        []string{"buffered", "cached", "inactive", "free", "slab_reclaimable", "slab_unreclaimable", "used"},
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName:         "state",
+						RequirementLevel: AttributeRequirementLevelRecommended,
+						SemanticConvention: &SemanticConvention{
+							SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/registry/attributes/system.md#system-memory-state",
+						},
+					},
 				},
 				Metrics: map[MetricName]Metric{
 					"default.metric": {
@@ -330,12 +350,27 @@ func TestLoadMetadata(t *testing.T) {
 							SemanticConvention:    &SemanticConvention{SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime"},
 							Description:           "Monotonic cumulative sum int metric enabled by default.",
 							ExtendedDocumentation: "The metric will be become optional soon.",
+							Attributes:            []AttributeName{"cpu"},
 						},
 						Unit: strPtr("s"),
 						Sum: &Sum{
 							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
 							Mono:                   Mono{Monotonic: true},
+						},
+					},
+					"system.memory.usage": {
+						Signal: Signal{
+							Enabled:     true,
+							Stability:   component.StabilityLevelDevelopment,
+							Description: "Bytes of memory in use.",
+							Attributes:  []AttributeName{"state"},
+						},
+						Unit: strPtr("By"),
+						Sum: &Sum{
+							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
+							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+							Mono:                   Mono{Monotonic: false},
 						},
 					},
 					"optional.metric": {
@@ -629,7 +664,7 @@ func TestLoadMetadata(t *testing.T) {
 		{
 			name:    "testdata/invalid_metric_semconvref.yaml",
 			want:    Metadata{},
-			wantErr: "metric \"default.metric\": invalid semantic-conventions URL: want https://github.com/open-telemetry/semantic-conventions/blob/v1.37.2/*#metric-defaultmetric, got \"https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime\"",
+			wantErr: "metric \"default.metric\": invalid semantic-conventions URL: want https://github.com/open-telemetry/semantic-conventions/blob/v1.37.2/*#metric-defaultmetric, got \"https://github.com/open-telemetry/semantic-conventions/blob/v1.37.2/docs/system/system-metrics.md#metric-systemcputime\"",
 		},
 		{
 			name:    "testdata/no_metric_stability.yaml",
@@ -645,6 +680,16 @@ func TestLoadMetadata(t *testing.T) {
 			name:    "testdata/invalid_config.yaml",
 			want:    Metadata{},
 			wantErr: "config type must be \"object\", got \"string\"",
+		},
+		{
+			name:    "testdata/invalid_metric_semconv_url_full.yaml",
+			want:    Metadata{},
+			wantErr: "metric \"default.metric\", use relative path for URL, not the full URL",
+		},
+		{
+			name:    "testdata/invalid_attribute_semconv_url_full.yaml",
+			want:    Metadata{},
+			wantErr: "attribute \"used_attr\", use relative path for URL, not the full URL",
 		},
 		{
 			name:    "testdata/~~this file doesn't exist~~.yaml",

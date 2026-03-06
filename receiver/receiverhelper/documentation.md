@@ -112,6 +112,6 @@ The number of requests performed.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| outcome | The outcome of receiver requests | Str: ``success``, ``refused``, ``failure`` |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| outcome | The outcome of receiver requests | Str: ``success``, ``refused``, ``failure`` | - |
