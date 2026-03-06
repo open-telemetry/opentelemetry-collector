@@ -6,6 +6,7 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"go.uber.org/multierr"
@@ -16,6 +17,10 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
+
+// partitionIdleTimeout is the duration after which an empty partition is removed.
+// TODO make this configurable.
+const partitionIdleTimeout = 3600 * time.Second
 
 var _ Batcher[request.Request] = (*partitionBatcher)(nil)
 
@@ -38,6 +43,9 @@ type partitionBatcher struct {
 	timer          *time.Timer
 	shutdownCh     chan struct{}
 	logger         *zap.Logger
+	onEmpty        func() bool  // callback when partition is idle; returns true if partition was removed
+	lastDataTime   time.Time    // tracks when data was last present
+	refCount       atomic.Int64 // tracks in-flight callers holding a reference
 }
 
 func newPartitionBatcher(
@@ -47,15 +55,18 @@ func newPartitionBatcher(
 	wp *workerPool,
 	next sender.SendFunc[request.Request],
 	logger *zap.Logger,
+	onEmpty func() bool,
 ) *partitionBatcher {
 	return &partitionBatcher{
-		cfg:         cfg,
-		wp:          wp,
-		sizer:       sizer,
-		mergeCtx:    mergeCtx,
-		consumeFunc: next,
-		shutdownCh:  make(chan struct{}, 1),
-		logger:      logger,
+		cfg:          cfg,
+		wp:           wp,
+		sizer:        sizer,
+		mergeCtx:     mergeCtx,
+		consumeFunc:  next,
+		shutdownCh:   make(chan struct{}, 1),
+		logger:       logger,
+		onEmpty:      onEmpty,
+		lastDataTime: time.Now(),
 	}
 }
 
@@ -65,8 +76,29 @@ func (qb *partitionBatcher) resetTimer() {
 	}
 }
 
+// incRef increments the reference count (called when partition is obtained).
+func (qb *partitionBatcher) incRef() {
+	qb.refCount.Add(1)
+}
+
+// decRef decrements the reference count (called after consume completes).
+func (qb *partitionBatcher) decRef() {
+	qb.refCount.Add(-1)
+}
+
+// isRemovable returns true if the partition can be safely removed.
+// Must be called while holding the parent's lock to avoid races.
+func (qb *partitionBatcher) isRemovable() bool {
+	qb.currentBatchMu.Lock()
+	defer qb.currentBatchMu.Unlock()
+	return qb.currentBatch == nil && qb.refCount.Load() == 0
+}
+
 func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, done queue.Done) {
 	qb.currentBatchMu.Lock()
+
+	// Update last data time since we're receiving data
+	qb.lastDataTime = time.Now()
 
 	if qb.currentBatch == nil {
 		reqList, mergeSplitErr := req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.cfg.Sizer, nil)
@@ -204,7 +236,9 @@ func (qb *partitionBatcher) Start(context.Context, component.Host) error {
 			case <-qb.shutdownCh:
 				return
 			case <-qb.timer.C:
-				qb.flushCurrentBatchIfNotEmpty()
+				if qb.flushCurrentBatchOrRemovePartition() {
+					return
+				}
 			}
 		}
 	})
@@ -215,35 +249,51 @@ func (qb *partitionBatcher) Start(context.Context, component.Host) error {
 func (qb *partitionBatcher) Shutdown(context.Context) error {
 	close(qb.shutdownCh)
 	// Make sure execute one last flush if necessary.
-	qb.flushCurrentBatchIfNotEmpty()
+	qb.flushCurrentBatchOrRemovePartition()
 	qb.stopWG.Wait()
 	return nil
 }
 
-// flushCurrentBatchIfNotEmpty sends out the current request batch if it is not nil
-func (qb *partitionBatcher) flushCurrentBatchIfNotEmpty() {
+// flushCurrentBatchOrRemovePartition flushes the current batch if not empty,
+// or removes the partition from the parent if it's been idle for too long.
+// Returns true if the partition should be removed (and the timer loop should exit).
+func (qb *partitionBatcher) flushCurrentBatchOrRemovePartition() bool {
 	qb.currentBatchMu.Lock()
 	if qb.currentBatch == nil {
+		// No data to flush - check if idle for too long AND no one holding a reference
+		idleDuration := time.Since(qb.lastDataTime)
+		refCount := qb.refCount.Load()
+
+		if idleDuration >= partitionIdleTimeout && refCount == 0 && qb.onEmpty != nil {
+			qb.currentBatchMu.Unlock()
+			// onEmpty returns true if partition was actually removed
+			return qb.onEmpty()
+		}
+		if qb.timer != nil {
+			qb.resetTimer()
+		}
 		qb.currentBatchMu.Unlock()
-		return
+		return false
 	}
+
+	// Has data to flush - update lastDataTime
+	qb.lastDataTime = time.Now()
 	batchToFlush := qb.currentBatch
 	qb.currentBatch = nil
-	// Reset timer while holding the lock to prevent data race with Consume() which
-	// also calls resetTimer() under the same lock.
 	qb.resetTimer()
 	qb.currentBatchMu.Unlock()
 
-	// flush() blocks until successfully started a goroutine for flushing.
 	qb.flush(batchToFlush.ctx, batchToFlush.req, batchToFlush.done)
+	return false
 }
 
 // flush starts a goroutine that calls consumeFunc. It blocks until a worker is available if necessary.
 func (qb *partitionBatcher) flush(ctx context.Context, req request.Request, done queue.Done) {
 	qb.stopWG.Add(1)
-	qb.wp.execute(func() {
+	qb.wp.execute(func() bool {
 		defer qb.stopWG.Done()
 		done.OnDone(qb.consumeFunc(ctx, req))
+		return true
 	})
 }
 
@@ -259,7 +309,7 @@ func newWorkerPool(maxWorkers int) *workerPool {
 	return &workerPool{workers: workers}
 }
 
-func (wp *workerPool) execute(f func()) {
+func (wp *workerPool) execute(f func() bool) {
 	<-wp.workers
 	go func() {
 		defer func() {
