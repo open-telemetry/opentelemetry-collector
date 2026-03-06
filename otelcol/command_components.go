@@ -136,27 +136,28 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 	}
 }
 
-func sortFactoriesByType[T component.Factory](factories map[component.Type]T) []T {
-	// Gather component types (factories map keys)
-	componentTypes := make([]component.Type, 0, len(factories))
-	for componentType := range factories {
-		componentTypes = append(componentTypes, componentType)
-	}
-
-	// Sort component types as strings
-	sort.Slice(componentTypes, func(i, j int) bool {
-		return componentTypes[i].String() < componentTypes[j].String()
-	})
-
-	// Build and return list of factories, sorted by component types
-	sortedFactories := make([]T, 0, len(factories))
-	for _, componentType := range componentTypes {
-		if !isComponentAlias(factories[componentType]) {
-			sortedFactories = append(sortedFactories, factories[componentType])
+func canonicalFactoryKeys[T component.Factory](factories map[component.Type]T) []component.Type {
+	keys := make([]component.Type, 0, len(factories))
+	for ct, f := range factories {
+		if ct == f.Type() { // keep canonical keys only
+			keys = append(keys, ct)
 		}
 	}
+	return keys
+}
 
-	return sortedFactories
+func sortFactoriesByType[T component.Factory](factories map[component.Type]T) []T {
+	keys := canonicalFactoryKeys(factories)
+
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i].String() < keys[j].String()
+	})
+
+	out := make([]T, 0, len(keys))
+	for _, ct := range keys {
+		out = append(out, factories[ct])
+	}
+	return out
 }
 
 func sortProvidersByScheme(providerModules map[string]string, provFactories []confmap.ProviderFactory, set confmap.ProviderSettings) []componentWithoutStability {

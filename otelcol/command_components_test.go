@@ -260,54 +260,74 @@ func TestSortFactoriesByType(t *testing.T) {
 	for _, tt := range []struct {
 		name      string
 		factories map[component.Type]mockFactory
-		want      []mockFactory
+		wantTypes []string
 	}{
 		{
 			name:      "with an empty map",
 			factories: map[component.Type]mockFactory{},
-			want:      []mockFactory{},
+			wantTypes: []string{},
 		},
 		{
-			name: "with a single factory",
+			name: "with canonical factories only (sorted by type)",
 			factories: map[component.Type]mockFactory{
-				component.MustNewType("receiver"): newMockFactory("receiver_factory"),
+				// IMPORTANT: keys must match factory.Type() (this mirrors MakeFactoryMap output).
+				component.MustNewType("processor"): newMockFactory("processor"),
+				component.MustNewType("exporter"):  newMockFactory("exporter"),
+				component.MustNewType("receiver"):  newMockFactory("receiver"),
 			},
-			want: []mockFactory{
-				newMockFactory("receiver_factory"),
-			},
+			wantTypes: []string{"exporter", "processor", "receiver"},
 		},
 		{
-			name: "with multiple factories",
-			factories: map[component.Type]mockFactory{
-				component.MustNewType("processor"): newMockFactory("processor_factory"),
-				component.MustNewType("exporter"):  newMockFactory("exporter_factory"),
-				component.MustNewType("receiver"):  newMockFactory("receiver_factory"),
-			},
-			want: []mockFactory{
-				newMockFactory("exporter_factory"),
-				newMockFactory("processor_factory"),
-				newMockFactory("receiver_factory"),
-			},
-		},
-		{
-			name: "with aliases factories",
+			name: "exactly one canonical factory with deprecated alias (k8s_attributes -> k8sattributes)",
 			factories: func() map[component.Type]mockFactory {
-				alias := newMockFactory("alias_processor_factory")
-				alias.SetDeprecatedAlias(alias.Type())
+				f := newMockFactory("k8s_attributes")
+				f.SetDeprecatedAlias(component.MustNewType("k8sattributes"))
 
+				// Model MakeFactoryMap behavior: alias key points to SAME factory value.
 				return map[component.Type]mockFactory{
-					component.MustNewType("processor"):       newMockFactory("processor_factory"),
-					component.MustNewType("alias_processor"): alias,
+					component.MustNewType("k8s_attributes"): f, // canonical key
+					component.MustNewType("k8sattributes"):  f, // alias key
 				}
 			}(),
-			want: []mockFactory{
-				newMockFactory("processor_factory"),
-			},
+			wantTypes: []string{"k8s_attributes"},
+		},
+		{
+			name: "sort and ignore alias keys",
+			factories: func() map[component.Type]mockFactory {
+				// canonical: k8s_attributes, alias: k8sattributes
+				fK8s := newMockFactory("k8s_attributes")
+				fK8s.SetDeprecatedAlias(component.MustNewType("k8sattributes"))
+
+				// canonical: otlp_http, alias: otlphttp
+				fOtlpHTTP := newMockFactory("otlp_http")
+				fOtlpHTTP.SetDeprecatedAlias(component.MustNewType("otlphttp"))
+
+				// another canonical-only entry to verify ordering
+				fBatch := newMockFactory("batch")
+
+				// Model MakeFactoryMap behavior: alias keys point to SAME factory value.
+				return map[component.Type]mockFactory{
+					component.MustNewType("k8s_attributes"): fK8s,
+					component.MustNewType("k8sattributes"):  fK8s,
+
+					component.MustNewType("otlp_http"): fOtlpHTTP,
+					component.MustNewType("otlphttp"):  fOtlpHTTP,
+
+					component.MustNewType("batch"): fBatch,
+				}
+			}(),
+			wantTypes: []string{"batch", "k8s_attributes", "otlp_http"},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			got := sortFactoriesByType(tt.factories)
-			assert.Equal(t, tt.want, got)
+
+			gotTypes := make([]string, 0, len(got))
+			for _, f := range got {
+				gotTypes = append(gotTypes, f.Type().String())
+			}
+
+			assert.Equal(t, tt.wantTypes, gotTypes)
 		})
 	}
 }
