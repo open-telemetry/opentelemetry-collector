@@ -188,6 +188,7 @@ func run(ymlPath string) error {
 		toGenerate[filepath.Join(tmplDir, "testdata", "config.yaml.tmpl")] = filepath.Join(testdataDir, "config.yaml")
 		toGenerate[filepath.Join(tmplDir, "config.go.tmpl")] = filepath.Join(codeDir, "generated_config.go")
 		toGenerate[filepath.Join(tmplDir, "config_test.go.tmpl")] = filepath.Join(codeDir, "generated_config_test.go")
+		toGenerate[filepath.Join(tmplDir, "config.schema.yaml.tmpl")] = filepath.Join(codeDir, "config.schema.yaml")
 	}
 
 	if len(md.ResourceAttributes) > 0 { // only generate resource files if resource attributes are configured
@@ -259,6 +260,15 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 						}
 					}
 					return atts
+				},
+				"hasAggregatableAttributes": func(ans []AttributeName) bool {
+					for _, an := range ans {
+						if md.Attributes[an].RequirementLevel == AttributeRequirementLevelRecommended ||
+							md.Attributes[an].RequirementLevel == AttributeRequirementLevelOptIn {
+							return true
+						}
+					}
+					return false
 				},
 				"getEventConditionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
 					seen := make(map[AttributeName]bool)

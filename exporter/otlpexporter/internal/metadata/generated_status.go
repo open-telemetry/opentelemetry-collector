@@ -7,8 +7,9 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("otlp_grpc")
-	ScopeName = "go.opentelemetry.io/collector/exporter/otlpexporter"
+	Type           = component.MustNewType("otlp_grpc")
+	DeprecatedType = component.MustNewType("otlp")
+	ScopeName      = "go.opentelemetry.io/collector/exporter/otlpexporter"
 )
 
 const (
