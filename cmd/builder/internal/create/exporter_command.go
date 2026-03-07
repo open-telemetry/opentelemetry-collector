@@ -23,12 +23,12 @@ func newExporterCommand() *cobra.Command {
 		Long:  `ocb create exporter initializes a new repository in the provided folder with a manifest to start building a custom Collector exporter. This command is experimental and very likely to change.`,
 		Args:  cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
-			path := args[0]
-			if path == "" {
+			dirName := args[0]
+			if dirName == "" {
 				return fmt.Errorf("exporter directory name cannot be empty")
 			}
 
-			return runCreateExporter(path+"exporter", signals, outputPath)
+			return runCreateExporter(dirName+"exporter", signals, outputPath)
 		},
 	}
 
@@ -38,20 +38,24 @@ func newExporterCommand() *cobra.Command {
 	return cmd
 }
 
-func runCreateExporter(path string, signals []string, outputPath string) error {
-	if path == "" {
-		return errors.New("argument must be a folder")
+func runCreateExporter(dirName string, signals []string, outputPath string) error {
+	if dirName == "" {
+		return errors.New("directory name cannot be empty")
 	}
-	path, err := filepath.Abs(path)
+
+	fullPath := filepath.Join(outputPath, dirName)
+
+	fullPath, err := filepath.Abs(fullPath)
 	if err != nil {
 		return fmt.Errorf("failed to get absolute path: %w", err)
 	}
-	err = os.MkdirAll(path, 0o750)
+
+	err = os.MkdirAll(fullPath, 0o750)
 	if err != nil {
-		return fmt.Errorf("failed to create folder %s: %w", path, err)
+		return fmt.Errorf("failed to create folder %s: %w", fullPath, err)
 	}
 
-	err = runTidy(path)
+	err = runTidy(fullPath)
 	if err != nil {
 		return fmt.Errorf("failed to run go mod tidy: %w", err)
 	}
