@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"time"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
 )
@@ -40,6 +41,16 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 				panic(err)
 			}
 			return goType
+		},
+		"mapDefaultValue": func(cfg *ConfigMetadata) string {
+			if cfg == nil || cfg.Default == nil {
+				return ""
+			}
+			val, err := MapDefaultValue(cfg)
+			if err != nil {
+				panic(err)
+			}
+			return val
 		},
 		"publicType": func(ref string) string {
 			typeName, err := FormatTypeName(ref, rootPackage, componentPackage)
@@ -147,6 +158,50 @@ func resolveGoType(md *ConfigMetadata, propName, rootPackage, componentPackage s
 		return "any", nil
 	default:
 		return "", fmt.Errorf("unsupported type: %q", md.Type)
+	}
+}
+
+// MapDefaultValue Maps a ConfigMetadata default value to its corresponding Go textual representation.
+func MapDefaultValue(md *ConfigMetadata) (string, error) {
+	if md == nil || md.Default == nil {
+		return "", errors.New("nil ConfigMetadata or Default")
+	}
+
+	if md.Ref != "" || md.GoType != "" {
+		// Custom types or refs might not have an easy textual representation of their literal
+		// unless they are primitive go types or durations, but let's try our best.
+		// For strings/durations:
+		if md.Type == "string" && md.Format == "duration" {
+			d, err := time.ParseDuration(fmt.Sprintf("%v", md.Default))
+			if err != nil {
+				return "", err
+			}
+			return fmt.Sprintf("time.Duration(%d) /* %s */", d, md.Default), nil
+		}
+	}
+
+	switch md.Type {
+	case "string":
+		if md.Format == "duration" {
+			d, err := time.ParseDuration(fmt.Sprintf("%v", md.Default))
+			if err != nil {
+				return "", err
+			}
+			return fmt.Sprintf("time.Duration(%d) /* %s */", d, md.Default), nil
+		}
+		return fmt.Sprintf("%q", md.Default), nil
+	case "integer":
+		return fmt.Sprintf("%v", md.Default), nil
+	case "number":
+		return fmt.Sprintf("%v", md.Default), nil
+	case "boolean":
+		return fmt.Sprintf("%v", md.Default), nil
+	case "array":
+		// Handle default for slices? Usually they're represented as Go slices.
+		// For now we can print them if they're simple literals
+		return fmt.Sprintf("%#v", md.Default), nil
+	default:
+		return "", fmt.Errorf("unsupported type for default value: %q", md.Type)
 	}
 }
 
