@@ -100,6 +100,11 @@ type ClientConfig struct {
 	// The headers associated with gRPC requests.
 	Headers configopaque.MapList `mapstructure:"headers,omitempty"`
 
+	// UserAgent overrides the default user-agent header sent on gRPC requests.
+	// The default is derived from the build info. When empty, the caller controls
+	// the user-agent via grpc.WithUserAgent or similar options.
+	UserAgent string `mapstructure:"user_agent,omitempty"`
+
 	// Sets the balancer in grpclb_policy to discover the servers. Default is pick_first.
 	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
 	BalancerName string `mapstructure:"balancer_name"`
