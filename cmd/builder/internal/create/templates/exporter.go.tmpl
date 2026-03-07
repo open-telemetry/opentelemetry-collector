@@ -1,0 +1,56 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package {{.Name}}exporter // import "go.opentelemetry.io/collector/exporter/{{.Name}}exporter"
+
+import (
+	"context"
+	{{- if .HasTraces}}
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	{{- end}}
+	{{- if .HasMetrics}}
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	{{- end}}
+	{{- if .HasLogs}}
+	"go.opentelemetry.io/collector/pdata/plog"
+	{{- end}}
+	{{- if .HasProfiles}}
+	"go.opentelemetry.io/collector/pdata/pprofile"
+	{{- end}}
+)
+
+type {{.Name}}Exporter struct {
+	// Add your exporter fields here
+}
+
+func new{{.Name}}Exporter() *{{.Name}}Exporter {
+	return &{{.Name}}Exporter{}
+}
+
+{{if .HasTraces}}
+func (e *{{.Name}}Exporter) pushTraces(_ context.Context, td ptrace.Traces) error {
+	// Add your traces export logic here
+	return nil
+}
+{{end}}
+
+{{if .HasMetrics}}
+func (e *{{.Name}}Exporter) pushMetrics(_ context.Context, md pmetric.Metrics) error {
+	// Add your metrics export logic here
+	return nil
+}
+{{end}}
+
+{{if .HasLogs}}
+func (e *{{.Name}}Exporter) pushLogs(_ context.Context, ld plog.Logs) error {
+	// Add your logs export logic here
+	return nil
+}
+{{end}}
+
+{{if .HasProfiles}}
+func (e *{{.Name}}Exporter) pushProfiles(_ context.Context, pd pprofile.Profiles) error {
+	// Add your profiles export logic here
+	return nil
+}
+{{end}}
