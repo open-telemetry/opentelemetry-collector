@@ -207,3 +207,136 @@ func TestRegisterGateLifecycle(t *testing.T) {
 		})
 	}
 }
+
+func TestRegisterOrLoadRegistersWhenMissing(t *testing.T) {
+	r := NewRegistry()
+
+	g, err := r.RegisterOrLoad("test.gate", StageBeta, WithRegisterDescription("Test Gate"))
+	require.NoError(t, err)
+	require.NotNil(t, g)
+
+	assert.Equal(t, "test.gate", g.ID())
+	assert.True(t, g.IsEnabled())
+}
+
+func TestRegisterOrLoadErrorsOnInvalidID(t *testing.T) {
+	r := NewRegistry()
+
+	_, err := r.RegisterOrLoad("+invalid.gate.name", StageBeta)
+
+	require.Error(t, err)
+}
+
+func TestRegisterOrLoadLoadsWhenDefinitionsMatch(t *testing.T) {
+	r := NewRegistry()
+
+	g1, err := r.RegisterOrLoad(
+		"test.gate",
+		StageStable,
+		WithRegisterDescription("Test Gate"),
+		WithRegisterReferenceURL("http://example.com/issue/1"),
+		WithRegisterFromVersion("v0.88.0"),
+		WithRegisterToVersion("v1.0.0"),
+	)
+	require.NoError(t, err)
+
+	g2, err := r.RegisterOrLoad(
+		"test.gate",
+		StageStable,
+		WithRegisterDescription("Test Gate"),
+		WithRegisterReferenceURL("http://example.com/issue/1"),
+		WithRegisterFromVersion("v0.88.0"),
+		WithRegisterToVersion("v1.0.0"),
+	)
+	require.NoError(t, err)
+
+	assert.Same(t, g1, g2)
+}
+
+func TestRegisterOrLoadErrorsWhenDefinitionsDiffer(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		firstStage  Stage
+		secondStage Stage
+		firstOpts   []RegisterOption
+		secondOpts  []RegisterOption
+	}{
+		{
+			name:        "different stage",
+			firstStage:  StageBeta,
+			secondStage: StageAlpha,
+		},
+		{
+			name:        "different description",
+			firstStage:  StageBeta,
+			secondStage: StageBeta,
+			firstOpts:   []RegisterOption{WithRegisterDescription("desc1")},
+			secondOpts:  []RegisterOption{WithRegisterDescription("desc2")},
+		},
+		{
+			name:        "different referenceURL",
+			firstStage:  StageBeta,
+			secondStage: StageBeta,
+			firstOpts:   []RegisterOption{WithRegisterReferenceURL("http://example.com/issue/1")},
+			secondOpts:  []RegisterOption{WithRegisterReferenceURL("http://example.com/issue/2")},
+		},
+		{
+			name:        "different fromVersion",
+			firstStage:  StageBeta,
+			secondStage: StageBeta,
+			firstOpts:   []RegisterOption{WithRegisterFromVersion("v0.88.0")},
+			secondOpts:  []RegisterOption{WithRegisterFromVersion("v0.89.0")},
+		},
+		{
+			name:        "nil vs non-nil fromVersion",
+			firstStage:  StageBeta,
+			secondStage: StageBeta,
+			firstOpts:   nil,
+			secondOpts:  []RegisterOption{WithRegisterFromVersion("v0.88.0")},
+		},
+		{
+			name:        "different toVersion",
+			firstStage:  StageStable,
+			secondStage: StageStable,
+			firstOpts:   []RegisterOption{WithRegisterToVersion("v1.0.0")},
+			secondOpts:  []RegisterOption{WithRegisterToVersion("v1.1.0")},
+		},
+		{
+			name:        "nil vs non-nil toVersion",
+			firstStage:  StageBeta,
+			secondStage: StageBeta,
+			firstOpts:   nil,
+			secondOpts:  []RegisterOption{WithRegisterToVersion("v1.0.0")},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			r := NewRegistry()
+
+			_, err := r.RegisterOrLoad("test.gate", tc.firstStage, tc.firstOpts...)
+			require.NoError(t, err)
+
+			_, err = r.RegisterOrLoad("test.gate", tc.secondStage, tc.secondOpts...)
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestRegisterOrLoadErrorsOnInvalidOptionForExistingGate(t *testing.T) {
+	r := NewRegistry()
+	_, err := r.RegisterOrLoad("test.gate", StageBeta)
+	require.NoError(t, err)
+
+	_, err = r.RegisterOrLoad("test.gate", StageBeta, WithRegisterFromVersion("invalid-version"))
+	require.Error(t, err)
+}
+
+func TestMustRegisterOrLoad(t *testing.T) {
+	r := NewRegistry()
+
+	g := r.MustRegisterOrLoad("test.gate", StageBeta, WithRegisterDescription("Test Gate"))
+	require.NotNil(t, g)
+
+	assert.Panics(t, func() {
+		r.MustRegisterOrLoad("test.gate", StageAlpha, WithRegisterDescription("Test Gate"))
+	})
+}

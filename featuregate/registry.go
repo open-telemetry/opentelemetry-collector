@@ -166,6 +166,74 @@ func (r *Registry) Register(id string, stage Stage, opts ...RegisterOption) (*Ga
 	return g, nil
 }
 
+// RegisterOrLoad returns an existing Gate with the given id if one is already registered.
+// If the Gate is not registered, it registers and returns a new Gate.
+// RegisterOrLoad returns an error if the provided stage or gate options differ from the existing Gate definition.
+func (r *Registry) RegisterOrLoad(id string, stage Stage, opts ...RegisterOption) (*Gate, error) {
+	if err := validateID(id); err != nil {
+		return nil, fmt.Errorf("invalid ID %q: %w", id, err)
+	}
+	v, ok := r.gates.Load(id)
+
+	if !ok {
+		return r.Register(id, stage, opts...)
+	}
+
+	g := v.(*Gate)
+
+	requestedGate := &Gate{
+		id:    id,
+		stage: stage,
+	}
+
+	for _, opt := range opts {
+		err := opt.apply(requestedGate)
+		if err != nil {
+			return nil, fmt.Errorf("failed to apply option: %w", err)
+		}
+	}
+
+	if g.stage != requestedGate.stage {
+		return nil, fmt.Errorf("feature gate %q already registered with different stage", id)
+	}
+
+	if g.description != requestedGate.description {
+		return nil, fmt.Errorf("feature gate %q already registered with different description", id)
+	}
+
+	if g.referenceURL != requestedGate.referenceURL {
+		return nil, fmt.Errorf("feature gate %q already registered with different referenceURL", id)
+	}
+
+	if (g.fromVersion == nil) != (requestedGate.fromVersion == nil) {
+		return nil, fmt.Errorf("feature gate %q already registered with different fromVersion", id)
+	}
+
+	if g.fromVersion != nil && !g.fromVersion.Equal(requestedGate.fromVersion) {
+		return nil, fmt.Errorf("feature gate %q already registered with different fromVersion", id)
+	}
+
+	if (g.toVersion == nil) != (requestedGate.toVersion == nil) {
+		return nil, fmt.Errorf("feature gate %q already registered with different toVersion", id)
+	}
+
+	if g.toVersion != nil && !g.toVersion.Equal(requestedGate.toVersion) {
+		return nil, fmt.Errorf("feature gate %q already registered with different toVersion", id)
+	}
+
+	return g, nil
+}
+
+// MustRegisterOrLoad like RegisterOrLoad but panics if an invalid ID or gate options are provided,
+// or if the provided Gate definition differs from an already registered Gate with the same id.
+func (r *Registry) MustRegisterOrLoad(id string, stage Stage, opts ...RegisterOption) *Gate {
+	g, err := r.RegisterOrLoad(id, stage, opts...)
+	if err != nil {
+		panic(err)
+	}
+	return g
+}
+
 // Set the enabled valued for a Gate identified by the given id.
 func (r *Registry) Set(id string, enabled bool) error {
 	v, ok := r.gates.Load(id)
