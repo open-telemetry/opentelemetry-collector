@@ -1,6 +1,16 @@
-type: config/configoptional
+type: configoptional
 github_project: open-telemetry/opentelemetry-collector
 
 status:
   disable_codecov_badge: true
   class: pkg
+  stability:
+    beta: [metrics, traces, logs]
+    development: [profiles]
+
+feature_gates:
+  - id: configoptional.AddEnabledField
+    description: "Allows optional fields to be toggled via an 'enabled' field."
+    stage: beta
+    from_version: 'v0.138.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/issues/14021'
