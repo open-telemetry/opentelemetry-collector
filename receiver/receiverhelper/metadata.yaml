@@ -121,3 +121,10 @@ attributes:
       - success
       - refused
       - failure
+
+feature_gates:
+  - id: receiverhelper.newReceiverMetrics
+    description: 'Controls whether receivers emit new metrics and span attributes to distinguish downstream errors from internal errors. This is a breaking change for the semantics of the otelcol_receiver_refused_metric_points,  otelcol_receiver_refused_log_records and otelcol_receiver_refused_spans.'
+    stage: alpha
+    from_version: 'v0.138.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/pull/12802'

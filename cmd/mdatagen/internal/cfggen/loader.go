@@ -64,7 +64,7 @@ func (sl *schemaLoader) Load(ref Ref) (*ConfigMetadata, error) {
 func (sl *schemaLoader) load(ref Ref) (*ConfigMetadata, error) {
 	repoRoot, err := sl.repoRoot(sl.cd)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to determine repo root: %w", err)
 	}
 
 	if ref.isLocal() {
