@@ -1,0 +1,19 @@
+display_name: {{.Name}} Exporter
+type: {{.Name}}
+
+status:
+  class: exporter
+  stability:
+    development:
+      {{- if .HasTraces}}
+      - traces
+      {{- end}}
+      {{- if .HasMetrics}}
+      - metrics
+      {{- end}}
+      {{- if .HasLogs}}
+      - logs
+      {{- end}}
+      {{- if .HasProfiles}}
+      - profiles
+      {{- end}}
