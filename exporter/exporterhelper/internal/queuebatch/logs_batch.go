@@ -51,16 +51,63 @@ func (req *logsRequest) mergeTo(dst *logsRequest, sz sizer.LogsSizer) {
 
 func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer) ([]request.Request, error) {
 	var res []request.Request
+	var droppedItems int
 	for req.size(sz) > maxSize {
 		ld, removedSize := extractLogs(req.ld, maxSize, sz)
 		if ld.LogRecordCount() == 0 {
-			return res, fmt.Errorf("one log record size is greater than max size, dropping items: %d", req.ld.LogRecordCount())
+			// The first log record is too large to fit into a batch.
+			// Drop it and continue processing the rest.
+			droppedItems++
+			removeFirstLogRecord(req.ld)
+			// Invalidate the cached size since we modified the data directly.
+			req.setCachedSize(-1)
+			continue
 		}
 		req.setCachedSize(req.size(sz) - removedSize)
 		res = append(res, newLogsRequest(ld))
 	}
-	res = append(res, req)
+	if droppedItems == 0 || req.ld.LogRecordCount() > 0 {
+		res = append(res, req)
+	}
+	if droppedItems > 0 {
+		return res, fmt.Errorf("%d log records exceeded max size, the records were dropped", droppedItems)
+	}
 	return res, nil
+}
+
+// removeFirstLogRecord removes the first log record from the logs.
+// It cleans up any empty scope logs and resource logs that result from the removal.
+func removeFirstLogRecord(ld plog.Logs) {
+	rl := ld.ResourceLogs().At(0)
+	sl := rl.ScopeLogs().At(0)
+	first := true
+	sl.LogRecords().RemoveIf(func(_ plog.LogRecord) bool {
+		if first {
+			first = false
+			return true
+		}
+		return false
+	})
+	if sl.LogRecords().Len() == 0 {
+		first = true
+		rl.ScopeLogs().RemoveIf(func(_ plog.ScopeLogs) bool {
+			if first {
+				first = false
+				return true
+			}
+			return false
+		})
+	}
+	if rl.ScopeLogs().Len() == 0 {
+		first = true
+		ld.ResourceLogs().RemoveIf(func(_ plog.ResourceLogs) bool {
+			if first {
+				first = false
+				return true
+			}
+			return false
+		})
+	}
 }
 
 // extractLogs extracts logs from the input logs and returns a new logs with the specified number of log records.
