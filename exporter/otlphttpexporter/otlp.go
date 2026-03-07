@@ -353,7 +353,7 @@ func (e *baseExporter) tracesPartialSuccessHandler(protoBytes []byte, contentTyp
 			return fmt.Errorf("error parsing json response: %w", err)
 		}
 	default:
-		return nil
+		return fmt.Errorf("unsupported partial success response content type: %q", contentType)
 	}
 
 	partialSuccess := exportResponse.PartialSuccess()
@@ -383,7 +383,7 @@ func (e *baseExporter) metricsPartialSuccessHandler(protoBytes []byte, contentTy
 			return fmt.Errorf("error parsing json response: %w", err)
 		}
 	default:
-		return nil
+		return fmt.Errorf("unsupported partial success response content type: %q", contentType)
 	}
 
 	partialSuccess := exportResponse.PartialSuccess()
@@ -413,7 +413,7 @@ func (e *baseExporter) logsPartialSuccessHandler(protoBytes []byte, contentType 
 			return fmt.Errorf("error parsing json response: %w", err)
 		}
 	default:
-		return nil
+		return fmt.Errorf("unsupported partial success response content type: %q", contentType)
 	}
 
 	partialSuccess := exportResponse.PartialSuccess()
@@ -443,7 +443,7 @@ func (e *baseExporter) profilesPartialSuccessHandler(protoBytes []byte, contentT
 			return fmt.Errorf("error parsing json response: %w", err)
 		}
 	default:
-		return nil
+		return fmt.Errorf("unsupported partial success response content type: %q", contentType)
 	}
 
 	partialSuccess := exportResponse.PartialSuccess()
