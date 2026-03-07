@@ -3,7 +3,7 @@ github_project: open-telemetry/opentelemetry-collector
 
 status:
   disable_codecov_badge: true
-  class: extension
+  class: pkg
   codeowners:
   stability:
     development: [profiles]

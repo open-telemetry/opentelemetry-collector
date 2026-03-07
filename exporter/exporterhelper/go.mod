@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/client v1.52.0
 	go.opentelemetry.io/collector/component v1.52.0
@@ -66,7 +67,7 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.146.1 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.146.1 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/sys v0.40.0 // indirect
+	golang.org/x/sys v0.41.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251222181119-0a764e51fe1b // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

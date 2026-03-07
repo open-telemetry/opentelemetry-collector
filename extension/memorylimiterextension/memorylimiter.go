@@ -59,13 +59,21 @@ func (ml *memoryLimiterExtension) GetHTTPHandler(base http.Handler) (http.Handle
 	}), nil
 }
 
-func (ml *memoryLimiterExtension) GetGRPCServerOptions() ([]grpc.ServerOption, error) {
-	return []grpc.ServerOption{grpc.UnaryInterceptor(
-		func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
-			if ml.MustRefuse() {
-				return nil, status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
-			}
-			return handler(ctx, req)
-		},
-	)}, nil
+func (ml *memoryLimiterExtension) GetGRPCServerOptions(_ context.Context) ([]grpc.ServerOption, error) {
+	return []grpc.ServerOption{
+		grpc.ChainUnaryInterceptor(
+			func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
+				if ml.MustRefuse() {
+					return nil, status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
+				}
+				return handler(ctx, req)
+			}),
+		grpc.ChainStreamInterceptor(
+			func(srv any, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+				if ml.MustRefuse() {
+					return status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
+				}
+				return handler(srv, ss)
+			}),
+	}, nil
 }
