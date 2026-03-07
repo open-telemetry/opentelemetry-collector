@@ -219,6 +219,14 @@ func TestRegisterOrLoadRegistersWhenMissing(t *testing.T) {
 	assert.True(t, g.IsEnabled())
 }
 
+func TestRegisterOrLoadErrorsOnInvalidID(t *testing.T) {
+	r := NewRegistry()
+
+	_, err := r.RegisterOrLoad("+invalid.gate.name", StageBeta)
+
+	require.Error(t, err)
+}
+
 func TestRegisterOrLoadLoadsWhenDefinitionsMatch(t *testing.T) {
 	r := NewRegistry()
 
