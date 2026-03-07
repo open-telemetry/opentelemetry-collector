@@ -51,5 +51,19 @@ fi
 
 for RUN_ID in ${WAITING_RUNS}; do
     echo "Approving workflow run: ${RUN_ID}"
-    gh api --method POST "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/approve" --silent
+    DELAY=5
+    APPROVED=false
+    while [[ ${DELAY} -le 60 ]]; do
+        if gh api --method POST "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/approve" --silent; then
+            APPROVED=true
+            break
+        fi
+        echo "Approval failed for run ${RUN_ID}, retrying in ${DELAY}s..."
+        sleep "${DELAY}"
+        DELAY=$(( DELAY * 2 ))
+    done
+    if [[ "${APPROVED}" != "true" ]]; then
+        echo "Failed to approve run ${RUN_ID} after retries"
+        exit 1
+    fi
 done
