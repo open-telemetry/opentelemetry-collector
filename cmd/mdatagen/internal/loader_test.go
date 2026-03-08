@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -73,6 +74,28 @@ func TestLoadMetadata(t *testing.T) {
 					},
 					Warnings:             []string{"Any additional information that should be brought to the consumer's attention"},
 					UnsupportedPlatforms: []string{"freebsd", "illumos"},
+				},
+				Config: &cfggen.ConfigMetadata{
+					Type: "object",
+					AllOf: []*cfggen.ConfigMetadata{
+						{
+							Ref: "./internal/metadata.metrics_builder_config",
+						},
+					},
+					Properties: map[string]*cfggen.ConfigMetadata{
+						"endpoint": {
+							Description: "The endpoint to scrape metrics from.",
+							Type:        "string",
+							Default:     "localhost:12345",
+						},
+						"timeout": {
+							Description: "Timeout for scraping metrics.",
+							Type:        "string",
+							Format:      "duration",
+							Default:     "10s",
+						},
+					},
+					Required: []string{"endpoint"},
 				},
 				ResourceAttributes: map[AttributeName]Attribute{
 					"string.resource.attr": {
@@ -619,6 +642,11 @@ func TestLoadMetadata(t *testing.T) {
 			wantErr: "`stability` must be `deprecated` when specifying a `deprecated` field",
 		},
 		{
+			name:    "testdata/invalid_config.yaml",
+			want:    Metadata{},
+			wantErr: "config type must be \"object\", got \"string\"",
+		},
+		{
 			name:    "testdata/~~this file doesn't exist~~.yaml",
 			wantErr: "unable to read the file file:testdata/~~this file doesn't exist~~.yaml",
 		},
@@ -673,6 +701,46 @@ func TestLoadMetadata(t *testing.T) {
 					Class: "receiver",
 					Stability: map[component.StabilityLevel][]string{
 						component.StabilityLevelBeta: {"logs"},
+					},
+				},
+			},
+		},
+		{
+			name: "testdata/with_underscore_in_semconv_ref_anchor_tag.yaml",
+			want: Metadata{
+				Type:                 "metricreceiver",
+				GeneratedPackageName: "metadata",
+				SemConvVersion:       "1.38.0",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				ShortFolderName:      "testdata",
+				Tests:                Tests{Host: "newMdatagenNopHost()"},
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelDevelopment: {"logs"},
+						component.StabilityLevelBeta:        {"traces"},
+						component.StabilityLevelStable:      {"metrics"},
+					},
+					Distributions: []string{"contrib"},
+					Warnings:      []string{"Any additional information that should be brought to the consumer's attention"},
+				},
+				Metrics: map[MetricName]Metric{
+					"system.disk.io_time": {
+						Signal: Signal{
+							Enabled:     true,
+							Description: "Time disk spent activated..",
+							Stability:   component.StabilityLevelDevelopment,
+							SemanticConvention: &SemanticConvention{
+								SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemdiskio_time",
+							},
+						},
+						Unit: strPtr("s"),
+						Sum: &Sum{
+							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+							Mono:                   Mono{Monotonic: true},
+							MetricValueType:        MetricValueType{ValueType: pmetric.NumberDataPointValueTypeDouble},
+						},
 					},
 				},
 			},
