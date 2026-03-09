@@ -4,6 +4,9 @@ all_set:
     default.metric:
       enabled: true
       attributes: ["string_attr","state","enum_attr","slice_attr","map_attr"]
+    default.metric.histogram:
+      enabled: true
+      attributes: ["string_attr","boolean_attr"]
     default.metric.to_be_removed:
       enabled: true
     metric.input_type:
@@ -40,6 +43,9 @@ all_set:
 reaggregate_set:
   metrics:
     default.metric:
+      enabled: true
+      attributes: []
+    default.metric.histogram:
       enabled: true
       attributes: []
     default.metric.to_be_removed:
@@ -80,6 +86,9 @@ none_set:
     default.metric:
       enabled: false
       attributes: ["string_attr","state","enum_attr","slice_attr","map_attr"]
+    default.metric.histogram:
+      enabled: false
+      attributes: ["string_attr","boolean_attr"]
     default.metric.to_be_removed:
       enabled: false
     metric.input_type:

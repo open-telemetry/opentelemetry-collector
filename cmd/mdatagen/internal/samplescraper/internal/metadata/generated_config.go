@@ -57,6 +57,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 // MetricsConfig provides config for sample metrics.
 type MetricsConfig struct {
 	DefaultMetric            MetricConfig `mapstructure:"default.metric"`
+	DefaultMetricHistogram   MetricConfig `mapstructure:"default.metric.histogram"`
 	DefaultMetricToBeRemoved MetricConfig `mapstructure:"default.metric.to_be_removed"`
 	MetricInputType          MetricConfig `mapstructure:"metric.input_type"`
 	OptionalMetric           MetricConfig `mapstructure:"optional.metric"`
@@ -72,6 +73,14 @@ func DefaultMetricsConfig() MetricsConfig {
 			requiredAttributes: []string{},
 			definedAttributes:  []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr"},
 			EnabledAttributes:  []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr"},
+		},
+		DefaultMetricHistogram: MetricConfig{
+			Enabled: true,
+
+			AggregationStrategy: AggregationStrategySum,
+			requiredAttributes:  []string{},
+			definedAttributes:   []string{"string_attr", "boolean_attr"},
+			EnabledAttributes:   []string{"string_attr", "boolean_attr"},
 		},
 		DefaultMetricToBeRemoved: MetricConfig{
 			Enabled: true,

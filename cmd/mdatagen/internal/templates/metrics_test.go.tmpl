@@ -340,11 +340,18 @@ func TestMetricsBuilder(t *testing.T) {
 					dp := ms.At(i).{{ $metric.Data.Type }}().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
+					{{- if eq $metric.Data.Type "Histogram" }}
+					assert.Equal(t, uint64(1), dp.Count())
+					assert.InDelta(t, float64(1), dp.Sum(), 0.01)
+					assert.InDelta(t, float64(1), dp.Min(), 0.01)
+					assert.InDelta(t, float64(1), dp.Max(), 0.01)
+					{{- else }}
 					assert.Equal(t, pmetric.NumberDataPointValueType{{ $metric.Data.MetricValueType }}, dp.ValueType())
 					{{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
 					assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
 					{{- else }}
 					assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
+					{{- end }}
 					{{- end }}
 
 					{{- range $i, $attr := $metric.Attributes }}
