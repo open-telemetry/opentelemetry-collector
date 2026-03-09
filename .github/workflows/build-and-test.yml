@@ -141,6 +141,10 @@ jobs:
         run: |
           make crosslink
           git diff -s --exit-code || (echo 'Replace statements are out of date, please run "make crosslink" and commit the changes in this PR.' && exit 1)
+      - name: generate-chloggen-components
+        run: |
+          make generate-chloggen-components
+          git diff --exit-code || (echo '.chloggen/config.yaml is out of date, please run "make generate-chloggen-components" and commit the changes.' && exit 1)
 
   unittest-matrix:
     strategy:

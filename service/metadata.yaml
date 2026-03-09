@@ -204,3 +204,8 @@ feature_gates:
     stage: beta
     from_version: 'v0.111.0'
     reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/pull/11251'
+  - id: telemetry.newPipelineTelemetry
+    description: 'Injects component-identifying scope attributes in internal Collector metrics'
+    stage: alpha
+    from_version: 'v0.123.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/component-universal-telemetry.md'
