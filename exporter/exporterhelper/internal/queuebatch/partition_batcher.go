@@ -38,6 +38,7 @@ type partitionBatcher struct {
 	timer          *time.Timer
 	shutdownCh     chan struct{}
 	logger         *zap.Logger
+	active         bool
 }
 
 func newPartitionBatcher(
@@ -56,6 +57,7 @@ func newPartitionBatcher(
 		consumeFunc: next,
 		shutdownCh:  make(chan struct{}, 1),
 		logger:      logger,
+		active:      true,
 	}
 }
 
@@ -65,7 +67,7 @@ func (qb *partitionBatcher) resetTimer() {
 	}
 }
 
-func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, done queue.Done) {
+func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Request, done queue.Done) {
 	qb.currentBatchMu.Lock()
 
 	if qb.currentBatch == nil {
@@ -192,6 +194,17 @@ func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, do
 	}
 }
 
+func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, done queue.Done) {
+	qb.currentBatchMu.Lock()
+	isActive := qb.active
+	qb.currentBatchMu.Unlock()
+	qb.consumeInternal(ctx, req, done)
+	if !isActive {
+		// Not active then flush else let the timer/Shutdown do it's work.
+		qb.flushCurrentBatchIfNotEmpty()
+	}
+}
+
 // Start starts the goroutine that reads from the queue and flushes asynchronously.
 func (qb *partitionBatcher) Start(context.Context, component.Host) error {
 	if qb.cfg.FlushTimeout <= 0 {
@@ -211,12 +224,24 @@ func (qb *partitionBatcher) Start(context.Context, component.Host) error {
 	return nil
 }
 
-// Shutdown ensures that queue and all Batcher are stopped.
-func (qb *partitionBatcher) Shutdown(context.Context) error {
+// shutdownInternal ensures that queue and all Batcher are stopped.
+func (qb *partitionBatcher) shutdownInternal() {
+	qb.currentBatchMu.Lock()
+	if !qb.active {
+		qb.currentBatchMu.Unlock()
+		return
+	}
+	qb.active = false
+	qb.currentBatchMu.Unlock()
 	close(qb.shutdownCh)
 	// Make sure execute one last flush if necessary.
 	qb.flushCurrentBatchIfNotEmpty()
 	qb.stopWG.Wait()
+}
+
+// Shutdown ensures that queue and all Batcher are stopped.
+func (qb *partitionBatcher) Shutdown(context.Context) error {
+	qb.shutdownInternal()
 	return nil
 }
 
