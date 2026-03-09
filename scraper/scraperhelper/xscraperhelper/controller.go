@@ -118,12 +118,12 @@ func getOptions(options []ControllerOption) controllerOptions {
 }
 
 func scrapeProfiles(c *controller.Controller[xscraper.Profiles], nextConsumer xconsumer.Profiles) {
-	ctx, done := controller.WithScrapeContext(c.Timeout)
+	ctx, done := controller.WithScrapeContext(c.Timeout())
 	defer done()
 
 	profiles := pprofile.NewProfiles()
-	for i := range c.Scrapers {
-		md, err := c.Scrapers[i].ScrapeProfiles(ctx)
+	for i := range c.Scrapers() {
+		md, err := c.Scrapers()[i].ScrapeProfiles(ctx)
 		if err != nil && !scrapererror.IsPartialScrapeError(err) {
 			continue
 		}
