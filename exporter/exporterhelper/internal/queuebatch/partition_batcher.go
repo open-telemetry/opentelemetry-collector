@@ -67,9 +67,10 @@ func (qb *partitionBatcher) resetTimer() {
 	}
 }
 
-func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Request, done queue.Done) {
+// consumeInternal assumes lock is already acquired.
+func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Request, done queue.Done) bool {
 	qb.currentBatchMu.Lock()
-
+	isActive := qb.active
 	if qb.currentBatch == nil {
 		reqList, mergeSplitErr := req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.cfg.Sizer, nil)
 		if mergeSplitErr != nil {
@@ -80,7 +81,7 @@ func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Req
 		if len(reqList) == 0 {
 			done.OnDone(mergeSplitErr)
 			qb.currentBatchMu.Unlock()
-			return
+			return isActive
 		}
 
 		// If more than one flush is required for this request, call done only when all flushes are done.
@@ -115,7 +116,7 @@ func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Req
 			qb.flush(ctx, reqList[i], done)
 		}
 
-		return
+		return isActive
 	}
 
 	reqList, mergeSplitErr := qb.currentBatch.req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.cfg.Sizer, req)
@@ -128,7 +129,7 @@ func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Req
 	if len(reqList) == 0 {
 		done.OnDone(mergeSplitErr)
 		qb.currentBatchMu.Unlock()
-		return
+		return isActive
 	}
 
 	// If more than one flush is required for this request, call done only when all flushes are done.
@@ -192,15 +193,12 @@ func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Req
 	for i := 0; i < len(reqList); i++ {
 		qb.flush(ctx, reqList[i], done)
 	}
+	return isActive
 }
 
 func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, done queue.Done) {
-	qb.currentBatchMu.Lock()
-	isActive := qb.active
-	qb.currentBatchMu.Unlock()
-	qb.consumeInternal(ctx, req, done)
-	if !isActive {
-		// Not active then flush else let the timer/Shutdown do it's work.
+	if !qb.consumeInternal(ctx, req, done) {
+		// Not active partition then flush else let the timer/Shutdown do it's work.
 		qb.flushCurrentBatchIfNotEmpty()
 	}
 }
