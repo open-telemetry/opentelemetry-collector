@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: exporter/debug
+note: "Add printing of metric metadata in detailed verbosity."
+issues: [14667]
+sub_text: "Previously, the debug exporter ignored metric metadata when printing metrics. It is now included in the descriptor output."
