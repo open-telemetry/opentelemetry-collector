@@ -56,7 +56,7 @@ func TestProfileSwitchDictionary(t *testing.T) {
 			}(),
 			dst: func() ProfilesDictionary {
 				d := NewProfilesDictionary()
-				d.StringTable().Append("", "foo")
+				d.StringTable().Append("", "test")
 
 				d.AttributeTable().AppendEmpty()
 				d.AttributeTable().AppendEmpty()
@@ -70,12 +70,12 @@ func TestProfileSwitchDictionary(t *testing.T) {
 			}(),
 			wantDictionary: func() ProfilesDictionary {
 				d := NewProfilesDictionary()
-				d.StringTable().Append("", "foo", "test")
+				d.StringTable().Append("", "test")
 
 				d.AttributeTable().AppendEmpty()
 				d.AttributeTable().AppendEmpty()
 				a := d.AttributeTable().AppendEmpty()
-				a.SetKeyStrindex(2)
+				a.SetKeyStrindex(1)
 				return d
 			}(),
 		},
@@ -280,11 +280,11 @@ func TestProfileSwitchDictionary(t *testing.T) {
 
 				// Order of entries depend on the order of
 				// processing in switchDictionary()
-				p.SampleType().SetTypeStrindex(5)
-				p.SampleType().SetUnitStrindex(6)
+				p.SampleType().SetTypeStrindex(3)
+				p.SampleType().SetUnitStrindex(4)
 
-				p.PeriodType().SetTypeStrindex(3)
-				p.PeriodType().SetUnitStrindex(4)
+				p.PeriodType().SetTypeStrindex(1)
+				p.PeriodType().SetUnitStrindex(2)
 
 				return p
 			}(),
@@ -300,18 +300,16 @@ func TestProfileSwitchDictionary(t *testing.T) {
 				d.StackTable().AppendEmpty()
 
 				a := d.AttributeTable().AppendEmpty()
-				a.SetKeyStrindex(1)
-				a.SetUnitStrindex(2)
+				a.SetKeyStrindex(7)
+				a.SetUnitStrindex(8)
 				a.Value().SetStr("AnyValue")
 
 				// Order of entries depend on the order of
 				// processing in switchDictionary()
-				d.StringTable().Append("attribute-key")  // 1
-				d.StringTable().Append("attribute-unit") // 2
-				d.StringTable().Append("period-type")    // 3
-				d.StringTable().Append("period-unit")    // 4
-				d.StringTable().Append("sample-type")    // 5
-				d.StringTable().Append("sample-unit")    // 6
+				d.StringTable().Append("period-type") // 1
+				d.StringTable().Append("period-unit") // 2
+				d.StringTable().Append("sample-type") // 3
+				d.StringTable().Append("sample-unit") // 4
 				return d
 			}(),
 		},

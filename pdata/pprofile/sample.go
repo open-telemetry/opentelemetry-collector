@@ -14,10 +14,6 @@ func (ms Sample) switchDictionary(src, dst ProfilesDictionary) error {
 		}
 
 		attr := src.AttributeTable().At(int(v))
-		err := attr.switchDictionary(src, dst)
-		if err != nil {
-			return fmt.Errorf("couldn't switch dictionary for attribute %d: %w", i, err)
-		}
 		idx, err := SetAttribute(dst.AttributeTable(), attr)
 		if err != nil {
 			return fmt.Errorf("couldn't set attribute %d: %w", i, err)
