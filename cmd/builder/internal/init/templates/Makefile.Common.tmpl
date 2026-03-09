@@ -1,0 +1,62 @@
+GOOS=$(shell go env GOOS)
+GOARCH=$(shell go env GOARCH)
+
+GOTESTSUM=go tool gotest.tools/gotestsum
+GOTESTSUM_OPT=--packages="./..."
+GOTEST_OPT?=$(GOTEST_RACE_OPT) -timeout 900s -parallel 4
+# On Windows arm64 `-race` is not enabled
+ifneq ($(GOOS)-$(GOARCH),windows-arm64)
+GOTEST_OPT+=-race
+endif
+
+DOCKERCMD?=docker
+SRC_ROOT:=$(shell git rev-parse --show-toplevel)
+ALL_SRC_AND_DOC_CMD := find . -type f \( -name "*.md" -o -name "*.go" -o -name "*.yaml" \) | sort
+
+.PHONY: test
+test:
+	$(GOTESTSUM) $(GOTESTSUM_OPT) -- $(GOTEST_OPT)
+
+.PHONY: test-with-cover
+test-with-cover:
+	mkdir -p $(CURDIR)/coverage/unit
+	$(GOTESTSUM) $(GOTESTSUM_OPT) -- $(GOTEST_OPT) -cover -covermode=atomic -args -test.gocoverdir="$(CURDIR)/coverage/unit"
+
+.PHONY: fmt
+fmt:
+	go tool mvdan.cc/gofumpt -l -w -extra .
+	go tool golang.org/x/tools/cmd/goimports -w -local {{.Name}} ./
+
+.PHONY: gci
+gci:
+	go tool github.com/daixiang0/gci write -s standard -s default -s \
+	    "prefix({{.Name}})" $$($(ALL_SRC_AND_DOC_CMD))
+
+.PHONY: tidy
+tidy:
+	rm -rf go.sum
+	go mod tidy -compat=$(GO_COMPAT_VERSION)
+
+.PHONY: checklinks
+checklinks:
+	command -v $(DOCKERCMD) >/dev/null 2>&1 || { echo >&2 "$(DOCKERCMD) not installed. Install before continuing"; exit 1; }
+	$(DOCKERCMD) run -w /home/repo --rm \
+		--mount 'type=bind,source='$(CURDIR)',target=/home/repo' \
+		--mount 'type=bind,source='$(SRC_ROOT)/lychee.toml',target=/lychee.toml' \
+		lycheeverse/lychee \
+		--config /lychee.toml \
+		--root-dir /home/repo \
+		-v \
+		--no-progress './**/*.md'
+
+.PHONY: go-generate
+go-generate:
+ifeq ($(CURDIR),$(SRC_ROOT))
+	$(MAKE) for-all CMD="go generate ./..."
+	$(MAKE) for-all-target TARGET="fmt"
+	$(MAKE) for-all-target TARGET="gci"
+else
+	go generate ./...
+	$(MAKE) fmt
+	$(MAKE) gci
+endif

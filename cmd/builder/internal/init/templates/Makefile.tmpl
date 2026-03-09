@@ -1,9 +1,13 @@
+include ./Makefile.Common
+
 GOMODULES := $(shell find . -mindepth 2 \
 							 -type f \
 							 -name "go.mod" \
 							 -not -path "./internal/tools/*" \
 							 -exec dirname {} \; | sort )
+GO_COMPAT_VERSION = $(shell grep '^go ' go.mod | awk '{print $$2}')
 
+ALL_MODS := $(shell find . -type f -name "go.mod" -not -path "./build/collector/*" -exec dirname {} \;)
 
 .PHONY: generate
 generate:
@@ -14,3 +18,21 @@ generate:
 run: generate
 	@cd build/collector && \
 	./{{.Name}} --config ../../config.yaml
+
+.PHONY: for-all
+for-all:
+	@set -e; for dir in $(ALL_MODS); do \
+	  (cd "$${dir}" && \
+	  	echo "running $(CMD) in $${dir}" && \
+	 	$(CMD) ); \
+	done
+
+# Define a delegation target for each module
+.PHONY: $(ALL_MODS)
+$(ALL_MODS):
+	@echo "Running target '$(TARGET)' in module '$@' as part of group '$(GROUP)'"
+	$(MAKE) --no-print-directory -C $@ $(TARGET)
+
+# Trigger each module's delegation target
+.PHONY: for-all-target
+for-all-target: $(ALL_MODS)

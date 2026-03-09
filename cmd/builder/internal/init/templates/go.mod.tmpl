@@ -2,4 +2,10 @@ module {{.Name}}
 
 go 1.25
 
-tool go.opentelemetry.io/collector/cmd/builder
+tool (
+	github.com/daixiang0/gci
+	go.opentelemetry.io/collector/cmd/builder
+	golang.org/x/tools/cmd/goimports
+	gotest.tools/gotestsum
+	mvdan.cc/gofumpt
+)

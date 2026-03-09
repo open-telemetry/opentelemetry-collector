@@ -69,34 +69,21 @@ func run(path string) error {
 		BetaVersion:   builder.DefaultBetaOtelColVersion,
 	}
 
-	err = writeTemplate(path, "manifest.yaml", meta)
-	if err != nil {
-		return fmt.Errorf("failed writing manifest: %w", err)
-	}
-
-	err = writeTemplate(path, ".gitignore", meta)
-	if err != nil {
-		return fmt.Errorf("failed writing gitignore: %w", err)
-	}
-
-	err = writeTemplate(path, "README.md", meta)
-	if err != nil {
-		return fmt.Errorf("failed writing README: %w", err)
-	}
-
-	err = writeTemplate(path, "go.mod", meta)
-	if err != nil {
-		return fmt.Errorf("failed writing go.mod: %w", err)
-	}
-
-	err = writeTemplate(path, "Makefile", meta)
-	if err != nil {
-		return fmt.Errorf("failed writing Makefile: %w", err)
-	}
-
-	err = writeTemplate(path, "config.yaml", meta)
-	if err != nil {
-		return fmt.Errorf("failed writing config.yaml: %w", err)
+	for _, fn := range []string{
+		"manifest.yaml",
+		".gitignore",
+		"README.md",
+		"go.mod",
+		"Makefile.Common",
+		"Makefile",
+		"config.yaml",
+		"empty_test.go",
+		"lychee.toml",
+	} {
+		err = writeTemplate(path, fn, meta)
+		if err != nil {
+			return fmt.Errorf("failed writing %s: %w", fn, err)
+		}
 	}
 
 	err = os.MkdirAll(filepath.Join(path, "build"), 0o750)
@@ -107,6 +94,11 @@ func run(path string) error {
 	err = runTidy(path)
 	if err != nil {
 		return fmt.Errorf("failed running go mod tidy: %w", err)
+	}
+
+	err = runGitInit(path)
+	if err != nil {
+		return fmt.Errorf("failed running git init: %w", err)
 	}
 
 	return nil
@@ -135,6 +127,16 @@ func executeTemplate(tmplFile string, m metadata) ([]byte, error) {
 
 func runTidy(path string) error {
 	cmd := exec.Command("go", "mod", "tidy")
+	cmd.Dir = path
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%w (%s)", err, string(output))
+	}
+	return nil
+}
+
+func runGitInit(path string) error {
+	cmd := exec.Command("git", "init")
 	cmd.Dir = path
 	output, err := cmd.CombinedOutput()
 	if err != nil {
