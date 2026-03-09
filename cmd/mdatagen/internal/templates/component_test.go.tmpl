@@ -23,20 +23,32 @@ import (
 	{{- if isExporter }}
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	{{ if supportsProfiles }}
+	"go.opentelemetry.io/collector/exporter/xexporter"
+	{{- end }}
 	{{- end }}
 	{{- if isProcessor }}
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
+	{{ if supportsProfiles }}
+	"go.opentelemetry.io/collector/processor/xprocessor"
+	{{- end }}
 	{{- end }}
 	{{- if isReceiver }}
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	{{ if supportsProfiles }}
+	"go.opentelemetry.io/collector/receiver/xreceiver"
+	{{- end }}
 	{{- end }}
 	{{- if isScraper }}
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapertest"
+	{{ if supportsProfiles }}
+	"go.opentelemetry.io/collector/scraper/xscraper"
+	{{- end }}
 	{{- end }}
 	{{- if isExtension }}
 	"go.opentelemetry.io/collector/extension/extensiontest"
@@ -44,6 +56,9 @@ import (
 	{{- if isConnector }}
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
+	{{ if supportsProfiles }}
+	"go.opentelemetry.io/collector/connector/xconnector"
+	{{- end }}
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pipeline"

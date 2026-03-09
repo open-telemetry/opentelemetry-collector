@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapertest"
+
+	"go.opentelemetry.io/collector/scraper/xscraper"
 )
 
 var typ = component.MustNewType("sample")
@@ -45,6 +47,13 @@ func TestComponentLifecycle(t *testing.T) {
 			name: "metrics",
 			createFn: func(ctx context.Context, set scraper.Settings, cfg component.Config) (component.Component, error) {
 				return factory.CreateMetrics(ctx, set, cfg)
+			},
+		},
+
+		{
+			name: "profiles",
+			createFn: func(ctx context.Context, set scraper.Settings, cfg component.Config) (component.Component, error) {
+				return factory.(xscraper.Factory).CreateProfiles(ctx, set, cfg)
 			},
 		},
 	}

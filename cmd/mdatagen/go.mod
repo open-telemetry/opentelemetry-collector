@@ -14,6 +14,7 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.53.0
 	go.opentelemetry.io/collector/connector v0.147.0
 	go.opentelemetry.io/collector/connector/connectortest v0.147.0
+	go.opentelemetry.io/collector/connector/xconnector v0.147.0
 	go.opentelemetry.io/collector/consumer v1.53.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.147.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.147.0
@@ -22,14 +23,17 @@ require (
 	go.opentelemetry.io/collector/pdata v1.53.0
 	go.opentelemetry.io/collector/pdata/xpdata v0.147.0
 	go.opentelemetry.io/collector/pipeline v1.53.0
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.147.0
 	go.opentelemetry.io/collector/processor v1.53.0
 	go.opentelemetry.io/collector/processor/processortest v0.147.0
+	go.opentelemetry.io/collector/processor/xprocessor v0.147.0
 	go.opentelemetry.io/collector/receiver v1.53.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.147.0
 	go.opentelemetry.io/collector/receiver/xreceiver v0.147.0
 	go.opentelemetry.io/collector/scraper v0.147.0
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.147.0
 	go.opentelemetry.io/collector/scraper/scrapertest v0.147.0
+	go.opentelemetry.io/collector/scraper/xscraper v0.147.0
 	go.opentelemetry.io/collector/service/hostcapabilities v0.147.0
 	go.opentelemetry.io/otel v1.41.0
 	go.opentelemetry.io/otel/metric v1.41.0
@@ -80,7 +84,6 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.53.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.53.0 // indirect
 	go.opentelemetry.io/collector/confmap/xconfmap v0.147.0 // indirect
-	go.opentelemetry.io/collector/connector/xconnector v0.147.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.147.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.53.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.147.0 // indirect
@@ -88,8 +91,6 @@ require (
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.147.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.147.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.147.0 // indirect
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.147.0 // indirect
-	go.opentelemetry.io/collector/processor/xprocessor v0.147.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.147.0 // indirect
 	go.opentelemetry.io/collector/service v0.147.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.66.0 // indirect
@@ -237,3 +238,5 @@ replace go.opentelemetry.io/collector/config/confignet => ../../config/confignet
 replace go.opentelemetry.io/collector/receiver/receiverhelper => ../../receiver/receiverhelper
 
 replace go.opentelemetry.io/collector/scraper/scraperhelper => ../../scraper/scraperhelper
+
+replace go.opentelemetry.io/collector/scraper/xscraper => ../../scraper/xscraper
