@@ -13,6 +13,7 @@ import (
 
 	"github.com/go-viper/mapstructure/v2"
 
+	"go.opentelemetry.io/collector/confmap/internal/metadata"
 	"go.opentelemetry.io/collector/confmap/internal/third_party/composehook"
 )
 
@@ -99,7 +100,7 @@ func useExpandValue() mapstructure.DecodeHookFuncType {
 	) (any, error) {
 		if exp, ok := data.(ExpandedValue); ok {
 			var useOriginal bool
-			if NewExpandedValueSanitizer.IsEnabled() {
+			if metadata.ConfmapNewExpandedValueSanitizerFeatureGate.IsEnabled() {
 				// Check if the target field is string, *string, **string, etc.
 				baseType := to
 				pointed := false
@@ -127,7 +128,7 @@ func useExpandValue() mapstructure.DecodeHookFuncType {
 			return v, nil
 		}
 
-		if !NewExpandedValueSanitizer.IsEnabled() {
+		if !metadata.ConfmapNewExpandedValueSanitizerFeatureGate.IsEnabled() {
 			switch to.Kind() {
 			case reflect.Array, reflect.Slice, reflect.Map:
 				if isStringyStructure(to) {
