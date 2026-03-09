@@ -25,6 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/confighttp/internal/metadata"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/featuregate"
 )
@@ -153,7 +154,7 @@ func TestHTTPClientCompression(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.NoError(t, featuregate.GlobalRegistry().Set(enableFramedSnappy.ID(), tt.framedSnappyEnabled))
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConfighttpFramedSnappyFeatureGate.ID(), tt.framedSnappyEnabled))
 
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				body, err := io.ReadAll(r.Body)
@@ -353,7 +354,7 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.NoError(t, featuregate.GlobalRegistry().Set(enableFramedSnappy.ID(), tt.framedSnappyEnabled))
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConfighttpFramedSnappyFeatureGate.ID(), tt.framedSnappyEnabled))
 
 			srv := httptest.NewServer(httpContentDecompressor(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				body, err := io.ReadAll(r.Body)
@@ -677,7 +678,7 @@ func TestDecompressorAvoidDecompressionBomb(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// t.Parallel() // TODO: Re-enable parallel tests once feature gate is removed. We can't parallelize since registry is shared.
-			require.NoError(t, featuregate.GlobalRegistry().Set(enableFramedSnappy.ID(), tc.framedSnappyEnabled))
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConfighttpFramedSnappyFeatureGate.ID(), tc.framedSnappyEnabled))
 
 			h := httpContentDecompressor(
 				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

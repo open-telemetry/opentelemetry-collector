@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -478,11 +479,11 @@ func (rl AttributeRequirementLevel) String() string {
 }
 
 func (mn AttributeName) Render() (string, error) {
-	return FormatIdentifier(string(mn), true)
+	return helpers.FormatIdentifier(string(mn), true)
 }
 
 func (mn AttributeName) RenderUnexported() (string, error) {
-	return FormatIdentifier(string(mn), false)
+	return helpers.FormatIdentifier(string(mn), false)
 }
 
 // ValueType defines an attribute value type.

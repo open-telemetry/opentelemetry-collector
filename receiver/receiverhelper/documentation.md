@@ -115,3 +115,13 @@ The number of requests performed.
 | Name | Description | Values | Semantic Convention |
 | ---- | ----------- | ------ | ------------------- |
 | outcome | The outcome of receiver requests | Str: ``success``, ``refused``, ``failure`` | - |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `receiverhelper.newReceiverMetrics` | alpha | Controls whether receivers emit new metrics and span attributes to distinguish downstream errors from internal errors. This is a breaking change for the semantics of the otelcol_receiver_refused_metric_points,  otelcol_receiver_refused_log_records and otelcol_receiver_refused_spans. | v0.138.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/pull/12802) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
