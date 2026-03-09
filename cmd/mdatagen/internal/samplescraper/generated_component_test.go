@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapertest"
-
 	"go.opentelemetry.io/collector/scraper/xscraper"
 )
 
