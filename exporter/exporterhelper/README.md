@@ -45,6 +45,7 @@ batch settings, use `batch: {}`. When `batch` is defined, the settings are:
 - `min_size` (default = 8192): the minimum size of a batch; should be less than or equal to the `sending_queue::queue_size` if `sending_queue::batch::sizer` matches `sending_queue::sizer`.
 - `max_size` (default = 0): the maximum size of a batch, enables batch splitting. The maximum size of a batch should be greater than or equal to the minimum size of a batch. If set to zero, there is no maximum size;
 - `sizer`: see below.
+- `partition`: see below.
 
 The `batch::sizer` field is given special treatment because the queue itself also defines a `sizer`. This field supports using different size limits for the queue and batch-related logic. 
 
@@ -56,8 +57,6 @@ Available `batch::sizer` options:
 
 - `items`: number of the smallest parts of each signal (spans, metric data points, log records);
 - `bytes`: the size of serialized data in bytes (the least performant option).
-
-- `partition`: see below.
 
 The `batch::partition` configuration defines the partitioning of the batches.
 

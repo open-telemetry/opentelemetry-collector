@@ -493,21 +493,21 @@ func (g *Graph) ShutdownAll(ctx context.Context, reporter status.Reporter) error
 }
 
 func (g *Graph) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
-	exportersMap := make(map[pipeline.Signal]map[component.ID]component.Component)
-	exportersMap[pipeline.SignalTraces] = make(map[component.ID]component.Component)
-	exportersMap[pipeline.SignalMetrics] = make(map[component.ID]component.Component)
-	exportersMap[pipeline.SignalLogs] = make(map[component.ID]component.Component)
-	exportersMap[xpipeline.SignalProfiles] = make(map[component.ID]component.Component)
+	exporters := make(map[pipeline.Signal]map[component.ID]component.Component)
+	exporters[pipeline.SignalTraces] = make(map[component.ID]component.Component)
+	exporters[pipeline.SignalMetrics] = make(map[component.ID]component.Component)
+	exporters[pipeline.SignalLogs] = make(map[component.ID]component.Component)
+	exporters[xpipeline.SignalProfiles] = make(map[component.ID]component.Component)
 
 	for _, pg := range g.pipelines {
 		for _, expNode := range pg.exporters {
 			// Skip connectors, otherwise individual components can introduce cycles
 			if expNode, ok := g.componentGraph.Node(expNode.ID()).(*exporterNode); ok {
-				exportersMap[expNode.pipelineType][expNode.componentID] = expNode.Component
+				exporters[expNode.pipelineType][expNode.componentID] = expNode.Component
 			}
 		}
 	}
-	return exportersMap
+	return exporters
 }
 
 func cycleErr(err error, cycles [][]graph.Node) error {

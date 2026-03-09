@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.yaml.in/yaml/v3"
 
+	"go.opentelemetry.io/collector/confmap/internal/metadata"
 	"go.opentelemetry.io/collector/featuregate"
 )
 
@@ -1016,7 +1017,7 @@ func TestRecursiveUnmarshaling(t *testing.T) {
 }
 
 func testExpandedValue(t *testing.T, newSanitizer bool) {
-	err := featuregate.GlobalRegistry().Set(NewExpandedValueSanitizer.ID(), newSanitizer)
+	err := featuregate.GlobalRegistry().Set(metadata.ConfmapNewExpandedValueSanitizerFeatureGate.ID(), newSanitizer)
 	require.NoError(t, err)
 
 	cm := NewFromStringMap(map[string]any{
@@ -1075,14 +1076,14 @@ func testExpandedValue(t *testing.T, newSanitizer bool) {
 }
 
 func TestExpandedValue(t *testing.T) {
-	before := NewExpandedValueSanitizer.IsEnabled()
+	before := metadata.ConfmapNewExpandedValueSanitizerFeatureGate.IsEnabled()
 	t.Run("old sanitizer", func(t *testing.T) {
 		testExpandedValue(t, false)
 	})
 	t.Run("new sanitizer", func(t *testing.T) {
 		testExpandedValue(t, true)
 	})
-	err := featuregate.GlobalRegistry().Set(NewExpandedValueSanitizer.ID(), before)
+	err := featuregate.GlobalRegistry().Set(metadata.ConfmapNewExpandedValueSanitizerFeatureGate.ID(), before)
 	require.NoError(t, err)
 }
 

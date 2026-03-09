@@ -9,7 +9,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 
 	"google.golang.org/grpc"
 
@@ -38,10 +37,10 @@ type Config struct {
 // returns the HTTP client wrapper function. If a middleware is not
 // found, an error is returned.  This should only be used by HTTP
 // clients.
-func (m Config) GetHTTPClientRoundTripper(_ context.Context, extensions map[component.ID]component.Component) (func(http.RoundTripper) (http.RoundTripper, error), error) {
+func (m Config) GetHTTPClientRoundTripper(ctx context.Context, extensions map[component.ID]component.Component) (extensionmiddleware.WrapHTTPRoundTripperFunc, error) {
 	if ext, found := extensions[m.ID]; found {
 		if client, ok := ext.(extensionmiddleware.HTTPClient); ok {
-			return client.GetHTTPRoundTripper, nil
+			return client.GetHTTPRoundTripper(ctx)
 		}
 		return nil, errNotHTTPClient
 	}
@@ -53,10 +52,10 @@ func (m Config) GetHTTPClientRoundTripper(_ context.Context, extensions map[comp
 // returns the http.Handler wrapper function. If a middleware is not
 // found, an error is returned.  This should only be used by HTTP
 // servers.
-func (m Config) GetHTTPServerHandler(_ context.Context, extensions map[component.ID]component.Component) (func(http.Handler) (http.Handler, error), error) {
+func (m Config) GetHTTPServerHandler(ctx context.Context, extensions map[component.ID]component.Component) (extensionmiddleware.WrapHTTPHandlerFunc, error) {
 	if ext, found := extensions[m.ID]; found {
 		if server, ok := ext.(extensionmiddleware.HTTPServer); ok {
-			return server.GetHTTPHandler, nil
+			return server.GetHTTPHandler(ctx)
 		}
 		return nil, errNotHTTPServer
 	}
