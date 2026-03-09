@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
@@ -59,6 +60,7 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return typeName
 		},
+		"hasDefDefaults": HasDefDefaults,
 	}
 }
 
@@ -167,39 +169,25 @@ func MapDefaultValue(md *ConfigMetadata) (string, error) {
 		return "", errors.New("nil ConfigMetadata or Default")
 	}
 
-	if md.Ref != "" || md.GoType != "" {
-		// Custom types or refs might not have an easy textual representation of their literal
-		// unless they are primitive go types or durations, but let's try our best.
-		// For strings/durations:
-		if md.Type == "string" && md.Format == "duration" {
-			d, err := time.ParseDuration(fmt.Sprintf("%v", md.Default))
-			if err != nil {
-				return "", err
-			}
-			return fmt.Sprintf("time.Duration(%d) /* %s */", d, md.Default), nil
+	if md.Type == "string" && md.Format == "duration" {
+		d, err := time.ParseDuration(fmt.Sprintf("%v", md.Default))
+		if err != nil {
+			return "", err
 		}
+		return fmt.Sprintf("time.Duration(%d) /* %s */", d, md.Default), nil
 	}
 
 	switch md.Type {
 	case "string":
-		if md.Format == "duration" {
-			d, err := time.ParseDuration(fmt.Sprintf("%v", md.Default))
-			if err != nil {
-				return "", err
-			}
-			return fmt.Sprintf("time.Duration(%d) /* %s */", d, md.Default), nil
-		}
 		return fmt.Sprintf("%q", md.Default), nil
-	case "integer":
+	case "integer", "number", "boolean":
 		return fmt.Sprintf("%v", md.Default), nil
-	case "number":
-		return fmt.Sprintf("%v", md.Default), nil
-	case "boolean":
-		return fmt.Sprintf("%v", md.Default), nil
-	case "array":
-		// Handle default for slices? Usually they're represented as Go slices.
-		// For now we can print them if they're simple literals
-		return fmt.Sprintf("%#v", md.Default), nil
+	case "array", "object":
+		// Handle default for slices and maps. Usually they're represented as Go slices/maps.
+		// For now we can print them if they're simple literals, and substitute interface {} with any.
+		s := fmt.Sprintf("%#v", md.Default)
+		s = strings.ReplaceAll(s, "interface {}", "any")
+		return s, nil
 	default:
 		return "", fmt.Errorf("unsupported type for default value: %q", md.Type)
 	}
@@ -331,4 +319,31 @@ func collectDefs(md *ConfigMetadata, defs map[string]*ConfigMetadata) {
 			}
 		}
 	}
+}
+
+// HasDefDefaults recursively checks if a property or its nested properties have any default values defined
+func HasDefDefaults(md *ConfigMetadata) bool {
+	if md == nil {
+		return false
+	}
+
+	if md.Type == "object" && md.Properties != nil {
+		for _, prop := range md.Properties {
+			if prop.Default != nil {
+				return true
+			}
+			if HasDefDefaults(prop) {
+				return true
+			}
+		}
+	} else if md.Type == "array" && md.Items != nil {
+		if md.Items.Default != nil {
+			return true
+		}
+		if HasDefDefaults(md.Items) {
+			return true
+		}
+	}
+
+	return false
 }

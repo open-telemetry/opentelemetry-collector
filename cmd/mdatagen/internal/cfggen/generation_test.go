@@ -586,6 +586,76 @@ func TestExtractImports_NilInput(t *testing.T) {
 	require.Nil(t, result)
 }
 
+func TestMapDefaultValue_Arrays(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected string
+	}{
+		{
+			name: "array of strings",
+			metadata: &ConfigMetadata{
+				Type:    "array",
+				Default: []any{"a", "b"},
+			},
+			expected: "[]any{\"a\", \"b\"}",
+		},
+		{
+			name: "array of ints",
+			metadata: &ConfigMetadata{
+				Type:    "array",
+				Default: []any{1, 2, 3},
+			},
+			expected: "[]any{1, 2, 3}",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := MapDefaultValue(tt.metadata)
+			require.NoError(t, err)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestMapDefaultValue_Objects(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected string
+	}{
+		{
+			name: "map of strings",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Default: map[string]any{
+					"key1": "value1",
+				},
+			},
+			expected: "map[string]any{\"key1\":\"value1\"}",
+		},
+		{
+			name: "map of ints",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Default: map[string]any{
+					"key1": 1,
+				},
+			},
+			expected: "map[string]any{\"key1\":1}",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := MapDefaultValue(tt.metadata)
+			require.NoError(t, err)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 func TestFormatTypeName_InternalReferences(t *testing.T) {
 	tests := []struct {
 		name     string

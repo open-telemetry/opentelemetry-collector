@@ -56,17 +56,15 @@ type {{ $defName | publicVar }} struct {
     {{- if ne (mapDefaultValue $prop) "" }}{{- $hasDefaults = true }}{{- end }}
 {{- end }}
 {{- if $hasDefaults }}
-func (c *{{ $defName | publicVar }}) Unmarshal(componentParser *confmap.Conf) error {
-	if componentParser == nil {
-		return nil
-	}
+func default{{ $defName | publicVar }}() {{ $defName | publicVar }} {
+	return {{ $defName | publicVar }}{
 {{- range $propName, $prop := $def.Properties }}
     {{- $defVal := mapDefaultValue $prop }}
     {{- if ne $defVal "" }}
-	c.{{ $propName | publicVar }} = {{ $defVal }}
+		{{ $propName | publicVar }}: {{ $defVal }},
     {{- end }}
 {{- end }}
-	return componentParser.Unmarshal(c)
+	}
 }
 {{- end }}
 {{ end }}
@@ -82,19 +80,19 @@ type Config struct {
 
 {{- $hasDefaultsConfig := false }}
 {{- range $propName, $prop := .Metadata.Config.Properties }}
-    {{- if ne (mapDefaultValue $prop) "" }}{{- $hasDefaultsConfig = true }}{{- end }}
+    {{- if or (ne (mapDefaultValue $prop) "") (hasDefDefaults $prop) }}{{- $hasDefaultsConfig = true }}{{- end }}
 {{- end }}
 {{- if $hasDefaultsConfig }}
-func (c *Config) Unmarshal(componentParser *confmap.Conf) error {
-	if componentParser == nil {
-		return nil
-	}
+func createDefaultConfig() component.Config {
+	return &Config{
 {{- range $propName, $prop := .Metadata.Config.Properties }}
     {{- $defVal := mapDefaultValue $prop }}
     {{- if ne $defVal "" }}
-	c.{{ $propName | publicVar }} = {{ $defVal }}
+		{{ $propName | publicVar }}: {{ $defVal }},
+    {{- else if hasDefDefaults $prop }}
+        {{ $propName | publicVar }}: default{{ $prop.Type | publicVar }}(),
     {{- end }}
 {{- end }}
-	return componentParser.Unmarshal(c)
+	}
 }
 {{- end }}

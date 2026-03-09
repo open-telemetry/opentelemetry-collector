@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver/internal/metadata"
-	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/component"
 )
 
 // Config defines the configuration for Sample Receiver component.
@@ -18,11 +18,9 @@ type Config struct {
 	Timeout time.Duration `mapstructure:"timeout"`
 }
 
-func (c *Config) Unmarshal(componentParser *confmap.Conf) error {
-	if componentParser == nil {
-		return nil
+func createDefaultConfig() component.Config {
+	return &Config{
+		Endpoint: "localhost:12345",
+		Timeout:  time.Duration(10000000000), /* 10s */
 	}
-	c.Endpoint = "localhost:12345"
-	c.Timeout = time.Duration(10000000000) /* 10s */
-	return componentParser.Unmarshal(c)
 }
