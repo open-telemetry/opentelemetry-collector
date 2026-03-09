@@ -67,7 +67,6 @@ func (qb *partitionBatcher) resetTimer() {
 	}
 }
 
-// consumeInternal assumes lock is already acquired.
 func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Request, done queue.Done) bool {
 	qb.currentBatchMu.Lock()
 	isActive := qb.active
