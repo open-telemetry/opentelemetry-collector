@@ -56,10 +56,12 @@ func TestSampleSwitchDictionary(t *testing.T) {
 			}(),
 			dst: func() ProfilesDictionary {
 				d := NewProfilesDictionary()
-				d.StringTable().Append("", "foo")
+				d.StringTable().Append("", "test")
 
 				d.AttributeTable().AppendEmpty()
 				d.AttributeTable().AppendEmpty()
+				a := d.AttributeTable().AppendEmpty()
+				a.SetKeyStrindex(1)
 				return d
 			}(),
 
@@ -70,12 +72,12 @@ func TestSampleSwitchDictionary(t *testing.T) {
 			}(),
 			wantDictionary: func() ProfilesDictionary {
 				d := NewProfilesDictionary()
-				d.StringTable().Append("", "foo", "test")
+				d.StringTable().Append("", "test")
 
 				d.AttributeTable().AppendEmpty()
 				d.AttributeTable().AppendEmpty()
 				a := d.AttributeTable().AppendEmpty()
-				a.SetKeyStrindex(2)
+				a.SetKeyStrindex(1)
 				return d
 			}(),
 		},
@@ -221,8 +223,13 @@ func TestSampleSwitchDictionary(t *testing.T) {
 			}(),
 			dst: func() ProfilesDictionary {
 				d := NewProfilesDictionary()
+				d.LocationTable().AppendEmpty()
+				d.LocationTable().AppendEmpty().SetAddress(2)
+
 				d.StackTable().AppendEmpty()
 				d.StackTable().AppendEmpty()
+				s := d.StackTable().AppendEmpty()
+				s.LocationIndices().Append(1)
 				return d
 			}(),
 
@@ -233,12 +240,13 @@ func TestSampleSwitchDictionary(t *testing.T) {
 			}(),
 			wantDictionary: func() ProfilesDictionary {
 				d := NewProfilesDictionary()
+				d.LocationTable().AppendEmpty()
 				d.LocationTable().AppendEmpty().SetAddress(2)
 
 				d.StackTable().AppendEmpty()
 				d.StackTable().AppendEmpty()
 				s := d.StackTable().AppendEmpty()
-				s.LocationIndices().Append(0)
+				s.LocationIndices().Append(1)
 				return d
 			}(),
 		},
