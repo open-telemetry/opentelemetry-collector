@@ -103,12 +103,18 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
+      - name: Setup Node
+        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
+        with:
+          node-version: "20"
       - name: checklicense
         run: make checklicense
       - name: misspell
         run: make misspell
       - name: checkdoc
         run: make checkdoc
+      - name: markdownlint
+        run: make markdownlint
       - name: checkapi
         run: make checkapi
       - name: Check for go mod dependency changes
