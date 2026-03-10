@@ -223,7 +223,7 @@ func DeleteAnyValue(orig *AnyValue, nullable bool) {
 			ProtoPoolAnyValue_BytesValue.Put(ov)
 		}
 	case *AnyValue_StringValueRef:
-		if UseProtoPooling.IsEnabled() {
+		if metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov.StringValueRef = int32(0)
 			ProtoPoolAnyValue_StringValueRef.Put(ov)
 		}
@@ -322,7 +322,7 @@ func CopyAnyValue(dest, src *AnyValue) *AnyValue {
 
 	case *AnyValue_StringValueRef:
 		var ov *AnyValue_StringValueRef
-		if !UseProtoPooling.IsEnabled() {
+		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov = &AnyValue_StringValueRef{}
 		} else {
 			ov = ProtoPoolAnyValue_StringValueRef.Get().(*AnyValue_StringValueRef)
@@ -513,7 +513,7 @@ func (orig *AnyValue) UnmarshalJSON(iter *json.Iterator) {
 		case "stringValueRef", "string_value_ref":
 			{
 				var ov *AnyValue_StringValueRef
-				if !UseProtoPooling.IsEnabled() {
+				if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 					ov = &AnyValue_StringValueRef{}
 				} else {
 					ov = ProtoPoolAnyValue_StringValueRef.Get().(*AnyValue_StringValueRef)
@@ -801,7 +801,7 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			var ov *AnyValue_StringValueRef
-			if !UseProtoPooling.IsEnabled() {
+			if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 				ov = &AnyValue_StringValueRef{}
 			} else {
 				ov = ProtoPoolAnyValue_StringValueRef.Get().(*AnyValue_StringValueRef)
