@@ -47,7 +47,7 @@ require (
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.147.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.147.0
 	go.opentelemetry.io/collector/service v0.147.0
-	go.opentelemetry.io/proto/otlp v1.9.0
+	go.opentelemetry.io/proto/otlp v1.10.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
 	google.golang.org/grpc v1.79.2
