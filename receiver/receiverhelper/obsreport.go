@@ -184,7 +184,7 @@ func (rec *ObsReport) endOp(
 	if err != nil {
 		numAccepted = 0
 		// If gate is enabled, we distinguish between refused and failed.
-		if NewReceiverMetricsGate.IsEnabled() {
+		if metadata.ReceiverhelperNewReceiverMetricsFeatureGate.IsEnabled() {
 			if consumererror.IsDownstream(err) {
 				numRefused = numReceivedItems
 			} else {
@@ -201,7 +201,7 @@ func (rec *ObsReport) endOp(
 	rec.recordMetrics(receiverCtx, signal, numAccepted, numRefused, numFailedErrors)
 
 	// The new otelcol_receiver_requests metric is only emitted when the feature gate is enabled.
-	if NewReceiverMetricsGate.IsEnabled() {
+	if metadata.ReceiverhelperNewReceiverMetricsFeatureGate.IsEnabled() {
 		var outcome string
 		switch {
 		case err == nil:

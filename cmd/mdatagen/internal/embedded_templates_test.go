@@ -31,6 +31,7 @@ func TestEnsureTemplatesLoaded(t *testing.T) {
 			path.Join(rootDir, "resource_test.go.tmpl"):        {},
 			path.Join(rootDir, "config.go.tmpl"):               {},
 			path.Join(rootDir, "config_test.go.tmpl"):          {},
+			path.Join(rootDir, "config.schema.yaml.tmpl"):      {},
 			path.Join(rootDir, "package_test.go.tmpl"):         {},
 			path.Join(rootDir, "readme.md.tmpl"):               {},
 			path.Join(rootDir, "status.go.tmpl"):               {},
@@ -42,6 +43,7 @@ func TestEnsureTemplatesLoaded(t *testing.T) {
 			path.Join(rootDir, "helper.tmpl"):                  {},
 			path.Join(rootDir, "feature_gates.md.tmpl"):        {},
 			path.Join(rootDir, "feature_gates.go.tmpl"):        {},
+			path.Join(rootDir, "config_from_cfggen.go.tmpl"):   {},
 		}
 		count = 0
 	)

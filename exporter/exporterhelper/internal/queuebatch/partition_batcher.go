@@ -6,7 +6,6 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 import (
 	"context"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"go.uber.org/multierr"
@@ -43,9 +42,9 @@ type partitionBatcher struct {
 	timer          *time.Timer
 	shutdownCh     chan struct{}
 	logger         *zap.Logger
-	onEmpty        func() bool  // callback when partition is idle; returns true if partition was removed
-	lastDataTime   time.Time    // tracks when data was last present
-	refCount       atomic.Int64 // tracks in-flight callers holding a reference
+	onEmpty        func()    // callback triggered when partition is idle for given time period.
+	lastDataTime   time.Time // tracks when data was last present
+	active         bool      // indicates if partition is still active i.e timer is running and shutdown is not called yet. If Consume is called on inactive partition then data is flushed sync because timer is not running.
 }
 
 func newPartitionBatcher(
@@ -55,7 +54,7 @@ func newPartitionBatcher(
 	wp *workerPool,
 	next sender.SendFunc[request.Request],
 	logger *zap.Logger,
-	onEmpty func() bool,
+	onEmpty func(),
 ) *partitionBatcher {
 	return &partitionBatcher{
 		cfg:          cfg,
@@ -67,6 +66,7 @@ func newPartitionBatcher(
 		logger:       logger,
 		onEmpty:      onEmpty,
 		lastDataTime: time.Now(),
+		active:       true,
 	}
 }
 
@@ -76,30 +76,9 @@ func (qb *partitionBatcher) resetTimer() {
 	}
 }
 
-// incRef increments the reference count (called when partition is obtained).
-func (qb *partitionBatcher) incRef() {
-	qb.refCount.Add(1)
-}
-
-// decRef decrements the reference count (called after consume completes).
-func (qb *partitionBatcher) decRef() {
-	qb.refCount.Add(-1)
-}
-
-// isRemovable returns true if the partition can be safely removed.
-// Must be called while holding the parent's lock to avoid races.
-func (qb *partitionBatcher) isRemovable() bool {
+func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Request, done queue.Done) bool {
 	qb.currentBatchMu.Lock()
-	defer qb.currentBatchMu.Unlock()
-	return qb.currentBatch == nil && qb.refCount.Load() == 0
-}
-
-func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, done queue.Done) {
-	qb.currentBatchMu.Lock()
-
-	// Update last data time since we're receiving data
-	qb.lastDataTime = time.Now()
-
+	isActive := qb.active
 	if qb.currentBatch == nil {
 		reqList, mergeSplitErr := req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.cfg.Sizer, nil)
 		if mergeSplitErr != nil {
@@ -110,7 +89,7 @@ func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, do
 		if len(reqList) == 0 {
 			done.OnDone(mergeSplitErr)
 			qb.currentBatchMu.Unlock()
-			return
+			return isActive
 		}
 
 		// If more than one flush is required for this request, call done only when all flushes are done.
@@ -145,7 +124,7 @@ func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, do
 			qb.flush(ctx, reqList[i], done)
 		}
 
-		return
+		return isActive
 	}
 
 	reqList, mergeSplitErr := qb.currentBatch.req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.cfg.Sizer, req)
@@ -158,7 +137,7 @@ func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, do
 	if len(reqList) == 0 {
 		done.OnDone(mergeSplitErr)
 		qb.currentBatchMu.Unlock()
-		return
+		return isActive
 	}
 
 	// If more than one flush is required for this request, call done only when all flushes are done.
@@ -222,6 +201,14 @@ func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, do
 	for i := 0; i < len(reqList); i++ {
 		qb.flush(ctx, reqList[i], done)
 	}
+	return isActive
+}
+
+func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, done queue.Done) {
+	if !qb.consumeInternal(ctx, req, done) {
+		// Not active partition then flush else let the timer/Shutdown do it's work.
+		qb.flushCurrentBatchOrRemovePartition()
+	}
 }
 
 // Start starts the goroutine that reads from the queue and flushes asynchronously.
@@ -236,64 +223,72 @@ func (qb *partitionBatcher) Start(context.Context, component.Host) error {
 			case <-qb.shutdownCh:
 				return
 			case <-qb.timer.C:
-				if qb.flushCurrentBatchOrRemovePartition() {
-					return
-				}
+				qb.flushCurrentBatchOrRemovePartition()
 			}
 		}
 	})
 	return nil
 }
 
-// Shutdown ensures that queue and all Batcher are stopped.
-func (qb *partitionBatcher) Shutdown(context.Context) error {
+// shutdownInternal ensures that queue and all Batcher are stopped.
+func (qb *partitionBatcher) shutdownInternal() {
+	qb.currentBatchMu.Lock()
+	if !qb.active {
+		qb.currentBatchMu.Unlock()
+	}
+	qb.active = false
+	qb.currentBatchMu.Unlock()
 	close(qb.shutdownCh)
 	// Make sure execute one last flush if necessary.
 	qb.flushCurrentBatchOrRemovePartition()
 	qb.stopWG.Wait()
+}
+
+// Shutdown ensures that queue and all Batcher are stopped.
+func (qb *partitionBatcher) Shutdown(context.Context) error {
+	qb.shutdownInternal()
 	return nil
 }
 
 // flushCurrentBatchOrRemovePartition flushes the current batch if not empty,
 // or removes the partition from the parent if it's been idle for too long.
 // Returns true if the partition should be removed (and the timer loop should exit).
-func (qb *partitionBatcher) flushCurrentBatchOrRemovePartition() bool {
+func (qb *partitionBatcher) flushCurrentBatchOrRemovePartition() {
 	qb.currentBatchMu.Lock()
 	if qb.currentBatch == nil {
 		// No data to flush - check if idle for too long AND no one holding a reference
 		idleDuration := time.Since(qb.lastDataTime)
-		refCount := qb.refCount.Load()
 
-		if idleDuration >= partitionIdleTimeout && refCount == 0 && qb.onEmpty != nil {
+		if idleDuration >= partitionIdleTimeout && qb.onEmpty != nil {
 			qb.currentBatchMu.Unlock()
-			// onEmpty returns true if partition was actually removed
-			return qb.onEmpty()
+			qb.onEmpty()
+			return
 		}
 		if qb.timer != nil {
 			qb.resetTimer()
 		}
 		qb.currentBatchMu.Unlock()
-		return false
+		return
 	}
 
 	// Has data to flush - update lastDataTime
 	qb.lastDataTime = time.Now()
 	batchToFlush := qb.currentBatch
 	qb.currentBatch = nil
+	// Reset timer while holding the lock to prevent data race with Consume() which
+	// also calls resetTimer() under the same lock.
 	qb.resetTimer()
 	qb.currentBatchMu.Unlock()
-
+	// flush() blocks until successfully started a goroutine for flushing.
 	qb.flush(batchToFlush.ctx, batchToFlush.req, batchToFlush.done)
-	return false
 }
 
 // flush starts a goroutine that calls consumeFunc. It blocks until a worker is available if necessary.
 func (qb *partitionBatcher) flush(ctx context.Context, req request.Request, done queue.Done) {
 	qb.stopWG.Add(1)
-	qb.wp.execute(func() bool {
+	qb.wp.execute(func() {
 		defer qb.stopWG.Done()
 		done.OnDone(qb.consumeFunc(ctx, req))
-		return true
 	})
 }
 
@@ -309,7 +304,7 @@ func newWorkerPool(maxWorkers int) *workerPool {
 	return &workerPool{workers: workers}
 }
 
-func (wp *workerPool) execute(f func() bool) {
+func (wp *workerPool) execute(f func()) {
 	<-wp.workers
 	go func() {
 		defer func() {

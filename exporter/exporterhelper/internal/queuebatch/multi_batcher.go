@@ -50,7 +50,7 @@ func newMultiBatcher(
 	// TODO: make maxActivePartitionsCount configurable
 	cache, err := lru.NewLRU[string, *partitionBatcher](10000, func(_ string, pb *partitionBatcher) {
 		// Flush the partition when evicted
-		mb.wp.execute(pb.flushCurrentBatchOrRemovePartition)
+		mb.wp.execute(pb.shutdownInternal)
 	})
 	if err != nil {
 		return nil, err
@@ -68,7 +68,6 @@ func (mb *multiBatcher) getPartition(ctx context.Context, req request.Request) *
 
 	// Fast path: partition already exists
 	if pb, ok := mb.partitions.Get(key); ok {
-		pb.incRef() // Increment ref count before returning
 		return pb
 	}
 
@@ -76,20 +75,14 @@ func (mb *multiBatcher) getPartition(ctx context.Context, req request.Request) *
 	var newPB *partitionBatcher
 
 	// Create new partition with onEmpty callback to remove from LRU after idle timeout
-	newPB = newPartitionBatcher(mb.cfg, mb.sizer, mb.mergeCtx, mb.wp, mb.consumeFunc, mb.logger, func() bool {
+	newPB = newPartitionBatcher(mb.cfg, mb.sizer, mb.mergeCtx, mb.wp, mb.consumeFunc, mb.logger, func() {
 		mb.lock.Lock()
 		defer mb.lock.Unlock()
 		// Only remove if no one is holding a reference AND partition is empty
-		if newPB.isRemovable() {
-			_ = newPB.Shutdown(ctx)
-			mb.partitions.Remove(key)
-			return true // removed successfully
-		}
-		return false // not removed, someone has a reference
+		mb.partitions.Remove(key)
 	})
 	_ = mb.partitions.Add(key, newPB)
 	_ = newPB.Start(ctx, nil)
-	newPB.incRef() // Increment ref count before returning
 	return newPB
 }
 
@@ -100,7 +93,6 @@ func (mb *multiBatcher) Start(context.Context, component.Host) error {
 func (mb *multiBatcher) Consume(ctx context.Context, req request.Request, done queue.Done) {
 	shard := mb.getPartition(ctx, req)
 	shard.Consume(ctx, req, done)
-	shard.decRef() // Decrement ref count after consume completes
 }
 
 // getActivePartitionsCount is test only method
