@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/internal/memorylimiter v0.147.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
-	google.golang.org/grpc v1.79.1
+	google.golang.org/grpc v1.79.2
 )
 
 require (
