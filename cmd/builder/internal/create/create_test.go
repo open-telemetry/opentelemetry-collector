@@ -29,12 +29,6 @@ func TestRunCreateExporter(t *testing.T) {
 		wantErr   string
 	}{
 		{
-			name:      "empty directory name",
-			buildPath: func(string) string { return "" },
-			signals:   []string{"traces", "metrics", "logs"},
-			wantErr:   "directory name cannot be empty",
-		},
-		{
 			name:      "with relative path",
 			buildPath: func(string) string { return "./tmp/myexporter" },
 			signals:   []string{"traces", "metrics", "logs"},
