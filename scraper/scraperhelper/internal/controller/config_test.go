@@ -70,14 +70,6 @@ func TestScheduleConfigValidate(t *testing.T) {
 			set:    ScheduleConfig{},
 			errVal: `"collection_interval": requires positive value`,
 		},
-		{
-			name: "invalid timeout",
-			set: ScheduleConfig{
-				CollectionInterval: time.Minute,
-				Timeout:            -1 * time.Minute,
-			},
-			errVal: `"timeout": requires positive value`,
-		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()

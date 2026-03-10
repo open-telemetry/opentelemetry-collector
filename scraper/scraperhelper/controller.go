@@ -61,7 +61,7 @@ func NewLogsScheduleForScraper(scraperIndex int, cfg ScheduleConfig, nextConsume
 	return LogsSchedule{
 		Config: cfg,
 		ScrapeFunc: func(c LogsScraperController) {
-			ctx, cancel := WithScrapeContext(cfg.Timeout)
+			ctx, cancel := WithScrapeContext(0)
 			defer cancel()
 			logs, err := c.Scrapers()[scraperIndex].ScrapeLogs(ctx)
 			if err != nil && !scrapererror.IsPartialScrapeError(err) {
@@ -83,7 +83,7 @@ func NewMetricsScheduleForScraper(scraperIndex int, cfg ScheduleConfig, nextCons
 	return MetricsSchedule{
 		Config: cfg,
 		ScrapeFunc: func(c MetricsScraperController) {
-			ctx, cancel := WithScrapeContext(cfg.Timeout)
+			ctx, cancel := WithScrapeContext(0)
 			defer cancel()
 			metrics, err := c.Scrapers()[scraperIndex].ScrapeMetrics(ctx)
 			if err != nil && !scrapererror.IsPartialScrapeError(err) {
@@ -301,8 +301,7 @@ func scrapeMetrics(c *controller.Controller[scraper.Metrics], nextConsumer consu
 }
 
 // WithScrapeContext returns a context with an optional deadline for scrape operations.
-// If timeout is 0, the context has no deadline. Use this in custom schedule ScrapeFuncs
-// with the schedule's Config.Timeout for per-schedule timeouts.
+// If timeout is 0, the context has no deadline.
 func WithScrapeContext(timeout time.Duration) (context.Context, context.CancelFunc) {
 	return controller.WithScrapeContext(timeout)
 }

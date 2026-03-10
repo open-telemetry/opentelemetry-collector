@@ -116,7 +116,7 @@ func NewControllerWithSchedules[T component.Component](
 		schedules: schedulesCopy,
 		done:      make(chan struct{}),
 		obsrecv:   obsrecv,
-		timeout:   0, // not used when schedules are set; each schedule uses its own Config.Timeout
+		timeout:   0, // not used when schedules are set
 	}
 
 	return cs, nil
@@ -200,17 +200,9 @@ func (sc *Controller[T]) startScraping() {
 	})
 }
 
-// runSchedule runs one schedule: initial delay, then ticker loop calling ScrapeFunc.
+// runSchedule runs one schedule: ticker loop calling ScrapeFunc.
 func (sc *Controller[T]) runSchedule(sched *Schedule[T]) {
 	cfg := &sched.Config
-	if cfg.InitialDelay > 0 {
-		select {
-		case <-time.After(cfg.InitialDelay):
-		case <-sc.done:
-			return
-		}
-	}
-
 	ticker := time.NewTicker(cfg.CollectionInterval)
 	defer ticker.Stop()
 

@@ -50,18 +50,11 @@ func (set *ControllerConfig) Validate() (errs error) {
 	return errs
 }
 
-// ScheduleConfig defines the interval and timing for one collection schedule.
+// ScheduleConfig defines the interval for one collection schedule.
 // Receivers can use multiple schedules to collect different metrics or events at different intervals.
 type ScheduleConfig struct {
-	// CollectionInterval sets how frequently this schedule's scraper
-	// should be called and is used as the context timeout to ensure
-	// that scrapers don't exceed the interval.
+	// CollectionInterval sets how frequently this schedule's scraper should be called.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
-	// InitialDelay sets the initial start delay for this schedule;
-	// any non-positive value is assumed to be immediate.
-	InitialDelay time.Duration `mapstructure:"initial_delay"`
-	// Timeout is an optional value used to set this schedule's scraper context deadline.
-	Timeout time.Duration `mapstructure:"timeout"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -70,9 +63,6 @@ type ScheduleConfig struct {
 func (s *ScheduleConfig) Validate() (errs error) {
 	if s.CollectionInterval <= 0 {
 		errs = multierr.Append(errs, fmt.Errorf(`"collection_interval": %w`, errNonPositiveInterval))
-	}
-	if s.Timeout < 0 {
-		errs = multierr.Append(errs, fmt.Errorf(`"timeout": %w`, errNonPositiveInterval))
 	}
 	return errs
 }

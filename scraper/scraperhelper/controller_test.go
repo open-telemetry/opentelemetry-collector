@@ -775,7 +775,6 @@ func TestMetricsControllerWithSchedules(t *testing.T) {
 		{
 			Config: ScheduleConfig{
 				CollectionInterval: 20 * time.Millisecond,
-				InitialDelay:       0,
 			},
 			ScrapeFunc: func(c MetricsScraperController) {
 				ch1 <- struct{}{}
@@ -784,7 +783,6 @@ func TestMetricsControllerWithSchedules(t *testing.T) {
 		{
 			Config: ScheduleConfig{
 				CollectionInterval: 30 * time.Millisecond,
-				InitialDelay:       0,
 			},
 			ScrapeFunc: func(c MetricsScraperController) {
 				ch2 <- struct{}{}
