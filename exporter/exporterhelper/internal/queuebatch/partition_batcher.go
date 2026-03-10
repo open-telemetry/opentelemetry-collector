@@ -254,7 +254,6 @@ func (qb *partitionBatcher) Shutdown(context.Context) error {
 
 // flushCurrentBatchOrRemovePartition flushes the current batch if not empty,
 // or removes the partition from the parent if it's been idle for too long.
-// Returns true if the partition should be removed (and the timer loop should exit).
 func (qb *partitionBatcher) flushCurrentBatchOrRemovePartition() {
 	qb.currentBatchMu.Lock()
 	if qb.currentBatch == nil {
