@@ -71,11 +71,8 @@ func (mb *multiBatcher) getPartition(ctx context.Context, req request.Request) *
 		return pb
 	}
 
-	// Declare newPB first so it can be captured in the closure
-	var newPB *partitionBatcher
-
 	// Create new partition with onEmpty callback to remove from LRU after idle timeout
-	newPB = newPartitionBatcher(mb.cfg, mb.sizer, mb.mergeCtx, mb.wp, mb.consumeFunc, mb.logger, func() {
+	newPB := newPartitionBatcher(mb.cfg, mb.sizer, mb.mergeCtx, mb.wp, mb.consumeFunc, mb.logger, func() {
 		mb.lock.Lock()
 		defer mb.lock.Unlock()
 		mb.partitions.Remove(key)
