@@ -231,6 +231,15 @@ func TestCodeCovID(t *testing.T) {
 			},
 			want: "exporter_file",
 		},
+		{
+			md: Metadata{
+				Type: "file_log_thing",
+				Status: &Status{
+					Class: "exporter",
+				},
+			},
+			want: "exporter_filelogthing",
+		},
 	}
 
 	for _, tt := range tests {

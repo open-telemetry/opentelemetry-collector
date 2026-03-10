@@ -88,7 +88,7 @@ func (md Metadata) GetCodeCovComponentID() string {
 		return md.Status.CodeCovComponentID
 	}
 
-	return strings.ReplaceAll(md.Status.Class+"_"+md.Type, "/", "_")
+	return strings.ReplaceAll(md.Status.Class+"_"+strings.ReplaceAll(md.Type, "_", ""), "/", "_")
 }
 
 func (md Metadata) HasEntities() bool {
