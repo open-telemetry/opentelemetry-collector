@@ -78,7 +78,6 @@ func (mb *multiBatcher) getPartition(ctx context.Context, req request.Request) *
 	newPB = newPartitionBatcher(mb.cfg, mb.sizer, mb.mergeCtx, mb.wp, mb.consumeFunc, mb.logger, func() {
 		mb.lock.Lock()
 		defer mb.lock.Unlock()
-		// Only remove if no one is holding a reference AND partition is empty
 		mb.partitions.Remove(key)
 	})
 	_ = mb.partitions.Add(key, newPB)

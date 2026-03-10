@@ -79,6 +79,7 @@ func (qb *partitionBatcher) resetTimer() {
 func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Request, done queue.Done) bool {
 	qb.currentBatchMu.Lock()
 	isActive := qb.active
+	qb.lastDataTime = time.Now()
 	if qb.currentBatch == nil {
 		reqList, mergeSplitErr := req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.cfg.Sizer, nil)
 		if mergeSplitErr != nil {
