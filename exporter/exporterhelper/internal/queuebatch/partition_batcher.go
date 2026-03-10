@@ -235,6 +235,7 @@ func (qb *partitionBatcher) shutdownInternal() {
 	qb.currentBatchMu.Lock()
 	if !qb.active {
 		qb.currentBatchMu.Unlock()
+		return
 	}
 	qb.active = false
 	qb.currentBatchMu.Unlock()
