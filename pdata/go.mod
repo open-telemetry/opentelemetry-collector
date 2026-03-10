@@ -7,9 +7,9 @@ require (
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/featuregate v1.53.0
 	go.opentelemetry.io/collector/internal/testutil v0.147.0
-	go.opentelemetry.io/proto/slim/otlp v1.9.0
+	go.opentelemetry.io/proto/slim/otlp v1.10.0
 	go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development v0.2.0
-	go.opentelemetry.io/proto/slim/otlp/profiles/v1development v0.2.0
+	go.opentelemetry.io/proto/slim/otlp/profiles/v1development v0.3.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	google.golang.org/grpc v1.79.2
