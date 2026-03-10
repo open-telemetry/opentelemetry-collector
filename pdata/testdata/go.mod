@@ -16,7 +16,6 @@ require (
 	go.opentelemetry.io/proto/slim/otlp v1.10.0 // indirect
 	go.opentelemetry.io/proto/slim/otlp/profiles/v1development v0.3.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
 )
 
 replace go.opentelemetry.io/collector/pdata => ../
