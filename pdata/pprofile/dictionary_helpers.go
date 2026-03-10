@@ -38,11 +38,11 @@ func resolveKeyValueReferences(dict ProfilesDictionary, kvs []internal.KeyValue)
 	for i := range kvs {
 		kv := &kvs[i]
 		// Resolve key_ref if set
-		if kv.KeyRef >= 0 {
-			idx := int(kv.KeyRef)
+		if kv.KeyStrindex >= 0 {
+			idx := int(kv.KeyStrindex)
 			if idx < dict.StringTable().Len() {
 				kv.Key = dict.StringTable().At(idx)
-				// N.b. keep KeyRef set to optimize re-marshaling. This is
+				// N.b. keep KeyStrindex set to optimize re-marshaling. This is
 				// technically a violation of the proto spec, but acceptable
 				// for the in-memory pdata API since keys are immutable.
 			}
@@ -54,8 +54,8 @@ func resolveKeyValueReferences(dict ProfilesDictionary, kvs []internal.KeyValue)
 
 // resolveAnyValueReference resolves string_value_ref in an AnyValue
 func resolveAnyValueReference(dict ProfilesDictionary, anyValue *internal.AnyValue) {
-	if ref, ok := anyValue.Value.(*internal.AnyValue_StringValueRef); ok && ref.StringValueRef != 0 {
-		idx := int(ref.StringValueRef)
+	if ref, ok := anyValue.Value.(*internal.AnyValue_StringValueStrindex); ok && ref.StringValueStrindex != 0 {
+		idx := int(ref.StringValueStrindex)
 		if idx >= 0 && idx < dict.StringTable().Len() {
 			str := dict.StringTable().At(idx)
 			var ov *internal.AnyValue_StringValue
@@ -121,8 +121,8 @@ func convertKeyValueToReferences(getStringIndex func(string) int32, kvs []intern
 		kv := &kvs[i]
 
 		// Convert key to reference
-		if kv.Key != "" && kv.KeyRef == 0 {
-			kv.KeyRef = getStringIndex(kv.Key)
+		if kv.Key != "" && kv.KeyStrindex == 0 {
+			kv.KeyStrindex = getStringIndex(kv.Key)
 			kv.Key = ""
 		}
 
@@ -134,20 +134,20 @@ func convertKeyValueToReferences(getStringIndex func(string) int32, kvs []intern
 // convertAnyValueToReference converts string values to string_value_ref
 func convertAnyValueToReference(getStringIndex func(string) int32, anyValue *internal.AnyValue) {
 	// Skip if already a reference
-	if _, ok := anyValue.Value.(*internal.AnyValue_StringValueRef); ok {
+	if _, ok := anyValue.Value.(*internal.AnyValue_StringValueStrindex); ok {
 		return
 	}
 
 	if strVal, ok := anyValue.Value.(*internal.AnyValue_StringValue); ok && strVal.StringValue != "" {
 		// Convert to reference
 		idx := getStringIndex(strVal.StringValue)
-		var ov *internal.AnyValue_StringValueRef
+		var ov *internal.AnyValue_StringValueStrindex
 		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &internal.AnyValue_StringValueRef{}
+			ov = &internal.AnyValue_StringValueStrindex{}
 		} else {
-			ov = internal.ProtoPoolAnyValue_StringValueRef.Get().(*internal.AnyValue_StringValueRef)
+			ov = internal.ProtoPoolAnyValue_StringValueStrindex.Get().(*internal.AnyValue_StringValueStrindex)
 		}
-		ov.StringValueRef = idx
+		ov.StringValueStrindex = idx
 		anyValue.Value = ov
 	} else if kvList, ok := anyValue.Value.(*internal.AnyValue_KvlistValue); ok && kvList.KvlistValue != nil {
 		convertKeyValueToReferences(getStringIndex, kvList.KvlistValue.Values)

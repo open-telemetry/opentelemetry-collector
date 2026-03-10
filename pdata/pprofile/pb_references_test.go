@@ -44,12 +44,12 @@ func TestMarshalUnmarshalWithReferences(t *testing.T) {
 	foundRef := false
 	for i := 0; i < len(*mapOrig); i++ {
 		kv := (*mapOrig)[i]
-		if kv.KeyRef != 0 {
+		if kv.KeyStrindex != 0 {
 			foundRef = true
 			break
 		}
 		// Check if value is a string reference
-		if ref, ok := kv.Value.Value.(*internal.AnyValue_StringValueRef); ok && ref.StringValueRef != 0 {
+		if ref, ok := kv.Value.Value.(*internal.AnyValue_StringValueStrindex); ok && ref.StringValueStrindex != 0 {
 			foundRef = true
 			break
 		}
