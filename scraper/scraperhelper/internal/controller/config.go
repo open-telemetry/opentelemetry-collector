@@ -49,3 +49,20 @@ func (set *ControllerConfig) Validate() (errs error) {
 	}
 	return errs
 }
+
+// ScheduleConfig defines the interval for one collection schedule.
+// Receivers can use multiple schedules to collect different metrics or events at different intervals.
+type ScheduleConfig struct {
+	// CollectionInterval sets how frequently this schedule's scraper should be called.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+// Validate validates the schedule config.
+func (s *ScheduleConfig) Validate() (errs error) {
+	if s.CollectionInterval <= 0 {
+		errs = multierr.Append(errs, fmt.Errorf(`"collection_interval": %w`, errNonPositiveInterval))
+	}
+	return errs
+}

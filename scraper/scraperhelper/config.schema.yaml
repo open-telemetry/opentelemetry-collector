@@ -18,3 +18,12 @@ $defs:
         type: string
         x-customType: time.Duration
         format: duration
+  schedule_config:
+    description: ScheduleConfig defines the interval for one collection schedule. Used for per-metric or per-event collection_interval.
+    type: object
+    properties:
+      collection_interval:
+        description: CollectionInterval sets how frequently this schedule's scraper should be called.
+        type: string
+        x-customType: time.Duration
+        format: duration

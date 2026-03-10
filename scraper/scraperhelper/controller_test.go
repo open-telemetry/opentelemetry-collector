@@ -766,6 +766,54 @@ func TestNewDefaultControllerConfig(t *testing.T) {
 	require.Equal(t, intControllerConfig, controllerConfig)
 }
 
+func TestMetricsControllerWithSchedules(t *testing.T) {
+	t.Parallel()
+
+	ch1 := make(chan struct{}, 10)
+	ch2 := make(chan struct{}, 10)
+	schedules := []MetricsSchedule{
+		{
+			Config: ScheduleConfig{
+				CollectionInterval: 20 * time.Millisecond,
+			},
+			ScrapeFunc: func(c MetricsScraperController) {
+				ch1 <- struct{}{}
+			},
+		},
+		{
+			Config: ScheduleConfig{
+				CollectionInterval: 30 * time.Millisecond,
+			},
+			ScrapeFunc: func(c MetricsScraperController) {
+				ch2 <- struct{}{}
+			},
+		},
+	}
+
+	scp, err := scraper.NewMetrics(func(context.Context) (pmetric.Metrics, error) {
+		return pmetric.NewMetrics(), nil
+	})
+	require.NoError(t, err)
+
+	r, err := NewMetricsController(
+		nil,
+		receivertest.NewNopSettings(receivertest.NopType),
+		new(consumertest.MetricsSink),
+		AddMetricsScraper(component.MustNewType("scraper"), scp),
+		WithMetricsSchedules(schedules),
+	)
+	require.NoError(t, err)
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, r.Shutdown(context.Background())) }()
+
+	// Wait for initial scrape from both schedules (each runs once on start)
+	<-ch1
+	<-ch2
+	// Wait for at least one more tick from schedule 1 (20ms interval)
+	<-ch1
+	// Both schedules ran with their own tickers
+}
+
 func TestNewMetricsController_ScraperIDInErrorLogs(t *testing.T) {
 	t.Parallel()
 

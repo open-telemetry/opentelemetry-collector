@@ -49,3 +49,36 @@ func TestScrapeControllerSettings(t *testing.T) {
 		})
 	}
 }
+
+func TestScheduleConfigValidate(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name   string
+		set    ScheduleConfig
+		errVal string
+	}{
+		{
+			name: "valid",
+			set: ScheduleConfig{
+				CollectionInterval: time.Minute,
+			},
+			errVal: "",
+		},
+		{
+			name:   "zero interval",
+			set:    ScheduleConfig{},
+			errVal: `"collection_interval": requires positive value`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			err := tc.set.Validate()
+			if tc.errVal == "" {
+				assert.NoError(t, err)
+				return
+			}
+			assert.EqualError(t, err, tc.errVal)
+		})
+	}
+}
