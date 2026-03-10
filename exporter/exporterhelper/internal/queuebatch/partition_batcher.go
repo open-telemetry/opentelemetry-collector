@@ -38,6 +38,7 @@ type partitionBatcher struct {
 	timer          *time.Timer
 	shutdownCh     chan struct{}
 	logger         *zap.Logger
+	active         bool // indicates if partition is still active i.e timer is running and shutdown is not called yet. If Consume is called on inactive partition then data is flushed sync because timer is not running.
 }
 
 func newPartitionBatcher(
@@ -56,6 +57,7 @@ func newPartitionBatcher(
 		consumeFunc: next,
 		shutdownCh:  make(chan struct{}, 1),
 		logger:      logger,
+		active:      true,
 	}
 }
 
@@ -65,9 +67,9 @@ func (qb *partitionBatcher) resetTimer() {
 	}
 }
 
-func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, done queue.Done) {
+func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Request, done queue.Done) bool {
 	qb.currentBatchMu.Lock()
-
+	isActive := qb.active
 	if qb.currentBatch == nil {
 		reqList, mergeSplitErr := req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.cfg.Sizer, nil)
 		if mergeSplitErr != nil {
@@ -78,7 +80,7 @@ func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, do
 		if len(reqList) == 0 {
 			done.OnDone(mergeSplitErr)
 			qb.currentBatchMu.Unlock()
-			return
+			return isActive
 		}
 
 		// If more than one flush is required for this request, call done only when all flushes are done.
@@ -113,7 +115,7 @@ func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, do
 			qb.flush(ctx, reqList[i], done)
 		}
 
-		return
+		return isActive
 	}
 
 	reqList, mergeSplitErr := qb.currentBatch.req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.cfg.Sizer, req)
@@ -126,7 +128,7 @@ func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, do
 	if len(reqList) == 0 {
 		done.OnDone(mergeSplitErr)
 		qb.currentBatchMu.Unlock()
-		return
+		return isActive
 	}
 
 	// If more than one flush is required for this request, call done only when all flushes are done.
@@ -190,6 +192,14 @@ func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, do
 	for i := 0; i < len(reqList); i++ {
 		qb.flush(ctx, reqList[i], done)
 	}
+	return isActive
+}
+
+func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, done queue.Done) {
+	if !qb.consumeInternal(ctx, req, done) {
+		// Not active partition then flush else let the timer/Shutdown do it's work.
+		qb.flushCurrentBatchIfNotEmpty()
+	}
 }
 
 // Start starts the goroutine that reads from the queue and flushes asynchronously.
@@ -211,12 +221,24 @@ func (qb *partitionBatcher) Start(context.Context, component.Host) error {
 	return nil
 }
 
-// Shutdown ensures that queue and all Batcher are stopped.
-func (qb *partitionBatcher) Shutdown(context.Context) error {
+// shutdownInternal ensures that queue and all Batcher are stopped.
+func (qb *partitionBatcher) shutdownInternal() {
+	qb.currentBatchMu.Lock()
+	if !qb.active {
+		qb.currentBatchMu.Unlock()
+		return
+	}
+	qb.active = false
+	qb.currentBatchMu.Unlock()
 	close(qb.shutdownCh)
 	// Make sure execute one last flush if necessary.
 	qb.flushCurrentBatchIfNotEmpty()
 	qb.stopWG.Wait()
+}
+
+// Shutdown ensures that queue and all Batcher are stopped.
+func (qb *partitionBatcher) Shutdown(context.Context) error {
+	qb.shutdownInternal()
 	return nil
 }
 

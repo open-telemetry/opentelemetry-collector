@@ -69,7 +69,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
 			aggMap["DefaultMetric"] = mb.metricDefaultMetric.config.AggregationStrategy
-			aggMap["DefaultMetricToBeRemoved"] = mb.metricDefaultMetricToBeRemoved.config.AggregationStrategy
 			aggMap["MetricInputType"] = mb.metricMetricInputType.config.AggregationStrategy
 			aggMap["OptionalMetric"] = mb.metricOptionalMetric.config.AggregationStrategy
 			aggMap["OptionalMetricEmptyUnit"] = mb.metricOptionalMetricEmptyUnit.config.AggregationStrategy
