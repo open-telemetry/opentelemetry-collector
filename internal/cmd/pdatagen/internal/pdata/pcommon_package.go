@@ -110,7 +110,7 @@ var keyValueStruct = &messageStruct{
 			returnMessage: anyValueClone,
 		},
 		&PrimitiveField{
-			fieldName: "KeyRef",
+			fieldName: "KeyStrindex",
 			protoID:   3,
 			protoType: proto.TypeInt32,
 		},
@@ -177,9 +177,9 @@ var anyValueStruct = &messageStruct{
 					protoType:       proto.TypeBytes,
 				},
 				&OneOfPrimitiveValue{
-					fieldName:       "StringValueRef",
+					fieldName:       "StringValueStrindex",
 					protoID:         8,
-					originFieldName: "StringValueRef",
+					originFieldName: "StringValueStrindex",
 					protoType:       proto.TypeInt32,
 				},
 			},

@@ -101,13 +101,13 @@ func (m *AnyValue) GetBytesValue() []byte {
 	return nil
 }
 
-type AnyValue_StringValueRef struct {
-	StringValueRef int32
+type AnyValue_StringValueStrindex struct {
+	StringValueStrindex int32
 }
 
-func (m *AnyValue) GetStringValueRef() int32 {
-	if v, ok := m.GetValue().(*AnyValue_StringValueRef); ok {
-		return v.StringValueRef
+func (m *AnyValue) GetStringValueStrindex() int32 {
+	if v, ok := m.GetValue().(*AnyValue_StringValueStrindex); ok {
+		return v.StringValueStrindex
 	}
 	return int32(0)
 }
@@ -165,9 +165,9 @@ var (
 		},
 	}
 
-	ProtoPoolAnyValue_StringValueRef = sync.Pool{
+	ProtoPoolAnyValue_StringValueStrindex = sync.Pool{
 		New: func() any {
-			return &AnyValue_StringValueRef{}
+			return &AnyValue_StringValueStrindex{}
 		},
 	}
 )
@@ -222,10 +222,10 @@ func DeleteAnyValue(orig *AnyValue, nullable bool) {
 			ov.BytesValue = nil
 			ProtoPoolAnyValue_BytesValue.Put(ov)
 		}
-	case *AnyValue_StringValueRef:
+	case *AnyValue_StringValueStrindex:
 		if metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov.StringValueRef = int32(0)
-			ProtoPoolAnyValue_StringValueRef.Put(ov)
+			ov.StringValueStrindex = int32(0)
+			ProtoPoolAnyValue_StringValueStrindex.Put(ov)
 		}
 	}
 	orig.Reset()
@@ -320,14 +320,14 @@ func CopyAnyValue(dest, src *AnyValue) *AnyValue {
 		ov.BytesValue = t.BytesValue
 		dest.Value = ov
 
-	case *AnyValue_StringValueRef:
-		var ov *AnyValue_StringValueRef
+	case *AnyValue_StringValueStrindex:
+		var ov *AnyValue_StringValueStrindex
 		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &AnyValue_StringValueRef{}
+			ov = &AnyValue_StringValueStrindex{}
 		} else {
-			ov = ProtoPoolAnyValue_StringValueRef.Get().(*AnyValue_StringValueRef)
+			ov = ProtoPoolAnyValue_StringValueStrindex.Get().(*AnyValue_StringValueStrindex)
 		}
-		ov.StringValueRef = t.StringValueRef
+		ov.StringValueStrindex = t.StringValueStrindex
 		dest.Value = ov
 
 	default:
@@ -419,9 +419,9 @@ func (orig *AnyValue) MarshalJSON(dest *json.Stream) {
 
 		dest.WriteObjectField("bytesValue")
 		dest.WriteBytes(orig.BytesValue)
-	case *AnyValue_StringValueRef:
-		dest.WriteObjectField("stringValueRef")
-		dest.WriteInt32(orig.StringValueRef)
+	case *AnyValue_StringValueStrindex:
+		dest.WriteObjectField("stringValueStrindex")
+		dest.WriteInt32(orig.StringValueStrindex)
 	}
 	dest.WriteObjectEnd()
 }
@@ -510,15 +510,15 @@ func (orig *AnyValue) UnmarshalJSON(iter *json.Iterator) {
 				ov.BytesValue = iter.ReadBytes()
 				orig.Value = ov
 			}
-		case "stringValueRef", "string_value_ref":
+		case "stringValueStrindex", "string_value_strindex":
 			{
-				var ov *AnyValue_StringValueRef
+				var ov *AnyValue_StringValueStrindex
 				if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-					ov = &AnyValue_StringValueRef{}
+					ov = &AnyValue_StringValueStrindex{}
 				} else {
-					ov = ProtoPoolAnyValue_StringValueRef.Get().(*AnyValue_StringValueRef)
+					ov = ProtoPoolAnyValue_StringValueStrindex.Get().(*AnyValue_StringValueStrindex)
 				}
-				ov.StringValueRef = iter.ReadInt32()
+				ov.StringValueStrindex = iter.ReadInt32()
 				orig.Value = ov
 			}
 
@@ -561,9 +561,9 @@ func (orig *AnyValue) SizeProto() int {
 	case *AnyValue_BytesValue:
 		l = len(orig.BytesValue)
 		n += 1 + proto.Sov(uint64(l)) + l
-	case *AnyValue_StringValueRef:
+	case *AnyValue_StringValueStrindex:
 
-		n += 1 + proto.Sov(uint64(orig.StringValueRef))
+		n += 1 + proto.Sov(uint64(orig.StringValueStrindex))
 	}
 	return n
 }
@@ -626,8 +626,8 @@ func (orig *AnyValue) MarshalProto(buf []byte) int {
 		pos--
 		buf[pos] = 0x3a
 
-	case *AnyValue_StringValueRef:
-		pos = proto.EncodeVarint(buf, pos, uint64(orig.StringValueRef))
+	case *AnyValue_StringValueStrindex:
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.StringValueStrindex))
 		pos--
 		buf[pos] = 0x40
 
@@ -793,20 +793,20 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 
 		case 8:
 			if wireType != proto.WireTypeVarint {
-				return fmt.Errorf("proto: wrong wireType = %d for field StringValueRef", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field StringValueStrindex", wireType)
 			}
 			var num uint64
 			num, pos, err = proto.ConsumeVarint(buf, pos)
 			if err != nil {
 				return err
 			}
-			var ov *AnyValue_StringValueRef
+			var ov *AnyValue_StringValueStrindex
 			if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-				ov = &AnyValue_StringValueRef{}
+				ov = &AnyValue_StringValueStrindex{}
 			} else {
-				ov = ProtoPoolAnyValue_StringValueRef.Get().(*AnyValue_StringValueRef)
+				ov = ProtoPoolAnyValue_StringValueStrindex.Get().(*AnyValue_StringValueStrindex)
 			}
-			ov.StringValueRef = int32(num)
+			ov.StringValueStrindex = int32(num)
 			orig.Value = ov
 
 		default:
