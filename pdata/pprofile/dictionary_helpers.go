@@ -5,6 +5,7 @@ package pprofile // import "go.opentelemetry.io/collector/pdata/pprofile"
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
+	"go.opentelemetry.io/collector/pdata/internal/metadata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -58,7 +59,7 @@ func resolveAnyValueReference(dict ProfilesDictionary, anyValue *internal.AnyVal
 		if idx >= 0 && idx < dict.StringTable().Len() {
 			str := dict.StringTable().At(idx)
 			var ov *internal.AnyValue_StringValue
-			if !internal.UseProtoPooling.IsEnabled() {
+			if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 				ov = &internal.AnyValue_StringValue{}
 			} else {
 				ov = internal.ProtoPoolAnyValue_StringValue.Get().(*internal.AnyValue_StringValue)
@@ -141,7 +142,7 @@ func convertAnyValueToReference(getStringIndex func(string) int32, anyValue *int
 		// Convert to reference
 		idx := getStringIndex(strVal.StringValue)
 		var ov *internal.AnyValue_StringValueRef
-		if !internal.UseProtoPooling.IsEnabled() {
+		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov = &internal.AnyValue_StringValueRef{}
 		} else {
 			ov = internal.ProtoPoolAnyValue_StringValueRef.Get().(*internal.AnyValue_StringValueRef)

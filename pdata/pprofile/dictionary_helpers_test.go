@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/internal"
+	"go.opentelemetry.io/collector/pdata/internal/metadata"
 )
 
 func TestResolveProfilesReferencesEmpty(t *testing.T) {
@@ -86,10 +87,10 @@ func TestResolveProfilesReferencesInvalidIndices(t *testing.T) {
 
 func TestResolveAnyValueReferenceWithPooling(t *testing.T) {
 	// Test with pooling enabled
-	prevPooling := internal.UseProtoPooling.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(internal.UseProtoPooling.ID(), true))
+	prevPooling := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(internal.UseProtoPooling.ID(), prevPooling))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prevPooling))
 	}()
 
 	profiles := NewProfiles()
@@ -228,10 +229,10 @@ func TestConvertProfilesToReferencesDeduplication(t *testing.T) {
 }
 
 func TestConvertAnyValueToReferenceWithPooling(t *testing.T) {
-	prevPooling := internal.UseProtoPooling.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(internal.UseProtoPooling.ID(), true))
+	prevPooling := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(internal.UseProtoPooling.ID(), prevPooling))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prevPooling))
 	}()
 
 	stringIndex := make(map[string]int32)
