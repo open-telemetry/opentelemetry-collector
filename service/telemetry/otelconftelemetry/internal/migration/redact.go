@@ -17,7 +17,7 @@ func redactHeaderPath(config any, path []string) {
 			}
 		}
 	} else if configMap, ok := config.(map[string]any); ok {
-		for _, nextKey := range strings.Split(next, "|") {
+		for nextKey := range strings.SplitSeq(next, "|") {
 			if len(path) == 1 {
 				configMap[nextKey] = "[REDACTED]"
 			} else if elem, ok := configMap[nextKey]; ok {
