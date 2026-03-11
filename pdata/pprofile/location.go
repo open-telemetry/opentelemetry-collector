@@ -22,10 +22,6 @@ func (ms Location) switchDictionary(src, dst ProfilesDictionary) error {
 		}
 
 		mapping := src.MappingTable().At(int(ms.MappingIndex()))
-		err := mapping.switchDictionary(src, dst)
-		if err != nil {
-			return fmt.Errorf("couldn't switch dictionary for mapping: %w", err)
-		}
 		idx, err := SetMapping(dst.MappingTable(), mapping)
 		if err != nil {
 			return fmt.Errorf("couldn't set mapping: %w", err)
@@ -39,10 +35,6 @@ func (ms Location) switchDictionary(src, dst ProfilesDictionary) error {
 		}
 
 		attr := src.AttributeTable().At(int(v))
-		err := attr.switchDictionary(src, dst)
-		if err != nil {
-			return fmt.Errorf("couldn't switch dictionary for attribute %d: %w", i, err)
-		}
 		idx, err := SetAttribute(dst.AttributeTable(), attr)
 		if err != nil {
 			return fmt.Errorf("couldn't set attribute %d: %w", i, err)

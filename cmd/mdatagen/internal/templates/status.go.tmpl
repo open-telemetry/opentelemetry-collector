@@ -7,8 +7,11 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("{{ .Type }}")
-	ScopeName = "{{ .ScopeName }}"
+	Type           = component.MustNewType("{{ .Type }}")
+{{-	if .DeprecatedType }}
+	DeprecatedType = component.MustNewType("{{ .DeprecatedType }}")
+{{- end }}
+	ScopeName      = "{{ .ScopeName }}"
 )
 
 const (

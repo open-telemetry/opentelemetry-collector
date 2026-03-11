@@ -56,13 +56,14 @@ func TestStatusFSM(t *testing.T) {
 			},
 		},
 		{
-			name: "repeated events are errors",
+			name: "repeated OK and RecoverableError events are valid",
 			reportedStatuses: []componentstatus.Status{
 				componentstatus.StatusStarting,
 				componentstatus.StatusOK,
+				componentstatus.StatusOK,
 				componentstatus.StatusRecoverableError,
 				componentstatus.StatusRecoverableError,
-				componentstatus.StatusRecoverableError,
+				componentstatus.StatusOK,
 				componentstatus.StatusOK,
 				componentstatus.StatusStopping,
 				componentstatus.StatusStopped,
@@ -70,12 +71,14 @@ func TestStatusFSM(t *testing.T) {
 			expectedStatuses: []componentstatus.Status{
 				componentstatus.StatusStarting,
 				componentstatus.StatusOK,
+				componentstatus.StatusOK,
 				componentstatus.StatusRecoverableError,
+				componentstatus.StatusRecoverableError,
+				componentstatus.StatusOK,
 				componentstatus.StatusOK,
 				componentstatus.StatusStopping,
 				componentstatus.StatusStopped,
 			},
-			expectedErrorCount: 2,
 		},
 		{
 			name: "PermanentError is stoppable",

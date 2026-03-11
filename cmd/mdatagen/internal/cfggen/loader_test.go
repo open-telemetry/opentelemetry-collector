@@ -495,6 +495,59 @@ func TestLoader_RepoRoot_GitError(t *testing.T) {
 	require.Contains(t, err.Error(), "failed to determine repo root")
 }
 
+func TestLoader_PersistToFile_MkdirAllError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("file permission test not reliable on Windows")
+	}
+	tempDir := t.TempDir()
+	t.Cleanup(func() {
+		_ = os.Chmod(tempDir, 0o700) // #nosec G302 -- restore so t.TempDir cleanup can remove it
+	})
+
+	require.NoError(t, os.Chmod(tempDir, 0o500)) // #nosec G302
+
+	loader := NewLoader(tempDir).(*schemaLoader)
+	err := loader.persistToFile(filepath.Join(tempDir, "newdir", "schema.yaml"), &ConfigMetadata{Title: "X"})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to create directory")
+}
+
+func TestLoader_PersistToFile_WriteFileError(t *testing.T) {
+	tempDir := t.TempDir()
+
+	filePath := filepath.Join(tempDir, "schema.yaml")
+	require.NoError(t, os.MkdirAll(filePath, 0o750))
+
+	loader := NewLoader(tempDir).(*schemaLoader)
+	err := loader.persistToFile(filePath, &ConfigMetadata{Title: "X"})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to write file")
+}
+
+func TestLoader_TryLoad_ReadBodyError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Length", "1000")
+		w.WriteHeader(http.StatusOK)
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		_ = conn.Close()
+	}))
+	defer server.Close()
+
+	originalURL := namespaceToURL["go.opentelemetry.io/collector"]
+	namespaceToURL["go.opentelemetry.io/collector"] = server.URL
+	defer func() { namespaceToURL["go.opentelemetry.io/collector"] = originalURL }()
+
+	loader := NewLoader("").(*schemaLoader)
+	ref := *NewRef("go.opentelemetry.io/collector/test/path.config")
+	_, err := loader.tryLoad(ref, "v1.0.0")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to read response body")
+}
+
 func mdatagenDir(t *testing.T) string {
 	t.Helper()
 	_, file, _, ok := runtime.Caller(0)

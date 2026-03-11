@@ -1038,3 +1038,118 @@ func TestResolver_ResolveSchema_ContentSchema(t *testing.T) {
 	require.NotNil(t, result.Properties["body"].ContentSchema)
 	require.Equal(t, "object", result.Properties["body"].ContentSchema.Type)
 }
+
+func TestResolver_ResolveSchema_PreservesCustomExtensions(t *testing.T) {
+	// When a node has both a $ref and custom extensions (GoType, IsPointer,
+	// IsOptional, Description, Default, Enum), the custom extensions should
+	// be preserved after resolution instead of being overwritten by the
+	// resolved schema's values.
+
+	targetSchema := &ConfigMetadata{
+		Type: "object",
+		Defs: map[string]*ConfigMetadata{
+			"duration_type": {
+				Type:        "string",
+				Description: "A generic duration type",
+			},
+		},
+	}
+
+	ml := &mockLoader{
+		schemas: map[string]*ConfigMetadata{
+			"go.opentelemetry.io/collector/config/configbase.duration_type": targetSchema,
+		},
+	}
+
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: ml,
+	}
+
+	src := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"timeout": {
+				Ref:         "go.opentelemetry.io/collector/config/configbase.duration_type",
+				GoType:      "time.Duration",
+				IsPointer:   true,
+				IsOptional:  true,
+				Description: "Request timeout for the endpoint",
+				Default:     "30s",
+				Enum:        []any{"10s", "30s", "60s"},
+			},
+		},
+	}
+
+	result, err := resolver.ResolveSchema(src)
+	require.NoError(t, err)
+	require.NotNil(t, result.Properties["timeout"])
+
+	timeout := result.Properties["timeout"]
+	// GoType should be preserved from the referencing node
+	require.Equal(t, "time.Duration", timeout.GoType)
+	// IsPointer should be preserved
+	require.True(t, timeout.IsPointer)
+	// IsOptional should be preserved
+	require.True(t, timeout.IsOptional)
+	// Description should come from the referencing node, not the target
+	require.Equal(t, "Request timeout for the endpoint", timeout.Description)
+	// Default should be preserved
+	require.NotNil(t, timeout.Default)
+	require.Equal(t, "30s", timeout.Default)
+	// Enum should be preserved
+	require.Equal(t, []any{"10s", "30s", "60s"}, timeout.Enum)
+	// Type should come from the resolved schema
+	require.Equal(t, "string", timeout.Type)
+}
+
+func TestResolver_ResolveSchema_RefWithoutCustomExtensions(t *testing.T) {
+	// When a node has a $ref but NO custom extensions, the resolved schema's
+	// values should be used as-is (no overriding).
+
+	targetSchema := &ConfigMetadata{
+		Type: "object",
+		Defs: map[string]*ConfigMetadata{
+			"base_config": {
+				Type:        "object",
+				Description: "Base configuration from the target schema",
+				GoType:      "BaseConfig",
+			},
+		},
+	}
+
+	ml := &mockLoader{
+		schemas: map[string]*ConfigMetadata{
+			"go.opentelemetry.io/collector/config/configbase.base_config": targetSchema,
+		},
+	}
+
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: ml,
+	}
+
+	src := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"base": {
+				Ref: "go.opentelemetry.io/collector/config/configbase.base_config",
+				// No custom extensions set
+			},
+		},
+	}
+
+	result, err := resolver.ResolveSchema(src)
+	require.NoError(t, err)
+	require.NotNil(t, result.Properties["base"])
+
+	base := result.Properties["base"]
+	// Values should come from the resolved target
+	require.Equal(t, "object", base.Type)
+	require.Equal(t, "Base configuration from the target schema", base.Description)
+	require.Equal(t, "BaseConfig", base.GoType)
+}

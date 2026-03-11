@@ -8,7 +8,7 @@ import (
 )
 
 const deleteOther = `{{ if ne .oneOfGroup "" -}}
-	if UseProtoPooling.IsEnabled() {
+	if metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 		ov.{{ .fieldName }} = {{ .defaultValue }}
 		ProtoPool{{ .oneOfMessageName }}.Put(ov)
 	}

@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -20,6 +21,8 @@ import (
 type Metadata struct {
 	// Type of the component.
 	Type string `mapstructure:"type"`
+	// DeprecatedType of the component.
+	DeprecatedType string `mapstructure:"deprecated_type"`
 	// DisplayName is a human-readable display name for the component.
 	DisplayName string `mapstructure:"display_name"`
 	// Description is a brief description of the component.
@@ -85,7 +88,7 @@ func (md Metadata) GetCodeCovComponentID() string {
 		return md.Status.CodeCovComponentID
 	}
 
-	return strings.ReplaceAll(md.Status.Class+"_"+md.Type, "/", "_")
+	return strings.ReplaceAll(md.Status.Class+"_"+strings.ReplaceAll(md.Type, "_", ""), "/", "_")
 }
 
 func (md Metadata) HasEntities() bool {
@@ -474,11 +477,11 @@ func (rl AttributeRequirementLevel) String() string {
 }
 
 func (mn AttributeName) Render() (string, error) {
-	return FormatIdentifier(string(mn), true)
+	return helpers.FormatIdentifier(string(mn), true)
 }
 
 func (mn AttributeName) RenderUnexported() (string, error) {
-	return FormatIdentifier(string(mn), false)
+	return helpers.FormatIdentifier(string(mn), false)
 }
 
 // ValueType defines an attribute value type.
