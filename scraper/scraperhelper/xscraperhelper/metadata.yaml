@@ -16,7 +16,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: Number of profile records that were unable to be scraped.
-      unit: "{datapoints}"
+      unit: "{datapoint}"
       sum:
         value_type: int
         monotonic: true
@@ -25,7 +25,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: Number of profile records successfully scraped.
-      unit: "{datapoints}"
+      unit: "{datapoint}"
       sum:
         value_type: int
         monotonic: true
