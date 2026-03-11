@@ -268,6 +268,13 @@ func TestSortFactoriesByType(t *testing.T) {
 			wantTypes: []string{},
 		},
 		{
+			name: "with a single factory",
+			factories: map[component.Type]mockFactory{
+				component.MustNewType("processor"): newMockFactory("processor"),
+			},
+			wantTypes: []string{"processor"},
+		},
+		{
 			name: "with canonical factories only (sorted by type)",
 			factories: map[component.Type]mockFactory{
 				// IMPORTANT: keys must match factory.Type() (this mirrors MakeFactoryMap output).
