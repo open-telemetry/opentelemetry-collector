@@ -3,6 +3,8 @@
 
 package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
+//go:generate mdatagen metadata.yaml
+
 import (
 	"errors"
 	"flag"

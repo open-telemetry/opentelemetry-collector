@@ -970,6 +970,46 @@ func TestSendProfiles(t *testing.T) {
 	assert.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
 }
 
+func TestPushTracesBeforeStart(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	set := exportertest.NewNopSettings(factory.Type())
+	exp := newExporter(cfg, set)
+	err := exp.pushTraces(context.Background(), ptrace.NewTraces())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not started")
+}
+
+func TestPushMetricsBeforeStart(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	set := exportertest.NewNopSettings(factory.Type())
+	exp := newExporter(cfg, set)
+	err := exp.pushMetrics(context.Background(), pmetric.NewMetrics())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not started")
+}
+
+func TestPushLogsBeforeStart(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	set := exportertest.NewNopSettings(factory.Type())
+	exp := newExporter(cfg, set)
+	err := exp.pushLogs(context.Background(), plog.NewLogs())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not started")
+}
+
+func TestPushProfilesBeforeStart(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	set := exportertest.NewNopSettings(factory.Type())
+	exp := newExporter(cfg, set)
+	err := exp.pushProfiles(context.Background(), pprofile.NewProfiles())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not started")
+}
+
 func TestSendProfilesWhenEndpointHasHttpScheme(t *testing.T) {
 	tests := []struct {
 		name               string
