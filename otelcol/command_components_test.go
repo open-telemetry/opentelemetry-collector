@@ -304,6 +304,42 @@ func TestSortFactoriesByType(t *testing.T) {
 				newMockFactory("processor_factory"),
 			},
 		},
+		{
+			// Regression test for https://github.com/open-telemetry/opentelemetry-collector/issues/14682:
+			// a canonical factory that exposes a deprecated alias must not be dropped from the output.
+			name: "canonical factory with deprecated alias is not dropped",
+			factories: func() map[component.Type]mockFactory {
+				f := newMockFactory("k8s_attributes")
+				f.SetDeprecatedAlias(component.MustNewType("k8sattributes"))
+				return map[component.Type]mockFactory{
+					component.MustNewType("k8s_attributes"): f,
+				}
+			}(),
+			want: func() []mockFactory {
+				f := newMockFactory("k8s_attributes")
+				f.SetDeprecatedAlias(component.MustNewType("k8sattributes"))
+				return []mockFactory{f}
+			}(),
+		},
+		{
+			// Regression test for https://github.com/open-telemetry/opentelemetry-collector/issues/14682:
+			// when MakeFactoryMap registers the same factory under both the canonical key and the
+			// deprecated alias key, only the canonical entry must appear in the components output.
+			name: "deprecated alias entry excluded when both canonical and alias keys are present",
+			factories: func() map[component.Type]mockFactory {
+				f := newMockFactory("k8s_attributes")
+				f.SetDeprecatedAlias(component.MustNewType("k8sattributes"))
+				return map[component.Type]mockFactory{
+					component.MustNewType("k8s_attributes"): f,
+					component.MustNewType("k8sattributes"):  f,
+				}
+			}(),
+			want: func() []mockFactory {
+				f := newMockFactory("k8s_attributes")
+				f.SetDeprecatedAlias(component.MustNewType("k8sattributes"))
+				return []mockFactory{f}
+			}(),
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			got := sortFactoriesByType(tt.factories)

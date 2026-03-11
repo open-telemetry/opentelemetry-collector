@@ -148,11 +148,14 @@ func sortFactoriesByType[T component.Factory](factories map[component.Type]T) []
 		return componentTypes[i].String() < componentTypes[j].String()
 	})
 
-	// Build and return list of factories, sorted by component types
+	// Build and return list of factories, sorted by component types.
+	// MakeFactoryMap registers each factory under both its canonical type and its deprecated alias
+	// type (if any). We only want to include the canonical entry here.
 	sortedFactories := make([]T, 0, len(factories))
 	for _, componentType := range componentTypes {
-		if !isComponentAlias(factories[componentType]) {
-			sortedFactories = append(sortedFactories, factories[componentType])
+		factory := factories[componentType]
+		if !isDeprecatedAliasEntry(componentType, factory) {
+			sortedFactories = append(sortedFactories, factory)
 		}
 	}
 
@@ -193,6 +196,18 @@ func sortConverterModules(modules []string) []componentWithoutStability {
 		})
 	}
 	return sortedModules
+}
+
+// isDeprecatedAliasEntry returns true when the factory is being accessed via its deprecated
+// alias type rather than its canonical type. MakeFactoryMap inserts the same factory under
+// two keys when a deprecated alias exists: the canonical key (factory.Type()) and the alias
+// key (factory.DeprecatedAlias()). An entry is the deprecated alias entry when the lookup
+// key differs from the factory's own type AND the factory advertises a deprecated alias.
+func isDeprecatedAliasEntry[T component.Factory](componentType component.Type, factory T) bool {
+	if al, ok := any(factory).(componentalias.TypeAliasHolder); ok {
+		return al.DeprecatedAlias().String() != "" && factory.Type() != componentType
+	}
+	return false
 }
 
 func isComponentAlias(component any) bool {
