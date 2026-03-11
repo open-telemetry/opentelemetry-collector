@@ -9,6 +9,7 @@ import (
 	"go/parser"
 	"go/token"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -279,6 +280,9 @@ func TestRunContents(t *testing.T) {
 			tmpdir := filepath.Join(t.TempDir(), "shortname")
 			err := os.MkdirAll(tmpdir, 0o750)
 			require.NoError(t, err)
+			// Init a git repo so helpers.RootPackage can resolve the repo root
+			// when generateConfigGoStruct is called for components with config.
+			gitInit(t, tmpdir)
 			ymlContent, err := os.ReadFile(filepath.Join("testdata", tt.yml))
 			require.NoError(t, err)
 			metadataFile := filepath.Join(tmpdir, "metadata.yaml")
@@ -517,7 +521,13 @@ func TestGenerateConfigFiles(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpdir := t.TempDir()
+			root := t.TempDir()
+
+			tmpdir := filepath.Join(root, "shortname")
+			require.NoError(t, os.MkdirAll(tmpdir, 0o700))
+
+			gitInit(t, root)
+			require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
 			err := generateConfigFiles(tt.md, tmpdir)
 			if tt.wantErr {
 				require.Error(t, err)
@@ -531,6 +541,32 @@ func TestGenerateConfigFiles(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGenerateConfigGoStruct_RootPackageError(t *testing.T) {
+	// tmpdir is not inside any git repo, so helpers.RootPackage fails
+	md := Metadata{
+		Type:        "test",
+		PackageName: "shortname",
+		Status:      &Status{Class: "receiver"},
+		Config:      &cfggen.ConfigMetadata{Type: "object"},
+	}
+	err := generateConfigGoStruct(md, t.TempDir())
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "unable to determine root package")
+}
+
+func TestGenerateConfigFiles_GoStructError(t *testing.T) {
+	// generateConfigGoStruct fails because tmpdir is not inside a git repo
+	md := Metadata{
+		Type:        "test",
+		PackageName: "shortname",
+		Status:      &Status{Class: "receiver"},
+		Config:      &cfggen.ConfigMetadata{Type: "object"},
+	}
+	err := generateConfigFiles(md, t.TempDir())
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to generate config Go struct")
 }
 
 func TestGenerateConfigFiles_WriteError(t *testing.T) {
@@ -1034,4 +1070,12 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 			require.Equal(t, tt.expected, string(actual))
 		})
 	}
+}
+
+func gitInit(t *testing.T, dir string) {
+	t.Helper()
+	cmd := exec.Command("git", "init")
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, "git init failed: %s", out)
 }
