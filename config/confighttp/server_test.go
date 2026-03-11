@@ -861,7 +861,7 @@ func TestAuthWithQueryParams(t *testing.T) {
 	assert.True(t, authCalled)
 }
 
-func BenchmarkHttpRequest(b *testing.B) {
+func BenchmarkHTTPRequest(b *testing.B) {
 	tests := []struct {
 		name            string
 		forceHTTP1      bool
