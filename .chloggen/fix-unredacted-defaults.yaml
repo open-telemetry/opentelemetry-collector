@@ -1,0 +1,7 @@
+change_type: bug_fix
+component: otelcol
+note: "Fix `print-config --mode=unredacted` to include default values, ensuring structural consistency with the redacted mode."
+issues: [14750]
+subtext: |
+  Resolves an issue where the unredacted mode output omitted all default-valued options. By merging the explicit raw secrets back into the full configuration, the unredacted mode now preserves all component defaults while correctly displaying sensitive data.
+change_logs: [user]
