@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/internal/componentalias"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 )
@@ -165,9 +164,7 @@ func sortProvidersByScheme(providerModules map[string]string, provFactories []co
 	for _, f := range provFactories {
 		provF := f.Create(set)
 		scheme := provF.Scheme()
-		if !isComponentAlias(f) {
-			schemes = append(schemes, scheme)
-		}
+		schemes = append(schemes, scheme)
 	}
 
 	sort.Strings(schemes)
@@ -194,11 +191,4 @@ func sortConverterModules(modules []string) []componentWithoutStability {
 		})
 	}
 	return sortedModules
-}
-
-func isComponentAlias(component any) bool {
-	if al, ok := component.(componentalias.TypeAliasHolder); ok {
-		return al.DeprecatedAlias().String() != ""
-	}
-	return false
 }
