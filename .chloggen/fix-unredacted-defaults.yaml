@@ -1,5 +1,5 @@
 change_type: bug_fix
-component: otelcol
+component: pkg/otelcol
 note: "Fix `print-config --mode=unredacted` to include default values, ensuring structural consistency with the redacted mode."
 issues: [14750]
 subtext: |
