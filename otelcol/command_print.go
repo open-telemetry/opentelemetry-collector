@@ -156,7 +156,7 @@ func (pctx *printContext) printUnredactedConfig() error {
 	}
 
 	baseConfMap := confmap.New()
-	if err := baseConfMap.Marshal(cfg); err != nil {
+	if err = baseConfMap.Marshal(cfg); err != nil {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
 	baseMap := baseConfMap.ToStringMap()
