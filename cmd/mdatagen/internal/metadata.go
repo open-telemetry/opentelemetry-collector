@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -19,6 +21,8 @@ import (
 type Metadata struct {
 	// Type of the component.
 	Type string `mapstructure:"type"`
+	// DeprecatedType of the component.
+	DeprecatedType string `mapstructure:"deprecated_type"`
 	// DisplayName is a human-readable display name for the component.
 	DisplayName string `mapstructure:"display_name"`
 	// Description is a brief description of the component.
@@ -59,6 +63,8 @@ type Metadata struct {
 	PackageName string `mapstructure:"package_name"`
 	// FeatureGates that are managed by the component.
 	FeatureGates []FeatureGate `mapstructure:"feature_gates"`
+	// Config is the configuration schema for the component.
+	Config *cfggen.ConfigMetadata `mapstructure:"config"`
 }
 
 type Deprecated struct {
@@ -94,7 +100,7 @@ func (md Metadata) GetCodeCovComponentID() string {
 		return md.Status.CodeCovComponentID
 	}
 
-	return strings.ReplaceAll(md.Status.Class+"_"+md.Type, "/", "_")
+	return strings.ReplaceAll(md.Status.Class+"_"+strings.ReplaceAll(md.Type, "_", ""), "/", "_")
 }
 
 func (md Metadata) HasEntities() bool {
@@ -129,6 +135,10 @@ func (md *Metadata) Validate() error {
 	}
 
 	if err := md.validateFeatureGates(); err != nil {
+		errs = errors.Join(errs, err)
+	}
+
+	if err := md.validateConfig(); err != nil {
 		errs = errors.Join(errs, err)
 	}
 
@@ -440,6 +450,13 @@ func (md *Metadata) validateFeatureGates() error {
 	return errs
 }
 
+func (md *Metadata) validateConfig() error {
+	if md.Config != nil {
+		return md.Config.Validate()
+	}
+	return nil
+}
+
 type AttributeName string
 
 // AttributeRequirementLevel defines the requirement level of an attribute.
@@ -472,11 +489,11 @@ func (rl AttributeRequirementLevel) String() string {
 }
 
 func (mn AttributeName) Render() (string, error) {
-	return FormatIdentifier(string(mn), true)
+	return helpers.FormatIdentifier(string(mn), true)
 }
 
 func (mn AttributeName) RenderUnexported() (string, error) {
-	return FormatIdentifier(string(mn), false)
+	return helpers.FormatIdentifier(string(mn), false)
 }
 
 // ValueType defines an attribute value type.
