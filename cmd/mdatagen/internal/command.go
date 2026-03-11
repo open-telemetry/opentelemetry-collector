@@ -212,6 +212,11 @@ func run(ymlPath string) error {
 		toGenerate[filepath.Join(tmplDir, "feature_gates.go.tmpl")] = filepath.Join(codeDir, "generated_feature_gates.go")
 	}
 
+	if len(md.Entities) > 0 && len(md.Metrics) > 0 { // only generate entity metrics if entities are defined
+		toGenerate[filepath.Join(tmplDir, "entity_metrics.go.tmpl")] = filepath.Join(codeDir, "generated_entity_metrics.go")
+		toGenerate[filepath.Join(tmplDir, "entity_metrics_test.go.tmpl")] = filepath.Join(codeDir, "generated_entity_metrics_test.go")
+	}
+
 	// If at least one file to generate, will need the codeDir
 	if len(toGenerate) > 0 {
 		if err = os.MkdirAll(codeDir, 0o700); err != nil {
