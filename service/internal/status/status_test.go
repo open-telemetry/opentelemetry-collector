@@ -365,26 +365,22 @@ func TestReporterDeadlockOnAsyncFatalError(t *testing.T) {
 	// StartAll: Component A begins starting.
 	rep.ReportStatus(id1, componentstatus.NewEvent(componentstatus.StatusStarting))
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		rep.ReportStatus(id1, componentstatus.NewFatalErrorEvent(errors.New("port already in use")))
-	}()
+	})
 
 	select {
 	case <-onStatusChangeCalled:
-		// The FatalError goroutine now holds r.mu and is blocked on blockCh.
+		// The FatalError goroutine now holds mutex lock and is blocked on blockCh.
 	case <-time.After(time.Second):
 		t.Fatal("timed out waiting for FatalError reporter to enter onStatusChange")
 	}
 
 	startAllDone := make(chan struct{})
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		rep.ReportStatus(id2, componentstatus.NewEvent(componentstatus.StatusStarting))
 		close(startAllDone)
-	}()
+	})
 
 	select {
 	case <-startAllDone:
