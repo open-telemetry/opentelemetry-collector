@@ -12,7 +12,7 @@ MD009: false  # trailing spaces
 MD010: false  # hard tabs
 MD012: true  # multiple consecutive blank lines
 MD013: false  # line length
-MD014: false  # dollar signs in commands
+MD014: true  # dollar signs in commands
 MD022: false  # blanks around headings
 MD024: false  # duplicate headings
 MD025: false  # multiple top-level headings

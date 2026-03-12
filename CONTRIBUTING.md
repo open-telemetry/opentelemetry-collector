@@ -211,20 +211,20 @@ Working with the project sources requires the following tools:
 Fork the repo and checkout the upstream repo to your GOPATH by:
 
 ```
-$ git clone git@github.com:open-telemetry/opentelemetry-collector.git
+git clone git@github.com:open-telemetry/opentelemetry-collector.git
 ```
 
 Add your fork as an origin:
 
 ```shell
-$ cd opentelemetry-collector
-$ git remote add fork git@github.com:YOUR_GITHUB_USERNAME/opentelemetry-collector.git
+cd opentelemetry-collector
+git remote add fork git@github.com:YOUR_GITHUB_USERNAME/opentelemetry-collector.git
 ```
 
 Run tests, fmt, and lint:
 
 ```shell
-$ make
+make
 ```
 
 You can run `make markdownlint` to check Markdown formatting.
