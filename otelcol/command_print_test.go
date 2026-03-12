@@ -250,6 +250,7 @@ func TestPrintCommand(t *testing.T) {
 		}
 	}
 }
+
 func TestRestoreSecrets(t *testing.T) {
 	tests := []struct {
 		name     string
