@@ -858,15 +858,15 @@ status:
 			omitLabelsFile:  true,
 			labelsFileLines: nil,
 			metadataYAML: `
-	type: filestorageexample
-	github_project: open-telemetry/opentelemetry-collector-contrib
-	scope_name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorageexample
-	status:
-	  disable_codecov_badge: true
-	  class: extension
-	  stability:
-	    beta: [logs]
-	`,
+type: filestorageexample
+github_project: open-telemetry/opentelemetry-collector-contrib
+scope_name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorageexample
+status:
+  disable_codecov_badge: true
+  class: extension
+  stability:
+    beta: [logs]
+`,
 			wantLabel: "extension/storage/filestorageexample",
 		},
 	}
