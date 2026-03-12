@@ -619,7 +619,7 @@ func TestPartitionBatcher_OnEmptyNotCalledWithActiveData(t *testing.T) {
 
 	done := newFakeDone()
 	// Keep sending data to prevent idle timeout
-	for i := 0; i < 5; i++ {
+	for _ = range 5 {
 		ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 5}, done)
 		time.Sleep(15 * time.Millisecond)
 	}
