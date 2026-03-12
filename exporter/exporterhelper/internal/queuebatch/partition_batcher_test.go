@@ -619,7 +619,7 @@ func TestPartitionBatcher_OnEmptyNotCalledWithActiveData(t *testing.T) {
 
 	done := newFakeDone()
 	// Keep sending data to prevent idle timeout
-	for _ = range 5 {
+	for range 5 {
 		ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 5}, done)
 		time.Sleep(15 * time.Millisecond)
 	}
@@ -627,5 +627,5 @@ func TestPartitionBatcher_OnEmptyNotCalledWithActiveData(t *testing.T) {
 	// Data was flowing, onEmpty should not have been called
 	assert.Equal(t, int64(0), onEmptyCalled.Load())
 	// But data should have been flushed
-	assert.True(t, sink.RequestsCount() >= 1)
+	assert.GreaterOrEqual(t, sink.RequestsCount(), 1)
 }
