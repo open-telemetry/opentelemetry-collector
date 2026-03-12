@@ -2,7 +2,6 @@
 
 Config defines configuration for OTLP receiver.
 
-
 ## Config
 
 | Name      | Type                                              | Default    | Docs                                                                                                  |

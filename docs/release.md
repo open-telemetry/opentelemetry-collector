@@ -77,7 +77,6 @@ releases and add new schedules to the bottom of the list. To update the release 
    1. If the core release manager is also eligible as a contrib and 'releases' release manager, assign them to all roles they can perform.
    2. Otherwise, pick a contrib/'releases' approver/maintainer that is not a core approver/maintainer, rotating through the list of eligible people. The contrib approvers/maintainers are all members of the [@collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers) team, and the 'releases' approvers/maintainers are all members of the [@collector-releases-approvers](https://github.com/orgs/open-telemetry/teams/collector-releases-approvers) team.
 
-
 ## Troubleshooting
 
 1. `unknown revision internal/coreinternal/v0.85.0` -- This is typically an indication that there's a dependency on a new module. You can fix it by adding a new `replaces` entry to the `go.mod` for the affected module.

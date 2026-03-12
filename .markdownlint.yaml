@@ -10,7 +10,7 @@ MD004: false  # unordered list style
 MD007: false  # unordered list indentation
 MD009: false  # trailing spaces
 MD010: false  # hard tabs
-MD012: false  # multiple consecutive blank lines
+MD012: true  # multiple consecutive blank lines
 MD013: false  # line length
 MD014: false  # dollar signs in commands
 MD022: false  # blanks around headings
