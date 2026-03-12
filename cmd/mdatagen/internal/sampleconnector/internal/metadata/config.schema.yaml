@@ -5,7 +5,7 @@ $defs:
     type: object
     properties:
       default.metric:
-        description: "DefaultMetricConfig provides config for the default.metric metric."
+        description: "DefaultMetricMetricConfig provides config for the default.metric metric."
         type: object
         properties:
           enabled:
@@ -36,14 +36,14 @@ $defs:
               - "slice_attr"
               - "map_attr"
       default.metric.to_be_removed:
-        description: "DefaultMetricToBeRemovedConfig provides config for the default.metric.to_be_removed metric."
+        description: "DefaultMetricToBeRemovedMetricConfig provides config for the default.metric.to_be_removed metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       metric.input_type:
-        description: "MetricInputTypeConfig provides config for the metric.input_type metric."
+        description: "MetricInputTypeMetricConfig provides config for the metric.input_type metric."
         type: object
         properties:
           enabled:
@@ -74,7 +74,7 @@ $defs:
               - "slice_attr"
               - "map_attr"
       optional.metric:
-        description: "OptionalMetricConfig provides config for the optional.metric metric."
+        description: "OptionalMetricMetricConfig provides config for the optional.metric metric."
         type: object
         properties:
           enabled:
@@ -101,7 +101,7 @@ $defs:
               - "boolean_attr"
               - "boolean_attr2"
       optional.metric.empty_unit:
-        description: "OptionalMetricEmptyUnitConfig provides config for the optional.metric.empty_unit metric."
+        description: "OptionalMetricEmptyUnitMetricConfig provides config for the optional.metric.empty_unit metric."
         type: object
         properties:
           enabled:
@@ -126,7 +126,7 @@ $defs:
               - "string_attr"
               - "boolean_attr"
       reaggregate.metric:
-        description: "ReaggregateMetricConfig provides config for the reaggregate.metric metric."
+        description: "ReaggregateMetricMetricConfig provides config for the reaggregate.metric metric."
         type: object
         properties:
           enabled:
