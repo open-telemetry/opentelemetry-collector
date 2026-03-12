@@ -14,6 +14,10 @@ import (
 	{{- if and (not (and .Tests.SkipLifecycle .Tests.SkipShutdown)) (or isExporter isProcessor) }}
 	"time"
 	{{- end }}
+	{{- if .ExampleConfigs }}
+
+	"gopkg.in/yaml.v3"
+	{{- end }}
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -703,5 +707,34 @@ func (mnh *mdatagenNopHost) GetExtensions() map[component.ID]component.Component
 
 func (mnh *mdatagenNopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
 	return nil
+}
+{{- end }}
+
+{{- if .ExampleConfigs }}
+
+func TestExampleConfigs(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      string
+		description string
+	}{
+		{{- range $idx, $example := .ExampleConfigs }}
+		{
+			name:        {{ printf "%q" $example.Name }},
+			description: {{ printf "%q" $example.Description }},
+			config: {{ printf "`%s`" $example.Config }},
+		},
+		{{- end }}
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test that the example config is valid YAML
+			var config map[string]any
+			err := yaml.Unmarshal([]byte(tt.config), &config)
+			require.NoError(t, err, "Example config '%s' should be valid YAML: %s", tt.name, tt.description)
+			require.NotNil(t, config, "Example config '%s' should produce a non-nil config", tt.name)
+		})
+	}
 }
 {{- end }}
