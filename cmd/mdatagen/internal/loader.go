@@ -69,7 +69,7 @@ func LoadMetadata(filePath string) (Metadata, error) {
 
 	lbl := getComponentLabelFromRepo(filePath)
 	if lbl == "" && md.Status != nil {
-		lbl = deriveLabelFromScope(md.ScopeName, md.Status.Class, md.ShortFolderName)
+		lbl = deriveLabelFromClassAndShort(md.Status.Class, md.ShortFolderName)
 	}
 	md.Label = lbl
 
@@ -91,6 +91,9 @@ var componentTypes = []string{
 func shortFolderName(filePath string) string {
 	parentFolder := filepath.Base(filepath.Dir(filePath))
 	for _, cType := range componentTypes {
+		if parentFolder == cType {
+			return cType
+		}
 		if before, ok := strings.CutSuffix(parentFolder, cType); ok {
 			return before
 		}
@@ -178,21 +181,15 @@ func getComponentLabelFromRepo(filePath string) string {
 	return ""
 }
 
-func deriveLabelFromScope(scope, class, short string) string {
-	label := short
-	if class != "" {
-		if short == "" {
-			label = class
-		} else {
-			label = fmt.Sprintf("%s/%s", class, short)
-		}
-	}
-
-	if scope != "" && class != "" {
-		marker := "/" + class + "/"
-		if idx := strings.LastIndex(scope, marker); idx >= 0 {
-			label = scope[idx+1:]
-		}
+// deriveLabelFromClassAndShort returns the fallback label for a component given its class and short folder name.
+func deriveLabelFromClassAndShort(class, short string) string {
+	var label string
+	if class != "" && short != "" {
+		label = fmt.Sprintf("%s/%s", class, short)
+	} else if class != "" {
+		label = class
+	} else {
+		label = short
 	}
 
 	parts := strings.Split(label, "/")

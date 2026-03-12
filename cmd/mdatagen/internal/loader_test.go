@@ -1126,3 +1126,27 @@ func TestGetComponentLabelFromRepo_ReturnsEmpty_WhenLabelsPathIsADirectory(t *te
 func strPtr(s string) *string {
 	return &s
 }
+
+func TestLoadMetadata_LabelForScraperPkg(t *testing.T) {
+	tempDir := t.TempDir()
+	compDir := filepath.Join(tempDir, "scraper")
+	require.NoError(t, os.MkdirAll(compDir, 0o750))
+	// Write go.mod and a dummy Go file to allow package detection
+	require.NoError(t, os.WriteFile(filepath.Join(compDir, "go.mod"), []byte("module test/scraper"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(compDir, "scraper.go"), []byte("package scraper"), 0o600))
+	// Write metadata.yaml with valid YAML (real newlines)
+	metadataYAML := `type: scraper
+github_project: open-telemetry/opentelemetry-collector
+status:
+  disable_codecov_badge: true
+  class: pkg
+  stability:
+    development: [metrics, logs]
+`
+	mdPath := filepath.Join(compDir, "metadata.yaml")
+	require.NoError(t, os.WriteFile(mdPath, []byte(metadataYAML), 0o600))
+
+	md, err := LoadMetadata(mdPath)
+	require.NoError(t, err)
+	require.Equal(t, "pkg/scraper", md.Label)
+}
