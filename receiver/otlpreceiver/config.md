@@ -3,20 +3,20 @@
 Config defines configuration for OTLP receiver.
 
 
-### Config
+## Config
 
 | Name      | Type                                              | Default    | Docs                                                                                                  |
 |-----------|---------------------------------------------------|------------|-------------------------------------------------------------------------------------------------------|
 | protocols | [otlpreceiver-Protocols](#otlpreceiver-protocols) | <no value> | Protocols is the configuration for the supported protocols, currently gRPC and HTTP (Proto and JSON). |
 
-### otlpreceiver-Protocols
+## otlpreceiver-Protocols
 
 | Name | Type                                                            | Default    | Docs                                                                        |
 |------|-----------------------------------------------------------------|------------|-----------------------------------------------------------------------------|
 | grpc | [configgrpc-GRPCServerSettings](#configgrpc-grpcserversettings) | <no value> | GRPCServerSettings defines common settings for a gRPC server configuration. |
 | http | [confighttp-HTTPServerSettings](#confighttp-httpserversettings) | <no value> | HTTPServerSettings defines settings for creating an HTTP server.            |
 
-### configgrpc-GRPCServerSettings
+## configgrpc-GRPCServerSettings
 
 | Name                   | Type                                                                  | Default      | Docs                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 |------------------------|-----------------------------------------------------------------------|--------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -30,7 +30,7 @@ Config defines configuration for OTLP receiver.
 | keepalive              | [configgrpc-KeepaliveServerConfig](#configgrpc-keepaliveserverconfig) | <no value>   | Keepalive anchor for all the settings related to keepalive.                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | auth                   | [configauth-Authentication](#configauth-authentication)               | <no value>   | Auth for this receiver                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 
-### configtls-TLSServerSetting
+## configtls-TLSServerSetting
 
 | Name           | Type   | Default    | Docs                                                                                                                                                                                                                                                             |
 |----------------|--------|------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -39,14 +39,14 @@ Config defines configuration for OTLP receiver.
 | key_file       | string | <no value> | Path to the TLS key to use for TLS required connections. (optional)                                                                                                                                                                                              |
 | client_ca_file | string | <no value> | Path to the TLS cert to use by the server to verify a client certificate. (optional) This sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. Please refer to https://godoc.org/crypto/tls#Config for more information. (optional) |
 
-### configgrpc-KeepaliveServerConfig
+## configgrpc-KeepaliveServerConfig
 
 | Name               | Type                                                                            | Default    | Docs                                                                                                                                                                                                                                                                          |
 |--------------------|---------------------------------------------------------------------------------|------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | server_parameters  | [configgrpc-KeepaliveServerParameters](#configgrpc-keepaliveserverparameters)   | <no value> | KeepaliveServerParameters allow configuration of the keepalive.ServerParameters. The same default values as keepalive.ServerParameters are applicable and get applied by the server. See https://godoc.org/google.golang.org/grpc/keepalive#ServerParameters for details.     |
 | enforcement_policy | [configgrpc-KeepaliveEnforcementPolicy](#configgrpc-keepaliveenforcementpolicy) | <no value> | KeepaliveEnforcementPolicy allow configuration of the keepalive.EnforcementPolicy. The same default values as keepalive.EnforcementPolicy are applicable and get applied by the server. See https://godoc.org/google.golang.org/grpc/keepalive#EnforcementPolicy for details. |
 
-### configgrpc-KeepaliveServerParameters
+## configgrpc-KeepaliveServerParameters
 
 | Name                     | Type                            | Default    | Docs |
 |--------------------------|---------------------------------|------------|------|
@@ -56,20 +56,20 @@ Config defines configuration for OTLP receiver.
 | time                     | [time-Duration](#time-duration) | <no value> |      |
 | timeout                  | [time-Duration](#time-duration) | <no value> |      |
 
-### configgrpc-KeepaliveEnforcementPolicy
+## configgrpc-KeepaliveEnforcementPolicy
 
 | Name                  | Type                            | Default    | Docs |
 |-----------------------|---------------------------------|------------|------|
 | min_time              | [time-Duration](#time-duration) | <no value> |      |
 | permit_without_stream | bool                            | <no value> |      |
 
-### configauth-Authentication
+## configauth-Authentication
 
 | Name          | Type   | Default    | Docs                                                                                                           |
 |---------------|--------|------------|----------------------------------------------------------------------------------------------------------------|
 | authenticator | string | <no value> | AuthenticatorName specifies the name of the extension to use in order to authenticate the incoming data point. |
 
-### confighttp-HTTPServerSettings
+## confighttp-HTTPServerSettings
 
 | Name                  | Type                                                      | Default      | Docs                                                                                                                                    |
 |-----------------------|-----------------------------------------------------------|--------------|-----------------------------------------------------------------------------------------------------------------------------------------|
@@ -78,7 +78,7 @@ Config defines configuration for OTLP receiver.
 | cors                  | [confighttp-CORSConfig](#confighttp-corsconfig)           | <no value>   | CORSConfig configures a receiver for HTTP cross-origin resource sharing (CORS).                                                       |
 | max_request_body_size | int                                                       | 20971520     | MaxRequestBodySize configures the maximum allowed body size in bytes for a single request. The default `20971520` means 20MiB           |
 
-### confighttp-CORSConfig
+## confighttp-CORSConfig
 
 | Name            | Type     | Default    | Docs                                                                                                                                                                                                                                                                                       |
 |-----------------|----------|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -86,7 +86,7 @@ Config defines configuration for OTLP receiver.
 | allowed_headers | []string | <no value> | AllowedHeaders sets what headers will be allowed in CORS requests. The Accept, Accept-Language, Content-Type, and Content-Language headers are implicitly allowed. If no headers are listed, X-Requested-With will also be accepted by default. Include `"*"` to allow any request header. |
 | max_age         | int      | <no value> | MaxAge sets the value of the Access-Control-Max-Age response header.  Set it to the number of seconds that browsers should cache a CORS preflight response for.                                                                                                                            |
 
-### configtls-TLSServerSetting
+## configtls-TLSServerSetting
 
 | Name           | Type   | Default    | Docs                                                                                                                                                                                                                                                             |
 |----------------|--------|------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -95,5 +95,5 @@ Config defines configuration for OTLP receiver.
 | key_file       | string | <no value> | Path to the TLS key to use for TLS required connections. (optional)                                                                                                                                                                                              |
 | client_ca_file | string | <no value> | Path to the TLS cert to use by the server to verify a client certificate. (optional) This sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. Please refer to https://godoc.org/crypto/tls#Config for more information. (optional) |
 
-### time-Duration 
+## time-Duration 
 An optionally signed sequence of decimal numbers, each with a unit suffix, such as `300ms`, `-1.5h`, or `2h45m`. Valid time units are `ns`, `us`, `ms`, `s`, `m`, `h`.

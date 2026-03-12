@@ -2,7 +2,7 @@
 
 Component status reporting is a collector feature that allows components to report their status (aka health) via status events to extensions. In order for an extension receive these events it must implement the [StatusWatcher interface](https://github.com/open-telemetry/opentelemetry-collector/blob/f05f556780632d12ef7dbf0656534d771210aa1f/extension/extension.go#L54-L63).
 
-### Status Definitions
+## Status Definitions
 
 The system defines six statuses, listed in the table below:
 
@@ -29,7 +29,7 @@ Statuses can be categorized into two groups: lifecycle and runtime.
 - PermanentError
 - FatalError
 
-### Transitioning Between Statuses
+## Transitioning Between Statuses
 
 There is a finite state machine underlying the status reporting API that governs the allowable state transitions. See the state diagram below:
 
@@ -40,7 +40,7 @@ The finite state machine ensures that components progress through the lifecycle 
 
 ![Status Event Generation](img/component-status-event-generation.png)
 
-### Automation
+## Automation
 
 The collector's service implementation is responsible for starting and stopping components. Since it knows when these events occur and their outcomes, it can automate status reporting of lifecycle events for components.
 
@@ -52,7 +52,7 @@ The collector will report a Starting event when starting a component. If an erro
 
 The collector will report a Stopping event when shutting down a component. If Shutdown returns an error, the collector will report a PermanentError event. If Shutdown completes without an error, the collector will report a Stopped event.
 
-### Best Practices
+## Best Practices
 
 **Start**
 
@@ -70,7 +70,7 @@ We intend to define guidelines to help component authors distinguish between rec
 
 A component should never have to report explicit status during shutdown. Automated status reporting should handle all cases. To recap, the collector will report Stopping before Shutdown is called. If a component returns an error from shutdown the collector will report a PermanentError and it will report Stopped if Shutdown returns without an error.
 
-### Implementation Details
+## Implementation Details
 
 There are a couple of implementation details that are worth discussing for those who work on or wish to understand the collector internals.
 

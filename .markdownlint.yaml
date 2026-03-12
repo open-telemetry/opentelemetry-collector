@@ -5,7 +5,7 @@
 default: true
 
 # Disabled rules (existing codebase has many violations)
-MD001: false  # heading increment
+MD001: true  # heading increment
 MD004: false  # unordered list style
 MD007: false  # unordered list indentation
 MD009: false  # trailing spaces
