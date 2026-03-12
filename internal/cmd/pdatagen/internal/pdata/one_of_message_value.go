@@ -32,7 +32,7 @@ func (ms {{ .structName }}) {{ .fieldName }}() {{ .returnType }} {
 func (ms {{ .structName }}) SetEmpty{{ .fieldName }}() {{ .returnType }} {
 	ms.state.AssertMutable()
 	var ov *internal.{{ .originStructType }}
-	if !internal.UseProtoPooling.IsEnabled() {
+	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 		ov = &internal.{{ .originStructType }}{}
 	} else {
 		ov = internal.ProtoPool{{ .oneOfName }}.Get().(*internal.{{ .originStructType }})

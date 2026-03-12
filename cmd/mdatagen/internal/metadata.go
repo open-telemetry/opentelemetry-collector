@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -19,6 +21,8 @@ import (
 type Metadata struct {
 	// Type of the component.
 	Type string `mapstructure:"type"`
+	// DeprecatedType of the component.
+	DeprecatedType string `mapstructure:"deprecated_type"`
 	// DisplayName is a human-readable display name for the component.
 	DisplayName string `mapstructure:"display_name"`
 	// Description is a brief description of the component.
@@ -57,6 +61,8 @@ type Metadata struct {
 	PackageName string `mapstructure:"package_name"`
 	// FeatureGates that are managed by the component.
 	FeatureGates []FeatureGate `mapstructure:"feature_gates"`
+	// Config is the configuration schema for the component.
+	Config *cfggen.ConfigMetadata `mapstructure:"config"`
 }
 
 type Deprecated struct {
@@ -82,7 +88,7 @@ func (md Metadata) GetCodeCovComponentID() string {
 		return md.Status.CodeCovComponentID
 	}
 
-	return strings.ReplaceAll(md.Status.Class+"_"+md.Type, "/", "_")
+	return strings.ReplaceAll(md.Status.Class+"_"+strings.ReplaceAll(md.Type, "_", ""), "/", "_")
 }
 
 func (md Metadata) HasEntities() bool {
@@ -117,6 +123,10 @@ func (md *Metadata) Validate() error {
 	}
 
 	if err := md.validateFeatureGates(); err != nil {
+		errs = errors.Join(errs, err)
+	}
+
+	if err := md.validateConfig(); err != nil {
 		errs = errors.Join(errs, err)
 	}
 
@@ -203,6 +213,11 @@ func (md *Metadata) validateEntities() error {
 				errs = errors.Join(errs, fmt.Errorf(`entity "%v": attribute %v is already used by entity "%v"`, entity.Type, ref.Ref, otherEntity))
 			} else {
 				usedAttrs[ref.Ref] = entity.Type
+			}
+		}
+		for _, ref := range entity.ExtraAttributes {
+			if _, ok := md.ResourceAttributes[ref.Ref]; !ok {
+				errs = errors.Join(errs, fmt.Errorf(`entity "%v": extra_attributes refers to undefined resource attribute: %v`, entity.Type, ref.Ref))
 			}
 		}
 	}
@@ -428,6 +443,13 @@ func (md *Metadata) validateFeatureGates() error {
 	return errs
 }
 
+func (md *Metadata) validateConfig() error {
+	if md.Config != nil {
+		return md.Config.Validate()
+	}
+	return nil
+}
+
 type AttributeName string
 
 // AttributeRequirementLevel defines the requirement level of an attribute.
@@ -460,11 +482,11 @@ func (rl AttributeRequirementLevel) String() string {
 }
 
 func (mn AttributeName) Render() (string, error) {
-	return FormatIdentifier(string(mn), true)
+	return helpers.FormatIdentifier(string(mn), true)
 }
 
 func (mn AttributeName) RenderUnexported() (string, error) {
-	return FormatIdentifier(string(mn), false)
+	return helpers.FormatIdentifier(string(mn), false)
 }
 
 // ValueType defines an attribute value type.
@@ -713,6 +735,10 @@ type Entity struct {
 	Identity []EntityAttributeRef `mapstructure:"identity"`
 	// Description contains references to resource attributes that describe the entity.
 	Description []EntityAttributeRef `mapstructure:"description"`
+	// ExtraAttributes contains references to resource attributes that are contextually
+	// relevant to the entity but are not part of its identity or description
+	// (e.g. k8s.namespace.name on a pod entity).
+	ExtraAttributes []EntityAttributeRef `mapstructure:"extra_attributes"`
 	// Relationships defines how this entity relates to other entities (optional).
 	// Relationships should be defined only on one end. It is recommended to define
 	// relationships on entities with lower lifespan (higher churn).

@@ -235,6 +235,8 @@ Run tests, fmt, and lint:
 $ make
 ```
 
+You can run `make markdownlint` to check Markdown formatting.
+
 ## Creating a PR
 
 Checkout a new branch, make modifications, build locally, and push the branch to your fork
