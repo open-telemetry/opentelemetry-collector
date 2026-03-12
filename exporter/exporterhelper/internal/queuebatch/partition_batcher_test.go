@@ -560,3 +560,72 @@ func TestPartitionBatcher_ContextMerging(t *testing.T) {
 		})
 	}
 }
+
+func TestPartitionBatcher_OnEmptyCallbackTriggered(t *testing.T) {
+	// Use a very short FlushTimeout so the idle threshold (partitionIdleCycles*FlushTimeout) is reached quickly.
+	cfg := BatchConfig{
+		FlushTimeout: 10 * time.Millisecond,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      100, // High min size to ensure data doesn't flush immediately
+	}
+
+	sink := requesttest.NewSink()
+	onEmptyCalled := &atomic.Int64{}
+	onEmpty := func() {
+		onEmptyCalled.Add(1)
+	}
+
+	ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(1), sink.Export, zap.NewNop(), onEmpty)
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, ba.Shutdown(context.Background()))
+	})
+
+	// Consume some data below min threshold so it stays in currentBatch
+	done := newFakeDone()
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 5}, done)
+
+	// Wait for the batch to be flushed by timeout
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() == 1
+	}, 500*time.Millisecond, 10*time.Millisecond)
+
+	// Now wait for idle timeout (partitionIdleCycles * FlushTimeout = 10 * 10ms = 100ms)
+	// The onEmpty callback should be called after the partition is idle for this duration.
+	assert.Eventually(t, func() bool {
+		return onEmptyCalled.Load() >= 1
+	}, 500*time.Millisecond, 10*time.Millisecond)
+}
+
+func TestPartitionBatcher_OnEmptyNotCalledWithActiveData(t *testing.T) {
+	// Test that onEmpty is NOT called when data keeps flowing
+	cfg := BatchConfig{
+		FlushTimeout: 20 * time.Millisecond,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      5,
+	}
+
+	sink := requesttest.NewSink()
+	onEmptyCalled := &atomic.Int64{}
+	onEmpty := func() {
+		onEmptyCalled.Add(1)
+	}
+
+	ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(1), sink.Export, zap.NewNop(), onEmpty)
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, ba.Shutdown(context.Background()))
+	})
+
+	done := newFakeDone()
+	// Keep sending data to prevent idle timeout
+	for i := 0; i < 5; i++ {
+		ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 5}, done)
+		time.Sleep(15 * time.Millisecond)
+	}
+
+	// Data was flowing, onEmpty should not have been called
+	assert.Equal(t, int64(0), onEmptyCalled.Load())
+	// But data should have been flushed
+	assert.True(t, sink.RequestsCount() >= 1)
+}
