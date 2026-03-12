@@ -568,8 +568,6 @@ func generateConfigGoStruct(md Metadata, outputDir string) error {
 	return generateFileWithFns(tmplFile, dstFile, md, packageName, fns)
 }
 
-// joinCamelCase joins parts into a camelCase identifier. If exported is true the
-// first part is title-cased; otherwise it is lower-cased (lowerCamelCase).
 func joinCamelCase(parts []string, exported bool) string {
 	caser := cases.Title(language.English).String
 	var result strings.Builder

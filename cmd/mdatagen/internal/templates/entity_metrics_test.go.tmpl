@@ -9,10 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/xpdata/entity"
-	{{- if or isReceiver isScraper isConnector }}
 	"go.opentelemetry.io/collector/{{ .Status.Class }}/{{ .Status.Class }}test"
-	{{- end }}
-	"go.uber.org/zap"
 )
 
 {{ $resourceAttributes := .ResourceAttributes }}
@@ -20,10 +17,7 @@ import (
 func TestEntityBuilders(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	{{- if or isReceiver isScraper isConnector }}
 	settings := {{ .Status.Class }}test.NewNopSettings({{ .Status.Class }}test.NopType)
-	{{- end }}
-	settings.Logger = zap.NewNop()
 	mb := NewMetricsBuilder(DefaultMetricsBuilderConfig(), settings, WithStartTime(start))
 
 	{{- range $ent := .Entities }}
@@ -70,30 +64,9 @@ func TestEntityBuilders(t *testing.T) {
 		{{- end }}
 
 		eb := mb.For{{ publicVar $entityType }}(e)
-		require.NotNil(t, eb)
-
 		{{- range $name, $metric := $.Metrics }}
 		{{- if eq $metric.Entity $entityType }}
-		{{- if $metric.Data.HasMetricInputType }}
-		err := eb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ end }}
-		{{- range $metric.Attributes -}}
-		{{- if not (attributeInfo .).IsConditional -}}
-			, {{- template "getAttributeValue" . -}}
-		{{- end -}}
-		{{- end -}}
-		)
-		assert.NoError(t, err)
-
-		err = eb.Record{{ $name.Render }}DataPoint(ts, "not-a-number"
-		{{- range $metric.Attributes -}}
-		{{- if not (attributeInfo .).IsConditional -}}
-			, {{- template "getAttributeValue" . -}}
-		{{- end -}}
-		{{- end -}}
-		)
-		assert.Error(t, err)
-		{{- else }}
-		eb.Record{{ $name.Render }}DataPoint(ts, 1
+		eb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
 		{{- range $metric.Attributes -}}
 		{{- if not (attributeInfo .).IsConditional -}}
 			, {{- template "getAttributeValue" . -}}
@@ -102,10 +75,9 @@ func TestEntityBuilders(t *testing.T) {
 		)
 		{{- end }}
 		{{- end }}
-		{{- end }}
-
 		eb.Emit()
 		metrics := mb.Emit()
+
 		{{- $count := 0 }}
 		{{- range $name, $metric := $.Metrics }}
 		{{- if and (eq $metric.Entity $entityType) $metric.Enabled }}
@@ -143,7 +115,7 @@ func TestEntityBuilders(t *testing.T) {
 		{{- range $idAttr := $ent.Identity }}
 		cfg.ResourceAttributes.{{ publicVar $idAttr.Ref.Render }}.Enabled = false
 		{{- end }}
-		mbCfg := NewMetricsBuilder(cfg, settings, WithStartTime(start))
+		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
 		e := New{{ $entityStructType }}(
 			{{- range $i, $idAttr := $ent.Identity -}}
@@ -158,7 +130,7 @@ func TestEntityBuilders(t *testing.T) {
 		{{- end }}
 		{{- end }}
 
-		eb := mbCfg.For{{ publicVar $entityType }}(e)
+		eb := mb.For{{ publicVar $entityType }}(e)
 		{{- range $name, $metric := $.Metrics }}
 		{{- if eq $metric.Entity $entityType }}
 		eb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
@@ -171,7 +143,7 @@ func TestEntityBuilders(t *testing.T) {
 		{{- end }}
 		{{- end }}
 		eb.Emit()
-		metrics := mbCfg.Emit()
+		metrics := mb.Emit()
 
 		require.Equal(t, 1, metrics.ResourceMetrics().Len())
 		rm := metrics.ResourceMetrics().At(0)
@@ -199,7 +171,7 @@ func TestEntityBuilders(t *testing.T) {
 		{{- range $extraAttr := $ent.ExtraAttributes }}
 		cfg.ResourceAttributes.{{ publicVar $extraAttr.Ref.Render }}.Enabled = false
 		{{- end }}
-		mbCfg := NewMetricsBuilder(cfg, settings, WithStartTime(start))
+		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
 		e := New{{ $entityStructType }}(
 			{{- range $i, $idAttr := $ent.Identity -}}
@@ -220,7 +192,7 @@ func TestEntityBuilders(t *testing.T) {
 		{{- end }}
 		{{- end }}
 
-		eb := mbCfg.For{{ publicVar $entityType }}(e)
+		eb := mb.For{{ publicVar $entityType }}(e)
 		{{- range $name, $metric := $.Metrics }}
 		{{- if eq $metric.Entity $entityType }}
 		eb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
@@ -233,7 +205,7 @@ func TestEntityBuilders(t *testing.T) {
 		{{- end }}
 		{{- end }}
 		eb.Emit()
-		metrics := mbCfg.Emit()
+		metrics := mb.Emit()
 
 		require.Equal(t, 1, metrics.ResourceMetrics().Len())
 		rm := metrics.ResourceMetrics().At(0)

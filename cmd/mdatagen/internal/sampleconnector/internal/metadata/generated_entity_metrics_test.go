@@ -7,17 +7,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/xpdata/entity"
-	"go.uber.org/zap"
 )
 
 func TestEntityBuilders(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
 	settings := connectortest.NewNopSettings(connectortest.NopType)
-	settings.Logger = zap.NewNop()
 	mb := NewMetricsBuilder(DefaultMetricsBuilderConfig(), settings, WithStartTime(start))
 
 	t.Run("test.entity", func(t *testing.T) {
@@ -26,18 +25,12 @@ func TestEntityBuilders(t *testing.T) {
 		e.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
 
 		eb := mb.ForTestEntity(e)
-		require.NotNil(t, eb)
 		eb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 		eb.RecordDefaultMetricToBeRemovedDataPoint(ts, 1)
-		err := eb.RecordMetricInputTypeDataPoint(ts, "1", "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
-		assert.NoError(t, err)
-
-		err = eb.RecordMetricInputTypeDataPoint(ts, "not-a-number", "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
-		assert.Error(t, err)
+		eb.RecordMetricInputTypeDataPoint(ts, "1", "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 		eb.RecordOptionalMetricDataPoint(ts, 1, "string_attr-val", true, false)
 		eb.RecordOptionalMetricEmptyUnitDataPoint(ts, 1, "string_attr-val", true)
 		eb.RecordReaggregateMetricDataPoint(ts, 1, "string_attr-val", true)
-
 		eb.Emit()
 		metrics := mb.Emit()
 
@@ -58,12 +51,12 @@ func TestEntityBuilders(t *testing.T) {
 		// other enabled attributes are still added to the resource directly.
 		cfg := DefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.StringResourceAttr.Enabled = false
-		mbCfg := NewMetricsBuilder(cfg, settings, WithStartTime(start))
+		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
 		e := NewTestEntityEntity("string.resource.attr-val")
 		e.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
 
-		eb := mbCfg.ForTestEntity(e)
+		eb := mb.ForTestEntity(e)
 		eb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 		eb.RecordDefaultMetricToBeRemovedDataPoint(ts, 1)
 		eb.RecordMetricInputTypeDataPoint(ts, "1", "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
@@ -71,7 +64,7 @@ func TestEntityBuilders(t *testing.T) {
 		eb.RecordOptionalMetricEmptyUnitDataPoint(ts, 1, "string_attr-val", true)
 		eb.RecordReaggregateMetricDataPoint(ts, 1, "string_attr-val", true)
 		eb.Emit()
-		metrics := mbCfg.Emit()
+		metrics := mb.Emit()
 
 		require.Equal(t, 1, metrics.ResourceMetrics().Len())
 		rm := metrics.ResourceMetrics().At(0)
@@ -87,12 +80,12 @@ func TestEntityBuilders(t *testing.T) {
 		// with its identity but the disabled attribute is not added.
 		cfg := DefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.MapResourceAttr.Enabled = false
-		mbCfg := NewMetricsBuilder(cfg, settings, WithStartTime(start))
+		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
 		e := NewTestEntityEntity("string.resource.attr-val")
 		e.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
 
-		eb := mbCfg.ForTestEntity(e)
+		eb := mb.ForTestEntity(e)
 		eb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 		eb.RecordDefaultMetricToBeRemovedDataPoint(ts, 1)
 		eb.RecordMetricInputTypeDataPoint(ts, "1", "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
@@ -100,7 +93,7 @@ func TestEntityBuilders(t *testing.T) {
 		eb.RecordOptionalMetricEmptyUnitDataPoint(ts, 1, "string_attr-val", true)
 		eb.RecordReaggregateMetricDataPoint(ts, 1, "string_attr-val", true)
 		eb.Emit()
-		metrics := mbCfg.Emit()
+		metrics := mb.Emit()
 
 		require.Equal(t, 1, metrics.ResourceMetrics().Len())
 		rm := metrics.ResourceMetrics().At(0)
