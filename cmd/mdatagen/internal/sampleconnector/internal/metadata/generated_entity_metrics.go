@@ -13,24 +13,43 @@ import (
 // TestEntityEntity represents a test.entity entity.
 // Create one with NewTestEntityEntity and pass it to EmitForEntity.
 type TestEntityEntity struct {
-	ent entity.Entity
+	stringResourceAttr string
+	mapResourceAttr    map[string]any
 }
 
 // NewTestEntityEntity creates a new TestEntityEntity.
 // Identity attributes are required and must be provided at construction time.
-func NewTestEntityEntity(Stringresourceattr string) *TestEntityEntity {
-	e := &TestEntityEntity{
-		ent: entity.NewEntity("test.entity"),
+func NewTestEntityEntity(stringResourceAttr string) *TestEntityEntity {
+	return &TestEntityEntity{
+		stringResourceAttr: stringResourceAttr,
 	}
-	e.ent.IdentifyingAttributes().PutStr("string.resource.attr", Stringresourceattr)
-	return e
 }
 
 // Description attribute setters for test.entity.
 
 // SetMapResourceAttr sets the map.resource.attr description attribute.
 func (e *TestEntityEntity) SetMapResourceAttr(val map[string]any) {
-	e.ent.DescriptiveAttributes().PutEmpty("map.resource.attr").SetEmptyMap().FromRaw(val)
+	e.mapResourceAttr = val
+}
+
+// copyToResource populates res with the entity's attributes according to cfg.
+// If all identity attributes are enabled, an entity ref is produced; otherwise
+// the enabled attributes are written directly as plain resource attributes.
+func (e *TestEntityEntity) copyToResource(cfg ResourceAttributesConfig, res pcommon.Resource) {
+	if cfg.StringResourceAttr.Enabled {
+		ent := entity.ResourceEntities(res).PutEmpty("test.entity")
+		ent.IdentifyingAttributes().PutStr("string.resource.attr", e.stringResourceAttr)
+		if cfg.MapResourceAttr.Enabled {
+			ent.DescriptiveAttributes().PutEmpty("map.resource.attr").SetEmptyMap().FromRaw(e.mapResourceAttr)
+		}
+	} else {
+		if cfg.StringResourceAttr.Enabled {
+			res.Attributes().PutStr("string.resource.attr", e.stringResourceAttr)
+		}
+		if cfg.MapResourceAttr.Enabled {
+			res.Attributes().PutEmptyMap("map.resource.attr").FromRaw(e.mapResourceAttr)
+		}
+	}
 }
 
 // TestEntityMetricsBuilder records metrics for the test.entity entity.
@@ -75,11 +94,12 @@ func (eb *TestEntityMetricsBuilder) RecordReaggregateMetricDataPoint(ts pcommon.
 	eb.mb.metricReaggregateMetric.recordDataPoint(eb.mb.startTime, ts, val, stringAttrAttributeValue, booleanAttrAttributeValue)
 }
 
-// Emit emits all pending metrics for the entity passed to ForTestEntity and resets
-// the internal state. The entity's identity and description attributes are added to the resource.
-// If any relationships have been set on the entity, the related entities are also added to the resource.
+// Emit emits all pending metrics for the entity. Resource attributes are filtered by config:
+// disabled identity attributes suppress the entity (other enabled attributes are added directly
+// to the resource); disabled descriptive/extra attributes are omitted entirely.
 func (eb *TestEntityMetricsBuilder) Emit() {
 	res := pcommon.NewResource()
-	eb.entity.ent.CopyToResource(res)
+	cfg := eb.mb.config.ResourceAttributes
+	eb.entity.copyToResource(cfg, res)
 	eb.mb.EmitForResource(withResourceMoved(res))
 }
