@@ -1,0 +1,25 @@
+type: receiver
+reaggregation_enabled: true
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+
+attributes:
+  opt_in_string_attr:
+    description: Opt-in string attr.
+    type: string
+    requirement_level: opt_in
+
+metrics:
+  system.cpu.time:
+    enabled: true
+    description: Metric used to verify reaggregation test generation for dotted names.
+    stability: development
+    unit: s
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [opt_in_string_attr]
