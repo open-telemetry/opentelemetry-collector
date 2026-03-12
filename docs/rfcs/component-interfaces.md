@@ -14,12 +14,31 @@ When an interface type is exported for users outside of this
 repository, the type MUST follow these guidelines. This does not
 apply to internal packages, by definition.
 
+### Quick Reference
+
+| Aspect | Sealed Interface | Open Interface |
+|--------|-----------------|----------------|
+| Purpose | Package-provided implementation | Capability detection |
+| `private()` method | Yes | No |
+| Constructor | Required (`NewX`) | Not used |
+| External implementation | Prevented | Encouraged |
+| Evolution | Add methods + options | Add companion interfaces |
+| Example | `receiver.Factory` | `extensionmiddleware.GRPCClient` |
+
 ## Background
 
 As its most prominent feature, for every method in the public
 interface, a corresponding `type <Method>Func func(...) ...`
 declaration in the same package will exist. The method and the
 function have the same signature, by design.
+
+The motivation for this pattern is to support safe, incremental
+evolution of public interfaces. By pairing each interface method with
+a corresponding function type, we gain important properties: callers
+can pass `nil` for no-op behavior, types can embed the function type
+to automatically satisfy the interface, and new methods can be added
+to sealed interfaces through new function types and constructor
+options—all without breaking existing code.
 
 Users of the [`net/http` package have seen this
 pattern](https://pkg.go.dev/net/http#HandlerFunc). `http.HandlerFunc`
@@ -86,10 +105,10 @@ of an exposed `interface` type and has several uses:
   implementation of the interface. Uninitialized types that embed `<Method>Func`
   automatically gain a no-op implementation of the associated method.
 
-## Interface Consumers and Providers
+## Interface Implementation Patterns
 
-Extension interfaces fall into two categories: **sealed interfaces**
-and **open interfaces**.
+Public interfaces in the Collector fall into two categories: **sealed
+interfaces** and **open interfaces**.
 
 Sealed interfaces are provided by a package with safe-evolution in
 mind, not for external implementations. The use of sealed interfaces
@@ -103,24 +122,24 @@ sub-modules. In this example, new factory methods can be added in the
 future, through functional options, without breaking existing consumers
 or providers.
 
-Open interfaces are meant to enable extension points, enabling
-capability detection on a method-by-method basis. Open interfaces are
-implemented by extension components to provide capabilities through
-type assertions. While it is not safe to add a new method to an open
-interface, as it will break existing implementations, it is safe to
-add new and alternative extension points that serve equivalent
-functions. Consumers . Examples include
+Open interfaces, also known as **optional interfaces**, are meant to
+enable extension points, allowing capability detection on a
+method-by-method basis. Open interfaces are implemented by components
+to provide capabilities discovered through type assertions. While it
+is not safe to add a new method to an open interface, as it will
+break existing implementations, it is safe to add new companion
+interfaces that serve equivalent functions. Examples include
 `extensionmiddleware.HTTPClient` and `extensionmiddleware.GRPCServer`,
-our middleware interfaces.  In this example, new protocols can have
+our middleware interfaces. In this example, new protocols can have
 middleware support added in the future, and we can adjust to changes
 in the existing HTTP and gRPC middleware.
 
 ## Key Concepts
 
-### Two Categories of Extension Interfaces
+### Two Categories of Public Interfaces
 
-Extension interfaces fall into two categories based on how they are
-discovered and used.
+Public interfaces in the Collector fall into two categories based on
+how they are discovered and used.
 
 **Sealed interfaces** are provided by a package and consumed by users.
 They use an unexported `private()` method to prevent external
@@ -132,12 +151,12 @@ this practice enables safely evolving interfaces because users are
 forced to use constructor functions. Examples include
 `receiver.Factory` and `component.Host`.
 
-**Open interfaces** are implemented by extensions and discovered
-through type assertions at runtime. Consumers check if an extension
-implements a capability using Go's type assertion syntax. Multiple
-independent implementations exist, and extensions "opt in" to
-providing a feature. Examples include `extensionmiddleware.GRPCClient`
-and `extensionauth.Client`.
+**Open interfaces**, also called **optional interfaces**, are
+implemented by components and discovered through type assertions at
+runtime. Consumers check if a component implements a capability using
+Go's type assertion syntax. Multiple independent implementations
+exist, and components "opt in" to providing a feature. Examples
+include `extensionmiddleware.GRPCClient` and `extensionauth.Client`.
 
 The key distinction: sealed interfaces prevent external
 implementation; open interfaces invite it.
@@ -279,17 +298,6 @@ interfaces for capability detection:
   [extension/extensionmiddleware/extensionmiddlewaretest/err.go](../../extension/extensionmiddleware/extensionmiddlewaretest/err.go)
   demonstrates `baseExtension` struct embedding all function types
   with `NewNop()` and `NewErr()`
-
-## Summary
-
-| Aspect | Sealed Interface | Open Interface |
-|--------|-----------------|----------------|
-| Purpose | Package-provided implementation | Capability detection |
-| `private()` method | Yes | No |
-| Constructor | Required (`NewX`) | Not used |
-| External implementation | Prevented | Encouraged |
-| Evolution | Add methods + options | Add companion interfaces |
-| Example | `receiver.Factory` | `extensionmiddleware.GRPCClient` |
 
 ## References
 
