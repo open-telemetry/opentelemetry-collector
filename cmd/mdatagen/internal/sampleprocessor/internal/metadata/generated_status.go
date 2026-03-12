@@ -12,7 +12,8 @@ var (
 )
 
 const (
-	LogsStability    = component.StabilityLevelDevelopment
-	TracesStability  = component.StabilityLevelBeta
-	MetricsStability = component.StabilityLevelStable
+	LogsStability     = component.StabilityLevelDevelopment
+	ProfilesStability = component.StabilityLevelDevelopment
+	TracesStability   = component.StabilityLevelBeta
+	MetricsStability  = component.StabilityLevelStable
 )
