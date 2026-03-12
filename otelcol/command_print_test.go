@@ -250,3 +250,46 @@ func TestPrintCommand(t *testing.T) {
 		}
 	}
 }
+func TestRestoreSecrets(t *testing.T) {
+	tests := []struct {
+		name     string
+		base     any
+		raw      any
+		expected any
+	}{
+		{
+			name:     "replace in map",
+			base:     map[string]any{"key1": "[REDACTED]", "key2": "normal"},
+			raw:      map[string]any{"key1": "secret1", "key2": "normal"},
+			expected: map[string]any{"key1": "secret1", "key2": "normal"},
+		},
+		{
+			name:     "replace in slice",
+			base:     []any{"[REDACTED]", "normal"},
+			raw:      []any{"secret_in_slice", "normal"},
+			expected: []any{"secret_in_slice", "normal"},
+		},
+		{
+			name: "nested structures",
+			base: map[string]any{
+				"nested_slice": []any{"[REDACTED]"},
+				"nested_map":   map[string]any{"deep_key": "[REDACTED]"},
+			},
+			raw: map[string]any{
+				"nested_slice": []any{"deep_secret1"},
+				"nested_map":   map[string]any{"deep_key": "deep_secret2"},
+			},
+			expected: map[string]any{
+				"nested_slice": []any{"deep_secret1"},
+				"nested_map":   map[string]any{"deep_key": "deep_secret2"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			restoreSecrets(tt.base, tt.raw)
+			require.Equal(t, tt.expected, tt.base)
+		})
+	}
+}
