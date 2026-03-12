@@ -782,6 +782,12 @@ func WithResource(res pcommon.Resource) ResourceMetricsOption {
 	})
 }
 
+func withResourceMoved(res pcommon.Resource) ResourceMetricsOption {
+	return resourceMetricsOptionFunc(func(rm pmetric.ResourceMetrics) {
+		res.MoveTo(rm.Resource())
+	})
+}
+
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
@@ -802,11 +808,19 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 	})
 }
 
+// ForTestEntity returns a TestEntityMetricsBuilder that restricts metric recording
+// to metrics belonging to the test.entity entity.
+func (mb *MetricsBuilder) ForTestEntity(e *TestEntityEntity) *TestEntityMetricsBuilder {
+	return &TestEntityMetricsBuilder{mb: mb, entity: e}
+}
+
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
 // recording another set of data points as part of another resource. This function can be helpful when one scraper
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
 // just `Emit` function can be called instead.
 // Resource attributes should be provided as ResourceMetricsOption arguments.
+//
+// Deprecated: Use the For<EntityType> methods to get entity-scoped builders and call Emit() on them instead.
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
@@ -852,16 +866,22 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordDefaultMetricDataPoint adds a data point to default.metric metric.
+//
+// Deprecated: Use mb.ForTestEntity(entity).RecordDefaultMetricDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordDefaultMetricDataPoint(ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue AttributeEnumAttr, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
 	mb.metricDefaultMetric.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, overriddenIntAttrAttributeValue, enumAttrAttributeValue.String(), sliceAttrAttributeValue, mapAttrAttributeValue)
 }
 
 // RecordDefaultMetricToBeRemovedDataPoint adds a data point to default.metric.to_be_removed metric.
+//
+// Deprecated: Use mb.ForTestEntity(entity).RecordDefaultMetricToBeRemovedDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordDefaultMetricToBeRemovedDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricDefaultMetricToBeRemoved.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordMetricInputTypeDataPoint adds a data point to metric.input_type metric.
+//
+// Deprecated: Use mb.ForTestEntity(entity).RecordMetricInputTypeDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordMetricInputTypeDataPoint(ts pcommon.Timestamp, inputVal string, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue AttributeEnumAttr, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
@@ -872,16 +892,22 @@ func (mb *MetricsBuilder) RecordMetricInputTypeDataPoint(ts pcommon.Timestamp, i
 }
 
 // RecordOptionalMetricDataPoint adds a data point to optional.metric metric.
+//
+// Deprecated: Use mb.ForTestEntity(entity).RecordOptionalMetricDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordOptionalMetricDataPoint(ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool, booleanAttr2AttributeValue bool) {
 	mb.metricOptionalMetric.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, booleanAttrAttributeValue, booleanAttr2AttributeValue)
 }
 
 // RecordOptionalMetricEmptyUnitDataPoint adds a data point to optional.metric.empty_unit metric.
+//
+// Deprecated: Use mb.ForTestEntity(entity).RecordOptionalMetricEmptyUnitDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordOptionalMetricEmptyUnitDataPoint(ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
 	mb.metricOptionalMetricEmptyUnit.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, booleanAttrAttributeValue)
 }
 
 // RecordReaggregateMetricDataPoint adds a data point to reaggregate.metric metric.
+//
+// Deprecated: Use mb.ForTestEntity(entity).RecordReaggregateMetricDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordReaggregateMetricDataPoint(ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
 	mb.metricReaggregateMetric.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, booleanAttrAttributeValue)
 }

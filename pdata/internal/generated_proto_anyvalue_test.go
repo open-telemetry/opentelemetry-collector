@@ -191,20 +191,22 @@ func genTestFailingUnmarshalProtoValuesAnyValue() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field": {0x02},
 
-		"StringValue/wrong_wire_type": {0xc},
-		"StringValue/missing_value":   {0xa},
-		"BoolValue/wrong_wire_type":   {0x14},
-		"BoolValue/missing_value":     {0x10},
-		"IntValue/wrong_wire_type":    {0x1c},
-		"IntValue/missing_value":      {0x18},
-		"DoubleValue/wrong_wire_type": {0x24},
-		"DoubleValue/missing_value":   {0x21},
-		"ArrayValue/wrong_wire_type":  {0x2c},
-		"ArrayValue/missing_value":    {0x2a},
-		"KvlistValue/wrong_wire_type": {0x34},
-		"KvlistValue/missing_value":   {0x32},
-		"BytesValue/wrong_wire_type":  {0x3c},
-		"BytesValue/missing_value":    {0x3a},
+		"StringValue/wrong_wire_type":         {0xc},
+		"StringValue/missing_value":           {0xa},
+		"BoolValue/wrong_wire_type":           {0x14},
+		"BoolValue/missing_value":             {0x10},
+		"IntValue/wrong_wire_type":            {0x1c},
+		"IntValue/missing_value":              {0x18},
+		"DoubleValue/wrong_wire_type":         {0x24},
+		"DoubleValue/missing_value":           {0x21},
+		"ArrayValue/wrong_wire_type":          {0x2c},
+		"ArrayValue/missing_value":            {0x2a},
+		"KvlistValue/wrong_wire_type":         {0x34},
+		"KvlistValue/missing_value":           {0x32},
+		"BytesValue/wrong_wire_type":          {0x3c},
+		"BytesValue/missing_value":            {0x3a},
+		"StringValueStrindex/wrong_wire_type": {0x44},
+		"StringValueStrindex/missing_value":   {0x40},
 	}
 }
 
@@ -218,6 +220,7 @@ func genTestEncodingValuesAnyValue() map[string]*AnyValue {
 		"DoubleValue/test": {Value: &AnyValue_DoubleValue{DoubleValue: float64(3.1415926)}}, "ArrayValue/default": {Value: &AnyValue_ArrayValue{ArrayValue: &ArrayValue{}}},
 		"ArrayValue/test": {Value: &AnyValue_ArrayValue{ArrayValue: GenTestArrayValue()}}, "KvlistValue/default": {Value: &AnyValue_KvlistValue{KvlistValue: &KeyValueList{}}},
 		"KvlistValue/test": {Value: &AnyValue_KvlistValue{KvlistValue: GenTestKeyValueList()}}, "BytesValue/default": {Value: &AnyValue_BytesValue{BytesValue: nil}},
-		"BytesValue/test": {Value: &AnyValue_BytesValue{BytesValue: []byte{1, 2, 3}}},
+		"BytesValue/test": {Value: &AnyValue_BytesValue{BytesValue: []byte{1, 2, 3}}}, "StringValueStrindex/default": {Value: &AnyValue_StringValueStrindex{StringValueStrindex: int32(0)}},
+		"StringValueStrindex/test": {Value: &AnyValue_StringValueStrindex{StringValueStrindex: int32(13)}},
 	}
 }
