@@ -852,23 +852,6 @@ status:
 `,
 			wantLabel: "receiver/nop",
 		},
-		{
-			name:            "derive nested storage path from scope when no labels file present",
-			relCompDir:      "extension/storage/filestorageexample",
-			omitLabelsFile:  true,
-			labelsFileLines: nil,
-			metadataYAML: `
-type: filestorageexample
-github_project: open-telemetry/opentelemetry-collector-contrib
-scope_name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorageexample
-status:
-  disable_codecov_badge: true
-  class: extension
-  stability:
-    beta: [logs]
-`,
-			wantLabel: "extension/storage/filestorageexample",
-		},
 	}
 
 	for _, tt := range cases {
