@@ -9,7 +9,7 @@ $defs:
       {{- range $name, $metric := .Metrics }}
       {{- $metricReag := and $reag (hasAggregatableAttributes $metric.Attributes) }}
       {{ $name }}:
-        description: "{{ $name.Render }}Config provides config for the {{ $name }} metric."
+        description: "{{ $name.Render }}MetricConfig provides config for the {{ $name }} metric."
         type: object
         properties:
           enabled:

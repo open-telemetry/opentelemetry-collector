@@ -113,7 +113,7 @@ func With{{ .Render }}MetricAttribute({{ .RenderUnexported }}AttributeValue {{ (
 {{- $metricReag := and $reag (hasAggregatableAttributes $metric.Attributes) -}}
 type metric{{ $name.Render }} struct {
 	data                     pmetric.Metric // data buffer for generated metric.
-	config                   {{ if $reag }}{{ $name.Render }}Config{{ else }}MetricConfig{{ end }} // metric config provided by user.
+	config                   {{ if $reag }}{{ $name.Render }}{{ end }}MetricConfig // metric config provided by user.
 	capacity                 int // max observed number of data points added to the metric.
 	{{- if $metricReag }}
 	aggDataPoints            []{{ $metric.Data.MetricValueType.BasicType }} // slice containing number of aggregated datapoints at each index
@@ -153,7 +153,7 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetTimestamp(ts)
 	{{- range $metric.Attributes }}
 	{{- if not (attributeInfo .).IsConditional }}
-	if slices.Contains(m.config.EnabledAttributes, {{ $name.Render }}AttributeKey{{ .Render }}) {
+	if slices.Contains(m.config.EnabledAttributes, {{ $name.Render }}MetricAttributeKey{{ .Render }}) {
 		{{- template "putAttribute" . }}
 	}
 	{{- end }}
@@ -242,7 +242,7 @@ func (m *metric{{ $name.Render }}) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetric{{ $name.Render }}(cfg {{ if $reag }}{{ $name.Render }}Config{{ else }}MetricConfig{{ end }}) metric{{ $name.Render }} {
+func newMetric{{ $name.Render }}(cfg {{ if $reag }}{{ $name.Render }}{{ end }}MetricConfig) metric{{ $name.Render }} {
 	m := metric{{ $name.Render }}{config: cfg}
 
 	if cfg.Enabled {

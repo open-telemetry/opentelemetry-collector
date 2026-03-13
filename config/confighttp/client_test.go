@@ -485,7 +485,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 	}
 }
 
-func TestHttpClientHeaders(t *testing.T) {
+func TestHTTPClientHeaders(t *testing.T) {
 	tests := []struct {
 		name    string
 		headers configopaque.MapList
@@ -524,7 +524,7 @@ func TestHttpClientHeaders(t *testing.T) {
 	}
 }
 
-func TestHttpClientHostHeader(t *testing.T) {
+func TestHTTPClientHostHeader(t *testing.T) {
 	hostHeader := "th"
 	tt := struct {
 		name    string
@@ -559,7 +559,7 @@ func TestHttpClientHostHeader(t *testing.T) {
 	})
 }
 
-func TestHttpTransportOptions(t *testing.T) {
+func TestHTTPTransportOptions(t *testing.T) {
 	settings := componenttest.NewNopTelemetrySettings()
 	// Disable OTel instrumentation so the *http.Transport object is directly accessible
 	settings.MeterProvider = nil

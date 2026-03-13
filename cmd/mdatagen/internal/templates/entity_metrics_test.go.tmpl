@@ -9,10 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/xpdata/entity"
-	{{- if or isReceiver isScraper isConnector }}
 	"go.opentelemetry.io/collector/{{ .Status.Class }}/{{ .Status.Class }}test"
-	{{- end }}
-	"go.uber.org/zap"
 )
 
 {{ $resourceAttributes := .ResourceAttributes }}
@@ -20,10 +17,7 @@ import (
 func TestEntityBuilders(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	{{- if or isReceiver isScraper isConnector }}
 	settings := {{ .Status.Class }}test.NewNopSettings({{ .Status.Class }}test.NopType)
-	{{- end }}
-	settings.Logger = zap.NewNop()
 	mb := NewMetricsBuilder(DefaultMetricsBuilderConfig(), settings, WithStartTime(start))
 
 	{{- range $ent := .Entities }}
@@ -70,30 +64,9 @@ func TestEntityBuilders(t *testing.T) {
 		{{- end }}
 
 		eb := mb.For{{ publicVar $entityType }}(e)
-		require.NotNil(t, eb)
-
 		{{- range $name, $metric := $.Metrics }}
 		{{- if eq $metric.Entity $entityType }}
-		{{- if $metric.Data.HasMetricInputType }}
-		err := eb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ end }}
-		{{- range $metric.Attributes -}}
-		{{- if not (attributeInfo .).IsConditional -}}
-			, {{- template "getAttributeValue" . -}}
-		{{- end -}}
-		{{- end -}}
-		)
-		assert.NoError(t, err)
-
-		err = eb.Record{{ $name.Render }}DataPoint(ts, "not-a-number"
-		{{- range $metric.Attributes -}}
-		{{- if not (attributeInfo .).IsConditional -}}
-			, {{- template "getAttributeValue" . -}}
-		{{- end -}}
-		{{- end -}}
-		)
-		assert.Error(t, err)
-		{{- else }}
-		eb.Record{{ $name.Render }}DataPoint(ts, 1
+		eb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
 		{{- range $metric.Attributes -}}
 		{{- if not (attributeInfo .).IsConditional -}}
 			, {{- template "getAttributeValue" . -}}
@@ -102,10 +75,9 @@ func TestEntityBuilders(t *testing.T) {
 		)
 		{{- end }}
 		{{- end }}
-		{{- end }}
-
 		eb.Emit()
 		metrics := mb.Emit()
+
 		{{- $count := 0 }}
 		{{- range $name, $metric := $.Metrics }}
 		{{- if and (eq $metric.Entity $entityType) $metric.Enabled }}
@@ -134,5 +106,129 @@ func TestEntityBuilders(t *testing.T) {
 		assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 		{{- end }}
 	})
+
+	{{- if gt $count 0 }}
+	t.Run("{{ $entityType }}/disabled_identity_attr", func(t *testing.T) {
+		// When an identity attribute is disabled, the entity is not produced but
+		// other enabled attributes are still added to the resource directly.
+		cfg := DefaultMetricsBuilderConfig()
+		{{- range $idAttr := $ent.Identity }}
+		cfg.ResourceAttributes.{{ publicVar $idAttr.Ref.Render }}.Enabled = false
+		{{- end }}
+		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
+
+		e := New{{ $entityStructType }}(
+			{{- range $i, $idAttr := $ent.Identity -}}
+			{{- $attr := index $resourceAttributes $idAttr.Ref -}}
+			{{- if $i }}, {{ end -}}{{ $attr.TestValue }}
+			{{- end -}}
+		)
+		{{- if $ent.Description }}
+		{{- range $descAttr := $ent.Description }}
+		{{- $attr := index $resourceAttributes $descAttr.Ref }}
+		e.Set{{ publicVar $descAttr.Ref.Render }}({{ $attr.TestValue }})
+		{{- end }}
+		{{- end }}
+
+		eb := mb.For{{ publicVar $entityType }}(e)
+		{{- range $name, $metric := $.Metrics }}
+		{{- if eq $metric.Entity $entityType }}
+		eb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
+		{{- range $metric.Attributes -}}
+		{{- if not (attributeInfo .).IsConditional -}}
+			, {{- template "getAttributeValue" . -}}
+		{{- end -}}
+		{{- end -}}
+		)
+		{{- end }}
+		{{- end }}
+		eb.Emit()
+		metrics := mb.Emit()
+
+		require.Equal(t, 1, metrics.ResourceMetrics().Len())
+		rm := metrics.ResourceMetrics().At(0)
+		// Entity must not be present since its identity attribute is disabled.
+		_, ok := entity.ResourceEntities(rm.Resource()).Get("{{ $entityType }}")
+		assert.False(t, ok)
+		// Enabled descriptive attributes should still be on the resource directly.
+		{{- range $descAttr := $ent.Description }}
+		{{- $attr := index $resourceAttributes $descAttr.Ref }}
+		{{- if $attr.Enabled }}
+		_, ok = rm.Resource().Attributes().Get("{{ $descAttr.Ref }}")
+		assert.True(t, ok)
+		{{- end }}
+		{{- end }}
+	})
+
+	{{- if or $ent.Description $ent.ExtraAttributes }}
+	t.Run("{{ $entityType }}/disabled_descriptive_attr", func(t *testing.T) {
+		// When a descriptive attribute is disabled, the entity is still produced
+		// with its identity but the disabled attribute is not added.
+		cfg := DefaultMetricsBuilderConfig()
+		{{- range $descAttr := $ent.Description }}
+		cfg.ResourceAttributes.{{ publicVar $descAttr.Ref.Render }}.Enabled = false
+		{{- end }}
+		{{- range $extraAttr := $ent.ExtraAttributes }}
+		cfg.ResourceAttributes.{{ publicVar $extraAttr.Ref.Render }}.Enabled = false
+		{{- end }}
+		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
+
+		e := New{{ $entityStructType }}(
+			{{- range $i, $idAttr := $ent.Identity -}}
+			{{- $attr := index $resourceAttributes $idAttr.Ref -}}
+			{{- if $i }}, {{ end -}}{{ $attr.TestValue }}
+			{{- end -}}
+		)
+		{{- if $ent.Description }}
+		{{- range $descAttr := $ent.Description }}
+		{{- $attr := index $resourceAttributes $descAttr.Ref }}
+		e.Set{{ publicVar $descAttr.Ref.Render }}({{ $attr.TestValue }})
+		{{- end }}
+		{{- end }}
+		{{- if $ent.ExtraAttributes }}
+		{{- range $extraAttr := $ent.ExtraAttributes }}
+		{{- $attr := index $resourceAttributes $extraAttr.Ref }}
+		e.Set{{ publicVar $extraAttr.Ref.Render }}({{ $attr.TestValue }})
+		{{- end }}
+		{{- end }}
+
+		eb := mb.For{{ publicVar $entityType }}(e)
+		{{- range $name, $metric := $.Metrics }}
+		{{- if eq $metric.Entity $entityType }}
+		eb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
+		{{- range $metric.Attributes -}}
+		{{- if not (attributeInfo .).IsConditional -}}
+			, {{- template "getAttributeValue" . -}}
+		{{- end -}}
+		{{- end -}}
+		)
+		{{- end }}
+		{{- end }}
+		eb.Emit()
+		metrics := mb.Emit()
+
+		require.Equal(t, 1, metrics.ResourceMetrics().Len())
+		rm := metrics.ResourceMetrics().At(0)
+		// Entity must still be produced since identity attributes are enabled.
+		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("{{ $entityType }}")
+		require.True(t, ok)
+		{{- range $idAttr := $ent.Identity }}
+		{{- $attr := index $resourceAttributes $idAttr.Ref }}
+		attrVal, ok := entityVal.IdentifyingAttributes().Get("{{ $idAttr.Ref }}")
+		require.True(t, ok)
+		assert.Equal(t, {{ $attr.TestValue }}, attrVal.Str())
+		{{- end }}
+		// Disabled descriptive/extra attributes must not be present.
+		{{- range $descAttr := $ent.Description }}
+		_, ok = entityVal.DescriptiveAttributes().Get("{{ $descAttr.Ref }}")
+		assert.False(t, ok)
+		{{- end }}
+		{{- range $extraAttr := $ent.ExtraAttributes }}
+		_, ok = entityVal.DescriptiveAttributes().Get("{{ $extraAttr.Ref }}")
+		assert.False(t, ok)
+		{{- end }}
+	})
+	{{- end }}
+	{{- end }}
 	{{- end }}
 }

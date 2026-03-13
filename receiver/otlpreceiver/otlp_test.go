@@ -58,7 +58,7 @@ const otlpReceiverName = "receiver_test"
 
 var otlpReceiverID = component.MustNewIDWithName("otlp", otlpReceiverName)
 
-func TestJsonHttp(t *testing.T) {
+func TestJSONHTTP(t *testing.T) {
 	tests := []struct {
 		name               string
 		encoding           string
@@ -331,7 +331,7 @@ func TestHandleInvalidRequests(t *testing.T) {
 	require.NoError(t, recv.Shutdown(context.Background()))
 }
 
-func TestProtoHttp(t *testing.T) {
+func TestProtoHTTP(t *testing.T) {
 	tests := []struct {
 		name               string
 		encoding           string

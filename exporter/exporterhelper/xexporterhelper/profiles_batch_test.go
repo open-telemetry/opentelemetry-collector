@@ -311,12 +311,12 @@ func TestExtractProfiles(t *testing.T) {
 	}
 }
 
-func TestMergeSplitManySmallLogs(t *testing.T) {
+func TestMergeSplitManySmallProfiles(t *testing.T) {
 	// All requests merge into a single batch.
 	merged := []Request{newProfilesRequest(testdata.GenerateProfiles(1))}
 	for range 1000 {
-		lr2 := newProfilesRequest(testdata.GenerateProfiles(10))
-		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, exporterhelper.RequestSizerTypeItems, lr2)
+		pr2 := newProfilesRequest(testdata.GenerateProfiles(10))
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, exporterhelper.RequestSizerTypeItems, pr2)
 		merged = append(merged[0:len(merged)-1], res...)
 	}
 	assert.Len(t, merged, 2)
