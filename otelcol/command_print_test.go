@@ -60,7 +60,6 @@ func TestPrintCommand(t *testing.T) {
 		outString       map[string]string
 		disableFF       bool // disable the feature flag
 		validate        bool // add validation (even redacted)
-		errOnlyRedacted bool // error applies only in redacted mode
 	}{
 		{
 			name:      "file not found",
@@ -224,10 +223,6 @@ func TestPrintCommand(t *testing.T) {
 				switch mode {
 				case "redacted":
 				case "unredacted":
-					if test.errOnlyRedacted {
-						expectErr = false
-						expectErrMsg = ""
-					}
 				default:
 					expectErr = true
 					if test.disableFF {
