@@ -53,13 +53,13 @@ func TestPrintCommand(t *testing.T) {
 	defaultConfig := fmt.Sprint("file:", filepath.Join("testdata", "print_default.yaml"))
 
 	tests := []struct {
-		name            string
-		ofmt            string
-		path            string
-		errString       string
-		outString       map[string]string
-		disableFF       bool // disable the feature flag
-		validate        bool // add validation (even redacted)
+		name      string
+		ofmt      string
+		path      string
+		errString string
+		outString map[string]string
+		disableFF bool // disable the feature flag
+		validate  bool // add validation (even redacted)
 	}{
 		{
 			name:      "file not found",
