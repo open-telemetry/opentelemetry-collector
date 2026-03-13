@@ -257,8 +257,14 @@
             "type": "string",
             "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
           }
-        }
+        },
+        "required": [
+          "interval"
+        ]
       }
     }
-  }
+  },
+  "required": [
+    "targets"
+  ]
 }

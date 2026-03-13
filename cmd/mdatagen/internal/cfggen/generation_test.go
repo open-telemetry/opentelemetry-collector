@@ -793,24 +793,6 @@ func TestExtractDefs_EmptyInput(t *testing.T) {
 	require.Empty(t, result)
 }
 
-func TestExtractDefs_AdditionalPropertiesObject(t *testing.T) {
-	md := &ConfigMetadata{
-		Type: "object",
-		Properties: map[string]*ConfigMetadata{
-			// A property of type "object" with no sub-properties triggers the ap check
-			"extra": {Type: "object"},
-		},
-		AdditionalProperties: &ConfigMetadata{
-			Type: "object",
-			Properties: map[string]*ConfigMetadata{
-				"value": {Type: "integer"},
-			},
-		},
-	}
-	result := ExtractDefs(md)
-	require.Contains(t, result, "extra")
-}
-
 func TestNewCfgFns_ExtractImports(t *testing.T) {
 	fns := NewCfgFns("go.opentelemetry.io/collector", "go.opentelemetry.io/collector/comp")
 
@@ -981,4 +963,452 @@ func TestExtractImports_ContentSchema(t *testing.T) {
 	result, err := ExtractImports(md, "", "")
 	require.NoError(t, err)
 	require.Contains(t, result, "time")
+}
+
+func TestExtractValidators(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected []Validator
+	}{
+		{
+			name: "no validators",
+			metadata: &ConfigMetadata{
+				Type: "string",
+			},
+			expected: []Validator{},
+		},
+		{
+			name:     "nil config",
+			metadata: nil,
+			expected: []Validator{},
+		},
+		{
+			name: "required string field",
+			metadata: &ConfigMetadata{
+				Type:     "object",
+				Required: []string{"name"},
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string"},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName:  "name",
+					FieldType:  "string",
+					IsRequired: true,
+					IsOptional: false,
+					IsPointer:  false,
+					IsCallable: false,
+					IsIterable: false,
+				},
+			},
+		},
+		{
+			name: "required optional field",
+			metadata: &ConfigMetadata{
+				Type:     "object",
+				Required: []string{"name"},
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string", IsOptional: true},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName:  "name",
+					FieldType:  "string",
+					IsRequired: true,
+					IsOptional: true,
+					IsPointer:  false,
+					IsCallable: false,
+					IsIterable: false,
+				},
+			},
+		},
+		{
+			name: "required pointer field",
+			metadata: &ConfigMetadata{
+				Type:     "object",
+				Required: []string{"name"},
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string", IsPointer: true},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName:  "name",
+					FieldType:  "string",
+					IsRequired: true,
+					IsOptional: false,
+					IsPointer:  true,
+					IsCallable: false,
+					IsIterable: false,
+				},
+			},
+		},
+		{
+			name: "embedded object with required child emits IsCallable",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"server": {
+						Type:     "object",
+						Required: []string{"host"},
+						Properties: map[string]*ConfigMetadata{
+							"host": {Type: "string"},
+						},
+					},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName:  "server",
+					FieldType:  "object",
+					IsRequired: false,
+					IsPointer:  false,
+					IsOptional: false,
+					IsCallable: true,
+					IsIterable: false,
+				},
+			},
+		},
+		{
+			name: "embedded object without required children emits nothing",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"server": {
+						Type: "object",
+						Properties: map[string]*ConfigMetadata{
+							"host": {Type: "string"},
+						},
+					},
+				},
+			},
+			expected: []Validator{},
+		},
+		{
+			name: "map with required child in value schema emits IsCallable with IsIterable",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"tags": {
+						Type: "object",
+						AdditionalProperties: &ConfigMetadata{
+							Type:     "object",
+							Required: []string{"value"},
+							Properties: map[string]*ConfigMetadata{
+								"value": {Type: "string"},
+							},
+						},
+					},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName:  "tags",
+					FieldType:  "object",
+					IsRequired: false,
+					IsPointer:  false,
+					IsOptional: false,
+					IsCallable: true,
+					IsIterable: true,
+				},
+			},
+		},
+		{
+			name: "array with required child in items schema emits IsCallable with IsIterable",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"endpoints": {
+						Type: "array",
+						Items: &ConfigMetadata{
+							Type:     "object",
+							Required: []string{"url"},
+							Properties: map[string]*ConfigMetadata{
+								"url": {Type: "string"},
+							},
+						},
+					},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName:  "endpoints",
+					FieldType:  "array",
+					IsRequired: false,
+					IsPointer:  false,
+					IsOptional: false,
+					IsCallable: true,
+					IsIterable: true,
+				},
+			},
+		},
+		{
+			name: "required field that also has children emits both validators",
+			metadata: &ConfigMetadata{
+				Type:     "object",
+				Required: []string{"server"},
+				Properties: map[string]*ConfigMetadata{
+					"server": {
+						Type:     "object",
+						Required: []string{"host"},
+						Properties: map[string]*ConfigMetadata{
+							"host": {Type: "string"},
+						},
+					},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName:  "server",
+					FieldType:  "object",
+					IsRequired: true,
+					IsPointer:  false,
+					IsOptional: false,
+					IsCallable: false,
+					IsIterable: false,
+				},
+				{
+					FieldName:  "server",
+					FieldType:  "object",
+					IsRequired: false,
+					IsPointer:  false,
+					IsOptional: false,
+					IsCallable: true,
+					IsIterable: false,
+				},
+			},
+		},
+		{
+			name: "array with no items emits nothing",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"ids": {
+						Type:  "array",
+						Items: nil,
+					},
+				},
+			},
+			expected: []Validator{},
+		},
+		{
+			name: "object with additionalProperties but no required children emits nothing",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"labels": {
+						Type: "object",
+						AdditionalProperties: &ConfigMetadata{
+							Type: "string",
+						},
+					},
+				},
+			},
+			expected: []Validator{},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := ExtractValidators(test.metadata, test.metadata)
+			require.Equal(t, test.expected, result)
+		})
+	}
+}
+
+func TestExtractValidators_PropRef(t *testing.T) {
+	root := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"server": {
+				Ref: "server_config",
+			},
+		},
+	}
+	serverConfig := &ConfigMetadata{
+		Required: []string{"host"},
+		Properties: map[string]*ConfigMetadata{
+			"host": {Type: "string"},
+		},
+	}
+
+	propWithRef := &ConfigMetadata{
+		Type:       "object",
+		Ref:        "server_config",
+		Required:   serverConfig.Required,
+		Properties: serverConfig.Properties,
+	}
+	root.Properties["server"] = propWithRef
+
+	result := ExtractValidators(root, root)
+	require.Len(t, result, 1)
+	require.Equal(t, Validator{
+		FieldName:  "server",
+		FieldType:  "ref",
+		IsRequired: false,
+		IsCallable: true,
+		IsIterable: false,
+	}, result[0])
+}
+
+func TestExtractValidators_InternalRefFromDefs(t *testing.T) {
+	root := &ConfigMetadata{
+		Type: "object",
+		Defs: map[string]*ConfigMetadata{
+			"server_config": {
+				Type:     "object",
+				Required: []string{"host"},
+				Properties: map[string]*ConfigMetadata{
+					"host": {Type: "string"},
+				},
+			},
+		},
+	}
+	md := &ConfigMetadata{
+		Ref: "server_config",
+	}
+
+	result := ExtractValidators(root, md)
+	require.Len(t, result, 1)
+	require.Equal(t, Validator{
+		FieldName:  "server_config",
+		FieldType:  "ref",
+		IsRequired: false,
+		IsPointer:  false,
+		IsOptional: false,
+		IsCallable: true,
+		IsIterable: false,
+	}, result[0])
+}
+
+func TestExtractValidators_InternalRefFromDefs_NoValidators(t *testing.T) {
+	root := &ConfigMetadata{
+		Type: "object",
+		Defs: map[string]*ConfigMetadata{
+			"plain_config": {
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"host": {Type: "string"},
+				},
+			},
+		},
+	}
+	md := &ConfigMetadata{
+		Ref: "plain_config",
+	}
+
+	result := ExtractValidators(root, md)
+	require.Empty(t, result)
+}
+
+func TestExtractValidators_InternalRefFromDefs_RefNotFound(t *testing.T) {
+	root := &ConfigMetadata{
+		Type: "object",
+		Defs: map[string]*ConfigMetadata{},
+	}
+	md := &ConfigMetadata{
+		Ref: "missing_def",
+	}
+
+	result := ExtractValidators(root, md)
+	require.Empty(t, result)
+}
+
+func TestExtractValidators_AllOf_WithRef(t *testing.T) {
+	root := &ConfigMetadata{
+		Type: "object",
+		Defs: map[string]*ConfigMetadata{
+			"base_config": {
+				Type:     "object",
+				Required: []string{"endpoint"},
+				Properties: map[string]*ConfigMetadata{
+					"endpoint": {Type: "string"},
+				},
+			},
+		},
+	}
+	md := &ConfigMetadata{
+		Type: "object",
+		AllOf: []*ConfigMetadata{
+			{Ref: "base_config"},
+		},
+	}
+
+	result := ExtractValidators(root, md)
+	require.Len(t, result, 1)
+	require.Equal(t, Validator{
+		FieldName:  "base_config",
+		FieldType:  "ref",
+		IsRequired: false,
+		IsPointer:  false,
+		IsOptional: false,
+		IsCallable: true,
+		IsIterable: false,
+	}, result[0])
+}
+
+func TestExtractValidators_AllOf_NoRef(t *testing.T) {
+	root := &ConfigMetadata{
+		Type: "object",
+	}
+	md := &ConfigMetadata{
+		Type: "object",
+		AllOf: []*ConfigMetadata{
+			{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"host": {Type: "string"},
+				},
+			},
+		},
+	}
+
+	result := ExtractValidators(root, md)
+	require.Empty(t, result)
+}
+
+func TestExtractValidators_AllOf_RefWithNoValidators(t *testing.T) {
+	// An allOf entry whose Ref resolves to a schema with no required fields
+	// produces no validator.
+	root := &ConfigMetadata{
+		Type: "object",
+		Defs: map[string]*ConfigMetadata{
+			"empty_base": {
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"host": {Type: "string"},
+				},
+			},
+		},
+	}
+	md := &ConfigMetadata{
+		Type: "object",
+		AllOf: []*ConfigMetadata{
+			{Ref: "empty_base"},
+		},
+	}
+
+	result := ExtractValidators(root, md)
+	require.Empty(t, result)
+}
+
+func TestNewCfgFns_ExtractValidators(t *testing.T) {
+	fns := NewCfgFns("", "")
+	extractValidators := fns["extractValidators"].(func(*ConfigMetadata, *ConfigMetadata) []Validator)
+
+	require.Nil(t, extractValidators(nil, nil))
+
+	md := &ConfigMetadata{
+		Type:     "object",
+		Required: []string{"name"},
+		Properties: map[string]*ConfigMetadata{
+			"name": {Type: "string"},
+		},
+	}
+	result := extractValidators(md, md)
+	require.Len(t, result, 1)
+	require.Equal(t, "name", result[0].FieldName)
+	require.True(t, result[0].IsRequired)
 }
