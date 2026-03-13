@@ -16,8 +16,9 @@ import (
 )
 
 type KeyValue struct {
-	Value AnyValue
-	Key   string
+	Value       AnyValue
+	Key         string
+	KeyStrindex int32
 }
 
 var (
@@ -46,6 +47,7 @@ func DeleteKeyValue(orig *KeyValue, nullable bool) {
 	}
 
 	DeleteAnyValue(&orig.Value, false)
+
 	orig.Reset()
 	if nullable {
 		protoPoolKeyValue.Put(orig)
@@ -67,6 +69,8 @@ func CopyKeyValue(dest, src *KeyValue) *KeyValue {
 	}
 	dest.Key = src.Key
 	CopyAnyValue(&dest.Value, &src.Value)
+
+	dest.KeyStrindex = src.KeyStrindex
 
 	return dest
 }
@@ -132,6 +136,10 @@ func (orig *KeyValue) MarshalJSON(dest *json.Stream) {
 	}
 	dest.WriteObjectField("value")
 	orig.Value.MarshalJSON(dest)
+	if orig.KeyStrindex != int32(0) {
+		dest.WriteObjectField("keyStrindex")
+		dest.WriteInt32(orig.KeyStrindex)
+	}
 	dest.WriteObjectEnd()
 }
 
@@ -144,6 +152,8 @@ func (orig *KeyValue) UnmarshalJSON(iter *json.Iterator) {
 		case "value":
 
 			orig.Value.UnmarshalJSON(iter)
+		case "keyStrindex", "key_strindex":
+			orig.KeyStrindex = iter.ReadInt32()
 		default:
 			iter.Skip()
 		}
@@ -161,6 +171,9 @@ func (orig *KeyValue) SizeProto() int {
 	}
 	l = orig.Value.SizeProto()
 	n += 1 + proto.Sov(uint64(l)) + l
+	if orig.KeyStrindex != int32(0) {
+		n += 1 + proto.Sov(uint64(orig.KeyStrindex))
+	}
 	return n
 }
 
@@ -182,6 +195,11 @@ func (orig *KeyValue) MarshalProto(buf []byte) int {
 	pos--
 	buf[pos] = 0x12
 
+	if orig.KeyStrindex != int32(0) {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.KeyStrindex))
+		pos--
+		buf[pos] = 0x18
+	}
 	return len(buf) - pos
 }
 
@@ -227,6 +245,17 @@ func (orig *KeyValue) UnmarshalProto(buf []byte) error {
 			if err != nil {
 				return err
 			}
+
+		case 3:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field KeyStrindex", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.KeyStrindex = int32(num)
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
 			if err != nil {
@@ -241,6 +270,7 @@ func GenTestKeyValue() *KeyValue {
 	orig := NewKeyValue()
 	orig.Key = "test_key"
 	orig.Value = *GenTestAnyValue()
+	orig.KeyStrindex = int32(13)
 	return orig
 }
 

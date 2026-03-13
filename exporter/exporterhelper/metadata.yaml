@@ -17,7 +17,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: Number of log records failed to be added to the sending queue.
-      unit: "{records}"
+      unit: "{record}"
       sum:
         value_type: int
         monotonic: true
@@ -26,7 +26,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: Number of metric points failed to be added to the sending queue.
-      unit: "{datapoints}"
+      unit: "{datapoint}"
       sum:
         value_type: int
         monotonic: true
@@ -35,7 +35,7 @@ telemetry:
       enabled: true
       stability: development
       description: Number of profile samples failed to be added to the sending queue.
-      unit: "{samples}"
+      unit: "{sample}"
       sum:
         value_type: int
         monotonic: true
@@ -44,7 +44,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: Number of spans failed to be added to the sending queue.
-      unit: "{spans}"
+      unit: "{span}"
       sum:
         value_type: int
         monotonic: true
@@ -53,7 +53,7 @@ telemetry:
       enabled: true
       description: Number of units in the batch
       stability: development
-      unit: "{units}"
+      unit: "{unit}"
       histogram:
         value_type: int
         bucket_boundaries:
@@ -111,7 +111,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: Fixed capacity of the retry queue (in batches).
-      unit: "{batches}"
+      unit: "{batch}"
       gauge:
         value_type: int
         async: true
@@ -120,7 +120,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: Current size of the retry queue (in batches).
-      unit: "{batches}"
+      unit: "{batch}"
       gauge:
         value_type: int
         async: true
@@ -129,7 +129,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: "Number of log records in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent."
-      unit: "{records}"
+      unit: "{record}"
       sum:
         value_type: int
         monotonic: true
@@ -138,7 +138,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: "Number of metric points in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent."
-      unit: "{datapoints}"
+      unit: "{datapoint}"
       sum:
         value_type: int
         monotonic: true
@@ -147,7 +147,7 @@ telemetry:
       enabled: true
       stability: development
       description: "Number of profile samples in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent."
-      unit: "{samples}"
+      unit: "{sample}"
       sum:
         value_type: int
         monotonic: true
@@ -156,7 +156,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: "Number of spans in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent."
-      unit: "{spans}"
+      unit: "{span}"
       sum:
         value_type: int
         monotonic: true
@@ -165,7 +165,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: Number of log record successfully sent to destination.
-      unit: "{records}"
+      unit: "{record}"
       sum:
         value_type: int
         monotonic: true
@@ -174,7 +174,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: Number of metric points successfully sent to destination.
-      unit: "{datapoints}"
+      unit: "{datapoint}"
       sum:
         value_type: int
         monotonic: true
@@ -183,7 +183,7 @@ telemetry:
       enabled: true
       stability: development
       description: Number of profile samples successfully sent to destination.
-      unit: "{samples}"
+      unit: "{sample}"
       sum:
         value_type: int
         monotonic: true
@@ -192,7 +192,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: Number of spans successfully sent to destination.
-      unit: "{spans}"
+      unit: "{span}"
       sum:
         value_type: int
         monotonic: true

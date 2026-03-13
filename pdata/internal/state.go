@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 )
 
-// State defines an ownership state of pmetric.Metrics, plog.Logs or ptrace.Traces.
+// State defines an ownership state of pmetric.Metrics, plog.Logs, ptrace.Traces or pprofile.Profiles.
 type State struct {
 	refs  atomic.Int32
 	state uint32

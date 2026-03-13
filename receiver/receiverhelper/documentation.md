@@ -12,7 +12,7 @@ Number of log records successfully pushed into the pipeline.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {records} | Sum | Int | true | Alpha |
+| {record} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_accepted_metric_points
 
@@ -20,7 +20,7 @@ Number of metric points successfully pushed into the pipeline.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoints} | Sum | Int | true | Alpha |
+| {datapoint} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_accepted_profile_samples
 
@@ -28,7 +28,7 @@ Number of profile samples successfully pushed into the pipeline.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {samples} | Sum | Int | true | Alpha |
+| {sample} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_accepted_spans
 
@@ -36,7 +36,7 @@ Number of spans successfully pushed into the pipeline.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {spans} | Sum | Int | true | Alpha |
+| {span} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_failed_log_records
 
@@ -44,7 +44,7 @@ The number of log records that failed to be processed by the receiver due to int
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {records} | Sum | Int | true | Alpha |
+| {record} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_failed_metric_points
 
@@ -52,7 +52,7 @@ The number of metric points that failed to be processed by the receiver due to i
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoints} | Sum | Int | true | Alpha |
+| {datapoint} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_failed_profile_samples
 
@@ -60,7 +60,7 @@ The number of profile samples that failed to be processed by the receiver due to
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {samples} | Sum | Int | true | Alpha |
+| {sample} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_failed_spans
 
@@ -68,7 +68,7 @@ The number of spans that failed to be processed by the receiver due to internal 
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {spans} | Sum | Int | true | Alpha |
+| {span} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_refused_log_records
 
@@ -76,7 +76,7 @@ Number of log records that could not be pushed into the pipeline.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {records} | Sum | Int | true | Alpha |
+| {record} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_refused_metric_points
 
@@ -84,7 +84,7 @@ Number of metric points that could not be pushed into the pipeline.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoints} | Sum | Int | true | Alpha |
+| {datapoint} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_refused_profile_samples
 
@@ -92,7 +92,7 @@ Number of profile samples that could not be pushed into the pipeline.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {samples} | Sum | Int | true | Alpha |
+| {sample} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_refused_spans
 
@@ -100,7 +100,7 @@ Number of spans that could not be pushed into the pipeline.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {spans} | Sum | Int | true | Alpha |
+| {span} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_requests
 
@@ -108,7 +108,7 @@ The number of requests performed.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {requests} | Sum | Int | true | Alpha |
+| {request} | Sum | Int | true | Alpha |
 
 #### Attributes
 

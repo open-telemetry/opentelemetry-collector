@@ -268,7 +268,7 @@ Number of times the batch was sent due to a size trigger
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {times} | Sum | Int | true | Deprecated since 1.5.0 |
+| {time} | Sum | Int | true | Deprecated since 1.5.0 |
 
 **Deprecation note**: This metric will be removed in favor of batch_send_trigger_size
 
@@ -286,7 +286,7 @@ Queue capacity - sync gauge example.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {items} | Gauge | Int | Development |
+| {item} | Gauge | Int | Development |
 
 ### otelcol_queue_length
 
@@ -296,7 +296,7 @@ For example this metric only exists if feature A is enabled.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {items} | Gauge | Int | Alpha |
+| {item} | Gauge | Int | Alpha |
 
 ### otelcol_request_duration
 
