@@ -5,6 +5,8 @@ package migration // import "go.opentelemetry.io/collector/service/telemetry/ote
 
 import "strings"
 
+const maskedString = "[REDACTED]" // Same as configopaque.String
+
 func redactHeaderPath(config any, path []string) {
 	if len(path) == 0 {
 		return
@@ -19,7 +21,7 @@ func redactHeaderPath(config any, path []string) {
 	} else if configMap, ok := config.(map[string]any); ok {
 		for nextKey := range strings.SplitSeq(next, "|") {
 			if len(path) == 1 {
-				configMap[nextKey] = "[REDACTED]"
+				configMap[nextKey] = maskedString
 			} else if elem, ok := configMap[nextKey]; ok {
 				redactHeaderPath(elem, rest)
 			}
