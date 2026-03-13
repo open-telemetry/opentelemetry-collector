@@ -13,7 +13,7 @@ status:
   disable_codecov_badge: true
   class: processor
   stability:
-    development: [logs]
+    development: [logs, profiles]
     beta: [traces]
     stable: [metrics]
   distributions: []
