@@ -17,6 +17,7 @@ import (
 	"text/template"
 
 	"github.com/spf13/cobra"
+
 	"go.opentelemetry.io/collector/cmd/builder/internal/builder"
 )
 
@@ -48,7 +49,7 @@ func newExporterCommand() *cobra.Command {
 		RunE: func(_ *cobra.Command, args []string) error {
 			dirName := args[0]
 			if dirName == "" {
-				return fmt.Errorf("exporter directory name cannot be empty")
+				return errors.New("exporter directory name cannot be empty")
 			}
 
 			return runCreateExporter(dirName, signals, outputPath)

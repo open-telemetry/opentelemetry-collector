@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package create
+package create // import "go.opentelemetry.io/collector/cmd/builder/internal/create"
 
 import (
 	"os"
@@ -74,7 +74,7 @@ func validateExporter(t *testing.T, path string) {
 	require.FileExists(t, filepath.Join(path, "factory.go"))
 	require.FileExists(t, filepath.Join(path, "exporter.go"))
 
-	data, err := os.ReadFile(filepath.Join(path, "metadata.yaml"))
+	data, err := os.ReadFile(filepath.Join(path, "metadata.yaml")) // #nosec G304 -- test path controlled
 	require.NoError(t, err)
 	assert.Contains(t, string(data), "class: exporter")
 	assert.Contains(t, string(data), "type: my")
