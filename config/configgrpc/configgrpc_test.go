@@ -634,7 +634,7 @@ func TestGRPCServerSettings_ToListener_Error(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestHttpReception(t *testing.T) {
+func TestHTTPReception(t *testing.T) {
 	tests := []struct {
 		name           string
 		tlsServerCreds configoptional.Optional[configtls.ServerConfig]

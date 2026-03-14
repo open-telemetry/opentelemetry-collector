@@ -13,7 +13,7 @@
           "type": "object",
           "properties": {
             "default.metric": {
-              "description": "DefaultMetricConfig provides config for the default.metric metric.",
+              "description": "DefaultMetricMetricConfig provides config for the default.metric metric.",
               "type": "object",
               "properties": {
                 "aggregation_strategy": {
@@ -58,7 +58,7 @@
               }
             },
             "default.metric.to_be_removed": {
-              "description": "DefaultMetricToBeRemovedConfig provides config for the default.metric.to_be_removed metric.",
+              "description": "DefaultMetricToBeRemovedMetricConfig provides config for the default.metric.to_be_removed metric.",
               "type": "object",
               "properties": {
                 "enabled": {
@@ -68,7 +68,7 @@
               }
             },
             "metric.input_type": {
-              "description": "MetricInputTypeConfig provides config for the metric.input_type metric.",
+              "description": "MetricInputTypeMetricConfig provides config for the metric.input_type metric.",
               "type": "object",
               "properties": {
                 "aggregation_strategy": {
@@ -108,7 +108,7 @@
               }
             },
             "optional.metric": {
-              "description": "OptionalMetricConfig provides config for the optional.metric metric.",
+              "description": "OptionalMetricMetricConfig provides config for the optional.metric metric.",
               "type": "object",
               "properties": {
                 "aggregation_strategy": {
@@ -146,7 +146,7 @@
               }
             },
             "optional.metric.empty_unit": {
-              "description": "OptionalMetricEmptyUnitConfig provides config for the optional.metric.empty_unit metric.",
+              "description": "OptionalMetricEmptyUnitMetricConfig provides config for the optional.metric.empty_unit metric.",
               "type": "object",
               "properties": {
                 "aggregation_strategy": {
@@ -180,7 +180,7 @@
               }
             },
             "reaggregate.metric": {
-              "description": "ReaggregateMetricConfig provides config for the reaggregate.metric metric.",
+              "description": "ReaggregateMetricMetricConfig provides config for the reaggregate.metric metric.",
               "type": "object",
               "properties": {
                 "aggregation_strategy": {
@@ -214,7 +214,7 @@
               }
             },
             "reaggregate.metric.with_required": {
-              "description": "ReaggregateMetricWithRequiredConfig provides config for the reaggregate.metric.with_required metric.",
+              "description": "ReaggregateMetricWithRequiredMetricConfig provides config for the reaggregate.metric.with_required metric.",
               "type": "object",
               "properties": {
                 "aggregation_strategy": {
@@ -250,7 +250,7 @@
               }
             },
             "system.cpu.time": {
-              "description": "SystemCPUTimeConfig provides config for the system.cpu.time metric.",
+              "description": "SystemCPUTimeMetricConfig provides config for the system.cpu.time metric.",
               "type": "object",
               "properties": {
                 "enabled": {

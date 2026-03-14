@@ -107,7 +107,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.BatchSizeTriggerSend, err = builder.meter.Int64Counter(
 		"otelcol_batch_size_trigger_send",
 		metric.WithDescription("Number of times the batch was sent due to a size trigger [Deprecated]"),
-		metric.WithUnit("{times}"),
+		metric.WithUnit("{time}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessRuntimeTotalAllocBytes, err = builder.meter.Int64ObservableCounter(
@@ -119,13 +119,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.QueueCapacity, err = builder.meter.Int64Gauge(
 		"otelcol_queue_capacity",
 		metric.WithDescription("Queue capacity - sync gauge example. [Development]"),
-		metric.WithUnit("{items}"),
+		metric.WithUnit("{item}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.QueueLength, err = builder.meter.Int64ObservableGauge(
 		"otelcol_queue_length",
 		metric.WithDescription("This metric is optional and therefore not initialized in NewTelemetryBuilder. [Alpha]"),
-		metric.WithUnit("{items}"),
+		metric.WithUnit("{item}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.RequestDuration, err = builder.meter.Float64Histogram(
