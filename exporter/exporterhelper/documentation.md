@@ -12,7 +12,7 @@ Number of log records failed to be added to the sending queue.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {records} | Sum | Int | true | Alpha |
+| {record} | Sum | Int | true | Alpha |
 
 ### otelcol_exporter_enqueue_failed_metric_points
 
@@ -20,7 +20,7 @@ Number of metric points failed to be added to the sending queue.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoints} | Sum | Int | true | Alpha |
+| {datapoint} | Sum | Int | true | Alpha |
 
 ### otelcol_exporter_enqueue_failed_profile_samples
 
@@ -28,7 +28,7 @@ Number of profile samples failed to be added to the sending queue.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {samples} | Sum | Int | true | Development |
+| {sample} | Sum | Int | true | Development |
 
 ### otelcol_exporter_enqueue_failed_spans
 
@@ -36,7 +36,7 @@ Number of spans failed to be added to the sending queue.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {spans} | Sum | Int | true | Alpha |
+| {span} | Sum | Int | true | Alpha |
 
 ### otelcol_exporter_queue_batch_send_size
 
@@ -44,7 +44,7 @@ Number of units in the batch
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {units} | Histogram | Int | Development |
+| {unit} | Histogram | Int | Development |
 
 ### otelcol_exporter_queue_batch_send_size_bytes
 
@@ -60,7 +60,7 @@ Fixed capacity of the retry queue (in batches).
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {batches} | Gauge | Int | Alpha |
+| {batch} | Gauge | Int | Alpha |
 
 ### otelcol_exporter_queue_size
 
@@ -68,7 +68,7 @@ Current size of the retry queue (in batches).
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {batches} | Gauge | Int | Alpha |
+| {batch} | Gauge | Int | Alpha |
 
 ### otelcol_exporter_send_failed_log_records
 
@@ -76,7 +76,7 @@ Number of log records in failed attempts to send to destination. At detailed tel
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {records} | Sum | Int | true | Alpha |
+| {record} | Sum | Int | true | Alpha |
 
 ### otelcol_exporter_send_failed_metric_points
 
@@ -84,7 +84,7 @@ Number of metric points in failed attempts to send to destination. At detailed t
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoints} | Sum | Int | true | Alpha |
+| {datapoint} | Sum | Int | true | Alpha |
 
 ### otelcol_exporter_send_failed_profile_samples
 
@@ -92,7 +92,7 @@ Number of profile samples in failed attempts to send to destination. At detailed
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {samples} | Sum | Int | true | Development |
+| {sample} | Sum | Int | true | Development |
 
 ### otelcol_exporter_send_failed_spans
 
@@ -100,7 +100,7 @@ Number of spans in failed attempts to send to destination. At detailed telemetry
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {spans} | Sum | Int | true | Alpha |
+| {span} | Sum | Int | true | Alpha |
 
 ### otelcol_exporter_sent_log_records
 
@@ -108,7 +108,7 @@ Number of log record successfully sent to destination.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {records} | Sum | Int | true | Alpha |
+| {record} | Sum | Int | true | Alpha |
 
 ### otelcol_exporter_sent_metric_points
 
@@ -116,7 +116,7 @@ Number of metric points successfully sent to destination.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoints} | Sum | Int | true | Alpha |
+| {datapoint} | Sum | Int | true | Alpha |
 
 ### otelcol_exporter_sent_profile_samples
 
@@ -124,7 +124,7 @@ Number of profile samples successfully sent to destination.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {samples} | Sum | Int | true | Development |
+| {sample} | Sum | Int | true | Development |
 
 ### otelcol_exporter_sent_spans
 
@@ -132,7 +132,7 @@ Number of spans successfully sent to destination.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {spans} | Sum | Int | true | Alpha |
+| {span} | Sum | Int | true | Alpha |
 
 ## Feature Gates
 
