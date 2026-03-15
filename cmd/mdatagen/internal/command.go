@@ -58,19 +58,21 @@ func NewCommand() (*cobra.Command, error) {
 	if err != nil {
 		return nil, err
 	}
+	var noFormat bool
 	rootCmd := &cobra.Command{
 		Use:          "mdatagen",
 		Version:      ver,
 		SilenceUsage: true,
 		Args:         cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
-			return run(args[0])
+			return run(args[0], noFormat)
 		},
 	}
+	rootCmd.Flags().BoolVar(&noFormat, "noformat", noFormat, "skip gofmt formatting of generated Go files")
 	return rootCmd, nil
 }
 
-func run(ymlPath string) error {
+func run(ymlPath string, noformat bool) error {
 	if ymlPath == "" {
 		return errors.New("argument must be metadata.yaml file")
 	}
@@ -104,7 +106,7 @@ func run(ymlPath string) error {
 		if !slices.Contains(nonComponents, md.Status.Class) {
 			toGenerate[filepath.Join(tmplDir, "status.go.tmpl")] = filepath.Join(codeDir, "generated_status.go")
 			err = generateFile(filepath.Join(tmplDir, "component_test.go.tmpl"),
-				filepath.Join(ymlDir, "generated_component_test.go"), md, packageName)
+				filepath.Join(ymlDir, "generated_component_test.go"), md, packageName, noformat)
 			if err != nil {
 				return err
 			}
@@ -124,7 +126,7 @@ func run(ymlPath string) error {
 		}
 
 		err = generateFile(filepath.Join(tmplDir, "package_test.go.tmpl"),
-			filepath.Join(ymlDir, "generated_package_test.go"), md, packageName)
+			filepath.Join(ymlDir, "generated_package_test.go"), md, packageName, noformat)
 		if err != nil {
 			return err
 		}
@@ -225,12 +227,12 @@ func run(ymlPath string) error {
 	}
 
 	for tmpl, dst := range toGenerate {
-		if err := generateFile(tmpl, dst, md, md.GeneratedPackageName); err != nil {
+		if err := generateFile(tmpl, dst, md, md.GeneratedPackageName, noformat); err != nil {
 			return err
 		}
 	}
 
-	if err := generateConfigFiles(md, ymlDir); err != nil {
+	if err := generateConfigFiles(md, ymlDir, noformat); err != nil {
 		return fmt.Errorf("failed to generate config files: %w", err)
 	}
 
@@ -416,8 +418,8 @@ func executeTemplate(tmplFile string, md Metadata, goPackage string, fns templat
 	return buf.Bytes(), nil
 }
 
-func generateFile(tmplFile, outputFile string, md Metadata, goPackage string) error {
-	return generateFileWithFns(tmplFile, outputFile, md, goPackage, getTemplateFuncMap(md))
+func generateFile(tmplFile, outputFile string, md Metadata, goPackage string, noformat bool) error {
+	return generateFileWithFns(tmplFile, outputFile, md, goPackage, getTemplateFuncMap(md), noformat)
 }
 
 func inlineReplace(tmplFile, outputFile string, md Metadata, start, end, goPackage string) error {
@@ -449,7 +451,7 @@ func inlineReplace(tmplFile, outputFile string, md Metadata, start, end, goPacka
 	return nil
 }
 
-func generateFileWithFns(tmplFile, outputFile string, md Metadata, goPackage string, fns template.FuncMap) error {
+func generateFileWithFns(tmplFile, outputFile string, md Metadata, goPackage string, fns template.FuncMap, noformat bool) error {
 	if err := os.Remove(outputFile); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("unable to remove generated file %q: %w", outputFile, err)
 	}
@@ -459,7 +461,7 @@ func generateFileWithFns(tmplFile, outputFile string, md Metadata, goPackage str
 		return err
 	}
 	var formatErr error
-	if strings.HasSuffix(outputFile, ".go") {
+	if strings.HasSuffix(outputFile, ".go") && !noformat {
 		if formatted, err := format.Source(result); err == nil {
 			result = formatted
 		} else {
@@ -534,7 +536,7 @@ func validateYAMLKeyOrder(raw []byte) error {
 	return nil
 }
 
-func generateConfigFiles(md Metadata, mdDir string) error {
+func generateConfigFiles(md Metadata, mdDir string, noformat bool) error {
 	if md.Config != nil {
 		resolver := cfggen.NewResolver(md.PackageName, md.Status.Class, md.Type, mdDir)
 		resolvedSchema, err := resolver.ResolveSchema(md.Config)
@@ -547,14 +549,14 @@ func generateConfigFiles(md Metadata, mdDir string) error {
 			return fmt.Errorf("failed to write config schema: %w", err)
 		}
 
-		if err := generateConfigGoStruct(md, mdDir); err != nil {
+		if err := generateConfigGoStruct(md, mdDir, noformat); err != nil {
 			return fmt.Errorf("failed to generate config Go struct: %w", err)
 		}
 	}
 	return nil
 }
 
-func generateConfigGoStruct(md Metadata, outputDir string) error {
+func generateConfigGoStruct(md Metadata, outputDir string, noformat bool) error {
 	rootPkg, err := helpers.RootPackage(outputDir)
 	if err != nil {
 		return fmt.Errorf("unable to determine root package: %w", err)
@@ -565,7 +567,7 @@ func generateConfigGoStruct(md Metadata, outputDir string) error {
 	dstFile := filepath.Join(outputDir, "generated_config.go")
 
 	fns := cfggen.WithCfgFns(getTemplateFuncMap(md), rootPkg, md.PackageName)
-	return generateFileWithFns(tmplFile, dstFile, md, packageName, fns)
+	return generateFileWithFns(tmplFile, dstFile, md, packageName, fns, noformat)
 }
 
 func joinCamelCase(parts []string, exported bool) string {
