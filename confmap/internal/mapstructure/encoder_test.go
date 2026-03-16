@@ -12,7 +12,6 @@ import (
 
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/go-playground/assert.v1"
 )
 
 type mockUnredactedStringer string
@@ -403,13 +402,13 @@ func TestStringTextUnredactedHookFunc(t *testing.T) {
 
 	val, err := hook(reflect.ValueOf(123), reflect.Value{})
 	require.NoError(t, err)
-	assert.Equal(t, 123, val)
+	require.Equal(t, 123, val)
 
 	val, err = hook(reflect.ValueOf("plain"), reflect.Value{})
 	require.NoError(t, err)
-	assert.Equal(t, "plain", val)
+	require.Equal(t, "plain", val)
 
 	val, err = hook(reflect.ValueOf(mockUnredactedStringer("secret")), reflect.Value{})
 	require.NoError(t, err)
-	assert.Equal(t, "secret", val)
+	require.Equal(t, "secret", val)
 }
