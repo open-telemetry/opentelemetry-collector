@@ -59,7 +59,7 @@ Components refer to connectors, exporters, extensions, processors, and receivers
 * Provide a configuration structure which defines the configuration of the component
 * Provide the implementation that performs the component operation
 
-For more details on components, see the [Donating new components](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/28446b3e2d590451992761222d4c43b7948632d8/docs/new-components.md?plain=1#L1) document and the tutorial [Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) which provides a detailed example of building a component.
+For more details on components, see the [Donating New Components](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/28446b3e2d590451992761222d4c43b7948632d8/docs/new-components.md?plain=1#L1) document and the tutorial [Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) which provides a detailed example of building a component.
 
 When adding a new component to the OpenTelemetry Collector, ensure that any configuration structs used by the component include fields with the `configopaque.String` type for sensitive data. This ensures that the data is masked when serialized to prevent accidental exposure.
 
