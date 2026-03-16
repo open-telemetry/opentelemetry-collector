@@ -27,11 +27,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/connector"
+	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
+	"go.opentelemetry.io/collector/service/hostcapabilities"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/status"
@@ -490,3 +492,141 @@ func (g *Graph) ShutdownAll(ctx context.Context, reporter status.Reporter) error
 	return errs
 }
 
+func (g *Graph) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
+	exporters := make(map[pipeline.Signal]map[component.ID]component.Component)
+	exporters[pipeline.SignalTraces] = make(map[component.ID]component.Component)
+	exporters[pipeline.SignalMetrics] = make(map[component.ID]component.Component)
+	exporters[pipeline.SignalLogs] = make(map[component.ID]component.Component)
+	exporters[xpipeline.SignalProfiles] = make(map[component.ID]component.Component)
+
+	for _, pg := range g.pipelines {
+		for _, expNode := range pg.exporters {
+			// Skip connectors, otherwise individual components can introduce cycles
+			if expNode, ok := g.componentGraph.Node(expNode.ID()).(*exporterNode); ok {
+				exporters[expNode.pipelineType][expNode.componentID] = expNode.Component
+			}
+		}
+	}
+	return exporters
+}
+
+func cycleErr(err error, cycles [][]graph.Node) error {
+	var topoErr topo.Unorderable
+	if !errors.As(err, &topoErr) || len(cycles) == 0 || len(cycles[0]) == 0 {
+		return err
+	}
+
+	// There may be multiple cycles, but report only the first one.
+	cycle := cycles[0]
+
+	// The last node is a duplicate of the first node.
+	// Remove it because we may start from a different node.
+	cycle = cycle[:len(cycle)-1]
+
+	// A cycle always contains a connector. For the sake of consistent
+	// error messages report the cycle starting from a connector.
+	for i := 0; i < len(cycle); i++ {
+		if _, ok := cycle[i].(*connectorNode); ok {
+			cycle = append(cycle[i:], cycle[:i]...)
+			break
+		}
+	}
+
+	// Repeat the first node at the end to clarify the cycle
+	cycle = append(cycle, cycle[0])
+
+	// Build the error message
+	componentDetails := make([]string, 0, len(cycle))
+	for _, node := range cycle {
+		switch n := node.(type) {
+		case *processorNode:
+			componentDetails = append(componentDetails, fmt.Sprintf("processor %q in pipeline %q", n.componentID, n.pipelineID.String()))
+		case *connectorNode:
+			componentDetails = append(componentDetails, fmt.Sprintf("connector %q (%s to %s)", n.componentID, n.exprPipelineType, n.rcvrPipelineType))
+		default:
+			continue // skip capabilities/fanout nodes
+		}
+	}
+	return fmt.Errorf("cycle detected: %s", strings.Join(componentDetails, " -> "))
+}
+
+func connectorStability(f connector.Factory, expType, recType pipeline.Signal) component.StabilityLevel {
+	switch expType {
+	case pipeline.SignalTraces:
+		switch recType {
+		case pipeline.SignalTraces:
+			return f.TracesToTracesStability()
+		case pipeline.SignalMetrics:
+			return f.TracesToMetricsStability()
+		case pipeline.SignalLogs:
+			return f.TracesToLogsStability()
+		case xpipeline.SignalProfiles:
+			fprof, ok := f.(xconnector.Factory)
+			if !ok {
+				return component.StabilityLevelUndefined
+			}
+			return fprof.TracesToProfilesStability()
+		}
+	case pipeline.SignalMetrics:
+		switch recType {
+		case pipeline.SignalTraces:
+			return f.MetricsToTracesStability()
+		case pipeline.SignalMetrics:
+			return f.MetricsToMetricsStability()
+		case pipeline.SignalLogs:
+			return f.MetricsToLogsStability()
+		case xpipeline.SignalProfiles:
+			fprof, ok := f.(xconnector.Factory)
+			if !ok {
+				return component.StabilityLevelUndefined
+			}
+			return fprof.MetricsToProfilesStability()
+		}
+	case pipeline.SignalLogs:
+		switch recType {
+		case pipeline.SignalTraces:
+			return f.LogsToTracesStability()
+		case pipeline.SignalMetrics:
+			return f.LogsToMetricsStability()
+		case pipeline.SignalLogs:
+			return f.LogsToLogsStability()
+		case xpipeline.SignalProfiles:
+			fprof, ok := f.(xconnector.Factory)
+			if !ok {
+				return component.StabilityLevelUndefined
+			}
+			return fprof.LogsToProfilesStability()
+		}
+	case xpipeline.SignalProfiles:
+		fprof, ok := f.(xconnector.Factory)
+		if !ok {
+			return component.StabilityLevelUndefined
+		}
+		switch recType {
+		case pipeline.SignalTraces:
+			return fprof.ProfilesToTracesStability()
+		case pipeline.SignalMetrics:
+			return fprof.ProfilesToMetricsStability()
+		case pipeline.SignalLogs:
+			return fprof.ProfilesToLogsStability()
+		case xpipeline.SignalProfiles:
+			return fprof.ProfilesToProfilesStability()
+		}
+	}
+	return component.StabilityLevelUndefined
+}
+
+var (
+	_ component.Host                   = (*HostWrapper)(nil)
+	_ componentstatus.Reporter         = (*HostWrapper)(nil)
+	_ hostcapabilities.ExposeExporters = (*HostWrapper)(nil) //nolint:staticcheck // SA1019
+)
+
+type HostWrapper struct {
+	*Host
+	InstanceID *componentstatus.InstanceID
+}
+
+func (host *HostWrapper) Report(event *componentstatus.Event) {
+	host.Reporter.ReportStatus(host.InstanceID, event)
+}
