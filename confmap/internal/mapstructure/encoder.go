@@ -285,7 +285,7 @@ func StringTextUnredactedHookFunc() mapstructure.DecodeHookFuncValue {
 		if s, ok := from.Interface().(unredactedStringer); ok {
 			return s.UnredactedString(), nil
 		}
-		
+
 		return from.Interface(), nil
 	}
 }
