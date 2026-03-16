@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
-
 	"go.opentelemetry.io/collector/processor/xprocessor"
 )
 
