@@ -75,7 +75,7 @@ func TestPrintCommand(t *testing.T) {
 			name:            "invalid syntax without validate",
 			path:            invalidConfig1,
 			errString:       "'timeout' time: invalid duration",
-			errOnlyRedacted: false, 
+			errOnlyRedacted: false,
 		},
 		{
 			name:      "validation fail",
