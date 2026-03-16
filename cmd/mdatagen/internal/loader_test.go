@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -73,6 +74,28 @@ func TestLoadMetadata(t *testing.T) {
 					},
 					Warnings:             []string{"Any additional information that should be brought to the consumer's attention"},
 					UnsupportedPlatforms: []string{"freebsd", "illumos"},
+				},
+				Config: &cfggen.ConfigMetadata{
+					Type: "object",
+					AllOf: []*cfggen.ConfigMetadata{
+						{
+							Ref: "./internal/metadata.metrics_builder_config",
+						},
+					},
+					Properties: map[string]*cfggen.ConfigMetadata{
+						"endpoint": {
+							Description: "The endpoint to scrape metrics from.",
+							Type:        "string",
+							Default:     "localhost:12345",
+						},
+						"timeout": {
+							Description: "Timeout for scraping metrics.",
+							Type:        "string",
+							Format:      "duration",
+							Default:     "10s",
+						},
+					},
+					Required: []string{"endpoint"},
 				},
 				ResourceAttributes: map[AttributeName]Attribute{
 					"string.resource.attr": {
@@ -437,7 +460,7 @@ func TestLoadMetadata(t *testing.T) {
 								Since: "1.5.0",
 								Note:  "This metric will be removed in favor of batch_send_trigger_size",
 							},
-							Unit: strPtr("{times}"),
+							Unit: strPtr("{time}"),
 							Sum: &Sum{
 								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeInt},
 								Mono:            Mono{Monotonic: true},
@@ -477,7 +500,7 @@ func TestLoadMetadata(t *testing.T) {
 								Description:           "This metric is optional and therefore not initialized in NewTelemetryBuilder.",
 								ExtendedDocumentation: "For example this metric only exists if feature A is enabled.",
 							},
-							Unit:     strPtr("{items}"),
+							Unit:     strPtr("{item}"),
 							Optional: true,
 							Gauge: &Gauge{
 								MetricValueType: MetricValueType{
@@ -492,7 +515,7 @@ func TestLoadMetadata(t *testing.T) {
 								Description: "Queue capacity - sync gauge example.",
 								Stability:   component.StabilityLevelDevelopment,
 							},
-							Unit: strPtr("{items}"),
+							Unit: strPtr("{item}"),
 							Gauge: &Gauge{
 								MetricValueType: MetricValueType{
 									ValueType: pmetric.NumberDataPointValueTypeInt,
@@ -617,6 +640,11 @@ func TestLoadMetadata(t *testing.T) {
 			name:    "testdata/undeprecated_with_deprecation.yaml",
 			want:    Metadata{},
 			wantErr: "`stability` must be `deprecated` when specifying a `deprecated` field",
+		},
+		{
+			name:    "testdata/invalid_config.yaml",
+			want:    Metadata{},
+			wantErr: "config type must be \"object\", got \"string\"",
 		},
 		{
 			name:    "testdata/~~this file doesn't exist~~.yaml",

@@ -3,98 +3,108 @@
 package {{ .Package }}
 
 {{ $reag := .ReaggregationEnabled }}
+{{- $hasReagMetrics := false }}
+{{- range $name, $metric := .Metrics }}{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}{{- $hasReagMetrics = true }}{{- end }}{{- end }}
 
 import (
-    {{- if and $reag .Metrics -}}
-    "fmt"
-    "slices"
-    {{- end }}
+	{{- if $hasReagMetrics }}
+	"fmt"
+	"slices"
+	{{- end }}
 
-    "go.opentelemetry.io/collector/confmap"
-    {{ if and .Metrics .ResourceAttributes -}}
-    "go.opentelemetry.io/collector/filter"
-    {{- end }}
+	"go.opentelemetry.io/collector/confmap"
+	{{ if and .Metrics .ResourceAttributes -}}
+	"go.opentelemetry.io/collector/filter"
+	{{- end }}
 )
 {{ if .Metrics -}}
 
-
+{{- if not $reag }}
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled             bool     `mapstructure:"enabled"`
+	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-  {{ if $reag }}
-  AggregationStrategy string   `mapstructure:"aggregation_strategy"`
-  EnabledAttributes   []string `mapstructure:"attributes"` 
-  definedAttributes   []string   
-  requiredAttributes  []string                             
-  {{- end }}
 }
 
 func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
+	{{- template "metricUnmarshal" "ms" }}
+}
+{{- else }}
+
+{{- range $name, $metric := .Metrics }}
+{{- if hasAggregatableAttributes $metric.Attributes }}
+// {{ $name.Render }}MetricAttributeKey specifies the key of an attribute for the {{ $name }} metric.
+type {{ $name.Render }}MetricAttributeKey string
+
+const (
+	{{- range $metric.Attributes }}
+	{{ $name.Render }}MetricAttributeKey{{ .Render }} {{ $name.Render }}MetricAttributeKey = "{{ (attributeInfo .).Name }}"
+	{{- end }}
+)
+{{- end }}
+
+// {{ $name.Render }}MetricConfig provides config for the {{ $name }} metric.
+type {{ $name.Render }}MetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+	{{- if hasAggregatableAttributes $metric.Attributes }}
+
+	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []{{ $name.Render }}MetricAttributeKey `mapstructure:"attributes"`
+	{{- end }}
+}
+
+func (ms *{{ $name.Render }}MetricConfig) Unmarshal(parser *confmap.Conf) error {
+	{{- template "metricUnmarshal" "ms" }}
+}
+
+{{ if hasAggregatableAttributes $metric.Attributes -}}
+func (ms *{{ $name.Render }}MetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case {{ range $index, $element := $metric.Attributes -}}{{ if $index }}, {{ end }}{{ $name.Render }}MetricAttributeKey{{ $element.Render }}{{ end }}:
+		default:
+			return fmt.Errorf("metric {{ $name }} doesn't have an attribute %v, valid attributes: [{{ range $index, $element := $metric.Attributes -}}{{ if $index }}, {{ end }}{{ (attributeInfo $element).Name }}{{ end }}]", val)
+		}
 	}
 
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
+	{{- range $element := $metric.Attributes }}
+	{{- if (attributeInfo $element).IsRequired }}
+	if !slices.Contains(ms.EnabledAttributes, {{ $name.Render }}MetricAttributeKey{{ $element.Render }}) {
+		return fmt.Errorf("{{ (attributeInfo $element).Name }} is a required attribute for {{ $name }} metric and must be included")
+	}
+	{{- end }}
+	{{- end }}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
 	}
 
-  {{- if $reag }}
-  for _, val := range ms.EnabledAttributes {
-    if !slices.Contains(ms.definedAttributes, val) {
-      return fmt.Errorf("%v is not defined in metadata.yaml", val)
-    }
-  }
-
-  for _, val := range ms.requiredAttributes {
-    if !slices.Contains(ms.EnabledAttributes, val) {
-      return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
-    }
-  }
-
-  if ms.AggregationStrategy != AggregationStrategySum && 
-     ms.AggregationStrategy != AggregationStrategyAvg && 
-     ms.AggregationStrategy != AggregationStrategyMin && 
-     ms.AggregationStrategy != AggregationStrategyMax {
-    return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
-  }
-  {{- end }}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
-
-{{- if $reag }}
-// AttributeConfig holds configuration information for a particular metric.
-type AttributeConfig struct {
-  Enabled bool `mapstructure:"enabled"`
-}
+{{- end }}
+{{- end }}
 {{- end }}
 
 // MetricsConfig provides config for {{ .Type }} metrics.
 type MetricsConfig struct {
 	{{- range $name, $metric := .Metrics }}
-	{{ $name.Render }} MetricConfig `mapstructure:"{{ $name }}"`
+	{{ $name.Render }} {{ if $reag }}{{ $name.Render }}{{ end }}MetricConfig `mapstructure:"{{ $name }}"`
 	{{- end }}
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		{{- range $name, $metric := .Metrics }}
-		{{ $name.Render }}: MetricConfig{
+		{{- $metricReag := and $reag (hasAggregatableAttributes $metric.Attributes) }}
+		{{ $name.Render }}: {{ if $reag }}{{ $name.Render }}{{ end }}MetricConfig{
 			Enabled: {{ $metric.Enabled }},
-    {{ if $reag }}
-    {{ if eq $metric.Data.Type "Sum" -}}
-      AggregationStrategy: AggregationStrategySum,
-    {{- end }}
-    {{- if eq $metric.Data.Type "Gauge" -}}
-      AggregationStrategy: AggregationStrategyAvg,
-    {{- end }}
-      requiredAttributes: []string{ {{- range $index, $element := (requiredAttributes $metric.Attributes) -}}{{ if $index }},{{ end }}"{{ $element }}"{{ end -}} },
-      definedAttributes: []string{ {{- range $index, $element := $metric.Attributes -}}{{ if $index }},{{ end }}"{{ (attributeInfo $element).Name }}"{{ end -}} },
-      EnabledAttributes: []string{ {{- range $index, $element := (defaultAttributes $metric.Attributes) -}}{{ if $index }},{{ end }}"{{ $element }}"{{ end -}} },
-    {{- end }}
+			{{- if $metricReag }}
+			AggregationStrategy: AggregationStrategy{{ if eq $metric.Data.Type "Sum" }}Sum{{ else }}Avg{{ end }},
+			EnabledAttributes:   []{{ $name.Render }}MetricAttributeKey{ {{- range $element := $metric.Attributes -}}{{- if (attributeInfo $element).IsNotOptIn }}{{ $name.Render }}MetricAttributeKey{{ $element.Render }}, {{ end }}{{- end -}} },
+			{{- end }}
 		},
 		{{- end }}
 	}

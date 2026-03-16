@@ -12,7 +12,7 @@ status:
   disable_codecov_badge: true
   class: connector
   stability:
-    development: [metrics_to_metrics]
+    development: [metrics_to_metrics, profiles_to_profiles]
   distributions: []
   unsupported_platforms: [freebsd, illumos]
   codeowners:
