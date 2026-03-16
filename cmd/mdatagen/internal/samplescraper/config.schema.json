@@ -256,10 +256,17 @@
           "interval": {
             "type": "string",
             "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+          },
+          "options": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
           }
         },
         "required": [
-          "interval"
+          "http_client",
+          "options"
         ]
       }
     }

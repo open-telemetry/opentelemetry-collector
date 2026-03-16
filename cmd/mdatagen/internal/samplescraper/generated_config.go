@@ -12,16 +12,20 @@ import (
 )
 
 type TargetsItem struct {
-	HTTPClient confighttp.ClientConfig                `mapstructure:"http_client"`
+	HTTPClient *confighttp.ClientConfig               `mapstructure:"http_client"`
 	Interval   configoptional.Optional[time.Duration] `mapstructure:"interval"`
+	Options    map[string]string                      `mapstructure:"options"`
 }
 
 // Validate validates the targets_item fields.
 func (c *TargetsItem) Validate() error {
 	var err error
 
-	if c.Interval.HasValue() {
-		err = errors.Join(err, errors.New("Interval is required"))
+	if c.Options == nil || len(c.Options) == 0 {
+		err = errors.Join(err, errors.New("Options is required"))
+	}
+	if c.HTTPClient == nil {
+		err = errors.Join(err, errors.New("HTTPClient is required"))
 	}
 
 	return err

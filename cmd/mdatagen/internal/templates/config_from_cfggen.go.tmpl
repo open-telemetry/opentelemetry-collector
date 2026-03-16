@@ -67,11 +67,7 @@ type Config struct {
 
 {{ define "requiredValidator" -}}
     {{ $name := .FieldName | publicVar -}}
-    {{- if .IsOptional }}
-        if c.{{ $name }}.HasValue() {
-            err = errors.Join(err, errors.New("{{ $name }} is required"))
-        }
-    {{- else if .IsPointer }}
+    {{- if .IsPointer }}
         if c.{{ $name }} == nil {
             err = errors.Join(err, errors.New("{{ $name }} is required"))
         }

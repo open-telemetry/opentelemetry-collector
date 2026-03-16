@@ -36,11 +36,16 @@ config:
         properties:
           http_client:
             $ref: /config/confighttp.client_config
+            x-pointer: true
           interval:
             type: string
             format: duration
             x-optional: true
-        required: [interval]
+          options:
+            type: object
+            additionalProperties:
+              type: string
+        required: [http_client, options]
   required: [targets]
 
 resource_attributes:
