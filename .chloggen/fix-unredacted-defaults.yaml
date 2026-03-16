@@ -3,4 +3,5 @@ component: pkg/otelcol
 note: Fix missing default values in unredacted print-config command by introducing confmap.WithUnredacted MarshalOption.
 subtext: |
   Resolves an issue where the unredacted mode output omitted all default-valued options. By introducing a new MarshalOption to disable redaction directly at the confmap encoding level, the unredacted mode now preserves all component defaults natively without requiring post-processing.
+issues: [14750]
 change_logs: [user]
