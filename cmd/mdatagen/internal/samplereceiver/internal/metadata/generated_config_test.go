@@ -27,48 +27,48 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					DefaultMetric: DefaultMetricConfig{
+					DefaultMetric: DefaultMetricMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []DefaultMetricAttributeKey{DefaultMetricAttributeKeyStringAttr, DefaultMetricAttributeKeyOverriddenIntAttr, DefaultMetricAttributeKeyEnumAttr, DefaultMetricAttributeKeySliceAttr, DefaultMetricAttributeKeyMapAttr, DefaultMetricAttributeKeyConditionalIntAttr, DefaultMetricAttributeKeyConditionalStringAttr, DefaultMetricAttributeKeyOptInBoolAttr},
+						EnabledAttributes:   []DefaultMetricMetricAttributeKey{DefaultMetricMetricAttributeKeyStringAttr, DefaultMetricMetricAttributeKeyOverriddenIntAttr, DefaultMetricMetricAttributeKeyEnumAttr, DefaultMetricMetricAttributeKeySliceAttr, DefaultMetricMetricAttributeKeyMapAttr, DefaultMetricMetricAttributeKeyConditionalIntAttr, DefaultMetricMetricAttributeKeyConditionalStringAttr, DefaultMetricMetricAttributeKeyOptInBoolAttr},
 					},
-					DefaultMetricToBeRemoved: DefaultMetricToBeRemovedConfig{
+					DefaultMetricToBeRemoved: DefaultMetricToBeRemovedMetricConfig{
 						Enabled: true,
 					},
-					MetricInputType: MetricInputTypeConfig{
+					MetricInputType: MetricInputTypeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MetricInputTypeAttributeKey{MetricInputTypeAttributeKeyStringAttr, MetricInputTypeAttributeKeyOverriddenIntAttr, MetricInputTypeAttributeKeyEnumAttr, MetricInputTypeAttributeKeySliceAttr, MetricInputTypeAttributeKeyMapAttr},
+						EnabledAttributes:   []MetricInputTypeMetricAttributeKey{MetricInputTypeMetricAttributeKeyStringAttr, MetricInputTypeMetricAttributeKeyOverriddenIntAttr, MetricInputTypeMetricAttributeKeyEnumAttr, MetricInputTypeMetricAttributeKeySliceAttr, MetricInputTypeMetricAttributeKeyMapAttr},
 					},
-					OptionalMetric: OptionalMetricConfig{
+					OptionalMetric: OptionalMetricMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OptionalMetricAttributeKey{OptionalMetricAttributeKeyStringAttr, OptionalMetricAttributeKeyBooleanAttr, OptionalMetricAttributeKeyBooleanAttr2, OptionalMetricAttributeKeyConditionalStringAttr},
+						EnabledAttributes:   []OptionalMetricMetricAttributeKey{OptionalMetricMetricAttributeKeyStringAttr, OptionalMetricMetricAttributeKeyBooleanAttr, OptionalMetricMetricAttributeKeyBooleanAttr2, OptionalMetricMetricAttributeKeyConditionalStringAttr},
 					},
-					OptionalMetricEmptyUnit: OptionalMetricEmptyUnitConfig{
+					OptionalMetricEmptyUnit: OptionalMetricEmptyUnitMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OptionalMetricEmptyUnitAttributeKey{OptionalMetricEmptyUnitAttributeKeyStringAttr, OptionalMetricEmptyUnitAttributeKeyBooleanAttr},
+						EnabledAttributes:   []OptionalMetricEmptyUnitMetricAttributeKey{OptionalMetricEmptyUnitMetricAttributeKeyStringAttr, OptionalMetricEmptyUnitMetricAttributeKeyBooleanAttr},
 					},
-					ReaggregateMetric: ReaggregateMetricConfig{
+					ReaggregateMetric: ReaggregateMetricMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []ReaggregateMetricAttributeKey{ReaggregateMetricAttributeKeyStringAttr, ReaggregateMetricAttributeKeyBooleanAttr},
+						EnabledAttributes:   []ReaggregateMetricMetricAttributeKey{ReaggregateMetricMetricAttributeKeyStringAttr, ReaggregateMetricMetricAttributeKeyBooleanAttr},
 					},
-					ReaggregateMetricWithRequired: ReaggregateMetricWithRequiredConfig{
+					ReaggregateMetricWithRequired: ReaggregateMetricWithRequiredMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []ReaggregateMetricWithRequiredAttributeKey{ReaggregateMetricWithRequiredAttributeKeyRequiredStringAttr, ReaggregateMetricWithRequiredAttributeKeyStringAttr, ReaggregateMetricWithRequiredAttributeKeyBooleanAttr},
+						EnabledAttributes:   []ReaggregateMetricWithRequiredMetricAttributeKey{ReaggregateMetricWithRequiredMetricAttributeKeyRequiredStringAttr, ReaggregateMetricWithRequiredMetricAttributeKeyStringAttr, ReaggregateMetricWithRequiredMetricAttributeKeyBooleanAttr},
 					},
-					SystemCPUTime: SystemCPUTimeConfig{
+					SystemCPUTime: SystemCPUTimeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SystemCPUTimeAttributeKey{SystemCPUTimeAttributeKeyCpu},
+						EnabledAttributes:   []SystemCPUTimeMetricAttributeKey{SystemCPUTimeMetricAttributeKeyCpu},
 					},
-					SystemMemoryUsage: SystemMemoryUsageConfig{
+					SystemMemoryUsage: SystemMemoryUsageMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SystemMemoryUsageAttributeKey{SystemMemoryUsageAttributeKeyState},
+						EnabledAttributes:   []SystemMemoryUsageMetricAttributeKey{SystemMemoryUsageMetricAttributeKeyState},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -87,48 +87,48 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					DefaultMetric: DefaultMetricConfig{
+					DefaultMetric: DefaultMetricMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []DefaultMetricAttributeKey{DefaultMetricAttributeKeyStringAttr, DefaultMetricAttributeKeyOverriddenIntAttr, DefaultMetricAttributeKeyEnumAttr, DefaultMetricAttributeKeySliceAttr, DefaultMetricAttributeKeyMapAttr, DefaultMetricAttributeKeyConditionalIntAttr, DefaultMetricAttributeKeyConditionalStringAttr, DefaultMetricAttributeKeyOptInBoolAttr},
+						EnabledAttributes:   []DefaultMetricMetricAttributeKey{DefaultMetricMetricAttributeKeyStringAttr, DefaultMetricMetricAttributeKeyOverriddenIntAttr, DefaultMetricMetricAttributeKeyEnumAttr, DefaultMetricMetricAttributeKeySliceAttr, DefaultMetricMetricAttributeKeyMapAttr, DefaultMetricMetricAttributeKeyConditionalIntAttr, DefaultMetricMetricAttributeKeyConditionalStringAttr, DefaultMetricMetricAttributeKeyOptInBoolAttr},
 					},
-					DefaultMetricToBeRemoved: DefaultMetricToBeRemovedConfig{
+					DefaultMetricToBeRemoved: DefaultMetricToBeRemovedMetricConfig{
 						Enabled: false,
 					},
-					MetricInputType: MetricInputTypeConfig{
+					MetricInputType: MetricInputTypeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []MetricInputTypeAttributeKey{MetricInputTypeAttributeKeyStringAttr, MetricInputTypeAttributeKeyOverriddenIntAttr, MetricInputTypeAttributeKeyEnumAttr, MetricInputTypeAttributeKeySliceAttr, MetricInputTypeAttributeKeyMapAttr},
+						EnabledAttributes:   []MetricInputTypeMetricAttributeKey{MetricInputTypeMetricAttributeKeyStringAttr, MetricInputTypeMetricAttributeKeyOverriddenIntAttr, MetricInputTypeMetricAttributeKeyEnumAttr, MetricInputTypeMetricAttributeKeySliceAttr, MetricInputTypeMetricAttributeKeyMapAttr},
 					},
-					OptionalMetric: OptionalMetricConfig{
+					OptionalMetric: OptionalMetricMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OptionalMetricAttributeKey{OptionalMetricAttributeKeyStringAttr, OptionalMetricAttributeKeyBooleanAttr, OptionalMetricAttributeKeyBooleanAttr2, OptionalMetricAttributeKeyConditionalStringAttr},
+						EnabledAttributes:   []OptionalMetricMetricAttributeKey{OptionalMetricMetricAttributeKeyStringAttr, OptionalMetricMetricAttributeKeyBooleanAttr, OptionalMetricMetricAttributeKeyBooleanAttr2, OptionalMetricMetricAttributeKeyConditionalStringAttr},
 					},
-					OptionalMetricEmptyUnit: OptionalMetricEmptyUnitConfig{
+					OptionalMetricEmptyUnit: OptionalMetricEmptyUnitMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OptionalMetricEmptyUnitAttributeKey{OptionalMetricEmptyUnitAttributeKeyStringAttr, OptionalMetricEmptyUnitAttributeKeyBooleanAttr},
+						EnabledAttributes:   []OptionalMetricEmptyUnitMetricAttributeKey{OptionalMetricEmptyUnitMetricAttributeKeyStringAttr, OptionalMetricEmptyUnitMetricAttributeKeyBooleanAttr},
 					},
-					ReaggregateMetric: ReaggregateMetricConfig{
+					ReaggregateMetric: ReaggregateMetricMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []ReaggregateMetricAttributeKey{ReaggregateMetricAttributeKeyStringAttr, ReaggregateMetricAttributeKeyBooleanAttr},
+						EnabledAttributes:   []ReaggregateMetricMetricAttributeKey{ReaggregateMetricMetricAttributeKeyStringAttr, ReaggregateMetricMetricAttributeKeyBooleanAttr},
 					},
-					ReaggregateMetricWithRequired: ReaggregateMetricWithRequiredConfig{
+					ReaggregateMetricWithRequired: ReaggregateMetricWithRequiredMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []ReaggregateMetricWithRequiredAttributeKey{ReaggregateMetricWithRequiredAttributeKeyRequiredStringAttr, ReaggregateMetricWithRequiredAttributeKeyStringAttr, ReaggregateMetricWithRequiredAttributeKeyBooleanAttr},
+						EnabledAttributes:   []ReaggregateMetricWithRequiredMetricAttributeKey{ReaggregateMetricWithRequiredMetricAttributeKeyRequiredStringAttr, ReaggregateMetricWithRequiredMetricAttributeKeyStringAttr, ReaggregateMetricWithRequiredMetricAttributeKeyBooleanAttr},
 					},
-					SystemCPUTime: SystemCPUTimeConfig{
+					SystemCPUTime: SystemCPUTimeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SystemCPUTimeAttributeKey{SystemCPUTimeAttributeKeyCpu},
+						EnabledAttributes:   []SystemCPUTimeMetricAttributeKey{SystemCPUTimeMetricAttributeKeyCpu},
 					},
-					SystemMemoryUsage: SystemMemoryUsageConfig{
+					SystemMemoryUsage: SystemMemoryUsageMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SystemMemoryUsageAttributeKey{SystemMemoryUsageAttributeKeyState},
+						EnabledAttributes:   []SystemMemoryUsageMetricAttributeKey{SystemMemoryUsageMetricAttributeKeyState},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -147,7 +147,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(DefaultMetricConfig{}, DefaultMetricToBeRemovedConfig{}, MetricInputTypeConfig{}, OptionalMetricConfig{}, OptionalMetricEmptyUnitConfig{}, ReaggregateMetricConfig{}, ReaggregateMetricWithRequiredConfig{}, SystemCPUTimeConfig{}, SystemMemoryUsageConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(DefaultMetricMetricConfig{}, DefaultMetricToBeRemovedMetricConfig{}, MetricInputTypeMetricConfig{}, OptionalMetricMetricConfig{}, OptionalMetricEmptyUnitMetricConfig{}, ReaggregateMetricMetricConfig{}, ReaggregateMetricWithRequiredMetricConfig{}, SystemCPUTimeMetricConfig{}, SystemMemoryUsageMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
