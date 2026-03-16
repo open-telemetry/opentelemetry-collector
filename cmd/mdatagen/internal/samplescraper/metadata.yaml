@@ -13,7 +13,7 @@ status:
   class: scraper
   stability:
     stable: [metrics]
-    development: [logs]
+    development: [logs, profiles]
   distributions: []
   unsupported_platforms: [freebsd, illumos]
   codeowners:

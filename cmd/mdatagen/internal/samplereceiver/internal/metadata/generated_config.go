@@ -10,30 +10,30 @@ import (
 	"go.opentelemetry.io/collector/filter"
 )
 
-// DefaultMetricAttributeKey specifies the key of an attribute for the default.metric metric.
-type DefaultMetricAttributeKey string
+// DefaultMetricMetricAttributeKey specifies the key of an attribute for the default.metric metric.
+type DefaultMetricMetricAttributeKey string
 
 const (
-	DefaultMetricAttributeKeyStringAttr            DefaultMetricAttributeKey = "string_attr"
-	DefaultMetricAttributeKeyOverriddenIntAttr     DefaultMetricAttributeKey = "state"
-	DefaultMetricAttributeKeyEnumAttr              DefaultMetricAttributeKey = "enum_attr"
-	DefaultMetricAttributeKeySliceAttr             DefaultMetricAttributeKey = "slice_attr"
-	DefaultMetricAttributeKeyMapAttr               DefaultMetricAttributeKey = "map_attr"
-	DefaultMetricAttributeKeyConditionalIntAttr    DefaultMetricAttributeKey = "conditional_int_attr"
-	DefaultMetricAttributeKeyConditionalStringAttr DefaultMetricAttributeKey = "conditional_string_attr"
-	DefaultMetricAttributeKeyOptInBoolAttr         DefaultMetricAttributeKey = "opt_in_bool_attr"
+	DefaultMetricMetricAttributeKeyStringAttr            DefaultMetricMetricAttributeKey = "string_attr"
+	DefaultMetricMetricAttributeKeyOverriddenIntAttr     DefaultMetricMetricAttributeKey = "state"
+	DefaultMetricMetricAttributeKeyEnumAttr              DefaultMetricMetricAttributeKey = "enum_attr"
+	DefaultMetricMetricAttributeKeySliceAttr             DefaultMetricMetricAttributeKey = "slice_attr"
+	DefaultMetricMetricAttributeKeyMapAttr               DefaultMetricMetricAttributeKey = "map_attr"
+	DefaultMetricMetricAttributeKeyConditionalIntAttr    DefaultMetricMetricAttributeKey = "conditional_int_attr"
+	DefaultMetricMetricAttributeKeyConditionalStringAttr DefaultMetricMetricAttributeKey = "conditional_string_attr"
+	DefaultMetricMetricAttributeKeyOptInBoolAttr         DefaultMetricMetricAttributeKey = "opt_in_bool_attr"
 )
 
-// DefaultMetricConfig provides config for the default.metric metric.
-type DefaultMetricConfig struct {
+// DefaultMetricMetricConfig provides config for the default.metric metric.
+type DefaultMetricMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                      `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []DefaultMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []DefaultMetricMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *DefaultMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *DefaultMetricMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -47,10 +47,10 @@ func (ms *DefaultMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *DefaultMetricConfig) Validate() error {
+func (ms *DefaultMetricMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case DefaultMetricAttributeKeyStringAttr, DefaultMetricAttributeKeyOverriddenIntAttr, DefaultMetricAttributeKeyEnumAttr, DefaultMetricAttributeKeySliceAttr, DefaultMetricAttributeKeyMapAttr, DefaultMetricAttributeKeyConditionalIntAttr, DefaultMetricAttributeKeyConditionalStringAttr, DefaultMetricAttributeKeyOptInBoolAttr:
+		case DefaultMetricMetricAttributeKeyStringAttr, DefaultMetricMetricAttributeKeyOverriddenIntAttr, DefaultMetricMetricAttributeKeyEnumAttr, DefaultMetricMetricAttributeKeySliceAttr, DefaultMetricMetricAttributeKeyMapAttr, DefaultMetricMetricAttributeKeyConditionalIntAttr, DefaultMetricMetricAttributeKeyConditionalStringAttr, DefaultMetricMetricAttributeKeyOptInBoolAttr:
 		default:
 			return fmt.Errorf("metric default.metric doesn't have an attribute %v, valid attributes: [string_attr, state, enum_attr, slice_attr, map_attr, conditional_int_attr, conditional_string_attr, opt_in_bool_attr]", val)
 		}
@@ -65,13 +65,13 @@ func (ms *DefaultMetricConfig) Validate() error {
 	return nil
 }
 
-// DefaultMetricToBeRemovedConfig provides config for the default.metric.to_be_removed metric.
-type DefaultMetricToBeRemovedConfig struct {
+// DefaultMetricToBeRemovedMetricConfig provides config for the default.metric.to_be_removed metric.
+type DefaultMetricToBeRemovedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *DefaultMetricToBeRemovedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *DefaultMetricToBeRemovedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -85,27 +85,27 @@ func (ms *DefaultMetricToBeRemovedConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-// MetricInputTypeAttributeKey specifies the key of an attribute for the metric.input_type metric.
-type MetricInputTypeAttributeKey string
+// MetricInputTypeMetricAttributeKey specifies the key of an attribute for the metric.input_type metric.
+type MetricInputTypeMetricAttributeKey string
 
 const (
-	MetricInputTypeAttributeKeyStringAttr        MetricInputTypeAttributeKey = "string_attr"
-	MetricInputTypeAttributeKeyOverriddenIntAttr MetricInputTypeAttributeKey = "state"
-	MetricInputTypeAttributeKeyEnumAttr          MetricInputTypeAttributeKey = "enum_attr"
-	MetricInputTypeAttributeKeySliceAttr         MetricInputTypeAttributeKey = "slice_attr"
-	MetricInputTypeAttributeKeyMapAttr           MetricInputTypeAttributeKey = "map_attr"
+	MetricInputTypeMetricAttributeKeyStringAttr        MetricInputTypeMetricAttributeKey = "string_attr"
+	MetricInputTypeMetricAttributeKeyOverriddenIntAttr MetricInputTypeMetricAttributeKey = "state"
+	MetricInputTypeMetricAttributeKeyEnumAttr          MetricInputTypeMetricAttributeKey = "enum_attr"
+	MetricInputTypeMetricAttributeKeySliceAttr         MetricInputTypeMetricAttributeKey = "slice_attr"
+	MetricInputTypeMetricAttributeKeyMapAttr           MetricInputTypeMetricAttributeKey = "map_attr"
 )
 
-// MetricInputTypeConfig provides config for the metric.input_type metric.
-type MetricInputTypeConfig struct {
+// MetricInputTypeMetricConfig provides config for the metric.input_type metric.
+type MetricInputTypeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                        `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []MetricInputTypeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MetricInputTypeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *MetricInputTypeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *MetricInputTypeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -119,10 +119,10 @@ func (ms *MetricInputTypeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *MetricInputTypeConfig) Validate() error {
+func (ms *MetricInputTypeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case MetricInputTypeAttributeKeyStringAttr, MetricInputTypeAttributeKeyOverriddenIntAttr, MetricInputTypeAttributeKeyEnumAttr, MetricInputTypeAttributeKeySliceAttr, MetricInputTypeAttributeKeyMapAttr:
+		case MetricInputTypeMetricAttributeKeyStringAttr, MetricInputTypeMetricAttributeKeyOverriddenIntAttr, MetricInputTypeMetricAttributeKeyEnumAttr, MetricInputTypeMetricAttributeKeySliceAttr, MetricInputTypeMetricAttributeKeyMapAttr:
 		default:
 			return fmt.Errorf("metric metric.input_type doesn't have an attribute %v, valid attributes: [string_attr, state, enum_attr, slice_attr, map_attr]", val)
 		}
@@ -137,26 +137,26 @@ func (ms *MetricInputTypeConfig) Validate() error {
 	return nil
 }
 
-// OptionalMetricAttributeKey specifies the key of an attribute for the optional.metric metric.
-type OptionalMetricAttributeKey string
+// OptionalMetricMetricAttributeKey specifies the key of an attribute for the optional.metric metric.
+type OptionalMetricMetricAttributeKey string
 
 const (
-	OptionalMetricAttributeKeyStringAttr            OptionalMetricAttributeKey = "string_attr"
-	OptionalMetricAttributeKeyBooleanAttr           OptionalMetricAttributeKey = "boolean_attr"
-	OptionalMetricAttributeKeyBooleanAttr2          OptionalMetricAttributeKey = "boolean_attr2"
-	OptionalMetricAttributeKeyConditionalStringAttr OptionalMetricAttributeKey = "conditional_string_attr"
+	OptionalMetricMetricAttributeKeyStringAttr            OptionalMetricMetricAttributeKey = "string_attr"
+	OptionalMetricMetricAttributeKeyBooleanAttr           OptionalMetricMetricAttributeKey = "boolean_attr"
+	OptionalMetricMetricAttributeKeyBooleanAttr2          OptionalMetricMetricAttributeKey = "boolean_attr2"
+	OptionalMetricMetricAttributeKeyConditionalStringAttr OptionalMetricMetricAttributeKey = "conditional_string_attr"
 )
 
-// OptionalMetricConfig provides config for the optional.metric metric.
-type OptionalMetricConfig struct {
+// OptionalMetricMetricConfig provides config for the optional.metric metric.
+type OptionalMetricMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                       `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OptionalMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OptionalMetricMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *OptionalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OptionalMetricMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -170,10 +170,10 @@ func (ms *OptionalMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *OptionalMetricConfig) Validate() error {
+func (ms *OptionalMetricMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OptionalMetricAttributeKeyStringAttr, OptionalMetricAttributeKeyBooleanAttr, OptionalMetricAttributeKeyBooleanAttr2, OptionalMetricAttributeKeyConditionalStringAttr:
+		case OptionalMetricMetricAttributeKeyStringAttr, OptionalMetricMetricAttributeKeyBooleanAttr, OptionalMetricMetricAttributeKeyBooleanAttr2, OptionalMetricMetricAttributeKeyConditionalStringAttr:
 		default:
 			return fmt.Errorf("metric optional.metric doesn't have an attribute %v, valid attributes: [string_attr, boolean_attr, boolean_attr2, conditional_string_attr]", val)
 		}
@@ -188,24 +188,24 @@ func (ms *OptionalMetricConfig) Validate() error {
 	return nil
 }
 
-// OptionalMetricEmptyUnitAttributeKey specifies the key of an attribute for the optional.metric.empty_unit metric.
-type OptionalMetricEmptyUnitAttributeKey string
+// OptionalMetricEmptyUnitMetricAttributeKey specifies the key of an attribute for the optional.metric.empty_unit metric.
+type OptionalMetricEmptyUnitMetricAttributeKey string
 
 const (
-	OptionalMetricEmptyUnitAttributeKeyStringAttr  OptionalMetricEmptyUnitAttributeKey = "string_attr"
-	OptionalMetricEmptyUnitAttributeKeyBooleanAttr OptionalMetricEmptyUnitAttributeKey = "boolean_attr"
+	OptionalMetricEmptyUnitMetricAttributeKeyStringAttr  OptionalMetricEmptyUnitMetricAttributeKey = "string_attr"
+	OptionalMetricEmptyUnitMetricAttributeKeyBooleanAttr OptionalMetricEmptyUnitMetricAttributeKey = "boolean_attr"
 )
 
-// OptionalMetricEmptyUnitConfig provides config for the optional.metric.empty_unit metric.
-type OptionalMetricEmptyUnitConfig struct {
+// OptionalMetricEmptyUnitMetricConfig provides config for the optional.metric.empty_unit metric.
+type OptionalMetricEmptyUnitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OptionalMetricEmptyUnitAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OptionalMetricEmptyUnitMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *OptionalMetricEmptyUnitConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OptionalMetricEmptyUnitMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -219,10 +219,10 @@ func (ms *OptionalMetricEmptyUnitConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *OptionalMetricEmptyUnitConfig) Validate() error {
+func (ms *OptionalMetricEmptyUnitMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OptionalMetricEmptyUnitAttributeKeyStringAttr, OptionalMetricEmptyUnitAttributeKeyBooleanAttr:
+		case OptionalMetricEmptyUnitMetricAttributeKeyStringAttr, OptionalMetricEmptyUnitMetricAttributeKeyBooleanAttr:
 		default:
 			return fmt.Errorf("metric optional.metric.empty_unit doesn't have an attribute %v, valid attributes: [string_attr, boolean_attr]", val)
 		}
@@ -237,24 +237,24 @@ func (ms *OptionalMetricEmptyUnitConfig) Validate() error {
 	return nil
 }
 
-// ReaggregateMetricAttributeKey specifies the key of an attribute for the reaggregate.metric metric.
-type ReaggregateMetricAttributeKey string
+// ReaggregateMetricMetricAttributeKey specifies the key of an attribute for the reaggregate.metric metric.
+type ReaggregateMetricMetricAttributeKey string
 
 const (
-	ReaggregateMetricAttributeKeyStringAttr  ReaggregateMetricAttributeKey = "string_attr"
-	ReaggregateMetricAttributeKeyBooleanAttr ReaggregateMetricAttributeKey = "boolean_attr"
+	ReaggregateMetricMetricAttributeKeyStringAttr  ReaggregateMetricMetricAttributeKey = "string_attr"
+	ReaggregateMetricMetricAttributeKeyBooleanAttr ReaggregateMetricMetricAttributeKey = "boolean_attr"
 )
 
-// ReaggregateMetricConfig provides config for the reaggregate.metric metric.
-type ReaggregateMetricConfig struct {
+// ReaggregateMetricMetricConfig provides config for the reaggregate.metric metric.
+type ReaggregateMetricMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                          `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ReaggregateMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ReaggregateMetricMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ReaggregateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ReaggregateMetricMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -268,10 +268,10 @@ func (ms *ReaggregateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *ReaggregateMetricConfig) Validate() error {
+func (ms *ReaggregateMetricMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ReaggregateMetricAttributeKeyStringAttr, ReaggregateMetricAttributeKeyBooleanAttr:
+		case ReaggregateMetricMetricAttributeKeyStringAttr, ReaggregateMetricMetricAttributeKeyBooleanAttr:
 		default:
 			return fmt.Errorf("metric reaggregate.metric doesn't have an attribute %v, valid attributes: [string_attr, boolean_attr]", val)
 		}
@@ -286,25 +286,25 @@ func (ms *ReaggregateMetricConfig) Validate() error {
 	return nil
 }
 
-// ReaggregateMetricWithRequiredAttributeKey specifies the key of an attribute for the reaggregate.metric.with_required metric.
-type ReaggregateMetricWithRequiredAttributeKey string
+// ReaggregateMetricWithRequiredMetricAttributeKey specifies the key of an attribute for the reaggregate.metric.with_required metric.
+type ReaggregateMetricWithRequiredMetricAttributeKey string
 
 const (
-	ReaggregateMetricWithRequiredAttributeKeyRequiredStringAttr ReaggregateMetricWithRequiredAttributeKey = "required_string_attr"
-	ReaggregateMetricWithRequiredAttributeKeyStringAttr         ReaggregateMetricWithRequiredAttributeKey = "string_attr"
-	ReaggregateMetricWithRequiredAttributeKeyBooleanAttr        ReaggregateMetricWithRequiredAttributeKey = "boolean_attr"
+	ReaggregateMetricWithRequiredMetricAttributeKeyRequiredStringAttr ReaggregateMetricWithRequiredMetricAttributeKey = "required_string_attr"
+	ReaggregateMetricWithRequiredMetricAttributeKeyStringAttr         ReaggregateMetricWithRequiredMetricAttributeKey = "string_attr"
+	ReaggregateMetricWithRequiredMetricAttributeKeyBooleanAttr        ReaggregateMetricWithRequiredMetricAttributeKey = "boolean_attr"
 )
 
-// ReaggregateMetricWithRequiredConfig provides config for the reaggregate.metric.with_required metric.
-type ReaggregateMetricWithRequiredConfig struct {
+// ReaggregateMetricWithRequiredMetricConfig provides config for the reaggregate.metric.with_required metric.
+type ReaggregateMetricWithRequiredMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ReaggregateMetricWithRequiredAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ReaggregateMetricWithRequiredMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ReaggregateMetricWithRequiredConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ReaggregateMetricWithRequiredMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -318,15 +318,15 @@ func (ms *ReaggregateMetricWithRequiredConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
-func (ms *ReaggregateMetricWithRequiredConfig) Validate() error {
+func (ms *ReaggregateMetricWithRequiredMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ReaggregateMetricWithRequiredAttributeKeyRequiredStringAttr, ReaggregateMetricWithRequiredAttributeKeyStringAttr, ReaggregateMetricWithRequiredAttributeKeyBooleanAttr:
+		case ReaggregateMetricWithRequiredMetricAttributeKeyRequiredStringAttr, ReaggregateMetricWithRequiredMetricAttributeKeyStringAttr, ReaggregateMetricWithRequiredMetricAttributeKeyBooleanAttr:
 		default:
 			return fmt.Errorf("metric reaggregate.metric.with_required doesn't have an attribute %v, valid attributes: [required_string_attr, string_attr, boolean_attr]", val)
 		}
 	}
-	if !slices.Contains(ms.EnabledAttributes, ReaggregateMetricWithRequiredAttributeKeyRequiredStringAttr) {
+	if !slices.Contains(ms.EnabledAttributes, ReaggregateMetricWithRequiredMetricAttributeKeyRequiredStringAttr) {
 		return fmt.Errorf("required_string_attr is a required attribute for reaggregate.metric.with_required metric and must be included")
 	}
 
@@ -339,13 +339,13 @@ func (ms *ReaggregateMetricWithRequiredConfig) Validate() error {
 	return nil
 }
 
-// SystemCPUTimeConfig provides config for the system.cpu.time metric.
-type SystemCPUTimeConfig struct {
+// SystemCPUTimeMetricConfig provides config for the system.cpu.time metric.
+type SystemCPUTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SystemCPUTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -361,52 +361,52 @@ func (ms *SystemCPUTimeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for sample metrics.
 type MetricsConfig struct {
-	DefaultMetric                 DefaultMetricConfig                 `mapstructure:"default.metric"`
-	DefaultMetricToBeRemoved      DefaultMetricToBeRemovedConfig      `mapstructure:"default.metric.to_be_removed"`
-	MetricInputType               MetricInputTypeConfig               `mapstructure:"metric.input_type"`
-	OptionalMetric                OptionalMetricConfig                `mapstructure:"optional.metric"`
-	OptionalMetricEmptyUnit       OptionalMetricEmptyUnitConfig       `mapstructure:"optional.metric.empty_unit"`
-	ReaggregateMetric             ReaggregateMetricConfig             `mapstructure:"reaggregate.metric"`
-	ReaggregateMetricWithRequired ReaggregateMetricWithRequiredConfig `mapstructure:"reaggregate.metric.with_required"`
-	SystemCPUTime                 SystemCPUTimeConfig                 `mapstructure:"system.cpu.time"`
+	DefaultMetric                 DefaultMetricMetricConfig                 `mapstructure:"default.metric"`
+	DefaultMetricToBeRemoved      DefaultMetricToBeRemovedMetricConfig      `mapstructure:"default.metric.to_be_removed"`
+	MetricInputType               MetricInputTypeMetricConfig               `mapstructure:"metric.input_type"`
+	OptionalMetric                OptionalMetricMetricConfig                `mapstructure:"optional.metric"`
+	OptionalMetricEmptyUnit       OptionalMetricEmptyUnitMetricConfig       `mapstructure:"optional.metric.empty_unit"`
+	ReaggregateMetric             ReaggregateMetricMetricConfig             `mapstructure:"reaggregate.metric"`
+	ReaggregateMetricWithRequired ReaggregateMetricWithRequiredMetricConfig `mapstructure:"reaggregate.metric.with_required"`
+	SystemCPUTime                 SystemCPUTimeMetricConfig                 `mapstructure:"system.cpu.time"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		DefaultMetric: DefaultMetricConfig{
+		DefaultMetric: DefaultMetricMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []DefaultMetricAttributeKey{DefaultMetricAttributeKeyStringAttr, DefaultMetricAttributeKeyOverriddenIntAttr, DefaultMetricAttributeKeyEnumAttr, DefaultMetricAttributeKeySliceAttr, DefaultMetricAttributeKeyMapAttr, DefaultMetricAttributeKeyConditionalIntAttr, DefaultMetricAttributeKeyConditionalStringAttr},
+			EnabledAttributes:   []DefaultMetricMetricAttributeKey{DefaultMetricMetricAttributeKeyStringAttr, DefaultMetricMetricAttributeKeyOverriddenIntAttr, DefaultMetricMetricAttributeKeyEnumAttr, DefaultMetricMetricAttributeKeySliceAttr, DefaultMetricMetricAttributeKeyMapAttr, DefaultMetricMetricAttributeKeyConditionalIntAttr, DefaultMetricMetricAttributeKeyConditionalStringAttr},
 		},
-		DefaultMetricToBeRemoved: DefaultMetricToBeRemovedConfig{
+		DefaultMetricToBeRemoved: DefaultMetricToBeRemovedMetricConfig{
 			Enabled: true,
 		},
-		MetricInputType: MetricInputTypeConfig{
+		MetricInputType: MetricInputTypeMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []MetricInputTypeAttributeKey{MetricInputTypeAttributeKeyStringAttr, MetricInputTypeAttributeKeyOverriddenIntAttr, MetricInputTypeAttributeKeyEnumAttr, MetricInputTypeAttributeKeySliceAttr, MetricInputTypeAttributeKeyMapAttr},
+			EnabledAttributes:   []MetricInputTypeMetricAttributeKey{MetricInputTypeMetricAttributeKeyStringAttr, MetricInputTypeMetricAttributeKeyOverriddenIntAttr, MetricInputTypeMetricAttributeKeyEnumAttr, MetricInputTypeMetricAttributeKeySliceAttr, MetricInputTypeMetricAttributeKeyMapAttr},
 		},
-		OptionalMetric: OptionalMetricConfig{
+		OptionalMetric: OptionalMetricMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []OptionalMetricAttributeKey{OptionalMetricAttributeKeyStringAttr, OptionalMetricAttributeKeyBooleanAttr, OptionalMetricAttributeKeyBooleanAttr2, OptionalMetricAttributeKeyConditionalStringAttr},
+			EnabledAttributes:   []OptionalMetricMetricAttributeKey{OptionalMetricMetricAttributeKeyStringAttr, OptionalMetricMetricAttributeKeyBooleanAttr, OptionalMetricMetricAttributeKeyBooleanAttr2, OptionalMetricMetricAttributeKeyConditionalStringAttr},
 		},
-		OptionalMetricEmptyUnit: OptionalMetricEmptyUnitConfig{
+		OptionalMetricEmptyUnit: OptionalMetricEmptyUnitMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []OptionalMetricEmptyUnitAttributeKey{OptionalMetricEmptyUnitAttributeKeyStringAttr, OptionalMetricEmptyUnitAttributeKeyBooleanAttr},
+			EnabledAttributes:   []OptionalMetricEmptyUnitMetricAttributeKey{OptionalMetricEmptyUnitMetricAttributeKeyStringAttr, OptionalMetricEmptyUnitMetricAttributeKeyBooleanAttr},
 		},
-		ReaggregateMetric: ReaggregateMetricConfig{
+		ReaggregateMetric: ReaggregateMetricMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []ReaggregateMetricAttributeKey{ReaggregateMetricAttributeKeyStringAttr, ReaggregateMetricAttributeKeyBooleanAttr},
+			EnabledAttributes:   []ReaggregateMetricMetricAttributeKey{ReaggregateMetricMetricAttributeKeyStringAttr, ReaggregateMetricMetricAttributeKeyBooleanAttr},
 		},
-		ReaggregateMetricWithRequired: ReaggregateMetricWithRequiredConfig{
+		ReaggregateMetricWithRequired: ReaggregateMetricWithRequiredMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []ReaggregateMetricWithRequiredAttributeKey{ReaggregateMetricWithRequiredAttributeKeyRequiredStringAttr, ReaggregateMetricWithRequiredAttributeKeyStringAttr, ReaggregateMetricWithRequiredAttributeKeyBooleanAttr},
+			EnabledAttributes:   []ReaggregateMetricWithRequiredMetricAttributeKey{ReaggregateMetricWithRequiredMetricAttributeKeyRequiredStringAttr, ReaggregateMetricWithRequiredMetricAttributeKeyStringAttr, ReaggregateMetricWithRequiredMetricAttributeKeyBooleanAttr},
 		},
-		SystemCPUTime: SystemCPUTimeConfig{
+		SystemCPUTime: SystemCPUTimeMetricConfig{
 			Enabled: true,
 		},
 	}

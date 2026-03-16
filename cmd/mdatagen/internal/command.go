@@ -212,6 +212,11 @@ func run(ymlPath string) error {
 		toGenerate[filepath.Join(tmplDir, "feature_gates.go.tmpl")] = filepath.Join(codeDir, "generated_feature_gates.go")
 	}
 
+	if len(md.Entities) > 0 && len(md.Metrics) > 0 { // only generate entity metrics if entities are defined
+		toGenerate[filepath.Join(tmplDir, "entity_metrics.go.tmpl")] = filepath.Join(codeDir, "generated_entity_metrics.go")
+		toGenerate[filepath.Join(tmplDir, "entity_metrics_test.go.tmpl")] = filepath.Join(codeDir, "generated_entity_metrics_test.go")
+	}
+
 	// If at least one file to generate, will need the codeDir
 	if len(toGenerate) > 0 {
 		if err = os.MkdirAll(codeDir, 0o700); err != nil {
@@ -334,13 +339,10 @@ func getTemplateFuncMap(md Metadata) template.FuncMap {
 		"casesTitle":  cases.Title(language.English).String,
 		"toLowerCase": strings.ToLower,
 		"toCamelCase": func(s string) string {
-			caser := cases.Title(language.English).String
-			parts := strings.Split(s, "_")
-			var result strings.Builder
-			for _, part := range parts {
-				fmt.Fprintf(&result, "%s", caser(part))
-			}
-			return result.String()
+			return joinCamelCase(strings.Split(s, "_"), true)
+		},
+		"toLowerCamelCase": func(s string) string {
+			return joinCamelCase(strings.Split(s, "_"), false)
 		},
 		"inc":       func(i int) int { return i + 1 },
 		"distroURL": distroURL,
@@ -564,4 +566,17 @@ func generateConfigGoStruct(md Metadata, outputDir string) error {
 
 	fns := cfggen.WithCfgFns(getTemplateFuncMap(md), rootPkg, md.PackageName)
 	return generateFileWithFns(tmplFile, dstFile, md, packageName, fns)
+}
+
+func joinCamelCase(parts []string, exported bool) string {
+	caser := cases.Title(language.English).String
+	var result strings.Builder
+	for i, part := range parts {
+		if i == 0 && !exported {
+			fmt.Fprintf(&result, "%s", strings.ToLower(part))
+		} else {
+			fmt.Fprintf(&result, "%s", caser(part))
+		}
+	}
+	return result.String()
 }
