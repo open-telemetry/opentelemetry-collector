@@ -21,11 +21,11 @@ type TargetsItem struct {
 func (c *TargetsItem) Validate() error {
 	var err error
 
-	if c.Options == nil || len(c.Options) == 0 {
-		err = errors.Join(err, errors.New("Options is required"))
-	}
 	if c.HTTPClient == nil {
 		err = errors.Join(err, errors.New("HTTPClient is required"))
+	}
+	if c.Options == nil || len(c.Options) == 0 {
+		err = errors.Join(err, errors.New("Options is required"))
 	}
 
 	return err
