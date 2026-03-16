@@ -108,26 +108,26 @@ func TestLocationSwitchDictionary(t *testing.T) {
 			}(),
 			dst: func() ProfilesDictionary {
 				d := NewProfilesDictionary()
-				d.StringTable().Append("", "foo")
+				d.StringTable().Append("", "test")
 
 				d.MappingTable().AppendEmpty()
-				d.MappingTable().AppendEmpty()
+				m := d.MappingTable().AppendEmpty()
+				m.SetFilenameStrindex(1)
 				return d
 			}(),
 
 			wantLocation: func() Location {
 				l := NewLocation()
-				l.SetMappingIndex(2)
+				l.SetMappingIndex(1)
 				return l
 			}(),
 			wantDictionary: func() ProfilesDictionary {
 				d := NewProfilesDictionary()
-				d.StringTable().Append("", "foo", "test")
+				d.StringTable().Append("", "test")
 
 				d.MappingTable().AppendEmpty()
-				d.MappingTable().AppendEmpty()
 				m := d.MappingTable().AppendEmpty()
-				m.SetFilenameStrindex(2)
+				m.SetFilenameStrindex(1)
 				return d
 			}(),
 		},
@@ -151,6 +151,30 @@ func TestLocationSwitchDictionary(t *testing.T) {
 			wantErr:        errors.New("invalid mapping index 1"),
 		},
 		{
+			name: "with a mapping index equal to the source table length (boundary condition)",
+			location: func() Location {
+				l := NewLocation()
+				l.SetMappingIndex(2)
+				return l
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.MappingTable().AppendEmpty()
+				d.MappingTable().AppendEmpty()
+				return d
+			}(),
+			dst: NewProfilesDictionary(),
+
+			wantLocation: func() Location {
+				l := NewLocation()
+				l.SetMappingIndex(2)
+				return l
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid mapping index 2"),
+		},
+		{
 			name: "with an existing attribute",
 			location: func() Location {
 				l := NewLocation()
@@ -170,26 +194,27 @@ func TestLocationSwitchDictionary(t *testing.T) {
 			}(),
 			dst: func() ProfilesDictionary {
 				d := NewProfilesDictionary()
-				d.StringTable().Append("", "foo")
+				d.StringTable().Append("", "test")
 
 				d.AttributeTable().AppendEmpty()
-				d.AttributeTable().AppendEmpty()
+				a := d.AttributeTable().AppendEmpty()
+				a.SetKeyStrindex(1)
+
 				return d
 			}(),
 
 			wantLocation: func() Location {
 				l := NewLocation()
-				l.AttributeIndices().Append(2)
+				l.AttributeIndices().Append(1)
 				return l
 			}(),
 			wantDictionary: func() ProfilesDictionary {
 				d := NewProfilesDictionary()
-				d.StringTable().Append("", "foo", "test")
+				d.StringTable().Append("", "test")
 
 				d.AttributeTable().AppendEmpty()
-				d.AttributeTable().AppendEmpty()
 				a := d.AttributeTable().AppendEmpty()
-				a.SetKeyStrindex(2)
+				a.SetKeyStrindex(1)
 				return d
 			}(),
 		},
@@ -213,6 +238,30 @@ func TestLocationSwitchDictionary(t *testing.T) {
 			wantErr:        errors.New("invalid attribute index 1"),
 		},
 		{
+			name: "with an attribute index equal to the source table length (boundary condition)",
+			location: func() Location {
+				l := NewLocation()
+				l.AttributeIndices().Append(2)
+				return l
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.AttributeTable().AppendEmpty()
+				d.AttributeTable().AppendEmpty()
+				return d
+			}(),
+			dst: NewProfilesDictionary(),
+
+			wantLocation: func() Location {
+				l := NewLocation()
+				l.AttributeIndices().Append(2)
+				return l
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid attribute index 2"),
+		},
+		{
 			name: "with an existing line",
 			location: func() Location {
 				l := NewLocation()
@@ -232,26 +281,27 @@ func TestLocationSwitchDictionary(t *testing.T) {
 			}(),
 			dst: func() ProfilesDictionary {
 				d := NewProfilesDictionary()
-				d.StringTable().Append("", "foo")
+				d.StringTable().Append("", "test")
 
 				d.FunctionTable().AppendEmpty()
-				d.FunctionTable().AppendEmpty()
+				f := d.FunctionTable().AppendEmpty()
+				f.SetNameStrindex(1)
+
 				return d
 			}(),
 
 			wantLocation: func() Location {
 				l := NewLocation()
-				l.Lines().AppendEmpty().SetFunctionIndex(2)
+				l.Lines().AppendEmpty().SetFunctionIndex(1)
 				return l
 			}(),
 			wantDictionary: func() ProfilesDictionary {
 				d := NewProfilesDictionary()
-				d.StringTable().Append("", "foo", "test")
+				d.StringTable().Append("", "test")
 
 				d.FunctionTable().AppendEmpty()
-				d.FunctionTable().AppendEmpty()
 				f := d.FunctionTable().AppendEmpty()
-				f.SetNameStrindex(2)
+				f.SetNameStrindex(1)
 				return d
 			}(),
 		},

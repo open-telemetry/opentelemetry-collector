@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"syscall"
 	"testing"
 	"time"
 
@@ -531,13 +530,13 @@ func TestCollectorSendSignal(t *testing.T) {
 		return StateRunning == col.GetState()
 	}, 2*time.Second, 200*time.Millisecond)
 
-	col.signalsChannel <- syscall.SIGHUP
+	col.signalsChannel <- SIGHUP
 
 	assert.Eventually(t, func() bool {
 		return StateRunning == col.GetState()
 	}, 2*time.Second, 200*time.Millisecond)
 
-	col.signalsChannel <- syscall.SIGTERM
+	col.signalsChannel <- SIGTERM
 
 	wg.Wait()
 	assert.Equal(t, StateClosed, col.GetState())
@@ -554,11 +553,9 @@ func TestCollectorFailedShutdown(t *testing.T) {
 	require.NoError(t, err)
 
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		assert.EqualError(t, col.Run(context.Background()), "failed to shutdown collector telemetry: err1")
-	}()
+	})
 
 	assert.Eventually(t, func() bool {
 		return StateRunning == col.GetState()
@@ -808,11 +805,9 @@ func TestCollectorDryRun(t *testing.T) {
 
 func startCollector(ctx context.Context, t *testing.T, col *Collector) *sync.WaitGroup {
 	wg := &sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		assert.NoError(t, col.Run(ctx))
-	}()
+	})
 	return wg
 }
 

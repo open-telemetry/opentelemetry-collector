@@ -12,7 +12,7 @@ attributes:
     description: Conditional int attr.
     type: string
     requirement_level: conditionally_required
-  
+
   opt_in_string_attr:
     description: Opt-in string attr.
     type: string
@@ -22,8 +22,7 @@ metrics:
   metric:
     enabled: true
     description: Metric.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     gauge:
       value_type: double

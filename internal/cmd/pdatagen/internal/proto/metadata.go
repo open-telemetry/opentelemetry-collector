@@ -4,7 +4,7 @@
 package proto // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/proto"
 
 import (
-	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/tmplutil"
 )
 
 const metadataMessageTemplate = `
@@ -73,5 +73,5 @@ func newMetadata(ms *Message) *Metadata {
 }
 
 func (meta *Metadata) Generate() []byte {
-	return []byte(template.Execute(template.Parse("metadataMessageTemplate", []byte(metadataMessageTemplate)), meta))
+	return []byte(tmplutil.Execute(tmplutil.Parse("metadataMessageTemplate", []byte(metadataMessageTemplate)), meta))
 }

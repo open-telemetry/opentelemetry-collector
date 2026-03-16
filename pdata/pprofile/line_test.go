@@ -164,26 +164,26 @@ func TestLineSwitchDictionary(t *testing.T) {
 			}(),
 			dst: func() ProfilesDictionary {
 				d := NewProfilesDictionary()
-				d.StringTable().Append("", "foo")
+				d.StringTable().Append("", "test")
 
 				d.FunctionTable().AppendEmpty()
-				d.FunctionTable().AppendEmpty()
+				f := d.FunctionTable().AppendEmpty()
+				f.SetNameStrindex(1)
 				return d
 			}(),
 
 			wantLine: func() Line {
 				l := NewLine()
-				l.SetFunctionIndex(2)
+				l.SetFunctionIndex(1)
 				return l
 			}(),
 			wantDictionary: func() ProfilesDictionary {
 				d := NewProfilesDictionary()
-				d.StringTable().Append("", "foo", "test")
+				d.StringTable().Append("", "test")
 
 				d.FunctionTable().AppendEmpty()
-				d.FunctionTable().AppendEmpty()
 				f := d.FunctionTable().AppendEmpty()
-				f.SetNameStrindex(2)
+				f.SetNameStrindex(1)
 				return d
 			}(),
 		},
@@ -205,6 +205,30 @@ func TestLineSwitchDictionary(t *testing.T) {
 			}(),
 			wantDictionary: NewProfilesDictionary(),
 			wantErr:        errors.New("invalid function index 1"),
+		},
+		{
+			name: "with a function index equal to the source table length (boundary condition)",
+			line: func() Line {
+				l := NewLine()
+				l.SetFunctionIndex(2)
+				return l
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.FunctionTable().AppendEmpty()
+				d.FunctionTable().AppendEmpty() // Length 2: indices 0,1 valid
+				return d
+			}(),
+			dst: NewProfilesDictionary(),
+
+			wantLine: func() Line {
+				l := NewLine()
+				l.SetFunctionIndex(2)
+				return l
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid function index 2"),
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

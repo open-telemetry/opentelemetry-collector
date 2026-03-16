@@ -56,7 +56,7 @@ func TestProfileSwitchDictionary(t *testing.T) {
 			}(),
 			dst: func() ProfilesDictionary {
 				d := NewProfilesDictionary()
-				d.StringTable().Append("", "foo")
+				d.StringTable().Append("", "test")
 
 				d.AttributeTable().AppendEmpty()
 				d.AttributeTable().AppendEmpty()
@@ -70,12 +70,12 @@ func TestProfileSwitchDictionary(t *testing.T) {
 			}(),
 			wantDictionary: func() ProfilesDictionary {
 				d := NewProfilesDictionary()
-				d.StringTable().Append("", "foo", "test")
+				d.StringTable().Append("", "test")
 
 				d.AttributeTable().AppendEmpty()
 				d.AttributeTable().AppendEmpty()
 				a := d.AttributeTable().AppendEmpty()
-				a.SetKeyStrindex(2)
+				a.SetKeyStrindex(1)
 				return d
 			}(),
 		},
@@ -97,6 +97,30 @@ func TestProfileSwitchDictionary(t *testing.T) {
 			}(),
 			wantDictionary: NewProfilesDictionary(),
 			wantErr:        errors.New("invalid attribute index 1"),
+		},
+		{
+			name: "with an attribute index equal to the source table length (boundary condition)",
+			profile: func() Profile {
+				p := NewProfile()
+				p.AttributeIndices().Append(2)
+				return p
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.AttributeTable().AppendEmpty()
+				d.AttributeTable().AppendEmpty()
+				return d
+			}(),
+			dst: NewProfilesDictionary(),
+
+			wantProfile: func() Profile {
+				p := NewProfile()
+				p.AttributeIndices().Append(2)
+				return p
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid attribute index 2"),
 		},
 		{
 			name: "with a profile that has a sample",
@@ -191,6 +215,101 @@ func TestProfileSwitchDictionary(t *testing.T) {
 			wantDictionary: func() ProfilesDictionary {
 				d := NewProfilesDictionary()
 				d.StringTable().Append("", "foo", "test")
+				return d
+			}(),
+		},
+		{
+			name: "Profile with various elements",
+			profile: func() Profile {
+				p := NewProfile()
+
+				p.SampleType().SetTypeStrindex(1)
+				p.SampleType().SetUnitStrindex(2)
+
+				p.PeriodType().SetTypeStrindex(3)
+				p.PeriodType().SetUnitStrindex(4)
+
+				p.AttributeIndices().Append(1)
+
+				return p
+			}(),
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				// Make sure we are conform with the protocol
+				d.MappingTable().AppendEmpty()
+				d.LocationTable().AppendEmpty()
+				d.FunctionTable().AppendEmpty()
+				d.LinkTable().AppendEmpty()
+				d.StringTable().Append("")
+				d.AttributeTable().AppendEmpty()
+				d.StackTable().AppendEmpty()
+
+				d.StringTable().Append("sample-type")    // 1
+				d.StringTable().Append("sample-unit")    // 2
+				d.StringTable().Append("period-type")    // 3
+				d.StringTable().Append("period-unit")    // 4
+				d.StringTable().Append("unrelated-1")    // 5
+				d.StringTable().Append("unrelated-2")    // 6
+				d.StringTable().Append("attribute-key")  // 7
+				d.StringTable().Append("attribute-unit") // 8
+
+				a := d.AttributeTable().AppendEmpty()
+				a.SetKeyStrindex(7)
+				a.Value().SetStr("AnyValue")
+				a.SetUnitStrindex(8)
+
+				return d
+			}(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				// Make sure we are conform with the protocol
+				d.MappingTable().AppendEmpty()
+				d.LocationTable().AppendEmpty()
+				d.FunctionTable().AppendEmpty()
+				d.LinkTable().AppendEmpty()
+				d.StringTable().Append("")
+				d.AttributeTable().AppendEmpty()
+				d.StackTable().AppendEmpty()
+
+				return d
+			}(),
+			wantProfile: func() Profile {
+				p := NewProfile()
+
+				p.AttributeIndices().Append(1)
+
+				// Order of entries depend on the order of
+				// processing in switchDictionary()
+				p.SampleType().SetTypeStrindex(3)
+				p.SampleType().SetUnitStrindex(4)
+
+				p.PeriodType().SetTypeStrindex(1)
+				p.PeriodType().SetUnitStrindex(2)
+
+				return p
+			}(),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				// Make sure we are conform with the protocol
+				d.MappingTable().AppendEmpty()
+				d.LocationTable().AppendEmpty()
+				d.FunctionTable().AppendEmpty()
+				d.LinkTable().AppendEmpty()
+				d.StringTable().Append("")
+				d.AttributeTable().AppendEmpty()
+				d.StackTable().AppendEmpty()
+
+				a := d.AttributeTable().AppendEmpty()
+				a.SetKeyStrindex(7)
+				a.SetUnitStrindex(8)
+				a.Value().SetStr("AnyValue")
+
+				// Order of entries depend on the order of
+				// processing in switchDictionary()
+				d.StringTable().Append("period-type") // 1
+				d.StringTable().Append("period-unit") // 2
+				d.StringTable().Append("sample-type") // 3
+				d.StringTable().Append("sample-unit") // 4
 				return d
 			}(),
 		},
