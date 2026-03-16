@@ -4,15 +4,15 @@ go 1.25.0
 
 require (
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.53.0
-	go.opentelemetry.io/collector/config/configoptional v1.53.0
-	go.opentelemetry.io/collector/config/configretry v1.53.0
-	go.opentelemetry.io/collector/consumer v1.53.0
+	go.opentelemetry.io/collector/component v1.54.0
+	go.opentelemetry.io/collector/config/configoptional v1.54.0
+	go.opentelemetry.io/collector/config/configretry v1.54.0
+	go.opentelemetry.io/collector/consumer v1.54.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.147.0
 	go.opentelemetry.io/collector/exporter/exporterhelper v0.147.0
 	go.opentelemetry.io/collector/internal/componentalias v0.147.0
-	go.opentelemetry.io/collector/pdata v1.53.0
-	go.opentelemetry.io/collector/pipeline v1.53.0
+	go.opentelemetry.io/collector/pdata v1.54.0
+	go.opentelemetry.io/collector/pipeline v1.54.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
 )
@@ -34,14 +34,14 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/client v1.53.0 // indirect
-	go.opentelemetry.io/collector/confmap v1.53.0 // indirect
+	go.opentelemetry.io/collector/client v1.54.0 // indirect
+	go.opentelemetry.io/collector/confmap v1.54.0 // indirect
 	go.opentelemetry.io/collector/confmap/xconfmap v0.147.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.147.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.147.0 // indirect
-	go.opentelemetry.io/collector/extension v1.53.0 // indirect
+	go.opentelemetry.io/collector/extension v1.54.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.147.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.53.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.54.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.147.0 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.147.0 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.147.0 // indirect

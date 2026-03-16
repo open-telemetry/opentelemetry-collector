@@ -6,13 +6,13 @@ replace go.opentelemetry.io/collector/processor => ../
 
 require (
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.53.0
+	go.opentelemetry.io/collector/component v1.54.0
 	go.opentelemetry.io/collector/component/componenttest v0.147.0
-	go.opentelemetry.io/collector/consumer v1.53.0
+	go.opentelemetry.io/collector/consumer v1.54.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.147.0
-	go.opentelemetry.io/collector/pdata v1.53.0
-	go.opentelemetry.io/collector/pipeline v1.53.0
-	go.opentelemetry.io/collector/processor v1.53.0
+	go.opentelemetry.io/collector/pdata v1.54.0
+	go.opentelemetry.io/collector/pipeline v1.54.0
+	go.opentelemetry.io/collector/processor v1.54.0
 	go.opentelemetry.io/collector/processor/processortest v0.147.0
 	go.opentelemetry.io/otel v1.42.0
 	go.opentelemetry.io/otel/metric v1.42.0
@@ -35,7 +35,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.147.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.147.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.53.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.54.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.147.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.147.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.147.0 // indirect
