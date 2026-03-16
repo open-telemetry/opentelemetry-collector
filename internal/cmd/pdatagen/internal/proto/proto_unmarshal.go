@@ -54,7 +54,7 @@ const unmarshalProtoFloat = `{{ if .repeated -}}
 		}
 {{ if ne .oneOfGroup "" -}}
 		var ov *{{ .oneOfMessageName }}
-		if !UseProtoPooling.IsEnabled() {
+		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov = &{{ .oneOfMessageName }}{}
 		} else {
 			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
@@ -112,7 +112,7 @@ const unmarshalProtoFixed = `{{ if .repeated -}}
 		}
 {{ if ne .oneOfGroup "" -}}
 		var ov *{{ .oneOfMessageName }}
-		if !UseProtoPooling.IsEnabled() {
+		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov = &{{ .oneOfMessageName }}{}
 		} else {
 			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
@@ -168,7 +168,7 @@ const unmarshalProtoBool = `{{ if .repeated -}}
 		}
 {{ if ne .oneOfGroup "" -}}
 		var ov *{{ .oneOfMessageName }}
-		if !UseProtoPooling.IsEnabled() {
+		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov = &{{ .oneOfMessageName }}{}
 		} else {
 			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
@@ -224,7 +224,7 @@ const unmarshalProtoVarint = `{{ if .repeated -}}
 		}
 {{ if ne .oneOfGroup "" -}}
 		var ov *{{ .oneOfMessageName }}
-		if !UseProtoPooling.IsEnabled() {
+		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov = &{{ .oneOfMessageName }}{}
 		} else {
 			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
@@ -250,7 +250,7 @@ const unmarshalProtoString = `
 		startPos := pos - length
 {{ if ne .oneOfGroup "" -}}
 		var ov *{{ .oneOfMessageName }}
-		if !UseProtoPooling.IsEnabled() {
+		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov = &{{ .oneOfMessageName }}{}
 		} else {
 			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
@@ -276,7 +276,7 @@ const unmarshalProtoBytes = `
 		startPos := pos - length
 {{ if ne .oneOfGroup "" -}}
 		var ov *{{ .oneOfMessageName }}
-		if !UseProtoPooling.IsEnabled() {
+		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov = &{{ .oneOfMessageName }}{}
 		} else {
 			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
@@ -313,7 +313,7 @@ const unmarshalProtoMessage = `
 		startPos := pos - length
 {{ if ne .oneOfGroup "" -}}
 		var ov *{{ .oneOfMessageName }}
-		if !UseProtoPooling.IsEnabled() {
+		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov = &{{ .oneOfMessageName }}{}
 		} else {
 			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
@@ -384,7 +384,7 @@ const unmarshalProtoSignedVarint = `{{ if .repeated -}}
 		}
 {{ if ne .oneOfGroup "" -}}
 		var ov *{{ .oneOfMessageName }}
-		if !UseProtoPooling.IsEnabled() {
+		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov = &{{ .oneOfMessageName }}{}
 		} else {
 			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})

@@ -77,6 +77,11 @@ func TestLoadMetadata(t *testing.T) {
 				},
 				Config: &cfggen.ConfigMetadata{
 					Type: "object",
+					AllOf: []*cfggen.ConfigMetadata{
+						{
+							Ref: "./internal/metadata.metrics_builder_config",
+						},
+					},
 					Properties: map[string]*cfggen.ConfigMetadata{
 						"endpoint": {
 							Description: "The endpoint to scrape metrics from.",
@@ -455,7 +460,7 @@ func TestLoadMetadata(t *testing.T) {
 								Since: "1.5.0",
 								Note:  "This metric will be removed in favor of batch_send_trigger_size",
 							},
-							Unit: strPtr("{times}"),
+							Unit: strPtr("{time}"),
 							Sum: &Sum{
 								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeInt},
 								Mono:            Mono{Monotonic: true},
@@ -495,7 +500,7 @@ func TestLoadMetadata(t *testing.T) {
 								Description:           "This metric is optional and therefore not initialized in NewTelemetryBuilder.",
 								ExtendedDocumentation: "For example this metric only exists if feature A is enabled.",
 							},
-							Unit:     strPtr("{items}"),
+							Unit:     strPtr("{item}"),
 							Optional: true,
 							Gauge: &Gauge{
 								MetricValueType: MetricValueType{
@@ -510,7 +515,7 @@ func TestLoadMetadata(t *testing.T) {
 								Description: "Queue capacity - sync gauge example.",
 								Stability:   component.StabilityLevelDevelopment,
 							},
-							Unit: strPtr("{items}"),
+							Unit: strPtr("{item}"),
 							Gauge: &Gauge{
 								MetricValueType: MetricValueType{
 									ValueType: pmetric.NumberDataPointValueTypeInt,
