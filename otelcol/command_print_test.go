@@ -53,13 +53,14 @@ func TestPrintCommand(t *testing.T) {
 	defaultConfig := fmt.Sprint("file:", filepath.Join("testdata", "print_default.yaml"))
 
 	tests := []struct {
-		name      string
-		ofmt      string
-		path      string
-		errString string
-		outString map[string]string
-		disableFF bool // disable the feature flag
-		validate  bool // add validation (even redacted)
+		name            string
+		ofmt            string
+		path            string
+		errString       string
+		outString       map[string]string
+		disableFF       bool // disable the feature flag
+		validate        bool // add validation (even redacted)
+		errOnlyRedacted bool // error applies only in redacted mode
 	}{
 		{
 			name:      "file not found",
@@ -71,9 +72,10 @@ func TestPrintCommand(t *testing.T) {
 			path: validConfig,
 		},
 		{
-			name:      "invalid syntax without validate",
-			path:      invalidConfig1,
-			errString: "'timeout' time: invalid duration",
+			name:            "invalid syntax without validate",
+			path:            invalidConfig1,
+			errString:       "'timeout' time: invalid duration",
+			errOnlyRedacted: false, 
 		},
 		{
 			name:      "validation fail",
@@ -108,10 +110,7 @@ func TestPrintCommand(t *testing.T) {
 			ofmt: "json",
 			path: validConfig,
 			outString: map[string]string{
-				// Note: JSON does not format as a time.Duration
-				"redacted": `"timeout": 5000000000`,
-
-				// Note: the original input is "5s"
+				"redacted":   `"timeout": 5000000000`,
 				"unredacted": `"timeout": 5000000000`,
 			},
 		},
@@ -128,7 +127,7 @@ func TestPrintCommand(t *testing.T) {
 			path: defaultConfig,
 			outString: map[string]string{
 				"redacted":   `opaque: '[REDACTED]'`,
-				"unredacted": `opaque: '[REDACTED]'`,
+				"unredacted": `opaque: "1234"`,
 			},
 		},
 	}
@@ -223,6 +222,10 @@ func TestPrintCommand(t *testing.T) {
 				switch mode {
 				case "redacted":
 				case "unredacted":
+					if test.errOnlyRedacted {
+						expectErr = false
+						expectErrMsg = ""
+					}
 				default:
 					expectErr = true
 					if test.disableFF {
@@ -243,49 +246,5 @@ func TestPrintCommand(t *testing.T) {
 				}
 			})
 		}
-	}
-}
-
-func TestRestoreSecrets(t *testing.T) {
-	tests := []struct {
-		name     string
-		base     any
-		raw      any
-		expected any
-	}{
-		{
-			name:     "replace in map",
-			base:     map[string]any{"key1": "[REDACTED]", "key2": "normal"},
-			raw:      map[string]any{"key1": "secret1", "key2": "normal"},
-			expected: map[string]any{"key1": "secret1", "key2": "normal"},
-		},
-		{
-			name:     "replace in slice",
-			base:     []any{"[REDACTED]", "normal"},
-			raw:      []any{"secret_in_slice", "normal"},
-			expected: []any{"secret_in_slice", "normal"},
-		},
-		{
-			name: "nested structures",
-			base: map[string]any{
-				"nested_slice": []any{"[REDACTED]"},
-				"nested_map":   map[string]any{"deep_key": "[REDACTED]"},
-			},
-			raw: map[string]any{
-				"nested_slice": []any{"deep_secret1"},
-				"nested_map":   map[string]any{"deep_key": "deep_secret2"},
-			},
-			expected: map[string]any{
-				"nested_slice": []any{"deep_secret1"},
-				"nested_map":   map[string]any{"deep_key": "deep_secret2"},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			restoreSecrets(tt.base, tt.raw)
-			require.Equal(t, tt.expected, tt.base)
-		})
 	}
 }

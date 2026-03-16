@@ -25,3 +25,9 @@ type ExpandedValue = internal.ExpandedValue
 func ToStringMapRaw(conf *confmap.Conf) map[string]any {
 	return internal.ToStringMapRaw(conf)
 }
+
+func WithUnredacted() confmap.MarshalOption {
+	return internal.MarshalOptionFunc(func(opts *internal.MarshalOptions) {
+		opts.OpaqueUnredacted = true
+	})
+}

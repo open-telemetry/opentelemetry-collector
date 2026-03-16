@@ -150,68 +150,21 @@ func (pctx *printContext) printUnredactedConfig() error {
 	}
 
 	if pctx.validate {
+		// Validation serves prevent revealing invalid data.
 		if err = xconfmap.Validate(cfg); err != nil {
 			return fmt.Errorf("invalid configuration: %w", err)
 		}
+		// Note: we discard the validated configuration.
 	}
 
-	baseConfMap := confmap.New()
-	if err = baseConfMap.Marshal(cfg); err != nil {
+	confMap := confmap.New()
+	if err := confMap.Marshal(cfg, xconfmap.WithUnredacted()); err != nil {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
-	baseMap := baseConfMap.ToStringMap()
 
-	resolver, err := confmap.NewResolver(pctx.set.ConfigProviderSettings.ResolverSettings)
-	if err != nil {
-		return fmt.Errorf("failed to create new resolver: %w", err)
-	}
-	rawConf, err := resolver.Resolve(pctx.cmd.Context())
-	if err != nil {
-		return fmt.Errorf("error while resolving config: %w", err)
-	}
-	rawMap := rawConf.ToStringMap()
-
-	restoreSecrets(baseMap, rawMap)
-
-	return pctx.printConfigData(baseMap)
+	return pctx.printConfigData(confMap.ToStringMap())
 }
 
-// restoreSecrets recursively replaces "[REDACTED]" strings in the base config
-// with the actual explicit values from the raw config.
-func restoreSecrets(base, raw any) {
-	bMap, bOk := base.(map[string]any)
-	rMap, rOk := raw.(map[string]any)
-	if bOk && rOk {
-		for k, bVal := range bMap {
-			if bStr, isStr := bVal.(string); isStr && bStr == "[REDACTED]" {
-				if rVal, exists := rMap[k]; exists && rVal != nil {
-					bMap[k] = rVal
-				}
-			} else if rVal, exists := rMap[k]; exists {
-				restoreSecrets(bVal, rVal)
-			}
-		}
-		return
-	}
-
-	bSlice, bOk := base.([]any)
-	rSlice, rOk := raw.([]any)
-	if bOk && rOk && len(bSlice) == len(rSlice) {
-		for i := range bSlice {
-			if bStr, isStr := bSlice[i].(string); isStr && bStr == "[REDACTED]" {
-				if rSlice[i] != nil {
-					bSlice[i] = rSlice[i]
-				}
-			} else {
-				restoreSecrets(bSlice[i], rSlice[i])
-			}
-		}
-	}
-}
-
-// printRedactedConfig prints resolved configuration with its assigned
-// types, but without validation. Notably, configopaque strings are printed
-// as "[redacted]". This is the default.
 func (pctx *printContext) printRedactedConfig() error {
 	cfg, err := pctx.getPrintableConfig()
 	if err != nil {
@@ -228,5 +181,6 @@ func (pctx *printContext) printRedactedConfig() error {
 	if err := confMap.Marshal(cfg); err != nil {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
+
 	return pctx.printConfigData(confMap.ToStringMap())
 }

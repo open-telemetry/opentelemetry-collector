@@ -268,3 +268,14 @@ func YamlMarshalerHookFunc() mapstructure.DecodeHookFuncValue {
 		return from.Interface(), nil
 	}
 }
+
+func StringTextUnredactedHookFunc() mapstructure.DecodeHookFuncValue {
+	return func(from, _ reflect.Value) (any, error) {
+		if from.Kind() == reflect.String {
+			if _, ok := from.Interface().(encoding.TextMarshaler); ok {
+				return from.String(), nil
+			}
+		}
+		return from.Interface(), nil
+	}
+}
