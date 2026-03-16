@@ -4,9 +4,9 @@ Collector build and testing is currently fully automated. However there are stil
 
 We release both core and contrib collectors with the same versions where the contrib release uses the core release as a dependency. We’ve divided this process into three sections. Each section is assigned to an approver or maintainer of the corresponding repository. The sections are:
 
-1. The [Core](#releasing-opentelemetry-collector-core-release-manager) collector, including the collector builder CLI tool.
-2. The [Contrib](#releasing-opentelemetry-collector-contrib-contrib-release-manager) collector repository, containing Collector components.
-3. The [artifacts](#producing-the-artifacts-releases-release-manager)
+1. The [Core](https://github.com/am1r021/opentelemetry-collector/blob/4e52431c4f93093dbfe441be25c266aa617243ac/docs/release.md#releasing-opentelemetry-collector-core-release-manager) collector, including the collector builder CLI tool.
+2. The [Contrib](https://github.com/am1r021/opentelemetry-collector/blob/4e52431c4f93093dbfe441be25c266aa617243ac/docs/release.md#releasing-opentelemetry-collector-contrib-contrib-release-manager) collector repository, containing Collector components.
+3. The [artifacts](https://github.com/am1r021/opentelemetry-collector/blob/4e52431c4f93093dbfe441be25c266aa617243ac/docs/release.md#producing-the-artifacts-releases-release-manager)
 
 **Important Note:** You’ll need to be able to sign git commits/tags in order to be able to release a collector version. Follow [this guide](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits) to set it up.
 
