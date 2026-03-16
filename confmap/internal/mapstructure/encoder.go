@@ -46,6 +46,11 @@ type EncoderConfig struct {
 	EncodeHook mapstructure.DecodeHookFunc
 }
 
+// unredactedStringer is an interface for types that can reveal their unredacted string values.
+type unredactedStringer interface {
+	UnredactedString() string
+}
+
 // New returns a new encoder for the configuration.
 func New(cfg *EncoderConfig) *Encoder {
 	return &Encoder{config: cfg}
@@ -269,13 +274,18 @@ func YamlMarshalerHookFunc() mapstructure.DecodeHookFuncValue {
 	}
 }
 
+// StringTextUnredactedHookFunc returns a DecodeHookFuncValue that checks
+// for the unredactedStringer interface to return the unredacted string.
 func StringTextUnredactedHookFunc() mapstructure.DecodeHookFuncValue {
 	return func(from, _ reflect.Value) (any, error) {
-		if from.Kind() == reflect.String {
-			if _, ok := from.Interface().(encoding.TextMarshaler); ok {
-				return from.String(), nil
-			}
+		if from.Kind() != reflect.String {
+			return from.Interface(), nil
 		}
+
+		if s, ok := from.Interface().(unredactedStringer); ok {
+			return s.UnredactedString(), nil
+		}
+		
 		return from.Interface(), nil
 	}
 }

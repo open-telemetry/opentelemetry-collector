@@ -24,6 +24,12 @@ func (s String) String() string {
 	return maskedString
 }
 
+// UnredactedString returns the original unmasked string.
+// This implements the unredactedStringer interface used by confmap.
+func (s String) UnredactedString() string {
+	return string(s)
+}
+
 // GoString formats the string as `[REDACTED]`.
 // This is used for the %#v verb.
 func (s String) GoString() string {

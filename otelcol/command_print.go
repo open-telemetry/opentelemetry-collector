@@ -140,9 +140,9 @@ func (pctx *printContext) getPrintableConfig() (any, error) {
 	return cfg, nil
 }
 
-// printUnredactedConfig prints resolved configuration before interpreting
-// with the intended types for each component, thus it shows the full
-// configuration without considering configuopaque. Use with caution.
+// printUnredactedConfig prints the resolved configuration before interpreting
+// with the intended types for each component. It uses unredacted mode to
+// reveal the full configuration including opaque values. Use with caution.
 func (pctx *printContext) printUnredactedConfig() error {
 	cfg, err := pctx.getPrintableConfig()
 	if err != nil {
