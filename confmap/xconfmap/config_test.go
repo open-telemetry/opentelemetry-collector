@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type configChildStruct struct {
@@ -320,4 +321,9 @@ func TestValidateConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestWithUnredacted(t *testing.T) {
+	opt := WithUnredacted()
+	require.NotNil(t, opt)
 }

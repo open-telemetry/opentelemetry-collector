@@ -92,3 +92,7 @@ func TestStringMarshalBinary(t *testing.T) {
 		assert.Equal(t, []byte("[REDACTED]"), opaque)
 	}
 }
+
+func TestUnredactedString(t *testing.T) {
+	assert.Equal(t, "my-secret", String("my-secret").UnredactedString())
+}

@@ -12,7 +12,10 @@ import (
 
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/go-playground/assert.v1"
 )
+
+type mockUnredactedStringer string
 
 type TestComplexStruct struct {
 	Skipped               TestEmptyStruct             `mapstructure:",squash"`
@@ -391,4 +394,22 @@ func testHookFunc() mapstructure.DecodeHookFuncValue {
 		}
 		return got.skipped, nil
 	}
+}
+
+func (m mockUnredactedStringer) UnredactedString() string { return string(m) }
+
+func TestStringTextUnredactedHookFunc(t *testing.T) {
+	hook := StringTextUnredactedHookFunc()
+
+	val, err := hook(reflect.ValueOf(123), reflect.Value{})
+	require.NoError(t, err)
+	assert.Equal(t, 123, val)
+
+	val, err = hook(reflect.ValueOf("plain"), reflect.Value{})
+	require.NoError(t, err)
+	assert.Equal(t, "plain", val)
+
+	val, err = hook(reflect.ValueOf(mockUnredactedStringer("secret")), reflect.Value{})
+	require.NoError(t, err)
+	assert.Equal(t, "secret", val)
 }
