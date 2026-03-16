@@ -7,7 +7,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/xpdata/entity"
@@ -18,7 +17,6 @@ func TestEntityBuilders(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
 	settings := receivertest.NewNopSettings(receivertest.NopType)
-	settings.Logger = zap.NewNop()
 	mb := NewMetricsBuilder(DefaultMetricsBuilderConfig(), settings, WithStartTime(start))
 
 	t.Run("k8s.replicaset", func(t *testing.T) {
@@ -27,9 +25,7 @@ func TestEntityBuilders(t *testing.T) {
 		e.SetK8sReplicasetName("k8s.replicaset.name-val")
 
 		eb := mb.ForK8sReplicaset(e)
-		require.NotNil(t, eb)
 		eb.RecordK8sReplicasetDesiredDataPoint(ts, 1)
-
 		eb.Emit()
 		metrics := mb.Emit()
 
@@ -45,6 +41,57 @@ func TestEntityBuilders(t *testing.T) {
 		ms := rm.ScopeMetrics().At(0).Metrics()
 		assert.Equal(t, 1, ms.Len())
 	})
+	t.Run("k8s.replicaset/disabled_identity_attr", func(t *testing.T) {
+		// When an identity attribute is disabled, the entity is not produced but
+		// other enabled attributes are still added to the resource directly.
+		cfg := DefaultMetricsBuilderConfig()
+		cfg.ResourceAttributes.K8sReplicasetUID.Enabled = false
+		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
+
+		e := NewK8sReplicasetEntity("k8s.replicaset.uid-val")
+		e.SetK8sReplicasetName("k8s.replicaset.name-val")
+
+		eb := mb.ForK8sReplicaset(e)
+		eb.RecordK8sReplicasetDesiredDataPoint(ts, 1)
+		eb.Emit()
+		metrics := mb.Emit()
+
+		require.Equal(t, 1, metrics.ResourceMetrics().Len())
+		rm := metrics.ResourceMetrics().At(0)
+		// Entity must not be present since its identity attribute is disabled.
+		_, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.replicaset")
+		assert.False(t, ok)
+		// Enabled descriptive attributes should still be on the resource directly.
+		_, ok = rm.Resource().Attributes().Get("k8s.replicaset.name")
+		assert.True(t, ok)
+	})
+	t.Run("k8s.replicaset/disabled_descriptive_attr", func(t *testing.T) {
+		// When a descriptive attribute is disabled, the entity is still produced
+		// with its identity but the disabled attribute is not added.
+		cfg := DefaultMetricsBuilderConfig()
+		cfg.ResourceAttributes.K8sReplicasetName.Enabled = false
+		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
+
+		e := NewK8sReplicasetEntity("k8s.replicaset.uid-val")
+		e.SetK8sReplicasetName("k8s.replicaset.name-val")
+
+		eb := mb.ForK8sReplicaset(e)
+		eb.RecordK8sReplicasetDesiredDataPoint(ts, 1)
+		eb.Emit()
+		metrics := mb.Emit()
+
+		require.Equal(t, 1, metrics.ResourceMetrics().Len())
+		rm := metrics.ResourceMetrics().At(0)
+		// Entity must still be produced since identity attributes are enabled.
+		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.replicaset")
+		require.True(t, ok)
+		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.replicaset.uid")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.replicaset.uid-val", attrVal.Str())
+		// Disabled descriptive/extra attributes must not be present.
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.replicaset.name")
+		assert.False(t, ok)
+	})
 
 	t.Run("k8s.pod", func(t *testing.T) {
 		e := NewK8sPodEntity("k8s.pod.uid-val")
@@ -55,10 +102,8 @@ func TestEntityBuilders(t *testing.T) {
 		e.SetControlledByK8sReplicaset(relatedK8sReplicaset)
 
 		eb := mb.ForK8sPod(e)
-		require.NotNil(t, eb)
 		eb.RecordK8sPodCPUTimeDataPoint(ts, 1)
 		eb.RecordK8sPodPhaseDataPoint(ts, 1, AttributePhasePending)
-
 		eb.Emit()
 		metrics := mb.Emit()
 
@@ -73,5 +118,62 @@ func TestEntityBuilders(t *testing.T) {
 		require.Equal(t, 1, rm.ScopeMetrics().Len())
 		ms := rm.ScopeMetrics().At(0).Metrics()
 		assert.Equal(t, 2, ms.Len())
+	})
+	t.Run("k8s.pod/disabled_identity_attr", func(t *testing.T) {
+		// When an identity attribute is disabled, the entity is not produced but
+		// other enabled attributes are still added to the resource directly.
+		cfg := DefaultMetricsBuilderConfig()
+		cfg.ResourceAttributes.K8sPodUID.Enabled = false
+		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
+
+		e := NewK8sPodEntity("k8s.pod.uid-val")
+		e.SetK8sPodName("k8s.pod.name-val")
+
+		eb := mb.ForK8sPod(e)
+		eb.RecordK8sPodCPUTimeDataPoint(ts, 1)
+		eb.RecordK8sPodPhaseDataPoint(ts, 1, AttributePhasePending)
+		eb.Emit()
+		metrics := mb.Emit()
+
+		require.Equal(t, 1, metrics.ResourceMetrics().Len())
+		rm := metrics.ResourceMetrics().At(0)
+		// Entity must not be present since its identity attribute is disabled.
+		_, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.pod")
+		assert.False(t, ok)
+		// Enabled descriptive attributes should still be on the resource directly.
+		_, ok = rm.Resource().Attributes().Get("k8s.pod.name")
+		assert.True(t, ok)
+	})
+	t.Run("k8s.pod/disabled_descriptive_attr", func(t *testing.T) {
+		// When a descriptive attribute is disabled, the entity is still produced
+		// with its identity but the disabled attribute is not added.
+		cfg := DefaultMetricsBuilderConfig()
+		cfg.ResourceAttributes.K8sPodName.Enabled = false
+		cfg.ResourceAttributes.K8sNamespaceName.Enabled = false
+		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
+
+		e := NewK8sPodEntity("k8s.pod.uid-val")
+		e.SetK8sPodName("k8s.pod.name-val")
+		e.SetK8sNamespaceName("k8s.namespace.name-val")
+
+		eb := mb.ForK8sPod(e)
+		eb.RecordK8sPodCPUTimeDataPoint(ts, 1)
+		eb.RecordK8sPodPhaseDataPoint(ts, 1, AttributePhasePending)
+		eb.Emit()
+		metrics := mb.Emit()
+
+		require.Equal(t, 1, metrics.ResourceMetrics().Len())
+		rm := metrics.ResourceMetrics().At(0)
+		// Entity must still be produced since identity attributes are enabled.
+		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.pod")
+		require.True(t, ok)
+		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.pod.uid")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.pod.uid-val", attrVal.Str())
+		// Disabled descriptive/extra attributes must not be present.
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.pod.name")
+		assert.False(t, ok)
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.namespace.name")
+		assert.False(t, ok)
 	})
 }

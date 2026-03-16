@@ -339,13 +339,10 @@ func getTemplateFuncMap(md Metadata) template.FuncMap {
 		"casesTitle":  cases.Title(language.English).String,
 		"toLowerCase": strings.ToLower,
 		"toCamelCase": func(s string) string {
-			caser := cases.Title(language.English).String
-			parts := strings.Split(s, "_")
-			var result strings.Builder
-			for _, part := range parts {
-				fmt.Fprintf(&result, "%s", caser(part))
-			}
-			return result.String()
+			return joinCamelCase(strings.Split(s, "_"), true)
+		},
+		"toLowerCamelCase": func(s string) string {
+			return joinCamelCase(strings.Split(s, "_"), false)
 		},
 		"inc":       func(i int) int { return i + 1 },
 		"distroURL": distroURL,
@@ -569,4 +566,17 @@ func generateConfigGoStruct(md Metadata, outputDir string) error {
 
 	fns := cfggen.WithCfgFns(getTemplateFuncMap(md), rootPkg, md.PackageName)
 	return generateFileWithFns(tmplFile, dstFile, md, packageName, fns)
+}
+
+func joinCamelCase(parts []string, exported bool) string {
+	caser := cases.Title(language.English).String
+	var result strings.Builder
+	for i, part := range parts {
+		if i == 0 && !exported {
+			fmt.Fprintf(&result, "%s", strings.ToLower(part))
+		} else {
+			fmt.Fprintf(&result, "%s", caser(part))
+		}
+	}
+	return result.String()
 }
