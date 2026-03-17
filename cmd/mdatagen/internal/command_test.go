@@ -528,7 +528,7 @@ func TestGenerateConfigFiles(t *testing.T) {
 
 			gitInit(t, root)
 			require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
-			err := generateConfigFiles(tt.md, tmpdir)
+			err := generateConfigFiles(tt.md, tmpdir, "testmodule")
 			if tt.wantErr {
 				require.Error(t, err)
 				return
@@ -564,7 +564,7 @@ func TestGenerateConfigFiles_GoStructError(t *testing.T) {
 		Status:      &Status{Class: "receiver"},
 		Config:      &cfggen.ConfigMetadata{Type: "object"},
 	}
-	err := generateConfigFiles(md, t.TempDir())
+	err := generateConfigFiles(md, t.TempDir(), "testmodule")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to generate config Go struct")
 }
@@ -580,7 +580,7 @@ func TestGenerateConfigFiles_WriteError(t *testing.T) {
 			Type: "object",
 		},
 	}
-	err := generateConfigFiles(md, "/nonexistent/path/that/does/not/exist")
+	err := generateConfigFiles(md, "/nonexistent/path/that/does/not/exist", "testmodule")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to write config schema")
 }
@@ -855,7 +855,7 @@ Some info about a component
 			readmeFile := filepath.Join(tmpdir, "README.md")
 			require.NoError(t, os.WriteFile(readmeFile, []byte(tt.markdown), 0o600))
 
-			err := inlineReplace("templates/readme.md.tmpl", readmeFile, md, statusStart, statusEnd, "metadata")
+			err := inlineReplace("templates/readme.md.tmpl", readmeFile, md, statusStart, statusEnd, "metadata", "go.opentelemetry.io/collector")
 			require.NoError(t, err)
 
 			require.FileExists(t, filepath.Join(tmpdir, "README.md"))
@@ -977,7 +977,7 @@ const (
 		t.Run(tt.name, func(t *testing.T) {
 			tmpdir := t.TempDir()
 			err := generateFile("templates/status.go.tmpl",
-				filepath.Join(tmpdir, "generated_status.go"), tt.md, "metadata")
+				filepath.Join(tmpdir, "generated_status.go"), tt.md, "metadata", "go.opentelemetry.io/collector")
 			require.NoError(t, err)
 			actual, err := os.ReadFile(filepath.Clean(filepath.Join(tmpdir, "generated_status.go")))
 			require.NoError(t, err)
@@ -1063,13 +1063,45 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpdir := t.TempDir()
 			err := generateFile("templates/telemetry.go.tmpl",
-				filepath.Join(tmpdir, "generated_telemetry.go"), tt.md, "metadata")
+				filepath.Join(tmpdir, "generated_telemetry.go"), tt.md, "metadata", "go.opentelemetry.io/collector")
 			require.NoError(t, err)
 			actual, err := os.ReadFile(filepath.Clean(filepath.Join(tmpdir, "generated_telemetry.go")))
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, string(actual))
 		})
 	}
+}
+
+func TestGenerateConfigSchema_LocalizesSameRootRefs(t *testing.T) {
+	enabled := true
+	md := Metadata{
+		Type: "foo",
+		ResourceAttributes: map[AttributeName]Attribute{
+			"resource.attr": {
+				Description: "resource attr",
+				EnabledPtr:  &enabled,
+				FullName:    "resource.attr",
+			},
+		},
+		Events: map[EventName]Event{
+			"default.event": {
+				Signal: Signal{
+					Enabled:     true,
+					Description: "event description",
+				},
+			},
+		},
+	}
+
+	tmpdir := t.TempDir()
+	outputFile := filepath.Join(tmpdir, "config.schema.yaml")
+	err := generateFile("templates/config.schema.yaml.tmpl", outputFile, md, "metadata", "go.opentelemetry.io/collector")
+	require.NoError(t, err)
+
+	actual, err := os.ReadFile(filepath.Clean(outputFile))
+	require.NoError(t, err)
+	require.Contains(t, string(actual), "$ref: /filter.config")
+	require.NotContains(t, string(actual), "$ref: go.opentelemetry.io/collector/filter.config")
 }
 
 func gitInit(t *testing.T, dir string) {
