@@ -171,6 +171,26 @@ func TestRetrySenderRetryPartialUnref(t *testing.T) {
 	require.NoError(t, rs.Shutdown(context.Background()))
 }
 
+func TestRetrySenderRetryMultiplePartialUnref(t *testing.T) {
+	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg.InitialInterval = 0
+	rc := &fakeRefCounter{}
+	rs := newRetrySender(rCfg, exportertest.NewNopSettings(exportertest.NopType), sender.NewSender(func(_ context.Context, req request.Request) error {
+		if req.ItemsCount() > 1 {
+			return requesttest.NewPartialError(&requesttest.FakeRequest{Items: req.ItemsCount() - 1})
+		}
+		return nil
+	}), rc)
+	require.NoError(t, rs.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, rs.Send(context.Background(), &requesttest.FakeRequest{Items: 3}))
+	// Items=3 → partial(2) → partial(1) → success. Two replacements.
+	// req_B(Items=2) is Unref'd in the loop, req_C(Items=1) is Unref'd in defer.
+	assert.Equal(t, 2, rc.unrefCount)
+	assert.Equal(t, 2, rc.unreffed[0].ItemsCount())
+	assert.Equal(t, 1, rc.unreffed[1].ItemsCount())
+	require.NoError(t, rs.Shutdown(context.Background()))
+}
+
 func TestRetrySenderSimpleRetryNoUnref(t *testing.T) {
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = 0
