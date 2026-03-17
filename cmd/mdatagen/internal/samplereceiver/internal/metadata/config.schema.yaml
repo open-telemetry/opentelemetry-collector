@@ -5,7 +5,7 @@ $defs:
     type: object
     properties:
       default.metric:
-        description: "DefaultMetricConfig provides config for the default.metric metric."
+        description: "DefaultMetricMetricConfig provides config for the default.metric metric."
         type: object
         properties:
           enabled:
@@ -41,14 +41,14 @@ $defs:
               - "conditional_int_attr"
               - "conditional_string_attr"
       default.metric.to_be_removed:
-        description: "DefaultMetricToBeRemovedConfig provides config for the default.metric.to_be_removed metric."
+        description: "DefaultMetricToBeRemovedMetricConfig provides config for the default.metric.to_be_removed metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       metric.input_type:
-        description: "MetricInputTypeConfig provides config for the metric.input_type metric."
+        description: "MetricInputTypeMetricConfig provides config for the metric.input_type metric."
         type: object
         properties:
           enabled:
@@ -79,7 +79,7 @@ $defs:
               - "slice_attr"
               - "map_attr"
       optional.metric:
-        description: "OptionalMetricConfig provides config for the optional.metric metric."
+        description: "OptionalMetricMetricConfig provides config for the optional.metric metric."
         type: object
         properties:
           enabled:
@@ -108,7 +108,7 @@ $defs:
               - "boolean_attr2"
               - "conditional_string_attr"
       optional.metric.empty_unit:
-        description: "OptionalMetricEmptyUnitConfig provides config for the optional.metric.empty_unit metric."
+        description: "OptionalMetricEmptyUnitMetricConfig provides config for the optional.metric.empty_unit metric."
         type: object
         properties:
           enabled:
@@ -133,7 +133,7 @@ $defs:
               - "string_attr"
               - "boolean_attr"
       reaggregate.metric:
-        description: "ReaggregateMetricConfig provides config for the reaggregate.metric metric."
+        description: "ReaggregateMetricMetricConfig provides config for the reaggregate.metric metric."
         type: object
         properties:
           enabled:
@@ -158,7 +158,7 @@ $defs:
               - "string_attr"
               - "boolean_attr"
       reaggregate.metric.with_required:
-        description: "ReaggregateMetricWithRequiredConfig provides config for the reaggregate.metric.with_required metric."
+        description: "ReaggregateMetricWithRequiredMetricConfig provides config for the reaggregate.metric.with_required metric."
         type: object
         properties:
           enabled:
@@ -185,7 +185,7 @@ $defs:
               - "string_attr"
               - "boolean_attr"
       system.cpu.time:
-        description: "SystemCPUTimeConfig provides config for the system.cpu.time metric."
+        description: "SystemCPUTimeMetricConfig provides config for the system.cpu.time metric."
         type: object
         properties:
           enabled:
@@ -231,22 +231,22 @@ $defs:
             description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           metrics_exclude:
             description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           events_include:
             description: "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           events_exclude:
             description: "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
       optional.resource.attr:
         description: ResourceAttributeConfig provides common config for a optional.resource.attr resource attribute.
         type: object
@@ -258,22 +258,22 @@ $defs:
             description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           metrics_exclude:
             description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           events_include:
             description: "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           events_exclude:
             description: "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
       slice.resource.attr:
         description: ResourceAttributeConfig provides common config for a slice.resource.attr resource attribute.
         type: object
@@ -285,22 +285,22 @@ $defs:
             description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           metrics_exclude:
             description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           events_include:
             description: "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           events_exclude:
             description: "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
       string.enum.resource.attr:
         description: ResourceAttributeConfig provides common config for a string.enum.resource.attr resource attribute.
         type: object
@@ -312,22 +312,22 @@ $defs:
             description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           metrics_exclude:
             description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           events_include:
             description: "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           events_exclude:
             description: "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
       string.resource.attr:
         description: ResourceAttributeConfig provides common config for a string.resource.attr resource attribute.
         type: object
@@ -339,22 +339,22 @@ $defs:
             description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           metrics_exclude:
             description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           events_include:
             description: "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           events_exclude:
             description: "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
       string.resource.attr_disable_warning:
         description: ResourceAttributeConfig provides common config for a string.resource.attr_disable_warning resource attribute.
         type: object
@@ -366,22 +366,22 @@ $defs:
             description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           metrics_exclude:
             description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           events_include:
             description: "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           events_exclude:
             description: "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
       string.resource.attr_remove_warning:
         description: ResourceAttributeConfig provides common config for a string.resource.attr_remove_warning resource attribute.
         type: object
@@ -393,22 +393,22 @@ $defs:
             description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           metrics_exclude:
             description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           events_include:
             description: "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           events_exclude:
             description: "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
       string.resource.attr_to_be_removed:
         description: ResourceAttributeConfig provides common config for a string.resource.attr_to_be_removed resource attribute.
         type: object
@@ -420,22 +420,22 @@ $defs:
             description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           metrics_exclude:
             description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           events_include:
             description: "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           events_exclude:
             description: "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
   metrics_builder_config:
     description: MetricsBuilderConfig is a configuration for sample metrics builder.
     type: object

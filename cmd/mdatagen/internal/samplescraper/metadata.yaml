@@ -13,7 +13,7 @@ status:
   class: scraper
   stability:
     stable: [metrics]
-    development: [logs]
+    development: [logs, profiles]
   distributions: []
   unsupported_platforms: [freebsd, illumos]
   codeowners:
@@ -25,7 +25,7 @@ config:
   type: object
   description: Configuration for the Sample Scraper.
   allOf:
-    - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+    - $ref: /scraper/scraperhelper.controller_config
   $defs:
   properties:
     targets:
