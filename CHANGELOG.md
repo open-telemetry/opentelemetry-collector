@@ -7,6 +7,48 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.54.0/v0.148.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Change metric units to be singular to match OTel specification, e.g. `{requests}` -> `{request}` (#14753)
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Add deprecated_type field to allow specifying an alias for component types. (#14718)
+- `cmd/mdatagen`: Generate entity-scoped MetricsBuilder API that enforces entity-metric associations at compile time (#14659)
+- `cmd/mdatagen`: Skip generating reaggregation config options for metrics that have no aggregatable attributes. (#14689)
+- `pkg/service`: The internal status reporter no longer drops repeated Ok and RecoverableError statuses (#14282)
+  Status events can now carry metadata and there's value in allowing them to be emitted despite the status value itself 
+  not changing.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/builder`: Add `.exe` to output binary names when building for Windows targets. (#12591)
+- `exporter/debug`: Add printing of metric metadata in detailed verbosity. (#14667)
+- `exporter/otlp_grpc`: Prevent nil pointer panic when push methods are called before the OTLP exporter initializes its gRPC clients. (#14663)
+  When the sending queue and retry are disabled, calling ConsumeTraces,
+  ConsumeMetrics, ConsumeLogs, or ConsumeProfiles before the OTLP exporter
+  initializes its gRPC clients could cause a nil pointer dereference panic.
+  The push methods now return an error instead of panicking.
+  
+- `exporter/otlp_http`: Show the actual destination URL in error messages when request URL is modified by middleware. (#14673)
+  Unwraps the `*url.Error` returned by `http.Client.Do()` to prevent misleading error logs when a middleware extension dynamically updates the endpoint.
+  
+- `pdata/pprofile`: Switch the dictionary of dictionary tables entries only once when merging profiles (#14709)
+  For dictionary table data, we used to switch their dictionaries when doing
+  the switch for the data that uses them.
+  However, when an entry is associated with multiple other data (several
+  samples can use the same stack), we would have been switching the
+  dictionaries of the entry multiple times.
+  
+  We now switch dictionaries for dictionary table data only once, before
+  switching the resource profiles.
+  
+
+<!-- previous-version -->
+
 ## v1.53.0/v0.147.0
 
 ### 💡 Enhancements 💡

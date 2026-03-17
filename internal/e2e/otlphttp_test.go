@@ -67,7 +67,7 @@ func TestTraceNoBackend(t *testing.T) {
 	assert.Error(t, exp.ConsumeTraces(context.Background(), td))
 }
 
-func TestTraceInvalidUrl(t *testing.T) {
+func TestTraceInvalidURL(t *testing.T) {
 	exp := startTraces(t, "http:/\\//this_is_an/*/invalid_url", "")
 	td := testdata.GenerateTraces(1)
 	require.Error(t, exp.ConsumeTraces(context.Background(), td))

@@ -24,6 +24,7 @@ import (
 	"golang.org/x/text/language"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
 )
 
 const (
@@ -80,6 +81,10 @@ func run(ymlPath string) error {
 
 	ymlDir := filepath.Dir(ymlPath)
 	packageName := filepath.Base(ymlDir)
+	importRootPath, err := helpers.RootPackage(ymlDir)
+	if err != nil {
+		return fmt.Errorf("unable to determine import root path: %w", err)
+	}
 
 	raw, readErr := os.ReadFile(filepath.Clean(ymlPath))
 	if readErr != nil {
@@ -103,7 +108,7 @@ func run(ymlPath string) error {
 		if !slices.Contains(nonComponents, md.Status.Class) {
 			toGenerate[filepath.Join(tmplDir, "status.go.tmpl")] = filepath.Join(codeDir, "generated_status.go")
 			err = generateFile(filepath.Join(tmplDir, "component_test.go.tmpl"),
-				filepath.Join(ymlDir, "generated_component_test.go"), md, packageName)
+				filepath.Join(ymlDir, "generated_component_test.go"), md, packageName, importRootPath)
 			if err != nil {
 				return err
 			}
@@ -123,7 +128,7 @@ func run(ymlPath string) error {
 		}
 
 		err = generateFile(filepath.Join(tmplDir, "package_test.go.tmpl"),
-			filepath.Join(ymlDir, "generated_package_test.go"), md, packageName)
+			filepath.Join(ymlDir, "generated_package_test.go"), md, packageName, importRootPath)
 		if err != nil {
 			return err
 		}
@@ -132,7 +137,7 @@ func run(ymlPath string) error {
 			err = inlineReplace(
 				filepath.Join(tmplDir, "readme.md.tmpl"),
 				filepath.Join(ymlDir, "README.md"),
-				md, statusStart, statusEnd, md.GeneratedPackageName)
+				md, statusStart, statusEnd, md.GeneratedPackageName, importRootPath)
 			if err != nil {
 				return err
 			}
@@ -188,6 +193,7 @@ func run(ymlPath string) error {
 		toGenerate[filepath.Join(tmplDir, "testdata", "config.yaml.tmpl")] = filepath.Join(testdataDir, "config.yaml")
 		toGenerate[filepath.Join(tmplDir, "config.go.tmpl")] = filepath.Join(codeDir, "generated_config.go")
 		toGenerate[filepath.Join(tmplDir, "config_test.go.tmpl")] = filepath.Join(codeDir, "generated_config_test.go")
+		toGenerate[filepath.Join(tmplDir, "config.schema.yaml.tmpl")] = filepath.Join(codeDir, "config.schema.yaml")
 	}
 
 	if len(md.ResourceAttributes) > 0 { // only generate resource files if resource attributes are configured
@@ -210,6 +216,11 @@ func run(ymlPath string) error {
 		toGenerate[filepath.Join(tmplDir, "feature_gates.go.tmpl")] = filepath.Join(codeDir, "generated_feature_gates.go")
 	}
 
+	if len(md.Entities) > 0 && len(md.Metrics) > 0 { // only generate entity metrics if entities are defined
+		toGenerate[filepath.Join(tmplDir, "entity_metrics.go.tmpl")] = filepath.Join(codeDir, "generated_entity_metrics.go")
+		toGenerate[filepath.Join(tmplDir, "entity_metrics_test.go.tmpl")] = filepath.Join(codeDir, "generated_entity_metrics_test.go")
+	}
+
 	// If at least one file to generate, will need the codeDir
 	if len(toGenerate) > 0 {
 		if err = os.MkdirAll(codeDir, 0o700); err != nil {
@@ -218,196 +229,205 @@ func run(ymlPath string) error {
 	}
 
 	for tmpl, dst := range toGenerate {
-		if err := generateFile(tmpl, dst, md, md.GeneratedPackageName); err != nil {
+		if err := generateFile(tmpl, dst, md, md.GeneratedPackageName, importRootPath); err != nil {
 			return err
 		}
 	}
 
-	if err := generateConfigFiles(md, ymlDir); err != nil {
+	if err := generateConfigFiles(md, ymlDir, importRootPath); err != nil {
 		return fmt.Errorf("failed to generate config files: %w", err)
 	}
 
 	return nil
 }
 
-func templatize(tmplFile string, md Metadata) *template.Template {
+func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
+	return template.FuncMap{
+		"publicVar": func(s string) (string, error) {
+			return helpers.FormatIdentifier(s, true)
+		},
+		"attributeInfo": func(an AttributeName) Attribute {
+			return md.Attributes[an]
+		},
+		"defaultAttributes": func(ans []AttributeName) []string {
+			var atts []string
+			for _, an := range ans {
+				if md.Attributes[an].IsNotOptIn() {
+					atts = append(atts, string(md.Attributes[an].Name()))
+				}
+			}
+			return atts
+		},
+		"requiredAttributes": func(ans []AttributeName) []string {
+			var atts []string
+			for _, an := range ans {
+				if md.Attributes[an].IsRequired() {
+					atts = append(atts, string(md.Attributes[an].Name()))
+				}
+			}
+			return atts
+		},
+		"hasAggregatableAttributes": func(ans []AttributeName) bool {
+			for _, an := range ans {
+				if md.Attributes[an].RequirementLevel == AttributeRequirementLevelRecommended ||
+					md.Attributes[an].RequirementLevel == AttributeRequirementLevelOptIn {
+					return true
+				}
+			}
+			return false
+		},
+		"getEventConditionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
+			seen := make(map[AttributeName]bool)
+			used := make([]AttributeName, 0)
+
+			for _, event := range md.Events {
+				for _, attribute := range event.Attributes {
+					v, exists := attrs[attribute]
+					if exists && v.IsConditional() && !seen[attribute] {
+						used = append(used, attribute)
+						seen[attribute] = true
+					}
+				}
+			}
+			sort.Slice(used, func(i, j int) bool { return string(used[i]) < string(used[j]) })
+
+			return used
+		},
+		"getMetricConditionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
+			seen := make(map[AttributeName]bool)
+			used := make([]AttributeName, 0)
+
+			for _, event := range md.Metrics {
+				for _, attribute := range event.Attributes {
+					v, exists := attrs[attribute]
+					if exists && v.IsConditional() && !seen[attribute] {
+						used = append(used, attribute)
+						seen[attribute] = true
+					}
+				}
+			}
+			sort.Slice(used, func(i, j int) bool { return string(used[i]) < string(used[j]) })
+
+			return used
+		},
+		"metricInfo": func(mn MetricName) Metric {
+			return md.Metrics[mn]
+		},
+		"eventInfo": func(en EventName) Event {
+			return md.Events[en]
+		},
+		"telemetryInfo": func(mn MetricName) Metric {
+			return md.Telemetry.Metrics[mn]
+		},
+		"parseImportsRequired": func(metrics map[MetricName]Metric) bool {
+			for _, m := range metrics {
+				if m.Data().HasMetricInputType() {
+					return true
+				}
+			}
+			return false
+		},
+		"stringsJoin":  strings.Join,
+		"stringsSplit": strings.Split,
+		"userLinks": func(elems []string) []string {
+			result := make([]string, len(elems))
+			for i, elem := range elems {
+				if elem == "open-telemetry/collector-approvers" {
+					result[i] = "[@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)"
+				} else {
+					result[i] = fmt.Sprintf("[@%s](https://www.github.com/%s)", elem, elem)
+				}
+			}
+			return result
+		},
+		"casesTitle":  cases.Title(language.English).String,
+		"toLowerCase": strings.ToLower,
+		"toCamelCase": func(s string) string {
+			return joinCamelCase(strings.Split(s, "_"), true)
+		},
+		"toLowerCamelCase": func(s string) string {
+			return joinCamelCase(strings.Split(s, "_"), false)
+		},
+		"schemaRef": func(ref string) string {
+			return cfggen.LocalizeRef(ref, importRootPath)
+		},
+		"inc":       func(i int) int { return i + 1 },
+		"distroURL": distroURL,
+		"isExporter": func() bool {
+			return md.Status.Class == "exporter"
+		},
+		"isProcessor": func() bool {
+			return md.Status.Class == "processor"
+		},
+		"isReceiver": func() bool {
+			return md.Status.Class == "receiver"
+		},
+		"isExtension": func() bool {
+			return md.Status.Class == "extension"
+		},
+		"isConnector": func() bool {
+			return md.Status.Class == "connector"
+		},
+		"isScraper": func() bool {
+			return md.Status.Class == "scraper"
+		},
+		"isCommand": func() bool {
+			return md.Status.Class == "cmd"
+		},
+		"supportsLogs":               func() bool { return md.supportsSignal("logs") },
+		"supportsMetrics":            func() bool { return md.supportsSignal("metrics") },
+		"supportsTraces":             func() bool { return md.supportsSignal("traces") },
+		"supportsProfiles":           func() bool { return md.supportsSignal("profiles") },
+		"supportsLogsToLogs":         func() bool { return md.supportsSignal("logs_to_logs") },
+		"supportsLogsToMetrics":      func() bool { return md.supportsSignal("logs_to_metrics") },
+		"supportsLogsToTraces":       func() bool { return md.supportsSignal("logs_to_traces") },
+		"supportsLogsToProfiles":     func() bool { return md.supportsSignal("logs_to_profiles") },
+		"supportsMetricsToLogs":      func() bool { return md.supportsSignal("metrics_to_logs") },
+		"supportsMetricsToMetrics":   func() bool { return md.supportsSignal("metrics_to_metrics") },
+		"supportsMetricsToTraces":    func() bool { return md.supportsSignal("metrics_to_traces") },
+		"supportsMetricsToProfiles":  func() bool { return md.supportsSignal("metrics_to_profiles") },
+		"supportsTracesToLogs":       func() bool { return md.supportsSignal("traces_to_logs") },
+		"supportsTracesToMetrics":    func() bool { return md.supportsSignal("traces_to_metrics") },
+		"supportsTracesToTraces":     func() bool { return md.supportsSignal("traces_to_traces") },
+		"supportsTracesToProfiles":   func() bool { return md.supportsSignal("traces_to_profiles") },
+		"supportsProfilesToLogs":     func() bool { return md.supportsSignal("profiles_to_logs") },
+		"supportsProfilesToMetrics":  func() bool { return md.supportsSignal("profiles_to_metrics") },
+		"supportsProfilesToTraces":   func() bool { return md.supportsSignal("profiles_to_traces") },
+		"supportsProfilesToProfiles": func() bool { return md.supportsSignal("profiles_to_profiles") },
+		"expectConsumerError": func() bool {
+			return md.Tests.ExpectConsumerError
+		},
+		// ParseFS delegates the parsing of the files to `Glob`
+		// which uses the `\` as a special character.
+		// Meaning on windows based machines, the `\` needs to be replaced
+		// with a `/` for it to find the file.
+	}
+}
+
+func templatize(tmplFile string, funcMap template.FuncMap) *template.Template {
 	return template.Must(
 		template.
 			New(filepath.Base(tmplFile)).
 			Option("missingkey=error").
-			Funcs(map[string]any{
-				"publicVar": func(s string) (string, error) {
-					return FormatIdentifier(s, true)
-				},
-				"attributeInfo": func(an AttributeName) Attribute {
-					return md.Attributes[an]
-				},
-				"defaultAttributes": func(ans []AttributeName) []string {
-					var atts []string
-					for _, an := range ans {
-						if md.Attributes[an].IsNotOptIn() {
-							atts = append(atts, string(md.Attributes[an].Name()))
-						}
-					}
-					return atts
-				},
-				"requiredAttributes": func(ans []AttributeName) []string {
-					var atts []string
-					for _, an := range ans {
-						if md.Attributes[an].IsRequired() {
-							atts = append(atts, string(md.Attributes[an].Name()))
-						}
-					}
-					return atts
-				},
-				"hasAggregatableAttributes": func(ans []AttributeName) bool {
-					for _, an := range ans {
-						if md.Attributes[an].RequirementLevel == AttributeRequirementLevelRecommended ||
-							md.Attributes[an].RequirementLevel == AttributeRequirementLevelOptIn {
-							return true
-						}
-					}
-					return false
-				},
-				"getEventConditionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
-					seen := make(map[AttributeName]bool)
-					used := make([]AttributeName, 0)
-
-					for _, event := range md.Events {
-						for _, attribute := range event.Attributes {
-							v, exists := attrs[attribute]
-							if exists && v.IsConditional() && !seen[attribute] {
-								used = append(used, attribute)
-								seen[attribute] = true
-							}
-						}
-					}
-					sort.Slice(used, func(i, j int) bool { return string(used[i]) < string(used[j]) })
-
-					return used
-				},
-				"getMetricConditionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
-					seen := make(map[AttributeName]bool)
-					used := make([]AttributeName, 0)
-
-					for _, event := range md.Metrics {
-						for _, attribute := range event.Attributes {
-							v, exists := attrs[attribute]
-							if exists && v.IsConditional() && !seen[attribute] {
-								used = append(used, attribute)
-								seen[attribute] = true
-							}
-						}
-					}
-					sort.Slice(used, func(i, j int) bool { return string(used[i]) < string(used[j]) })
-
-					return used
-				},
-				"metricInfo": func(mn MetricName) Metric {
-					return md.Metrics[mn]
-				},
-				"eventInfo": func(en EventName) Event {
-					return md.Events[en]
-				},
-				"telemetryInfo": func(mn MetricName) Metric {
-					return md.Telemetry.Metrics[mn]
-				},
-				"parseImportsRequired": func(metrics map[MetricName]Metric) bool {
-					for _, m := range metrics {
-						if m.Data().HasMetricInputType() {
-							return true
-						}
-					}
-					return false
-				},
-				"stringsJoin":  strings.Join,
-				"stringsSplit": strings.Split,
-				"userLinks": func(elems []string) []string {
-					result := make([]string, len(elems))
-					for i, elem := range elems {
-						if elem == "open-telemetry/collector-approvers" {
-							result[i] = "[@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)"
-						} else {
-							result[i] = fmt.Sprintf("[@%s](https://www.github.com/%s)", elem, elem)
-						}
-					}
-					return result
-				},
-				"casesTitle":  cases.Title(language.English).String,
-				"toLowerCase": strings.ToLower,
-				"toCamelCase": func(s string) string {
-					caser := cases.Title(language.English).String
-					parts := strings.Split(s, "_")
-					var result strings.Builder
-					for _, part := range parts {
-						fmt.Fprintf(&result, "%s", caser(part))
-					}
-					return result.String()
-				},
-				"inc":       func(i int) int { return i + 1 },
-				"distroURL": distroURL,
-				"isExporter": func() bool {
-					return md.Status.Class == "exporter"
-				},
-				"isProcessor": func() bool {
-					return md.Status.Class == "processor"
-				},
-				"isReceiver": func() bool {
-					return md.Status.Class == "receiver"
-				},
-				"isExtension": func() bool {
-					return md.Status.Class == "extension"
-				},
-				"isConnector": func() bool {
-					return md.Status.Class == "connector"
-				},
-				"isScraper": func() bool {
-					return md.Status.Class == "scraper"
-				},
-				"isCommand": func() bool {
-					return md.Status.Class == "cmd"
-				},
-				"supportsLogs":               func() bool { return md.supportsSignal("logs") },
-				"supportsMetrics":            func() bool { return md.supportsSignal("metrics") },
-				"supportsTraces":             func() bool { return md.supportsSignal("traces") },
-				"supportsProfiles":           func() bool { return md.supportsSignal("profiles") },
-				"supportsLogsToLogs":         func() bool { return md.supportsSignal("logs_to_logs") },
-				"supportsLogsToMetrics":      func() bool { return md.supportsSignal("logs_to_metrics") },
-				"supportsLogsToTraces":       func() bool { return md.supportsSignal("logs_to_traces") },
-				"supportsLogsToProfiles":     func() bool { return md.supportsSignal("logs_to_profiles") },
-				"supportsMetricsToLogs":      func() bool { return md.supportsSignal("metrics_to_logs") },
-				"supportsMetricsToMetrics":   func() bool { return md.supportsSignal("metrics_to_metrics") },
-				"supportsMetricsToTraces":    func() bool { return md.supportsSignal("metrics_to_traces") },
-				"supportsMetricsToProfiles":  func() bool { return md.supportsSignal("metrics_to_profiles") },
-				"supportsTracesToLogs":       func() bool { return md.supportsSignal("traces_to_logs") },
-				"supportsTracesToMetrics":    func() bool { return md.supportsSignal("traces_to_metrics") },
-				"supportsTracesToTraces":     func() bool { return md.supportsSignal("traces_to_traces") },
-				"supportsTracesToProfiles":   func() bool { return md.supportsSignal("traces_to_profiles") },
-				"supportsProfilesToLogs":     func() bool { return md.supportsSignal("profiles_to_logs") },
-				"supportsProfilesToMetrics":  func() bool { return md.supportsSignal("profiles_to_metrics") },
-				"supportsProfilesToTraces":   func() bool { return md.supportsSignal("profiles_to_traces") },
-				"supportsProfilesToProfiles": func() bool { return md.supportsSignal("profiles_to_profiles") },
-				"expectConsumerError": func() bool {
-					return md.Tests.ExpectConsumerError
-				},
-				// ParseFS delegates the parsing of the files to `Glob`
-				// which uses the `\` as a special character.
-				// Meaning on windows based machines, the `\` needs to be replaced
-				// with a `/` for it to find the file.
-			}).ParseFS(TemplateFS, "templates/helper.tmpl", strings.ReplaceAll(tmplFile, "\\", "/")))
+			Funcs(funcMap).
+			ParseFS(TemplateFS, "templates/helper.tmpl", strings.ReplaceAll(tmplFile, "\\", "/")))
 }
 
-func executeTemplate(tmplFile string, md Metadata, goPackage string) ([]byte, error) {
-	tmpl := templatize(tmplFile, md)
+func executeTemplate(tmplFile string, md Metadata, goPackage, importRootPath string, fns template.FuncMap) ([]byte, error) {
+	tmpl := templatize(tmplFile, fns)
 	buf := bytes.Buffer{}
 
-	if err := tmpl.Execute(&buf, TemplateContext{Metadata: md, Package: goPackage}); err != nil {
+	if err := tmpl.Execute(&buf, TemplateContext{Metadata: md, Package: goPackage, ImportRootPath: importRootPath}); err != nil {
 		return []byte{}, fmt.Errorf("failed executing template: %w", err)
 	}
 	return buf.Bytes(), nil
 }
 
-func inlineReplace(tmplFile, outputFile string, md Metadata, start, end, goPackage string) error {
+func generateFile(tmplFile, outputFile string, md Metadata, goPackage, importRootPath string) error {
+	return generateFileWithFns(tmplFile, outputFile, md, goPackage, importRootPath, getTemplateFuncMap(md, importRootPath))
+}
+
+func inlineReplace(tmplFile, outputFile string, md Metadata, start, end, goPackage, importRootPath string) error {
 	var readmeContents []byte
 	var err error
 	if readmeContents, err = os.ReadFile(filepath.Clean(outputFile)); err != nil {
@@ -423,7 +443,7 @@ func inlineReplace(tmplFile, outputFile string, md Metadata, start, end, goPacka
 		md.GithubProject = "open-telemetry/opentelemetry-collector-contrib"
 	}
 
-	buf, err := executeTemplate(tmplFile, md, goPackage)
+	buf, err := executeTemplate(tmplFile, md, goPackage, importRootPath, getTemplateFuncMap(md, importRootPath))
 	if err != nil {
 		return err
 	}
@@ -436,12 +456,12 @@ func inlineReplace(tmplFile, outputFile string, md Metadata, start, end, goPacka
 	return nil
 }
 
-func generateFile(tmplFile, outputFile string, md Metadata, goPackage string) error {
+func generateFileWithFns(tmplFile, outputFile string, md Metadata, goPackage, importRootPath string, fns template.FuncMap) error {
 	if err := os.Remove(outputFile); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("unable to remove generated file %q: %w", outputFile, err)
 	}
 
-	result, err := executeTemplate(tmplFile, md, goPackage)
+	result, err := executeTemplate(tmplFile, md, goPackage, importRootPath, fns)
 	if err != nil {
 		return err
 	}
@@ -521,7 +541,7 @@ func validateYAMLKeyOrder(raw []byte) error {
 	return nil
 }
 
-func generateConfigFiles(md Metadata, mdDir string) error {
+func generateConfigFiles(md Metadata, mdDir, _ string) error {
 	if md.Config != nil {
 		resolver := cfggen.NewResolver(md.PackageName, md.Status.Class, md.Type, mdDir)
 		resolvedSchema, err := resolver.ResolveSchema(md.Config)
@@ -533,6 +553,37 @@ func generateConfigFiles(md Metadata, mdDir string) error {
 		if err != nil {
 			return fmt.Errorf("failed to write config schema: %w", err)
 		}
+
+		if err := generateConfigGoStruct(md, mdDir); err != nil {
+			return fmt.Errorf("failed to generate config Go struct: %w", err)
+		}
 	}
 	return nil
+}
+
+func generateConfigGoStruct(md Metadata, outputDir string) error {
+	rootPkg, err := helpers.RootPackage(outputDir)
+	if err != nil {
+		return fmt.Errorf("unable to determine root package: %w", err)
+	}
+
+	packageName := filepath.Base(outputDir)
+	tmplFile := filepath.Join("templates", "config_from_cfggen.go.tmpl")
+	dstFile := filepath.Join(outputDir, "generated_config.go")
+
+	fns := cfggen.WithCfgFns(getTemplateFuncMap(md, rootPkg), rootPkg, md.PackageName)
+	return generateFileWithFns(tmplFile, dstFile, md, packageName, rootPkg, fns)
+}
+
+func joinCamelCase(parts []string, exported bool) string {
+	caser := cases.Title(language.English).String
+	var result strings.Builder
+	for i, part := range parts {
+		if i == 0 && !exported {
+			fmt.Fprintf(&result, "%s", strings.ToLower(part))
+		} else {
+			fmt.Fprintf(&result, "%s", caser(part))
+		}
+	}
+	return result.String()
 }

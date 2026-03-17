@@ -1,5 +1,6 @@
 display_name: OTLP HTTP Exporter
 type: otlp_http
+deprecated_type: otlphttp
 github_project: open-telemetry/opentelemetry-collector
 
 status:

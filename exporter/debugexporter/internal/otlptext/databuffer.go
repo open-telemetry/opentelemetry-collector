@@ -116,6 +116,7 @@ func (b *dataBuffer) logMetricDescriptor(md pmetric.Metric) {
 	b.logEntry("     -> Description: %s", md.Description())
 	b.logEntry("     -> Unit: %s", md.Unit())
 	b.logEntry("     -> DataType: %s", md.Type().String())
+	b.logAttributes("     -> Metadata", md.Metadata())
 }
 
 func (b *dataBuffer) logMetricDataPoints(m pmetric.Metric) {
