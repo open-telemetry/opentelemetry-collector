@@ -1,0 +1,14 @@
+change_type: enhancement
+
+component: exporter/exporterhelper
+
+note: Add support for `requests` sizer in the exporter batcher.
+
+issues: [12880]
+
+subtext: |
+  Previously the batch configuration only accepted `items` or `bytes` as a sizer. With this change,
+  `requests` is a valid `batch::sizer`. `min_size` and `max_size` have no effect because any merged
+  request still counts as exactly 1 in requests-sizer terms.
+
+change_logs: [user, api]
