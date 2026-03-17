@@ -6,7 +6,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/featuregate v1.54.0
-	go.opentelemetry.io/collector/internal/testutil v0.147.0
+	go.opentelemetry.io/collector/internal/testutil v0.148.0
 	go.opentelemetry.io/proto/slim/otlp v1.10.0
 	go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development v0.3.0
 	go.opentelemetry.io/proto/slim/otlp/profiles/v1development v0.3.0
