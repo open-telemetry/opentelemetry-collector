@@ -97,6 +97,20 @@ func TestEntityBuilders(t *testing.T) {
 		require.True(t, ok)
 		assert.Equal(t, {{ $attr.TestValue }}, attrVal.Str())
 		{{- end }}
+		{{- range $descAttr := $ent.Description }}
+		{{- $attr := index $resourceAttributes $descAttr.Ref }}
+		attrVal, ok := entityVal.DescriptiveAttributes().Get("{{ $descAttr.Ref }}")
+		require.True(t, ok)
+		assert.Equal(t, {{ $attr.TestValue }}, attrVal.Str())
+		{{- end }}
+		{{- range $extraAttr := $ent.ExtraAttributes }}
+		{{- $attr := index $resourceAttributes $extraAttr.Ref }}
+		_, ok = entityVal.DescriptiveAttributes().Get("{{ $extraAttr.Ref }}")
+		assert.False(t, ok)
+		attrVal, ok := rm.Resource().Attributes().Get("{{ $extraAttr.Ref }}")
+		require.True(t, ok)
+		assert.Equal(t, {{ $attr.TestValue }}, attrVal.Str())
+		{{- end }}
 
 		require.Equal(t, 1, rm.ScopeMetrics().Len())
 		ms := rm.ScopeMetrics().At(0).Metrics()
