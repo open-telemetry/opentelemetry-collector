@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
@@ -47,18 +48,20 @@ func NewThrottleRetry(err error, delay time.Duration) error {
 
 type retrySender struct {
 	component.StartFunc
-	cfg    configretry.BackOffConfig
-	stopCh chan struct{}
-	logger *zap.Logger
-	next   sender.Sender[request.Request]
+	cfg        configretry.BackOffConfig
+	stopCh     chan struct{}
+	logger     *zap.Logger
+	next       sender.Sender[request.Request]
+	refCounter queue.ReferenceCounter[request.Request]
 }
 
-func newRetrySender(config configretry.BackOffConfig, set exporter.Settings, next sender.Sender[request.Request]) *retrySender {
+func newRetrySender(config configretry.BackOffConfig, set exporter.Settings, next sender.Sender[request.Request], refCounter queue.ReferenceCounter[request.Request]) *retrySender {
 	return &retrySender{
-		cfg:    config,
-		stopCh: make(chan struct{}),
-		logger: set.Logger,
-		next:   next,
+		cfg:        config,
+		stopCh:     make(chan struct{}),
+		logger:     set.Logger,
+		next:       next,
+		refCounter: refCounter,
 	}
 }
 
@@ -69,6 +72,13 @@ func (rs *retrySender) Shutdown(context.Context) error {
 
 // Send implements the requestSender interface
 func (rs *retrySender) Send(ctx context.Context, req request.Request) error {
+	originalReq := req
+	defer func() {
+		if originalReq != req && rs.refCounter != nil {
+			rs.refCounter.Unref(req)
+		}
+	}()
+
 	// Do not use NewExponentialBackOff since it calls Reset and the code here must
 	// call Reset after changing the InitialInterval (this saves an unnecessary call to Now).
 	expBackoff := backoff.ExponentialBackOff{
@@ -99,7 +109,13 @@ func (rs *retrySender) Send(ctx context.Context, req request.Request) error {
 		}
 
 		if errReq, ok := req.(request.ErrorHandler); ok {
-			req = errReq.OnError(err)
+			newReq := errReq.OnError(err)
+			if newReq != req {
+				if originalReq != req && rs.refCounter != nil {
+					rs.refCounter.Unref(req)
+				}
+				req = newReq
+			}
 		}
 
 		backoffDelay := expBackoff.NextBackOff()
