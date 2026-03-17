@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type mockUnredactedStringer string
+type obfuscatedTestString string
 
 type TestComplexStruct struct {
 	Skipped               TestEmptyStruct             `mapstructure:",squash"`
@@ -395,7 +395,9 @@ func testHookFunc() mapstructure.DecodeHookFuncValue {
 	}
 }
 
-func (m mockUnredactedStringer) UnredactedString() string { return string(m) }
+func (m obfuscatedTestString) MarshalText() ([]byte, error) {
+	return []byte("[REDACTED]"), nil
+}
 
 func TestStringTextUnredactedHookFunc(t *testing.T) {
 	hook := StringTextUnredactedHookFunc()
@@ -408,7 +410,8 @@ func TestStringTextUnredactedHookFunc(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "plain", val)
 
-	val, err = hook(reflect.ValueOf(mockUnredactedStringer("secret")), reflect.Value{})
+	testSecret := obfuscatedTestString("secret")
+	val, err = hook(reflect.ValueOf(testSecret), reflect.Value{})
 	require.NoError(t, err)
 	require.Equal(t, "secret", val)
 }
