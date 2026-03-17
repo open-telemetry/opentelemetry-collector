@@ -351,3 +351,31 @@ func TestNamespaceOf_NoSlash(t *testing.T) {
 	result := namespaceOf("noslash")
 	require.Empty(t, result)
 }
+
+func TestLocalizeRef(t *testing.T) {
+	tests := []struct {
+		name           string
+		refPath        string
+		importRootPath string
+		expected       string
+	}{
+		{
+			name:           "same root collector ref becomes local absolute",
+			refPath:        "go.opentelemetry.io/collector/filter.config",
+			importRootPath: "go.opentelemetry.io/collector",
+			expected:       "/filter.config",
+		},
+		{
+			name:           "different root ref stays external",
+			refPath:        "go.opentelemetry.io/collector/filter.config",
+			importRootPath: "github.com/open-telemetry/opentelemetry-collector-contrib",
+			expected:       "go.opentelemetry.io/collector/filter.config",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, LocalizeRef(tt.refPath, tt.importRootPath))
+		})
+	}
+}

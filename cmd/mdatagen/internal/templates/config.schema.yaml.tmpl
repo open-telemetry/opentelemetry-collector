@@ -78,24 +78,24 @@ $defs:
             description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: {{ schemaRef "go.opentelemetry.io/collector/filter.config" }}
           metrics_exclude:
             description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: {{ schemaRef "go.opentelemetry.io/collector/filter.config" }}
         {{- end }}
         {{- if $.Events }}
           events_include:
             description: "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: {{ schemaRef "go.opentelemetry.io/collector/filter.config" }}
           events_exclude:
             description: "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: {{ schemaRef "go.opentelemetry.io/collector/filter.config" }}
         {{- end }}
     {{- end }}
 {{- end }}
