@@ -735,14 +735,43 @@ func TestResolver_ResolveSchema_ParentRelativeRefWithOrigin(t *testing.T) {
 	require.Equal(t, "TLS settings", tls.Description)
 }
 
-func TestNewResolver(t *testing.T) {
-	dir := t.TempDir()
-	r := NewResolver("go.opentelemetry.io/collector/receiver/otlp", "receiver", "otlp", dir)
-	require.NotNil(t, r)
-	require.Equal(t, "go.opentelemetry.io/collector/receiver/otlp", r.pkgID)
-	require.Equal(t, "receiver", r.class)
-	require.Equal(t, "otlp", r.name)
-	require.NotNil(t, r.loader)
+func TestResolver_ResolveSchema_SameRootExternalRefLocalized(t *testing.T) {
+	ml := &mockLoader{
+		schemas: map[string]*ConfigMetadata{
+			"/config/confighttp.client_config": {
+				Defs: map[string]*ConfigMetadata{
+					"client_config": {
+						Type: "object",
+						Properties: map[string]*ConfigMetadata{
+							"endpoint": {Type: "string"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	resolver := &Resolver{
+		pkgID:          "go.opentelemetry.io/collector/receiver/otlpreceiver",
+		class:          "receiver",
+		name:           "otlp",
+		importRootPath: "go.opentelemetry.io/collector",
+		loader:         ml,
+	}
+
+	src := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"http": {
+				Ref: "go.opentelemetry.io/collector/config/confighttp.client_config",
+			},
+		},
+	}
+
+	result, err := resolver.ResolveSchema(src)
+	require.NoError(t, err)
+	require.Equal(t, "object", result.Properties["http"].Type)
+	require.Equal(t, "string", result.Properties["http"].Properties["endpoint"].Type)
 }
 
 func TestResolver_ResolveSchema_UnknownNamespaceFallback(t *testing.T) {

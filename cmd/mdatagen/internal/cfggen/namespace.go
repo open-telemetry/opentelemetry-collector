@@ -188,3 +188,10 @@ func (r *Ref) String() string {
 func (r *Ref) CacheKey() string {
 	return r.String()
 }
+
+func LocalizeRef(refPath, importRootPath string) string {
+	if importRootPath == "" || !strings.HasPrefix(refPath, importRootPath+"/") {
+		return refPath
+	}
+	return strings.TrimPrefix(refPath, importRootPath)
+}
