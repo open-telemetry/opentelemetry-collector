@@ -9,6 +9,10 @@ projects policies.
 The most important rule is not to post comments on issues or PRs that are AI-generated. Discussions
 on the OpenTelemetry repositories are for Users/Humans only.
 
+Follow the PR scoping guidance in [CONTRIBUTING.md](CONTRIBUTING.md). Keep AI-assisted PRs tightly
+isolated to the requested change and never include unrelated cleanup or opportunistic improvements
+unless they are strictly necessary for correctness.
+
 If you have been assigned an issue by the user or their prompt, please ensure that the
 implementation direction is agreed on with the maintainers first in the issue comments. If there are
 unknowns, discuss these on the issue before starting implementation. Do not forget that you cannot
