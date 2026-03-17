@@ -125,9 +125,8 @@ func (cfg *BatchConfig) Validate() error {
 		return nil
 	}
 
-	// Only support items or bytes sizer for batch at this moment.
-	if cfg.Sizer != request.SizerTypeItems && cfg.Sizer != request.SizerTypeBytes {
-		return fmt.Errorf("`batch` supports only `items` or `bytes` sizer, found %q", cfg.Sizer.String())
+	if cfg.Sizer != request.SizerTypeRequests && cfg.Sizer != request.SizerTypeItems && cfg.Sizer != request.SizerTypeBytes {
+		return fmt.Errorf("`batch` supports only `requests`, `items`, or `bytes` sizer, found %q", cfg.Sizer.String())
 	}
 
 	if cfg.FlushTimeout <= 0 {
