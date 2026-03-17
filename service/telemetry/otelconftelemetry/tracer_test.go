@@ -12,7 +12,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.opentelemetry.io/contrib/otelconf"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	"go.uber.org/zap"
@@ -42,7 +42,7 @@ func TestCreateTracerProvider(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.Traces.Propagators = []string{"b3", "tracecontext"}
-	cfg.Traces.Processors = []config.SpanProcessor{newOTLPSimpleSpanProcessor(srv)}
+	cfg.Traces.Processors = []otelconf.SpanProcessor{newOTLPSimpleSpanProcessor(srv)}
 
 	resource, err := createResource(t.Context(), telemetry.Settings{
 		BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"},
@@ -74,10 +74,10 @@ func TestCreateTracerProvider_Invalid(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Logs.Level = zapcore.FatalLevel
 	cfg.Metrics.Level = configtelemetry.LevelNone
-	cfg.Traces.Processors = []config.SpanProcessor{{
-		Simple: &config.SimpleSpanProcessor{
-			Exporter: config.SpanExporter{
-				OTLP: &config.OTLP{ /* missing endpoint, etc. */ },
+	cfg.Traces.Processors = []otelconf.SpanProcessor{{
+		Simple: &otelconf.SimpleSpanProcessor{
+			Exporter: otelconf.SpanExporter{
+				// no exporter configured
 			},
 		},
 	}}
@@ -87,7 +87,7 @@ func TestCreateTracerProvider_Invalid(t *testing.T) {
 	_, err = createTracerProvider(t.Context(), telemetry.TracerSettings{
 		Settings: telemetry.Settings{Resource: &resource},
 	}, cfg)
-	require.EqualError(t, err, "no valid span exporter")
+	require.ErrorContains(t, err, "no valid span exporter")
 }
 
 func TestCreateTracerProvider_Propagators(t *testing.T) {
@@ -98,7 +98,7 @@ func TestCreateTracerProvider_Propagators(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.Traces.Propagators = []string{"b3", "tracecontext"}
-	cfg.Traces.Processors = []config.SpanProcessor{newOTLPSimpleSpanProcessor(srv)}
+	cfg.Traces.Processors = []otelconf.SpanProcessor{newOTLPSimpleSpanProcessor(srv)}
 
 	resource, err := createResource(t.Context(), telemetry.Settings{
 		BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"},
@@ -153,7 +153,7 @@ func TestCreateTracerProvider_Disabled(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.Traces.Level = configtelemetry.LevelNone
-	cfg.Traces.Processors = []config.SpanProcessor{newOTLPSimpleSpanProcessor(srv)}
+	cfg.Traces.Processors = []otelconf.SpanProcessor{newOTLPSimpleSpanProcessor(srv)}
 
 	core, observedLogs := observer.New(zapcore.DebugLevel)
 
@@ -185,14 +185,12 @@ func TestCreateTracerProvider_Disabled(t *testing.T) {
 	assert.Equal(t, 0, received)
 }
 
-func newOTLPSimpleSpanProcessor(srv *httptest.Server) config.SpanProcessor {
-	return config.SpanProcessor{
-		Simple: &config.SimpleSpanProcessor{
-			Exporter: config.SpanExporter{
-				OTLP: &config.OTLP{
-					Endpoint: ptr(srv.URL),
-					Protocol: ptr("http/protobuf"),
-					Insecure: ptr(true),
+func newOTLPSimpleSpanProcessor(srv *httptest.Server) otelconf.SpanProcessor {
+	return otelconf.SpanProcessor{
+		Simple: &otelconf.SimpleSpanProcessor{
+			Exporter: otelconf.SpanExporter{
+				OTLPHttp: &otelconf.OTLPHttpExporter{
+					Endpoint: otelconf.OTLPHttpExporterEndpoint(ptr(srv.URL)),
 				},
 			},
 		},

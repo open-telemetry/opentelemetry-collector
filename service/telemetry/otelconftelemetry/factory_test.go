@@ -39,8 +39,8 @@ func TestDefaultConfig(t *testing.T) {
 			}()
 			cfg := NewFactory().CreateDefaultConfig()
 			require.Len(t, cfg.(*Config).Metrics.Readers, 1)
-			assert.Equal(t, tt.expected, *cfg.(*Config).Metrics.Readers[0].Pull.Exporter.Prometheus.Host)
-			assert.Equal(t, 8888, *cfg.(*Config).Metrics.Readers[0].Pull.Exporter.Prometheus.Port)
+			assert.Equal(t, tt.expected, *cfg.(*Config).Metrics.Readers[0].Pull.Exporter.PrometheusDevelopment.Host)
+			assert.Equal(t, 8888, *cfg.(*Config).Metrics.Readers[0].Pull.Exporter.PrometheusDevelopment.Port)
 		})
 	}
 }

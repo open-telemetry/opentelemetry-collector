@@ -76,8 +76,7 @@ func TestDefaultViewsFiltersSendFailedAttributes(t *testing.T) {
 
 			foundSendFailedView := false
 			for _, view := range views {
-				if view.Selector == nil ||
-					view.Selector.InstrumentName == nil ||
+				if view.Selector.InstrumentName == nil ||
 					*view.Selector.InstrumentName != "otelcol_exporter_send_failed_*" {
 					continue
 				}
@@ -137,23 +136,21 @@ func TestDefaultViews_BatchExporterMetrics(t *testing.T) {
 
 			var foundBucketDrop, foundBytesDrop bool
 			for _, view := range views {
-				if view.Selector != nil {
-					if view.Selector.MeterName != nil && *view.Selector.MeterName == exporterHelperScope {
-						if view.Selector.InstrumentName != nil {
-							if *view.Selector.InstrumentName == bucketMetricName {
-								foundBucketDrop = true
-								// Verify it's a drop view
-								require.NotNil(t, view.Stream)
-								require.NotNil(t, view.Stream.Aggregation)
-								require.NotNil(t, view.Stream.Aggregation.Drop)
-							}
-							if *view.Selector.InstrumentName == bytesMetricName {
-								foundBytesDrop = true
-								// Verify it's a drop view
-								require.NotNil(t, view.Stream)
-								require.NotNil(t, view.Stream.Aggregation)
-								require.NotNil(t, view.Stream.Aggregation.Drop)
-							}
+				if view.Selector.MeterName != nil && *view.Selector.MeterName == exporterHelperScope {
+					if view.Selector.InstrumentName != nil {
+						if *view.Selector.InstrumentName == bucketMetricName {
+							foundBucketDrop = true
+							// Verify it's a drop view
+							require.NotNil(t, view.Stream)
+							require.NotNil(t, view.Stream.Aggregation)
+							require.NotNil(t, view.Stream.Aggregation.Drop)
+						}
+						if *view.Selector.InstrumentName == bytesMetricName {
+							foundBytesDrop = true
+							// Verify it's a drop view
+							require.NotNil(t, view.Stream)
+							require.NotNil(t, view.Stream.Aggregation)
+							require.NotNil(t, view.Stream.Aggregation.Drop)
 						}
 					}
 				}
