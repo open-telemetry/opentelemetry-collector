@@ -81,6 +81,10 @@ func run(ymlPath string) error {
 
 	ymlDir := filepath.Dir(ymlPath)
 	packageName := filepath.Base(ymlDir)
+	importRootPath, err := helpers.RootPackage(ymlDir)
+	if err != nil {
+		return fmt.Errorf("unable to determine import root path: %w", err)
+	}
 
 	raw, readErr := os.ReadFile(filepath.Clean(ymlPath))
 	if readErr != nil {
@@ -104,7 +108,7 @@ func run(ymlPath string) error {
 		if !slices.Contains(nonComponents, md.Status.Class) {
 			toGenerate[filepath.Join(tmplDir, "status.go.tmpl")] = filepath.Join(codeDir, "generated_status.go")
 			err = generateFile(filepath.Join(tmplDir, "component_test.go.tmpl"),
-				filepath.Join(ymlDir, "generated_component_test.go"), md, packageName)
+				filepath.Join(ymlDir, "generated_component_test.go"), md, packageName, importRootPath)
 			if err != nil {
 				return err
 			}
@@ -124,7 +128,7 @@ func run(ymlPath string) error {
 		}
 
 		err = generateFile(filepath.Join(tmplDir, "package_test.go.tmpl"),
-			filepath.Join(ymlDir, "generated_package_test.go"), md, packageName)
+			filepath.Join(ymlDir, "generated_package_test.go"), md, packageName, importRootPath)
 		if err != nil {
 			return err
 		}
@@ -133,7 +137,7 @@ func run(ymlPath string) error {
 			err = inlineReplace(
 				filepath.Join(tmplDir, "readme.md.tmpl"),
 				filepath.Join(ymlDir, "README.md"),
-				md, statusStart, statusEnd, md.GeneratedPackageName)
+				md, statusStart, statusEnd, md.GeneratedPackageName, importRootPath)
 			if err != nil {
 				return err
 			}
@@ -225,19 +229,19 @@ func run(ymlPath string) error {
 	}
 
 	for tmpl, dst := range toGenerate {
-		if err := generateFile(tmpl, dst, md, md.GeneratedPackageName); err != nil {
+		if err := generateFile(tmpl, dst, md, md.GeneratedPackageName, importRootPath); err != nil {
 			return err
 		}
 	}
 
-	if err := generateConfigFiles(md, ymlDir); err != nil {
+	if err := generateConfigFiles(md, ymlDir, importRootPath); err != nil {
 		return fmt.Errorf("failed to generate config files: %w", err)
 	}
 
 	return nil
 }
 
-func getTemplateFuncMap(md Metadata) template.FuncMap {
+func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 	return template.FuncMap{
 		"publicVar": func(s string) (string, error) {
 			return helpers.FormatIdentifier(s, true)
@@ -344,6 +348,9 @@ func getTemplateFuncMap(md Metadata) template.FuncMap {
 		"toLowerCamelCase": func(s string) string {
 			return joinCamelCase(strings.Split(s, "_"), false)
 		},
+		"schemaRef": func(ref string) string {
+			return cfggen.LocalizeRef(ref, importRootPath)
+		},
 		"inc":       func(i int) int { return i + 1 },
 		"distroURL": distroURL,
 		"isExporter": func() bool {
@@ -406,21 +413,21 @@ func templatize(tmplFile string, funcMap template.FuncMap) *template.Template {
 			ParseFS(TemplateFS, "templates/helper.tmpl", strings.ReplaceAll(tmplFile, "\\", "/")))
 }
 
-func executeTemplate(tmplFile string, md Metadata, goPackage string, fns template.FuncMap) ([]byte, error) {
+func executeTemplate(tmplFile string, md Metadata, goPackage, importRootPath string, fns template.FuncMap) ([]byte, error) {
 	tmpl := templatize(tmplFile, fns)
 	buf := bytes.Buffer{}
 
-	if err := tmpl.Execute(&buf, TemplateContext{Metadata: md, Package: goPackage}); err != nil {
+	if err := tmpl.Execute(&buf, TemplateContext{Metadata: md, Package: goPackage, ImportRootPath: importRootPath}); err != nil {
 		return []byte{}, fmt.Errorf("failed executing template: %w", err)
 	}
 	return buf.Bytes(), nil
 }
 
-func generateFile(tmplFile, outputFile string, md Metadata, goPackage string) error {
-	return generateFileWithFns(tmplFile, outputFile, md, goPackage, getTemplateFuncMap(md))
+func generateFile(tmplFile, outputFile string, md Metadata, goPackage, importRootPath string) error {
+	return generateFileWithFns(tmplFile, outputFile, md, goPackage, importRootPath, getTemplateFuncMap(md, importRootPath))
 }
 
-func inlineReplace(tmplFile, outputFile string, md Metadata, start, end, goPackage string) error {
+func inlineReplace(tmplFile, outputFile string, md Metadata, start, end, goPackage, importRootPath string) error {
 	var readmeContents []byte
 	var err error
 	if readmeContents, err = os.ReadFile(filepath.Clean(outputFile)); err != nil {
@@ -436,7 +443,7 @@ func inlineReplace(tmplFile, outputFile string, md Metadata, start, end, goPacka
 		md.GithubProject = "open-telemetry/opentelemetry-collector-contrib"
 	}
 
-	buf, err := executeTemplate(tmplFile, md, goPackage, getTemplateFuncMap(md))
+	buf, err := executeTemplate(tmplFile, md, goPackage, importRootPath, getTemplateFuncMap(md, importRootPath))
 	if err != nil {
 		return err
 	}
@@ -449,12 +456,12 @@ func inlineReplace(tmplFile, outputFile string, md Metadata, start, end, goPacka
 	return nil
 }
 
-func generateFileWithFns(tmplFile, outputFile string, md Metadata, goPackage string, fns template.FuncMap) error {
+func generateFileWithFns(tmplFile, outputFile string, md Metadata, goPackage, importRootPath string, fns template.FuncMap) error {
 	if err := os.Remove(outputFile); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("unable to remove generated file %q: %w", outputFile, err)
 	}
 
-	result, err := executeTemplate(tmplFile, md, goPackage, fns)
+	result, err := executeTemplate(tmplFile, md, goPackage, importRootPath, fns)
 	if err != nil {
 		return err
 	}
@@ -534,7 +541,7 @@ func validateYAMLKeyOrder(raw []byte) error {
 	return nil
 }
 
-func generateConfigFiles(md Metadata, mdDir string) error {
+func generateConfigFiles(md Metadata, mdDir, _ string) error {
 	if md.Config != nil {
 		resolver := cfggen.NewResolver(md.PackageName, md.Status.Class, md.Type, mdDir)
 		resolvedSchema, err := resolver.ResolveSchema(md.Config)
@@ -564,8 +571,8 @@ func generateConfigGoStruct(md Metadata, outputDir string) error {
 	tmplFile := filepath.Join("templates", "config_from_cfggen.go.tmpl")
 	dstFile := filepath.Join(outputDir, "generated_config.go")
 
-	fns := cfggen.WithCfgFns(getTemplateFuncMap(md), rootPkg, md.PackageName)
-	return generateFileWithFns(tmplFile, dstFile, md, packageName, fns)
+	fns := cfggen.WithCfgFns(getTemplateFuncMap(md, rootPkg), rootPkg, md.PackageName)
+	return generateFileWithFns(tmplFile, dstFile, md, packageName, rootPkg, fns)
 }
 
 func joinCamelCase(parts []string, exported bool) string {
