@@ -20,6 +20,8 @@ var namespaceToURL = map[string]string{
 
 var supportedNamespaces = slices.Collect(maps.Keys(namespaceToURL))
 
+var pseudoVersionCommitPattern = regexp.MustCompile(`^[0-9a-f]{12,40}$`)
+
 type RefKind int
 
 const (
@@ -127,12 +129,29 @@ func (r *Ref) URL(version string) (string, error) {
 		return "", errors.New("unsupported namespace")
 	}
 	baseURL := namespaceToURL[ns]
+	version = rawRefVersion(version)
+
 	return fmt.Sprintf("%s/%s/%s/%s",
 			baseURL,
 			version,
 			r.SchemaID(),
 			schemaFileName),
 		nil
+}
+
+func rawRefVersion(version string) string {
+	trimmedVersion, _, _ := strings.Cut(version, "+")
+	parts := strings.Split(trimmedVersion, "-")
+	if len(parts) < 3 {
+		return version
+	}
+
+	commitHash := parts[len(parts)-1]
+	if pseudoVersionCommitPattern.MatchString(commitHash) {
+		return commitHash
+	}
+
+	return version
 }
 
 func (r *Ref) isInternal() bool {

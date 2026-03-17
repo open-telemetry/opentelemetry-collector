@@ -294,6 +294,18 @@ func TestRef_URL(t *testing.T) {
 			version:  "main",
 			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/main/processor/batchprocessor/config.schema.yaml",
 		},
+		{
+			name:     "collector pseudo-version uses commit hash",
+			refPath:  "go.opentelemetry.io/collector/scraper/scraperhelper.controller_config",
+			version:  "v0.147.1-0.20260317033252-665ab5d0143d",
+			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/665ab5d0143d/scraper/scraperhelper/config.schema.yaml",
+		},
+		{
+			name:     "pseudo-version with incompatible suffix uses commit hash",
+			refPath:  "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver.config",
+			version:  "v0.95.1-0.20260317033252-665ab5d0143d+incompatible",
+			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/665ab5d0143d/receiver/mysqlreceiver/config.schema.yaml",
+		},
 	}
 
 	for _, tt := range tests {
