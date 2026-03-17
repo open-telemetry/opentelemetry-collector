@@ -25,7 +25,7 @@ config:
   type: object
   description: Configuration for the Sample Scraper.
   allOf:
-    - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+    - $ref: /scraper/scraperhelper.controller_config
   $defs:
   properties:
     targets:
