@@ -735,6 +735,16 @@ func TestResolver_ResolveSchema_ParentRelativeRefWithOrigin(t *testing.T) {
 	require.Equal(t, "TLS settings", tls.Description)
 }
 
+func TestNewResolver(t *testing.T) {
+	dir := t.TempDir()
+	r := NewResolver("go.opentelemetry.io/collector/receiver/otlp", "receiver", "otlp", dir)
+	require.NotNil(t, r)
+	require.Equal(t, "go.opentelemetry.io/collector/receiver/otlp", r.pkgID)
+	require.Equal(t, "receiver", r.class)
+	require.Equal(t, "otlp", r.name)
+	require.NotNil(t, r.loader)
+}
+
 func TestResolver_ResolveSchema_UnknownNamespaceFallback(t *testing.T) {
 	// An external ref with an unsupported namespace should fall back to "any" type
 	resolver := &Resolver{
