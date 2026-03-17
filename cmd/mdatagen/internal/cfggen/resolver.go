@@ -16,22 +16,20 @@ const (
 )
 
 type Resolver struct {
-	pkgID          string
-	class          string
-	name           string
-	importRootPath string
-	loader         Loader
+	pkgID  string
+	class  string
+	name   string
+	loader Loader
 }
 
-func NewResolver(pkgID, class, name, dir, importRootPath string) *Resolver {
+func NewResolver(pkgID, class, name, dir string) *Resolver {
 	loader := NewLoader(dir)
 
 	return &Resolver{
-		loader:         loader,
-		pkgID:          pkgID,
-		class:          class,
-		name:           name,
-		importRootPath: importRootPath,
+		loader: loader,
+		pkgID:  pkgID,
+		class:  class,
+		name:   name,
 	}
 }
 
@@ -180,7 +178,7 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 // The origin parameter tracks which namespace the current schema was loaded from,
 // enabling local refs in remotely-fetched schemas to be converted to external refs.
 func (r *Resolver) resolveRef(root, current *ConfigMetadata, origin *Ref) (*ConfigMetadata, error) {
-	ref := WithOrigin(LocalizeRef(current.Ref, r.importRootPath), origin)
+	ref := WithOrigin(current.Ref, origin)
 
 	if err := ref.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid reference format %q: %w", current.Ref, err)

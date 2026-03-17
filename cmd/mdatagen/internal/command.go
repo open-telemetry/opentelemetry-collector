@@ -541,9 +541,9 @@ func validateYAMLKeyOrder(raw []byte) error {
 	return nil
 }
 
-func generateConfigFiles(md Metadata, mdDir, importRootPath string) error {
+func generateConfigFiles(md Metadata, mdDir, _ string) error {
 	if md.Config != nil {
-		resolver := cfggen.NewResolver(md.PackageName, md.Status.Class, md.Type, mdDir, importRootPath)
+		resolver := cfggen.NewResolver(md.PackageName, md.Status.Class, md.Type, mdDir)
 		resolvedSchema, err := resolver.ResolveSchema(md.Config)
 		if err != nil {
 			return fmt.Errorf("failed to resolve config schema: %w", err)
