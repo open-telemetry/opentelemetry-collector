@@ -364,6 +364,7 @@ func prometheusV03ToV1(in *config.Prometheus) *otelconf.ExperimentalPrometheusMe
 		Port:                       otelconf.ExperimentalPrometheusMetricExporterPort(in.Port),
 		WithoutScopeInfo:           otelconf.ExperimentalPrometheusMetricExporterWithoutScopeInfo(in.WithoutScopeInfo),
 		WithResourceConstantLabels: withResourceLabels,
+        TranslationStrategy:        &strategy,
 	}
 }
 
