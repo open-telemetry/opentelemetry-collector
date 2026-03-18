@@ -38,9 +38,9 @@ func TestEntityBuilders(t *testing.T) {
 		rm := metrics.ResourceMetrics().At(0)
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("test.entity")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("string.resource.attr")
+		stringResourceAttrAttrVal, ok := entityVal.IdentifyingAttributes().Get("string.resource.attr")
 		require.True(t, ok)
-		assert.Equal(t, "string.resource.attr-val", attrVal.Str())
+		assert.Equal(t, "string.resource.attr-val", stringResourceAttrAttrVal.Str())
 
 		require.Equal(t, 1, rm.ScopeMetrics().Len())
 		ms := rm.ScopeMetrics().At(0).Metrics()
@@ -100,9 +100,9 @@ func TestEntityBuilders(t *testing.T) {
 		// Entity must still be produced since identity attributes are enabled.
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("test.entity")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("string.resource.attr")
+		stringResourceAttrAttrVal, ok := entityVal.IdentifyingAttributes().Get("string.resource.attr")
 		require.True(t, ok)
-		assert.Equal(t, "string.resource.attr-val", attrVal.Str())
+		assert.Equal(t, "string.resource.attr-val", stringResourceAttrAttrVal.Str())
 		// Disabled descriptive/extra attributes must not be present.
 		_, ok = entityVal.DescriptiveAttributes().Get("map.resource.attr")
 		assert.False(t, ok)
