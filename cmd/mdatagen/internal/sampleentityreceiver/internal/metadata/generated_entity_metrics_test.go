@@ -33,9 +33,9 @@ func TestEntityBuilders(t *testing.T) {
 		rm := metrics.ResourceMetrics().At(0)
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.replicaset")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.replicaset.uid")
+		k8sReplicasetUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.replicaset.uid")
 		require.True(t, ok)
-		assert.Equal(t, "k8s.replicaset.uid-val", attrVal.Str())
+		assert.Equal(t, "k8s.replicaset.uid-val", k8sReplicasetUIDAttrVal.Str())
 
 		require.Equal(t, 1, rm.ScopeMetrics().Len())
 		ms := rm.ScopeMetrics().At(0).Metrics()
@@ -85,9 +85,9 @@ func TestEntityBuilders(t *testing.T) {
 		// Entity must still be produced since identity attributes are enabled.
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.replicaset")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.replicaset.uid")
+		k8sReplicasetUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.replicaset.uid")
 		require.True(t, ok)
-		assert.Equal(t, "k8s.replicaset.uid-val", attrVal.Str())
+		assert.Equal(t, "k8s.replicaset.uid-val", k8sReplicasetUIDAttrVal.Str())
 		// Disabled descriptive/extra attributes must not be present.
 		_, ok = entityVal.DescriptiveAttributes().Get("k8s.replicaset.name")
 		assert.False(t, ok)
@@ -111,9 +111,9 @@ func TestEntityBuilders(t *testing.T) {
 		rm := metrics.ResourceMetrics().At(0)
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.pod")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.pod.uid")
+		k8sPodUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.pod.uid")
 		require.True(t, ok)
-		assert.Equal(t, "k8s.pod.uid-val", attrVal.Str())
+		assert.Equal(t, "k8s.pod.uid-val", k8sPodUIDAttrVal.Str())
 
 		require.Equal(t, 1, rm.ScopeMetrics().Len())
 		ms := rm.ScopeMetrics().At(0).Metrics()
@@ -167,9 +167,9 @@ func TestEntityBuilders(t *testing.T) {
 		// Entity must still be produced since identity attributes are enabled.
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.pod")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.pod.uid")
+		k8sPodUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.pod.uid")
 		require.True(t, ok)
-		assert.Equal(t, "k8s.pod.uid-val", attrVal.Str())
+		assert.Equal(t, "k8s.pod.uid-val", k8sPodUIDAttrVal.Str())
 		// Disabled descriptive/extra attributes must not be present.
 		_, ok = entityVal.DescriptiveAttributes().Get("k8s.pod.name")
 		assert.False(t, ok)
