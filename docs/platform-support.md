@@ -60,6 +60,7 @@ Tier 3 platforms are _guaranteed to build_. Precompiled binaries are made availa
 Tier 3 platforms are currently:
 | Platform      | Owner(s)                                                                                                                                                       |
 |---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| aix/ppc64     | [Dylan-M](https://github.com/Dylan-M) [@atoulme](https://github.com/atoulme)                                                                                   |
 | darwin/amd64  | [@h0cheung](https://github.com/h0cheung)                                                                                                                       |
 | js/wasm       | [@evan-bradley](https://github.com/evan-bradley), [@mx-psi](https://github.com/mx-psi)                                                                         |
 | linux/386     | [@andrzej-stencel](https://github.com/andrzej-stencel)                                                                                                         |
@@ -69,5 +70,3 @@ Tier 3 platforms are currently:
 | linux/s390x   | [@bwalk-at-ibm](https://github.com/bwalk-at-ibm), [@rrschulze](https://github.com/rrschulze)                                                                   |
 | windows/386   | [@pjanotti](https://github.com/pjanotti)                                                                                                                       |
 | windows/arm64 | [@pjanotti](https://github.com/pjanotti)                                                                                                                       |
-
-The proposed additional platform aix/ppc64 ([#19195](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/19195)) will be included into Tier 3 once it's added to the OpenTelemetry Collector as platform. 
