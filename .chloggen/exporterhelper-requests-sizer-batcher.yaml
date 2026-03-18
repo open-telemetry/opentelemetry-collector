@@ -1,6 +1,6 @@
 change_type: enhancement
 
-component: exporter/exporterhelper
+component: pkg/exporterhelper
 
 note: Add support for `requests` sizer in the exporter batcher.
 
