@@ -17,11 +17,14 @@ import (
 
 func TestMetricsRequest(t *testing.T) {
 	mr := newMetricsRequest(testdata.GenerateMetrics(1))
+	req := mr.(*metricsRequest)
+	req.cachedSize = 123
+	
+	remaining := pmetric.NewMetrics()
+	metricsErr := consumererror.NewMetrics(errors.New("some error"), remaining)
+	handled := mr.(request.ErrorHandler).OnError(metricsErr)
 
-	metricsErr := consumererror.NewMetrics(errors.New("some error"), pmetric.NewMetrics())
-	assert.Equal(
-		t,
-		newMetricsRequest(pmetric.NewMetrics()),
-		mr.(request.ErrorHandler).OnError(metricsErr),
-	)
+	assert.Same(t, req, handled)
+	assert.Equal(t, remaining, req.md)
+	assert.Equal(t, -1, req.cachedSize)
 }
