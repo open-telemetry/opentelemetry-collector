@@ -73,14 +73,14 @@ import (
 	{{- end }}
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	{{ if or supportsLogsToProfiles supportsMetricsToProfiles supportsTracesToProfiles supportsProfilesToLogs supportsProfilesToMetrics supportsProfilesToTraces supportsProfilesToProfiles }}
+	{{- if or supportsLogsToProfiles supportsMetricsToProfiles supportsTracesToProfiles supportsProfilesToLogs supportsProfilesToMetrics supportsProfilesToTraces supportsProfilesToProfiles }}
 	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
-	{{ end }}
+	{{- end }}
 	"go.opentelemetry.io/collector/pipeline"
-	{{ if or supportsLogsToProfiles supportsMetricsToProfiles supportsTracesToProfiles supportsProfilesToLogs supportsProfilesToMetrics supportsProfilesToTraces supportsProfilesToProfiles }}
+	{{- if or supportsLogsToProfiles supportsMetricsToProfiles supportsTracesToProfiles supportsProfilesToLogs supportsProfilesToMetrics supportsProfilesToTraces supportsProfilesToProfiles }}
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
-	{{ end }}
+	{{- end }}
 	{{- end }}
 	{{- end }}
 )

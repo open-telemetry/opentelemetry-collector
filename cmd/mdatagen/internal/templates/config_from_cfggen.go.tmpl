@@ -4,8 +4,23 @@ package {{ .Package }}
 
 {{ $imports := extractImports .Metadata.Config }}
 {{- if $imports }}
+{{ $stdImports := stdImports $imports }}
+{{ $thirdPartyImports := thirdPartyImports $imports }}
+{{ $localImports := localImports $imports }}
 import (
-{{- range $imports }}
+{{- range $stdImports }}
+	"{{ . }}"
+{{- end }}
+{{- if and $stdImports (or $thirdPartyImports $localImports) }}
+
+{{- end }}
+{{- range $thirdPartyImports }}
+	"{{ . }}"
+{{- end }}
+{{- if and $thirdPartyImports $localImports }}
+
+{{- end }}
+{{- range $localImports }}
 	"{{ . }}"
 {{- end }}
 )

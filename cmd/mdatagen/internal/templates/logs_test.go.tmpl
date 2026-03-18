@@ -3,19 +3,23 @@
 package {{ .Package }}
 
 import (
-	"time"
 	"testing"
+	{{- if .Events }}
+	"context"
+	{{- end }}
+	"time"
+
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+	{{- if .Events }}
+	"go.opentelemetry.io/otel/trace"
+	{{- end }}
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	{{- if or isReceiver isScraper }}
 	"go.opentelemetry.io/collector/{{ .Status.Class }}/{{ .Status.Class }}test"
-	{{- end }}
-	{{- if .Events }}
-	"context"
-	"go.opentelemetry.io/otel/trace"
 	{{- end }}
 )
 
