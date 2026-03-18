@@ -352,19 +352,18 @@ func prometheusV03ToV1(in *config.Prometheus) *otelconf.ExperimentalPrometheusMe
 			Included: in.WithResourceConstantLabels.Included,
 		}
 	}
-    strategy := otelconf.ExperimentalPrometheusTranslationStrategyNoUtf8EscapingWithSuffixes
-            if in.WithoutTypeSuffix != nil && *in.WithoutTypeSuffix &&
-                    in.WithoutUnits != nil && *in.WithoutUnits {
-                    strategy =
-    otelconf.ExperimentalPrometheusTranslationStrategyUnderscoreEscapingWithoutSuffixes
-            }
+	strategy := otelconf.ExperimentalPrometheusTranslationStrategyNoUtf8EscapingWithSuffixes
+	if in.WithoutTypeSuffix != nil && *in.WithoutTypeSuffix &&
+		in.WithoutUnits != nil && *in.WithoutUnits {
+		strategy = otelconf.ExperimentalPrometheusTranslationStrategyUnderscoreEscapingWithoutSuffixes
+	}
 
 	return &otelconf.ExperimentalPrometheusMetricExporter{
 		Host:                       otelconf.ExperimentalPrometheusMetricExporterHost(in.Host),
 		Port:                       otelconf.ExperimentalPrometheusMetricExporterPort(in.Port),
 		WithoutScopeInfo:           otelconf.ExperimentalPrometheusMetricExporterWithoutScopeInfo(in.WithoutScopeInfo),
 		WithResourceConstantLabels: withResourceLabels,
-        TranslationStrategy:        &strategy,
+		TranslationStrategy:        &strategy,
 	}
 }
 
