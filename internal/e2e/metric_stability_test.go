@@ -121,12 +121,12 @@ func TestMetricStability(t *testing.T) {
 			configFile: "metric_stability_test_readers.yaml",
 			expectedMetrics: map[string]bool{
 				// Process metrics
-				"otelcol_process_uptime_seconds_total":            false,
-				"otelcol_process_cpu_seconds_total":               false,
-				"otelcol_process_memory_rss_bytes":                false,
-				"otelcol_process_runtime_heap_alloc_bytes":        false,
-				"otelcol_process_runtime_total_alloc_bytes_total": false,
-				"otelcol_process_runtime_total_sys_memory_bytes":  false,
+				"otelcol_process_uptime_seconds_total":           false,
+				"otelcol_process_cpu_seconds_total":              false,
+				"otelcol_process_memory_rss_bytes":               false,
+				"otelcol_process_runtime_heap_alloc_bytes":       false,
+				"otelcol_process_runtime_alloc_bytes_total":      false,
+				"otelcol_process_runtime_total_sys_memory_bytes": false,
 
 				// Batch processor metrics
 				"otelcol_processor_batch_batch_send_size":            false,
