@@ -171,7 +171,6 @@ To keep naming patterns consistent across the project, enumeration patterns are 
   - `pcommon.ValueTypeStr` for `pcommon.ValueType`
   - `pmetric.MetricTypeGauge` for `pmetric.MetricType`
 
-
 ## Recommended Libraries / Defaults
 
 In order to simplify development within the project, we have made certain library recommendations that should be followed.
@@ -180,7 +179,6 @@ In order to simplify development within the project, we have made certain librar
 |------------|------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
 | Hashing  	 | ["hashing/fnv"](https://pkg.go.dev/hash/fnv) 	 | The project adopted this as the default hashing method due to the efficiency and is reasonable for non-cryptographic use 	 |
 | Testing  	 | Use `t.Parallel()` where possible            	 | Enabling more tests to be run in parallel will speed up the feedback process when working on the project.                 	 |
-
 
 Within the project, there are some packages that have yet to follow the recommendations and are being addressed. However, any new code should adhere to the recommendations.
 

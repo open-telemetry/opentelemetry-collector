@@ -1,8 +1,8 @@
 # Component Status Reporting
 
-Component status reporting is a collector feature that allows components to report their status (aka health) via status events to extensions. In order for an extension receive these events it must implement the [StatusWatcher interface](https://github.com/open-telemetry/opentelemetry-collector/blob/f05f556780632d12ef7dbf0656534d771210aa1f/extension/extension.go#L54-L63).
+Component status reporting is a collector feature that allows components to report their status (aka health) via status events to extensions. In order for an extension receive these events it must implement the [Watcher interface](https://github.com/open-telemetry/opentelemetry-collector/blob/8ae99373af6204a4bfc4759e8e7ecedcb55c7e52/component/componentstatus/status.go#L35).
 
-### Status Definitions
+## Status Definitions
 
 The system defines six statuses, listed in the table below:
 
@@ -29,10 +29,9 @@ Statuses can be categorized into two groups: lifecycle and runtime.
 - PermanentError
 - FatalError
 
-### Transitioning Between Statuses
+## Transitioning Between Statuses
 
 There is a finite state machine underlying the status reporting API that governs the allowable state transitions. See the state diagram below:
-
 
 ![State Diagram](img/component-status-state-diagram.png)
 
@@ -40,7 +39,7 @@ The finite state machine ensures that components progress through the lifecycle 
 
 ![Status Event Generation](img/component-status-event-generation.png)
 
-### Automation
+## Automation
 
 The collector's service implementation is responsible for starting and stopping components. Since it knows when these events occur and their outcomes, it can automate status reporting of lifecycle events for components.
 
@@ -52,7 +51,7 @@ The collector will report a Starting event when starting a component. If an erro
 
 The collector will report a Stopping event when shutting down a component. If Shutdown returns an error, the collector will report a PermanentError event. If Shutdown completes without an error, the collector will report a Stopped event.
 
-### Best Practices
+## Best Practices
 
 **Start**
 
@@ -70,7 +69,7 @@ We intend to define guidelines to help component authors distinguish between rec
 
 A component should never have to report explicit status during shutdown. Automated status reporting should handle all cases. To recap, the collector will report Stopping before Shutdown is called. If a component returns an error from shutdown the collector will report a PermanentError and it will report Stopped if Shutdown returns without an error.
 
-### Implementation Details
+## Implementation Details
 
 There are a couple of implementation details that are worth discussing for those who work on or wish to understand the collector internals.
 
@@ -84,4 +83,4 @@ The service gets a slightly different TelemetrySettings object, a servicetelemet
 
 **sharedcomponent**
 
-The collector has the concept of a shared component. A shared component is represented as a single component to the collector, but represents multiple logical components elsewhere. The most common usage of this is the OTLP receiver, where a single shared component represents a logical instance for each signal: traces, metrics, and logs (although this can vary based on configuration). When a shared component reports status it must report an event for each of the logical instances it represents. In the current implementation, shared component reports status for all its logical instances during [Start](https://github.com/open-telemetry/opentelemetry-collector/blob/31ac3336d956d93abede6db76453730613e1f076/internal/sharedcomponent/sharedcomponent.go#L89-L98) and [Shutdown](https://github.com/open-telemetry/opentelemetry-collector/blob/31ac3336d956d93abede6db76453730613e1f076/internal/sharedcomponent/sharedcomponent.go#L105-L117). It also [modifies the ReportStatus method](https://github.com/open-telemetry/opentelemetry-collector/blob/31ac3336d956d93abede6db76453730613e1f076/internal/sharedcomponent/sharedcomponent.go#L34-L44) on component.TelemetrySettings to report status for each logical instance when called.
+The collector has the concept of a shared component. A shared component is represented as a single component to the collector, but represents multiple logical components elsewhere. The most common usage of this is the OTLP receiver, where a single shared component represents a logical instance for each signal: traces, metrics, and logs (although this can vary based on configuration). When a shared component reports status it must report an event for each of the logical instances it represents. In the current implementation, shared component reports status for all its logical instances during [Start](https://github.com/open-telemetry/opentelemetry-collector/blob/31ac3336d956d93abede6db76453730613e1f076/internal/sharedcomponent/sharedcomponent.go#L89-L98) and [Shutdown](https://github.com/open-telemetry/opentelemetry-collector/blob/31ac3336d956d93abede6db76453730613e1f076/internal/sharedcomponent/sharedcomponent.go#L105-L117). It also [wraps the host's Report method](https://github.com/open-telemetry/opentelemetry-collector/blob/31ac3336d956d93abede6db76453730613e1f076/internal/sharedcomponent/sharedcomponent.go#L34-L44) to report status for each logical instance when called.
