@@ -50,6 +50,57 @@ func TestProfilesText(t *testing.T) {
 	}
 }
 
+func TestProfilesTextInvalidDictionaryIndex(t *testing.T) {
+	tests := []struct {
+		name string
+		in   pprofile.Profiles
+		err  string
+	}{
+		{
+			name: "invalid_attribute_index",
+			in: func() pprofile.Profiles {
+				profiles := pprofile.NewProfiles()
+				dic := profiles.Dictionary()
+				dic.StringTable().Append("")
+
+				profile := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+				sample := profile.Samples().AppendEmpty()
+				sample.Values().Append(100)
+				// Attribute index 99 is out of bounds (attribute table is empty)
+				sample.AttributeIndices().Append(99)
+				return profiles
+			}(),
+			err: "invalid attribute index 99, attribute table size 0",
+		},
+		{
+			name: "invalid_string_index",
+			in: func() pprofile.Profiles {
+				profiles := pprofile.NewProfiles()
+				dic := profiles.Dictionary()
+				dic.StringTable().Append("")
+
+				a := dic.AttributeTable().AppendEmpty()
+				// KeyStrindex 99 is out of bounds
+				a.SetKeyStrindex(99)
+				a.Value().SetStr("value1")
+
+				profile := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+				sample := profile.Samples().AppendEmpty()
+				sample.Values().Append(100)
+				sample.AttributeIndices().Append(0)
+				return profiles
+			}(),
+			err: "invalid string index 99, string table size 1",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NewTextProfilesMarshaler().MarshalProfiles(tt.in)
+			assert.EqualError(t, err, tt.err)
+		})
+	}
+}
+
 // GenerateExtendedProfiles generates dummy profiling data with extended values for tests
 func extendProfiles(profiles pprofile.Profiles) pprofile.Profiles {
 	dic := profiles.Dictionary()

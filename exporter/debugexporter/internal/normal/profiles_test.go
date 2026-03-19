@@ -62,3 +62,55 @@ ScopeProfiles #0 scope-name@1.2.3 [https://example.com/scope] scopeKey=scopeValu
 		})
 	}
 }
+
+func TestMarshalProfilesInvalidDictionaryIndex(t *testing.T) {
+	tests := []struct {
+		name  string
+		input pprofile.Profiles
+		err   string
+	}{
+		{
+			name: "invalid attribute index",
+			input: func() pprofile.Profiles {
+				profiles := pprofile.NewProfiles()
+				dic := profiles.Dictionary()
+				dic.StringTable().Append("")
+
+				profile := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+				profile.SetProfileID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
+				profile.Samples().AppendEmpty()
+				// Attribute index 99 is out of bounds (attribute table is empty)
+				profile.AttributeIndices().Append(99)
+				return profiles
+			}(),
+			err: "invalid attribute index 99, attribute table size 0",
+		},
+		{
+			name: "invalid string index",
+			input: func() pprofile.Profiles {
+				profiles := pprofile.NewProfiles()
+				dic := profiles.Dictionary()
+				// Only one string at index 0
+				dic.StringTable().Append("")
+
+				a := dic.AttributeTable().AppendEmpty()
+				// KeyStrindex 99 is out of bounds
+				a.SetKeyStrindex(99)
+				a.Value().SetStr("value1")
+
+				profile := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+				profile.SetProfileID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
+				profile.Samples().AppendEmpty()
+				profile.AttributeIndices().Append(0)
+				return profiles
+			}(),
+			err: "invalid string index 99, string table size 1",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NewNormalProfilesMarshaler().MarshalProfiles(tt.input)
+			assert.EqualError(t, err, tt.err)
+		})
+	}
+}

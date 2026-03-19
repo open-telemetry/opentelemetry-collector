@@ -47,8 +47,16 @@ func (normalProfilesMarshaler) MarshalProfiles(pd pprofile.Profiles) ([]byte, er
 				if profile.AttributeIndices().Len() > 0 {
 					attrs := []string{}
 					for _, i := range profile.AttributeIndices().AsRaw() {
-						a := dic.AttributeTable().At(int(i))
-						attrs = append(attrs, fmt.Sprintf("%s=%s", dic.StringTable().At(int(a.KeyStrindex())), a.Value().AsString()))
+						attrIdx := int(i)
+						if attrIdx >= dic.AttributeTable().Len() {
+							return nil, fmt.Errorf("invalid attribute index %d, attribute table size %d", attrIdx, dic.AttributeTable().Len())
+						}
+						a := dic.AttributeTable().At(attrIdx)
+						keyIdx := int(a.KeyStrindex())
+						if keyIdx >= dic.StringTable().Len() {
+							return nil, fmt.Errorf("invalid string index %d, string table size %d", keyIdx, dic.StringTable().Len())
+						}
+						attrs = append(attrs, fmt.Sprintf("%s=%s", dic.StringTable().At(keyIdx), a.Value().AsString()))
 					}
 
 					buffer.WriteString(" ")
