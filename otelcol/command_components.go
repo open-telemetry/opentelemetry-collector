@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/internal/componentalias"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 )
@@ -136,26 +135,27 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 	}
 }
 
-func sortFactoriesByType[T component.Factory](factories map[component.Type]T) []T {
+func canonicalFactoryKeys[T component.Factory](factories map[component.Type]T) []component.Type {
 	// Gather component types (factories map keys)
 	componentTypes := make([]component.Type, 0, len(factories))
-	for componentType := range factories {
-		componentTypes = append(componentTypes, componentType)
+	for componentType, f := range factories {
+		if componentType == f.Type() { // keep canonical keys only
+			componentTypes = append(componentTypes, componentType)
+		}
 	}
+	return componentTypes
+}
 
-	// Sort component types as strings
+func sortFactoriesByType[T component.Factory](factories map[component.Type]T) []T {
+	componentTypes := canonicalFactoryKeys(factories)
 	sort.Slice(componentTypes, func(i, j int) bool {
 		return componentTypes[i].String() < componentTypes[j].String()
 	})
 
-	// Build and return list of factories, sorted by component types
-	sortedFactories := make([]T, 0, len(factories))
+	sortedFactories := make([]T, 0, len(componentTypes))
 	for _, componentType := range componentTypes {
-		if !isComponentAlias(factories[componentType]) {
-			sortedFactories = append(sortedFactories, factories[componentType])
-		}
+		sortedFactories = append(sortedFactories, factories[componentType])
 	}
-
 	return sortedFactories
 }
 
@@ -164,9 +164,7 @@ func sortProvidersByScheme(providerModules map[string]string, provFactories []co
 	for _, f := range provFactories {
 		provF := f.Create(set)
 		scheme := provF.Scheme()
-		if !isComponentAlias(f) {
-			schemes = append(schemes, scheme)
-		}
+		schemes = append(schemes, scheme)
 	}
 
 	sort.Strings(schemes)
@@ -193,11 +191,4 @@ func sortConverterModules(modules []string) []componentWithoutStability {
 		})
 	}
 	return sortedModules
-}
-
-func isComponentAlias(component any) bool {
-	if al, ok := component.(componentalias.TypeAliasHolder); ok {
-		return al.DeprecatedAlias().String() != ""
-	}
-	return false
 }
