@@ -32,6 +32,34 @@
 {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ if gt (len (attributeInfo .).Enum) 1}}{{ (index (attributeInfo .).Enum 1) | publicVar}}{{ else }}{{ (index (attributeInfo .).Enum 0) | publicVar}}{{ end }}{{ else }}{{ (attributeInfo .).TestValueTwo }}{{ end }}
 {{- end -}}
 
+{{- define "assertResourceAttributeValue" -}}
+{{- if eq .Type.String "Bool"}}
+assert.{{- if eq .TestValue "true" }}True{{ else }}False{{- end }}(t, {{ .FullName.RenderUnexported }}AttrVal.{{ .Type }}())
+{{- else if eq .Type.String "Int"}}
+assert.EqualValues(t, {{ .TestValue }}, {{ .FullName.RenderUnexported }}AttrVal.{{ .Type }}())
+{{- else }}
+assert.Equal(t, {{ .TestValue }}, {{ .FullName.RenderUnexported }}AttrVal.{{ .Type }}()
+{{- if or (eq .Type.String "Bytes") (eq .Type.String "Slice") (eq .Type.String "Map") -}}
+.AsRaw()
+{{- end -}}
+)
+{{- end }}
+{{- end -}}
+
+{{- define "assertMetricAttributeValue" -}}
+{{- if eq (attributeInfo .).Type.String "Bool"}}
+assert.{{- if eq (attributeInfo .).TestValue "true" }}True{{ else }}False{{- end }}(t, {{ .RenderUnexported }}AttrVal.{{ (attributeInfo .).Type }}())
+{{- else if eq (attributeInfo .).Type.String "Int"}}
+assert.EqualValues(t, {{ (attributeInfo .).TestValue }}, {{ .RenderUnexported }}AttrVal.{{ (attributeInfo .).Type }}())
+{{- else }}
+assert.Equal(t, {{ (attributeInfo .).TestValue }}, {{ .RenderUnexported }}AttrVal.{{ (attributeInfo .).Type }}()
+{{- if or (eq (attributeInfo .).Type.String "Bytes") (eq (attributeInfo .).Type.String "Slice") (eq (attributeInfo .).Type.String "Map") -}}
+.AsRaw()
+{{- end -}}
+)
+{{- end }}
+{{- end -}}
+
 {{- define "metricUnmarshal" }}
 	if parser == nil {
 		return nil
