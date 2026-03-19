@@ -181,6 +181,5 @@ func (pctx *printContext) printRedactedConfig() error {
 	if err := confMap.Marshal(cfg); err != nil {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
-
 	return pctx.printConfigData(confMap.ToStringMap())
 }
