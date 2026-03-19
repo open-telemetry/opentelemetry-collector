@@ -21,11 +21,11 @@ type TargetsItem struct {
 func (c *TargetsItem) Validate() error {
 	var err error
 
-	if c.HTTPClient == nil {
-		err = errors.Join(err, errors.New("HTTPClient is required"))
-	}
 	if c.Options == nil || len(c.Options) == 0 {
 		err = errors.Join(err, errors.New("Options is required"))
+	}
+	if c.HTTPClient == nil {
+		err = errors.Join(err, errors.New("HTTPClient is required"))
 	}
 
 	return err
@@ -42,11 +42,8 @@ type Config struct {
 func (c *Config) Validate() error {
 	var err error
 
-	if c.Targets == nil {
+	if c.Targets == nil || len(*c.Targets) == 0 {
 		err = errors.Join(err, errors.New("Targets is required"))
-	}
-	for _, value := range *c.Targets {
-		err = errors.Join(err, value.Validate())
 	}
 
 	return err

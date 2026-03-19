@@ -2,7 +2,7 @@
 
 package {{ .Package }}
 
-{{- $validators := extractValidators .Metadata.Config .Metadata.Config }}
+{{- $validators := extractValidators .Metadata.Config }}
 {{ $imports := extractImports .Metadata.Config }}
 {{- if or $imports $validators }}
 import (
@@ -41,7 +41,7 @@ import (
         {{ template "struct" $def }}
     }
 
-    {{ $defValidators := extractValidators $.Metadata.Config $def }}
+    {{ $defValidators := extractValidators $def }}
     {{- if $defValidators }}
         // Validate validates the {{$defName}} fields.
         func (c *{{ $defName | publicVar }}) Validate() error {
@@ -68,9 +68,15 @@ type Config struct {
 {{ define "requiredValidator" -}}
     {{ $name := .FieldName | publicVar -}}
     {{- if .IsPointer }}
+        {{- if or (eq .FieldType "array") (eq .FieldType "object") }}
+        if c.{{ $name }} == nil || len(*c.{{ $name }}) == 0 {
+            err = errors.Join(err, errors.New("{{ $name }} is required"))
+        }
+        {{- else }}
         if c.{{ $name }} == nil {
             err = errors.Join(err, errors.New("{{ $name }} is required"))
         }
+        {{- end }}
     {{- else if eq .FieldType "string" }}
         if c.{{ $name }} == "" {
             err = errors.Join(err, errors.New("{{ $name }} is required"))
@@ -89,21 +95,6 @@ type Config struct {
 {{- define "validation" -}}
     {{- if .IsRequired -}}
         {{ template "requiredValidator" . }}
-    {{- end -}}
-    {{- if .IsCallable -}}
-        {{ $id := printf "c.%s" (.FieldName | publicVar) -}}
-        {{- if .IsPointer -}}
-            {{ $id = printf "*%s" $id -}}
-        {{- else if .IsOptional -}}
-            {{ $id = printf "*%s.Get()" $id -}}
-        {{- end }}
-        {{- if .IsIterable }}
-            for _, value := range {{ $id }} {
-                err = errors.Join(err, value.Validate())
-            }
-        {{- else }}
-            err = errors.Join(err, {{ $id }}.Validate())
-        {{- end -}}
     {{- end -}}
 {{- end }}
 

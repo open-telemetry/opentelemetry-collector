@@ -31,11 +31,11 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return ExtractDefs(cfg)
 		},
-		"extractValidators": func(root, cfg *ConfigMetadata) []Validator {
+		"extractValidators": func(cfg *ConfigMetadata) []Validator {
 			if cfg == nil {
 				return nil
 			}
-			return ExtractValidators(root, cfg)
+			return ExtractValidators(cfg)
 		},
 		"mapGoType": func(cfg *ConfigMetadata, propName string) string {
 			if cfg == nil {
@@ -293,13 +293,13 @@ func collectDefsForSchema(propName string, md *ConfigMetadata, defs map[string]*
 }
 
 // ExtractValidators recursively scans the ConfigMetadata and collects validators for required fields and nested schemas.
-func ExtractValidators(root, md *ConfigMetadata) []Validator {
+func ExtractValidators(md *ConfigMetadata) []Validator {
 	validators := make([]Validator, 0)
 
 	if md == nil {
 		return validators
 	}
-	collectValidators(root, md, &validators)
+	collectValidators(md, &validators)
 
 	return validators
 }
@@ -310,11 +310,9 @@ type Validator struct {
 	IsRequired bool
 	IsPointer  bool
 	IsOptional bool
-	IsCallable bool
-	IsIterable bool
 }
 
-func collectValidators(root, md *ConfigMetadata, validators *[]Validator) {
+func collectValidators(md *ConfigMetadata, validators *[]Validator) {
 	for propName, prop := range md.Properties {
 		isRequired := slices.Contains(md.Required, propName)
 		if isRequired {
@@ -324,77 +322,6 @@ func collectValidators(root, md *ConfigMetadata, validators *[]Validator) {
 				IsRequired: isRequired,
 				IsPointer:  prop.IsPointer,
 				IsOptional: prop.IsOptional,
-				IsIterable: false,
-			})
-		}
-
-		childrenValidators := make([]Validator, 0)
-		isIterable := false
-
-		// if prop is ref to another schema, we need to look for validators in the referenced schema
-		// currently only internal refs are supported
-		if prop.Ref != "" {
-			childrenValidators = ExtractValidators(root, prop)
-		}
-
-		// look for nested validators in case of iterable objects
-		switch prop.Type {
-		case "object":
-			// embedded object
-			if len(prop.Properties) > 0 {
-				childrenValidators = ExtractValidators(root, prop)
-				isIterable = false
-			}
-			// map
-			if prop.AdditionalProperties != nil {
-				childrenValidators = ExtractValidators(root, prop.AdditionalProperties)
-				isIterable = true
-			}
-		case "array":
-			if prop.Items != nil {
-				childrenValidators = ExtractValidators(root, prop.Items)
-				isIterable = true
-			}
-		}
-		if len(childrenValidators) > 0 {
-			*validators = append(*validators, Validator{
-				FieldName:  propName,
-				FieldType:  resolveType(prop),
-				IsRequired: false,
-				IsPointer:  prop.IsPointer,
-				IsOptional: prop.IsOptional,
-				IsIterable: isIterable,
-				IsCallable: true,
-			})
-		}
-	}
-	// try to resolve ref from internal defs
-	if md.Ref != "" && root.Defs != nil {
-		if refDef, ok := root.Defs[md.Ref]; ok {
-			if len(ExtractValidators(root, refDef)) > 0 {
-				*validators = append(*validators, Validator{
-					FieldName:  md.Ref,
-					FieldType:  resolveType(md),
-					IsRequired: false,
-					IsPointer:  false,
-					IsOptional: false,
-					IsIterable: false,
-					IsCallable: true,
-				})
-			}
-		}
-	}
-	// look for validators in allOf schemas, currently only internal refs are supported
-	for _, schema := range md.AllOf {
-		if schema.Ref != "" && len(ExtractValidators(root, schema)) > 0 {
-			*validators = append(*validators, Validator{
-				FieldName:  schema.Ref,
-				FieldType:  resolveType(schema),
-				IsRequired: false,
-				IsPointer:  false,
-				IsOptional: false,
-				IsIterable: false,
-				IsCallable: true,
 			})
 		}
 	}
