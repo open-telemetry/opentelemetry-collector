@@ -53,24 +53,8 @@ ScopeProfiles #0 scope-name@1.2.3 [https://example.com/scope] scopeKey=scopeValu
 0102030405060708090a0b0c0d0e0f10 samples=2 key1=value1
 `,
 		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			output, err := NewNormalProfilesMarshaler().MarshalProfiles(tt.input)
-			require.NoError(t, err)
-			assert.Equal(t, tt.expected, string(output))
-		})
-	}
-}
-
-func TestMarshalProfilesInvalidDictionaryIndex(t *testing.T) {
-	tests := []struct {
-		name  string
-		input pprofile.Profiles
-		err   string
-	}{
 		{
-			name: "invalid attribute index",
+			name: "invalid attribute index outputs placeholder",
 			input: func() pprofile.Profiles {
 				profiles := pprofile.NewProfiles()
 				dic := profiles.Dictionary()
@@ -83,10 +67,13 @@ func TestMarshalProfilesInvalidDictionaryIndex(t *testing.T) {
 				profile.AttributeIndices().Append(99)
 				return profiles
 			}(),
-			err: "invalid attribute index 99, attribute table size 0",
+			expected: `ResourceProfiles #0
+ScopeProfiles #0
+0102030405060708090a0b0c0d0e0f10 samples=1 [Missing Dictionary Item #99]
+`,
 		},
 		{
-			name: "invalid string index",
+			name: "invalid string index outputs placeholder",
 			input: func() pprofile.Profiles {
 				profiles := pprofile.NewProfiles()
 				dic := profiles.Dictionary()
@@ -104,13 +91,17 @@ func TestMarshalProfilesInvalidDictionaryIndex(t *testing.T) {
 				profile.AttributeIndices().Append(0)
 				return profiles
 			}(),
-			err: "invalid string index 99, string table size 1",
+			expected: `ResourceProfiles #0
+ScopeProfiles #0
+0102030405060708090a0b0c0d0e0f10 samples=1 [Missing Dictionary Item #99]=value1
+`,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := NewNormalProfilesMarshaler().MarshalProfiles(tt.input)
-			assert.EqualError(t, err, tt.err)
+			output, err := NewNormalProfilesMarshaler().MarshalProfiles(tt.input)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, string(output))
 		})
 	}
 }

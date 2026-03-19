@@ -336,9 +336,9 @@ func (b *dataBuffer) logExemplars(description string, se pmetric.ExemplarSlice) 
 	}
 }
 
-func (b *dataBuffer) logProfileSamples(ss pprofile.SampleSlice, dic pprofile.ProfilesDictionary) error {
+func (b *dataBuffer) logProfileSamples(ss pprofile.SampleSlice, dic pprofile.ProfilesDictionary) {
 	if ss.Len() == 0 {
-		return nil
+		return
 	}
 
 	for i := 0; i < ss.Len(); i++ {
@@ -352,18 +352,19 @@ func (b *dataBuffer) logProfileSamples(ss pprofile.SampleSlice, dic pprofile.Pro
 			for j := range lai {
 				attrIdx := int(sample.AttributeIndices().At(j))
 				if attrIdx >= dic.AttributeTable().Len() {
-					return fmt.Errorf("invalid attribute index %d, attribute table size %d", attrIdx, dic.AttributeTable().Len())
+					b.logEntry("             -> [Missing Dictionary Item #%d]", attrIdx)
+					continue
 				}
 				attr := dic.AttributeTable().At(attrIdx)
 				keyIdx := int(attr.KeyStrindex())
-				if keyIdx >= dic.StringTable().Len() {
-					return fmt.Errorf("invalid string index %d, string table size %d", keyIdx, dic.StringTable().Len())
+				key := fmt.Sprintf("[Missing Dictionary Item #%d]", keyIdx)
+				if keyIdx < dic.StringTable().Len() {
+					key = dic.StringTable().At(keyIdx)
 				}
-				b.logEntry("             -> %s: %s", dic.StringTable().At(keyIdx), attr.Value().AsRaw())
+				b.logEntry("             -> %s: %s", key, attr.Value().AsRaw())
 			}
 		}
 	}
-	return nil
 }
 
 func (b *dataBuffer) logProfileMappings(ms pprofile.MappingSlice) {
