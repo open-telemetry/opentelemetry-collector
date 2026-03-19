@@ -60,7 +60,7 @@ Tier 3 platforms are _guaranteed to build_. Precompiled binaries are made availa
 Tier 3 platforms are currently:
 | Platform      | Owner(s)                                                                                                                                                       |
 |---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| aix/ppc64     | [Dylan-M](https://github.com/Dylan-M) [@atoulme](https://github.com/atoulme)                                                                                   |
+| aix/ppc64     | [@Dylan-M](https://github.com/Dylan-M) [@atoulme](https://github.com/atoulme)                                                                                  |
 | darwin/amd64  | [@h0cheung](https://github.com/h0cheung)                                                                                                                       |
 | js/wasm       | [@evan-bradley](https://github.com/evan-bradley), [@mx-psi](https://github.com/mx-psi)                                                                         |
 | linux/386     | [@andrzej-stencel](https://github.com/andrzej-stencel)                                                                                                         |
