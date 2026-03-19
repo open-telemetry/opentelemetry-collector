@@ -41,6 +41,9 @@ func TestEntityBuilders(t *testing.T) {
 		stringResourceAttrAttrVal, ok := entityVal.IdentifyingAttributes().Get("string.resource.attr")
 		require.True(t, ok)
 		assert.Equal(t, "string.resource.attr-val", stringResourceAttrAttrVal.Str())
+		mapResourceAttrAttrVal, ok := entityVal.DescriptiveAttributes().Get("map.resource.attr")
+		require.True(t, ok)
+		assert.Equal(t, map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"}, mapResourceAttrAttrVal.Map().AsRaw())
 
 		require.Equal(t, 1, rm.ScopeMetrics().Len())
 		ms := rm.ScopeMetrics().At(0).Metrics()
