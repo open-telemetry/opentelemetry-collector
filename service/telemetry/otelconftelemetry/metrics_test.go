@@ -55,7 +55,7 @@ func TestCreateMeterProvider(t *testing.T) {
 			name: "UseOpenTelemetryForInternalMetrics",
 			expectedMetrics: map[string]metricValue{
 				metricPrefix + otelPrefix + counterName: {
-					value: 13,
+					value:  13,
 					labels: map[string]string{},
 				},
 				metricPrefix + grpcPrefix + counterName: {
