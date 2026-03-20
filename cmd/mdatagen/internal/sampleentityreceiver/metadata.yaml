@@ -1,0 +1,101 @@
+# Sample metadata file with entities for testing entity-based builder API
+
+type: sampleentity
+display_name: Sample Entity Receiver
+description: This receiver demonstrates entity-based metrics builder API.
+scope_name: go.opentelemetry.io/collector/internal/receiver/sampleentityreceiver
+sem_conv_version: 1.38.0
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  codeowners:
+    active: [dmitryax]
+
+resource_attributes:
+  k8s.namespace.name:
+    description: The name of the Kubernetes Namespace
+    type: string
+    enabled: true
+
+  k8s.pod.name:
+    description: The name of the Kubernetes Pod
+    type: string
+    enabled: true
+
+  k8s.pod.uid:
+    description: The UID of the Kubernetes Pod
+    type: string
+    enabled: true
+
+  k8s.replicaset.name:
+    description: The name of the Kubernetes ReplicaSet
+    type: string
+    enabled: true
+
+  k8s.replicaset.uid:
+    description: The UID of the Kubernetes ReplicaSet
+    type: string
+    enabled: true
+
+entities:
+  - type: k8s.replicaset
+    brief: A Kubernetes ReplicaSet
+    stability: development
+    identity:
+      - ref: k8s.replicaset.uid
+    description:
+      - ref: k8s.replicaset.name
+
+  - type: k8s.pod
+    brief: A Kubernetes Pod
+    stability: development
+    identity:
+      - ref: k8s.pod.uid
+    description:
+      - ref: k8s.pod.name
+    extra_attributes:
+      - ref: k8s.namespace.name
+    relationships:
+      - type: controlled_by
+        target: k8s.replicaset
+
+attributes:
+  phase:
+    description: The phase of the pod (Pending, Running, Succeeded, Failed, Unknown)
+    type: string
+    enum: [Pending, Running, Succeeded, Failed, Unknown]
+
+metrics:
+  k8s.pod.cpu_time:
+    enabled: true
+    description: CPU time consumed by the pod
+    unit: s
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: []
+    entity: k8s.pod
+    stability: development
+
+  k8s.pod.phase:
+    enabled: true
+    description: Current phase of the pod
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [phase]
+    entity: k8s.pod
+    stability: development
+
+  k8s.replicaset.desired:
+    enabled: true
+    description: Number of desired replicas
+    unit: "{replicas}"
+    gauge:
+      value_type: int
+    attributes: []
+    entity: k8s.replicaset
+    stability: development
