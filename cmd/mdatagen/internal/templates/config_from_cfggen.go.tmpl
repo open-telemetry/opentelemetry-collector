@@ -3,10 +3,25 @@
 package {{ .Package }}
 
 {{ $imports := extractImports .Metadata.Config }}
-{{- if $imports }}
+{{- /* Determine if we have any defaults across all properties to inject confmap import */}}
+{{- $hasAnyDefaults := false }}
+{{- range $propName, $prop := .Metadata.Config.Properties }}
+    {{- if ne (mapDefaultValue $prop) "" }}{{- $hasAnyDefaults = true }}{{- end }}
+{{- end }}
+{{- $defs := extractDefs .Metadata.Config }}
+{{- range $defName, $def := $defs }}
+    {{- range $propName, $prop := $def.Properties }}
+        {{- if ne (mapDefaultValue $prop) "" }}{{- $hasAnyDefaults = true }}{{- end }}
+    {{- end }}
+{{- end }}
+
+{{- if or $imports $hasAnyDefaults }}
 import (
 {{- range $imports }}
 	"{{ . }}"
+{{- end }}
+{{- if $hasAnyDefaults }}
+	"go.opentelemetry.io/collector/confmap"
 {{- end }}
 )
 {{- end }}
@@ -28,7 +43,6 @@ import (
     {{- end }}
 {{ end }}
 
-{{- $defs := extractDefs .Metadata.Config }}
 {{ range $defName, $def := $defs }}
     {{- if $def.Description }}
 // {{ $defName | publicVar }} {{ $def.Description }}
@@ -36,6 +50,23 @@ import (
 type {{ $defName | publicVar }} struct {
 {{ template "struct" $def }}
 }
+
+{{- $hasDefaults := false }}
+{{- range $propName, $prop := $def.Properties }}
+    {{- if ne (mapDefaultValue $prop) "" }}{{- $hasDefaults = true }}{{- end }}
+{{- end }}
+{{- if $hasDefaults }}
+func default{{ $defName | publicVar }}() {{ $defName | publicVar }} {
+	return {{ $defName | publicVar }}{
+{{- range $propName, $prop := $def.Properties }}
+    {{- $defVal := mapDefaultValue $prop }}
+    {{- if ne $defVal "" }}
+		{{ $propName | publicVar }}: {{ $defVal }},
+    {{- end }}
+{{- end }}
+	}
+}
+{{- end }}
 {{ end }}
 
 {{- if .Metadata.Config.Description }}
@@ -46,3 +77,22 @@ type {{ $defName | publicVar }} struct {
 type Config struct {
 {{ template "struct" .Metadata.Config }}
 }
+
+{{- $hasDefaultsConfig := false }}
+{{- range $propName, $prop := .Metadata.Config.Properties }}
+    {{- if or (ne (mapDefaultValue $prop) "") (hasDefDefaults $prop) }}{{- $hasDefaultsConfig = true }}{{- end }}
+{{- end }}
+{{- if $hasDefaultsConfig }}
+func createDefaultConfig() component.Config {
+	return &Config{
+{{- range $propName, $prop := .Metadata.Config.Properties }}
+    {{- $defVal := mapDefaultValue $prop }}
+    {{- if ne $defVal "" }}
+		{{ $propName | publicVar }}: {{ $defVal }},
+    {{- else if hasDefDefaults $prop }}
+        {{ $propName | publicVar }}: default{{ $prop.Type | publicVar }}(),
+    {{- end }}
+{{- end }}
+	}
+}
+{{- end }}

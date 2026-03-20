@@ -586,6 +586,76 @@ func TestExtractImports_NilInput(t *testing.T) {
 	require.Nil(t, result)
 }
 
+func TestMapDefaultValue_Arrays(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected string
+	}{
+		{
+			name: "array of strings",
+			metadata: &ConfigMetadata{
+				Type:    "array",
+				Default: []any{"a", "b"},
+			},
+			expected: "[]any{\"a\", \"b\"}",
+		},
+		{
+			name: "array of ints",
+			metadata: &ConfigMetadata{
+				Type:    "array",
+				Default: []any{1, 2, 3},
+			},
+			expected: "[]any{1, 2, 3}",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := MapDefaultValue(tt.metadata)
+			require.NoError(t, err)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestMapDefaultValue_Objects(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected string
+	}{
+		{
+			name: "map of strings",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Default: map[string]any{
+					"key1": "value1",
+				},
+			},
+			expected: "map[string]any{\"key1\":\"value1\"}",
+		},
+		{
+			name: "map of ints",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Default: map[string]any{
+					"key1": 1,
+				},
+			},
+			expected: "map[string]any{\"key1\":1}",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := MapDefaultValue(tt.metadata)
+			require.NoError(t, err)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 func TestFormatTypeName_InternalReferences(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -981,4 +1051,144 @@ func TestExtractImports_ContentSchema(t *testing.T) {
 	result, err := ExtractImports(md, "", "")
 	require.NoError(t, err)
 	require.Contains(t, result, "time")
+}
+
+func TestMapDefaultValue(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected string
+		err      bool
+	}{
+		{
+			name: "string type",
+			metadata: &ConfigMetadata{
+				Type:    "string",
+				Default: "localhost",
+			},
+			expected: `"localhost"`,
+		},
+		{
+			name: "duration type",
+			metadata: &ConfigMetadata{
+				Type:    "string",
+				Format:  "duration",
+				Default: "10s",
+			},
+			expected: "time.Duration(10000000000) /* 10s */",
+		},
+		{
+			name: "integer type",
+			metadata: &ConfigMetadata{
+				Type:    "integer",
+				Default: 12345,
+			},
+			expected: "12345",
+		},
+		{
+			name: "boolean type",
+			metadata: &ConfigMetadata{
+				Type:    "boolean",
+				Default: true,
+			},
+			expected: "true",
+		},
+		{
+			name: "nil default",
+			metadata: &ConfigMetadata{
+				Type:    "boolean",
+				Default: nil,
+			},
+			err: true,
+		},
+		{
+			name: "number type",
+			metadata: &ConfigMetadata{
+				Type:    "number",
+				Default: 3.14,
+			},
+			expected: "3.14",
+		},
+		{
+			name: "array type",
+			metadata: &ConfigMetadata{
+				Type:    "array",
+				Default: []int{1, 2},
+			},
+			expected: "[]int{1, 2}",
+		},
+		{
+			name: "unsupported type",
+			metadata: &ConfigMetadata{
+				Type:    "unsupported",
+				Default: "value",
+			},
+			err: true,
+		},
+		{
+			name: "duration format with custom GoType",
+			metadata: &ConfigMetadata{
+				Type:    "string",
+				Format:  "duration",
+				GoType:  "CustomDuration",
+				Default: "10s",
+			},
+			expected: "time.Duration(10000000000) /* 10s */",
+		},
+		{
+			name: "duration format with invalid value",
+			metadata: &ConfigMetadata{
+				Type:    "string",
+				Format:  "duration",
+				Default: "invalid",
+			},
+			err: true,
+		},
+		{
+			name: "duration format with custom GoType and invalid value",
+			metadata: &ConfigMetadata{
+				Type:    "string",
+				Format:  "duration",
+				GoType:  "CustomDuration",
+				Default: "invalid",
+			},
+			err: true,
+		},
+		{
+			name:     "nil ConfigMetadata",
+			metadata: nil,
+			err:      true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := MapDefaultValue(tt.metadata)
+			if tt.err {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestNewCfgFns_MapDefaultValue(t *testing.T) {
+	fns := NewCfgFns("", "")
+	mapDefaultValue := fns["mapDefaultValue"].(func(*ConfigMetadata) string)
+
+	// nil input returns ""
+	require.Empty(t, mapDefaultValue(nil))
+
+	// nil default returns ""
+	require.Empty(t, mapDefaultValue(&ConfigMetadata{}))
+
+	// valid input returns formatted value
+	md := &ConfigMetadata{Type: "string", Default: "test"}
+	require.Equal(t, `"test"`, mapDefaultValue(md))
+
+	// error input panics
+	errMd := &ConfigMetadata{Type: "unsupported", Default: "test"}
+	require.Panics(t, func() { mapDefaultValue(errMd) })
 }
