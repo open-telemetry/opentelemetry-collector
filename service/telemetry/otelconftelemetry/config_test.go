@@ -33,6 +33,14 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 }
 
+func TestDefaultConfig_DoesNotEnableResourceConstantLabels(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	require.Len(t, cfg.Metrics.Readers, 1)
+	require.NotNil(t, cfg.Metrics.Readers[0].Pull)
+	require.NotNil(t, cfg.Metrics.Readers[0].Pull.Exporter.Prometheus)
+	assert.Nil(t, cfg.Metrics.Readers[0].Pull.Exporter.Prometheus.WithResourceConstantLabels)
+}
+
 func TestConfig(t *testing.T) {
 	t.Parallel()
 
