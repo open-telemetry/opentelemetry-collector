@@ -52,8 +52,9 @@ func TestProfilesText(t *testing.T) {
 
 func TestProfilesTextInvalidDictionaryIndex(t *testing.T) {
 	tests := []struct {
-		name string
-		in   pprofile.Profiles
+		name             string
+		in               pprofile.Profiles
+		expectedContains string
 	}{
 		{
 			name: "invalid_attribute_index",
@@ -69,6 +70,7 @@ func TestProfilesTextInvalidDictionaryIndex(t *testing.T) {
 				sample.AttributeIndices().Append(99)
 				return profiles
 			}(),
+			expectedContains: "[Missing Dictionary AttributeTable Item #99]",
 		},
 		{
 			name: "invalid_string_index",
@@ -88,13 +90,14 @@ func TestProfilesTextInvalidDictionaryIndex(t *testing.T) {
 				sample.AttributeIndices().Append(0)
 				return profiles
 			}(),
+			expectedContains: "[Missing Dictionary Key String Item #99]",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := NewTextProfilesMarshaler().MarshalProfiles(tt.in)
 			require.NoError(t, err)
-			assert.Contains(t, string(got), "[Missing Dictionary Item #")
+			assert.Contains(t, string(got), tt.expectedContains)
 		})
 	}
 }

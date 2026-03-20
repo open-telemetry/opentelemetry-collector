@@ -69,7 +69,7 @@ ScopeProfiles #0 scope-name@1.2.3 [https://example.com/scope] scopeKey=scopeValu
 			}(),
 			expected: `ResourceProfiles #0
 ScopeProfiles #0
-0102030405060708090a0b0c0d0e0f10 samples=1 [Missing Dictionary Item #99]
+0102030405060708090a0b0c0d0e0f10 samples=1 [Missing Dictionary AttributeTable Item #99]
 `,
 		},
 		{
@@ -93,7 +93,7 @@ ScopeProfiles #0
 			}(),
 			expected: `ResourceProfiles #0
 ScopeProfiles #0
-0102030405060708090a0b0c0d0e0f10 samples=1 [Missing Dictionary Item #99]=value1
+0102030405060708090a0b0c0d0e0f10 samples=1 [Missing Dictionary Key String Item #99]=value1
 `,
 		},
 	}

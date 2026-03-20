@@ -352,12 +352,12 @@ func (b *dataBuffer) logProfileSamples(ss pprofile.SampleSlice, dic pprofile.Pro
 			for j := range lai {
 				attrIdx := int(sample.AttributeIndices().At(j))
 				if attrIdx >= dic.AttributeTable().Len() {
-					b.logEntry("             -> [Missing Dictionary Item #%d]", attrIdx)
+					b.logEntry("             -> [Missing Dictionary AttributeTable Item #%d]", attrIdx)
 					continue
 				}
 				attr := dic.AttributeTable().At(attrIdx)
 				keyIdx := int(attr.KeyStrindex())
-				key := fmt.Sprintf("[Missing Dictionary Item #%d]", keyIdx)
+				key := fmt.Sprintf("[Missing Dictionary Key String Item #%d]", keyIdx)
 				if keyIdx < dic.StringTable().Len() {
 					key = dic.StringTable().At(keyIdx)
 				}

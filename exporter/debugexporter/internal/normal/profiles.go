@@ -49,12 +49,12 @@ func (normalProfilesMarshaler) MarshalProfiles(pd pprofile.Profiles) ([]byte, er
 					for _, i := range profile.AttributeIndices().AsRaw() {
 						attrIdx := int(i)
 						if attrIdx >= dic.AttributeTable().Len() {
-							attrs = append(attrs, fmt.Sprintf("[Missing Dictionary Item #%d]", attrIdx))
+							attrs = append(attrs, fmt.Sprintf("[Missing Dictionary AttributeTable Item #%d]", attrIdx))
 							continue
 						}
 						a := dic.AttributeTable().At(attrIdx)
 						keyIdx := int(a.KeyStrindex())
-						key := fmt.Sprintf("[Missing Dictionary Item #%d]", keyIdx)
+						key := fmt.Sprintf("[Missing Dictionary Key String Item #%d]", keyIdx)
 						if keyIdx < dic.StringTable().Len() {
 							key = dic.StringTable().At(keyIdx)
 						}

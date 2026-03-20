@@ -7,7 +7,7 @@ change_type: bug_fix
 component: exporter/debug
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Guard exporter/debug from out of bounds profiles dictionary indices
+note: Guard from out of bounds profiles dictionary indices
 
 # One or more tracking issues or pull requests related to the change
 issues: [14803]
