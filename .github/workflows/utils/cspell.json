@@ -291,6 +291,7 @@
       "kafkareceiver",
       "keepalive",
       "koanf",
+      "labeldrop",
       "ldflags",
       "limitermiddleware",
       "localhostgate",
