@@ -169,7 +169,7 @@ func metricsConfigV02ToV03(v2 metricsConfigV020, v3 *MetricsConfigV030) error {
 	return nil
 }
 
-func logsConfigV02ToV03(v2 logsConfigV020, v3 *LogsConfigV030) error {
+func logsConfigV02ToV03(v2 logsConfigV020, v3 *logsConfigV030) error {
 	processors := make([]config.LogRecordProcessor, len(v2.Processors))
 	for idx, p := range v2.Processors {
 		processors[idx] = config.LogRecordProcessor{}

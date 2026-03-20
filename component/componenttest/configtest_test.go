@@ -101,7 +101,7 @@ func TestCheckConfigStruct(t *testing.T) {
 			config: struct {
 				AdditionalProperties any `mapstructure:"Additional_Properties"`
 			}{},
-			wantErrMsgSubStr: `field "AdditionalProperties" has config tag "Additional_Properties" which doesn't satisfy "^[a-z0-9][a-z0-9_]*$"`,
+			wantErrMsgSubStr: `field "AdditionalProperties" has config tag "Additional_Properties" which doesn't satisfy "^[a-z0-9][a-z0-9_/]*$"`,
 		},
 		{
 			name:             "invalid_tag_detected",

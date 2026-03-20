@@ -4,8 +4,9 @@
 package migration // import "go.opentelemetry.io/collector/service/telemetry/otelconftelemetry/internal/migration"
 
 import (
-	"time"
+	"strings"
 
+	"go.opentelemetry.io/contrib/otelconf"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
 
@@ -95,7 +96,7 @@ func (c *MetricsConfigV030) Unmarshal(conf *confmap.Conf) error {
 	return nil
 }
 
-type LogsConfigV030 struct {
+type logsConfigV030 struct {
 	// Level is the minimum enabled logging level.
 	// (default = "INFO")
 	Level zapcore.Level `mapstructure:"level"`
@@ -167,22 +168,10 @@ type LogsConfigV030 struct {
 	DisableZapResource bool `mapstructure:"disable_zap_resource,omitempty"`
 }
 
-// LogsSamplingConfig sets a sampling strategy for the logger. Sampling caps the
-// global CPU and I/O load that logging puts on your process while attempting
-// to preserve a representative subset of your logs.
-type LogsSamplingConfig struct {
-	// Enabled enable sampling logging
-	Enabled bool `mapstructure:"enabled"`
-	// Tick represents the interval in seconds that the logger apply each sampling.
-	Tick time.Duration `mapstructure:"tick"`
-	// Initial represents the first M messages logged each Tick.
-	Initial int `mapstructure:"initial"`
-	// Thereafter represents the sampling rate, every Nth message will be sampled after Initial messages are logged during each Tick.
-	// If Thereafter is zero, the logger will drop all the messages after the Initial each Tick.
-	Thereafter int `mapstructure:"thereafter"`
-}
+// LogsConfigV030 is the exported type for use in tests and external migration.
+type LogsConfigV030 = logsConfigV030
 
-func (c *LogsConfigV030) Unmarshal(conf *confmap.Conf) error {
+func (c *logsConfigV030) Unmarshal(conf *confmap.Conf) error {
 	unmarshaled := *c
 	if err := conf.Unmarshal(c); err != nil {
 		v02 := logsConfigV020{
@@ -218,5 +207,238 @@ func (c *LogsConfigV030) Unmarshal(conf *confmap.Conf) error {
 			}
 		}
 	}
+	return nil
+}
+
+func headersV03ToV1(in []config.NameStringValuePair) []otelconf.NameStringValuePair {
+	out := make([]otelconf.NameStringValuePair, len(in))
+	for i, h := range in {
+		out[i] = otelconf.NameStringValuePair{
+			Name:  h.Name,
+			Value: otelconf.NameStringValuePairValue(h.Value),
+		}
+	}
+	return out
+}
+
+func grpcTLSV03ToV1(certificate, clientCertificate, clientKey *string, insecure *bool) *otelconf.GrpcTls {
+	if certificate == nil && clientCertificate == nil && clientKey == nil && insecure == nil {
+		return nil
+	}
+	return &otelconf.GrpcTls{
+		CaFile:   otelconf.GrpcTlsCaFile(certificate),
+		CertFile: otelconf.GrpcTlsCertFile(clientCertificate),
+		KeyFile:  otelconf.GrpcTlsKeyFile(clientKey),
+		Insecure: otelconf.GrpcTlsInsecure(insecure),
+	}
+}
+
+func httpTLSV03ToV1(certificate, clientCertificate, clientKey *string) *otelconf.HttpTls {
+	if certificate == nil && clientCertificate == nil && clientKey == nil {
+		return nil
+	}
+	return &otelconf.HttpTls{
+		CaFile:   otelconf.HttpTlsCaFile(certificate),
+		CertFile: otelconf.HttpTlsCertFile(clientCertificate),
+		KeyFile:  otelconf.HttpTlsKeyFile(clientKey),
+	}
+}
+
+func otlpV03ToV1(in *config.OTLP) (grpc *otelconf.OTLPGrpcExporter, http *otelconf.OTLPHttpExporter) {
+	if in == nil {
+		return nil, nil
+	}
+	if in.Protocol != nil && strings.HasPrefix(*in.Protocol, "http") {
+		return nil, &otelconf.OTLPHttpExporter{
+			Compression: otelconf.OTLPHttpExporterCompression(in.Compression),
+			Endpoint:    otelconf.OTLPHttpExporterEndpoint(in.Endpoint),
+			Headers:     headersV03ToV1(in.Headers),
+			HeadersList: otelconf.OTLPHttpExporterHeadersList(in.HeadersList),
+			Timeout:     otelconf.OTLPHttpExporterTimeout(in.Timeout),
+			Tls:         httpTLSV03ToV1(in.Certificate, in.ClientCertificate, in.ClientKey),
+		}
+	}
+	return &otelconf.OTLPGrpcExporter{
+		Compression: otelconf.OTLPGrpcExporterCompression(in.Compression),
+		Endpoint:    otelconf.OTLPGrpcExporterEndpoint(in.Endpoint),
+		Headers:     headersV03ToV1(in.Headers),
+		HeadersList: otelconf.OTLPGrpcExporterHeadersList(in.HeadersList),
+		Timeout:     otelconf.OTLPGrpcExporterTimeout(in.Timeout),
+		Tls:         grpcTLSV03ToV1(in.Certificate, in.ClientCertificate, in.ClientKey, in.Insecure),
+	}, nil
+}
+
+func spanExporterV03ToV1(in config.SpanExporter) otelconf.SpanExporter {
+	grpc, http := otlpV03ToV1(in.OTLP)
+	return otelconf.SpanExporter{
+		Console:  otelconf.ConsoleExporter(in.Console),
+		OTLPGrpc: grpc,
+		OTLPHttp: http,
+	}
+}
+
+func tracesConfigV03ToV1(v3 TracesConfigV030, v1 *TracesConfigV1) error {
+	processors := make([]otelconf.SpanProcessor, len(v3.Processors))
+	for idx, p := range v3.Processors {
+		processors[idx] = otelconf.SpanProcessor{}
+		if p.Batch != nil {
+			processors[idx].Batch = &otelconf.BatchSpanProcessor{
+				ExportTimeout:      otelconf.BatchSpanProcessorExportTimeout(p.Batch.ExportTimeout),
+				MaxExportBatchSize: otelconf.BatchSpanProcessorMaxExportBatchSize(p.Batch.MaxExportBatchSize),
+				MaxQueueSize:       otelconf.BatchSpanProcessorMaxQueueSize(p.Batch.MaxQueueSize),
+				ScheduleDelay:      otelconf.BatchSpanProcessorScheduleDelay(p.Batch.ScheduleDelay),
+				Exporter:           spanExporterV03ToV1(p.Batch.Exporter),
+			}
+		}
+		if p.Simple != nil {
+			processors[idx].Simple = &otelconf.SimpleSpanProcessor{
+				Exporter: spanExporterV03ToV1(p.Simple.Exporter),
+			}
+		}
+		processors[idx].AdditionalProperties = p.AdditionalProperties
+	}
+	v1.Level = v3.Level
+	v1.Propagators = v3.Propagators
+	v1.Processors = processors
+	return nil
+}
+
+func otlpMetricV03ToV1(in *config.OTLPMetric) (grpc *otelconf.OTLPGrpcMetricExporter, http *otelconf.OTLPHttpMetricExporter) {
+	if in == nil {
+		return nil, nil
+	}
+	var histAgg *otelconf.ExporterDefaultHistogramAggregation
+	if in.DefaultHistogramAggregation != nil {
+		v := otelconf.ExporterDefaultHistogramAggregation(*in.DefaultHistogramAggregation)
+		histAgg = &v
+	}
+	var temporality *otelconf.ExporterTemporalityPreference
+	if in.TemporalityPreference != nil {
+		v := otelconf.ExporterTemporalityPreference(*in.TemporalityPreference)
+		temporality = &v
+	}
+	if in.Protocol != nil && strings.HasPrefix(*in.Protocol, "http") {
+		return nil, &otelconf.OTLPHttpMetricExporter{
+			Compression:                 otelconf.OTLPHttpMetricExporterCompression(in.Compression),
+			Endpoint:                    otelconf.OTLPHttpMetricExporterEndpoint(in.Endpoint),
+			Headers:                     headersV03ToV1(in.Headers),
+			HeadersList:                 otelconf.OTLPHttpMetricExporterHeadersList(in.HeadersList),
+			Timeout:                     otelconf.OTLPHttpMetricExporterTimeout(in.Timeout),
+			DefaultHistogramAggregation: histAgg,
+			TemporalityPreference:       temporality,
+			Tls:                         httpTLSV03ToV1(in.Certificate, in.ClientCertificate, in.ClientKey),
+		}
+	}
+	return &otelconf.OTLPGrpcMetricExporter{
+		Compression:                 otelconf.OTLPGrpcMetricExporterCompression(in.Compression),
+		Endpoint:                    otelconf.OTLPGrpcMetricExporterEndpoint(in.Endpoint),
+		Headers:                     headersV03ToV1(in.Headers),
+		HeadersList:                 otelconf.OTLPGrpcMetricExporterHeadersList(in.HeadersList),
+		Timeout:                     otelconf.OTLPGrpcMetricExporterTimeout(in.Timeout),
+		DefaultHistogramAggregation: histAgg,
+		TemporalityPreference:       temporality,
+		Tls:                         grpcTLSV03ToV1(in.Certificate, in.ClientCertificate, in.ClientKey, in.Insecure),
+	}, nil
+}
+
+func prometheusV03ToV1(in *config.Prometheus) *otelconf.ExperimentalPrometheusMetricExporter {
+	if in == nil {
+		return nil
+	}
+	var withResourceLabels *otelconf.IncludeExclude
+	if in.WithResourceConstantLabels != nil {
+		withResourceLabels = &otelconf.IncludeExclude{
+			Excluded: in.WithResourceConstantLabels.Excluded,
+			Included: in.WithResourceConstantLabels.Included,
+		}
+	}
+	strategy := otelconf.ExperimentalPrometheusTranslationStrategyNoUtf8EscapingWithSuffixes
+	if in.WithoutTypeSuffix != nil && *in.WithoutTypeSuffix &&
+		in.WithoutUnits != nil && *in.WithoutUnits {
+		strategy = otelconf.ExperimentalPrometheusTranslationStrategyUnderscoreEscapingWithoutSuffixes
+	}
+
+	return &otelconf.ExperimentalPrometheusMetricExporter{
+		Host:                       otelconf.ExperimentalPrometheusMetricExporterHost(in.Host),
+		Port:                       otelconf.ExperimentalPrometheusMetricExporterPort(in.Port),
+		WithoutScopeInfo:           otelconf.ExperimentalPrometheusMetricExporterWithoutScopeInfo(in.WithoutScopeInfo),
+		WithResourceConstantLabels: withResourceLabels,
+		TranslationStrategy:        &strategy,
+	}
+}
+
+func metricsConfigV03ToV1(v3 MetricsConfigV030, v1 *MetricsConfigV1) error {
+	readers := make([]otelconf.MetricReader, len(v3.Readers))
+	for idx, r := range v3.Readers {
+		readers[idx] = otelconf.MetricReader{}
+		if r.Periodic != nil {
+			grpc, http := otlpMetricV03ToV1(r.Periodic.Exporter.OTLP)
+			var console *otelconf.ConsoleMetricExporter
+			if r.Periodic.Exporter.Console != nil {
+				console = &otelconf.ConsoleMetricExporter{}
+			}
+			readers[idx].Periodic = &otelconf.PeriodicMetricReader{
+				Interval: otelconf.PeriodicMetricReaderInterval(r.Periodic.Interval),
+				Timeout:  otelconf.PeriodicMetricReaderTimeout(r.Periodic.Timeout),
+				Exporter: otelconf.PushMetricExporter{
+					Console:  console,
+					OTLPGrpc: grpc,
+					OTLPHttp: http,
+				},
+			}
+		}
+		if r.Pull != nil {
+			readers[idx].Pull = &otelconf.PullMetricReader{
+				Exporter: otelconf.PullMetricExporter{
+					PrometheusDevelopment: prometheusV03ToV1(r.Pull.Exporter.Prometheus),
+				},
+			}
+		}
+	}
+	v1.Level = v3.Level
+	v1.Readers = readers
+	return nil
+}
+
+func logExporterV03ToV1(in config.LogRecordExporter) otelconf.LogRecordExporter {
+	grpc, http := otlpV03ToV1(in.OTLP)
+	return otelconf.LogRecordExporter{
+		Console:  otelconf.ConsoleExporter(in.Console),
+		OTLPGrpc: grpc,
+		OTLPHttp: http,
+	}
+}
+
+func logsConfigV03ToV1(v3 logsConfigV030, v1 *LogsConfigV1) error {
+	processors := make([]otelconf.LogRecordProcessor, len(v3.Processors))
+	for idx, p := range v3.Processors {
+		processors[idx] = otelconf.LogRecordProcessor{}
+		if p.Batch != nil {
+			processors[idx].Batch = &otelconf.BatchLogRecordProcessor{
+				ExportTimeout:      otelconf.BatchLogRecordProcessorExportTimeout(p.Batch.ExportTimeout),
+				MaxExportBatchSize: otelconf.BatchLogRecordProcessorMaxExportBatchSize(p.Batch.MaxExportBatchSize),
+				MaxQueueSize:       otelconf.BatchLogRecordProcessorMaxQueueSize(p.Batch.MaxQueueSize),
+				ScheduleDelay:      otelconf.BatchLogRecordProcessorScheduleDelay(p.Batch.ScheduleDelay),
+				Exporter:           logExporterV03ToV1(p.Batch.Exporter),
+			}
+		}
+		if p.Simple != nil {
+			processors[idx].Simple = &otelconf.SimpleLogRecordProcessor{
+				Exporter: logExporterV03ToV1(p.Simple.Exporter),
+			}
+		}
+		processors[idx].AdditionalProperties = p.AdditionalProperties
+	}
+	v1.Level = v3.Level
+	v1.Development = v3.Development
+	v1.Encoding = v3.Encoding
+	v1.DisableCaller = v3.DisableCaller
+	v1.DisableStacktrace = v3.DisableStacktrace
+	v1.Sampling = v3.Sampling
+	v1.OutputPaths = v3.OutputPaths
+	v1.ErrorOutputPaths = v3.ErrorOutputPaths
+	v1.InitialFields = v3.InitialFields
+	v1.Processors = processors
+	v1.DisableZapResource = v3.DisableZapResource
 	return nil
 }

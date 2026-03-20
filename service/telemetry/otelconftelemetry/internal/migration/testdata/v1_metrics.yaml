@@ -1,0 +1,13 @@
+readers:
+  - periodic:
+      exporter:
+        otlp_grpc:
+          endpoint: https://127.0.0.1:4317
+          headers:
+          - name: "key1"
+            value: "value1"
+  - pull:
+      exporter:
+        prometheus/development:
+          host: 127.0.0.1
+          port: 8902

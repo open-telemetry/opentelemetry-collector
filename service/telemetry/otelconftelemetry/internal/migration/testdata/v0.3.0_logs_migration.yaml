@@ -1,0 +1,6 @@
+level: "info"
+disable_zap_resource: true
+processors:
+  - simple:
+      exporter:
+        console: {}

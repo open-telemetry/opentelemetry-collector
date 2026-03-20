@@ -1,0 +1,19 @@
+level: "none"
+processors:
+  - batch:
+      exporter:
+        otlp_http:
+          endpoint: https://127.0.0.1:4317
+          headers:
+          - name: "key1"
+            value: "value1"
+  - simple:
+      exporter:
+        console: {}
+  - simple:
+      exporter:
+        otlp_http:
+          endpoint: http://127.0.0.1:4317
+          headers:
+          - name: "key1"
+            value: "value1"

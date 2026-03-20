@@ -6,7 +6,7 @@ package otelconftelemetry // import "go.opentelemetry.io/collector/service/telem
 import (
 	"time"
 
-	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.opentelemetry.io/contrib/otelconf"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
@@ -33,6 +33,7 @@ func createDefaultConfig() component.Config {
 		metricsHost = ""
 	}
 
+	translationStrategy := otelconf.ExperimentalPrometheusTranslationStrategyUnderscoreEscapingWithoutSuffixes
 	return &Config{
 		Logs: LogsConfig{
 			Level:       zapcore.InfoLevel,
@@ -53,16 +54,15 @@ func createDefaultConfig() component.Config {
 		},
 		Metrics: MetricsConfig{
 			Level: configtelemetry.LevelNormal,
-			MeterProvider: config.MeterProvider{
-				Readers: []config.MetricReader{
+			MeterProvider: otelconf.MeterProvider{
+				Readers: []otelconf.MetricReader{
 					{
-						Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
-							WithoutScopeInfo:  ptr(true),
-							WithoutUnits:      ptr(true),
-							WithoutTypeSuffix: ptr(true),
-							Host:              &metricsHost,
-							Port:              ptr(8888),
-							WithResourceConstantLabels: &config.IncludeExclude{
+						Pull: &otelconf.PullMetricReader{Exporter: otelconf.PullMetricExporter{PrometheusDevelopment: &otelconf.ExperimentalPrometheusMetricExporter{
+							WithoutScopeInfo:    otelconf.ExperimentalPrometheusMetricExporterWithoutScopeInfo(ptr(true)),
+							Host:                otelconf.ExperimentalPrometheusMetricExporterHost(&metricsHost),
+							Port:                otelconf.ExperimentalPrometheusMetricExporterPort(ptr(8888)),
+							TranslationStrategy: &translationStrategy,
+							WithResourceConstantLabels: &otelconf.IncludeExclude{
 								Included: []string{},
 							},
 						}}},

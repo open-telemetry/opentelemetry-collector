@@ -26,7 +26,7 @@ type Config struct {
 // LogsConfig defines the configurable settings for service telemetry logs.
 // This MUST be compatible with zap.Config. Cannot use directly zap.Config because
 // the collector uses mapstructure and not yaml tags.
-type LogsConfig = migration.LogsConfigV030
+type LogsConfig = migration.LogsConfigV1
 
 // LogsSamplingConfig sets a sampling strategy for the logger. Sampling caps the
 // global CPU and I/O load that logging puts on your process while attempting
@@ -34,12 +34,10 @@ type LogsConfig = migration.LogsConfigV030
 type LogsSamplingConfig = migration.LogsSamplingConfig
 
 // MetricsConfig exposes the common Telemetry configuration for one component.
-// Experimental: *NOTE* this structure is subject to change or removal in the future.
-type MetricsConfig = migration.MetricsConfigV030
+type MetricsConfig = migration.MetricsConfigV1
 
 // TracesConfig exposes the common Telemetry configuration for collector's internal spans.
-// Experimental: *NOTE* this structure is subject to change or removal in the future.
-type TracesConfig = migration.TracesConfigV030
+type TracesConfig = migration.TracesConfigV1
 
 // Validate checks whether the current configuration is valid
 func (c *Config) Validate() error {

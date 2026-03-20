@@ -93,6 +93,11 @@ require (
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.148.0 // indirect
 	go.opentelemetry.io/collector/service/hostcapabilities v0.148.0 // indirect
 	go.opentelemetry.io/contrib/otelconf v0.22.0 // indirect
+	go.opentelemetry.io/contrib/propagators/autoprop v0.67.0 // indirect
+	go.opentelemetry.io/contrib/propagators/aws v1.42.0 // indirect
+	go.opentelemetry.io/contrib/propagators/b3 v1.42.0 // indirect
+	go.opentelemetry.io/contrib/propagators/jaeger v1.42.0 // indirect
+	go.opentelemetry.io/contrib/propagators/ot v1.42.0 // indirect
 	go.opentelemetry.io/otel v1.42.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.18.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.18.0 // indirect
