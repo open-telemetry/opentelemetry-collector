@@ -273,6 +273,67 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 	}
 }
 
+func TestMergeSplitLogsBasedOnRequestSize(t *testing.T) {
+	tests := []struct {
+		name     string
+		szt      request.SizerType
+		maxSize  int
+		lr1      request.Request
+		lr2      request.Request
+		expected []request.Request
+	}{
+		{
+			name:     "first_request_only",
+			szt:      request.SizerTypeRequests,
+			maxSize:  1,
+			lr1:      newLogsRequest(testdata.GenerateLogs(5)),
+			lr2:      nil,
+			expected: []request.Request{newLogsRequest(testdata.GenerateLogs(5))},
+		},
+		{
+			name:    "cannot_merge_when_max_size_is_one",
+			szt:     request.SizerTypeRequests,
+			maxSize: 1,
+			lr1:     newLogsRequest(testdata.GenerateLogs(2)),
+			lr2:     newLogsRequest(testdata.GenerateLogs(3)),
+			expected: []request.Request{
+				newLogsRequest(testdata.GenerateLogs(2)),
+				newLogsRequest(testdata.GenerateLogs(3)),
+			},
+		},
+		{
+			name:    "merge_when_max_size_is_two",
+			szt:     request.SizerTypeRequests,
+			maxSize: 2,
+			lr1:     newLogsRequest(testdata.GenerateLogs(2)),
+			lr2:     newLogsRequest(testdata.GenerateLogs(3)),
+			expected: []request.Request{newLogsRequest(func() plog.Logs {
+				ld := testdata.GenerateLogs(2)
+				testdata.GenerateLogs(3).ResourceLogs().MoveAndAppendTo(ld.ResourceLogs())
+				return ld
+			}())},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res, err := tt.lr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.lr2)
+			require.NoError(t, err)
+			require.Len(t, res, len(tt.expected))
+			for i := range res {
+				assert.Equal(t, tt.expected[i].(*logsRequest).ld, res[i].(*logsRequest).ld)
+			}
+		})
+	}
+}
+
+func TestMergeSplitLogsRequestsInvalidInput(t *testing.T) {
+	r1 := newLogsRequest(testdata.GenerateLogs(2))
+	r2 := newTracesRequest(testdata.GenerateTraces(3))
+
+	_, err := r1.MergeSplit(context.Background(), 1, request.SizerTypeRequests, r2)
+	require.EqualError(t, err, "invalid input type")
+}
+
 func TestMergeSplitLogsInputNotModifiedIfErrorReturned(t *testing.T) {
 	r1 := newLogsRequest(testdata.GenerateLogs(18))
 	r2 := newTracesRequest(testdata.GenerateTraces(3))

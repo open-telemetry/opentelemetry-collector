@@ -16,6 +16,23 @@ import (
 // MergeSplit splits and/or merges the provided metrics request and the current request into one or more requests
 // conforming with the MaxSizeConfig.
 func (req *metricsRequest) MergeSplit(_ context.Context, maxSize int, szt request.SizerType, r2 request.Request) ([]request.Request, error) {
+	if szt == request.SizerTypeRequests {
+		if r2 == nil {
+			return []request.Request{req}, nil
+		}
+
+		req2, ok := r2.(*metricsRequest)
+		if !ok {
+			return nil, errors.New("invalid input type")
+		}
+
+		if maxSize == 1 {
+			return []request.Request{req, req2}, nil
+		}
+		req2.mergeTo(req, nil)
+		return []request.Request{req}, nil
+	}
+
 	var sz sizer.MetricsSizer
 	switch szt {
 	case request.SizerTypeItems:

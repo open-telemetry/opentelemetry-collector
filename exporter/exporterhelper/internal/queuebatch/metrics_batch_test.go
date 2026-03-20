@@ -476,6 +476,67 @@ func TestMergeSplitMetricsBasedOnByteSize(t *testing.T) {
 	}
 }
 
+func TestMergeSplitMetricsBasedOnRequestSize(t *testing.T) {
+	tests := []struct {
+		name     string
+		szt      request.SizerType
+		maxSize  int
+		mr1      request.Request
+		mr2      request.Request
+		expected []request.Request
+	}{
+		{
+			name:     "first_request_only",
+			szt:      request.SizerTypeRequests,
+			maxSize:  1,
+			mr1:      newMetricsRequest(testdata.GenerateMetrics(5)),
+			mr2:      nil,
+			expected: []request.Request{newMetricsRequest(testdata.GenerateMetrics(5))},
+		},
+		{
+			name:    "cannot_merge_when_max_size_is_one",
+			szt:     request.SizerTypeRequests,
+			maxSize: 1,
+			mr1:     newMetricsRequest(testdata.GenerateMetrics(2)),
+			mr2:     newMetricsRequest(testdata.GenerateMetrics(3)),
+			expected: []request.Request{
+				newMetricsRequest(testdata.GenerateMetrics(2)),
+				newMetricsRequest(testdata.GenerateMetrics(3)),
+			},
+		},
+		{
+			name:    "merge_when_max_size_is_two",
+			szt:     request.SizerTypeRequests,
+			maxSize: 2,
+			mr1:     newMetricsRequest(testdata.GenerateMetrics(2)),
+			mr2:     newMetricsRequest(testdata.GenerateMetrics(3)),
+			expected: []request.Request{newMetricsRequest(func() pmetric.Metrics {
+				md := testdata.GenerateMetrics(2)
+				testdata.GenerateMetrics(3).ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
+				return md
+			}())},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res, err := tt.mr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.mr2)
+			require.NoError(t, err)
+			require.Len(t, res, len(tt.expected))
+			for i := range res {
+				assert.Equal(t, tt.expected[i].(*metricsRequest).md, res[i].(*metricsRequest).md)
+			}
+		})
+	}
+}
+
+func TestMergeSplitMetricsRequestsInvalidInput(t *testing.T) {
+	r1 := newMetricsRequest(testdata.GenerateMetrics(2))
+	r2 := newLogsRequest(testdata.GenerateLogs(3))
+
+	_, err := r1.MergeSplit(context.Background(), 1, request.SizerTypeRequests, r2)
+	require.EqualError(t, err, "invalid input type")
+}
+
 func TestExtractGaugeDataPoints(t *testing.T) {
 	tests := []struct {
 		name           string

@@ -286,6 +286,80 @@ func TestMergeSplitTracesBasedOnByteSize(t *testing.T) {
 	}
 }
 
+func TestMergeSplitTracesBasedOnRequestSize(t *testing.T) {
+	tests := []struct {
+		name     string
+		szt      request.SizerType
+		maxSize  int
+		tr1      request.Request
+		tr2      request.Request
+		expected []request.Request
+	}{
+		{
+			name:     "first_request_only",
+			szt:      request.SizerTypeRequests,
+			maxSize:  1,
+			tr1:      newTracesRequest(testdata.GenerateTraces(5)),
+			tr2:      nil,
+			expected: []request.Request{newTracesRequest(testdata.GenerateTraces(5))},
+		},
+		{
+			name:    "cannot_merge_when_max_size_is_one",
+			szt:     request.SizerTypeRequests,
+			maxSize: 1,
+			tr1:     newTracesRequest(testdata.GenerateTraces(2)),
+			tr2:     newTracesRequest(testdata.GenerateTraces(3)),
+			expected: []request.Request{
+				newTracesRequest(testdata.GenerateTraces(2)),
+				newTracesRequest(testdata.GenerateTraces(3)),
+			},
+		},
+		{
+			name:    "merge_when_max_size_is_two",
+			szt:     request.SizerTypeRequests,
+			maxSize: 2,
+			tr1:     newTracesRequest(testdata.GenerateTraces(2)),
+			tr2:     newTracesRequest(testdata.GenerateTraces(3)),
+			expected: []request.Request{newTracesRequest(func() ptrace.Traces {
+				td := testdata.GenerateTraces(2)
+				testdata.GenerateTraces(3).ResourceSpans().MoveAndAppendTo(td.ResourceSpans())
+				return td
+			}())},
+		},
+		{
+			name:    "merge_when_max_size_is_zero",
+			szt:     request.SizerTypeRequests,
+			maxSize: 0,
+			tr1:     newTracesRequest(testdata.GenerateTraces(2)),
+			tr2:     newTracesRequest(testdata.GenerateTraces(3)),
+			expected: []request.Request{newTracesRequest(func() ptrace.Traces {
+				td := testdata.GenerateTraces(2)
+				testdata.GenerateTraces(3).ResourceSpans().MoveAndAppendTo(td.ResourceSpans())
+				return td
+			}())},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res, err := tt.tr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.tr2)
+			require.NoError(t, err)
+			assert.Len(t, res, len(tt.expected))
+			for i := range res {
+				assert.Equal(t, tt.expected[i].(*tracesRequest).td, res[i].(*tracesRequest).td)
+			}
+		})
+	}
+}
+
+func TestMergeSplitTracesRequestsInvalidInput(t *testing.T) {
+	r1 := newTracesRequest(testdata.GenerateTraces(2))
+	r2 := newLogsRequest(testdata.GenerateLogs(3))
+
+	_, err := r1.MergeSplit(context.Background(), 1, request.SizerTypeRequests, r2)
+	require.EqualError(t, err, "invalid input type")
+}
+
 func TestMergeSplitTracesInputNotModifiedIfErrorReturned(t *testing.T) {
 	r1 := newTracesRequest(testdata.GenerateTraces(18))
 	r2 := newLogsRequest(testdata.GenerateLogs(3))
