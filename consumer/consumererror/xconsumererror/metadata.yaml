@@ -5,4 +5,4 @@ status:
   disable_codecov_badge: true
   class: consumer
   stability:
-    development: [profiles]
+    alpha: [profiles]
