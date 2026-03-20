@@ -11,6 +11,8 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+
+	"golang.org/x/mod/module"
 )
 
 var namespaceToURL = map[string]string{
@@ -19,8 +21,6 @@ var namespaceToURL = map[string]string{
 }
 
 var supportedNamespaces = slices.Collect(maps.Keys(namespaceToURL))
-
-var pseudoVersionCommitPattern = regexp.MustCompile(`^[0-9a-f]{12,40}$`)
 
 type RefKind int
 
@@ -141,17 +141,10 @@ func (r *Ref) URL(version string) (string, error) {
 
 func rawRefVersion(version string) string {
 	trimmedVersion, _, _ := strings.Cut(version, "+")
-	parts := strings.Split(trimmedVersion, "-")
-	if len(parts) < 3 {
-		return version
+	if rev, err := module.PseudoVersionRev(trimmedVersion); err == nil {
+		return rev
 	}
-
-	commitHash := parts[len(parts)-1]
-	if pseudoVersionCommitPattern.MatchString(commitHash) {
-		return commitHash
-	}
-
-	return version
+	return trimmedVersion
 }
 
 func (r *Ref) isInternal() bool {

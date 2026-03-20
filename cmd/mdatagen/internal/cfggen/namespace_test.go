@@ -306,6 +306,30 @@ func TestRef_URL(t *testing.T) {
 			version:  "v0.95.1-0.20260317033252-665ab5d0143d+incompatible",
 			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/665ab5d0143d/receiver/mysqlreceiver/config.schema.yaml",
 		},
+		{
+			name:     "dirty version uses trimmed version string",
+			refPath:  "go.opentelemetry.io/collector/scraper/scraperhelper.controller_config",
+			version:  "v1.0.0+dirty",
+			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/v1.0.0/scraper/scraperhelper/config.schema.yaml",
+		},
+		{
+			name:     "unrecognized suffix uses raw version string",
+			refPath:  "go.opentelemetry.io/collector/scraper/scraperhelper.controller_config",
+			version:  "v1.0.0-xxx-yyy+dirty",
+			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/v1.0.0-xxx-yyy/scraper/scraperhelper/config.schema.yaml",
+		},
+		{
+			name:     "pre-release version passes through unchanged",
+			refPath:  "go.opentelemetry.io/collector/scraper/scraperhelper.controller_config",
+			version:  "v1.0.0-rc.1",
+			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/v1.0.0-rc.1/scraper/scraperhelper/config.schema.yaml",
+		},
+		{
+			name:     "pre-release tag that looks like a pseudo-version passes through unchanged",
+			refPath:  "go.opentelemetry.io/collector/scraper/scraperhelper.controller_config",
+			version:  "v1.0.0-beta-abc123abcdef",
+			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/v1.0.0-beta-abc123abcdef/scraper/scraperhelper/config.schema.yaml",
+		},
 	}
 
 	for _, tt := range tests {
