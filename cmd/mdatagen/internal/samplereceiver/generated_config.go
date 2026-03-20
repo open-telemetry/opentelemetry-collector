@@ -23,7 +23,7 @@ func (c *Config) Validate() error {
 	var err error
 
 	if c.Endpoint == "" {
-		err = errors.Join(err, errors.New("Endpoint is required"))
+		err = errors.Join(err, errors.New("endpoint is required"))
 	}
 
 	return err

@@ -70,24 +70,24 @@ type Config struct {
     {{- if .IsPointer }}
         {{- if or (eq .FieldType "array") (eq .FieldType "object") }}
         if c.{{ $name }} == nil || len(*c.{{ $name }}) == 0 {
-            err = errors.Join(err, errors.New("{{ $name }} is required"))
+            err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
         }
         {{- else }}
         if c.{{ $name }} == nil {
-            err = errors.Join(err, errors.New("{{ $name }} is required"))
+            err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
         }
         {{- end }}
     {{- else if eq .FieldType "string" }}
         if c.{{ $name }} == "" {
-            err = errors.Join(err, errors.New("{{ $name }} is required"))
+            err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
         }
     {{- else if eq .FieldType "array" }}
         if len(c.{{ $name }}) == 0 {
-            err = errors.Join(err, errors.New("{{ $name }} is required"))
+            err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
         }
     {{- else if eq .FieldType "object" }}
         if c.{{ $name }} == nil || len(c.{{ $name }}) == 0 {
-            err = errors.Join(err, errors.New("{{ $name }} is required"))
+            err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
         }
     {{- end -}}
 {{- end }}

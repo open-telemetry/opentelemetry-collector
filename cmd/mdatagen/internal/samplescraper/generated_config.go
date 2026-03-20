@@ -22,10 +22,10 @@ func (c *TargetsItem) Validate() error {
 	var err error
 
 	if c.Options == nil || len(c.Options) == 0 {
-		err = errors.Join(err, errors.New("Options is required"))
+		err = errors.Join(err, errors.New("options is required"))
 	}
 	if c.HTTPClient == nil {
-		err = errors.Join(err, errors.New("HTTPClient is required"))
+		err = errors.Join(err, errors.New("http_client is required"))
 	}
 
 	return err
@@ -43,7 +43,7 @@ func (c *Config) Validate() error {
 	var err error
 
 	if c.Targets == nil || len(*c.Targets) == 0 {
-		err = errors.Join(err, errors.New("Targets is required"))
+		err = errors.Join(err, errors.New("targets is required"))
 	}
 
 	return err
