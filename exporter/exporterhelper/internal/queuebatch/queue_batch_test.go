@@ -147,6 +147,38 @@ func TestQueueBatchDifferentSizers(t *testing.T) {
 	require.NoError(t, qb.Shutdown(context.Background()))
 }
 
+func TestQueueBatchInheritedBytesSizerSplitsBatches(t *testing.T) {
+	// Verify that when batch sizer is inherited from queue (bytes), it is
+	// actually used at runtime. If inheritance were broken and the batch
+	// silently defaulted to "items", the item count (2) would be under
+	// MaxSize (100) and no split would happen.
+	cfg := Config{
+		WaitForResult:   false,
+		Sizer:           request.SizerTypeBytes,
+		QueueSize:       10000,
+		BlockOnOverflow: false,
+		NumConsumers:    1,
+		Batch: configoptional.Some(BatchConfig{
+			FlushTimeout: 200 * time.Millisecond,
+			// Sizer intentionally inherited from queue (bytes) — NOT set here.
+			Sizer:   request.SizerTypeBytes,
+			MinSize: 0,
+			MaxSize: 100,
+		}),
+	}
+	sink := requesttest.NewSink()
+	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
+	require.NoError(t, err)
+	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
+	// 2 items but 250 bytes — bytes exceed MaxSize (100), items do not.
+	require.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 2, Bytes: 250}))
+	assert.Eventually(t, func() bool {
+		// With bytes sizer: 250 / 100 = 3 batches expected.
+		return sink.RequestsCount() == 3
+	}, 1*time.Second, 10*time.Millisecond)
+	require.NoError(t, qb.Shutdown(context.Background()))
+}
+
 func TestQueueBatchPersistenceEnabled(t *testing.T) {
 	cfg := newTestConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
