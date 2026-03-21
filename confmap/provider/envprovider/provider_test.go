@@ -105,10 +105,9 @@ func TestUnsetEnvWithLoggerWarn(t *testing.T) {
 	env := NewFactory().Create(confmap.ProviderSettings{Logger: logger})
 	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
 	require.NoError(t, err)
-	retMap, err := ret.AsConf()
+	raw, err := ret.AsRaw()
 	require.NoError(t, err)
-	expectedMap := confmap.NewFromStringMap(map[string]any{})
-	assert.Equal(t, expectedMap.ToStringMap(), retMap.ToStringMap())
+	assert.Equal(t, "", raw)
 
 	require.NoError(t, env.Shutdown(context.Background()))
 
@@ -140,10 +139,9 @@ func TestEmptyEnvWithLoggerWarn(t *testing.T) {
 	env := NewFactory().Create(confmap.ProviderSettings{Logger: logger})
 	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
 	require.NoError(t, err)
-	retMap, err := ret.AsConf()
+	raw, err := ret.AsRaw()
 	require.NoError(t, err)
-	expectedMap := confmap.NewFromStringMap(map[string]any{})
-	assert.Equal(t, expectedMap.ToStringMap(), retMap.ToStringMap())
+	assert.Equal(t, "", raw)
 
 	require.NoError(t, env.Shutdown(context.Background()))
 
@@ -185,6 +183,42 @@ func TestEnvWithDefaultValue(t *testing.T) {
 			str, err := ret.AsString()
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedVal, str)
+		})
+	}
+	assert.NoError(t, env.Shutdown(context.Background()))
+}
+
+// TestEmptyDefaultReturnsEmptyString verifies that ${env:VAR:-} with an unset VAR
+// resolves to an empty string ("") via AsRaw(), not nil.
+// This is the fix for https://github.com/open-telemetry/opentelemetry-collector/issues/14587.
+func TestEmptyDefaultReturnsEmptyString(t *testing.T) {
+	env := createProvider()
+
+	tests := []struct {
+		name  string
+		unset bool
+		value string
+		uri   string
+	}{
+		{name: "empty default with unset var", unset: true, uri: "env:MY_VAR:-"},
+		{name: "env var set to empty string", value: "", uri: "env:MY_VAR:-foo"},
+		{name: "unset var without default", unset: true, uri: "env:MY_VAR"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if !tt.unset {
+				t.Setenv("MY_VAR", tt.value)
+			}
+			ret, err := env.Retrieve(context.Background(), tt.uri, nil)
+			require.NoError(t, err)
+
+			raw, err := ret.AsRaw()
+			require.NoError(t, err)
+			// AsRaw() must return "" (empty string), not nil.
+			// Environment variables are inherently strings, so empty values
+			// should resolve to "" to preserve the distinction between
+			// "field not set" (nil) and "field set to empty" ("").
+			assert.Equal(t, "", raw)
 		})
 	}
 	assert.NoError(t, env.Shutdown(context.Background()))
