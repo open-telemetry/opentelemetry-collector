@@ -4,6 +4,8 @@
 package migration // import "go.opentelemetry.io/collector/service/telemetry/otelconftelemetry/internal/migration"
 
 import (
+	"errors"
+	"fmt"
 	"time"
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
@@ -180,6 +182,61 @@ type LogsSamplingConfig struct {
 	// Thereafter represents the sampling rate, every Nth message will be sampled after Initial messages are logged during each Tick.
 	// If Thereafter is zero, the logger will drop all the messages after the Initial each Tick.
 	Thereafter int `mapstructure:"thereafter"`
+}
+
+// ResourceConfigV030 represents the v0.3.0 resource configuration, with
+// backward-compatible support for the legacy map format.
+type ResourceConfigV030 struct {
+	config.Resource `mapstructure:",squash"`
+
+	LegacyAttributes map[string]any `mapstructure:",remain"`
+}
+
+// Unmarshal supports both the declarative config resource schema and the
+// legacy inline map format used by the collector.
+func (c *ResourceConfigV030) Unmarshal(conf *confmap.Conf) error {
+	if conf == nil {
+		return nil
+	}
+
+	raw := conf.ToStringMap()
+	if raw == nil {
+		return nil
+	}
+
+	type decodedResource struct {
+		config.Resource `mapstructure:",squash"`
+		LegacyAttrs     map[string]any `mapstructure:",remain"`
+	}
+
+	var decoded decodedResource
+	if err := conf.Unmarshal(&decoded); err != nil {
+		return err
+	}
+
+	if decoded.AttributesList != nil {
+		return errors.New("resource.attributes_list is not currently supported")
+	}
+
+	for key, val := range decoded.LegacyAttrs {
+		switch val.(type) {
+		case nil, string:
+		default:
+			return fmt.Errorf("legacy resource attribute %q must be string or null", key)
+		}
+	}
+
+	c.Resource = decoded.Resource
+	c.LegacyAttributes = decoded.LegacyAttrs
+	return nil
+}
+
+func (c ResourceConfigV030) IsRemoved(name string) bool {
+	if len(c.LegacyAttributes) == 0 {
+		return false
+	}
+	val, ok := c.LegacyAttributes[name]
+	return ok && val == nil
 }
 
 func (c *LogsConfigV030) Unmarshal(conf *confmap.Conf) error {
