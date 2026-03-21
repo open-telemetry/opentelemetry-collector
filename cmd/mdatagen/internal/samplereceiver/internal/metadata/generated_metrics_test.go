@@ -68,12 +68,12 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["DefaultMetric"] = mb.metricDefaultMetric.config.AggregationStrategy
-			aggMap["MetricInputType"] = mb.metricMetricInputType.config.AggregationStrategy
-			aggMap["OptionalMetric"] = mb.metricOptionalMetric.config.AggregationStrategy
-			aggMap["OptionalMetricEmptyUnit"] = mb.metricOptionalMetricEmptyUnit.config.AggregationStrategy
-			aggMap["ReaggregateMetric"] = mb.metricReaggregateMetric.config.AggregationStrategy
-			aggMap["ReaggregateMetricWithRequired"] = mb.metricReaggregateMetricWithRequired.config.AggregationStrategy
+			aggMap["default.metric"] = mb.metricDefaultMetric.config.AggregationStrategy
+			aggMap["metric.input_type"] = mb.metricMetricInputType.config.AggregationStrategy
+			aggMap["optional.metric"] = mb.metricOptionalMetric.config.AggregationStrategy
+			aggMap["optional.metric.empty_unit"] = mb.metricOptionalMetricEmptyUnit.config.AggregationStrategy
+			aggMap["reaggregate.metric"] = mb.metricReaggregateMetric.config.AggregationStrategy
+			aggMap["reaggregate.metric.with_required"] = mb.metricReaggregateMetricWithRequired.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet == testDataSetDefault {
