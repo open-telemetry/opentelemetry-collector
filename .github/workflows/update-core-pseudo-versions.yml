@@ -1,0 +1,279 @@
+name: "Update intra-core pseudo-versions"
+
+# This workflow updates all go.opentelemetry.io/collector dependencies across
+# the repository to use pseudo-versions derived from a specific commit on main.
+#
+# This is useful when collector-contrib's update workflow fails because some
+# indirect intra-core dependencies weren't updated. Rather than manually editing
+# each problematic go.mod, this workflow updates ALL intra-core references to a
+# consistent pseudo-version at once.
+#
+# See: https://github.com/open-telemetry/opentelemetry-collector/issues/XXXXX
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: >
+          The full commit SHA on main to derive pseudo-versions from.
+          Leave empty to use the current HEAD of main.
+        required: false
+        default: ""
+      target-repo:
+        description: >
+          The repository to update (in owner/repo format).
+          Leave empty to update this repository's own go.mod files.
+        required: false
+        default: ""
+      target-branch:
+        description: >
+          The branch name to create for the update PR.
+        required: false
+        default: "update-core-pseudo-versions"
+      dry-run:
+        description: >
+          If true, only print what would be updated without making changes.
+        type: boolean
+        required: false
+        default: false
+
+permissions: read-all
+
+jobs:
+  compute-pseudo-versions:
+    runs-on: ubuntu-latest
+    outputs:
+      stable-pseudo: ${{ steps.compute.outputs.stable-pseudo }}
+      beta-pseudo: ${{ steps.compute.outputs.beta-pseudo }}
+      commit: ${{ steps.compute.outputs.commit }}
+    steps:
+      - name: Checkout core repo
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Compute pseudo-versions
+        id: compute
+        shell: bash
+        run: |
+          COMMIT="${{ inputs.commit }}"
+          if [[ -z "${COMMIT}" ]]; then
+            COMMIT="$(git rev-parse HEAD)"
+          fi
+
+          SHORT_COMMIT="${COMMIT:0:12}"
+          COMMIT_TIMESTAMP="$(git log -1 --format='%cd' --date=format:'%Y%m%d%H%M%S' "${COMMIT}")"
+
+          # Extract versions from versions.yaml
+          STABLE_VERSION="$(awk '/^  stable:/{found=1} found && /version:/{print $2; exit}' versions.yaml)"
+          BETA_VERSION="$(awk '/^  beta:/{found=1} found && /version:/{print $2; exit}' versions.yaml)"
+
+          # Compute pseudo-versions (increment patch, add pre-release suffix)
+          compute_pseudo() {
+            local ver="${1#v}"
+            IFS='.' read -r major minor patch <<< "${ver}"
+            patch=$((patch + 1))
+            echo "v${major}.${minor}.${patch}-0.${COMMIT_TIMESTAMP}-${SHORT_COMMIT}"
+          }
+
+          STABLE_PSEUDO="$(compute_pseudo "${STABLE_VERSION}")"
+          BETA_PSEUDO="$(compute_pseudo "${BETA_VERSION}")"
+
+          echo "commit=${COMMIT}" >> "${GITHUB_OUTPUT}"
+          echo "stable-pseudo=${STABLE_PSEUDO}" >> "${GITHUB_OUTPUT}"
+          echo "beta-pseudo=${BETA_PSEUDO}" >> "${GITHUB_OUTPUT}"
+
+          echo "## Computed Pseudo-Versions" >> "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| Module Set | Current Version | Pseudo-Version |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "|------------|----------------|----------------|" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| Stable | ${STABLE_VERSION} | ${STABLE_PSEUDO} |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "| Beta | ${BETA_VERSION} | ${BETA_PSEUDO} |" >> "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "Based on commit: [\`${SHORT_COMMIT}\`](https://github.com/${{ github.repository }}/commit/${COMMIT})" >> "${GITHUB_STEP_SUMMARY}"
+
+  update-dependencies:
+    needs: compute-pseudo-versions
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout core repo
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          path: core
+
+      - name: Checkout target repo
+        if: ${{ inputs.target-repo != '' }}
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: ${{ inputs.target-repo }}
+          fetch-depth: 1
+          path: target
+
+      - name: Setup Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version: stable
+          cache: false
+
+      - name: Cache Go
+        id: go-cache
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ runner.arch }}-pseudo-versions
+
+      - name: Update dependencies
+        id: update
+        shell: bash
+        env:
+          STABLE_PSEUDO: ${{ needs.compute-pseudo-versions.outputs.stable-pseudo }}
+          BETA_PSEUDO: ${{ needs.compute-pseudo-versions.outputs.beta-pseudo }}
+          COMMIT: ${{ needs.compute-pseudo-versions.outputs.commit }}
+          DRY_RUN: ${{ inputs.dry-run }}
+        run: |
+          # Determine target directory
+          if [[ -n "${{ inputs.target-repo }}" ]]; then
+            TARGET_DIR="$(pwd)/target"
+          else
+            TARGET_DIR="$(pwd)/core"
+          fi
+
+          echo "Target directory: ${TARGET_DIR}"
+          echo "Stable pseudo-version: ${STABLE_PSEUDO}"
+          echo "Beta pseudo-version: ${BETA_PSEUDO}"
+          echo ""
+
+          CORE_DIR="$(pwd)/core"
+
+          # Build module-to-pseudo-version mapping from versions.yaml
+          VERSIONS_YAML="${CORE_DIR}/versions.yaml"
+
+          # Parse stable modules
+          declare -A MODULE_VERSIONS
+          current_set=""
+          while IFS= read -r line; do
+            if [[ "${line}" =~ ^[[:space:]]{2}([a-z]+): ]]; then
+              current_set="${BASH_REMATCH[1]}"
+            fi
+            if [[ "${current_set}" == "stable" && "${line}" =~ ^[[:space:]]*-[[:space:]](go\.opentelemetry\.io/collector.*) ]]; then
+              MODULE_VERSIONS["${BASH_REMATCH[1]}"]="${STABLE_PSEUDO}"
+            fi
+            if [[ "${current_set}" == "beta" && "${line}" =~ ^[[:space:]]*-[[:space:]](go\.opentelemetry\.io/collector.*) ]]; then
+              MODULE_VERSIONS["${BASH_REMATCH[1]}"]="${BETA_PSEUDO}"
+            fi
+          done < "${VERSIONS_YAML}"
+
+          echo "Found ${#MODULE_VERSIONS[@]} core modules"
+
+          # Find all go.mod files in target
+          GO_MOD_FILES="$(find "${TARGET_DIR}" -name "go.mod" -not -path "*/vendor/*" | sort)"
+
+          UPDATED_COUNT=0
+          UPDATED_LIST=""
+
+          for go_mod in ${GO_MOD_FILES}; do
+            MOD_NAME="$(head -1 "${go_mod}" | awk '{print $2}')"
+            EDITS=""
+
+            for module in "${!MODULE_VERSIONS[@]}"; do
+              pseudo="${MODULE_VERSIONS[${module}]}"
+
+              # Skip self-references
+              if [[ "${MOD_NAME}" == "${module}" ]]; then
+                continue
+              fi
+
+              # Skip if there's a local replace directive
+              if grep -qP "^replace\s+\Q${module}\E\s+=>\s+\.\./" "${go_mod}" 2>/dev/null; then
+                continue
+              fi
+
+              # Check if this module is referenced in go.mod
+              if grep -qP "^\s+\Q${module}\E\s+v" "${go_mod}" 2>/dev/null; then
+                EDITS+=" -require=${module}@${pseudo}"
+              fi
+            done
+
+            if [[ -n "${EDITS}" ]]; then
+              REL_PATH="${go_mod#"${TARGET_DIR}/"}"
+              if [[ "${DRY_RUN}" == "true" ]]; then
+                echo "[DRY RUN] Would update: ${REL_PATH}"
+                echo "  Edits: ${EDITS}"
+              else
+                echo "Updating: ${REL_PATH}"
+                # shellcheck disable=SC2086
+                go mod edit ${EDITS} "${go_mod}"
+              fi
+              UPDATED_COUNT=$((UPDATED_COUNT + 1))
+              UPDATED_LIST+="- \`${REL_PATH}\`\n"
+            fi
+          done
+
+          echo ""
+          echo "Updated ${UPDATED_COUNT} go.mod files"
+
+          # Run go mod tidy if not dry run
+          if [[ "${DRY_RUN}" != "true" && "${UPDATED_COUNT}" -gt 0 ]]; then
+            echo ""
+            echo "Running 'go mod tidy' across updated modules..."
+            for go_mod in ${GO_MOD_FILES}; do
+              mod_dir="$(dirname "${go_mod}")"
+              echo "  Tidying ${mod_dir#"${TARGET_DIR}/"}"
+              (cd "${mod_dir}" && go mod tidy -compat=1.25.0 2>&1) || true
+            done
+          fi
+
+          echo "updated-count=${UPDATED_COUNT}" >> "${GITHUB_OUTPUT}"
+
+          # Write summary
+          echo "## Update Results" >> "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "Updated **${UPDATED_COUNT}** go.mod files." >> "${GITHUB_STEP_SUMMARY}"
+          if [[ -n "${UPDATED_LIST}" ]]; then
+            echo "" >> "${GITHUB_STEP_SUMMARY}"
+            echo "### Updated files:" >> "${GITHUB_STEP_SUMMARY}"
+            echo -e "${UPDATED_LIST}" >> "${GITHUB_STEP_SUMMARY}"
+          fi
+
+      - name: Create Pull Request
+        if: ${{ inputs.dry-run != true && steps.update.outputs.updated-count != '0' }}
+        working-directory: ${{ inputs.target-repo != '' && 'target' || 'core' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          STABLE_PSEUDO: ${{ needs.compute-pseudo-versions.outputs.stable-pseudo }}
+          BETA_PSEUDO: ${{ needs.compute-pseudo-versions.outputs.beta-pseudo }}
+          COMMIT: ${{ needs.compute-pseudo-versions.outputs.commit }}
+          BRANCH: ${{ inputs.target-branch }}
+        run: |
+          git config user.name otelbot
+          git config user.email 197425009+otelbot@users.noreply.github.com
+          git checkout -b "${BRANCH}"
+          git add --all
+          git diff --cached --exit-code && { echo "No changes to commit"; exit 0; }
+          git commit -m "Update intra-core dependencies to pseudo-versions
+
+          Stable modules: ${STABLE_PSEUDO}
+          Beta modules: ${BETA_PSEUDO}
+          Based on commit: ${COMMIT}"
+
+          git push --set-upstream origin "${BRANCH}" --force
+
+          gh pr create \
+            --head "${BRANCH}" \
+            --title "[chore] Update intra-core dependencies to pseudo-versions" \
+            --body "This PR updates all \`go.opentelemetry.io/collector\` dependencies to consistent pseudo-versions based on commit [\`${COMMIT:0:12}\`](https://github.com/${{ github.repository }}/commit/${COMMIT}).
+
+          **Pseudo-versions:**
+          - Stable modules: \`${STABLE_PSEUDO}\`
+          - Beta modules: \`${BETA_PSEUDO}\`
+
+          This ensures all intra-core dependencies use the same version, preventing issues where missing indirect dependencies cause compilation failures.
+
+          ---
+          *Generated by the [update-core-pseudo-versions](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) workflow.*"
