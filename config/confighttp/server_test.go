@@ -307,6 +307,8 @@ func TestHTTPServerTransport(t *testing.T) {
 			assert.Equal(t, http.StatusOK, resp.StatusCode)
 		})
 	}
+
+	testHttpServerNpipeTransport(t)
 }
 
 func TestHTTPCors(t *testing.T) {
