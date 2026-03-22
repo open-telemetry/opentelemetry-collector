@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver/internal/metadata"
+	"go.opentelemetry.io/collector/component"
 )
 
 // Config defines the configuration for Sample Receiver component.
@@ -15,4 +16,11 @@ type Config struct {
 	Endpoint string `mapstructure:"endpoint"`
 	// Timeout for scraping metrics.
 	Timeout time.Duration `mapstructure:"timeout"`
+}
+
+func createDefaultConfig() component.Config {
+	return &Config{
+		Endpoint: "localhost:12345",
+		Timeout:  time.Duration(10000000000), /* 10s */
+	}
 }
