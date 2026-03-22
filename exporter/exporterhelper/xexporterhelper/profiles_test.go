@@ -49,13 +49,16 @@ var fakeProfilesExporterConfig = struct{}{}
 
 func TestProfilesRequest(t *testing.T) {
 	lr := newProfilesRequest(testdata.GenerateProfiles(1))
+	req := lr.(*profilesRequest)
+	req.cachedSize = 123
 
-	profileErr := xconsumererror.NewProfiles(errors.New("some error"), pprofile.NewProfiles())
-	assert.Equal(
-		t,
-		newProfilesRequest(pprofile.NewProfiles()),
-		lr.(RequestErrorHandler).OnError(profileErr),
-	)
+	remaining := pprofile.NewProfiles()
+	profileErr := xconsumererror.NewProfiles(errors.New("some error"), remaining)
+	handled := lr.(RequestErrorHandler).OnError(profileErr)
+
+	assert.Same(t, req, handled)
+	assert.Equal(t, remaining, req.pd)
+	assert.Equal(t, -1, req.cachedSize)
 }
 
 func TestProfilesExporter_InvalidName(t *testing.T) {
