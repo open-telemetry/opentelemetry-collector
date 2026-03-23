@@ -576,9 +576,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("cpu")
+						cpuAttrVal, ok := dp.Attributes().Get("cpu")
 						assert.True(t, ok)
-						assert.Equal(t, "cpu-val", attrVal.Str())
+						assert.Equal(t, "cpu-val", cpuAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.cpu.time"], "Found a duplicate in the metrics slice: system.cpu.time")
 						validatedMetrics["system.cpu.time"] = true
@@ -620,9 +620,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("state")
+						stateAttrVal, ok := dp.Attributes().Get("state")
 						assert.True(t, ok)
-						assert.Equal(t, "buffered", attrVal.Str())
+						assert.Equal(t, "buffered", stateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.memory.usage"], "Found a duplicate in the metrics slice: system.memory.usage")
 						validatedMetrics["system.memory.usage"] = true
