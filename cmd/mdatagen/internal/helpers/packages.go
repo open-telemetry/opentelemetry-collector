@@ -4,7 +4,6 @@
 package helpers // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -12,34 +11,45 @@ import (
 	"strings"
 )
 
-// RootPackage determines the root Go module path by reading the module directive
-// from the go.mod at the repository root. This is used to resolve local absolute
-// references (e.g., "/config/confighttp.client_config") into full Go import paths.
+// RootPackage determines the root Go module path by finding the highest go.mod above componentDir
+// and running "go list -m" in that directory. This is used to resolve local absolute references
+// (e.g., "/config/confighttp.client_config") into full Go import paths.
 func RootPackage(componentDir string) (string, error) {
-	repoRoot, err := repoRoot(componentDir)
+	rootModDir, err := rootModuleDir(componentDir)
 	if err != nil {
 		return "", err
 	}
 
-	goModData, err := os.ReadFile(filepath.Clean(filepath.Join(repoRoot, "go.mod")))
-	if err != nil {
-		return "", fmt.Errorf("failed to read root go.mod: %w", err)
-	}
-
-	for line := range strings.SplitSeq(string(goModData), "\n") {
-		if after, ok := strings.CutPrefix(strings.TrimSpace(line), "module "); ok {
-			return strings.TrimSpace(after), nil
-		}
-	}
-	return "", errors.New("module directive not found in root go.mod")
-}
-
-func repoRoot(dir string) (string, error) {
-	cmd := exec.Command("git", "rev-parse", "--show-toplevel")
-	cmd.Dir = dir
+	cmd := exec.Command("go", "list", "-m")
+	cmd.Dir = rootModDir
 	output, err := cmd.Output()
 	if err != nil {
-		return "", fmt.Errorf("failed to find repo root: %w", err)
+		return "", fmt.Errorf("failed to resolve root module path: %w", err)
 	}
 	return strings.TrimSpace(string(output)), nil
+}
+
+func rootModuleDir(componentDir string) (string, error) {
+	absDir, err := filepath.Abs(componentDir)
+	if err != nil {
+		return "", fmt.Errorf("failed to get absolute path: %w", err)
+	}
+
+	var found string
+	dir := absDir
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			found = dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+
+	if found == "" {
+		return "", fmt.Errorf("no go.mod found in any parent of %s", componentDir)
+	}
+	return found, nil
 }
