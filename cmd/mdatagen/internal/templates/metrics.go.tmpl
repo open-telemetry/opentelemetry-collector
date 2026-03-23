@@ -91,19 +91,37 @@ type metricInfo struct {
 
 {{ if getMetricConditionalAttributes .Attributes }}
 type MetricAttributeOption interface {
-	apply(pmetric.NumberDataPoint)
+	apply(pcommon.Map)
 }
 
-type metricAttributeOptionFunc func(pmetric.NumberDataPoint)
+type metricAttributeOptionFunc func(pcommon.Map)
 
-func (maof metricAttributeOptionFunc) apply(dp pmetric.NumberDataPoint) {
-	maof(dp)
+func (maof metricAttributeOptionFunc) apply(attrs pcommon.Map) {
+	maof(attrs)
 }
 
 {{ range getMetricConditionalAttributes .Attributes }}
-func With{{ .Render }}MetricAttribute({{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}) MetricAttributeOption {
+func With{{ .Render }}MetricAttribute({{ .RenderUnexported }}AttributeValue {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ else }}{{ (attributeInfo .).Type.Primitive }}{{ end }}) MetricAttributeOption {
 	return metricAttributeOptionFunc(func(attrs pcommon.Map) {
-		{{- template "putAttributeMap" . }}
+		{{- if (attributeInfo .).Enum }}
+		attrs.PutStr("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue.String())
+		{{- else if eq (attributeInfo .).Type.String "String" }}
+		attrs.PutStr("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue)
+		{{- else if eq (attributeInfo .).Type.String "Str" }}
+		attrs.PutStr("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue)
+		{{- else if eq (attributeInfo .).Type.String "Int" }}
+		attrs.PutInt("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue)
+		{{- else if eq (attributeInfo .).Type.String "Double" }}
+		attrs.PutDouble("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue)
+		{{- else if eq (attributeInfo .).Type.String "Bool" }}
+		attrs.PutBool("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue)
+		{{- else if eq (attributeInfo .).Type.String "Map" }}
+		{{ .RenderUnexported }}AttributeValue.CopyTo(attrs.PutEmptyMap("{{ (attributeInfo .).Name }}"))
+		{{- else if eq (attributeInfo .).Type.String "Slice" }}
+		{{ .RenderUnexported }}AttributeValue.CopyTo(attrs.PutEmptySlice("{{ (attributeInfo .).Name }}"))
+		{{- else }}
+		attrs.PutStr("{{ (attributeInfo .).Name }}", string({{ .RenderUnexported }}AttributeValue))
+		{{- end }}
 	})
 }
 {{ end }}
