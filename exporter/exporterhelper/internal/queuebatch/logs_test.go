@@ -19,7 +19,7 @@ func TestLogsRequest(t *testing.T) {
 	lr := newLogsRequest(testdata.GenerateLogs(1))
 	req := lr.(*logsRequest)
 	req.cachedSize = 123
-	
+
 	remaining := plog.NewLogs()
 	logErr := consumererror.NewLogs(errors.New("some error"), remaining)
 	handled := lr.(request.ErrorHandler).OnError(logErr)

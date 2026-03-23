@@ -19,7 +19,7 @@ func TestMetricsRequest(t *testing.T) {
 	mr := newMetricsRequest(testdata.GenerateMetrics(1))
 	req := mr.(*metricsRequest)
 	req.cachedSize = 123
-	
+
 	remaining := pmetric.NewMetrics()
 	metricsErr := consumererror.NewMetrics(errors.New("some error"), remaining)
 	handled := mr.(request.ErrorHandler).OnError(metricsErr)

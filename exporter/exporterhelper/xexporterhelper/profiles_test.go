@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/oteltest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sendertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/storagetest"
@@ -48,14 +49,14 @@ const (
 var fakeProfilesExporterConfig = struct{}{}
 
 func TestProfilesRequest(t *testing.T) {
-	lr := newProfilesRequest(testdata.GenerateProfiles(1))
-	req := lr.(*profilesRequest)
+	pr := newProfilesRequest(testdata.GenerateProfiles(1))
+	req := pr.(*profilesRequest)
 	req.cachedSize = 123
 
 	remaining := pprofile.NewProfiles()
 	profileErr := xconsumererror.NewProfiles(errors.New("some error"), remaining)
-	handled := lr.(RequestErrorHandler).OnError(profileErr)
-
+	// handled := pr.(RequestErrorHandler).OnError(profileErr)
+	handled := pr.(request.ErrorHandler).OnError(profileErr)
 	assert.Same(t, req, handled)
 	assert.Equal(t, remaining, req.pd)
 	assert.Equal(t, -1, req.cachedSize)
