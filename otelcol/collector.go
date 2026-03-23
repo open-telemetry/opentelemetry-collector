@@ -111,6 +111,12 @@ type Collector struct {
 	shutdownChan chan struct{}
 	shutdownOnce sync.Once
 
+	// done is closed when Run returns, signaling that the collector has
+	// completed all cleanup. Used by Shutdown to block until Run finishes.
+	done chan struct{}
+	// runStarted is set to true when Run is called.
+	runStarted atomic.Bool
+
 	// signalsChannel is used to receive termination signals from the OS.
 	signalsChannel chan os.Signal
 	// asyncErrorChannel is used to signal a fatal error from any component.
@@ -140,6 +146,7 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 		buildZapLogger: zap.Config.Build,
 		state:          state,
 		shutdownChan:   make(chan struct{}),
+		done:           make(chan struct{}),
 		// Per signal.Notify documentation, a size of the channel equaled with
 		// the number of signals getting notified on is recommended.
 		signalsChannel:             make(chan os.Signal, 3),
@@ -156,10 +163,15 @@ func (col *Collector) GetState() State {
 }
 
 // Shutdown shuts down the collector server.
+// If Run has been called, Shutdown blocks until Run completes all cleanup.
 func (col *Collector) Shutdown() {
 	col.shutdownOnce.Do(func() {
 		close(col.shutdownChan)
 	})
+	// If Run was called, wait for it to complete all cleanup.
+	if col.runStarted.Load() {
+		<-col.done
+	}
 }
 
 func buildModuleInfo(m map[component.Type]string) map[component.Type]service.ModuleInfo {
@@ -324,7 +336,24 @@ func newFallbackLogger(options []zap.Option) (*zap.Logger, error) {
 // Run starts the collector according to the given configuration, and waits for it to complete.
 // Consecutive calls to Run are not allowed, Run shouldn't be called once a collector is shut down.
 // Sets up the control logic for config reloading and shutdown.
+// If Shutdown was called before Run, Run returns nil after cleaning up resources.
 func (col *Collector) Run(ctx context.Context) error {
+	if !col.runStarted.CompareAndSwap(false, true) {
+		return errors.New("collector server Run was already called")
+	}
+	defer close(col.done)
+
+	// If Shutdown was already called, return immediately without starting the service.
+	select {
+	case <-col.shutdownChan:
+		col.setCollectorState(StateClosed)
+		if err := col.configProvider.Shutdown(ctx); err != nil {
+			return fmt.Errorf("failed to shutdown config provider: %w", err)
+		}
+		return nil
+	default:
+	}
+
 	// setupConfigurationComponents is the "main" function responsible for startup
 	if err := col.setupConfigurationComponents(ctx); err != nil {
 		col.setCollectorState(StateClosed)
