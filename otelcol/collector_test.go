@@ -145,7 +145,7 @@ func TestCollectorStateAfterConfigChange(t *testing.T) {
 	watcher(&confmap.ChangeEvent{})
 	unblock = <-shutdownRequests
 	assert.Equal(t, StateClosing, col.GetState())
-	col.Shutdown()
+	go col.Shutdown() // Shutdown now blocks until Run completes, so signal asynchronously.
 	close(unblock)
 
 	// After the config reload, the final shutdown should occur.
@@ -410,6 +410,10 @@ func TestCollectorRun(t *testing.T) {
 
 			wg := startCollector(context.Background(), t, col)
 
+			assert.Eventually(t, func() bool {
+				return StateRunning == col.GetState()
+			}, 2*time.Second, 200*time.Millisecond)
+
 			col.Shutdown()
 			wg.Wait()
 			assert.Equal(t, StateClosed, col.GetState())
@@ -429,11 +433,70 @@ func TestCollectorRun_AfterShutdown(t *testing.T) {
 	// Calling shutdown before collector is running should cause it to return quickly
 	require.NotPanics(t, func() { col.Shutdown() })
 
+	// Run after Shutdown should return nil without starting the service.
+	err = col.Run(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, StateClosed, col.GetState())
+}
+
+func TestShutdownBlocksUntilRunCompletes(t *testing.T) {
+	set := CollectorSettings{
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              nopFactories,
+		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
+	}
+	col, err := NewCollector(set)
+	require.NoError(t, err)
+
+	// Start the collector in a goroutine.
 	wg := startCollector(context.Background(), t, col)
+
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	// Record whether Run has finished by the time Shutdown returns.
+	runFinished := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(runFinished)
+	}()
+
+	// Shutdown should block until Run completes.
+	col.Shutdown()
+
+	// After Shutdown returns, Run must have finished.
+	select {
+	case <-runFinished:
+		// expected: Run completed before or at the same time Shutdown returned.
+	case <-time.After(5 * time.Second):
+		t.Fatal("Run did not complete after Shutdown returned")
+	}
+
+	assert.Equal(t, StateClosed, col.GetState())
+}
+
+func TestCollectorRun_DoubleRunReturnsError(t *testing.T) {
+	set := CollectorSettings{
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              nopFactories,
+		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
+	}
+	col, err := NewCollector(set)
+	require.NoError(t, err)
+
+	wg := startCollector(context.Background(), t, col)
+
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	// Second call to Run should return an error, not panic.
+	err = col.Run(context.Background())
+	require.EqualError(t, err, "collector server Run was already called")
 
 	col.Shutdown()
 	wg.Wait()
-	assert.Equal(t, StateClosed, col.GetState())
 }
 
 func TestCollectorRun_Errors(t *testing.T) {
@@ -708,6 +771,11 @@ func TestProviderAndConverterModules(t *testing.T) {
 	require.NoError(t, err)
 	wg := startCollector(context.Background(), t, col)
 	require.NoError(t, err)
+
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
 	providerModules := map[string]string{
 		"nop": "go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3",
 	}
