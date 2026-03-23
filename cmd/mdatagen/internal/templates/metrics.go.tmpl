@@ -179,7 +179,7 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 
 	{{- if $metric.HasConditionalAttributes $.Attributes }}
 	for _, op := range options {
-		op.apply(dp)
+		op.apply(dp.Attributes())
 	}
 	{{- end }}
 

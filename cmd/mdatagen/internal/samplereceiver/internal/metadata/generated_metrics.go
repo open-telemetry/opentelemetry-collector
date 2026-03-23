@@ -163,7 +163,7 @@ func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommo
 		dp.Attributes().PutBool("opt_in_bool_attr", optInBoolAttrAttributeValue)
 	}
 	for _, op := range options {
-		op.apply(dp)
+		op.apply(dp.Attributes())
 	}
 
 	var s string
@@ -416,7 +416,7 @@ func (m *metricOptionalMetric) recordDataPoint(start pcommon.Timestamp, ts pcomm
 		dp.Attributes().PutBool("boolean_attr2", booleanAttr2AttributeValue)
 	}
 	for _, op := range options {
-		op.apply(dp)
+		op.apply(dp.Attributes())
 	}
 
 	var s string
