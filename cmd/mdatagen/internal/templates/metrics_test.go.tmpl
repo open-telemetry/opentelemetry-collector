@@ -79,10 +79,12 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
-      {{- if $reag }}
+{{- if $reag }}
       aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-      {{- range $name, $_ := .Metrics }}
+      {{- range $name, $metric := .Metrics }}
+      {{- if ne $metric.Data.Type "Histogram" }}
       aggMap["{{ $name.Render }}"] = mb.metric{{ $name.Render }}.config.AggregationStrategy 
+      {{- end }}
       {{- end }}
       {{- end }}
 
@@ -140,9 +142,13 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 			{{- range $name, $metric := .Metrics }}
 
-				{{ if $metric.Enabled }}defaultMetricsCount++{{ end }}
+{{ if $metric.Enabled }}defaultMetricsCount++{{ end }}
 				allMetricsCount++
-				mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
+				mb.Record{{ $name.Render }}DataPoint(ts, 
+                {{- if eq $metric.Data.Type "Histogram" }} 1, 1, 1, 1, []uint64{1, 2, 3}
+                {{- else if $metric.Data.HasMetricInputType }} "1"
+                {{- else }} 1
+                {{- end }}
 				{{- range $metric.Attributes -}}
 				{{- if not (attributeInfo .).IsConditional -}}
 					, {{- template "getAttributeValue" . -}}
@@ -154,7 +160,7 @@ func TestMetricsBuilder(t *testing.T) {
                 {{- end -}}
                 {{- end -}}
                 )
-        {{- if $reag }}
+        {{- if and $reag (ne $metric.Data.Type "Histogram") }}
         if tt.name == "reaggregate_set" {
           mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"3"{{ else }}3{{ end }}
           {{- range $metric.Attributes -}}
@@ -212,7 +218,7 @@ func TestMetricsBuilder(t *testing.T) {
 				switch ms.At(i).Name() {
 				{{- range $name, $metric := .Metrics }}
 				case "{{ $name }}":
-          {{- if $reag }}
+{{- if and $reag (ne $metric.Data.Type "Histogram") }}
           if tt.name != "reaggregate_set" {
             assert.False(t, validatedMetrics["{{ $name }}"], "Found a duplicate in the metrics slice: {{ $name }}")
             validatedMetrics["{{ $name }}"] = true
@@ -313,6 +319,51 @@ func TestMetricsBuilder(t *testing.T) {
           }
           {{- else }}
           assert.False(t, validatedMetrics["{{ $name }}"], "Found a duplicate in the metrics slice: {{ $name }}")
+          validatedMetrics["{{ $name }}"] = true
+          assert.Equal(t, pmetric.MetricType{{ $metric.Data.Type }}, ms.At(i).Type())
+          assert.Equal(t, 1, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
+          assert.Equal(t, "{{ $metric.Description }}", ms.At(i).Description())
+          {{- if len $metric.Unit}}
+          assert.Equal(t, "{{ $metric.Unit }}", ms.At(i).Unit())
+          {{- else }}
+          assert.Empty(t, ms.At(i).Unit())
+          {{- end }}
+          {{- if $metric.Data.HasMonotonic }}
+          assert.{{- if $metric.Data.Monotonic }}True{{ else }}False{{ end }}(t, ms.At(i).{{ $metric.Data.Type }}().IsMonotonic())
+          {{- end }}
+          {{- if $metric.Data.HasAggregated }}
+          assert.Equal(t, pmetric.AggregationTemporality{{ $metric.Data.AggregationTemporality }}, ms.At(i).{{ $metric.Data.Type }}().AggregationTemporality())
+          {{- end }}
+          dp := ms.At(i).{{ $metric.Data.Type }}().DataPoints().At(0)
+          assert.Equal(t, start, dp.StartTimestamp())
+          assert.Equal(t, ts, dp.Timestamp())
+          {{- if eq $metric.Data.Type "Histogram" }}
+          assert.Equal(t, uint64(1), dp.Count())
+          assert.Equal(t, float64(1), dp.Sum())
+          assert.Equal(t, float64(1), dp.Min())
+          assert.Equal(t, float64(1), dp.Max())
+          {{- else }}
+          assert.Equal(t, pmetric.NumberDataPointValueType{{ $metric.Data.MetricValueType }}, dp.ValueType())
+          {{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
+          assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
+          {{- else }}
+          assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
+          {{- end }}
+          {{- end }}
+
+          {{- range $i, $attr := $metric.Attributes }}
+          attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
+          assert.True(t, ok)
+          {{- if eq (attributeInfo $attr).Type.String "Bool"}}
+          assert.{{- if eq (attributeInfo $attr).TestValue "true" }}True{{ else }}False{{- end }}(t, attrVal.{{ (attributeInfo $attr).Type }}()
+          {{- else if eq (attributeInfo $attr).Type.String "Int"}}
+          assert.EqualValues(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
+          {{- else }}
+          assert.Equal(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
+          {{- end }}
+          {{- if or (eq (attributeInfo $attr).Type.String "Slice") (eq (attributeInfo $attr).Type.String "Map")}}.AsRaw(){{ end }})
+          {{- end }}
+          {{- end }}
 					validatedMetrics["{{ $name }}"] = true
 					assert.Equal(t, pmetric.MetricType{{ $metric.Data.Type }}, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
