@@ -84,7 +84,7 @@ func TestMetricsBuilder(t *testing.T) {
 			{{- if $hasReagMetrics }}
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
 			{{- range $name, $metric := .Metrics }}
-			{{- if and (hasAggregatableAttributes $metric.Attributes) (ne $metric.Data.Type "Histogram") }}
+			{{- if and (hasAggregatableAttributes $metric.Attributes) (ne $metric.Data.Type "histogram") }}
 			aggMap["{{ $name.Render }}"] = mb.metric{{ $name.Render }}.config.AggregationStrategy
 			{{- end }}
 			{{- end }}
@@ -214,7 +214,7 @@ func TestMetricsBuilder(t *testing.T) {
 			{{- if $reag }}
 			if tt.name == "reaggregate_set" {
 				{{- range $name, $metric := .Metrics }}
-				{{- if hasAggregatableAttributes $metric.Attributes }}
+				{{- if and (hasAggregatableAttributes $metric.Attributes) (ne $metric.Data.Type "Histogram") }}
 				assert.Empty(t, mb.metric{{ $name.Render }}.aggDataPoints)
 				{{- end }}
 				{{- end }}

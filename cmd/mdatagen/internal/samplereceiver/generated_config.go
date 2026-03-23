@@ -3,8 +3,9 @@
 package samplereceiver
 
 import (
-	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver/internal/metadata"
 	"time"
+
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver/internal/metadata"
 )
 
 // Config defines the configuration for Sample Receiver component.
