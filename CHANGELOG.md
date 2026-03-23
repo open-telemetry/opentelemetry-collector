@@ -9,6 +9,26 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 ## v1.54.0/v0.148.0
 
+### ❗ Known Issues ❗
+
+- `service`: The collector's internal Prometheus metrics endpoint (`:8888`) now emits OTel service labels with underscore
+  names (`service_name`, `service_instance_id`, `service_version`) instead of dot-notation names (`service.name`,
+  `service.instance.id`, `service.version`). Users scraping this endpoint with the Prometheus receiver will see these renamed
+  labels in resource and datapoint attributes. As a workaround, add the following `metric_relabel_configs` to your scrape
+  config in prometheus receiver:
+  ```yaml
+  metric_relabel_configs:
+    - source_labels: [service_name]
+      target_label: service.name
+    - source_labels: [service_instance_id]
+      target_label: service.instance.id
+    - source_labels: [service_version]
+      target_label: service.version
+    - regex: service_name|service_instance_id|service_version
+      action: labeldrop
+  ```
+  See https://github.com/open-telemetry/opentelemetry-collector/issues/14814 for details and updates.
+
 ### 🛑 Breaking changes 🛑
 
 - `all`: Change metric units to be singular to match OTel specification, e.g. `{requests}` -> `{request}` (#14753)

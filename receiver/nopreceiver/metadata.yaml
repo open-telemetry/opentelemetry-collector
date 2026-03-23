@@ -10,5 +10,5 @@ status:
   class: receiver
   stability:
     beta: [traces, metrics, logs]
-    development: [profiles]
+    alpha: [profiles]
   distributions: [core, contrib]
