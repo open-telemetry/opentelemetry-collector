@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -179,7 +181,7 @@ func TestLogsScrapeController(t *testing.T) {
 				}
 
 				spans := tel.SpanRecorder.Ended()
-				assertReceiverSpan(t, spans)
+				assertLogsReceiverSpan(t, spans)
 				testhelper.AssertScraperSpan(t, test.scrapeErr, spans, "scraper/scraper/ScrapeLogs")
 				assertLogsScraperObsMetrics(t, tel, receiverID, component.MustNewID("scraper"), test.scrapeErr, sink)
 			}
@@ -290,7 +292,7 @@ func TestMetricsScrapeController(t *testing.T) {
 				}
 
 				spans := tel.SpanRecorder.Ended()
-				assertReceiverSpan(t, spans)
+				assertMetricsReceiverSpan(t, spans)
 				testhelper.AssertScraperSpan(t, test.scrapeErr, spans, "scraper/scraper/ScrapeMetrics")
 				assertMetricsScraperObsMetrics(t, tel, receiverID, component.MustNewID("scraper"), test.scrapeErr, sink)
 			}
@@ -376,10 +378,21 @@ func getExpectedShutdownErr(test scraperTestCase) error {
 	return errs
 }
 
-func assertReceiverSpan(t *testing.T, spans []sdktrace.ReadOnlySpan) {
+func assertMetricsReceiverSpan(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 	receiverSpan := false
 	for _, span := range spans {
 		if span.Name() == "receiver/receiver/MetricsReceived" {
+			receiverSpan = true
+			break
+		}
+	}
+	assert.True(t, receiverSpan)
+}
+
+func assertLogsReceiverSpan(t *testing.T, spans []sdktrace.ReadOnlySpan) {
+	receiverSpan := false
+	for _, span := range spans {
+		if span.Name() == "receiver/receiver/LogsReceived" {
 			receiverSpan = true
 			break
 		}
@@ -762,4 +775,60 @@ func TestNewDefaultControllerConfig(t *testing.T) {
 	controllerConfig := NewDefaultControllerConfig()
 	intControllerConfig := controller.NewDefaultControllerConfig()
 	require.Equal(t, intControllerConfig, controllerConfig)
+}
+
+func TestNewMetricsController_ScraperIDInErrorLogs(t *testing.T) {
+	t.Parallel()
+
+	core, observedLogs := observer.New(zap.ErrorLevel)
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	telset := tel.NewTelemetrySettings()
+	telset.Logger = zap.New(core)
+
+	receiverID := component.MustNewID("fakeReceiver")
+	scraperType := component.MustNewType("fakeScraper")
+	scrapeErr := errors.New("scrape error")
+
+	scrapeCh := make(chan int, 1)
+	ts := &testScrape{ch: scrapeCh, err: scrapeErr}
+	scp, err := scraper.NewMetrics(ts.scrapeMetrics)
+	require.NoError(t, err)
+
+	cfg := newTestNoDelaySettings()
+	tickerCh := make(chan time.Time)
+
+	recv, err := NewMetricsController(
+		cfg,
+		receiver.Settings{ID: receiverID, TelemetrySettings: telset, BuildInfo: component.NewDefaultBuildInfo()},
+		new(consumertest.MetricsSink),
+		AddMetricsScraper(scraperType, scp),
+		WithTickerChannel(tickerCh),
+	)
+	require.NoError(t, err)
+	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, recv.Shutdown(context.Background())) }()
+
+	<-scrapeCh
+
+	require.Eventually(t, func() bool {
+		return observedLogs.Len() >= 1
+	}, time.Second, 10*time.Millisecond)
+	errorLogs := observedLogs.FilterLevelExact(zap.ErrorLevel).All()
+	require.Len(t, errorLogs, 1)
+
+	assert.Equal(t, "Error scraping metrics", errorLogs[0].Message)
+	assert.Equal(t, scraperType.String(), errorLogs[0].ContextMap()["scraper"])
+	assert.Equal(t, scrapeErr.Error(), errorLogs[0].ContextMap()["error"])
+
+	// Verify the original receiver telemetry settings logger was NOT mutated
+	// by logging something and checking it doesn't have the scraper field
+	telset.Logger.Error("test log from receiver")
+
+	allLogs := observedLogs.FilterLevelExact(zap.ErrorLevel).All()
+	require.Len(t, allLogs, 2)
+
+	receiverLog := allLogs[1]
+	assert.Equal(t, "test log from receiver", receiverLog.Message)
+	assert.NotContains(t, receiverLog.ContextMap(), "scraper")
 }

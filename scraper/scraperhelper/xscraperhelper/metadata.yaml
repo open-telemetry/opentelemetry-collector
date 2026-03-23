@@ -8,26 +8,24 @@ status:
     active:
       - florianl
   stability:
-    development: [profiles]
+    alpha: [profiles]
 
 telemetry:
   metrics:
     scraper_errored_profile_records:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Number of profile records that were unable to be scraped.
-      unit: "{datapoints}"
+      unit: "{datapoint}"
       sum:
         value_type: int
         monotonic: true
 
     scraper_scraped_profile_records:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Number of profile records successfully scraped.
-      unit: "{datapoints}"
+      unit: "{datapoint}"
       sum:
         value_type: int
         monotonic: true

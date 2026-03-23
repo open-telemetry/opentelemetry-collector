@@ -47,9 +47,13 @@ are our most advanced users and are the most equipped to deal with disruptive ch
 
 ## How to structure PRs to get expedient reviews?
 
-We recommend that any PR (unless it is trivial) to be smaller than 500 lines
-(excluding go mod/sum changes) in order to help reviewers to do a thorough and
-reasonably fast reviews.
+We recommend that PRs be smaller than 500 lines, excluding `go.mod` and `go.sum`
+changes, to help reviewers perform thorough and timely reviews.
+
+Keep each PR isolated to the specific change it is meant to deliver. Do not bundle unrelated
+cleanup, drive-by edits, opportunistic refactors, wording tweaks, formatting changes, or other
+"small" improvements into the same PR unless they are strictly necessary to make the intended
+change correct. Narrow, focused PRs are significantly easier to review and validate.
 
 ### When adding a new component
 
@@ -59,7 +63,7 @@ Components refer to connectors, exporters, extensions, processors, and receivers
 * Provide a configuration structure which defines the configuration of the component
 * Provide the implementation that performs the component operation
 
-For more details on components, see the [Adding New Components](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#adding-new-components) document and the tutorial [Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) which provides a detailed example of building a component.
+For more details on components, see the [Donating New Components](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#donating-new-components) document and the tutorial [Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) which provides a detailed example of building a component.
 
 When adding a new component to the OpenTelemetry Collector, ensure that any configuration structs used by the component include fields with the `configopaque.String` type for sensitive data. This ensures that the data is masked when serialized to prevent accidental exposure.
 
@@ -87,6 +91,9 @@ When submitting a component to the community, consider breaking it down into sep
 Any refactoring work must be split in its own PR that does not include any
 behavior changes. It is important to do this to avoid hidden changes in large
 and trivial refactoring PRs.
+
+If you notice additional improvement opportunities while working on a change, handle them in
+follow-up PRs instead of extending the current one beyond its original scope.
 
 ## Report a bug or request a feature
 
@@ -127,6 +134,16 @@ Example label comment:
 /label help-wanted -arm64
 ```
 
+### Rerunning Failed Workflows
+
+PR authors can rerun failed GitHub Actions workflows by commenting `/rerun` on the pull request. This will automatically rerun all failed workflow runs for the PR's latest commit.
+
+Example rerun comment:
+
+```
+/rerun
+```
+
 ## How to contribute
 
 ### Before you start
@@ -144,7 +161,7 @@ Comment on the issue that you want to work on so we can assign it to you and
 clarify anything related to it.
 
 If you would like to work on something that is not listed as an issue
-(e.g. a new feature or enhancement) please first read our [vision](docs/vision.md) 
+(e.g. a new feature or enhancement) please first read our [vision](docs/vision.md)
 to make sure your proposal aligns with the goals of the
 Collector, then create an issue and describe your proposal. It is best to do this
 in advance so that maintainers can decide if the proposal is a good fit for
@@ -192,7 +209,7 @@ section of the general project contributing guide.
 Working with the project sources requires the following tools:
 
 1. [git](https://git-scm.com/)
-2. [go](https://golang.org/) (version 1.24 and up)
+2. [go](https://golang.org/) (version 1.25 and up)
 3. [make](https://www.gnu.org/software/make/)
 4. [docker](https://www.docker.com/)
 
@@ -216,6 +233,8 @@ Run tests, fmt, and lint:
 ```shell
 $ make
 ```
+
+You can run `make markdownlint` to check Markdown formatting.
 
 ## Creating a PR
 
@@ -249,7 +268,7 @@ before merging (but see the above paragraph about writing good commit messages i
 
 ## General Notes
 
-This project uses Go 1.24.* and [Github Actions.](https://github.com/features/actions)
+This project uses Go 1.25.* and [Github Actions.](https://github.com/features/actions)
 
 It is recommended to run `make gofmt all` before submitting your PR.
 
@@ -320,7 +339,7 @@ locally. Ensure that you execute these commands from the root of the repository:
 
   The actual name of the binary will depend on your platform, adjust accordingly
   (e.g., `./bin/otelcorecol_darwin_arm64`).
-  
+
   Replace `otel-config.yaml` with the appropriate configuration file as needed.
 
 3. Verify that your changes are reflected in the Collector's behavior by testing
@@ -415,10 +434,10 @@ running the default common target for each module as well as additional repo-lev
 When a new OTLP version is published, the following steps are required to update this code base:
 
 1. Edit the top-level Makefile's `OPENTELEMETRY_PROTO_VERSION` variable
-2. Run `make genproto` 
+2. Run `make genproto`
 3. Inspect modifications to the generated code in `pdata/internal/data/protogen`
 4. When new fields are added in the protocol, make corresponding changes in `pdata/internal/cmd/pdatagen/internal`
-5. Run `make genpdata` 
+5. Run `make genpdata`
 6. Inspect modifications to the generated code in `pdata/*`
 7. Run `make genproto-cleanup`, to remove temporary files
 8. Update the supported OTLP version in [README.md](./README.md).

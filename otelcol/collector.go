@@ -14,7 +14,6 @@ import (
 	"os/signal"
 	"sync"
 	"sync/atomic"
-	"syscall"
 
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -348,12 +347,12 @@ func (col *Collector) Run(ctx context.Context) error {
 	}
 
 	// Always notify with SIGHUP for configuration reloading.
-	signal.Notify(col.signalsChannel, syscall.SIGHUP)
+	signal.Notify(col.signalsChannel, SIGHUP)
 	defer signal.Stop(col.signalsChannel)
 
 	// Only notify with SIGTERM and SIGINT if graceful shutdown is enabled.
 	if !col.set.DisableGracefulShutdown {
-		signal.Notify(col.signalsChannel, os.Interrupt, syscall.SIGTERM)
+		signal.Notify(col.signalsChannel, os.Interrupt, SIGTERM)
 	}
 
 	// Control loop: selects between channels for various interrupts - when this loop is broken, the collector exits.
@@ -374,7 +373,7 @@ LOOP:
 			break LOOP
 		case s := <-col.signalsChannel:
 			col.service.Logger().Info("Received signal from OS", zap.String("signal", s.String()))
-			if s != syscall.SIGHUP {
+			if s != SIGHUP {
 				break LOOP
 			}
 			if err := col.reloadConfiguration(ctx); err != nil {

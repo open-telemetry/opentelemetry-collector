@@ -19,15 +19,18 @@ func GenerateProfiles(profilesCount int) pprofile.Profiles {
 	ss := td.ResourceProfiles().At(0).ScopeProfiles().AppendEmpty().Profiles()
 
 	dic := td.Dictionary()
+	// By convention, the first element is empty
 	dic.StringTable().Append("")
 	dic.StringTable().Append("key")
 
+	// By convention, the first element is empty
+	dic.AttributeTable().AppendEmpty()
 	attr := dic.AttributeTable().AppendEmpty()
 	attr.SetKeyStrindex(1)
-	attr.Value().SetStr("value")
+	attr.Value().SetStr("value-1")
 	attr2 := dic.AttributeTable().AppendEmpty()
-	attr.SetKeyStrindex(1)
-	attr2.Value().SetStr("value")
+	attr2.SetKeyStrindex(1)
+	attr2.Value().SetStr("value-2")
 
 	ss.EnsureCapacity(profilesCount)
 	for i := range profilesCount {
@@ -58,7 +61,7 @@ func fillProfileOne(dic pprofile.ProfilesDictionary, profile pprofile.Profile) {
 	sample := profile.Samples().AppendEmpty()
 	sample.SetStackIndex(stackID)
 	sample.Values().Append(4)
-	sample.AttributeIndices().Append(0)
+	sample.AttributeIndices().Append(1)
 }
 
 func fillProfileTwo(dic pprofile.ProfilesDictionary, profile pprofile.Profile) {
@@ -76,5 +79,5 @@ func fillProfileTwo(dic pprofile.ProfilesDictionary, profile pprofile.Profile) {
 	sample := profile.Samples().AppendEmpty()
 	sample.SetStackIndex(stackID)
 	sample.Values().Append(9)
-	sample.AttributeIndices().Append(0)
+	sample.AttributeIndices().Append(2)
 }

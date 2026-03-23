@@ -47,6 +47,11 @@ func TestMetricsText(t *testing.T) {
 			in:   generateMetricsWithEntityRefs(),
 			out:  "metrics_with_entity_refs.out",
 		},
+		{
+			name: "metrics_with_metadata",
+			in:   generateMetricsWithMetadata(),
+			out:  "metrics_with_metadata.out",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -77,6 +82,29 @@ func generateMetricsWithEntityRefs() pmetric.Metrics {
 	dp := gauge.DataPoints().AppendEmpty()
 	dp.SetDoubleValue(123.45)
 	dp.Attributes().PutStr("test.attribute", "test-value")
+
+	return md
+}
+
+func generateMetricsWithMetadata() pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("service.name", "test-service")
+
+	sm := rm.ScopeMetrics().AppendEmpty()
+	sm.Scope().SetName("test-scope")
+
+	metric := sm.Metrics().AppendEmpty()
+	metric.SetName("test-metric-metadata")
+	metric.SetDescription("A test metric with metadata")
+	metric.SetUnit("1")
+
+	metric.Metadata().PutStr("meta.key", "meta-value")
+	metric.Metadata().PutInt("meta.id", 101)
+
+	gauge := metric.SetEmptyGauge()
+	dp := gauge.DataPoints().AppendEmpty()
+	dp.SetIntValue(1)
 
 	return md
 }

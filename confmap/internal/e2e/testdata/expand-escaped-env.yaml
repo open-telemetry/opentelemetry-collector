@@ -39,3 +39,7 @@ test_map:
   key19: "${env:ENV_NESTED_DOLLARSIGN_ESCAPED}"
   # nested env var syntax is expanded
   key20: "${env:ENV_EXPAND_NESTED}"
+  # default value
+  key21: "${env:UNDEFINED_KEY:-default_value}"
+  # escaped default value
+  key22: "${env:UNDEFINED_KEY:-$${env:UNDEFINED_KEY}}"

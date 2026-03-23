@@ -3,6 +3,8 @@
 package {{ .Package }}
 
 {{ $reag := .ReaggregationEnabled }}
+{{- $hasReagMetrics := false }}
+{{- range $name, $metric := .Metrics }}{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}{{- $hasReagMetrics = true }}{{- end }}{{- end }}
 
 import (
 	{{- if .Metrics | parseImportsRequired }}
@@ -10,9 +12,9 @@ import (
 	"fmt"
 	{{- end }}
 	"time"
-  {{- if $reag }}
-  "slices"
-  {{- end }}
+	{{- if $hasReagMetrics }}
+	"slices"
+	{{- end }}
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -30,15 +32,15 @@ import (
 
 {{- if $reag }}
 const (
-  AggregationStrategySum = "sum"
-  AggregationStrategyAvg = "avg"
-  AggregationStrategyMin = "min"
-  AggregationStrategyMax = "max"
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+	AggregationStrategyMin = "min"
+	AggregationStrategyMax = "max"
 )
 {{- end }}
 
 {{ range $name, $info := .Attributes }}
-{{- if $info.Enum -}}
+{{- if $info.Enum }}
 // Attribute{{ $name.Render }} specifies the value {{ $name }} attribute.
 type Attribute{{ $name.Render }} int
 
@@ -66,16 +68,15 @@ var MapAttribute{{ $name.Render }} = map[string]Attribute{{ $name.Render }}{
 	"{{ . }}": Attribute{{ $name.Render }}{{ . | publicVar }},
 	{{- end }}
 }
-
-{{ end }}
+{{- end }}
 {{- end }}
 
 var MetricsInfo = metricsInfo{
-    {{- range $name, $metric := .Metrics }}
-    {{ $name.Render }}: metricInfo{
-        Name: "{{ $name }}",
-    },
-    {{- end }}
+	{{- range $name, $metric := .Metrics }}
+	{{ $name.Render }}: metricInfo{
+		Name: "{{ $name }}",
+	},
+	{{- end }}
 }
 
 type metricsInfo struct {
@@ -85,7 +86,7 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-    Name string
+	Name string
 }
 
 {{ if getMetricConditionalAttributes .Attributes }}
@@ -108,15 +109,15 @@ func With{{ .Render }}MetricAttribute({{ .RenderUnexported }}AttributeValue {{ (
 {{ end }}
 {{ end }}
 
-{{ range $name, $metric := .Metrics -}}
+{{ range $name, $metric := .Metrics }}
 {{- $metricReag := and $reag (hasAggregatableAttributes $metric.Attributes) (ne $metric.Data.Type "Histogram") -}}
 type metric{{ $name.Render }} struct {
 	data                     pmetric.Metric // data buffer for generated metric.
-	config                   MetricConfig   // metric config provided by user.
-	capacity                 int            // max observed number of data points added to the metric.
-  {{- if $reag }}
-  aggDataPoints            []{{ $metric.Data.MetricValueType.BasicType }} // slice containing number of aggregated datapoints at each index 
-  {{- end }}
+	config                   {{ if $reag }}{{ $name.Render }}{{ end }}MetricConfig // metric config provided by user.
+	capacity                 int // max observed number of data points added to the metric.
+	{{- if $metricReag }}
+	aggDataPoints            []{{ $metric.Data.MetricValueType.BasicType }} // slice containing number of aggregated datapoints at each index
+	{{- end }}
 }
 
 // init fills {{ $name }} metric with initial data.
@@ -134,10 +135,13 @@ func (m *metric{{ $name.Render }}) init() {
 	{{- if $metric.Attributes }}
 	m.data.{{ $metric.Data.Type }}().DataPoints().EnsureCapacity(m.capacity)
 	{{- end }}
+	{{- if $metricReag }}
+	m.aggDataPoints = m.aggDataPoints[:0]
+	{{- end }}
 }
 
 {{/* This function changed in a major way, so instead of gating individual lines of code the original is being included */}}
-{{- if $reag }}
+{{- if $metricReag }}
 func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val {{ $metric.Data.MetricValueType.BasicType }}
 {{- range $metric.Attributes -}}{{- if not (attributeInfo .).IsConditional -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}{{ end }}{{- if $metric.HasConditionalAttributes $.Attributes -}}, options ...MetricAttributeOption{{- end -}}) {
 	if !m.config.Enabled {
@@ -148,43 +152,45 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	{{- range $metric.Attributes }}
-    {{- if not (attributeInfo .).IsConditional }}
-	    {{ template "putMetricAttribute" . }}
-	  {{- end }}
+	{{- if not (attributeInfo .).IsConditional }}
+	if slices.Contains(m.config.EnabledAttributes, {{ $name.Render }}MetricAttributeKey{{ .Render }}) {
+		{{- template "putAttribute" . }}
+	}
+	{{- end }}
 	{{- end }}
 
 	{{- if $metric.HasConditionalAttributes $.Attributes }}
-    for _, op := range options {
-        op.apply(dp)
-    }
-  {{- end }}
+	for _, op := range options {
+		op.apply(dp)
+	}
+	{{- end }}
 
-  var s string
+	var s string
 	dps := m.data.{{ $metric.Data.Type }}().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
 		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-      switch s = m.config.AggregationStrategy; s {
-      case AggregationStrategySum, AggregationStrategyAvg:
-        dpi.Set{{ $metric.Data.MetricValueType }}Value(dpi.{{ $metric.Data.MetricValueType }}Value() + val)
-        m.aggDataPoints[i] += 1
-        return
-      case AggregationStrategyMin:
-        if dpi.{{ $metric.Data.MetricValueType }}Value() > val {
-          dpi.Set{{ $metric.Data.MetricValueType }}Value(val)
-        }
-        return
-      case AggregationStrategyMax:
-        if dpi.{{ $metric.Data.MetricValueType }}Value() < val {
-          dpi.Set{{ $metric.Data.MetricValueType }}Value(val)
-        }
-        return
-      }
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.Set{{ $metric.Data.MetricValueType }}Value(dpi.{{ $metric.Data.MetricValueType }}Value() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.{{ $metric.Data.MetricValueType }}Value() > val {
+					dpi.Set{{ $metric.Data.MetricValueType }}Value(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.{{ $metric.Data.MetricValueType }}Value() < val {
+					dpi.Set{{ $metric.Data.MetricValueType }}Value(val)
+				}
+				return
+			}
 		}
 	}
 
 	dp.Set{{ $metric.Data.MetricValueType }}Value(val)
-  m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
 	dp.MoveTo(dps.AppendEmpty())
 }
 {{- else }}
@@ -229,7 +235,7 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetTimestamp(ts)
 	dp.Set{{ $metric.Data.MetricValueType }}Value(val)
 	{{- range $metric.Attributes }}
-    {{- if not (attributeInfo .).IsConditional -}}
+	{{- if not (attributeInfo .).IsConditional -}}
 	{{- template "putAttribute" . -}}
 	{{- end }}
 	{{- end }}
@@ -252,23 +258,23 @@ func (m *metric{{ $name.Render }}) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metric{{ $name.Render }}) emit(metrics pmetric.MetricSlice) {
-  {{- if $reag }}
-  if m.config.Enabled && m.data.{{ $metric.Data.Type }}().DataPoints().Len() > 0 {
-    if m.config.AggregationStrategy == AggregationStrategyAvg {
-      for i, aggCount := range m.aggDataPoints {
-        m.data.{{ $metric.Data.Type }}().DataPoints().At(i).Set{{ $metric.Data.MetricValueType }}Value(m.data.{{ $metric.Data.Type }}().DataPoints().At(i).{{ $metric.Data.MetricValueType }}Value() / aggCount)
-      }
-    }
-  {{- else }}
-  if m.config.Enabled && m.data.{{ $metric.Data.Type }}().DataPoints().Len() > 0 {
-  {{- end }}
+	{{- if $metricReag }}
+	if m.config.Enabled && m.data.{{ $metric.Data.Type }}().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.{{ $metric.Data.Type }}().DataPoints().At(i).Set{{ $metric.Data.MetricValueType }}Value(m.data.{{ $metric.Data.Type }}().DataPoints().At(i).{{ $metric.Data.MetricValueType }}Value() / aggCount)
+			}
+		}
+	{{- else }}
+	if m.config.Enabled && m.data.{{ $metric.Data.Type }}().DataPoints().Len() > 0 {
+	{{- end }}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetric{{ $name.Render }}(cfg MetricConfig) metric{{ $name.Render }} {
+func newMetric{{ $name.Render }}(cfg {{ if $reag }}{{ $name.Render }}{{ end }}MetricConfig) metric{{ $name.Render }} {
 	m := metric{{ $name.Render }}{config: cfg}
 
 	if cfg.Enabled {
@@ -299,13 +305,13 @@ type MetricsBuilder struct {
 
 // MetricBuilderOption applies changes to default metrics builder.
 type MetricBuilderOption interface {
-    apply(*MetricsBuilder)
+	apply(*MetricsBuilder)
 }
 
 type metricBuilderOptionFunc func(mb *MetricsBuilder)
 
 func (mbof metricBuilderOptionFunc) apply(mb *MetricsBuilder) {
-  mbof(mb)
+	mbof(mb)
 }
 
 // WithStartTime sets startTime on the metrics builder.
@@ -396,13 +402,13 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 
 // ResourceMetricsOption applies changes to provided resource metrics.
 type ResourceMetricsOption interface {
-    apply(pmetric.ResourceMetrics)
+	apply(pmetric.ResourceMetrics)
 }
 
 type resourceMetricsOptionFunc func(pmetric.ResourceMetrics)
 
 func (rmof resourceMetricsOptionFunc) apply(rm pmetric.ResourceMetrics) {
-    rmof(rm)
+	rmof(rm)
 }
 
 // WithResource sets the provided resource on the emitted ResourceMetrics.
@@ -412,6 +418,14 @@ func WithResource(res pcommon.Resource) ResourceMetricsOption {
 		res.CopyTo(rm.Resource())
 	})
 }
+
+{{ if .HasEntities -}}
+func withResourceMoved(res pcommon.Resource) ResourceMetricsOption {
+	return resourceMetricsOptionFunc(func(rm pmetric.ResourceMetrics) {
+		res.MoveTo(rm.Resource())
+	})
+}
+{{- end }}
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
@@ -440,11 +454,27 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 	})
 }
 
+{{ range $ent := .Entities }}
+{{ $entityType := $ent.Type }}
+{{ $entityStructType := printf "%sEntity" (publicVar $entityType) }}
+{{ $builderType := printf "%sMetricsBuilder" (publicVar $entityType) }}
+
+// For{{ publicVar $entityType }} returns a {{ $builderType }} that restricts metric recording
+// to metrics belonging to the {{ $entityType }} entity.
+func (mb *MetricsBuilder) For{{ publicVar $entityType }}(e *{{ $entityStructType }}) *{{ $builderType }} {
+	return &{{ $builderType }}{mb: mb, entity: e}
+}
+{{ end }}
+
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
 // recording another set of data points as part of another resource. This function can be helpful when one scraper
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
 // just `Emit` function can be called instead.
 // Resource attributes should be provided as ResourceMetricsOption arguments.
+{{- if .HasEntities }}
+//
+// Deprecated: Use the For<EntityType> methods to get entity-scoped builders and call Emit() on them instead.
+{{- end }}
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	{{- if .SemConvVersion }}
@@ -492,6 +522,10 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 
 {{ range $name, $metric := .Metrics -}}
 // Record{{ $name.Render }}DataPoint adds a data point to {{ $name }} metric.
+{{- if $metric.Entity }}
+//
+// Deprecated: Use mb.For{{ publicVar $metric.Entity }}(entity).Record{{ $name.Render }}DataPoint(...) instead.
+{{- end }}
 {{- if eq $metric.Data.Type "Histogram" }}
 func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp, count uint64, sum float64, min float64, max float64, bucketCounts []uint64
 {{- else }}

@@ -58,6 +58,134 @@ Below are some more examples that can be used for reference:
 
 You can run `cd cmd/mdatagen && $(GOCMD) install .` to install the `mdatagen` tool in `GOBIN` and then run `mdatagen metadata.yaml` to generate documentation for a specific component or you can run `make generate` to generate documentation for all components.
 
+### Component Config Documentation
+
+The metadata generator supports automatic generation of configuration schemas for components. 
+This generates JSON Schema files that enable IDE autocompletion, validation, and documentation for component configuration.
+In the future it will also generate Go config structs and human-readable documentation for configuration options
+
+To define a configuration schema, add a `config` section to your `metadata.yaml`:
+
+```yaml
+type: myreceiver
+status:
+  class: receiver
+  stability:
+    beta: [metrics, traces]
+
+config:
+  type: object
+  properties:
+    endpoint:
+      type: string
+      description: The endpoint to listen on
+      default: "localhost:4317"
+    timeout:
+      type: string
+      format: duration
+      description: Request timeout duration
+      default: "30s"
+    tls:
+      $ref: go.opentelemetry.io/collector/config/configtls.server_config
+  required: [endpoint]
+```
+
+The `config` section is based on [JSON Schema standard](https://json-schema.org/) (draft 2020-12) and supports:
+
+- **Standard JSON Schema types**: string, number, integer, boolean, object, array, null
+- **Validation constraints**: minLength, maxLength, pattern, minimum, maximum, enum, etc.
+- **References**: Internal (`$ref: definition_name`), external (`$ref: package.path.type`), or relative (`$ref: ./internal/config.type`)
+- **Reusable definitions**: Define common schemas in `$defs` and reference them with `$ref`
+- **Schema composition**: Use `allOf` for complex configurations
+
+### Metrics Builder Configuration
+
+For receivers, scrapers, and other components that emit metrics, `mdatagen` can generate metrics builder
+configuration from `metadata.yaml`.
+
+```yaml
+type: myreceiver
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+
+resource_attributes:
+  transport:
+    description: Transport used by the request.
+    type: string
+    enabled: true
+
+attributes:
+  status_code:
+    description: Response status code.
+    type: int
+    requirement_level: opt_in
+
+metrics:
+  http.server.request.count:
+    enabled: true
+    description: Number of received requests.
+    unit: "{request}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [status_code]
+```
+
+This lets users:
+
+- enable or disable individual metrics
+- enable or disable resource attributes
+- use `metrics_include` and `metrics_exclude` on resource attributes to only emit metrics with matching resource attribute values
+
+### Metric Reaggregation Configuration
+
+Set `reaggregation_enabled: true` to let users reduce metric cardinality by dropping selected metric
+attributes and aggregating the resulting datapoints.
+
+```yaml
+reaggregation_enabled: true
+
+attributes:
+  transport:
+    description: Transport used by the request.
+    type: string
+    requirement_level: recommended
+  status_code:
+    description: Response status code.
+    type: int
+    requirement_level: opt_in
+```
+
+This adds two per-metric settings for metrics that declare attributes:
+
+- `attributes`: the subset of metric attributes to keep in the emitted metric stream
+- `aggregation_strategy`: how collapsed datapoints are merged, using `sum`, `avg`, `min`, or `max`
+
+Defaults:
+
+- sum metrics use `sum`; gauge metrics use `avg`
+- `required` attributes are always kept
+- `recommended` and `conditionally_required` attributes are kept by default, but users can remove them
+- `opt_in` attributes are omitted by default, so that dimension is aggregated unless the user adds it
+
+Example user configuration:
+
+```yaml
+receivers:
+  myreceiver:
+    metrics:
+      http.server.request.count:
+        enabled: true
+        aggregation_strategy: sum
+        attributes: [transport]
+```
+
+In this example, datapoints that only differ by `status_code` are aggregated together, while
+`transport` remains part of the output identity.
+
 ### Feature Gates Documentation
 
 The metadata generator supports automatic documentation generation for feature gates used by components. Feature gates are documented by adding a `feature_gates` section to your `metadata.yaml`:

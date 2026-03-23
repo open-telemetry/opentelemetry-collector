@@ -7,4 +7,4 @@ status:
   stability:
     alpha: [metrics]
   codeowners:
-    active: []
+    active: [ArthurSens, dmathieu]
