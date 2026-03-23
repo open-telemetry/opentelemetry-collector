@@ -8,7 +8,7 @@ status:
   class: exporter
   stability:
     stable: [traces, metrics, logs]
-    development: [profiles]
+    alpha: [profiles]
   distributions: [core, contrib, k8s, otlp]
 
 tests:

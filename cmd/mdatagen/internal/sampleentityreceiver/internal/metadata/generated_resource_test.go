@@ -33,31 +33,30 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("k8s.namespace.name")
+			k8sNamespaceNameAttrVal, ok := res.Attributes().Get("k8s.namespace.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.namespace.name-val", val.Str())
+				assert.Equal(t, "k8s.namespace.name-val", k8sNamespaceNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.pod.name")
+			k8sPodNameAttrVal, ok := res.Attributes().Get("k8s.pod.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.pod.name-val", val.Str())
+				assert.Equal(t, "k8s.pod.name-val", k8sPodNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.pod.uid")
+			k8sPodUIDAttrVal, ok := res.Attributes().Get("k8s.pod.uid")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.pod.uid-val", val.Str())
+				assert.Equal(t, "k8s.pod.uid-val", k8sPodUIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.replicaset.name")
+			k8sReplicasetNameAttrVal, ok := res.Attributes().Get("k8s.replicaset.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.replicaset.name-val", val.Str())
+				assert.Equal(t, "k8s.replicaset.name-val", k8sReplicasetNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.replicaset.uid")
+			k8sReplicasetUIDAttrVal, ok := res.Attributes().Get("k8s.replicaset.uid")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.replicaset.uid-val", val.Str())
+				assert.Equal(t, "k8s.replicaset.uid-val", k8sReplicasetUIDAttrVal.Str())
 			}
 		})
 	}
