@@ -6,12 +6,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 type testDataSet int
@@ -69,15 +68,12 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 			ebK8sReplicaset := mb.ForK8sReplicaset(NewK8sReplicasetEntity("k8s.replicaset.uid-val"))
 			ebK8sPod := mb.ForK8sPod(NewK8sPodEntity("k8s.pod.uid-val"))
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sPod.RecordK8sPodCPUTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sPod.RecordK8sPodPhaseDataPoint(ts, 1, AttributePhasePending)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sReplicaset.RecordK8sReplicasetDesiredDataPoint(ts, 1)

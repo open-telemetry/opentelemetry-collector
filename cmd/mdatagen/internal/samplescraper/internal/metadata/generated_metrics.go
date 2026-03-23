@@ -8,13 +8,12 @@ import (
 	"strconv"
 	"time"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
 const (
@@ -76,6 +75,9 @@ var MetricsInfo = metricsInfo{
 	SystemCPUTime: metricInfo{
 		Name: "system.cpu.time",
 	},
+	SystemCPUUtilization: metricInfo{
+		Name: "system_cpu_utilization",
+	},
 }
 
 type metricsInfo struct {
@@ -86,6 +88,7 @@ type metricsInfo struct {
 	OptionalMetricEmptyUnit  metricInfo
 	ReaggregateMetric        metricInfo
 	SystemCPUTime            metricInfo
+	SystemCPUUtilization     metricInfo
 }
 
 type metricInfo struct {
@@ -681,6 +684,64 @@ func newMetricSystemCPUTime(cfg SystemCPUTimeMetricConfig) metricSystemCPUTime {
 	return m
 }
 
+type metricSystemCPUUtilization struct {
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   SystemCPUUtilizationMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
+}
+
+// init fills system_cpu_utilization metric with initial data.
+func (m *metricSystemCPUUtilization) init() {
+	m.data.SetName("system_cpu_utilization")
+	m.data.SetDescription("Histogram metric for testing histogram generation.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyHistogram()
+	m.data.Histogram().SetAggregationTemporality(pmetric.AggregationTemporalityUnspecified)
+	m.data.Histogram().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, count uint64, sum float64, min float64, max float64, bucketCounts []uint64, stringAttrAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Histogram().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetCount(count)
+	dp.SetSum(sum)
+	dp.SetMin(min)
+	dp.SetMax(max)
+	dp.ExplicitBounds().FromRaw([]float64{0, 0.25, 0.5, 0.75, 1})
+	dp.BucketCounts().FromRaw(bucketCounts)
+	dp.Attributes().PutStr("string_attr", stringAttrAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemCPUUtilization) updateCapacity() {
+	if m.data.Histogram().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Histogram().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemCPUUtilization) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Histogram().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemCPUUtilization(cfg SystemCPUUtilizationMetricConfig) metricSystemCPUUtilization {
+	m := metricSystemCPUUtilization{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -698,6 +759,7 @@ type MetricsBuilder struct {
 	metricOptionalMetricEmptyUnit  metricOptionalMetricEmptyUnit
 	metricReaggregateMetric        metricReaggregateMetric
 	metricSystemCPUTime            metricSystemCPUTime
+	metricSystemCPUUtilization     metricSystemCPUUtilization
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -751,6 +813,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 		metricOptionalMetricEmptyUnit:  newMetricOptionalMetricEmptyUnit(mbc.Metrics.OptionalMetricEmptyUnit),
 		metricReaggregateMetric:        newMetricReaggregateMetric(mbc.Metrics.ReaggregateMetric),
 		metricSystemCPUTime:            newMetricSystemCPUTime(mbc.Metrics.SystemCPUTime),
+		metricSystemCPUUtilization:     newMetricSystemCPUUtilization(mbc.Metrics.SystemCPUUtilization),
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 	}
@@ -844,17 +907,24 @@ func WithResource(res pcommon.Resource) ResourceMetricsOption {
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 	return resourceMetricsOptionFunc(func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
 			switch metrics.At(i).Type() {
 			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
+				dps := metrics.At(i).Gauge().DataPoints()
+				for j := 0; j < dps.Len(); j++ {
+					dps.At(j).SetStartTimestamp(start)
+				}
 			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
+				dps := metrics.At(i).Sum().DataPoints()
+				for j := 0; j < dps.Len(); j++ {
+					dps.At(j).SetStartTimestamp(start)
+				}
+			case pmetric.MetricTypeHistogram:
+				dps := metrics.At(i).Histogram().DataPoints()
+				for j := 0; j < dps.Len(); j++ {
+					dps.At(j).SetStartTimestamp(start)
+				}
 			}
 		}
 	})
@@ -879,6 +949,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOptionalMetricEmptyUnit.emit(ils.Metrics())
 	mb.metricReaggregateMetric.emit(ils.Metrics())
 	mb.metricSystemCPUTime.emit(ils.Metrics())
+	mb.metricSystemCPUUtilization.emit(ils.Metrics())
 
 	for _, op := range options {
 		op.apply(rm)
@@ -948,6 +1019,11 @@ func (mb *MetricsBuilder) RecordReaggregateMetricDataPoint(ts pcommon.Timestamp,
 // RecordSystemCPUTimeDataPoint adds a data point to system.cpu.time metric.
 func (mb *MetricsBuilder) RecordSystemCPUTimeDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricSystemCPUTime.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSystemCPUUtilizationDataPoint adds a data point to system_cpu_utilization metric.
+func (mb *MetricsBuilder) RecordSystemCPUUtilizationDataPoint(ts pcommon.Timestamp, count uint64, sum float64, min float64, max float64, bucketCounts []uint64, stringAttrAttributeValue string) {
+	mb.metricSystemCPUUtilization.recordDataPoint(mb.startTime, ts, count, sum, min, max, bucketCounts, stringAttrAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

@@ -8,13 +8,12 @@ import (
 	"strconv"
 	"time"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
 const (
@@ -97,24 +96,24 @@ type metricInfo struct {
 }
 
 type MetricAttributeOption interface {
-	apply(pmetric.NumberDataPoint)
+	apply(pcommon.Map)
 }
 
-type metricAttributeOptionFunc func(pmetric.NumberDataPoint)
+type metricAttributeOptionFunc func(pcommon.Map)
 
-func (maof metricAttributeOptionFunc) apply(dp pmetric.NumberDataPoint) {
-	maof(dp)
+func (maof metricAttributeOptionFunc) apply(attrs pcommon.Map) {
+	maof(attrs)
 }
 
 func WithConditionalIntAttrMetricAttribute(conditionalIntAttrAttributeValue int64) MetricAttributeOption {
-	return metricAttributeOptionFunc(func(dp pmetric.NumberDataPoint) {
-		dp.Attributes().PutInt("conditional_int_attr", conditionalIntAttrAttributeValue)
+	return metricAttributeOptionFunc(func(attrs pcommon.Map) {
+		attrs.PutInt("conditional_int_attr", conditionalIntAttrAttributeValue)
 	})
 }
 
 func WithConditionalStringAttrMetricAttribute(conditionalStringAttrAttributeValue string) MetricAttributeOption {
-	return metricAttributeOptionFunc(func(dp pmetric.NumberDataPoint) {
-		dp.Attributes().PutStr("conditional_string_attr", conditionalStringAttrAttributeValue)
+	return metricAttributeOptionFunc(func(attrs pcommon.Map) {
+		attrs.PutStr("conditional_string_attr", conditionalStringAttrAttributeValue)
 	})
 }
 
@@ -976,17 +975,24 @@ func WithResource(res pcommon.Resource) ResourceMetricsOption {
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 	return resourceMetricsOptionFunc(func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
 			switch metrics.At(i).Type() {
 			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
+				dps := metrics.At(i).Gauge().DataPoints()
+				for j := 0; j < dps.Len(); j++ {
+					dps.At(j).SetStartTimestamp(start)
+				}
 			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
+				dps := metrics.At(i).Sum().DataPoints()
+				for j := 0; j < dps.Len(); j++ {
+					dps.At(j).SetStartTimestamp(start)
+				}
+			case pmetric.MetricTypeHistogram:
+				dps := metrics.At(i).Histogram().DataPoints()
+				for j := 0; j < dps.Len(); j++ {
+					dps.At(j).SetStartTimestamp(start)
+				}
 			}
 		}
 	})

@@ -4,6 +4,7 @@ package metadata
 
 import (
 	"fmt"
+	"slices"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
