@@ -220,6 +220,7 @@ metrics:
 
   system_cpu_utilization:
       enabled: true
+      stability: development
       description: Histogram metric for testing histogram generation.
       unit: "1"
       histogram:
