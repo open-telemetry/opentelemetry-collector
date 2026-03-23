@@ -12,5 +12,6 @@ var (
 )
 
 const (
-	MetricsToMetricsStability = component.StabilityLevelDevelopment
+	MetricsToMetricsStability   = component.StabilityLevelDevelopment
+	ProfilesToProfilesStability = component.StabilityLevelDevelopment
 )

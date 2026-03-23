@@ -1,6 +1,9 @@
 # Required: The type of the component - Usually the name. The type and class combined uniquely identify the component (eg. receiver/otlp) or subcomponent (eg. receiver/hostmetricsreceiver/cpu)
 type:
 
+# Optional: A deprecated type that is still available as an alias.
+deprecated_type: string
+
 # Optional: Human-readable display name for the component. Used as the title in generated README files.
 display_name: string
 
@@ -15,6 +18,11 @@ scope_name: string
 
 # Optional: The name of the package that mdatagen generates. If not set, the name "metadata" will be used.
 generated_package_name: string
+
+# Optional: Enables per-metric reaggregation config generation for metrics with attributes.
+# When enabled, generated metrics config includes `aggregation_strategy` and `attributes`
+# fields that let users reduce metric cardinality by choosing which dimensions are kept.
+reaggregation_enabled: bool
 
 # Required for components (Optional for subcomponents): A high-level view of the development status and use of this component
 status:

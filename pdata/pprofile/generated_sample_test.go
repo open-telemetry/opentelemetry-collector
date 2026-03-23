@@ -52,13 +52,6 @@ func TestSample_StackIndex(t *testing.T) {
 	assert.Panics(t, func() { newSample(internal.NewSample(), sharedState).SetStackIndex(int32(13)) })
 }
 
-func TestSample_Values(t *testing.T) {
-	ms := NewSample()
-	assert.Equal(t, pcommon.NewInt64Slice(), ms.Values())
-	ms.orig.Values = internal.GenTestInt64Slice()
-	assert.Equal(t, pcommon.Int64Slice(internal.GenTestInt64SliceWrapper()), ms.Values())
-}
-
 func TestSample_AttributeIndices(t *testing.T) {
 	ms := NewSample()
 	assert.Equal(t, pcommon.NewInt32Slice(), ms.AttributeIndices())
@@ -74,6 +67,13 @@ func TestSample_LinkIndex(t *testing.T) {
 	sharedState := internal.NewState()
 	sharedState.MarkReadOnly()
 	assert.Panics(t, func() { newSample(internal.NewSample(), sharedState).SetLinkIndex(int32(13)) })
+}
+
+func TestSample_Values(t *testing.T) {
+	ms := NewSample()
+	assert.Equal(t, pcommon.NewInt64Slice(), ms.Values())
+	ms.orig.Values = internal.GenTestInt64Slice()
+	assert.Equal(t, pcommon.Int64Slice(internal.GenTestInt64SliceWrapper()), ms.Values())
 }
 
 func TestSample_TimestampsUnixNano(t *testing.T) {

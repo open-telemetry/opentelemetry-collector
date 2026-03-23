@@ -26,7 +26,7 @@ func AssertEqualBatchSizeTriggerSend(t *testing.T, tt *componenttest.Telemetry, 
 	want := metricdata.Metrics{
 		Name:        "otelcol_batch_size_trigger_send",
 		Description: "Number of times the batch was sent due to a size trigger [Deprecated]",
-		Unit:        "{times}",
+		Unit:        "{time}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -58,7 +58,7 @@ func AssertEqualQueueCapacity(t *testing.T, tt *componenttest.Telemetry, dps []m
 	want := metricdata.Metrics{
 		Name:        "otelcol_queue_capacity",
 		Description: "Queue capacity - sync gauge example. [Development]",
-		Unit:        "{items}",
+		Unit:        "{item}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
 		},
@@ -72,7 +72,7 @@ func AssertEqualQueueLength(t *testing.T, tt *componenttest.Telemetry, dps []met
 	want := metricdata.Metrics{
 		Name:        "otelcol_queue_length",
 		Description: "This metric is optional and therefore not initialized in NewTelemetryBuilder. [Alpha]",
-		Unit:        "{items}",
+		Unit:        "{item}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
 		},
