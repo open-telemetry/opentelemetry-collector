@@ -47,9 +47,13 @@ are our most advanced users and are the most equipped to deal with disruptive ch
 
 ## How to structure PRs to get expedient reviews?
 
-We recommend that any PR (unless it is trivial) to be smaller than 500 lines
-(excluding go mod/sum changes) in order to help reviewers to do a thorough and
-reasonably fast reviews.
+We recommend that PRs be smaller than 500 lines, excluding `go.mod` and `go.sum`
+changes, to help reviewers perform thorough and timely reviews.
+
+Keep each PR isolated to the specific change it is meant to deliver. Do not bundle unrelated
+cleanup, drive-by edits, opportunistic refactors, wording tweaks, formatting changes, or other
+"small" improvements into the same PR unless they are strictly necessary to make the intended
+change correct. Narrow, focused PRs are significantly easier to review and validate.
 
 ### When adding a new component
 
@@ -59,7 +63,7 @@ Components refer to connectors, exporters, extensions, processors, and receivers
 * Provide a configuration structure which defines the configuration of the component
 * Provide the implementation that performs the component operation
 
-For more details on components, see the [Adding New Components](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#adding-new-components) document and the tutorial [Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) which provides a detailed example of building a component.
+For more details on components, see the [Donating New Components](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#donating-new-components) document and the tutorial [Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) which provides a detailed example of building a component.
 
 When adding a new component to the OpenTelemetry Collector, ensure that any configuration structs used by the component include fields with the `configopaque.String` type for sensitive data. This ensures that the data is masked when serialized to prevent accidental exposure.
 
@@ -87,6 +91,9 @@ When submitting a component to the community, consider breaking it down into sep
 Any refactoring work must be split in its own PR that does not include any
 behavior changes. It is important to do this to avoid hidden changes in large
 and trivial refactoring PRs.
+
+If you notice additional improvement opportunities while working on a change, handle them in
+follow-up PRs instead of extending the current one beyond its original scope.
 
 ## Report a bug or request a feature
 

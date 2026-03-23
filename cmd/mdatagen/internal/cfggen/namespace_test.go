@@ -198,10 +198,22 @@ func TestWithOrigin(t *testing.T) {
 			expected: "go.opentelemetry.io/collector/config/confighttp.target_type",
 		},
 		{
-			name:     "no version propagated when origin has no version",
-			refPath:  "/config/configauth.config",
+			name:     "local relative ref with local absolute resolves to local absolute schema ID",
+			refPath:  "./internal.timeout_config",
+			origin:   "/config/confighttp",
+			expected: "/config/confighttp/internal.timeout_config",
+		},
+		{
+			name:     "local relative ref with external origin resolves to external schema ID",
+			refPath:  "./internal.timeout_config",
 			origin:   "go.opentelemetry.io/collector/config/confighttp",
-			expected: "go.opentelemetry.io/collector/config/configauth.config",
+			expected: "go.opentelemetry.io/collector/config/confighttp/internal.timeout_config",
+		},
+		{
+			name:     "local absolute ref with local absolute origin keeps original schema ID",
+			refPath:  "/config/confighttp.timeout_config",
+			origin:   "/config/confignet.connection_config",
+			expected: "/config/confighttp.timeout_config",
 		},
 	}
 
