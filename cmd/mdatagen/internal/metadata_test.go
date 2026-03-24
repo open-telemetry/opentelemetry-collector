@@ -136,6 +136,10 @@ func TestValidate(t *testing.T) {
 			wantErr: `attribute host.name is already used by entity`,
 		},
 		{
+			name:    "testdata/entity_extra_attributes_conflict.yaml",
+			wantErr: `extra_attributes attribute k8s.namespace.name is already used by entity`,
+		},
+		{
 			name:    "testdata/entity_duplicate_types.yaml",
 			wantErr: `duplicate entity type: host`,
 		},

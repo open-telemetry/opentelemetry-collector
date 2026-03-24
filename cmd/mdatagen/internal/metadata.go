@@ -219,6 +219,11 @@ func (md *Metadata) validateEntities() error {
 			if _, ok := md.ResourceAttributes[ref.Ref]; !ok {
 				errs = errors.Join(errs, fmt.Errorf(`entity "%v": extra_attributes refers to undefined resource attribute: %v`, entity.Type, ref.Ref))
 			}
+			if otherEntity, used := usedAttrs[ref.Ref]; used {
+				errs = errors.Join(errs, fmt.Errorf(`entity "%v": extra_attributes attribute %v is already used by entity "%v"`, entity.Type, ref.Ref, otherEntity))
+			} else {
+				usedAttrs[ref.Ref] = entity.Type
+			}
 		}
 	}
 
