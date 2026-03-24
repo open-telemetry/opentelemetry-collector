@@ -19,6 +19,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
+	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/client"
@@ -40,6 +41,27 @@ var (
 	_ extension.Extension  = (*mockAuthServer)(nil)
 	_ extensionauth.Server = (*mockAuthServer)(nil)
 )
+
+func init() {
+	// Register a custom resolver scheme for testing the custom scheme validation
+	// and dialTarget code paths.
+	resolver.Register(&nopResolverBuilder{scheme: "custom-test"})
+}
+
+type nopResolverBuilder struct {
+	scheme string
+}
+
+func (b *nopResolverBuilder) Build(_ resolver.Target, _ resolver.ClientConn, _ resolver.BuildOptions) (resolver.Resolver, error) {
+	return &nopResolver{}, nil
+}
+
+func (b *nopResolverBuilder) Scheme() string { return b.scheme }
+
+type nopResolver struct{}
+
+func (*nopResolver) ResolveNow(resolver.ResolveNowOptions) {}
+func (*nopResolver) Close()                                {}
 
 type mockAuthServer struct {
 	component.StartFunc
@@ -316,6 +338,12 @@ func TestDialTarget(t *testing.T) {
 			resolverScheme: "",
 			expected:       "backend.example.com:4317",
 		},
+		{
+			name:           "custom registered scheme",
+			endpoint:       "backend.example.com:4317",
+			resolverScheme: "custom-test",
+			expected:       "custom-test:///backend.example.com:4317",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -358,6 +386,11 @@ func TestValidateResolverScheme(t *testing.T) {
 			wantErr:        false,
 		},
 		{
+			name:           "custom registered scheme is valid",
+			resolverScheme: "custom-test",
+			wantErr:        false,
+		},
+		{
 			name:           "unregistered scheme is invalid",
 			resolverScheme: "notarealscheme",
 			wantErr:        true,
@@ -376,6 +409,41 @@ func TestValidateResolverScheme(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestToClientConnWithResolverScheme(t *testing.T) {
+	tests := []struct {
+		name           string
+		resolverScheme string
+	}{
+		{
+			name:           "passthrough resolver",
+			resolverScheme: "passthrough",
+		},
+		{
+			name:           "dns resolver",
+			resolverScheme: "dns",
+		},
+		{
+			name:           "default resolver",
+			resolverScheme: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := ClientConfig{
+				Endpoint: "localhost:1234",
+				TLS: configtls.ClientConfig{
+					Insecure: true,
+				},
+				ResolverScheme: tt.resolverScheme,
+			}
+			conn, err := cfg.ToClientConn(context.Background(), nil, componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+			require.NotNil(t, conn)
+			assert.NoError(t, conn.Close())
 		})
 	}
 }
