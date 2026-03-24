@@ -7,7 +7,9 @@ import (
 	"context"
 	"testing"
 
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
+
+	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/stretchr/testify/require"
 
@@ -120,47 +122,32 @@ func TestExampleConfigs(t *testing.T) {
 	}{
 		{
 			name:        "Basic Configuration",
-			description: "This example demonstrates the most basic configuration for the sample receiver with default settings.",
+			description: "Minimal configuration for the sample receiver.",
 			config: `sample:
-  metrics:
-    default.metric:
-      enabled: true
-`,
-		},
-		{
-			name:        "Advanced Configuration",
-			description: "This example shows an advanced configuration with custom metrics enabled and resource attributes configured.",
-			config: `sample:
-  metrics:
-    default.metric:
-      enabled: true
-    optional.metric:
-      enabled: true
-  resource_attributes:
-    string.resource.attr:
-      enabled: true
-    optional.resource.attr:
-      enabled: true
-`,
-		},
-		{
-			name:        "Minimal Configuration",
-			description: "A minimal configuration suitable for testing environments with only essential metrics.",
-			config: `sample:
-  metrics:
-    metric.input_type:
-      enabled: true
 `,
 		},
 	}
 
+	factory := NewFactory()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Test that the example config is valid YAML
-			var config map[string]any
-			err := yaml.Unmarshal([]byte(tt.config), &config)
-			require.NoError(t, err, "Example config '%s' should be valid YAML: %s", tt.name, tt.description)
-			require.NotNil(t, config, "Example config '%s' should produce a non-nil config", tt.name)
+			// Parse the example config YAML
+			var rawConf map[string]any
+			err := yaml.Unmarshal([]byte(tt.config), &rawConf)
+			require.NoErrorf(t, err, "example config %q is not valid YAML", tt.name)
+
+			// Unmarshal into the component's real config struct
+			cm := confmap.NewFromStringMap(rawConf)
+			sub, err := cm.Sub("sample")
+			require.NoErrorf(t, err, "example config %q must have a %q key", tt.name, "sample")
+
+			cfg := factory.CreateDefaultConfig()
+			require.NoErrorf(t, sub.Unmarshal(&cfg), "example config %q failed to unmarshal into component config", tt.name)
+
+			// If the config implements Validate(), call it
+			if validator, ok := cfg.(interface{ Validate() error }); ok {
+				require.NoErrorf(t, validator.Validate(), "example config %q failed validation", tt.name)
+			}
 		})
 	}
 }

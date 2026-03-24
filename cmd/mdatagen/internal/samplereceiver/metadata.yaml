@@ -9,6 +9,12 @@ github_project: open-telemetry/opentelemetry-collector
 
 sem_conv_version: 1.38.0
 
+example_configs:
+  - name: Basic Configuration
+    description: Minimal configuration for the sample receiver.
+    config: |
+      sample:
+
 feature_gates:
   - id: receiver.sample.featuregate.example
     description: This is an example feature gate for testing mdatagen code generation.

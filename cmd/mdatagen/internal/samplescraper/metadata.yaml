@@ -13,7 +13,6 @@ example_configs:
     description: Basic configuration for the sample scraper with default metrics enabled.
     config: |
       sample:
-        collection_interval: 30s
 
 status:
   disable_codecov_badge: true

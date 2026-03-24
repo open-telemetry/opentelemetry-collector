@@ -526,7 +526,14 @@ func TestLoadMetadata(t *testing.T) {
 				},
 				ScopeName:       "go.opentelemetry.io/collector/internal/receiver/samplereceiver",
 				ShortFolderName: "sample",
-				Tests:           Tests{Host: "newMdatagenNopHost()"},
+				ExampleConfigs: []ExampleConfig{
+					{
+						Name:        "Basic Configuration",
+						Description: "Minimal configuration for the sample receiver.",
+						Config:      "sample:\n",
+					},
+				},
+				Tests: Tests{Host: "newMdatagenNopHost()"},
 				FeatureGates: []FeatureGate{
 					{
 						ID:           "receiver.sample.featuregate.example",

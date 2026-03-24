@@ -10,7 +10,6 @@ Basic configuration for the sample scraper with default metrics enabled.
 
 ```yaml
 sample:
-  collection_interval: 30s
 
 ```
 

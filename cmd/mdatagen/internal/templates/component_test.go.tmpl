@@ -16,7 +16,9 @@ import (
 	{{- end }}
 	{{- if .ExampleConfigs }}
 
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
+
+	"go.opentelemetry.io/collector/confmap"
 	{{- end }}
 
 	"github.com/stretchr/testify/require"
@@ -60,13 +62,16 @@ import (
 	{{- if isConnector }}
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
-	{{- if supportsProfiles }}
+	{{- if or supportsProfiles supportsLogsToProfiles supportsMetricsToProfiles supportsTracesToProfiles supportsProfilesToLogs supportsProfilesToMetrics supportsProfilesToTraces supportsProfilesToProfiles }}
 	"go.opentelemetry.io/collector/connector/xconnector"
 	{{- end }}
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	{{- if or supportsProfiles supportsLogsToProfiles supportsMetricsToProfiles supportsTracesToProfiles supportsProfilesToLogs supportsProfilesToMetrics supportsProfilesToTraces supportsProfilesToProfiles }}
+	"go.opentelemetry.io/collector/consumer/xconsumer"
+	{{- end }}
 	"go.opentelemetry.io/collector/pipeline"
-	{{- if supportsProfiles }}
+	{{- if or supportsProfiles supportsLogsToProfiles supportsMetricsToProfiles supportsTracesToProfiles supportsProfilesToLogs supportsProfilesToMetrics supportsProfilesToTraces supportsProfilesToProfiles }}
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	{{- end }}
 	{{- end }}
@@ -742,13 +747,26 @@ func TestExampleConfigs(t *testing.T) {
 		{{- end }}
 	}
 
+	factory := NewFactory()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Test that the example config is valid YAML
-			var config map[string]any
-			err := yaml.Unmarshal([]byte(tt.config), &config)
-			require.NoError(t, err, "Example config '%s' should be valid YAML: %s", tt.name, tt.description)
-			require.NotNil(t, config, "Example config '%s' should produce a non-nil config", tt.name)
+			// Parse the example config YAML
+			var rawConf map[string]any
+			err := yaml.Unmarshal([]byte(tt.config), &rawConf)
+			require.NoErrorf(t, err, "example config %q is not valid YAML", tt.name)
+
+			// Unmarshal into the component's real config struct
+			cm := confmap.NewFromStringMap(rawConf)
+			sub, err := cm.Sub("{{ .Type }}")
+			require.NoErrorf(t, err, "example config %q must have a %q key", tt.name, "{{ .Type }}")
+
+			cfg := factory.CreateDefaultConfig()
+			require.NoErrorf(t, sub.Unmarshal(&cfg), "example config %q failed to unmarshal into component config", tt.name)
+
+			// If the config implements Validate(), call it
+			if validator, ok := cfg.(interface{ Validate() error }); ok {
+				require.NoErrorf(t, validator.Validate(), "example config %q failed validation", tt.name)
+			}
 		})
 	}
 }

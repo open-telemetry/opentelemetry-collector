@@ -4,11 +4,14 @@ package {{ .Package }}
 
 {{ $reag := .ReaggregationEnabled }}
 {{- $hasReagMetrics := false }}
-{{- range $name, $metric := .Metrics }}{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}{{- $hasReagMetrics = true }}{{- end }}{{- end }}
+{{- $hasRequiredAttr := false }}
+{{- range $name, $metric := .Metrics }}{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}{{- $hasReagMetrics = true }}{{- range $element := $metric.Attributes }}{{- if (attributeInfo $element).IsRequired }}{{- $hasRequiredAttr = true }}{{- end }}{{- end }}{{- end }}{{- end }}
 
 import (
 	{{- if $hasReagMetrics }}
 	"fmt"
+	{{- end }}
+	{{- if $hasRequiredAttr }}
 	"slices"
 	{{- end }}
 
