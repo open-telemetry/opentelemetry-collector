@@ -145,6 +145,29 @@ func TestMappingSwitchDictionary(t *testing.T) {
 			wantErr:        errors.New("invalid filename index 1"),
 		},
 		{
+			name: "with a filename index equal to the source table length (boundary condition)",
+			mapping: func() Mapping {
+				m := NewMapping()
+				m.SetFilenameStrindex(2)
+				return m
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("", "test")
+				return d
+			}(),
+			dst: NewProfilesDictionary(),
+
+			wantMapping: func() Mapping {
+				m := NewMapping()
+				m.SetFilenameStrindex(2)
+				return m
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid filename index 2"),
+		},
+		{
 			name: "with an existing attribute",
 			mapping: func() Mapping {
 				m := NewMapping()
@@ -164,26 +187,27 @@ func TestMappingSwitchDictionary(t *testing.T) {
 			}(),
 			dst: func() ProfilesDictionary {
 				d := NewProfilesDictionary()
-				d.StringTable().Append("", "foo")
+				d.StringTable().Append("", "test")
 
 				d.AttributeTable().AppendEmpty()
-				d.AttributeTable().AppendEmpty()
+				a := d.AttributeTable().AppendEmpty()
+				a.SetKeyStrindex(1)
+
 				return d
 			}(),
 
 			wantMapping: func() Mapping {
 				m := NewMapping()
-				m.AttributeIndices().Append(2)
+				m.AttributeIndices().Append(1)
 				return m
 			}(),
 			wantDictionary: func() ProfilesDictionary {
 				d := NewProfilesDictionary()
-				d.StringTable().Append("", "foo", "test")
+				d.StringTable().Append("", "test")
 
 				d.AttributeTable().AppendEmpty()
-				d.AttributeTable().AppendEmpty()
 				a := d.AttributeTable().AppendEmpty()
-				a.SetKeyStrindex(2)
+				a.SetKeyStrindex(1)
 				return d
 			}(),
 		},
@@ -205,6 +229,30 @@ func TestMappingSwitchDictionary(t *testing.T) {
 			}(),
 			wantDictionary: NewProfilesDictionary(),
 			wantErr:        errors.New("invalid attribute index 1"),
+		},
+		{
+			name: "with an attribute index equal to the source table length (boundary condition)",
+			mapping: func() Mapping {
+				m := NewMapping()
+				m.AttributeIndices().Append(2)
+				return m
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.AttributeTable().AppendEmpty()
+				d.AttributeTable().AppendEmpty()
+				return d
+			}(),
+			dst: NewProfilesDictionary(),
+
+			wantMapping: func() Mapping {
+				m := NewMapping()
+				m.AttributeIndices().Append(2)
+				return m
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid attribute index 2"),
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

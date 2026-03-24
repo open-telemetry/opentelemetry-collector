@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/otelcol/internal/metadata"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.opentelemetry.io/collector/service/telemetry"
@@ -148,16 +149,16 @@ func TestPrintCommand(t *testing.T) {
 				fg := featuregate.GlobalRegistry()
 
 				fg.VisitAll(func(g *featuregate.Gate) {
-					if g.ID() == featureGateName {
+					if g.ID() == metadata.OtelcolPrintInitialConfigFeatureGate.ID() {
 						defer func() {
-							_ = fg.Set(featureGateName, g.IsEnabled())
+							_ = fg.Set(metadata.OtelcolPrintInitialConfigFeatureGate.ID(), g.IsEnabled())
 						}()
 					}
 				})
 				if test.disableFF {
-					require.NoError(t, fg.Set(featureGateName, false))
+					require.NoError(t, fg.Set(metadata.OtelcolPrintInitialConfigFeatureGate.ID(), false))
 				} else {
-					require.NoError(t, fg.Set(featureGateName, true))
+					require.NoError(t, fg.Set(metadata.OtelcolPrintInitialConfigFeatureGate.ID(), true))
 				}
 
 				testR := component.MustNewType("r")

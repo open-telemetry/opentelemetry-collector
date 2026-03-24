@@ -24,8 +24,8 @@ func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
 func AssertEqualBatchSizeTriggerSend(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_batch_size_trigger_send",
-		Description: "Number of times the batch was sent due to a size trigger [Deprecated since v0.110.0]",
-		Unit:        "{times}",
+		Description: "Number of times the batch was sent due to a size trigger [Deprecated]",
+		Unit:        "{time}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -40,7 +40,7 @@ func AssertEqualBatchSizeTriggerSend(t *testing.T, tt *componenttest.Telemetry, 
 func AssertEqualProcessRuntimeTotalAllocBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_process_runtime_total_alloc_bytes",
-		Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')",
+		Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc') [Stable]",
 		Unit:        "By",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -57,7 +57,7 @@ func AssertEqualQueueCapacity(t *testing.T, tt *componenttest.Telemetry, dps []m
 	want := metricdata.Metrics{
 		Name:        "otelcol_queue_capacity",
 		Description: "Queue capacity - sync gauge example. [Development]",
-		Unit:        "{items}",
+		Unit:        "{item}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
 		},
@@ -71,7 +71,7 @@ func AssertEqualQueueLength(t *testing.T, tt *componenttest.Telemetry, dps []met
 	want := metricdata.Metrics{
 		Name:        "otelcol_queue_length",
 		Description: "This metric is optional and therefore not initialized in NewTelemetryBuilder. [Alpha]",
-		Unit:        "{items}",
+		Unit:        "{item}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
 		},

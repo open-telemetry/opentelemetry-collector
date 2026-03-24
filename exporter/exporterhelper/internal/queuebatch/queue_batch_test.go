@@ -486,11 +486,9 @@ func TestQueueBatch_BatchBlocking(t *testing.T) {
 	// send 6 blockOnOverflow requests
 	wg := sync.WaitGroup{}
 	for range 6 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			assert.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 1, Delay: 10 * time.Millisecond}))
-		}()
+		})
 	}
 	wg.Wait()
 

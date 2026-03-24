@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.opentelemetry.io/otel/trace"
 	nooptrace "go.opentelemetry.io/otel/trace/noop"
 
@@ -345,7 +346,9 @@ func checkRecordedMetricsForLogs(t *testing.T, tt *componenttest.Telemetry, id c
 			[]metricdata.DataPoint[int64]{
 				{
 					Attributes: attribute.NewSet(
-						attribute.String("exporter", id.String())),
+						attribute.String("exporter", id.String()),
+						attribute.String(string(semconv.ErrorTypeKey), "_OTHER"),
+						attribute.Bool(internal.ErrorPermanentKey, false)),
 					Value: int64(numBatches * ld.LogRecordCount()),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())

@@ -7,6 +7,162 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.54.0/v0.148.0
+
+### ❗ Known Issues ❗
+
+- `service`: The collector's internal Prometheus metrics endpoint (`:8888`) now emits OTel service labels with underscore
+  names (`service_name`, `service_instance_id`, `service_version`) instead of dot-notation names (`service.name`,
+  `service.instance.id`, `service.version`). Users scraping this endpoint with the Prometheus receiver will see these renamed
+  labels in resource and datapoint attributes. As a workaround, add the following `metric_relabel_configs` to your scrape
+  config in prometheus receiver:
+  ```yaml
+  metric_relabel_configs:
+    - source_labels: [service_name]
+      target_label: service.name
+    - source_labels: [service_instance_id]
+      target_label: service.instance.id
+    - source_labels: [service_version]
+      target_label: service.version
+    - regex: service_name|service_instance_id|service_version
+      action: labeldrop
+  ```
+  See https://github.com/open-telemetry/opentelemetry-collector/issues/14814 for details and updates.
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Change metric units to be singular to match OTel specification, e.g. `{requests}` -> `{request}` (#14753)
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Add deprecated_type field to allow specifying an alias for component types. (#14718)
+- `cmd/mdatagen`: Generate entity-scoped MetricsBuilder API that enforces entity-metric associations at compile time (#14659)
+- `cmd/mdatagen`: Skip generating reaggregation config options for metrics that have no aggregatable attributes. (#14689)
+- `pkg/service`: The internal status reporter no longer drops repeated Ok and RecoverableError statuses (#14282)
+  Status events can now carry metadata and there's value in allowing them to be emitted despite the status value itself 
+  not changing.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/builder`: Add `.exe` to output binary names when building for Windows targets. (#12591)
+- `exporter/debug`: Add printing of metric metadata in detailed verbosity. (#14667)
+- `exporter/otlp_grpc`: Prevent nil pointer panic when push methods are called before the OTLP exporter initializes its gRPC clients. (#14663)
+  When the sending queue and retry are disabled, calling ConsumeTraces,
+  ConsumeMetrics, ConsumeLogs, or ConsumeProfiles before the OTLP exporter
+  initializes its gRPC clients could cause a nil pointer dereference panic.
+  The push methods now return an error instead of panicking.
+  
+- `exporter/otlp_http`: Show the actual destination URL in error messages when request URL is modified by middleware. (#14673)
+  Unwraps the `*url.Error` returned by `http.Client.Do()` to prevent misleading error logs when a middleware extension dynamically updates the endpoint.
+  
+- `pdata/pprofile`: Switch the dictionary of dictionary tables entries only once when merging profiles (#14709)
+  For dictionary table data, we used to switch their dictionaries when doing
+  the switch for the data that uses them.
+  However, when an entry is associated with multiple other data (several
+  samples can use the same stack), we would have been switching the
+  dictionaries of the entry multiple times.
+  
+  We now switch dictionaries for dictionary table data only once, before
+  switching the resource profiles.
+  
+
+<!-- previous-version -->
+
+## v1.53.0/v0.147.0
+
+### 💡 Enhancements 💡
+
+- `exporter/debug`: Output bucket counts for exponential histogram data points in normal verbosity. (#10463)
+- `pkg/exporterhelper`: Add `metadata_keys` configuration to `sending_queue.batch.partition` to partition batches by client metadata (#14139)
+  The `metadata_keys` configuration option is now available in the `sending_queue.batch.partition` section for all exporters.
+  When specified, batches are partitioned based on the values of the listed metadata keys, allowing separate batching per metadata partition. This feature
+  is automatically configured when using `exporterhelper.WithQueue()`.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/builder`: Fix duplicate error output when CLI command execution fails in the builder tool. (#14436)
+- `cmd/mdatagen`: Fix duplicate error output when CLI command execution fails in the mdatagen tool. (#14436)
+- `cmd/mdatagen`: Fix semconv URL validation for metrics with underscores in their names (#14583)
+  Metrics like `system.disk.io_time` now correctly validate against semantic convention URLs containing underscores in the anchor tag.
+- `extension/memory_limiter`: Use ChainUnaryInterceptor instead of UnaryInterceptor to allow multiple interceptors. (#14634)
+  If multiple extensions that use the UnaryInterceptor are set the binary panics at start time.
+- `extension/memory_limiter`: Add support for streaming services. (#14634)
+- `pkg/config/configmiddleware`: Add context.Context to HTTP middleware interface constructors. (#14523)
+  This is a breaking API change for components that implement or use extensionmiddleware.
+- `pkg/confmap`: Fix another issue where configs could fail to decode when using interpolated values in string fields. (#14034)
+  For example, a resource attribute can be set via an environment variable to a string that is parseable as a number, e.g. `1234`.
+  
+  (A similar bug was fixed in a previous release: that one was triggered when the field was nested in a struct,
+  whereas this one is triggered when the field internally has type "pointer to string" rather than "string".)
+  
+- `pkg/otelcol`: The featuregate subcommand now rejects extra positional arguments instead of silently ignoring them. (#14554)
+- `pkg/queuebatch`: Fix data race in partition_batcher where resetTimer() was called outside mutex, causing concurrent timer.Reset() calls and unpredictable batch flush timing under load. (#14491)
+- `pkg/scraperhelper`: Log scrapers now emit log-appropriate receiver telemetry (#14654)
+  Log scrapers previously emitted the same receiver telemetry as metric scrapers,
+  such as the otelcol_receiver_accepted_metric_points metric (instead of otelcol_receiver_accepted_log_records),
+  or spans named receiver/myreceiver/MetricsReceived (instead of receiver/myreceiver/LogsReceived).
+  
+  This did not affect scraper-specific spans and metrics.
+  
+- `processor/batch`: Fixes a bug where the batch processor would not copy `SchemaUrl` metadata from resource and scope containers during partial batch splits. (#12279, #14620)
+
+<!-- previous-version -->
+
+## v1.52.0/v0.146.1
+
+<!-- previous-version -->
+
+## v0.146.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Increase minimum Go version to 1.25 (#14567)
+
+### 🚩 Deprecations 🚩
+
+- `pdata/pprofile`: Declare removed aggregation elements as deprecated. (#14528)
+
+### 💡 Enhancements 💡
+
+- `all`: Add detailed failure attributes to exporter send_failed metrics at detailed telemetry level. (#13956)
+  The `otelcol_exporter_send_failed_{spans,metric_points,log_records}` metrics now include
+  failure attributes when telemetry level is Detailed: `error.type` (OpenTelemetry semantic convention
+  describing the error class) and `error.permanent` (indicates if error is permanent/non-retryable).
+  The `error.type` attribute captures gRPC status codes (e.g., "Unavailable", "ResourceExhausted"),
+  standard Go context errors (e.g., "canceled", "deadline_exceeded"),
+  and collector-specific errors (e.g., "shutdown").
+  This enables better alerting and debugging by providing standardized error classification.
+- `cmd/builder`: Introduce new experimental `init` subcommand (#14530)
+  The new `init` subcommand initializes a new custom collector
+- `cmd/builder`: Add "telemetry" field to allow configuring telemetry providers (#14575)
+  Most users should not need to use this, this field should only be set if you
+  intend to provide your own OpenTelemetry SDK.
+  
+- `cmd/mdatagen`: Introduce additional metadata (the version since the deprecation started, and the deprecation reason) for deprecated metrics. (#14113)
+- `cmd/mdatagen`: Add optional `relationships` field to entity schema in metadata.yaml (#14284)
+- `exporter/debug`: Add `output_paths` configuration option to control output destination when `use_internal_logger` is false. (#10472)
+  When `use_internal_logger` is set to `false`, the debug exporter now supports configuring the output destination via the `output_paths` option.
+  This allows users to send debug exporter output to `stdout`, `stderr`, or a file path.
+  The default value is `["stdout"]` to maintain backward compatibility.
+  
+- `pkg/confmap`: Add experimental `ToStringMapRaw` function to decode `confmap.Conf` into a string map without losing internal types (#14480)
+  This method exposes the internal structure of a `confmap.Conf` which may change at any time without prior notice
+  
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Reset aggDataPoints during metric init to avoid index out of range panic across emit cycles when reaggregation is enabled. (#14569)
+- `cmd/mdatagen`: Fix panic when mdatagen is run without arguments. (#14506)
+- `pdata/pprofile`: Fix off-by-one issue in dictionary lookups. (#14534)
+- `pkg/config/confighttp`: Fix high cardinality span name from request method from confighttp server internal telemetry (#14516)
+  Follow spec to bound request method cardinality.
+- `pkg/otelcol`: Ignore component aliases in the `otelcol components` command (#14492)
+- `pkg/otelcol`: Order providers and converters in alphabetical order in the `components` subcommand. (#14476)
+
+<!-- previous-version -->
+
 ## v1.51.0/v0.145.0
 
 ### 💡 Enhancements 💡
