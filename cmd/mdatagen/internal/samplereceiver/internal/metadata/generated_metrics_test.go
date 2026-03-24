@@ -560,3 +560,19 @@ func TestMetricsBuilder(t *testing.T) {
 		})
 	}
 }
+
+func TestWithStartTimeOverride(t *testing.T) {
+	rm := pmetric.NewResourceMetrics()
+	metrics := rm.ScopeMetrics().AppendEmpty().Metrics()
+
+	metrics.AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+	metrics.AppendEmpty().SetEmptySum().DataPoints().AppendEmpty()
+	metrics.AppendEmpty().SetEmptyHistogram().DataPoints().AppendEmpty()
+
+	opt := WithStartTimeOverride(pcommon.Timestamp(1234567890))
+	opt.apply(rm)
+
+	assert.Equal(t, pcommon.Timestamp(1234567890), metrics.At(0).Gauge().DataPoints().At(0).StartTimestamp())
+	assert.Equal(t, pcommon.Timestamp(1234567890), metrics.At(1).Sum().DataPoints().At(0).StartTimestamp())
+	assert.Equal(t, pcommon.Timestamp(1234567890), metrics.At(2).Histogram().DataPoints().At(0).StartTimestamp())
+}

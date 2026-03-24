@@ -159,3 +159,21 @@ func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesC
 	return cfg
 }
 {{- end }}
+
+{{ if $reag }}
+{{- range $name, $metric := .Metrics }}
+func Test{{ $name.Render }}MetricConfig_Unmarshal_Nil(t *testing.T) {
+	cfg := &{{ $name.Render }}MetricConfig{}
+	require.NoError(t, cfg.Unmarshal(nil))
+}
+
+{{- if hasAggregatableAttributes $metric.Attributes }}
+func Test{{ $name.Render }}MetricConfig_Validate_InvalidAttribute(t *testing.T) {
+	cfg := &{{ $name.Render }}MetricConfig{
+		EnabledAttributes: []{{ $name.Render }}MetricAttributeKey{"invalid_attribute_for_test"},
+	}
+	require.Error(t, cfg.Validate())
+}
+{{- end }}
+{{- end }}
+{{ end }}
