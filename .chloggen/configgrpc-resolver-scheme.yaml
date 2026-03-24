@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
-component: config/configgrpc
+component: pkg/config/configgrpc
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Add resolver_scheme field to ClientConfig to control the gRPC name resolver scheme, enabling passthrough mode to bypass DNS resolution in IPv4-only environments
