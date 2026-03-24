@@ -114,7 +114,7 @@ func WithConditionalIntAttrMetricAttribute(conditionalIntAttrAttributeValue int6
 
 func WithConditionalStringAttrMetricAttribute(conditionalStringAttrAttributeValue string) MetricAttributeOption {
 	return metricAttributeOptionFunc(func(attrs pcommon.Map) {
-		attrs.PutStr("conditional_string_attr", conditionalStringAttrAttributeValue)
+		attrs.PutStr("conditional_string_attr", string(conditionalStringAttrAttributeValue))
 	})
 }
 

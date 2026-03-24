@@ -107,8 +107,6 @@ func With{{ .Render }}MetricAttribute({{ .RenderUnexported }}AttributeValue {{ i
 		attrs.PutStr("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue.String())
 		{{- else if eq (attributeInfo .).Type.String "String" }}
 		attrs.PutStr("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue)
-		{{- else if eq (attributeInfo .).Type.String "Str" }}
-		attrs.PutStr("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue)
 		{{- else if eq (attributeInfo .).Type.String "Int" }}
 		attrs.PutInt("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue)
 		{{- else if eq (attributeInfo .).Type.String "Double" }}
@@ -259,7 +257,7 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	{{- end }}
 
 	{{- if $metric.HasConditionalAttributes $.Attributes }}
-for _, op := range options {
+	for _, op := range options {
 		op.apply(dp.Attributes())
 	}
 	{{- end }}
