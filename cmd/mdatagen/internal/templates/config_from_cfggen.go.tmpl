@@ -65,6 +65,17 @@ type Config struct {
     {{ template "struct" .Metadata.Config }}
 }
 
+{{ define "customValidator" -}}
+    {{ $name := .FieldName | publicVar -}}
+    {{ $value := "c" }}
+    {{- if ne .FieldName "." }}
+        {{ $value = printf "c.%s" $name -}}
+    {{ end }}
+    if inner_err := {{ .CustomValidator }}({{ $value }}); inner_err != nil {
+        err = errors.Join(err, inner_err)
+    }
+{{- end }}
+
 {{ define "requiredValidator" -}}
     {{ $name := .FieldName | publicVar -}}
     {{- if .IsPointer }}
@@ -95,6 +106,9 @@ type Config struct {
 {{- define "validation" -}}
     {{- if .IsRequired -}}
         {{ template "requiredValidator" . }}
+    {{- end -}}
+    {{- if .CustomValidator }}
+        {{ template "customValidator" . }}
     {{- end -}}
 {{- end }}
 

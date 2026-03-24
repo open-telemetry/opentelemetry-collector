@@ -38,6 +38,8 @@ config:
           http_client:
             $ref: /config/confighttp.client_config
             x-pointer: true
+            go_struct:
+              custom_validator:
           interval:
             type: string
             format: duration

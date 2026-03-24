@@ -305,11 +305,12 @@ func ExtractValidators(md *ConfigMetadata) []Validator {
 }
 
 type Validator struct {
-	FieldName  string
-	FieldType  string
-	IsRequired bool
-	IsPointer  bool
-	IsOptional bool
+	FieldName       string
+	FieldType       string
+	IsRequired      bool
+	IsPointer       bool
+	IsOptional      bool
+	CustomValidator string
 }
 
 func collectValidators(md *ConfigMetadata, validators *[]Validator) {
@@ -324,6 +325,23 @@ func collectValidators(md *ConfigMetadata, validators *[]Validator) {
 				IsOptional: prop.IsOptional,
 			})
 		}
+		if prop.GoStruct.CustomValidator != nil {
+			*validators = append(*validators, Validator{
+				FieldName:       propName,
+				FieldType:       resolveType(prop),
+				IsPointer:       prop.IsPointer,
+				IsOptional:      prop.IsOptional,
+				CustomValidator: generateValidatorName(propName, prop.GoStruct.CustomValidator),
+			})
+		}
+	}
+
+	if md.GoStruct.CustomValidator != nil {
+		*validators = append(*validators, Validator{
+			FieldName:       ".",
+			FieldType:       md.Type,
+			CustomValidator: generateValidatorName("", md.GoStruct.CustomValidator),
+		})
 	}
 }
 
@@ -338,4 +356,12 @@ func resolveType(md *ConfigMetadata) string {
 	default:
 		return md.Type
 	}
+}
+
+func generateValidatorName(propName string, desc *CustomValidatorConfig) string {
+	if desc.Name != "" {
+		return desc.Name
+	}
+	id, _ := helpers.FormatIdentifier(propName, true)
+	return "validate" + id
 }
