@@ -149,7 +149,7 @@ func TestUnmarshal(t *testing.T) {
 		expectedCfg func() configoptional.Optional[Config]
 	}{
 		{
-			path: "batch_set_empty_explicit_sizer.yaml",
+			path: "batch_set_empty_explicit_sizer_bytes.yaml",
 			expectedCfg: func() configoptional.Optional[Config] {
 				cfg := newBaseCfg()
 				cfg.Get().Sizer = request.SizerTypeBytes
@@ -157,6 +157,18 @@ func TestUnmarshal(t *testing.T) {
 				// Batch sizer inherited from queue sizer
 				cfg.Get().Batch.GetOrInsertDefault()
 				cfg.Get().Batch.Get().Sizer = request.SizerTypeBytes
+				return cfg
+			},
+		},
+		{
+			path: "batch_set_empty_explicit_sizer_requests.yaml",
+			expectedCfg: func() configoptional.Optional[Config] {
+				cfg := newBaseCfg()
+				cfg.Get().Sizer = request.SizerTypeRequests
+				cfg.Get().QueueSize = 10000
+				// Queue sizer is "requests" (not valid for batch), so batch defaults to "items"
+				cfg.Get().Batch.GetOrInsertDefault()
+				cfg.Get().Batch.Get().Sizer = request.SizerTypeItems
 				return cfg
 			},
 		},
