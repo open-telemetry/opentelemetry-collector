@@ -273,12 +273,111 @@ func TestSanitizeEndpoint(t *testing.T) {
 	assert.Equal(t, "/backend.example.com:4317", cfg.sanitizedEndpoint())
 }
 
+func TestDialTarget(t *testing.T) {
+	tests := []struct {
+		name           string
+		endpoint       string
+		resolverScheme string
+		expected       string
+	}{
+		{
+			name:           "default scheme with bare endpoint",
+			endpoint:       "backend.example.com:4317",
+			resolverScheme: "",
+			expected:       "backend.example.com:4317",
+		},
+		{
+			name:           "explicit dns scheme",
+			endpoint:       "backend.example.com:4317",
+			resolverScheme: "dns",
+			expected:       "dns:///backend.example.com:4317",
+		},
+		{
+			name:           "passthrough scheme",
+			endpoint:       "backend.example.com:4317",
+			resolverScheme: "passthrough",
+			expected:       "passthrough:///backend.example.com:4317",
+		},
+		{
+			name:           "passthrough with http endpoint strips http before prepending",
+			endpoint:       "http://backend.example.com:4317",
+			resolverScheme: "passthrough",
+			expected:       "passthrough:///backend.example.com:4317",
+		},
+		{
+			name:           "passthrough with dns endpoint strips dns before prepending",
+			endpoint:       "dns:///backend.example.com:4317",
+			resolverScheme: "passthrough",
+			expected:       "passthrough:///backend.example.com:4317",
+		},
+		{
+			name:           "default scheme with http endpoint",
+			endpoint:       "http://backend.example.com:4317",
+			resolverScheme: "",
+			expected:       "backend.example.com:4317",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := NewDefaultClientConfig()
+			cfg.Endpoint = tt.endpoint
+			cfg.ResolverScheme = tt.resolverScheme
+			assert.Equal(t, tt.expected, cfg.dialTarget())
+		})
+	}
+}
+
 func TestValidateEndpoint(t *testing.T) {
 	cfg := NewDefaultClientConfig()
 	cfg.Endpoint = "dns://authority/backend.example.com:4317"
 	assert.NoError(t, cfg.Validate())
 	cfg.Endpoint = "unix:///my/unix/socket.sock"
 	assert.NoError(t, cfg.Validate())
+}
+
+func TestValidateResolverScheme(t *testing.T) {
+	tests := []struct {
+		name           string
+		resolverScheme string
+		wantErr        bool
+		errContains    string
+	}{
+		{
+			name:           "empty (default) is valid",
+			resolverScheme: "",
+			wantErr:        false,
+		},
+		{
+			name:           "dns is valid",
+			resolverScheme: "dns",
+			wantErr:        false,
+		},
+		{
+			name:           "passthrough is valid",
+			resolverScheme: "passthrough",
+			wantErr:        false,
+		},
+		{
+			name:           "unregistered scheme is invalid",
+			resolverScheme: "notarealscheme",
+			wantErr:        true,
+			errContains:    "invalid resolver_scheme",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := NewDefaultClientConfig()
+			cfg.Endpoint = "backend.example.com:4317"
+			cfg.ResolverScheme = tt.resolverScheme
+			err := cfg.Validate()
+			if tt.wantErr {
+				require.Error(t, err)
+				assert.ErrorContains(t, err, tt.errContains)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
 
 func TestHeaders(t *testing.T) {
