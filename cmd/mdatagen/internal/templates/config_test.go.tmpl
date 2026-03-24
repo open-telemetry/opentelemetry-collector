@@ -34,11 +34,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				Metrics: MetricsConfig{
 					{{- range $name, $metric := .Metrics }}
 					{{- $metricReag := and $reag (hasAggregatableAttributes $metric.Attributes) }}
-					{{ $name.Render }}: {{ if $reag }}{{ $name.Render }}{{ else }}Metric{{ end }}Config{
+					{{ $name.Render }}: {{ if $reag }}{{ $name.Render }}{{ end }}MetricConfig{
 						Enabled: true,
 						{{- if $metricReag }}
 						AggregationStrategy: AggregationStrategy{{ if eq $metric.Data.Type "Sum" }}Sum{{ else }}Avg{{ end }},
-						EnabledAttributes:   []{{ $name.Render }}AttributeKey{ {{- range $index, $element := $metric.Attributes -}}{{ if $index }}, {{ end }}{{ $name.Render }}AttributeKey{{ $element.Render }}{{ end -}} },
+						EnabledAttributes:   []{{ $name.Render }}MetricAttributeKey{ {{- range $index, $element := $metric.Attributes -}}{{ if $index }}, {{ end }}{{ $name.Render }}MetricAttributeKey{{ $element.Render }}{{ end -}} },
 						{{- end }}
 					},
 					{{- end }}
@@ -58,11 +58,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				Metrics: MetricsConfig{
 					{{- range $name, $metric := .Metrics }}
 					{{- $metricReag := and $reag (hasAggregatableAttributes $metric.Attributes) }}
-					{{ $name.Render }}: {{ if $reag }}{{ $name.Render }}{{ else }}Metric{{ end }}Config{
+					{{ $name.Render }}: {{ if $reag }}{{ $name.Render }}{{ end }}MetricConfig{
 						Enabled: false,
 						{{- if $metricReag }}
 						AggregationStrategy: AggregationStrategy{{ if eq $metric.Data.Type "Sum" }}Sum{{ else }}Avg{{ end }},
-						EnabledAttributes:   []{{ $name.Render }}AttributeKey{ {{- range $index, $element := $metric.Attributes -}}{{ if $index }}, {{ end }}{{ $name.Render }}AttributeKey{{ $element.Render }}{{ end -}} },
+						EnabledAttributes:   []{{ $name.Render }}MetricAttributeKey{ {{- range $index, $element := $metric.Attributes -}}{{ if $index }}, {{ end }}{{ $name.Render }}MetricAttributeKey{{ $element.Render }}{{ end -}} },
 						{{- end }}
 					},
 					{{- end }}
@@ -82,7 +82,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
 			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(
 				{{- if $reag }}
-				{{- range $name, $metric := .Metrics }}{{ $name.Render }}Config{}, {{ end }}
+				{{- range $name, $metric := .Metrics }}{{ $name.Render }}MetricConfig{}, {{ end }}
 				{{- else }}MetricConfig{},{{ end }}
 				{{- if .ResourceAttributes }}ResourceAttributeConfig{},{{ end }}
 			))

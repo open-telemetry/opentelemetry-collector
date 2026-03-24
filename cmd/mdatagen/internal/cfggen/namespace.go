@@ -68,16 +68,24 @@ func NewRef(refPath string) *Ref {
 
 func WithOrigin(refPath string, origin *Ref) *Ref {
 	ref := NewRef(refPath)
-	if origin != nil {
-		if origin.isExternal() {
-			ref.namespace = origin.namespace
-			ref.kind = External
-			if !strings.HasPrefix(ref.schemaID, "/") {
-				ref.schemaID = path.Join(origin.schemaID, ref.schemaID)
-			} else {
-				ref.schemaID = strings.Trim(ref.schemaID, "/")
-			}
+	if origin == nil {
+		return ref
+	}
+
+	if origin.isExternal() {
+		ref.namespace = origin.namespace
+		ref.kind = External
+		if strings.HasPrefix(ref.schemaID, "/") {
+			ref.schemaID = strings.Trim(ref.schemaID, "/")
+			return ref
 		}
+
+		ref.schemaID = path.Join(origin.schemaID, ref.schemaID)
+		return ref
+	}
+	// check if it's a local ref with relative path, if so, resolve it against the origin schema ID
+	if ref.isLocal() && !strings.HasPrefix(ref.schemaID, "/") {
+		ref.schemaID = path.Join(origin.schemaID, ref.schemaID)
 	}
 	return ref
 }
@@ -155,10 +163,8 @@ func (r *Ref) Validate() error {
 	if r.defName == "" {
 		return errors.New("missing definition name")
 	}
-	if r.isInternal() || r.isLocal() {
-		if r.isLocal() && r.schemaID == "" {
-			return errors.New("missing schema ID in local reference")
-		}
+	if r.isLocal() && r.schemaID == "" {
+		return errors.New("missing schema ID in local reference")
 	}
 
 	return nil
@@ -187,4 +193,11 @@ func (r *Ref) String() string {
 
 func (r *Ref) CacheKey() string {
 	return r.String()
+}
+
+func LocalizeRef(refPath, importRootPath string) string {
+	if importRootPath == "" || !strings.HasPrefix(refPath, importRootPath+"/") {
+		return refPath
+	}
+	return strings.TrimPrefix(refPath, importRootPath)
 }

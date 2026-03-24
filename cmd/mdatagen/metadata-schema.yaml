@@ -19,15 +19,10 @@ scope_name: string
 # Optional: The name of the package that mdatagen generates. If not set, the name "metadata" will be used.
 generated_package_name: string
 
-# Optional: Array of example configuration snippets for the component. Used to demonstrate common use cases.
-example_configs:
-  - # Required: A descriptive name for the example configuration.
-    name: string
-    # Required: Description providing context about when this configuration should be used.
-    description: string
-    # Required: The example configuration snippet in YAML format.
-    config: |
-      key: value
+# Optional: Enables per-metric reaggregation config generation for metrics with attributes.
+# When enabled, generated metrics config includes `aggregation_strategy` and `attributes`
+# fields that let users reduce metric cardinality by choosing which dimensions are kept.
+reaggregation_enabled: bool
 
 # Required for components (Optional for subcomponents): A high-level view of the development status and use of this component
 status:
