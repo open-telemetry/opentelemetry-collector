@@ -6,3 +6,5 @@ exclude  = [
     "^http(s)?://localhost",
     "^http(s)?://example.com"
 ]
+
+remap = ["https://github.com/(.*)#L[0-9]+(-L[0-9]+)? https://github.com/$1"]
