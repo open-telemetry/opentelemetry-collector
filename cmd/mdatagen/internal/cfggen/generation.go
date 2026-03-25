@@ -31,6 +31,12 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return ExtractDefs(cfg)
 		},
+		"extractValidators": func(cfg *ConfigMetadata) []Validator {
+			if cfg == nil {
+				return nil
+			}
+			return ExtractValidators(cfg)
+		},
 		"mapGoType": func(cfg *ConfigMetadata, propName string) string {
 			if cfg == nil {
 				return "any"
@@ -256,24 +262,80 @@ func collectDefs(md *ConfigMetadata, defs map[string]*ConfigMetadata) {
 	}
 
 	for propName, prop := range md.Properties {
-		// if is embedded object
-		if prop.Type == "object" {
-			if len(prop.Properties) > 0 {
-				defs[propName] = prop
-				collectDefs(prop, defs)
-			}
-			ap := md.AdditionalProperties
-			if ap != nil && ap.Type == "object" && len(ap.Properties) > 0 {
-				defs[propName] = ap
-				collectDefs(ap, defs)
-			}
+		collectDefsForSchema(propName, prop, defs)
+	}
+
+	for _, schema := range md.AllOf {
+		collectDefs(schema, defs)
+	}
+}
+
+func collectDefsForSchema(propName string, md *ConfigMetadata, defs map[string]*ConfigMetadata) {
+	if md == nil || md.Ref != "" || md.GoType != "" {
+		return
+	}
+
+	switch md.Type {
+	case "object":
+		if len(md.Properties) > 0 {
+			defs[propName] = md
+			collectDefs(md, defs)
+		} else if md.AdditionalProperties != nil {
+			// map[string]V — the value type V inherits the same propName
+			collectDefsForSchema(propName, md.AdditionalProperties, defs)
 		}
-		if prop.Type == "array" {
-			if prop.Items != nil && prop.Items.Type == "object" && len(prop.Items.Properties) > 0 {
-				defName := propName + "_item"
-				defs[defName] = prop.Items
-				collectDefs(prop.Items, defs)
-			}
+	case "array":
+		if md.Items != nil {
+			// []T — item type uses propName+"_item", matching MapGoType
+			collectDefsForSchema(propName+"_item", md.Items, defs)
 		}
+	}
+}
+
+// ExtractValidators recursively scans the ConfigMetadata and collects validators for required fields and nested schemas.
+func ExtractValidators(md *ConfigMetadata) []Validator {
+	validators := make([]Validator, 0)
+
+	if md == nil {
+		return validators
+	}
+	collectValidators(md, &validators)
+
+	return validators
+}
+
+type Validator struct {
+	FieldName  string
+	FieldType  string
+	IsRequired bool
+	IsPointer  bool
+	IsOptional bool
+}
+
+func collectValidators(md *ConfigMetadata, validators *[]Validator) {
+	for propName, prop := range md.Properties {
+		isRequired := slices.Contains(md.Required, propName)
+		if isRequired {
+			*validators = append(*validators, Validator{
+				FieldName:  propName,
+				FieldType:  resolveType(prop),
+				IsRequired: isRequired,
+				IsPointer:  prop.IsPointer,
+				IsOptional: prop.IsOptional,
+			})
+		}
+	}
+}
+
+func resolveType(md *ConfigMetadata) string {
+	switch {
+	case md.Ref != "":
+		return "ref"
+	case md.Type == "string" && md.Format == "date-time":
+		return "datetime"
+	case md.Type == "string" && md.Format == "duration":
+		return "duration"
+	default:
+		return md.Type
 	}
 }
