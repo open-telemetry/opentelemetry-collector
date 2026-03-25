@@ -39,9 +39,6 @@ func addrToPrometheus(address string) *config.Prometheus {
 		WithoutScopeInfo:  ptr(true),
 		WithoutUnits:      ptr(true),
 		WithoutTypeSuffix: ptr(true),
-		WithResourceConstantLabels: &config.IncludeExclude{
-			Included: []string{},
-		},
 	}
 }
 
