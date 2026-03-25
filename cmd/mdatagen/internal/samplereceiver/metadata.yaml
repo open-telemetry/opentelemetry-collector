@@ -312,7 +312,7 @@ telemetry:
         since: "1.5.0"
         note: "This metric will be removed in favor of batch_send_trigger_size"
       description: Number of times the batch was sent due to a size trigger
-      unit: "{times}"
+      unit: "{time}"
       sum:
         value_type: int
         monotonic: true
@@ -329,7 +329,7 @@ telemetry:
       enabled: true
       description: Queue capacity - sync gauge example.
       stability: development
-      unit: "{items}"
+      unit: "{item}"
       gauge:
         value_type: int
     queue_length:
@@ -337,7 +337,7 @@ telemetry:
       stability: alpha
       description: This metric is optional and therefore not initialized in NewTelemetryBuilder.
       extended_documentation: For example this metric only exists if feature A is enabled.
-      unit: "{items}"
+      unit: "{item}"
       optional: true
       gauge:
         async: true
