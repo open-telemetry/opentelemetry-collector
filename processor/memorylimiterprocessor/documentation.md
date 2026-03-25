@@ -45,6 +45,22 @@ Number of spans successfully pushed into the next component in the pipeline.
 
 **Deprecation note**: This metric is deprecated
 
+### otelcol_processor_memory_limiter_limit_bytes
+
+The hard memory limit (in bytes) configured on this memory limiter processor instance, derived from limit_mib or limit_percentage * total_memory. Useful as a static denominator for capacity utilization dashboards.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+### otelcol_processor_memory_limiter_spike_limit_bytes
+
+The spike (soft) memory limit (in bytes) configured on this memory limiter processor instance. The processor starts refusing data when Alloc >= (limit - spike). This is the soft threshold.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
 ### otelcol_processor_refused_log_records
 
 Number of log records that were rejected by the next component in the pipeline.

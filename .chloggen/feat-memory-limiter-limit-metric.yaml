@@ -1,0 +1,5 @@
+change_type: enhancement
+component: processor/memory_limiter
+note: Add `otelcol_processor_memory_limiter_limit_bytes` and `otelcol_processor_memory_limiter_spike_limit_bytes` internal metrics to expose the resolved hard and spike memory limits configured for the memory limiter processor.
+issues: [15006]
+change_logs: [user]

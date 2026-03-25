@@ -23,15 +23,17 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                         metric.Meter
-	mu                            sync.Mutex
-	registrations                 []metric.Registration
-	ProcessorAcceptedLogRecords   metric.Int64Counter
-	ProcessorAcceptedMetricPoints metric.Int64Counter
-	ProcessorAcceptedSpans        metric.Int64Counter
-	ProcessorRefusedLogRecords    metric.Int64Counter
-	ProcessorRefusedMetricPoints  metric.Int64Counter
-	ProcessorRefusedSpans         metric.Int64Counter
+	meter                                 metric.Meter
+	mu                                    sync.Mutex
+	registrations                         []metric.Registration
+	ProcessorAcceptedLogRecords           metric.Int64Counter
+	ProcessorAcceptedMetricPoints         metric.Int64Counter
+	ProcessorAcceptedSpans                metric.Int64Counter
+	ProcessorMemoryLimiterLimitBytes      metric.Int64Gauge
+	ProcessorMemoryLimiterSpikeLimitBytes metric.Int64Gauge
+	ProcessorRefusedLogRecords            metric.Int64Counter
+	ProcessorRefusedMetricPoints          metric.Int64Counter
+	ProcessorRefusedSpans                 metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -79,6 +81,18 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_processor_accepted_spans",
 		metric.WithDescription("Number of spans successfully pushed into the next component in the pipeline. [Deprecated]"),
 		metric.WithUnit("{span}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorMemoryLimiterLimitBytes, err = builder.meter.Int64Gauge(
+		"otelcol_processor_memory_limiter_limit_bytes",
+		metric.WithDescription("The hard memory limit (in bytes) configured on this memory limiter processor instance, derived from limit_mib or limit_percentage * total_memory. Useful as a static denominator for capacity utilization dashboards. [Development]"),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorMemoryLimiterSpikeLimitBytes, err = builder.meter.Int64Gauge(
+		"otelcol_processor_memory_limiter_spike_limit_bytes",
+		metric.WithDescription("The spike (soft) memory limit (in bytes) configured on this memory limiter processor instance. The processor starts refusing data when Alloc >= (limit - spike). This is the soft threshold. [Development]"),
+		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorRefusedLogRecords, err = builder.meter.Int64Counter(
