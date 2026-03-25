@@ -1,6 +1,6 @@
 # Component Status Reporting
 
-Component status reporting is a collector feature that allows components to report their status (aka health) via status events to extensions. In order for an extension receive these events it must implement the [Watcher interface](https://github.com/open-telemetry/opentelemetry-collector/blob/8ae99373af6204a4bfc4759e8e7ecedcb55c7e52/component/componentstatus/status.go#L35).
+Component status reporting is a collector feature that allows components to report their status (aka health) via status events to extensions. In order for an extension receive these events it must implement the [Watcher interface](https://github.com/open-telemetry/opentelemetry-collector/blob/v0.147.0/component/componentstatus/status.go#L35).
 
 ## Status Definitions
 
