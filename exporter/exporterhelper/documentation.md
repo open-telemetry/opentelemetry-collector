@@ -38,6 +38,38 @@ Number of spans failed to be added to the sending queue.
 | ---- | ----------- | ---------- | --------- | --------- |
 | {span} | Sum | Int | true | Alpha |
 
+### otelcol_exporter_in_flight_log_records
+
+Number of log record export requests currently in-flight (including retry backoff).
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {request} | Sum | Int | false | Development |
+
+### otelcol_exporter_in_flight_metric_points
+
+Number of metric point export requests currently in-flight (including retry backoff).
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {request} | Sum | Int | false | Development |
+
+### otelcol_exporter_in_flight_profile_samples
+
+Number of profile sample export requests currently in-flight (including retry backoff).
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {request} | Sum | Int | false | Development |
+
+### otelcol_exporter_in_flight_spans
+
+Number of span export requests currently in-flight (including retry backoff).
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {request} | Sum | Int | false | Development |
+
 ### otelcol_exporter_queue_batch_send_size
 
 Number of units in the batch
