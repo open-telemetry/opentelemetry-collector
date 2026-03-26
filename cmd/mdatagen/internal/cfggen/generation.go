@@ -256,13 +256,13 @@ func collectDefs(md *ConfigMetadata, defs map[string]*ConfigMetadata) {
 		return
 	}
 
-	for name, def := range md.Defs {
-		defs[name] = def
-		collectDefs(def, defs)
+	for _, name := range slices.Sorted(maps.Keys(md.Defs)) {
+		defs[name] = md.Defs[name]
+		collectDefs(md.Defs[name], defs)
 	}
 
-	for propName, prop := range md.Properties {
-		collectDefsForSchema(propName, prop, defs)
+	for _, propName := range slices.Sorted(maps.Keys(md.Properties)) {
+		collectDefsForSchema(propName, md.Properties[propName], defs)
 	}
 
 	for _, schema := range md.AllOf {
@@ -314,7 +314,8 @@ type Validator struct {
 }
 
 func collectValidators(md *ConfigMetadata, validators *[]Validator) {
-	for propName, prop := range md.Properties {
+	for _, propName := range slices.Sorted(maps.Keys(md.Properties)) {
+		prop := md.Properties[propName]
 		isRequired := slices.Contains(md.Required, propName)
 		if isRequired {
 			*validators = append(*validators, Validator{
@@ -353,6 +354,8 @@ func resolveType(md *ConfigMetadata) string {
 		return "datetime"
 	case md.Type == "string" && md.Format == "duration":
 		return "duration"
+	case md.Type == "object" && md.AdditionalProperties != nil:
+		return "map"
 	default:
 		return md.Type
 	}

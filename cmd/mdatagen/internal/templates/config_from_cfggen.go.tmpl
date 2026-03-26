@@ -79,7 +79,7 @@ type Config struct {
 {{ define "requiredValidator" -}}
     {{ $name := .FieldName | publicVar -}}
     {{- if .IsPointer }}
-        {{- if or (eq .FieldType "array") (eq .FieldType "object") }}
+        {{- if or (eq .FieldType "array") (eq .FieldType "map") }}
         if c.{{ $name }} == nil || len(*c.{{ $name }}) == 0 {
             err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
         }
@@ -96,7 +96,7 @@ type Config struct {
         if len(c.{{ $name }}) == 0 {
             err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
         }
-    {{- else if eq .FieldType "object" }}
+    {{- else if eq .FieldType "map" }}
         if c.{{ $name }} == nil || len(c.{{ $name }}) == 0 {
             err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
         }
