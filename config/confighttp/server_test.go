@@ -104,7 +104,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 	}
 }
 
-func TestHttpServerTLS(t *testing.T) {
+func TestHTTPServerTLS(t *testing.T) {
 	tests := []struct {
 		name           string
 		tlsServerCreds configoptional.Optional[configtls.ServerConfig]
@@ -279,8 +279,8 @@ func TestHttpServerTLS(t *testing.T) {
 	}
 }
 
-func TestHttpServerTransport(t *testing.T) {
-	if runtime.GOOS != "windows" {
+func TestHTTPServerTransport(t *testing.T) {
+	if runtime.GOOS == "linux" {
 		t.Run("unix", func(t *testing.T) {
 			addr := "@" + t.Name() // abstract unix socket
 			sc := &ServerConfig{
@@ -309,7 +309,7 @@ func TestHttpServerTransport(t *testing.T) {
 	}
 }
 
-func TestHttpCors(t *testing.T) {
+func TestHTTPCors(t *testing.T) {
 	tests := []struct {
 		name string
 
@@ -399,7 +399,7 @@ func TestHttpCors(t *testing.T) {
 	}
 }
 
-func TestHttpCorsInvalidSettings(t *testing.T) {
+func TestHTTPCorsInvalidSettings(t *testing.T) {
 	sc := &ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "localhost:0",
@@ -419,7 +419,7 @@ func TestHttpCorsInvalidSettings(t *testing.T) {
 	require.NoError(t, s.Close())
 }
 
-func TestHttpCorsWithSettings(t *testing.T) {
+func TestHTTPCorsWithSettings(t *testing.T) {
 	sc := &ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "localhost:0",
@@ -455,7 +455,7 @@ func TestHttpCorsWithSettings(t *testing.T) {
 	assert.Equal(t, "*", rec.Header().Get("Access-Control-Allow-Origin"))
 }
 
-func TestHttpServerHeaders(t *testing.T) {
+func TestHTTPServerHeaders(t *testing.T) {
 	tests := []struct {
 		name    string
 		headers configopaque.MapList
@@ -861,7 +861,7 @@ func TestAuthWithQueryParams(t *testing.T) {
 	assert.True(t, authCalled)
 }
 
-func BenchmarkHttpRequest(b *testing.B) {
+func BenchmarkHTTPRequest(b *testing.B) {
 	tests := []struct {
 		name            string
 		forceHTTP1      bool
@@ -1025,17 +1025,30 @@ func TestHTTPServerTelemetry_Tracing(t *testing.T) {
 
 	type testcase struct {
 		handler          http.Handler
+		httpMethod       string
 		expectedSpanName string
 	}
 
-	for name, testcase := range map[string]testcase{
+	for name, tc := range map[string]testcase{
 		"pattern": {
 			handler:          mux,
+			httpMethod:       "GET",
 			expectedSpanName: "GET /b/{bucket}/o/{objectname...}",
 		},
 		"no_pattern": {
 			handler:          http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
+			httpMethod:       "GET",
 			expectedSpanName: "GET",
+		},
+		"unknown_method": {
+			handler:          mux,
+			httpMethod:       "FOOBAR",
+			expectedSpanName: "HTTP /b/{bucket}/o/{objectname...}",
+		},
+		"lowercase_method": {
+			handler:          mux,
+			httpMethod:       "get",
+			expectedSpanName: "GET /b/{bucket}/o/{objectname...}",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -1046,7 +1059,7 @@ func TestHTTPServerTelemetry_Tracing(t *testing.T) {
 				context.Background(),
 				nil,
 				telemetry.NewTelemetrySettings(),
-				testcase.handler,
+				tc.handler,
 			)
 			require.NoError(t, err)
 
@@ -1062,14 +1075,16 @@ func TestHTTPServerTelemetry_Tracing(t *testing.T) {
 				<-done
 			}()
 
-			resp, err := http.Get(fmt.Sprintf("http://%s/b/bucket123/o/object456/segment", lis.Addr()))
+			req, err := http.NewRequest(tc.httpMethod, fmt.Sprintf("http://%s/b/bucket123/o/object456/segment", lis.Addr()), http.NoBody)
+			require.NoError(t, err)
+			resp, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)
 			require.Equal(t, http.StatusOK, resp.StatusCode)
 			resp.Body.Close()
 
 			spans := telemetry.SpanRecorder.Ended()
 			require.Len(t, spans, 1)
-			assert.Equal(t, testcase.expectedSpanName, spans[0].Name())
+			assert.Equal(t, tc.expectedSpanName, spans[0].Name())
 		})
 	}
 }

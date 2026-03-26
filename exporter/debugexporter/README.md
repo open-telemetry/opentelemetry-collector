@@ -2,14 +2,12 @@
 # Debug Exporter
 | Status        |           |
 | ------------- |-----------|
-| Stability     | [development]: profiles   |
-|               | [alpha]: traces, metrics, logs   |
+| Stability     | [alpha]: traces, metrics, logs, profiles   |
 | Distributions | [core], [contrib], [k8s] |
 | Warnings      | [Unstable Output Format](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fdebug%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fdebug) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fdebug%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fdebug) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@andrzej-stencel](https://www.github.com/andrzej-stencel) |
 
-[development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -37,6 +35,7 @@ The following settings are optional:
   Refer to [Zap docs](https://godoc.org/go.uber.org/zap/zapcore#NewSampler) for more details
   on how sampling parameters impact number of messages.
 - `use_internal_logger` (default = `true`): uses the collector's internal logger for output. See [below](#using-the-collectors-internal-logger) for description.
+- `output_paths` (default = `["stdout"]`): a list of file paths to write output to. This option can only be used when `use_internal_logger` is `false`. Special strings "stdout" and "stderr" are interpreted as [standard output](https://en.wikipedia.org/wiki/Standard_streams#Standard_output_(stdout)) and [standard error](https://en.wikipedia.org/wiki/Standard_streams#Standard_error_(stderr)) respectively. All other values are treated as file paths. Setting `output_paths` when `use_internal_logger` is `true` results in a configuration error.
 - `sending_queue` (disabled by default): see [Sending Queue](../exporterhelper/README.md#sending-queue) for the full set of available options.
 
 Example configuration:
@@ -47,6 +46,16 @@ exporters:
     verbosity: detailed
     sampling_initial: 5
     sampling_thereafter: 200
+```
+
+Example configuration with custom output path:
+
+```yaml
+exporters:
+  debug:
+    use_internal_logger: false
+    output_paths:
+      - stderr
 ```
 
 ## Verbosity levels
@@ -137,7 +146,8 @@ This comes with the following consequences:
 
 When `use_internal_logger` is set to `false`, the exporter does not use the collector's internal logger.
 Changing the values in `service::telemetry::logs` has no effect on the exporter's output.
-The exporter's output is sent to `stdout`.
+The exporter's output is sent to the paths specified in `output_paths` (default: `["stdout"]`).
+You can configure `output_paths` to send output to `stderr`, a file, or multiple destinations.
 
 [internal_telemetry]: https://opentelemetry.io/docs/collector/internal-telemetry/
 [internal_logs_config]: https://opentelemetry.io/docs/collector/internal-telemetry/#configure-internal-logs

@@ -11,40 +11,36 @@ telemetry:
   metrics:
     scraper_errored_log_records:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Number of log records that were unable to be scraped.
-      unit: "{datapoints}"
+      unit: "{datapoint}"
       sum:
         value_type: int
         monotonic: true
 
     scraper_errored_metric_points:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Number of metric points that were unable to be scraped.
-      unit: "{datapoints}"
+      unit: "{datapoint}"
       sum:
         value_type: int
         monotonic: true
 
     scraper_scraped_log_records:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Number of log records successfully scraped.
-      unit: "{datapoints}"
+      unit: "{datapoint}"
       sum:
         value_type: int
         monotonic: true
 
     scraper_scraped_metric_points:
       enabled: true
-      stability:
-        level: alpha
+      stability: alpha
       description: Number of metric points successfully scraped.
-      unit: "{datapoints}"
+      unit: "{datapoint}"
       sum:
         value_type: int
         monotonic: true

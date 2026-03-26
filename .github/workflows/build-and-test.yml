@@ -19,15 +19,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Go
-        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version: oldstable
           cache: false
       - name: Cache Go
         id: go-cache
-        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: |
             ~/go/bin
@@ -42,15 +42,15 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Go
-        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version: oldstable
           cache: false
       - name: Cache Go
         id: go-cache
-        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: |
             ~/go/bin
@@ -67,15 +67,15 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Go
-        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version: oldstable
           cache: false
       - name: Cache Go
         id: go-cache
-        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: |
             ~/go/bin
@@ -89,26 +89,32 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Go
-        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version: stable
           cache: false
       - name: Cache Go
         id: go-cache
-        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: |
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
+      - name: Setup Node
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: "24"
       - name: checklicense
         run: make checklicense
       - name: misspell
         run: make misspell
       - name: checkdoc
         run: make checkdoc
+      - name: markdownlint
+        run: make markdownlint
       - name: checkapi
         run: make checkapi
       - name: Check for go mod dependency changes
@@ -141,6 +147,10 @@ jobs:
         run: |
           make crosslink
           git diff -s --exit-code || (echo 'Replace statements are out of date, please run "make crosslink" and commit the changes in this PR.' && exit 1)
+      - name: generate-chloggen-components
+        run: |
+          make generate-chloggen-components
+          git diff --exit-code || (echo '.chloggen/config.yaml is out of date, please run "make generate-chloggen-components" and commit the changes.' && exit 1)
 
   unittest-matrix:
     strategy:
@@ -151,29 +161,29 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Go
-        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version: ${{ matrix.go-version }}
           cache: false
       - name: Cache Go
         id: go-cache
-        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: |
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
       - name: Cache Build
-        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: ~/.cache/go-build
           key: unittest-${{ runner.os }}-${{ matrix.runner }}-go-build-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests
         run: |
           make -j4 gotest-with-junit
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: test-results-${{ runner.os }}-${{ matrix.runner }}-${{ matrix.go-version }}
           path: internal/tools/testresults/
@@ -200,29 +210,29 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Go
-        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version: oldstable
           cache: false
       - name: Cache Go
         id: go-cache
-        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: |
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
       - name: Cache Build
-        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: ~/.cache/go-build
           key: coverage-${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests With Coverage
         run: make gotest-with-cover
       - name: Upload coverage report
-        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # 5.5.2
+        uses: codecov/codecov-action@1af58845a975a7985b0beb0cbe6fbbb71a41dbad # 5.5.3
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -244,6 +254,8 @@ jobs:
             goarch: amd64
           - goos: darwin
             goarch: arm64
+          - goos: js
+            goarch: wasm
           - goos: linux
             goarch: 386
           - goos: linux
@@ -268,15 +280,15 @@ jobs:
 
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Go
-        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version: oldstable
           cache: false
       - name: Cache Go
         id: go-cache
-        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: |
             ~/go/bin

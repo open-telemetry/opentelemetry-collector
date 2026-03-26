@@ -7,6 +7,87 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.54.0/v0.148.0
+
+### 🛑 Breaking changes 🛑
+
+- `cmd/mdatagen`: Generate a per-metric config type `<MetricName>Config` for each metric when `reaggregation_enabled: true` (#14689)
+  Metrics with aggregatable attributes get `AggregationStrategy` and `EnabledAttributes []<MetricName>AttributeKey`
+  fields; others get `Enabled` only. Typed attribute key constants (e.g. `DefaultMetricAttributeKeyStringAttr`)
+  replace `[]string`, eliminating runtime attribute slice allocations. Validation errors now list valid attributes
+  and strategies by name. Components using `reaggregation_enabled: true` will need to update references to `MetricConfig`.
+  
+- `pdata/pprofile`: Update protoID for message Sample fields (#14652)
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Extend mdatagen tool to generate go config structs for OpenTelemetry collector components. (#14561)
+  The component config go code is generated from `config` section of the metadata.yaml file.
+- `cmd/mdatagen`: Extend mdatagen tool to generate config JSON schema for OpenTelemetry components. (#14543)
+  The component config JSON schema is generated from `config` section of the metadata.yaml file.
+- `cmd/mdatagen`: Schema generation for mdatagen-controlled config parts (#14562)
+  The schema is generated in separate yaml file and used to create full component schema.
+- `pdata/pprofile`: Implement reference based attributes in Profiles (#14546)
+- `pkg/pdata`: Upgrade the OTLP protobuf definitions to version 1.10.0 (#14766)
+- `pkg/service`: The internal status reporter no longer drops repeated Ok and RecoverableError statuses (#14282)
+  Status events can now carry metadata and there's value in allowing them to be emitted despite the status value itself 
+  not changing.
+  
+- `pkg/xexporterhelper`: Add logic to cleanup partitions from memory which are not being used for specific time period. (#14526)
+- `pkg/xpdata`: Add `NewEntity` constructor, `Entity.CopyToResource`, and `EntityAttributeMap.All` to `pdata/xpdata/entity` (#14659)
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Preserve custom extensions (e.g., `x-customType`, `x-pointer`) during schema reference resolution. (#14713, #14565)
+  Fixes an issue where custom properties defined locally on a node were 
+  overwritten and lost when resolving a `$ref` to an external/internal schema.
+  
+- `pkg/xexporterhelper`: Fix race when partition is being removed from LRU and new items are being added at the same time. (#14526)
+
+<!-- previous-version -->
+
+## v1.53.0/v0.147.0
+
+### 💡 Enhancements 💡
+
+- `pkg/exporterhelper`: Add `metadata_keys` configuration to `sending_queue.batch.partition` to partition batches by client metadata (#14139)
+  The `metadata_keys` configuration option is now available in the `sending_queue.batch.partition` section for all exporters.
+  When specified, batches are partitioned based on the values of the listed metadata keys, allowing separate batching per metadata partition. This feature
+  is automatically configured when using `exporterhelper.WithQueue()`.
+  
+- `pkg/xexporterhelper`: Add code structure to handle unbounded partitions in sending queue. (#14526)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/config/configmiddleware`: Add context.Context to gRPC middleware interface constructors. (#14523)
+- `pkg/extensionmiddleware`: Add context.Context to gRPC middleware interface constructors. (#14523)
+  This is a breaking API change for components that implement or use extensionmiddleware.
+
+<!-- previous-version -->
+
+## v1.52.0/v0.146.1
+
+<!-- previous-version -->
+
+## v0.146.0
+
+### 🛑 Breaking changes 🛑
+
+- `cmd/mdatagen`: Flatten the metric stability field (#14113)
+  So we better match the weaver schema. Additional deprecation data can be set within the `deprecated` field.
+
+### 🚩 Deprecations 🚩
+
+- `pdata/pprofile`: Declare removed aggregation elements as deprecated. (#14528)
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Add entity association requirement for metrics and events when entities are defined (#14284)
+- `pkg/otelcol`: Gate process signals behind build tags (#14542)
+  Particularly for Wasm on JS, there are no invalid process signal references, which would cause build failures.
+
+<!-- previous-version -->
+
 ## v1.51.0/v0.145.0
 
 ### 💡 Enhancements 💡

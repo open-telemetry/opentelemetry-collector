@@ -92,9 +92,7 @@ func (sc *Controller[T]) Shutdown(ctx context.Context) error {
 // startScraping initiates a ticker that calls Scrape based on the configured
 // collection interval.
 func (sc *Controller[T]) startScraping() {
-	sc.wg.Add(1)
-	go func() {
-		defer sc.wg.Done()
+	sc.wg.Go(func() {
 		if sc.initialDelay > 0 {
 			select {
 			case <-time.After(sc.initialDelay):
@@ -121,7 +119,7 @@ func (sc *Controller[T]) startScraping() {
 				return
 			}
 		}
-	}()
+	})
 }
 
 func GetSettings(sType component.Type, rSet receiver.Settings) scraper.Settings {
