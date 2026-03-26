@@ -9,7 +9,6 @@ import (
 	"go/parser"
 	"go/token"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -280,9 +279,6 @@ func TestRunContents(t *testing.T) {
 			tmpdir := filepath.Join(t.TempDir(), "shortname")
 			err := os.MkdirAll(tmpdir, 0o750)
 			require.NoError(t, err)
-			// Init a git repo so helpers.RootPackage can resolve the repo root
-			// when generateConfigGoStruct is called for components with config.
-			gitInit(t, tmpdir)
 			ymlContent, err := os.ReadFile(filepath.Join("testdata", tt.yml))
 			require.NoError(t, err)
 			metadataFile := filepath.Join(tmpdir, "metadata.yaml")
@@ -526,7 +522,6 @@ func TestGenerateConfigFiles(t *testing.T) {
 			tmpdir := filepath.Join(root, "shortname")
 			require.NoError(t, os.MkdirAll(tmpdir, 0o700))
 
-			gitInit(t, root)
 			require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
 			err := generateConfigFiles(tt.md, tmpdir, "testmodule")
 			if tt.wantErr {
@@ -544,7 +539,7 @@ func TestGenerateConfigFiles(t *testing.T) {
 }
 
 func TestGenerateConfigGoStruct_RootPackageError(t *testing.T) {
-	// tmpdir is not inside any git repo, so helpers.RootPackage fails
+	// tmpdir has no go.mod in any ancestor, so helpers.RootPackage fails
 	md := Metadata{
 		Type:        "test",
 		PackageName: "shortname",
@@ -557,7 +552,7 @@ func TestGenerateConfigGoStruct_RootPackageError(t *testing.T) {
 }
 
 func TestGenerateConfigFiles_GoStructError(t *testing.T) {
-	// generateConfigGoStruct fails because tmpdir is not inside a git repo
+	// generateConfigGoStruct fails because tmpdir has no go.mod in any ancestor
 	md := Metadata{
 		Type:        "test",
 		PackageName: "shortname",
@@ -1102,12 +1097,4 @@ func TestGenerateConfigSchema_LocalizesSameRootRefs(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, string(actual), "$ref: /filter.config")
 	require.NotContains(t, string(actual), "$ref: go.opentelemetry.io/collector/filter.config")
-}
-
-func gitInit(t *testing.T, dir string) {
-	t.Helper()
-	cmd := exec.Command("git", "init")
-	cmd.Dir = dir
-	out, err := cmd.CombinedOutput()
-	require.NoError(t, err, "git init failed: %s", out)
 }
