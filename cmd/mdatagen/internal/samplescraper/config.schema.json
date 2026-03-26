@@ -255,6 +255,7 @@
           },
           "interval": {
             "type": "string",
+            "default": "10s",
             "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
           },
           "options": {

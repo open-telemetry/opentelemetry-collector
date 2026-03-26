@@ -859,6 +859,7 @@ func TestWithCfgFns(t *testing.T) {
 	require.Contains(t, result, "extractImports")
 	require.Contains(t, result, "extractDefs")
 	require.Contains(t, result, "publicType")
+	require.Contains(t, result, "extractDefaults")
 }
 
 func TestResolveGoType_CustomTypeFormatError(t *testing.T) {
@@ -1128,4 +1129,563 @@ func TestNewCfgFns_ExtractValidators(t *testing.T) {
 	require.Len(t, result, 1)
 	require.Equal(t, "name", result[0].FieldName)
 	require.True(t, result[0].IsRequired)
+}
+
+func TestExtractDefaults(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected []DefaultValue
+	}{
+		{
+			name:     "nil input",
+			metadata: nil,
+			expected: nil,
+		},
+		{
+			name: "no defaults",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"endpoint": {Type: "string"},
+				},
+			},
+			expected: nil,
+		},
+		{
+			name: "string default",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"endpoint": {Type: "string", Default: "localhost:4317"},
+				},
+			},
+			expected: []DefaultValue{
+				{FieldName: "endpoint", GoExpr: `"localhost:4317"`, IsOptional: false},
+			},
+		},
+		{
+			name: "integer default",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"port": {Type: "integer", Default: float64(8080)},
+				},
+			},
+			expected: []DefaultValue{
+				{FieldName: "port", GoExpr: "8080", IsOptional: false},
+			},
+		},
+		{
+			name: "number default",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"ratio": {Type: "number", Default: float64(0.5)},
+				},
+			},
+			expected: []DefaultValue{
+				{FieldName: "ratio", GoExpr: "0.5", IsOptional: false},
+			},
+		},
+		{
+			name: "bool true default",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"enabled": {Type: "boolean", Default: true},
+				},
+			},
+			expected: []DefaultValue{
+				{FieldName: "enabled", GoExpr: "true", IsOptional: false},
+			},
+		},
+		{
+			name: "bool false default",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"verbose": {Type: "boolean", Default: false},
+				},
+			},
+			expected: []DefaultValue{
+				{FieldName: "verbose", GoExpr: "false", IsOptional: false},
+			},
+		},
+		{
+			name: "duration 10s",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"timeout": {Type: "string", Format: "duration", Default: "10s"},
+				},
+			},
+			expected: []DefaultValue{
+				{FieldName: "timeout", GoExpr: "10*time.Second", IsOptional: false},
+			},
+		},
+		{
+			name: "duration 1h30m",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"timeout": {Type: "string", Format: "duration", Default: "1h30m"},
+				},
+			},
+			expected: []DefaultValue{
+				{FieldName: "timeout", GoExpr: "1*time.Hour + 30*time.Minute", IsOptional: false},
+			},
+		},
+		{
+			name: "duration 500ms",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"timeout": {Type: "string", Format: "duration", Default: "500ms"},
+				},
+			},
+			expected: []DefaultValue{
+				{FieldName: "timeout", GoExpr: "500*time.Millisecond", IsOptional: false},
+			},
+		},
+		{
+			name: "skip date-time",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"ts": {Type: "string", Format: "date-time", Default: "2023-01-01T00:00:00Z"},
+				},
+			},
+			expected: nil,
+		},
+		{
+			name: "skip GoType",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"x": {GoType: "pkg.T", Default: "v"},
+				},
+			},
+			expected: nil,
+		},
+		{
+			name: "skip Ref",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"x": {Ref: "SomeType", Default: "v"},
+				},
+			},
+			expected: nil,
+		},
+		{
+			name: "skip object",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"sub": {Type: "object", Default: map[string]any{}},
+				},
+			},
+			expected: nil,
+		},
+		{
+			name: "skip array",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"list": {Type: "array", Default: []any{}},
+				},
+			},
+			expected: nil,
+		},
+		{
+			name: "pointer string default",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"x": {Type: "string", IsPointer: true, Default: "v"},
+				},
+			},
+			expected: []DefaultValue{
+				{FieldName: "x", GoExpr: `"v"`, IsOptional: false, IsPointer: true},
+			},
+		},
+		{
+			name: "optional string",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"ep": {Type: "string", IsOptional: true, Default: "x"},
+				},
+			},
+			expected: []DefaultValue{
+				{FieldName: "ep", GoExpr: `"x"`, IsOptional: true},
+			},
+		},
+		{
+			name: "bad duration",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"t": {Type: "string", Format: "duration", Default: "not-a-duration"},
+				},
+			},
+			expected: nil,
+		},
+		{
+			name: "wrong default type for string",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"ep": {Type: "string", Default: 42},
+				},
+			},
+			expected: nil,
+		},
+		{
+			name: "sorted output",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"z": {Type: "string", Default: "z-val"},
+					"a": {Type: "string", Default: "a-val"},
+					"m": {Type: "string", Default: "m-val"},
+				},
+			},
+			expected: []DefaultValue{
+				{FieldName: "a", GoExpr: `"a-val"`, IsOptional: false},
+				{FieldName: "m", GoExpr: `"m-val"`, IsOptional: false},
+				{FieldName: "z", GoExpr: `"z-val"`, IsOptional: false},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ExtractDefaults(tt.metadata)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestNewCfgFns_ExtractDefaults(t *testing.T) {
+	fns := NewCfgFns("", "")
+	extractDefaults := fns["extractDefaults"].(func(*ConfigMetadata) []DefaultValue)
+
+	// nil input returns nil
+	require.Nil(t, extractDefaults(nil))
+
+	// valid input with a default
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"endpoint": {Type: "string", Default: "localhost:4317"},
+		},
+	}
+	result := extractDefaults(md)
+	require.Len(t, result, 1)
+	require.Equal(t, "endpoint", result[0].FieldName)
+	require.Equal(t, `"localhost:4317"`, result[0].GoExpr)
+}
+
+func TestWithCfgFns_ExtractDefaults(t *testing.T) {
+	base := map[string]any{"existing": "value"}
+	result := WithCfgFns(base, "", "")
+
+	require.Contains(t, result, "extractDefaults")
+}
+
+func TestExtractDefRefs(t *testing.T) {
+	// Helper to build a simple object def with one scalar default.
+	defWithDefault := func() *ConfigMetadata {
+		return &ConfigMetadata{
+			Type: "object",
+			Properties: map[string]*ConfigMetadata{
+				"timeout": {Type: "string", Format: "duration", Default: "10s"},
+			},
+		}
+	}
+	// Helper to build an object def with no defaults.
+	defNoDefault := func() *ConfigMetadata {
+		return &ConfigMetadata{
+			Type: "object",
+			Properties: map[string]*ConfigMetadata{
+				"name": {Type: "string"},
+			},
+		}
+	}
+
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected []DefRef
+	}{
+		{
+			name:     "nil input",
+			metadata: nil,
+			expected: nil,
+		},
+		{
+			name: "no properties",
+			metadata: &ConfigMetadata{
+				Type: "object",
+			},
+			expected: nil,
+		},
+		{
+			name: "scalar-only properties are skipped",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"endpoint": {Type: "string", Default: "localhost"},
+				},
+			},
+			expected: nil,
+		},
+		{
+			name: "ref to def with defaults",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Defs: map[string]*ConfigMetadata{
+					"Connection": defWithDefault(),
+				},
+				Properties: map[string]*ConfigMetadata{
+					"conn": {Ref: "Connection"},
+				},
+			},
+			expected: []DefRef{
+				{FieldName: "conn", DefName: "Connection", IsPointer: false, IsArray: false, IsRequired: false},
+			},
+		},
+		{
+			name: "ref to def with no defaults is skipped",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Defs: map[string]*ConfigMetadata{
+					"Empty": defNoDefault(),
+				},
+				Properties: map[string]*ConfigMetadata{
+					"conn": {Ref: "Empty"},
+				},
+			},
+			expected: nil,
+		},
+		{
+			name: "ref to unknown def is skipped",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"conn": {Ref: "DoesNotExist"},
+				},
+			},
+			expected: nil,
+		},
+		{
+			name: "external ref is skipped",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"conn": {Ref: "pkg/SomeType"},
+				},
+			},
+			expected: nil,
+		},
+		{
+			name: "inline object property with defaults",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"sub": defWithDefault(),
+				},
+			},
+			expected: []DefRef{
+				{FieldName: "sub", DefName: "sub", IsPointer: false, IsArray: false, IsRequired: false},
+			},
+		},
+		{
+			name: "inline object property with no defaults is skipped",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"sub": defNoDefault(),
+				},
+			},
+			expected: nil,
+		},
+		{
+			name: "array of objects with defaults",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"items": {
+						Type:  "array",
+						Items: defWithDefault(),
+					},
+				},
+			},
+			expected: []DefRef{
+				{FieldName: "items", DefName: "items_item", IsPointer: false, IsArray: true, IsRequired: false},
+			},
+		},
+		{
+			name: "array items with no defaults is skipped",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"items": {
+						Type:  "array",
+						Items: defNoDefault(),
+					},
+				},
+			},
+			expected: nil,
+		},
+		{
+			name: "IsPointer propagated from property",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"sub": {
+						Type:      "object",
+						IsPointer: true,
+						Properties: map[string]*ConfigMetadata{
+							"timeout": {Type: "string", Format: "duration", Default: "5s"},
+						},
+					},
+				},
+			},
+			expected: []DefRef{
+				{FieldName: "sub", DefName: "sub", IsPointer: true, IsArray: false, IsRequired: false},
+			},
+		},
+		{
+			name: "IsRequired set when property in Required list",
+			metadata: &ConfigMetadata{
+				Type:     "object",
+				Required: []string{"conn"},
+				Defs: map[string]*ConfigMetadata{
+					"Connection": defWithDefault(),
+				},
+				Properties: map[string]*ConfigMetadata{
+					"conn": {Ref: "Connection"},
+				},
+			},
+			expected: []DefRef{
+				{FieldName: "conn", DefName: "Connection", IsPointer: false, IsArray: false, IsRequired: true},
+			},
+		},
+		{
+			name: "results sorted by field name",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Defs: map[string]*ConfigMetadata{
+					"ConnA": defWithDefault(),
+					"ConnB": defWithDefault(),
+					"ConnC": defWithDefault(),
+				},
+				Properties: map[string]*ConfigMetadata{
+					"zzz": {Ref: "ConnC"},
+					"aaa": {Ref: "ConnA"},
+					"mmm": {Ref: "ConnB"},
+				},
+			},
+			expected: []DefRef{
+				{FieldName: "aaa", DefName: "ConnA"},
+				{FieldName: "mmm", DefName: "ConnB"},
+				{FieldName: "zzz", DefName: "ConnC"},
+			},
+		},
+		{
+			name: "allOf internal ref to def with defaults",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Defs: map[string]*ConfigMetadata{
+					"Base": defWithDefault(),
+				},
+				AllOf: []*ConfigMetadata{
+					{Ref: "Base"},
+				},
+				Properties: map[string]*ConfigMetadata{
+					"x": {Type: "string"},
+				},
+			},
+			expected: []DefRef{
+				{FieldName: "Base", DefName: "Base", IsPointer: false, IsArray: false, IsRequired: false},
+			},
+		},
+		{
+			name: "allOf external ref is skipped",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				AllOf: []*ConfigMetadata{
+					{Ref: "pkg/external.Type"},
+				},
+				Properties: map[string]*ConfigMetadata{
+					"x": {Type: "string"},
+				},
+			},
+			expected: nil,
+		},
+		{
+			name: "allOf ref to def with no defaults is skipped",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Defs: map[string]*ConfigMetadata{
+					"Base": defNoDefault(),
+				},
+				AllOf: []*ConfigMetadata{
+					{Ref: "Base"},
+				},
+				Properties: map[string]*ConfigMetadata{
+					"x": {Type: "string"},
+				},
+			},
+			expected: nil,
+		},
+		{
+			name: "allOf entry with empty ref is skipped",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				AllOf: []*ConfigMetadata{
+					{Type: "object"},
+				},
+				Properties: map[string]*ConfigMetadata{
+					"x": {Type: "string"},
+				},
+			},
+			expected: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ExtractDefRefs(tt.metadata)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestNewCfgFns_ExtractDefRefs(t *testing.T) {
+	fns := NewCfgFns("", "")
+	extractDefRefs := fns["extractDefRefs"].(func(*ConfigMetadata) []DefRef)
+
+	// nil input returns nil
+	require.Nil(t, extractDefRefs(nil))
+
+	// valid input: inline object property with a default
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"sub": {
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"timeout": {Type: "string", Format: "duration", Default: "5s"},
+				},
+			},
+		},
+	}
+	result := extractDefRefs(md)
+	require.Len(t, result, 1)
+	require.Equal(t, "sub", result[0].FieldName)
+	require.Equal(t, "sub", result[0].DefName)
 }

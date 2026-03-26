@@ -3,6 +3,7 @@
 package {{ .Package }}
 
 {{- $validators := extractValidators .Metadata.Config }}
+{{- $defaults := extractDefaults .Metadata.Config }}
 {{ $imports := extractImports .Metadata.Config }}
 {{- if or $imports $validators }}
 import (
@@ -54,6 +55,20 @@ import (
         }
     {{- end }}
 
+    {{ $defDefaults := extractDefaults $def }}
+    {{- $defDefRefs := extractDefRefs $def }}
+    {{- if or $defDefaults $defDefRefs }}
+        // createDefault{{ $defName | publicVar }} creates a {{ $defName | publicVar }} with default values.
+        func createDefault{{ $defName | publicVar }}() {{ $defName | publicVar }} {
+            {{- template "defaultVars" $defDefaults }}
+            {{- template "defRefVars" $defDefRefs }}
+            return {{ $defName | publicVar }}{
+                {{- template "defaultAssignments" $defDefaults }}
+                {{- template "defRefAssignments" $defDefRefs }}
+            }
+        }
+    {{- end }}
+
 {{ end }}
 
 {{- if .Metadata.Config.Description }}
@@ -64,6 +79,52 @@ import (
 type Config struct {
     {{ template "struct" .Metadata.Config }}
 }
+
+{{- define "defaultVars" -}}
+    {{- range . }}{{- if .IsPointer }}
+        {{ .FieldName | publicVar }}Default := {{ .GoExpr }}
+    {{- end }}{{- end }}
+{{- end }}
+
+{{- define "defaultAssignments" -}}
+{{- range . }}
+{{- if .IsPointer }}
+    {{ .FieldName | publicVar }}: &{{ .FieldName | publicVar }}Default,
+{{- else if .IsOptional }}
+    {{ .FieldName | publicVar }}: configoptional.Some({{ .GoExpr }}),
+{{- else }}
+    {{ .FieldName | publicVar }}: {{ .GoExpr }},
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- define "defRefVars" -}}
+    {{- range . }}
+        {{- if .IsPointer }}
+            {{- if and .IsArray .IsRequired }}
+                {{ .FieldName | publicVar }}Default := []{{ .DefName | publicVar }}{createDefault{{ .DefName | publicVar }}()}
+            {{- else if not .IsArray }}
+                {{ .FieldName | publicVar }}Default := createDefault{{ .DefName | publicVar }}()
+            {{- end }}
+        {{- end }}
+    {{- end }}
+{{- end }}
+
+{{- define "defRefAssignments" -}}
+    {{- range . }}
+        {{- if .IsPointer }}
+            {{- if and .IsArray .IsRequired }}
+                {{ .FieldName | publicVar }}: &{{ .FieldName | publicVar }}Default,
+            {{- else if not .IsArray }}
+                {{ .FieldName | publicVar }}: &{{ .FieldName | publicVar }}Default,
+            {{- end }}
+        {{- else if and .IsArray .IsRequired }}
+            {{ .FieldName | publicVar }}: []{{ .DefName | publicVar }}{createDefault{{ .DefName | publicVar }}()},
+        {{- else if not .IsArray }}
+            {{ .FieldName | publicVar }}: createDefault{{ .DefName | publicVar }}(),
+        {{- end }}
+    {{- end }}
+{{- end }}
 
 {{ define "requiredValidator" -}}
     {{ $name := .FieldName | publicVar -}}
@@ -109,3 +170,14 @@ type Config struct {
         return err
     }
 {{- end }}
+
+{{- $defRefs := extractDefRefs .Metadata.Config }}
+// createDefaultConfig creates a Config with default values.
+func createDefaultConfig() *Config {
+    {{- template "defaultVars" $defaults }}
+    {{- template "defRefVars" $defRefs }}
+    return &Config{
+        {{- template "defaultAssignments" $defaults }}
+        {{- template "defRefAssignments" $defRefs }}
+    }
+}

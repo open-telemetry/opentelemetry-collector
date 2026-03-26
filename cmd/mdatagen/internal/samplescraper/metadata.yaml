@@ -26,7 +26,6 @@ config:
   description: Configuration for the Sample Scraper.
   allOf:
     - $ref: /scraper/scraperhelper.controller_config
-  $defs:
   properties:
     targets:
       description: Targets configuration for the scraper.
@@ -42,6 +41,7 @@ config:
             type: string
             format: duration
             x-optional: true
+            default: 10s
           options:
             type: object
             additionalProperties:

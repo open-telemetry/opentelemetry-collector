@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strconv"
+	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
 )
@@ -53,6 +56,18 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 				panic(err)
 			}
 			return typeName
+		},
+		"extractDefaults": func(cfg *ConfigMetadata) []DefaultValue {
+			if cfg == nil {
+				return nil
+			}
+			return ExtractDefaults(cfg)
+		},
+		"extractDefRefs": func(cfg *ConfigMetadata) []DefRef {
+			if cfg == nil {
+				return nil
+			}
+			return ExtractDefRefs(cfg)
 		},
 	}
 }
@@ -290,6 +305,247 @@ func collectDefsForSchema(propName string, md *ConfigMetadata, defs map[string]*
 			collectDefsForSchema(propName+"_item", md.Items, defs)
 		}
 	}
+}
+
+// DefaultValue represents a resolved default expression for a single Config field.
+type DefaultValue struct {
+	FieldName  string // original snake_case property name
+	GoExpr     string // Go literal expression, e.g. `"localhost:4317"` or `10*time.Second`
+	IsOptional bool   // true when x-optional: true → wraps with configoptional.Some(...)
+	IsPointer  bool   // true when x-pointer: true → emits a local var and takes its address
+}
+
+// ExtractDefaults scans the top-level properties of md and collects fields that have a
+// `default:` value expressible as a Go literal. Results are sorted by field name for
+// deterministic output. Skips: x-customType, $ref, object, array, date-time fields.
+func ExtractDefaults(md *ConfigMetadata) []DefaultValue {
+	if md == nil {
+		return nil
+	}
+	var defaults []DefaultValue
+	for _, propName := range slices.Sorted(maps.Keys(md.Properties)) {
+		prop := md.Properties[propName]
+		if prop == nil || prop.Default == nil {
+			continue
+		}
+		if dv, ok := renderDefault(propName, prop); ok {
+			defaults = append(defaults, dv)
+		}
+	}
+	return defaults
+}
+
+func renderDefault(propName string, md *ConfigMetadata) (DefaultValue, bool) {
+	if md.GoType != "" || md.Ref != "" {
+		return DefaultValue{}, false
+	}
+	if md.Type == "object" || md.Type == "array" {
+		return DefaultValue{}, false
+	}
+	if md.Type == "string" && md.Format == "date-time" {
+		return DefaultValue{}, false
+	}
+
+	var goExpr string
+	switch md.Type {
+	case "string":
+		if md.Format == "duration" {
+			expr, ok := renderDurationExpr(md.Default)
+			if !ok {
+				return DefaultValue{}, false
+			}
+			goExpr = expr
+		} else {
+			s, ok := md.Default.(string)
+			if !ok {
+				return DefaultValue{}, false
+			}
+			goExpr = fmt.Sprintf("%q", s)
+		}
+	case "integer":
+		switch v := md.Default.(type) {
+		case int:
+			goExpr = strconv.Itoa(v)
+		case int64:
+			goExpr = strconv.FormatInt(v, 10)
+		case float64:
+			goExpr = strconv.Itoa(int(v))
+		default:
+			return DefaultValue{}, false
+		}
+	case "number":
+		switch v := md.Default.(type) {
+		case float64:
+			goExpr = strconv.FormatFloat(v, 'f', -1, 64)
+		case int:
+			goExpr = strconv.FormatFloat(float64(v), 'f', -1, 64)
+		default:
+			return DefaultValue{}, false
+		}
+	case "boolean":
+		switch v := md.Default.(type) {
+		case bool:
+			if v {
+				goExpr = "true"
+			} else {
+				goExpr = "false"
+			}
+		default:
+			return DefaultValue{}, false
+		}
+	default:
+		return DefaultValue{}, false
+	}
+
+	return DefaultValue{
+		FieldName:  propName,
+		GoExpr:     goExpr,
+		IsOptional: md.IsOptional,
+		IsPointer:  md.IsPointer,
+	}, true
+}
+
+func renderDurationExpr(value any) (string, bool) {
+	s, ok := value.(string)
+	if !ok {
+		return "", false
+	}
+	d, err := time.ParseDuration(s)
+	if err != nil {
+		return "", false
+	}
+	return formatDurationAsGoExpr(d), true
+}
+
+func formatDurationAsGoExpr(d time.Duration) string {
+	if d == 0 {
+		return "0"
+	}
+	units := []struct {
+		name  string
+		value time.Duration
+	}{
+		{"time.Hour", time.Hour},
+		{"time.Minute", time.Minute},
+		{"time.Second", time.Second},
+		{"time.Millisecond", time.Millisecond},
+		{"time.Microsecond", time.Microsecond},
+		{"time.Nanosecond", time.Nanosecond},
+	}
+	var parts []string
+	rem := d
+	for _, u := range units {
+		if rem >= u.value {
+			n := rem / u.value
+			rem -= n * u.value
+			parts = append(parts, fmt.Sprintf("%d*%s", n, u.name))
+		}
+	}
+	return strings.Join(parts, " + ")
+}
+
+type DefRef struct {
+	FieldName  string
+	DefName    string
+	IsPointer  bool
+	IsArray    bool
+	IsRequired bool
+}
+
+// ExtractDefRefs recursively scans the ConfigMetadata for properties that have `default` specified or
+// reference nested definitions (defs) with defaults. It also includes allOf entries that are plain
+// internal def references whose def has defaults.
+func ExtractDefRefs(md *ConfigMetadata) []DefRef {
+	if md == nil {
+		return nil
+	}
+	defs := ExtractDefs(md)
+	var refs []DefRef
+	for _, propName := range slices.Sorted(maps.Keys(md.Properties)) {
+		prop := md.Properties[propName]
+		if prop == nil {
+			continue
+		}
+		defName, isArray := resolveDefName(propName, prop)
+		if defName == "" {
+			continue
+		}
+		defMeta, ok := defs[defName]
+		if !ok {
+			continue
+		}
+		if !defHasDefaults(defMeta) {
+			continue
+		}
+		refs = append(refs, DefRef{
+			FieldName:  propName,
+			DefName:    defName,
+			IsPointer:  prop.IsPointer,
+			IsArray:    isArray,
+			IsRequired: slices.Contains(md.Required, propName),
+		})
+	}
+	// allOf entries: plain internal $ref → FieldName = DefName = ref value
+	for _, schema := range md.AllOf {
+		if schema.Ref == "" || strings.ContainsAny(schema.Ref, "./") {
+			continue
+		}
+		defMeta, ok := defs[schema.Ref]
+		if !ok || !defHasDefaults(defMeta) {
+			continue
+		}
+		refs = append(refs, DefRef{
+			FieldName:  schema.Ref,
+			DefName:    schema.Ref,
+			IsPointer:  false,
+			IsArray:    false,
+			IsRequired: false,
+		})
+	}
+	return refs
+}
+
+func defHasDefaults(md *ConfigMetadata) bool {
+	if len(ExtractDefaults(md)) > 0 {
+		return true
+	}
+	defs := ExtractDefs(md)
+	for propName, prop := range md.Properties {
+		defName, _ := resolveDefName(propName, prop)
+		if defName == "" {
+			continue
+		}
+		nested, ok := defs[defName]
+		if ok && defHasDefaults(nested) {
+			return true
+		}
+	}
+	return false
+}
+
+func resolveDefName(propName string, md *ConfigMetadata) (defName string, isArray bool) {
+	if md == nil || md.GoType != "" {
+		return "", false
+	}
+	// Plain internal $ref (no "/" or ".") — the ref value is the def name directly.
+	if md.Ref != "" {
+		if !strings.ContainsAny(md.Ref, "./") {
+			return md.Ref, false
+		}
+		return "", false
+	}
+	switch md.Type {
+	case "object":
+		if len(md.Properties) > 0 {
+			return propName, false
+		}
+	case "array":
+		if md.Items != nil && md.Items.Ref == "" && md.Items.GoType == "" &&
+			md.Items.Type == "object" && len(md.Items.Properties) > 0 {
+			return propName + "_item", true
+		}
+	}
+	return "", false
 }
 
 // ExtractValidators recursively scans the ConfigMetadata and collects validators for required fields and nested schemas.

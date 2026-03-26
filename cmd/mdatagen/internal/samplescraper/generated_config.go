@@ -21,14 +21,21 @@ type TargetsItem struct {
 func (c *TargetsItem) Validate() error {
 	var err error
 
-	if c.Options == nil || len(c.Options) == 0 {
-		err = errors.Join(err, errors.New("options is required"))
-	}
 	if c.HTTPClient == nil {
 		err = errors.Join(err, errors.New("http_client is required"))
 	}
+	if c.Options == nil || len(c.Options) == 0 {
+		err = errors.Join(err, errors.New("options is required"))
+	}
 
 	return err
+}
+
+// createDefaultTargetsItem creates a TargetsItem with default values.
+func createDefaultTargetsItem() TargetsItem {
+	return TargetsItem{
+		Interval: configoptional.Some(10 * time.Second),
+	}
 }
 
 // Configuration for the Sample Scraper.
@@ -47,4 +54,12 @@ func (c *Config) Validate() error {
 	}
 
 	return err
+}
+
+// createDefaultConfig creates a Config with default values.
+func createDefaultConfig() *Config {
+	TargetsDefault := []TargetsItem{createDefaultTargetsItem()}
+	return &Config{
+		Targets: &TargetsDefault,
+	}
 }
