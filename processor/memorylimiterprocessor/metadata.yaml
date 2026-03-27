@@ -54,6 +54,22 @@ telemetry:
         value_type: int
         monotonic: true
 
+    processor_memory_limiter_limit_bytes:
+      enabled: true
+      description: The hard memory limit (in bytes) configured on this memory limiter processor instance, derived from limit_mib or limit_percentage * total_memory. Useful as a static denominator for capacity utilization dashboards.
+      stability: development
+      unit: "By"
+      gauge:
+        value_type: int
+
+    processor_memory_limiter_spike_limit_bytes:
+      enabled: true
+      description: The spike (soft) memory limit (in bytes) configured on this memory limiter processor instance. The processor starts refusing data when Alloc >= (limit - spike). This is the soft threshold.
+      stability: development
+      unit: "By"
+      gauge:
+        value_type: int
+
     processor_refused_log_records:
       enabled: true
       description: Number of log records that were rejected by the next component in the pipeline.

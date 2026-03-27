@@ -80,6 +80,18 @@ func TestGetDecision(t *testing.T) {
 	})
 }
 
+func TestLimits(t *testing.T) {
+	ml, err := NewMemoryLimiter(&Config{
+		CheckInterval:       time.Minute,
+		MemoryLimitMiB:      100,
+		MemorySpikeLimitMiB: 20,
+	}, zap.NewNop())
+	require.NoError(t, err)
+
+	assert.Equal(t, uint64(100*mibBytes), ml.AllocLimit())
+	assert.Equal(t, uint64(20*mibBytes), ml.SpikeLimit())
+}
+
 func TestRefuseDecision(t *testing.T) {
 	decision1000Limit30Spike30 := newPercentageMemUsageChecker(1000, 60, 30)
 	decision1000Limit60Spike50 := newPercentageMemUsageChecker(1000, 60, 50)
