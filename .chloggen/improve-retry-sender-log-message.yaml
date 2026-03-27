@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: exporter/exporterhelper
+note: Improve retry sender log message to clarify the error is transient and include retry count.
+issues: [13943]

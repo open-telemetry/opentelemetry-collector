@@ -124,18 +124,20 @@ func (rs *retrySender) Send(ctx context.Context, req request.Request) error {
 			return fmt.Errorf("request will be cancelled before next retry: %w", err)
 		}
 
+		retryNum++
 		backoffDelayStr := backoffDelay.String()
 		span.AddEvent(
-			"Exporting failed. Will retry the request after interval.",
+			"Transient error, will retry the request after interval.",
 			trace.WithAttributes(
 				attribute.String("interval", backoffDelayStr),
+				attribute.Int64("retry_num", retryNum),
 				attribute.String("error", err.Error())))
 		rs.logger.Info(
-			"Exporting failed. Will retry the request after interval.",
+			"Transient error, will retry the request after interval.",
 			zap.Error(err),
 			zap.String("interval", backoffDelayStr),
+			zap.Int64("retry_num", retryNum),
 		)
-		retryNum++
 
 		// back-off, but get interrupted when shutting down or request is cancelled or timed out.
 		select {
