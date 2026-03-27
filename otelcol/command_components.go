@@ -195,9 +195,21 @@ func sortConverterModules(modules []string) []componentWithoutStability {
 	return sortedModules
 }
 
-func isComponentAlias(component any) bool {
-	if al, ok := component.(componentalias.TypeAliasHolder); ok {
-		return al.DeprecatedAlias().String() != ""
+func isComponentAlias(comp any) bool {
+	al, ok := comp.(componentalias.TypeAliasHolder)
+	if !ok {
+		return false
 	}
-	return false
+
+	alias := al.DeprecatedAlias()
+	if alias.String() == "" {
+		return false
+	}
+
+	typed, ok := comp.(interface{ Type() component.Type })
+	if !ok {
+		return false
+	}
+
+	return typed.Type() == alias
 }

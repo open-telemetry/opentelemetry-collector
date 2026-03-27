@@ -304,6 +304,24 @@ func TestSortFactoriesByType(t *testing.T) {
 				newMockFactory("processor_factory"),
 			},
 		},
+		{
+			name: "with canonical factory that exposes deprecated alias",
+			factories: func() map[component.Type]mockFactory {
+				canonical := newMockFactory("k8s_attributes")
+				canonical.SetDeprecatedAlias(component.MustNewType("k8sattributes"))
+
+				return map[component.Type]mockFactory{
+					component.MustNewType("k8s_attributes"): canonical,
+				}
+			}(),
+			want: []mockFactory{
+				func() mockFactory {
+					canonical := newMockFactory("k8s_attributes")
+					canonical.SetDeprecatedAlias(component.MustNewType("k8sattributes"))
+					return canonical
+				}(),
+			},
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			got := sortFactoriesByType(tt.factories)
