@@ -13,10 +13,15 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
@@ -87,6 +92,42 @@ func TestBaseExporterLogging(t *testing.T) {
 	assert.Contains(t, errorLogs[1].Message, "Exporting failed. Rejecting data.")
 	assert.Equal(t, "my error", errorLogs[1].ContextMap()["error"])
 	require.NoError(t, bs.Shutdown(context.Background()))
+}
+
+func TestBaseExporterExtraAttrs(t *testing.T) {
+	set := exportertest.NewNopSettings(exportertest.NopType)
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	set.MeterProvider = tt.NewTelemetrySettings().MeterProvider
+
+	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg.Enabled = false
+	qCfg := NewDefaultQueueConfig()
+	qCfg.WaitForResult = true
+
+	bs, err := NewBaseExporter(set, pipeline.SignalMetrics, errExport,
+		WithQueueBatchSettings(newFakeQueueBatch()),
+		WithQueue(configoptional.Some(qCfg)),
+		WithRetry(rCfg),
+		WithAttributes(attribute.String("test", "value"), attribute.Bool("other", true)),
+	)
+	require.NoError(t, err)
+	require.NoError(t, bs.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, bs.Shutdown(context.Background()))
+	})
+	sendErr := bs.Send(context.Background(), &requesttest.FakeRequest{Items: 2})
+	require.Error(t, sendErr)
+	metadatatest.AssertEqualExporterSentMetricPoints(t, tt, []metricdata.DataPoint[int64]{
+		{
+			Attributes: attribute.NewSet(
+				attribute.String("exporter", set.ID.String()),
+				attribute.String("test", "value"),
+				attribute.Bool("other", true),
+			),
+			Value: int64(0),
+		},
+	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestWithQueue_MetadataKeys(t *testing.T) {

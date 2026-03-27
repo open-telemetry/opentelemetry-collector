@@ -6,6 +6,8 @@ package otlpexporter // import "go.opentelemetry.io/collector/exporter/otlpexpor
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -64,6 +66,7 @@ func createTraces(
 		exporterhelper.WithQueue(oCfg.QueueConfig),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
+		exporterhelper.WithAttrs(attribute.String("endpoint", oCfg.ClientConfig.Endpoint)),
 	)
 }
 
@@ -82,6 +85,7 @@ func createMetrics(
 		exporterhelper.WithQueue(oCfg.QueueConfig),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
+		exporterhelper.WithAttrs(attribute.String("endpoint", oCfg.ClientConfig.Endpoint)),
 	)
 }
 
@@ -100,6 +104,7 @@ func createLogs(
 		exporterhelper.WithQueue(oCfg.QueueConfig),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
+		exporterhelper.WithAttrs(attribute.String("endpoint", oCfg.ClientConfig.Endpoint)),
 	)
 }
 
@@ -118,5 +123,6 @@ func createProfilesExporter(
 		exporterhelper.WithQueue(oCfg.QueueConfig),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
+		exporterhelper.WithAttrs(attribute.String("endpoint", oCfg.ClientConfig.Endpoint)),
 	)
 }
