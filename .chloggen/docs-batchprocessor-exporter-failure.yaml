@@ -1,0 +1,5 @@
+change_type: enhancement
+component: processor/batch
+note: Clarified that data can be dropped when exporters reject batches and both retry and queueing are disabled.
+issues: [14520]
+change_logs: [user]
