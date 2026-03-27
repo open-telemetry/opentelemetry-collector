@@ -73,7 +73,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 	}
 
 	if be.retryCfg.Enabled {
-		be.RetrySender = newRetrySender(be.retryCfg, set, be.firstSender)
+		be.RetrySender = newRetrySender(be.retryCfg, set, be.firstSender, be.queueBatchSettings.ReferenceCounter)
 		be.firstSender = be.RetrySender
 	}
 

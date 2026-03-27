@@ -23,6 +23,11 @@ func (e errorPartial) Error() string {
 	return fmt.Sprintf("items: %d", e.fr.Items)
 }
 
+// NewPartialError creates a partial error containing the given FakeRequest.
+func NewPartialError(fr *FakeRequest) error {
+	return errorPartial{fr: fr}
+}
+
 type FakeRequest struct {
 	Items          int
 	Bytes          int
