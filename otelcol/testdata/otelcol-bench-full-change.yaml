@@ -1,0 +1,30 @@
+receivers:
+  nop/new1:
+  nop/new2:
+
+processors:
+  nop/new1:
+  nop/new2:
+
+exporters:
+  nop/new1:
+  nop/new2:
+
+extensions:
+  nop:
+
+service:
+  extensions: [nop]
+  pipelines:
+    traces/new:
+      receivers: [nop/new1, nop/new2]
+      processors: [nop/new1, nop/new2]
+      exporters: [nop/new1, nop/new2]
+    metrics/new:
+      receivers: [nop/new1]
+      processors: [nop/new1]
+      exporters: [nop/new1]
+    logs/new:
+      receivers: [nop/new2]
+      processors: [nop/new2]
+      exporters: [nop/new2]
