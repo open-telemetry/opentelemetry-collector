@@ -1,0 +1,4 @@
+change_type: enhancement
+component: exporter/exporterhelper
+note: Add otelcol_exporter_in_flight_requests metric to track the number of export requests currently being sent to the destination.
+issues: [15009]
