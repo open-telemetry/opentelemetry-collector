@@ -368,6 +368,9 @@ func (cc *ClientConfig) getGrpcDialOptions(
 		opts = append(opts, grpc.WithWriteBufferSize(cc.WriteBufferSize))
 	}
 
+	// Share write buffers across connections to reduce per-connection memory.
+	opts = append(opts, grpc.WithSharedWriteBuffer(true))
+
 	if cc.Keepalive.HasValue() {
 		keepaliveConfig := cc.Keepalive.Get()
 		keepAliveOption := grpc.WithKeepaliveParams(keepalive.ClientParameters{
@@ -524,6 +527,10 @@ func (sc *ServerConfig) getGrpcServerOptions(
 	if sc.WriteBufferSize > 0 {
 		opts = append(opts, grpc.WriteBufferSize(sc.WriteBufferSize))
 	}
+
+	// Share write buffers across connections to reduce per-connection memory.
+	// Without this, each connection holds a 32KB write buffer even when idle.
+	opts = append(opts, grpc.SharedWriteBuffer(true))
 
 	// The default values referenced in the GRPC docs are set within the server, so this code doesn't need
 	// to apply them over zero/nil values before passing these as grpc.ServerOptions.
