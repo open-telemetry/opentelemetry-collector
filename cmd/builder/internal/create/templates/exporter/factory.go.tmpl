@@ -1,0 +1,54 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package {{.Name}}exporter // import "go.opentelemetry.io/collector/exporter/{{.Name}}exporter"
+
+import (
+    "context"
+
+    "go.opentelemetry.io/collector/component"
+    "go.opentelemetry.io/collector/exporter"
+)
+
+// The value of "type" key in configuration.
+var componentType = component.MustNewType("{{.Name}}")
+
+// NewFactory creates and returns a new factory for the {{.Name}} exporter.
+func NewFactory() exporter.Factory {
+    return exporter.NewFactory(
+        component.MustNewType("{{.Name}}"),
+        createDefaultConfig,
+        {{if .HasTraces}}exporter.WithTraces(createTraces, component.StabilityLevelDevelopment),{{end}}
+        {{if .HasMetrics}}exporter.WithMetrics(createMetrics, component.StabilityLevelDevelopment),{{end}}
+        {{if .HasLogs}}exporter.WithLogs(createLogs, component.StabilityLevelDevelopment),{{end}}
+        {{if .HasProfiles}}exporter.WithProfiles(createProfiles, component.StabilityLevelDevelopment),{{end}}
+    )
+}
+
+func createDefaultConfig() component.Config {
+    return &Config{}
+}
+
+{{if .HasTraces}}
+func createTraces(_ context.Context, _ exporter.Settings, _ component.Config) (exporter.Traces, error) {
+    return &{{.Name}}Exporter{}, nil
+}
+{{end}}
+
+{{if .HasMetrics}}
+func createMetrics(_ context.Context, _ exporter.Settings, _ component.Config) (exporter.Metrics, error) {
+    return &{{.Name}}Exporter{}, nil
+}
+{{end}}
+
+{{if .HasLogs}}
+func createLogs(_ context.Context, _ exporter.Settings, _ component.Config) (exporter.Logs, error) {
+    return &{{.Name}}Exporter{}, nil
+}
+{{end}}
+
+{{if .HasProfiles}}
+func createProfiles(_ context.Context, _ exporter.Settings, _ component.Config) (exporter.Profiles, error) {
+    return &{{.Name}}Exporter{}, nil
+}
+{{end}}

@@ -17,6 +17,7 @@ import (
 
 	"go.opentelemetry.io/collector/cmd/builder/internal/builder"
 	"go.opentelemetry.io/collector/cmd/builder/internal/config"
+	"go.opentelemetry.io/collector/cmd/builder/internal/create"
 )
 
 const (
@@ -69,6 +70,7 @@ configuration is provided, ocb will generate a default Collector.
 	}
 
 	cmd.AddCommand(initCommand())
+	cmd.AddCommand(create.CreateCommand())
 	cmd.AddCommand(versionCommand())
 
 	return cmd, nil

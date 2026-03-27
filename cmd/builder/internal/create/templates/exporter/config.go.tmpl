@@ -1,0 +1,22 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package {{.Name}}exporter // import "go.opentelemetry.io/collector/exporter/{{.Name}}exporter"
+
+import "go.opentelemetry.io/collector/component"
+
+// Config defines configuration for {{.Name}} exporter.
+type Config struct {
+	// Add your configuration fields here
+
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+var _ component.Config = (*Config)(nil)
+
+// Validate checks if the exporter configuration is valid.
+func (cfg *Config) Validate() error {
+	// Add validation logic here
+	return nil
+}
