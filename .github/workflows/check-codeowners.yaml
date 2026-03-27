@@ -48,7 +48,7 @@ jobs:
           repository: ${{github.event.pull_request.head.repo.full_name}}
           path: pr
 
-      - uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+      - uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
         id: otelbot-token
         with:
           app-id: ${{ vars.OTELBOT_APP_ID }}
