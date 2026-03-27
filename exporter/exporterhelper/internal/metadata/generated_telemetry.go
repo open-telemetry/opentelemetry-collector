@@ -32,6 +32,7 @@ type TelemetryBuilder struct {
 	ExporterEnqueueFailedMetricPoints   metric.Int64Counter
 	ExporterEnqueueFailedProfileSamples metric.Int64Counter
 	ExporterEnqueueFailedSpans          metric.Int64Counter
+	ExporterInFlightRequests            metric.Int64UpDownCounter
 	ExporterQueueBatchSendSize          metric.Int64Histogram
 	ExporterQueueBatchSendSizeBytes     metric.Int64Histogram
 	ExporterQueueCapacity               metric.Int64ObservableGauge
@@ -137,6 +138,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_exporter_enqueue_failed_spans",
 		metric.WithDescription("Number of spans failed to be added to the sending queue. [Alpha]"),
 		metric.WithUnit("{span}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterInFlightRequests, err = builder.meter.Int64UpDownCounter(
+		"otelcol_exporter_in_flight_requests",
+		metric.WithDescription("Number of export requests currently in-flight. [Development]"),
+		metric.WithUnit("{request}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterQueueBatchSendSize, err = builder.meter.Int64Histogram(

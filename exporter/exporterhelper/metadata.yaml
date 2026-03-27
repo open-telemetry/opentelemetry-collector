@@ -49,6 +49,15 @@ telemetry:
         value_type: int
         monotonic: true
 
+    exporter_in_flight_requests:
+      enabled: true
+      stability: development
+      description: Number of export requests currently in-flight.
+      unit: "{request}"
+      sum:
+        value_type: int
+        monotonic: false
+
     exporter_queue_batch_send_size:
       enabled: true
       description: Number of units in the batch

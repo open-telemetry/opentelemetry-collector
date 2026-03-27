@@ -50,13 +50,14 @@ type obsReportSender[K request.Request] struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	spanName        string
-	tracer          trace.Tracer
-	spanAttrs       trace.SpanStartEventOption
-	metricAttr      metric.MeasurementOption
-	itemsSentInst   metric.Int64Counter
-	itemsFailedInst metric.Int64Counter
-	next            sender.Sender[K]
+	spanName             string
+	tracer               trace.Tracer
+	spanAttrs            trace.SpanStartEventOption
+	metricAttr           metric.MeasurementOption
+	itemsSentInst        metric.Int64Counter
+	itemsFailedInst      metric.Int64Counter
+	inFlightRequestsInst metric.Int64UpDownCounter
+	next                 sender.Sender[K]
 }
 
 func newObsReportSender[K request.Request](set exporter.Settings, signal pipeline.Signal, next sender.Sender[K]) (sender.Sender[K], error) {
@@ -69,11 +70,12 @@ func newObsReportSender[K request.Request](set exporter.Settings, signal pipelin
 	expAttr := attribute.String(ExporterKey, idStr)
 
 	or := &obsReportSender[K]{
-		spanName:   ExporterKey + spanNameSep + idStr + spanNameSep + signal.String(),
-		tracer:     metadata.Tracer(set.TelemetrySettings),
-		spanAttrs:  trace.WithAttributes(expAttr, attribute.String(DataTypeKey, signal.String())),
-		metricAttr: metric.WithAttributeSet(attribute.NewSet(expAttr)),
-		next:       next,
+		spanName:             ExporterKey + spanNameSep + idStr + spanNameSep + signal.String(),
+		tracer:               metadata.Tracer(set.TelemetrySettings),
+		spanAttrs:            trace.WithAttributes(expAttr, attribute.String(DataTypeKey, signal.String())),
+		metricAttr:           metric.WithAttributeSet(attribute.NewSet(expAttr)),
+		inFlightRequestsInst: telemetryBuilder.ExporterInFlightRequests,
+		next:                 next,
 	}
 
 	switch signal {
@@ -96,15 +98,17 @@ func newObsReportSender[K request.Request](set exporter.Settings, signal pipelin
 	return or, nil
 }
 
-func (ors *obsReportSender[K]) Send(ctx context.Context, req K) error {
+func (ors *obsReportSender[K]) Send(ctx context.Context, req K) (retErr error) {
 	// Have to read the number of items before sending the request since the request can
 	// be modified by the downstream components like the batcher.
 	c := ors.startOp(ctx)
 	items := req.ItemsCount()
+	// Use defer to guarantee endOp runs even if next.Send panics,
+	// ensuring the in-flight counter is always decremented.
+	defer func() { ors.endOp(c, items, retErr) }()
 	// Forward the data to the next consumer (this pusher is the next).
-	err := ors.next.Send(c, req)
-	ors.endOp(c, items, err)
-	return err
+	retErr = ors.next.Send(c, req)
+	return retErr
 }
 
 // StartOp creates the span used to trace the operation. Returning
@@ -114,11 +118,13 @@ func (ors *obsReportSender[K]) startOp(ctx context.Context) context.Context {
 		ors.spanName,
 		ors.spanAttrs,
 		trace.WithLinks(queuebatch.LinksFromContext(ctx)...))
+	ors.inFlightRequestsInst.Add(ctx, 1, ors.metricAttr)
 	return ctx
 }
 
 // EndOp completes the export operation that was started with StartOp.
 func (ors *obsReportSender[K]) endOp(ctx context.Context, numRecords int, err error) {
+	ors.inFlightRequestsInst.Add(ctx, -1, ors.metricAttr)
 	numSent, numFailedToSend := toNumItems(numRecords, err)
 
 	if ors.itemsSentInst != nil {
