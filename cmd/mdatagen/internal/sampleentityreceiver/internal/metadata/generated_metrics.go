@@ -350,17 +350,24 @@ func withResourceMoved(res pcommon.Resource) ResourceMetricsOption {
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 	return resourceMetricsOptionFunc(func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
 			switch metrics.At(i).Type() {
 			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
+				dps := metrics.At(i).Gauge().DataPoints()
+				for j := 0; j < dps.Len(); j++ {
+					dps.At(j).SetStartTimestamp(start)
+				}
 			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
+				dps := metrics.At(i).Sum().DataPoints()
+				for j := 0; j < dps.Len(); j++ {
+					dps.At(j).SetStartTimestamp(start)
+				}
+			case pmetric.MetricTypeHistogram:
+				dps := metrics.At(i).Histogram().DataPoints()
+				for j := 0; j < dps.Len(); j++ {
+					dps.At(j).SetStartTimestamp(start)
+				}
 			}
 		}
 	})

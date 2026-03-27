@@ -58,6 +58,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SystemCPUTime: SystemCPUTimeMetricConfig{
 						Enabled: true,
 					},
+					SystemCPUUtilization: SystemCPUUtilizationMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SystemCPUUtilizationMetricAttributeKey{SystemCPUUtilizationMetricAttributeKeyStringAttr},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					MapResourceAttr:                  ResourceAttributeConfig{Enabled: true},
@@ -106,6 +111,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SystemCPUTime: SystemCPUTimeMetricConfig{
 						Enabled: false,
 					},
+					SystemCPUUtilization: SystemCPUUtilizationMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SystemCPUUtilizationMetricAttributeKey{SystemCPUUtilizationMetricAttributeKeyStringAttr},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					MapResourceAttr:                  ResourceAttributeConfig{Enabled: false},
@@ -123,7 +133,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(DefaultMetricMetricConfig{}, DefaultMetricToBeRemovedMetricConfig{}, MetricInputTypeMetricConfig{}, OptionalMetricMetricConfig{}, OptionalMetricEmptyUnitMetricConfig{}, ReaggregateMetricMetricConfig{}, SystemCPUTimeMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(DefaultMetricMetricConfig{}, DefaultMetricToBeRemovedMetricConfig{}, MetricInputTypeMetricConfig{}, OptionalMetricMetricConfig{}, OptionalMetricEmptyUnitMetricConfig{}, ReaggregateMetricMetricConfig{}, SystemCPUTimeMetricConfig{}, SystemCPUUtilizationMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -194,4 +204,73 @@ func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesC
 	cfg := DefaultResourceAttributesConfig()
 	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
+}
+
+func TestDefaultMetricMetricConfig_Unmarshal_Nil(t *testing.T) {
+	cfg := &DefaultMetricMetricConfig{}
+	require.NoError(t, cfg.Unmarshal(nil))
+}
+func TestDefaultMetricMetricConfig_Validate_InvalidAttribute(t *testing.T) {
+	cfg := &DefaultMetricMetricConfig{
+		EnabledAttributes: []DefaultMetricMetricAttributeKey{"invalid_attribute_for_test"},
+	}
+	require.Error(t, cfg.Validate())
+}
+func TestDefaultMetricToBeRemovedMetricConfig_Unmarshal_Nil(t *testing.T) {
+	cfg := &DefaultMetricToBeRemovedMetricConfig{}
+	require.NoError(t, cfg.Unmarshal(nil))
+}
+func TestMetricInputTypeMetricConfig_Unmarshal_Nil(t *testing.T) {
+	cfg := &MetricInputTypeMetricConfig{}
+	require.NoError(t, cfg.Unmarshal(nil))
+}
+func TestMetricInputTypeMetricConfig_Validate_InvalidAttribute(t *testing.T) {
+	cfg := &MetricInputTypeMetricConfig{
+		EnabledAttributes: []MetricInputTypeMetricAttributeKey{"invalid_attribute_for_test"},
+	}
+	require.Error(t, cfg.Validate())
+}
+func TestOptionalMetricMetricConfig_Unmarshal_Nil(t *testing.T) {
+	cfg := &OptionalMetricMetricConfig{}
+	require.NoError(t, cfg.Unmarshal(nil))
+}
+func TestOptionalMetricMetricConfig_Validate_InvalidAttribute(t *testing.T) {
+	cfg := &OptionalMetricMetricConfig{
+		EnabledAttributes: []OptionalMetricMetricAttributeKey{"invalid_attribute_for_test"},
+	}
+	require.Error(t, cfg.Validate())
+}
+func TestOptionalMetricEmptyUnitMetricConfig_Unmarshal_Nil(t *testing.T) {
+	cfg := &OptionalMetricEmptyUnitMetricConfig{}
+	require.NoError(t, cfg.Unmarshal(nil))
+}
+func TestOptionalMetricEmptyUnitMetricConfig_Validate_InvalidAttribute(t *testing.T) {
+	cfg := &OptionalMetricEmptyUnitMetricConfig{
+		EnabledAttributes: []OptionalMetricEmptyUnitMetricAttributeKey{"invalid_attribute_for_test"},
+	}
+	require.Error(t, cfg.Validate())
+}
+func TestReaggregateMetricMetricConfig_Unmarshal_Nil(t *testing.T) {
+	cfg := &ReaggregateMetricMetricConfig{}
+	require.NoError(t, cfg.Unmarshal(nil))
+}
+func TestReaggregateMetricMetricConfig_Validate_InvalidAttribute(t *testing.T) {
+	cfg := &ReaggregateMetricMetricConfig{
+		EnabledAttributes: []ReaggregateMetricMetricAttributeKey{"invalid_attribute_for_test"},
+	}
+	require.Error(t, cfg.Validate())
+}
+func TestSystemCPUTimeMetricConfig_Unmarshal_Nil(t *testing.T) {
+	cfg := &SystemCPUTimeMetricConfig{}
+	require.NoError(t, cfg.Unmarshal(nil))
+}
+func TestSystemCPUUtilizationMetricConfig_Unmarshal_Nil(t *testing.T) {
+	cfg := &SystemCPUUtilizationMetricConfig{}
+	require.NoError(t, cfg.Unmarshal(nil))
+}
+func TestSystemCPUUtilizationMetricConfig_Validate_InvalidAttribute(t *testing.T) {
+	cfg := &SystemCPUUtilizationMetricConfig{
+		EnabledAttributes: []SystemCPUUtilizationMetricAttributeKey{"invalid_attribute_for_test"},
+	}
+	require.Error(t, cfg.Validate())
 }

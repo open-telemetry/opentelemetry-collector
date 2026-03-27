@@ -9,7 +9,6 @@ package {{ .Package }}
 import (
 	{{- if $hasReagMetrics }}
 	"fmt"
-	"slices"
 	{{- end }}
 
 	"go.opentelemetry.io/collector/confmap"

@@ -91,26 +91,42 @@ type metricInfo struct {
 
 {{ if getMetricConditionalAttributes .Attributes }}
 type MetricAttributeOption interface {
-	apply(pmetric.NumberDataPoint)
+	apply(pcommon.Map)
 }
 
-type metricAttributeOptionFunc func(pmetric.NumberDataPoint)
+type metricAttributeOptionFunc func(pcommon.Map)
 
-func (maof metricAttributeOptionFunc) apply(dp pmetric.NumberDataPoint) {
-	maof(dp)
+func (maof metricAttributeOptionFunc) apply(attrs pcommon.Map) {
+	maof(attrs)
 }
 
 {{ range getMetricConditionalAttributes .Attributes }}
-func With{{ .Render }}MetricAttribute({{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}) MetricAttributeOption {
-	return metricAttributeOptionFunc(func(dp pmetric.NumberDataPoint) {
-		{{- template "putAttribute" . }}
+func With{{ .Render }}MetricAttribute({{ .RenderUnexported }}AttributeValue {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ else }}{{ (attributeInfo .).Type.Primitive }}{{ end }}) MetricAttributeOption {
+	return metricAttributeOptionFunc(func(attrs pcommon.Map) {
+		{{- if (attributeInfo .).Enum }}
+		attrs.PutStr("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue.String())
+		{{- else if eq (attributeInfo .).Type.String "String" }}
+		attrs.PutStr("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue)
+		{{- else if eq (attributeInfo .).Type.String "Int" }}
+		attrs.PutInt("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue)
+		{{- else if eq (attributeInfo .).Type.String "Double" }}
+		attrs.PutDouble("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue)
+		{{- else if eq (attributeInfo .).Type.String "Bool" }}
+		attrs.PutBool("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue)
+		{{- else if eq (attributeInfo .).Type.String "Map" }}
+		{{ .RenderUnexported }}AttributeValue.CopyTo(attrs.PutEmptyMap("{{ (attributeInfo .).Name }}"))
+		{{- else if eq (attributeInfo .).Type.String "Slice" }}
+		{{ .RenderUnexported }}AttributeValue.CopyTo(attrs.PutEmptySlice("{{ (attributeInfo .).Name }}"))
+		{{- else }}
+		attrs.PutStr("{{ (attributeInfo .).Name }}", string({{ .RenderUnexported }}AttributeValue))
+		{{- end }}
 	})
 }
 {{ end }}
 {{ end }}
 
 {{ range $name, $metric := .Metrics }}
-{{- $metricReag := and $reag (hasAggregatableAttributes $metric.Attributes) -}}
+{{- $metricReag := and $reag (hasAggregatableAttributes $metric.Attributes) (ne $metric.Data.Type "Histogram") -}}
 type metric{{ $name.Render }} struct {
 	data                     pmetric.Metric // data buffer for generated metric.
 	config                   {{ if $reag }}{{ $name.Render }}{{ end }}MetricConfig // metric config provided by user.
@@ -161,7 +177,7 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 
 	{{- if $metric.HasConditionalAttributes $.Attributes }}
 	for _, op := range options {
-		op.apply(dp)
+		op.apply(dp.Attributes())
 	}
 	{{- end }}
 
@@ -194,6 +210,37 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.MoveTo(dps.AppendEmpty())
 }
 {{- else }}
+{{- if eq $metric.Data.Type "Histogram" }}
+func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, count uint64, sum float64, min float64, max float64, bucketCounts []uint64
+{{- range $metric.Attributes -}}{{- if not (attributeInfo .).IsConditional -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}{{ end }}{{- if $metric.HasConditionalAttributes $.Attributes -}}, options ...MetricAttributeOption{{- end -}}) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Histogram().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetCount(count)
+	dp.SetSum(sum)
+	dp.SetMin(min)
+	dp.SetMax(max)
+	{{- if $metric.Histogram.Boundaries }}
+	dp.ExplicitBounds().FromRaw([]float64{ {{- range $i, $b := $metric.Histogram.Boundaries }}{{if $i}}, {{end}}{{$b}}{{end}} })
+	{{- end }}
+	dp.BucketCounts().FromRaw(bucketCounts)
+
+	{{- range $metric.Attributes }}
+	{{- if not (attributeInfo .).IsConditional -}}
+	{{- template "putAttribute" . -}}
+	{{- end }}
+	{{- end }}
+
+	{{- if $metric.HasConditionalAttributes $.Attributes }}
+	for _, op := range options {
+		op.apply(dp.Attributes())
+	}
+	{{- end }}
+}
+{{- else }}
 func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val {{ $metric.Data.MetricValueType.BasicType }}
 {{- range $metric.Attributes -}}{{- if not (attributeInfo .).IsConditional -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}{{ end }}{{- if $metric.HasConditionalAttributes $.Attributes -}}, options ...MetricAttributeOption{{- end -}}) {
 	if !m.config.Enabled {
@@ -211,10 +258,11 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 
 	{{- if $metric.HasConditionalAttributes $.Attributes }}
 	for _, op := range options {
-		op.apply(dp)
+		op.apply(dp.Attributes())
 	}
 	{{- end }}
 }
+{{- end }}
 {{- end }}
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -399,17 +447,24 @@ func withResourceMoved(res pcommon.Resource) ResourceMetricsOption {
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 	return resourceMetricsOptionFunc(func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
 			switch metrics.At(i).Type() {
 			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
+				dps := metrics.At(i).Gauge().DataPoints()
+				for j := 0; j < dps.Len(); j++ {
+					dps.At(j).SetStartTimestamp(start)
+				}
 			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
+				dps := metrics.At(i).Sum().DataPoints()
+				for j := 0; j < dps.Len(); j++ {
+					dps.At(j).SetStartTimestamp(start)
+				}
+			case pmetric.MetricTypeHistogram:
+				dps := metrics.At(i).Histogram().DataPoints()
+				for j := 0; j < dps.Len(); j++ {
+					dps.At(j).SetStartTimestamp(start)
+				}
 			}
 		}
 	})
@@ -487,10 +542,14 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 //
 // Deprecated: Use mb.For{{ publicVar $metric.Entity }}(entity).Record{{ $name.Render }}DataPoint(...) instead.
 {{- end }}
+{{- if eq $metric.Data.Type "Histogram" }}
+func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp, count uint64, sum float64, min float64, max float64, bucketCounts []uint64
+{{- else }}
 func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 	{{- if $metric.Data.HasMetricInputType }}, inputVal {{ $metric.Data.MetricInputType.String }}
 	{{- else }}, val {{ $metric.Data.MetricValueType.BasicType }}
 	{{- end }}
+{{- end }}
 	{{- range $metric.Attributes -}}
 	{{- if not (attributeInfo .).IsConditional -}}
 	, {{ .RenderUnexported }}AttributeValue {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ else }}{{ (attributeInfo .).Type.Primitive }}{{ end }}
@@ -500,8 +559,8 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 	, options... MetricAttributeOption
 	{{- end -}}
 	)
-	{{- if $metric.Data.HasMetricInputType }} error{{ end }} {
-	{{- if $metric.Data.HasMetricInputType }}
+	{{- if and $metric.Data.HasMetricInputType (ne $metric.Data.Type "Histogram") }} error{{ end }} {
+	{{- if and $metric.Data.HasMetricInputType (ne $metric.Data.Type "Histogram") }}
 	{{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
 	val, err := strconv.ParseFloat(inputVal, 64)
 	{{- else if eq $metric.Data.MetricValueType.BasicType "int64" }}
@@ -511,7 +570,11 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 		return fmt.Errorf("failed to parse {{ $metric.Data.MetricValueType.BasicType }} for {{ $name.Render }}, value was %s: %w", inputVal, err)
 	}
 	{{- end }}
+	{{- if eq $metric.Data.Type "Histogram" }}
+	mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts, count, sum, min, max, bucketCounts
+	{{- else }}
 	mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts, val
+	{{- end }}
 		{{- range $metric.Attributes -}}
 		{{- if not (attributeInfo .).IsConditional -}}
 		, {{ .RenderUnexported }}AttributeValue{{ if (attributeInfo .).Enum }}.String(){{ end }}
@@ -521,7 +584,7 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 		, options...
 		{{- end -}}
 		)
-	{{- if $metric.Data.HasMetricInputType }}
+	{{- if and $metric.Data.HasMetricInputType (ne $metric.Data.Type "Histogram") }}
 	return nil
 	{{- end }}
 }

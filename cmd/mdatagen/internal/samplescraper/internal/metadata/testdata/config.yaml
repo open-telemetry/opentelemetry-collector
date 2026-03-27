@@ -20,6 +20,9 @@ all_set:
       attributes: ["string_attr","boolean_attr"]
     system.cpu.time:
       enabled: true
+    system_cpu_utilization:
+      enabled: true
+      attributes: ["string_attr"]
   resource_attributes:
     map.resource.attr:
       enabled: true
@@ -58,6 +61,9 @@ reaggregate_set:
       attributes: []
     system.cpu.time:
       enabled: true
+    system_cpu_utilization:
+      enabled: true
+      attributes: []
   resource_attributes:
     map.resource.attr:
       enabled: true
@@ -96,6 +102,9 @@ none_set:
       attributes: ["string_attr","boolean_attr"]
     system.cpu.time:
       enabled: false
+    system_cpu_utilization:
+      enabled: false
+      attributes: ["string_attr"]
   resource_attributes:
     map.resource.attr:
       enabled: false
