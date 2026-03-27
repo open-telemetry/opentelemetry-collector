@@ -37,3 +37,11 @@ var TelemetryNewPipelineTelemetryFeatureGate = featuregate.GlobalRegistry().Must
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/component-universal-telemetry.md"),
 	featuregate.WithRegisterFromVersion("v0.123.0"),
 )
+
+var TelemetryNoDefaultMetricsReaderFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"telemetry.noDefaultMetricsReader",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the collector will not bind any default Prometheus metrics endpoint on port 8888. Users must explicitly configure service::telemetry::metrics::readers."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/14727"),
+	featuregate.WithRegisterFromVersion("v0.148.0"),
+)
