@@ -467,6 +467,21 @@ foo
 	}
 }
 
+func TestGenerateMetricsTestUsesRawMetricNameForReaggregation(t *testing.T) {
+	md, err := LoadMetadata(filepath.Join("testdata", "reaggregation_dotted_metric.yaml"))
+	require.NoError(t, err)
+
+	outputFile := filepath.Join(t.TempDir(), "generated_metrics_test.go")
+	require.NoError(t, generateFile("templates/metrics_test.go.tmpl", outputFile, md, "metadata"))
+
+	contents, err := os.ReadFile(filepath.Clean(outputFile))
+	require.NoError(t, err)
+
+	require.Contains(t, string(contents), `aggMap["system.cpu.time"] = mb.metricSystemCPUTime.config.AggregationStrategy`)
+	require.Contains(t, string(contents), `switch aggMap["system.cpu.time"] {`)
+	require.NotContains(t, string(contents), `aggMap["SystemCPUTime"] =`)
+}
+
 func TestGenerateConfigFiles(t *testing.T) {
 	tests := []struct {
 		name    string
