@@ -10,18 +10,19 @@ status:
   warnings:
     - Any additional information that should be brought to the consumer's attention
 
-sem_conv_version: 1.38.0
+sem_conv_version: 1.37.2
 
 metrics:
-  system.disk.io_time:
+  default.metric:
     enabled: true
-    description: Time disk spent activated..
+    description: Monotonic cumulative sum int metric enabled by default.
+    extended_documentation: The metric will be become optional soon.
     stability: development
     semantic_convention:
-      ref: system/system-metrics.md#metric-systemdiskio_time
+      ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.37.2/docs/system/system-metrics.md#metric-systemcputime
     unit: s
     sum:
-      value_type: double
+      value_type: int
       monotonic: true
       aggregation_temporality: cumulative
 

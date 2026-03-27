@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package cfggen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
+
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"maps"
@@ -556,6 +558,9 @@ func ExtractValidators(md *ConfigMetadata) []Validator {
 		return validators
 	}
 	collectValidators(md, &validators)
+	slices.SortFunc(validators, func(a, b Validator) int {
+		return cmp.Compare(a.FieldName, b.FieldName)
+	})
 
 	return validators
 }
