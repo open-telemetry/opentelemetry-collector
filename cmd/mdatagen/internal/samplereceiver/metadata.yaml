@@ -9,6 +9,12 @@ github_project: open-telemetry/opentelemetry-collector
 
 sem_conv_version: 1.38.0
 
+example_configs:
+  - name: Basic Configuration
+    description: Minimal configuration for the sample receiver.
+    config: |
+      sample:
+
 feature_gates:
   - id: receiver.sample.featuregate.example
     description: This is an example feature gate for testing mdatagen code generation.
@@ -26,8 +32,8 @@ status:
     deprecated: [profiles]
   deprecation:
     profiles:
-      migration: "no migration needed"
-      date: "2025-02-05"
+      migration: 'no migration needed'
+      date: '2025-02-05'
   distributions: []
   unsupported_platforms: [freebsd, illumos]
   codeowners:
@@ -183,7 +189,7 @@ events:
 
   default.event.to_be_removed:
     enabled: true
-    description: "[DEPRECATED] Example to-be-removed event enabled by default."
+    description: '[DEPRECATED] Example to-be-removed event enabled by default.'
     extended_documentation: The event will be removed soon.
     warnings:
       if_enabled: This event is deprecated and will be removed soon.
@@ -192,9 +198,10 @@ events:
 
   default.event.to_be_renamed:
     enabled: false
-    description: "[DEPRECATED] Example event disabled by default."
+    description: '[DEPRECATED] Example event disabled by default.'
     extended_documentation: The event will be renamed soon.
-    attributes: [string_attr, boolean_attr, boolean_attr2, conditional_string_attr]
+    attributes:
+      [string_attr, boolean_attr, boolean_attr2, conditional_string_attr]
     warnings:
       if_configured: This event is deprecated and will be renamed soon.
 
@@ -228,7 +235,7 @@ metrics:
 
   default.metric.to_be_removed:
     enabled: true
-    description: "[DEPRECATED] Non-monotonic delta sum double metric enabled by default."
+    description: '[DEPRECATED] Non-monotonic delta sum double metric enabled by default.'
     extended_documentation: The metric will be removed soon.
     stability: deprecated
     deprecated:
@@ -265,7 +272,8 @@ metrics:
     unit: "1"
     gauge:
       value_type: double
-    attributes: [string_attr, boolean_attr, boolean_attr2, conditional_string_attr]
+    attributes:
+      [string_attr, boolean_attr, boolean_attr2, conditional_string_attr]
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
 

@@ -7,6 +7,10 @@ import (
 	"context"
 	"testing"
 
+	"go.yaml.in/yaml/v3"
+
+	"go.opentelemetry.io/collector/confmap"
+
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
@@ -108,4 +112,42 @@ func (mnh *mdatagenNopHost) GetExtensions() map[component.ID]component.Component
 
 func (mnh *mdatagenNopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
 	return nil
+}
+
+func TestExampleConfigs(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      string
+		description string
+	}{
+		{
+			name:        "Basic Configuration",
+			description: "Minimal configuration for the sample receiver.",
+			config: `sample:
+`,
+		},
+	}
+
+	factory := NewFactory()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Parse the example config YAML
+			var rawConf map[string]any
+			err := yaml.Unmarshal([]byte(tt.config), &rawConf)
+			require.NoErrorf(t, err, "example config %q is not valid YAML", tt.name)
+
+			// Unmarshal into the component's real config struct
+			cm := confmap.NewFromStringMap(rawConf)
+			sub, err := cm.Sub("sample")
+			require.NoErrorf(t, err, "example config %q must have a %q key", tt.name, "sample")
+
+			cfg := factory.CreateDefaultConfig()
+			require.NoErrorf(t, sub.Unmarshal(&cfg), "example config %q failed to unmarshal into component config", tt.name)
+
+			// If the config implements Validate(), call it
+			if validator, ok := cfg.(interface{ Validate() error }); ok {
+				require.NoErrorf(t, validator.Validate(), "example config %q failed validation", tt.name)
+			}
+		})
+	}
 }
