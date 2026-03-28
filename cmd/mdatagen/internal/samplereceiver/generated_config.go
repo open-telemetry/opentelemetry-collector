@@ -28,3 +28,11 @@ func (c *Config) Validate() error {
 
 	return err
 }
+
+// createDefaultConfig creates a Config with default values.
+func createDefaultConfig() *Config {
+	return &Config{
+		Endpoint: "localhost:12345",
+		Timeout:  10 * time.Second,
+	}
+}

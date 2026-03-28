@@ -79,6 +79,7 @@ func TestRunContents(t *testing.T) {
 		wantFeatureGatesGenerated       bool
 		wantConfigSchemaGenerated       bool
 		wantMetricsSchemaYamlGenerated  bool
+		wantConfigGoStructGenerated     bool
 		wantErr                         bool
 		wantOrderErr                    bool
 		wantRunErr                      bool
@@ -262,12 +263,13 @@ func TestRunContents(t *testing.T) {
 			wantMetricsSchemaYamlGenerated: true,
 		},
 		{
-			yml:                        "with_config.yaml",
-			wantStatusGenerated:        true,
-			wantReadmeGenerated:        true,
-			wantLogsGenerated:          true,
-			wantComponentTestGenerated: true,
-			wantConfigSchemaGenerated:  true,
+			yml:                         "with_config.yaml",
+			wantStatusGenerated:         true,
+			wantReadmeGenerated:         true,
+			wantLogsGenerated:           true,
+			wantComponentTestGenerated:  true,
+			wantConfigSchemaGenerated:   true,
+			wantConfigGoStructGenerated: true,
 		},
 		{
 			yml:        "with_invalid_config_ref.yaml",
@@ -440,6 +442,18 @@ foo
 				require.FileExists(t, filepath.Join(tmpdir, "config.schema.json"))
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, "config.schema.json"))
+			}
+
+			if tt.wantConfigGoStructGenerated {
+				cfgGoPath := filepath.Join(tmpdir, "generated_config.go")
+				require.FileExists(t, cfgGoPath)
+				contents, err = os.ReadFile(filepath.Clean(cfgGoPath))
+				require.NoError(t, err)
+				require.Contains(t, string(contents), "func createDefaultConfig()")
+				require.Contains(t, string(contents), `"localhost:4317"`)
+				require.Contains(t, string(contents), "time.Second")
+				_, err = parser.ParseFile(token.NewFileSet(), "", contents, parser.DeclarationErrors)
+				require.NoError(t, err)
 			}
 
 			schemaYamlPath := filepath.Join(tmpdir, generatedPackageDir, "config.schema.yaml")

@@ -31,6 +31,13 @@ func (c *TargetsItem) Validate() error {
 	return err
 }
 
+// createDefaultTargetsItem creates a TargetsItem with default values.
+func createDefaultTargetsItem() TargetsItem {
+	return TargetsItem{
+		Interval: configoptional.Some(10 * time.Second),
+	}
+}
+
 // Configuration for the Sample Scraper.
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
@@ -47,4 +54,12 @@ func (c *Config) Validate() error {
 	}
 
 	return err
+}
+
+// createDefaultConfig creates a Config with default values.
+func createDefaultConfig() *Config {
+	TargetsDefault := []TargetsItem{createDefaultTargetsItem()}
+	return &Config{
+		Targets: &TargetsDefault,
+	}
 }
