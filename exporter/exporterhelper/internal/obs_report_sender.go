@@ -56,6 +56,7 @@ type obsReportSender[K request.Request] struct {
 	metricAttr      metric.MeasurementOption
 	itemsSentInst   metric.Int64Counter
 	itemsFailedInst metric.Int64Counter
+	inFlightInst    metric.Int64UpDownCounter
 	next            sender.Sender[K]
 }
 
@@ -80,17 +81,22 @@ func newObsReportSender[K request.Request](set exporter.Settings, signal pipelin
 	case pipeline.SignalTraces:
 		or.itemsSentInst = telemetryBuilder.ExporterSentSpans
 		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedSpans
+		or.inFlightInst = telemetryBuilder.ExporterInFlightSpans
 
 	case pipeline.SignalMetrics:
 		or.itemsSentInst = telemetryBuilder.ExporterSentMetricPoints
 		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedMetricPoints
+		or.inFlightInst = telemetryBuilder.ExporterInFlightMetricPoints
 
 	case pipeline.SignalLogs:
 		or.itemsSentInst = telemetryBuilder.ExporterSentLogRecords
 		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedLogRecords
+		or.inFlightInst = telemetryBuilder.ExporterInFlightLogRecords
+
 	case xpipeline.SignalProfiles:
 		or.itemsSentInst = telemetryBuilder.ExporterSentProfileSamples
 		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedProfileSamples
+		or.inFlightInst = telemetryBuilder.ExporterInFlightProfileSamples
 	}
 
 	return or, nil
@@ -107,9 +113,13 @@ func (ors *obsReportSender[K]) Send(ctx context.Context, req K) error {
 	return err
 }
 
-// StartOp creates the span used to trace the operation. Returning
-// the updated context and the created span.
+// startOp increments the in-flight request counter and creates the span
+// used to trace the operation. Returns the updated context.
 func (ors *obsReportSender[K]) startOp(ctx context.Context) context.Context {
+	if ors.inFlightInst != nil {
+		ors.inFlightInst.Add(ctx, 1, ors.metricAttr)
+	}
+
 	ctx, _ = ors.tracer.Start(ctx,
 		ors.spanName,
 		ors.spanAttrs,
@@ -119,6 +129,10 @@ func (ors *obsReportSender[K]) startOp(ctx context.Context) context.Context {
 
 // EndOp completes the export operation that was started with StartOp.
 func (ors *obsReportSender[K]) endOp(ctx context.Context, numRecords int, err error) {
+	if ors.inFlightInst != nil {
+		ors.inFlightInst.Add(ctx, -1, ors.metricAttr)
+	}
+
 	numSent, numFailedToSend := toNumItems(numRecords, err)
 
 	if ors.itemsSentInst != nil {

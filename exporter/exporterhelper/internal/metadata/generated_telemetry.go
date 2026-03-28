@@ -32,6 +32,10 @@ type TelemetryBuilder struct {
 	ExporterEnqueueFailedMetricPoints   metric.Int64Counter
 	ExporterEnqueueFailedProfileSamples metric.Int64Counter
 	ExporterEnqueueFailedSpans          metric.Int64Counter
+	ExporterInFlightLogRecords          metric.Int64UpDownCounter
+	ExporterInFlightMetricPoints        metric.Int64UpDownCounter
+	ExporterInFlightProfileSamples      metric.Int64UpDownCounter
+	ExporterInFlightSpans               metric.Int64UpDownCounter
 	ExporterQueueBatchSendSize          metric.Int64Histogram
 	ExporterQueueBatchSendSizeBytes     metric.Int64Histogram
 	ExporterQueueCapacity               metric.Int64ObservableGauge
@@ -137,6 +141,30 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_exporter_enqueue_failed_spans",
 		metric.WithDescription("Number of spans failed to be added to the sending queue. [Alpha]"),
 		metric.WithUnit("{span}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterInFlightLogRecords, err = builder.meter.Int64UpDownCounter(
+		"otelcol_exporter_in_flight_log_records",
+		metric.WithDescription("Number of log record export requests currently in-flight (including retry backoff). [Development]"),
+		metric.WithUnit("{request}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterInFlightMetricPoints, err = builder.meter.Int64UpDownCounter(
+		"otelcol_exporter_in_flight_metric_points",
+		metric.WithDescription("Number of metric point export requests currently in-flight (including retry backoff). [Development]"),
+		metric.WithUnit("{request}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterInFlightProfileSamples, err = builder.meter.Int64UpDownCounter(
+		"otelcol_exporter_in_flight_profile_samples",
+		metric.WithDescription("Number of profile sample export requests currently in-flight (including retry backoff). [Development]"),
+		metric.WithUnit("{request}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterInFlightSpans, err = builder.meter.Int64UpDownCounter(
+		"otelcol_exporter_in_flight_spans",
+		metric.WithDescription("Number of span export requests currently in-flight (including retry backoff). [Development]"),
+		metric.WithUnit("{request}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterQueueBatchSendSize, err = builder.meter.Int64Histogram(
