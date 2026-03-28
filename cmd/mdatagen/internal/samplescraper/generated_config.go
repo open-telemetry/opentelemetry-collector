@@ -3,6 +3,7 @@
 package samplescraper
 
 import (
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -11,8 +12,23 @@ import (
 )
 
 type TargetsItem struct {
-	HTTPClient confighttp.ClientConfig                `mapstructure:"http_client"`
+	HTTPClient *confighttp.ClientConfig               `mapstructure:"http_client"`
 	Interval   configoptional.Optional[time.Duration] `mapstructure:"interval"`
+	Options    map[string]string                      `mapstructure:"options"`
+}
+
+// Validate validates the targets_item fields.
+func (c *TargetsItem) Validate() error {
+	var err error
+
+	if c.HTTPClient == nil {
+		err = errors.Join(err, errors.New("http_client is required"))
+	}
+	if c.Options == nil || len(c.Options) == 0 {
+		err = errors.Join(err, errors.New("options is required"))
+	}
+
+	return err
 }
 
 // Configuration for the Sample Scraper.
@@ -20,4 +36,15 @@ type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	// Targets configuration for the scraper.
 	Targets *[]TargetsItem `mapstructure:"targets"`
+}
+
+// Validate validates the Config fields.
+func (c *Config) Validate() error {
+	var err error
+
+	if c.Targets == nil || len(*c.Targets) == 0 {
+		err = errors.Join(err, errors.New("targets is required"))
+	}
+
+	return err
 }

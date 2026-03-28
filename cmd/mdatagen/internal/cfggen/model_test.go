@@ -220,7 +220,7 @@ func TestConfigMetadata_Validate_TypeAsInterface(t *testing.T) {
 	// might produce different types
 	tests := []struct {
 		name    string
-		typeVal any
+		typeVal string
 		wantErr bool
 	}{
 		{
@@ -232,11 +232,6 @@ func TestConfigMetadata_Validate_TypeAsInterface(t *testing.T) {
 			name:    "type as string 'string'",
 			typeVal: "string",
 			wantErr: true,
-		},
-		{
-			name:    "type as array of strings (union type) - not supported",
-			typeVal: []any{"object", "null"},
-			wantErr: true, // Current implementation doesn't handle union types, treats as invalid
 		},
 	}
 

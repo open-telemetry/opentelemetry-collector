@@ -56,8 +56,7 @@ ones currently available on the main branch.
 The profiling methods and interfaces will be made available in a `profiles`
 subpackage.
 
-See [PR
-#10253](https://github.com/open-telemetry/opentelemetry-collector/pull/10253)
+See [PR #10253](https://github.com/open-telemetry/opentelemetry-collector/pull/10253)
 for an example.
 
 ### Mark specific APIs as `experimental`
