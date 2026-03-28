@@ -93,8 +93,9 @@ func (tracesReferenceCounter) Unref(req request.Request) {
 func (req *tracesRequest) OnError(err error) request.Request {
 	var traceError consumererror.Traces
 	if errors.As(err, &traceError) {
-		// TODO: Add logic to unref the new request created here.
-		return newTracesRequest(traceError.Data())
+		req.td = traceError.Data()
+		req.cachedSize = -1
+		return req
 	}
 	return req
 }

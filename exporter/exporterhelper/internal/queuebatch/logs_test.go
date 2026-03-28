@@ -17,11 +17,14 @@ import (
 
 func TestLogsRequest(t *testing.T) {
 	lr := newLogsRequest(testdata.GenerateLogs(1))
+	req := lr.(*logsRequest)
+	req.cachedSize = 123
 
-	logErr := consumererror.NewLogs(errors.New("some error"), plog.NewLogs())
-	assert.Equal(
-		t,
-		newLogsRequest(plog.NewLogs()),
-		lr.(request.ErrorHandler).OnError(logErr),
-	)
+	remaining := plog.NewLogs()
+	logErr := consumererror.NewLogs(errors.New("some error"), remaining)
+	handled := lr.(request.ErrorHandler).OnError(logErr)
+
+	assert.Same(t, req, handled)
+	assert.Equal(t, remaining, req.ld)
+	assert.Equal(t, -1, req.cachedSize)
 }
