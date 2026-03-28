@@ -28,6 +28,13 @@ func (c *TargetsItem) Validate() error {
 		err = errors.Join(err, errors.New("options is required"))
 	}
 
+	if inner_err := validateHTTPClient(c.HTTPClient); inner_err != nil {
+		err = errors.Join(err, inner_err)
+	}
+	if c.Options == nil || len(c.Options) == 0 {
+		err = errors.Join(err, errors.New("options is required"))
+	}
+
 	return err
 }
 
