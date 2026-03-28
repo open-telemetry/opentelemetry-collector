@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	otelapi "go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -357,6 +358,39 @@ func TestCreateLoggerZapOptions(t *testing.T) {
 	logEntry := observedLogs.All()[0]
 	assert.Equal(t, testMessage, logEntry.Message)
 	assert.Equal(t, zapcore.InfoLevel, logEntry.Level)
+}
+
+func TestCreateLoggerSetsOpenTelemetryErrorHandler(t *testing.T) {
+	core, observedLogs := observer.New(zapcore.DebugLevel)
+	cfg := &Config{
+		Logs: LogsConfig{
+			Level:    zapcore.InfoLevel,
+			Encoding: "json",
+		},
+	}
+	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	require.NoError(t, err)
+
+	logger, provider, err := createLogger(t.Context(), telemetry.LoggerSettings{
+		Settings: telemetry.Settings{Resource: &resource},
+		BuildZapLogger: func(zap.Config, ...zap.Option) (*zap.Logger, error) {
+			return zap.New(core), nil
+		},
+	}, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, provider)
+	defer func() {
+		assert.NoError(t, provider.Shutdown(context.Background()))
+	}()
+
+	otelapi.Handle(errors.New("failed to upload metrics: connection refused"))
+
+	entries := observedLogs.All()
+	require.Len(t, entries, 1)
+	assert.Equal(t, "OpenTelemetry internal telemetry error", entries[0].Message)
+	assert.Contains(t, entries[0].ContextMap()["error"], "failed to upload metrics")
+
+	logger.Info("sanity")
 }
 
 func TestLogger_OTLP(t *testing.T) {
