@@ -63,7 +63,7 @@ Components refer to connectors, exporters, extensions, processors, and receivers
 * Provide a configuration structure which defines the configuration of the component
 * Provide the implementation that performs the component operation
 
-For more details on components, see the [Donating New Components](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#donating-new-components) document and the tutorial [Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) which provides a detailed example of building a component.
+For more details on components, see the [Donating New Components](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.147.0/docs/new-components.md) document and the tutorial [Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) which provides a detailed example of building a component.
 
 When adding a new component to the OpenTelemetry Collector, ensure that any configuration structs used by the component include fields with the `configopaque.String` type for sensitive data. This ensures that the data is masked when serialized to prevent accidental exposure.
 
@@ -218,20 +218,20 @@ Working with the project sources requires the following tools:
 Fork the repo and checkout the upstream repo to your GOPATH by:
 
 ```
-$ git clone git@github.com:open-telemetry/opentelemetry-collector.git
+git clone git@github.com:open-telemetry/opentelemetry-collector.git
 ```
 
 Add your fork as an origin:
 
 ```shell
-$ cd opentelemetry-collector
-$ git remote add fork git@github.com:YOUR_GITHUB_USERNAME/opentelemetry-collector.git
+cd opentelemetry-collector
+git remote add fork git@github.com:YOUR_GITHUB_USERNAME/opentelemetry-collector.git
 ```
 
 Run tests, fmt, and lint:
 
 ```shell
-$ make
+make
 ```
 
 You can run `make markdownlint` to check Markdown formatting.
