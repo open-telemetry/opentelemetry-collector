@@ -38,6 +38,14 @@ Number of spans failed to be added to the sending queue.
 | ---- | ----------- | ---------- | --------- | --------- |
 | {span} | Sum | Int | true | Alpha |
 
+### otelcol_exporter_in_flight_requests
+
+Number of export requests currently in-flight.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {request} | Sum | Int | false | Development |
+
 ### otelcol_exporter_queue_batch_send_size
 
 Number of units in the batch
