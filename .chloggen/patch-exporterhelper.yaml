@@ -1,0 +1,7 @@
+change_type: bug_fix
+component: pkg/exporterhelper
+note: Fix batch sizer defaulting related to the queue-level sizer.
+issues: [14687]
+subtext: |
+  When the batch section is configured without an explicit sizer, the queue-level sizer is now inherited only if it is a valid batch sizer (items or bytes), otherwise it defaults to items.
+change_logs: [user]

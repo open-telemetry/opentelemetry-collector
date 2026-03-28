@@ -1,0 +1,6 @@
+enabled: true
+sizer: bytes
+queue_size: 2000
+batch:
+  # sizer is NOT set in batch; should be inherited from queue (bytes)
+  min_size: 100

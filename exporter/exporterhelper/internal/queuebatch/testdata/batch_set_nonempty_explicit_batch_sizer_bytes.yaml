@@ -1,0 +1,7 @@
+enabled: true
+sizer: items
+queue_size: 2000
+batch:
+  # sizer is explicitly set to bytes; should NOT be overridden by queue sizer (items)
+  sizer: bytes
+  min_size: 100
