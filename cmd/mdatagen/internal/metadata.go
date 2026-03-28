@@ -180,6 +180,17 @@ func (md *Metadata) validateEntities() error {
 	usedAttrs := make(map[AttributeName]string)
 	seenTypes := make(map[string]bool)
 
+	// Pre-build a set of related entity pairs (undirected) from all relationships.
+	type entityPair struct{ a, b string }
+	relatedPairs := make(map[entityPair]bool)
+	for _, entity := range md.Entities {
+		for _, rel := range entity.Relationships {
+			relatedPairs[entityPair{entity.Type, rel.Target}] = true
+			relatedPairs[entityPair{rel.Target, entity.Type}] = true
+		}
+	}
+	usedExtraAttrs := make(map[AttributeName]string)
+
 	// First pass: collect entity types and validate basic entity properties
 	for _, entity := range md.Entities {
 		if entity.Type == "" {
@@ -220,6 +231,13 @@ func (md *Metadata) validateEntities() error {
 		for _, ref := range entity.ExtraAttributes {
 			if _, ok := md.ResourceAttributes[ref.Ref]; !ok {
 				errs = errors.Join(errs, fmt.Errorf(`entity "%v": extra_attributes refers to undefined resource attribute: %v`, entity.Type, ref.Ref))
+			}
+			if otherEntity, used := usedExtraAttrs[ref.Ref]; used {
+				if relatedPairs[entityPair{entity.Type, otherEntity}] {
+					errs = errors.Join(errs, fmt.Errorf(`entity "%v": extra_attributes attribute %v is already used by related entity "%v"`, entity.Type, ref.Ref, otherEntity))
+				}
+			} else {
+				usedExtraAttrs[ref.Ref] = entity.Type
 			}
 		}
 	}
