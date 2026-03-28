@@ -109,6 +109,11 @@ func Test_NetAddr_Validate(t *testing.T) {
 	require.NoError(t, na.Validate())
 
 	na = &AddrConfig{
+		Transport: TransportTypeNpipe,
+	}
+	require.NoError(t, na.Validate())
+
+	na = &AddrConfig{
 		Transport: transportTypeEmpty,
 	}
 	require.Error(t, na.Validate())
@@ -156,6 +161,10 @@ func Test_TransportType_UnmarshalText(t *testing.T) {
 	var tt TransportType
 	err := tt.UnmarshalText([]byte("tcp"))
 	require.NoError(t, err)
+	assert.Equal(t, TransportTypeTCP, tt)
+	err = tt.UnmarshalText([]byte("npipe"))
+	require.NoError(t, err)
+	assert.Equal(t, TransportTypeNpipe, tt)
 	err = tt.UnmarshalText([]byte("invalid"))
 	require.Error(t, err)
 }
