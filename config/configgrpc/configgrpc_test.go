@@ -1319,3 +1319,25 @@ func tempSocketName(t *testing.T) string {
 	require.NoError(t, os.Remove(socket))
 	return socket
 }
+
+func TestGrpcClientUserAgent(t *testing.T) {
+	cc := &ClientConfig{
+		TLS: configtls.ClientConfig{
+			Insecure: true,
+		},
+		UserAgent: "my-distribution/1.0",
+	}
+	opts, err := cc.getGrpcDialOptions(
+		context.Background(),
+		nil,
+		componenttest.NewNopTelemetrySettings(),
+		[]ToClientConnOption{},
+	)
+	require.NoError(t, err)
+	/* Expecting 3 DialOptions:
+	 * - WithTransportCredentials (TLS)
+	 * - WithStatsHandler (always, for self-telemetry)
+	 * - WithUserAgent (from UserAgent field)
+	 */
+	assert.Len(t, opts, 3)
+}
