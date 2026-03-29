@@ -22,6 +22,8 @@ func createLogger(
 	componentConfig component.Config,
 ) (*zap.Logger, component.ShutdownFunc, error) {
 	cfg := componentConfig.(*Config)
+	resCfg := resourceConfigFromSettings(set.Settings, cfg)
+
 	attrs := pcommonAttrsToOTelAttrs(set.Resource)
 	res := sdkresource.NewWithAttributes("", attrs...)
 
@@ -86,7 +88,7 @@ func createLogger(
 		}))
 	}
 
-	sdk, err := newSDK(ctx, res, otelconf.OpenTelemetryConfiguration{
+	sdk, err := newSDK(ctx, &resCfg, otelconf.OpenTelemetryConfiguration{
 		LoggerProvider: &otelconf.LoggerProvider{
 			Processors: cfg.Logs.Processors,
 		},
