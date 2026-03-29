@@ -6,7 +6,6 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
@@ -54,7 +53,9 @@ func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer) ([]request.
 	for req.size(sz) > maxSize {
 		md, rmSize := extractMetrics(req.md, maxSize, sz)
 		if md.DataPointCount() == 0 {
-			return res, fmt.Errorf("one datapoint size is greater than max size, dropping items: %d", req.md.DataPointCount())
+			// A single item exceeds the max size. Cannot split further,
+			// send the oversized item as-is to avoid dropping data.
+			break
 		}
 		req.setCachedSize(req.size(sz) - rmSize)
 		res = append(res, newMetricsRequest(md))

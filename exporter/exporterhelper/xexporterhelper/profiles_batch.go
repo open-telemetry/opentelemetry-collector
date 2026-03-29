@@ -59,7 +59,9 @@ func (req *profilesRequest) split(maxSize int, sz sizer.ProfilesSizer) ([]Reques
 	for req.size(sz) > maxSize {
 		pd, rmSize := extractProfiles(req.pd, maxSize, sz)
 		if pd.SampleCount() == 0 {
-			return res, fmt.Errorf("one sample size is greater than max size, dropping items: %d", req.pd.SampleCount())
+			// A single item exceeds the max size. Cannot split further,
+			// send the oversized item as-is to avoid dropping data.
+			break
 		}
 		req.setCachedSize(req.size(sz) - rmSize)
 		res = append(res, newProfilesRequest(pd))
