@@ -51,16 +51,120 @@ func (req *metricsRequest) mergeTo(dst *metricsRequest, sz sizer.MetricsSizer) {
 
 func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer) ([]request.Request, error) {
 	var res []request.Request
+	var droppedItems int
 	for req.size(sz) > maxSize {
 		md, rmSize := extractMetrics(req.md, maxSize, sz)
 		if md.DataPointCount() == 0 {
-			return res, fmt.Errorf("one datapoint size is greater than max size, dropping items: %d", req.md.DataPointCount())
+			// The first data point is too large to fit into a batch.
+			// Drop it and continue processing the rest.
+			droppedItems++
+			removeFirstDataPoint(req.md)
+			// Invalidate the cached size since we modified the data directly.
+			req.setCachedSize(-1)
+			continue
 		}
 		req.setCachedSize(req.size(sz) - rmSize)
 		res = append(res, newMetricsRequest(md))
 	}
-	res = append(res, req)
+	if droppedItems == 0 || req.md.DataPointCount() > 0 {
+		res = append(res, req)
+	}
+	if droppedItems > 0 {
+		return res, fmt.Errorf("%d data points exceeded max size, the data points were dropped", droppedItems)
+	}
 	return res, nil
+}
+
+// removeFirstDataPoint removes the first data point from the metrics.
+// It cleans up any empty parent containers (Metric, ScopeMetrics, ResourceMetrics).
+func removeFirstDataPoint(md pmetric.Metrics) {
+	rm := md.ResourceMetrics().At(0)
+	sm := rm.ScopeMetrics().At(0)
+	m := sm.Metrics().At(0)
+
+	// Remove the first data point based on metric type.
+	removeFirstDP(m)
+
+	// Clean up empty metric.
+	if dataPointsLen(m) == 0 {
+		first := true
+		sm.Metrics().RemoveIf(func(_ pmetric.Metric) bool {
+			if first {
+				first = false
+				return true
+			}
+			return false
+		})
+	}
+	// Clean up empty scope metrics.
+	if sm.Metrics().Len() == 0 {
+		first := true
+		rm.ScopeMetrics().RemoveIf(func(_ pmetric.ScopeMetrics) bool {
+			if first {
+				first = false
+				return true
+			}
+			return false
+		})
+	}
+	// Clean up empty resource metrics.
+	if rm.ScopeMetrics().Len() == 0 {
+		first := true
+		md.ResourceMetrics().RemoveIf(func(_ pmetric.ResourceMetrics) bool {
+			if first {
+				first = false
+				return true
+			}
+			return false
+		})
+	}
+}
+
+// removeFirstDP removes the first data point from the given metric.
+func removeFirstDP(m pmetric.Metric) {
+	first := true
+	switch m.Type() {
+	case pmetric.MetricTypeGauge:
+		m.Gauge().DataPoints().RemoveIf(func(_ pmetric.NumberDataPoint) bool {
+			if first {
+				first = false
+				return true
+			}
+			return false
+		})
+	case pmetric.MetricTypeSum:
+		m.Sum().DataPoints().RemoveIf(func(_ pmetric.NumberDataPoint) bool {
+			if first {
+				first = false
+				return true
+			}
+			return false
+		})
+	case pmetric.MetricTypeHistogram:
+		m.Histogram().DataPoints().RemoveIf(func(_ pmetric.HistogramDataPoint) bool {
+			if first {
+				first = false
+				return true
+			}
+			return false
+		})
+	case pmetric.MetricTypeExponentialHistogram:
+		m.ExponentialHistogram().DataPoints().RemoveIf(func(_ pmetric.ExponentialHistogramDataPoint) bool {
+			if first {
+				first = false
+				return true
+			}
+			return false
+		})
+	case pmetric.MetricTypeSummary:
+		m.Summary().DataPoints().RemoveIf(func(_ pmetric.SummaryDataPoint) bool {
+			if first {
+				first = false
+				return true
+			}
+			return false
+		})
+	}
 }
 
 // extractMetrics extracts metrics from srcMetrics until capacity is reached.

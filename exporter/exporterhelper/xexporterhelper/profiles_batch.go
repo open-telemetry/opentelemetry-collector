@@ -56,17 +56,63 @@ func (req *profilesRequest) mergeTo(dst *profilesRequest, sz sizer.ProfilesSizer
 
 func (req *profilesRequest) split(maxSize int, sz sizer.ProfilesSizer) ([]Request, error) {
 	var res []Request
+	var droppedItems int
 	for req.size(sz) > maxSize {
 		pd, rmSize := extractProfiles(req.pd, maxSize, sz)
 		if pd.SampleCount() == 0 {
-			return res, fmt.Errorf("one sample size is greater than max size, dropping items: %d", req.pd.SampleCount())
+			// The first profile is too large to fit into a batch.
+			// Drop it and continue processing the rest.
+			droppedItems++
+			removeFirstProfile(req.pd)
+			// Invalidate the cached size since we modified the data directly.
+			req.setCachedSize(-1)
+			continue
 		}
 		req.setCachedSize(req.size(sz) - rmSize)
 		res = append(res, newProfilesRequest(pd))
 	}
-
-	res = append(res, req)
+	if droppedItems == 0 || req.pd.SampleCount() > 0 {
+		res = append(res, req)
+	}
+	if droppedItems > 0 {
+		return res, fmt.Errorf("%d profiles exceeded max size, the profiles were dropped", droppedItems)
+	}
 	return res, nil
+}
+
+// removeFirstProfile removes the first profile from the profiles.
+// It cleans up any empty scope profiles and resource profiles that result from the removal.
+func removeFirstProfile(pd pprofile.Profiles) {
+	rp := pd.ResourceProfiles().At(0)
+	sp := rp.ScopeProfiles().At(0)
+	first := true
+	sp.Profiles().RemoveIf(func(_ pprofile.Profile) bool {
+		if first {
+			first = false
+			return true
+		}
+		return false
+	})
+	if sp.Profiles().Len() == 0 {
+		first = true
+		rp.ScopeProfiles().RemoveIf(func(_ pprofile.ScopeProfiles) bool {
+			if first {
+				first = false
+				return true
+			}
+			return false
+		})
+	}
+	if rp.ScopeProfiles().Len() == 0 {
+		first = true
+		pd.ResourceProfiles().RemoveIf(func(_ pprofile.ResourceProfiles) bool {
+			if first {
+				first = false
+				return true
+			}
+			return false
+		})
+	}
 }
 
 // extractProfiles extracts a new profiles with a maximum number of samples.
