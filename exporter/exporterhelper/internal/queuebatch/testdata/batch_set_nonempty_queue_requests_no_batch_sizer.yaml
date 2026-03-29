@@ -1,0 +1,6 @@
+enabled: true
+sizer: requests
+queue_size: 2000
+batch:
+  # sizer is NOT set in batch; should be defaulted to items
+  min_size: 100

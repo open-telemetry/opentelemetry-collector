@@ -55,9 +55,8 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 	// configuration, inherit the queue-level sizer when it is a valid batch
 	// sizer, otherwise default to items.
 	if cfg.Batch.HasValue() && !conf.IsSet("batch::sizer") {
-		if cfg.Sizer == request.SizerTypeItems || cfg.Sizer == request.SizerTypeBytes {
-			cfg.Batch.Get().Sizer = cfg.Sizer
-		} else {
+		cfg.Batch.Get().Sizer = cfg.Sizer
+		if cfg.Sizer == request.SizerTypeRequests {
 			cfg.Batch.Get().Sizer = request.SizerTypeItems
 		}
 	}

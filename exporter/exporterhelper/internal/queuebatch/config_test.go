@@ -276,6 +276,21 @@ func TestUnmarshal(t *testing.T) {
 				return cfg
 			},
 		},
+		{
+			path: "batch_set_nonempty_queue_requests_no_batch_sizer.yaml",
+			expectedCfg: func() configoptional.Optional[Config] {
+				cfg := newBaseCfg()
+				cfg.Get().Sizer = request.SizerTypeRequests
+				cfg.Get().QueueSize = 2000
+				cfg.Get().Batch = configoptional.Some(BatchConfig{
+					FlushTimeout: 200 * time.Millisecond,
+					// Explicit batch sizer (bytes) must NOT be overridden by queue sizer (items)
+					Sizer:   request.SizerTypeItems,
+					MinSize: 100,
+				})
+				return cfg
+			},
+		},
 	}
 
 	for _, tt := range tests {
