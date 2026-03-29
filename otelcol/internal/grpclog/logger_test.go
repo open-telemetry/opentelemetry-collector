@@ -83,6 +83,68 @@ func TestGRPCLogger(t *testing.T) {
 	}
 }
 
+func TestBenignClientCloseWarningsSuppressed(t *testing.T) {
+	benignMessages := []string{
+		"transport: http2Server.HandleStreams failed to read frame: EOF",
+		"transport: http2Server.HandleStreams failed to read frame: read tcp: connection reset by peer",
+		"[transport] connection reset by peer",
+	}
+
+	for _, msg := range benignMessages {
+		t.Run(msg, func(t *testing.T) {
+			warnLogged := false
+			hook := zap.Hooks(func(entry zapcore.Entry) error {
+				if entry.Level == zapcore.WarnLevel {
+					warnLogged = true
+				}
+				return nil
+			})
+
+			cfg := zap.Config{
+				Level:    zap.NewAtomicLevelAt(zapcore.WarnLevel),
+				Encoding: "console",
+			}
+			logger, err := cfg.Build(hook)
+			require.NoError(t, err)
+
+			SetLogger(logger)
+			component := &mockComponent{logger: grpclog.Component("transport")}
+			component.Warning(msg)
+
+			assert.False(t, warnLogged, "benign client-close message should be suppressed: %s", msg)
+		})
+	}
+}
+
+func TestNonBenignWarningsPreserved(t *testing.T) {
+	warnLogged := false
+	hook := zap.Hooks(func(entry zapcore.Entry) error {
+		if entry.Level == zapcore.WarnLevel {
+			warnLogged = true
+		}
+		return nil
+	})
+
+	cfg := zap.Config{
+		Level:    zap.NewAtomicLevelAt(zapcore.WarnLevel),
+		Encoding: "console",
+	}
+	logger, err := cfg.Build(hook)
+	require.NoError(t, err)
+
+	SetLogger(logger)
+	component := &mockComponent{logger: grpclog.Component("channelz")}
+	component.Warning("some unexpected grpc error unrelated to client close")
+	assert.True(t, warnLogged, "non-benign warning should still be logged at warn level")
+}
+
+func TestIsBenignClientCloseMessage(t *testing.T) {
+	assert.True(t, isBenignClientCloseMessage("HandleStreams failed to read frame: EOF"))
+	assert.True(t, isBenignClientCloseMessage("read tcp: connection reset by peer"))
+	assert.False(t, isBenignClientCloseMessage("unexpected internal error"))
+	assert.False(t, isBenignClientCloseMessage("dial tcp: connection refused"))
+}
+
 type mockComponent struct {
 	logger grpclog.DepthLoggerV2
 }
