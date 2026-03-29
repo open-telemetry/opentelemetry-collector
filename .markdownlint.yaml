@@ -34,6 +34,5 @@ MD053: false  # unused link definitions
 MD058: false  # blanks around tables
 MD059: false  # descriptive link text
 MD060: false  # table column style
-MD018: false  # no space after hash in heading
 MD028: false  # blank line inside blockquote
 MD037: false  # spaces inside emphasis
