@@ -1,2 +1,3 @@
 enabled: true
+# Queue sizer is "requests" (not valid for batch), so batch defaults to "items"
 batch:

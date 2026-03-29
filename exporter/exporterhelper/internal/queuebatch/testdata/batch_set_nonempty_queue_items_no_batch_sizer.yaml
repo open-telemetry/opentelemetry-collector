@@ -2,5 +2,5 @@ enabled: true
 sizer: items
 queue_size: 2000
 batch:
-  # sizer is NOT set in batch; should be inherited from queue (items)
+  # Batch sizer inherited from queue sizer (items)
   min_size: 100

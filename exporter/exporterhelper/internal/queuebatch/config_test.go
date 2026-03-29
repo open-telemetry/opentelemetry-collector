@@ -154,7 +154,7 @@ func TestUnmarshal(t *testing.T) {
 				cfg := newBaseCfg()
 				cfg.Get().Sizer = request.SizerTypeBytes
 				cfg.Get().QueueSize = 10000
-				// Batch sizer inherited from queue sizer
+				// Batch sizer inherited from queue sizer (bytes)
 				cfg.Get().Batch.GetOrInsertDefault()
 				cfg.Get().Batch.Get().Sizer = request.SizerTypeBytes
 				return cfg
@@ -190,7 +190,7 @@ func TestUnmarshal(t *testing.T) {
 				cfg.Get().QueueSize = 2000
 				cfg.Get().Batch = configoptional.Some(BatchConfig{
 					FlushTimeout: 200 * time.Millisecond,
-					// Sizer has been overridden by parent sizer
+					// Batch sizer inherited from queue sizer (bytes)
 					Sizer:   request.SizerTypeBytes,
 					MinSize: 100,
 				})
@@ -247,6 +247,21 @@ func TestUnmarshal(t *testing.T) {
 			},
 		},
 		{
+			path: "batch_set_nonempty_queue_requests_no_batch_sizer.yaml",
+			expectedCfg: func() configoptional.Optional[Config] {
+				cfg := newBaseCfg()
+				cfg.Get().Sizer = request.SizerTypeRequests
+				cfg.Get().QueueSize = 2000
+				cfg.Get().Batch = configoptional.Some(BatchConfig{
+					FlushTimeout: 200 * time.Millisecond,
+					// Queue sizer is "requests" (not valid for batch), so batch defaults to "items"
+					Sizer:   request.SizerTypeItems,
+					MinSize: 100,
+				})
+				return cfg
+			},
+		},
+		{
 			path: "batch_set_nonempty_explicit_batch_sizer_items.yaml",
 			expectedCfg: func() configoptional.Optional[Config] {
 				cfg := newBaseCfg()
@@ -271,21 +286,6 @@ func TestUnmarshal(t *testing.T) {
 					FlushTimeout: 200 * time.Millisecond,
 					// Explicit batch sizer (bytes) must NOT be overridden by queue sizer (items)
 					Sizer:   request.SizerTypeBytes,
-					MinSize: 100,
-				})
-				return cfg
-			},
-		},
-		{
-			path: "batch_set_nonempty_queue_requests_no_batch_sizer.yaml",
-			expectedCfg: func() configoptional.Optional[Config] {
-				cfg := newBaseCfg()
-				cfg.Get().Sizer = request.SizerTypeRequests
-				cfg.Get().QueueSize = 2000
-				cfg.Get().Batch = configoptional.Some(BatchConfig{
-					FlushTimeout: 200 * time.Millisecond,
-					// Explicit batch sizer (bytes) must NOT be overridden by queue sizer (items)
-					Sizer:   request.SizerTypeItems,
 					MinSize: 100,
 				})
 				return cfg

@@ -1,1 +1,2 @@
 enabled: true
+# Batch remains unset, sizer override does not apply.
