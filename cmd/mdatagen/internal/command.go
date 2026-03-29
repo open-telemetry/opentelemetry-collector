@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"go/format"
 	"io/fs"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -310,6 +311,7 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 
 			return used
 		},
+		"urlEncodeLabel": url.PathEscape,
 		"metricInfo": func(mn MetricName) Metric {
 			return md.Metrics[mn]
 		},

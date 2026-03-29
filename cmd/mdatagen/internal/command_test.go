@@ -844,6 +844,7 @@ Some info about a component
 					Codeowners:     tt.codeowners,
 					Deprecation:    tt.deprecation,
 				},
+				Label: tt.componentClass + "/foo",
 			}
 			tmpdir := t.TempDir()
 
@@ -1097,4 +1098,40 @@ func TestGenerateConfigSchema_LocalizesSameRootRefs(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, string(actual), "$ref: /filter.config")
 	require.NotContains(t, string(actual), "$ref: go.opentelemetry.io/collector/filter.config")
+}
+
+func TestReadmeIssuesLabel_StoragePath_GenerateFile(t *testing.T) {
+	stability := map[component.StabilityLevel][]string{
+		component.StabilityLevelBeta: {"metrics"},
+	}
+	md := Metadata{
+		GithubProject:   "open-telemetry/opentelemetry-collector-contrib",
+		Type:            "filestorageexample",
+		ShortFolderName: "filestorageexample",
+		ScopeName:       "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorageexample",
+		Status: &Status{
+			DisableCodeCov: true,
+			Stability:      stability,
+			Distributions:  []string{"contrib"},
+			Class:          "extension",
+		},
+		Label: "extension/storage/filestorageexample",
+	}
+
+	tmpdir := t.TempDir()
+	out := filepath.Join(tmpdir, "README.md")
+
+	require.NoError(t, generateFile("templates/readme.md.tmpl", out, md, "metadata"))
+
+	b, err := os.ReadFile(out) //nolint:gosec
+	require.NoError(t, err)
+	s := strings.ReplaceAll(string(b), "\r\n", "\n")
+
+	// Assert URL-encoded label appears in badge and link queries
+	require.Contains(t, s, "label%3Aextension%2Fstorage%2Ffilestorageexample")
+	require.Contains(t, s, "issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fstorage%2Ffilestorageexample")
+	require.Contains(t, s, "issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fstorage%2Ffilestorageexample")
+
+	// Also assert newline before Issues row to avoid concatenation
+	require.Contains(t, s, "\n| Distributions | [contrib] |\n| Issues        | ")
 }
