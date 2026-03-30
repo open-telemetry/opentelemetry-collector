@@ -84,15 +84,41 @@ func (c *MetricsConfigV030) Unmarshal(conf *confmap.Conf) error {
 		// TODO: add a warning log to tell users to migrate their config
 		return metricsConfigV02ToV03(v02, c)
 	}
-	// ensure endpoint normalization occurs
 	for _, r := range c.Readers {
+		// ensure endpoint normalization occurs
 		if r.Periodic != nil {
 			if r.Periodic.Exporter.OTLP != nil && r.Periodic.Exporter.OTLP.Endpoint != nil {
 				r.Periodic.Exporter.OTLP.Endpoint = normalizeEndpoint(*r.Periodic.Exporter.OTLP.Endpoint, r.Periodic.Exporter.OTLP.Insecure)
 			}
 		}
+		// Apply Prometheus exporter defaults for fields not explicitly set.
+		// When users explicitly configure the telemetry section (e.g. to
+		// change the host), unset *bool fields default to nil which the
+		// Prometheus exporter treats as false. This ensures the defaults
+		// match the implicit/default configuration where these are true.
+		if r.Pull != nil && r.Pull.Exporter.Prometheus != nil {
+			applyPrometheusDefaults(r.Pull.Exporter.Prometheus)
+		}
 	}
 	return nil
+}
+
+func boolPtr(v bool) *bool {
+	return &v
+}
+
+// applyPrometheusDefaults sets default values for Prometheus exporter
+// fields that were not explicitly provided in the configuration.
+func applyPrometheusDefaults(p *config.Prometheus) {
+	if p.WithoutScopeInfo == nil {
+		p.WithoutScopeInfo = boolPtr(true)
+	}
+	if p.WithoutUnits == nil {
+		p.WithoutUnits = boolPtr(true)
+	}
+	if p.WithoutTypeSuffix == nil {
+		p.WithoutTypeSuffix = boolPtr(true)
+	}
 }
 
 type LogsConfigV030 struct {

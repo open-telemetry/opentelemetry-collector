@@ -96,6 +96,24 @@ func TestConfig(t *testing.T) {
 		"config_invalid_metrics_views_level.yaml": {
 			validateErr: `service::telemetry::metrics::views can only be set when service::telemetry::metrics::level is detailed`,
 		},
+		"config_prometheus_host_only.yaml": {
+			config: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				host := "[::0]"
+				cfg.Metrics.Readers = []config.MetricReader{
+					{
+						Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
+							WithoutScopeInfo:  ptr(true),
+							WithoutUnits:      ptr(true),
+							WithoutTypeSuffix: ptr(true),
+							Host:              &host,
+							Port:              ptr(8888),
+						}}},
+					},
+				}
+				return cfg
+			}(),
+		},
 	}
 
 	for filename, test := range tests {
