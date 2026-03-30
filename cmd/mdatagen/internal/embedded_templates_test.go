@@ -6,6 +6,7 @@ package internal
 import (
 	"io/fs"
 	"path"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -58,4 +59,23 @@ func TestEnsureTemplatesLoaded(t *testing.T) {
 		return nil
 	}))
 	assert.Equal(t, len(templateFiles), count, "Must match the expected number of calls")
+}
+
+func TestGoTemplatesUseTabIndentation(t *testing.T) {
+	t.Parallel()
+
+	require.NoError(t, fs.WalkDir(TemplateFS, ".", func(filePath string, d fs.DirEntry, err error) error {
+		require.NoError(t, err)
+		if d == nil || d.IsDir() || !strings.HasSuffix(filePath, ".go.tmpl") {
+			return nil
+		}
+		content, readErr := TemplateFS.ReadFile(filePath)
+		require.NoError(t, readErr)
+		for i, line := range strings.Split(string(content), "\n") {
+			assert.False(t, strings.HasPrefix(line, "    "),
+				"file %s line %d uses space indentation; use tabs instead:\n  %q",
+				filePath, i+1, line)
+		}
+		return nil
+	}))
 }

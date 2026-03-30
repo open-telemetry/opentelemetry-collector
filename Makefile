@@ -40,7 +40,18 @@ endef
 .DEFAULT_GOAL := all
 
 .PHONY: all
-all: checklicense checkdoc misspell markdownlint goimpi goporto multimod-verify golint gotest
+all: checklicense checkdoc misspell markdownlint goimpi goporto multimod-verify golint gotest checktmpl
+
+.PHONY: checktmpl
+checktmpl:
+	@tmplRes=$$(grep -rEl "^ {4}" \
+	  cmd/mdatagen/internal/templates/*.go.tmpl \
+	  cmd/builder/internal/builder/templates/*.go.tmpl 2>/dev/null); \
+	if [ -n "$$tmplRes" ]; then \
+	  echo "space indentation found in .go.tmpl files (use tabs):"; \
+	  echo "$$tmplRes"; \
+	  exit 1; \
+	fi
 
 all-modules:
 	@echo $(ALL_MODULES) | tr ' ' '\n' | sort

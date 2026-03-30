@@ -109,6 +109,8 @@ jobs:
           node-version: "24"
       - name: checklicense
         run: make checklicense
+      - name: checktmpl
+        run: make checktmpl
       - name: misspell
         run: make misspell
       - name: checkdoc

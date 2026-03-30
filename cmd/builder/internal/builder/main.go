@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"go/format"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -238,13 +239,28 @@ func downloadModules(cfg *Config) error {
 }
 
 func processAndWrite(cfg *Config, tmpl *template.Template, outFile string, tmplParams any) error {
+	buf := new(bytes.Buffer)
+	if err := tmpl.Execute(buf, tmplParams); err != nil {
+		return err
+	}
+
+	result := buf.Bytes()
+	if strings.HasSuffix(outFile, ".go") {
+		if formatted, err := format.Source(result); err == nil {
+			result = formatted
+		} else {
+			cfg.Logger.Warn("Failed to format generated file, writing unformatted output",
+				zap.String("file", outFile), zap.Error(err))
+		}
+	}
+
 	out, err := os.Create(filepath.Clean(filepath.Join(cfg.Distribution.OutputPath, outFile)))
 	if err != nil {
 		return err
 	}
-
 	defer out.Close()
-	return tmpl.Execute(out, tmplParams)
+	_, err = out.Write(result)
+	return err
 }
 
 func readGoModFile(cfg *Config) (string, map[string]string, error) {
