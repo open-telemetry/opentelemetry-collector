@@ -13,6 +13,42 @@ status:
 
 telemetry:
   metrics:
+    exporter_dropped_log_records:
+      enabled: true
+      stability: alpha
+      description: Number of log records intentionally dropped by the exporter (e.g. unsupported data).
+      unit: "{record}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    exporter_dropped_metric_points:
+      enabled: true
+      stability: alpha
+      description: Number of metric points intentionally dropped by the exporter (e.g. unsupported temporality).
+      unit: "{datapoint}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    exporter_dropped_profile_samples:
+      enabled: true
+      stability: development
+      description: Number of profile samples intentionally dropped by the exporter.
+      unit: "{sample}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    exporter_dropped_spans:
+      enabled: true
+      stability: alpha
+      description: Number of spans intentionally dropped by the exporter (e.g. unsupported data).
+      unit: "{span}"
+      sum:
+        value_type: int
+        monotonic: true
+
     exporter_enqueue_failed_log_records:
       enabled: true
       stability: alpha

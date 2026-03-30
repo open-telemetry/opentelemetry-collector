@@ -50,13 +50,14 @@ type obsReportSender[K request.Request] struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	spanName        string
-	tracer          trace.Tracer
-	spanAttrs       trace.SpanStartEventOption
-	metricAttr      metric.MeasurementOption
-	itemsSentInst   metric.Int64Counter
-	itemsFailedInst metric.Int64Counter
-	next            sender.Sender[K]
+	spanName          string
+	tracer            trace.Tracer
+	spanAttrs         trace.SpanStartEventOption
+	metricAttr        metric.MeasurementOption
+	itemsSentInst     metric.Int64Counter
+	itemsFailedInst   metric.Int64Counter
+	itemsDroppedInst  metric.Int64Counter
+	next              sender.Sender[K]
 }
 
 func newObsReportSender[K request.Request](set exporter.Settings, signal pipeline.Signal, next sender.Sender[K]) (sender.Sender[K], error) {
@@ -80,17 +81,21 @@ func newObsReportSender[K request.Request](set exporter.Settings, signal pipelin
 	case pipeline.SignalTraces:
 		or.itemsSentInst = telemetryBuilder.ExporterSentSpans
 		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedSpans
+		or.itemsDroppedInst = telemetryBuilder.ExporterDroppedSpans
 
 	case pipeline.SignalMetrics:
 		or.itemsSentInst = telemetryBuilder.ExporterSentMetricPoints
 		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedMetricPoints
+		or.itemsDroppedInst = telemetryBuilder.ExporterDroppedMetricPoints
 
 	case pipeline.SignalLogs:
 		or.itemsSentInst = telemetryBuilder.ExporterSentLogRecords
 		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedLogRecords
+		or.itemsDroppedInst = telemetryBuilder.ExporterDroppedLogRecords
 	case xpipeline.SignalProfiles:
 		or.itemsSentInst = telemetryBuilder.ExporterSentProfileSamples
 		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedProfileSamples
+		or.itemsDroppedInst = telemetryBuilder.ExporterDroppedProfileSamples
 	}
 
 	return or, nil
@@ -104,6 +109,11 @@ func (ors *obsReportSender[K]) Send(ctx context.Context, req K) error {
 	// Forward the data to the next consumer (this pusher is the next).
 	err := ors.next.Send(c, req)
 	ors.endOp(c, items, err)
+	// DroppedItemsErr is a non-failure sentinel: don't propagate it as an
+	// error to the rest of the pipeline.
+	if _, ok := experr.DroppedItemsFromErr(err); ok {
+		return nil
+	}
 	return err
 }
 
@@ -119,7 +129,30 @@ func (ors *obsReportSender[K]) startOp(ctx context.Context) context.Context {
 
 // EndOp completes the export operation that was started with StartOp.
 func (ors *obsReportSender[K]) endOp(ctx context.Context, numRecords int, err error) {
+	// Check if the exporter intentionally dropped some items.  A
+	// DroppedItemsErr is a non-failure sentinel: the exporter processed the
+	// request successfully but chose to discard certain items (e.g. a
+	// Prometheus exporter dropping non-monotonic DELTA sums).
+	var numDropped int64
+	if d, ok := experr.DroppedItemsFromErr(err); ok {
+		numDropped = int64(d.Dropped)
+		// Clear the error so that it is not counted as a send failure and
+		// is not propagated to the rest of the pipeline.
+		err = nil
+	}
+
 	numSent, numFailedToSend := toNumItems(numRecords, err)
+
+	// Items that were intentionally dropped should not be counted as
+	// successfully sent.  Clamp to zero in case the exporter reported more
+	// dropped items than the total item count.
+	if numDropped > 0 {
+		if numSent > numDropped {
+			numSent -= numDropped
+		} else {
+			numSent = 0
+		}
+	}
 
 	if ors.itemsSentInst != nil {
 		ors.itemsSentInst.Add(ctx, numSent, ors.metricAttr)
@@ -128,6 +161,10 @@ func (ors *obsReportSender[K]) endOp(ctx context.Context, numRecords int, err er
 	if ors.itemsFailedInst != nil && numFailedToSend > 0 {
 		withFailedAttrs := metric.WithAttributeSet(extractFailureAttributes(err))
 		ors.itemsFailedInst.Add(ctx, numFailedToSend, ors.metricAttr, withFailedAttrs)
+	}
+
+	if ors.itemsDroppedInst != nil && numDropped > 0 {
+		ors.itemsDroppedInst.Add(ctx, numDropped, ors.metricAttr)
 	}
 
 	span := trace.SpanFromContext(ctx)
