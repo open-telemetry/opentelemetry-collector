@@ -112,7 +112,7 @@ func TestMetricsBuilder(t *testing.T) {
 			{{- end }}
 			{{- end }}
 			{{- range $name, $attr := .ResourceAttributes }}
-			{{- if and $attr.Enabled $attr.Warnings.IfEnabled }}
+			{{- if $attr.Warnings.IfEnabled }}
 			if tt.resAttrsSet == testDataSetDefault || tt.resAttrsSet == testDataSetAll {
 				assert.Equal(t, "[WARNING] `{{ $name }}` should not be enabled: {{ $attr.Warnings.IfEnabled }}", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++

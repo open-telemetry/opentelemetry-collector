@@ -3,6 +3,7 @@
 package samplereceiver
 
 import (
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver/internal/metadata"
@@ -15,4 +16,15 @@ type Config struct {
 	Endpoint string `mapstructure:"endpoint"`
 	// Timeout for scraping metrics.
 	Timeout time.Duration `mapstructure:"timeout"`
+}
+
+// Validate validates the Config fields.
+func (c *Config) Validate() error {
+	var err error
+
+	if c.Endpoint == "" {
+		err = errors.Join(err, errors.New("endpoint is required"))
+	}
+
+	return err
 }
