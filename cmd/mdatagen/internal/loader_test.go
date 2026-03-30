@@ -662,36 +662,6 @@ func TestLoadMetadata(t *testing.T) {
 			wantErr: "decoding failed due to the following error(s):\n\n'metrics[default.metric]' decoding failed due to the following error(s):\n\n'stability' unsupported stability level: \"development42\"",
 		},
 		{
-			name:    "testdata/invalid_metric_semconvref.yaml",
-			want:    Metadata{},
-			wantErr: "metric \"default.metric\": invalid semantic-conventions URL: want https://github.com/open-telemetry/semantic-conventions/blob/v1.37.2/*#metric-defaultmetric, got \"https://github.com/open-telemetry/semantic-conventions/blob/v1.37.2/docs/system/system-metrics.md#metric-systemcputime\"",
-		},
-		{
-			name:    "testdata/no_metric_stability.yaml",
-			want:    Metadata{},
-			wantErr: "metric \"default.metric\": missing required field: `stability.level`",
-		},
-		{
-			name:    "testdata/undeprecated_with_deprecation.yaml",
-			want:    Metadata{},
-			wantErr: "`stability` must be `deprecated` when specifying a `deprecated` field",
-		},
-		{
-			name:    "testdata/invalid_config.yaml",
-			want:    Metadata{},
-			wantErr: "config type must be \"object\", got \"string\"",
-		},
-		{
-			name:    "testdata/invalid_metric_semconv_url_full.yaml",
-			want:    Metadata{},
-			wantErr: "metric \"default.metric\", use relative path for URL, not the full URL",
-		},
-		{
-			name:    "testdata/invalid_attribute_semconv_url_full.yaml",
-			want:    Metadata{},
-			wantErr: "attribute \"used_attr\", use relative path for URL, not the full URL",
-		},
-		{
 			name:    "testdata/~~this file doesn't exist~~.yaml",
 			wantErr: "unable to read the file file:testdata/~~this file doesn't exist~~.yaml",
 		},

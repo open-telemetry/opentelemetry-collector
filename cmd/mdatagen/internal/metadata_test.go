@@ -339,6 +339,57 @@ func TestAttributeRequirementLevelUnmarshalText(t *testing.T) {
 	}
 }
 
+func TestExpandSemConvRefs(t *testing.T) {
+	tests := []struct {
+		name    string
+		md      Metadata
+		wantErr string
+	}{
+		{
+			name: "full URL for metric semconv ref is rejected",
+			md: Metadata{
+				SemConvVersion: "1.38.0",
+				Metrics: map[MetricName]Metric{
+					"default.metric": {
+						Signal: Signal{
+							SemanticConvention: &SemanticConvention{
+								SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-defaultmetric",
+							},
+						},
+					},
+				},
+			},
+			wantErr: `metric "default.metric", use relative path for URL, not the full URL`,
+		},
+		{
+			name: "full URL for attribute semconv ref is rejected",
+			md: Metadata{
+				SemConvVersion: "1.38.0",
+				Attributes: map[AttributeName]Attribute{
+					"used_attr": {
+						SemanticConvention: &SemanticConvention{
+							SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/registry/attributes/system.md",
+						},
+					},
+				},
+			},
+			wantErr: `attribute "used_attr", use relative path for URL, not the full URL`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.md.expandSemConvRefs()
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestValidateFeatureGates(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -534,7 +585,7 @@ func TestValidateConfig(t *testing.T) {
 	tests := []struct {
 		name    string
 		config  *cfggen.ConfigMetadata
-		wantErr bool
+		wantErr string
 	}{
 		{
 			name: "valid config",
@@ -546,12 +597,17 @@ func TestValidateConfig(t *testing.T) {
 					},
 				},
 			},
-			wantErr: false,
 		},
 		{
-			name:    "no config defined",
-			config:  nil,
-			wantErr: false,
+			name:   "no config defined",
+			config: nil,
+		},
+		{
+			name: "invalid config type",
+			config: &cfggen.ConfigMetadata{
+				Type: "string",
+			},
+			wantErr: `config type must be "object", got "string"`,
 		},
 	}
 	for _, tt := range tests {
@@ -567,8 +623,9 @@ func TestValidateConfig(t *testing.T) {
 				Config: tt.config,
 			}
 			err := md.Validate()
-			if tt.wantErr {
+			if tt.wantErr != "" {
 				require.Error(t, err)
+				assert.ErrorContains(t, err, tt.wantErr)
 			} else {
 				require.NoError(t, err)
 			}
