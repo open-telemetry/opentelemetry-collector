@@ -60,8 +60,8 @@ type TestEntityMetricsBuilder struct {
 }
 
 // RecordDefaultMetricDataPoint records a data point for the default.metric metric.
-func (eb *TestEntityMetricsBuilder) RecordDefaultMetricDataPoint(ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue AttributeEnumAttr, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
-	eb.mb.metricDefaultMetric.recordDataPoint(eb.mb.startTime, ts, val, stringAttrAttributeValue, overriddenIntAttrAttributeValue, enumAttrAttributeValue.String(), sliceAttrAttributeValue, mapAttrAttributeValue)
+func (eb *TestEntityMetricsBuilder) RecordDefaultMetricDataPoint(ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, options ...MetricAttributeOption) {
+	eb.mb.metricDefaultMetric.recordDataPoint(eb.mb.startTime, ts, val, stringAttrAttributeValue, overriddenIntAttrAttributeValue, sliceAttrAttributeValue, mapAttrAttributeValue, options...)
 }
 
 // RecordDefaultMetricToBeRemovedDataPoint records a data point for the default.metric.to_be_removed metric.
@@ -70,12 +70,12 @@ func (eb *TestEntityMetricsBuilder) RecordDefaultMetricToBeRemovedDataPoint(ts p
 }
 
 // RecordMetricInputTypeDataPoint records a data point for the metric.input_type metric.
-func (eb *TestEntityMetricsBuilder) RecordMetricInputTypeDataPoint(ts pcommon.Timestamp, inputVal string, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue AttributeEnumAttr, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) error {
+func (eb *TestEntityMetricsBuilder) RecordMetricInputTypeDataPoint(ts pcommon.Timestamp, inputVal string, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, options ...MetricAttributeOption) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MetricInputType, value was %s: %w", inputVal, err)
 	}
-	eb.mb.metricMetricInputType.recordDataPoint(eb.mb.startTime, ts, val, stringAttrAttributeValue, overriddenIntAttrAttributeValue, enumAttrAttributeValue.String(), sliceAttrAttributeValue, mapAttrAttributeValue)
+	eb.mb.metricMetricInputType.recordDataPoint(eb.mb.startTime, ts, val, stringAttrAttributeValue, overriddenIntAttrAttributeValue, sliceAttrAttributeValue, mapAttrAttributeValue, options...)
 	return nil
 }
 

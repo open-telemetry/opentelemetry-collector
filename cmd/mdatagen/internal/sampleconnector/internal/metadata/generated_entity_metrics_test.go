@@ -7,7 +7,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/xpdata/entity"
@@ -25,9 +24,9 @@ func TestEntityBuilders(t *testing.T) {
 		e.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
 
 		eb := mb.ForTestEntity(e)
-		eb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
+		eb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 		eb.RecordDefaultMetricToBeRemovedDataPoint(ts, 1)
-		eb.RecordMetricInputTypeDataPoint(ts, "1", "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
+		eb.RecordMetricInputTypeDataPoint(ts, "1", "string_attr-val", 19, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 		eb.RecordOptionalMetricDataPoint(ts, 1, "string_attr-val", true, false)
 		eb.RecordOptionalMetricEmptyUnitDataPoint(ts, 1, "string_attr-val", true)
 		eb.RecordReaggregateMetricDataPoint(ts, 1, "string_attr-val", true)
@@ -60,9 +59,9 @@ func TestEntityBuilders(t *testing.T) {
 		e.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
 
 		eb := mb.ForTestEntity(e)
-		eb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
+		eb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 		eb.RecordDefaultMetricToBeRemovedDataPoint(ts, 1)
-		eb.RecordMetricInputTypeDataPoint(ts, "1", "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
+		eb.RecordMetricInputTypeDataPoint(ts, "1", "string_attr-val", 19, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 		eb.RecordOptionalMetricDataPoint(ts, 1, "string_attr-val", true, false)
 		eb.RecordOptionalMetricEmptyUnitDataPoint(ts, 1, "string_attr-val", true)
 		eb.RecordReaggregateMetricDataPoint(ts, 1, "string_attr-val", true)
@@ -89,9 +88,9 @@ func TestEntityBuilders(t *testing.T) {
 		e.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
 
 		eb := mb.ForTestEntity(e)
-		eb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
+		eb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 		eb.RecordDefaultMetricToBeRemovedDataPoint(ts, 1)
-		eb.RecordMetricInputTypeDataPoint(ts, "1", "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
+		eb.RecordMetricInputTypeDataPoint(ts, "1", "string_attr-val", 19, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 		eb.RecordOptionalMetricDataPoint(ts, 1, "string_attr-val", true, false)
 		eb.RecordOptionalMetricEmptyUnitDataPoint(ts, 1, "string_attr-val", true)
 		eb.RecordReaggregateMetricDataPoint(ts, 1, "string_attr-val", true)
