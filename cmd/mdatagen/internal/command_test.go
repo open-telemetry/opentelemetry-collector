@@ -551,6 +551,48 @@ func TestGenerateConfigGoStruct_RootPackageError(t *testing.T) {
 	require.Contains(t, err.Error(), "unable to determine root package")
 }
 
+func TestGenerateConfigGoStruct_ResolvedDefaultsAndImports(t *testing.T) {
+	root := t.TempDir()
+	outputDir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(outputDir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	md := Metadata{
+		Type:        "test",
+		PackageName: "testmodule/shortname",
+		Status:      &Status{Class: "receiver"},
+		Config: &cfggen.ConfigMetadata{
+			Type: "object",
+			AllOf: []*cfggen.ConfigMetadata{
+				{
+					Type:         "object",
+					ResolvedFrom: "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
+					Properties: map[string]*cfggen.ConfigMetadata{
+						"timeout": {
+							Type:   "string",
+							GoType: "time.Duration",
+						},
+					},
+					Default: map[string]any{"timeout": "30s"},
+				},
+			},
+		},
+	}
+
+	err := generateConfigGoStruct(md, outputDir)
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(filepath.Join(outputDir, "generated_config.go")) // #nosec G304
+	require.NoError(t, err)
+
+	generated := string(content)
+	require.Contains(t, generated, `"go.opentelemetry.io/collector/component"`)
+	require.Contains(t, generated, `"go.opentelemetry.io/collector/scraper/scraperhelper"`)
+	require.Contains(t, generated, `"time"`)
+	require.Contains(t, generated, "func createDefaultConfig() component.Config")
+	require.Contains(t, generated, "controllerConfig.Timeout = 30 * time.Second")
+}
+
 func TestGenerateConfigFiles_GoStructError(t *testing.T) {
 	// generateConfigGoStruct fails because tmpdir has no go.mod in any ancestor
 	md := Metadata{

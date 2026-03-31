@@ -60,22 +60,22 @@ func TestMapGoType_BasicTypes(t *testing.T) {
 func TestMapGoType_FormattedStrings(t *testing.T) {
 	tests := []struct {
 		name     string
-		format   string
+		goType   string
 		expected string
 	}{
 		{
 			name:     "date-time format",
-			format:   "date-time",
+			goType:   "time.Time",
 			expected: "time.Time",
 		},
 		{
 			name:     "duration format",
-			format:   "duration",
+			goType:   "time.Duration",
 			expected: "time.Duration",
 		},
 		{
 			name:     "no format",
-			format:   "",
+			goType:   "",
 			expected: "string",
 		},
 	}
@@ -84,7 +84,7 @@ func TestMapGoType_FormattedStrings(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			md := &ConfigMetadata{
 				Type:   "string",
-				Format: tt.format,
+				GoType: tt.goType,
 			}
 			result, err := MapGoType(md, "field", "", "")
 			require.NoError(t, err)
@@ -121,7 +121,7 @@ func TestMapGoType_Arrays(t *testing.T) {
 			name: "array with ref items",
 			metadata: &ConfigMetadata{
 				Type:  "array",
-				Items: &ConfigMetadata{Ref: "./internal/metadata.custom_type"},
+				Items: &ConfigMetadata{ResolvedFrom: "./internal/metadata.custom_type"},
 			},
 			expected: "[]metadata.CustomType",
 		},
@@ -188,7 +188,7 @@ func TestMapGoType_Objects(t *testing.T) {
 			name: "object with additionalProperties ref",
 			metadata: &ConfigMetadata{
 				Type:                 "object",
-				AdditionalProperties: &ConfigMetadata{Ref: "./internal/metadata.custom_type"},
+				AdditionalProperties: &ConfigMetadata{ResolvedFrom: "./internal/metadata.custom_type"},
 			},
 			propName: "field",
 			expected: "map[string]metadata.CustomType",
@@ -302,7 +302,7 @@ func TestMapGoType_References(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			md := &ConfigMetadata{
-				Ref: tt.ref,
+				ResolvedFrom: tt.ref,
 			}
 			result, err := MapGoType(md, "field", "", "")
 			require.NoError(t, err)
@@ -394,7 +394,7 @@ func TestExtractImports_BasicTypes(t *testing.T) {
 			name: "time import for date-time format",
 			metadata: &ConfigMetadata{
 				Type:   "string",
-				Format: "date-time",
+				GoType: "time.Time",
 			},
 			expected: []string{"time"},
 		},
@@ -402,7 +402,7 @@ func TestExtractImports_BasicTypes(t *testing.T) {
 			name: "time import for duration format",
 			metadata: &ConfigMetadata{
 				Type:   "string",
-				Format: "duration",
+				GoType: "time.Duration",
 			},
 			expected: []string{"time"},
 		},
@@ -434,14 +434,14 @@ func TestExtractImports_CustomTypes(t *testing.T) {
 		{
 			name: "external reference",
 			metadata: &ConfigMetadata{
-				Ref: "go.opentelemetry.io/collector/component.Config",
+				ResolvedFrom: "go.opentelemetry.io/collector/component.Config",
 			},
 			expected: []string{"go.opentelemetry.io/collector/component"},
 		},
 		{
 			name: "no import for internal reference",
 			metadata: &ConfigMetadata{
-				Ref: "my_type",
+				ResolvedFrom: "my_type",
 			},
 			expected: []string{},
 		},
@@ -468,14 +468,14 @@ func TestExtractImports_LocalRef(t *testing.T) {
 		{
 			name: "local absolute reference",
 			metadata: &ConfigMetadata{
-				Ref: "/config/confighttp.client_config",
+				ResolvedFrom: "/config/confighttp.client_config",
 			},
 			expected: []string{"go.opentelemetry.io/collector/config/confighttp"},
 		},
 		{
 			name: "local relative reference",
 			metadata: &ConfigMetadata{
-				Ref: "./internal/metadata.custom_type",
+				ResolvedFrom: "./internal/metadata.custom_type",
 			},
 			expected: []string{"go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadata"},
 		},
@@ -500,20 +500,56 @@ func TestExtractImports_Optional(t *testing.T) {
 	require.Contains(t, result, "go.opentelemetry.io/collector/config/configoptional")
 }
 
+func TestExtractImports_ResolvedReferenceWithDefaultedDuration(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:         "object",
+		ResolvedFrom: "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
+		Properties: map[string]*ConfigMetadata{
+			"timeout": {
+				Type:   "string",
+				GoType: "time.Duration",
+			},
+		},
+		Default: map[string]any{"timeout": "30s"},
+	}
+
+	result, err := ExtractImports(md, "", "")
+	require.NoError(t, err)
+	require.ElementsMatch(t, []string{
+		"go.opentelemetry.io/collector/scraper/scraperhelper",
+		"time",
+	}, result)
+}
+
+func TestExtractImports_ResolvedReferenceOptional(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:         "object",
+		ResolvedFrom: "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
+		IsOptional:   true,
+	}
+
+	result, err := ExtractImports(md, "", "")
+	require.NoError(t, err)
+	require.ElementsMatch(t, []string{
+		"go.opentelemetry.io/collector/config/confighttp",
+		"go.opentelemetry.io/collector/config/configoptional",
+	}, result)
+}
+
 func TestExtractImports_Nested(t *testing.T) {
 	md := &ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"timeout": {
 				Type:   "string",
-				Format: "duration",
+				GoType: "time.Duration",
 			},
 			"nested": {
 				Type: "object",
 				Properties: map[string]*ConfigMetadata{
 					"timestamp": {
 						Type:   "string",
-						Format: "date-time",
+						GoType: "time.Time",
 					},
 				},
 			},
@@ -530,7 +566,7 @@ func TestExtractImports_AllOf(t *testing.T) {
 		AllOf: []*ConfigMetadata{
 			{
 				Type:   "string",
-				Format: "duration",
+				GoType: "time.Duration",
 			},
 		},
 	}
@@ -544,7 +580,7 @@ func TestExtractImports_ArrayItems(t *testing.T) {
 		Type: "array",
 		Items: &ConfigMetadata{
 			Type:   "string",
-			Format: "date-time",
+			GoType: "time.Time",
 		},
 	}
 	result, err := ExtractImports(md, "", "")
@@ -557,7 +593,7 @@ func TestExtractImports_AdditionalProperties(t *testing.T) {
 		Type: "object",
 		AdditionalProperties: &ConfigMetadata{
 			Type:   "string",
-			Format: "duration",
+			GoType: "time.Duration",
 		},
 	}
 	result, err := ExtractImports(md, "", "")
@@ -571,7 +607,7 @@ func TestExtractImports_Defs(t *testing.T) {
 		Defs: map[string]*ConfigMetadata{
 			"CustomType": {
 				Type:   "string",
-				Format: "date-time",
+				GoType: "time.Time",
 			},
 		},
 	}
@@ -802,7 +838,7 @@ func TestNewCfgFns_ExtractImports(t *testing.T) {
 	require.Nil(t, extractImports(nil))
 
 	// valid input returns imports
-	md := &ConfigMetadata{Type: "string", Format: "duration"}
+	md := &ConfigMetadata{Type: "string", GoType: "time.Duration"}
 	result := extractImports(md)
 	require.Contains(t, result, "time")
 
@@ -870,8 +906,8 @@ func TestResolveGoType_CustomTypeFormatError(t *testing.T) {
 }
 
 func TestResolveGoType_RefFormatError(t *testing.T) {
-	// Ref with invalid empty type name after dot triggers FormatTypeName error
-	md := &ConfigMetadata{Ref: "github.com/pkg."}
+	// ResolvedFrom with invalid empty type name after dot triggers FormatTypeName error
+	md := &ConfigMetadata{ResolvedFrom: "github.com/pkg."}
 	_, err := MapGoType(md, "field", "", "")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to format reference type")
@@ -957,7 +993,7 @@ func TestExtractImports_ContentSchema(t *testing.T) {
 	md := &ConfigMetadata{
 		ContentSchema: &ConfigMetadata{
 			Type:   "string",
-			Format: "duration",
+			GoType: "time.Duration",
 		},
 	}
 	result, err := ExtractImports(md, "", "")
@@ -1128,4 +1164,456 @@ func TestNewCfgFns_ExtractValidators(t *testing.T) {
 	require.Len(t, result, 1)
 	require.Equal(t, "name", result[0].FieldName)
 	require.True(t, result[0].IsRequired)
+}
+
+func TestDefaultAssigment_Render_LocalVar(t *testing.T) {
+	d := &DefaultAssigment{Target: "my_var", Value: "SomeType{}"}
+	require.Equal(t, "\nmy_var := SomeType{}", d.Render())
+}
+
+func TestDefaultAssigment_Render_PlainAssignment(t *testing.T) {
+	d := &DefaultAssigment{Target: "cfg", Path: "Timeout", Value: "30 * time.Second"}
+	require.Equal(t, "cfg.Timeout = 30 * time.Second", d.Render())
+}
+
+func TestDefaultAssigment_Render_PointerAssignment(t *testing.T) {
+	d := &DefaultAssigment{Target: "cfg", Path: "Client", Value: "client", IsPointer: true}
+	require.Equal(t, "cfg.Client = &client", d.Render())
+}
+
+func TestDefaultAssigment_Render_OptionalAssignment(t *testing.T) {
+	d := &DefaultAssigment{Target: "cfg", Path: "Interval", Value: "10 * time.Second", IsOptional: true}
+	require.Equal(t, "cfg.Interval = configoptional.Some(10 * time.Second)", d.Render())
+}
+
+func TestDefaultAssigment_Render_PointerOptionalAssignment(t *testing.T) {
+	d := &DefaultAssigment{Target: "cfg", Path: "Field", Value: "val", IsPointer: true, IsOptional: true}
+	require.Equal(t, "cfg.Field = configoptional.Some(&val)", d.Render())
+}
+
+func TestDefaultAssigment_Render_EmptyTarget(t *testing.T) {
+	d := &DefaultAssigment{Target: "", Path: "Field", Value: "val"}
+	require.Empty(t, d.Render())
+}
+
+func TestExtractDefaults_Nil(t *testing.T) {
+	result := ExtractDefaults(&ConfigMetadata{Type: "object"})
+	require.Nil(t, result)
+}
+
+func TestExtractDefaults_NoDefaults(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"name": {Type: "string"},
+		},
+	}
+	result := ExtractDefaults(md)
+	require.Nil(t, result)
+}
+
+func TestExtractDefaults_SimpleString(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"endpoint": {Type: "string", Default: "http://localhost:8080"},
+		},
+	}
+	stmts := ExtractDefaults(md)
+	require.Len(t, stmts, 1)
+	require.Equal(t, `cfg.Endpoint = "http://localhost:8080"`, stmts[0].Render())
+}
+
+func TestExtractDefaults_SimpleInt(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"port": {Type: "integer", Default: float64(8080)},
+		},
+	}
+	stmts := ExtractDefaults(md)
+	require.Len(t, stmts, 1)
+	require.Equal(t, "cfg.Port = 8080", stmts[0].Render())
+}
+
+func TestExtractDefaults_SimpleBool(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"enabled": {Type: "boolean", Default: true},
+		},
+	}
+	stmts := ExtractDefaults(md)
+	require.Len(t, stmts, 1)
+	require.Equal(t, "cfg.Enabled = true", stmts[0].Render())
+}
+
+func TestExtractDefaults_Duration(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"timeout": {Type: "string", GoType: "time.Duration", Default: "30s"},
+		},
+	}
+	stmts := ExtractDefaults(md)
+	require.Len(t, stmts, 1)
+	require.Equal(t, "cfg.Timeout = 30*time.Second", stmts[0].Render())
+}
+
+func TestExtractDefaults_PointerScalar(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"retries": {Type: "integer", Default: float64(3), IsPointer: true},
+		},
+	}
+	stmts := ExtractDefaults(md)
+
+	require.Len(t, stmts, 2)
+	require.Equal(t, "\nretries := 3", stmts[0].Render())
+	require.Equal(t, "cfg.Retries = &retries", stmts[1].Render())
+}
+
+func TestExtractDefaults_OptionalScalar(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"interval": {Type: "string", GoType: "time.Duration", Default: "10s", IsOptional: true},
+		},
+	}
+	stmts := ExtractDefaults(md)
+	require.Len(t, stmts, 1)
+	require.Equal(t, "cfg.Interval = configoptional.Some(10*time.Second)", stmts[0].Render())
+}
+
+func TestExtractDefaults_SimpleMapDefault(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"labels": {
+				Type:                 "object",
+				AdditionalProperties: &ConfigMetadata{Type: "string"},
+				Default:              map[string]any{"env": "prod"},
+			},
+		},
+	}
+	stmts := ExtractDefaults(md)
+	require.Len(t, stmts, 1)
+	require.Equal(t, `cfg.Labels = map[string]string{"env": "prod"}`, stmts[0].Render())
+}
+
+func TestExtractDefaults_NestedObject(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"server": {
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"host": {Type: "string", Default: "localhost"},
+					"port": {Type: "integer", Default: float64(9090)},
+				},
+			},
+		},
+	}
+	stmts := ExtractDefaults(md)
+	require.NotEmpty(t, stmts)
+	rendered := make([]string, 0, len(stmts))
+	for _, s := range stmts {
+		rendered = append(rendered, s.Render())
+	}
+	require.Contains(t, rendered, `cfg.Server = server`)
+	require.Contains(t, rendered, `server.Host = "localhost"`)
+	require.Contains(t, rendered, `server.Port = 9090`)
+}
+
+func TestExtractDefaults_NestedObjectPointer(t *testing.T) {
+	// A nested object field that is a pointer: the final assignment must use &.
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"client": {
+				Type:      "object",
+				IsPointer: true,
+				Properties: map[string]*ConfigMetadata{
+					"endpoint": {Type: "string", Default: "http://localhost"},
+				},
+			},
+		},
+	}
+	stmts := ExtractDefaults(md)
+	require.NotEmpty(t, stmts)
+	rendered := make([]string, 0, len(stmts))
+	for _, s := range stmts {
+		rendered = append(rendered, s.Render())
+	}
+	require.Contains(t, rendered, "cfg.Client = &client")
+}
+
+func TestExtractDefaults_RootObjectDefaultOverridesPropertyDefault(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:    "object",
+		Default: map[string]any{"timeout": "10s"},
+		Properties: map[string]*ConfigMetadata{
+			"timeout": {Type: "string", GoType: "time.Duration", Default: "30s"},
+		},
+	}
+
+	stmts := ExtractDefaults(md)
+	require.Len(t, stmts, 1)
+	require.Equal(t, "cfg.Timeout = 10*time.Second", stmts[0].Render())
+}
+
+func TestExtractDefaults_ArrayOfObjects(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"targets": {
+				Type: "array",
+				Items: &ConfigMetadata{
+					Type: "object",
+					Properties: map[string]*ConfigMetadata{
+						"url": {Type: "string", Default: "http://example.com"},
+					},
+				},
+				Default: []any{
+					map[string]any{"url": "http://example.com"},
+				},
+			},
+		},
+	}
+	stmts := ExtractDefaults(md)
+	require.NotEmpty(t, stmts)
+	rendered := make([]string, 0, len(stmts))
+	for _, s := range stmts {
+		rendered = append(rendered, s.Render())
+	}
+	require.Contains(t, rendered, `targets_1.Url = "http://example.com"`)
+	require.Contains(t, rendered, `cfg.Targets = targets`)
+}
+
+func TestExtractDefaults_ArrayOfObjectsPointer(t *testing.T) {
+	// The array itself is a pointer field.
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"targets": {
+				Type:      "array",
+				IsPointer: true,
+				Items: &ConfigMetadata{
+					Type: "object",
+					Properties: map[string]*ConfigMetadata{
+						"url": {Type: "string", Default: "http://example.com"},
+					},
+				},
+				Default: []any{map[string]any{}},
+			},
+		},
+	}
+	stmts := ExtractDefaults(md)
+	require.NotEmpty(t, stmts)
+	rendered := make([]string, 0, len(stmts))
+	for _, s := range stmts {
+		rendered = append(rendered, s.Render())
+	}
+	require.Contains(t, rendered, "cfg.Targets = &targets")
+}
+
+func TestExtractDefaults_NestedArrayOfObjects(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"server": {
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"targets": {
+						Type: "array",
+						Items: &ConfigMetadata{
+							Type: "object",
+							Properties: map[string]*ConfigMetadata{
+								"url": {Type: "string"},
+							},
+						},
+						Default: []any{
+							map[string]any{"url": "http://example.com"},
+						},
+					},
+				},
+			},
+		},
+	}
+	stmts := ExtractDefaults(md)
+	require.NotEmpty(t, stmts)
+	rendered := make([]string, 0, len(stmts))
+	for _, s := range stmts {
+		rendered = append(rendered, s.Render())
+	}
+	require.Contains(t, rendered, `server_targets_1.Url = "http://example.com"`)
+	require.Contains(t, rendered, `server.Targets = server_targets`)
+	require.Contains(t, rendered, `cfg.Server = server`)
+}
+
+func TestExtractDefaults_ArrayOfObjects_EmptyDefault(t *testing.T) {
+	// An array with an explicit empty default produces no statements.
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"items": {
+				Type:    "array",
+				Items:   &ConfigMetadata{Type: "object", Properties: map[string]*ConfigMetadata{"x": {Type: "string"}}},
+				Default: []any{},
+			},
+		},
+	}
+	result := ExtractDefaults(md)
+	require.Nil(t, result)
+}
+
+func TestExtractDefaults_MapOfObjects(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"endpoints": {
+				Type: "object",
+				AdditionalProperties: &ConfigMetadata{
+					Type: "object",
+					Properties: map[string]*ConfigMetadata{
+						"url": {Type: "string", Default: "http://default"},
+					},
+				},
+				Default: map[string]any{
+					"primary": map[string]any{"url": "http://primary"},
+				},
+			},
+		},
+	}
+	stmts := ExtractDefaults(md)
+	require.NotEmpty(t, stmts)
+	rendered := make([]string, 0, len(stmts))
+	for _, s := range stmts {
+		rendered = append(rendered, s.Render())
+	}
+	require.Contains(t, rendered, `endpoints_primary.Url = "http://primary"`)
+	require.Contains(t, rendered, `cfg.Endpoints = endpoints`)
+}
+
+func TestExtractDefaults_NestedMapOfObjects(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"server": {
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"endpoints": {
+						Type: "object",
+						AdditionalProperties: &ConfigMetadata{
+							Type: "object",
+							Properties: map[string]*ConfigMetadata{
+								"url": {Type: "string"},
+							},
+						},
+						Default: map[string]any{
+							"primary": map[string]any{"url": "http://primary"},
+						},
+					},
+				},
+			},
+		},
+	}
+	stmts := ExtractDefaults(md)
+	require.NotEmpty(t, stmts)
+	rendered := make([]string, 0, len(stmts))
+	for _, s := range stmts {
+		rendered = append(rendered, s.Render())
+	}
+	require.Contains(t, rendered, `server_endpoints_primary.Url = "http://primary"`)
+	require.Contains(t, rendered, `server.Endpoints = server_endpoints`)
+	require.Contains(t, rendered, `cfg.Server = server`)
+}
+
+func TestExtractDefaults_MapOfObjects_EmptyDefault(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"buckets": {
+				Type: "object",
+				AdditionalProperties: &ConfigMetadata{
+					Type:       "object",
+					Properties: map[string]*ConfigMetadata{"name": {Type: "string"}},
+				},
+				Default: map[string]any{},
+			},
+		},
+	}
+	result := ExtractDefaults(md)
+	require.Nil(t, result)
+}
+
+func TestExtractDefaults_NestedRefPointer(t *testing.T) {
+	// Simulates the http_client case: a property resolved from an external $ref
+	// that also has IsPointer=true. The generated assignment must use &.
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"http_client": {
+				Type:         "object",
+				ResolvedFrom: "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
+				IsPointer:    true,
+				Properties: map[string]*ConfigMetadata{
+					"endpoint": {Type: "string", Default: "http://localhost:8080/metrics"},
+				},
+				Default: map[string]any{"endpoint": "http://localhost:8080/metrics"},
+			},
+		},
+	}
+	stmts := ExtractDefaults(md)
+	require.NotEmpty(t, stmts)
+	rendered := make([]string, 0, len(stmts))
+	for _, s := range stmts {
+		rendered = append(rendered, s.Render())
+	}
+	// The field assignment must be a pointer assignment.
+	require.Contains(t, rendered, "cfg.HTTPClient = &httpClient")
+}
+
+func TestExtractDefaults_AllOf(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		AllOf: []*ConfigMetadata{
+			{
+				ResolvedFrom: "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
+				Type:         "object",
+				Properties: map[string]*ConfigMetadata{
+					"timeout": {Type: "string", GoType: "time.Duration"},
+				},
+				Default: map[string]any{"timeout": "30s"},
+			},
+		},
+	}
+	stmts := ExtractDefaults(md)
+	require.NotEmpty(t, stmts)
+	rendered := make([]string, 0, len(stmts))
+	for _, s := range stmts {
+		rendered = append(rendered, s.Render())
+	}
+	require.Contains(t, rendered, "controllerConfig.Timeout = 30*time.Second")
+	require.Contains(t, rendered, "cfg.ControllerConfig = controllerConfig")
+}
+
+func TestNewCfgFns_ExtractDefaults(t *testing.T) {
+	fns := NewCfgFns("", "")
+	extractDefaults := fns["extractDefaults"].(func(*ConfigMetadata) []*DefaultAssigment)
+
+	// nil input returns nil
+	require.Nil(t, extractDefaults(nil))
+
+	// schema with a default produces statements
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"port": {Type: "integer", Default: float64(9200)},
+		},
+	}
+	stmts := extractDefaults(md)
+	require.NotEmpty(t, stmts)
+	require.Equal(t, "cfg.Port = 9200", stmts[0].Render())
 }
