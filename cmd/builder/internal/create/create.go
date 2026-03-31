@@ -8,8 +8,8 @@ import "github.com/spf13/cobra"
 func CreateCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
-		Short: "[EXPERIMENTAL] Creates a custom collector repository based on the provided configuration",
-		Long:  `ocb create creates a custom collector repository in the provided folder with a manifest to start building a custom collector component. This command is experimental and very likely to change.`,
+		Short: "[EXPERIMENTAL] Creates a new OpenTelemetry Collector component",
+		Long:  `ocb create creates a new OpenTelemetry Collector component (exporter, receiver, processor, extension) with the necessary boilerplate files. The generated component can be used in any custom collector built with ocb. This command is experimental and very likely to change.`,
 	}
 
 	cmd.AddCommand(newExporterCommand())
