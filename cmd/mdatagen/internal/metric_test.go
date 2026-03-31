@@ -7,9 +7,79 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
+
+func TestMetricValidate(t *testing.T) {
+	unit := "s"
+	validGauge := &Gauge{MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble}}
+
+	tests := []struct {
+		name           string
+		metric         Metric
+		metricName     MetricName
+		semConvVersion string
+		wantErr        string
+	}{
+		{
+			name: "missing stability level",
+			metric: Metric{
+				Signal: Signal{Description: "A metric"},
+				Unit:   &unit,
+				Gauge:  validGauge,
+			},
+			metricName: "my.metric",
+			wantErr:    "missing required field: `stability.level`",
+		},
+		{
+			name: "stability must be deprecated when deprecated field set",
+			metric: Metric{
+				Signal: Signal{
+					Description: "A metric",
+					Stability:   component.StabilityLevelBeta,
+				},
+				Unit:       &unit,
+				Gauge:      validGauge,
+				Deprecated: &Deprecated{Since: "1.0.0"},
+			},
+			metricName: "my.metric",
+			wantErr:    "`stability` must be `deprecated` when specifying a `deprecated` field",
+		},
+		{
+			name: "invalid semantic convention URL",
+			metric: Metric{
+				Signal: Signal{
+					Description: "A metric",
+					Stability:   component.StabilityLevelBeta,
+					SemanticConvention: &SemanticConvention{
+						// anchor points to a different metric name than the metric being validated
+						SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.37.2/docs/system/system-metrics.md#metric-systemcputime",
+					},
+				},
+				Unit:  &unit,
+				Gauge: validGauge,
+			},
+			metricName:     "default.metric",
+			semConvVersion: "1.37.2",
+			wantErr:        "invalid semantic-conventions URL",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.metric.validate(tt.metricName, tt.semConvVersion)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
 
 func TestMetricData(t *testing.T) {
 	for _, arg := range []struct {
