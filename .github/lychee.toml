@@ -4,5 +4,11 @@ accept = ["200..=299", "429"]
 
 exclude  = [
     "^http(s)?://localhost",
-    "^http(s)?://example.com"
+    "^http(s)?://example.com",
+    "^file:///.*?/docs/release\\.md#(producing-the-artifacts|releasing-opentelemetry-collector|releasing-opentelemetry-collector-contrib|release-manager)$",
+    "^https://docs\\.github\\.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources$",
+    "^https://github\\.com/golang/go/blob/ed9db1d36ad6ef61095d5941ad9ee6da7ab6d05a/src/crypto/tls/common\\.go#L700$",
+    "^https://github\\.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp\\.md#protocol-details$",
+    "^https://github\\.com/open-telemetry/opentelemetry-collector-releases/blob/bf8002ec6d2109cdb4184fc6eb6f8bda59ea96a2/\\.goreleaser\\.yaml#L137$",
+    "^/config/configtelemetry/doc\\.go$"
 ]
