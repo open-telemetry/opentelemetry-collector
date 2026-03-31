@@ -67,7 +67,7 @@ Objectives:
 
 The OpenTelemetry Collector SIG is present at the [#otel-collector](https://cloud-native.slack.com/archives/C01N6P7KR6W)
 channel on the CNCF Slack and [meets once a week](https://github.com/open-telemetry/community#implementation-sigs) via
-video calls. Everyone is invited to join those calls, which typically serves the following purposes:
+video calls. Everyone is invited to join those calls, which typically serve the following purposes:
 
 - meet the humans behind the project
 - get an opinion about specific proposals
@@ -89,7 +89,7 @@ Wednesday:
 Contributors to the project are also welcome to have ad-hoc meetings for synchronous discussions about specific points.
 Post a note in #otel-collector-dev on Slack inviting others, specifying the topic to be discussed. Unless there are strong
 reasons to keep the meeting private, please make it an open invitation for other contributors to join. Try also to
-identify who would be the other contributors interested on that topic and in which timezones they are.
+identify other contributors who would be interested in that topic and in which timezones they are.
 
 Remember that our source of truth is GitHub: every decision made via Slack or video calls has to be recorded in the
 relevant GitHub issue. Ideally, the agenda items from the meeting notes would include a link to the issue or pull
