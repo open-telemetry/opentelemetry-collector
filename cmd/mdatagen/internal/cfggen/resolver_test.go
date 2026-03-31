@@ -83,7 +83,7 @@ func TestResolver_ResolveSchema_UnknownInternalReference(t *testing.T) {
 	// Should use "any" type because the internal reference doesn't exist
 	result, err := resolver.ResolveSchema(src)
 	require.NoError(t, err)
-	require.Nil(t, result.Properties["config"].Type)
+	require.Empty(t, result.Properties["config"].Type)
 }
 
 func TestResolver_ResolveSchema_NestedStructures(t *testing.T) {
