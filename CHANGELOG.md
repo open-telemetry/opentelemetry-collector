@@ -7,6 +7,40 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.55.0/v0.149.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/service`: Remove `service_name`, `service_instance_id`, and `service_version` as constant labels on every internal metric datapoint. These attributes are already present in `target_info` and were being duplicated on each series for OpenCensus backwards compatibility. (#14811)
+  Previously, the collector stamped every internal metric series (e.g. `otelcol_process_runtime_heap_alloc_bytes`)
+  with `service_name`, `service_instance_id`, and `service_version` labels to match the old OpenCensus behavior.
+  These attributes are now only present in the `target_info` metric, which is the correct Prometheus/OTel convention.
+  Users who filter or group by these labels on individual metrics will need to update their queries to use
+  `target_info` joins instead.
+  
+
+### 💡 Enhancements 💡
+
+- `all`: Move aix/ppc64 to tier 3 support (#13380)
+- `all`: Upgrade the profiles stability status to alpha (#14817)
+  The following components have their profiles status upgraded from development to alpha:
+  
+  * pdata/pprofile
+  * connector/forward
+  * exporter/debug
+  * receiver/nop
+  * exporter/nop
+  * exporter/otlp_grpc
+  * exporter/otlp_http
+  
+- `cmd/mdatagen`: Add semconv reference for attributes (#13297)
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Fix entity code generation so `extra_attributes` are emitted as resource attributes instead of entity descriptive attributes. (#14778)
+
+<!-- previous-version -->
+
 ## v1.54.0/v0.148.0
 
 ### ❗ Known Issues ❗
