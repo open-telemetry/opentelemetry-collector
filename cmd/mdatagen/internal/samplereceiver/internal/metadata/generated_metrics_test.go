@@ -106,7 +106,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Equal(t, "[WARNING] `string.resource.attr_to_be_removed` should not be enabled: This resource_attribute is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if tt.resAttrsSet == testDataSetDefault || tt.resAttrsSet == testDataSetAll {
+			if tt.resAttrsSet == testDataSetAll {
 				assert.Equal(t, "[WARNING] `string.resource.disabled_attr_to_be_removed` should not be enabled: This resource_attribute is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}

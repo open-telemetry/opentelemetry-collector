@@ -155,6 +155,10 @@ func TestLogsBuilder(t *testing.T) {
 				assert.Equal(t, "[WARNING] `string.resource.attr_to_be_removed` should not be enabled: This resource_attribute is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
+			if tt.resAttrsSet == eventTestDataSetAll {
+				assert.Equal(t, "[WARNING] `string.resource.disabled_attr_to_be_removed` should not be enabled: This resource_attribute is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
 
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
