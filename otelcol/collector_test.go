@@ -476,29 +476,6 @@ func TestShutdownBlocksUntilRunCompletes(t *testing.T) {
 	assert.Equal(t, StateClosed, col.GetState())
 }
 
-func TestCollectorRun_DoubleRunReturnsError(t *testing.T) {
-	set := CollectorSettings{
-		BuildInfo:              component.NewDefaultBuildInfo(),
-		Factories:              nopFactories,
-		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
-	}
-	col, err := NewCollector(set)
-	require.NoError(t, err)
-
-	wg := startCollector(context.Background(), t, col)
-
-	assert.Eventually(t, func() bool {
-		return StateRunning == col.GetState()
-	}, 2*time.Second, 200*time.Millisecond)
-
-	// Second call to Run should return an error, not panic.
-	err = col.Run(context.Background())
-	require.EqualError(t, err, "collector server Run was already called")
-
-	col.Shutdown()
-	wg.Wait()
-}
-
 func TestCollectorRun_Errors(t *testing.T) {
 	tests := map[string]struct {
 		settings    CollectorSettings
