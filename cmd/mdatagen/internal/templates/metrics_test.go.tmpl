@@ -113,7 +113,7 @@ func TestMetricsBuilder(t *testing.T) {
 			{{- end }}
 			{{- end }}
 			{{- range $name, $attr := .ResourceAttributes }}
-			{{- if and $attr.Enabled $attr.Warnings.IfEnabled }}
+			{{- if $attr.Warnings.IfEnabled }}
 			if tt.resAttrsSet == testDataSetDefault || tt.resAttrsSet == testDataSetAll {
 				assert.Equal(t, "[WARNING] `{{ $name }}` should not be enabled: {{ $attr.Warnings.IfEnabled }}", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
@@ -275,16 +275,9 @@ func TestMetricsBuilder(t *testing.T) {
 						{{- end }}
 						{{- range $i, $attr := $metric.Attributes }}
 						{{- if ne (attributeInfo $attr).RequirementLevel.String "Opt-In" }}
-						attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
+						{{ $attr.RenderUnexported }}AttrVal, ok := dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
 						assert.True(t, ok)
-						{{- if eq (attributeInfo $attr).Type.String "Bool"}}
-						assert.{{- if eq (attributeInfo $attr).TestValue "true" }}True{{ else }}False{{- end }}(t, attrVal.{{ (attributeInfo $attr).Type }}()
-						{{- else if eq (attributeInfo $attr).Type.String "Int"}}
-						assert.EqualValues(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
-						{{- else }}
-						assert.Equal(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
-						{{- end }}
-						{{- if or (eq (attributeInfo $attr).Type.String "Slice") (eq (attributeInfo $attr).Type.String "Map")}}.AsRaw(){{ end }})
+						{{- template "assertMetricAttributeValue" $attr }}
 						{{- end }}
 						{{- end }}
 					} else {
@@ -373,16 +366,9 @@ func TestMetricsBuilder(t *testing.T) {
 					{{- end }}
 
 					{{- range $i, $attr := $metric.Attributes }}
-					attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
+					{{ $attr.RenderUnexported }}AttrVal, ok := dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
 					assert.True(t, ok)
-					{{- if eq (attributeInfo $attr).Type.String "Bool"}}
-					assert.{{- if eq (attributeInfo $attr).TestValue "true" }}True{{ else }}False{{- end }}(t, attrVal.{{ (attributeInfo $attr).Type }}()
-					{{- else if eq (attributeInfo $attr).Type.String "Int"}}
-					assert.EqualValues(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
-					{{- else }}
-					assert.Equal(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
-					{{- end }}
-					{{- if or (eq (attributeInfo $attr).Type.String "Slice") (eq (attributeInfo $attr).Type.String "Map")}}.AsRaw(){{ end }})
+					{{- template "assertMetricAttributeValue" $attr }}
 					{{- end }}
 					{{- end }}
 					{{- end }}

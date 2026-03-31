@@ -253,6 +253,60 @@
               "description": "SystemCPUTimeMetricConfig provides config for the system.cpu.time metric.",
               "type": "object",
               "properties": {
+                "aggregation_strategy": {
+                  "type": "string",
+                  "default": "sum",
+                  "enum": [
+                    "sum",
+                    "avg",
+                    "min",
+                    "max"
+                  ]
+                },
+                "attributes": {
+                  "type": "array",
+                  "default": [
+                    "cpu"
+                  ],
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "cpu"
+                    ]
+                  }
+                },
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                }
+              }
+            },
+            "system.memory.usage": {
+              "description": "SystemMemoryUsageMetricConfig provides config for the system.memory.usage metric.",
+              "type": "object",
+              "properties": {
+                "aggregation_strategy": {
+                  "type": "string",
+                  "default": "sum",
+                  "enum": [
+                    "sum",
+                    "avg",
+                    "min",
+                    "max"
+                  ]
+                },
+                "attributes": {
+                  "type": "array",
+                  "default": [
+                    "state"
+                  ],
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "state"
+                    ]
+                  }
+                },
                 "enabled": {
                   "type": "boolean",
                   "default": true

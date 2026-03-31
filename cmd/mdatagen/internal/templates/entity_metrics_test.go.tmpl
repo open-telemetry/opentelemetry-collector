@@ -94,9 +94,35 @@ func TestEntityBuilders(t *testing.T) {
 		{{- $attr := index $resourceAttributes $idAttr.Ref }}
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("{{ $entityType }}")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("{{ $idAttr.Ref }}")
+		{{ $idAttr.Ref.RenderUnexported }}AttrVal, ok := entityVal.IdentifyingAttributes().Get("{{ $idAttr.Ref }}")
 		require.True(t, ok)
-		assert.Equal(t, {{ $attr.TestValue }}, attrVal.Str())
+		{{- template "assertResourceAttributeValue" $attr }}
+		{{- end }}
+
+		{{- range $descAttr := $ent.Description }}
+		{{- $attr := index $resourceAttributes $descAttr.Ref }}
+		{{- if $attr.Enabled }}
+		{{ $descAttr.Ref.RenderUnexported }}AttrVal, ok := entityVal.DescriptiveAttributes().Get("{{ $descAttr.Ref }}")
+		require.True(t, ok)
+		{{- template "assertResourceAttributeValue" $attr }}
+		{{- else }}
+		_, ok = entityVal.DescriptiveAttributes().Get("{{ $descAttr.Ref }}")
+		assert.False(t, ok)
+		{{- end }}
+		{{- end }}
+
+		{{- range $extraAttr := $ent.ExtraAttributes }}
+		{{- $attr := index $resourceAttributes $extraAttr.Ref }}
+		_, ok = entityVal.DescriptiveAttributes().Get("{{ $extraAttr.Ref }}")
+		assert.False(t, ok)
+		{{- if $attr.Enabled }}
+		{{ $extraAttr.Ref.RenderUnexported }}AttrVal, ok := rm.Resource().Attributes().Get("{{ $extraAttr.Ref }}")
+		require.True(t, ok)
+		{{- template "assertResourceAttributeValue" $attr }}
+		{{- else }}
+		_, ok = rm.Resource().Attributes().Get("{{ $extraAttr.Ref }}")
+		assert.False(t, ok)
+		{{- end }}
 		{{- end }}
 
 		require.Equal(t, 1, rm.ScopeMetrics().Len())
@@ -215,9 +241,9 @@ func TestEntityBuilders(t *testing.T) {
 		require.True(t, ok)
 		{{- range $idAttr := $ent.Identity }}
 		{{- $attr := index $resourceAttributes $idAttr.Ref }}
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("{{ $idAttr.Ref }}")
+		{{ $idAttr.Ref.RenderUnexported }}AttrVal, ok := entityVal.IdentifyingAttributes().Get("{{ $idAttr.Ref }}")
 		require.True(t, ok)
-		assert.Equal(t, {{ $attr.TestValue }}, attrVal.Str())
+		{{- template "assertResourceAttributeValue" $attr }}
 		{{- end }}
 		// Disabled descriptive/extra attributes must not be present.
 		{{- range $descAttr := $ent.Description }}

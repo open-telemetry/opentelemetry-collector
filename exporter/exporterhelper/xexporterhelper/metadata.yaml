@@ -9,4 +9,4 @@ status:
       - mx-psi
       - dmathieu
   stability:
-    development: [profiles]
+    alpha: [profiles]
