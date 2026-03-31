@@ -52,7 +52,8 @@ func (g *Gate) FromVersion() string {
 	return fmt.Sprintf("v%s", g.fromVersion)
 }
 
-// ToVersion returns the version information when Gate's in StageStable.
+//  ToVersion specifies the version in which a feature gate in StageStable
+// is scheduled to be removed. This is only applicable for features in StageStable and should be set to nil for features in other stages.
 func (g *Gate) ToVersion() string {
 	return fmt.Sprintf("v%s", g.toVersion)
 }
