@@ -111,11 +111,8 @@ type Collector struct {
 	shutdownChan chan struct{}
 	shutdownOnce sync.Once
 
-	// done is closed when Run returns, signaling that the collector has
-	// completed all cleanup. Used by Shutdown to block until Run finishes.
-	done chan struct{}
-	// runStarted is set to true when Run is called.
-	runStarted atomic.Bool
+	// wg is used by Shutdown to wait for Run to complete all cleanup.
+	wg sync.WaitGroup
 
 	// signalsChannel is used to receive termination signals from the OS.
 	signalsChannel chan os.Signal
@@ -146,7 +143,6 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 		buildZapLogger: zap.Config.Build,
 		state:          state,
 		shutdownChan:   make(chan struct{}),
-		done:           make(chan struct{}),
 		// Per signal.Notify documentation, a size of the channel equaled with
 		// the number of signals getting notified on is recommended.
 		signalsChannel:             make(chan os.Signal, 3),
@@ -168,10 +164,7 @@ func (col *Collector) Shutdown() {
 	col.shutdownOnce.Do(func() {
 		close(col.shutdownChan)
 	})
-	// If Run was called, wait for it to complete all cleanup.
-	if col.runStarted.Load() {
-		<-col.done
-	}
+	col.wg.Wait()
 }
 
 func buildModuleInfo(m map[component.Type]string) map[component.Type]service.ModuleInfo {
@@ -338,10 +331,8 @@ func newFallbackLogger(options []zap.Option) (*zap.Logger, error) {
 // Sets up the control logic for config reloading and shutdown.
 // If Shutdown was called before Run, Run returns nil after cleaning up resources.
 func (col *Collector) Run(ctx context.Context) error {
-	if !col.runStarted.CompareAndSwap(false, true) {
-		return errors.New("collector server Run was already called")
-	}
-	defer close(col.done)
+	col.wg.Add(1)
+	defer col.wg.Done()
 
 	// If Shutdown was already called, return immediately without starting the service.
 	select {
