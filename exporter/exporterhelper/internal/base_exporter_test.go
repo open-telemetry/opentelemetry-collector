@@ -65,6 +65,7 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 
 func TestBaseExporterLogging(t *testing.T) {
 	set := exportertest.NewNopSettings(exportertest.NopType)
+	set.ID = component.MustNewIDWithName(exportertest.NopType.String(), "with_name")
 	logger, observed := observer.New(zap.DebugLevel)
 	set.Logger = zap.New(logger)
 	rCfg := configretry.NewDefaultBackOffConfig()
@@ -83,8 +84,10 @@ func TestBaseExporterLogging(t *testing.T) {
 	errorLogs := observed.FilterLevelExact(zap.ErrorLevel).All()
 	require.Len(t, errorLogs, 2)
 	assert.Contains(t, errorLogs[0].Message, "Exporting failed. Dropping data.")
+	assert.Equal(t, "nop/with_name", errorLogs[0].ContextMap()["exporter"])
 	assert.Equal(t, "my error", errorLogs[0].ContextMap()["error"])
 	assert.Contains(t, errorLogs[1].Message, "Exporting failed. Rejecting data.")
+	assert.Equal(t, "nop/with_name", errorLogs[1].ContextMap()["exporter"])
 	assert.Equal(t, "my error", errorLogs[1].ContextMap()["error"])
 	require.NoError(t, bs.Shutdown(context.Background()))
 }

@@ -1,0 +1,7 @@
+change_type: enhancement
+component: pkg/exporterhelper
+note: Add exporter IDs to exporterhelper error and retry logs so failing exporters are easier to identify.
+issues: [9999]
+subtext: ""
+change_logs:
+  - user

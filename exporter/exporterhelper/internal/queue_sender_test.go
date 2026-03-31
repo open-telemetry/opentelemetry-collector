@@ -42,6 +42,7 @@ func TestNewQueueSenderFailedRequestDropped(t *testing.T) {
 	require.NoError(t, be.Shutdown(context.Background()))
 	assert.Len(t, observed.All(), 1)
 	assert.Equal(t, "Exporting failed. Dropping data.", observed.All()[0].Message)
+	assert.Equal(t, "nop", observed.All()[0].ContextMap()["exporter"])
 }
 
 func TestQueueConfig_Validate(t *testing.T) {
