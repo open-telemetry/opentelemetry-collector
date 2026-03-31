@@ -73,9 +73,9 @@ func TestProtoSizerEmptyMetrics(t *testing.T) {
 	assert.Equal(t, 0, sizer.MetricsSize(NewMetrics()))
 }
 
-func BenchmarkMetricsToProto(b *testing.B) {
+func BenchmarkMetricsToProto2k(b *testing.B) {
 	marshaler := &ProtoMarshaler{}
-	metrics := generateBenchmarkMetrics(128)
+	metrics := generateBenchmarkMetrics(2_000)
 
 	for b.Loop() {
 		buf, err := marshaler.MarshalMetrics(metrics)
@@ -84,10 +84,10 @@ func BenchmarkMetricsToProto(b *testing.B) {
 	}
 }
 
-func BenchmarkMetricsFromProto(b *testing.B) {
+func BenchmarkMetricsFromProto10k(b *testing.B) {
 	marshaler := &ProtoMarshaler{}
 	unmarshaler := &ProtoUnmarshaler{}
-	baseMetrics := generateBenchmarkMetrics(128)
+	baseMetrics := generateBenchmarkMetrics(2_000)
 	buf, err := marshaler.MarshalMetrics(baseMetrics)
 	require.NoError(b, err)
 	assert.NotEmpty(b, buf)

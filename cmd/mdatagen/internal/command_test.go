@@ -9,13 +9,16 @@ import (
 	"go/parser"
 	"go/token"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 	"go.opentelemetry.io/collector/component"
 )
 
@@ -27,6 +30,33 @@ func TestNewCommand(t *testing.T) {
 	assert.IsType(t, &cobra.Command{}, cmd)
 	assert.Equal(t, "mdatagen", cmd.Use)
 	assert.True(t, cmd.SilenceUsage)
+}
+
+func TestCommandNoArgs(t *testing.T) {
+	cmd, err := NewCommand()
+	require.NoError(t, err)
+
+	cmd.SetArgs([]string{})
+	err = cmd.Execute()
+
+	require.Error(t, err)
+}
+
+func TestCommandErrorOutputOnce(t *testing.T) {
+	cmd, err := NewCommand()
+	require.NoError(t, err)
+
+	var stderr bytes.Buffer
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{"/nonexistent/path/metadata.yaml"})
+
+	err = cmd.Execute()
+	require.Error(t, err)
+	out := stderr.String()
+	require.NotEmpty(t, out)
+
+	msg := err.Error()
+	assert.Equal(t, 1, strings.Count(out, msg), out)
 }
 
 func TestRunContents(t *testing.T) {
@@ -47,8 +77,12 @@ func TestRunContents(t *testing.T) {
 		wantGoleakSkip                  bool
 		wantGoleakSetup                 bool
 		wantGoleakTeardown              bool
+		wantFeatureGatesGenerated       bool
+		wantConfigSchemaGenerated       bool
+		wantMetricsSchemaYamlGenerated  bool
 		wantErr                         bool
 		wantOrderErr                    bool
+		wantRunErr                      bool
 		wantAttributes                  []string
 	}{
 		{
@@ -81,12 +115,13 @@ func TestRunContents(t *testing.T) {
 			wantReadmeGenerated: true,
 		},
 		{
-			yml:                        "metrics_and_type.yaml",
-			wantMetricsGenerated:       true,
-			wantConfigGenerated:        true,
-			wantStatusGenerated:        true,
-			wantReadmeGenerated:        true,
-			wantComponentTestGenerated: true,
+			yml:                            "metrics_and_type.yaml",
+			wantMetricsGenerated:           true,
+			wantConfigGenerated:            true,
+			wantStatusGenerated:            true,
+			wantReadmeGenerated:            true,
+			wantComponentTestGenerated:     true,
+			wantMetricsSchemaYamlGenerated: true,
 		},
 		{
 			yml:                             "resource_attributes_only.yaml",
@@ -96,6 +131,7 @@ func TestRunContents(t *testing.T) {
 			wantReadmeGenerated:             true,
 			wantComponentTestGenerated:      true,
 			wantLogsGenerated:               true,
+			wantMetricsSchemaYamlGenerated:  true,
 		},
 		{
 			yml:                        "status_only.yaml",
@@ -130,6 +166,12 @@ func TestRunContents(t *testing.T) {
 		},
 		{
 			yml:                        "with_tests_connector.yaml",
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
+		},
+		{
+			yml:                        "with_tests_profiles_connector.yaml",
 			wantStatusGenerated:        true,
 			wantReadmeGenerated:        true,
 			wantComponentTestGenerated: true,
@@ -178,12 +220,13 @@ func TestRunContents(t *testing.T) {
 			wantComponentTestGenerated: true,
 		},
 		{
-			yml:                        "async_metric.yaml",
-			wantMetricsGenerated:       true,
-			wantConfigGenerated:        true,
-			wantStatusGenerated:        true,
-			wantReadmeGenerated:        true,
-			wantComponentTestGenerated: true,
+			yml:                            "async_metric.yaml",
+			wantMetricsGenerated:           true,
+			wantConfigGenerated:            true,
+			wantStatusGenerated:            true,
+			wantReadmeGenerated:            true,
+			wantComponentTestGenerated:     true,
+			wantMetricsSchemaYamlGenerated: true,
 		},
 		{
 			yml:                        "custom_generated_package_name.yaml",
@@ -193,22 +236,43 @@ func TestRunContents(t *testing.T) {
 			wantLogsGenerated:          true,
 		},
 		{
-			yml:                        "with_conditional_attribute.yaml",
+			yml:                        "feature_gates.yaml",
 			wantStatusGenerated:        true,
 			wantReadmeGenerated:        true,
-			wantMetricsGenerated:       true,
-			wantLogsGenerated:          true,
-			wantConfigGenerated:        true,
 			wantComponentTestGenerated: true,
+			wantFeatureGatesGenerated:  true,
 		},
 		{
-			yml:                        "events/basic_event.yaml",
+			yml:                            "with_conditional_attribute.yaml",
+			wantStatusGenerated:            true,
+			wantReadmeGenerated:            true,
+			wantMetricsGenerated:           true,
+			wantLogsGenerated:              true,
+			wantConfigGenerated:            true,
+			wantComponentTestGenerated:     true,
+			wantMetricsSchemaYamlGenerated: true,
+		},
+		{
+			yml:                            "events/basic_event.yaml",
+			wantStatusGenerated:            true,
+			wantReadmeGenerated:            true,
+			wantComponentTestGenerated:     true,
+			wantConfigGenerated:            true,
+			wantEventsGenerated:            true,
+			wantLogsGenerated:              true,
+			wantMetricsSchemaYamlGenerated: true,
+		},
+		{
+			yml:                        "with_config.yaml",
 			wantStatusGenerated:        true,
 			wantReadmeGenerated:        true,
-			wantComponentTestGenerated: true,
-			wantConfigGenerated:        true,
-			wantEventsGenerated:        true,
 			wantLogsGenerated:          true,
+			wantComponentTestGenerated: true,
+			wantConfigSchemaGenerated:  true,
+		},
+		{
+			yml:        "with_invalid_config_ref.yaml",
+			wantRunErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -216,6 +280,9 @@ func TestRunContents(t *testing.T) {
 			tmpdir := filepath.Join(t.TempDir(), "shortname")
 			err := os.MkdirAll(tmpdir, 0o750)
 			require.NoError(t, err)
+			// Init a git repo so helpers.RootPackage can resolve the repo root
+			// when generateConfigGoStruct is called for components with config.
+			gitInit(t, tmpdir)
 			ymlContent, err := os.ReadFile(filepath.Join("testdata", tt.yml))
 			require.NoError(t, err)
 			metadataFile := filepath.Join(tmpdir, "metadata.yaml")
@@ -244,7 +311,15 @@ foo
 				require.Contains(t, err.Error(), "metadata.yaml ordering check failed")
 				return
 			}
+			if tt.wantRunErr {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "failed to generate config files")
+				return
+			}
 			require.NoError(t, err)
+
+			// Documentation is generated when any of these features are present
+			wantDocumentationGenerated := tt.wantFeatureGatesGenerated || tt.wantMetricsGenerated || tt.wantTelemetryGenerated || tt.wantResourceAttributesGenerated || tt.wantEventsGenerated
 
 			var contents []byte
 			if tt.wantMetricsGenerated {
@@ -252,13 +327,13 @@ foo
 				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_metrics_test.go"))
 				require.FileExists(t, filepath.Join(tmpdir, "documentation.md"))
 				if len(tt.wantAttributes) > 0 {
-					contents, err = os.ReadFile(filepath.Join(tmpdir, "documentation.md")) //nolint:gosec
+					contents, err = os.ReadFile(filepath.Clean(filepath.Join(tmpdir, "documentation.md")))
 					require.NoError(t, err)
 					for _, attr := range tt.wantAttributes {
 						require.Contains(t, string(contents), attr)
 					}
 				}
-				contents, err = os.ReadFile(filepath.Join(tmpdir, generatedPackageDir, "generated_metrics.go")) //nolint:gosec
+				contents, err = os.ReadFile(filepath.Clean(filepath.Join(tmpdir, generatedPackageDir, "generated_metrics.go")))
 				require.NoError(t, err)
 				if tt.wantMetricsContext {
 					require.Contains(t, string(contents), "\"context\"")
@@ -290,7 +365,7 @@ foo
 				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry.go"))
 				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry_test.go"))
 				require.FileExists(t, filepath.Join(tmpdir, "documentation.md"))
-				contents, err = os.ReadFile(filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry.go")) //nolint:gosec
+				contents, err = os.ReadFile(filepath.Clean(filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry.go")))
 				require.NoError(t, err)
 				if tt.wantMetricsContext {
 					require.Contains(t, string(contents), "\"context\"")
@@ -301,7 +376,9 @@ foo
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry.go"))
 			}
 
-			if !tt.wantMetricsGenerated && !tt.wantTelemetryGenerated && !tt.wantResourceAttributesGenerated && !tt.wantEventsGenerated {
+			if wantDocumentationGenerated {
+				require.FileExists(t, filepath.Join(tmpdir, "documentation.md"))
+			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, "documentation.md"))
 			}
 
@@ -311,7 +388,7 @@ foo
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_status.go"))
 			}
 
-			contents, err = os.ReadFile(filepath.Join(tmpdir, "README.md")) //nolint:gosec
+			contents, err = os.ReadFile(filepath.Clean(filepath.Join(tmpdir, "README.md")))
 			require.NoError(t, err)
 			if tt.wantReadmeGenerated {
 				require.NotContains(t, string(contents), "foo")
@@ -321,7 +398,7 @@ foo
 
 			if tt.wantComponentTestGenerated {
 				require.FileExists(t, filepath.Join(tmpdir, "generated_component_test.go"))
-				contents, err = os.ReadFile(filepath.Join(tmpdir, "generated_component_test.go")) //nolint:gosec
+				contents, err = os.ReadFile(filepath.Clean(filepath.Join(tmpdir, "generated_component_test.go")))
 				require.NoError(t, err)
 				require.Contains(t, string(contents), "func Test")
 				_, err = parser.ParseFile(token.NewFileSet(), "", contents, parser.DeclarationErrors)
@@ -331,7 +408,7 @@ foo
 			}
 
 			require.FileExists(t, filepath.Join(tmpdir, "generated_package_test.go"))
-			contents, err = os.ReadFile(filepath.Join(tmpdir, "generated_package_test.go")) //nolint:gosec
+			contents, err = os.ReadFile(filepath.Clean(filepath.Join(tmpdir, "generated_package_test.go")))
 			require.NoError(t, err)
 			require.Contains(t, string(contents), "func TestMain")
 			_, err = parser.ParseFile(token.NewFileSet(), "", contents, parser.DeclarationErrors)
@@ -362,8 +439,150 @@ foo
 			} else {
 				require.NotContains(t, string(contents), "teardownFunc")
 			}
+
+			if tt.wantConfigSchemaGenerated {
+				require.FileExists(t, filepath.Join(tmpdir, "config.schema.json"))
+			} else {
+				require.NoFileExists(t, filepath.Join(tmpdir, "config.schema.json"))
+			}
+
+			schemaYamlPath := filepath.Join(tmpdir, generatedPackageDir, "config.schema.yaml")
+			if tt.wantMetricsSchemaYamlGenerated {
+				require.FileExists(t, schemaYamlPath)
+				contents, err = os.ReadFile(filepath.Clean(schemaYamlPath))
+				require.NoError(t, err)
+				require.Contains(t, string(contents), "# Code generated by mdatagen. DO NOT EDIT.")
+				require.Contains(t, string(contents), "$defs:")
+				if tt.wantMetricsGenerated {
+					require.Contains(t, string(contents), "metrics_config:")
+					require.Contains(t, string(contents), "metrics_builder_config:")
+				}
+				if tt.wantEventsGenerated {
+					require.Contains(t, string(contents), "events_config:")
+					require.Contains(t, string(contents), "logs_builder_config:")
+				}
+				if tt.wantResourceAttributesGenerated {
+					require.Contains(t, string(contents), "resource_attributes_config:")
+				}
+			} else {
+				require.NoFileExists(t, schemaYamlPath)
+			}
 		})
 	}
+}
+
+func TestGenerateConfigFiles(t *testing.T) {
+	tests := []struct {
+		name    string
+		md      Metadata
+		wantErr bool
+		wantGen bool
+	}{
+		{
+			name: "nil config skips generation",
+			md: Metadata{
+				Type: "test",
+				Status: &Status{
+					Class: "receiver",
+				},
+				Config: nil,
+			},
+			wantGen: false,
+		},
+		{
+			name: "valid config generates schema file",
+			md: Metadata{
+				Type:        "test",
+				PackageName: "shortname",
+				Status: &Status{
+					Class: "receiver",
+				},
+				Config: &cfggen.ConfigMetadata{
+					Type: "object",
+				},
+			},
+			wantGen: true,
+		},
+		{
+			name: "invalid ref in config causes resolve error",
+			md: Metadata{
+				Type:        "test",
+				PackageName: "shortname",
+				Status: &Status{
+					Class: "receiver",
+				},
+				// A local ref without a definition name fails Validate() inside ResolveSchema
+				Config: &cfggen.ConfigMetadata{
+					Ref: "/config/configauth",
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			root := t.TempDir()
+
+			tmpdir := filepath.Join(root, "shortname")
+			require.NoError(t, os.MkdirAll(tmpdir, 0o700))
+
+			gitInit(t, root)
+			require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+			err := generateConfigFiles(tt.md, tmpdir, "testmodule")
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			if tt.wantGen {
+				require.FileExists(t, filepath.Join(tmpdir, "config.schema.json"))
+			} else {
+				require.NoFileExists(t, filepath.Join(tmpdir, "config.schema.json"))
+			}
+		})
+	}
+}
+
+func TestGenerateConfigGoStruct_RootPackageError(t *testing.T) {
+	// tmpdir is not inside any git repo, so helpers.RootPackage fails
+	md := Metadata{
+		Type:        "test",
+		PackageName: "shortname",
+		Status:      &Status{Class: "receiver"},
+		Config:      &cfggen.ConfigMetadata{Type: "object"},
+	}
+	err := generateConfigGoStruct(md, t.TempDir())
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "unable to determine root package")
+}
+
+func TestGenerateConfigFiles_GoStructError(t *testing.T) {
+	// generateConfigGoStruct fails because tmpdir is not inside a git repo
+	md := Metadata{
+		Type:        "test",
+		PackageName: "shortname",
+		Status:      &Status{Class: "receiver"},
+		Config:      &cfggen.ConfigMetadata{Type: "object"},
+	}
+	err := generateConfigFiles(md, t.TempDir(), "testmodule")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to generate config Go struct")
+}
+
+func TestGenerateConfigFiles_WriteError(t *testing.T) {
+	md := Metadata{
+		Type:        "test",
+		PackageName: "shortname",
+		Status: &Status{
+			Class: "receiver",
+		},
+		Config: &cfggen.ConfigMetadata{
+			Type: "object",
+		},
+	}
+	err := generateConfigFiles(md, "/nonexistent/path/that/does/not/exist", "testmodule")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to write config schema")
 }
 
 func TestRun(t *testing.T) {
@@ -636,11 +855,11 @@ Some info about a component
 			readmeFile := filepath.Join(tmpdir, "README.md")
 			require.NoError(t, os.WriteFile(readmeFile, []byte(tt.markdown), 0o600))
 
-			err := inlineReplace("templates/readme.md.tmpl", readmeFile, md, statusStart, statusEnd, "metadata")
+			err := inlineReplace("templates/readme.md.tmpl", readmeFile, md, statusStart, statusEnd, "metadata", "go.opentelemetry.io/collector")
 			require.NoError(t, err)
 
 			require.FileExists(t, filepath.Join(tmpdir, "README.md"))
-			got, err := os.ReadFile(filepath.Join(tmpdir, "README.md")) //nolint:gosec
+			got, err := os.ReadFile(filepath.Clean(filepath.Join(tmpdir, "README.md")))
 			require.NoError(t, err)
 			got = bytes.ReplaceAll(got, []byte("\r\n"), []byte("\n"))
 			expected, err := os.ReadFile(filepath.Join("testdata", tt.outputFile))
@@ -720,15 +939,47 @@ const (
 )
 `,
 		},
+		{
+			name: "foo component with deprecated type",
+			md: Metadata{
+				Type:           "foo",
+				DeprecatedType: "old_foo",
+				Status: &Status{
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelBeta: {"metrics"},
+					},
+					Distributions: []string{"contrib"},
+					Class:         "receiver",
+				},
+			},
+			expected: `// Code generated by mdatagen. DO NOT EDIT.
+
+package metadata
+
+import (
+	"go.opentelemetry.io/collector/component"
+)
+
+var (
+	Type           = component.MustNewType("foo")
+	DeprecatedType = component.MustNewType("old_foo")
+	ScopeName      = ""
+)
+
+const (
+	MetricsStability = component.StabilityLevelBeta
+)
+`,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpdir := t.TempDir()
 			err := generateFile("templates/status.go.tmpl",
-				filepath.Join(tmpdir, "generated_status.go"), tt.md, "metadata")
+				filepath.Join(tmpdir, "generated_status.go"), tt.md, "metadata", "go.opentelemetry.io/collector")
 			require.NoError(t, err)
-			actual, err := os.ReadFile(filepath.Join(tmpdir, "generated_status.go")) //nolint:gosec
+			actual, err := os.ReadFile(filepath.Clean(filepath.Join(tmpdir, "generated_status.go")))
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, string(actual))
 		})
@@ -812,11 +1063,51 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpdir := t.TempDir()
 			err := generateFile("templates/telemetry.go.tmpl",
-				filepath.Join(tmpdir, "generated_telemetry.go"), tt.md, "metadata")
+				filepath.Join(tmpdir, "generated_telemetry.go"), tt.md, "metadata", "go.opentelemetry.io/collector")
 			require.NoError(t, err)
-			actual, err := os.ReadFile(filepath.Join(tmpdir, "generated_telemetry.go")) //nolint:gosec
+			actual, err := os.ReadFile(filepath.Clean(filepath.Join(tmpdir, "generated_telemetry.go")))
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, string(actual))
 		})
 	}
+}
+
+func TestGenerateConfigSchema_LocalizesSameRootRefs(t *testing.T) {
+	enabled := true
+	md := Metadata{
+		Type: "foo",
+		ResourceAttributes: map[AttributeName]Attribute{
+			"resource.attr": {
+				Description: "resource attr",
+				EnabledPtr:  &enabled,
+				FullName:    "resource.attr",
+			},
+		},
+		Events: map[EventName]Event{
+			"default.event": {
+				Signal: Signal{
+					Enabled:     true,
+					Description: "event description",
+				},
+			},
+		},
+	}
+
+	tmpdir := t.TempDir()
+	outputFile := filepath.Join(tmpdir, "config.schema.yaml")
+	err := generateFile("templates/config.schema.yaml.tmpl", outputFile, md, "metadata", "go.opentelemetry.io/collector")
+	require.NoError(t, err)
+
+	actual, err := os.ReadFile(filepath.Clean(outputFile))
+	require.NoError(t, err)
+	require.Contains(t, string(actual), "$ref: /filter.config")
+	require.NotContains(t, string(actual), "$ref: go.opentelemetry.io/collector/filter.config")
+}
+
+func gitInit(t *testing.T, dir string) {
+	t.Helper()
+	cmd := exec.Command("git", "init")
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, "git init failed: %s", out)
 }

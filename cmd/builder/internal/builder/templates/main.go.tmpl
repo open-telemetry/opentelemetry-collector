@@ -4,13 +4,14 @@
 package main
 
 import (
-	"log"
+	"fmt"
+	"os"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	{{- range .ConfmapConverters}}
 	{{.Name}} "{{.Import}}"
-	{{- end}}	
+	{{- end}}
 	{{- range .ConfmapProviders}}
 	{{.Name}} "{{.Import}}"
 	{{- end}}
@@ -50,7 +51,7 @@ func main() {
 			{{- range .ConfmapProviders}}
 			{{.Name}}.NewFactory().Create(confmap.ProviderSettings{}).Scheme(): "{{.GoMod}}",
 			{{- end}}
-    	},
+		},
 		ConverterModules: []string{
 			{{- range .ConfmapConverters}}
 			"{{.GoMod}}",
@@ -59,14 +60,15 @@ func main() {
 	}
 
 	if err := run(set); err != nil {
-		log.Fatal(err)
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 }
 
 func runInteractive(params otelcol.CollectorSettings) error {
 	cmd := otelcol.NewCommand(params)
 	if err := cmd.Execute(); err != nil {
-		log.Fatalf("collector server run finished with error: %v", err)
+		return err
 	}
 
 	return nil

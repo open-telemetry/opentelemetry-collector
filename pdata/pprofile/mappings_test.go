@@ -37,7 +37,7 @@ func TestSetMapping(t *testing.T) {
 	idx, err = SetMapping(table, m2)
 	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, int32(table.Len()-1), idx) //nolint:gosec // G115
+	assert.Equal(t, int32(table.Len()-1), idx)
 
 	// Set an existing mapping
 	idx, err = SetMapping(table, m)
@@ -48,7 +48,7 @@ func TestSetMapping(t *testing.T) {
 	idx, err = SetMapping(table, m2)
 	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, int32(table.Len()-1), idx) //nolint:gosec // G115
+	assert.Equal(t, int32(table.Len()-1), idx)
 }
 
 func BenchmarkSetMapping(b *testing.B) {
@@ -96,7 +96,7 @@ func BenchmarkSetMapping(b *testing.B) {
 			runBefore: func(_ *testing.B, table MappingSlice) {
 				for i := range 100 {
 					m := table.AppendEmpty()
-					m.SetMemoryLimit(uint64(i)) //nolint:gosec // overflow checked
+					m.SetMemoryLimit(uint64(i))
 				}
 			},
 		},

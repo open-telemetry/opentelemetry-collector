@@ -88,6 +88,7 @@ var replaceModules = []string{
 	"/extension/zpagesextension",
 	"/extension/xextension",
 	"/featuregate",
+	"/internal/componentalias",
 	"/internal/memorylimiter",
 	"/internal/fanoutconsumer",
 	"/internal/sharedcomponent",
@@ -145,6 +146,31 @@ func TestGenerateInvalidOutputPath(t *testing.T) {
 	cfg.Distribution.OutputPath = ":/invalid"
 	err := Generate(cfg)
 	require.ErrorContains(t, err, "failed to create output path")
+}
+
+func TestOutputBinaryName(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		goos string
+		want string
+	}{
+		{
+			name: "on windows",
+			goos: "windows",
+			want: "otelcorecol.exe",
+		},
+		{
+			name: "on other OSes",
+			goos: "linux",
+			want: "otelcorecol",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("GOOS", tt.goos)
+			assert.Equal(t, tt.want, outputBinaryName("otelcorecol"))
+			assert.Equal(t, "otelcorecol.exe", outputBinaryName("otelcorecol.exe"))
+		})
+	}
 }
 
 func TestVersioning(t *testing.T) {
@@ -446,8 +472,7 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 
 func verifyGoMod(t *testing.T, dir string, replaceMods map[string]bool) {
 	gomodpath := path.Join(dir, "go.mod")
-	//nolint:gosec // #nosec G304 We control this path and generate the file inside, so we can assume it is safe.
-	gomod, err := os.ReadFile(gomodpath)
+	gomod, err := os.ReadFile(filepath.Clean(gomodpath))
 	require.NoError(t, err)
 
 	mod, err := modfile.Parse(gomodpath, gomod, nil)

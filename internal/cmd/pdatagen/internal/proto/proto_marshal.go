@@ -6,7 +6,7 @@ package proto // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/int
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/tmplutil"
 )
 
 const marshalProtoFloat = `{{ if .repeated -}}
@@ -22,19 +22,27 @@ const marshalProtoFloat = `{{ if .repeated -}}
 		buf[pos] = {{ . }}
 		{{ end -}}
 	}
-{{- else }}
-{{- if not .nullable -}}
-	if orig.{{ .fieldName }} != 0 {
-{{ end -}}
+{{- else if ne .oneOfGroup "" -}}
 		pos -= {{ div .bitSize 8 }}
 		binary.LittleEndian.PutUint{{ .bitSize }}(buf[pos:], math.Float{{ .bitSize }}bits(orig.{{ .fieldName }}))
 		{{ range .protoTag -}}
 		pos--
 		buf[pos] = {{ . }}
 		{{ end -}}
-{{- if not .nullable -}}
+{{- else }}
+	{{- if not .nullable -}}
+	if orig.{{ .fieldName }} != {{ .defaultValue }} {
+	{{- else -}}
+	if orig.Has{{ .fieldName }}() {
+	{{- end }}
+		pos -= {{ div .bitSize 8 }}
+		binary.LittleEndian.PutUint{{ .bitSize }}(buf[pos:], math.Float{{ .bitSize }}bits(orig.{{ .fieldName }}))
+		{{ range .protoTag -}}
+		pos--
+		buf[pos] = {{ . }}
+		{{ end -}}
 	}
-{{- end }}{{- end }}`
+{{- end }}`
 
 const marshalProtoFixed = `{{ if .repeated -}}
 	l = len(orig.{{ .fieldName }})
@@ -49,19 +57,27 @@ const marshalProtoFixed = `{{ if .repeated -}}
 		buf[pos] = {{ . }}
 		{{ end -}}
 	}
-{{- else }}
-{{- if not .nullable -}}
-	if orig.{{ .fieldName }} != 0 {
-{{ end -}}
+{{- else if ne .oneOfGroup "" -}}
 		pos -= {{ div .bitSize 8 }}
 		binary.LittleEndian.PutUint{{ .bitSize }}(buf[pos:], uint{{ .bitSize }}(orig.{{ .fieldName }}))
 		{{ range .protoTag -}}
 		pos--
 		buf[pos] = {{ . }}
 		{{ end -}}
-{{- if not .nullable -}}
+{{- else }}
+	{{- if not .nullable -}}
+	if orig.{{ .fieldName }} != {{ .defaultValue }} {
+	{{- else -}}
+	if orig.Has{{ .fieldName }}() {
+	{{- end }}
+		pos -= {{ div .bitSize 8 }}
+		binary.LittleEndian.PutUint{{ .bitSize }}(buf[pos:], uint{{ .bitSize }}(orig.{{ .fieldName }}))
+		{{ range .protoTag -}}
+		pos--
+		buf[pos] = {{ . }}
+		{{ end -}}
 	}
-{{- end }}{{- end }}`
+{{- end }}`
 
 const marshalProtoBool = `{{ if .repeated -}}
 	l = len(orig.{{ .fieldName }})
@@ -80,10 +96,7 @@ const marshalProtoBool = `{{ if .repeated -}}
 		buf[pos] = {{ . }}
 		{{ end -}}
 	}
-{{- else }}
-{{- if not .nullable -}}
-	if orig.{{ .fieldName }} {
-{{ end -}}
+{{- else if ne .oneOfGroup "" -}}
 		pos--
 		if orig.{{ .fieldName }} {
 			buf[pos] = 1
@@ -94,9 +107,24 @@ const marshalProtoBool = `{{ if .repeated -}}
 		pos--
 		buf[pos] = {{ . }}
 		{{ end -}}
-{{- if not .nullable -}}
+{{- else }}
+	{{- if not .nullable -}}
+	if orig.{{ .fieldName }} != {{ .defaultValue }} {
+	{{- else -}}
+	if orig.Has{{ .fieldName }}() {
+	{{- end }}
+		pos--
+		if orig.{{ .fieldName }} {
+			buf[pos] = 1
+		} else {
+			buf[pos] = 0
+		}
+		{{ range .protoTag -}}
+		pos--
+		buf[pos] = {{ . }}
+		{{ end -}}
 	}
-{{- end }}{{- end }}`
+{{- end }}`
 
 const marshalProtoVarint = `{{ if .repeated -}}
 	l = len(orig.{{ .fieldName }})
@@ -111,18 +139,25 @@ const marshalProtoVarint = `{{ if .repeated -}}
 		buf[pos] = {{ . }}
 		{{ end -}}
 	}
-{{- else }}
-{{- if not .nullable -}}
-	if orig.{{ .fieldName }} != 0 {
-{{ end -}}
+{{- else if ne .oneOfGroup "" -}}
 		pos = proto.EncodeVarint(buf, pos, uint64(orig.{{ .fieldName }}))
 		{{ range .protoTag -}}
 		pos--
 		buf[pos] = {{ . }}
 		{{ end -}}
-{{- if not .nullable -}}
+{{- else }}
+	{{- if not .nullable -}}
+	if orig.{{ .fieldName }} != {{ .defaultValue }} {
+	{{- else -}}
+	if orig.Has{{ .fieldName }}() {
+	{{- end }}
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.{{ .fieldName }}))
+		{{ range .protoTag -}}
+		pos--
+		buf[pos] = {{ . }}
+		{{ end -}}
 	}
-{{- end }}{{- end }}`
+{{- end }}`
 
 const marshalProtoBytesString = `{{ if .repeated -}}
 	for i := len(orig.{{ .fieldName }}) - 1; i >= 0; i-- {
@@ -194,36 +229,43 @@ const marshalProtoSignedVarint = `{{ if .repeated -}}
 		buf[pos] = {{ . }}
 		{{ end -}}
 	}
-{{- else }}
-{{- if not .nullable -}}
-	if orig.{{ .fieldName }} != 0 {
-{{ end -}}
+{{- else if ne .oneOfGroup "" -}}
 		pos = proto.EncodeVarint(buf, pos, uint64((uint{{ .bitSize }}(orig.{{ .fieldName }})<<1)^uint{{ .bitSize }}(orig.{{ .fieldName }}>>{{ sub .bitSize 1}})))
 		{{ range .protoTag -}}
 		pos--
 		buf[pos] = {{ . }}
 		{{ end -}}
-{{- if not .nullable -}}
+{{- else }}
+	{{- if not .nullable -}}
+	if orig.{{ .fieldName }} != {{ .defaultValue }} {
+	{{- else -}}
+	if orig.Has{{ .fieldName }}() {
+	{{- end }}
+		pos = proto.EncodeVarint(buf, pos, uint64((uint{{ .bitSize }}(orig.{{ .fieldName }})<<1)^uint{{ .bitSize }}(orig.{{ .fieldName }}>>{{ sub .bitSize 1}})))
+		{{ range .protoTag -}}
+		pos--
+		buf[pos] = {{ . }}
+		{{ end -}}
 	}
-{{- end }}{{- end }}`
+{{- end }}`
 
 func (pf *Field) GenMarshalProto() string {
 	tf := pf.getTemplateFields()
 	switch pf.Type {
 	case TypeDouble, TypeFloat:
-		return template.Execute(template.Parse("marshalProtoFloat", []byte(marshalProtoFloat)), tf)
+		return tmplutil.Execute(tmplutil.Parse("marshalProtoFloat", []byte(marshalProtoFloat)), tf)
 	case TypeFixed64, TypeSFixed64, TypeFixed32, TypeSFixed32:
-		return template.Execute(template.Parse("marshalProtoFixed", []byte(marshalProtoFixed)), tf)
+		return tmplutil.Execute(tmplutil.Parse("marshalProtoFixed", []byte(marshalProtoFixed)), tf)
 	case TypeInt32, TypeInt64, TypeUint32, TypeUint64, TypeEnum:
-		return template.Execute(template.Parse("marshalProtoVarint", []byte(marshalProtoVarint)), tf)
+		return tmplutil.Execute(tmplutil.Parse("marshalProtoVarint", []byte(marshalProtoVarint)), tf)
 	case TypeBool:
-		return template.Execute(template.Parse("marshalProtoBool", []byte(marshalProtoBool)), tf)
+		return tmplutil.Execute(tmplutil.Parse("marshalProtoBool", []byte(marshalProtoBool)), tf)
 	case TypeBytes, TypeString:
-		return template.Execute(template.Parse("marshalProtoBytesString", []byte(marshalProtoBytesString)), tf)
+		return tmplutil.Execute(tmplutil.Parse("marshalProtoBytesString", []byte(marshalProtoBytesString)), tf)
 	case TypeMessage:
-		return template.Execute(template.Parse("marshalProtoMessage", []byte(marshalProtoMessage)), tf)
+		return tmplutil.Execute(tmplutil.Parse("marshalProtoMessage", []byte(marshalProtoMessage)), tf)
 	case TypeSInt32, TypeSInt64:
-		return template.Execute(template.Parse("marshalProtoSignedVarint", []byte(marshalProtoSignedVarint)), tf)
+		return tmplutil.Execute(tmplutil.Parse("marshalProtoSignedVarint", []byte(marshalProtoSignedVarint)), tf)
 	}
 	panic(fmt.Sprintf("unhandled case %T", pf.Type))
 }

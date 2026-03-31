@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/service/internal/metadata"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -30,11 +31,11 @@ func TestDefaultConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run("UseLocalHostAsDefaultMetricsAddress/"+strconv.FormatBool(tt.gate), func(t *testing.T) {
-			prev := useLocalHostAsDefaultMetricsAddressFeatureGate.IsEnabled()
-			require.NoError(t, featuregate.GlobalRegistry().Set(useLocalHostAsDefaultMetricsAddressFeatureGate.ID(), tt.gate))
+			prev := metadata.TelemetryUseLocalHostAsDefaultMetricsAddressFeatureGate.IsEnabled()
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.TelemetryUseLocalHostAsDefaultMetricsAddressFeatureGate.ID(), tt.gate))
 			defer func() {
 				// Restore previous value.
-				require.NoError(t, featuregate.GlobalRegistry().Set(useLocalHostAsDefaultMetricsAddressFeatureGate.ID(), prev))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.TelemetryUseLocalHostAsDefaultMetricsAddressFeatureGate.ID(), prev))
 			}()
 			cfg := NewFactory().CreateDefaultConfig()
 			require.Len(t, cfg.(*Config).Metrics.Readers, 1)

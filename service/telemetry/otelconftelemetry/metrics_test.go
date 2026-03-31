@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -20,7 +19,6 @@ import (
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -113,9 +111,9 @@ func TestCreateMeterProvider(t *testing.T) {
 			},
 		}
 		cfg.Resource = map[string]*string{
-			string(semconv.ServiceNameKey):       ptr("otelcol"),
-			string(semconv.ServiceVersionKey):    ptr("latest"),
-			string(semconv.ServiceInstanceIDKey): ptr(testInstanceID),
+			"service.name":        ptr("otelcol"),
+			"service.version":     ptr("latest"),
+			"service.instance.id": ptr(testInstanceID),
 		}
 
 		t.Run(tt.name, func(t *testing.T) {
@@ -164,13 +162,13 @@ func createTestMetrics(t *testing.T, mp metric.MeterProvider) {
 	grpcExampleCounter, err := mp.Meter("go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc").Int64Counter(metricPrefix + grpcPrefix + counterName)
 	require.NoError(t, err)
 	grpcExampleCounter.Add(context.Background(), 11, metric.WithAttributeSet(attribute.NewSet(
-		attribute.String(string(semconv.RPCSystemKey), "grpc"),
+		attribute.String("rpc.system", "grpc"),
 	)))
 
 	httpExampleCounter, err := mp.Meter("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp").Int64Counter(metricPrefix + httpPrefix + counterName)
 	require.NoError(t, err)
 	httpExampleCounter.Add(context.Background(), 10, metric.WithAttributeSet(attribute.NewSet(
-		attribute.String(string(semconv.HTTPRequestMethodKey), "GET"),
+		attribute.String("http.request.method", "GET"),
 	)))
 }
 
@@ -357,7 +355,7 @@ func TestTelemetryMetrics_DefaultViews(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			var metrics pmetric.Metrics
-			srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
+			srv, certFile := newTLSBackend(t, http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
 				body, err := io.ReadAll(req.Body)
 				assert.NoError(t, err)
 
@@ -365,7 +363,6 @@ func TestTelemetryMetrics_DefaultViews(t *testing.T) {
 				assert.NoError(t, exportRequest.UnmarshalProto(body))
 				metrics = exportRequest.Metrics()
 			}))
-			defer srv.Close()
 
 			cfg := createDefaultConfig().(*Config)
 			cfg.Metrics.Level = configtelemetry.LevelDetailed
@@ -374,9 +371,9 @@ func TestTelemetryMetrics_DefaultViews(t *testing.T) {
 				Periodic: &config.PeriodicMetricReader{
 					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Endpoint: ptr(srv.URL),
-							Protocol: ptr("http/protobuf"),
-							Insecure: ptr(true),
+							Endpoint:    ptr(srv.URL),
+							Protocol:    ptr("http/protobuf"),
+							Certificate: ptr(certFile),
 						},
 					},
 				},

@@ -9,7 +9,7 @@ import (
 
 	"github.com/ettle/strcase"
 
-	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/tmplutil"
 )
 
 const unmarshalJSONPrimitive = `	case {{ .allJSONTags }}:
@@ -17,10 +17,10 @@ const unmarshalJSONPrimitive = `	case {{ .allJSONTags }}:
 	for iter.ReadArray() {
 		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, iter.Read{{ upperFirst .goType }}())
 	}
-{{ else if .nullable -}}
+{{ else if ne .oneOfGroup "" -}}
 	{
 		var ov *{{ .oneOfMessageName }}
-		if !UseProtoPooling.IsEnabled() {
+		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov = &{{ .oneOfMessageName }}{}
 		} else {
 			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
@@ -28,6 +28,8 @@ const unmarshalJSONPrimitive = `	case {{ .allJSONTags }}:
 		ov.{{ .fieldName }} = iter.Read{{ upperFirst .goType }}()
 		orig.{{ .oneOfGroup }} = ov
 	}
+{{ else if .nullable -}}
+	orig.Set{{ .fieldName }}(iter.Read{{ upperFirst .goType }}())
 {{ else -}}
 	orig.{{ .fieldName }} = iter.Read{{ upperFirst .goType }}()
 {{- end }}`
@@ -50,7 +52,7 @@ const unmarshalJSONMessage = `	case {{ .allJSONTags }}:
 {{ else if ne .oneOfGroup "" -}}
 	{
 		var ov *{{ .oneOfMessageName }}
-		if !UseProtoPooling.IsEnabled() {
+		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov = &{{ .oneOfMessageName }}{}
 		} else {
 			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
@@ -72,7 +74,7 @@ const unmarshalJSONBytes = `	case {{ .allJSONTags }}:
 {{ else if ne .oneOfGroup "" -}}
 	{
 		var ov *{{ .oneOfMessageName }}
-		if !UseProtoPooling.IsEnabled() {
+		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov = &{{ .oneOfMessageName }}{}
 		} else {
 			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
@@ -89,17 +91,17 @@ func (pf *Field) GenUnmarshalJSON() string {
 	tf["allJSONTags"] = allJSONTags(pf.Name)
 	switch pf.Type {
 	case TypeBytes:
-		return template.Execute(template.Parse("unmarshalJSONBytes", []byte(unmarshalJSONBytes)), tf)
+		return tmplutil.Execute(tmplutil.Parse("unmarshalJSONBytes", []byte(unmarshalJSONBytes)), tf)
 	case TypeMessage:
-		return template.Execute(template.Parse("unmarshalJSONMessage", []byte(unmarshalJSONMessage)), tf)
+		return tmplutil.Execute(tmplutil.Parse("unmarshalJSONMessage", []byte(unmarshalJSONMessage)), tf)
 	case TypeEnum:
-		return template.Execute(template.Parse("unmarshalJSONEnum", []byte(unmarshalJSONEnum)), tf)
+		return tmplutil.Execute(tmplutil.Parse("unmarshalJSONEnum", []byte(unmarshalJSONEnum)), tf)
 	case TypeDouble, TypeFloat,
 		TypeFixed64, TypeSFixed64, TypeFixed32, TypeSFixed32,
 		TypeInt32, TypeInt64, TypeUint32, TypeUint64,
 		TypeSInt32, TypeSInt64,
 		TypeBool, TypeString:
-		return template.Execute(template.Parse("unmarshalJSONPrimitive", []byte(unmarshalJSONPrimitive)), tf)
+		return tmplutil.Execute(tmplutil.Parse("unmarshalJSONPrimitive", []byte(unmarshalJSONPrimitive)), tf)
 	}
 	panic(fmt.Sprintf("unhandled case %T", pf.Type))
 }

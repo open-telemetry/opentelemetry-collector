@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
+	{{.Telemetry.Name}} "{{.Telemetry.Import}}"
 	{{- range .Connectors}}
 	{{.Name}} "{{.Import}}"
 	{{- end}}
@@ -28,10 +28,24 @@ import (
 	{{- end}}
 )
 
+type aliasProvider interface{ DeprecatedAlias() component.Type }
+
+func makeModulesMap[T component.Factory](factories map[component.Type]T, modules map[component.Type]string) map[component.Type]string {
+	for compType, factory := range factories {
+		if ap, ok := any(factory).(aliasProvider); ok {
+			alias := ap.DeprecatedAlias()
+			if alias.String() != "" {
+				modules[alias] = modules[compType]
+			}
+		}
+	}
+	return modules
+}
+
 func components() (otelcol.Factories, error) {
 	var err error
 	factories := otelcol.Factories{
-		Telemetry: otelconftelemetry.NewFactory(),
+		Telemetry: {{.Telemetry.Name}}.NewFactory(),
 	}
 
 	factories.Extensions, err = otelcol.MakeFactoryMap[extension.Factory](
@@ -42,10 +56,11 @@ func components() (otelcol.Factories, error) {
 	if err != nil {
 		return otelcol.Factories{}, err
 	}
-	factories.ExtensionModules = make(map[component.Type]string, len(factories.Extensions))
-	{{- range .Extensions}}
-	factories.ExtensionModules[{{.Name}}.NewFactory().Type()] = "{{.GoMod}}"
-	{{- end}}
+	factories.ExtensionModules = makeModulesMap(factories.Extensions, map[component.Type]string{
+		{{- range .Extensions}}
+		{{.Name}}.NewFactory().Type(): "{{.GoMod}}",
+		{{- end}}
+	})
 
 	factories.Receivers, err = otelcol.MakeFactoryMap[receiver.Factory](
 		{{- range .Receivers}}
@@ -55,10 +70,11 @@ func components() (otelcol.Factories, error) {
 	if err != nil {
 		return otelcol.Factories{}, err
 	}
-	factories.ReceiverModules = make(map[component.Type]string, len(factories.Receivers))
-	{{- range .Receivers}}
-	factories.ReceiverModules[{{.Name}}.NewFactory().Type()] = "{{.GoMod}}"
-	{{- end}}
+	factories.ReceiverModules = makeModulesMap(factories.Receivers, map[component.Type]string{
+		{{- range .Receivers}}
+		{{.Name}}.NewFactory().Type(): "{{.GoMod}}",
+		{{- end}}
+	})
 
 	factories.Exporters, err = otelcol.MakeFactoryMap[exporter.Factory](
 		{{- range .Exporters}}
@@ -68,10 +84,11 @@ func components() (otelcol.Factories, error) {
 	if err != nil {
 		return otelcol.Factories{}, err
 	}
-	factories.ExporterModules = make(map[component.Type]string, len(factories.Exporters))
-	{{- range .Exporters}}
-	factories.ExporterModules[{{.Name}}.NewFactory().Type()] = "{{.GoMod}}"
-	{{- end}}
+	factories.ExporterModules = makeModulesMap(factories.Exporters, map[component.Type]string{
+		{{- range .Exporters}}
+		{{.Name}}.NewFactory().Type(): "{{.GoMod}}",
+		{{- end}}
+	})
 
 	factories.Processors, err = otelcol.MakeFactoryMap[processor.Factory](
 		{{- range .Processors}}
@@ -81,10 +98,11 @@ func components() (otelcol.Factories, error) {
 	if err != nil {
 		return otelcol.Factories{}, err
 	}
-	factories.ProcessorModules = make(map[component.Type]string, len(factories.Processors))
-	{{- range .Processors}}
-	factories.ProcessorModules[{{.Name}}.NewFactory().Type()] = "{{.GoMod}}"
-	{{- end}}
+	factories.ProcessorModules = makeModulesMap(factories.Processors, map[component.Type]string{
+		{{- range .Processors}}
+		{{.Name}}.NewFactory().Type(): "{{.GoMod}}",
+		{{- end}}
+	})
 
 	factories.Connectors, err = otelcol.MakeFactoryMap[connector.Factory](
 		{{- range .Connectors}}
@@ -94,10 +112,11 @@ func components() (otelcol.Factories, error) {
 	if err != nil {
 		return otelcol.Factories{}, err
 	}
-	factories.ConnectorModules = make(map[component.Type]string, len(factories.Connectors))
-	{{- range .Connectors}}
-	factories.ConnectorModules[{{.Name}}.NewFactory().Type()] = "{{.GoMod}}"
-	{{- end}}
+	factories.ConnectorModules = makeModulesMap(factories.Connectors, map[component.Type]string{
+		{{- range .Connectors}}
+		{{.Name}}.NewFactory().Type(): "{{.GoMod}}",
+		{{- end}}
+	})
 
 	return factories, nil
 }

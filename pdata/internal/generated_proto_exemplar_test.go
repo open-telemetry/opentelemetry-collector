@@ -17,16 +17,17 @@ import (
 
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/metadata"
 )
 
 func TestCopyExemplar(t *testing.T) {
 	for name, src := range genTestEncodingValuesExemplar() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
-				prevPooling := UseProtoPooling.IsEnabled()
-				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				prevPooling := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), pooling))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prevPooling))
 				}()
 
 				dest := NewExemplar()
@@ -102,10 +103,10 @@ func TestMarshalAndUnmarshalJSONExemplar(t *testing.T) {
 	for name, src := range genTestEncodingValuesExemplar() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
-				prevPooling := UseProtoPooling.IsEnabled()
-				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				prevPooling := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), pooling))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prevPooling))
 				}()
 
 				stream := json.BorrowStream(nil)
@@ -146,10 +147,10 @@ func TestMarshalAndUnmarshalProtoExemplar(t *testing.T) {
 	for name, src := range genTestEncodingValuesExemplar() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
-				prevPooling := UseProtoPooling.IsEnabled()
-				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				prevPooling := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), pooling))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prevPooling))
 				}()
 
 				buf := make([]byte, src.SizeProto())
@@ -196,13 +197,12 @@ func genTestFailingUnmarshalProtoValuesExemplar() map[string][]byte {
 
 		"AsDouble/wrong_wire_type": {0x1c},
 		"AsDouble/missing_value":   {0x19},
-
-		"AsInt/wrong_wire_type":   {0x34},
-		"AsInt/missing_value":     {0x31},
-		"TraceId/wrong_wire_type": {0x2c},
-		"TraceId/missing_value":   {0x2a},
-		"SpanId/wrong_wire_type":  {0x24},
-		"SpanId/missing_value":    {0x22},
+		"AsInt/wrong_wire_type":    {0x34},
+		"AsInt/missing_value":      {0x31},
+		"TraceId/wrong_wire_type":  {0x2c},
+		"TraceId/missing_value":    {0x2a},
+		"SpanId/wrong_wire_type":   {0x24},
+		"SpanId/missing_value":     {0x22},
 	}
 }
 
@@ -212,10 +212,9 @@ func genTestEncodingValuesExemplar() map[string]*Exemplar {
 		"FilteredAttributes/test": {FilteredAttributes: []KeyValue{{}, *GenTestKeyValue()}},
 		"TimeUnixNano/test":       {TimeUnixNano: uint64(13)},
 		"AsDouble/default":        {Value: &Exemplar_AsDouble{AsDouble: float64(0)}},
-		"AsDouble/test":           {Value: &Exemplar_AsDouble{AsDouble: float64(3.1415926)}},
-		"AsInt/default":           {Value: &Exemplar_AsInt{AsInt: int64(0)}},
-		"AsInt/test":              {Value: &Exemplar_AsInt{AsInt: int64(13)}},
-		"TraceId/test":            {TraceId: *GenTestTraceID()},
-		"SpanId/test":             {SpanId: *GenTestSpanID()},
+		"AsDouble/test":           {Value: &Exemplar_AsDouble{AsDouble: float64(3.1415926)}}, "AsInt/default": {Value: &Exemplar_AsInt{AsInt: int64(0)}},
+		"AsInt/test":   {Value: &Exemplar_AsInt{AsInt: int64(13)}},
+		"TraceId/test": {TraceId: *GenTestTraceID()},
+		"SpanId/test":  {SpanId: *GenTestSpanID()},
 	}
 }

@@ -30,19 +30,25 @@ func TestSetupTelemetry(t *testing.T) {
 	}))
 	tb.ExporterEnqueueFailedLogRecords.Add(context.Background(), 1)
 	tb.ExporterEnqueueFailedMetricPoints.Add(context.Background(), 1)
+	tb.ExporterEnqueueFailedProfileSamples.Add(context.Background(), 1)
 	tb.ExporterEnqueueFailedSpans.Add(context.Background(), 1)
 	tb.ExporterQueueBatchSendSize.Record(context.Background(), 1)
 	tb.ExporterQueueBatchSendSizeBytes.Record(context.Background(), 1)
 	tb.ExporterSendFailedLogRecords.Add(context.Background(), 1)
 	tb.ExporterSendFailedMetricPoints.Add(context.Background(), 1)
+	tb.ExporterSendFailedProfileSamples.Add(context.Background(), 1)
 	tb.ExporterSendFailedSpans.Add(context.Background(), 1)
 	tb.ExporterSentLogRecords.Add(context.Background(), 1)
 	tb.ExporterSentMetricPoints.Add(context.Background(), 1)
+	tb.ExporterSentProfileSamples.Add(context.Background(), 1)
 	tb.ExporterSentSpans.Add(context.Background(), 1)
 	AssertEqualExporterEnqueueFailedLogRecords(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterEnqueueFailedMetricPoints(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterEnqueueFailedProfileSamples(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterEnqueueFailedSpans(t, testTel,
@@ -66,6 +72,9 @@ func TestSetupTelemetry(t *testing.T) {
 	AssertEqualExporterSendFailedMetricPoints(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterSendFailedProfileSamples(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterSendFailedSpans(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
@@ -73,6 +82,9 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterSentMetricPoints(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterSentProfileSamples(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterSentSpans(t, testTel,

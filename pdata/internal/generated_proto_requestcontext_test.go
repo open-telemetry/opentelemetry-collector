@@ -17,16 +17,17 @@ import (
 
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/metadata"
 )
 
 func TestCopyRequestContext(t *testing.T) {
 	for name, src := range genTestEncodingValuesRequestContext() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
-				prevPooling := UseProtoPooling.IsEnabled()
-				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				prevPooling := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), pooling))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prevPooling))
 				}()
 
 				dest := NewRequestContext()
@@ -102,10 +103,10 @@ func TestMarshalAndUnmarshalJSONRequestContext(t *testing.T) {
 	for name, src := range genTestEncodingValuesRequestContext() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
-				prevPooling := UseProtoPooling.IsEnabled()
-				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				prevPooling := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), pooling))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prevPooling))
 				}()
 
 				stream := json.BorrowStream(nil)
@@ -146,10 +147,10 @@ func TestMarshalAndUnmarshalProtoRequestContext(t *testing.T) {
 	for name, src := range genTestEncodingValuesRequestContext() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
-				prevPooling := UseProtoPooling.IsEnabled()
-				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				prevPooling := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), pooling))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prevPooling))
 				}()
 
 				buf := make([]byte, src.SizeProto())
@@ -194,15 +195,12 @@ func genTestFailingUnmarshalProtoValuesRequestContext() map[string][]byte {
 		"ClientMetadata/wrong_wire_type": {0x14},
 		"ClientMetadata/missing_value":   {0x12},
 
-		"IP/wrong_wire_type": {0x1c},
-		"IP/missing_value":   {0x1a},
-
-		"TCP/wrong_wire_type": {0x24},
-		"TCP/missing_value":   {0x22},
-
-		"UDP/wrong_wire_type": {0x2c},
-		"UDP/missing_value":   {0x2a},
-
+		"IP/wrong_wire_type":   {0x1c},
+		"IP/missing_value":     {0x1a},
+		"TCP/wrong_wire_type":  {0x24},
+		"TCP/missing_value":    {0x22},
+		"UDP/wrong_wire_type":  {0x2c},
+		"UDP/missing_value":    {0x2a},
 		"Unix/wrong_wire_type": {0x34},
 		"Unix/missing_value":   {0x32},
 	}
@@ -214,12 +212,9 @@ func genTestEncodingValuesRequestContext() map[string]*RequestContext {
 		"SpanContext/test":    {SpanContext: GenTestSpanContext()},
 		"ClientMetadata/test": {ClientMetadata: []KeyValue{{}, *GenTestKeyValue()}},
 		"IP/default":          {ClientAddress: &RequestContext_IP{IP: &IPAddr{}}},
-		"IP/test":             {ClientAddress: &RequestContext_IP{IP: GenTestIPAddr()}},
-		"TCP/default":         {ClientAddress: &RequestContext_TCP{TCP: &TCPAddr{}}},
-		"TCP/test":            {ClientAddress: &RequestContext_TCP{TCP: GenTestTCPAddr()}},
-		"UDP/default":         {ClientAddress: &RequestContext_UDP{UDP: &UDPAddr{}}},
-		"UDP/test":            {ClientAddress: &RequestContext_UDP{UDP: GenTestUDPAddr()}},
-		"Unix/default":        {ClientAddress: &RequestContext_Unix{Unix: &UnixAddr{}}},
-		"Unix/test":           {ClientAddress: &RequestContext_Unix{Unix: GenTestUnixAddr()}},
+		"IP/test":             {ClientAddress: &RequestContext_IP{IP: GenTestIPAddr()}}, "TCP/default": {ClientAddress: &RequestContext_TCP{TCP: &TCPAddr{}}},
+		"TCP/test": {ClientAddress: &RequestContext_TCP{TCP: GenTestTCPAddr()}}, "UDP/default": {ClientAddress: &RequestContext_UDP{UDP: &UDPAddr{}}},
+		"UDP/test": {ClientAddress: &RequestContext_UDP{UDP: GenTestUDPAddr()}}, "Unix/default": {ClientAddress: &RequestContext_Unix{Unix: &UnixAddr{}}},
+		"Unix/test": {ClientAddress: &RequestContext_Unix{Unix: GenTestUnixAddr()}},
 	}
 }

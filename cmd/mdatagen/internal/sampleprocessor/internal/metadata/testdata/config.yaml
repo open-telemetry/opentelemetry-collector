@@ -17,6 +17,24 @@ all_set:
       enabled: true
     string.resource.attr_to_be_removed:
       enabled: true
+reaggregate_set:
+  resource_attributes:
+    map.resource.attr:
+      enabled: true
+    optional.resource.attr:
+      enabled: true
+    slice.resource.attr:
+      enabled: true
+    string.enum.resource.attr:
+      enabled: true
+    string.resource.attr:
+      enabled: true
+    string.resource.attr_disable_warning:
+      enabled: true
+    string.resource.attr_remove_warning:
+      enabled: true
+    string.resource.attr_to_be_removed:
+      enabled: true
 none_set:
   resource_attributes:
     map.resource.attr:

@@ -35,6 +35,37 @@ func (ms Profiles) SampleCount() int {
 // switchDictionary updates the Profiles, switching its indices from one
 // dictionary to another.
 func (ms Profiles) switchDictionary(src, dst ProfilesDictionary) error {
+	for i, v := range ms.Dictionary().AttributeTable().All() {
+		err := v.switchDictionary(src, dst)
+		if err != nil {
+			return fmt.Errorf("couldn't switch attribute %d: %w", i, err)
+		}
+	}
+	for i, v := range ms.Dictionary().FunctionTable().All() {
+		err := v.switchDictionary(src, dst)
+		if err != nil {
+			return fmt.Errorf("couldn't switch function %d: %w", i, err)
+		}
+	}
+	for i, v := range ms.Dictionary().MappingTable().All() {
+		err := v.switchDictionary(src, dst)
+		if err != nil {
+			return fmt.Errorf("couldn't switch mapping %d: %w", i, err)
+		}
+	}
+	for i, v := range ms.Dictionary().LocationTable().All() {
+		err := v.switchDictionary(src, dst)
+		if err != nil {
+			return fmt.Errorf("couldn't switch location %d: %w", i, err)
+		}
+	}
+	for i, v := range ms.Dictionary().StackTable().All() {
+		err := v.switchDictionary(src, dst)
+		if err != nil {
+			return fmt.Errorf("couldn't switch stack %d: %w", i, err)
+		}
+	}
+
 	for i, v := range ms.ResourceProfiles().All() {
 		err := v.switchDictionary(src, dst)
 		if err != nil {
@@ -43,4 +74,18 @@ func (ms Profiles) switchDictionary(src, dst ProfilesDictionary) error {
 	}
 
 	return nil
+}
+
+// ProfileCount calculates the total number of profile records.
+func (ms Profiles) ProfileCount() int {
+	profileCount := 0
+	rps := ms.ResourceProfiles()
+	for i := 0; i < rps.Len(); i++ {
+		rp := rps.At(i)
+		sps := rp.ScopeProfiles()
+		for j := 0; j < sps.Len(); j++ {
+			profileCount += sps.At(j).Profiles().Len()
+		}
+	}
+	return profileCount
 }

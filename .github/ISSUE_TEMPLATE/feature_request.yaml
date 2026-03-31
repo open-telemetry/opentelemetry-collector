@@ -19,6 +19,17 @@ body:
       - cmd/mdatagen/internal/sampleprocessor
       - cmd/mdatagen/internal/samplereceiver
       - cmd/mdatagen/internal/samplescraper
+      - config/configauth
+      - config/configcompression
+      - config/configgrpc
+      - config/confighttp
+      - config/configmiddleware
+      - config/confignet
+      - config/configopaque
+      - config/configoptional
+      - config/configretry
+      - config/configtelemetry
+      - config/configtls
       - confmap
       - confmap/provider/envprovider
       - confmap/provider/fileprovider
@@ -27,6 +38,7 @@ body:
       - confmap/provider/yamlprovider
       - connector/forward
       - connector/x
+      - consumer/consumererror/xconsumererror
       - consumer/xconsumer
       - docs/rfcs
       - exporter/debug
@@ -34,8 +46,8 @@ body:
       - exporter/exporterhelper/internal/queuebatch
       - exporter/exporterhelper/xexporterhelper
       - exporter/nop
-      - exporter/otlp
-      - exporter/otlphttp
+      - exporter/otlp_grpc
+      - exporter/otlp_http
       - exporter/x
       - extension/memorylimiter
       - extension/x
@@ -55,6 +67,8 @@ body:
       - receiver/x
       - scraper
       - scraper/scraperhelper
+      - scraper/scraperhelper/xscraperhelper
+      - scraper/xscraper
       - service
       - service/internal/graph
       # End components list

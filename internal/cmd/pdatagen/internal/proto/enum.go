@@ -4,7 +4,7 @@
 package proto // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/proto"
 
 import (
-	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/tmplutil"
 )
 
 const enumMessageTemplate = `
@@ -51,15 +51,5 @@ type EnumField struct {
 }
 
 func (ms *Enum) GenerateEnum() []byte {
-	return []byte(template.Execute(template.Parse("enumMessageTemplate", []byte(enumMessageTemplate)), ms))
-}
-
-func (ms *Enum) templateFields(imports, testImports []string) map[string]any {
-	return map[string]any{
-		"fields":      ms.Fields,
-		"messageName": ms.Name,
-		"description": ms.Description,
-		"imports":     imports,
-		"testImports": testImports,
-	}
+	return []byte(tmplutil.Execute(tmplutil.Parse("enumMessageTemplate", []byte(enumMessageTemplate)), ms))
 }

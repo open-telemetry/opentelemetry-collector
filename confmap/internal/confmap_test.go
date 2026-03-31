@@ -4,6 +4,7 @@
 package internal
 
 import (
+	"encoding"
 	"errors"
 	"math"
 	"os"
@@ -14,7 +15,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	yaml "go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v3"
+
+	"go.opentelemetry.io/collector/confmap/internal/metadata"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 func TestToStringMapFlatten(t *testing.T) {
@@ -559,6 +563,53 @@ func TestEmbeddedMarshalerError(t *testing.T) {
 	assert.EqualError(t, cfgMap.Unmarshal(tc), "error running encode hook: marshaling error")
 }
 
+// stringOpaque is similar to configopaque.String, in that
+// marshaling then unmarshaling it changes its value.
+type stringOpaque string
+
+var _ encoding.TextMarshaler = stringOpaque("")
+
+func (s stringOpaque) MarshalText() (text []byte, err error) {
+	return []byte("opaque"), nil
+}
+
+type squashedConfigOpaque struct {
+	Value  stringOpaque `mapstructure:"value"`
+	secret bool
+}
+
+var _ Unmarshaler = (*squashedConfigOpaque)(nil)
+
+func (ecwrt *squashedConfigOpaque) Unmarshal(conf *Conf) error {
+	if err := conf.Unmarshal(ecwrt); err != nil {
+		return err
+	}
+	ecwrt.secret = true
+	return nil
+}
+
+type testConfigOpaque struct {
+	// Don't embed, otherwise testConfigOpaque will implement Unmarshaler,
+	// and unmarshalerHookFunc will be called instead of unmarshalerEmbeddedStructsHookFunc.
+	Squashed squashedConfigOpaque `mapstructure:",squash"`
+}
+
+// Regression test: the hook processing embedded marshalers previously made the assumption that
+// marshaling a struct then unmarshaling the resulting map back into the struct
+// is a no-op, which is not true for configopaque.String.
+func TestEmbeddedMarshalerWithoutRoundtrip(t *testing.T) {
+	cfgMap := NewFromStringMap(map[string]any{
+		"value": "hello",
+	})
+
+	tc := &testConfigOpaque{}
+	require.NoError(t, cfgMap.Unmarshal(tc))
+	// Check that "hello" hasn't been replaced by "opaque"
+	assert.Equal(t, "hello", string(tc.Squashed.Value))
+	// Check that the inner Unmarshal was called
+	assert.True(t, tc.Squashed.secret)
+}
+
 type B struct {
 	String string `mapstructure:"string"`
 }
@@ -965,7 +1016,10 @@ func TestRecursiveUnmarshaling(t *testing.T) {
 	require.Equal(t, "something", r.Foo)
 }
 
-func TestExpandedValue(t *testing.T) {
+func testExpandedValue(t *testing.T, newSanitizer bool) {
+	err := featuregate.GlobalRegistry().Set(metadata.ConfmapNewExpandedValueSanitizerFeatureGate.ID(), newSanitizer)
+	require.NoError(t, err)
+
 	cm := NewFromStringMap(map[string]any{
 		"key": ExpandedValue{
 			Value:    0xdeadbeef,
@@ -983,6 +1037,30 @@ func TestExpandedValue(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfgStr))
 	assert.Equal(t, "original", cfgStr.Key)
 
+	type ConfigStrPtr struct {
+		Key *string `mapstructure:"key"`
+	}
+
+	cfgStrPtr := ConfigStrPtr{}
+	if newSanitizer {
+		require.NoError(t, cm.Unmarshal(&cfgStrPtr))
+		if assert.NotNil(t, cfgStrPtr.Key) {
+			assert.Equal(t, "original", *cfgStrPtr.Key)
+		}
+	} else {
+		require.Error(t, cm.Unmarshal(&cfgStrPtr))
+	}
+
+	cfgMapStrPtr := map[string]*string{}
+	if newSanitizer {
+		require.NoError(t, cm.Unmarshal(&cfgMapStrPtr))
+		if assert.NotNil(t, cfgMapStrPtr["key"]) {
+			assert.Equal(t, "original", *cfgMapStrPtr["key"])
+		}
+	} else {
+		require.Error(t, cm.Unmarshal(&cfgMapStrPtr))
+	}
+
 	type ConfigInt struct {
 		Key int `mapstructure:"key"`
 	}
@@ -995,6 +1073,39 @@ func TestExpandedValue(t *testing.T) {
 	}
 	cfgBool := ConfigBool{}
 	assert.Error(t, cm.Unmarshal(&cfgBool))
+}
+
+func TestExpandedValue(t *testing.T) {
+	before := metadata.ConfmapNewExpandedValueSanitizerFeatureGate.IsEnabled()
+	t.Run("old sanitizer", func(t *testing.T) {
+		testExpandedValue(t, false)
+	})
+	t.Run("new sanitizer", func(t *testing.T) {
+		testExpandedValue(t, true)
+	})
+	err := featuregate.GlobalRegistry().Set(metadata.ConfmapNewExpandedValueSanitizerFeatureGate.ID(), before)
+	require.NoError(t, err)
+}
+
+func TestExpandedValueNil(t *testing.T) {
+	cm := NewFromStringMap(map[string]any{
+		"key": ExpandedValue{
+			Value:    nil,
+			Original: "NULL",
+		},
+	})
+
+	type ConfigStrPtr struct {
+		Key *string `mapstructure:"key"`
+	}
+
+	cfgStrPtr := ConfigStrPtr{}
+	require.NoError(t, cm.Unmarshal(&cfgStrPtr))
+	assert.Nil(t, cfgStrPtr.Key)
+
+	cfgMapStrPtr := map[string]*string{}
+	require.NoError(t, cm.Unmarshal(&cfgMapStrPtr))
+	assert.Nil(t, cfgMapStrPtr["key"])
 }
 
 func TestSubExpandedValue(t *testing.T) {
@@ -1325,4 +1436,36 @@ func TestConfmapNilMerge(t *testing.T) {
 			assert.Equal(t, test.expected, leftConf.ToStringMap())
 		})
 	}
+}
+
+type simpleUnmarshaler struct {
+	unmarshaled bool
+	Value       string `mapstructure:"value"`
+}
+
+var _ Unmarshaler = (*simpleUnmarshaler)(nil)
+
+func (s *simpleUnmarshaler) Unmarshal(c *Conf) error {
+	s.unmarshaled = true
+	return c.Unmarshal(s) // Does not call simpleUnmarshaler.Unmarshal
+}
+
+type wrapperUnmarshaler[T any] struct {
+	inner T
+}
+
+var _ Unmarshaler = (*wrapperUnmarshaler[simpleUnmarshaler])(nil)
+
+func (w *wrapperUnmarshaler[T]) Unmarshal(c *Conf) error {
+	return c.Unmarshal(&w.inner, WithForceUnmarshaler()) // Calls T.Unmarshal
+}
+
+func TestUnmarshalWithForceUnmarshaler(t *testing.T) {
+	conf := NewFromStringMap(map[string]any{
+		"value": "test_value",
+	})
+	var out wrapperUnmarshaler[simpleUnmarshaler]
+	require.NoError(t, conf.Unmarshal(&out))
+	assert.Equal(t, "test_value", out.inner.Value)
+	assert.True(t, out.inner.unmarshaled)
 }

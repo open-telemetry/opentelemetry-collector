@@ -1,11 +1,12 @@
-include-fragments = true
+include_fragments = true
 
 accept = ["200..=299", "429"]
 
 exclude  = [
     "^http(s)?://localhost",
-    "^http(s)?://example.com"
+    "^http(s)?://example.com",
+    "^https://opentelemetry.io/img/logos/opentelemetry-logo-nav\\.png$",
+    "^https://opentelemetry.io/docs/collector/trace-receiver/?$",
+    "^https://www\\.gnu\\.org/software/make/$",
+    "^https://kubernetes\\.io/docs/reference/command-line-tools-reference/feature-gates/#feature-stages$"
 ]
-
-# better to be safe and avoid failures
-max-retries = 6

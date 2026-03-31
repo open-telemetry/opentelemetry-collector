@@ -55,7 +55,6 @@ func TestNoDataLoss(t *testing.T) {
 	runtime.ReadMemStats(&ms)
 
 	// Set the limit to current usage plus expected increase. This means initially we will not be limited.
-	//nolint:gosec
 	cfg.MemoryLimitMiB = uint32(ms.Alloc/(1024*1024) + expectedMemoryIncreaseMiB)
 	cfg.MemorySpikeLimitMiB = 1
 

@@ -24,8 +24,8 @@ type provider struct{}
 //	bytes-uri = "yaml:" yaml-bytes
 //
 // Examples:
-// `yaml:exporters::otlphttp::sending_queue::batch::flush_timeout: 2s`
-// `yaml:exporters::otlphttp/foo::sending_queue::batch::flush_timeout: 2s`
+// `yaml:exporters::otlp_http::sending_queue::batch::flush_timeout: 2s`
+// `yaml:exporters::otlp_http/foo::sending_queue::batch::flush_timeout: 2s`
 func NewFactory() confmap.ProviderFactory {
 	return confmap.NewProviderFactory(newProvider)
 }

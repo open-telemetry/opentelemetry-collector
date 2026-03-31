@@ -26,7 +26,7 @@ type protoDeltaSizer struct{}
 // - opentelemetry-collector/pdata/internal/data/protogen/profiles/v1development/profiles.pb.go
 // which is generated with gogo/protobuf.
 func (s *protoDeltaSizer) DeltaSize(newItemSize int) int {
-	return 1 + newItemSize + sov(uint64(newItemSize)) //nolint:gosec // disable G115
+	return 1 + newItemSize + sov(uint64(newItemSize))
 }
 
 func sov(x uint64) int {

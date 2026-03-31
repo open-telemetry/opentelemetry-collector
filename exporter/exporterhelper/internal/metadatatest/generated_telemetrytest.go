@@ -16,7 +16,7 @@ func AssertEqualExporterEnqueueFailedLogRecords(t *testing.T, tt *componenttest.
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_enqueue_failed_log_records",
 		Description: "Number of log records failed to be added to the sending queue. [Alpha]",
-		Unit:        "{records}",
+		Unit:        "{record}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -32,7 +32,7 @@ func AssertEqualExporterEnqueueFailedMetricPoints(t *testing.T, tt *componenttes
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_enqueue_failed_metric_points",
 		Description: "Number of metric points failed to be added to the sending queue. [Alpha]",
-		Unit:        "{datapoints}",
+		Unit:        "{datapoint}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -44,11 +44,27 @@ func AssertEqualExporterEnqueueFailedMetricPoints(t *testing.T, tt *componenttes
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualExporterEnqueueFailedProfileSamples(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_enqueue_failed_profile_samples",
+		Description: "Number of profile samples failed to be added to the sending queue. [Development]",
+		Unit:        "{sample}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_exporter_enqueue_failed_profile_samples")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualExporterEnqueueFailedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_enqueue_failed_spans",
 		Description: "Number of spans failed to be added to the sending queue. [Alpha]",
-		Unit:        "{spans}",
+		Unit:        "{span}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -64,7 +80,7 @@ func AssertEqualExporterQueueBatchSendSize(t *testing.T, tt *componenttest.Telem
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_queue_batch_send_size",
 		Description: "Number of units in the batch [Development]",
-		Unit:        "{units}",
+		Unit:        "{unit}",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			DataPoints:  dps,
@@ -94,7 +110,7 @@ func AssertEqualExporterQueueCapacity(t *testing.T, tt *componenttest.Telemetry,
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_queue_capacity",
 		Description: "Fixed capacity of the retry queue (in batches). [Alpha]",
-		Unit:        "{batches}",
+		Unit:        "{batch}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
 		},
@@ -108,7 +124,7 @@ func AssertEqualExporterQueueSize(t *testing.T, tt *componenttest.Telemetry, dps
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_queue_size",
 		Description: "Current size of the retry queue (in batches). [Alpha]",
-		Unit:        "{batches}",
+		Unit:        "{batch}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
 		},
@@ -121,8 +137,8 @@ func AssertEqualExporterQueueSize(t *testing.T, tt *componenttest.Telemetry, dps
 func AssertEqualExporterSendFailedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_send_failed_log_records",
-		Description: "Number of log records in failed attempts to send to destination. [Alpha]",
-		Unit:        "{records}",
+		Description: "Number of log records in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent. [Alpha]",
+		Unit:        "{record}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -137,8 +153,8 @@ func AssertEqualExporterSendFailedLogRecords(t *testing.T, tt *componenttest.Tel
 func AssertEqualExporterSendFailedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_send_failed_metric_points",
-		Description: "Number of metric points in failed attempts to send to destination. [Alpha]",
-		Unit:        "{datapoints}",
+		Description: "Number of metric points in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent. [Alpha]",
+		Unit:        "{datapoint}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -150,11 +166,27 @@ func AssertEqualExporterSendFailedMetricPoints(t *testing.T, tt *componenttest.T
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualExporterSendFailedProfileSamples(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_send_failed_profile_samples",
+		Description: "Number of profile samples in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent. [Development]",
+		Unit:        "{sample}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_exporter_send_failed_profile_samples")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualExporterSendFailedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_send_failed_spans",
-		Description: "Number of spans in failed attempts to send to destination. [Alpha]",
-		Unit:        "{spans}",
+		Description: "Number of spans in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent. [Alpha]",
+		Unit:        "{span}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -170,7 +202,7 @@ func AssertEqualExporterSentLogRecords(t *testing.T, tt *componenttest.Telemetry
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_sent_log_records",
 		Description: "Number of log record successfully sent to destination. [Alpha]",
-		Unit:        "{records}",
+		Unit:        "{record}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -186,7 +218,7 @@ func AssertEqualExporterSentMetricPoints(t *testing.T, tt *componenttest.Telemet
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_sent_metric_points",
 		Description: "Number of metric points successfully sent to destination. [Alpha]",
-		Unit:        "{datapoints}",
+		Unit:        "{datapoint}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -198,11 +230,27 @@ func AssertEqualExporterSentMetricPoints(t *testing.T, tt *componenttest.Telemet
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualExporterSentProfileSamples(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_sent_profile_samples",
+		Description: "Number of profile samples successfully sent to destination. [Development]",
+		Unit:        "{sample}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_exporter_sent_profile_samples")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualExporterSentSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_sent_spans",
 		Description: "Number of spans successfully sent to destination. [Alpha]",
-		Unit:        "{spans}",
+		Unit:        "{span}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,

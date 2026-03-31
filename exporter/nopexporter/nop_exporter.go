@@ -10,16 +10,18 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/nopexporter/internal/metadata"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 )
 
 // NewFactory returns an exporter.Factory that constructs nop exporters.
 func NewFactory() exporter.Factory {
-	return exporter.NewFactory(
+	return xexporter.NewFactory(
 		metadata.Type,
 		func() component.Config { return &struct{}{} },
-		exporter.WithTraces(createTraces, metadata.TracesStability),
-		exporter.WithMetrics(createMetrics, metadata.MetricsStability),
-		exporter.WithLogs(createLogs, metadata.LogsStability),
+		xexporter.WithTraces(createTraces, metadata.TracesStability),
+		xexporter.WithMetrics(createMetrics, metadata.MetricsStability),
+		xexporter.WithLogs(createLogs, metadata.LogsStability),
+		xexporter.WithProfiles(createProfiles, metadata.ProfilesStability),
 	)
 }
 
@@ -32,6 +34,10 @@ func createMetrics(context.Context, exporter.Settings, component.Config) (export
 }
 
 func createLogs(context.Context, exporter.Settings, component.Config) (exporter.Logs, error) {
+	return nopInstance, nil
+}
+
+func createProfiles(context.Context, exporter.Settings, component.Config) (xexporter.Profiles, error) {
 	return nopInstance, nil
 }
 

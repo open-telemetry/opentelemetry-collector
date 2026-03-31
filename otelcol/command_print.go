@@ -12,20 +12,11 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	yaml "go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v3"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
-	"go.opentelemetry.io/collector/featuregate"
-)
-
-const featureGateName = "otelcol.printInitialConfig"
-
-var printCommandFeatureFlag = featuregate.GlobalRegistry().MustRegister(
-	featureGateName,
-	featuregate.StageBeta,
-	featuregate.WithRegisterFromVersion("v0.120.0"),
-	featuregate.WithRegisterDescription("if set to true, enable the print-config command"),
+	"go.opentelemetry.io/collector/otelcol/internal/metadata"
 )
 
 // newConfigPrintSubCommand constructs a new print-config command using the given CollectorSettings.
@@ -84,7 +75,7 @@ type printContext struct {
 }
 
 func (pctx *printContext) configPrintSubCommand(flagSet *flag.FlagSet, mode string) error {
-	if !printCommandFeatureFlag.IsEnabled() {
+	if !metadata.OtelcolPrintInitialConfigFeatureGate.IsEnabled() {
 		return errors.New("print-config is currently experimental, use the otelcol.printInitialConfig feature gate to enable this command")
 	}
 	err := updateSettingsUsingFlags(&pctx.set, flagSet)

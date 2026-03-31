@@ -74,9 +74,9 @@ func TestProtoSizerEmptyTraces(t *testing.T) {
 	assert.Equal(t, 0, sizer.TracesSize(NewTraces()))
 }
 
-func BenchmarkTracesToProto(b *testing.B) {
+func BenchmarkTracesToProto2k(b *testing.B) {
 	marshaler := &ProtoMarshaler{}
-	traces := generateBenchmarkTraces(128)
+	traces := generateBenchmarkTraces(2_000)
 
 	for b.Loop() {
 		buf, err := marshaler.MarshalTraces(traces)
@@ -85,10 +85,10 @@ func BenchmarkTracesToProto(b *testing.B) {
 	}
 }
 
-func BenchmarkTracesFromProto(b *testing.B) {
+func BenchmarkTracesFromProto2k(b *testing.B) {
 	marshaler := &ProtoMarshaler{}
 	unmarshaler := &ProtoUnmarshaler{}
-	baseTraces := generateBenchmarkTraces(128)
+	baseTraces := generateBenchmarkTraces(2_000)
 	buf, err := marshaler.MarshalTraces(baseTraces)
 	require.NoError(b, err)
 	assert.NotEmpty(b, buf)

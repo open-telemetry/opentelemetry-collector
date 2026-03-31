@@ -1,6 +1,7 @@
 bin/
 dist/
 /local
+.schemas
 
 # GoLand IDEA
 /.idea/
@@ -9,6 +10,9 @@ dist/
 # VS Code
 .vscode/
 .devcontainer/
+
+# Cursor
+.cursor
 
 # Emacs
 *~

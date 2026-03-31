@@ -8,7 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter/internal/experr"
+	"go.opentelemetry.io/collector/internal/componentalias"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -105,6 +105,7 @@ type CreateLogsFunc func(context.Context, Settings, component.Config) (Logs, err
 type factory struct {
 	cfgType component.Type
 	component.CreateDefaultConfigFunc
+	componentalias.TypeAliasHolder
 	createTracesFunc      CreateTracesFunc
 	tracesStabilityLevel  component.StabilityLevel
 	createMetricsFunc     CreateMetricsFunc
@@ -136,8 +137,8 @@ func (f *factory) CreateTraces(ctx context.Context, set Settings, cfg component.
 		return nil, pipeline.ErrSignalNotSupported
 	}
 
-	if set.ID.Type() != f.Type() {
-		return nil, experr.ErrIDMismatch(set.ID, f.Type())
+	if err := componentalias.ValidateComponentType(f, set.ID); err != nil {
+		return nil, err
 	}
 
 	return f.createTracesFunc(ctx, set, cfg)
@@ -148,8 +149,8 @@ func (f *factory) CreateMetrics(ctx context.Context, set Settings, cfg component
 		return nil, pipeline.ErrSignalNotSupported
 	}
 
-	if set.ID.Type() != f.Type() {
-		return nil, experr.ErrIDMismatch(set.ID, f.Type())
+	if err := componentalias.ValidateComponentType(f, set.ID); err != nil {
+		return nil, err
 	}
 
 	return f.createMetricsFunc(ctx, set, cfg)
@@ -160,8 +161,8 @@ func (f *factory) CreateLogs(ctx context.Context, set Settings, cfg component.Co
 		return nil, pipeline.ErrSignalNotSupported
 	}
 
-	if set.ID.Type() != f.Type() {
-		return nil, experr.ErrIDMismatch(set.ID, f.Type())
+	if err := componentalias.ValidateComponentType(f, set.ID); err != nil {
+		return nil, err
 	}
 
 	return f.createLogsFunc(ctx, set, cfg)
@@ -196,6 +197,7 @@ func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefa
 	f := &factory{
 		cfgType:                 cfgType,
 		CreateDefaultConfigFunc: createDefaultConfig,
+		TypeAliasHolder:         componentalias.NewTypeAliasHolder(),
 	}
 	for _, opt := range options {
 		opt.applyOption(f)

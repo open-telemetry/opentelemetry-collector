@@ -8,16 +8,16 @@ For platforms not listed as supported by any of the tiers, support cannot be ass
 
 ## Current Test Strategy
 
-The current verification process of the OpenTelemetry Collector includes unit and performance tests for core and additional end-to-end and integration tests for contrib. In the end-to-end tests, receivers, processors, and exporters etc. are tested in a testbed, while the integration tests rely on actual instances and available container images. Additional stability tests are in preparation for the future as well. All verification tests are run on the linux/amd64 as the primary platform today. In addition, unit tests are run for the _contrib_ collector on windows/amd64. The tests use as execution environments the latest Ubuntu and Windows Server versions [supported as Github runners](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources). 
+The current verification process of the OpenTelemetry Collector includes unit and performance tests for core and additional end-to-end and integration tests for contrib. In the end-to-end tests, receivers, processors, and exporters etc. are tested in a testbed, while the integration tests rely on actual instances and available container images. Additional stability tests are in preparation for the future as well. All verification tests are run on the linux/amd64 as the primary platform today. In addition, unit tests are run for the _contrib_ collector on windows/amd64. The tests use as execution environments the latest Ubuntu and Windows Server versions [supported as Github runners](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners).
 
 The cross compile supports the following targets:
 - darwin/amd64 and darwin/arm64
 - linux/amd64, linux/arm64, linux/386, linux/arm and linux/ppc64le
-- windows/amd64, windows/386. 
+- windows/amd64, windows/arm64 and windows/386.
 
 Except of the mentioned tests for linux/amd64 and windows/amd64, no other platforms are tested by the CI/CD tooling. 
 
-Container images of the _core_ and _contrib_ collector are built and published to Docker Hub and ghcr.io for the platforms specified in the [goreleaser configuration](https://github.com/open-telemetry/opentelemetry-collector-releases/blob/bf8002ec6d2109cdb4184fc6eb6f8bda59ea96a2/.goreleaser.yaml#L137). End-to-end tests of the _contrib_ container images are run on the latest Ubuntu Linux supported by GitHub runners and for the four most recent Kubernetes versions.
+Container images of the _core_ and _contrib_ collector are built and published to Docker Hub and ghcr.io for the platforms specified in the [goreleaser configuration](https://github.com/open-telemetry/opentelemetry-collector-releases/blob/bf8002ec6d2109cdb4184fc6eb6f8bda59ea96a2/.goreleaser.yaml). End-to-end tests of the _contrib_ container images are run on the latest Ubuntu Linux supported by GitHub runners and for the four most recent Kubernetes versions.
 
 ## Tiered platform support model
 
@@ -61,11 +61,13 @@ Tier 3 platforms are currently:
 | Platform      | Owner(s)                                                                                                                                                       |
 |---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | darwin/amd64  | [@h0cheung](https://github.com/h0cheung)                                                                                                                       |
+| js/wasm       | [@evan-bradley](https://github.com/evan-bradley), [@mx-psi](https://github.com/mx-psi)                                                                         |
 | linux/386     | [@andrzej-stencel](https://github.com/andrzej-stencel)                                                                                                         |
 | linux/arm     | [@Wal8800](https://github.com/Wal8800), [@atoulme](https://github.com/atoulme)                                                                                 |
 | linux/ppc64le | [@IBM-Currency-Helper](https://github.com/IBM-Currency-Helper), [@adilhusain-s](https://github.com/adilhusain-s), [@seth-priya](https://github.com/seth-priya) |
 | linux/riscv64 | [@shanduur](https://github.com/shanduur)                                                                                                                       |
 | linux/s390x   | [@bwalk-at-ibm](https://github.com/bwalk-at-ibm), [@rrschulze](https://github.com/rrschulze)                                                                   |
 | windows/386   | [@pjanotti](https://github.com/pjanotti)                                                                                                                       |
+| windows/arm64 | [@pjanotti](https://github.com/pjanotti)                                                                                                                       |
 
 The proposed additional platform aix/ppc64 ([#19195](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/19195)) will be included into Tier 3 once it's added to the OpenTelemetry Collector as platform. 

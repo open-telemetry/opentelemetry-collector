@@ -6,7 +6,7 @@ package proto // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/int
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/tmplutil"
 )
 
 const marshalJSONPrimitive = `{{ if .repeated -}}
@@ -20,15 +20,19 @@ const marshalJSONPrimitive = `{{ if .repeated -}}
 		}
 		dest.WriteArrayEnd()
 	}
+{{ else if ne .oneOfGroup "" -}}
+		dest.WriteObjectField("{{ .jsonTag }}")
+		dest.Write{{ upperFirst .goType }}(orig.{{ .fieldName }})
 {{- else }}
 {{- if not .nullable -}}
 	if orig.{{ .fieldName }} != {{ .defaultValue }} {
+{{- else -}}
+	if orig.Has{{ .fieldName }} () {
 {{ end -}}
 		dest.WriteObjectField("{{ .jsonTag }}")
 		dest.Write{{ upperFirst .goType }}(orig.{{ .fieldName }})
-{{- if not .nullable -}}
 	}
-{{- end }}{{- end }}`
+{{- end }}`
 
 const marshalJSONEnum = `{{ if .repeated -}}
 	if len(orig.{{ .fieldName }}) > 0 {
@@ -93,17 +97,17 @@ func (pf *Field) GenMarshalJSON() string {
 	tf := pf.getTemplateFields()
 	switch pf.Type {
 	case TypeBytes:
-		return template.Execute(template.Parse("marshalJSONBytes", []byte(marshalJSONBytes)), tf)
+		return tmplutil.Execute(tmplutil.Parse("marshalJSONBytes", []byte(marshalJSONBytes)), tf)
 	case TypeMessage:
-		return template.Execute(template.Parse("marshalJSONMessage", []byte(marshalJSONMessage)), tf)
+		return tmplutil.Execute(tmplutil.Parse("marshalJSONMessage", []byte(marshalJSONMessage)), tf)
 	case TypeEnum:
-		return template.Execute(template.Parse("marshalJSONEnum", []byte(marshalJSONEnum)), tf)
+		return tmplutil.Execute(tmplutil.Parse("marshalJSONEnum", []byte(marshalJSONEnum)), tf)
 	case TypeDouble, TypeFloat,
 		TypeFixed64, TypeSFixed64, TypeFixed32, TypeSFixed32,
 		TypeInt32, TypeInt64, TypeUint32, TypeUint64,
 		TypeSInt32, TypeSInt64,
 		TypeBool, TypeString:
-		return template.Execute(template.Parse("marshalJSONPrimitive", []byte(marshalJSONPrimitive)), tf)
+		return tmplutil.Execute(tmplutil.Parse("marshalJSONPrimitive", []byte(marshalJSONPrimitive)), tf)
 	}
 	panic(fmt.Sprintf("unhandled case %T", pf.Type))
 }

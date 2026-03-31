@@ -16,6 +16,15 @@ type Entity struct {
 	attributes pcommon.Map
 }
 
+func NewEntity(t string) Entity {
+	ref := NewEntityRef()
+	ref.SetType(t)
+	return Entity{
+		ref:        ref,
+		attributes: pcommon.NewMap(),
+	}
+}
+
 func (e Entity) Type() string {
 	return e.ref.Type()
 }
@@ -28,18 +37,29 @@ func (e Entity) SetSchemaURL(schemaURL string) {
 	e.ref.SetSchemaUrl(schemaURL)
 }
 
-// IDAttributes returns an EntityAttributeMap for managing the entity's id attributes.
-func (e Entity) IDAttributes() EntityAttributeMap {
+// IdentifyingAttributes returns an EntityAttributeMap for managing the entity's identifying attributes.
+func (e Entity) IdentifyingAttributes() EntityAttributeMap {
 	return EntityAttributeMap{
 		keys:       e.ref.IdKeys(),
 		attributes: e.attributes,
 	}
 }
 
-// DescriptionAttributes returns an EntityAttributeMap for managing the entity's description attributes.
-func (e Entity) DescriptionAttributes() EntityAttributeMap {
+// DescriptiveAttributes returns an EntityAttributeMap for managing the entity's descriptive attributes.
+func (e Entity) DescriptiveAttributes() EntityAttributeMap {
 	return EntityAttributeMap{
 		keys:       e.ref.DescriptionKeys(),
 		attributes: e.attributes,
+	}
+}
+
+// CopyToResource moves the entity to the provided resource by overriding existing entities and attributes.
+func (e Entity) CopyToResource(res pcommon.Resource) {
+	ent := ResourceEntities(res).PutEmpty(e.Type())
+	for k, v := range e.IdentifyingAttributes().All() {
+		v.CopyTo(ent.IdentifyingAttributes().PutEmpty(k))
+	}
+	for k, v := range e.DescriptiveAttributes().All() {
+		v.CopyTo(ent.DescriptiveAttributes().PutEmpty(k))
 	}
 }

@@ -35,6 +35,8 @@ type FieldInterface interface {
 
 	GenOneOfMessages() string
 
+	GenTest() string
+
 	GoType() string
 
 	DefaultValue() string
@@ -105,6 +107,17 @@ func (pf *Field) DefaultValue() string {
 	}
 }
 
+func (pf *Field) GenTest() string {
+	if pf.Repeated {
+		return "orig." + pf.GetName() + " = " + pf.TestValue()
+	}
+
+	if pf.Type != TypeMessage && pf.Nullable {
+		return "orig.Set" + pf.GetName() + "(" + pf.TestValue() + ")"
+	}
+	return "orig." + pf.GetName() + " = " + pf.TestValue()
+}
+
 func (pf *Field) TestValue() string {
 	if pf.Repeated {
 		return pf.MemberGoType() + "{" + pf.DefaultValue() + ", " + pf.rawTestValue() + "}"
@@ -171,7 +184,10 @@ func (pf *Field) MemberGoType() string {
 	if pf.Repeated {
 		return "[]" + ptrGoType()
 	}
-	return ptrGoType()
+	if pf.Type == TypeMessage {
+		return ptrGoType()
+	}
+	return pf.GoType()
 }
 
 func (pf *Field) GenMessageField() string {
@@ -218,7 +234,6 @@ func genProtoTag(fieldNumber uint32, wt WireType) []string {
 	i := 0
 	keybuf := make([]byte, 0)
 	for i = 0; x > 127; i++ {
-		//nolint:gosec
 		keybuf = append(keybuf, 0x80|uint8(x&0x7F))
 		x >>= 7
 	}

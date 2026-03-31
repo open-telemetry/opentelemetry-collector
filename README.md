@@ -184,11 +184,12 @@ For more information about the maintainer role, see the [community repository](h
 For more information about the approver role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#approver).
 
 In addition to what is described at the organization-level, the SIG Collector requires all core approvers to take part in rotating
-the role of the [release manager](./docs/release.md#release-manager).
+the role of the [release manager](./docs/release.md#release-managers).
 
 ### Triagers
 
 - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
+- [Arthur Silva Sens](https://github.com/ArthurSens), Grafana Labs
 - [Chao Weng](https://github.com/sincejune), AppDynamics
 - [Vihas Makwana](https://github.com/VihasMakwana), Elastic
 - Actively seeking contributors to triage issues

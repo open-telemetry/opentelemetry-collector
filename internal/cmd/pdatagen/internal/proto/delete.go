@@ -4,23 +4,23 @@
 package proto // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/proto"
 
 import (
-	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/tmplutil"
 )
 
 const deleteOther = `{{ if ne .oneOfGroup "" -}}
-	if UseProtoPooling.IsEnabled() {
+	if metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 		ov.{{ .fieldName }} = {{ .defaultValue }}
 		ProtoPool{{ .oneOfMessageName }}.Put(ov)
 	}
-{{ end }}`
+{{- end -}}`
 
 const deleteMessage = `{{ if .repeated -}}
 	for i := range orig.{{ .fieldName }} {
 	{{ if .nullable -}}
 		Delete{{ .messageName }}(orig.{{ .fieldName }}[i], true)
-	{{- else -}}
+	{{ else -}}
 		Delete{{ .messageName }}(&orig.{{ .fieldName }}[i], false)
-	{{- end }}
+	{{- end -}}
 	}
 {{- else if ne .oneOfGroup "" -}}
 	Delete{{ .messageName }}(ov.{{ .fieldName }}, true)
@@ -30,16 +30,16 @@ const deleteMessage = `{{ if .repeated -}}
 	Delete{{ .messageName }}(orig.{{ .fieldName }}, true)
 {{- else -}}
 	Delete{{ .messageName }}(&orig.{{ .fieldName }}, false)
-{{- end }}
+{{- end -}}
 `
 
 func (pf *Field) GenDelete() string {
 	tf := pf.getTemplateFields()
 	if pf.Type == TypeMessage {
-		return template.Execute(template.Parse("deleteMessage", []byte(deleteMessage)), tf)
+		return tmplutil.Execute(tmplutil.Parse("deleteMessage", []byte(deleteMessage)), tf)
 	}
 	if pf.OneOfGroup != "" {
-		return template.Execute(template.Parse("deleteOther", []byte(deleteOther)), tf)
+		return tmplutil.Execute(tmplutil.Parse("deleteOther", []byte(deleteOther)), tf)
 	}
 	return ""
 }

@@ -4,7 +4,8 @@
 package main
 
 import (
-	"log"
+	"fmt"
+	"os"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -20,7 +21,7 @@ func main() {
 	info := component.BuildInfo{
 		Command:     "otelcorecol",
 		Description: "Local OpenTelemetry Collector binary, testing only.",
-		Version:     "0.140.0-dev",
+		Version:     "0.148.0-dev",
 	}
 
 	set := otelcol.CollectorSettings{
@@ -38,24 +39,25 @@ func main() {
 			},
 		},
 		ProviderModules: map[string]string{
-			envprovider.NewFactory().Create(confmap.ProviderSettings{}).Scheme():   "go.opentelemetry.io/collector/confmap/provider/envprovider v1.46.0",
-			fileprovider.NewFactory().Create(confmap.ProviderSettings{}).Scheme():  "go.opentelemetry.io/collector/confmap/provider/fileprovider v1.46.0",
-			httpprovider.NewFactory().Create(confmap.ProviderSettings{}).Scheme():  "go.opentelemetry.io/collector/confmap/provider/httpprovider v1.46.0",
-			httpsprovider.NewFactory().Create(confmap.ProviderSettings{}).Scheme(): "go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.46.0",
-			yamlprovider.NewFactory().Create(confmap.ProviderSettings{}).Scheme():  "go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.46.0",
+			envprovider.NewFactory().Create(confmap.ProviderSettings{}).Scheme():   "go.opentelemetry.io/collector/confmap/provider/envprovider v1.54.0",
+			fileprovider.NewFactory().Create(confmap.ProviderSettings{}).Scheme():  "go.opentelemetry.io/collector/confmap/provider/fileprovider v1.54.0",
+			httpprovider.NewFactory().Create(confmap.ProviderSettings{}).Scheme():  "go.opentelemetry.io/collector/confmap/provider/httpprovider v1.54.0",
+			httpsprovider.NewFactory().Create(confmap.ProviderSettings{}).Scheme(): "go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.54.0",
+			yamlprovider.NewFactory().Create(confmap.ProviderSettings{}).Scheme():  "go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.54.0",
 		},
 		ConverterModules: []string{},
 	}
 
 	if err := run(set); err != nil {
-		log.Fatal(err)
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 }
 
 func runInteractive(params otelcol.CollectorSettings) error {
 	cmd := otelcol.NewCommand(params)
 	if err := cmd.Execute(); err != nil {
-		log.Fatalf("collector server run finished with error: %v", err)
+		return err
 	}
 
 	return nil

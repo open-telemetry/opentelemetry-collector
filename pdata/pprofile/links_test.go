@@ -38,7 +38,7 @@ func TestSetLink(t *testing.T) {
 	idx, err = SetLink(table, l2)
 	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, int32(table.Len()-1), idx) //nolint:gosec // G115
+	assert.Equal(t, int32(table.Len()-1), idx)
 
 	// Set an existing link
 	idx, err = SetLink(table, l)
@@ -49,7 +49,7 @@ func TestSetLink(t *testing.T) {
 	idx, err = SetLink(table, l2)
 	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, int32(table.Len()-1), idx) //nolint:gosec // G115
+	assert.Equal(t, int32(table.Len()-1), idx)
 }
 
 func BenchmarkSetLink(b *testing.B) {

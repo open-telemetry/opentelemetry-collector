@@ -17,16 +17,17 @@ import (
 
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/metadata"
 )
 
 func TestCopyNumberDataPoint(t *testing.T) {
 	for name, src := range genTestEncodingValuesNumberDataPoint() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
-				prevPooling := UseProtoPooling.IsEnabled()
-				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				prevPooling := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), pooling))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prevPooling))
 				}()
 
 				dest := NewNumberDataPoint()
@@ -102,10 +103,10 @@ func TestMarshalAndUnmarshalJSONNumberDataPoint(t *testing.T) {
 	for name, src := range genTestEncodingValuesNumberDataPoint() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
-				prevPooling := UseProtoPooling.IsEnabled()
-				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				prevPooling := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), pooling))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prevPooling))
 				}()
 
 				stream := json.BorrowStream(nil)
@@ -146,10 +147,10 @@ func TestMarshalAndUnmarshalProtoNumberDataPoint(t *testing.T) {
 	for name, src := range genTestEncodingValuesNumberDataPoint() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
-				prevPooling := UseProtoPooling.IsEnabled()
-				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				prevPooling := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), pooling))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prevPooling))
 				}()
 
 				buf := make([]byte, src.SizeProto())
@@ -196,9 +197,8 @@ func genTestFailingUnmarshalProtoValuesNumberDataPoint() map[string][]byte {
 		"TimeUnixNano/wrong_wire_type":      {0x1c},
 		"TimeUnixNano/missing_value":        {0x19},
 
-		"AsDouble/wrong_wire_type": {0x24},
-		"AsDouble/missing_value":   {0x21},
-
+		"AsDouble/wrong_wire_type":  {0x24},
+		"AsDouble/missing_value":    {0x21},
 		"AsInt/wrong_wire_type":     {0x34},
 		"AsInt/missing_value":       {0x31},
 		"Exemplars/wrong_wire_type": {0x2c},
@@ -215,10 +215,9 @@ func genTestEncodingValuesNumberDataPoint() map[string]*NumberDataPoint {
 		"StartTimeUnixNano/test": {StartTimeUnixNano: uint64(13)},
 		"TimeUnixNano/test":      {TimeUnixNano: uint64(13)},
 		"AsDouble/default":       {Value: &NumberDataPoint_AsDouble{AsDouble: float64(0)}},
-		"AsDouble/test":          {Value: &NumberDataPoint_AsDouble{AsDouble: float64(3.1415926)}},
-		"AsInt/default":          {Value: &NumberDataPoint_AsInt{AsInt: int64(0)}},
-		"AsInt/test":             {Value: &NumberDataPoint_AsInt{AsInt: int64(13)}},
-		"Exemplars/test":         {Exemplars: []Exemplar{{}, *GenTestExemplar()}},
-		"Flags/test":             {Flags: uint32(13)},
+		"AsDouble/test":          {Value: &NumberDataPoint_AsDouble{AsDouble: float64(3.1415926)}}, "AsInt/default": {Value: &NumberDataPoint_AsInt{AsInt: int64(0)}},
+		"AsInt/test":     {Value: &NumberDataPoint_AsInt{AsInt: int64(13)}},
+		"Exemplars/test": {Exemplars: []Exemplar{{}, *GenTestExemplar()}},
+		"Flags/test":     {Flags: uint32(13)},
 	}
 }

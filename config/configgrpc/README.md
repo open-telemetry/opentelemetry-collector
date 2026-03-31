@@ -35,7 +35,7 @@ Example:
 
 ```yaml
 exporters:
-  otlp:
+  otlp_grpc:
     endpoint: otelcol2:55690
     auth:
       authenticator: some-authenticator-extension
@@ -86,7 +86,7 @@ The following table summarizes the results, including some additional columns co
 
 Compression ratios will vary in practice as they are highly dependent on the data's information entropy. Compression rates are dependent on the speed of the CPU, and the size of payloads being compressed: smaller payloads compress at slower rates relative to larger payloads, which are able to amortize fixed computation costs over more bytes.
 
-`gzip` is the only required compression algorithm required for [OTLP servers](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md#protocol-details), and is a natural first choice. It is not as fast as `snappy`, but achieves better compression ratios and has reasonable performance. If your collector is CPU bound and your OTLP server supports it, you may benefit from using `snappy` compression. If your collector is CPU bound and has a very fast network link, you may benefit from disabling compression, which is the default.
+`gzip` is the only required compression algorithm required for [OTLP servers](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md), and is a natural first choice. It is not as fast as `snappy`, but achieves better compression ratios and has reasonable performance. If your collector is CPU bound and your OTLP server supports it, you may benefit from using `snappy` compression. If your collector is CPU bound and has a very fast network link, you may benefit from disabling compression, which is the default.
 
 ## Server Configuration
 

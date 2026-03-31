@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.18.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"go.opentelemetry.io/collector/component"
 )

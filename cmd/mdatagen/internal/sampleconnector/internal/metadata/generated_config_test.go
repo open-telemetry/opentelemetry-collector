@@ -27,11 +27,34 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					DefaultMetric:            MetricConfig{Enabled: true},
-					DefaultMetricToBeRemoved: MetricConfig{Enabled: true},
-					MetricInputType:          MetricConfig{Enabled: true},
-					OptionalMetric:           MetricConfig{Enabled: true},
-					OptionalMetricEmptyUnit:  MetricConfig{Enabled: true},
+					DefaultMetric: DefaultMetricMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []DefaultMetricMetricAttributeKey{DefaultMetricMetricAttributeKeyStringAttr, DefaultMetricMetricAttributeKeyOverriddenIntAttr, DefaultMetricMetricAttributeKeyEnumAttr, DefaultMetricMetricAttributeKeySliceAttr, DefaultMetricMetricAttributeKeyMapAttr},
+					},
+					DefaultMetricToBeRemoved: DefaultMetricToBeRemovedMetricConfig{
+						Enabled: true,
+					},
+					MetricInputType: MetricInputTypeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MetricInputTypeMetricAttributeKey{MetricInputTypeMetricAttributeKeyStringAttr, MetricInputTypeMetricAttributeKeyOverriddenIntAttr, MetricInputTypeMetricAttributeKeyEnumAttr, MetricInputTypeMetricAttributeKeySliceAttr, MetricInputTypeMetricAttributeKeyMapAttr},
+					},
+					OptionalMetric: OptionalMetricMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OptionalMetricMetricAttributeKey{OptionalMetricMetricAttributeKeyStringAttr, OptionalMetricMetricAttributeKeyBooleanAttr, OptionalMetricMetricAttributeKeyBooleanAttr2},
+					},
+					OptionalMetricEmptyUnit: OptionalMetricEmptyUnitMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OptionalMetricEmptyUnitMetricAttributeKey{OptionalMetricEmptyUnitMetricAttributeKeyStringAttr, OptionalMetricEmptyUnitMetricAttributeKeyBooleanAttr},
+					},
+					ReaggregateMetric: ReaggregateMetricMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []ReaggregateMetricMetricAttributeKey{ReaggregateMetricMetricAttributeKeyStringAttr, ReaggregateMetricMetricAttributeKeyBooleanAttr},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					MapResourceAttr:                  ResourceAttributeConfig{Enabled: true},
@@ -49,11 +72,34 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					DefaultMetric:            MetricConfig{Enabled: false},
-					DefaultMetricToBeRemoved: MetricConfig{Enabled: false},
-					MetricInputType:          MetricConfig{Enabled: false},
-					OptionalMetric:           MetricConfig{Enabled: false},
-					OptionalMetricEmptyUnit:  MetricConfig{Enabled: false},
+					DefaultMetric: DefaultMetricMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []DefaultMetricMetricAttributeKey{DefaultMetricMetricAttributeKeyStringAttr, DefaultMetricMetricAttributeKeyOverriddenIntAttr, DefaultMetricMetricAttributeKeyEnumAttr, DefaultMetricMetricAttributeKeySliceAttr, DefaultMetricMetricAttributeKeyMapAttr},
+					},
+					DefaultMetricToBeRemoved: DefaultMetricToBeRemovedMetricConfig{
+						Enabled: false,
+					},
+					MetricInputType: MetricInputTypeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MetricInputTypeMetricAttributeKey{MetricInputTypeMetricAttributeKeyStringAttr, MetricInputTypeMetricAttributeKeyOverriddenIntAttr, MetricInputTypeMetricAttributeKeyEnumAttr, MetricInputTypeMetricAttributeKeySliceAttr, MetricInputTypeMetricAttributeKeyMapAttr},
+					},
+					OptionalMetric: OptionalMetricMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OptionalMetricMetricAttributeKey{OptionalMetricMetricAttributeKeyStringAttr, OptionalMetricMetricAttributeKeyBooleanAttr, OptionalMetricMetricAttributeKeyBooleanAttr2},
+					},
+					OptionalMetricEmptyUnit: OptionalMetricEmptyUnitMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []OptionalMetricEmptyUnitMetricAttributeKey{OptionalMetricEmptyUnitMetricAttributeKeyStringAttr, OptionalMetricEmptyUnitMetricAttributeKeyBooleanAttr},
+					},
+					ReaggregateMetric: ReaggregateMetricMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []ReaggregateMetricMetricAttributeKey{ReaggregateMetricMetricAttributeKeyStringAttr, ReaggregateMetricMetricAttributeKeyBooleanAttr},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					MapResourceAttr:                  ResourceAttributeConfig{Enabled: false},
@@ -71,7 +117,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(DefaultMetricMetricConfig{}, DefaultMetricToBeRemovedMetricConfig{}, MetricInputTypeMetricConfig{}, OptionalMetricMetricConfig{}, OptionalMetricEmptyUnitMetricConfig{}, ReaggregateMetricMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

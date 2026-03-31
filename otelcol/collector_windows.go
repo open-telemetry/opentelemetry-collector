@@ -10,6 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"slices"
 	"time"
 
 	"go.uber.org/zap"
@@ -18,8 +19,6 @@ import (
 	"golang.org/x/sys/windows/svc/eventlog"
 
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/service"
-	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 type windowsService struct {
@@ -93,14 +92,19 @@ func (s *windowsService) start(elog *eventlog.Log, colErrorChannel chan error) e
 		return err
 	}
 
-	// The logging options need to be in place before the collector Run method is called
-	// since the telemetry creates the logger at the time of the Run method call.
-	// However, the zap.WrapCore function needs to read the serviceConfig to determine
-	// if the Windows Event Log should be used, however, the serviceConfig is also
-	// only read at the time of the Run method call. To work around this, we pass the
-	// serviceConfig as a pointer to the logging options, and then read its value
-	// when the zap.Logger is created by the telemetry.
-	s.col.set.LoggingOptions = loggingOptionsWithEventLogCore(elog, &s.col.serviceConfig, s.col.set.LoggingOptions)
+	// Override the Zap logger to write to the Windows Event Log
+	// if no file output is specified.
+	s.col.buildZapLogger = func(cfg zap.Config, opts ...zap.Option) (*zap.Logger, error) {
+		for _, output := range cfg.OutputPaths {
+			if output != "stdout" && output != "stderr" {
+				// A file has been specified in the configuration,
+				// so do not use the Windows Event Log.
+				return cfg.Build(opts...)
+			}
+		}
+		opts = slices.Insert(opts, 0, zap.WrapCore(withWindowsCore(elog)))
+		return cfg.Build(opts...)
+	}
 
 	// col.Run blocks until receiving a SIGTERM signal, so needs to be started
 	// asynchronously, but it will exit early if an error occurs on startup
@@ -137,20 +141,6 @@ func openEventLog(serviceName string) (*eventlog.Log, error) {
 	}
 
 	return elog, nil
-}
-
-func loggingOptionsWithEventLogCore(
-	elog *eventlog.Log,
-	serviceConfig **service.Config,
-	userOptions []zap.Option,
-) []zap.Option {
-	return append(
-		// The order below must be preserved - see PR #11051
-		// The event log core must run *after* any user provided options, so it
-		// must be the first option in this list.
-		[]zap.Option{zap.WrapCore(withWindowsCore(elog, serviceConfig))},
-		userOptions...,
-	)
 }
 
 var _ zapcore.Core = (*windowsEventLogCore)(nil)
@@ -212,20 +202,8 @@ func (w windowsEventLogCore) Sync() error {
 	return w.core.Sync()
 }
 
-func withWindowsCore(elog *eventlog.Log, serviceConfig **service.Config) func(zapcore.Core) zapcore.Core {
+func withWindowsCore(elog *eventlog.Log) func(zapcore.Core) zapcore.Core {
 	return func(core zapcore.Core) zapcore.Core {
-		if serviceConfig != nil && *serviceConfig != nil {
-			// TODO remove the dependency on otelconftelemetry
-			//
-			// https://github.com/open-telemetry/opentelemetry-collector/issues/14002
-			for _, output := range (*serviceConfig).Telemetry.(*otelconftelemetry.Config).Logs.OutputPaths {
-				if output != "stdout" && output != "stderr" {
-					// A log file was specified in the configuration, so we should not use the Windows Event Log
-					return core
-				}
-			}
-		}
-
 		// Use the Windows Event Log
 		encoderConfig := zap.NewProductionEncoderConfig()
 		encoderConfig.LineEnding = "\r\n"

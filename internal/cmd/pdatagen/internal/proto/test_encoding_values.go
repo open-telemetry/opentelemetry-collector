@@ -7,12 +7,18 @@ import (
 	"slices"
 	"strings"
 
-	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/tmplutil"
 )
 
 const encodingTestValuesScalar = `{{ if ne .oneOfGroup "" -}}
 "{{ .fieldName }}/default": { {{ .oneOfGroup }}: &{{ .oneOfMessageName }}{{ "{" }}{{ .fieldName }}: {{ .defaultValue }}} },
 "{{ .fieldName }}/test": { {{ .oneOfGroup }}: &{{ .oneOfMessageName }}{{ "{" }}{{ .fieldName }}: {{ .testValue }}} },
+{{- else if .nullable }}
+"{{ .fieldName }}/test": func () *{{ .parentMessageName }} { 
+	ms := New{{ .parentMessageName }}() 
+	ms.Set{{ .fieldName }}({{ .testValue }})
+	return ms
+}(),
 {{- else }}
 "{{ .fieldName }}/test": { {{ .fieldName }}: {{ .testValue }} },
 {{- end }}`
@@ -28,14 +34,14 @@ func (pf *Field) GenTestEncodingValues() string {
 	tf := pf.getTemplateFields()
 	switch pf.Type {
 	case TypeMessage:
-		return template.Execute(template.Parse("encodingTestValuesMessage", []byte(encodingTestValuesMessage)), tf)
+		return tmplutil.Execute(tmplutil.Parse("encodingTestValuesMessage", []byte(encodingTestValuesMessage)), tf)
 	case
 		TypeDouble, TypeFloat,
 		TypeFixed64, TypeSFixed64, TypeFixed32, TypeSFixed32,
 		TypeInt32, TypeInt64, TypeUint32, TypeUint64,
 		TypeSInt32, TypeSInt64,
 		TypeBool, TypeString, TypeBytes, TypeEnum:
-		return template.Execute(template.Parse("encodingTestValuesScalar", []byte(encodingTestValuesScalar)), tf)
+		return tmplutil.Execute(tmplutil.Parse("encodingTestValuesScalar", []byte(encodingTestValuesScalar)), tf)
 	}
 	return ""
 }
@@ -55,7 +61,7 @@ func (pf *Field) GenTestFailingUnmarshalProtoValues() string {
 		TypeInt32, TypeInt64, TypeUint32, TypeUint64,
 		TypeSInt32, TypeSInt64,
 		TypeBool, TypeString, TypeBytes, TypeEnum:
-		return template.Execute(template.Parse("failingUnmarshalProtoValuesScalar", []byte(failingUnmarshalProtoValuesScalar)), tf)
+		return tmplutil.Execute(tmplutil.Parse("failingUnmarshalProtoValuesScalar", []byte(failingUnmarshalProtoValuesScalar)), tf)
 	}
 	return ""
 }

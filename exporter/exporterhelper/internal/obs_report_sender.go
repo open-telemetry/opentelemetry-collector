@@ -5,19 +5,26 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
+	otelcodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
+	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
 
 const (
@@ -34,6 +41,9 @@ const (
 	ItemsSent = "items.sent"
 	// ItemsFailed used to track number of items that failed to be sent by exporters.
 	ItemsFailed = "items.failed"
+
+	// ErrorPermanentKey indicates whether the error is permanent (non-retryable).
+	ErrorPermanentKey = "error.permanent"
 )
 
 type obsReportSender[K request.Request] struct {
@@ -78,6 +88,9 @@ func newObsReportSender[K request.Request](set exporter.Settings, signal pipelin
 	case pipeline.SignalLogs:
 		or.itemsSentInst = telemetryBuilder.ExporterSentLogRecords
 		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedLogRecords
+	case xpipeline.SignalProfiles:
+		or.itemsSentInst = telemetryBuilder.ExporterSentProfileSamples
+		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedProfileSamples
 	}
 
 	return or, nil
@@ -105,16 +118,16 @@ func (ors *obsReportSender[K]) startOp(ctx context.Context) context.Context {
 }
 
 // EndOp completes the export operation that was started with StartOp.
-func (ors *obsReportSender[K]) endOp(ctx context.Context, numLogRecords int, err error) {
-	numSent, numFailedToSend := toNumItems(numLogRecords, err)
+func (ors *obsReportSender[K]) endOp(ctx context.Context, numRecords int, err error) {
+	numSent, numFailedToSend := toNumItems(numRecords, err)
 
-	// No metrics recorded for profiles.
 	if ors.itemsSentInst != nil {
 		ors.itemsSentInst.Add(ctx, numSent, ors.metricAttr)
 	}
-	// No metrics recorded for profiles.
-	if ors.itemsFailedInst != nil {
-		ors.itemsFailedInst.Add(ctx, numFailedToSend, ors.metricAttr)
+
+	if ors.itemsFailedInst != nil && numFailedToSend > 0 {
+		withFailedAttrs := metric.WithAttributeSet(extractFailureAttributes(err))
+		ors.itemsFailedInst.Add(ctx, numFailedToSend, ors.metricAttr, withFailedAttrs)
 	}
 
 	span := trace.SpanFromContext(ctx)
@@ -126,7 +139,7 @@ func (ors *obsReportSender[K]) endOp(ctx context.Context, numLogRecords int, err
 			attribute.Int64(ItemsFailed, numFailedToSend),
 		)
 		if err != nil {
-			span.SetStatus(codes.Error, err.Error())
+			span.SetStatus(otelcodes.Error, err.Error())
 		}
 	}
 }
@@ -136,4 +149,39 @@ func toNumItems(numExportedItems int, err error) (int64, int64) {
 		return 0, int64(numExportedItems)
 	}
 	return int64(numExportedItems), 0
+}
+
+func extractFailureAttributes(err error) attribute.Set {
+	if err == nil {
+		return attribute.NewSet()
+	}
+
+	attrs := []attribute.KeyValue{}
+
+	errorType := determineErrorType(err)
+	attrs = append(attrs, attribute.String(string(semconv.ErrorTypeKey), errorType))
+
+	isPermanent := consumererror.IsPermanent(err)
+	attrs = append(attrs, attribute.Bool(ErrorPermanentKey, isPermanent))
+
+	return attribute.NewSet(attrs...)
+}
+
+func determineErrorType(err error) string {
+	if experr.IsShutdownErr(err) {
+		return "Shutdown"
+	}
+
+	if errors.Is(err, context.Canceled) {
+		return "Canceled"
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return "Deadline_Exceeded"
+	}
+
+	if st, ok := status.FromError(err); ok && st.Code() != codes.OK {
+		return st.Code().String()
+	}
+
+	return "_OTHER"
 }

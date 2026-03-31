@@ -69,8 +69,8 @@ func TestRelativePath(t *testing.T) {
 	retMap, err := ret.AsConf()
 	require.NoError(t, err)
 	expectedMap := confmap.NewFromStringMap(map[string]any{
-		"processors::testprocessor": nil,
-		"exporters::otlp::endpoint": "localhost:4317",
+		"processors::testprocessor":      nil,
+		"exporters::otlp_grpc::endpoint": "localhost:4317",
 	})
 	assert.Equal(t, expectedMap, retMap)
 	assert.NoError(t, fp.Shutdown(context.Background()))
@@ -83,8 +83,8 @@ func TestAbsolutePath(t *testing.T) {
 	retMap, err := ret.AsConf()
 	require.NoError(t, err)
 	expectedMap := confmap.NewFromStringMap(map[string]any{
-		"processors::testprocessor": nil,
-		"exporters::otlp::endpoint": "localhost:4317",
+		"processors::testprocessor":      nil,
+		"exporters::otlp_grpc::endpoint": "localhost:4317",
 	})
 	assert.Equal(t, expectedMap, retMap)
 	assert.NoError(t, fp.Shutdown(context.Background()))

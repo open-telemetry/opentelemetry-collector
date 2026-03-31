@@ -6,7 +6,7 @@ package proto // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/int
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/tmplutil"
 )
 
 const sizeProtoI8 = `{{ if .repeated -}}
@@ -15,12 +15,16 @@ const sizeProtoI8 = `{{ if .repeated -}}
 		l *= 8
 		n+= {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 	}
-{{- else if not .nullable -}}
-	if orig.{{ .fieldName }} != 0 {
+{{- else if ne .oneOfGroup "" }}
+		n+= {{ add .protoTagSize 8 }}
+{{- else }}
+	{{- if not .nullable -}}
+	if orig.{{ .fieldName }} != {{ .defaultValue }} {
+	{{- else -}}
+	if orig.Has{{ .fieldName }}() {
+	{{- end }}
 		n+= {{ add .protoTagSize 8 }}
 	}
-{{- else -}}
-	n+= {{ add .protoTagSize 8 }}
 {{- end }}`
 
 const sizeProtoI4 = `{{ if .repeated -}}
@@ -29,12 +33,16 @@ const sizeProtoI4 = `{{ if .repeated -}}
 		l *= 4
 		n+= + {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 	}
-{{- else if not .nullable -}}
-	if orig.{{ .fieldName }} != 0 {
+{{- else if ne .oneOfGroup "" }}
+		n+= {{ add .protoTagSize 4 }}
+{{- else }}
+	{{- if not .nullable -}}
+	if orig.{{ .fieldName }} != {{ .defaultValue }} {
+	{{- else -}}
+	if orig.Has{{ .fieldName }}() {
+	{{- end }}
 		n+= {{ add .protoTagSize 4 }}
 	}
-{{- else -}}
-	n+= {{ add .protoTagSize 4 }}
 {{- end }}`
 
 const sizeProtoBool = `{{ if .repeated -}}
@@ -42,15 +50,19 @@ const sizeProtoBool = `{{ if .repeated -}}
 	if l > 0 {
 		n+= + {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 	}
-{{- else if not .nullable -}}
-	if orig.{{ .fieldName }} {
+{{- else if ne .oneOfGroup "" }}
+		n+= {{ add .protoTagSize 1 }}
+{{- else -}}
+	{{- if not .nullable -}}
+	if orig.{{ .fieldName }} != {{ .defaultValue }} {
+	{{- else -}}
+	if orig.Has{{ .fieldName }}() {
+	{{- end }}
 		n+= {{ add .protoTagSize 1 }}
 	}
-{{- else -}}
-	n+= {{ add .protoTagSize 1 }}
 {{- end }}`
 
-const sizeProtoVarint = `{{ if .repeated -}}
+const sizeProtoVarint = `{{ if .repeated }}
 	if len(orig.{{ .fieldName }}) > 0 {
 		l = 0
 		for _, e := range orig.{{ .fieldName }} {
@@ -58,12 +70,16 @@ const sizeProtoVarint = `{{ if .repeated -}}
 		}
 		n+= {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 	}
-{{- else if not .nullable -}}
-	if orig.{{ .fieldName }} != 0 {
+{{- else if ne .oneOfGroup "" }}
+		n+= {{ .protoTagSize }} + proto.Sov(uint64(orig.{{ .fieldName }}))
+{{- else }}
+	{{- if not .nullable -}}
+	if orig.{{ .fieldName }} != {{ .defaultValue }} {
+	{{- else -}}
+	if orig.Has{{ .fieldName }}() {
+	{{- end }}
 		n+= {{ .protoTagSize }} + proto.Sov(uint64(orig.{{ .fieldName }}))
 	}
-{{- else -}}
-	n+= {{ .protoTagSize }} + proto.Sov(uint64(orig.{{ .fieldName }}))
 {{- end }}`
 
 const sizeProtoBytesString = `{{ if .repeated -}}
@@ -71,14 +87,14 @@ const sizeProtoBytesString = `{{ if .repeated -}}
 		l = len(s)
 		n+= {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 	}
-{{- else if not .nullable -}}
+{{- else if ne .oneOfGroup "" -}}
+		l = len(orig.{{ .fieldName }})
+		n+= {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
+{{- else }}
 	l = len(orig.{{ .fieldName }})
 	if l > 0 {
 		n+= {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 	}
-{{- else -}}
-	l = len(orig.{{ .fieldName }})
-	n+= {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 {{- end }}`
 
 const sizeProtoMessage = `{{ if .repeated -}}
@@ -104,31 +120,35 @@ const sizeProtoSignedVarint = `{{ if .repeated -}}
 		}
 		n+= {{ .protoTagSize }} + proto.Sov(uint64(l)) + l
 	}
-{{- else if not .nullable -}}
-	if orig.{{ .fieldName }} != 0 {
+{{- else if ne .oneOfGroup "" -}}
+	n+= {{ .protoTagSize }} + proto.Soz(uint64(orig.{{ .fieldName }}))
+{{- else -}}
+	{{- if not .nullable -}}
+	if orig.{{ .fieldName }} != {{ .defaultValue }} {
+	{{- else -}}
+	if orig.Has{{ .fieldName }}() {
+	{{- end }}
 		n+= {{ .protoTagSize }} + proto.Soz(uint64(orig.{{ .fieldName }}))
 	}
-{{- else -}}
-	n+= {{ .protoTagSize }} + proto.Soz(uint64(orig.{{ .fieldName }}))
 {{- end }}`
 
 func (pf *Field) GenSizeProto() string {
 	tf := pf.getTemplateFields()
 	switch pf.Type {
 	case TypeFixed64, TypeSFixed64, TypeDouble:
-		return template.Execute(template.Parse("sizeProtoI8", []byte(sizeProtoI8)), tf)
+		return tmplutil.Execute(tmplutil.Parse("sizeProtoI8", []byte(sizeProtoI8)), tf)
 	case TypeFixed32, TypeSFixed32, TypeFloat:
-		return template.Execute(template.Parse("sizeProtoI4", []byte(sizeProtoI4)), tf)
+		return tmplutil.Execute(tmplutil.Parse("sizeProtoI4", []byte(sizeProtoI4)), tf)
 	case TypeInt32, TypeInt64, TypeUint32, TypeUint64, TypeEnum:
-		return template.Execute(template.Parse("sizeProtoVarint", []byte(sizeProtoVarint)), tf)
+		return tmplutil.Execute(tmplutil.Parse("sizeProtoVarint", []byte(sizeProtoVarint)), tf)
 	case TypeBool:
-		return template.Execute(template.Parse("sizeProtoBool", []byte(sizeProtoBool)), tf)
+		return tmplutil.Execute(tmplutil.Parse("sizeProtoBool", []byte(sizeProtoBool)), tf)
 	case TypeBytes, TypeString:
-		return template.Execute(template.Parse("sizeProtoBytesString", []byte(sizeProtoBytesString)), tf)
+		return tmplutil.Execute(tmplutil.Parse("sizeProtoBytesString", []byte(sizeProtoBytesString)), tf)
 	case TypeMessage:
-		return template.Execute(template.Parse("sizeProtoMessage", []byte(sizeProtoMessage)), tf)
+		return tmplutil.Execute(tmplutil.Parse("sizeProtoMessage", []byte(sizeProtoMessage)), tf)
 	case TypeSInt32, TypeSInt64:
-		return template.Execute(template.Parse("sizeProtoSignedVarint", []byte(sizeProtoSignedVarint)), tf)
+		return tmplutil.Execute(tmplutil.Parse("sizeProtoSignedVarint", []byte(sizeProtoSignedVarint)), tf)
 	}
 	panic(fmt.Sprintf("unhandled case %T", pf.Type))
 }

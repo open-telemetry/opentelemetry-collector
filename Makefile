@@ -12,11 +12,15 @@ ALL_SRC := $(shell find . -name '*.go' \
 ALL_DOC := $(shell find . \( -name "*.md" -o -name "*.yaml" \) \
                                 -type f | sort)
 
+# All Markdown files. Used in markdownlint.
+ALL_MD := $(shell find . -name "*.md" -type f | sort)
+
 # ALL_MODULES includes ./* dirs (excludes . dir)
 ALL_MODULES := $(shell find . -mindepth 2 \
 				-type f \
 				-name "go.mod" \
 				-not -path "./internal/tools/*" \
+				-not -path "./cmd/builder/internal/tmp/init/*" \
 				-exec dirname {} \; | sort )
 
 CMD?=
@@ -37,7 +41,7 @@ endef
 .DEFAULT_GOAL := all
 
 .PHONY: all
-all: checklicense checkdoc misspell goimpi goporto multimod-verify golint gotest
+all: checklicense checkdoc misspell markdownlint goimpi goporto multimod-verify golint gotest
 
 all-modules:
 	@echo $(ALL_MODULES) | tr ' ' '\n' | sort
@@ -81,6 +85,10 @@ for-all:
 .PHONY: golint
 golint:
 	@$(MAKE) for-all-target TARGET="lint"
+
+.PHONY: gomodernize
+gomodernize:
+	@$(MAKE) for-all-target TARGET="modernize"
 
 .PHONY: goimpi
 goimpi:
@@ -129,6 +137,10 @@ checklicense:
 .PHONY: misspell
 misspell:
 	$(GO_TOOL) misspell -error $(ALL_DOC)
+
+.PHONY: markdownlint
+markdownlint:
+	npx -y markdownlint-cli@0.48.0 -c .markdownlint.yaml --ignore-path .markdownlintignore -- $(ALL_MD)
 
 .PHONY: misspell-correction
 misspell-correction:
@@ -180,6 +192,7 @@ ocb:
 genpdata:
 	cd internal/cmd/pdatagen && $(GOCMD) run main.go -C $(SRC_ROOT)
 	$(MAKE) -C pdata fmt
+	cd pdata && $(GO_TOOL) betteralign --generated_files --apply ./... || true
 
 DOCKERCMD ?= docker
 DOCKER_PROTOBUF ?= otel/build-protobuf:0.23.0
@@ -224,7 +237,6 @@ check-contrib:
 .PHONY: generate-contrib
 generate-contrib:
 	@echo -e "\nGenerating files in contrib"
-	$(MAKE) -C $(CONTRIB_PATH) -B install-tools
 	$(MAKE) -C $(CONTRIB_PATH) generate GROUP=all
 
 # Restores contrib to its original state after running check-contrib.

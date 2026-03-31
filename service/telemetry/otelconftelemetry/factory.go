@@ -11,15 +11,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/service/internal/metadata"
 	"go.opentelemetry.io/collector/service/telemetry"
-)
-
-var useLocalHostAsDefaultMetricsAddressFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"telemetry.UseLocalHostAsDefaultMetricsAddress",
-	featuregate.StageBeta,
-	featuregate.WithRegisterFromVersion("v0.111.0"),
-	featuregate.WithRegisterDescription("controls whether default Prometheus metrics server use localhost as the default host for their endpoints"),
 )
 
 // NewFactory creates a new telemetry.Factory that uses otelconf
@@ -36,7 +29,7 @@ func NewFactory() telemetry.Factory {
 
 func createDefaultConfig() component.Config {
 	metricsHost := "localhost"
-	if !useLocalHostAsDefaultMetricsAddressFeatureGate.IsEnabled() {
+	if !metadata.TelemetryUseLocalHostAsDefaultMetricsAddressFeatureGate.IsEnabled() {
 		metricsHost = ""
 	}
 
@@ -51,11 +44,12 @@ func createDefaultConfig() component.Config {
 				Initial:    10,
 				Thereafter: 100,
 			},
-			OutputPaths:       []string{"stderr"},
-			ErrorOutputPaths:  []string{"stderr"},
-			DisableCaller:     false,
-			DisableStacktrace: false,
-			InitialFields:     map[string]any(nil),
+			OutputPaths:        []string{"stderr"},
+			ErrorOutputPaths:   []string{"stderr"},
+			DisableCaller:      false,
+			DisableStacktrace:  false,
+			InitialFields:      map[string]any(nil),
+			DisableZapResource: false,
 		},
 		Metrics: MetricsConfig{
 			Level: configtelemetry.LevelNormal,

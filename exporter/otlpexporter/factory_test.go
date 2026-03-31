@@ -33,9 +33,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 	ocfg, ok := factory.CreateDefaultConfig().(*Config)
 	assert.True(t, ok)
 	assert.Equal(t, configretry.NewDefaultBackOffConfig(), ocfg.RetryConfig)
-	assert.Equal(t, exporterhelper.NewDefaultQueueConfig(), ocfg.QueueConfig)
+	assert.Equal(t, configoptional.Some(exporterhelper.NewDefaultQueueConfig()), ocfg.QueueConfig)
 	assert.Equal(t, exporterhelper.NewDefaultTimeoutConfig(), ocfg.TimeoutConfig)
 	assert.Equal(t, configcompression.TypeGzip, ocfg.ClientConfig.Compression)
+	assert.Equal(t, configgrpc.BalancerName(), ocfg.ClientConfig.BalancerName)
 }
 
 func TestCreateMetrics(t *testing.T) {

@@ -17,16 +17,17 @@ import (
 
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/metadata"
 )
 
 func TestCopyMetric(t *testing.T) {
 	for name, src := range genTestEncodingValuesMetric() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
-				prevPooling := UseProtoPooling.IsEnabled()
-				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				prevPooling := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), pooling))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prevPooling))
 				}()
 
 				dest := NewMetric()
@@ -102,10 +103,10 @@ func TestMarshalAndUnmarshalJSONMetric(t *testing.T) {
 	for name, src := range genTestEncodingValuesMetric() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
-				prevPooling := UseProtoPooling.IsEnabled()
-				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				prevPooling := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), pooling))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prevPooling))
 				}()
 
 				stream := json.BorrowStream(nil)
@@ -146,10 +147,10 @@ func TestMarshalAndUnmarshalProtoMetric(t *testing.T) {
 	for name, src := range genTestEncodingValuesMetric() {
 		for _, pooling := range []bool{true, false} {
 			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
-				prevPooling := UseProtoPooling.IsEnabled()
-				require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), pooling))
+				prevPooling := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), pooling))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(UseProtoPooling.ID(), prevPooling))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prevPooling))
 				}()
 
 				buf := make([]byte, src.SizeProto())
@@ -196,41 +197,33 @@ func genTestFailingUnmarshalProtoValuesMetric() map[string][]byte {
 		"Unit/wrong_wire_type":        {0x1c},
 		"Unit/missing_value":          {0x1a},
 
-		"Gauge/wrong_wire_type": {0x2c},
-		"Gauge/missing_value":   {0x2a},
-
-		"Sum/wrong_wire_type": {0x3c},
-		"Sum/missing_value":   {0x3a},
-
-		"Histogram/wrong_wire_type": {0x4c},
-		"Histogram/missing_value":   {0x4a},
-
+		"Gauge/wrong_wire_type":                {0x2c},
+		"Gauge/missing_value":                  {0x2a},
+		"Sum/wrong_wire_type":                  {0x3c},
+		"Sum/missing_value":                    {0x3a},
+		"Histogram/wrong_wire_type":            {0x4c},
+		"Histogram/missing_value":              {0x4a},
 		"ExponentialHistogram/wrong_wire_type": {0x54},
 		"ExponentialHistogram/missing_value":   {0x52},
-
-		"Summary/wrong_wire_type":  {0x5c},
-		"Summary/missing_value":    {0x5a},
-		"Metadata/wrong_wire_type": {0x64},
-		"Metadata/missing_value":   {0x62},
+		"Summary/wrong_wire_type":              {0x5c},
+		"Summary/missing_value":                {0x5a},
+		"Metadata/wrong_wire_type":             {0x64},
+		"Metadata/missing_value":               {0x62},
 	}
 }
 
 func genTestEncodingValuesMetric() map[string]*Metric {
 	return map[string]*Metric{
-		"empty":                        NewMetric(),
-		"Name/test":                    {Name: "test_name"},
-		"Description/test":             {Description: "test_description"},
-		"Unit/test":                    {Unit: "test_unit"},
-		"Gauge/default":                {Data: &Metric_Gauge{Gauge: &Gauge{}}},
-		"Gauge/test":                   {Data: &Metric_Gauge{Gauge: GenTestGauge()}},
-		"Sum/default":                  {Data: &Metric_Sum{Sum: &Sum{}}},
-		"Sum/test":                     {Data: &Metric_Sum{Sum: GenTestSum()}},
-		"Histogram/default":            {Data: &Metric_Histogram{Histogram: &Histogram{}}},
-		"Histogram/test":               {Data: &Metric_Histogram{Histogram: GenTestHistogram()}},
-		"ExponentialHistogram/default": {Data: &Metric_ExponentialHistogram{ExponentialHistogram: &ExponentialHistogram{}}},
-		"ExponentialHistogram/test":    {Data: &Metric_ExponentialHistogram{ExponentialHistogram: GenTestExponentialHistogram()}},
-		"Summary/default":              {Data: &Metric_Summary{Summary: &Summary{}}},
-		"Summary/test":                 {Data: &Metric_Summary{Summary: GenTestSummary()}},
-		"Metadata/test":                {Metadata: []KeyValue{{}, *GenTestKeyValue()}},
+		"empty":            NewMetric(),
+		"Name/test":        {Name: "test_name"},
+		"Description/test": {Description: "test_description"},
+		"Unit/test":        {Unit: "test_unit"},
+		"Gauge/default":    {Data: &Metric_Gauge{Gauge: &Gauge{}}},
+		"Gauge/test":       {Data: &Metric_Gauge{Gauge: GenTestGauge()}}, "Sum/default": {Data: &Metric_Sum{Sum: &Sum{}}},
+		"Sum/test": {Data: &Metric_Sum{Sum: GenTestSum()}}, "Histogram/default": {Data: &Metric_Histogram{Histogram: &Histogram{}}},
+		"Histogram/test": {Data: &Metric_Histogram{Histogram: GenTestHistogram()}}, "ExponentialHistogram/default": {Data: &Metric_ExponentialHistogram{ExponentialHistogram: &ExponentialHistogram{}}},
+		"ExponentialHistogram/test": {Data: &Metric_ExponentialHistogram{ExponentialHistogram: GenTestExponentialHistogram()}}, "Summary/default": {Data: &Metric_Summary{Summary: &Summary{}}},
+		"Summary/test":  {Data: &Metric_Summary{Summary: GenTestSummary()}},
+		"Metadata/test": {Metadata: []KeyValue{{}, *GenTestKeyValue()}},
 	}
 }

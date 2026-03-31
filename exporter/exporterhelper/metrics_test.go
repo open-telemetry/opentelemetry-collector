@@ -17,11 +17,13 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.opentelemetry.io/otel/trace"
 	nooptrace "go.opentelemetry.io/otel/trace/noop"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
@@ -148,7 +150,7 @@ func TestMetrics_WithPersistentQueue(t *testing.T) {
 			})
 
 			ms := consumertest.MetricsSink{}
-			te, err := NewMetrics(context.Background(), set, &fakeMetricsConfig, ms.ConsumeMetrics, WithQueue(qCfg))
+			te, err := NewMetrics(context.Background(), set, &fakeMetricsConfig, ms.ConsumeMetrics, WithQueue(configoptional.Some(qCfg)))
 			require.NoError(t, err)
 			require.NoError(t, te.Start(context.Background(), host))
 			t.Cleanup(func() { require.NoError(t, te.Shutdown(context.Background())) })
@@ -348,7 +350,9 @@ func checkRecordedMetricsForMetrics(t *testing.T, tt *componenttest.Telemetry, i
 			[]metricdata.DataPoint[int64]{
 				{
 					Attributes: attribute.NewSet(
-						attribute.String(internal.ExporterKey, id.String())),
+						attribute.String(internal.ExporterKey, id.String()),
+						attribute.String(string(semconv.ErrorTypeKey), "_OTHER"),
+						attribute.Bool(internal.ErrorPermanentKey, false)),
 					Value: numPoints,
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())

@@ -8,86 +8,120 @@ The following telemetry is emitted by this component.
 
 ### otelcol_receiver_accepted_log_records
 
-Number of log records successfully pushed into the pipeline. [Alpha]
+Number of log records successfully pushed into the pipeline.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {records} | Sum | Int | true | Alpha |
+| {record} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_accepted_metric_points
 
-Number of metric points successfully pushed into the pipeline. [Alpha]
+Number of metric points successfully pushed into the pipeline.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoints} | Sum | Int | true | Alpha |
+| {datapoint} | Sum | Int | true | Alpha |
+
+### otelcol_receiver_accepted_profile_samples
+
+Number of profile samples successfully pushed into the pipeline.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {sample} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_accepted_spans
 
-Number of spans successfully pushed into the pipeline. [Alpha]
+Number of spans successfully pushed into the pipeline.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {spans} | Sum | Int | true | Alpha |
+| {span} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_failed_log_records
 
-The number of log records that failed to be processed by the receiver due to internal errors. [Alpha]
+The number of log records that failed to be processed by the receiver due to internal errors.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {records} | Sum | Int | true | Alpha |
+| {record} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_failed_metric_points
 
-The number of metric points that failed to be processed by the receiver due to internal errors. [Alpha]
+The number of metric points that failed to be processed by the receiver due to internal errors.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoints} | Sum | Int | true | Alpha |
+| {datapoint} | Sum | Int | true | Alpha |
+
+### otelcol_receiver_failed_profile_samples
+
+The number of profile samples that failed to be processed by the receiver due to internal errors.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {sample} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_failed_spans
 
-The number of spans that failed to be processed by the receiver due to internal errors. [Alpha]
+The number of spans that failed to be processed by the receiver due to internal errors.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {spans} | Sum | Int | true | Alpha |
+| {span} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_refused_log_records
 
-Number of log records that could not be pushed into the pipeline. [Alpha]
+Number of log records that could not be pushed into the pipeline.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {records} | Sum | Int | true | Alpha |
+| {record} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_refused_metric_points
 
-Number of metric points that could not be pushed into the pipeline. [Alpha]
+Number of metric points that could not be pushed into the pipeline.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoints} | Sum | Int | true | Alpha |
+| {datapoint} | Sum | Int | true | Alpha |
+
+### otelcol_receiver_refused_profile_samples
+
+Number of profile samples that could not be pushed into the pipeline.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {sample} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_refused_spans
 
-Number of spans that could not be pushed into the pipeline. [Alpha]
+Number of spans that could not be pushed into the pipeline.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {spans} | Sum | Int | true | Alpha |
+| {span} | Sum | Int | true | Alpha |
 
 ### otelcol_receiver_requests
 
-The number of requests performed. [Alpha]
+The number of requests performed.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {requests} | Sum | Int | true | Alpha |
+| {request} | Sum | Int | true | Alpha |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | outcome | The outcome of receiver requests | Str: ``success``, ``refused``, ``failure`` |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `receiverhelper.newReceiverMetrics` | alpha | Controls whether receivers emit new metrics and span attributes to distinguish downstream errors from internal errors. This is a breaking change for the semantics of the otelcol_receiver_refused_metric_points,  otelcol_receiver_refused_log_records and otelcol_receiver_refused_spans. | v0.138.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/pull/12802) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

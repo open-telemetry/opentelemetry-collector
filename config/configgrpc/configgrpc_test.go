@@ -263,6 +263,24 @@ func TestAllGrpcClientSettings(t *testing.T) {
 	}
 }
 
+func TestSanitizeEndpoint(t *testing.T) {
+	cfg := NewDefaultClientConfig()
+	cfg.Endpoint = "dns://authority/backend.example.com:4317"
+	assert.Equal(t, "authority/backend.example.com:4317", cfg.sanitizedEndpoint())
+	cfg.Endpoint = "dns:///backend.example.com:4317"
+	assert.Equal(t, "backend.example.com:4317", cfg.sanitizedEndpoint())
+	cfg.Endpoint = "dns:////backend.example.com:4317"
+	assert.Equal(t, "/backend.example.com:4317", cfg.sanitizedEndpoint())
+}
+
+func TestValidateEndpoint(t *testing.T) {
+	cfg := NewDefaultClientConfig()
+	cfg.Endpoint = "dns://authority/backend.example.com:4317"
+	assert.NoError(t, cfg.Validate())
+	cfg.Endpoint = "unix:///my/unix/socket.sock"
+	assert.NoError(t, cfg.Validate())
+}
+
 func TestHeaders(t *testing.T) {
 	traceServer := &grpcTraceServer{}
 	server, addr := traceServer.startTestServer(t, configoptional.Some(ServerConfig{
@@ -457,7 +475,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			err: "failed to load TLS config: failed to load CA CertPool File: failed to load cert /doesnt/exist:",
 			settings: ClientConfig{
 				Headers:     nil,
-				Endpoint:    "",
+				Endpoint:    "localhost:1234",
 				Compression: "",
 				TLS: configtls.ClientConfig{
 					Config: configtls.Config{
@@ -472,7 +490,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			err: "failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither",
 			settings: ClientConfig{
 				Headers:     nil,
-				Endpoint:    "",
+				Endpoint:    "localhost:1234",
 				Compression: "",
 				TLS: configtls.ClientConfig{
 					Config: configtls.Config{
@@ -616,7 +634,7 @@ func TestGRPCServerSettings_ToListener_Error(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestHttpReception(t *testing.T) {
+func TestHTTPReception(t *testing.T) {
 	tests := []struct {
 		name           string
 		tlsServerCreds configoptional.Optional[configtls.ServerConfig]
@@ -963,22 +981,74 @@ func TestClientInfoInterceptors(t *testing.T) {
 	}
 }
 
+func TestClientInfoInterceptorBeforeAuth(t *testing.T) {
+	mock := &grpcTraceServer{}
+	var addr string
+	var authCalled bool
+
+	type serverAuthExtension struct {
+		component.StartFunc
+		component.ShutdownFunc
+		extensionauth.Server
+	}
+
+	// prepare the server
+	{
+		var srv *grpc.Server
+		srv, addr = mock.startTestServerWithExtensions(t, configoptional.Some(ServerConfig{
+			NetAddr: confignet.AddrConfig{
+				Endpoint:  "localhost:0",
+				Transport: confignet.TransportTypeTCP,
+			},
+			Auth: configoptional.Some(configauth.Config{
+				AuthenticatorID: mockID,
+			}),
+		}), map[component.ID]component.Component{
+			mockID: serverAuthExtension{
+				Server: newMockAuthServer(
+					func(ctx context.Context, _ map[string][]string) (context.Context, error) {
+						// verify that client info is populated before auth
+						authCalled = true
+						cl := client.FromContext(ctx)
+						assert.NotNil(t, cl.Addr)
+						return ctx, nil
+					},
+				),
+			},
+		})
+		defer srv.Stop()
+	}
+
+	// prepare the client and execute a RPC
+	{
+		_, errResp := sendTestRequest(t, ClientConfig{
+			Endpoint: addr,
+			TLS: configtls.ClientConfig{
+				Insecure: true,
+			},
+		})
+		require.NoError(t, errResp)
+	}
+
+	assert.True(t, authCalled)
+}
+
 func TestDefaultUnaryInterceptorAuthSucceeded(t *testing.T) {
 	// prepare
 	handlerCalled := false
 	authCalled := false
-	authFunc := func(context.Context, map[string][]string) (context.Context, error) {
+	expectedAuthData := new(struct{ client.AuthData })
+	authFunc := func(ctx context.Context, _ map[string][]string) (context.Context, error) {
 		authCalled = true
-		ctx := client.NewContext(context.Background(), client.Info{
-			Addr: &net.IPAddr{IP: net.IPv4(1, 2, 3, 4)},
-		})
-
+		cl := client.FromContext(ctx)
+		cl.Auth = expectedAuthData
+		ctx = client.NewContext(ctx, cl)
 		return ctx, nil
 	}
 	handler := func(ctx context.Context, _ any) (any, error) {
 		handlerCalled = true
 		cl := client.FromContext(ctx)
-		assert.Equal(t, "1.2.3.4", cl.Addr.String())
+		assert.Equal(t, expectedAuthData, cl.Auth)
 		return nil, nil
 	}
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data"))
@@ -1068,17 +1138,18 @@ func TestDefaultStreamInterceptorAuthSucceeded(t *testing.T) {
 	// prepare
 	handlerCalled := false
 	authCalled := false
-	authFunc := func(context.Context, map[string][]string) (context.Context, error) {
+	expectedAuthData := new(struct{ client.AuthData })
+	authFunc := func(ctx context.Context, _ map[string][]string) (context.Context, error) {
 		authCalled = true
-		ctx := client.NewContext(context.Background(), client.Info{
-			Addr: &net.IPAddr{IP: net.IPv4(1, 2, 3, 4)},
-		})
+		cl := client.FromContext(ctx)
+		cl.Auth = expectedAuthData
+		ctx = client.NewContext(ctx, cl)
 		return ctx, nil
 	}
 	handler := func(_ any, stream grpc.ServerStream) error {
 		// ensure that the client information is propagated down to the underlying stream
 		cl := client.FromContext(stream.Context())
-		assert.Equal(t, "1.2.3.4", cl.Addr.String())
+		assert.Equal(t, expectedAuthData, cl.Auth)
 		handlerCalled = true
 		return nil
 	}

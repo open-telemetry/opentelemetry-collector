@@ -4,13 +4,12 @@
 package internal
 
 import (
-	"io/fs"
-	"path/filepath"
-	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 )
 
 func TestValidate(t *testing.T) {
@@ -140,50 +139,57 @@ func TestValidate(t *testing.T) {
 			name:    "testdata/entity_duplicate_types.yaml",
 			wantErr: `duplicate entity type: host`,
 		},
+		{
+			name:    "testdata/invalid_entity_stability.yaml",
+			wantErr: `unsupported stability level: "stable42"`,
+		},
+		{
+			name:    "testdata/entity_relationships_bidirectional.yaml",
+			wantErr: `duplicate relationship to target "k8s.replicaset" (only one relationship allowed between two entities)`,
+		},
+		{
+			name:    "testdata/entity_relationships_empty_type.yaml",
+			wantErr: `entity "k8s.pod": relationship type cannot be empty`,
+		},
+		{
+			name:    "testdata/entity_relationships_empty_target.yaml",
+			wantErr: `entity "k8s.pod": relationship target cannot be empty`,
+		},
+		{
+			name:    "testdata/entity_relationships_undefined_target.yaml",
+			wantErr: `entity "k8s.pod": relationship target "k8s.replicaset" does not exist`,
+		},
+		{
+			name:    "testdata/entity_metric_missing_association.yaml",
+			wantErr: `metric "host.cpu.time": entity is required when entities are defined`,
+		},
+		{
+			name:    "testdata/entity_event_missing_association.yaml",
+			wantErr: `event "host.restart": entity is required when entities are defined`,
+		},
+		{
+			name:    "testdata/entity_undefined_reference.yaml",
+			wantErr: `metric "host.cpu.time": entity refers to undefined entity type: undefined_entity`,
+		},
+		{
+			name:    "testdata/entity_single_metric_missing_association.yaml",
+			wantErr: `metric "host.cpu.time": entity is required when entities are defined`,
+		},
+		{
+			name:    "testdata/entity_metrics_events_valid.yaml",
+			wantErr: "",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := LoadMetadata(tt.name)
-			require.Error(t, err)
-			require.ErrorContains(t, err, tt.wantErr)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				require.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
 		})
-	}
-}
-
-func TestValidateMetricDuplicates(t *testing.T) {
-	allowedMetrics := map[string][]string{
-		"container.cpu.utilization": {"docker_stats", "kubeletstats"},
-		"container.memory.rss":      {"docker_stats", "kubeletstats"},
-		"container.uptime":          {"docker_stats", "kubeletstats"},
-	}
-	allMetrics := map[string][]string{}
-	err := filepath.Walk("../../../receiver", func(path string, info fs.FileInfo, _ error) error {
-		if info.Name() == "metadata.yaml" {
-			md, err := LoadMetadata(path)
-			require.NoError(t, err)
-			if len(md.Metrics) > 0 {
-				for metricName := range md.Metrics {
-					allMetrics[md.Type] = append(allMetrics[md.Type], string(metricName))
-				}
-			}
-		}
-		return nil
-	})
-	require.NoError(t, err)
-
-	seen := make(map[string]string)
-	for receiver, metrics := range allMetrics {
-		for _, metricName := range metrics {
-			if val, exists := seen[metricName]; exists {
-				receivers, allowed := allowedMetrics[metricName]
-				assert.Truef(
-					t,
-					allowed && slices.Contains(receivers, receiver) && slices.Contains(receivers, val),
-					"Duplicate metric %v in receivers %v and %v. Please validate that this is intentional by adding the metric name and receiver types in the allowedMetrics map in this test\n", metricName, receiver, val,
-				)
-			}
-			seen[metricName] = receiver
-		}
 	}
 }
 
@@ -224,6 +230,15 @@ func TestCodeCovID(t *testing.T) {
 				},
 			},
 			want: "exporter_file",
+		},
+		{
+			md: Metadata{
+				Type: "file_log_thing",
+				Status: &Status{
+					Class: "exporter",
+				},
+			},
+			want: "exporter_filelogthing",
 		},
 	}
 
@@ -320,6 +335,243 @@ func TestAttributeRequirementLevelUnmarshalText(t *testing.T) {
 			}
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, rl)
+		})
+	}
+}
+
+func TestValidateFeatureGates(t *testing.T) {
+	tests := []struct {
+		name        string
+		featureGate FeatureGate
+		wantErr     string
+	}{
+		{
+			name: "valid alpha gate",
+			featureGate: FeatureGate{
+				ID:           "component.feature",
+				Description:  "Test feature gate",
+				Stage:        FeatureGateStageAlpha,
+				FromVersion:  "v0.100.0",
+				ReferenceURL: "https://example.com",
+			},
+		},
+		{
+			name: "valid stable gate with to_version",
+			featureGate: FeatureGate{
+				ID:           "component.stable",
+				Description:  "Stable feature gate",
+				Stage:        FeatureGateStageStable,
+				FromVersion:  "v0.90.0",
+				ToVersion:    "v0.95.0",
+				ReferenceURL: "https://example.com",
+			},
+		},
+		{
+			name: "empty description",
+			featureGate: FeatureGate{
+				ID:          "component.feature",
+				Stage:       FeatureGateStageAlpha,
+				FromVersion: "v0.100.0",
+			},
+			wantErr: `description is required`,
+		},
+		{
+			name: "invalid stage",
+			featureGate: FeatureGate{
+				ID:          "component.feature",
+				Description: "Test feature",
+				Stage:       "invalid",
+				FromVersion: "v0.100.0",
+			},
+			wantErr: `invalid stage "invalid"`,
+		},
+		{
+			name: "missing from_version",
+			featureGate: FeatureGate{
+				ID:          "component.feature",
+				Description: "Test feature",
+				Stage:       FeatureGateStageAlpha,
+			},
+			wantErr: `from_version is required`,
+		},
+		{
+			name: "from_version without v prefix",
+			featureGate: FeatureGate{
+				ID:          "component.feature",
+				Description: "Test feature",
+				Stage:       FeatureGateStageAlpha,
+				FromVersion: "0.100.0",
+			},
+			wantErr: `from_version "0.100.0" must start with 'v'`,
+		},
+		{
+			name: "to_version without v prefix",
+			featureGate: FeatureGate{
+				ID:          "component.feature",
+				Description: "Test feature",
+				Stage:       FeatureGateStageStable,
+				FromVersion: "v0.90.0",
+				ToVersion:   "0.95.0",
+			},
+			wantErr: `to_version "0.95.0" must start with 'v'`,
+		},
+		{
+			name: "stable gate missing to_version",
+			featureGate: FeatureGate{
+				ID:          "component.feature",
+				Description: "Test feature",
+				Stage:       FeatureGateStageStable,
+				FromVersion: "v0.90.0",
+			},
+			wantErr: `to_version is required for stable stage gates`,
+		},
+		{
+			name: "deprecated gate missing to_version",
+			featureGate: FeatureGate{
+				ID:          "component.feature",
+				Description: "Test feature",
+				Stage:       FeatureGateStageDeprecated,
+				FromVersion: "v0.90.0",
+			},
+			wantErr: `to_version is required for deprecated stage gates`,
+		},
+		{
+			name: "missing reference_url",
+			featureGate: FeatureGate{
+				ID:          "component.feature",
+				Description: "Test feature",
+				Stage:       FeatureGateStageAlpha,
+				FromVersion: "v0.100.0",
+			},
+			wantErr: `reference_url is required`,
+		},
+		{
+			name: "invalid characters in ID",
+			featureGate: FeatureGate{
+				ID:           "component.feature@invalid",
+				Description:  "Test feature",
+				Stage:        FeatureGateStageAlpha,
+				FromVersion:  "v0.100.0",
+				ReferenceURL: "https://example.com",
+			},
+			wantErr: `ID contains invalid characters`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			md := &Metadata{
+				FeatureGates: []FeatureGate{tt.featureGate},
+			}
+			err := md.validateFeatureGates()
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateFeatureGatesEmptyID(t *testing.T) {
+	md := &Metadata{
+		FeatureGates: []FeatureGate{
+			{
+				Description: "Test",
+				Stage:       FeatureGateStageAlpha,
+			},
+		},
+	}
+	err := md.validateFeatureGates()
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "ID cannot be empty")
+}
+
+func TestValidateFeatureGatesDuplicateID(t *testing.T) {
+	md := &Metadata{
+		FeatureGates: []FeatureGate{
+			{
+				ID:          "component.feature",
+				Description: "Test feature",
+				Stage:       FeatureGateStageAlpha,
+			},
+			{
+				ID:          "component.feature",
+				Description: "Duplicate feature",
+				Stage:       FeatureGateStageAlpha,
+			},
+		},
+	}
+	err := md.validateFeatureGates()
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "duplicate ID")
+}
+
+func TestValidateFeatureGatesNotSorted(t *testing.T) {
+	md := &Metadata{
+		FeatureGates: []FeatureGate{
+			{
+				ID:           "component.zebra",
+				Description:  "Test feature",
+				Stage:        FeatureGateStageAlpha,
+				ReferenceURL: "https://example.com",
+			},
+			{
+				ID:           "component.alpha",
+				Description:  "Another feature",
+				Stage:        FeatureGateStageAlpha,
+				ReferenceURL: "https://example.com",
+			},
+		},
+	}
+	err := md.validateFeatureGates()
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "feature gates must be sorted by ID")
+}
+
+func TestValidateConfig(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  *cfggen.ConfigMetadata
+		wantErr bool
+	}{
+		{
+			name: "valid config",
+			config: &cfggen.ConfigMetadata{
+				Type: "object",
+				AllOf: []*cfggen.ConfigMetadata{
+					{
+						Ref: "component.config",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:    "no config defined",
+			config:  nil,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			md := &Metadata{
+				Type: "test",
+				Status: &Status{
+					Class: "exporter",
+					Stability: StabilityMap{
+						6: {"traces"},
+					},
+				},
+				Config: tt.config,
+			}
+			err := md.Validate()
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
 		})
 	}
 }

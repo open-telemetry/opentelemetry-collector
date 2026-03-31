@@ -61,7 +61,7 @@ func TestSetLocation(t *testing.T) {
 	idx, err = SetLocation(table, l2)
 	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, int32(table.Len()-1), idx) //nolint:gosec // G115
+	assert.Equal(t, int32(table.Len()-1), idx)
 
 	// Set an existing value
 	idx, err = SetLocation(table, l)
@@ -72,14 +72,14 @@ func TestSetLocation(t *testing.T) {
 	idx, err = SetLocation(table, l2)
 	require.NoError(t, err)
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, int32(table.Len()-1), idx) //nolint:gosec // G115
+	assert.Equal(t, int32(table.Len()-1), idx)
 }
 
 func BenchmarkFromLocationIndices(b *testing.B) {
 	table := NewLocationSlice()
 
 	for i := range 100 {
-		table.AppendEmpty().SetAddress(uint64(i)) //nolint:gosec // overflow checked
+		table.AppendEmpty().SetAddress(uint64(i))
 	}
 
 	obj := NewStack()
@@ -139,7 +139,7 @@ func BenchmarkSetLocation(b *testing.B) {
 			runBefore: func(_ *testing.B, table LocationSlice) {
 				for i := range 100 {
 					l := table.AppendEmpty()
-					l.SetAddress(uint64(i)) //nolint:gosec // overflow checked
+					l.SetAddress(uint64(i))
 				}
 
 				l := table.AppendEmpty()

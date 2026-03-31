@@ -17,11 +17,13 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.opentelemetry.io/otel/trace"
 	nooptrace "go.opentelemetry.io/otel/trace/noop"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
@@ -99,9 +101,9 @@ func TestLogs_Default_ReturnError(t *testing.T) {
 func TestLogs_WithPersistentQueue(t *testing.T) {
 	fgOrigReadState := queue.PersistRequestContextOnRead
 	fgOrigWriteState := queue.PersistRequestContextOnWrite
-	qCfg := NewDefaultQueueConfig()
+	qCfg := configoptional.Some(NewDefaultQueueConfig())
 	storageID := component.MustNewIDWithName("file_storage", "storage")
-	qCfg.StorageID = &storageID
+	qCfg.Get().StorageID = &storageID
 	set := exportertest.NewNopSettings(exportertest.NopType)
 	set.ID = component.MustNewIDWithName("test_logs", "with_persistent_queue")
 	host := hosttest.NewHost(map[component.ID]component.Component{
@@ -344,7 +346,9 @@ func checkRecordedMetricsForLogs(t *testing.T, tt *componenttest.Telemetry, id c
 			[]metricdata.DataPoint[int64]{
 				{
 					Attributes: attribute.NewSet(
-						attribute.String("exporter", id.String())),
+						attribute.String("exporter", id.String()),
+						attribute.String(string(semconv.ErrorTypeKey), "_OTHER"),
+						attribute.Bool(internal.ErrorPermanentKey, false)),
 					Value: int64(numBatches * ld.LogRecordCount()),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
