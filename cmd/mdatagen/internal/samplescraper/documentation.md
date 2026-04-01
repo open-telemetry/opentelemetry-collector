@@ -24,13 +24,13 @@ The metric will be become optional soon.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| string_attr | Attribute with any string value. | Any Str | Recommended |
-| state | Integer attribute with overridden name. | Any Int | Recommended |
-| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | Recommended |
-| slice_attr | Attribute with a slice value. | Any Slice | Recommended |
-| map_attr | Attribute with a map value. | Any Map | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| string_attr | Attribute with any string value. | Any Str | Recommended | - |
+| state | Integer attribute with overridden name. | Any Int | Recommended | - |
+| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | Recommended | - |
+| slice_attr | Attribute with a slice value. | Any Slice | Recommended | - |
+| map_attr | Attribute with a map value. | Any Map | Recommended | - |
 
 ### default.metric.to_be_removed
 
@@ -54,13 +54,13 @@ Monotonic cumulative sum int metric with string input_type enabled by default.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| string_attr | Attribute with any string value. | Any Str | Recommended |
-| state | Integer attribute with overridden name. | Any Int | Recommended |
-| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | Recommended |
-| slice_attr | Attribute with a slice value. | Any Slice | Recommended |
-| map_attr | Attribute with a map value. | Any Map | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| string_attr | Attribute with any string value. | Any Str | Recommended | - |
+| state | Integer attribute with overridden name. | Any Int | Recommended | - |
+| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | Recommended | - |
+| slice_attr | Attribute with a slice value. | Any Slice | Recommended | - |
+| map_attr | Attribute with a map value. | Any Map | Recommended | - |
 
 ### reaggregate.metric
 
@@ -72,10 +72,10 @@ Metric for testing spatial reaggregation
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| string_attr | Attribute with any string value. | Any Str | Recommended |
-| boolean_attr | Attribute with a boolean value. | Any Bool | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| string_attr | Attribute with any string value. | Any Str | Recommended | - |
+| boolean_attr | Attribute with a boolean value. | Any Bool | Recommended | - |
 
 ### system.cpu.time
 
@@ -123,11 +123,11 @@ metrics:
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| string_attr | Attribute with any string value. | Any Str | Recommended |
-| boolean_attr | Attribute with a boolean value. | Any Bool | Recommended |
-| boolean_attr2 | Another attribute with a boolean value. | Any Bool | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| string_attr | Attribute with any string value. | Any Str | Recommended | - |
+| boolean_attr | Attribute with a boolean value. | Any Bool | Recommended | - |
+| boolean_attr2 | Another attribute with a boolean value. | Any Bool | Recommended | - |
 
 ### optional.metric.empty_unit
 
@@ -141,20 +141,20 @@ metrics:
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| string_attr | Attribute with any string value. | Any Str | Recommended |
-| boolean_attr | Attribute with a boolean value. | Any Bool | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| string_attr | Attribute with any string value. | Any Str | Recommended | - |
+| boolean_attr | Attribute with a boolean value. | Any Bool | Recommended | - |
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| map.resource.attr | Resource attribute with a map value. | Any Map | true |
-| optional.resource.attr | Explicitly disabled ResourceAttribute. | Any Str | false |
-| slice.resource.attr | Resource attribute with a slice value. | Any Slice | true |
-| string.enum.resource.attr | Resource attribute with a known set of string values. | Str: ``one``, ``two`` | true |
-| string.resource.attr | Resource attribute with any string value. | Any Str | true |
-| string.resource.attr_disable_warning | Resource attribute with any string value. | Any Str | true |
-| string.resource.attr_remove_warning | Resource attribute with any string value. | Any Str | false |
-| string.resource.attr_to_be_removed | Resource attribute with any string value. | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| map.resource.attr | Resource attribute with a map value. | Any Map | true | - |
+| optional.resource.attr | Explicitly disabled ResourceAttribute. | Any Str | false | - |
+| slice.resource.attr | Resource attribute with a slice value. | Any Slice | true | - |
+| string.enum.resource.attr | Resource attribute with a known set of string values. | Str: ``one``, ``two`` | true | - |
+| string.resource.attr | Resource attribute with any string value. | Any Str | true | - |
+| string.resource.attr_disable_warning | Resource attribute with any string value. | Any Str | true | - |
+| string.resource.attr_remove_warning | Resource attribute with any string value. | Any Str | false | - |
+| string.resource.attr_to_be_removed | Resource attribute with any string value. | Any Str | true | - |

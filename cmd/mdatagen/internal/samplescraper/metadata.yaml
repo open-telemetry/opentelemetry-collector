@@ -37,10 +37,17 @@ config:
         properties:
           http_client:
             $ref: /config/confighttp.client_config
+            x-pointer: true
           interval:
             type: string
             format: duration
             x-optional: true
+          options:
+            type: object
+            additionalProperties:
+              type: string
+        required: [http_client, options]
+  required: [targets]
 
 resource_attributes:
   map.resource.attr:
@@ -216,7 +223,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     semantic_convention:
-      ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime
+      ref: system/system-metrics.md#metric-systemcputime
 
   system_cpu_utilization:
       enabled: true
@@ -227,4 +234,4 @@ metrics:
         value_type: double
         bucket_boundaries: [0, 0.25, 0.5, 0.75, 1]
       attributes: [string_attr]
-    
+      
