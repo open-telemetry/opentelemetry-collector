@@ -61,7 +61,14 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						EnabledAttributes:   []ReaggregateMetricWithRequiredMetricAttributeKey{ReaggregateMetricWithRequiredMetricAttributeKeyRequiredStringAttr, ReaggregateMetricWithRequiredMetricAttributeKeyStringAttr, ReaggregateMetricWithRequiredMetricAttributeKeyBooleanAttr},
 					},
 					SystemCPUTime: SystemCPUTimeMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemCPUTimeMetricAttributeKey{SystemCPUTimeMetricAttributeKeyCpu},
+					},
+					SystemMemoryUsage: SystemMemoryUsageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemMemoryUsageMetricAttributeKey{SystemMemoryUsageMetricAttributeKeyState},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -114,7 +121,14 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						EnabledAttributes:   []ReaggregateMetricWithRequiredMetricAttributeKey{ReaggregateMetricWithRequiredMetricAttributeKeyRequiredStringAttr, ReaggregateMetricWithRequiredMetricAttributeKeyStringAttr, ReaggregateMetricWithRequiredMetricAttributeKeyBooleanAttr},
 					},
 					SystemCPUTime: SystemCPUTimeMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemCPUTimeMetricAttributeKey{SystemCPUTimeMetricAttributeKeyCpu},
+					},
+					SystemMemoryUsage: SystemMemoryUsageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemMemoryUsageMetricAttributeKey{SystemMemoryUsageMetricAttributeKeyState},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -133,7 +147,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(DefaultMetricMetricConfig{}, DefaultMetricToBeRemovedMetricConfig{}, MetricInputTypeMetricConfig{}, OptionalMetricMetricConfig{}, OptionalMetricEmptyUnitMetricConfig{}, ReaggregateMetricMetricConfig{}, ReaggregateMetricWithRequiredMetricConfig{}, SystemCPUTimeMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(DefaultMetricMetricConfig{}, DefaultMetricToBeRemovedMetricConfig{}, MetricInputTypeMetricConfig{}, OptionalMetricMetricConfig{}, OptionalMetricEmptyUnitMetricConfig{}, ReaggregateMetricMetricConfig{}, ReaggregateMetricWithRequiredMetricConfig{}, SystemCPUTimeMetricConfig{}, SystemMemoryUsageMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
