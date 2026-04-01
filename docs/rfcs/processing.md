@@ -221,7 +221,6 @@ traces:
   group_by(trace_id, 2m)
 ```
 
-
 Update a spans ID
 
 ```

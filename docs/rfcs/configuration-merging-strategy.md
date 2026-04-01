@@ -151,7 +151,6 @@ service:
 
 2. _Merge all the lists under the `service::*` section_:
 
-
 ```yaml
 #main.yaml
 receivers:
@@ -243,7 +242,6 @@ otelcol \
 - After running above command, the final configuration will include:
     - Merged extension(s) from `extra_extension.yaml`
     - Merged receiver(s) from `extra_receiver.yaml`
-
 
 3. _Prepend processors_:
 ```bash

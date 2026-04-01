@@ -4,3 +4,6 @@ CHANGELOG-API.md
 
 # GitHub templates (intentional structure/HTML)
 .github/
+
+# Test fixtures (managed by mdatagen tests)
+cmd/mdatagen/internal/testdata/
