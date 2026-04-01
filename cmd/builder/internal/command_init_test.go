@@ -4,12 +4,10 @@
 package internal // import "go.opentelemetry.io/collector/cmd/builder/internal"
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/file"
-	"github.com/knadh/koanf/v2"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -71,17 +69,28 @@ func validateCollector(t *testing.T, path string) {
 	require.FileExists(t, filepath.Join(path, "go.sum"))
 	require.FileExists(t, filepath.Join(path, "Makefile"))
 	require.FileExists(t, filepath.Join(path, "config.yaml"))
+}
 
-	k := koanf.New(".")
-	err := k.Load(file.Provider(filepath.Join(path, "manifest.yaml")), yaml.Parser())
+func TestBuildManifest(t *testing.T) {
+	dir := t.TempDir()
+	meta := metadata{
+		Name:        "myCollector",
+		Description: defaultDescription,
+		BetaVersion: builder.DefaultBetaOtelColVersion,
+	}
+	require.NoError(t, buildManifest(dir, meta))
+
+	content, err := os.ReadFile(filepath.Join(dir, "manifest.yaml")) //nolint:gosec // G304: path is test-controlled
 	require.NoError(t, err)
 
-	cfg := builder.Config{}
-	err = k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{
-		Tag: "mapstructure",
-	})
-	require.NoError(t, err)
+	expected := "dist:\n" +
+		"    description: Custom OpenTelemetry Collector\n" +
+		"    name: myCollector\n" +
+		"    output_path: ./build/collector\n" +
+		"exporters:\n" +
+		"    - gomod: go.opentelemetry.io/collector/exporter/otlpexporter " + builder.DefaultBetaOtelColVersion + "\n" +
+		"receivers:\n" +
+		"    - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver " + builder.DefaultBetaOtelColVersion + "\n"
 
-	assert.Equal(t, "init", cfg.Distribution.Name)
-	assert.Equal(t, defaultDescription, cfg.Distribution.Description)
+	assert.Equal(t, expected, string(content))
 }
