@@ -79,3 +79,4 @@ func TestGoTemplatesUseTabIndentation(t *testing.T) {
 		return nil
 	}))
 }
+
