@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strings"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
 )
@@ -26,6 +27,40 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 				return []string{}
 			}
 			return imports
+		},
+		"extractStdlibImports": func(cfg *ConfigMetadata) []string {
+			if cfg == nil {
+				return nil
+			}
+			imports, err := ExtractImports(cfg, rootPackage, componentPackage)
+			if err != nil {
+				return []string{}
+			}
+			var stdlib []string
+			for _, imp := range imports {
+				if !strings.Contains(imp, ".") {
+					stdlib = append(stdlib, imp)
+				}
+			}
+			slices.Sort(stdlib)
+			return stdlib
+		},
+		"extractNonStdlibImports": func(cfg *ConfigMetadata) []string {
+			if cfg == nil {
+				return nil
+			}
+			imports, err := ExtractImports(cfg, rootPackage, componentPackage)
+			if err != nil {
+				return []string{}
+			}
+			var nonStdlib []string
+			for _, imp := range imports {
+				if strings.Contains(imp, ".") {
+					nonStdlib = append(nonStdlib, imp)
+				}
+			}
+			slices.Sort(nonStdlib)
+			return nonStdlib
 		},
 		"extractDefs": func(cfg *ConfigMetadata) map[string]*ConfigMetadata {
 			if cfg == nil {

@@ -9,7 +9,11 @@ import (
 {{- if $validators }}
 	"errors"
 {{- end }}
-{{- range $imports }}
+{{- range extractStdlibImports .Metadata.Config }}
+	"{{ . }}"
+{{- end }}
+
+{{ range extractNonStdlibImports .Metadata.Config }}
 	"{{ . }}"
 {{- end }}
 )
