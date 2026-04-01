@@ -46,6 +46,13 @@ all: checklicense checkdoc misspell markdownlint goimpi goporto multimod-verify 
 checktmpl:
 	cd cmd/mdatagen && go test ./internal -run TestGoTemplatesUseTabIndentation -count=1
 	cd cmd/builder && go test ./internal/builder -run TestGoTemplatesUseTabIndentation -count=1
+	cd cmd/mdatagen && go run . ./internal/sampleconnector/metadata.yaml
+	cd cmd/mdatagen && go run . ./internal/sampleentityreceiver/metadata.yaml
+	cd cmd/mdatagen && go run . ./internal/samplefactoryreceiver/metadata.yaml
+	cd cmd/mdatagen && go run . ./internal/sampleprocessor/metadata.yaml
+	cd cmd/mdatagen && go run . ./internal/samplereceiver/metadata.yaml
+	cd cmd/mdatagen && go run . ./internal/samplescraper/metadata.yaml
+	git diff --exit-code cmd/mdatagen/internal/sample*/
 
 all-modules:
 	@echo $(ALL_MODULES) | tr ' ' '\n' | sort
