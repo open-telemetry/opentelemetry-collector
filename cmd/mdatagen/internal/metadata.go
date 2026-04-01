@@ -441,6 +441,10 @@ func (md *Metadata) validateFeatureGates() error {
 		if (gate.Stage == FeatureGateStageStable || gate.Stage == FeatureGateStageDeprecated) && gate.ToVersion == "" {
 			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": to_version is required for %v stage gates`, gate.ID, gate.Stage))
 		}
+		// Any gate other than stable/deprecated shouldn't have to_version
+		if gate.Stage != FeatureGateStageStable && gate.Stage != FeatureGateStageDeprecated && gate.ToVersion != "" {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": to_version is not supported for the %v stage`, gate.ID, gate.Stage))
+		}
 	}
 	return errs
 }
