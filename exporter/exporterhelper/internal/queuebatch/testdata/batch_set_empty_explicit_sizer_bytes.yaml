@@ -1,0 +1,3 @@
+sizer: bytes
+# Batch sizer inherited from queue sizer (bytes)
+batch:

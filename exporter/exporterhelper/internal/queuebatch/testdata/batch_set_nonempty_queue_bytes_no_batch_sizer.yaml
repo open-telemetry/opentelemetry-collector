@@ -1,6 +1,6 @@
 enabled: true
 sizer: bytes
-queue_size: 2000 
+queue_size: 2000
 batch:
   # Batch sizer inherited from queue sizer (bytes)
-  min_size: 100 
+  min_size: 100

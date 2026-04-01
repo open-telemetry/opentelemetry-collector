@@ -47,11 +47,9 @@ batch settings, use `batch: {}`. When `batch` is defined, the settings are:
 - `sizer`: see below.
 - `partition`: see below.
 
-The `batch::sizer` field is given special treatment because the queue itself also defines a `sizer`. This field supports using different size limits for the queue and batch-related logic. 
+The `batch::sizer` field is given special treatment because the queue itself also defines a `sizer`. This field supports using different size limits for the queue and batch-related logic.
 
-If the `batch::sizer` field is not set, it takes its value from the parent structure. 
-
-If `sending_queue::sizer` is not set, `batch::sizer` defaults to `items`. 
+If `batch::sizer` is unset, it inherits the `sending_queue::sizer` value, except when `sending_queue::sizer` is `requests`; in that case, `batch::sizer` defaults to `items`.
 
 Available `batch::sizer` options:
 

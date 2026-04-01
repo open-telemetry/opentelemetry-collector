@@ -1,5 +1,6 @@
 enabled: true
-queue_size: 2000 
+sizer: requests
+queue_size: 2000
 batch:
   # Queue sizer is "requests" (not valid for batch), so batch defaults to "items"
-  min_size: 100 
+  min_size: 100
