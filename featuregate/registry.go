@@ -142,7 +142,12 @@ func (r *Registry) Register(id string, stage Stage, opts ...RegisterOption) (*Ga
 			return nil, fmt.Errorf("failed to apply option: %w", err)
 		}
 	}
-	switch g.stage {
+	if g.ToVersion != nil {
+		if g.Stage != StageStable && !g.Stage.IsDeprecated(){
+		return fmt.Errorf("ToVersion can only be set for stable or deprecated stages")
+	}
+	}
+		switch g.stage {
 	case StageAlpha, StageDeprecated:
 		g.enabled = &atomic.Bool{}
 	case StageBeta, StageStable:
