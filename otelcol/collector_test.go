@@ -439,6 +439,35 @@ func TestCollectorRun_AfterShutdown(t *testing.T) {
 	assert.Equal(t, StateClosed, col.GetState())
 }
 
+func TestCollectorRun_AfterShutdown_ConfigProviderShutdownError(t *testing.T) {
+	set := CollectorSettings{
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              nopFactories,
+		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
+	}
+	col, err := NewCollector(set)
+	require.NoError(t, err)
+
+	col.Shutdown()
+
+	wantErr := errors.New("provider shutdown failed")
+	resolver, resolverErr := confmap.NewResolver(confmap.ResolverSettings{
+		URIs: []string{"err:config"},
+		ProviderFactories: []confmap.ProviderFactory{
+			confmap.NewProviderFactory(func(_ confmap.ProviderSettings) confmap.Provider {
+				return &errShutdownProvider{err: wantErr}
+			}),
+		},
+	})
+	require.NoError(t, resolverErr)
+	col.configProvider = &ConfigProvider{mapResolver: resolver}
+
+	runErr := col.Run(context.Background())
+	assert.ErrorContains(t, runErr, "failed to shutdown config provider")
+	assert.ErrorIs(t, runErr, wantErr)
+	assert.Equal(t, StateClosed, col.GetState())
+}
+
 func TestShutdownBlocksUntilRunCompletes(t *testing.T) {
 	set := CollectorSettings{
 		BuildInfo:              component.NewDefaultBuildInfo(),
@@ -641,6 +670,22 @@ func (*failureProvider) Scheme() string {
 
 func (*failureProvider) Shutdown(context.Context) error {
 	return nil
+}
+
+type errShutdownProvider struct {
+	err error
+}
+
+func (p *errShutdownProvider) Retrieve(context.Context, string, confmap.WatcherFunc) (*confmap.Retrieved, error) {
+	return confmap.NewRetrieved(nil)
+}
+
+func (p *errShutdownProvider) Scheme() string {
+	return "err"
+}
+
+func (p *errShutdownProvider) Shutdown(context.Context) error {
+	return p.err
 }
 
 type fakeProvider struct {
