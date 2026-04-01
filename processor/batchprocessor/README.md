@@ -2,11 +2,19 @@
 # Batch Processor
 | Status        |           |
 | ------------- |-----------|
-| Stability     | [beta]: traces, metrics, logs   |
+| Stability     | [deprecated]: traces, metrics, logs   |
+| Deprecation of logs | [Date]: 2026-04-01   |
+|                      | [Migration Note]: migrate to exporter helper   |
+| Deprecation of metrics | [Date]: 2026-04-01   |
+|                      | [Migration Note]: migrate to exporter helper   |
+| Deprecation of traces | [Date]: 2026-04-01   |
+|                      | [Migration Note]: migrate to exporter helper   |
 | Distributions | [core], [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fbatch%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fbatch) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fbatch%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fbatch) |
 
-[beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
+[deprecated]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#deprecated
+[Date]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#deprecation-information
+[Migration Note]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#deprecation-information
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [k8s]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-k8s
