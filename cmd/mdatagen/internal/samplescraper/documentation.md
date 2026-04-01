@@ -97,9 +97,9 @@ Histogram metric for testing histogram generation.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| string_attr | Attribute with any string value. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| string_attr | Attribute with any string value. | Any Str | Recommended | - |
 
 ## Optional Metrics
 

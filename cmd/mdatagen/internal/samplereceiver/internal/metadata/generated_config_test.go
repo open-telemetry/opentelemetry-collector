@@ -298,3 +298,19 @@ func TestSystemCPUTimeMetricConfig_Unmarshal_Nil(t *testing.T) {
 	cfg := &SystemCPUTimeMetricConfig{}
 	require.NoError(t, cfg.Unmarshal(nil))
 }
+func TestSystemCPUTimeMetricConfig_Validate_InvalidAttribute(t *testing.T) {
+	cfg := &SystemCPUTimeMetricConfig{
+		EnabledAttributes: []SystemCPUTimeMetricAttributeKey{"invalid_attribute_for_test"},
+	}
+	require.Error(t, cfg.Validate())
+}
+func TestSystemMemoryUsageMetricConfig_Unmarshal_Nil(t *testing.T) {
+	cfg := &SystemMemoryUsageMetricConfig{}
+	require.NoError(t, cfg.Unmarshal(nil))
+}
+func TestSystemMemoryUsageMetricConfig_Validate_InvalidAttribute(t *testing.T) {
+	cfg := &SystemMemoryUsageMetricConfig{
+		EnabledAttributes: []SystemMemoryUsageMetricAttributeKey{"invalid_attribute_for_test"},
+	}
+	require.Error(t, cfg.Validate())
+}
