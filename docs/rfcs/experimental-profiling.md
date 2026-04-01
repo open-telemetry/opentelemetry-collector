@@ -9,8 +9,8 @@ otherwise considered stable.
 
 This document describes:
 
-- The approach we intend to take to introduce profiling with no breaking changes
-- How the migration will happen once profiling goes stable
+* The approach we intend to take to introduce profiling with no breaking changes
+* How the migration will happen once profiling goes stable
 
 ### Discarded approaches
 
@@ -40,10 +40,10 @@ This has been discarded, as the usage would have been too difficult.
 
 The proposed approach will consist of two main phases:
 
-- Introduce `experimental` packages for each required module of the collector that needs to be profiles-aware.
-  - `consumer`, `receiver`, `connector`, `component`, `processor`
-- Mark specific APIs as `experimental` in their godoc for parts that can't be a new package.
-  - `service`
+* Introduce `experimental` packages for each required module of the collector that needs to be profiles-aware.
+  * `consumer`, `receiver`, `connector`, `component`, `processor`
+* Mark specific APIs as `experimental` in their godoc for parts that can't be a new package.
+  * `service`
 
 ### Introduce "experimental" subpackages
 
@@ -86,10 +86,10 @@ The user-specified configuration will let users specify a `profiles` pipeline:
 
 ```
 service:
- pipelines:
-  profiles:
-   receivers: [otlp]
-   exporters: [otlp]
+  pipelines:
+    profiles:
+      receivers: [otlp]
+      exporters: [otlp]
 ```
 
 When an experimental signal is being used, the collector will log a warning at

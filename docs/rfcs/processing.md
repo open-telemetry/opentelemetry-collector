@@ -333,15 +333,15 @@ import "github.com/open-telemetry/opentelemetry/processors"
 processors.register("replace_match", replace_match)
 
 func replace_match(path processors.TelemetryPath, pattern regexp.Regexp, replacement string) processors.Result  {
- val := path.Get()
- if val == nil {
-  return processors.CONTINUE
- }
+  val := path.Get()
+  if val == nil {
+    return processors.CONTINUE
+  }
 
- // replace finds placeholders in "replacement" and swaps them in for regex matched substrings.
- replaced := replace(val, pattern, replacement)
- path.Set(replaced)
- return processors.CONTINUE
+  // replace finds placeholders in "replacement" and swaps them in for regex matched substrings.
+  replaced := replace(val, pattern, replacement)
+  path.Set(replaced)
+  return processors.CONTINUE
 }
 ```
 
