@@ -40,7 +40,12 @@ endef
 .DEFAULT_GOAL := all
 
 .PHONY: all
-all: checklicense checkdoc misspell markdownlint goimpi goporto multimod-verify golint gotest
+all: checklicense checkdoc misspell markdownlint goimpi goporto multimod-verify golint gotest checktmpl
+
+.PHONY: checktmpl
+checktmpl:
+	cd cmd/mdatagen && go test ./internal -run TestGoTemplatesUseTabIndentation -count=1
+	cd cmd/builder && go test ./internal/builder -run TestGoTemplatesUseTabIndentation -count=1
 
 all-modules:
 	@echo $(ALL_MODULES) | tr ' ' '\n' | sort

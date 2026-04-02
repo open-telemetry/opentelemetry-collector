@@ -7,105 +7,109 @@ package {{ .Package }}
 {{- if or $imports $validators }}
 import (
 {{- if $validators }}
-    "errors"
+	"errors"
 {{- end }}
-{{- range $imports }}
+{{- range extractStdlibImports .Metadata.Config }}
+	"{{ . }}"
+{{- end }}
+
+{{ range extractNonStdlibImports .Metadata.Config }}
 	"{{ . }}"
 {{- end }}
 )
 {{- end }}
 
 {{ define "struct" }}
-    {{- if .AllOf }}
-    {{- range .AllOf }}
-        {{- if .Description }}
-    // {{ .Description }}
-        {{- end }}
-    	{{ .Ref | publicType }} `mapstructure:",squash"`
-    {{- end }}
-    {{- end }}
-    {{- range $propName, $prop := .Properties }}
-        {{- if $prop.Description }}
-    // {{ $prop.Description }}
-        {{- end }}
-    	{{ $propName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}"`
-    {{- end }}
+	{{- if .AllOf }}
+	{{- range .AllOf }}
+		{{- if .Description }}
+	// {{ .Description }}
+		{{- end }}
+	{{ .Ref | publicType }} `mapstructure:",squash"`
+	{{- end }}
+	{{- end }}
+	{{- range $propName, $prop := .Properties }}
+		{{- if $prop.Description }}
+	// {{ $prop.Description }}
+		{{- end }}
+	{{ $propName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}"`
+	{{- end }}
 {{ end }}
 
 {{- $defs := extractDefs .Metadata.Config }}
 {{ range $defName, $def := $defs }}
-    {{- if $def.Description }}
-        // {{ $defName | publicVar }} {{ $def.Description }}
-    {{- end }}
-    type {{ $defName | publicVar }} struct {
-        {{ template "struct" $def }}
-    }
+	{{- if $def.Description }}
+	// {{ $defName | publicVar }} {{ $def.Description }}
+	{{- end }}
+	type {{ $defName | publicVar }} struct {
+		{{ template "struct" $def }}
+	}
 
-    {{ $defValidators := extractValidators $def }}
-    {{- if $defValidators }}
-        // Validate validates the {{$defName}} fields.
-        func (c *{{ $defName | publicVar }}) Validate() error {
-            var err error
-            {{ range $validator := $defValidators -}}
-                {{- template "validation" $validator }}
-            {{- end }}
+	{{ $defValidators := extractValidators $def }}
+	{{- if $defValidators }}
+	// Validate validates the {{$defName}} fields.
+	func (c *{{ $defName | publicVar }}) Validate() error {
+		var err error
+		{{ range $validator := $defValidators -}}
+			{{- template "validation" $validator }}
+		{{- end }}
 
-            return err
-        }
-    {{- end }}
+		return err
+	}
+	{{- end }}
 
 {{ end }}
 
 {{- if .Metadata.Config.Description }}
-    // {{ .Metadata.Config.Description }}
+// {{ .Metadata.Config.Description }}
 {{- else }}
-    // Config defines the configuration for {{ .Metadata.DisplayName }} component.
+// Config defines the configuration for {{ .Metadata.DisplayName }} component.
 {{- end }}
 type Config struct {
-    {{ template "struct" .Metadata.Config }}
+	{{ template "struct" .Metadata.Config }}
 }
 
 {{ define "requiredValidator" -}}
-    {{ $name := .FieldName | publicVar -}}
-    {{- if .IsPointer }}
-        {{- if or (eq .FieldType "array") (eq .FieldType "object") }}
-        if c.{{ $name }} == nil || len(*c.{{ $name }}) == 0 {
-            err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
-        }
-        {{- else }}
-        if c.{{ $name }} == nil {
-            err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
-        }
-        {{- end }}
-    {{- else if eq .FieldType "string" }}
-        if c.{{ $name }} == "" {
-            err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
-        }
-    {{- else if eq .FieldType "array" }}
-        if len(c.{{ $name }}) == 0 {
-            err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
-        }
-    {{- else if eq .FieldType "object" }}
-        if c.{{ $name }} == nil || len(c.{{ $name }}) == 0 {
-            err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
-        }
-    {{- end -}}
+	{{ $name := .FieldName | publicVar -}}
+	{{- if .IsPointer }}
+		{{- if or (eq .FieldType "array") (eq .FieldType "object") }}
+		if c.{{ $name }} == nil || len(*c.{{ $name }}) == 0 {
+			err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
+		}
+		{{- else }}
+		if c.{{ $name }} == nil {
+			err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
+		}
+		{{- end }}
+	{{- else if eq .FieldType "string" }}
+		if c.{{ $name }} == "" {
+			err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
+		}
+	{{- else if eq .FieldType "array" }}
+		if len(c.{{ $name }}) == 0 {
+			err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
+		}
+	{{- else if eq .FieldType "object" }}
+		if c.{{ $name }} == nil || len(c.{{ $name }}) == 0 {
+			err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
+		}
+	{{- end -}}
 {{- end }}
 
 {{- define "validation" -}}
-    {{- if .IsRequired -}}
-        {{ template "requiredValidator" . }}
-    {{- end -}}
+	{{- if .IsRequired -}}
+		{{ template "requiredValidator" . }}
+	{{- end -}}
 {{- end }}
 
 {{- if $validators }}
-    // Validate validates the Config fields.
-    func (c *Config) Validate() error {
-        var err error
-        {{ range $validator := $validators -}}
-            {{- template "validation" $validator }}
-        {{- end }}
+// Validate validates the Config fields.
+func (c *Config) Validate() error {
+	var err error
+	{{ range $validator := $validators -}}
+		{{- template "validation" $validator }}
+	{{- end }}
 
-        return err
-    }
+	return err
+}
 {{- end }}

@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
-	{{- if or isConnector isExporter isExtension isProcessor isReceiver isScraper }}
+	{{ if or isConnector isExporter isExtension isProcessor isReceiver isScraper }}
 	"go.opentelemetry.io/collector/component"
 	{{- end }}
 	"go.opentelemetry.io/collector/component/componenttest"
