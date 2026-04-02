@@ -20,6 +20,17 @@ import (
 
 const (
 	mibBytes = 1024 * 1024
+
+	// gcEffectivenessThreshold is the minimum percentage of memory that must be
+	// reclaimed by a forced GC for it to be considered effective. If GC reclaims
+	// less than this percentage, the GC interval is backed off to avoid burning
+	// CPU on fruitless GC cycles.
+	gcEffectivenessThreshold = 5
+
+	// maxGCBackoffInterval is the maximum interval between forced GC calls when
+	// GC is repeatedly ineffective. This caps the exponential backoff to ensure
+	// the system still periodically attempts GC for recovery detection.
+	maxGCBackoffInterval = 2 * time.Minute
 )
 
 var (
@@ -51,6 +62,13 @@ type MemoryLimiter struct {
 	// testing different values.
 	readMemStatsFn func(m *runtime.MemStats)
 	runGCFn        func()
+
+	// consecutiveIneffectiveGCs tracks how many consecutive forced GCs failed to
+	// reclaim a meaningful amount of memory. When GC is ineffective (e.g., memory
+	// is held by live references in exporter queues), the GC interval is backed off
+	// exponentially to prevent a CPU-burning GC loop that starves the collector
+	// and prevents recovery. See https://github.com/open-telemetry/opentelemetry-collector/issues/4981
+	consecutiveIneffectiveGCs int
 
 	// Fields used for logging.
 	logger *zap.Logger
@@ -158,12 +176,52 @@ func memstatToZapField(ms *runtime.MemStats) zap.Field {
 	return zap.Uint64("cur_mem_mib", ms.Alloc/mibBytes)
 }
 
-func (ml *MemoryLimiter) doGCandReadMemStats() *runtime.MemStats {
+func (ml *MemoryLimiter) doGCandReadMemStats(memAllocBeforeGC uint64) *runtime.MemStats {
 	ml.runGCFn()
 	ml.lastGCDone = time.Now()
 	ms := ml.readMemStats()
 	ml.logger.Info("Memory usage after GC.", memstatToZapField(ms))
+
+	// Track GC effectiveness. If GC reclaimed less than gcEffectivenessThreshold%
+	// of the pre-GC allocation, it is considered ineffective. This happens when
+	// memory is held by live references (e.g., exporter queues, retry goroutines)
+	// and cannot be freed by GC. In this case, continued forced GC only wastes CPU
+	// and can starve the collector, preventing recovery.
+	if memAllocBeforeGC > 0 && ms.Alloc > memAllocBeforeGC*(100-gcEffectivenessThreshold)/100 {
+		ml.consecutiveIneffectiveGCs++
+		if ml.consecutiveIneffectiveGCs == 1 {
+			ml.logger.Warn("Forced GC did not reclaim enough memory. Will back off GC frequency to preserve CPU for recovery.",
+				zap.Uint64("mem_before_gc_mib", memAllocBeforeGC/mibBytes),
+				memstatToZapField(ms))
+		}
+	} else {
+		ml.consecutiveIneffectiveGCs = 0
+	}
+
 	return ms
+}
+
+// effectiveGCInterval returns the GC interval to use, applying exponential
+// backoff when consecutive GCs have been ineffective. This prevents a
+// CPU-burning GC loop when memory cannot be reclaimed (e.g., held by exporter
+// queues during downstream outages).
+func (ml *MemoryLimiter) effectiveGCInterval(baseInterval time.Duration) time.Duration {
+	if ml.consecutiveIneffectiveGCs == 0 {
+		return baseInterval
+	}
+	// Use CheckInterval as the minimum base when the configured interval is 0.
+	interval := baseInterval
+	if interval == 0 {
+		interval = ml.memCheckWait
+	}
+	// Exponential backoff: double the interval for each consecutive ineffective GC.
+	for range ml.consecutiveIneffectiveGCs {
+		interval *= 2
+		if interval >= maxGCBackoffInterval {
+			return maxGCBackoffInterval
+		}
+	}
+	return interval
 }
 
 // CheckMemLimits inspects current memory usage against threshold and toggles mustRefuse when threshold is exceeded
@@ -180,24 +238,26 @@ func (ml *MemoryLimiter) CheckMemLimits() {
 			ml.logger.Info("Memory usage back within limits. Resuming normal operation.", memstatToZapField(ms))
 		}
 		ml.mustRefuse.Store(aboveSoftLimit)
+		// Reset GC backoff on recovery so the next pressure event starts fresh.
+		ml.consecutiveIneffectiveGCs = 0
 		return
 	}
 
 	if ml.usageChecker.aboveHardLimit(ms) {
 		// We are above hard limit, do a GC if it wasn't done recently and see if
 		// it brings memory usage below the soft limit.
-		if time.Since(ml.lastGCDone) > ml.minGCIntervalWhenHardLimited {
+		if time.Since(ml.lastGCDone) > ml.effectiveGCInterval(ml.minGCIntervalWhenHardLimited) {
 			ml.logger.Warn("Memory usage is above hard limit. Forcing a GC.", memstatToZapField(ms))
-			ms = ml.doGCandReadMemStats()
+			ms = ml.doGCandReadMemStats(ms.Alloc)
 			// Check the limit again to see if GC helped.
 			aboveSoftLimit = ml.usageChecker.aboveSoftLimit(ms)
 		}
 	} else {
 		// We are above soft limit, do a GC if it wasn't done recently and see if
 		// it brings memory usage below the soft limit.
-		if time.Since(ml.lastGCDone) > ml.minGCIntervalWhenSoftLimited {
+		if time.Since(ml.lastGCDone) > ml.effectiveGCInterval(ml.minGCIntervalWhenSoftLimited) {
 			ml.logger.Info("Memory usage is above soft limit. Forcing a GC.", memstatToZapField(ms))
-			ms = ml.doGCandReadMemStats()
+			ms = ml.doGCandReadMemStats(ms.Alloc)
 			// Check the limit again to see if GC helped.
 			aboveSoftLimit = ml.usageChecker.aboveSoftLimit(ms)
 		}

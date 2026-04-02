@@ -59,6 +59,7 @@ var _ component.Config = (*Config)(nil)
 func NewDefaultConfig() *Config {
 	return &Config{
 		MinGCIntervalWhenSoftLimited: 10 * time.Second,
+		MinGCIntervalWhenHardLimited: 10 * time.Second,
 	}
 }
 

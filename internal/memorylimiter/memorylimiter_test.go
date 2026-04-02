@@ -202,8 +202,21 @@ func TestCallGCWhenSoftLimit(t *testing.T) {
 			ml, err := NewMemoryLimiter(tt.mlCfg, zap.NewNop())
 			require.NoError(t, err)
 			memAllocMiB := uint64(0)
+			// Track whether GC was called so that readMemStatsFn can simulate
+			// effective GC by reporting lower memory after collection. Without
+			// this, the GC effectiveness backoff would suppress the second GC
+			// call in tests that expect GC to fire on every check.
+			gcCalled := false
 			ml.readMemStatsFn = func(ms *runtime.MemStats) {
-				ms.Alloc = memAllocMiB * mibBytes
+				if gcCalled {
+					// Simulate GC reclaiming ~10% of memory. This is enough
+					// to be considered effective (above the 5% threshold) but
+					// still above the soft limit, so mustRefuse remains true.
+					ms.Alloc = memAllocMiB * mibBytes * 9 / 10
+					gcCalled = false
+				} else {
+					ms.Alloc = memAllocMiB * mibBytes
+				}
 			}
 			// Mark last GC in the past so that even first call can trigger GC
 			// Not updating the initialization code, since at the beginning of the collector no need to GC.
@@ -211,6 +224,7 @@ func TestCallGCWhenSoftLimit(t *testing.T) {
 			numGCs := 0
 			ml.runGCFn = func() {
 				numGCs++
+				gcCalled = true
 			}
 
 			memAllocMiB = tt.memAllocMiB[0]
@@ -227,4 +241,134 @@ func TestCallGCWhenSoftLimit(t *testing.T) {
 			assert.Equal(t, tt.numGCs, numGCs)
 		})
 	}
+}
+
+func TestGCBackoffWhenIneffective(t *testing.T) {
+	// When GC cannot reclaim memory (e.g., held by exporter queues), the
+	// memory limiter should back off GC frequency to avoid burning CPU.
+	// This test reproduces the scenario from issue #4981 where the collector
+	// entered a degenerate state with force-GC on every tick.
+	cfg := &Config{
+		CheckInterval:                1 * time.Second,
+		MinGCIntervalWhenHardLimited: 0,
+		MemoryLimitMiB:               50,
+		MemorySpikeLimitMiB:          10,
+	}
+	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
+	require.NoError(t, err)
+
+	// Simulate memory stuck at 55 MiB (above hard limit of 50 MiB).
+	// GC has no effect — memory stays the same after collection.
+	ml.readMemStatsFn = func(ms *runtime.MemStats) {
+		ms.Alloc = 55 * mibBytes
+	}
+	ml.lastGCDone = ml.lastGCDone.Add(-time.Minute)
+	numGCs := 0
+	ml.runGCFn = func() {
+		numGCs++
+	}
+
+	// First check: GC should fire (no backoff yet).
+	ml.CheckMemLimits()
+	assert.True(t, ml.MustRefuse())
+	assert.Equal(t, 1, numGCs)
+	assert.Equal(t, 1, ml.consecutiveIneffectiveGCs)
+
+	// Subsequent checks with only 1ms between them: GC should NOT fire
+	// because backoff has been applied due to ineffective GC.
+	for range 5 {
+		ml.lastGCDone = ml.lastGCDone.Add(-1 * time.Millisecond)
+		ml.CheckMemLimits()
+	}
+	assert.True(t, ml.MustRefuse())
+	assert.Equal(t, 1, numGCs, "GC should not fire again due to backoff")
+
+	// But after enough time passes (exceeding the backed-off interval),
+	// GC should fire again.
+	ml.lastGCDone = ml.lastGCDone.Add(-3 * time.Minute)
+	ml.CheckMemLimits()
+	assert.True(t, ml.MustRefuse())
+	assert.Equal(t, 2, numGCs, "GC should fire after backoff interval expires")
+	assert.Equal(t, 2, ml.consecutiveIneffectiveGCs)
+}
+
+func TestGCBackoffResetOnRecovery(t *testing.T) {
+	// When memory drops below the soft limit (e.g., exporter queue drains),
+	// the GC backoff counter should reset so the next pressure event starts
+	// with fresh GC behavior.
+	cfg := &Config{
+		CheckInterval:                1 * time.Second,
+		MinGCIntervalWhenHardLimited: 0,
+		MemoryLimitMiB:               50,
+		MemorySpikeLimitMiB:          10,
+	}
+	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
+	require.NoError(t, err)
+
+	var currentMemAllocMiB uint64
+	ml.readMemStatsFn = func(ms *runtime.MemStats) {
+		ms.Alloc = currentMemAllocMiB * mibBytes
+	}
+	ml.lastGCDone = ml.lastGCDone.Add(-time.Minute)
+	numGCs := 0
+	ml.runGCFn = func() {
+		numGCs++
+	}
+
+	// Trigger ineffective GC (memory above hard limit, GC doesn't help).
+	currentMemAllocMiB = 55
+	ml.CheckMemLimits()
+	assert.True(t, ml.MustRefuse())
+	assert.Equal(t, 1, numGCs)
+	assert.Equal(t, 1, ml.consecutiveIneffectiveGCs)
+
+	// Simulate recovery: memory drops below soft limit.
+	currentMemAllocMiB = 30
+	ml.CheckMemLimits()
+	assert.False(t, ml.MustRefuse())
+	assert.Equal(t, 0, ml.consecutiveIneffectiveGCs, "backoff should reset on recovery")
+
+	// New pressure event: GC should fire immediately (no backoff from
+	// the previous incident).
+	currentMemAllocMiB = 55
+	ml.lastGCDone = ml.lastGCDone.Add(-time.Minute)
+	ml.CheckMemLimits()
+	assert.True(t, ml.MustRefuse())
+	assert.Equal(t, 2, numGCs, "GC should fire immediately after backoff reset")
+}
+
+func TestEffectiveGCInterval(t *testing.T) {
+	cfg := &Config{
+		CheckInterval:  1 * time.Second,
+		MemoryLimitMiB: 50,
+	}
+	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
+	require.NoError(t, err)
+
+	// No backoff: returns base interval.
+	ml.consecutiveIneffectiveGCs = 0
+	assert.Equal(t, 10*time.Second, ml.effectiveGCInterval(10*time.Second))
+	assert.Equal(t, time.Duration(0), ml.effectiveGCInterval(0))
+
+	// With base interval of 0, uses CheckInterval as the base.
+	ml.consecutiveIneffectiveGCs = 1
+	assert.Equal(t, 2*time.Second, ml.effectiveGCInterval(0)) // 1s * 2^1
+
+	ml.consecutiveIneffectiveGCs = 2
+	assert.Equal(t, 4*time.Second, ml.effectiveGCInterval(0)) // 1s * 2^2
+
+	ml.consecutiveIneffectiveGCs = 3
+	assert.Equal(t, 8*time.Second, ml.effectiveGCInterval(0)) // 1s * 2^3
+
+	// With explicit base interval, doubles from there.
+	ml.consecutiveIneffectiveGCs = 1
+	assert.Equal(t, 20*time.Second, ml.effectiveGCInterval(10*time.Second)) // 10s * 2^1
+
+	ml.consecutiveIneffectiveGCs = 2
+	assert.Equal(t, 40*time.Second, ml.effectiveGCInterval(10*time.Second)) // 10s * 2^2
+
+	// Caps at maxGCBackoffInterval.
+	ml.consecutiveIneffectiveGCs = 20
+	assert.Equal(t, maxGCBackoffInterval, ml.effectiveGCInterval(10*time.Second))
+	assert.Equal(t, maxGCBackoffInterval, ml.effectiveGCInterval(0))
 }
