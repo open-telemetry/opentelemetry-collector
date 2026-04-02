@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -153,4 +154,98 @@ func TestUnmarshal_LoggingExporter(t *testing.T) {
 	cfgs := NewConfigs(factories)
 	err := cfgs.Unmarshal(conf)
 	assert.ErrorContains(t, err, "the logging exporter has been deprecated, use the debug exporter instead")
+}
+
+func TestUnmarshal_TelemetryLogLevel(t *testing.T) {
+	for _, tk := range testKinds {
+		t.Run(tk.kind, func(t *testing.T) {
+			cfgs := NewConfigs(tk.factories)
+			conf := confmap.NewFromStringMap(map[string]any{
+				"nop": map[string]any{
+					"telemetry": map[string]any{
+						"logs": map[string]any{
+							"level": "debug",
+						},
+					},
+				},
+				"nop/verbose": map[string]any{
+					"telemetry": map[string]any{
+						"logs": map[string]any{
+							"level": "error",
+						},
+					},
+				},
+				"nop/default": nil,
+			})
+			require.NoError(t, cfgs.Unmarshal(conf))
+
+			assert.Equal(t, map[component.ID]component.Config{
+				component.NewID(nopType):                    tk.factories[nopType].CreateDefaultConfig(),
+				component.NewIDWithName(nopType, "verbose"): tk.factories[nopType].CreateDefaultConfig(),
+				component.NewIDWithName(nopType, "default"): tk.factories[nopType].CreateDefaultConfig(),
+			}, cfgs.Configs())
+
+			logLevels := cfgs.LogLevels()
+			assert.Equal(t, zapcore.DebugLevel, logLevels[component.NewID(nopType)])
+			assert.Equal(t, zapcore.ErrorLevel, logLevels[component.NewIDWithName(nopType, "verbose")])
+			_, hasDefault := logLevels[component.NewIDWithName(nopType, "default")]
+			assert.False(t, hasDefault, "component without telemetry config should not have a log level entry")
+		})
+	}
+}
+
+func TestUnmarshal_TelemetryLogLevel_NoLevel(t *testing.T) {
+	for _, tk := range testKinds {
+		t.Run(tk.kind, func(t *testing.T) {
+			cfgs := NewConfigs(tk.factories)
+			conf := confmap.NewFromStringMap(map[string]any{
+				"nop": map[string]any{
+					"telemetry": map[string]any{
+						"logs": map[string]any{},
+					},
+				},
+			})
+			require.NoError(t, cfgs.Unmarshal(conf))
+			assert.Empty(t, cfgs.LogLevels(), "empty telemetry::logs section should not produce a log level entry")
+		})
+	}
+}
+
+func TestUnmarshal_TelemetryInvalidConfig(t *testing.T) {
+	for _, tk := range testKinds {
+		t.Run(tk.kind, func(t *testing.T) {
+			cfgs := NewConfigs(tk.factories)
+			conf := confmap.NewFromStringMap(map[string]any{
+				"nop": map[string]any{
+					"telemetry": map[string]any{
+						"logs": map[string]any{
+							"level":         "debug",
+							"unknown_field": "value",
+						},
+					},
+				},
+			})
+			err := cfgs.Unmarshal(conf)
+			assert.ErrorContains(t, err, "invalid telemetry config")
+		})
+	}
+}
+
+func TestUnmarshal_TelemetryStrippedFromComponentConfig(t *testing.T) {
+	for _, tk := range testKinds {
+		t.Run(tk.kind, func(t *testing.T) {
+			cfgs := NewConfigs(tk.factories)
+			conf := confmap.NewFromStringMap(map[string]any{
+				"nop": map[string]any{
+					"telemetry": map[string]any{
+						"logs": map[string]any{
+							"level": "warn",
+						},
+					},
+				},
+			})
+			require.NoError(t, cfgs.Unmarshal(conf))
+			assert.Equal(t, tk.factories[nopType].CreateDefaultConfig(), cfgs.Configs()[component.NewID(nopType)])
+		})
+	}
 }
