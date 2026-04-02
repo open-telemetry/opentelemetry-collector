@@ -6,7 +6,6 @@ all_set:
       attributes: ["string_attr","state","enum_attr","slice_attr","map_attr","conditional_int_attr","conditional_string_attr","opt_in_bool_attr"]
     default.metric.to_be_removed:
       enabled: true
-      attributes: []
     metric.input_type:
       enabled: true
       attributes: ["string_attr","state","enum_attr","slice_attr","map_attr"]
@@ -24,7 +23,10 @@ all_set:
       attributes: ["required_string_attr","string_attr","boolean_attr"]
     system.cpu.time:
       enabled: true
-      attributes: []
+      attributes: ["cpu"]
+    system.memory.usage:
+      enabled: true
+      attributes: ["state"]
   events:
     default.event:
       enabled: true
@@ -56,7 +58,6 @@ reaggregate_set:
       attributes: []
     default.metric.to_be_removed:
       enabled: true
-      attributes: []
     metric.input_type:
       enabled: true
       attributes: []
@@ -73,6 +74,9 @@ reaggregate_set:
       enabled: true
       attributes: ["required_string_attr"]
     system.cpu.time:
+      enabled: true
+      attributes: []
+    system.memory.usage:
       enabled: true
       attributes: []
   events:
@@ -106,7 +110,6 @@ none_set:
       attributes: ["string_attr","state","enum_attr","slice_attr","map_attr","conditional_int_attr","conditional_string_attr","opt_in_bool_attr"]
     default.metric.to_be_removed:
       enabled: false
-      attributes: []
     metric.input_type:
       enabled: false
       attributes: ["string_attr","state","enum_attr","slice_attr","map_attr"]
@@ -124,7 +127,10 @@ none_set:
       attributes: ["required_string_attr","string_attr","boolean_attr"]
     system.cpu.time:
       enabled: false
-      attributes: []
+      attributes: ["cpu"]
+    system.memory.usage:
+      enabled: false
+      attributes: ["state"]
   events:
     default.event:
       enabled: false

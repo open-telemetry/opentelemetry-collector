@@ -4,10 +4,13 @@
 package pprofile
 
 import (
+	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
 	gootlpprofiles "go.opentelemetry.io/proto/slim/otlp/profiles/v1development"
 	goproto "google.golang.org/protobuf/proto"
 )
@@ -42,9 +45,18 @@ func TestProfilesProtoWireCompatibility(t *testing.T) {
 	td2, err = unmarshaler.UnmarshalProfiles(wire2)
 	require.NoError(t, err)
 
-	// Now compare that the original and final ProtoBuf messages are the same.
-	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
-	assert.Equal(t, td, td2)
+	// After unmarshal, td2 will have resolved references (strings instead of string_value_ref/key_ref)
+	// while td may have references. Marshal td2 again to verify wire compatibility.
+	wire3, err := marshaler.MarshalProfiles(td2)
+	require.NoError(t, err)
+
+	// Verify full round-trip fidelity: unmarshal both wire1 and wire3 into goproto
+	// messages and compare them semantically. This ensures all data (attributes,
+	// dictionary, profiles, etc.) survives the round-trip through both libraries.
+	var check1, check2 gootlpprofiles.ProfilesData
+	require.NoError(t, goproto.Unmarshal(wire1, &check1))
+	require.NoError(t, goproto.Unmarshal(wire3, &check2))
+	assert.True(t, goproto.Equal(&check1, &check2), "round-trip through goproto did not preserve profile data")
 }
 
 func TestProtoProfilesUnmarshalerError(t *testing.T) {
@@ -75,6 +87,8 @@ func BenchmarkProfilesToProto(b *testing.B) {
 	marshaler := &ProtoMarshaler{}
 	profiles := generateBenchmarkProfiles(128)
 
+	b.ResetTimer()
+	b.ReportAllocs()
 	for b.Loop() {
 		buf, err := marshaler.MarshalProfiles(profiles)
 		require.NoError(b, err)
@@ -90,6 +104,7 @@ func BenchmarkProfilesFromProto(b *testing.B) {
 	require.NoError(b, err)
 	assert.NotEmpty(b, buf)
 
+	b.ResetTimer()
 	b.ReportAllocs()
 	for b.Loop() {
 		profiles, err := unmarshaler.UnmarshalProfiles(buf)
@@ -107,4 +122,214 @@ func generateBenchmarkProfiles(samplesCount int) Profiles {
 		im.SetStackIndex(0)
 	}
 	return md
+}
+
+// generateProfiles creates a Profiles object with the specified number of resources, scopes, profiles, and samples.
+func generateProfiles(b *testing.B, resourceCount, scopeCount, profileCount, sampleCount int) Profiles {
+	b.Helper()
+
+	profiles := NewProfiles()
+	dict := profiles.Dictionary()
+
+	// Pre-populate dictionary with common strings
+	dict.StringTable().Append("") // Index 0 is always empty string
+	dict.StringTable().Append("cpu")
+	dict.StringTable().Append("nanoseconds")
+	dict.StringTable().Append("samples")
+	dict.StringTable().Append("count")
+
+	// Generate resource profiles
+	for r := range resourceCount {
+		rp := profiles.ResourceProfiles().AppendEmpty()
+		rp.SetSchemaUrl(semconv.SchemaURL)
+		resource := rp.Resource()
+
+		// Add resource attributes
+		attrs := resource.Attributes()
+		attrs.PutStr(string(semconv.ServiceNameKey), fmt.Sprintf("service-%d", r))
+		attrs.PutStr(string(semconv.ServiceVersionKey), fmt.Sprintf("version-%d", r))
+		attrs.PutStr(string(semconv.ProcessPIDKey), strconv.Itoa(1000+r))
+		attrs.PutStr(string(semconv.K8SPodNameKey), fmt.Sprintf("pod-%d", r%10))
+		attrs.PutStr(string(semconv.K8SNamespaceNameKey), "default")
+		attrs.PutStr(string(semconv.TelemetrySDKNameKey), "opentelemetry")
+
+		// Generate scope profiles
+		for s := range scopeCount {
+			sp := rp.ScopeProfiles().AppendEmpty()
+			sp.SetSchemaUrl(semconv.SchemaURL)
+			scope := sp.Scope()
+			scope.SetName(fmt.Sprintf("profiler-scope-%d", s))
+			scope.SetVersion("1.0.0")
+
+			// Generate profiles
+			for range profileCount {
+				profile := sp.Profiles().AppendEmpty()
+
+				// Add sample types
+				sampleType := profile.SampleType()
+				sampleType.SetTypeStrindex(1) // "cpu"
+				sampleType.SetUnitStrindex(2) // "nanoseconds"
+
+				// Add period type
+				periodType := profile.PeriodType()
+				periodType.SetTypeStrindex(1) // "cpu"
+				periodType.SetUnitStrindex(2) // "nanoseconds"
+				profile.SetPeriod(1000000)
+
+				// Generate samples
+				samples := profile.Samples()
+				for i := range sampleCount {
+					sample := samples.AppendEmpty()
+					sample.SetStackIndex(int32(i % 100))
+
+					// Add attribute indices for samples
+					sample.AttributeIndices().Append(int32(i % 10))
+				}
+			}
+		}
+	}
+
+	return profiles
+}
+
+func BenchmarkUnmarshalProfiles(b *testing.B) {
+	testCases := []struct {
+		name          string
+		resourceCount int
+		scopeCount    int
+		profileCount  int
+		sampleCount   int
+	}{
+		{
+			name:          "small",
+			resourceCount: 1,
+			scopeCount:    1,
+			profileCount:  1,
+			sampleCount:   100,
+		},
+		{
+			name:          "medium",
+			resourceCount: 5,
+			scopeCount:    2,
+			profileCount:  2,
+			sampleCount:   500,
+		},
+		{
+			name:          "large",
+			resourceCount: 20,
+			scopeCount:    3,
+			profileCount:  5,
+			sampleCount:   1000,
+		},
+	}
+
+	for _, tc := range testCases {
+		b.Run(tc.name, func(b *testing.B) {
+			// Generate profile data and marshal it
+			profiles := generateProfiles(b, tc.resourceCount, tc.scopeCount, tc.profileCount, tc.sampleCount)
+			marshaler := &ProtoMarshaler{}
+			data, err := marshaler.MarshalProfiles(profiles)
+			if err != nil {
+				b.Fatalf("failed to marshal profiles: %v", err)
+			}
+
+			unmarshaler := &ProtoUnmarshaler{}
+			b.ResetTimer()
+			b.ReportAllocs()
+
+			for i := 0; i < b.N; i++ {
+				profiles, err := unmarshaler.UnmarshalProfiles(data)
+				if err != nil {
+					b.Fatalf("failed to unmarshal: %v", err)
+				}
+				_ = profiles
+			}
+		})
+	}
+}
+
+func BenchmarkMarshalProfiles(b *testing.B) {
+	testCases := []struct {
+		name          string
+		resourceCount int
+		scopeCount    int
+		profileCount  int
+		sampleCount   int
+	}{
+		{
+			name:          "small",
+			resourceCount: 1,
+			scopeCount:    1,
+			profileCount:  1,
+			sampleCount:   100,
+		},
+		{
+			name:          "medium",
+			resourceCount: 5,
+			scopeCount:    2,
+			profileCount:  2,
+			sampleCount:   500,
+		},
+		{
+			name:          "large",
+			resourceCount: 20,
+			scopeCount:    3,
+			profileCount:  5,
+			sampleCount:   1000,
+		},
+	}
+
+	for _, tc := range testCases {
+		b.Run(tc.name, func(b *testing.B) {
+			marshaler := &ProtoMarshaler{}
+
+			// with_refs: simulate the normal ingest path where data was
+			// received on the wire (refs present), then unmarshaled (refs
+			// resolved but KeyRef kept), and is now being re-marshaled
+			// without any attribute modifications.
+			b.Run("with_refs", func(b *testing.B) {
+				profiles := generateProfiles(b, tc.resourceCount, tc.scopeCount, tc.profileCount, tc.sampleCount)
+				unmarshaler := &ProtoUnmarshaler{}
+				buf, err := marshaler.MarshalProfiles(profiles)
+				if err != nil {
+					b.Fatalf("failed to marshal: %v", err)
+				}
+				profiles, err = unmarshaler.UnmarshalProfiles(buf)
+				if err != nil {
+					b.Fatalf("failed to unmarshal: %v", err)
+				}
+
+				b.ResetTimer()
+				b.ReportAllocs()
+
+				for i := 0; i < b.N; i++ {
+					buf, err := marshaler.MarshalProfiles(profiles)
+					if err != nil {
+						b.Fatalf("failed to marshal: %v", err)
+					}
+					_ = buf
+				}
+			})
+
+			// without_refs: each iteration gets a fresh copy with no refs,
+			// simulating data that was constructed or had attributes modified.
+			b.Run("without_refs", func(b *testing.B) {
+				copies := make([]Profiles, b.N)
+				for i := range copies {
+					copies[i] = generateProfiles(b, tc.resourceCount, tc.scopeCount, tc.profileCount, tc.sampleCount)
+				}
+
+				b.ResetTimer()
+				b.ReportAllocs()
+
+				for i := 0; i < b.N; i++ {
+					buf, err := marshaler.MarshalProfiles(copies[i])
+					if err != nil {
+						b.Fatalf("failed to marshal: %v", err)
+					}
+					_ = buf
+				}
+			})
+		})
+	}
 }

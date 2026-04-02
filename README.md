@@ -98,7 +98,7 @@ calls and don't want them to feel excluded.
 
 ## Supported OTLP version
 
-This code base is currently built against using OTLP protocol v1.5.0,
+This code base is currently built against using OTLP protocol v1.10.0,
 considered Stable. [See the OpenTelemetry Protocol Stability
 definition
 here.](https://github.com/open-telemetry/opentelemetry-proto?tab=readme-ov-file#stability-definition)
@@ -189,6 +189,7 @@ the role of the [release manager](./docs/release.md#release-manager).
 ### Triagers
 
 - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
+- [Arthur Silva Sens](https://github.com/ArthurSens), Grafana Labs
 - [Chao Weng](https://github.com/sincejune), AppDynamics
 - [Vihas Makwana](https://github.com/VihasMakwana), Elastic
 - Actively seeking contributors to triage issues

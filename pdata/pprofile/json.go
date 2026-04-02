@@ -15,6 +15,9 @@ type JSONMarshaler struct{}
 
 // MarshalProfiles to the OTLP/JSON format.
 func (*JSONMarshaler) MarshalProfiles(pd Profiles) ([]byte, error) {
+	// Convert strings to references for efficient transmission
+	convertProfilesToReferences(pd)
+
 	dest := json.BorrowStream(nil)
 	defer json.ReturnStream(dest)
 	pd.getOrig().MarshalJSON(dest)
@@ -37,5 +40,10 @@ func (*JSONUnmarshaler) UnmarshalProfiles(buf []byte) (Profiles, error) {
 		return Profiles{}, iter.Error()
 	}
 	otlp.MigrateProfiles(pd.getOrig().ResourceProfiles)
+
+	// Resolve all string_value_ref and key_ref to their actual strings
+	// so the pdata API works transparently
+	resolveProfilesReferences(pd)
+
 	return pd, nil
 }

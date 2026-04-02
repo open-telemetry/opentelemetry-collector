@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -73,6 +74,28 @@ func TestLoadMetadata(t *testing.T) {
 					},
 					Warnings:             []string{"Any additional information that should be brought to the consumer's attention"},
 					UnsupportedPlatforms: []string{"freebsd", "illumos"},
+				},
+				Config: &cfggen.ConfigMetadata{
+					Type: "object",
+					AllOf: []*cfggen.ConfigMetadata{
+						{
+							Ref: "./internal/metadata.metrics_builder_config",
+						},
+					},
+					Properties: map[string]*cfggen.ConfigMetadata{
+						"endpoint": {
+							Description: "The endpoint to scrape metrics from.",
+							Type:        "string",
+							Default:     "localhost:12345",
+						},
+						"timeout": {
+							Description: "Timeout for scraping metrics.",
+							Type:        "string",
+							Format:      "duration",
+							Default:     "10s",
+						},
+					},
+					Required: []string{"endpoint"},
 				},
 				ResourceAttributes: map[AttributeName]Attribute{
 					"string.resource.attr": {
@@ -160,6 +183,14 @@ func TestLoadMetadata(t *testing.T) {
 				},
 
 				Attributes: map[AttributeName]Attribute{
+					"cpu": {
+						Description: "Logical CPU number starting at 0.",
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName:         "cpu",
+						RequirementLevel: AttributeRequirementLevelRecommended,
+					},
 					"enum_attr": {
 						Description:  "Attribute with a known set of string values.",
 						NameOverride: "",
@@ -252,6 +283,18 @@ func TestLoadMetadata(t *testing.T) {
 						FullName:         "required_string_attr",
 						RequirementLevel: AttributeRequirementLevelRequired,
 					},
+					"state": {
+						Description: "Breakdown of memory usage by type.",
+						Enum:        []string{"buffered", "cached", "inactive", "free", "slab_reclaimable", "slab_unreclaimable", "used"},
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName:         "state",
+						RequirementLevel: AttributeRequirementLevelRecommended,
+						SemanticConvention: &SemanticConvention{
+							SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/registry/attributes/system.md#system-memory-state",
+						},
+					},
 				},
 				Metrics: map[MetricName]Metric{
 					"default.metric": {
@@ -307,12 +350,27 @@ func TestLoadMetadata(t *testing.T) {
 							SemanticConvention:    &SemanticConvention{SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime"},
 							Description:           "Monotonic cumulative sum int metric enabled by default.",
 							ExtendedDocumentation: "The metric will be become optional soon.",
+							Attributes:            []AttributeName{"cpu"},
 						},
 						Unit: strPtr("s"),
 						Sum: &Sum{
 							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
 							Mono:                   Mono{Monotonic: true},
+						},
+					},
+					"system.memory.usage": {
+						Signal: Signal{
+							Enabled:     true,
+							Stability:   component.StabilityLevelDevelopment,
+							Description: "Bytes of memory in use.",
+							Attributes:  []AttributeName{"state"},
+						},
+						Unit: strPtr("By"),
+						Sum: &Sum{
+							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
+							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+							Mono:                   Mono{Monotonic: false},
 						},
 					},
 					"optional.metric": {
@@ -437,7 +495,7 @@ func TestLoadMetadata(t *testing.T) {
 								Since: "1.5.0",
 								Note:  "This metric will be removed in favor of batch_send_trigger_size",
 							},
-							Unit: strPtr("{times}"),
+							Unit: strPtr("{time}"),
 							Sum: &Sum{
 								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeInt},
 								Mono:            Mono{Monotonic: true},
@@ -477,7 +535,7 @@ func TestLoadMetadata(t *testing.T) {
 								Description:           "This metric is optional and therefore not initialized in NewTelemetryBuilder.",
 								ExtendedDocumentation: "For example this metric only exists if feature A is enabled.",
 							},
-							Unit:     strPtr("{items}"),
+							Unit:     strPtr("{item}"),
 							Optional: true,
 							Gauge: &Gauge{
 								MetricValueType: MetricValueType{
@@ -492,7 +550,7 @@ func TestLoadMetadata(t *testing.T) {
 								Description: "Queue capacity - sync gauge example.",
 								Stability:   component.StabilityLevelDevelopment,
 							},
-							Unit: strPtr("{items}"),
+							Unit: strPtr("{item}"),
 							Gauge: &Gauge{
 								MetricValueType: MetricValueType{
 									ValueType: pmetric.NumberDataPointValueTypeInt,
@@ -606,7 +664,7 @@ func TestLoadMetadata(t *testing.T) {
 		{
 			name:    "testdata/invalid_metric_semconvref.yaml",
 			want:    Metadata{},
-			wantErr: "metric \"default.metric\": invalid semantic-conventions URL: want https://github.com/open-telemetry/semantic-conventions/blob/v1.37.2/*#metric-defaultmetric, got \"https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime\"",
+			wantErr: "metric \"default.metric\": invalid semantic-conventions URL: want https://github.com/open-telemetry/semantic-conventions/blob/v1.37.2/*#metric-defaultmetric, got \"https://github.com/open-telemetry/semantic-conventions/blob/v1.37.2/docs/system/system-metrics.md#metric-systemcputime\"",
 		},
 		{
 			name:    "testdata/no_metric_stability.yaml",
@@ -617,6 +675,21 @@ func TestLoadMetadata(t *testing.T) {
 			name:    "testdata/undeprecated_with_deprecation.yaml",
 			want:    Metadata{},
 			wantErr: "`stability` must be `deprecated` when specifying a `deprecated` field",
+		},
+		{
+			name:    "testdata/invalid_config.yaml",
+			want:    Metadata{},
+			wantErr: "config type must be \"object\", got \"string\"",
+		},
+		{
+			name:    "testdata/invalid_metric_semconv_url_full.yaml",
+			want:    Metadata{},
+			wantErr: "metric \"default.metric\", use relative path for URL, not the full URL",
+		},
+		{
+			name:    "testdata/invalid_attribute_semconv_url_full.yaml",
+			want:    Metadata{},
+			wantErr: "attribute \"used_attr\", use relative path for URL, not the full URL",
 		},
 		{
 			name:    "testdata/~~this file doesn't exist~~.yaml",
@@ -673,6 +746,46 @@ func TestLoadMetadata(t *testing.T) {
 					Class: "receiver",
 					Stability: map[component.StabilityLevel][]string{
 						component.StabilityLevelBeta: {"logs"},
+					},
+				},
+			},
+		},
+		{
+			name: "testdata/with_underscore_in_semconv_ref_anchor_tag.yaml",
+			want: Metadata{
+				Type:                 "metricreceiver",
+				GeneratedPackageName: "metadata",
+				SemConvVersion:       "1.38.0",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				ShortFolderName:      "testdata",
+				Tests:                Tests{Host: "newMdatagenNopHost()"},
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelDevelopment: {"logs"},
+						component.StabilityLevelBeta:        {"traces"},
+						component.StabilityLevelStable:      {"metrics"},
+					},
+					Distributions: []string{"contrib"},
+					Warnings:      []string{"Any additional information that should be brought to the consumer's attention"},
+				},
+				Metrics: map[MetricName]Metric{
+					"system.disk.io_time": {
+						Signal: Signal{
+							Enabled:     true,
+							Description: "Time disk spent activated..",
+							Stability:   component.StabilityLevelDevelopment,
+							SemanticConvention: &SemanticConvention{
+								SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemdiskio_time",
+							},
+						},
+						Unit: strPtr("s"),
+						Sum: &Sum{
+							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+							Mono:                   Mono{Monotonic: true},
+							MetricValueType:        MetricValueType{ValueType: pmetric.NumberDataPointValueTypeDouble},
+						},
 					},
 				},
 			},
