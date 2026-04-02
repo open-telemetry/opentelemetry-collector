@@ -170,7 +170,7 @@ func TestServerReusePort(t *testing.T) {
 		}
 
 		_, err := sc.Listen(t.Context())
-		require.Error(t, err, "ReusePort is not supported on Windows")
+		require.EqualError(t, err, "ReusePort is not supported on this platform")
 		return
 	}
 
