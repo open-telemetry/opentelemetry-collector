@@ -622,3 +622,80 @@ type testParams struct {
 	items int
 	err   error
 }
+
+func TestExportMetricsDroppedOp(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	const totalItems = 10
+	const droppedItems = 3
+
+	obsrep, err := newObsReportSender(
+		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		pipeline.SignalMetrics,
+		sender.NewSender(func(context.Context, request.Request) error {
+			return experr.NewDroppedItemsErr(droppedItems, "incompatible temporality")
+		}),
+	)
+	require.NoError(t, err)
+
+	// A DroppedItemsErr must not be returned to the caller.
+	sendErr := obsrep.Send(context.Background(), &requesttest.FakeRequest{Items: totalItems})
+	require.NoError(t, sendErr)
+
+	metadatatest.AssertEqualExporterSentMetricPoints(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(attribute.String("exporter", exporterID.String())),
+				Value:      int64(totalItems - droppedItems),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	metadatatest.AssertEqualExporterDroppedMetricPoints(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(attribute.String("exporter", exporterID.String())),
+				Value:      int64(droppedItems),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	// No items should be counted as send failures.
+	_, getErr := tt.GetMetric("otelcol_exporter_send_failed_metric_points")
+	assert.Error(t, getErr, "send_failed_metric_points should not be recorded when items are dropped")
+}
+
+func TestExportAllItemsDroppedOp(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	const totalItems = 5
+
+	obsrep, err := newObsReportSender(
+		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		pipeline.SignalMetrics,
+		sender.NewSender(func(context.Context, request.Request) error {
+			// Drop all items.
+			return experr.NewDroppedItemsErr(totalItems, "unsupported")
+		}),
+	)
+	require.NoError(t, err)
+
+	sendErr := obsrep.Send(context.Background(), &requesttest.FakeRequest{Items: totalItems})
+	require.NoError(t, sendErr)
+
+	metadatatest.AssertEqualExporterSentMetricPoints(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(attribute.String("exporter", exporterID.String())),
+				Value:      0,
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	metadatatest.AssertEqualExporterDroppedMetricPoints(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(attribute.String("exporter", exporterID.String())),
+				Value:      int64(totalItems),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+}

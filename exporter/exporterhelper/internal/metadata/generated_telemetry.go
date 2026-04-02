@@ -28,6 +28,10 @@ type TelemetryBuilder struct {
 	meter                               metric.Meter
 	mu                                  sync.Mutex
 	registrations                       []metric.Registration
+	ExporterDroppedLogRecords           metric.Int64Counter
+	ExporterDroppedMetricPoints         metric.Int64Counter
+	ExporterDroppedProfileSamples       metric.Int64Counter
+	ExporterDroppedSpans                metric.Int64Counter
 	ExporterEnqueueFailedLogRecords     metric.Int64Counter
 	ExporterEnqueueFailedMetricPoints   metric.Int64Counter
 	ExporterEnqueueFailedProfileSamples metric.Int64Counter
@@ -115,6 +119,30 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+	builder.ExporterDroppedLogRecords, err = builder.meter.Int64Counter(
+		"otelcol_exporter_dropped_log_records",
+		metric.WithDescription("Number of log records intentionally dropped by the exporter (e.g. unsupported data). [Alpha]"),
+		metric.WithUnit("{record}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterDroppedMetricPoints, err = builder.meter.Int64Counter(
+		"otelcol_exporter_dropped_metric_points",
+		metric.WithDescription("Number of metric points intentionally dropped by the exporter (e.g. unsupported temporality). [Alpha]"),
+		metric.WithUnit("{datapoint}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterDroppedProfileSamples, err = builder.meter.Int64Counter(
+		"otelcol_exporter_dropped_profile_samples",
+		metric.WithDescription("Number of profile samples intentionally dropped by the exporter. [Development]"),
+		metric.WithUnit("{sample}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterDroppedSpans, err = builder.meter.Int64Counter(
+		"otelcol_exporter_dropped_spans",
+		metric.WithDescription("Number of spans intentionally dropped by the exporter (e.g. unsupported data). [Alpha]"),
+		metric.WithUnit("{span}"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ExporterEnqueueFailedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_exporter_enqueue_failed_log_records",
 		metric.WithDescription("Number of log records failed to be added to the sending queue. [Alpha]"),
