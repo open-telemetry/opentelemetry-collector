@@ -90,6 +90,9 @@ func (m *Metric) validate(metricName MetricName, semConvVersion string) error {
 	if m.Gauge != nil {
 		errs = errors.Join(errs, m.Gauge.Validate())
 	}
+	if m.Histogram != nil {
+		errs = errors.Join(errs, m.Histogram.Validate())
+	}
 	if m.SemanticConvention != nil {
 		if err := validateSemConvMetricURL(m.SemanticConvention.SemanticConventionRef, semConvVersion, string(metricName)); err != nil {
 			errs = errors.Join(errs, err)
@@ -367,16 +370,54 @@ func (d *Sum) IsAsync() bool {
 
 var _ MetricData = (*Histogram)(nil)
 
+// HistogramAggregation specifies the aggregation type for a histogram metric.
+type HistogramAggregation string
+
+const (
+	// HistogramAggregationExplicit uses explicit, predefined bucket boundaries.
+	// This is the default when no aggregation is specified.
+	HistogramAggregationExplicit HistogramAggregation = "explicit"
+	// HistogramAggregationExponential uses base2 exponential bucket boundaries,
+	// providing adaptive bucketing and better visibility into long-tail distributions.
+	HistogramAggregationExponential HistogramAggregation = "exponential"
+)
+
 type Histogram struct {
 	AggregationTemporality `mapstructure:"aggregation_temporality"`
 	Mono                   `mapstructure:",squash"`
 	MetricValueType        `mapstructure:"value_type"`
 	MetricInputType        `mapstructure:",squash"`
-	Async                  bool      `mapstructure:"async,omitempty"`
-	Boundaries             []float64 `mapstructure:"bucket_boundaries"`
+	Async                  bool                 `mapstructure:"async,omitempty"`
+	Boundaries             []float64            `mapstructure:"bucket_boundaries"`
+	// Aggregation specifies the histogram aggregation type. Defaults to "explicit".
+	// Use "exponential" for base2 exponential bucket histograms.
+	Aggregation            HistogramAggregation `mapstructure:"aggregation,omitempty"`
+}
+
+// IsExponential reports whether this histogram uses exponential bucket aggregation.
+func (d *Histogram) IsExponential() bool {
+	return d.Aggregation == HistogramAggregationExponential
+}
+
+// Validate checks that the histogram configuration is consistent.
+func (d *Histogram) Validate() error {
+	switch d.Aggregation {
+	case "", HistogramAggregationExplicit, HistogramAggregationExponential:
+		// valid
+	default:
+		return fmt.Errorf("invalid aggregation %q: must be %q or %q",
+			d.Aggregation, HistogramAggregationExplicit, HistogramAggregationExponential)
+	}
+	if d.IsExponential() && len(d.Boundaries) > 0 {
+		return errors.New("bucket_boundaries must not be set when aggregation is \"exponential\"")
+	}
+	return nil
 }
 
 func (d *Histogram) Type() string {
+	if d.IsExponential() {
+		return "ExponentialHistogram"
+	}
 	return "Histogram"
 }
 
@@ -390,7 +431,9 @@ func (d *Histogram) HasAggregated() bool {
 
 func (d *Histogram) Instrument() string {
 	instrumentName := cases.Title(language.English).String(d.BasicType())
-	return instrumentName + d.Type()
+	// The Go SDK instrument is always "Histogram" regardless of aggregation;
+	// aggregation type is controlled at the reader level.
+	return instrumentName + "Histogram"
 }
 
 // Unmarshal is a custom unmarshaler for histogram. Needed mostly to avoid MetricValueType.Unmarshal inheritance.

@@ -143,8 +143,8 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		{{ end -}}
 		metric.WithDescription("{{ $metric.Description }} [{{ $metric.Stability }}]"),
 		metric.WithUnit("{{ $metric.Unit }}"),
-		{{ if eq $metric.Data.Type "Histogram" -}}
-		{{- if $metric.Data.Boundaries -}}metric.WithExplicitBucketBoundaries([]float64{ {{- range $metric.Data.Boundaries }} {{.}}, {{- end }} }...),{{- end }}
+		{{ if $metric.Histogram -}}
+		{{- if and $metric.Histogram.Boundaries (not $metric.Histogram.IsExponential) -}}metric.WithExplicitBucketBoundaries([]float64{ {{- range $metric.Histogram.Boundaries }} {{.}}, {{- end }} }...),{{- end }}
 		{{- end }}
 	)
 	errs = errors.Join(errs, err)

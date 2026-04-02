@@ -55,6 +55,8 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.DataPoint[{{ $metric.Sum.MetricValueType.BasicType }}]{{"{{Value: 1}}"}},
 		{{- else if eq $metric.Data.Type "Histogram" -}}
 		[]metricdata.HistogramDataPoint[{{ $metric.Histogram.MetricValueType.BasicType }}]{{"{{}}"}}, metricdatatest.IgnoreValue(),
+		{{- else if eq $metric.Data.Type "ExponentialHistogram" -}}
+		[]metricdata.ExponentialHistogramDataPoint[{{ $metric.Histogram.MetricValueType.BasicType }}]{{"{{}}"}}, metricdatatest.IgnoreValue(),
 		{{- end }}
 		metricdatatest.IgnoreTimestamp())
 	{{- end }}
