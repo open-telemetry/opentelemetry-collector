@@ -92,6 +92,10 @@ type BatchConfig struct {
 	// FlushTimeout sets the time after which a batch will be sent regardless of its size.
 	FlushTimeout time.Duration `mapstructure:"flush_timeout"`
 
+	// FixedWindows enables batching on a fixed schedule anchored at batcher start
+	// time, instead of resetting the flush timeout relative to the last timer reset.
+	FixedWindows bool `mapstructure:"fixed_windows"`
+
 	// Sizer determines the type of size measurement used by the batch.
 	// If not configured, use the same configuration as the queue.
 	// It accepts "requests", "items", or "bytes".
