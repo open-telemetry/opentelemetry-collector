@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/featuregate
 
-go 1.25.0
+go 1.25.8
 
 require (
 	github.com/hashicorp/go-version v1.9.0
