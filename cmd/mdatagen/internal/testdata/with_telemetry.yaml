@@ -10,7 +10,7 @@ attributes:
     type: string
 telemetry:
   metrics:
-    sampling_decision_latency:
+    request_latency:
       description: Latency (in microseconds) of a given sampling policy
       unit: µs
       enabled: true

@@ -387,8 +387,8 @@ type Histogram struct {
 	Mono                   `mapstructure:",squash"`
 	MetricValueType        `mapstructure:"value_type"`
 	MetricInputType        `mapstructure:",squash"`
-	Async                  bool                 `mapstructure:"async,omitempty"`
-	Boundaries             []float64            `mapstructure:"bucket_boundaries"`
+	Async                  bool      `mapstructure:"async,omitempty"`
+	Boundaries             []float64 `mapstructure:"bucket_boundaries"`
 	// Aggregation specifies the histogram aggregation type. Defaults to "explicit".
 	// Use "exponential" for base2 exponential bucket histograms.
 	Aggregation HistogramAggregation `mapstructure:"aggregation,omitempty"`
@@ -449,9 +449,7 @@ func (d *Histogram) HasAggregated() bool {
 
 func (d *Histogram) Instrument() string {
 	instrumentName := cases.Title(language.English).String(d.BasicType())
-	// The Go SDK instrument is always "Histogram" regardless of aggregation;
-	// aggregation type is controlled at the reader level.
-	return instrumentName + "Histogram"
+	return instrumentName + d.Type()
 }
 
 // Unmarshal is a custom unmarshaler for histogram. Needed mostly to avoid MetricValueType.Unmarshal inheritance.
