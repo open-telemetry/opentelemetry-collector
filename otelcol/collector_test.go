@@ -145,7 +145,7 @@ func TestCollectorStateAfterConfigChange(t *testing.T) {
 	watcher(&confmap.ChangeEvent{})
 	unblock = <-shutdownRequests
 	assert.Equal(t, StateClosing, col.GetState())
-	col.Shutdown()
+	go col.Shutdown() // Shutdown now blocks until Run completes, so signal asynchronously.
 	close(unblock)
 
 	// After the config reload, the final shutdown should occur.
@@ -410,6 +410,10 @@ func TestCollectorRun(t *testing.T) {
 
 			wg := startCollector(context.Background(), t, col)
 
+			assert.Eventually(t, func() bool {
+				return StateRunning == col.GetState()
+			}, 2*time.Second, 200*time.Millisecond)
+
 			col.Shutdown()
 			wg.Wait()
 			assert.Equal(t, StateClosed, col.GetState())
@@ -429,10 +433,75 @@ func TestCollectorRun_AfterShutdown(t *testing.T) {
 	// Calling shutdown before collector is running should cause it to return quickly
 	require.NotPanics(t, func() { col.Shutdown() })
 
-	wg := startCollector(context.Background(), t, col)
+	// Run after Shutdown should return nil without starting the service.
+	err = col.Run(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, StateClosed, col.GetState())
+}
+
+func TestCollectorRun_AfterShutdown_ConfigProviderShutdownError(t *testing.T) {
+	set := CollectorSettings{
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              nopFactories,
+		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
+	}
+	col, err := NewCollector(set)
+	require.NoError(t, err)
 
 	col.Shutdown()
-	wg.Wait()
+
+	wantErr := errors.New("provider shutdown failed")
+	resolver, resolverErr := confmap.NewResolver(confmap.ResolverSettings{
+		URIs: []string{"err:config"},
+		ProviderFactories: []confmap.ProviderFactory{
+			confmap.NewProviderFactory(func(_ confmap.ProviderSettings) confmap.Provider {
+				return &errShutdownProvider{err: wantErr}
+			}),
+		},
+	})
+	require.NoError(t, resolverErr)
+	col.configProvider = &ConfigProvider{mapResolver: resolver}
+
+	runErr := col.Run(context.Background())
+	require.ErrorContains(t, runErr, "failed to shutdown config provider")
+	require.ErrorIs(t, runErr, wantErr)
+	assert.Equal(t, StateClosed, col.GetState())
+}
+
+func TestShutdownBlocksUntilRunCompletes(t *testing.T) {
+	set := CollectorSettings{
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              nopFactories,
+		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
+	}
+	col, err := NewCollector(set)
+	require.NoError(t, err)
+
+	// Start the collector in a goroutine.
+	wg := startCollector(context.Background(), t, col)
+
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	// Record whether Run has finished by the time Shutdown returns.
+	runFinished := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(runFinished)
+	}()
+
+	// Shutdown should block until Run completes.
+	col.Shutdown()
+
+	// After Shutdown returns, Run must have finished.
+	select {
+	case <-runFinished:
+		// expected: Run completed before or at the same time Shutdown returned.
+	case <-time.After(5 * time.Second):
+		t.Fatal("Run did not complete after Shutdown returned")
+	}
+
 	assert.Equal(t, StateClosed, col.GetState())
 }
 
@@ -603,6 +672,22 @@ func (*failureProvider) Shutdown(context.Context) error {
 	return nil
 }
 
+type errShutdownProvider struct {
+	err error
+}
+
+func (p *errShutdownProvider) Retrieve(context.Context, string, confmap.WatcherFunc) (*confmap.Retrieved, error) {
+	return confmap.NewRetrieved(nil)
+}
+
+func (p *errShutdownProvider) Scheme() string {
+	return "err"
+}
+
+func (p *errShutdownProvider) Shutdown(context.Context) error {
+	return p.err
+}
+
 type fakeProvider struct {
 	scheme string
 	ret    func(ctx context.Context, uri string, watcher confmap.WatcherFunc) (*confmap.Retrieved, error)
@@ -708,6 +793,11 @@ func TestProviderAndConverterModules(t *testing.T) {
 	require.NoError(t, err)
 	wg := startCollector(context.Background(), t, col)
 	require.NoError(t, err)
+
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
 	providerModules := map[string]string{
 		"nop": "go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3",
 	}
