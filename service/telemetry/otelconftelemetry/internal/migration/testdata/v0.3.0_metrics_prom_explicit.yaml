@@ -1,0 +1,10 @@
+level: normal
+readers:
+  - pull:
+      exporter:
+        prometheus:
+          host: 127.0.0.1
+          port: 8888
+          without_scope_info: false
+          without_units: false
+          without_type_suffix: false
