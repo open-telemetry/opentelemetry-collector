@@ -463,8 +463,8 @@ func TestCollectorRun_AfterShutdown_ConfigProviderShutdownError(t *testing.T) {
 	col.configProvider = &ConfigProvider{mapResolver: resolver}
 
 	runErr := col.Run(context.Background())
-	assert.ErrorContains(t, runErr, "failed to shutdown config provider")
-	assert.ErrorIs(t, runErr, wantErr)
+	require.ErrorContains(t, runErr, "failed to shutdown config provider")
+	require.ErrorIs(t, runErr, wantErr)
 	assert.Equal(t, StateClosed, col.GetState())
 }
 
