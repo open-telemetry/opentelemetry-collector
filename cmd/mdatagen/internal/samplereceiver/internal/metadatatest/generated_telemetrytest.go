@@ -6,13 +6,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 )
 
 func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
@@ -93,6 +92,21 @@ func AssertEqualRequestDuration(t *testing.T, tt *componenttest.Telemetry, dps [
 		},
 	}
 	got, err := tt.GetMetric("otelcol_request_duration")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualRequestDurationExponential(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.ExponentialHistogramDataPoint[float64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_request_duration_exponential",
+		Description: "Duration of request (exponential histogram) [Alpha]",
+		Unit:        "s",
+		Data: metricdata.ExponentialHistogram[float64]{
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_request_duration_exponential")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
