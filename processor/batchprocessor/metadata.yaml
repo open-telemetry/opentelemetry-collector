@@ -6,7 +6,17 @@ status:
   disable_codecov_badge: true
   class: processor
   stability:
-    beta: [traces, metrics, logs]
+    deprecated: [traces, metrics, logs]
+  deprecation:
+    traces:
+      migration: "migrate to exporter helper"
+      date: "2026-04-01"
+    metrics:
+      migration: "migrate to exporter helper"
+      date: "2026-04-01"
+    logs:
+      migration: "migrate to exporter helper"
+      date: "2026-04-01"
   distributions: [core, contrib, k8s]
 
 tests:
