@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strings"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
 )
@@ -169,7 +170,36 @@ func ExtractImports(md *ConfigMetadata, rootPackage, componentPackage string) ([
 		return nil, err
 	}
 
-	return slices.Collect(maps.Keys(imports)), nil
+	result := slices.Collect(maps.Keys(imports))
+	slices.SortFunc(result, func(a, b string) int {
+		aStd := !strings.Contains(a, ".")
+		bStd := !strings.Contains(b, ".")
+		if aStd != bStd {
+			if aStd {
+				return -1
+			}
+			return 1
+		}
+		if a < b {
+			return -1
+		}
+		if a > b {
+			return 1
+		}
+		return 0
+	})
+
+	// Insert blank line separator between stdlib and third-party imports
+	// so that go/format.Source preserves proper import grouping.
+	for i := 1; i < len(result); i++ {
+		prevStd := !strings.Contains(result[i-1], ".")
+		curStd := !strings.Contains(result[i], ".")
+		if prevStd && !curStd {
+			result = slices.Insert(result, i, "")
+			break
+		}
+	}
+	return result, nil
 }
 
 func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, componentPackage string) error {
@@ -304,6 +334,16 @@ func ExtractValidators(md *ConfigMetadata) []Validator {
 	collectValidators(md, &validators)
 	slices.SortFunc(validators, func(a, b Validator) int {
 		return cmp.Compare(a.FieldName, b.FieldName)
+	})
+
+	slices.SortFunc(validators, func(a, b Validator) int {
+		if a.FieldName < b.FieldName {
+			return -1
+		}
+		if a.FieldName > b.FieldName {
+			return 1
+		}
+		return 0
 	})
 
 	return validators

@@ -2,6 +2,17 @@
 
 # sample
 
+## Example Configurations
+
+### Basic Configuration
+
+Minimal configuration for the sample receiver.
+
+```yaml
+sample:
+
+```
+
 ## Default Metrics
 
 The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:

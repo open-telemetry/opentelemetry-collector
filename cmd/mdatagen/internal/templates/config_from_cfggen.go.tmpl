@@ -10,7 +10,10 @@ import (
     "errors"
 {{- end }}
 {{- range $imports }}
+{{- if . }}
 	"{{ . }}"
+{{- else }}
+{{ end }}
 {{- end }}
 )
 {{- end }}

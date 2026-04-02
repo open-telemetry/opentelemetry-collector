@@ -2,6 +2,17 @@
 
 # sample
 
+## Example Configurations
+
+### Default Configuration
+
+Basic configuration for the sample scraper with default metrics enabled.
+
+```yaml
+sample:
+
+```
+
 ## Default Metrics
 
 The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
