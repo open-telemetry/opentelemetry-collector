@@ -16,6 +16,8 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"go.uber.org/zap/zapcore"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/connector"
@@ -70,6 +72,10 @@ type Settings struct {
 	// Extensions configuration to its builder.
 	ExtensionsConfigs   map[component.ID]component.Config
 	ExtensionsFactories map[component.Type]extension.Factory
+
+	// ComponentLogLevels holds per-component log level overrides, keyed by
+	// component kind then component ID.
+	ComponentLogLevels map[component.Kind]map[component.ID]zapcore.Level
 
 	// ModuleInfo describes the go module for each component.
 	ModuleInfos ModuleInfos
@@ -212,13 +218,13 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 		// ignore other errors as they represent invalid state transitions and are considered benign.
 	})
 
-	err = srv.initGraph(ctx, cfg)
+	err = srv.initGraph(ctx, cfg, set.ComponentLogLevels)
 	if err != nil {
 		return nil, err
 	}
 
 	// process the configuration and initialize the pipeline
-	err = srv.initExtensions(ctx, cfg.Extensions)
+	err = srv.initExtensions(ctx, cfg.Extensions, set.ComponentLogLevels)
 	if err != nil {
 		return nil, err
 	}
@@ -307,12 +313,13 @@ func (srv *Service) Shutdown(ctx context.Context) error {
 }
 
 // Creates extensions.
-func (srv *Service) initExtensions(ctx context.Context, cfg extensions.Config) error {
+func (srv *Service) initExtensions(ctx context.Context, cfg extensions.Config, componentLogLevels map[component.Kind]map[component.ID]zapcore.Level) error {
 	var err error
 	extensionsSettings := extensions.Settings{
-		Telemetry:  srv.telemetrySettings,
-		BuildInfo:  srv.buildInfo,
-		Extensions: srv.host.Extensions,
+		Telemetry:          srv.telemetrySettings,
+		BuildInfo:          srv.buildInfo,
+		Extensions:         srv.host.Extensions,
+		ComponentLogLevels: componentLogLevels,
 	}
 	if srv.host.ServiceExtensions, err = extensions.New(ctx, extensionsSettings, cfg, extensions.WithReporter(srv.host.Reporter)); err != nil {
 		return fmt.Errorf("failed to build extensions: %w", err)
@@ -321,17 +328,18 @@ func (srv *Service) initExtensions(ctx context.Context, cfg extensions.Config) e
 }
 
 // Creates the pipeline graph.
-func (srv *Service) initGraph(ctx context.Context, cfg Config) error {
+func (srv *Service) initGraph(ctx context.Context, cfg Config, componentLogLevels map[component.Kind]map[component.ID]zapcore.Level) error {
 	var err error
 	if srv.host.Pipelines, err = graph.Build(ctx, graph.Settings{
-		Telemetry:        srv.telemetrySettings,
-		BuildInfo:        srv.buildInfo,
-		ReceiverBuilder:  srv.host.Receivers,
-		ProcessorBuilder: srv.host.Processors,
-		ExporterBuilder:  srv.host.Exporters,
-		ConnectorBuilder: srv.host.Connectors,
-		PipelineConfigs:  cfg.Pipelines,
-		ReportStatus:     srv.host.Reporter.ReportStatus,
+		Telemetry:          srv.telemetrySettings,
+		BuildInfo:          srv.buildInfo,
+		ReceiverBuilder:    srv.host.Receivers,
+		ProcessorBuilder:   srv.host.Processors,
+		ExporterBuilder:    srv.host.Exporters,
+		ConnectorBuilder:   srv.host.Connectors,
+		PipelineConfigs:    cfg.Pipelines,
+		ReportStatus:       srv.host.Reporter.ReportStatus,
+		ComponentLogLevels: componentLogLevels,
 	}); err != nil {
 		return fmt.Errorf("failed to build pipelines: %w", err)
 	}

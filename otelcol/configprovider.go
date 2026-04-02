@@ -7,6 +7,9 @@ import (
 	"context"
 	"fmt"
 
+	"go.uber.org/zap/zapcore"
+
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -63,13 +66,33 @@ func (cm *ConfigProvider) Get(ctx context.Context, factories Factories) (*Config
 		return nil, fmt.Errorf("cannot unmarshal the configuration: %w", err)
 	}
 
+	var logLevels map[component.Kind]map[component.ID]zapcore.Level
+	for _, entry := range []struct {
+		kind   component.Kind
+		levels map[component.ID]zapcore.Level
+	}{
+		{component.KindReceiver, cfg.Receivers.LogLevels()},
+		{component.KindProcessor, cfg.Processors.LogLevels()},
+		{component.KindExporter, cfg.Exporters.LogLevels()},
+		{component.KindConnector, cfg.Connectors.LogLevels()},
+		{component.KindExtension, cfg.Extensions.LogLevels()},
+	} {
+		if len(entry.levels) > 0 {
+			if logLevels == nil {
+				logLevels = make(map[component.Kind]map[component.ID]zapcore.Level)
+			}
+			logLevels[entry.kind] = entry.levels
+		}
+	}
+
 	return &Config{
-		Receivers:  cfg.Receivers.Configs(),
-		Processors: cfg.Processors.Configs(),
-		Exporters:  cfg.Exporters.Configs(),
-		Connectors: cfg.Connectors.Configs(),
-		Extensions: cfg.Extensions.Configs(),
-		Service:    cfg.Service,
+		Receivers:          cfg.Receivers.Configs(),
+		Processors:         cfg.Processors.Configs(),
+		Exporters:          cfg.Exporters.Configs(),
+		Connectors:         cfg.Connectors.Configs(),
+		Extensions:         cfg.Extensions.Configs(),
+		Service:            cfg.Service,
+		ComponentLogLevels: logLevels,
 	}, nil
 }
 

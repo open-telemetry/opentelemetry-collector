@@ -7,14 +7,24 @@ import (
 	"errors"
 	"fmt"
 
+	"go.uber.org/zap/zapcore"
 	"golang.org/x/exp/maps"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 )
 
+type componentTelemetryConfig struct {
+	Logs componentLogConfig `mapstructure:"logs"`
+}
+
+type componentLogConfig struct {
+	Level zapcore.Level `mapstructure:"level"`
+}
+
 type Configs[F component.Factory] struct {
-	cfgs map[component.ID]component.Config
+	cfgs      map[component.ID]component.Config
+	logLevels map[component.ID]zapcore.Level
 
 	factories map[component.Type]F
 }
@@ -31,6 +41,7 @@ func (c *Configs[F]) Unmarshal(conf *confmap.Conf) error {
 
 	// Prepare resulting map.
 	c.cfgs = make(map[component.ID]component.Config)
+	c.logLevels = make(map[component.ID]zapcore.Level)
 	// Iterate over raw configs and create a config for each.
 	for id := range rawCfgs {
 		// Find factory based on component kind and type that we read from config source.
@@ -43,6 +54,23 @@ func (c *Configs[F]) Unmarshal(conf *confmap.Conf) error {
 		sub, err := conf.Sub(id.String())
 		if err != nil {
 			return errorUnmarshalError(id, err)
+		}
+
+		// Extract per-component telemetry config before component unmarshalling.
+		// The key is stripped so the component's unmarshaller doesn't fail on unknown fields.
+		if sub.IsSet("telemetry") {
+			telSub, err := sub.Sub("telemetry")
+			if err != nil {
+				return errorUnmarshalError(id, err)
+			}
+			var telCfg componentTelemetryConfig
+			if err := telSub.Unmarshal(&telCfg); err != nil {
+				return errorUnmarshalError(id, fmt.Errorf("invalid telemetry config: %w", err))
+			}
+			if telSub.IsSet("logs::level") {
+				c.logLevels[id] = telCfg.Logs.Level
+			}
+			sub.Delete("telemetry")
 		}
 
 		// Create the default config for this component.
@@ -62,6 +90,12 @@ func (c *Configs[F]) Unmarshal(conf *confmap.Conf) error {
 
 func (c *Configs[F]) Configs() map[component.ID]component.Config {
 	return c.cfgs
+}
+
+// LogLevels returns per-component log level overrides extracted from the
+// "telemetry::logs::level" key in each component's configuration section.
+func (c *Configs[F]) LogLevels() map[component.ID]zapcore.Level {
+	return c.logLevels
 }
 
 func errorUnknownType(id component.ID, factories []component.Type) error {

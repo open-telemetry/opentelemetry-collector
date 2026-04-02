@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 
+	"go.uber.org/zap/zapcore"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/pipelines"
@@ -36,6 +38,12 @@ type Config struct {
 	Extensions map[component.ID]component.Config `mapstructure:"extensions"`
 
 	Service service.Config `mapstructure:"service"`
+
+	// ComponentLogLevels holds per-component log level overrides extracted
+	// from the "telemetry::logs::level" key in each component's config section.
+	// The outer map is keyed by component kind (receiver, processor, etc.)
+	// since component.ID is only unique within a kind.
+	ComponentLogLevels map[component.Kind]map[component.ID]zapcore.Level `mapstructure:"-"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
