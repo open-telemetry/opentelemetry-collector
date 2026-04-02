@@ -5,6 +5,10 @@ package otlpexporter // import "go.opentelemetry.io/collector/exporter/otlpexpor
 
 import (
 	"context"
+	"net/url"
+
+	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -49,6 +53,22 @@ func createDefaultConfig() component.Config {
 	}
 }
 
+func endpointAttributes(cfg *Config) []attribute.KeyValue {
+	endpointUrl, err := url.Parse(cfg.ClientConfig.Endpoint)
+	if err != nil {
+		// if the endpoint is not a URL, we treat it as the server address without extra information
+		return []attribute.KeyValue{semconv.ServerAddressKey.String(cfg.ClientConfig.Endpoint)}
+	}
+	out := []attribute.KeyValue{
+		semconv.ServerAddressKey.String(endpointUrl.Host),
+		semconv.URLPath(endpointUrl.Path),
+	}
+	if endpointUrl.Port() != "" {
+		out = append(out, semconv.ServerPortKey.String(endpointUrl.Port()))
+	}
+	return out
+}
+
 func createTraces(
 	ctx context.Context,
 	set exporter.Settings,
@@ -56,6 +76,7 @@ func createTraces(
 ) (exporter.Traces, error) {
 	oce := newExporter(cfg, set)
 	oCfg := cfg.(*Config)
+
 	return exporterhelper.NewTraces(ctx, set, cfg,
 		oce.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -64,6 +85,7 @@ func createTraces(
 		exporterhelper.WithQueue(oCfg.QueueConfig),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
+		exporterhelper.WithAttrs(endpointAttributes(oCfg)...),
 	)
 }
 
@@ -82,6 +104,7 @@ func createMetrics(
 		exporterhelper.WithQueue(oCfg.QueueConfig),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
+		exporterhelper.WithAttrs(endpointAttributes(oCfg)...),
 	)
 }
 
@@ -100,6 +123,7 @@ func createLogs(
 		exporterhelper.WithQueue(oCfg.QueueConfig),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
+		exporterhelper.WithAttrs(endpointAttributes(oCfg)...),
 	)
 }
 
@@ -118,5 +142,6 @@ func createProfilesExporter(
 		exporterhelper.WithQueue(oCfg.QueueConfig),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
+		exporterhelper.WithAttrs(endpointAttributes(oCfg)...),
 	)
 }
