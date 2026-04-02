@@ -164,7 +164,7 @@ func TestMetricsBuilder(t *testing.T) {
 			{{- end -}}
 			{{- range $metric.Attributes -}}
 			{{- if (attributeInfo .).IsConditional -}}
-				, With{{ .Render }}MetricAttribute({{- template "getAttributeValue" . -}})
+				, With{{ .Render }}MetricAttribute({{- template "getConditionalAttributeValue" . -}})
 			{{- end -}}
 			{{- end -}}
 			)
@@ -182,7 +182,7 @@ func TestMetricsBuilder(t *testing.T) {
 				{{- end -}}
 				{{- range $metric.Attributes -}}
 				{{- if (attributeInfo .).IsConditional -}}
-					, With{{ .Render }}MetricAttribute({{- template "getAttributeValue" . -}})
+					, With{{ .Render }}MetricAttribute({{- template "getConditionalAttributeValue" . -}})
 				{{- end -}}
 				{{- end -}}
 				)

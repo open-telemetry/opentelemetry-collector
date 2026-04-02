@@ -5,10 +5,14 @@ package {{ .Package }}
 {{ $reag := .ReaggregationEnabled }}
 {{- $hasReagMetrics := false }}
 {{- range $name, $metric := .Metrics }}{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}{{- $hasReagMetrics = true }}{{- end }}{{- end }}
+{{- $hasRequiredAttrInReagMetrics := false }}
+{{- range $name, $metric := .Metrics }}{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}{{- if requiredAttributes $metric.Attributes }}{{- $hasRequiredAttrInReagMetrics = true }}{{- end }}{{- end }}{{- end }}
 
 import (
 	{{- if $hasReagMetrics }}
 	"fmt"
+	{{- end }}
+	{{- if $hasRequiredAttrInReagMetrics }}
 	"slices"
 	{{- end }}
 
