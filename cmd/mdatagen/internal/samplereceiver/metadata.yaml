@@ -99,6 +99,13 @@ resource_attributes:
     warnings:
       if_enabled: This resource_attribute is deprecated and will be removed soon.
 
+  string.resource.disabled_attr_to_be_removed:
+    description: Resource attribute with any string value.
+    type: string
+    enabled: false
+    warnings:
+      if_enabled: This resource_attribute is deprecated and will be removed soon.
+
 attributes:
   boolean_attr:
     description: Attribute with a boolean value.

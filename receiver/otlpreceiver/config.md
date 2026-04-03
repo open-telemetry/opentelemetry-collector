@@ -2,7 +2,6 @@
 
 Config defines configuration for OTLP receiver.
 
-
 ### Config
 
 | Name      | Type                                              | Default    | Docs                                                                                                  |
@@ -95,5 +94,5 @@ Config defines configuration for OTLP receiver.
 | key_file       | string | <no value> | Path to the TLS key to use for TLS required connections. (optional)                                                                                                                                                                                              |
 | client_ca_file | string | <no value> | Path to the TLS cert to use by the server to verify a client certificate. (optional) This sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. Please refer to https://godoc.org/crypto/tls#Config for more information. (optional) |
 
-### time-Duration 
+### time-Duration
 An optionally signed sequence of decimal numbers, each with a unit suffix, such as `300ms`, `-1.5h`, or `2h45m`. Valid time units are `ns`, `us`, `ms`, `s`, `m`, `h`.
