@@ -46,7 +46,7 @@ Most of these have package-level documentation and function/struct-level comment
 
 #### Factories
 Each component type contains a `Factory` interface along with its corresponding `NewFactory` function.
-Implementations of new components use this `NewFactory` function in their implementation to register key functions with 
+Implementations of new components use this `NewFactory` function in their implementation to register key functions with
 the Collector.  An example of this is in [receiver.go](../receiver/receiver.go).
 
 For example, the Collector uses this interface to give receivers a handle to a `nextConsumer` -

@@ -180,6 +180,18 @@ func TestLoadMetadata(t *testing.T) {
 						FullName:         "string.resource.attr_to_be_removed",
 						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
+					"string.resource.disabled_attr_to_be_removed": {
+						Description: "Resource attribute with any string value.",
+						Warnings: Warnings{
+							IfEnabled: "This resource_attribute is deprecated and will be removed soon.",
+						},
+						EnabledPtr: boolPtr(false),
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName:         "string.resource.disabled_attr_to_be_removed",
+						RequirementLevel: AttributeRequirementLevelRecommended,
+					},
 				},
 
 				Attributes: map[AttributeName]Attribute{
