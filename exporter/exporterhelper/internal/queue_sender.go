@@ -48,6 +48,7 @@ func NewQueueSender(
 		itemsCount := req.ItemsCount()
 		if errSend := next.Send(ctx, req); errSend != nil {
 			qSet.Telemetry.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
+				zap.String("exporter", qSet.ID.String()),
 				zap.Error(errSend), zap.Int("dropped_items", itemsCount))
 			return errSend
 		}
