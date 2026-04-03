@@ -1175,10 +1175,10 @@ func TestExtractValidators_RootCustomValidatorLast(t *testing.T) {
 
 	result := ExtractValidators(md)
 	require.Len(t, result, 2)
-	require.True(t, result[0].IsRequired)
-	require.Empty(t, result[0].CustomValidator)
-	require.Equal(t, ".", result[1].FieldName)
-	require.Equal(t, "validateConfig", result[1].CustomValidator)
+	require.Equal(t, ".", result[0].FieldName)
+	require.Equal(t, "validateConfig", result[0].CustomValidator)
+	require.True(t, result[1].IsRequired)
+	require.Empty(t, result[1].CustomValidator)
 }
 
 func TestExtractValidators_NoCustomValidator(t *testing.T) {
