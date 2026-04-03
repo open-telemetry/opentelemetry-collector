@@ -44,11 +44,22 @@ func (e *EncodingType) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// RetryConfig extends the standard BackOffConfig with additional HTTP-specific options.
+type RetryConfig struct {
+	configretry.BackOffConfig `mapstructure:",squash"`
+
+	// RetryableStatuses is a list of HTTP status codes that should trigger retries.
+	// By default, this is set to [429, 502, 503, 504] per OTLP spec.
+	// Modify this list to control which codes are retried - codes not in this list
+	// will be treated as permanent errors.
+	RetryableStatuses []int `mapstructure:"retryable_statuses"`
+}
+
 // Config defines configuration for OTLP/HTTP exporter.
 type Config struct {
 	ClientConfig confighttp.ClientConfig                                  `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	QueueConfig  configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
-	RetryConfig  configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+	RetryConfig  RetryConfig                                              `mapstructure:"retry_on_failure"`
 
 	// The URL to send traces to. If omitted the Endpoint + "/v1/traces" will be used.
 	TracesEndpoint string `mapstructure:"traces_endpoint"`
@@ -73,5 +84,12 @@ func (cfg *Config) Validate() error {
 	if cfg.ClientConfig.Endpoint == "" && cfg.TracesEndpoint == "" && cfg.MetricsEndpoint == "" && cfg.LogsEndpoint == "" && cfg.ProfilesEndpoint == "" {
 		return errors.New("at least one endpoint must be specified")
 	}
+
+	for _, code := range cfg.RetryConfig.RetryableStatuses {
+		if code < 100 || code > 599 {
+			return fmt.Errorf("invalid HTTP status code in retry_on_failure.retryable_statuses: %d (must be in range 100-599)", code)
+		}
+	}
+
 	return nil
 }
