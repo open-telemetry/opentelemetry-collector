@@ -4,18 +4,16 @@ status:
   class: receiver
   stability:
     beta: [traces, logs, metrics]
-attributes:
-  name:
-    description: Name of sampling decision
-    type: string
+
 telemetry:
   metrics:
-    request_latency:
-      description: Latency (in microseconds) of a given sampling policy
-      unit: µs
+    request_size:
+      description: Size of requests in bytes
+      unit: By
       enabled: true
       stability: alpha
       histogram:
-        value_type: int
+        value_type: double
         aggregation: exponential
-      attributes: [name]
+        max_size: 160
+        max_scale: 10
