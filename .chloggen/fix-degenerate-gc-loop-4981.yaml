@@ -1,0 +1,23 @@
+change_type: bug_fix
+
+component: processor/memory_limiter
+
+note: Fix degenerate collector performance when exporter has problems causing permanent CPU-burning GC loop
+
+issues: [4981]
+
+subtext: |
+  When a downstream exporter target crashes, the memory limiter processor could
+  enter a permanent degenerate state where forced GC runs on every check interval
+  tick without reclaiming memory (because data is held by live references in
+  exporter queues and retry goroutines). This consumed 70%+ CPU and prevented
+  recovery even after the downstream service was repaired.
+
+  The fix adds GC effectiveness tracking with exponential backoff: when consecutive
+  forced GCs fail to reclaim at least 5% of memory, the GC interval is doubled on
+  each attempt (up to a 30-second cap). This preserves CPU for the exporter consumer
+  goroutines to drain their queues, enabling recovery. The backoff resets when
+  memory drops below the soft limit, or when memory usage drops significantly
+  compared to the last forced GC (detecting that garbage has become reclaimable).
+
+change_logs: [user]
