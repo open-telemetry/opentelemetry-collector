@@ -8,6 +8,10 @@ $defs:
         type: string
         x-customType: time.Duration
         format: duration
+      fixed_windows:
+        description: If true, batching is aligned to fixed time windows anchored at startup (startTime + N * flush_timeout), preventing drift caused by delayed flushes. When false (default), batching is based on a relative timeout from the last flush.
+        type: boolean
+        default: false
       max_size:
         description: MaxSize defines the configuration for the maximum size of a batch.
         type: integer
