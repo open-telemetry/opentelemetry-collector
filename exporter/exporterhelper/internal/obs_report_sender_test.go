@@ -272,6 +272,16 @@ func TestExportTraceDataOp(t *testing.T) {
 	}
 	metadatatest.AssertEqualExporterSendFailedSpans(t, tt, expectedDataPoints,
 		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	// After all sends complete, in-flight requests should be back to zero.
+	metadatatest.AssertEqualExporterInFlightRequests(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", exporterID.String())),
+				Value: 0,
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestExportMetricsOp(t *testing.T) {
@@ -346,6 +356,16 @@ func TestExportMetricsOp(t *testing.T) {
 	}
 	metadatatest.AssertEqualExporterSendFailedMetricPoints(t, tt, expectedDataPoints,
 		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	// After all sends complete, in-flight requests should be back to zero.
+	metadatatest.AssertEqualExporterInFlightRequests(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", exporterID.String())),
+				Value: 0,
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestExportLogsOp(t *testing.T) {
@@ -420,6 +440,16 @@ func TestExportLogsOp(t *testing.T) {
 	}
 	metadatatest.AssertEqualExporterSendFailedLogRecords(t, tt, expectedDataPoints,
 		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	// After all sends complete, in-flight requests should be back to zero.
+	metadatatest.AssertEqualExporterInFlightRequests(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", exporterID.String())),
+				Value: 0,
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 // TestDetermineErrorType tests the determineErrorType function directly
@@ -616,6 +646,16 @@ func TestExportProfilesOp(t *testing.T) {
 	}
 	metadatatest.AssertEqualExporterSendFailedProfileSamples(t, tt, expectedDataPoints,
 		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	// After all sends complete, in-flight requests should be back to zero.
+	metadatatest.AssertEqualExporterInFlightRequests(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", exporterID.String())),
+				Value: 0,
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 type testParams struct {
