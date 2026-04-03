@@ -1,0 +1,7 @@
+sizer: items
+num_consumers: 10
+queue_size: 2000
+batch:
+  flush_timeout: 200ms
+  fixed_windows: true
+  min_size: 100

@@ -119,6 +119,10 @@ func TestBatchConfig_Validate(t *testing.T) {
 	cfg.MinSize = 2048
 	cfg.MaxSize = 1024
 	require.EqualError(t, xconfmap.Validate(cfg), "`max_size` (1024) must be greater or equal to `min_size` (2048)")
+
+	cfg = newTestBatchConfig()
+	cfg.FixedWindows = true
+	require.NoError(t, xconfmap.Validate(cfg))
 }
 
 func newTestBatchConfig() BatchConfig {
@@ -199,6 +203,21 @@ func TestUnmarshal(t *testing.T) {
 			path: "batch_unset.yaml",
 			// Batch remains unset, sizer override does not apply.
 			expectedCfg: newBaseCfg,
+		},
+		{
+			path: "batch_set_fixed_windows.yaml",
+			expectedCfg: func() configoptional.Optional[Config] {
+				cfg := newBaseCfg()
+				cfg.Get().Sizer = request.SizerTypeItems
+				cfg.Get().QueueSize = 2000
+				cfg.Get().Batch = configoptional.Some(BatchConfig{
+					FlushTimeout: 200 * time.Millisecond,
+					Sizer:        request.SizerTypeItems,
+					MinSize:      100,
+					FixedWindows: true,
+				})
+				return cfg
+			},
 		},
 	}
 

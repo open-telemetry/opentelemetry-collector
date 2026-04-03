@@ -239,6 +239,75 @@ func TestPartitionBatcher_NoSplit_WithTimeout(t *testing.T) {
 	}
 }
 
+func TestPartitionBatcher_NoSplit_WithFixedWindows(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/11869")
+	}
+
+	tests := []struct {
+		name       string
+		sizerType  request.SizerType
+		sizer      request.Sizer
+		maxWorkers int
+	}{
+		{
+			name:       "items/one_worker",
+			sizerType:  request.SizerTypeItems,
+			sizer:      request.NewItemsSizer(),
+			maxWorkers: 1,
+		},
+		{
+			name:       "items/three_workers",
+			sizerType:  request.SizerTypeItems,
+			sizer:      request.NewItemsSizer(),
+			maxWorkers: 3,
+		},
+		{
+			name:       "bytes/one_worker",
+			sizerType:  request.SizerTypeBytes,
+			sizer:      request.NewBytesSizer(),
+			maxWorkers: 1,
+		},
+		{
+			name:       "bytes/three_workers",
+			sizerType:  request.SizerTypeBytes,
+			sizer:      request.NewBytesSizer(),
+			maxWorkers: 3,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := BatchConfig{
+				FlushTimeout: 50 * time.Millisecond,
+				FixedWindows: true,
+				Sizer:        tt.sizerType,
+				MinSize:      100,
+			}
+
+			sink := requesttest.NewSink()
+			ba := newPartitionBatcher(cfg, tt.sizer, nil, newWorkerPool(tt.maxWorkers), sink.Export, zap.NewNop(), nil)
+			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+			t.Cleanup(func() {
+				require.NoError(t, ba.Shutdown(context.Background()))
+			})
+
+			done := newFakeDone()
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, Bytes: 8}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 17, Bytes: 17}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 13, Bytes: 13}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 35, Bytes: 35}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 2, Bytes: 2}, done)
+
+			assert.Eventually(t, func() bool {
+				return sink.RequestsCount() == 1 && (sink.ItemsCount() == 75 || sink.BytesCount() == 75)
+			}, 1*time.Second, 10*time.Millisecond)
+
+			assert.EqualValues(t, 0, done.errors.Load())
+			assert.EqualValues(t, 5, done.success.Load())
+		})
+	}
+}
+
 func TestPartitionBatcher_Split_TimeoutDisabled(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/11847")
@@ -559,6 +628,32 @@ func TestPartitionBatcher_ContextMerging(t *testing.T) {
 			assert.EqualValues(t, 2, done.success.Load())
 		})
 	}
+}
+
+func TestPartitionBatcher_FixedWindows_ResetTimerComputesNextBoundary(t *testing.T) {
+	cfg := BatchConfig{
+		FlushTimeout: 100 * time.Millisecond,
+		FixedWindows: true,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      1,
+	}
+
+	sink := requesttest.NewSink()
+	ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(1), sink.Export, zap.NewNop(), nil)
+
+	// Preserve the existing lifecycle assumption: timer exists before resetTimer is called.
+	ba.timer = time.NewTimer(time.Hour)
+	t.Cleanup(func() {
+		ba.timer.Stop()
+	})
+
+	now := time.Now()
+	ba.startTime = now.Add(-250 * time.Millisecond)
+
+	ba.resetTimer()
+
+	expected := ba.startTime.Add(300 * time.Millisecond)
+	assert.Equal(t, expected, ba.nextFlushTime)
 }
 
 func TestPartitionBatcher_OnEmptyCallbackTriggered(t *testing.T) {
