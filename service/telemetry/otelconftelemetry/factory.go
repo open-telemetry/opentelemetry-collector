@@ -28,12 +28,7 @@ func NewFactory() telemetry.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	metricsHost := "localhost"
-	if !metadata.TelemetryUseLocalHostAsDefaultMetricsAddressFeatureGate.IsEnabled() {
-		metricsHost = ""
-	}
-
-	return &Config{
+	cfg := &Config{
 		Logs: LogsConfig{
 			Level:       zapcore.InfoLevel,
 			Development: false,
@@ -52,6 +47,16 @@ func createDefaultConfig() component.Config {
 			DisableZapResource: false,
 		},
 		Metrics: MetricsConfig{
+			Level: configtelemetry.LevelNone,
+		},
+	}
+
+	if !metadata.TelemetryNoDefaultMetricsReaderFeatureGate.IsEnabled() {
+		metricsHost := "localhost"
+		if !metadata.TelemetryUseLocalHostAsDefaultMetricsAddressFeatureGate.IsEnabled() {
+			metricsHost = ""
+		}
+		cfg.Metrics = MetricsConfig{
 			Level: configtelemetry.LevelNormal,
 			MeterProvider: config.MeterProvider{
 				Readers: []config.MetricReader{
@@ -66,8 +71,10 @@ func createDefaultConfig() component.Config {
 					},
 				},
 			},
-		},
+		}
 	}
+
+	return cfg
 }
 
 func ptr[T any](v T) *T {
