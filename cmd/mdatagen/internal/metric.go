@@ -390,7 +390,7 @@ type Histogram struct {
 	Async                  bool      `mapstructure:"async,omitempty"`
 	Boundaries             []float64 `mapstructure:"bucket_boundaries"`
 	// Aggregation specifies the histogram aggregation type. Defaults to "explicit".
-	// Use "exponential" for base2 exponential bucket histograms.
+	// Use "exponential" for exponential bucket histograms.
 	Aggregation HistogramAggregation `mapstructure:"aggregation,omitempty"`
 	// MaxSize is the maximum number of buckets for exponential histograms.
 	// Defaults to 160 when unset (0). Only valid when aggregation is "exponential".
@@ -449,7 +449,7 @@ func (d *Histogram) HasAggregated() bool {
 
 func (d *Histogram) Instrument() string {
 	instrumentName := cases.Title(language.English).String(d.BasicType())
-	return instrumentName + d.Type()
+	return instrumentName + "Histogram"
 }
 
 // Unmarshal is a custom unmarshaler for histogram. Needed mostly to avoid MetricValueType.Unmarshal inheritance.

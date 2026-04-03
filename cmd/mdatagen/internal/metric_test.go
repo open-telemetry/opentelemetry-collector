@@ -104,6 +104,7 @@ func TestMetricData(t *testing.T) {
 		{&Sum{MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeInt}, Async: true}, "Sum", true, true, "Int64ObservableUpDownCounter", true},
 		{&Sum{MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble}, Async: true}, "Sum", true, true, "Float64ObservableUpDownCounter", true},
 		{&Histogram{}, "Histogram", true, false, "Histogram", false},
+		{&Histogram{Aggregation: HistogramAggregationExponential}, "ExponentialHistogram", true, false, "Histogram", false},
 	} {
 		assert.Equal(t, arg.wantType, arg.metricData.Type())
 		assert.Equal(t, arg.wantHasAggregated, arg.metricData.HasAggregated())

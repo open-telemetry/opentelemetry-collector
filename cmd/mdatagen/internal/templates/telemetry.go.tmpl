@@ -161,9 +161,6 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 
 // Views returns the SDK metric Views required to produce exponential histograms
 // for metrics declared with aggregation: exponential in this component's metadata.
-// Pass these to sdkmetric.WithView when configuring the MeterProvider, for example:
-//
-//	sdkmetric.NewMeterProvider(sdkmetric.WithView(metadata.Views()...))
 func Views() []sdkmetric.View {
 	return []sdkmetric.View{
 		{{- range $name, $metric := .Telemetry.Metrics }}
