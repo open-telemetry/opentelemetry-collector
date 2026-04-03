@@ -6,7 +6,6 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
@@ -54,7 +53,9 @@ func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer) ([]request.Reques
 	for req.size(sz) > maxSize {
 		ld, removedSize := extractLogs(req.ld, maxSize, sz)
 		if ld.LogRecordCount() == 0 {
-			return res, fmt.Errorf("one log record size is greater than max size, dropping items: %d", req.ld.LogRecordCount())
+			// A single item exceeds the max size. Cannot split further,
+			// send the oversized item as-is to avoid dropping data.
+			break
 		}
 		req.setCachedSize(req.size(sz) - removedSize)
 		res = append(res, newLogsRequest(ld))
