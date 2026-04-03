@@ -1051,6 +1051,9 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.StringResourceAttrToBeRemoved.Enabled {
 		settings.Logger.Warn("[WARNING] `string.resource.attr_to_be_removed` should not be enabled: This resource_attribute is deprecated and will be removed soon.")
 	}
+	if mbc.ResourceAttributes.StringResourceDisabledAttrToBeRemoved.Enabled {
+		settings.Logger.Warn("[WARNING] `string.resource.disabled_attr_to_be_removed` should not be enabled: This resource_attribute is deprecated and will be removed soon.")
+	}
 	mb := &MetricsBuilder{
 		config:                              mbc,
 		startTime:                           pcommon.NewTimestampFromTime(time.Now()),
@@ -1115,6 +1118,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	}
 	if mbc.ResourceAttributes.StringResourceAttrToBeRemoved.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["string.resource.attr_to_be_removed"] = filter.CreateFilter(mbc.ResourceAttributes.StringResourceAttrToBeRemoved.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.StringResourceDisabledAttrToBeRemoved.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["string.resource.disabled_attr_to_be_removed"] = filter.CreateFilter(mbc.ResourceAttributes.StringResourceDisabledAttrToBeRemoved.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.StringResourceDisabledAttrToBeRemoved.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["string.resource.disabled_attr_to_be_removed"] = filter.CreateFilter(mbc.ResourceAttributes.StringResourceDisabledAttrToBeRemoved.MetricsExclude)
 	}
 
 	for _, op := range options {
