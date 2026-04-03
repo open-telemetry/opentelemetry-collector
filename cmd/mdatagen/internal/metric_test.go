@@ -85,6 +85,73 @@ func TestMetricInputTypeValidate(t *testing.T) {
 	}
 }
 
+func TestHistogramValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		h       Histogram
+		wantErr string
+	}{
+		{
+			name: "valid explicit default",
+			h:    Histogram{},
+		},
+		{
+			name: "valid explicit",
+			h:    Histogram{Aggregation: HistogramAggregationExplicit},
+		},
+		{
+			name: "valid exponential",
+			h:    Histogram{Aggregation: HistogramAggregationExponential, MaxSize: 160, MaxScale: 10},
+		},
+		{
+			name:    "invalid aggregation",
+			h:       Histogram{Aggregation: "invalid"},
+			wantErr: "invalid aggregation",
+		},
+		{
+			name:    "exponential with boundaries",
+			h:       Histogram{Aggregation: HistogramAggregationExponential, Boundaries: []float64{1.0, 2.0}},
+			wantErr: "bucket_boundaries must not be set when aggregation is \"exponential\"",
+		},
+		{
+			name:    "max_size on non-exponential",
+			h:       Histogram{MaxSize: 5},
+			wantErr: "max_size is only valid when aggregation is \"exponential\"",
+		},
+		{
+			name:    "max_scale on non-exponential",
+			h:       Histogram{MaxScale: 5},
+			wantErr: "max_scale is only valid when aggregation is \"exponential\"",
+		},
+		{
+			name:    "negative max_size",
+			h:       Histogram{Aggregation: HistogramAggregationExponential, MaxSize: -1},
+			wantErr: "max_size must be a positive integer",
+		},
+		{
+			name:    "negative max_scale",
+			h:       Histogram{Aggregation: HistogramAggregationExponential, MaxScale: -1},
+			wantErr: "max_scale must be between 0 and 20",
+		},
+		{
+			name:    "max_scale above 20",
+			h:       Histogram{Aggregation: HistogramAggregationExponential, MaxScale: 21},
+			wantErr: "max_scale must be between 0 and 20",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.h.Validate()
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestMetricData(t *testing.T) {
 	for _, arg := range []struct {
 		metricData        MetricData
