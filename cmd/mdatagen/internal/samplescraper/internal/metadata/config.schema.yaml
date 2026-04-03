@@ -157,6 +157,29 @@ $defs:
           enabled:
             type: boolean
             default: true
+      system_cpu_utilization:
+        description: "SystemCPUUtilizationMetricConfig provides config for the system_cpu_utilization metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "string_attr"
+            default:
+              - "string_attr"
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for sample resource attributes.
     type: object

@@ -224,3 +224,14 @@ metrics:
       aggregation_temporality: cumulative
     semantic_convention:
       ref: system/system-metrics.md#metric-systemcputime
+
+  system_cpu_utilization:
+      enabled: true
+      stability: development
+      description: Histogram metric for testing histogram generation.
+      unit: "1"
+      histogram:
+        value_type: double
+        bucket_boundaries: [0, 0.25, 0.5, 0.75, 1]
+      attributes: [string_attr]
+      

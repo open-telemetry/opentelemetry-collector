@@ -87,6 +87,20 @@ The metric will be become optional soon.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- | ------------------- |
 | s | Sum | Int | Cumulative | true | Beta | [system.cpu.time](https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime) |
 
+### system_cpu_utilization
+
+Histogram metric for testing histogram generation.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Histogram | Double | Unspecified | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| string_attr | Attribute with any string value. | Any Str | Recommended | - |
+
 ## Optional Metrics
 
 The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
