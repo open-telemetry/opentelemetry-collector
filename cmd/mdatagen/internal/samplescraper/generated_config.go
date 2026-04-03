@@ -6,24 +6,24 @@ import (
 	"errors"
 	"time"
 
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper/internal/metadata"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
 type TargetsItem struct {
-	HTTPClient *confighttp.ClientConfig               `mapstructure:"http_client"`
-	Interval   configoptional.Optional[time.Duration] `mapstructure:"interval"`
-	Options    map[string]string                      `mapstructure:"options"`
+	// ClientConfig defines settings for creating an HTTP client.
+	confighttp.ClientConfig `mapstructure:",squash"`
+	Interval                configoptional.Optional[time.Duration] `mapstructure:"interval"`
+	Options                 map[string]string                      `mapstructure:"options"`
 }
 
 // Validate validates the targets_item fields.
 func (c *TargetsItem) Validate() error {
 	var err error
 
-	if c.HTTPClient == nil {
-		err = errors.Join(err, errors.New("http_client is required"))
-	}
 	if c.Options == nil || len(c.Options) == 0 {
 		err = errors.Join(err, errors.New("options is required"))
 	}
@@ -33,6 +33,9 @@ func (c *TargetsItem) Validate() error {
 
 // Configuration for the Sample Scraper.
 type Config struct {
+	// MetricsBuilderConfig is a configuration for sample metrics builder.
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	// ControllerConfig defines common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed.
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	// Targets configuration for the scraper.
 	Targets *[]TargetsItem `mapstructure:"targets"`
@@ -47,4 +50,24 @@ func (c *Config) Validate() error {
 	}
 
 	return err
+}
+func createDefaultConfig() component.Config {
+	cfg := Config{}
+
+	targets_1 := TargetsItem{}
+	targets_1.Interval = configoptional.Some(10 * time.Second)
+	targets_1.Options = map[string]string{"option1": "value1", "option2": "value2"}
+
+	targets_1_ClientConfig := confighttp.ClientConfig{}
+	targets_1_ClientConfig.Endpoint = "http://localhost:8080/metrics"
+	targets_1.ClientConfig = targets_1_ClientConfig
+
+	targets := []TargetsItem{targets_1}
+	cfg.Targets = &targets
+
+	controllerConfig := scraperhelper.ControllerConfig{}
+	controllerConfig.Timeout = 30 * time.Second
+	cfg.ControllerConfig = controllerConfig
+
+	return &cfg
 }
