@@ -384,7 +384,7 @@ telemetry:
         # Bucket boundaries are only available to set for histogram metrics.
         bucket_boundaries: [double]
         # Optional: Histogram aggregation type. Defaults to "explicit" (explicit bucket histogram).
-        # Use "exponential" for base2 exponential bucket histograms, which provide adaptive
+        # Use "exponential" for exponential bucket histograms, which provide adaptive
         # bucketing and better visibility into long-tail distributions. When set to "exponential",
         # bucket_boundaries must not be specified.
         aggregation: <explicit|exponential>
