@@ -15,12 +15,9 @@ subtext: |
 
   The fix adds GC effectiveness tracking with exponential backoff: when consecutive
   forced GCs fail to reclaim at least 5% of memory, the GC interval is doubled on
-  each attempt (up to a 2-minute cap). This preserves CPU for the exporter consumer
+  each attempt (up to a 30-second cap). This preserves CPU for the exporter consumer
   goroutines to drain their queues, enabling recovery. The backoff resets when
-  memory drops below the soft limit.
-
-  Additionally, the default `min_gc_interval_when_hard_limited` is changed from 0
-  (no minimum, meaning GC on every tick) to 10 seconds, matching the existing
-  soft limit default.
+  memory drops below the soft limit, or when memory usage drops significantly
+  compared to the last forced GC (detecting that garbage has become reclaimable).
 
 change_logs: [user]

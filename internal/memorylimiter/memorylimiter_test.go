@@ -337,6 +337,56 @@ func TestGCBackoffResetOnRecovery(t *testing.T) {
 	assert.Equal(t, 2, numGCs, "GC should fire immediately after backoff reset")
 }
 
+func TestGCBackoffEarlyResetWhenMemoryBecomesReclaimable(t *testing.T) {
+	// After an exporter recovers and its queue drains, the garbage exists but
+	// runtime.MemStats.Alloc does not fall until another GC runs. If the
+	// backoff has grown large, the forced GC is delayed and mustRefuse stays
+	// true while the heap is reclaimable. This test verifies that the backoff
+	// resets early when Alloc drops significantly compared to the last forced
+	// GC observation (e.g., the Go runtime ran its own GC cycle).
+	cfg := &Config{
+		CheckInterval:                1 * time.Second,
+		MinGCIntervalWhenHardLimited: 0,
+		MemoryLimitMiB:               50,
+		MemorySpikeLimitMiB:          10,
+	}
+	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
+	require.NoError(t, err)
+
+	var currentMemAllocMiB uint64
+	ml.readMemStatsFn = func(ms *runtime.MemStats) {
+		ms.Alloc = currentMemAllocMiB * mibBytes
+	}
+	ml.lastGCDone = ml.lastGCDone.Add(-time.Minute)
+	numGCs := 0
+	ml.runGCFn = func() {
+		numGCs++
+	}
+
+	// Build up backoff: memory stuck at 55 MiB, GC ineffective.
+	currentMemAllocMiB = 55
+	ml.CheckMemLimits()
+	assert.Equal(t, 1, numGCs)
+	assert.Equal(t, 1, ml.consecutiveIneffectiveGCs)
+	assert.Equal(t, uint64(55*mibBytes), ml.lastAllocAfterGC)
+
+	// Simulate Go runtime GC running and freeing memory: Alloc drops from
+	// 55 to 48 MiB (still above soft limit of 40, but dropped >5% from the
+	// 55 MiB observed after the last forced GC).
+	currentMemAllocMiB = 48
+	// Only 1ms has passed — normally backoff would prevent forced GC.
+	ml.lastGCDone = ml.lastGCDone.Add(-1 * time.Millisecond)
+	ml.CheckMemLimits()
+
+	// Backoff should have been reset because Alloc dropped >5% vs
+	// lastAllocAfterGC, and a forced GC should have fired immediately.
+	assert.Equal(t, 2, numGCs, "GC should fire after early backoff reset")
+
+	// The new forced GC sees 48 MiB before and after, so it's ineffective,
+	// but the counter should be 1 (reset then incremented).
+	assert.Equal(t, 1, ml.consecutiveIneffectiveGCs)
+}
+
 func TestEffectiveGCInterval(t *testing.T) {
 	cfg := &Config{
 		CheckInterval:  1 * time.Second,
@@ -365,7 +415,7 @@ func TestEffectiveGCInterval(t *testing.T) {
 	assert.Equal(t, 20*time.Second, ml.effectiveGCInterval(10*time.Second)) // 10s * 2^1
 
 	ml.consecutiveIneffectiveGCs = 2
-	assert.Equal(t, 40*time.Second, ml.effectiveGCInterval(10*time.Second)) // 10s * 2^2
+	assert.Equal(t, maxGCBackoffInterval, ml.effectiveGCInterval(10*time.Second)) // 10s * 2^2 = 40s, capped at 30s
 
 	// Caps at maxGCBackoffInterval.
 	ml.consecutiveIneffectiveGCs = 20
