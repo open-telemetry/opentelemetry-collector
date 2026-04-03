@@ -16,8 +16,15 @@ import (
 )
 
 func TestTracesRequest(t *testing.T) {
-	mr := newTracesRequest(testdata.GenerateTraces(1))
+	tr := newTracesRequest(testdata.GenerateTraces(1))
+	req := tr.(*tracesRequest)
+	req.cachedSize = 123
 
-	traceErr := consumererror.NewTraces(errors.New("some error"), ptrace.NewTraces())
-	assert.Equal(t, newTracesRequest(ptrace.NewTraces()), mr.(request.ErrorHandler).OnError(traceErr))
+	remaining := ptrace.NewTraces()
+	traceErr := consumererror.NewTraces(errors.New("some error"), remaining)
+	handled := tr.(request.ErrorHandler).OnError(traceErr)
+
+	assert.Same(t, req, handled)
+	assert.Equal(t, remaining, req.td)
+	assert.Equal(t, -1, req.cachedSize)
 }
