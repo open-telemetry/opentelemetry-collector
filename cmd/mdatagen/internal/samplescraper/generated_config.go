@@ -24,9 +24,6 @@ func (c *TargetsItem) Validate() error {
 	if c.HTTPClient == nil {
 		err = errors.Join(err, errors.New("http_client is required"))
 	}
-	if c.Options == nil || len(c.Options) == 0 {
-		err = errors.Join(err, errors.New("options is required"))
-	}
 
 	if inner_err := validateHTTPClient(c.HTTPClient); inner_err != nil {
 		err = errors.Join(err, inner_err)
