@@ -200,6 +200,9 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 	if lbc.ResourceAttributes.StringResourceAttrToBeRemoved.Enabled {
 		settings.Logger.Warn("[WARNING] `string.resource.attr_to_be_removed` should not be enabled: This resource_attribute is deprecated and will be removed soon.")
 	}
+	if lbc.ResourceAttributes.StringResourceDisabledAttrToBeRemoved.Enabled {
+		settings.Logger.Warn("[WARNING] `string.resource.disabled_attr_to_be_removed` should not be enabled: This resource_attribute is deprecated and will be removed soon.")
+	}
 	lb := &LogsBuilder{
 		config:                         lbc,
 		logsBuffer:                     plog.NewLogs(),
@@ -258,6 +261,12 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 	}
 	if lbc.ResourceAttributes.StringResourceAttrToBeRemoved.EventsExclude != nil {
 		lb.resourceAttributeExcludeFilter["string.resource.attr_to_be_removed"] = filter.CreateFilter(lbc.ResourceAttributes.StringResourceAttrToBeRemoved.EventsExclude)
+	}
+	if lbc.ResourceAttributes.StringResourceDisabledAttrToBeRemoved.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["string.resource.disabled_attr_to_be_removed"] = filter.CreateFilter(lbc.ResourceAttributes.StringResourceDisabledAttrToBeRemoved.EventsInclude)
+	}
+	if lbc.ResourceAttributes.StringResourceDisabledAttrToBeRemoved.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["string.resource.disabled_attr_to_be_removed"] = filter.CreateFilter(lbc.ResourceAttributes.StringResourceDisabledAttrToBeRemoved.EventsExclude)
 	}
 
 	return lb
