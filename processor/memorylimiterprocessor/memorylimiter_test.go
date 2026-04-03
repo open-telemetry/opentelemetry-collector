@@ -5,6 +5,7 @@ package memorylimiterprocessor
 
 import (
 	"context"
+	"errors"
 	"runtime"
 	"testing"
 	"time"
@@ -32,6 +33,42 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
+
+type stubMemoryLimiter struct {
+	startErr   error
+	allocLimit uint64
+	spikeLimit uint64
+}
+
+func (s stubMemoryLimiter) Start(context.Context, component.Host) error {
+	return s.startErr
+}
+
+func (stubMemoryLimiter) Shutdown(context.Context) error {
+	return nil
+}
+
+func (stubMemoryLimiter) CheckMemLimits() {}
+
+func (stubMemoryLimiter) MustRefuse() bool {
+	return false
+}
+
+func (s stubMemoryLimiter) AllocLimit() uint64 {
+	return s.allocLimit
+}
+
+func (s stubMemoryLimiter) SpikeLimit() uint64 {
+	return s.spikeLimit
+}
+
+func mustNewObsReport(t *testing.T, set processor.Settings) *obsReport {
+	t.Helper()
+
+	obsrep, err := newObsReport(set)
+	require.NoError(t, err)
+	return obsrep
+}
 
 func TestNoDataLoss(t *testing.T) {
 	// Create an exporter.
@@ -237,6 +274,51 @@ func TestMetricsTelemetry(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp())
 
+	require.NoError(t, tel.Shutdown(context.Background()))
+}
+
+func TestRecordsConfiguredLimitMetricsOnStart(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	cfg := &Config{
+		CheckInterval:       time.Second,
+		MemoryLimitMiB:      512,
+		MemorySpikeLimitMiB: 128,
+	}
+
+	ml, err := newMemoryLimiterProcessor(metadatatest.NewSettings(tel), cfg)
+	require.NoError(t, err)
+
+	require.NoError(t, ml.start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, ml.shutdown(context.Background()))
+
+	expected := []metricdata.DataPoint[int64]{
+		{
+			Value:      512 * 1024 * 1024,
+			Attributes: attribute.NewSet(attribute.String("processor", "memory_limiter")),
+		},
+	}
+	metadatatest.AssertEqualProcessorMemoryLimiterLimitBytes(t, tel, expected, metricdatatest.IgnoreTimestamp())
+
+	expected = []metricdata.DataPoint[int64]{
+		{
+			Value:      128 * 1024 * 1024,
+			Attributes: attribute.NewSet(attribute.String("processor", "memory_limiter")),
+		},
+	}
+	metadatatest.AssertEqualProcessorMemoryLimiterSpikeLimitBytes(t, tel, expected, metricdatatest.IgnoreTimestamp())
+
+	require.NoError(t, tel.Shutdown(context.Background()))
+}
+
+func TestStartPropagatesMemoryLimiterError(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	p := &memoryLimiterProcessor{
+		memlimiter: stubMemoryLimiter{startErr: errors.New("start failed")},
+		obsrep:     mustNewObsReport(t, metadatatest.NewSettings(tel)),
+	}
+
+	err := p.start(context.Background(), componenttest.NewNopHost())
+	require.EqualError(t, err, "start failed")
 	require.NoError(t, tel.Shutdown(context.Background()))
 }
 

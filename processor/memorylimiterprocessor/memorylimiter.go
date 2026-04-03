@@ -17,8 +17,17 @@ import (
 	"go.opentelemetry.io/collector/processor"
 )
 
+type memoryLimiter interface {
+	Start(context.Context, component.Host) error
+	Shutdown(context.Context) error
+	CheckMemLimits()
+	MustRefuse() bool
+	AllocLimit() uint64
+	SpikeLimit() uint64
+}
+
 type memoryLimiterProcessor struct {
-	memlimiter *memorylimiter.MemoryLimiter
+	memlimiter memoryLimiter
 	obsrep     *obsReport
 }
 
@@ -42,7 +51,11 @@ func newMemoryLimiterProcessor(set processor.Settings, cfg *Config) (*memoryLimi
 }
 
 func (p *memoryLimiterProcessor) start(ctx context.Context, host component.Host) error {
-	return p.memlimiter.Start(ctx, host)
+	if err := p.memlimiter.Start(ctx, host); err != nil {
+		return err
+	}
+	p.obsrep.recordLimits(ctx, p.memlimiter.AllocLimit(), p.memlimiter.SpikeLimit())
+	return nil
 }
 
 func (p *memoryLimiterProcessor) shutdown(ctx context.Context) error {

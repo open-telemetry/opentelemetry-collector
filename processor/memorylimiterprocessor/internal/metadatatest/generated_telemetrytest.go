@@ -70,6 +70,34 @@ func AssertEqualProcessorAcceptedSpans(t *testing.T, tt *componenttest.Telemetry
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualProcessorMemoryLimiterLimitBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_memory_limiter_limit_bytes",
+		Description: "The hard memory limit (in bytes) configured on this memory limiter processor instance, derived from limit_mib or limit_percentage * total_memory. Useful as a static denominator for capacity utilization dashboards. [Development]",
+		Unit:        "By",
+		Data: metricdata.Gauge[int64]{
+			DataPoints: dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_memory_limiter_limit_bytes")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorMemoryLimiterSpikeLimitBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_memory_limiter_spike_limit_bytes",
+		Description: "The spike (soft) memory limit (in bytes) configured on this memory limiter processor instance. The processor starts refusing data when Alloc >= (limit - spike). This is the soft threshold. [Development]",
+		Unit:        "By",
+		Data: metricdata.Gauge[int64]{
+			DataPoints: dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_memory_limiter_spike_limit_bytes")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualProcessorRefusedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_refused_log_records",
