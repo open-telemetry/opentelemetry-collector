@@ -30,7 +30,7 @@ const (
 	// maxGCBackoffInterval is the maximum interval between forced GC calls when
 	// GC is repeatedly ineffective. This caps the exponential backoff to ensure
 	// the system still periodically attempts GC for recovery detection.
-	maxGCBackoffInterval = 2 * time.Minute
+	maxGCBackoffInterval = 30 * time.Second
 )
 
 var (
@@ -69,6 +69,13 @@ type MemoryLimiter struct {
 	// exponentially to prevent a CPU-burning GC loop that starves the collector
 	// and prevents recovery. See https://github.com/open-telemetry/opentelemetry-collector/issues/4981
 	consecutiveIneffectiveGCs int
+
+	// lastAllocAfterGC records the heap allocation observed after the most recent
+	// forced GC. This is compared against current Alloc on each check to detect
+	// when memory has become reclaimable (e.g., exporter queue drained and Go
+	// runtime collected the garbage), allowing the GC backoff to reset before the
+	// full backoff interval expires.
+	lastAllocAfterGC uint64
 
 	// Fields used for logging.
 	logger *zap.Logger
@@ -198,6 +205,8 @@ func (ml *MemoryLimiter) doGCandReadMemStats(memAllocBeforeGC uint64) *runtime.M
 		ml.consecutiveIneffectiveGCs = 0
 	}
 
+	ml.lastAllocAfterGC = ms.Alloc
+
 	return ms
 }
 
@@ -244,6 +253,16 @@ func (ml *MemoryLimiter) CheckMemLimits() {
 	}
 
 	if ml.usageChecker.aboveHardLimit(ms) {
+		// If memory has dropped significantly since the last forced GC (e.g.,
+		// exporter queue drained and Go runtime collected the garbage), reset
+		// the backoff so we attempt a forced GC promptly to detect recovery.
+		// Without this, the backoff could delay GC for up to maxGCBackoffInterval
+		// while the heap is already reclaimable.
+		if ml.consecutiveIneffectiveGCs > 0 && ml.lastAllocAfterGC > 0 &&
+			ms.Alloc <= ml.lastAllocAfterGC*(100-gcEffectivenessThreshold)/100 {
+			ml.consecutiveIneffectiveGCs = 0
+		}
+
 		// We are above hard limit, do a GC if it wasn't done recently and see if
 		// it brings memory usage below the soft limit.
 		if time.Since(ml.lastGCDone) > ml.effectiveGCInterval(ml.minGCIntervalWhenHardLimited) {
@@ -253,6 +272,12 @@ func (ml *MemoryLimiter) CheckMemLimits() {
 			aboveSoftLimit = ml.usageChecker.aboveSoftLimit(ms)
 		}
 	} else {
+		// Same early backoff reset check for the soft limit path.
+		if ml.consecutiveIneffectiveGCs > 0 && ml.lastAllocAfterGC > 0 &&
+			ms.Alloc <= ml.lastAllocAfterGC*(100-gcEffectivenessThreshold)/100 {
+			ml.consecutiveIneffectiveGCs = 0
+		}
+
 		// We are above soft limit, do a GC if it wasn't done recently and see if
 		// it brings memory usage below the soft limit.
 		if time.Since(ml.lastGCDone) > ml.effectiveGCInterval(ml.minGCIntervalWhenSoftLimited) {
