@@ -266,12 +266,39 @@ func TestMergeSplitTracesBasedOnByteSize(t *testing.T) {
 			}())},
 			expectPartialError: true,
 		},
+		{
+			name:    "unsplittable_then_splittable_trace",
+			szt:     request.SizerTypeBytes,
+			maxSize: 1000,
+			lr1: newTracesRequest(func() ptrace.Traces {
+				ld := testdata.GenerateTraces(2)
+				ld.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("large_attr", string(make([]byte, 1001)))
+				ld.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("large_attr", string(make([]byte, 10)))
+				return ld
+			}()),
+			lr2: nil,
+			expected: []request.Request{newTracesRequest(func() ptrace.Traces {
+				ld := testdata.GenerateTraces(2)
+				ld.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("large_attr", string(make([]byte, 10)))
+				// Remove the first span (the oversized one) to get the expected output.
+				first := true
+				ld.ResourceSpans().At(0).ScopeSpans().At(0).Spans().RemoveIf(func(_ ptrace.Span) bool {
+					if first {
+						first = false
+						return true
+					}
+					return false
+				})
+				return ld
+			}())},
+			expectPartialError: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.lr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.lr2)
 			if tt.expectPartialError {
-				require.ErrorContains(t, err, "one span size is greater than max size, dropping items:")
+				require.ErrorContains(t, err, "spans exceeded max size, the spans were dropped")
 			} else {
 				require.NoError(t, err)
 			}
