@@ -84,6 +84,13 @@ func (rb *ResourceBuilder) SetStringResourceAttrToBeRemoved(val string) {
 	}
 }
 
+// SetStringResourceDisabledAttrToBeRemoved sets provided value as "string.resource.disabled_attr_to_be_removed" attribute.
+func (rb *ResourceBuilder) SetStringResourceDisabledAttrToBeRemoved(val string) {
+	if rb.config.StringResourceDisabledAttrToBeRemoved.Enabled {
+		rb.res.Attributes().PutStr("string.resource.disabled_attr_to_be_removed", val)
+	}
+}
+
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res

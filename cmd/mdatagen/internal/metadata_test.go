@@ -479,6 +479,17 @@ func TestValidateFeatureGates(t *testing.T) {
 			wantErr: `to_version is required for deprecated stage gates`,
 		},
 		{
+			name: "non-stable or deprecated gate with a to_version",
+			featureGate: FeatureGate{
+				ID:          "component.feature",
+				Description: "Test feature",
+				Stage:       FeatureGateStageBeta,
+				FromVersion: "v0.90.0",
+				ToVersion:   "v0.91.0",
+			},
+			wantErr: `to_version is not supported for the beta stage`,
+		},
+		{
 			name: "missing reference_url",
 			featureGate: FeatureGate{
 				ID:          "component.feature",
