@@ -28,6 +28,7 @@ import (
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
+	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/client"
@@ -103,6 +104,19 @@ type ClientConfig struct {
 	// Sets the balancer in grpclb_policy to discover the servers. Default is pick_first.
 	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
 	BalancerName string `mapstructure:"balancer_name"`
+
+	// ResolverScheme configures the gRPC name resolver used for the endpoint.
+	//   - "" (default): Uses the default resolver scheme of grpc.NewClient, which
+	//     is "dns". The DNS resolver returns all A and AAAA records for the
+	//     hostname, and the load balancer (e.g., pick_first with Happy Eyeballs
+	//     per RFC 8305) determines which address to connect to.
+	//   - "dns": Equivalent to the default. Explicitly uses gRPC's DNS resolver.
+	//   - "passthrough": Bypasses gRPC's DNS resolution and passes the endpoint
+	//     directly to the OS networking stack via net.Dial. This is useful in
+	//     IPv4-only environments where dual-stack DNS records (AAAA + A) cause
+	//     the Happy Eyeballs algorithm to attempt IPv6 connections first,
+	//     resulting in connection failures or additional latency.
+	ResolverScheme string `mapstructure:"resolver_scheme,omitempty"`
 
 	// WithAuthority parameter configures client to rewrite ":authority" header
 	// (godoc.org/google.golang.org/grpc#WithAuthority)
@@ -251,6 +265,15 @@ func (cc *ClientConfig) Validate() error {
 		}
 	}
 
+	switch cc.ResolverScheme {
+	case "", "dns", "passthrough":
+		// Known resolver schemes.
+	default:
+		if resolver.Get(cc.ResolverScheme) == nil {
+			return fmt.Errorf("invalid resolver_scheme %q: no resolver registered for this scheme", cc.ResolverScheme)
+		}
+	}
+
 	return nil
 }
 
@@ -266,6 +289,25 @@ func (cc *ClientConfig) sanitizedEndpoint() string {
 		return r.ReplaceAllString(cc.Endpoint, "")
 	default:
 		return cc.Endpoint
+	}
+}
+
+// dialTarget returns the target URI for grpc.NewClient, incorporating the
+// configured resolver scheme. When ResolverScheme is set, it is prepended to
+// the sanitized endpoint so that grpc.NewClient uses the corresponding resolver.
+// When ResolverScheme is empty, the bare host:port is returned and grpc.NewClient
+// applies its default "dns" scheme.
+func (cc *ClientConfig) dialTarget() string {
+	endpoint := cc.sanitizedEndpoint()
+	switch cc.ResolverScheme {
+	case "passthrough":
+		return "passthrough:///" + endpoint
+	case "dns":
+		return "dns:///" + endpoint
+	case "":
+		return endpoint
+	default:
+		return cc.ResolverScheme + ":///" + endpoint
 	}
 }
 
@@ -310,7 +352,7 @@ func (cc *ClientConfig) ToClientConn(
 	if err != nil {
 		return nil, err
 	}
-	conn, err := grpc.NewClient(cc.sanitizedEndpoint(), grpcOpts...)
+	conn, err := grpc.NewClient(cc.dialTarget(), grpcOpts...)
 	if err != nil {
 		return nil, err
 	}

@@ -18,6 +18,11 @@ README](../configtls/README.md).
 - [`balancer_name`](https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md): Default before v0.103.0 is `pick_first`, default for v0.103.0 is `round_robin`. See [issue](https://github.com/open-telemetry/opentelemetry-collector/issues/10298). To restore the previous behavior, set `balancer_name` to `pick_first`.
 - `compression`: Compression type to use among `gzip`, `snappy`, `zstd`, and `none`.
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
+- `resolver_scheme`: Controls the gRPC [name resolver](https://grpc.io/docs/guides/custom-name-resolution/) scheme used for the endpoint. Supported values:
+  - `""` (default): Uses gRPC's default `dns` resolver, which returns all A and AAAA records and relies on the load balancer (e.g., `pick_first` with [Happy Eyeballs](https://datatracker.ietf.org/doc/html/rfc8305)) for address selection.
+  - `"dns"`: Equivalent to the default. Explicitly uses gRPC's DNS resolver.
+  - `"passthrough"`: Bypasses gRPC's DNS resolution and passes the endpoint directly to the OS networking stack via `net.Dial`. This is useful in IPv4-only environments where dual-stack DNS records (AAAA + A) cause Happy Eyeballs to attempt IPv6 connections first, resulting in connection failures or additional latency.
+  - Any other value is accepted if a resolver is registered for that scheme with gRPC's resolver registry.
 - [`tls`](../configtls/README.md)
 - `headers`: name/value pairs added to the request
 - [`keepalive`](https://godoc.org/google.golang.org/grpc/keepalive#ClientParameters)
