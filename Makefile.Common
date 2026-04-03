@@ -19,7 +19,13 @@ SRC_ROOT := $(shell git rev-parse --show-toplevel)
 TOOLS_MOD_DIR   := $(SRC_ROOT)/internal/tools
 TOOLS_MOD_FILE  := $(TOOLS_MOD_DIR)/go.mod
 GO_TOOL         := $(GOCMD) tool -modfile $(TOOLS_MOD_FILE)
+GOJQ            := go run github.com/itchyny/gojq/cmd/gojq@latest
 CHLOGGEN_CONFIG := .chloggen/config.yaml
+# Ignored vulnerabilities - set to empty to fail on all vulnerabilities
+IGNORED_VULNS   := GO-2025-3955 GO-2025-4006 GO-2025-4007 GO-2025-4008 GO-2025-4009 GO-2025-4010 \
+                   GO-2025-4011 GO-2025-4012 GO-2025-4013 GO-2025-4014 GO-2025-4015 GO-2025-4155 \
+                   GO-2025-4175 GO-2026-4337 GO-2026-4340 GO-2026-4341 GO-2026-4342 GO-2026-4601 \
+                   GO-2026-4602 GO-2026-4603
 # no trailing slash
 JUNIT_OUT_DIR ?= $(TOOLS_MOD_DIR)/testresults
 
@@ -84,7 +90,27 @@ common/gofumpt:
 
 .PHONY: vulncheck
 vulncheck:
-	$(GO_TOOL) govulncheck ./...
+	@set -e; \
+	$(GO_TOOL) govulncheck -format json ./... > govulncheck-output.json; \
+	FOUND="$$( $(GOJQ) -r 'select(.finding!=null)|.finding.osv' govulncheck-output.json | sort -u )"; \
+	rm -f govulncheck-output.json; \
+	[ -z "$$FOUND" ] && echo "No vulnerabilities found" && exit 0; \
+	echo "Found: $$FOUND"; \
+	\
+	UNIGNORED=""; \
+	for id in $$FOUND; do \
+		echo "$(IGNORED_VULNS)" | grep -qw "$$id" || UNIGNORED="$$UNIGNORED $$id"; \
+	done; \
+	UNIGNORED="$$(echo $$UNIGNORED | xargs)"; \
+	[ -z "$$UNIGNORED" ] && echo "All vulnerabilities ignored" && exit 0; \
+	\
+	echo "Vulnerabilities need attention: $$UNIGNORED"; \
+	echo ""; \
+	echo "Vulnerability Summary:"; \
+	echo "ID    SUMMARY"; \
+	$(GOJQ) -r 'select(.finding!=null)|[.finding.osv,.finding.summary]|@tsv' govulncheck-output.json 2>/dev/null || true; \
+	rm -f govulncheck-output.json; \
+	exit 1
 
 .PHONY: generate
 generate:
