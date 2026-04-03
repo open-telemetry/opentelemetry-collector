@@ -15,11 +15,18 @@ type GoLeak struct {
 	Teardown string `mapstructure:"teardown"`
 }
 
+type InvalidConfig struct {
+	Name   string         `mapstructure:"name"`
+	Config map[string]any `mapstructure:"config"`
+	Error  string         `mapstructure:"error"`
+}
+
 type Tests struct {
-	Config              any    `mapstructure:"config"`
-	SkipLifecycle       bool   `mapstructure:"skip_lifecycle"`
-	SkipShutdown        bool   `mapstructure:"skip_shutdown"`
-	GoLeak              GoLeak `mapstructure:"goleak"`
-	ExpectConsumerError bool   `mapstructure:"expect_consumer_error"`
-	Host                string `mapstructure:"host"`
+	Config              any             `mapstructure:"config"`
+	InvalidConfigs      []InvalidConfig `mapstructure:"invalid_configs"`
+	SkipLifecycle       bool            `mapstructure:"skip_lifecycle"`
+	SkipShutdown        bool            `mapstructure:"skip_shutdown"`
+	GoLeak              GoLeak          `mapstructure:"goleak"`
+	ExpectConsumerError bool            `mapstructure:"expect_consumer_error"`
+	Host                string          `mapstructure:"host"`
 }

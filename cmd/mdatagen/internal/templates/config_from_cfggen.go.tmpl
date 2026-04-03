@@ -5,11 +5,26 @@ package {{ .Package }}
 {{- $validators := extractValidators .Metadata.Config }}
 {{ $imports := extractImports .Metadata.Config }}
 {{- if or $imports $validators }}
+{{ $stdImports := stdImports $imports }}
+{{ $thirdPartyImports := thirdPartyImports $imports }}
+{{ $localImports := localImports $imports }}
 import (
 {{- if $validators }}
-    "errors"
+	"errors"
 {{- end }}
-{{- range $imports }}
+{{- range $stdImports }}
+	"{{ . }}"
+{{- end }}
+{{- if and (or $validators $stdImports) (or $thirdPartyImports $localImports) }}
+
+{{- end }}
+{{- range $thirdPartyImports }}
+	"{{ . }}"
+{{- end }}
+{{- if and $thirdPartyImports $localImports }}
+
+{{- end }}
+{{- range $localImports }}
 	"{{ . }}"
 {{- end }}
 )

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strings"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
 )
@@ -56,7 +57,44 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return typeName
 		},
+		"stdImports": func(imports []string) []string {
+			return filterImports(imports, importGroupStd)
+		},
+		"thirdPartyImports": func(imports []string) []string {
+			return filterImports(imports, importGroupThirdParty)
+		},
+		"localImports": func(imports []string) []string {
+			return filterImports(imports, importGroupLocal)
+		},
 	}
+}
+
+type importGroup int
+
+const (
+	importGroupStd importGroup = iota
+	importGroupThirdParty
+	importGroupLocal
+)
+
+func filterImports(imports []string, group importGroup) []string {
+	filtered := make([]string, 0, len(imports))
+	for _, imp := range imports {
+		if classifyImport(imp) == group {
+			filtered = append(filtered, imp)
+		}
+	}
+	return filtered
+}
+
+func classifyImport(imp string) importGroup {
+	if !strings.Contains(strings.SplitN(imp, "/", 2)[0], ".") {
+		return importGroupStd
+	}
+	if strings.HasPrefix(imp, "go.opentelemetry.io/collector") {
+		return importGroupLocal
+	}
+	return importGroupThirdParty
 }
 
 // WithCfgFns merges config generation template functions into the given function map.
@@ -169,7 +207,14 @@ func ExtractImports(md *ConfigMetadata, rootPackage, componentPackage string) ([
 		return nil, err
 	}
 
-	return slices.Collect(maps.Keys(imports)), nil
+	ordered := slices.Collect(maps.Keys(imports))
+	slices.SortFunc(ordered, func(a, b string) int {
+		if ga, gb := classifyImport(a), classifyImport(b); ga != gb {
+			return int(ga - gb)
+		}
+		return strings.Compare(a, b)
+	})
+	return ordered, nil
 }
 
 func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, componentPackage string) error {
