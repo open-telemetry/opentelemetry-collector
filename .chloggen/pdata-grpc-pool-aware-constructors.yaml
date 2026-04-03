@@ -1,0 +1,16 @@
+change_type: bug_fix
+
+component: pdata
+
+note: Use pool-aware constructors in gRPC service handlers so top-level request structs participate in the sync.Pool lifecycle.
+
+issues: []
+
+subtext: |
+  The gRPC service handlers for all signal types allocated the top-level
+  ExportXxxServiceRequest with bare new(), bypassing the sync.Pool when
+  pdata.useProtoPooling is enabled. This caused objects returned to the pool
+  via Delete to never be retrieved. The handlers now use the pool-aware
+  New*() constructors.
+
+change_logs: [api]
