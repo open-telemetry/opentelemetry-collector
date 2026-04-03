@@ -11,6 +11,7 @@
 | ------------- |-----------|
 {{- $class := .Status.Class }}
 {{- $shortName := .ShortFolderName }}
+{{- $issueLabelPath := .GetGitHubIssueLabelPath }}
 {{- if ne $class "connector" }}
 {{- $idx := 0 }}
 {{- range $stability, $value := .Status.Stability }}
@@ -34,7 +35,7 @@
 | Warnings      | [{{ stringsJoin .Status.Warnings ", " }}](#warnings) |
 {{- end }}
 {{- if ne $class "" }}
-| Issues        | [![Open issues](https://img.shields.io/github/issues-search/{{ .GithubProject }}?query=is%3Aissue%20is%3Aopen%20label%3A{{ $class }}%2F{{ $shortName }}%20&label=open&color=orange&logo=opentelemetry)](https://github.com/{{ .GithubProject }}/issues?q=is%3Aopen+is%3Aissue+label%3A{{ $class }}%2F{{ $shortName }}) [![Closed issues](https://img.shields.io/github/issues-search/{{ .GithubProject }}?query=is%3Aissue%20is%3Aclosed%20label%3A{{ $class }}%2F{{ $shortName }}%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/{{ .GithubProject }}/issues?q=is%3Aclosed+is%3Aissue+label%3A{{ $class }}%2F{{ $shortName }}) |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/{{ .GithubProject }}?query=is%3Aissue%20is%3Aopen%20label%3A{{ urlquery $issueLabelPath }}%20&label=open&color=orange&logo=opentelemetry)](https://github.com/{{ .GithubProject }}/issues?q=is%3Aopen+is%3Aissue+label%3A{{ urlquery $issueLabelPath }}) [![Closed issues](https://img.shields.io/github/issues-search/{{ .GithubProject }}?query=is%3Aissue%20is%3Aclosed%20label%3A{{ urlquery $issueLabelPath }}%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/{{ .GithubProject }}/issues?q=is%3Aclosed+is%3Aissue+label%3A{{ urlquery $issueLabelPath }}) |
 {{- if not .Status.DisableCodeCov }}
 | Code coverage | [![codecov](https://codecov.io/github/{{ .GithubProject }}/graph/main/badge.svg?component={{ .GetCodeCovComponentID }})](https://app.codecov.io/gh/{{ .GithubProject}}/tree/main/?components%5B0%5D={{ .GetCodeCovComponentID }}&displayType=list) |
 {{- end }}

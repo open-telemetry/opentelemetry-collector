@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -31,6 +32,22 @@ type TemplateContext struct {
 	Package string
 	// ImportRootPath is the repo-local import prefix used to localize same-tree schema references.
 	ImportRootPath string
+}
+
+func (tc TemplateContext) GetGitHubIssueLabelPath() string {
+	if tc.Status == nil || tc.Status.Class == "" {
+		return ""
+	}
+
+	if tc.PackageName != "" && tc.ImportRootPath != "" {
+		repoRelativePath := strings.TrimPrefix(tc.PackageName, tc.ImportRootPath+"/")
+		if repoRelativePath != tc.PackageName &&
+			(repoRelativePath == tc.Status.Class || strings.HasPrefix(repoRelativePath, tc.Status.Class+"/")) {
+			return repoRelativePath
+		}
+	}
+
+	return path.Join(tc.Status.Class, tc.ShortFolderName)
 }
 
 func LoadMetadata(filePath string) (Metadata, error) {
