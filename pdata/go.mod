@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/pdata
 
-go 1.25.0
+go 1.25.8
 
 require (
 	github.com/json-iterator/go v1.1.12
