@@ -44,7 +44,9 @@ type partitionBatcher struct {
 	logger         *zap.Logger
 	onEmpty        func()    // callback triggered when partition is idle for given time period.
 	lastDataTime   time.Time // tracks when data was last present
-	active         bool      // indicates if partition is still active i.e timer is running and shutdown is not called yet. If Consume is called on inactive partition then data is flushed sync because timer is not running.
+	active         bool      // indicates if partition is still active i.e timer is running and shutdown is not called yet. If Consume is called on inactive partition then data is flushed sync because timer is not running
+	startTime      time.Time // scheduling anchor for fixed-window mode
+	nextFlushTime  time.Time // next scheduled flush boundary for fixed-window mode
 }
 
 func newPartitionBatcher(
@@ -71,9 +73,25 @@ func newPartitionBatcher(
 }
 
 func (qb *partitionBatcher) resetTimer() {
-	if qb.cfg.FlushTimeout > 0 {
-		qb.timer.Reset(qb.cfg.FlushTimeout)
+	if qb.cfg.FlushTimeout <= 0 {
+		return
 	}
+
+	// Fixed windows disabled: rearm the timer relative to now.
+	if !qb.cfg.FixedWindows {
+		qb.timer.Reset(qb.cfg.FlushTimeout)
+		return
+	}
+
+	// Fixed windows enabled: rearm the timer for the first boundary strictly after now.
+	now := time.Now()
+
+	// Advance to the next boundary strictly AFTER now.
+	elapsed := now.Sub(qb.startTime)
+	intervals := elapsed / qb.cfg.FlushTimeout
+	qb.nextFlushTime = qb.startTime.Add((intervals + 1) * qb.cfg.FlushTimeout)
+
+	qb.timer.Reset(time.Until(qb.nextFlushTime))
 }
 
 func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Request, done queue.Done) bool {
@@ -217,7 +235,15 @@ func (qb *partitionBatcher) Start(context.Context, component.Host) error {
 	if qb.cfg.FlushTimeout <= 0 {
 		return nil
 	}
-	qb.timer = time.NewTimer(qb.cfg.FlushTimeout)
+
+	if qb.cfg.FixedWindows {
+		qb.startTime = time.Now()
+		qb.nextFlushTime = qb.startTime.Add(qb.cfg.FlushTimeout)
+		qb.timer = time.NewTimer(time.Until(qb.nextFlushTime))
+	} else {
+		qb.timer = time.NewTimer(qb.cfg.FlushTimeout)
+	}
+
 	qb.stopWG.Go(func() {
 		for {
 			select {
