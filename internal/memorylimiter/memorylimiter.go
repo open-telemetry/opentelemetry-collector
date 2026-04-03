@@ -189,12 +189,15 @@ func (ml *MemoryLimiter) doGCandReadMemStats(memAllocBeforeGC uint64) *runtime.M
 	ms := ml.readMemStats()
 	ml.logger.Info("Memory usage after GC.", memstatToZapField(ms))
 
-	// Track GC effectiveness. If GC reclaimed less than gcEffectivenessThreshold%
-	// of the pre-GC allocation, it is considered ineffective. This happens when
-	// memory is held by live references (e.g., exporter queues, retry goroutines)
-	// and cannot be freed by GC. In this case, continued forced GC only wastes CPU
-	// and can starve the collector, preventing recovery.
-	if memAllocBeforeGC > 0 && ms.Alloc > memAllocBeforeGC*(100-gcEffectivenessThreshold)/100 {
+	// Track GC effectiveness. A GC is considered effective if it either:
+	// - reclaimed at least gcEffectivenessThreshold% of the pre-GC allocation, or
+	// - brought memory below the soft limit (i.e., the pressure is resolved).
+	// When GC is ineffective (memory held by live references in exporter queues),
+	// continued forced GC only wastes CPU and can starve the collector.
+	gcResolvedPressure := !ml.usageChecker.aboveSoftLimit(ms)
+	gcReclaimedEnough := ms.Alloc <= memAllocBeforeGC*(100-gcEffectivenessThreshold)/100
+
+	if memAllocBeforeGC > 0 && !gcResolvedPressure && !gcReclaimedEnough {
 		ml.consecutiveIneffectiveGCs++
 		if ml.consecutiveIneffectiveGCs == 1 {
 			ml.logger.Warn("Forced GC did not reclaim enough memory. Will back off GC frequency to preserve CPU for recovery.",
@@ -224,10 +227,13 @@ func (ml *MemoryLimiter) effectiveGCInterval(baseInterval time.Duration) time.Du
 		interval = ml.memCheckWait
 	}
 	// Exponential backoff: double the interval for each consecutive ineffective GC.
+	// The cap never reduces the interval below the user-configured baseInterval,
+	// so a configured 60s minimum is always respected.
+	cap := max(maxGCBackoffInterval, baseInterval)
 	for range ml.consecutiveIneffectiveGCs {
 		interval *= 2
-		if interval >= maxGCBackoffInterval {
-			return maxGCBackoffInterval
+		if interval >= cap {
+			return cap
 		}
 	}
 	return interval

@@ -421,4 +421,59 @@ func TestEffectiveGCInterval(t *testing.T) {
 	ml.consecutiveIneffectiveGCs = 20
 	assert.Equal(t, maxGCBackoffInterval, ml.effectiveGCInterval(10*time.Second))
 	assert.Equal(t, maxGCBackoffInterval, ml.effectiveGCInterval(0))
+
+	// Cap never reduces below the configured baseInterval. A user who sets
+	// min_gc_interval_when_hard_limited: 60s should never see GC fire more
+	// often than every 60s, even during backoff. Since the cap is
+	// max(maxGCBackoffInterval, baseInterval) = max(30s, 60s) = 60s, the
+	// doubled interval (120s) gets capped back to 60s.
+	ml.consecutiveIneffectiveGCs = 1
+	assert.Equal(t, 1*time.Minute, ml.effectiveGCInterval(1*time.Minute)) // 60s * 2 = 120s, capped at max(30s,60s)=60s
+	ml.consecutiveIneffectiveGCs = 20
+	assert.Equal(t, 1*time.Minute, ml.effectiveGCInterval(1*time.Minute)) // always capped at 60s
+}
+
+func TestGCEffectivenessWhenPressureResolved(t *testing.T) {
+	// A GC that frees less than 5% of memory but brings usage below the soft
+	// limit should be treated as effective. Otherwise the next pressure event
+	// is backoff-throttled unnecessarily.
+	cfg := &Config{
+		CheckInterval:                1 * time.Second,
+		MinGCIntervalWhenHardLimited: 0,
+		MemoryLimitMiB:               100,
+		MemorySpikeLimitMiB:          5,
+	}
+	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
+	require.NoError(t, err)
+
+	// Soft limit = 100 - 5 = 95 MiB. Hard limit = 100 MiB.
+	// Simulate: before GC = 100 MiB, after GC = 94 MiB.
+	// That's only 6% reclaimed, but it resolved the pressure (94 < 95).
+	var currentAllocMiB uint64
+	gcCalled := false
+	ml.readMemStatsFn = func(ms *runtime.MemStats) {
+		if gcCalled {
+			ms.Alloc = 94 * mibBytes
+			gcCalled = false
+		} else {
+			ms.Alloc = currentAllocMiB * mibBytes
+		}
+	}
+	ml.lastGCDone = ml.lastGCDone.Add(-time.Minute)
+	ml.runGCFn = func() {
+		gcCalled = true
+	}
+
+	// First pressure event: GC resolves it.
+	currentAllocMiB = 100
+	ml.CheckMemLimits()
+	assert.False(t, ml.MustRefuse(), "should not refuse after GC resolved pressure")
+	assert.Equal(t, 0, ml.consecutiveIneffectiveGCs, "GC that resolved pressure should be effective")
+
+	// Second pressure event: GC should fire without any backoff.
+	currentAllocMiB = 100
+	ml.lastGCDone = ml.lastGCDone.Add(-time.Minute)
+	ml.CheckMemLimits()
+	assert.False(t, ml.MustRefuse())
+	assert.Equal(t, 0, ml.consecutiveIneffectiveGCs, "no stale backoff from previous event")
 }
