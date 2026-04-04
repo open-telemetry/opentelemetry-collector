@@ -10,4 +10,8 @@ telemetry:
       description: Latency (in microseconds) of a given sampling policy
       unit: µs
       enabled: true
+      stability: alpha
       histogram:
+        value_type: int
+        aggregation: exponential
+        bucket_boundaries: [0.005, 0.01, 0.025, 0.05, 0.1]

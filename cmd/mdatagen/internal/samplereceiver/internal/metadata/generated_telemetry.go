@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/embedded"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
@@ -33,6 +34,7 @@ type TelemetryBuilder struct {
 	QueueCapacity                 metric.Int64Gauge
 	QueueLength                   metric.Int64ObservableGauge
 	RequestDuration               metric.Float64Histogram
+	RequestDurationExponential    metric.Float64Histogram
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -135,5 +137,25 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithExplicitBucketBoundaries([]float64{1, 10, 100}...),
 	)
 	errs = errors.Join(errs, err)
+	builder.RequestDurationExponential, err = builder.meter.Float64Histogram(
+		"otelcol_request_duration_exponential",
+		metric.WithDescription("Duration of request (exponential histogram) [Alpha]"),
+		metric.WithUnit("s"),
+	)
+	errs = errors.Join(errs, err)
 	return &builder, errs
+}
+
+// Views returns the SDK metric Views required to produce exponential histograms
+// for metrics declared with aggregation: exponential in this component's metadata.
+func Views() []sdkmetric.View {
+	return []sdkmetric.View{
+		sdkmetric.NewView(
+			sdkmetric.Instrument{Name: "otelcol_request_duration_exponential"},
+			sdkmetric.Stream{Aggregation: sdkmetric.AggregationBase2ExponentialHistogram{
+				MaxSize:  320,
+				MaxScale: 10,
+			}},
+		),
+	}
 }

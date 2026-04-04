@@ -96,3 +96,18 @@ func AssertEqualRequestDuration(t *testing.T, tt *componenttest.Telemetry, dps [
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
+
+func AssertEqualRequestDurationExponential(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.ExponentialHistogramDataPoint[float64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_request_duration_exponential",
+		Description: "Duration of request (exponential histogram) [Alpha]",
+		Unit:        "s",
+		Data: metricdata.ExponentialHistogram[float64]{
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_request_duration_exponential")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}

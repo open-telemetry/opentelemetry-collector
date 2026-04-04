@@ -525,6 +525,20 @@ func TestLoadMetadata(t *testing.T) {
 								Boundaries:      []float64{1, 10, 100},
 							},
 						},
+						"request_duration_exponential": {
+							Signal: Signal{
+								Enabled:     true,
+								Stability:   component.StabilityLevelAlpha,
+								Description: "Duration of request (exponential histogram)",
+							},
+							Unit: strPtr("s"),
+							Histogram: &Histogram{
+								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
+								Aggregation:     HistogramAggregationExponential,
+								MaxSize:         320,
+								MaxScale:        10,
+							},
+						},
 						"process_runtime_total_alloc_bytes": {
 							Signal: Signal{
 								Enabled:     true,

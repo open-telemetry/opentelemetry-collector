@@ -90,6 +90,9 @@ func (m *Metric) validate(metricName MetricName, semConvVersion string) error {
 	if m.Gauge != nil {
 		errs = errors.Join(errs, m.Gauge.Validate())
 	}
+	if m.Histogram != nil {
+		errs = errors.Join(errs, m.Histogram.Validate())
+	}
 	if m.SemanticConvention != nil {
 		if err := validateSemConvMetricURL(m.SemanticConvention.SemanticConventionRef, semConvVersion, string(metricName)); err != nil {
 			errs = errors.Join(errs, err)
@@ -367,6 +370,18 @@ func (d *Sum) IsAsync() bool {
 
 var _ MetricData = (*Histogram)(nil)
 
+// HistogramAggregation specifies the aggregation type for a histogram metric.
+type HistogramAggregation string
+
+const (
+	// HistogramAggregationExplicit uses explicit, predefined bucket boundaries.
+	// This is the default when no aggregation is specified.
+	HistogramAggregationExplicit HistogramAggregation = "explicit"
+	// HistogramAggregationExponential uses base2 exponential bucket boundaries,
+	// providing adaptive bucketing and better visibility into long-tail distributions.
+	HistogramAggregationExponential HistogramAggregation = "exponential"
+)
+
 type Histogram struct {
 	AggregationTemporality `mapstructure:"aggregation_temporality"`
 	Mono                   `mapstructure:",squash"`
@@ -374,9 +389,53 @@ type Histogram struct {
 	MetricInputType        `mapstructure:",squash"`
 	Async                  bool      `mapstructure:"async,omitempty"`
 	Boundaries             []float64 `mapstructure:"bucket_boundaries"`
+	// Aggregation specifies the histogram aggregation type. Defaults to "explicit".
+	// Use "exponential" for exponential bucket histograms.
+	Aggregation HistogramAggregation `mapstructure:"aggregation,omitempty"`
+	// MaxSize is the maximum number of buckets for exponential histograms.
+	// Defaults to 160 when unset (0). Only valid when aggregation is "exponential".
+	MaxSize int `mapstructure:"max_size,omitempty"`
+	// MaxScale is the maximum resolution scale for exponential histograms.
+	// Must be in [0, 20]. Defaults to 20 when unset (0). Only valid when aggregation is "exponential".
+	MaxScale int `mapstructure:"max_scale,omitempty"`
+}
+
+// IsExponential reports whether this histogram uses exponential bucket aggregation.
+func (d *Histogram) IsExponential() bool {
+	return d.Aggregation == HistogramAggregationExponential
+}
+
+// Validate checks that the histogram configuration is consistent.
+func (d *Histogram) Validate() error {
+	switch d.Aggregation {
+	case "", HistogramAggregationExplicit, HistogramAggregationExponential:
+		// valid
+	default:
+		return fmt.Errorf("invalid aggregation %q: must be %q or %q",
+			d.Aggregation, HistogramAggregationExplicit, HistogramAggregationExponential)
+	}
+	if d.IsExponential() && len(d.Boundaries) > 0 {
+		return errors.New("bucket_boundaries must not be set when aggregation is \"exponential\"")
+	}
+	if d.MaxSize != 0 && !d.IsExponential() {
+		return errors.New("max_size is only valid when aggregation is \"exponential\"")
+	}
+	if d.MaxScale != 0 && !d.IsExponential() {
+		return errors.New("max_scale is only valid when aggregation is \"exponential\"")
+	}
+	if d.MaxSize < 0 {
+		return fmt.Errorf("max_size must be a positive integer, got %d", d.MaxSize)
+	}
+	if d.MaxScale < 0 || d.MaxScale > 20 {
+		return fmt.Errorf("max_scale must be between 0 and 20, got %d", d.MaxScale)
+	}
+	return nil
 }
 
 func (d *Histogram) Type() string {
+	if d.IsExponential() {
+		return "ExponentialHistogram"
+	}
 	return "Histogram"
 }
 
@@ -390,7 +449,7 @@ func (d *Histogram) HasAggregated() bool {
 
 func (d *Histogram) Instrument() string {
 	instrumentName := cases.Title(language.English).String(d.BasicType())
-	return instrumentName + d.Type()
+	return instrumentName + "Histogram"
 }
 
 // Unmarshal is a custom unmarshaler for histogram. Needed mostly to avoid MetricValueType.Unmarshal inheritance.

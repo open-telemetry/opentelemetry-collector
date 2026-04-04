@@ -383,6 +383,17 @@ telemetry:
         monotonic: bool
         # Bucket boundaries are only available to set for histogram metrics.
         bucket_boundaries: [double]
+        # Optional: Histogram aggregation type. Defaults to "explicit" (explicit bucket histogram).
+        # Use "exponential" for exponential bucket histograms, which provide adaptive
+        # bucketing and better visibility into long-tail distributions. When set to "exponential",
+        # bucket_boundaries must not be specified.
+        aggregation: <explicit|exponential>
+        # Optional: Maximum number of buckets for exponential histograms. Defaults to 160.
+        # Only valid when aggregation is "exponential".
+        max_size: int
+        # Optional: Maximum resolution scale for exponential histograms. Must be in [0, 20].
+        # Defaults to 20. Only valid when aggregation is "exponential".
+        max_scale: int
       # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
       # Note: Only the following attribute types are supported: <string|int|double|bool>
       attributes: [string]

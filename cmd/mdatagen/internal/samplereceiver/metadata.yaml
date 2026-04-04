@@ -380,3 +380,13 @@ telemetry:
       histogram:
         value_type: double
         bucket_boundaries: [1, 10, 100]
+    request_duration_exponential:
+      enabled: true
+      stability: alpha
+      description: Duration of request (exponential histogram)
+      unit: s
+      histogram:
+        value_type: double
+        aggregation: exponential
+        max_size: 320
+        max_scale: 10

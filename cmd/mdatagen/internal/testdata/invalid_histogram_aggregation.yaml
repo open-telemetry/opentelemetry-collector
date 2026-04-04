@@ -10,4 +10,7 @@ telemetry:
       description: Latency (in microseconds) of a given sampling policy
       unit: µs
       enabled: true
+      stability: alpha
       histogram:
+        value_type: int
+        aggregation: invalid_aggregation_type

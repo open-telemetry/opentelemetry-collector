@@ -307,6 +307,14 @@ Duration of request
 | ---- | ----------- | ---------- | --------- |
 | s | Histogram | Double | Alpha |
 
+### otelcol_request_duration_exponential
+
+Duration of request (exponential histogram)
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | ExponentialHistogram | Double | Alpha |
+
 ## Feature Gates
 
 This component has the following feature gates:
