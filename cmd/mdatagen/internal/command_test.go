@@ -274,12 +274,12 @@ func TestRunContents(t *testing.T) {
 			wantRunErr: true,
 		},
 		{
-			yml:                    "with_exponential_histogram_telemetry.yaml",
-			wantStatusGenerated:    true,
-			wantTelemetryGenerated: true,
-			wantReadmeGenerated:    true,
+			yml:                        "with_exponential_histogram_telemetry.yaml",
+			wantStatusGenerated:        true,
+			wantTelemetryGenerated:     true,
+			wantReadmeGenerated:        true,
 			wantComponentTestGenerated: true,
-			wantLogsGenerated:      true,
+			wantLogsGenerated:          true,
 		},
 	}
 	for _, tt := range tests {
