@@ -16,7 +16,7 @@ type ConfigMetadata struct {
 	Title                string                     `mapstructure:"title,omitempty" json:"title,omitempty" yaml:"title,omitempty"`
 	Description          string                     `mapstructure:"description,omitempty" json:"description,omitempty" yaml:"description,omitempty"`
 	Comment              string                     `mapstructure:"$comment,omitempty" json:"$comment,omitempty" yaml:"$comment,omitempty"`
-	Type                 any                        `mapstructure:"type,omitempty" json:"type,omitempty" yaml:"type,omitempty"`
+	Type                 string                     `mapstructure:"type,omitempty" json:"type,omitempty" yaml:"type,omitempty"`
 	Ref                  string                     `mapstructure:"$ref,omitempty" json:"-" yaml:"$ref,omitempty"`
 	Default              any                        `mapstructure:"default,omitempty" json:"default,omitempty" yaml:"default,omitempty"`
 	Examples             []any                      `mapstructure:"examples,omitempty" json:"examples,omitempty" yaml:"examples,omitempty"`

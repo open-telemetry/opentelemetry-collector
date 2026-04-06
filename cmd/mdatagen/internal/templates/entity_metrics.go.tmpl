@@ -22,9 +22,20 @@ import (
 // {{ $entityStructType }} represents a {{ $entityType }} entity.
 // Create one with New{{ $entityStructType }} and pass it to EmitForEntity.
 type {{ $entityStructType }} struct {
-	ent entity.Entity
+	{{- range $idAttr := $ent.Identity }}
+	{{- $attr := index $resourceAttributes $idAttr.Ref }}
+	{{ $idAttr.Ref.RenderUnexported }} {{ $attr.Type.Primitive }}
+	{{- end }}
+	{{- range $descAttr := $ent.Description }}
+	{{- $attr := index $resourceAttributes $descAttr.Ref }}
+	{{ $descAttr.Ref.RenderUnexported }} {{ $attr.Type.Primitive }}
+	{{- end }}
+	{{- range $extraAttr := $ent.ExtraAttributes }}
+	{{- $attr := index $resourceAttributes $extraAttr.Ref }}
+	{{ $extraAttr.Ref.RenderUnexported }} {{ $attr.Type.Primitive }}
+	{{- end }}
 	{{- range $rel := $ent.Relationships }}
-	{{ toCamelCase $rel.Type }}{{ publicVar $rel.Target }} *{{ publicVar $rel.Target }}Entity
+	{{ toLowerCamelCase $rel.Type }}{{ publicVar $rel.Target }} *{{ publicVar $rel.Target }}Entity
 	{{- end }}
 }
 
@@ -34,16 +45,14 @@ func New{{ $entityStructType }}(
 	{{- range $i, $idAttr := $ent.Identity -}}
 	{{- if $i }}, {{ end -}}
 	{{- $attr := index $resourceAttributes $idAttr.Ref -}}
-	{{ toCamelCase $idAttr.Ref.Render }} {{ $attr.Type.Primitive }}
+	{{ $idAttr.Ref.RenderUnexported }} {{ $attr.Type.Primitive }}
 	{{- end -}}
 ) *{{ $entityStructType }} {
-	e := &{{ $entityStructType }}{
-		ent: entity.NewEntity("{{ $entityType }}"),
+	return &{{ $entityStructType }}{
+		{{- range $idAttr := $ent.Identity }}
+		{{ $idAttr.Ref.RenderUnexported }}: {{ $idAttr.Ref.RenderUnexported }},
+		{{- end }}
 	}
-	{{- range $idAttr := $ent.Identity }}
-	e.ent.IdentifyingAttributes().PutStr("{{ $idAttr.Ref }}", {{ toCamelCase $idAttr.Ref.Render }})
-	{{- end }}
-	return e
 }
 
 {{- if $ent.Description }}
@@ -54,17 +63,7 @@ func New{{ $entityStructType }}(
 
 // Set{{ publicVar $descAttr.Ref.Render }} sets the {{ $descAttr.Ref }} description attribute.
 func (e *{{ $entityStructType }}) Set{{ publicVar $descAttr.Ref.Render }}(val {{ $attr.Type.Primitive }}) {
-	{{- if eq $attr.Type.ValueType.String "Str" }}
-	e.ent.DescriptiveAttributes().PutStr("{{ $descAttr.Ref }}", val)
-	{{- else if eq $attr.Type.ValueType.String "Map" }}
-	e.ent.DescriptiveAttributes().PutEmpty("{{ $descAttr.Ref }}").SetEmptyMap().FromRaw(val)
-	{{- else if eq $attr.Type.ValueType.String "Slice" }}
-	e.ent.DescriptiveAttributes().PutEmpty("{{ $descAttr.Ref }}").SetEmptySlice().FromRaw(val)
-	{{- else if eq $attr.Type.ValueType.String "Bytes" }}
-	e.ent.DescriptiveAttributes().PutEmpty("{{ $descAttr.Ref }}").SetEmptyBytes().FromRaw(val)
-	{{- else }}
-	e.ent.DescriptiveAttributes().PutEmpty("{{ $descAttr.Ref }}").Set{{ $attr.Type.ValueType }}(val)
-	{{- end }}
+	e.{{ $descAttr.Ref.RenderUnexported }} = val
 }
 {{- end }}
 {{- end }}
@@ -78,11 +77,7 @@ func (e *{{ $entityStructType }}) Set{{ publicVar $descAttr.Ref.Render }}(val {{
 
 // Set{{ publicVar $extraAttr.Ref.Render }} sets the {{ $extraAttr.Ref }} extra attribute on the resource.
 func (e *{{ $entityStructType }}) Set{{ publicVar $extraAttr.Ref.Render }}(val {{ $attr.Type.Primitive }}) {
-	{{- if eq $attr.Type.ValueType.String "Str" }}
-	e.ent.DescriptiveAttributes().PutStr("{{ $extraAttr.Ref }}", val)
-	{{- else }}
-	e.ent.DescriptiveAttributes().PutEmpty("{{ $extraAttr.Ref }}").Set{{ $attr.Type.ValueType }}(val)
-	{{- end }}
+	e.{{ $extraAttr.Ref.RenderUnexported }} = val
 }
 {{- end }}
 {{- end }}
@@ -96,10 +91,86 @@ func (e *{{ $entityStructType }}) Set{{ publicVar $extraAttr.Ref.Render }}(val {
 // {{ $relMethod }} sets the {{ $rel.Type }} relationship to a {{ $rel.Target }} entity.
 // The related entity will be emitted alongside this entity's metrics.
 func (e *{{ $entityStructType }}) {{ $relMethod }}(target *{{ publicVar $rel.Target }}Entity) {
-	e.{{ toCamelCase $rel.Type }}{{ publicVar $rel.Target }} = target
+	e.{{ toLowerCamelCase $rel.Type }}{{ publicVar $rel.Target }} = target
 }
 {{- end }}
 {{- end }}
+
+// copyToResource populates res with the entity's attributes according to cfg.
+// If all identity attributes are enabled, an entity ref is produced; otherwise
+// the enabled attributes are written directly as plain resource attributes.
+func (e *{{ $entityStructType }}) copyToResource(cfg ResourceAttributesConfig, res pcommon.Resource) {
+	if {{ range $i, $idAttr := $ent.Identity }}{{ if $i }} && {{ end }}cfg.{{ publicVar $idAttr.Ref.Render }}.Enabled{{ end }} {
+		ent := entity.ResourceEntities(res).PutEmpty("{{ $entityType }}")
+		{{- range $idAttr := $ent.Identity }}
+		{{- $attr := index $resourceAttributes $idAttr.Ref }}
+		{{- if eq $attr.Type.ValueType.String "Str" }}
+		ent.IdentifyingAttributes().PutStr("{{ $idAttr.Ref }}", e.{{ $idAttr.Ref.RenderUnexported }})
+		{{- else if or (eq $attr.Type.ValueType.String "Map") (eq $attr.Type.ValueType.String "Slice") (eq $attr.Type.ValueType.String "Bytes") }}
+		ent.IdentifyingAttributes().PutEmpty("{{ $idAttr.Ref }}").SetEmpty{{ $attr.Type.ValueType }}().FromRaw(e.{{ $idAttr.Ref.RenderUnexported }})
+		{{- else }}
+		ent.IdentifyingAttributes().PutEmpty("{{ $idAttr.Ref }}").Set{{ $attr.Type.ValueType }}(e.{{ $idAttr.Ref.RenderUnexported }})
+		{{- end }}
+		{{- end }}
+
+		{{- range $descAttr := $ent.Description }}
+		{{- $attr := index $resourceAttributes $descAttr.Ref }}
+		if cfg.{{ publicVar $descAttr.Ref.Render }}.Enabled {
+			{{- if eq $attr.Type.ValueType.String "Str" }}
+			ent.DescriptiveAttributes().PutStr("{{ $descAttr.Ref }}", e.{{ $descAttr.Ref.RenderUnexported }})
+			{{- else if or (eq $attr.Type.ValueType.String "Map") (eq $attr.Type.ValueType.String "Slice") (eq $attr.Type.ValueType.String "Bytes") }}
+			ent.DescriptiveAttributes().PutEmpty("{{ $descAttr.Ref }}").SetEmpty{{ $attr.Type.ValueType }}().FromRaw(e.{{ $descAttr.Ref.RenderUnexported }})
+			{{- else }}
+			ent.DescriptiveAttributes().PutEmpty("{{ $descAttr.Ref }}").Set{{ $attr.Type.ValueType }}(e.{{ $descAttr.Ref.RenderUnexported }})
+			{{- end }}
+		}
+		{{- end }}
+
+		{{- range $extraAttr := $ent.ExtraAttributes }}
+		{{- $attr := index $resourceAttributes $extraAttr.Ref }}
+		if cfg.{{ publicVar $extraAttr.Ref.Render }}.Enabled {
+			{{- if eq $attr.Type.ValueType.String "Str" }}
+			res.Attributes().PutStr("{{ $extraAttr.Ref }}", e.{{ $extraAttr.Ref.RenderUnexported }})
+			{{- else if or (eq $attr.Type.ValueType.String "Map") (eq $attr.Type.ValueType.String "Slice") (eq $attr.Type.ValueType.String "Bytes") }}
+			res.Attributes().PutEmpty("{{ $extraAttr.Ref }}").SetEmpty{{ $attr.Type.ValueType }}().FromRaw(e.{{ $extraAttr.Ref.RenderUnexported }})
+			{{- else }}
+			res.Attributes().PutEmpty("{{ $extraAttr.Ref }}").Set{{ $attr.Type.ValueType }}(e.{{ $extraAttr.Ref.RenderUnexported }})
+			{{- end }}
+		}
+		{{- end }}
+	} else {
+		{{- range $idAttr := $ent.Identity }}
+		{{- $attr := index $resourceAttributes $idAttr.Ref }}
+		if cfg.{{ publicVar $idAttr.Ref.Render }}.Enabled {
+			{{- if or (eq $attr.Type.String "Bytes") (eq $attr.Type.String "Slice") (eq $attr.Type.String "Map") }}
+			res.Attributes().PutEmpty{{ $attr.Type }}("{{ $idAttr.Ref }}").FromRaw(e.{{ $idAttr.Ref.RenderUnexported }})
+			{{- else }}
+			res.Attributes().Put{{ $attr.Type }}("{{ $idAttr.Ref }}", e.{{ $idAttr.Ref.RenderUnexported }})
+			{{- end }}
+		}
+		{{- end }}
+		{{- range $descAttr := $ent.Description }}
+		{{- $attr := index $resourceAttributes $descAttr.Ref }}
+		if cfg.{{ publicVar $descAttr.Ref.Render }}.Enabled {
+			{{- if or (eq $attr.Type.String "Bytes") (eq $attr.Type.String "Slice") (eq $attr.Type.String "Map") }}
+			res.Attributes().PutEmpty{{ $attr.Type }}("{{ $descAttr.Ref }}").FromRaw(e.{{ $descAttr.Ref.RenderUnexported }})
+			{{- else }}
+			res.Attributes().Put{{ $attr.Type }}("{{ $descAttr.Ref }}", e.{{ $descAttr.Ref.RenderUnexported }})
+			{{- end }}
+		}
+		{{- end }}
+		{{- range $extraAttr := $ent.ExtraAttributes }}
+		{{- $attr := index $resourceAttributes $extraAttr.Ref }}
+		if cfg.{{ publicVar $extraAttr.Ref.Render }}.Enabled {
+			{{- if or (eq $attr.Type.String "Bytes") (eq $attr.Type.String "Slice") (eq $attr.Type.String "Map") }}
+			res.Attributes().PutEmpty{{ $attr.Type }}("{{ $extraAttr.Ref }}").FromRaw(e.{{ $extraAttr.Ref.RenderUnexported }})
+			{{- else }}
+			res.Attributes().Put{{ $attr.Type }}("{{ $extraAttr.Ref }}", e.{{ $extraAttr.Ref.RenderUnexported }})
+			{{- end }}
+		}
+		{{- end }}
+	}
+}
 
 {{ end }}
 
@@ -161,18 +232,19 @@ func (eb *{{ $builderType }}) Record{{ $name.Render }}DataPoint(ts pcommon.Times
 {{- end }}
 {{- end }}
 
-// Emit emits all pending metrics for the entity passed to For{{ publicVar $entityType }} and resets
-// the internal state. The entity's identity and description attributes are added to the resource.
-// If any relationships have been set on the entity, the related entities are also added to the resource.
+// Emit emits all pending metrics for the entity. Resource attributes are filtered by config:
+// disabled identity attributes suppress the entity (other enabled attributes are added directly
+// to the resource); disabled descriptive/extra attributes are omitted entirely.
 func (eb *{{ $builderType }}) Emit() {
 	res := pcommon.NewResource()
-	eb.entity.ent.CopyToResource(res)
+	cfg := eb.mb.config.ResourceAttributes
+	eb.entity.copyToResource(cfg, res)
 	{{- range $rel := $ent.Relationships }}
-	if eb.entity.{{ toCamelCase $rel.Type }}{{ publicVar $rel.Target }} != nil {
-		eb.entity.{{ toCamelCase $rel.Type }}{{ publicVar $rel.Target }}.ent.CopyToResource(res)
+	if eb.entity.{{ toLowerCamelCase $rel.Type }}{{ publicVar $rel.Target }} != nil {
+		eb.entity.{{ toLowerCamelCase $rel.Type }}{{ publicVar $rel.Target }}.copyToResource(cfg, res)
 	}
 	{{- end }}
 	eb.mb.EmitForResource(withResourceMoved(res))
 }
 
-{{ end }}
+{{- end }}
