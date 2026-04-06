@@ -75,15 +75,19 @@ func TestConsumeRefused(t *testing.T) {
 	require.NoError(t, err)
 	receivedSizeCounter, err := meter.Int64Counter("received.size")
 	require.NoError(t, err)
+	receivedBodySizeCounter, err := meter.Int64Counter("received.body.size")
+	require.NoError(t, err)
 
 	producedItemsCounter, err := meter.Int64Counter("produced.items")
 	require.NoError(t, err)
 	producedSizeConter, err := meter.Int64Counter("produced.size")
 	require.NoError(t, err)
+	producedBodySizeCounter, err := meter.Int64Counter("produced.body.size")
+	require.NoError(t, err)
 
 	logger := zap.NewNop()
-	receivedSettings := obsconsumer.Settings{ItemCounter: receivedItemsCounter, SizeCounter: receivedSizeCounter, Logger: logger}
-	producedSettings := obsconsumer.Settings{ItemCounter: producedItemsCounter, SizeCounter: producedSizeConter, Logger: logger}
+	receivedSettings := obsconsumer.Settings{ItemCounter: receivedItemsCounter, SizeCounter: receivedSizeCounter, BodySizeCounter: newDisabledCounter(receivedBodySizeCounter), Logger: logger}
+	producedSettings := obsconsumer.Settings{ItemCounter: producedItemsCounter, SizeCounter: producedSizeConter, BodySizeCounter: newDisabledCounter(producedBodySizeCounter), Logger: logger}
 
 	type testCase struct {
 		name         string

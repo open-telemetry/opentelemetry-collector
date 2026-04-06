@@ -63,14 +63,16 @@ func (n *processorNode) buildComponent(ctx context.Context,
 	}
 
 	producedSettings := obsconsumer.Settings{
-		ItemCounter: tb.ProcessorProducedItems,
-		SizeCounter: tb.ProcessorProducedSize,
-		Logger:      set.Logger,
+		ItemCounter:     tb.ProcessorProducedItems,
+		SizeCounter:     tb.ProcessorProducedSize,
+		BodySizeCounter: tb.ProcessorProducedBodySize,
+		Logger:          set.Logger,
 	}
 	consumedSettings := obsconsumer.Settings{
-		ItemCounter: tb.ProcessorConsumedItems,
-		SizeCounter: tb.ProcessorConsumedSize,
-		Logger:      set.Logger,
+		ItemCounter:     tb.ProcessorConsumedItems,
+		SizeCounter:     tb.ProcessorConsumedSize,
+		BodySizeCounter: tb.ProcessorConsumedBodySize,
+		Logger:          set.Logger,
 	}
 
 	switch n.pipelineID.Signal() {

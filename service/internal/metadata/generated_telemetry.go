@@ -28,10 +28,13 @@ type TelemetryBuilder struct {
 	meter                             metric.Meter
 	mu                                sync.Mutex
 	registrations                     []metric.Registration
+	ConnectorConsumedBodySize         metric.Int64Counter
 	ConnectorConsumedItems            metric.Int64Counter
 	ConnectorConsumedSize             metric.Int64Counter
+	ConnectorProducedBodySize         metric.Int64Counter
 	ConnectorProducedItems            metric.Int64Counter
 	ConnectorProducedSize             metric.Int64Counter
+	ExporterConsumedBodySize          metric.Int64Counter
 	ExporterConsumedItems             metric.Int64Counter
 	ExporterConsumedSize              metric.Int64Counter
 	ProcessCPUSeconds                 metric.Float64ObservableCounter
@@ -40,10 +43,13 @@ type TelemetryBuilder struct {
 	ProcessRuntimeTotalAllocBytes     metric.Int64ObservableCounter
 	ProcessRuntimeTotalSysMemoryBytes metric.Int64ObservableGauge
 	ProcessUptime                     metric.Float64ObservableCounter
+	ProcessorConsumedBodySize         metric.Int64Counter
 	ProcessorConsumedItems            metric.Int64Counter
 	ProcessorConsumedSize             metric.Int64Counter
+	ProcessorProducedBodySize         metric.Int64Counter
 	ProcessorProducedItems            metric.Int64Counter
 	ProcessorProducedSize             metric.Int64Counter
+	ReceiverProducedBodySize          metric.Int64Counter
 	ReceiverProducedItems             metric.Int64Counter
 	ReceiverProducedSize              metric.Int64Counter
 }
@@ -187,6 +193,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+	builder.ConnectorConsumedBodySize, err = builder.meter.Int64Counter(
+		"otelcol.connector.consumed.body.size",
+		metric.WithDescription("Total byte size of log record bodies passed to the connector. [Development]"),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ConnectorConsumedItems, err = builder.meter.Int64Counter(
 		"otelcol.connector.consumed.items",
 		metric.WithDescription("Number of items passed to the connector. [Development]"),
@@ -199,6 +211,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("{item}"),
 	)
 	errs = errors.Join(errs, err)
+	builder.ConnectorProducedBodySize, err = builder.meter.Int64Counter(
+		"otelcol.connector.produced.body.size",
+		metric.WithDescription("Total byte size of log record bodies emitted from the connector. [Development]"),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ConnectorProducedItems, err = builder.meter.Int64Counter(
 		"otelcol.connector.produced.items",
 		metric.WithDescription("Number of items emitted from the connector. [Development]"),
@@ -209,6 +227,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol.connector.produced.size",
 		metric.WithDescription("Size of items emitted from the connector, based on ProtoMarshaler.Sizer. [Development]"),
 		metric.WithUnit("{item}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterConsumedBodySize, err = builder.meter.Int64Counter(
+		"otelcol.exporter.consumed.body.size",
+		metric.WithDescription("Total byte size of log record bodies passed to the exporter. [Development]"),
+		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterConsumedItems, err = builder.meter.Int64Counter(
@@ -259,6 +283,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("s"),
 	)
 	errs = errors.Join(errs, err)
+	builder.ProcessorConsumedBodySize, err = builder.meter.Int64Counter(
+		"otelcol.processor.consumed.body.size",
+		metric.WithDescription("Total byte size of log record bodies passed to the processor. [Development]"),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ProcessorConsumedItems, err = builder.meter.Int64Counter(
 		"otelcol.processor.consumed.items",
 		metric.WithDescription("Number of items passed to the processor. [Development]"),
@@ -271,6 +301,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("{item}"),
 	)
 	errs = errors.Join(errs, err)
+	builder.ProcessorProducedBodySize, err = builder.meter.Int64Counter(
+		"otelcol.processor.produced.body.size",
+		metric.WithDescription("Total byte size of log record bodies emitted from the processor. [Development]"),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ProcessorProducedItems, err = builder.meter.Int64Counter(
 		"otelcol.processor.produced.items",
 		metric.WithDescription("Number of items emitted from the processor. [Development]"),
@@ -281,6 +317,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol.processor.produced.size",
 		metric.WithDescription("Size of items emitted from the processor, based on ProtoMarshaler.Sizer. [Development]"),
 		metric.WithUnit("{item}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ReceiverProducedBodySize, err = builder.meter.Int64Counter(
+		"otelcol.receiver.produced.body.size",
+		metric.WithDescription("Total byte size of log record bodies emitted from the receiver. [Development]"),
+		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ReceiverProducedItems, err = builder.meter.Int64Counter(

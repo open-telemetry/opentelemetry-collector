@@ -11,6 +11,16 @@ status:
 
 telemetry:
   metrics:
+    connector.consumed.body.size:
+      prefix: otelcol.
+      enabled: false
+      stability: development
+      description: Total byte size of log record bodies passed to the connector.
+      unit: By
+      sum:
+        value_type: int
+        monotonic: true
+
     connector.consumed.items:
       prefix: otelcol.
       enabled: true
@@ -31,6 +41,16 @@ telemetry:
         value_type: int
         monotonic: true
 
+    connector.produced.body.size:
+      prefix: otelcol.
+      enabled: false
+      stability: development
+      description: Total byte size of log record bodies emitted from the connector.
+      unit: By
+      sum:
+        value_type: int
+        monotonic: true
+
     connector.produced.items:
       prefix: otelcol.
       enabled: true
@@ -47,6 +67,16 @@ telemetry:
       stability: development
       description: Size of items emitted from the connector, based on ProtoMarshaler.Sizer.
       unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    exporter.consumed.body.size:
+      prefix: otelcol.
+      enabled: false
+      stability: development
+      description: Total byte size of log record bodies passed to the exporter.
+      unit: By
       sum:
         value_type: int
         monotonic: true
@@ -128,6 +158,16 @@ telemetry:
         value_type: double
         monotonic: true
 
+    processor.consumed.body.size:
+      prefix: otelcol.
+      enabled: false
+      stability: development
+      description: Total byte size of log record bodies passed to the processor.
+      unit: By
+      sum:
+        value_type: int
+        monotonic: true
+
     processor.consumed.items:
       prefix: otelcol.
       enabled: true
@@ -148,6 +188,16 @@ telemetry:
         value_type: int
         monotonic: true
 
+    processor.produced.body.size:
+      prefix: otelcol.
+      enabled: false
+      stability: development
+      description: Total byte size of log record bodies emitted from the processor.
+      unit: By
+      sum:
+        value_type: int
+        monotonic: true
+
     processor.produced.items:
       prefix: otelcol.
       enabled: true
@@ -164,6 +214,16 @@ telemetry:
       stability: development
       description: Size of items emitted from the processor, based on ProtoMarshaler.Sizer.
       unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    receiver.produced.body.size:
+      prefix: otelcol.
+      enabled: false
+      stability: development
+      description: Total byte size of log record bodies emitted from the receiver.
+      unit: By
       sum:
         value_type: int
         monotonic: true
