@@ -1,0 +1,7 @@
+change_type: enhancement
+
+component: exporterhelper
+
+note: Add optional fixed-window batching mode to prevent timeout drift by aligning flushes to fixed time boundaries.
+
+issues: [13717, 15059]
