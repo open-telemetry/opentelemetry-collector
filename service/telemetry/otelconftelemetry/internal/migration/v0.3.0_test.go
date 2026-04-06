@@ -7,8 +7,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -25,6 +27,20 @@ func TestUnmarshalLogsConfigV030(t *testing.T) {
 	require.Equal(t, "http://127.0.0.1:4317", *cfg.Processors[2].Simple.Exporter.OTLP.Endpoint)
 }
 
+func TestMarshalLogsConfigV030(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "v0.3.0_logs.yaml"))
+	require.NoError(t, err)
+	cm2, err := confmaptest.LoadConf(filepath.Join("testdata", "v0.3.0_logs_marshaled.yaml"))
+	require.NoError(t, err)
+
+	cfg := LogsConfigV030{}
+	require.NoError(t, cm.Unmarshal(&cfg))
+	cm3 := confmap.New()
+	require.NoError(t, cm3.Marshal(&cfg))
+
+	assert.Equal(t, cm2.ToStringMap(), cm3.ToStringMap())
+}
+
 func TestUnmarshalTracesConfigV030(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "v0.3.0_traces.yaml"))
 	require.NoError(t, err)
@@ -38,6 +54,20 @@ func TestUnmarshalTracesConfigV030(t *testing.T) {
 	require.Equal(t, "http://127.0.0.1:4317", *cfg.Processors[2].Simple.Exporter.OTLP.Endpoint)
 }
 
+func TestMarshalTracesConfigV030(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "v0.3.0_traces.yaml"))
+	require.NoError(t, err)
+	cm2, err := confmaptest.LoadConf(filepath.Join("testdata", "v0.3.0_traces_marshaled.yaml"))
+	require.NoError(t, err)
+
+	cfg := TracesConfigV030{}
+	require.NoError(t, cm.Unmarshal(&cfg))
+	cm3 := confmap.New()
+	require.NoError(t, cm3.Marshal(&cfg))
+
+	assert.Equal(t, cm2.ToStringMap(), cm3.ToStringMap())
+}
+
 func TestUnmarshalMetricsConfigV030(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "v0.3.0_metrics.yaml"))
 	require.NoError(t, err)
@@ -48,4 +78,18 @@ func TestUnmarshalMetricsConfigV030(t *testing.T) {
 
 	// check the endpoint is prefixed w/ https
 	require.Equal(t, "https://127.0.0.1:4317", *cfg.Readers[0].Periodic.Exporter.OTLP.Endpoint)
+}
+
+func TestMarshalMetricsConfigV030(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "v0.3.0_metrics.yaml"))
+	require.NoError(t, err)
+	cm2, err := confmaptest.LoadConf(filepath.Join("testdata", "v0.3.0_metrics_marshaled.yaml"))
+	require.NoError(t, err)
+
+	cfg := MetricsConfigV030{}
+	require.NoError(t, cm.Unmarshal(&cfg))
+	cm3 := confmap.New()
+	require.NoError(t, cm3.Marshal(&cfg))
+
+	assert.Equal(t, cm2.ToStringMap(), cm3.ToStringMap())
 }
