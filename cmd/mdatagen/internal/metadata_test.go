@@ -193,6 +193,49 @@ func TestValidate(t *testing.T) {
 	}
 }
 
+func TestDeprecatedValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		d       Deprecated
+		wantErr string
+	}{
+		{
+			name:    "empty since",
+			d:       Deprecated{Since: ""},
+			wantErr: "deprecated.since must be set",
+		},
+		{
+			name:    "whitespace since",
+			d:       Deprecated{Since: "   "},
+			wantErr: "deprecated.since must be set",
+		},
+		{
+			name:    "whitespace-only note",
+			d:       Deprecated{Since: "1.0.0", Note: "   "},
+			wantErr: "deprecated.note must not be empty",
+		},
+		{
+			name: "valid, no note",
+			d:    Deprecated{Since: "1.0.0"},
+		},
+		{
+			name: "valid with note",
+			d:    Deprecated{Since: "1.0.0", Note: "use X instead"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.d.validate()
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestSupportsSignal(t *testing.T) {
 	md := Metadata{}
 	assert.False(t, md.supportsSignal("logs"))
@@ -434,6 +477,17 @@ func TestValidateFeatureGates(t *testing.T) {
 				FromVersion: "v0.90.0",
 			},
 			wantErr: `to_version is required for deprecated stage gates`,
+		},
+		{
+			name: "non-stable or deprecated gate with a to_version",
+			featureGate: FeatureGate{
+				ID:          "component.feature",
+				Description: "Test feature",
+				Stage:       FeatureGateStageBeta,
+				FromVersion: "v0.90.0",
+				ToVersion:   "v0.91.0",
+			},
+			wantErr: `to_version is not supported for the beta stage`,
 		},
 		{
 			name: "missing reference_url",
