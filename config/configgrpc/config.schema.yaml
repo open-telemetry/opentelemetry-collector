@@ -34,9 +34,6 @@ $defs:
       read_buffer_size:
         description: ReadBufferSize for gRPC client. See grpc.WithReadBufferSize. (https://godoc.org/google.golang.org/grpc#WithReadBufferSize).
         type: integer
-      resolver_scheme:
-        description: 'ResolverScheme configures the gRPC name resolver used for the endpoint. Supported values: "" (default, uses dns), "dns", "passthrough". The "passthrough" scheme bypasses gRPC DNS resolution and delegates address selection to the OS, which is useful in IPv4-only environments where dual-stack DNS records cause Happy Eyeballs to attempt IPv6 first.'
-        type: string
       tls:
         description: TLS struct exposes TLS client configuration.
         $ref: go.opentelemetry.io/collector/config/configtls.client_config

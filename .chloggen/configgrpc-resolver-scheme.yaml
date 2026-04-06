@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/config/configgrpc
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add resolver_scheme field to ClientConfig to control the gRPC name resolver scheme, enabling passthrough mode to bypass DNS resolution in IPv4-only environments
+note: Accept gRPC resolver scheme URIs in client endpoint (e.g. passthrough:///host:port) to allow control over name resolution
 
 # One or more tracking issues or pull requests related to the change
 issues: [14990]
@@ -19,8 +19,10 @@ subtext: |
   After the migration from grpc.DialContext to grpc.NewClient, the default resolver
   scheme changed from "passthrough" to "dns". Combined with grpc-go v1.77.0+ making
   Happy Eyeballs (RFC 8305) mandatory, this causes IPv6 connection attempts first in
-  dual-stack DNS environments. The new resolver_scheme field supports "dns" (default),
-  "passthrough", and any custom registered scheme.
+  dual-stack DNS environments. The endpoint field now accepts any gRPC resolver scheme
+  URI (e.g. passthrough:///host:port, dns:///host:port, xds:///service), aligned with
+  the OTLP specification which states the endpoint SHOULD accept any form allowed by
+  the underlying gRPC client implementation.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'

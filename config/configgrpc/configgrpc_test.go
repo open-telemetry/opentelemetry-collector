@@ -19,7 +19,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
-	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/client"
@@ -41,27 +40,6 @@ var (
 	_ extension.Extension  = (*mockAuthServer)(nil)
 	_ extensionauth.Server = (*mockAuthServer)(nil)
 )
-
-func init() {
-	// Register a custom resolver scheme for testing the custom scheme validation
-	// and dialTarget code paths.
-	resolver.Register(&nopResolverBuilder{scheme: "custom-test"})
-}
-
-type nopResolverBuilder struct {
-	scheme string
-}
-
-func (b *nopResolverBuilder) Build(_ resolver.Target, _ resolver.ClientConn, _ resolver.BuildOptions) (resolver.Resolver, error) {
-	return &nopResolver{}, nil
-}
-
-func (b *nopResolverBuilder) Scheme() string { return b.scheme }
-
-type nopResolver struct{}
-
-func (*nopResolver) ResolveNow(resolver.ResolveNowOptions) {}
-func (*nopResolver) Close()                                {}
 
 type mockAuthServer struct {
 	component.StartFunc
@@ -288,69 +266,59 @@ func TestAllGrpcClientSettings(t *testing.T) {
 func TestSanitizeEndpoint(t *testing.T) {
 	cfg := NewDefaultClientConfig()
 	cfg.Endpoint = "dns://authority/backend.example.com:4317"
-	assert.Equal(t, "authority/backend.example.com:4317", cfg.sanitizedEndpoint())
+	assert.Equal(t, "backend.example.com:4317", cfg.sanitizedEndpoint())
 	cfg.Endpoint = "dns:///backend.example.com:4317"
 	assert.Equal(t, "backend.example.com:4317", cfg.sanitizedEndpoint())
 	cfg.Endpoint = "dns:////backend.example.com:4317"
 	assert.Equal(t, "/backend.example.com:4317", cfg.sanitizedEndpoint())
+	cfg.Endpoint = "passthrough:///backend.example.com:4317"
+	assert.Equal(t, "backend.example.com:4317", cfg.sanitizedEndpoint())
+	cfg.Endpoint = "xds:///my-service:4317"
+	assert.Equal(t, "my-service:4317", cfg.sanitizedEndpoint())
 }
 
-func TestDialTarget(t *testing.T) {
+func TestGrpcDialTarget(t *testing.T) {
 	tests := []struct {
-		name           string
-		endpoint       string
-		resolverScheme string
-		expected       string
+		name     string
+		endpoint string
+		expected string
 	}{
 		{
-			name:           "default scheme with bare endpoint",
-			endpoint:       "backend.example.com:4317",
-			resolverScheme: "",
-			expected:       "backend.example.com:4317",
+			name:     "bare endpoint passed as-is",
+			endpoint: "backend.example.com:4317",
+			expected: "backend.example.com:4317",
 		},
 		{
-			name:           "explicit dns scheme",
-			endpoint:       "backend.example.com:4317",
-			resolverScheme: "dns",
-			expected:       "dns:///backend.example.com:4317",
+			name:     "http prefix is stripped",
+			endpoint: "http://backend.example.com:4317",
+			expected: "backend.example.com:4317",
 		},
 		{
-			name:           "passthrough scheme",
-			endpoint:       "backend.example.com:4317",
-			resolverScheme: "passthrough",
-			expected:       "passthrough:///backend.example.com:4317",
+			name:     "https prefix is stripped",
+			endpoint: "https://backend.example.com:4317",
+			expected: "backend.example.com:4317",
 		},
 		{
-			name:           "passthrough with http endpoint strips http before prepending",
-			endpoint:       "http://backend.example.com:4317",
-			resolverScheme: "passthrough",
-			expected:       "passthrough:///backend.example.com:4317",
+			name:     "dns scheme is preserved for grpc",
+			endpoint: "dns:///backend.example.com:4317",
+			expected: "dns:///backend.example.com:4317",
 		},
 		{
-			name:           "passthrough with dns endpoint strips dns before prepending",
-			endpoint:       "dns:///backend.example.com:4317",
-			resolverScheme: "passthrough",
-			expected:       "passthrough:///backend.example.com:4317",
+			name:     "passthrough scheme is preserved for grpc",
+			endpoint: "passthrough:///backend.example.com:4317",
+			expected: "passthrough:///backend.example.com:4317",
 		},
 		{
-			name:           "default scheme with http endpoint",
-			endpoint:       "http://backend.example.com:4317",
-			resolverScheme: "",
-			expected:       "backend.example.com:4317",
-		},
-		{
-			name:           "custom registered scheme",
-			endpoint:       "backend.example.com:4317",
-			resolverScheme: "custom-test",
-			expected:       "custom-test:///backend.example.com:4317",
+			name:     "xds scheme is preserved for grpc",
+			endpoint: "xds:///my-service:4317",
+			expected: "xds:///my-service:4317",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := NewDefaultClientConfig()
 			cfg.Endpoint = tt.endpoint
-			cfg.ResolverScheme = tt.resolverScheme
-			assert.Equal(t, tt.expected, cfg.dialTarget())
+			assert.Equal(t, tt.expected, cfg.grpcDialTarget())
 		})
 	}
 }
@@ -363,89 +331,25 @@ func TestValidateEndpoint(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 }
 
-func TestValidateResolverScheme(t *testing.T) {
-	tests := []struct {
-		name           string
-		resolverScheme string
-		wantErr        bool
-		errContains    string
-	}{
-		{
-			name:           "empty (default) is valid",
-			resolverScheme: "",
-			wantErr:        false,
-		},
-		{
-			name:           "dns is valid",
-			resolverScheme: "dns",
-			wantErr:        false,
-		},
-		{
-			name:           "passthrough is valid",
-			resolverScheme: "passthrough",
-			wantErr:        false,
-		},
-		{
-			name:           "custom registered scheme is valid",
-			resolverScheme: "custom-test",
-			wantErr:        false,
-		},
-		{
-			name:           "unregistered scheme is invalid",
-			resolverScheme: "notarealscheme",
-			wantErr:        true,
-			errContains:    "invalid resolver_scheme",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cfg := NewDefaultClientConfig()
-			cfg.Endpoint = "backend.example.com:4317"
-			cfg.ResolverScheme = tt.resolverScheme
-			err := cfg.Validate()
-			if tt.wantErr {
-				require.Error(t, err)
-				assert.ErrorContains(t, err, tt.errContains)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
+func TestValidateGrpcSchemeEndpoint(t *testing.T) {
+	cfg := NewDefaultClientConfig()
+	cfg.Endpoint = "passthrough:///backend.example.com:4317"
+	assert.NoError(t, cfg.Validate())
+	cfg.Endpoint = "dns:///backend.example.com:4317"
+	assert.NoError(t, cfg.Validate())
 }
 
-func TestToClientConnWithResolverScheme(t *testing.T) {
-	tests := []struct {
-		name           string
-		resolverScheme string
-	}{
-		{
-			name:           "passthrough resolver",
-			resolverScheme: "passthrough",
-		},
-		{
-			name:           "dns resolver",
-			resolverScheme: "dns",
-		},
-		{
-			name:           "default resolver",
-			resolverScheme: "",
+func TestToClientConnWithPassthroughEndpoint(t *testing.T) {
+	cfg := ClientConfig{
+		Endpoint: "passthrough:///localhost:1234",
+		TLS: configtls.ClientConfig{
+			Insecure: true,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cfg := ClientConfig{
-				Endpoint: "localhost:1234",
-				TLS: configtls.ClientConfig{
-					Insecure: true,
-				},
-				ResolverScheme: tt.resolverScheme,
-			}
-			conn, err := cfg.ToClientConn(context.Background(), nil, componenttest.NewNopTelemetrySettings())
-			require.NoError(t, err)
-			require.NotNil(t, conn)
-			assert.NoError(t, conn.Close())
-		})
-	}
+	conn, err := cfg.ToClientConn(context.Background(), nil, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+	require.NotNil(t, conn)
+	assert.NoError(t, conn.Close())
 }
 
 func TestHeaders(t *testing.T) {
