@@ -495,8 +495,8 @@ func TestLogsMultipleItemsMixedOutcomes(t *testing.T) {
 			failureBodySizeDP = dp
 		}
 	}
-	require.Equal(t, int64(8), successBodySizeDP.Value)  // 2*2 + 2*2 = 8 bytes ("ab" * 4)
-	require.Equal(t, int64(6), failureBodySizeDP.Value)   // 3 + 3 = 6 bytes ("abc" * 2)
+	require.Equal(t, int64(8), successBodySizeDP.Value) // 2*2 + 2*2 = 8 bytes ("ab" * 4)
+	require.Equal(t, int64(6), failureBodySizeDP.Value) // 3 + 3 = 6 bytes ("abc" * 2)
 
 	// Check that the logger was called for errors
 	require.Len(t, logs.All(), 2)
@@ -888,10 +888,10 @@ func TestLogsBodySizeStructuredBodies(t *testing.T) {
 			require.NoError(t, err)
 
 			consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{
-				ItemCounter:        itemCounter,
-				SizeCounter:        sizeCounterDisabled,
+				ItemCounter:     itemCounter,
+				SizeCounter:     sizeCounterDisabled,
 				BodySizeCounter: bodySizeCounter,
-				Logger:             zap.NewNop(),
+				Logger:          zap.NewNop(),
 			})
 
 			ld := plog.NewLogs()
