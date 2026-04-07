@@ -35,6 +35,22 @@ status:
   warnings:
     - Any additional information that should be brought to the consumer's attention
 
+config:
+  type: object
+  allOf:
+    - $ref: ./internal/metadata.metrics_builder_config
+  properties:
+    endpoint:
+      description: The endpoint to scrape metrics from.
+      type: string
+      default: "localhost:12345"
+    timeout:
+      description: Timeout for scraping metrics.
+      type: string
+      format: duration
+      default: 10s
+  required: [endpoint]
+
 resource_attributes:
   map.resource.attr:
     description: Resource attribute with a map value.
@@ -83,6 +99,13 @@ resource_attributes:
     warnings:
       if_enabled: This resource_attribute is deprecated and will be removed soon.
 
+  string.resource.disabled_attr_to_be_removed:
+    description: Resource attribute with any string value.
+    type: string
+    enabled: false
+    warnings:
+      if_enabled: This resource_attribute is deprecated and will be removed soon.
+
 attributes:
   boolean_attr:
     description: Attribute with a boolean value.
@@ -103,6 +126,10 @@ attributes:
     description: A conditional attribute with any string value
     type: string
     requirement_level: conditionally_required
+
+  cpu:
+    description: Logical CPU number starting at 0.
+    type: string
 
   enum_attr:
     description: Attribute with a known set of string values.
@@ -131,6 +158,13 @@ attributes:
   slice_attr:
     description: Attribute with a slice value.
     type: slice
+
+  state:
+    description: Breakdown of memory usage by type.
+    type: string
+    enum: [buffered, cached, inactive, free, slab_reclaimable, slab_unreclaimable, used]
+    semantic_convention:
+      ref: system.md#system-memory-state
 
   string_attr:
     description: Attribute with any string value.
@@ -284,8 +318,20 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [cpu]
     semantic_convention:
-      ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime
+      ref: system/system-metrics.md#metric-systemcputime
+
+  system.memory.usage:
+    enabled: true
+    description: Bytes of memory in use.
+    unit: By
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: [state]
 
 telemetry:
   metrics:
@@ -296,7 +342,7 @@ telemetry:
         since: "1.5.0"
         note: "This metric will be removed in favor of batch_send_trigger_size"
       description: Number of times the batch was sent due to a size trigger
-      unit: "{times}"
+      unit: "{time}"
       sum:
         value_type: int
         monotonic: true
@@ -313,7 +359,7 @@ telemetry:
       enabled: true
       description: Queue capacity - sync gauge example.
       stability: development
-      unit: "{items}"
+      unit: "{item}"
       gauge:
         value_type: int
     queue_length:
@@ -321,7 +367,7 @@ telemetry:
       stability: alpha
       description: This metric is optional and therefore not initialized in NewTelemetryBuilder.
       extended_documentation: For example this metric only exists if feature A is enabled.
-      unit: "{items}"
+      unit: "{item}"
       optional: true
       gauge:
         async: true

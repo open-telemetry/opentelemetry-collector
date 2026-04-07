@@ -77,7 +77,6 @@ releases and add new schedules to the bottom of the list. To update the release 
    1. If the core release manager is also eligible as a contrib and 'releases' release manager, assign them to all roles they can perform.
    2. Otherwise, pick a contrib/'releases' approver/maintainer that is not a core approver/maintainer, rotating through the list of eligible people. The contrib approvers/maintainers are all members of the [@collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers) team, and the 'releases' approvers/maintainers are all members of the [@collector-releases-approvers](https://github.com/orgs/open-telemetry/teams/collector-releases-approvers) team.
 
-
 ## Troubleshooting
 
 1. `unknown revision internal/coreinternal/v0.85.0` -- This is typically an indication that there's a dependency on a new module. You can fix it by adding a new `replaces` entry to the `go.mod` for the affected module.
@@ -173,9 +172,6 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Core Release manager  | Contrib release manager | 'Releases' release manager |
 |------------|----------|-----------------------|-------------------------|----------------------------|
-| 2026-02-17 | v0.146.0 | [@evan-bradley][2]    | [@evan-bradley][2]      | [@evan-bradley][2]         |
-| 2026-03-02 | v0.147.0 | [@songy23][6]         | [@songy23][6]           | [@songy23][6]              |
-| 2026-03-16 | v0.148.0 | [@dmitryax][7]        | [@dmitryax][7]          | [@dmitryax][7]             |
 | 2026-03-30 | v0.149.0 | [@codeboten][8]       | [@codeboten][8]         | [@codeboten][8]            |
 | 2026-04-13 | v0.150.0 | [@dmathieu][12]       | [@andrzej-stencel][4]   | [@crobert-1][20]           |
 | 2026-04-27 | v0.151.0 | [@bogdandrutu][9]     | [@bogdandrutu][9]       | [@bogdandrutu][9]          |
@@ -185,6 +181,9 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2026-06-22 | v0.155.0 | [@jmacd][1]           | [@ArthurSens][11]       | [@TylerHelmuth][3]         |
 | 2026-07-06 | v0.156.0 | [@mx-psi][14]         | [@mx-psi][14]           | [@mx-psi][14]              |
 | 2026-07-20 | v0.157.0 | [@TylerHelmuth][3]    | [@TylerHelmuth][3]      | [@mowies][15]              |
+| 2026-08-03 | v0.158.0 | [@evan-bradley][2]    | [@evan-bradley][2]      | [@evan-bradley][2]         |
+| 2026-08-17 | v0.159.0 | [@songy23][6]         | [@songy23][6]           | [@songy23][6]              |
+| 2026-08-31 | v0.148.0 | [@dmitryax][7]        | [@dmitryax][7]          | [@dmitryax][7]             |
 
 [1]: https://github.com/jmacd
 [2]: https://github.com/evan-bradley

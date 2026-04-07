@@ -60,6 +60,19 @@ func (c *TracesConfigV030) Unmarshal(conf *confmap.Conf) error {
 	return nil
 }
 
+var _ confmap.Marshaler = TracesConfigV030{}
+
+func (c TracesConfigV030) Marshal(conf *confmap.Conf) error {
+	if err := conf.Marshal(c); err != nil {
+		return fmt.Errorf("otelconftelemetry: failed to marshal traces configuration: %w", err)
+	}
+
+	// Redact header values the way configopaque would
+	sm := conf.ToStringMap()
+	redactHeaders(sm, "processors.*.simple|batch.exporter.otlp.headers.*.value")
+	return conf.Marshal(sm)
+}
+
 type MetricsConfigV030 struct {
 	// Level is the level of telemetry metrics, the possible values are:
 	//  - "none" indicates that no telemetry data should be collected;
@@ -95,6 +108,19 @@ func (c *MetricsConfigV030) Unmarshal(conf *confmap.Conf) error {
 		}
 	}
 	return nil
+}
+
+var _ confmap.Marshaler = MetricsConfigV030{}
+
+func (c MetricsConfigV030) Marshal(conf *confmap.Conf) error {
+	if err := conf.Marshal(c); err != nil {
+		return fmt.Errorf("otelconftelemetry: failed to marshal metrics configuration: %w", err)
+	}
+
+	// Redact header values the way configopaque would
+	sm := conf.ToStringMap()
+	redactHeaders(sm, "readers.*.periodic.exporter.otlp.headers.*.value")
+	return conf.Marshal(sm)
 }
 
 type LogsConfigV030 struct {
@@ -276,4 +302,17 @@ func (c *LogsConfigV030) Unmarshal(conf *confmap.Conf) error {
 		}
 	}
 	return nil
+}
+
+var _ confmap.Marshaler = LogsConfigV030{}
+
+func (c LogsConfigV030) Marshal(conf *confmap.Conf) error {
+	if err := conf.Marshal(c); err != nil {
+		return fmt.Errorf("otelconftelemetry: failed to marshal logs configuration: %w", err)
+	}
+
+	// Redact header values the way configopaque would
+	sm := conf.ToStringMap()
+	redactHeaders(sm, "processors.*.simple|batch.exporter.otlp.headers.*.value")
+	return conf.Marshal(sm)
 }
