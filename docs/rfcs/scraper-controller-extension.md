@@ -50,6 +50,23 @@ type RegistrationHandle interface {
 }
 ```
 
+We will define a `DeregisterFunc` function type implementing `RegistrationHandle` for convenience:
+
+```golang
+// DeregisterFunc implements RegistrationHandle using a simple function.
+//
+// If the function value is nil, the method call will be a no-op.
+type DeregisterFunc func(ctx context.Context) error
+
+// Deregister calls the underlying function to deregister the scraper.
+func (f DeregisterFunc) Deregister(ctx context.Context) error {
+    if f == nil {
+        return nil
+    }
+    return f(ctx)
+}
+```
+
 ### 2. Configuration Changes
 
 Modify `ControllerConfig` to support:
