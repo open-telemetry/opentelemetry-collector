@@ -17,7 +17,7 @@ README](../configtls/README.md).
 
 - [`balancer_name`](https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md): Default before v0.103.0 is `pick_first`, default for v0.103.0 is `round_robin`. See [issue](https://github.com/open-telemetry/opentelemetry-collector/issues/10298). To restore the previous behavior, set `balancer_name` to `pick_first`.
 - `compression`: Compression type to use among `gzip`, `snappy`, `zstd`, and `none`.
-- `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md). The endpoint accepts any form allowed by the underlying gRPC client implementation, including gRPC resolver scheme URIs such as `dns:///host:port`, `passthrough:///host:port`, or `xds:///service`. The `passthrough` scheme bypasses gRPC's DNS resolution and passes the address directly to the OS networking stack via `net.Dial`, which is useful in IPv4-only environments where dual-stack DNS records (AAAA + A) cause the [Happy Eyeballs](https://datatracker.ietf.org/doc/html/rfc8305) algorithm to attempt IPv6 connections first.
+- `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
 - [`tls`](../configtls/README.md)
 - `headers`: name/value pairs added to the request
 - [`keepalive`](https://godoc.org/google.golang.org/grpc/keepalive#ClientParameters)
