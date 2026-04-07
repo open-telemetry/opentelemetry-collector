@@ -21,7 +21,7 @@ subtext: |
   Happy Eyeballs (RFC 8305) mandatory, this causes IPv6 connection attempts first in
   dual-stack DNS environments. The endpoint field now accepts any gRPC resolver scheme
   URI (e.g. passthrough:///host:port, dns:///host:port, xds:///service), aligned with
-  the OTLP specification which states the endpoint SHOULD accept any form allowed by
+  the SDK OTLP exporter specification which states the endpoint SHOULD accept any form allowed by
   the underlying gRPC client implementation.
 
 # Optional: The change log or logs in which this entry should be included.
