@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 
-	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
@@ -27,7 +27,7 @@ const (
 	b3Propagator           = "b3"
 )
 
-func createTracerProvider(
+func (f *otelconfFactory) createTracerProvider(
 	ctx context.Context,
 	set telemetry.TracerSettings,
 	componentConfig component.Config,
@@ -38,14 +38,18 @@ func createTracerProvider(
 		return &noopNoContextTracerProvider{}, nil
 	}
 
+	resourceConfig, err := f.createResourceConfigOnce(ctx, set.BuildInfo, componentConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	propagator, err := textMapPropagatorFromConfig(cfg.Traces.Propagators)
 	if err != nil {
 		return nil, fmt.Errorf("error creating propagator: %w", err)
 	}
 	otel.SetTextMapPropagator(propagator)
 
-	resCfg := resourceConfigFromSettings(set.Settings, cfg)
-	sdk, err := newSDK(ctx, &resCfg, config.OpenTelemetryConfiguration{
+	sdk, err := newSDK(ctx, resourceConfig, otelconf.OpenTelemetryConfiguration{
 		TracerProvider: &cfg.Traces.TracerProvider,
 	})
 	if err != nil {

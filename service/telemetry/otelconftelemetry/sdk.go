@@ -6,12 +6,10 @@ package otelconftelemetry // import "go.opentelemetry.io/collector/service/telem
 import (
 	"context"
 
-	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 )
 
-func newSDK(ctx context.Context, resCfg *config.Resource, conf config.OpenTelemetryConfiguration) (config.SDK, error) {
-	if resCfg != nil {
-		conf.Resource = resCfg
-	}
-	return config.NewSDK(config.WithContext(ctx), config.WithOpenTelemetryConfiguration(conf))
+func newSDK(ctx context.Context, resourceConfig *otelconf.Resource, conf otelconf.OpenTelemetryConfiguration) (otelconf.SDK, error) {
+	conf.Resource = resourceConfig
+	return otelconf.NewSDK(otelconf.WithContext(ctx), otelconf.WithOpenTelemetryConfiguration(conf))
 }

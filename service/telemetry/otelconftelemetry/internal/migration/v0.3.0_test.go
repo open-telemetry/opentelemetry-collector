@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 func TestUnmarshalLogsConfigV030(t *testing.T) {
@@ -100,7 +101,7 @@ func TestResourceConfigV030UnmarshalLegacyFormat(t *testing.T) {
 			"service.name": "my-service",
 		})
 		var cfg ResourceConfigV030
-		require.NoError(t, cfg.Unmarshal(conf))
+		require.NoError(t, conf.Unmarshal(&cfg))
 		assert.Empty(t, cfg.Attributes)
 		assert.Equal(t, "my-service", cfg.LegacyAttributes["service.name"])
 	})
@@ -110,7 +111,7 @@ func TestResourceConfigV030UnmarshalLegacyFormat(t *testing.T) {
 			"schema_url": "https://opentelemetry.io/schemas/1.38.0",
 		})
 		var cfg ResourceConfigV030
-		require.NoError(t, cfg.Unmarshal(conf))
+		require.NoError(t, conf.Unmarshal(&cfg))
 		assert.Empty(t, cfg.Attributes)
 		require.NotNil(t, cfg.SchemaUrl)
 		assert.Equal(t, "https://opentelemetry.io/schemas/1.38.0", *cfg.SchemaUrl)
@@ -121,7 +122,7 @@ func TestResourceConfigV030UnmarshalLegacyFormat(t *testing.T) {
 			"custom.attr": "value",
 		})
 		var cfg ResourceConfigV030
-		require.NoError(t, cfg.Unmarshal(conf))
+		require.NoError(t, conf.Unmarshal(&cfg))
 		assert.Empty(t, cfg.Attributes)
 		assert.Equal(t, "value", cfg.LegacyAttributes["custom.attr"])
 	})
@@ -132,17 +133,17 @@ func TestResourceConfigV030UnmarshalLegacyFormat(t *testing.T) {
 			"service.other": "value",
 		})
 		var cfg ResourceConfigV030
-		require.NoError(t, cfg.Unmarshal(conf))
-		assert.True(t, cfg.IsRemoved("service.name"))
+		require.NoError(t, conf.Unmarshal(&cfg))
 		assert.Equal(t, "value", cfg.LegacyAttributes["service.other"])
 	})
 
-	t.Run("legacy unmarshal error", func(t *testing.T) {
+	t.Run("legacy validation error", func(t *testing.T) {
 		conf := confmap.NewFromStringMap(map[string]any{
 			"bad.value": map[string]any{"nested": "value"},
 		})
 		var cfg ResourceConfigV030
-		require.Error(t, cfg.Unmarshal(conf))
+		require.NoError(t, conf.Unmarshal(&cfg))
+		require.Error(t, xconfmap.Validate(&cfg))
 	})
 }
 
@@ -154,7 +155,7 @@ func TestResourceConfigV030UnmarshalDeclarativeFormat(t *testing.T) {
 			},
 		})
 		var cfg ResourceConfigV030
-		require.NoError(t, cfg.Unmarshal(conf))
+		require.NoError(t, conf.Unmarshal(&cfg))
 		assert.Len(t, cfg.Attributes, 1)
 		assert.Equal(t, "service.name", cfg.Attributes[0].Name)
 		assert.Equal(t, "svc", cfg.Attributes[0].Value)
@@ -166,7 +167,7 @@ func TestResourceConfigV030UnmarshalDeclarativeFormat(t *testing.T) {
 			"schema_url": "https://opentelemetry.io/schemas/1.38.0",
 		})
 		var cfg ResourceConfigV030
-		require.NoError(t, cfg.Unmarshal(conf))
+		require.NoError(t, conf.Unmarshal(&cfg))
 		assert.Empty(t, cfg.Attributes)
 		require.NotNil(t, cfg.SchemaUrl)
 		assert.Equal(t, "https://opentelemetry.io/schemas/1.38.0", *cfg.SchemaUrl)
@@ -180,9 +181,8 @@ func TestResourceConfigV030UnmarshalDeclarativeFormat(t *testing.T) {
 			"remove.attr": nil,
 		})
 		var cfg ResourceConfigV030
-		require.NoError(t, cfg.Unmarshal(conf))
+		require.NoError(t, conf.Unmarshal(&cfg))
 		assert.Len(t, cfg.Attributes, 1)
-		assert.True(t, cfg.IsRemoved("remove.attr"))
 		assert.Equal(t, "value", cfg.LegacyAttributes["legacy.attr"])
 	})
 
@@ -195,20 +195,14 @@ func TestResourceConfigV030UnmarshalDeclarativeFormat(t *testing.T) {
 			},
 		})
 		var cfg ResourceConfigV030
-		require.NoError(t, cfg.Unmarshal(conf))
+		require.NoError(t, conf.Unmarshal(&cfg))
 		assert.Empty(t, cfg.Attributes)
-		assert.False(t, cfg.IsRemoved("service.name"))
 	})
 
-	t.Run("nil conf", func(t *testing.T) {
-		var cfg ResourceConfigV030
-		require.NoError(t, cfg.Unmarshal(nil))
-		assert.Empty(t, cfg.Attributes)
-	})
 	t.Run("nil raw map", func(t *testing.T) {
 		conf := confmap.NewFromStringMap(map[string]any(nil))
 		var cfg ResourceConfigV030
-		require.NoError(t, cfg.Unmarshal(conf))
+		require.NoError(t, conf.Unmarshal(&cfg))
 		assert.Empty(t, cfg.Attributes)
 	})
 
@@ -217,6 +211,6 @@ func TestResourceConfigV030UnmarshalDeclarativeFormat(t *testing.T) {
 			"attributes_list": 123,
 		})
 		var cfg ResourceConfigV030
-		require.Error(t, cfg.Unmarshal(conf))
+		require.Error(t, conf.Unmarshal(&cfg))
 	})
 }

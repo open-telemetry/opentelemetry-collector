@@ -6,7 +6,7 @@ package otelconftelemetry // import "go.opentelemetry.io/collector/service/telem
 import (
 	"context"
 
-	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
 
 	"go.opentelemetry.io/collector/component"
@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
-func createMeterProvider(
+func (f *otelconfFactory) createMeterProvider(
 	ctx context.Context,
 	set telemetry.MeterSettings,
 	componentConfig component.Config,
@@ -27,9 +27,13 @@ func createMeterProvider(
 		cfg.Metrics.Views = set.DefaultViews(cfg.Metrics.Level)
 	}
 
-	resCfg := resourceConfigFromSettings(set.Settings, cfg)
+	resourceConfig, err := f.createResourceConfigOnce(ctx, set.BuildInfo, componentConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	mpConfig := cfg.Metrics.MeterProvider
-	sdk, err := newSDK(ctx, &resCfg, config.OpenTelemetryConfiguration{
+	sdk, err := newSDK(ctx, resourceConfig, otelconf.OpenTelemetryConfiguration{
 		MeterProvider: &mpConfig,
 	})
 	if err != nil {

@@ -113,10 +113,11 @@ func TestCreateMeterProvider(t *testing.T) {
 		}
 
 		t.Run(tt.name, func(t *testing.T) {
-			resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+			var f otelconfFactory
+			resource, err := f.createResource(t.Context(), telemetry.Settings{}, cfg)
 			require.NoError(t, err)
 
-			mp, err := createMeterProvider(t.Context(), telemetry.MeterSettings{
+			mp, err := f.createMeterProvider(t.Context(), telemetry.MeterSettings{
 				Settings: telemetry.Settings{Resource: &resource},
 			}, cfg)
 			require.NoError(t, err)
@@ -208,10 +209,11 @@ func TestCreateMeterProvider_Invalid(t *testing.T) {
 		// Invalid -- no OTLP protocol defined
 		Periodic: &config.PeriodicMetricReader{Exporter: config.PushMetricExporter{OTLP: &config.OTLPMetric{}}},
 	}}
-	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	var f otelconfFactory
+	resource, err := f.createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
 
-	_, err = createMeterProvider(t.Context(), telemetry.MeterSettings{
+	_, err = f.createMeterProvider(t.Context(), telemetry.MeterSettings{
 		Settings: telemetry.Settings{Resource: &resource},
 	}, cfg)
 	require.EqualError(t, err, "no valid metric exporter")
@@ -242,11 +244,12 @@ func TestCreateMeterProvider_Disabled(t *testing.T) {
 	// Setting Metrics.Level to LevelNone disables metrics,
 	// so the invalid configuration should not cause an error.
 	cfg.Metrics.Level = configtelemetry.LevelNone
-	resource2, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	var f otelconfFactory
+	resource2, err := f.createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
 	settings.Resource = &resource2
 
-	mp, err := createMeterProvider(t.Context(), settings, cfg)
+	mp, err := f.createMeterProvider(t.Context(), settings, cfg)
 	require.NoError(t, err)
 	assert.NoError(t, mp.Shutdown(t.Context()))
 
@@ -263,10 +266,11 @@ func TestInstrumentEnabled(t *testing.T) {
 		Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: prom}},
 	}}
 
-	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	var f otelconfFactory
+	resource, err := f.createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
 
-	meterProvider, err := createMeterProvider(t.Context(), telemetry.MeterSettings{
+	meterProvider, err := f.createMeterProvider(t.Context(), telemetry.MeterSettings{
 		Settings: telemetry.Settings{Resource: &resource},
 	}, cfg)
 	require.NoError(t, err)

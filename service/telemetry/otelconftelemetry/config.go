@@ -23,7 +23,7 @@ type Config struct {
 	//
 	// Supports both the declarative config resource schema and the legacy inline
 	// attribute map format for backward compatibility.
-	Resource migration.ResourceConfigV030 `mapstructure:"resource,omitempty"`
+	Resource ResourceConfig `mapstructure:"resource,omitempty"`
 }
 
 // LogsConfig defines the configurable settings for service telemetry logs.
@@ -43,6 +43,10 @@ type MetricsConfig = migration.MetricsConfigV030
 // TracesConfig exposes the common Telemetry configuration for collector's internal spans.
 // Experimental: *NOTE* this structure is subject to change or removal in the future.
 type TracesConfig = migration.TracesConfigV030
+
+// ResourceConfig exposes the configuration settings for the service telemetry resource.
+// Experimental: *NOTE* this structure is subject to change or removal in the future.
+type ResourceConfig = migration.ResourceConfigV030
 
 // Validate checks whether the current configuration is valid
 func (c *Config) Validate() error {

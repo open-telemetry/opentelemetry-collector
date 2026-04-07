@@ -5,128 +5,136 @@ package otelconftelemetry // import "go.opentelemetry.io/collector/service/telem
 
 import (
 	"context"
-	"sort"
+	"sync"
 
-	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
-	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
+	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.opentelemetry.io/otel/sdk/resource"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	internalresource "go.opentelemetry.io/collector/service/internal/resource"
 	"go.opentelemetry.io/collector/service/telemetry"
-	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry/internal/migration"
 )
 
 var defaultAttributeValues = internalresource.DefaultAttributeValues
 
-func createResource(
-	_ context.Context,
-	set telemetry.Settings,
-	componentConfig component.Config,
-) (pcommon.Resource, error) {
-	cfg := componentConfig.(*Config)
-	resCfg, err := resourceConfigWithDefaults(set.BuildInfo, &cfg.Resource)
-	if err != nil {
-		return pcommon.Resource{}, err
-	}
-	return pcommonResourceFromConfig(resCfg)
+type fullResource struct {
+	sdkResource    *resource.Resource
+	providerConfig *otelconf.Resource
 }
 
-// pcommonAttrsToOTelAttrs gets the Resource attributes to OpenTelemetry attribute.KeyValue slice.
-func pcommonAttrsToOTelAttrs(resource *pcommon.Resource) []attribute.KeyValue {
-	var result []attribute.KeyValue
-	if resource != nil {
-		attrs := resource.Attributes()
-		attrs.Range(func(k string, v pcommon.Value) bool {
-			result = append(result, pcommonValueToAttribute(k, v))
-			return true
-		})
-	}
-	return result
+type resourceCache struct {
+	once         sync.Once
+	fullResource *fullResource
+	err          error
 }
 
-func resourceConfigWithDefaults(buildInfo component.BuildInfo, cfg *migration.ResourceConfigV030) (config.Resource, error) {
-	if cfg == nil {
-		cfg = &migration.ResourceConfigV030{}
-	}
-
-	// Resource detectors are accepted in config for forward compatibility,
-	// but are not yet applied to build the resource.
-	resourceCfg := config.Resource{
-		Attributes:     nil,
-		AttributesList: cfg.AttributesList,
-		Detectors:      cfg.Detectors,
-		SchemaUrl:      cfg.SchemaUrl,
-	}
-
-	if resourceCfg.SchemaUrl == nil {
-		resourceCfg.SchemaUrl = ptr(semconv.SchemaURL)
-	}
-
-	removedDefaults := make(map[string]struct{})
-	for key, value := range cfg.LegacyAttributes {
-		if value == nil {
-			removedDefaults[key] = struct{}{}
-		}
-	}
-	defaults, err := defaultAttributeValues(buildInfo, removedDefaults)
+func createFullResource(
+	ctx context.Context,
+	buildInfo component.BuildInfo,
+	cfg *ResourceConfig,
+) (*fullResource, error) {
+	// Compute default values
+	defaults, err := defaultAttributeValues(buildInfo)
 	if err != nil {
-		return config.Resource{}, err
+		return nil, err
 	}
+
+	// Generate final SDK resource config, taking into account default values and legacy (map-style) attributes.
+	// To do this, we start with a shallow copy, and rebuild the attributes list.
+	sdkCfg := cfg.Resource
+	maxAttributes := len(cfg.Attributes) + len(cfg.LegacyAttributes) + len(defaults)
+	sdkCfg.Attributes = make([]otelconf.AttributeNameValue, 0, maxAttributes)
+
 	// Attribute order matters: later entries overwrite earlier ones in the SDK.
 	// We rely on this behavior to prioritize declarative attributes over legacy ones,
 	// and legacy ones over defaults.
-	for _, name := range []string{
-		string(semconv.ServiceNameKey),
-		string(semconv.ServiceVersionKey),
-		string(semconv.ServiceInstanceIDKey),
-	} {
-		if value, ok := defaults[name]; ok {
-			resourceCfg.Attributes = append(resourceCfg.Attributes, config.AttributeNameValue{
-				Name:  name,
-				Value: value,
-			})
+
+	for name, value := range defaults {
+		if _, ok := cfg.LegacyAttributes[name]; ok {
+			continue
 		}
+		sdkCfg.Attributes = append(sdkCfg.Attributes, otelconf.AttributeNameValue{
+			Name:  name,
+			Value: value,
+		})
 	}
 
-	legacyKeys := make([]string, 0, len(cfg.LegacyAttributes))
-	for key := range cfg.LegacyAttributes {
-		legacyKeys = append(legacyKeys, key)
-	}
-	sort.Strings(legacyKeys)
-	for _, key := range legacyKeys {
-		value := cfg.LegacyAttributes[key]
+	for key, value := range cfg.LegacyAttributes {
 		if value == nil {
 			continue
 		}
-		resourceCfg.Attributes = append(resourceCfg.Attributes, config.AttributeNameValue{
+		sdkCfg.Attributes = append(sdkCfg.Attributes, otelconf.AttributeNameValue{
 			Name:  key,
 			Value: value,
 		})
 	}
 
-	resourceCfg.Attributes = append(resourceCfg.Attributes, cfg.Attributes...)
-	return resourceCfg, nil
+	sdkCfg.Attributes = append(sdkCfg.Attributes, cfg.Attributes...)
+
+	// Generate final SDK resource using otelconf
+	sdk, err := otelconf.NewSDK(otelconf.WithContext(ctx), otelconf.WithOpenTelemetryConfiguration(otelconf.OpenTelemetryConfiguration{
+		Resource: &sdkCfg,
+	}))
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert SDK resource back into an equivalent SDK config for provider instantiation.
+	sdkResource := sdk.Resource()
+	sdkIterator := sdkResource.Iter()
+	providerConfig := &otelconf.Resource{
+		Attributes: make([]otelconf.AttributeNameValue, 0, sdkIterator.Len()),
+	}
+	if schemaUrl := sdkResource.SchemaURL(); schemaUrl != "" {
+		providerConfig.SchemaUrl = &schemaUrl
+	}
+	for sdkIterator.Next() {
+		kv := sdkIterator.Attribute()
+		providerConfig.Attributes = append(providerConfig.Attributes, otelconf.AttributeNameValue{
+			Name:  string(kv.Key),
+			Value: kv.Value.AsInterface(),
+		})
+	}
+
+	return &fullResource{
+		sdkResource:    sdkResource,
+		providerConfig: providerConfig,
+	}, nil
 }
 
-func resourceConfigFromSettings(set telemetry.Settings, cfg *Config) config.Resource {
-	resourceCfg := config.Resource{
-		SchemaUrl: cfg.Resource.SchemaUrl,
-	}
-	if resourceCfg.SchemaUrl == nil {
-		resourceCfg.SchemaUrl = ptr(semconv.SchemaURL)
-	}
-	if set.Resource == nil {
-		return resourceCfg
+func (f *otelconfFactory) createResourceConfigOnce(
+	ctx context.Context,
+	buildInfo component.BuildInfo,
+	componentConfig component.Config,
+) (*otelconf.Resource, error) {
+	f.resourceCache.once.Do(func() {
+		f.resourceCache.fullResource, f.resourceCache.err = createFullResource(ctx, buildInfo, &componentConfig.(*Config).Resource)
+	})
+	return f.resourceCache.fullResource.providerConfig, f.resourceCache.err
+}
+
+func (f *otelconfFactory) createResource(
+	ctx context.Context,
+	set telemetry.Settings,
+	componentConfig component.Config,
+) (pcommon.Resource, error) {
+	_, err := f.createResourceConfigOnce(ctx, set.BuildInfo, componentConfig)
+	if err != nil {
+		return pcommon.Resource{}, err
 	}
 
-	set.Resource.Attributes().Range(func(k string, v pcommon.Value) bool {
-		resourceCfg.Attributes = append(resourceCfg.Attributes, config.AttributeNameValue{
-			Name:  k,
-			Value: v.AsRaw(),
-		})
-		return true
-	})
-	return resourceCfg
+	sdkResource := f.resourceCache.fullResource.sdkResource
+	sdkIterator := sdkResource.Iter()
+
+	pcommonResource := pcommon.NewResource()
+	pcommonAttributes := pcommonResource.Attributes()
+	pcommonAttributes.EnsureCapacity(sdkIterator.Len())
+
+	for sdkIterator.Next() {
+		kv := sdkIterator.Attribute()
+		pcommonAttributes.PutEmpty(string(kv.Key)).FromRaw(kv.Value.AsInterface())
+	}
+
+	return pcommonResource, nil
 }
