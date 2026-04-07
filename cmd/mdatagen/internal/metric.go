@@ -37,6 +37,10 @@ type Metric struct {
 	// but the emitted metric name should be "metric.name".
 	Name string `mapstructure:"name"`
 
+	// This indicates if the metric is versioned are not. This helps with generated code.
+	// The reason for this is if the metric is versioned a metric name can be duplicated.
+	Versioned bool `mapstructure:"-"`
+
 	// Optional can be used to specify metrics that may
 	// or may not be present in all cases, depending on configuration.
 	Optional bool `mapstructure:"optional"`

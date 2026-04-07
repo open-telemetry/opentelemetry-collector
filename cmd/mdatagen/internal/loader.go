@@ -27,12 +27,13 @@ func setAttributeDefaultFields(attrs map[AttributeName]Attribute) {
 
 func setMetricDefaultFields(metrics map[MetricName]Metric) {
 	for k, v := range metrics {
-		if v.Name == "" {
-			keyStr := string(k)
-			if idx := strings.Index(keyStr, "/"); idx != -1 {
-				v.Name = keyStr[:idx]
-				metrics[k] = v
+		keyStr := string(k)
+		if withoutSlash, _, found := strings.Cut(keyStr, "/"); found {
+			v.Versioned = true
+			if v.Name == "" {
+				v.Name = withoutSlash
 			}
+			metrics[k] = v
 		}
 	}
 }

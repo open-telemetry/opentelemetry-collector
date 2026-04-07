@@ -688,7 +688,7 @@ func TestSetMetricDefaultFields(t *testing.T) {
 				"system.cpu.time/v2": {Signal: Signal{Description: "test"}},
 			},
 			expected: map[MetricName]Metric{
-				"system.cpu.time/v2": {Name: "system.cpu.time", Signal: Signal{Description: "test"}},
+				"system.cpu.time/v2": {Name: "system.cpu.time", Signal: Signal{Description: "test"}, Versioned: true},
 			},
 		},
 		{
