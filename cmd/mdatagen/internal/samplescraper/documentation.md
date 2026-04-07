@@ -12,6 +12,7 @@ metrics:
     enabled: false
 ```
 
+
 ### default.metric
 
 Monotonic cumulative sum int metric enabled by default.
@@ -32,6 +33,7 @@ The metric will be become optional soon.
 | slice_attr | Attribute with a slice value. | Any Slice | Recommended |
 | map_attr | Attribute with a map value. | Any Map | Recommended |
 
+
 ### default.metric.to_be_removed
 
 [DEPRECATED] Non-monotonic delta sum double metric enabled by default.
@@ -41,6 +43,7 @@ The metric will be removed soon.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Double | Delta | false | Deprecated |
+
 
 ### metric.input_type
 
@@ -60,6 +63,7 @@ Monotonic cumulative sum int metric with string input_type enabled by default.
 | slice_attr | Attribute with a slice value. | Any Slice | Recommended |
 | map_attr | Attribute with a map value. | Any Map | Recommended |
 
+
 ### reaggregate.metric
 
 Metric for testing spacial reaggregation
@@ -74,6 +78,7 @@ Metric for testing spacial reaggregation
 | ---- | ----------- | ------ | -------- |
 | string_attr | Attribute with any string value. | Any Str | Recommended |
 | boolean_attr | Attribute with a boolean value. | Any Bool | Recommended |
+
 
 ### system.cpu.time
 
@@ -95,6 +100,7 @@ metrics:
     enabled: true
 ```
 
+
 ### optional.metric
 
 [DEPRECATED] Gauge double metric disabled by default.
@@ -110,6 +116,7 @@ metrics:
 | string_attr | Attribute with any string value. | Any Str | Recommended |
 | boolean_attr | Attribute with a boolean value. | Any Bool | Recommended |
 | boolean_attr2 | Another attribute with a boolean value. | Any Bool | Recommended |
+
 
 ### optional.metric.empty_unit
 

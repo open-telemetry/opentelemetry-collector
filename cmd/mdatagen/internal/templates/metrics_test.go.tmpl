@@ -140,6 +140,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 			{{- range $name, $metric := .Metrics }}
 
+      {{- if not $metric.Versioned }}
 				{{ if $metric.Enabled }}defaultMetricsCount++{{ end }}
 				allMetricsCount++
 				mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
@@ -175,6 +176,7 @@ func TestMetricsBuilder(t *testing.T) {
         }
         {{- end }}
 			{{- end }}
+      {{- end }}
 
 			{{ if .ResourceAttributes }}
 			rb := mb.NewResourceBuilder()
@@ -211,7 +213,8 @@ func TestMetricsBuilder(t *testing.T) {
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
 				{{- range $name, $metric := .Metrics }}
-				case "{{ $name }}":
+        {{- if not $metric.Versioned }}
+        case "{{- if $metric.Name }}{{ $metric.Name }}{{ else }}{{ $name }}{{ end }}":
           {{- if $reag }}
           if tt.name != "reaggregate_set" {
             assert.False(t, validatedMetrics["{{ $name }}"], "Found a duplicate in the metrics slice: {{ $name }}")
@@ -351,6 +354,7 @@ func TestMetricsBuilder(t *testing.T) {
 					{{- if or (eq (attributeInfo $attr).Type.String "Slice") (eq (attributeInfo $attr).Type.String "Map")}}.AsRaw(){{ end }})
 					{{- end }}
           {{- end }}
+        {{- end }}
 				{{- end }}
 				}
 			}
