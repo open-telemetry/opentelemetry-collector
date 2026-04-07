@@ -101,6 +101,13 @@ Modify `controller.Controller` to:
 - Deregister scrapers during `Shutdown()`
 - Validate that at least one controller extension is configured if timer is disabled
 
+### 4. Reference Implementation
+
+We will introduce a reference implementation of the controller extension interface that
+is triggered by HTTP requests. This will be included in the OpenTelemetry Collector Contrib
+repository. The exact component name and configuration are to be determined, but will be
+along the lines of the webhook-driven controller described below.
+
 ## Use Cases
 
 Below are use cases that motivate this change. Some of the use cases describe hypothetical
