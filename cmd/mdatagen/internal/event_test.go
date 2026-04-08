@@ -12,8 +12,7 @@ import (
 
 func TestEventValidate(t *testing.T) {
 	err := (&Event{}).validate()
-	require.Error(t, err)
-	assert.ErrorContains(t, err, "missing event description")
+	require.ErrorContains(t, err, "missing event description")
 
 	err = (&Event{Signal: Signal{Description: "some event"}}).validate()
 	require.NoError(t, err)
