@@ -3,7 +3,6 @@ module go.opentelemetry.io/collector/config/confighttp
 go 1.25.0
 
 require (
-	github.com/Microsoft/go-winio v0.6.2
 	github.com/golang/snappy v1.0.0
 	github.com/klauspost/compress v1.18.4
 	github.com/pierrec/lz4/v4 v4.1.26
@@ -34,6 +33,7 @@ require (
 )
 
 require (
+	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.148.0 // indirect
 )
