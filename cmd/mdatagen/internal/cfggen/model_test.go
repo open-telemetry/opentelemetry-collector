@@ -8,6 +8,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestConfigMetadata_ToJSON(t *testing.T) {
@@ -316,6 +318,49 @@ func TestConfigMetadata_Validate_EdgeCases(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestGoStructConfig_Unmarshal(t *testing.T) {
+	tests := []struct {
+		name                  string
+		input                 map[string]any
+		expectCustomValidator bool
+	}{
+		{
+			name:                  "custom_validator present with empty map",
+			input:                 map[string]any{"custom_validator": map[string]any{}},
+			expectCustomValidator: true,
+		},
+		{
+			name:                  "custom_validator present with nil value",
+			input:                 map[string]any{"custom_validator": nil},
+			expectCustomValidator: true,
+		},
+		{
+			name:                  "custom_validator absent",
+			input:                 map[string]any{},
+			expectCustomValidator: false,
+		},
+		{
+			name:                  "unrelated keys only",
+			input:                 map[string]any{"something_else": true},
+			expectCustomValidator: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			parser := confmap.NewFromStringMap(tt.input)
+			var g GoStructConfig
+			err := g.Unmarshal(parser)
+			require.NoError(t, err)
+			if tt.expectCustomValidator {
+				assert.NotNil(t, g.CustomValidator, "CustomValidator should be non-nil when key is present")
+			} else {
+				assert.Nil(t, g.CustomValidator, "CustomValidator should be nil when key is absent")
 			}
 		})
 	}

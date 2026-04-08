@@ -618,6 +618,18 @@ func TestContextWithClient(t *testing.T) {
 			},
 		},
 		{
+			name: "request with IPv6 client IP and zone",
+			input: &http.Request{
+				RemoteAddr: "[fe80::1%eth0]:12345",
+			},
+			expected: client.Info{
+				Addr: &net.IPAddr{
+					IP:   net.ParseIP("fe80::1"),
+					Zone: "eth0",
+				},
+			},
+		},
+		{
 			name: "request with client headers, no metadata processing",
 			input: &http.Request{
 				Header: map[string][]string{"x-tt-header": {"tt-value"}},
