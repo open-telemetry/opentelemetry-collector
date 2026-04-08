@@ -56,6 +56,14 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return typeName
 		},
+		"hasValueValidators": func(v Validator) bool {
+			for k := range v.Validators {
+				if k != "required" {
+					return true
+				}
+			}
+			return false
+		},
 	}
 }
 
@@ -199,6 +207,10 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 		imports["go.opentelemetry.io/collector/config/configoptional"] = true
 	}
 
+	if md.Pattern != "" {
+		imports["regexp"] = true
+	}
+
 	for _, prop := range md.Properties {
 		if err := collectImports(prop, imports, rootPackage, componentPackage); err != nil {
 			return err
@@ -312,25 +324,57 @@ func ExtractValidators(md *ConfigMetadata) []Validator {
 type Validator struct {
 	FieldName       string
 	FieldType       string
-	IsRequired      bool
 	IsPointer       bool
 	IsOptional      bool
+	Validators      map[string]any
 	CustomValidator string
+}
+
+var supportedValidatorChecks = map[string]func(*ConfigMetadata) any{
+	"maxLength": func(md *ConfigMetadata) any {
+		if md.MaxLength == nil {
+			return nil
+		}
+		return *md.MaxLength
+	},
+	"minLength": func(md *ConfigMetadata) any {
+		if md.MinLength == nil {
+			return nil
+		}
+		return *md.MinLength
+	},
+	"pattern": func(md *ConfigMetadata) any {
+		if md.Pattern == "" {
+			return nil
+		}
+		return md.Pattern
+	},
 }
 
 func collectValidators(md *ConfigMetadata, validators *[]Validator) {
 	for _, propName := range slices.Sorted(maps.Keys(md.Properties)) {
 		prop := md.Properties[propName]
+		fieldValidators := make(map[string]any)
 		isRequired := slices.Contains(md.Required, propName)
 		if isRequired {
+			fieldValidators["required"] = true
+		}
+		for validatorName, getField := range supportedValidatorChecks {
+			if val := getField(prop); val != nil {
+				fieldValidators[validatorName] = val
+			}
+		}
+
+		if len(fieldValidators) > 0 {
 			*validators = append(*validators, Validator{
 				FieldName:  propName,
 				FieldType:  resolveType(prop),
-				IsRequired: isRequired,
 				IsPointer:  prop.IsPointer,
 				IsOptional: prop.IsOptional,
+				Validators: fieldValidators,
 			})
 		}
+
 		if prop.GoStruct.CustomValidator != nil {
 			*validators = append(*validators, Validator{
 				FieldName:       propName,
@@ -342,6 +386,7 @@ func collectValidators(md *ConfigMetadata, validators *[]Validator) {
 		}
 	}
 
+	// root custom validation
 	if md.GoStruct.CustomValidator != nil {
 		*validators = append(*validators, Validator{
 			FieldName:       ".",

@@ -965,6 +965,49 @@ func TestExtractImports_ContentSchema(t *testing.T) {
 	require.Contains(t, result, "time")
 }
 
+func TestExtractImports_Pattern(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+	}{
+		{
+			name:     "direct pattern field",
+			metadata: &ConfigMetadata{Type: "string", Pattern: `^[a-z]+$`},
+		},
+		{
+			name: "pattern in nested property",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string", Pattern: `^[a-z]+$`},
+				},
+			},
+		},
+		{
+			name: "pattern in array items",
+			metadata: &ConfigMetadata{
+				Type:  "array",
+				Items: &ConfigMetadata{Type: "string", Pattern: `^[a-z]+$`},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := ExtractImports(tt.metadata, "", "")
+			require.NoError(t, err)
+			require.Contains(t, result, "regexp")
+		})
+	}
+}
+
+func TestExtractImports_NoPatternNoRegexpImport(t *testing.T) {
+	md := &ConfigMetadata{Type: "string"}
+	result, err := ExtractImports(md, "", "")
+	require.NoError(t, err)
+	require.NotContains(t, result, "regexp")
+}
+
 func TestExtractValidators(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -996,9 +1039,9 @@ func TestExtractValidators(t *testing.T) {
 				{
 					FieldName:  "name",
 					FieldType:  "string",
-					IsRequired: true,
 					IsOptional: false,
 					IsPointer:  false,
+					Validators: map[string]any{"required": true},
 				},
 			},
 		},
@@ -1015,9 +1058,9 @@ func TestExtractValidators(t *testing.T) {
 				{
 					FieldName:  "name",
 					FieldType:  "string",
-					IsRequired: true,
 					IsOptional: true,
 					IsPointer:  false,
+					Validators: map[string]any{"required": true},
 				},
 			},
 		},
@@ -1034,9 +1077,9 @@ func TestExtractValidators(t *testing.T) {
 				{
 					FieldName:  "name",
 					FieldType:  "string",
-					IsRequired: true,
 					IsOptional: false,
 					IsPointer:  true,
+					Validators: map[string]any{"required": true},
 				},
 			},
 		},
@@ -1060,6 +1103,116 @@ func TestExtractValidators(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			result := ExtractValidators(test.metadata)
 			require.Equal(t, test.expected, result)
+		})
+	}
+}
+
+func TestExtractValidators_StringValidators(t *testing.T) {
+	maxLen := 64
+	minLen := 3
+
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected []Validator
+	}{
+		{
+			name: "maxLength only",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string", MaxLength: &maxLen},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName:  "name",
+					FieldType:  "string",
+					Validators: map[string]any{"maxLength": maxLen},
+				},
+			},
+		},
+		{
+			name: "minLength only",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string", MinLength: &minLen},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName:  "name",
+					FieldType:  "string",
+					Validators: map[string]any{"minLength": minLen},
+				},
+			},
+		},
+		{
+			name: "pattern only",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string", Pattern: `^[a-z]+$`},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName:  "name",
+					FieldType:  "string",
+					Validators: map[string]any{"pattern": `^[a-z]+$`},
+				},
+			},
+		},
+		{
+			name: "all string validators without required",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string", MinLength: &minLen, MaxLength: &maxLen, Pattern: `^[a-z]+$`},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName:  "name",
+					FieldType:  "string",
+					Validators: map[string]any{"minLength": minLen, "maxLength": maxLen, "pattern": `^[a-z]+$`},
+				},
+			},
+		},
+		{
+			name: "required combined with string validators",
+			metadata: &ConfigMetadata{
+				Type:     "object",
+				Required: []string{"name"},
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string", MinLength: &minLen, MaxLength: &maxLen, Pattern: `^[a-z]+$`},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName:  "name",
+					FieldType:  "string",
+					Validators: map[string]any{"required": true, "minLength": minLen, "maxLength": maxLen, "pattern": `^[a-z]+$`},
+				},
+			},
+		},
+		{
+			name: "nil minLength and maxLength produces no validator",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string"},
+				},
+			},
+			expected: []Validator{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ExtractValidators(tt.metadata)
+			require.Equal(t, tt.expected, result)
 		})
 	}
 }
@@ -1128,7 +1281,7 @@ func TestExtractValidators_CustomValidator(t *testing.T) {
 	require.Len(t, result, 1)
 	require.Equal(t, "http_client", result[0].FieldName)
 	require.Equal(t, "validateHTTPClient", result[0].CustomValidator)
-	require.False(t, result[0].IsRequired)
+	require.Empty(t, result[0].Validators)
 	require.True(t, result[0].IsPointer)
 }
 
@@ -1151,12 +1304,12 @@ func TestExtractValidators_RequiredAndCustomValidator(t *testing.T) {
 
 	// First validator is the required check
 	require.Equal(t, "http_client", result[0].FieldName)
-	require.True(t, result[0].IsRequired)
+	require.Equal(t, true, result[0].Validators["required"])
 	require.Empty(t, result[0].CustomValidator)
 
 	// Second validator is the custom validator
 	require.Equal(t, "http_client", result[1].FieldName)
-	require.False(t, result[1].IsRequired)
+	require.Empty(t, result[1].Validators)
 	require.Equal(t, "validateHTTPClient", result[1].CustomValidator)
 }
 
@@ -1175,10 +1328,10 @@ func TestExtractValidators_RootCustomValidatorLast(t *testing.T) {
 
 	result := ExtractValidators(md)
 	require.Len(t, result, 2)
+	require.Equal(t, true, result[1].Validators["required"])
+	require.Empty(t, result[1].CustomValidator)
 	require.Equal(t, ".", result[0].FieldName)
 	require.Equal(t, "validateConfig", result[0].CustomValidator)
-	require.True(t, result[1].IsRequired)
-	require.Empty(t, result[1].CustomValidator)
 }
 
 func TestExtractValidators_NoCustomValidator(t *testing.T) {
@@ -1194,6 +1347,59 @@ func TestExtractValidators_NoCustomValidator(t *testing.T) {
 
 	result := ExtractValidators(md)
 	require.Empty(t, result)
+}
+
+func TestNewCfgFns_HasValueValidators(t *testing.T) {
+	fns := NewCfgFns("", "")
+	hasValueValidators := fns["hasValueValidators"].(func(Validator) bool)
+
+	tests := []struct {
+		name      string
+		validator Validator
+		expected  bool
+	}{
+		{
+			name:      "empty validators map",
+			validator: Validator{Validators: map[string]any{}},
+			expected:  false,
+		},
+		{
+			name:      "only required",
+			validator: Validator{Validators: map[string]any{"required": true}},
+			expected:  false,
+		},
+		{
+			name:      "maxLength",
+			validator: Validator{Validators: map[string]any{"maxLength": 64}},
+			expected:  true,
+		},
+		{
+			name:      "minLength",
+			validator: Validator{Validators: map[string]any{"minLength": 1}},
+			expected:  true,
+		},
+		{
+			name:      "pattern",
+			validator: Validator{Validators: map[string]any{"pattern": `^[a-z]+$`}},
+			expected:  true,
+		},
+		{
+			name:      "required and pattern",
+			validator: Validator{Validators: map[string]any{"required": true, "pattern": `^[a-z]+$`}},
+			expected:  true,
+		},
+		{
+			name:      "nil validators map",
+			validator: Validator{Validators: nil},
+			expected:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, hasValueValidators(tt.validator))
+		})
+	}
 }
 
 func TestNewCfgFns_ExtractValidators(t *testing.T) {
@@ -1212,5 +1418,5 @@ func TestNewCfgFns_ExtractValidators(t *testing.T) {
 	result := extractValidators(md)
 	require.Len(t, result, 1)
 	require.Equal(t, "name", result[0].FieldName)
-	require.True(t, result[0].IsRequired)
+	require.Equal(t, true, result[0].Validators["required"])
 }

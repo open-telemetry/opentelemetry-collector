@@ -4,6 +4,7 @@ package samplescraper
 
 import (
 	"errors"
+	"regexp"
 	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -12,9 +13,13 @@ import (
 )
 
 type TargetsItem struct {
-	HTTPClient *confighttp.ClientConfig               `mapstructure:"http_client"`
-	Interval   configoptional.Optional[time.Duration] `mapstructure:"interval"`
-	Options    map[string]string                      `mapstructure:"options"`
+
+	// Overrides the global collection interval for this target.
+	CollectionInterval configoptional.Optional[time.Duration] `mapstructure:"collection_interval"`
+	// HTTP client configuration for the target endpoint.
+	HTTPClient *confighttp.ClientConfig `mapstructure:"http_client"`
+	// Static key-value labels attached to all metrics from this target.
+	Labels map[string]string `mapstructure:"labels"`
 }
 
 // Validate validates the targets_item fields.
@@ -28,9 +33,6 @@ func (c *TargetsItem) Validate() error {
 	if inner_err := validateHTTPClient(c.HTTPClient); inner_err != nil {
 		err = errors.Join(err, inner_err)
 	}
-	if c.Options == nil || len(c.Options) == 0 {
-		err = errors.Join(err, errors.New("options is required"))
-	}
 
 	return err
 }
@@ -38,13 +40,28 @@ func (c *TargetsItem) Validate() error {
 // Configuration for the Sample Scraper.
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	// Targets configuration for the scraper.
+	// Name of the scrape job, used to identify the source in telemetry.
+	JobName string `mapstructure:"job_name"`
+	// List of targets to scrape metrics from.
 	Targets *[]TargetsItem `mapstructure:"targets"`
 }
 
 // Validate validates the Config fields.
 func (c *Config) Validate() error {
 	var err error
+
+	if c.JobName == "" {
+		err = errors.Join(err, errors.New("job_name is required"))
+	}
+	if len(c.JobName) > 255 {
+		err = errors.Join(err, errors.New("job_name exceeds maximum length of 255"))
+	}
+	if len(c.JobName) < 1 {
+		err = errors.Join(err, errors.New("job_name must have minimum length of 1"))
+	}
+	if matched, _ := regexp.MatchString(`^[a-zA-Z0-9_.-]+$`, c.JobName); !matched {
+		err = errors.Join(err, errors.New("job_name must match pattern `^[a-zA-Z0-9_.-]+$`"))
+	}
 
 	if c.Targets == nil || len(*c.Targets) == 0 {
 		err = errors.Join(err, errors.New("targets is required"))

@@ -28,14 +28,24 @@
     }
   ],
   "properties": {
+    "job_name": {
+      "description": "Name of the scrape job, used to identify the source in telemetry.",
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_.-]+$"
+    },
     "targets": {
-      "description": "Targets configuration for the scraper.",
+      "description": "List of targets to scrape metrics from.",
       "type": "array",
       "items": {
         "type": "object",
         "properties": {
+          "collection_interval": {
+            "description": "Overrides the global collection interval for this target. (duration format, e.g., \"30s\", \"1h30m\")",
+            "type": "string",
+            "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+          },
           "http_client": {
-            "description": "ClientConfig defines settings for creating an HTTP client.",
+            "description": "HTTP client configuration for the target endpoint.",
             "type": "object",
             "properties": {
               "auth": {
@@ -253,11 +263,8 @@
               }
             }
           },
-          "interval": {
-            "type": "string",
-            "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
-          },
-          "options": {
+          "labels": {
+            "description": "Static key-value labels attached to all metrics from this target.",
             "type": "object",
             "additionalProperties": {
               "type": "string"
@@ -265,13 +272,13 @@
           }
         },
         "required": [
-          "http_client",
-          "options"
+          "http_client"
         ]
       }
     }
   },
   "required": [
+    "job_name",
     "targets"
   ]
 }
