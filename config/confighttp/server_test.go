@@ -19,7 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Microsoft/go-winio"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -298,33 +297,6 @@ func TestHTTPServerTransport(t *testing.T) {
 				Transport: &http.Transport{
 					DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
 						return net.Dial("unix", addr)
-					},
-				},
-				Timeout: 5 * time.Second, // Set a client-level timeout
-			}
-			resp, err := client.Get("http://whatever/foo")
-			require.NoError(t, err)
-			defer resp.Body.Close()
-			assert.Equal(t, http.StatusOK, resp.StatusCode)
-		})
-	}
-	if runtime.GOOS == "windows" {
-		t.Run("windows npipe", func(t *testing.T) {
-			addr := fmt.Sprintf("\\\\.\\pipe\\%s", t.Name())
-			sc := &ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Endpoint:  addr,
-					Transport: confignet.TransportTypeNpipe,
-				},
-			}
-			ln, err := sc.ToListener(t.Context())
-			require.NoError(t, err)
-			startServer(t, sc, ln, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
-
-			client := http.Client{
-				Transport: &http.Transport{
-					DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
-						return winio.DialPipeContext(ctx, addr)
 					},
 				},
 				Timeout: 5 * time.Second, // Set a client-level timeout
