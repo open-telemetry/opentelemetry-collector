@@ -17,7 +17,7 @@ The OpenTelemetry Collector ecosystem lacks a unified approach to configuration 
 ## Desired state
 
 **Goal**: Establish a single source of truth for component configuration that generates:
-1. **Go configuration structs** with proper mapstructure tags, validation, and default values. 
+1. **Go configuration structs** with proper mapstructure tags, validation, and default values.
 2. **JSON schemas** for configuration validation and editor autocompletion
 3. **Documentation** that stays automatically synchronized with implementation
 
@@ -46,7 +46,7 @@ Parsing Go code to generate schemas is inherently limited. Community consensus r
 This RFC proposes an approach that transitions from the current Go-struct-first model to a schema-first configuration generation system:
 
 1. **Bootstrap Phase**: Use existing `schemagen` tool to generate initial schema specifications
-2. **Tool Development Phase**: Create new tooling that generates Go structs, JSON schemas, and documentation from YAML schema specifications 
+2. **Tool Development Phase**: Create new tooling that generates Go structs, JSON schemas, and documentation from YAML schema specifications
 3. **Migration Phase**: Migrate all components to the new schema-first approach
 
 Use of the `schemagen` tool is dictated by the modularity of the Collector components. It allows generating schemas for shared libraries (e.g., scraperhelper) that can be referenced by individual components.
@@ -346,7 +346,7 @@ Example:
 **Objective**: Use `schemagen` tool to generate initial schema specifications for all components
 
 **Success Criteria:**
-- YAML schemas generated for all components in core and contrib repositories 
+- YAML schemas generated for all components in core and contrib repositories
 - Setup CI check to ensure schemas remain up-to-date with Go structs
 
 #### Phase 2: Implement new generation tool

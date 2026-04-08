@@ -36,46 +36,45 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("map.resource.attr")
+			mapResourceAttrAttrVal, ok := res.Attributes().Get("map.resource.attr")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"}, val.Map().AsRaw())
+				assert.Equal(t, map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"}, mapResourceAttrAttrVal.Map().AsRaw())
 			}
-			val, ok = res.Attributes().Get("optional.resource.attr")
+			optionalResourceAttrAttrVal, ok := res.Attributes().Get("optional.resource.attr")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "optional.resource.attr-val", val.Str())
+				assert.Equal(t, "optional.resource.attr-val", optionalResourceAttrAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("slice.resource.attr")
+			sliceResourceAttrAttrVal, ok := res.Attributes().Get("slice.resource.attr")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, []any{"slice.resource.attr-item1", "slice.resource.attr-item2"}, val.Slice().AsRaw())
+				assert.Equal(t, []any{"slice.resource.attr-item1", "slice.resource.attr-item2"}, sliceResourceAttrAttrVal.Slice().AsRaw())
 			}
-			val, ok = res.Attributes().Get("string.enum.resource.attr")
+			stringEnumResourceAttrAttrVal, ok := res.Attributes().Get("string.enum.resource.attr")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "one", val.Str())
+				assert.Equal(t, "one", stringEnumResourceAttrAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("string.resource.attr")
+			stringResourceAttrAttrVal, ok := res.Attributes().Get("string.resource.attr")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "string.resource.attr-val", val.Str())
+				assert.Equal(t, "string.resource.attr-val", stringResourceAttrAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("string.resource.attr_disable_warning")
+			stringResourceAttrDisableWarningAttrVal, ok := res.Attributes().Get("string.resource.attr_disable_warning")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "string.resource.attr_disable_warning-val", val.Str())
+				assert.Equal(t, "string.resource.attr_disable_warning-val", stringResourceAttrDisableWarningAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("string.resource.attr_remove_warning")
+			stringResourceAttrRemoveWarningAttrVal, ok := res.Attributes().Get("string.resource.attr_remove_warning")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "string.resource.attr_remove_warning-val", val.Str())
+				assert.Equal(t, "string.resource.attr_remove_warning-val", stringResourceAttrRemoveWarningAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("string.resource.attr_to_be_removed")
+			stringResourceAttrToBeRemovedAttrVal, ok := res.Attributes().Get("string.resource.attr_to_be_removed")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "string.resource.attr_to_be_removed-val", val.Str())
+				assert.Equal(t, "string.resource.attr_to_be_removed-val", stringResourceAttrToBeRemovedAttrVal.Str())
 			}
 		})
 	}
