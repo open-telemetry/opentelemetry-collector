@@ -310,20 +310,20 @@ func TestHTTPServerTransport(t *testing.T) {
 	}
 	if runtime.GOOS == "windows" {
 		t.Run("windows npipe", func(t *testing.T) {
-			addr := t.Name()
+			addr := fmt.Sprintf("\\\\.\\pipe\\%s", t.Name())
 			sc := &ServerConfig{
 				NetAddr: confignet.AddrConfig{
 					Endpoint:  addr,
 					Transport: confignet.TransportTypeNpipe,
 				},
 			}
-			ln, err := sc.ToListener(context.Background())
+			ln, err := sc.ToListener(t.Context())
 			require.NoError(t, err)
 			startServer(t, sc, ln, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 
 			client := http.Client{
 				Transport: &http.Transport{
-					DialContext: func(ctx context.Context, _, addr string) (net.Conn, error) {
+					DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
 						return winio.DialPipeContext(ctx, addr)
 					},
 				},
