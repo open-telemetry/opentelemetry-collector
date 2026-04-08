@@ -49,6 +49,8 @@ func TestRunInit(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpdir := filepath.Join(t.TempDir(), "init")
 			path := tt.buildPath(tmpdir)
+			defer os.RemoveAll(path)
+
 			err := run(path)
 
 			if tt.wantErr == "" {

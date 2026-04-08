@@ -50,6 +50,58 @@ func TestProfilesText(t *testing.T) {
 	}
 }
 
+func TestProfilesTextInvalidDictionaryIndex(t *testing.T) {
+	tests := []struct {
+		name             string
+		in               pprofile.Profiles
+		expectedContains string
+	}{
+		{
+			name: "invalid_attribute_index",
+			in: func() pprofile.Profiles {
+				profiles := pprofile.NewProfiles()
+				dic := profiles.Dictionary()
+				dic.StringTable().Append("")
+
+				profile := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+				sample := profile.Samples().AppendEmpty()
+				sample.Values().Append(100)
+				// Attribute index 99 is out of bounds (attribute table is empty)
+				sample.AttributeIndices().Append(99)
+				return profiles
+			}(),
+			expectedContains: "[Missing Dictionary AttributeTable Item #99]",
+		},
+		{
+			name: "invalid_string_index",
+			in: func() pprofile.Profiles {
+				profiles := pprofile.NewProfiles()
+				dic := profiles.Dictionary()
+				dic.StringTable().Append("")
+
+				a := dic.AttributeTable().AppendEmpty()
+				// KeyStrindex 99 is out of bounds
+				a.SetKeyStrindex(99)
+				a.Value().SetStr("value1")
+
+				profile := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+				sample := profile.Samples().AppendEmpty()
+				sample.Values().Append(100)
+				sample.AttributeIndices().Append(0)
+				return profiles
+			}(),
+			expectedContains: "[Missing Dictionary Key String Item #99]",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NewTextProfilesMarshaler().MarshalProfiles(tt.in)
+			require.NoError(t, err)
+			assert.Contains(t, string(got), tt.expectedContains)
+		})
+	}
+}
+
 // GenerateExtendedProfiles generates dummy profiling data with extended values for tests
 func extendProfiles(profiles pprofile.Profiles) pprofile.Profiles {
 	dic := profiles.Dictionary()
