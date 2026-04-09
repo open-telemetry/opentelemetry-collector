@@ -15,6 +15,7 @@ type JSONMarshaler struct{}
 
 // MarshalProfiles to the OTLP/JSON format.
 func (*JSONMarshaler) MarshalProfiles(pd Profiles) ([]byte, error) {
+	pd = prepareProfilesForMarshaling(pd)
 	// Convert strings to references for efficient transmission
 	convertProfilesToReferences(pd)
 

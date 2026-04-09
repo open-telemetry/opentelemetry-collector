@@ -8,6 +8,7 @@ var _ MarshalSizer = (*ProtoMarshaler)(nil)
 type ProtoMarshaler struct{}
 
 func (e *ProtoMarshaler) MarshalProfiles(pd Profiles) ([]byte, error) {
+	pd = prepareProfilesForMarshaling(pd)
 	// Convert strings to references for efficient transmission
 	convertProfilesToReferences(pd)
 

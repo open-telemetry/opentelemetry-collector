@@ -79,6 +79,18 @@ func resolveAnyValueReference(dict ProfilesDictionary, anyValue *internal.AnyVal
 // convertProfilesToReferences walks through all profiles data before marshaling
 // and converts string values to references for efficient transmission.
 // This builds up the string table in the dictionary and replaces strings with refs.
+// prepareProfilesForMarshaling clones read-only profiles so reference conversion
+// can populate the dictionary without mutating shared pdata instances.
+func prepareProfilesForMarshaling(profiles Profiles) Profiles {
+	if !profiles.IsReadOnly() {
+		return profiles
+	}
+
+	cloned := NewProfiles()
+	profiles.CopyTo(cloned)
+	return cloned
+}
+
 func convertProfilesToReferences(profiles Profiles) {
 	dict := profiles.Dictionary()
 	stringTable := dict.StringTable()

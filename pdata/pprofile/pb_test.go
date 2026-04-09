@@ -83,6 +83,26 @@ func TestProtoSizerEmptyProfiles(t *testing.T) {
 	assert.Equal(t, 2, sizer.ProfilesSize(NewProfiles()))
 }
 
+func TestProtoMarshalReadOnlyProfiles(t *testing.T) {
+	t.Parallel()
+	profiles := newProfilesWithAttributes()
+	profiles.MarkReadOnly()
+
+	marshaler := &ProtoMarshaler{}
+	buf, err := marshaler.MarshalProfiles(profiles)
+	require.NoError(t, err)
+	assert.NotEmpty(t, buf)
+	assert.Equal(t, 1, profiles.Dictionary().StringTable().Len())
+
+	restored, err := (&ProtoUnmarshaler{}).UnmarshalProfiles(buf)
+	require.NoError(t, err)
+
+	rp := restored.ResourceProfiles().At(0)
+	serviceNameVal, ok := rp.Resource().Attributes().Get("service.name")
+	assert.True(t, ok)
+	assert.Equal(t, "test-service", serviceNameVal.Str())
+}
+
 func BenchmarkProfilesToProto(b *testing.B) {
 	marshaler := &ProtoMarshaler{}
 	profiles := generateBenchmarkProfiles(128)

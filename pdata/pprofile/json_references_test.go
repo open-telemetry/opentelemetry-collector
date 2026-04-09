@@ -54,6 +54,23 @@ func TestJSONMarshalConvertsToReferences(t *testing.T) {
 	assert.Contains(t, tableStrs, "scope-value")
 }
 
+func TestJSONMarshalReadOnlyProfiles(t *testing.T) {
+	t.Parallel()
+	profiles := newProfilesWithAttributes()
+	profiles.MarkReadOnly()
+
+	marshaler := JSONMarshaler{}
+	jsonBytes, err := marshaler.MarshalProfiles(profiles)
+	require.NoError(t, err)
+	assert.NotEmpty(t, jsonBytes)
+
+	rp := profiles.ResourceProfiles().At(0)
+	serviceNameVal, ok := rp.Resource().Attributes().Get("service.name")
+	assert.True(t, ok)
+	assert.Equal(t, "test-service", serviceNameVal.Str())
+	assert.Equal(t, 1, profiles.Dictionary().StringTable().Len())
+}
+
 func TestJSONUnmarshalResolvesReferences(t *testing.T) {
 	profiles := newProfilesWithAttributes()
 
