@@ -5,6 +5,7 @@ package otelconftelemetry // import "go.opentelemetry.io/collector/service/telem
 
 import (
 	"context"
+	"sort"
 
 	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap"
@@ -58,6 +59,7 @@ func (f *otelconfFactory) createLogger(
 	if err != nil {
 		return nil, nil, err
 	}
+	warnLegacyResourceAttributes(logger, cfg)
 
 	// The attributes in res.Attributes(), which are generated in resource.go,
 	// are added to logs exported through the LoggerProvider instantiated below.
@@ -112,4 +114,19 @@ func (f *otelconfFactory) createLogger(
 	}))
 
 	return logger, sdk.Shutdown, nil
+}
+
+func warnLegacyResourceAttributes(logger *zap.Logger, cfg *Config) {
+	if len(cfg.Resource.LegacyAttributes) == 0 {
+		return
+	}
+	legacyKeys := make([]string, 0, len(cfg.Resource.LegacyAttributes))
+	for key := range cfg.Resource.LegacyAttributes {
+		legacyKeys = append(legacyKeys, key)
+	}
+	sort.Strings(legacyKeys)
+	logger.Warn(
+		"Using legacy service.telemetry.resource inline map format; prefer service.telemetry.resource.attributes",
+		zap.Strings("legacy_resource_attributes", legacyKeys),
+	)
 }

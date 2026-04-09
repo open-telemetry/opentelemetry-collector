@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+// newUUID is a variable to allow overriding UUID generation in tests.
 var newUUID = uuid.NewRandom
 
 func DefaultAttributeValues(buildInfo component.BuildInfo) (map[string]string, error) {

@@ -332,6 +332,45 @@ func TestCreateLoggerWithResource(t *testing.T) {
 	}
 }
 
+func TestCreateLoggerWarnsOnLegacyResourceAttributes(t *testing.T) {
+	core, observedLogs := observer.New(zapcore.DebugLevel)
+	cfg := &Config{
+		Logs: LogsConfig{
+			Level:    zapcore.InfoLevel,
+			Encoding: "json",
+		},
+		Resource: migration.ResourceConfigV030{
+			LegacyAttributes: map[string]any{
+				"service.name": nil,
+				"legacy.attr":  "value",
+			},
+		},
+	}
+
+	var f otelconfFactory
+	resource, err := f.createResource(t.Context(), telemetry.Settings{}, cfg)
+	require.NoError(t, err)
+
+	set := telemetry.LoggerSettings{
+		Settings: telemetry.Settings{Resource: &resource},
+		BuildZapLogger: func(zap.Config, ...zap.Option) (*zap.Logger, error) {
+			return zap.New(core), nil
+		},
+	}
+
+	_, shutdown, err := f.createLogger(t.Context(), set, cfg)
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, shutdown.Shutdown(t.Context()))
+	}()
+
+	logs := observedLogs.All()
+	require.NotEmpty(t, logs)
+	first := logs[0]
+	assert.Equal(t, zapcore.WarnLevel, first.Level)
+	assert.Contains(t, first.Message, "legacy service.telemetry.resource inline map format")
+}
+
 func TestCreateLoggerZapOptions(t *testing.T) {
 	buildInfo := component.BuildInfo{}
 	factory := NewFactory()
@@ -523,6 +562,7 @@ func TestLogAttributeInjection(t *testing.T) {
 	defer func() {
 		assert.NoError(t, loggerProvider.Shutdown(t.Context()))
 	}()
+	consoleLogs.TakeAll()
 
 	ts := componenttest.NewNopTelemetrySettings()
 	ts.Logger = sourceLogger
