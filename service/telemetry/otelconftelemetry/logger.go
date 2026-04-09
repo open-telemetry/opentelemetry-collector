@@ -55,6 +55,10 @@ func createLogger(
 	if err != nil {
 		return nil, nil, err
 	}
+	if cfg.Logs.MigratedFromV02 {
+		logger.Warn("Telemetry logs configuration is using the deprecated v0.2.0 Declarative Configuration format, please migrate to the v0.3.0 format",
+			zap.String("url", "https://opentelemetry.io/docs/specs/otel/configuration/#declarative-configuration"))
+	}
 
 	// The attributes in res.Attributes(), which are generated in telemetry.go,
 	// are added to logs exported through the LoggerProvider instantiated below.

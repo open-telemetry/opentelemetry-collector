@@ -318,6 +318,69 @@ func TestCreateLoggerWithResource(t *testing.T) {
 	}
 }
 
+func TestCreateLogger_020MigrationWarning(t *testing.T) {
+	core, observedLogs := observer.New(zapcore.DebugLevel)
+
+	cfg := &Config{
+		Logs: LogsConfig{
+			Level:           zapcore.InfoLevel,
+			Encoding:        "json",
+			MigratedFromV02: true,
+		},
+	}
+
+	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	require.NoError(t, err)
+
+	set := telemetry.LoggerSettings{
+		Settings: telemetry.Settings{Resource: &resource},
+		BuildZapLogger: func(zap.Config, ...zap.Option) (*zap.Logger, error) {
+			return zap.New(core), nil
+		},
+	}
+
+	_, loggerProvider, err := createLogger(t.Context(), set, cfg)
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, loggerProvider.Shutdown(t.Context()))
+	}()
+
+	require.Equal(t, 1, observedLogs.Len())
+	entry := observedLogs.All()[0]
+	assert.Equal(t, zapcore.WarnLevel, entry.Level)
+	assert.Equal(t, "Telemetry logs configuration is using the deprecated v0.2.0 Declarative Configuration format, please migrate to the v0.3.0 format", entry.Message)
+	assert.Equal(t, "https://opentelemetry.io/docs/specs/otel/configuration/#declarative-configuration", entry.ContextMap()["url"])
+}
+
+func TestCreateLogger_NoMigrationWarning(t *testing.T) {
+	core, observedLogs := observer.New(zapcore.DebugLevel)
+
+	cfg := &Config{
+		Logs: LogsConfig{
+			Level:    zapcore.InfoLevel,
+			Encoding: "json",
+		},
+	}
+
+	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	require.NoError(t, err)
+
+	set := telemetry.LoggerSettings{
+		Settings: telemetry.Settings{Resource: &resource},
+		BuildZapLogger: func(zap.Config, ...zap.Option) (*zap.Logger, error) {
+			return zap.New(core), nil
+		},
+	}
+
+	_, loggerProvider, err := createLogger(t.Context(), set, cfg)
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, loggerProvider.Shutdown(t.Context()))
+	}()
+
+	assert.Zero(t, observedLogs.Len())
+}
+
 func TestCreateLoggerZapOptions(t *testing.T) {
 	buildInfo := component.BuildInfo{}
 	factory := NewFactory()

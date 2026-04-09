@@ -25,6 +25,8 @@ func TestUnmarshalLogsConfigV030(t *testing.T) {
 	require.Equal(t, "https://127.0.0.1:4317", *cfg.Processors[0].Batch.Exporter.OTLP.Endpoint)
 	// check the endpoint is prefixed w/ http
 	require.Equal(t, "http://127.0.0.1:4317", *cfg.Processors[2].Simple.Exporter.OTLP.Endpoint)
+	// ensure migration flag is not set for native v0.3.0 config
+	require.False(t, cfg.MigratedFromV02)
 }
 
 func TestMarshalLogsConfigV030(t *testing.T) {
@@ -52,6 +54,8 @@ func TestUnmarshalTracesConfigV030(t *testing.T) {
 	require.Equal(t, "https://127.0.0.1:4317", *cfg.Processors[0].Batch.Exporter.OTLP.Endpoint)
 	// check the endpoint is prefixed w/ http
 	require.Equal(t, "http://127.0.0.1:4317", *cfg.Processors[2].Simple.Exporter.OTLP.Endpoint)
+	// ensure migration flag is not set for native v0.3.0 config
+	require.False(t, cfg.MigratedFromV02)
 }
 
 func TestMarshalTracesConfigV030(t *testing.T) {
@@ -78,6 +82,8 @@ func TestUnmarshalMetricsConfigV030(t *testing.T) {
 
 	// check the endpoint is prefixed w/ https
 	require.Equal(t, "https://127.0.0.1:4317", *cfg.Readers[0].Periodic.Exporter.OTLP.Endpoint)
+	// ensure migration flag is not set for native v0.3.0 config
+	require.False(t, cfg.MigratedFromV02)
 }
 
 func TestMarshalMetricsConfigV030(t *testing.T) {
