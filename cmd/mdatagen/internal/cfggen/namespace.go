@@ -11,6 +11,8 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+
+	"golang.org/x/mod/module"
 )
 
 var namespaceToURL = map[string]string{
@@ -135,12 +137,22 @@ func (r *Ref) URL(version string) (string, error) {
 		return "", errors.New("unsupported namespace")
 	}
 	baseURL := namespaceToURL[ns]
+	version = rawRefVersion(version)
+
 	return fmt.Sprintf("%s/%s/%s/%s",
 			baseURL,
 			version,
 			r.SchemaID(),
 			schemaFileName),
 		nil
+}
+
+func rawRefVersion(version string) string {
+	trimmedVersion, _, _ := strings.Cut(version, "+")
+	if rev, err := module.PseudoVersionRev(trimmedVersion); err == nil {
+		return rev
+	}
+	return trimmedVersion
 }
 
 func (r *Ref) isInternal() bool {
