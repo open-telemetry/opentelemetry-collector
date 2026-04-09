@@ -36,11 +36,13 @@ config:
       type: array
       items:
         type: object
-        allOf:
-          - $ref: /config/confighttp.client_config
+        properties:
+          http_client:
+            $ref: /config/confighttp.client_config
             default:
               endpoint: "http://localhost:8080/metrics"
-        properties:
+            go_struct:
+              custom_validator:
           interval:
             type: string
             format: duration

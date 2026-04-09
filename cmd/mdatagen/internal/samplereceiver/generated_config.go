@@ -30,6 +30,7 @@ func (c *Config) Validate() error {
 
 	return err
 }
+
 func createDefaultConfig() component.Config {
 	cfg := Config{}
 	cfg.Endpoint = "localhost:12345"

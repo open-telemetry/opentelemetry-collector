@@ -597,8 +597,8 @@
       ],
       "items": {
         "type": "object",
-        "allOf": [
-          {
+        "properties": {
+          "http_client": {
             "description": "ClientConfig defines settings for creating an HTTP client.",
             "type": "object",
             "default": {
@@ -819,9 +819,7 @@
                 "type": "integer"
               }
             }
-          }
-        ],
-        "properties": {
+          },
           "interval": {
             "type": "string",
             "default": "10s",

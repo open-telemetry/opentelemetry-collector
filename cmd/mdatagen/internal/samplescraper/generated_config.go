@@ -15,15 +15,18 @@ import (
 
 type TargetsItem struct {
 	// ClientConfig defines settings for creating an HTTP client.
-	confighttp.ClientConfig `mapstructure:",squash"`
-	Interval                configoptional.Optional[time.Duration] `mapstructure:"interval"`
-	Options                 map[string]string                      `mapstructure:"options"`
+	HTTPClient confighttp.ClientConfig                `mapstructure:"http_client"`
+	Interval   configoptional.Optional[time.Duration] `mapstructure:"interval"`
+	Options    map[string]string                      `mapstructure:"options"`
 }
 
 // Validate validates the targets_item fields.
 func (c *TargetsItem) Validate() error {
 	var err error
 
+	if inner_err := validateHTTPClient(c.HTTPClient); inner_err != nil {
+		err = errors.Join(err, inner_err)
+	}
 	if c.Options == nil || len(c.Options) == 0 {
 		err = errors.Join(err, errors.New("options is required"))
 	}
@@ -51,16 +54,17 @@ func (c *Config) Validate() error {
 
 	return err
 }
+
 func createDefaultConfig() component.Config {
 	cfg := Config{}
 
 	targets_1 := TargetsItem{}
+
+	targets_1_http_client := confighttp.ClientConfig{}
+	targets_1_http_client.Endpoint = "http://localhost:8080/metrics"
+	targets_1.HTTPClient = targets_1_http_client
 	targets_1.Interval = configoptional.Some(10 * time.Second)
 	targets_1.Options = map[string]string{"option1": "value1", "option2": "value2"}
-
-	targets_1_ClientConfig := confighttp.ClientConfig{}
-	targets_1_ClientConfig.Endpoint = "http://localhost:8080/metrics"
-	targets_1.ClientConfig = targets_1_ClientConfig
 
 	targets := []TargetsItem{targets_1}
 	cfg.Targets = &targets

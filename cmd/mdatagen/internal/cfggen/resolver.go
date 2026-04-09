@@ -69,6 +69,7 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 		// Copy the resolved node
 		newCurrent := *resolved
 		newCurrent.ResolvedFrom = current.Ref
+		newCurrent.GoStruct = current.GoStruct
 
 		// Restore custom extensions if they were explicitly set on the reference
 		if customGoType != "" {
