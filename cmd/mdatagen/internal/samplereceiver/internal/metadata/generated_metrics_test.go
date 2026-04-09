@@ -69,13 +69,13 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
 			aggMap["DefaultMetric"] = mb.metricDefaultMetric.config.AggregationStrategy
-			aggMap["DefaultMetricToBeRemoved"] = mb.metricDefaultMetricToBeRemoved.config.AggregationStrategy
 			aggMap["MetricInputType"] = mb.metricMetricInputType.config.AggregationStrategy
 			aggMap["OptionalMetric"] = mb.metricOptionalMetric.config.AggregationStrategy
 			aggMap["OptionalMetricEmptyUnit"] = mb.metricOptionalMetricEmptyUnit.config.AggregationStrategy
 			aggMap["ReaggregateMetric"] = mb.metricReaggregateMetric.config.AggregationStrategy
 			aggMap["ReaggregateMetricWithRequired"] = mb.metricReaggregateMetricWithRequired.config.AggregationStrategy
 			aggMap["SystemCPUTime"] = mb.metricSystemCPUTime.config.AggregationStrategy
+			aggMap["SystemMemoryUsage"] = mb.metricSystemMemoryUsage.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet == testDataSetDefault {
@@ -104,6 +104,10 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 			if tt.resAttrsSet == testDataSetDefault || tt.resAttrsSet == testDataSetAll {
 				assert.Equal(t, "[WARNING] `string.resource.attr_to_be_removed` should not be enabled: This resource_attribute is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if tt.resAttrsSet == testDataSetAll {
+				assert.Equal(t, "[WARNING] `string.resource.disabled_attr_to_be_removed` should not be enabled: This resource_attribute is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 			if tt.metricsSet != testDataSetReag {
@@ -159,7 +163,17 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemCPUTimeDataPoint(ts, 1)
+			mb.RecordSystemCPUTimeDataPoint(ts, 1, "cpu-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemCPUTimeDataPoint(ts, 3, "cpu-val-2")
+			}
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemMemoryUsageDataPoint(ts, 1, AttributeStateBuffered)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemMemoryUsageDataPoint(ts, 3, AttributeStateCached)
+			}
 
 			rb := mb.NewResourceBuilder()
 			rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
@@ -170,6 +184,7 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetStringResourceAttrDisableWarning("string.resource.attr_disable_warning-val")
 			rb.SetStringResourceAttrRemoveWarning("string.resource.attr_remove_warning-val")
 			rb.SetStringResourceAttrToBeRemoved("string.resource.attr_to_be_removed-val")
+			rb.SetStringResourceDisabledAttrToBeRemoved("string.resource.disabled_attr_to_be_removed-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
@@ -179,6 +194,8 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricOptionalMetricEmptyUnit.aggDataPoints)
 				assert.Empty(t, mb.metricReaggregateMetric.aggDataPoints)
 				assert.Empty(t, mb.metricReaggregateMetricWithRequired.aggDataPoints)
+				assert.Empty(t, mb.metricSystemCPUTime.aggDataPoints)
+				assert.Empty(t, mb.metricSystemMemoryUsage.aggDataPoints)
 			}
 
 			if tt.expectEmpty {
@@ -186,66 +203,72 @@ func TestMetricsBuilder(t *testing.T) {
 				return
 			}
 
-			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-			rm := metrics.ResourceMetrics().At(0)
-			assert.Equal(t, res, rm.Resource())
-			assert.Equal(t, 1, rm.ScopeMetrics().Len())
-			ms := rm.ScopeMetrics().At(0).Metrics()
+			var allMetricsList []pmetric.Metric
+			totalMetricsCount := 0
+			for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+				rm := metrics.ResourceMetrics().At(ri)
+				assert.Equal(t, 1, rm.ScopeMetrics().Len())
+				ms := rm.ScopeMetrics().At(0).Metrics()
+				totalMetricsCount += ms.Len()
+				for mi := 0; mi < ms.Len(); mi++ {
+					allMetricsList = append(allMetricsList, ms.At(mi))
+				}
+			}
 			if tt.metricsSet == testDataSetDefault {
-				assert.Equal(t, defaultMetricsCount, ms.Len())
+				assert.Equal(t, defaultMetricsCount, totalMetricsCount)
 			}
 			if tt.metricsSet == testDataSetAll {
-				assert.Equal(t, allMetricsCount, ms.Len())
+				assert.Equal(t, allMetricsCount, totalMetricsCount)
 			}
 			validatedMetrics := make(map[string]bool)
-			for i := 0; i < ms.Len(); i++ {
-				switch ms.At(i).Name() {
+			for _, mi := range allMetricsList {
+				switch mi.Name() {
 				case "default.metric":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["default.metric"], "Found a duplicate in the metrics slice: default.metric")
 						validatedMetrics["default.metric"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Monotonic cumulative sum int metric enabled by default.", ms.At(i).Description())
-						assert.Equal(t, "s", ms.At(i).Unit())
-						assert.True(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Monotonic cumulative sum int metric enabled by default.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("string_attr")
+						stringAttrAttrVal, ok := dp.Attributes().Get("string_attr")
 						assert.True(t, ok)
-						assert.Equal(t, "string_attr-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("state")
+						assert.Equal(t, "string_attr-val", stringAttrAttrVal.Str())
+						overriddenIntAttrAttrVal, ok := dp.Attributes().Get("state")
 						assert.True(t, ok)
-						assert.EqualValues(t, 19, attrVal.Int())
-						attrVal, ok = dp.Attributes().Get("enum_attr")
+						assert.EqualValues(t, 19, overriddenIntAttrAttrVal.Int())
+						enumAttrAttrVal, ok := dp.Attributes().Get("enum_attr")
 						assert.True(t, ok)
-						assert.Equal(t, "red", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("slice_attr")
+						assert.Equal(t, "red", enumAttrAttrVal.Str())
+						sliceAttrAttrVal, ok := dp.Attributes().Get("slice_attr")
 						assert.True(t, ok)
-						assert.Equal(t, []any{"slice_attr-item1", "slice_attr-item2"}, attrVal.Slice().AsRaw())
-						attrVal, ok = dp.Attributes().Get("map_attr")
+						assert.Equal(t, []any{"slice_attr-item1", "slice_attr-item2"}, sliceAttrAttrVal.Slice().AsRaw())
+						mapAttrAttrVal, ok := dp.Attributes().Get("map_attr")
 						assert.True(t, ok)
-						assert.Equal(t, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, attrVal.Map().AsRaw())
-						attrVal, ok = dp.Attributes().Get("conditional_int_attr")
+						assert.Equal(t, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, mapAttrAttrVal.Map().AsRaw())
+						conditionalIntAttrAttrVal, ok := dp.Attributes().Get("conditional_int_attr")
 						assert.True(t, ok)
-						assert.EqualValues(t, 20, attrVal.Int())
-						attrVal, ok = dp.Attributes().Get("conditional_string_attr")
+						assert.EqualValues(t, 20, conditionalIntAttrAttrVal.Int())
+						conditionalStringAttrAttrVal, ok := dp.Attributes().Get("conditional_string_attr")
 						assert.True(t, ok)
-						assert.Equal(t, "conditional_string_attr-val", attrVal.Str())
+						assert.Equal(t, "conditional_string_attr-val", conditionalStringAttrAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["default.metric"], "Found a duplicate in the metrics slice: default.metric")
 						validatedMetrics["default.metric"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Monotonic cumulative sum int metric enabled by default.", ms.At(i).Description())
-						assert.Equal(t, "s", ms.At(i).Unit())
-						assert.True(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Monotonic cumulative sum int metric enabled by default.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -275,13 +298,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "default.metric.to_be_removed":
 					assert.False(t, validatedMetrics["default.metric.to_be_removed"], "Found a duplicate in the metrics slice: default.metric.to_be_removed")
 					validatedMetrics["default.metric.to_be_removed"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "[DEPRECATED] Non-monotonic delta sum double metric enabled by default.", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityDelta, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "[DEPRECATED] Non-monotonic delta sum double metric enabled by default.", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityDelta, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -290,42 +313,42 @@ func TestMetricsBuilder(t *testing.T) {
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["metric.input_type"], "Found a duplicate in the metrics slice: metric.input_type")
 						validatedMetrics["metric.input_type"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Monotonic cumulative sum int metric with string input_type enabled by default.", ms.At(i).Description())
-						assert.Equal(t, "s", ms.At(i).Unit())
-						assert.True(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Monotonic cumulative sum int metric with string input_type enabled by default.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("string_attr")
+						stringAttrAttrVal, ok := dp.Attributes().Get("string_attr")
 						assert.True(t, ok)
-						assert.Equal(t, "string_attr-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("state")
+						assert.Equal(t, "string_attr-val", stringAttrAttrVal.Str())
+						overriddenIntAttrAttrVal, ok := dp.Attributes().Get("state")
 						assert.True(t, ok)
-						assert.EqualValues(t, 19, attrVal.Int())
-						attrVal, ok = dp.Attributes().Get("enum_attr")
+						assert.EqualValues(t, 19, overriddenIntAttrAttrVal.Int())
+						enumAttrAttrVal, ok := dp.Attributes().Get("enum_attr")
 						assert.True(t, ok)
-						assert.Equal(t, "red", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("slice_attr")
+						assert.Equal(t, "red", enumAttrAttrVal.Str())
+						sliceAttrAttrVal, ok := dp.Attributes().Get("slice_attr")
 						assert.True(t, ok)
-						assert.Equal(t, []any{"slice_attr-item1", "slice_attr-item2"}, attrVal.Slice().AsRaw())
-						attrVal, ok = dp.Attributes().Get("map_attr")
+						assert.Equal(t, []any{"slice_attr-item1", "slice_attr-item2"}, sliceAttrAttrVal.Slice().AsRaw())
+						mapAttrAttrVal, ok := dp.Attributes().Get("map_attr")
 						assert.True(t, ok)
-						assert.Equal(t, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, attrVal.Map().AsRaw())
+						assert.Equal(t, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, mapAttrAttrVal.Map().AsRaw())
 					} else {
 						assert.False(t, validatedMetrics["metric.input_type"], "Found a duplicate in the metrics slice: metric.input_type")
 						validatedMetrics["metric.input_type"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-						assert.Equal(t, "Monotonic cumulative sum int metric with string input_type enabled by default.", ms.At(i).Description())
-						assert.Equal(t, "s", ms.At(i).Unit())
-						assert.True(t, ms.At(i).Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-						dp := ms.At(i).Sum().DataPoints().At(0)
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Monotonic cumulative sum int metric with string input_type enabled by default.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -354,35 +377,35 @@ func TestMetricsBuilder(t *testing.T) {
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["optional.metric"], "Found a duplicate in the metrics slice: optional.metric")
 						validatedMetrics["optional.metric"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "[DEPRECATED] Gauge double metric disabled by default.", ms.At(i).Description())
-						assert.Equal(t, "1", ms.At(i).Unit())
-						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "[DEPRECATED] Gauge double metric disabled by default.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("string_attr")
+						stringAttrAttrVal, ok := dp.Attributes().Get("string_attr")
 						assert.True(t, ok)
-						assert.Equal(t, "string_attr-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("boolean_attr")
+						assert.Equal(t, "string_attr-val", stringAttrAttrVal.Str())
+						booleanAttrAttrVal, ok := dp.Attributes().Get("boolean_attr")
 						assert.True(t, ok)
-						assert.True(t, attrVal.Bool())
-						attrVal, ok = dp.Attributes().Get("boolean_attr2")
+						assert.True(t, booleanAttrAttrVal.Bool())
+						booleanAttr2AttrVal, ok := dp.Attributes().Get("boolean_attr2")
 						assert.True(t, ok)
-						assert.False(t, attrVal.Bool())
-						attrVal, ok = dp.Attributes().Get("conditional_string_attr")
+						assert.False(t, booleanAttr2AttrVal.Bool())
+						conditionalStringAttrAttrVal, ok := dp.Attributes().Get("conditional_string_attr")
 						assert.True(t, ok)
-						assert.Equal(t, "conditional_string_attr-val", attrVal.Str())
+						assert.Equal(t, "conditional_string_attr-val", conditionalStringAttrAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["optional.metric"], "Found a duplicate in the metrics slice: optional.metric")
 						validatedMetrics["optional.metric"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "[DEPRECATED] Gauge double metric disabled by default.", ms.At(i).Description())
-						assert.Equal(t, "1", ms.At(i).Unit())
-						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "[DEPRECATED] Gauge double metric disabled by default.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -407,29 +430,29 @@ func TestMetricsBuilder(t *testing.T) {
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["optional.metric.empty_unit"], "Found a duplicate in the metrics slice: optional.metric.empty_unit")
 						validatedMetrics["optional.metric.empty_unit"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "[DEPRECATED] Gauge double metric disabled by default.", ms.At(i).Description())
-						assert.Empty(t, ms.At(i).Unit())
-						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "[DEPRECATED] Gauge double metric disabled by default.", mi.Description())
+						assert.Empty(t, mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("string_attr")
+						stringAttrAttrVal, ok := dp.Attributes().Get("string_attr")
 						assert.True(t, ok)
-						assert.Equal(t, "string_attr-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("boolean_attr")
+						assert.Equal(t, "string_attr-val", stringAttrAttrVal.Str())
+						booleanAttrAttrVal, ok := dp.Attributes().Get("boolean_attr")
 						assert.True(t, ok)
-						assert.True(t, attrVal.Bool())
+						assert.True(t, booleanAttrAttrVal.Bool())
 					} else {
 						assert.False(t, validatedMetrics["optional.metric.empty_unit"], "Found a duplicate in the metrics slice: optional.metric.empty_unit")
 						validatedMetrics["optional.metric.empty_unit"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "[DEPRECATED] Gauge double metric disabled by default.", ms.At(i).Description())
-						assert.Empty(t, ms.At(i).Unit())
-						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "[DEPRECATED] Gauge double metric disabled by default.", mi.Description())
+						assert.Empty(t, mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -452,29 +475,29 @@ func TestMetricsBuilder(t *testing.T) {
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["reaggregate.metric"], "Found a duplicate in the metrics slice: reaggregate.metric")
 						validatedMetrics["reaggregate.metric"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "Metric for testing spatial reaggregation", ms.At(i).Description())
-						assert.Equal(t, "1", ms.At(i).Unit())
-						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Metric for testing spatial reaggregation", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("string_attr")
+						stringAttrAttrVal, ok := dp.Attributes().Get("string_attr")
 						assert.True(t, ok)
-						assert.Equal(t, "string_attr-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("boolean_attr")
+						assert.Equal(t, "string_attr-val", stringAttrAttrVal.Str())
+						booleanAttrAttrVal, ok := dp.Attributes().Get("boolean_attr")
 						assert.True(t, ok)
-						assert.True(t, attrVal.Bool())
+						assert.True(t, booleanAttrAttrVal.Bool())
 					} else {
 						assert.False(t, validatedMetrics["reaggregate.metric"], "Found a duplicate in the metrics slice: reaggregate.metric")
 						validatedMetrics["reaggregate.metric"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "Metric for testing spatial reaggregation", ms.At(i).Description())
-						assert.Equal(t, "1", ms.At(i).Unit())
-						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Metric for testing spatial reaggregation", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -497,32 +520,32 @@ func TestMetricsBuilder(t *testing.T) {
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["reaggregate.metric.with_required"], "Found a duplicate in the metrics slice: reaggregate.metric.with_required")
 						validatedMetrics["reaggregate.metric.with_required"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "Metric for testing spatial reaggregation with required attributes", ms.At(i).Description())
-						assert.Equal(t, "1", ms.At(i).Unit())
-						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Metric for testing spatial reaggregation with required attributes", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("required_string_attr")
+						requiredStringAttrAttrVal, ok := dp.Attributes().Get("required_string_attr")
 						assert.True(t, ok)
-						assert.Equal(t, "required_string_attr-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("string_attr")
+						assert.Equal(t, "required_string_attr-val", requiredStringAttrAttrVal.Str())
+						stringAttrAttrVal, ok := dp.Attributes().Get("string_attr")
 						assert.True(t, ok)
-						assert.Equal(t, "string_attr-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("boolean_attr")
+						assert.Equal(t, "string_attr-val", stringAttrAttrVal.Str())
+						booleanAttrAttrVal, ok := dp.Attributes().Get("boolean_attr")
 						assert.True(t, ok)
-						assert.True(t, attrVal.Bool())
+						assert.True(t, booleanAttrAttrVal.Bool())
 					} else {
 						assert.False(t, validatedMetrics["reaggregate.metric.with_required"], "Found a duplicate in the metrics slice: reaggregate.metric.with_required")
 						validatedMetrics["reaggregate.metric.with_required"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-						assert.Equal(t, "Metric for testing spatial reaggregation with required attributes", ms.At(i).Description())
-						assert.Equal(t, "1", ms.At(i).Unit())
-						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Metric for testing spatial reaggregation with required attributes", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -544,19 +567,93 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, ok)
 					}
 				case "system.cpu.time":
-					assert.False(t, validatedMetrics["system.cpu.time"], "Found a duplicate in the metrics slice: system.cpu.time")
-					validatedMetrics["system.cpu.time"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Monotonic cumulative sum int metric enabled by default.", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["system.cpu.time"], "Found a duplicate in the metrics slice: system.cpu.time")
+						validatedMetrics["system.cpu.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Monotonic cumulative sum int metric enabled by default.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						cpuAttrVal, ok := dp.Attributes().Get("cpu")
+						assert.True(t, ok)
+						assert.Equal(t, "cpu-val", cpuAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["system.cpu.time"], "Found a duplicate in the metrics slice: system.cpu.time")
+						validatedMetrics["system.cpu.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Monotonic cumulative sum int metric enabled by default.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["system.cpu.time"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("cpu")
+						assert.False(t, ok)
+					}
+				case "system.memory.usage":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["system.memory.usage"], "Found a duplicate in the metrics slice: system.memory.usage")
+						validatedMetrics["system.memory.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes of memory in use.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						stateAttrVal, ok := dp.Attributes().Get("state")
+						assert.True(t, ok)
+						assert.Equal(t, "buffered", stateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["system.memory.usage"], "Found a duplicate in the metrics slice: system.memory.usage")
+						validatedMetrics["system.memory.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes of memory in use.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["system.memory.usage"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("state")
+						assert.False(t, ok)
+					}
 				}
 			}
 		})

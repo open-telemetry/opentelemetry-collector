@@ -286,7 +286,8 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				tt.setConfig(cfg)
 			}
 
-			resource, err := createResource(t.Context(), telemetry.Settings{BuildInfo: tt.buildInfo}, cfg)
+			var f otelconfFactory
+			resource, err := f.createResource(t.Context(), telemetry.Settings{BuildInfo: tt.buildInfo}, cfg)
 			require.NoError(t, err)
 
 			set := telemetry.LoggerSettings{
@@ -297,7 +298,7 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				},
 			}
 
-			logger, loggerProvider, err := createLogger(t.Context(), set, cfg)
+			logger, loggerProvider, err := f.createLogger(t.Context(), set, cfg)
 			require.NoError(t, err)
 			defer func() {
 				assert.NoError(t, loggerProvider.Shutdown(t.Context()))
@@ -439,10 +440,11 @@ func newOTLPLogger(t *testing.T, level zapcore.Level, handler func(plogotlp.Expo
 		},
 	}
 
-	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	var f otelconfFactory
+	resource, err := f.createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
 
-	logger, shutdown, err := createLogger(t.Context(), telemetry.LoggerSettings{
+	logger, shutdown, err := f.createLogger(t.Context(), telemetry.LoggerSettings{
 		Settings:       telemetry.Settings{Resource: &resource},
 		BuildZapLogger: zap.Config.Build,
 	}, cfg)
@@ -504,7 +506,8 @@ func TestLogAttributeInjection(t *testing.T) {
 		},
 	}
 
-	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	var f otelconfFactory
+	resource, err := f.createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
 
 	set := telemetry.LoggerSettings{
@@ -515,7 +518,7 @@ func TestLogAttributeInjection(t *testing.T) {
 		},
 	}
 
-	sourceLogger, loggerProvider, err := createLogger(t.Context(), set, cfg)
+	sourceLogger, loggerProvider, err := f.createLogger(t.Context(), set, cfg)
 	require.NoError(t, err)
 	defer func() {
 		assert.NoError(t, loggerProvider.Shutdown(t.Context()))

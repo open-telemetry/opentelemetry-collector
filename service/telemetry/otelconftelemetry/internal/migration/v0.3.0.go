@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 type TracesConfigV030 struct {
@@ -60,6 +61,19 @@ func (c *TracesConfigV030) Unmarshal(conf *confmap.Conf) error {
 	return nil
 }
 
+var _ confmap.Marshaler = TracesConfigV030{}
+
+func (c TracesConfigV030) Marshal(conf *confmap.Conf) error {
+	if err := conf.Marshal(c); err != nil {
+		return fmt.Errorf("otelconftelemetry: failed to marshal traces configuration: %w", err)
+	}
+
+	// Redact header values the way configopaque would
+	sm := conf.ToStringMap()
+	redactHeaders(sm, "processors.*.simple|batch.exporter.otlp.headers.*.value")
+	return conf.Marshal(sm)
+}
+
 type MetricsConfigV030 struct {
 	// Level is the level of telemetry metrics, the possible values are:
 	//  - "none" indicates that no telemetry data should be collected;
@@ -95,6 +109,19 @@ func (c *MetricsConfigV030) Unmarshal(conf *confmap.Conf) error {
 		}
 	}
 	return nil
+}
+
+var _ confmap.Marshaler = MetricsConfigV030{}
+
+func (c MetricsConfigV030) Marshal(conf *confmap.Conf) error {
+	if err := conf.Marshal(c); err != nil {
+		return fmt.Errorf("otelconftelemetry: failed to marshal metrics configuration: %w", err)
+	}
+
+	// Redact header values the way configopaque would
+	sm := conf.ToStringMap()
+	redactHeaders(sm, "readers.*.periodic.exporter.otlp.headers.*.value")
+	return conf.Marshal(sm)
 }
 
 type LogsConfigV030 struct {
@@ -192,33 +219,19 @@ type ResourceConfigV030 struct {
 	LegacyAttributes map[string]any `mapstructure:",remain"`
 }
 
-// Unmarshal supports both the declarative config resource schema and the
-// legacy inline map format used by the collector.
-func (c *ResourceConfigV030) Unmarshal(conf *confmap.Conf) error {
-	if conf == nil {
-		return nil
+var _ xconfmap.Validator = (*ResourceConfigV030)(nil)
+
+func (cfg *ResourceConfigV030) Validate() error {
+	// resource::attributes_list isn't currently supported by otelconf, so we have to put the default values under resource::attributes.
+	// However, resource::attributes_list theoretically has lower priority than resource::attributes,
+	// so if otelconf started supporting it, its values would be overriden by the defaults.
+	// To avoid this surprising behavior, we explicitly disallow the use of resource::attributes_list for now.
+	if cfg.Resource.AttributesList != nil {
+		return errors.New("resource::attributes_list is not currently supported, please use resource::attributes")
 	}
 
-	raw := conf.ToStringMap()
-	if raw == nil {
-		return nil
-	}
-
-	type decodedResource struct {
-		config.Resource `mapstructure:",squash"`
-		LegacyAttrs     map[string]any `mapstructure:",remain"`
-	}
-
-	var decoded decodedResource
-	if err := conf.Unmarshal(&decoded); err != nil {
-		return err
-	}
-
-	if decoded.AttributesList != nil {
-		return errors.New("resource.attributes_list is not currently supported")
-	}
-
-	for key, val := range decoded.LegacyAttrs {
+	// mapstructure only supports map[string]any for ",remain" fields, but we need it to be equivalent to map[string]*string
+	for key, val := range cfg.LegacyAttributes {
 		switch val.(type) {
 		case nil, string:
 		default:
@@ -226,17 +239,7 @@ func (c *ResourceConfigV030) Unmarshal(conf *confmap.Conf) error {
 		}
 	}
 
-	c.Resource = decoded.Resource
-	c.LegacyAttributes = decoded.LegacyAttrs
 	return nil
-}
-
-func (c ResourceConfigV030) IsRemoved(name string) bool {
-	if len(c.LegacyAttributes) == 0 {
-		return false
-	}
-	val, ok := c.LegacyAttributes[name]
-	return ok && val == nil
 }
 
 func (c *LogsConfigV030) Unmarshal(conf *confmap.Conf) error {
@@ -276,4 +279,17 @@ func (c *LogsConfigV030) Unmarshal(conf *confmap.Conf) error {
 		}
 	}
 	return nil
+}
+
+var _ confmap.Marshaler = LogsConfigV030{}
+
+func (c LogsConfigV030) Marshal(conf *confmap.Conf) error {
+	if err := conf.Marshal(c); err != nil {
+		return fmt.Errorf("otelconftelemetry: failed to marshal logs configuration: %w", err)
+	}
+
+	// Redact header values the way configopaque would
+	sm := conf.ToStringMap()
+	redactHeaders(sm, "processors.*.simple|batch.exporter.otlp.headers.*.value")
+	return conf.Marshal(sm)
 }

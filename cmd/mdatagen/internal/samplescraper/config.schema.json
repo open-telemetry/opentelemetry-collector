@@ -28,9 +28,6 @@
     }
   ],
   "properties": {
-    "options": {
-      "description": "Custom options for the scraper."
-    },
     "targets": {
       "description": "Targets configuration for the scraper.",
       "type": "array",
@@ -42,7 +39,7 @@
             "type": "object",
             "properties": {
               "auth": {
-                "description": "Config defines the auth settings for the receiver.",
+                "description": "Auth configuration for outgoing HTTP calls.",
                 "type": "object",
                 "properties": {
                   "authenticator": {
@@ -52,10 +49,11 @@
                 }
               },
               "compression": {
-                "description": "Type represents a compression method",
+                "description": "The compression key for supported compression types within collector.",
                 "type": "string"
               },
               "compression_params": {
+                "description": "Advanced configuration options for the Compression",
                 "type": "object",
                 "properties": {
                   "level": {
@@ -64,7 +62,7 @@
                 }
               },
               "cookies": {
-                "description": "CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server."
+                "description": "Cookies configures the cookie management of the HTTP client."
               },
               "disable_keep_alives": {
                 "description": "DisableKeepAlives, if true, disables HTTP keep-alives and will only use the connection to the server for a single HTTP request. WARNING: enabling this option can result in significant overhead establishing a new HTTP(S) connection for every request. Before enabling this option please consider whether changes to idle connection settings can achieve your goal.",
@@ -79,7 +77,7 @@
                 "type": "boolean"
               },
               "headers": {
-                "description": "MapList is a replacement for map[string]configopaque.String with a similar API, which can also be unmarshalled from (and is stored as) a list of name/value pairs. Pairs are assumed to have distinct names. This is checked during config validation.",
+                "description": "Additional headers attached to each HTTP request sent by the client. Existing header values are overwritten if collision happens. Header values are opaque since they may be sensitive.",
                 "type": "array",
                 "items": {
                   "description": "Pair is an element of a MapList, and consists of a name and an opaque value.",
@@ -150,7 +148,7 @@
                 "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
               },
               "tls": {
-                "description": "ClientConfig contains TLS configurations that are specific to client connections in addition to the common configurations. This should be used by components configuring TLS client connections.",
+                "description": "TLS struct exposes TLS client configuration.",
                 "type": "object",
                 "allOf": [
                   {
@@ -162,7 +160,7 @@
                         "type": "string"
                       },
                       "ca_pem": {
-                        "description": "String alias that is marshaled and printed in an opaque way. To recover the original value, cast it to a string.",
+                        "description": "In memory PEM encoded cert. (optional)",
                         "type": "string"
                       },
                       "cert_file": {
@@ -170,7 +168,7 @@
                         "type": "string"
                       },
                       "cert_pem": {
-                        "description": "String alias that is marshaled and printed in an opaque way. To recover the original value, cast it to a string.",
+                        "description": "In memory PEM encoded TLS cert to use for TLS required connections. (optional)",
                         "type": "string"
                       },
                       "cipher_suites": {
@@ -196,7 +194,7 @@
                         "type": "string"
                       },
                       "key_pem": {
-                        "description": "String alias that is marshaled and printed in an opaque way. To recover the original value, cast it to a string.",
+                        "description": "In memory PEM encoded TLS key to use for TLS required connections. (optional)",
                         "type": "string"
                       },
                       "max_version": {
@@ -213,7 +211,7 @@
                         "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
                       },
                       "tpm": {
-                        "description": "TPMConfig defines trusted platform module configuration for storing TLS keys.",
+                        "description": "Trusted platform module configuration",
                         "type": "object",
                         "properties": {
                           "auth": {
@@ -258,9 +256,22 @@
           "interval": {
             "type": "string",
             "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+          },
+          "options": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
           }
-        }
+        },
+        "required": [
+          "http_client",
+          "options"
+        ]
       }
     }
-  }
+  },
+  "required": [
+    "targets"
+  ]
 }

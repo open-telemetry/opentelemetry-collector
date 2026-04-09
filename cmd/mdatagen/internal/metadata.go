@@ -12,10 +12,13 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
+
+const semConvURL = "https://github.com/open-telemetry/semantic-conventions/blob"
 
 type Metadata struct {
 	// Type of the component.
@@ -87,7 +90,7 @@ func (md Metadata) GetCodeCovComponentID() string {
 		return md.Status.CodeCovComponentID
 	}
 
-	return strings.ReplaceAll(md.Status.Class+"_"+md.Type, "/", "_")
+	return strings.ReplaceAll(md.Status.Class+"_"+strings.ReplaceAll(md.Type, "_", ""), "/", "_")
 }
 
 func (md Metadata) HasEntities() bool {
@@ -212,6 +215,11 @@ func (md *Metadata) validateEntities() error {
 				errs = errors.Join(errs, fmt.Errorf(`entity "%v": attribute %v is already used by entity "%v"`, entity.Type, ref.Ref, otherEntity))
 			} else {
 				usedAttrs[ref.Ref] = entity.Type
+			}
+		}
+		for _, ref := range entity.ExtraAttributes {
+			if _, ok := md.ResourceAttributes[ref.Ref]; !ok {
+				errs = errors.Join(errs, fmt.Errorf(`entity "%v": extra_attributes refers to undefined resource attribute: %v`, entity.Type, ref.Ref))
 			}
 		}
 	}
@@ -433,6 +441,10 @@ func (md *Metadata) validateFeatureGates() error {
 		if (gate.Stage == FeatureGateStageStable || gate.Stage == FeatureGateStageDeprecated) && gate.ToVersion == "" {
 			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": to_version is required for %v stage gates`, gate.ID, gate.Stage))
 		}
+		// Any gate other than stable/deprecated shouldn't have to_version
+		if gate.Stage != FeatureGateStageStable && gate.Stage != FeatureGateStageDeprecated && gate.ToVersion != "" {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": to_version is not supported for the %v stage`, gate.ID, gate.Stage))
+		}
 	}
 	return errs
 }
@@ -476,11 +488,11 @@ func (rl AttributeRequirementLevel) String() string {
 }
 
 func (mn AttributeName) Render() (string, error) {
-	return FormatIdentifier(string(mn), true)
+	return helpers.FormatIdentifier(string(mn), true)
 }
 
 func (mn AttributeName) RenderUnexported() (string, error) {
-	return FormatIdentifier(string(mn), false)
+	return helpers.FormatIdentifier(string(mn), false)
 }
 
 // ValueType defines an attribute value type.
@@ -575,6 +587,8 @@ type Attribute struct {
 	Warnings Warnings `mapstructure:"warnings"`
 	// RequirementLevel defines the requirement level of the attribute.
 	RequirementLevel AttributeRequirementLevel `mapstructure:"requirement_level"`
+	// The semantic convention reference of the attribute.
+	SemanticConvention *SemanticConvention `mapstructure:"semantic_convention"`
 }
 
 // IsConditional returns true if the attribute is conditionally required.
@@ -729,6 +743,10 @@ type Entity struct {
 	Identity []EntityAttributeRef `mapstructure:"identity"`
 	// Description contains references to resource attributes that describe the entity.
 	Description []EntityAttributeRef `mapstructure:"description"`
+	// ExtraAttributes contains references to resource attributes that are contextually
+	// relevant to the entity but are not part of its identity or description
+	// (e.g. k8s.namespace.name on a pod entity).
+	ExtraAttributes []EntityAttributeRef `mapstructure:"extra_attributes"`
 	// Relationships defines how this entity relates to other entities (optional).
 	// Relationships should be defined only on one end. It is recommended to define
 	// relationships on entities with lower lifespan (higher churn).
@@ -774,4 +792,40 @@ type FeatureGate struct {
 	ToVersion string `mapstructure:"to_version"`
 	// ReferenceURL is the URL with contextual information about the feature gate.
 	ReferenceURL string `mapstructure:"reference_url"`
+}
+
+func (md *Metadata) expandSemConvRefs() error {
+	for k, v := range md.Attributes {
+		if v.SemanticConvention != nil {
+			if strings.HasPrefix(v.SemanticConvention.SemanticConventionRef, "http") {
+				return fmt.Errorf("attribute %q, use relative path for URL, not the full URL", k)
+			}
+			url := fmt.Sprintf(
+				"%s/v%s/docs/registry/attributes/%s",
+				semConvURL,
+				md.SemConvVersion,
+				v.SemanticConvention.SemanticConventionRef,
+			)
+			v.SemanticConvention.SemanticConventionRef = url
+		}
+		md.Attributes[k] = v
+	}
+
+	for k, v := range md.Metrics {
+		if v.SemanticConvention != nil {
+			if strings.HasPrefix(v.SemanticConvention.SemanticConventionRef, "http") {
+				return fmt.Errorf("metric %q, use relative path for URL, not the full URL", k)
+			}
+			url := fmt.Sprintf(
+				"%s/v%s/docs/%s",
+				semConvURL,
+				md.SemConvVersion,
+				v.SemanticConvention.SemanticConventionRef,
+			)
+			v.SemanticConvention.SemanticConventionRef = url
+		}
+		md.Metrics[k] = v
+	}
+
+	return nil
 }

@@ -13,7 +13,7 @@ status:
   class: scraper
   stability:
     stable: [metrics]
-    development: [logs]
+    development: [logs, profiles]
   distributions: []
   unsupported_platforms: [freebsd, illumos]
   codeowners:
@@ -25,27 +25,29 @@ config:
   type: object
   description: Configuration for the Sample Scraper.
   allOf:
-    - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+    - $ref: /scraper/scraperhelper.controller_config
   $defs:
-    target:
-      type: object
-      properties:
-        http_client:
-          $ref: /config/confighttp.client_config
-        interval:
-          type: string
-          format: duration
-          x-optional: true
   properties:
     targets:
       description: Targets configuration for the scraper.
       x-pointer: true
       type: array
       items:
-        $ref: target
-    options:
-      x-customType: "com.github/test/options"
-      description: Custom options for the scraper.
+        type: object
+        properties:
+          http_client:
+            $ref: /config/confighttp.client_config
+            x-pointer: true
+          interval:
+            type: string
+            format: duration
+            x-optional: true
+          options:
+            type: object
+            additionalProperties:
+              type: string
+        required: [http_client, options]
+  required: [targets]
 
 resource_attributes:
   map.resource.attr:
@@ -221,4 +223,4 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     semantic_convention:
-      ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime
+      ref: system/system-metrics.md#metric-systemcputime

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
@@ -15,15 +16,20 @@ import (
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
+type otelconfFactory struct {
+	resourceCache resourceCache
+}
+
 // NewFactory creates a new telemetry.Factory that uses otelconf
 // to configure opentelemetry-go SDK telemetry providers.
 func NewFactory() telemetry.Factory {
+	var factory otelconfFactory
 	return telemetry.NewFactory(
 		createDefaultConfig,
-		telemetry.WithCreateResource(createResource),
-		telemetry.WithCreateLogger(createLogger),
-		telemetry.WithCreateMeterProvider(createMeterProvider),
-		telemetry.WithCreateTracerProvider(createTracerProvider),
+		telemetry.WithCreateResource(factory.createResource),
+		telemetry.WithCreateLogger(factory.createLogger),
+		telemetry.WithCreateMeterProvider(factory.createMeterProvider),
+		telemetry.WithCreateTracerProvider(factory.createTracerProvider),
 	)
 }
 
@@ -32,6 +38,8 @@ func createDefaultConfig() component.Config {
 	if !metadata.TelemetryUseLocalHostAsDefaultMetricsAddressFeatureGate.IsEnabled() {
 		metricsHost = ""
 	}
+
+	schemaUrl := semconv.SchemaURL
 
 	return &Config{
 		Logs: LogsConfig{
@@ -62,12 +70,14 @@ func createDefaultConfig() component.Config {
 							WithoutTypeSuffix: ptr(true),
 							Host:              &metricsHost,
 							Port:              ptr(8888),
-							WithResourceConstantLabels: &config.IncludeExclude{
-								Included: []string{},
-							},
 						}}},
 					},
 				},
+			},
+		},
+		Resource: ResourceConfig{
+			Resource: config.Resource{
+				SchemaUrl: &schemaUrl,
 			},
 		},
 	}
