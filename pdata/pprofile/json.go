@@ -13,7 +13,9 @@ import (
 // JSONMarshaler marshals pprofile.Profiles to JSON bytes using the OTLP/JSON format.
 type JSONMarshaler struct{}
 
-// MarshalProfiles to the OTLP/JSON format.
+// MarshalProfiles marshals Profiles to OTLP/JSON format bytes.
+// If the input data is read-only, it will be copied to a mutable
+// instance before mutation.
 func (*JSONMarshaler) MarshalProfiles(pd Profiles) ([]byte, error) {
 	// Only copy if data is shared/read-only to avoid unnecessary allocation
 	pdToUse := pd
