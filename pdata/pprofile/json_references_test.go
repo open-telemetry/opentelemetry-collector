@@ -85,3 +85,25 @@ func TestJSONUnmarshalResolvesReferences(t *testing.T) {
 	assert.True(t, ok, "scope.attr should be accessible after JSON unmarshal")
 	assert.Equal(t, "scope-value", scopeAttrVal.Str())
 }
+
+func TestJSONMarshalReadOnlyProfiles(t *testing.T) {
+	profiles := newProfilesWithAttributes()
+	marshaler := JSONMarshaler{}
+
+	// Mark as read-only to simulate sharing across multiple exporters
+	profiles.MarkReadOnly()
+
+	// MarshalProfiles should not panic or fail when given read-only data
+	jsonBytes, err := marshaler.MarshalProfiles(profiles)
+	require.NoError(t, err)
+
+	// Verify the JSON contains the expected data
+	var parsed map[string]any
+	require.NoError(t, stdjson.Unmarshal(jsonBytes, &parsed))
+
+	// Verify the original profiles is still usable and hasn't been mutated
+	rp := profiles.ResourceProfiles().At(0)
+	serviceNameVal, ok := rp.Resource().Attributes().Get("service.name")
+	assert.True(t, ok, "service.name should still be accessible")
+	assert.Equal(t, "test-service", serviceNameVal.Str())
+}

@@ -8,12 +8,20 @@ var _ MarshalSizer = (*ProtoMarshaler)(nil)
 type ProtoMarshaler struct{}
 
 func (e *ProtoMarshaler) MarshalProfiles(pd Profiles) ([]byte, error) {
-	// Convert strings to references for efficient transmission
-	convertProfilesToReferences(pd)
+	// Only copy if data is shared/read-only to avoid unnecessary allocation
+	pdToUse := pd
+	if pd.IsReadOnly() {
+		pdCopy := NewProfiles()
+		pd.CopyTo(pdCopy)
+		pdToUse = pdCopy
+	}
 
-	size := pd.getOrig().SizeProto()
+	// Convert strings to references for efficient transmission
+	convertProfilesToReferences(pdToUse)
+
+	size := pdToUse.getOrig().SizeProto()
 	buf := make([]byte, size)
-	_ = pd.getOrig().MarshalProto(buf)
+	_ = pdToUse.getOrig().MarshalProto(buf)
 	return buf, nil
 }
 

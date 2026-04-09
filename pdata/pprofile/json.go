@@ -15,12 +15,20 @@ type JSONMarshaler struct{}
 
 // MarshalProfiles to the OTLP/JSON format.
 func (*JSONMarshaler) MarshalProfiles(pd Profiles) ([]byte, error) {
+	// Only copy if data is shared/read-only to avoid unnecessary allocation
+	pdToUse := pd
+	if pd.IsReadOnly() {
+		pdCopy := NewProfiles()
+		pd.CopyTo(pdCopy)
+		pdToUse = pdCopy
+	}
+
 	// Convert strings to references for efficient transmission
-	convertProfilesToReferences(pd)
+	convertProfilesToReferences(pdToUse)
 
 	dest := json.BorrowStream(nil)
 	defer json.ReturnStream(dest)
-	pd.getOrig().MarshalJSON(dest)
+	pdToUse.getOrig().MarshalJSON(dest)
 	if dest.Error() != nil {
 		return nil, dest.Error()
 	}
