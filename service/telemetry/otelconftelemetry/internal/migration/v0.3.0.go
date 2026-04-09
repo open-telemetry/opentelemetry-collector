@@ -224,9 +224,9 @@ var _ xconfmap.Validator = (*ResourceConfigV030)(nil)
 func (cfg *ResourceConfigV030) Validate() error {
 	// resource::attributes_list isn't currently supported by otelconf, so we have to put the default values under resource::attributes.
 	// However, resource::attributes_list theoretically has lower priority than resource::attributes,
-	// so if otelconf started supporting it, its values would be overriden by the defaults.
+	// so if otelconf started supporting it, its values would be overridden by the defaults.
 	// To avoid this surprising behavior, we explicitly disallow the use of resource::attributes_list for now.
-	if cfg.Resource.AttributesList != nil {
+	if cfg.AttributesList != nil {
 		return errors.New("resource::attributes_list is not currently supported, please use resource::attributes")
 	}
 

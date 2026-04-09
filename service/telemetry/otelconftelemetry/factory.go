@@ -39,7 +39,7 @@ func createDefaultConfig() component.Config {
 		metricsHost = ""
 	}
 
-	schemaUrl := semconv.SchemaURL
+	schemaURL := semconv.SchemaURL
 
 	return &Config{
 		Logs: LogsConfig{
@@ -77,7 +77,7 @@ func createDefaultConfig() component.Config {
 		},
 		Resource: ResourceConfig{
 			Resource: config.Resource{
-				SchemaUrl: &schemaUrl,
+				SchemaUrl: &schemaURL,
 			},
 		},
 	}

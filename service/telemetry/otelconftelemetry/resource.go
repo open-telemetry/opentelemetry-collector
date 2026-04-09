@@ -86,8 +86,8 @@ func createFullResource(
 	providerConfig := &otelconf.Resource{
 		Attributes: make([]otelconf.AttributeNameValue, 0, sdkIterator.Len()),
 	}
-	if schemaUrl := sdkResource.SchemaURL(); schemaUrl != "" {
-		providerConfig.SchemaUrl = &schemaUrl
+	if schemaURL := sdkResource.SchemaURL(); schemaURL != "" {
+		providerConfig.SchemaUrl = &schemaURL
 	}
 	for sdkIterator.Next() {
 		kv := sdkIterator.Attribute()
@@ -133,7 +133,9 @@ func (f *otelconfFactory) createResource(
 
 	for sdkIterator.Next() {
 		kv := sdkIterator.Attribute()
-		pcommonAttributes.PutEmpty(string(kv.Key)).FromRaw(kv.Value.AsInterface())
+		if err := pcommonAttributes.PutEmpty(string(kv.Key)).FromRaw(kv.Value.AsInterface()); err != nil {
+			return pcommon.Resource{}, err
+		}
 	}
 
 	return pcommonResource, nil
