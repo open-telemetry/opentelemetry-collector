@@ -7,6 +7,9 @@ var _ MarshalSizer = (*ProtoMarshaler)(nil)
 
 type ProtoMarshaler struct{}
 
+// MarshalProfiles marshals Profiles to gRPC format bytes.
+// If the input data is read-only, it will be copied to a mutable
+// instance before mutation.
 func (e *ProtoMarshaler) MarshalProfiles(pd Profiles) ([]byte, error) {
 	// Only copy if data is shared/read-only to avoid unnecessary allocation
 	pdToUse := pd
