@@ -5,3 +5,13 @@ status:
   disable_codecov_badge: true
   class: pkg
   distributions: [core, contrib]
+  stability:
+    beta: [metrics, traces, logs]
+    alpha: [profiles]
+
+feature_gates:
+  - id: otelcol.printInitialConfig
+    description: 'if set to true, enable the print-config command'
+    stage: beta
+    from_version: 'v0.120.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/pull/11775'

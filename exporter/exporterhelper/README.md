@@ -23,12 +23,18 @@ The following configuration options can be modified:
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
   - `wait_for_result` (default = false): determines if incoming requests are blocked until the request is processed or not.
   - `block_on_overflow` (default = false): If true, blocks the request until the queue has space otherwise rejects the data immediately; ignored if `enabled` is `false`
-  - `sizer` (default = requests): How the queue and batching is measured. Available options: 
+  - `sizer` (default = requests): How the queue and batching is measured. Available options:
     - `requests`: number of incoming batches of metrics, logs, traces (the most performant option);
     - `items`: number of the smallest parts of each signal (spans, metric data points, log records);
     - `bytes`: the size of serialized data in bytes (the least performant option).
   - `queue_size` (default = 1000): Maximum size the queue can accept. Measured in units defined by `sizer`
   - `batch`: see below.
+
+**Failure behavior**: If data cannot be added to the sending queue, it is typically dropped. This occurs when the queue has reached its configured capacity or, for persistent queues, when the underlying storage cannot accept additional data (for example, due to insufficient disk space or I/O errors).
+
+When `block_on_overflow` is enabled, the caller may instead wait until space becomes available, and the request may still be enqueued if capacity frees up before the timeout.
+
+If data is rejected before entering the queue, it does not reach the exporter retry logic. Such enqueue failures are reported by the `otelcol_exporter_enqueue_failed_*` metrics.
 
 #### Sending queue batch settings
 
@@ -39,22 +45,33 @@ batch settings, use `batch: {}`. When `batch` is defined, the settings are:
 - `min_size` (default = 8192): the minimum size of a batch; should be less than or equal to the `sending_queue::queue_size` if `sending_queue::batch::sizer` matches `sending_queue::sizer`.
 - `max_size` (default = 0): the maximum size of a batch, enables batch splitting. The maximum size of a batch should be greater than or equal to the minimum size of a batch. If set to zero, there is no maximum size;
 - `sizer`: see below.
+- `partition`: see below.
 
-The `batch::sizer` field is given special treatment because the queue itself also defines a `sizer`. This field supports using different size limits for the queue and batch-related logic. 
+The `batch::sizer` field is given special treatment because the queue itself also defines a `sizer`. This field supports using different size limits for the queue and batch-related logic.
 
-If the `batch::sizer` field is not set, it takes its value from the parent structure. 
+If the `batch::sizer` field is not set, it takes its value from the parent structure.
 
-If `sending_queue::sizer` is not set, `batch::sizer` defaults to `items`. 
+If `sending_queue::sizer` is not set, `batch::sizer` defaults to `items`.
 
 Available `batch::sizer` options:
 
 - `items`: number of the smallest parts of each signal (spans, metric data points, log records);
 - `bytes`: the size of serialized data in bytes (the least performant option).
+
+The `batch::partition` configuration defines the partitioning of the batches.
+
+Available `batch::partition` options:
+
+- `metadata_keys`: a list of `client.Metadata` keys used to partition data into
+  separate batches. When empty, a single batcher instance is used. When set, one batcher will be used
+  per distinct combination of values for the listed metadata keys. Empty value and unset metadata are
+  treated as distinct cases. Entries are case-insensitive. Duplicated entries will trigger a validation error. Default is empty.
+
 ### Timeout
 
 - `timeout` (default = 5s): Time to wait per individual attempt to send data to a backend
 
-The `initial_interval`, `max_interval`, `max_elapsed_time`, and `timeout` options accept 
+The `initial_interval`, `max_interval`, `max_elapsed_time`, and `timeout` options accept
 [duration strings](https://pkg.go.dev/time#ParseDuration),
 valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 

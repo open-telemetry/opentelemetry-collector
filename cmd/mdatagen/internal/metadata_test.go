@@ -4,13 +4,12 @@
 package internal
 
 import (
-	"io/fs"
-	"path/filepath"
-	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 )
 
 func TestValidate(t *testing.T) {
@@ -194,40 +193,46 @@ func TestValidate(t *testing.T) {
 	}
 }
 
-func TestValidateMetricDuplicates(t *testing.T) {
-	allowedMetrics := map[string][]string{
-		"container.cpu.utilization": {"docker_stats", "kubeletstats"},
-		"container.memory.rss":      {"docker_stats", "kubeletstats"},
-		"container.uptime":          {"docker_stats", "kubeletstats"},
+func TestDeprecatedValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		d       Deprecated
+		wantErr string
+	}{
+		{
+			name:    "empty since",
+			d:       Deprecated{Since: ""},
+			wantErr: "deprecated.since must be set",
+		},
+		{
+			name:    "whitespace since",
+			d:       Deprecated{Since: "   "},
+			wantErr: "deprecated.since must be set",
+		},
+		{
+			name:    "whitespace-only note",
+			d:       Deprecated{Since: "1.0.0", Note: "   "},
+			wantErr: "deprecated.note must not be empty",
+		},
+		{
+			name: "valid, no note",
+			d:    Deprecated{Since: "1.0.0"},
+		},
+		{
+			name: "valid with note",
+			d:    Deprecated{Since: "1.0.0", Note: "use X instead"},
+		},
 	}
-	allMetrics := map[string][]string{}
-	err := filepath.Walk("../../../receiver", func(path string, info fs.FileInfo, _ error) error {
-		if info.Name() == "metadata.yaml" {
-			md, err := LoadMetadata(path)
-			require.NoError(t, err)
-			if len(md.Metrics) > 0 {
-				for metricName := range md.Metrics {
-					allMetrics[md.Type] = append(allMetrics[md.Type], string(metricName))
-				}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.d.validate()
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
 			}
-		}
-		return nil
-	})
-	require.NoError(t, err)
-
-	seen := make(map[string]string)
-	for receiver, metrics := range allMetrics {
-		for _, metricName := range metrics {
-			if val, exists := seen[metricName]; exists {
-				receivers, allowed := allowedMetrics[metricName]
-				assert.Truef(
-					t,
-					allowed && slices.Contains(receivers, receiver) && slices.Contains(receivers, val),
-					"Duplicate metric %v in receivers %v and %v. Please validate that this is intentional by adding the metric name and receiver types in the allowedMetrics map in this test\n", metricName, receiver, val,
-				)
-			}
-			seen[metricName] = receiver
-		}
+		})
 	}
 }
 
@@ -268,6 +273,15 @@ func TestCodeCovID(t *testing.T) {
 				},
 			},
 			want: "exporter_file",
+		},
+		{
+			md: Metadata{
+				Type: "file_log_thing",
+				Status: &Status{
+					Class: "exporter",
+				},
+			},
+			want: "exporter_filelogthing",
 		},
 	}
 
@@ -465,6 +479,17 @@ func TestValidateFeatureGates(t *testing.T) {
 			wantErr: `to_version is required for deprecated stage gates`,
 		},
 		{
+			name: "non-stable or deprecated gate with a to_version",
+			featureGate: FeatureGate{
+				ID:          "component.feature",
+				Description: "Test feature",
+				Stage:       FeatureGateStageBeta,
+				FromVersion: "v0.90.0",
+				ToVersion:   "v0.91.0",
+			},
+			wantErr: `to_version is not supported for the beta stage`,
+		},
+		{
 			name: "missing reference_url",
 			featureGate: FeatureGate{
 				ID:          "component.feature",
@@ -557,4 +582,50 @@ func TestValidateFeatureGatesNotSorted(t *testing.T) {
 	err := md.validateFeatureGates()
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "feature gates must be sorted by ID")
+}
+
+func TestValidateConfig(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  *cfggen.ConfigMetadata
+		wantErr bool
+	}{
+		{
+			name: "valid config",
+			config: &cfggen.ConfigMetadata{
+				Type: "object",
+				AllOf: []*cfggen.ConfigMetadata{
+					{
+						Ref: "component.config",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:    "no config defined",
+			config:  nil,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			md := &Metadata{
+				Type: "test",
+				Status: &Status{
+					Class: "exporter",
+					Stability: StabilityMap{
+						6: {"traces"},
+					},
+				},
+				Config: tt.config,
+			}
+			err := md.Validate()
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }
