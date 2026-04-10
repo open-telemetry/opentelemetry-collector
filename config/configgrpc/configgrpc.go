@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"math"
 	"net"
-	"regexp"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -254,16 +254,11 @@ func (cc *ClientConfig) Validate() error {
 	return nil
 }
 
-// grpcSchemeRE matches a gRPC target URI with a scheme and optional authority:
-//
-//	scheme://[authority]/endpoint
-//
-// It captures the endpoint portion after the authority separator.
-var grpcSchemeRE = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*://[^/]*/(.*)$`)
-
-// sanitizedEndpoint strips the URI scheme prefix from the endpoint to extract
-// the host:port for validation. It handles http://, https://, and any gRPC
-// resolver scheme URI (e.g. dns:///host:port, passthrough:///host:port).
+// sanitizedEndpoint strips the URI scheme and authority from the endpoint to
+// extract the host:port for validation. It handles http://, https://, and any
+// gRPC resolver scheme URI (e.g. dns:///host:port, passthrough:///host:port).
+// For gRPC URIs of the form "scheme://[authority]/endpoint", the authority is
+// also stripped, matching the parsing behavior of grpc-go's url.Parse approach.
 func (cc *ClientConfig) sanitizedEndpoint() string {
 	switch {
 	case cc.isSchemeHTTP():
@@ -271,12 +266,13 @@ func (cc *ClientConfig) sanitizedEndpoint() string {
 	case cc.isSchemeHTTPS():
 		return strings.TrimPrefix(cc.Endpoint, "https://")
 	default:
-		// Strip gRPC URI scheme and authority (e.g. "dns:///", "passthrough:///",
-		// "dns://authority/") to extract the endpoint for validation.
-		if m := grpcSchemeRE.FindStringSubmatch(cc.Endpoint); m != nil {
-			return m[1]
+		// Parse as a URI to strip scheme and authority, matching how grpc-go
+		// parses target URIs via url.Parse in grpc.NewClient.
+		u, err := url.Parse(cc.Endpoint)
+		if err != nil || u.Scheme == "" {
+			return cc.Endpoint
 		}
-		return cc.Endpoint
+		return strings.TrimPrefix(u.Path, "/")
 	}
 }
 

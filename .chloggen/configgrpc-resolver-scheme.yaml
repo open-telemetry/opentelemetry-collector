@@ -16,13 +16,9 @@ issues: [14990]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  After the migration from grpc.DialContext to grpc.NewClient, the default resolver
-  scheme changed from "passthrough" to "dns". Combined with grpc-go v1.77.0+ making
-  Happy Eyeballs (RFC 8305) mandatory, this causes IPv6 connection attempts first in
-  dual-stack DNS environments. The endpoint field now accepts any gRPC resolver scheme
-  URI (e.g. passthrough:///host:port, dns:///host:port, xds:///service), aligned with
-  the SDK OTLP exporter specification which states the endpoint SHOULD accept any form allowed by
-  the underlying gRPC client implementation.
+  After the migration to grpc.NewClient, some gRPC client components such as the OTLP
+  exporter experienced connection issues in dual-stack DNS environments. This can now be
+  fixed by using the passthrough:/// gRPC resolver scheme in the endpoint field.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
