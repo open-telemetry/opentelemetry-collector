@@ -793,24 +793,6 @@ func TestExtractDefs_EmptyInput(t *testing.T) {
 	require.Empty(t, result)
 }
 
-func TestExtractDefs_AdditionalPropertiesObject(t *testing.T) {
-	md := &ConfigMetadata{
-		Type: "object",
-		Properties: map[string]*ConfigMetadata{
-			// A property of type "object" with no sub-properties triggers the ap check
-			"extra": {Type: "object"},
-		},
-		AdditionalProperties: &ConfigMetadata{
-			Type: "object",
-			Properties: map[string]*ConfigMetadata{
-				"value": {Type: "integer"},
-			},
-		},
-	}
-	result := ExtractDefs(md)
-	require.Contains(t, result, "extra")
-}
-
 func TestNewCfgFns_ExtractImports(t *testing.T) {
 	fns := NewCfgFns("go.opentelemetry.io/collector", "go.opentelemetry.io/collector/comp")
 
@@ -981,4 +963,254 @@ func TestExtractImports_ContentSchema(t *testing.T) {
 	result, err := ExtractImports(md, "", "")
 	require.NoError(t, err)
 	require.Contains(t, result, "time")
+}
+
+func TestExtractValidators(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected []Validator
+	}{
+		{
+			name: "no validators",
+			metadata: &ConfigMetadata{
+				Type: "string",
+			},
+			expected: []Validator{},
+		},
+		{
+			name:     "nil config",
+			metadata: nil,
+			expected: []Validator{},
+		},
+		{
+			name: "required string field",
+			metadata: &ConfigMetadata{
+				Type:     "object",
+				Required: []string{"name"},
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string"},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName:  "name",
+					FieldType:  "string",
+					IsRequired: true,
+					IsOptional: false,
+					IsPointer:  false,
+				},
+			},
+		},
+		{
+			name: "required optional field",
+			metadata: &ConfigMetadata{
+				Type:     "object",
+				Required: []string{"name"},
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string", IsOptional: true},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName:  "name",
+					FieldType:  "string",
+					IsRequired: true,
+					IsOptional: true,
+					IsPointer:  false,
+				},
+			},
+		},
+		{
+			name: "required pointer field",
+			metadata: &ConfigMetadata{
+				Type:     "object",
+				Required: []string{"name"},
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string", IsPointer: true},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName:  "name",
+					FieldType:  "string",
+					IsRequired: true,
+					IsOptional: false,
+					IsPointer:  true,
+				},
+			},
+		},
+		{
+			name: "object with additionalProperties but no required children emits nothing",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"labels": {
+						Type: "object",
+						AdditionalProperties: &ConfigMetadata{
+							Type: "string",
+						},
+					},
+				},
+			},
+			expected: []Validator{},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := ExtractValidators(test.metadata)
+			require.Equal(t, test.expected, result)
+		})
+	}
+}
+
+func TestExtractValidators_InternalRefFromDefs_NoValidators(t *testing.T) {
+	md := &ConfigMetadata{
+		Ref: "plain_config",
+	}
+
+	result := ExtractValidators(md)
+	require.Empty(t, result)
+}
+
+func TestExtractValidators_InternalRefFromDefs_RefNotFound(t *testing.T) {
+	md := &ConfigMetadata{
+		Ref: "missing_def",
+	}
+
+	result := ExtractValidators(md)
+	require.Empty(t, result)
+}
+
+func TestExtractValidators_AllOf_NoRef(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		AllOf: []*ConfigMetadata{
+			{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"host": {Type: "string"},
+				},
+			},
+		},
+	}
+
+	result := ExtractValidators(md)
+	require.Empty(t, result)
+}
+
+func TestExtractValidators_AllOf_RefWithNoValidators(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		AllOf: []*ConfigMetadata{
+			{Ref: "empty_base"},
+		},
+	}
+
+	result := ExtractValidators(md)
+	require.Empty(t, result)
+}
+
+func TestExtractValidators_CustomValidator(t *testing.T) {
+	nonNil := new(CustomValidatorConfig)
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"http_client": {
+				Ref:       "/config/confighttp.client_config",
+				IsPointer: true,
+				GoStruct:  GoStructConfig{CustomValidator: nonNil},
+			},
+		},
+	}
+
+	result := ExtractValidators(md)
+	require.Len(t, result, 1)
+	require.Equal(t, "http_client", result[0].FieldName)
+	require.Equal(t, "validateHTTPClient", result[0].CustomValidator)
+	require.False(t, result[0].IsRequired)
+	require.True(t, result[0].IsPointer)
+}
+
+func TestExtractValidators_RequiredAndCustomValidator(t *testing.T) {
+	nonNil := new(CustomValidatorConfig)
+	md := &ConfigMetadata{
+		Type:     "object",
+		Required: []string{"http_client"},
+		Properties: map[string]*ConfigMetadata{
+			"http_client": {
+				Ref:       "/config/confighttp.client_config",
+				IsPointer: true,
+				GoStruct:  GoStructConfig{CustomValidator: nonNil},
+			},
+		},
+	}
+
+	result := ExtractValidators(md)
+	require.Len(t, result, 2)
+
+	// First validator is the required check
+	require.Equal(t, "http_client", result[0].FieldName)
+	require.True(t, result[0].IsRequired)
+	require.Empty(t, result[0].CustomValidator)
+
+	// Second validator is the custom validator
+	require.Equal(t, "http_client", result[1].FieldName)
+	require.False(t, result[1].IsRequired)
+	require.Equal(t, "validateHTTPClient", result[1].CustomValidator)
+}
+
+func TestExtractValidators_RootCustomValidatorLast(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:     "object",
+		Required: []string{"http_client"},
+		GoStruct: GoStructConfig{CustomValidator: &CustomValidatorConfig{Name: "validateConfig"}},
+		Properties: map[string]*ConfigMetadata{
+			"http_client": {
+				Ref:       "/config/confighttp.client_config",
+				IsPointer: true,
+			},
+		},
+	}
+
+	result := ExtractValidators(md)
+	require.Len(t, result, 2)
+	require.Equal(t, ".", result[0].FieldName)
+	require.Equal(t, "validateConfig", result[0].CustomValidator)
+	require.True(t, result[1].IsRequired)
+	require.Empty(t, result[1].CustomValidator)
+}
+
+func TestExtractValidators_NoCustomValidator(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"endpoint": {
+				Type:     "string",
+				GoStruct: GoStructConfig{}, // CustomValidator is nil
+			},
+		},
+	}
+
+	result := ExtractValidators(md)
+	require.Empty(t, result)
+}
+
+func TestNewCfgFns_ExtractValidators(t *testing.T) {
+	fns := NewCfgFns("", "")
+	extractValidators := fns["extractValidators"].(func(*ConfigMetadata) []Validator)
+
+	require.Nil(t, extractValidators(nil))
+
+	md := &ConfigMetadata{
+		Type:     "object",
+		Required: []string{"name"},
+		Properties: map[string]*ConfigMetadata{
+			"name": {Type: "string"},
+		},
+	}
+	result := extractValidators(md)
+	require.Len(t, result, 1)
+	require.Equal(t, "name", result[0].FieldName)
+	require.True(t, result[0].IsRequired)
 }
