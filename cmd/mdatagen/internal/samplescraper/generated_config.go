@@ -34,6 +34,14 @@ func (c *TargetsItem) Validate() error {
 	return err
 }
 
+func createDefaultTargetsItem() TargetsItem {
+	cfg := TargetsItem{}
+	cfg.Interval = configoptional.Some(10 * time.Second)
+	cfg.Options = map[string]string{"option2": "value2", "option1": "value1"}
+
+	return cfg
+}
+
 // Configuration for the Sample Scraper.
 type Config struct {
 	// MetricsBuilderConfig is a configuration for sample metrics builder.
@@ -57,21 +65,7 @@ func (c *Config) Validate() error {
 
 func createDefaultConfig() component.Config {
 	cfg := Config{}
-
-	targets_1 := TargetsItem{}
-
-	targets_1_http_client := confighttp.ClientConfig{}
-	targets_1_http_client.Endpoint = "http://localhost:8080/metrics"
-	targets_1.HTTPClient = targets_1_http_client
-	targets_1.Interval = configoptional.Some(10 * time.Second)
-	targets_1.Options = map[string]string{"option1": "value1", "option2": "value2"}
-
-	targets := []TargetsItem{targets_1}
-	cfg.Targets = &targets
-
-	controllerConfig := scraperhelper.ControllerConfig{}
-	controllerConfig.Timeout = 30 * time.Second
-	cfg.ControllerConfig = controllerConfig
+	cfg.Targets = &[]TargetsItem{createDefaultTargetsItem()}
 
 	return &cfg
 }

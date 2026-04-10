@@ -551,7 +551,7 @@ func TestGenerateConfigGoStruct_RootPackageError(t *testing.T) {
 	require.Contains(t, err.Error(), "unable to determine root package")
 }
 
-func TestGenerateConfigGoStruct_ResolvedDefaultsAndImports(t *testing.T) {
+func TestGenerateConfigGoStruct_ResolvedImports(t *testing.T) {
 	root := t.TempDir()
 	outputDir := filepath.Join(root, "shortname")
 	require.NoError(t, os.MkdirAll(outputDir, 0o700))
@@ -588,9 +588,85 @@ func TestGenerateConfigGoStruct_ResolvedDefaultsAndImports(t *testing.T) {
 	generated := string(content)
 	require.Contains(t, generated, `"go.opentelemetry.io/collector/component"`)
 	require.Contains(t, generated, `"go.opentelemetry.io/collector/scraper/scraperhelper"`)
+	require.Contains(t, generated, "func createDefaultConfig() component.Config")
+}
+
+func TestGenerateConfigGoStruct_PropertyDefaultsAndImports(t *testing.T) {
+	root := t.TempDir()
+	outputDir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(outputDir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	md := Metadata{
+		Type:        "test",
+		PackageName: "testmodule/shortname",
+		Status:      &Status{Class: "receiver"},
+		Config: &cfggen.ConfigMetadata{
+			Type: "object",
+			Properties: map[string]*cfggen.ConfigMetadata{
+				"timeout": {
+					Type:    "string",
+					GoType:  "time.Duration",
+					Default: "30s",
+				},
+			},
+		},
+	}
+
+	err := generateConfigGoStruct(md, outputDir)
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(filepath.Join(outputDir, "generated_config.go")) // #nosec G304
+	require.NoError(t, err)
+
+	generated := string(content)
 	require.Contains(t, generated, `"time"`)
 	require.Contains(t, generated, "func createDefaultConfig() component.Config")
-	require.Contains(t, generated, "controllerConfig.Timeout = 30 * time.Second")
+	require.Contains(t, generated, "cfg.Timeout = 30 * time.Second")
+}
+
+func TestGenerateConfigGoStruct_InternalResolvedRefGeneratesLocalType(t *testing.T) {
+	root := t.TempDir()
+	outputDir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(outputDir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	md := Metadata{
+		Type:        "test",
+		PackageName: "testmodule/shortname",
+		Status:      &Status{Class: "receiver"},
+		Config: &cfggen.ConfigMetadata{
+			Type: "object",
+			Properties: map[string]*cfggen.ConfigMetadata{
+				"config": {
+					Type:         "object",
+					ResolvedFrom: "plain_config",
+					Default:      map[string]any{"timeout": "30s"},
+					Properties: map[string]*cfggen.ConfigMetadata{
+						"timeout": {
+							Type:    "string",
+							GoType:  "time.Duration",
+							Default: "30s",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err := generateConfigGoStruct(md, outputDir)
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(filepath.Join(outputDir, "generated_config.go")) // #nosec G304
+	require.NoError(t, err)
+
+	generated := string(content)
+	require.Contains(t, generated, `"time"`)
+	require.Contains(t, generated, "type PlainConfig struct")
+	require.Contains(t, generated, "func createDefaultPlainConfig() PlainConfig")
+	require.Contains(t, generated, "cfg.Timeout = 30 * time.Second")
+	require.Contains(t, generated, "Config PlainConfig `mapstructure:\"config\"`")
+	require.Contains(t, generated, "cfg.Config = createDefaultPlainConfig()")
 }
 
 func TestGenerateConfigFiles_GoStructError(t *testing.T) {

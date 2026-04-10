@@ -601,9 +601,6 @@
           "http_client": {
             "description": "ClientConfig defines settings for creating an HTTP client.",
             "type": "object",
-            "default": {
-              "endpoint": "http://localhost:8080/metrics"
-            },
             "properties": {
               "auth": {
                 "description": "Auth configuration for outgoing HTTP calls.",

@@ -39,8 +39,6 @@ config:
         properties:
           http_client:
             $ref: /config/confighttp.client_config
-            default:
-              endpoint: "http://localhost:8080/metrics"
             go_struct:
               custom_validator:
           interval:
