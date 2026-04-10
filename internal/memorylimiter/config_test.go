@@ -24,6 +24,7 @@ func TestUnmarshalConfig(t *testing.T) {
 			CheckInterval:       5 * time.Second,
 			MemoryLimitMiB:      4000,
 			MemorySpikeLimitMiB: 500,
+			DisableGC:           true,
 		}, cfg)
 }
 
