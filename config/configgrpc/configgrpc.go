@@ -266,10 +266,17 @@ func (cc *ClientConfig) sanitizedEndpoint() string {
 	case cc.isSchemeHTTPS():
 		return strings.TrimPrefix(cc.Endpoint, "https://")
 	default:
+		// Only attempt URI parsing if the endpoint contains "://", which
+		// distinguishes a scheme URI (e.g. "dns:///host:port") from a bare
+		// host:port. Without this check, url.Parse("host:port") would
+		// misinterpret "host" as the scheme.
+		if !strings.Contains(cc.Endpoint, "://") {
+			return cc.Endpoint
+		}
 		// Parse as a URI to strip scheme and authority, matching how grpc-go
 		// parses target URIs via url.Parse in grpc.NewClient.
 		u, err := url.Parse(cc.Endpoint)
-		if err != nil || u.Scheme == "" {
+		if err != nil {
 			return cc.Endpoint
 		}
 		return strings.TrimPrefix(u.Path, "/")
