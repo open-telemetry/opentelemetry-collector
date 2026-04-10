@@ -275,6 +275,9 @@ func TestSanitizeEndpoint(t *testing.T) {
 	assert.Equal(t, "backend.example.com:4317", cfg.sanitizedEndpoint())
 	cfg.Endpoint = "xds:///my-service:4317"
 	assert.Equal(t, "my-service:4317", cfg.sanitizedEndpoint())
+	// Unparseable URI with :// falls back to returning the endpoint as-is.
+	cfg.Endpoint = "bad\x7f://host:4317"
+	assert.Equal(t, "bad\x7f://host:4317", cfg.sanitizedEndpoint())
 }
 
 func TestGrpcDialTarget(t *testing.T) {
