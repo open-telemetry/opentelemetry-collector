@@ -85,14 +85,15 @@ func TestBuildManifest(t *testing.T) {
 	content, err := os.ReadFile(filepath.Join(dir, "manifest.yaml")) //nolint:gosec // G304: path is test-controlled
 	require.NoError(t, err)
 
-	expected := "dist:\n" +
-		"    description: Custom OpenTelemetry Collector\n" +
-		"    name: myCollector\n" +
-		"    output_path: ./build/collector\n" +
-		"exporters:\n" +
-		"    - gomod: go.opentelemetry.io/collector/exporter/otlpexporter " + builder.DefaultBetaOtelColVersion + "\n" +
-		"receivers:\n" +
-		"    - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver " + builder.DefaultBetaOtelColVersion + "\n"
+	expected := `dist:
+    description: Custom OpenTelemetry Collector
+    name: myCollector
+    output_path: ./build/collector
+exporters:
+    - gomod: go.opentelemetry.io/collector/exporter/otlpexporter ` + builder.DefaultBetaOtelColVersion + `
+receivers:
+    - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver ` + builder.DefaultBetaOtelColVersion + `
+`
 
 	assert.Equal(t, expected, string(content))
 }
