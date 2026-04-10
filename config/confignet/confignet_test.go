@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"net"
+	"strings"
 	"testing"
 	"time"
 
@@ -109,11 +110,6 @@ func Test_NetAddr_Validate(t *testing.T) {
 	require.NoError(t, na.Validate())
 
 	na = &AddrConfig{
-		Transport: TransportTypeNpipe,
-	}
-	require.NoError(t, na.Validate())
-
-	na = &AddrConfig{
 		Transport: transportTypeEmpty,
 	}
 	require.Error(t, na.Validate())
@@ -122,6 +118,40 @@ func Test_NetAddr_Validate(t *testing.T) {
 		Transport: "random string",
 	}
 	assert.Error(t, na.Validate())
+}
+
+func Test_NetAddr_Validate_Npipe(t *testing.T) {
+	tests := []struct {
+		name     string
+		endpoint string
+		wantErr  bool
+	}{
+		{name: "local pipe", endpoint: `\\.\pipe\test`, wantErr: false},
+		{name: "remote pipe", endpoint: `\\server\pipe\myapp`, wantErr: false},
+		{name: "mixed case pipe component", endpoint: `\\.\PIPE\test`, wantErr: false},
+		{name: "special chars in name", endpoint: `\\.\pipe\my-pipe.v2`, wantErr: false},
+		{name: "empty", endpoint: "", wantErr: true},
+		{name: "missing leading backslashes", endpoint: `\pipe\test`, wantErr: true},
+		{name: "missing server name", endpoint: `\\\pipe\test`, wantErr: true},
+		{name: "missing pipe component", endpoint: `\\.\test`, wantErr: true},
+		{name: "empty pipe name", endpoint: `\\.\pipe\`, wantErr: true},
+		{name: "backslash in pipe name", endpoint: `\\.\pipe\a\b`, wantErr: true},
+		{name: "too long", endpoint: `\\.\pipe\` + strings.Repeat("a", 249), wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			na := &AddrConfig{
+				Transport: TransportTypeNpipe,
+				Endpoint:  tt.endpoint,
+			}
+			err := na.Validate()
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
 
 func TestTCPAddrConfig(t *testing.T) {

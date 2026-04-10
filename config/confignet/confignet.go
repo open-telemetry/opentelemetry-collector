@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strings"
 	"time"
 )
 
@@ -129,12 +130,43 @@ func (na *AddrConfig) Validate() error {
 		TransportTypeIP6,
 		TransportTypeUnix,
 		TransportTypeUnixgram,
-		TransportTypeUnixPacket,
-		TransportTypeNpipe:
+		TransportTypeUnixPacket:
 		return nil
+	case TransportTypeNpipe:
+		return validateNpipePath(na.Endpoint)
 	default:
 		return fmt.Errorf("invalid transport type %q", na.Transport)
 	}
+}
+
+// validateNpipePath validates a Windows named pipe path.
+// Named pipe paths must follow the format: \\<server>\pipe\<name>
+// See: https://learn.microsoft.com/en-us/windows/win32/ipc/pipe-names
+func validateNpipePath(endpoint string) error {
+	const maxLen = 256
+	if len(endpoint) > maxLen {
+		return fmt.Errorf("named pipe path %q exceeds maximum length of %d characters", endpoint, maxLen)
+	}
+	if !strings.HasPrefix(endpoint, `\\`) {
+		return fmt.Errorf(`named pipe path must start with "\\": %q`, endpoint)
+	}
+	// After \\, find the \pipe\ component (case-insensitive per Windows rules)
+	rest := strings.ToLower(endpoint[2:])
+	pipeIdx := strings.Index(rest, `\pipe\`)
+	if pipeIdx < 0 {
+		return fmt.Errorf(`named pipe path must contain "\pipe\": %q`, endpoint)
+	}
+	if pipeIdx == 0 {
+		return fmt.Errorf("named pipe path must have a non-empty server name: %q", endpoint)
+	}
+	pipeName := endpoint[2+pipeIdx+len(`\pipe\`):]
+	if pipeName == "" {
+		return fmt.Errorf(`named pipe path must have a non-empty pipe name after "\pipe\": %q`, endpoint)
+	}
+	if strings.ContainsRune(pipeName, '\\') {
+		return fmt.Errorf("named pipe name must not contain backslashes: %q", endpoint)
+	}
+	return nil
 }
 
 // TCPAddrConfig represents a TCP endpoint address.
