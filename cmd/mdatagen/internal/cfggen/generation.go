@@ -389,34 +389,32 @@ func resolveType(md *ConfigMetadata) string {
 func MapCustomDefaults(schema *ConfigMetadata, defaultValue any) []string {
 	exps := make([]string, 0)
 
-	switch defaultValue.(type) {
+	switch typedValue := defaultValue.(type) {
 	case map[string]any:
 		// is nested struct
 		if schema.AdditionalProperties == nil {
-			for key, value := range defaultValue.(map[string]any) {
-				if propSchema := schema.Properties[key]; propSchema != nil {
-					varName, _ := helpers.FormatIdentifier(key, true)
-					exp := fmt.Sprintf(".%s = %s", varName, FormatDefaultValue(propSchema, key, value))
-					exps = append(exps, exp)
-				} else {
+			for key, value := range typedValue {
+				propSchema := schema.Properties[key]
+				if propSchema == nil {
 					panic("schema does not contain required property: " + key)
 				}
+				varName, _ := helpers.FormatIdentifier(key, true)
+				exp := fmt.Sprintf(".%s = %s", varName, FormatDefaultValue(propSchema, key, value))
+				exps = append(exps, exp)
 			}
 		} else if schema.AdditionalProperties.Type == "object" { // is a map of object
 			panic("map of structs is not supported yet")
 		}
 	case []any:
 		// is an array of objects
-		if schema.Items != nil && schema.Items.Type == "object" {
-			for i, item := range defaultValue.([]any) {
-
-				nestedExps := MapCustomDefaults(schema.Items, item)
-				for _, exp := range nestedExps {
-					exps = append(exps, fmt.Sprintf("[%d]%s", i, exp))
-				}
-			}
-		} else {
+		if schema.Items == nil || schema.Items.Type != "object" {
 			panic("unsupported default value type for custom mapping")
+		}
+		for i, item := range typedValue {
+			nestedExps := MapCustomDefaults(schema.Items, item)
+			for _, exp := range nestedExps {
+				exps = append(exps, fmt.Sprintf("[%d]%s", i, exp))
+			}
 		}
 	}
 
@@ -426,7 +424,7 @@ func MapCustomDefaults(schema *ConfigMetadata, defaultValue any) []string {
 func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue any) string {
 	exp := formatSimpleValue(md, name, defaultValue)
 	if md.IsPointer {
-		exp = fmt.Sprintf("&%s", exp)
+		exp = "&" + exp
 	}
 	if md.IsOptional {
 		exp = fmt.Sprintf("configoptional.Some(%s)", exp)
