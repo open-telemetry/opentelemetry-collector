@@ -395,3 +395,21 @@ func TestSkipsNilFieldValidation(t *testing.T) {
 	cfg.ConfmapConverters = nil
 	assert.NoError(t, cfg.Validate())
 }
+
+func TestParseModulesRelativePathFlag(t *testing.T) {
+	cfg := Config{
+		Distribution: Distribution{
+			OutputPath:              "./output",
+			UseRelativeReplacePaths: true,
+		},
+		Extensions: []Module{{
+			GoMod: "some-module",
+			Path:  "./templates",
+		}},
+	}
+
+	err := cfg.ParseModules()
+	require.NoError(t, err)
+
+	assert.Equal(t, "../templates", cfg.Extensions[0].Path)
+}

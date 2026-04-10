@@ -431,7 +431,7 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 		{
 			GoMod: "go.opentelemetry.io/collector/exporter/otlphttpexporter v1.9999.9999",
 		},
-	}, usedNames)
+	}, usedNames, false, "")
 	require.NoError(t, err)
 	cfg.Receivers, err = parseModules([]Module{
 		{
@@ -440,13 +440,13 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 		{
 			GoMod: "go.opentelemetry.io/collector/receiver/otlpreceiver v1.9999.9999",
 		},
-	}, usedNames)
+	}, usedNames, false, "")
 	require.NoError(t, err)
 	cfg.Extensions, err = parseModules([]Module{
 		{
 			GoMod: "go.opentelemetry.io/collector/extension/zpagesextension v1.9999.9999",
 		},
-	}, usedNames)
+	}, usedNames, false, "")
 	require.NoError(t, err)
 	cfg.Processors, err = parseModules([]Module{
 		{
@@ -455,7 +455,7 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 		{
 			GoMod: "go.opentelemetry.io/collector/processor/memorylimiterprocessor v1.9999.9999",
 		},
-	}, usedNames)
+	}, usedNames, false, "")
 	require.NoError(t, err)
 
 	require.NoError(t, cfg.Validate())
