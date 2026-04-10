@@ -5,6 +5,8 @@ package ptrace // import "github.com/oodle-ai/opentelemetry-collector/pdata/ptra
 
 import (
 	"bytes"
+	"encoding/hex"
+	"fmt"
 
 	jsoniter "github.com/json-iterator/go"
 
@@ -106,13 +108,44 @@ func (dest Span) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "traceId", "trace_id":
-			dest.orig.TraceId = []byte(iter.ReadString())
+			s := iter.ReadString()
+			b, err := hex.DecodeString(s)
+			if err != nil {
+				iter.ReportError(
+					"readSpan.traceId",
+					fmt.Sprintf(
+						"parse trace_id:%v", err,
+					),
+				)
+			}
+			dest.orig.TraceId = b
 		case "spanId", "span_id":
-			dest.orig.SpanId = []byte(iter.ReadString())
+			s := iter.ReadString()
+			b, err := hex.DecodeString(s)
+			if err != nil {
+				iter.ReportError(
+					"readSpan.spanId",
+					fmt.Sprintf(
+						"parse span_id:%v", err,
+					),
+				)
+			}
+			dest.orig.SpanId = b
 		case "traceState", "trace_state":
 			dest.TraceState().FromRaw(iter.ReadString())
 		case "parentSpanId", "parent_span_id":
-			dest.orig.ParentSpanId = []byte(iter.ReadString())
+			s := iter.ReadString()
+			b, err := hex.DecodeString(s)
+			if err != nil {
+				iter.ReportError(
+					"readSpan.parentSpanId",
+					fmt.Sprintf(
+						"parse parent_span_id:%v",
+						err,
+					),
+				)
+			}
+			dest.orig.ParentSpanId = b
 		case "name":
 			dest.orig.Name = iter.ReadString()
 		case "kind":
@@ -172,9 +205,29 @@ func (dest SpanLink) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "traceId", "trace_id":
-			dest.orig.TraceId = []byte(iter.ReadString())
+			s := iter.ReadString()
+			b, err := hex.DecodeString(s)
+			if err != nil {
+				iter.ReportError(
+					"readSpanLink.traceId",
+					fmt.Sprintf(
+						"parse trace_id:%v", err,
+					),
+				)
+			}
+			dest.orig.TraceId = b
 		case "spanId", "span_id":
-			dest.orig.SpanId = []byte(iter.ReadString())
+			s := iter.ReadString()
+			b, err := hex.DecodeString(s)
+			if err != nil {
+				iter.ReportError(
+					"readSpanLink.spanId",
+					fmt.Sprintf(
+						"parse span_id:%v", err,
+					),
+				)
+			}
+			dest.orig.SpanId = b
 		case "traceState", "trace_state":
 			dest.orig.TraceState = iter.ReadString()
 		case "attributes":
