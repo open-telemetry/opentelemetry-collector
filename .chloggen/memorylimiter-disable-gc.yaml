@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: processor/memory_limiter
+
+note: Add `disable_gc` option to allow disabling forced garbage collection.
+
+issues: [15081]
+
+change_logs: [user]

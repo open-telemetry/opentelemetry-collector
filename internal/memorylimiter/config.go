@@ -37,6 +37,9 @@ type Config struct {
 	// GCs is a CPU-heavy operation and executing it too frequently may affect the recovery capabilities of the collector.
 	MinGCIntervalWhenHardLimited time.Duration `mapstructure:"min_gc_interval_when_hard_limited"`
 
+	// DisableGC disables forced garbage collection.
+	DisableGC bool `mapstructure:"disable_gc"`
+
 	// MemoryLimitMiB is the maximum amount of memory, in MiB, targeted to be
 	// allocated by the process.
 	MemoryLimitMiB uint32 `mapstructure:"limit_mib"`
