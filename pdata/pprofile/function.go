@@ -16,41 +16,35 @@ func (fn Function) Equal(val Function) bool {
 // switchDictionary updates the Function, switching its indices from one
 // dictionary to another.
 func (fn Function) switchDictionary(src, dst ProfilesDictionary) error {
-	if fn.NameStrindex() > 0 {
-		if src.StringTable().Len() <= int(fn.NameStrindex()) {
-			return fmt.Errorf("invalid name index %d", fn.NameStrindex())
-		}
-
-		idx, err := SetString(dst.StringTable(), src.StringTable().At(int(fn.NameStrindex())))
-		if err != nil {
-			return fmt.Errorf("couldn't set name: %w", err)
-		}
-		fn.SetNameStrindex(idx)
+	if src.StringTable().Len() <= int(fn.NameStrindex()) {
+		return fmt.Errorf("invalid name index %d", fn.NameStrindex())
 	}
 
-	if fn.SystemNameStrindex() > 0 {
-		if src.StringTable().Len() <= int(fn.SystemNameStrindex()) {
-			return fmt.Errorf("invalid system name index %d", fn.SystemNameStrindex())
-		}
+	nameIdx, err := SetString(dst.StringTable(), src.StringTable().At(int(fn.NameStrindex())))
+	if err != nil {
+		return fmt.Errorf("couldn't set name: %w", err)
+	}
+	fn.SetNameStrindex(nameIdx)
 
-		idx, err := SetString(dst.StringTable(), src.StringTable().At(int(fn.SystemNameStrindex())))
-		if err != nil {
-			return fmt.Errorf("couldn't set system name: %w", err)
-		}
-		fn.SetSystemNameStrindex(idx)
+	if src.StringTable().Len() <= int(fn.SystemNameStrindex()) {
+		return fmt.Errorf("invalid system name index %d", fn.SystemNameStrindex())
 	}
 
-	if fn.FilenameStrindex() > 0 {
-		if src.StringTable().Len() <= int(fn.FilenameStrindex()) {
-			return fmt.Errorf("invalid filename index %d", fn.FilenameStrindex())
-		}
-
-		idx, err := SetString(dst.StringTable(), src.StringTable().At(int(fn.FilenameStrindex())))
-		if err != nil {
-			return fmt.Errorf("couldn't set filename: %w", err)
-		}
-		fn.SetFilenameStrindex(idx)
+	sysIdx, err := SetString(dst.StringTable(), src.StringTable().At(int(fn.SystemNameStrindex())))
+	if err != nil {
+		return fmt.Errorf("couldn't set system name: %w", err)
 	}
+	fn.SetSystemNameStrindex(sysIdx)
+
+	if src.StringTable().Len() <= int(fn.FilenameStrindex()) {
+		return fmt.Errorf("invalid filename index %d", fn.FilenameStrindex())
+	}
+
+	fileIdx, err := SetString(dst.StringTable(), src.StringTable().At(int(fn.FilenameStrindex())))
+	if err != nil {
+		return fmt.Errorf("couldn't set filename: %w", err)
+	}
+	fn.SetFilenameStrindex(fileIdx)
 
 	return nil
 }

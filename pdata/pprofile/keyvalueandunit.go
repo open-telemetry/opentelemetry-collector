@@ -16,29 +16,25 @@ func (ms KeyValueAndUnit) Equal(val KeyValueAndUnit) bool {
 // switchDictionary updates the KeyValueAndUnit, switching its indices from one
 // dictionary to another.
 func (ms KeyValueAndUnit) switchDictionary(src, dst ProfilesDictionary) error {
-	if ms.KeyStrindex() > 0 {
-		if src.StringTable().Len() <= int(ms.KeyStrindex()) {
-			return fmt.Errorf("invalid key index %d", ms.KeyStrindex())
-		}
-
-		idx, err := SetString(dst.StringTable(), src.StringTable().At(int(ms.KeyStrindex())))
-		if err != nil {
-			return fmt.Errorf("couldn't set key: %w", err)
-		}
-		ms.SetKeyStrindex(idx)
+	if src.StringTable().Len() <= int(ms.KeyStrindex()) {
+		return fmt.Errorf("invalid key index %d", ms.KeyStrindex())
 	}
 
-	if ms.UnitStrindex() > 0 {
-		if src.StringTable().Len() <= int(ms.UnitStrindex()) {
-			return fmt.Errorf("invalid unit index %d", ms.UnitStrindex())
-		}
-
-		idx, err := SetString(dst.StringTable(), src.StringTable().At(int(ms.UnitStrindex())))
-		if err != nil {
-			return fmt.Errorf("couldn't set unit: %w", err)
-		}
-		ms.SetUnitStrindex(idx)
+	keyIdx, err := SetString(dst.StringTable(), src.StringTable().At(int(ms.KeyStrindex())))
+	if err != nil {
+		return fmt.Errorf("couldn't set key: %w", err)
 	}
+	ms.SetKeyStrindex(keyIdx)
+
+	if src.StringTable().Len() <= int(ms.UnitStrindex()) {
+		return fmt.Errorf("invalid unit index %d", ms.UnitStrindex())
+	}
+
+	unitIdx, err := SetString(dst.StringTable(), src.StringTable().At(int(ms.UnitStrindex())))
+	if err != nil {
+		return fmt.Errorf("couldn't set unit: %w", err)
+	}
+	ms.SetUnitStrindex(unitIdx)
 
 	return nil
 }

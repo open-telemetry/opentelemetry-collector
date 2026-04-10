@@ -83,11 +83,23 @@ func TestFunctionSwitchDictionary(t *testing.T) {
 			name:     "with an empty key value and unit",
 			function: NewFunction(),
 
-			src: NewProfilesDictionary(),
-			dst: NewProfilesDictionary(),
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
 
-			wantFunction:   NewFunction(),
-			wantDictionary: NewProfilesDictionary(),
+			wantFunction: NewFunction(),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
 		},
 		{
 			name: "with an existing name",
@@ -199,16 +211,28 @@ func TestFunctionSwitchDictionary(t *testing.T) {
 				return fn
 			}(),
 
-			src: NewProfilesDictionary(),
-			dst: NewProfilesDictionary(),
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
 
 			wantFunction: func() Function {
 				fn := NewFunction()
 				fn.SetSystemNameStrindex(1)
 				return fn
 			}(),
-			wantDictionary: NewProfilesDictionary(),
-			wantErr:        errors.New("invalid system name index 1"),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
+			wantErr: errors.New("invalid system name index 1"),
 		},
 		{
 			name: "with a system name index equal to the source table length (boundary condition)",
@@ -223,15 +247,23 @@ func TestFunctionSwitchDictionary(t *testing.T) {
 				d.StringTable().Append("", "test")
 				return d
 			}(),
-			dst: NewProfilesDictionary(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
 
 			wantFunction: func() Function {
 				fn := NewFunction()
 				fn.SetSystemNameStrindex(2)
 				return fn
 			}(),
-			wantDictionary: NewProfilesDictionary(),
-			wantErr:        errors.New("invalid system name index 2"),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
+			wantErr: errors.New("invalid system name index 2"),
 		},
 		{
 			name: "with an existing filename",
@@ -271,16 +303,28 @@ func TestFunctionSwitchDictionary(t *testing.T) {
 				return fn
 			}(),
 
-			src: NewProfilesDictionary(),
-			dst: NewProfilesDictionary(),
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
 
 			wantFunction: func() Function {
 				fn := NewFunction()
 				fn.SetFilenameStrindex(1)
 				return fn
 			}(),
-			wantDictionary: NewProfilesDictionary(),
-			wantErr:        errors.New("invalid filename index 1"),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
+			wantErr: errors.New("invalid filename index 1"),
 		},
 		{
 			name: "with a filename index equal to the source table length (boundary condition)",
@@ -295,15 +339,23 @@ func TestFunctionSwitchDictionary(t *testing.T) {
 				d.StringTable().Append("", "test")
 				return d
 			}(),
-			dst: NewProfilesDictionary(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
 
 			wantFunction: func() Function {
 				fn := NewFunction()
 				fn.SetFilenameStrindex(2)
 				return fn
 			}(),
-			wantDictionary: NewProfilesDictionary(),
-			wantErr:        errors.New("invalid filename index 2"),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
+			wantErr: errors.New("invalid filename index 2"),
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

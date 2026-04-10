@@ -78,11 +78,23 @@ func TestKeyValueAndUnitSwitchDictionary(t *testing.T) {
 			name:            "with an empty key value and unit",
 			keyValueAndUnit: NewKeyValueAndUnit(),
 
-			src: NewProfilesDictionary(),
-			dst: NewProfilesDictionary(),
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
 
 			wantKeyValueAndUnit: NewKeyValueAndUnit(),
-			wantDictionary:      NewProfilesDictionary(),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
 		},
 		{
 			name: "with an existing key",
@@ -194,16 +206,28 @@ func TestKeyValueAndUnitSwitchDictionary(t *testing.T) {
 				return kvu
 			}(),
 
-			src: NewProfilesDictionary(),
-			dst: NewProfilesDictionary(),
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
 
 			wantKeyValueAndUnit: func() KeyValueAndUnit {
 				kvu := NewKeyValueAndUnit()
 				kvu.SetUnitStrindex(1)
 				return kvu
 			}(),
-			wantDictionary: NewProfilesDictionary(),
-			wantErr:        errors.New("invalid unit index 1"),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
+			wantErr: errors.New("invalid unit index 1"),
 		},
 		{
 			name: "with a unit index equal to the source table length (boundary condition)",
@@ -218,15 +242,23 @@ func TestKeyValueAndUnitSwitchDictionary(t *testing.T) {
 				d.StringTable().Append("", "test")
 				return d
 			}(),
-			dst: NewProfilesDictionary(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
 
 			wantKeyValueAndUnit: func() KeyValueAndUnit {
 				kvu := NewKeyValueAndUnit()
 				kvu.SetUnitStrindex(2)
 				return kvu
 			}(),
-			wantDictionary: NewProfilesDictionary(),
-			wantErr:        errors.New("invalid unit index 2"),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
+			wantErr: errors.New("invalid unit index 2"),
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

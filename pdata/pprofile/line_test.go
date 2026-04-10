@@ -139,11 +139,26 @@ func TestLineSwitchDictionary(t *testing.T) {
 			name: "with an empty line",
 			line: NewLine(),
 
-			src: NewProfilesDictionary(),
-			dst: NewProfilesDictionary(),
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.FunctionTable().AppendEmpty()
+				d.StringTable().Append("")
+				return d
+			}(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.FunctionTable().AppendEmpty()
+				d.StringTable().Append("")
+				return d
+			}(),
 
-			wantLine:       NewLine(),
-			wantDictionary: NewProfilesDictionary(),
+			wantLine: NewLine(),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.FunctionTable().AppendEmpty()
+				d.StringTable().Append("")
+				return d
+			}(),
 		},
 		{
 			name: "with an existing function",

@@ -30,11 +30,29 @@ func TestSampleSwitchDictionary(t *testing.T) {
 			name:   "with an empty sample",
 			sample: NewSample(),
 
-			src: NewProfilesDictionary(),
-			dst: NewProfilesDictionary(),
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.LinkTable().AppendEmpty()
+				d.StackTable().AppendEmpty()
+				d.LocationTable().AppendEmpty()
+				return d
+			}(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.LinkTable().AppendEmpty()
+				d.StackTable().AppendEmpty()
+				d.LocationTable().AppendEmpty()
+				return d
+			}(),
 
-			wantSample:     NewSample(),
-			wantDictionary: NewProfilesDictionary(),
+			wantSample: NewSample(),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.LinkTable().AppendEmpty()
+				d.StackTable().AppendEmpty()
+				d.LocationTable().AppendEmpty()
+				return d
+			}(),
 		},
 		{
 			name: "with an existing attribute",
@@ -52,6 +70,10 @@ func TestSampleSwitchDictionary(t *testing.T) {
 				a := d.AttributeTable().AppendEmpty()
 				a.SetKeyStrindex(1)
 
+				d.LinkTable().AppendEmpty()
+				d.StackTable().AppendEmpty()
+				d.LocationTable().AppendEmpty()
+
 				return d
 			}(),
 			dst: func() ProfilesDictionary {
@@ -62,6 +84,10 @@ func TestSampleSwitchDictionary(t *testing.T) {
 				d.AttributeTable().AppendEmpty()
 				a := d.AttributeTable().AppendEmpty()
 				a.SetKeyStrindex(1)
+
+				d.LinkTable().AppendEmpty()
+				d.StackTable().AppendEmpty()
+				d.LocationTable().AppendEmpty()
 				return d
 			}(),
 
@@ -78,6 +104,10 @@ func TestSampleSwitchDictionary(t *testing.T) {
 				d.AttributeTable().AppendEmpty()
 				a := d.AttributeTable().AppendEmpty()
 				a.SetKeyStrindex(1)
+
+				d.LinkTable().AppendEmpty()
+				d.StackTable().AppendEmpty()
+				d.LocationTable().AppendEmpty()
 				return d
 			}(),
 		},
@@ -137,12 +167,16 @@ func TestSampleSwitchDictionary(t *testing.T) {
 				d.LinkTable().AppendEmpty()
 				l := d.LinkTable().AppendEmpty()
 				l.SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+				d.StackTable().AppendEmpty()
+				d.LocationTable().AppendEmpty()
 				return d
 			}(),
 			dst: func() ProfilesDictionary {
 				d := NewProfilesDictionary()
 				d.LinkTable().AppendEmpty()
 				d.LinkTable().AppendEmpty()
+				d.StackTable().AppendEmpty()
+				d.LocationTable().AppendEmpty()
 				return d
 			}(),
 
@@ -157,6 +191,8 @@ func TestSampleSwitchDictionary(t *testing.T) {
 				d.LinkTable().AppendEmpty()
 				l := d.LinkTable().AppendEmpty()
 				l.SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+				d.StackTable().AppendEmpty()
+				d.LocationTable().AppendEmpty()
 				return d
 			}(),
 		},
@@ -219,6 +255,8 @@ func TestSampleSwitchDictionary(t *testing.T) {
 				d.StackTable().AppendEmpty()
 				s := d.StackTable().AppendEmpty()
 				s.LocationIndices().Append(1)
+
+				d.LinkTable().AppendEmpty()
 				return d
 			}(),
 			dst: func() ProfilesDictionary {
@@ -230,6 +268,8 @@ func TestSampleSwitchDictionary(t *testing.T) {
 				d.StackTable().AppendEmpty()
 				s := d.StackTable().AppendEmpty()
 				s.LocationIndices().Append(1)
+
+				d.LinkTable().AppendEmpty()
 				return d
 			}(),
 
@@ -247,6 +287,8 @@ func TestSampleSwitchDictionary(t *testing.T) {
 				d.StackTable().AppendEmpty()
 				s := d.StackTable().AppendEmpty()
 				s.LocationIndices().Append(1)
+
+				d.LinkTable().AppendEmpty()
 				return d
 			}(),
 		},
@@ -258,16 +300,28 @@ func TestSampleSwitchDictionary(t *testing.T) {
 				return s
 			}(),
 
-			src: NewProfilesDictionary(),
-			dst: NewProfilesDictionary(),
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.LinkTable().AppendEmpty()
+				return d
+			}(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.LinkTable().AppendEmpty()
+				return d
+			}(),
 
 			wantSample: func() Sample {
 				s := NewSample()
 				s.SetStackIndex(1)
 				return s
 			}(),
-			wantDictionary: NewProfilesDictionary(),
-			wantErr:        errors.New("invalid stack index 1"),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.LinkTable().AppendEmpty()
+				return d
+			}(),
+			wantErr: errors.New("invalid stack index 1"),
 		},
 		{
 			name: "with a stack index equal to the source table length (boundary condition)",
@@ -281,17 +335,26 @@ func TestSampleSwitchDictionary(t *testing.T) {
 				d := NewProfilesDictionary()
 				d.StackTable().AppendEmpty()
 				d.StackTable().AppendEmpty()
+				d.LinkTable().AppendEmpty()
 				return d
 			}(),
-			dst: NewProfilesDictionary(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.LinkTable().AppendEmpty()
+				return d
+			}(),
 
 			wantSample: func() Sample {
 				s := NewSample()
 				s.SetStackIndex(2)
 				return s
 			}(),
-			wantDictionary: NewProfilesDictionary(),
-			wantErr:        errors.New("invalid stack index 2"),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.LinkTable().AppendEmpty()
+				return d
+			}(),
+			wantErr: errors.New("invalid stack index 2"),
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

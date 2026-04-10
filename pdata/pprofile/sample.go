@@ -21,30 +21,26 @@ func (ms Sample) switchDictionary(src, dst ProfilesDictionary) error {
 		ms.AttributeIndices().SetAt(i, idx)
 	}
 
-	if ms.LinkIndex() > 0 {
-		if src.LinkTable().Len() <= int(ms.LinkIndex()) {
-			return fmt.Errorf("invalid link index %d", ms.LinkIndex())
-		}
-
-		idx, err := SetLink(dst.LinkTable(), src.LinkTable().At(int(ms.LinkIndex())))
-		if err != nil {
-			return fmt.Errorf("couldn't set link: %w", err)
-		}
-		ms.SetLinkIndex(idx)
+	if src.LinkTable().Len() <= int(ms.LinkIndex()) {
+		return fmt.Errorf("invalid link index %d", ms.LinkIndex())
 	}
 
-	if ms.StackIndex() > 0 {
-		if src.StackTable().Len() <= int(ms.StackIndex()) {
-			return fmt.Errorf("invalid stack index %d", ms.StackIndex())
-		}
-
-		stack := src.StackTable().At(int(ms.StackIndex()))
-		idx, err := SetStack(dst.StackTable(), stack)
-		if err != nil {
-			return fmt.Errorf("couldn't set stack: %w", err)
-		}
-		ms.SetStackIndex(idx)
+	idx, err := SetLink(dst.LinkTable(), src.LinkTable().At(int(ms.LinkIndex())))
+	if err != nil {
+		return fmt.Errorf("couldn't set link: %w", err)
 	}
+	ms.SetLinkIndex(idx)
+
+	if src.StackTable().Len() <= int(ms.StackIndex()) {
+		return fmt.Errorf("invalid stack index %d", ms.StackIndex())
+	}
+
+	stack := src.StackTable().At(int(ms.StackIndex()))
+	sidx, err := SetStack(dst.StackTable(), stack)
+	if err != nil {
+		return fmt.Errorf("couldn't set stack: %w", err)
+	}
+	ms.SetStackIndex(sidx)
 
 	return nil
 }

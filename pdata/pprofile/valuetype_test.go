@@ -29,11 +29,23 @@ func TestValueTypeSwitchDictionary(t *testing.T) {
 			name:      "with an empty value type",
 			valueType: NewValueType(),
 
-			src: NewProfilesDictionary(),
-			dst: NewProfilesDictionary(),
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
 
-			wantValueType:  NewValueType(),
-			wantDictionary: NewProfilesDictionary(),
+			wantValueType: NewValueType(),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
 		},
 		{
 			name: "with an existing type",
@@ -145,16 +157,28 @@ func TestValueTypeSwitchDictionary(t *testing.T) {
 				return vt
 			}(),
 
-			src: NewProfilesDictionary(),
-			dst: NewProfilesDictionary(),
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
 
 			wantValueType: func() ValueType {
 				vt := NewValueType()
 				vt.SetUnitStrindex(1)
 				return vt
 			}(),
-			wantDictionary: NewProfilesDictionary(),
-			wantErr:        errors.New("invalid unit index 1"),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
+			wantErr: errors.New("invalid unit index 1"),
 		},
 		{
 			name: "with a unit index equal to the source table length (boundary condition)",
@@ -169,15 +193,23 @@ func TestValueTypeSwitchDictionary(t *testing.T) {
 				d.StringTable().Append("", "test")
 				return d
 			}(),
-			dst: NewProfilesDictionary(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
 
 			wantValueType: func() ValueType {
 				vt := NewValueType()
 				vt.SetUnitStrindex(2)
 				return vt
 			}(),
-			wantDictionary: NewProfilesDictionary(),
-			wantErr:        errors.New("invalid unit index 2"),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
+			wantErr: errors.New("invalid unit index 2"),
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

@@ -30,11 +30,23 @@ func TestProfileSwitchDictionary(t *testing.T) {
 			name:    "with an empty profile",
 			profile: NewProfile(),
 
-			src: NewProfilesDictionary(),
-			dst: NewProfilesDictionary(),
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
 
-			wantProfile:    NewProfile(),
-			wantDictionary: NewProfilesDictionary(),
+			wantProfile: NewProfile(),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.StringTable().Append("")
+				return d
+			}(),
 		},
 		{
 			name: "with an existing attribute",
@@ -135,12 +147,18 @@ func TestProfileSwitchDictionary(t *testing.T) {
 				d.LinkTable().AppendEmpty()
 				l := d.LinkTable().AppendEmpty()
 				l.SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+				d.StackTable().AppendEmpty()
+				d.LocationTable().AppendEmpty()
+				d.StringTable().Append("")
 				return d
 			}(),
 			dst: func() ProfilesDictionary {
 				d := NewProfilesDictionary()
 				d.LinkTable().AppendEmpty()
 				d.LinkTable().AppendEmpty()
+				d.StackTable().AppendEmpty()
+				d.LocationTable().AppendEmpty()
+				d.StringTable().Append("")
 				return d
 			}(),
 
@@ -155,6 +173,9 @@ func TestProfileSwitchDictionary(t *testing.T) {
 				d.LinkTable().AppendEmpty()
 				l := d.LinkTable().AppendEmpty()
 				l.SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+				d.StackTable().AppendEmpty()
+				d.LocationTable().AppendEmpty()
+				d.StringTable().Append("")
 				return d
 			}(),
 		},

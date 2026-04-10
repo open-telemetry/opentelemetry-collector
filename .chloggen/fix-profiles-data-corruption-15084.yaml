@@ -1,0 +1,26 @@
+change_type: bug_fix
+
+component: pdata/pprofile
+
+note: Fix data corruption of Profiles data when batching in the exporter queue
+
+issues: [15084]
+
+subtext: |
+  Fix two data corruption bugs in the Profiles MergeTo/switchDictionary path:
+
+  1. Dictionary index 0 was never remapped during MergeTo because all
+     switchDictionary methods used `> 0` guards. This caused samples
+     referencing StackIndex=0 (and similarly for LinkIndex, MappingIndex,
+     FunctionIndex, and all Strindex fields) to silently point to the wrong
+     entry in the destination dictionary after merging.
+
+  2. Resource and scope attribute KeyStrindex values became stale after
+     MergeTo because resolveProfilesReferences kept KeyStrindex set after
+     unmarshaling, but MergeTo did not update these references.
+     convertKeyValueToReferences then skipped re-indexing when KeyStrindex
+     was already non-zero, causing the stale indices to be serialized.
+     On the next unmarshal, keys resolved to wrong strings from the merged
+     dictionary.
+
+change_logs: [user]

@@ -8,6 +8,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestProfilesMergeTo(t *testing.T) {
@@ -617,4 +619,178 @@ func TestProfilesMergeToError(t *testing.T) {
 	require.Error(t, err)
 
 	assert.Equal(t, 0, dest.ResourceProfiles().Len())
+}
+
+// TestProfilesMergeTo_StackIndexZero verifies that samples referencing
+// StackIndex=0 are correctly remapped during MergeTo, rather than being
+// silently skipped (which causes data corruption).
+func TestProfilesMergeTo_StackIndexZero(t *testing.T) {
+	// Source: sample with StackIndex=0 pointing to a real stack.
+	src := NewProfiles()
+	src.Dictionary().StringTable().Append("")            // 0
+	src.Dictionary().StringTable().Append("srcFuncName") // 1
+	src.Dictionary().StringTable().Append("srcFileName") // 2
+	src.Dictionary().AttributeTable().AppendEmpty()      // 0: sentinel
+	src.Dictionary().LinkTable().AppendEmpty()           // 0: sentinel
+	src.Dictionary().MappingTable().AppendEmpty()        // 0: sentinel
+
+	srcFn := src.Dictionary().FunctionTable().AppendEmpty() // 0: real function
+	srcFn.SetNameStrindex(1)
+	srcFn.SetFilenameStrindex(2)
+
+	srcLoc := src.Dictionary().LocationTable().AppendEmpty() // 0: real location
+	srcLoc.SetAddress(42)
+	srcLine := srcLoc.Lines().AppendEmpty()
+	srcLine.SetFunctionIndex(0) // refs function at index 0
+
+	srcStack := src.Dictionary().StackTable().AppendEmpty() // 0: real stack
+	srcStack.LocationIndices().Append(0)                    // refs location at index 0
+
+	rp := src.ResourceProfiles().AppendEmpty()
+	rp.Resource().Attributes().PutStr("service.name", "src-service")
+	sp := rp.ScopeProfiles().AppendEmpty()
+	p := sp.Profiles().AppendEmpty()
+	sample := p.Samples().AppendEmpty()
+	sample.SetStackIndex(0) // Points to real stack at index 0
+
+	// Destination: has different data at index 0.
+	dst := NewProfiles()
+	dst.Dictionary().StringTable().Append("")            // 0
+	dst.Dictionary().StringTable().Append("dstFuncName") // 1
+	dst.Dictionary().StringTable().Append("dstFileName") // 2
+	dst.Dictionary().AttributeTable().AppendEmpty()      // 0: sentinel
+	dst.Dictionary().LinkTable().AppendEmpty()           // 0: sentinel
+	dst.Dictionary().MappingTable().AppendEmpty()        // 0: sentinel
+
+	dstFn := dst.Dictionary().FunctionTable().AppendEmpty() // 0: different function
+	dstFn.SetNameStrindex(1)
+	dstFn.SetFilenameStrindex(2)
+
+	dstLoc := dst.Dictionary().LocationTable().AppendEmpty() // 0: different location
+	dstLoc.SetAddress(99)
+	dstLine := dstLoc.Lines().AppendEmpty()
+	dstLine.SetFunctionIndex(0)
+
+	dstStack := dst.Dictionary().StackTable().AppendEmpty() // 0: different stack
+	dstStack.LocationIndices().Append(0)
+
+	err := src.MergeTo(dst)
+	require.NoError(t, err)
+
+	// After merge, the source's sample should reference a stack whose
+	// location has Address=42 (from src), NOT Address=99 (from dst).
+	require.Equal(t, 1, dst.ResourceProfiles().Len())
+	mergedSample := dst.ResourceProfiles().At(0).
+		ScopeProfiles().At(0).
+		Profiles().At(0).
+		Samples().At(0)
+
+	stackIdx := mergedSample.StackIndex()
+	stack := dst.Dictionary().StackTable().At(int(stackIdx))
+	locIdx := stack.LocationIndices().At(0)
+	loc := dst.Dictionary().LocationTable().At(int(locIdx))
+
+	assert.Equal(t, uint64(42), loc.Address(),
+		"source sample's stack should reference the original location with address 42, not destination's 99")
+
+	// Also verify the function name resolves to srcFuncName, not dstFuncName.
+	line := loc.Lines().At(0)
+	fn := dst.Dictionary().FunctionTable().At(int(line.FunctionIndex()))
+	fnName := dst.Dictionary().StringTable().At(int(fn.NameStrindex()))
+	assert.Equal(t, "srcFuncName", fnName,
+		"source sample's function should be srcFuncName, not dstFuncName")
+}
+
+// TestProfilesMergeTo_ResourceAttributeRoundTrip verifies that resource
+// attributes survive a marshal→unmarshal→merge→marshal→unmarshal round-trip
+// without corruption of KeyStrindex references.
+func TestProfilesMergeTo_ResourceAttributeRoundTrip(t *testing.T) {
+	marshaler := &ProtoMarshaler{}
+	unmarshaler := &ProtoUnmarshaler{}
+
+	// Create two profiles with DIFFERENT string tables so that after merge
+	// the destination string table differs from the source's original indices.
+	profileA := NewProfiles()
+	profileA.Dictionary().StringTable().Append("")
+	profileA.Dictionary().StringTable().Append("cpu")
+	profileA.Dictionary().StringTable().Append("nanoseconds")
+	profileA.Dictionary().AttributeTable().AppendEmpty()
+	profileA.Dictionary().StackTable().AppendEmpty()
+	profileA.Dictionary().LocationTable().AppendEmpty()
+	profileA.Dictionary().FunctionTable().AppendEmpty()
+	profileA.Dictionary().MappingTable().AppendEmpty()
+	profileA.Dictionary().LinkTable().AppendEmpty()
+	rpA := profileA.ResourceProfiles().AppendEmpty()
+	rpA.Resource().Attributes().PutStr("service.name", "service-A")
+	rpA.Resource().Attributes().PutStr("deployment", "prod")
+	spA := rpA.ScopeProfiles().AppendEmpty()
+	pA := spA.Profiles().AppendEmpty()
+	pA.PeriodType().SetTypeStrindex(1)
+	pA.PeriodType().SetUnitStrindex(2)
+
+	profileB := NewProfiles()
+	profileB.Dictionary().StringTable().Append("")
+	profileB.Dictionary().StringTable().Append("memory")
+	profileB.Dictionary().StringTable().Append("bytes")
+	profileB.Dictionary().AttributeTable().AppendEmpty()
+	profileB.Dictionary().StackTable().AppendEmpty()
+	profileB.Dictionary().LocationTable().AppendEmpty()
+	profileB.Dictionary().FunctionTable().AppendEmpty()
+	profileB.Dictionary().MappingTable().AppendEmpty()
+	profileB.Dictionary().LinkTable().AppendEmpty()
+	rpB := profileB.ResourceProfiles().AppendEmpty()
+	rpB.Resource().Attributes().PutStr("host.name", "host-1")
+	rpB.Resource().Attributes().PutStr("cluster.name", "us-east")
+	spB := rpB.ScopeProfiles().AppendEmpty()
+	pB := spB.Profiles().AppendEmpty()
+	pB.PeriodType().SetTypeStrindex(1)
+	pB.PeriodType().SetUnitStrindex(2)
+
+	// Record original resource attributes.
+	origAttrsA := attrMapToStrings(rpA.Resource().Attributes())
+	origAttrsB := attrMapToStrings(rpB.Resource().Attributes())
+
+	// Marshal → Unmarshal (simulates Kafka write/read).
+	bytesA, err := marshaler.MarshalProfiles(profileA)
+	require.NoError(t, err)
+	bytesB, err := marshaler.MarshalProfiles(profileB)
+	require.NoError(t, err)
+
+	dstProfiles, err := unmarshaler.UnmarshalProfiles(bytesA)
+	require.NoError(t, err)
+	srcProfiles, err := unmarshaler.UnmarshalProfiles(bytesB)
+	require.NoError(t, err)
+
+	// MergeTo — merges src into dst.
+	err = srcProfiles.MergeTo(dstProfiles)
+	require.NoError(t, err)
+
+	// Re-marshal the merged result.
+	mergedBytes, err := marshaler.MarshalProfiles(dstProfiles)
+	require.NoError(t, err)
+
+	// Re-unmarshal (simulates consumer reading from Kafka).
+	finalProfiles, err := unmarshaler.UnmarshalProfiles(mergedBytes)
+	require.NoError(t, err)
+
+	// After the full round-trip, resource attributes must still match.
+	require.Equal(t, 2, finalProfiles.ResourceProfiles().Len(),
+		"final profiles should have 2 resource profiles")
+
+	finalAttrsA := attrMapToStrings(finalProfiles.ResourceProfiles().At(0).Resource().Attributes())
+	finalAttrsB := attrMapToStrings(finalProfiles.ResourceProfiles().At(1).Resource().Attributes())
+
+	assert.Equal(t, origAttrsA, finalAttrsA,
+		"destination resource attributes corrupted after round-trip")
+	assert.Equal(t, origAttrsB, finalAttrsB,
+		"source resource attributes corrupted after round-trip")
+}
+
+func attrMapToStrings(m pcommon.Map) map[string]string {
+	result := make(map[string]string, m.Len())
+	m.Range(func(k string, v pcommon.Value) bool {
+		result[k] = v.AsString()
+		return true
+	})
+	return result
 }

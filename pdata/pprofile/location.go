@@ -16,18 +16,16 @@ func (ms Location) Equal(val Location) bool {
 // switchDictionary updates the Location, switching its indices from one
 // dictionary to another.
 func (ms Location) switchDictionary(src, dst ProfilesDictionary) error {
-	if ms.MappingIndex() > 0 {
-		if src.MappingTable().Len() <= int(ms.MappingIndex()) {
-			return fmt.Errorf("invalid mapping index %d", ms.MappingIndex())
-		}
-
-		mapping := src.MappingTable().At(int(ms.MappingIndex()))
-		idx, err := SetMapping(dst.MappingTable(), mapping)
-		if err != nil {
-			return fmt.Errorf("couldn't set mapping: %w", err)
-		}
-		ms.SetMappingIndex(idx)
+	if src.MappingTable().Len() <= int(ms.MappingIndex()) {
+		return fmt.Errorf("invalid mapping index %d", ms.MappingIndex())
 	}
+
+	mapping := src.MappingTable().At(int(ms.MappingIndex()))
+	idx, err := SetMapping(dst.MappingTable(), mapping)
+	if err != nil {
+		return fmt.Errorf("couldn't set mapping: %w", err)
+	}
+	ms.SetMappingIndex(idx)
 
 	for i, v := range ms.AttributeIndices().All() {
 		if src.AttributeTable().Len() <= int(v) {

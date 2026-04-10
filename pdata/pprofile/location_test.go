@@ -83,11 +83,26 @@ func TestLocationSwitchDictionary(t *testing.T) {
 			name:     "with an empty location",
 			location: NewLocation(),
 
-			src: NewProfilesDictionary(),
-			dst: NewProfilesDictionary(),
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.MappingTable().AppendEmpty()
+				d.StringTable().Append("")
+				return d
+			}(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.MappingTable().AppendEmpty()
+				d.StringTable().Append("")
+				return d
+			}(),
 
-			wantLocation:   NewLocation(),
-			wantDictionary: NewProfilesDictionary(),
+			wantLocation: NewLocation(),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.MappingTable().AppendEmpty()
+				d.StringTable().Append("")
+				return d
+			}(),
 		},
 		{
 			name: "with an existing mapping",
@@ -190,6 +205,8 @@ func TestLocationSwitchDictionary(t *testing.T) {
 				a := d.AttributeTable().AppendEmpty()
 				a.SetKeyStrindex(1)
 
+				d.MappingTable().AppendEmpty()
+
 				return d
 			}(),
 			dst: func() ProfilesDictionary {
@@ -199,6 +216,8 @@ func TestLocationSwitchDictionary(t *testing.T) {
 				d.AttributeTable().AppendEmpty()
 				a := d.AttributeTable().AppendEmpty()
 				a.SetKeyStrindex(1)
+
+				d.MappingTable().AppendEmpty()
 
 				return d
 			}(),
@@ -215,6 +234,8 @@ func TestLocationSwitchDictionary(t *testing.T) {
 				d.AttributeTable().AppendEmpty()
 				a := d.AttributeTable().AppendEmpty()
 				a.SetKeyStrindex(1)
+
+				d.MappingTable().AppendEmpty()
 				return d
 			}(),
 		},
@@ -226,16 +247,31 @@ func TestLocationSwitchDictionary(t *testing.T) {
 				return l
 			}(),
 
-			src: NewProfilesDictionary(),
-			dst: NewProfilesDictionary(),
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.MappingTable().AppendEmpty()
+				d.StringTable().Append("")
+				return d
+			}(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.MappingTable().AppendEmpty()
+				d.StringTable().Append("")
+				return d
+			}(),
 
 			wantLocation: func() Location {
 				l := NewLocation()
 				l.AttributeIndices().Append(1)
 				return l
 			}(),
-			wantDictionary: NewProfilesDictionary(),
-			wantErr:        errors.New("invalid attribute index 1"),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.MappingTable().AppendEmpty()
+				d.StringTable().Append("")
+				return d
+			}(),
+			wantErr: errors.New("invalid attribute index 1"),
 		},
 		{
 			name: "with an attribute index equal to the source table length (boundary condition)",
@@ -249,17 +285,29 @@ func TestLocationSwitchDictionary(t *testing.T) {
 				d := NewProfilesDictionary()
 				d.AttributeTable().AppendEmpty()
 				d.AttributeTable().AppendEmpty()
+				d.MappingTable().AppendEmpty()
+				d.StringTable().Append("")
 				return d
 			}(),
-			dst: NewProfilesDictionary(),
+			dst: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.MappingTable().AppendEmpty()
+				d.StringTable().Append("")
+				return d
+			}(),
 
 			wantLocation: func() Location {
 				l := NewLocation()
 				l.AttributeIndices().Append(2)
 				return l
 			}(),
-			wantDictionary: NewProfilesDictionary(),
-			wantErr:        errors.New("invalid attribute index 2"),
+			wantDictionary: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.MappingTable().AppendEmpty()
+				d.StringTable().Append("")
+				return d
+			}(),
+			wantErr: errors.New("invalid attribute index 2"),
 		},
 		{
 			name: "with an existing line",
@@ -277,6 +325,8 @@ func TestLocationSwitchDictionary(t *testing.T) {
 				f := d.FunctionTable().AppendEmpty()
 				f.SetNameStrindex(1)
 
+				d.MappingTable().AppendEmpty()
+
 				return d
 			}(),
 			dst: func() ProfilesDictionary {
@@ -286,6 +336,8 @@ func TestLocationSwitchDictionary(t *testing.T) {
 				d.FunctionTable().AppendEmpty()
 				f := d.FunctionTable().AppendEmpty()
 				f.SetNameStrindex(1)
+
+				d.MappingTable().AppendEmpty()
 
 				return d
 			}(),
@@ -302,6 +354,8 @@ func TestLocationSwitchDictionary(t *testing.T) {
 				d.FunctionTable().AppendEmpty()
 				f := d.FunctionTable().AppendEmpty()
 				f.SetNameStrindex(1)
+
+				d.MappingTable().AppendEmpty()
 				return d
 			}(),
 		},
