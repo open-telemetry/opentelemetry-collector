@@ -65,10 +65,21 @@ type Config struct {
     {{ template "struct" .Metadata.Config }}
 }
 
+{{ define "customValidator" -}}
+    {{ $name := .FieldName | publicVar -}}
+    {{ $value := "c" }}
+    {{- if ne .FieldName "." }}
+        {{ $value = printf "c.%s" $name -}}
+    {{ end }}
+    if inner_err := {{ .CustomValidator }}({{ $value }}); inner_err != nil {
+        err = errors.Join(err, inner_err)
+    }
+{{- end }}
+
 {{ define "requiredValidator" -}}
     {{ $name := .FieldName | publicVar -}}
     {{- if .IsPointer }}
-        {{- if or (eq .FieldType "array") (eq .FieldType "object") }}
+        {{- if or (eq .FieldType "array") (eq .FieldType "map") }}
         if c.{{ $name }} == nil || len(*c.{{ $name }}) == 0 {
             err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
         }
@@ -85,7 +96,7 @@ type Config struct {
         if len(c.{{ $name }}) == 0 {
             err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
         }
-    {{- else if eq .FieldType "object" }}
+    {{- else if eq .FieldType "map" }}
         if c.{{ $name }} == nil || len(c.{{ $name }}) == 0 {
             err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
         }
@@ -95,6 +106,9 @@ type Config struct {
 {{- define "validation" -}}
     {{- if .IsRequired -}}
         {{ template "requiredValidator" . }}
+    {{- end -}}
+    {{- if .CustomValidator }}
+        {{ template "customValidator" . }}
     {{- end -}}
 {{- end }}
 
