@@ -60,7 +60,7 @@ You can run `cd cmd/mdatagen && $(GOCMD) install .` to install the `mdatagen` to
 
 ### Component Config Documentation
 
-The metadata generator supports automatic generation of configuration schemas for components. 
+The metadata generator supports automatic generation of configuration schemas for components.
 This generates JSON Schema files that enable IDE autocompletion, validation, and documentation for component configuration.
 In the future it will also generate Go config structs and human-readable documentation for configuration options
 

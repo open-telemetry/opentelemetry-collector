@@ -19,3 +19,5 @@ processors:
           headers:
           - name: "key1"
             value: "value1"
+error_output_paths: []
+output_paths: []

@@ -6,7 +6,7 @@ status:
   class: pkg
   stability:
     beta: [metrics, traces, logs]
-    development: [profiles]
+    alpha: [profiles]
 
 feature_gates:
   - id: configoptional.AddEnabledField

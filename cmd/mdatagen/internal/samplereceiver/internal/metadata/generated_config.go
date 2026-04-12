@@ -339,10 +339,20 @@ func (ms *ReaggregateMetricWithRequiredMetricConfig) Validate() error {
 	return nil
 }
 
+// SystemCPUTimeMetricAttributeKey specifies the key of an attribute for the system.cpu.time metric.
+type SystemCPUTimeMetricAttributeKey string
+
+const (
+	SystemCPUTimeMetricAttributeKeyCpu SystemCPUTimeMetricAttributeKey = "cpu"
+)
+
 // SystemCPUTimeMetricConfig provides config for the system.cpu.time metric.
 type SystemCPUTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemCPUTimeMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *SystemCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -359,6 +369,72 @@ func (ms *SystemCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+func (ms *SystemCPUTimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemCPUTimeMetricAttributeKeyCpu:
+		default:
+			return fmt.Errorf("metric system.cpu.time doesn't have an attribute %v, valid attributes: [cpu]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SystemMemoryUsageMetricAttributeKey specifies the key of an attribute for the system.memory.usage metric.
+type SystemMemoryUsageMetricAttributeKey string
+
+const (
+	SystemMemoryUsageMetricAttributeKeyState SystemMemoryUsageMetricAttributeKey = "state"
+)
+
+// SystemMemoryUsageMetricConfig provides config for the system.memory.usage metric.
+type SystemMemoryUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemMemoryUsageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemMemoryUsageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemMemoryUsageMetricAttributeKeyState:
+		default:
+			return fmt.Errorf("metric system.memory.usage doesn't have an attribute %v, valid attributes: [state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MetricsConfig provides config for sample metrics.
 type MetricsConfig struct {
 	DefaultMetric                 DefaultMetricMetricConfig                 `mapstructure:"default.metric"`
@@ -369,6 +445,7 @@ type MetricsConfig struct {
 	ReaggregateMetric             ReaggregateMetricMetricConfig             `mapstructure:"reaggregate.metric"`
 	ReaggregateMetricWithRequired ReaggregateMetricWithRequiredMetricConfig `mapstructure:"reaggregate.metric.with_required"`
 	SystemCPUTime                 SystemCPUTimeMetricConfig                 `mapstructure:"system.cpu.time"`
+	SystemMemoryUsage             SystemMemoryUsageMetricConfig             `mapstructure:"system.memory.usage"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -407,7 +484,14 @@ func DefaultMetricsConfig() MetricsConfig {
 			EnabledAttributes:   []ReaggregateMetricWithRequiredMetricAttributeKey{ReaggregateMetricWithRequiredMetricAttributeKeyRequiredStringAttr, ReaggregateMetricWithRequiredMetricAttributeKeyStringAttr, ReaggregateMetricWithRequiredMetricAttributeKeyBooleanAttr},
 		},
 		SystemCPUTime: SystemCPUTimeMetricConfig{
-			Enabled: true,
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SystemCPUTimeMetricAttributeKey{SystemCPUTimeMetricAttributeKeyCpu},
+		},
+		SystemMemoryUsage: SystemMemoryUsageMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SystemMemoryUsageMetricAttributeKey{SystemMemoryUsageMetricAttributeKeyState},
 		},
 	}
 }
@@ -487,14 +571,15 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for sample resource attributes.
 type ResourceAttributesConfig struct {
-	MapResourceAttr                  ResourceAttributeConfig `mapstructure:"map.resource.attr"`
-	OptionalResourceAttr             ResourceAttributeConfig `mapstructure:"optional.resource.attr"`
-	SliceResourceAttr                ResourceAttributeConfig `mapstructure:"slice.resource.attr"`
-	StringEnumResourceAttr           ResourceAttributeConfig `mapstructure:"string.enum.resource.attr"`
-	StringResourceAttr               ResourceAttributeConfig `mapstructure:"string.resource.attr"`
-	StringResourceAttrDisableWarning ResourceAttributeConfig `mapstructure:"string.resource.attr_disable_warning"`
-	StringResourceAttrRemoveWarning  ResourceAttributeConfig `mapstructure:"string.resource.attr_remove_warning"`
-	StringResourceAttrToBeRemoved    ResourceAttributeConfig `mapstructure:"string.resource.attr_to_be_removed"`
+	MapResourceAttr                       ResourceAttributeConfig `mapstructure:"map.resource.attr"`
+	OptionalResourceAttr                  ResourceAttributeConfig `mapstructure:"optional.resource.attr"`
+	SliceResourceAttr                     ResourceAttributeConfig `mapstructure:"slice.resource.attr"`
+	StringEnumResourceAttr                ResourceAttributeConfig `mapstructure:"string.enum.resource.attr"`
+	StringResourceAttr                    ResourceAttributeConfig `mapstructure:"string.resource.attr"`
+	StringResourceAttrDisableWarning      ResourceAttributeConfig `mapstructure:"string.resource.attr_disable_warning"`
+	StringResourceAttrRemoveWarning       ResourceAttributeConfig `mapstructure:"string.resource.attr_remove_warning"`
+	StringResourceAttrToBeRemoved         ResourceAttributeConfig `mapstructure:"string.resource.attr_to_be_removed"`
+	StringResourceDisabledAttrToBeRemoved ResourceAttributeConfig `mapstructure:"string.resource.disabled_attr_to_be_removed"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -522,6 +607,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		StringResourceAttrToBeRemoved: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		StringResourceDisabledAttrToBeRemoved: ResourceAttributeConfig{
+			Enabled: false,
 		},
 	}
 }
