@@ -6,7 +6,7 @@ description: This scraper is used for testing purposes to check the output of md
 reaggregation_enabled: true
 github_project: open-telemetry/opentelemetry-collector
 
-sem_conv_version: 1.38.0
+sem_conv_version: 1.40.0
 
 status:
   disable_codecov_badge: true
