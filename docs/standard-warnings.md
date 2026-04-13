@@ -1,5 +1,5 @@
 # Standard Warnings
-Some components have scenarios that could cause issues.  Some components require the collector be interacted with in a specific way in order to ensure the component works as intended. This document describes common warnings that may affect a component in the collector. 
+Some components have scenarios that could cause issues.  Some components require the collector be interacted with in a specific way in order to ensure the component works as intended. This document describes common warnings that may affect a component in the collector.
 
 Visit a component's README to see if it is affected by any of these standard warnings.
 
