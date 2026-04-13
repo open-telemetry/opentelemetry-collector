@@ -6,7 +6,7 @@ description: This scraper is used for testing purposes to check the output of md
 reaggregation_enabled: true
 github_project: open-telemetry/opentelemetry-collector
 
-sem_conv_version: 1.38.0
+sem_conv_version: 1.40.0
 
 status:
   disable_codecov_badge: true
@@ -38,6 +38,8 @@ config:
           http_client:
             $ref: /config/confighttp.client_config
             x-pointer: true
+            go_struct:
+              custom_validator:
           interval:
             type: string
             format: duration
@@ -223,4 +225,4 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     semantic_convention:
-      ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime
+      ref: system/system-metrics.md#metric-systemcputime

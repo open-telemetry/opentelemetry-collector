@@ -41,9 +41,9 @@ This has been discarded, as the usage would have been too difficult.
 The proposed approach will consist of two main phases:
 
 * Introduce `experimental` packages for each required module of the collector that needs to be profiles-aware.
-	* `consumer`, `receiver`, `connector`, `component`, `processor`
+  * `consumer`, `receiver`, `connector`, `component`, `processor`
 * Mark specific APIs as `experimental` in their godoc for parts that can't be a new package.
-	* `service`
+  * `service`
 
 ### Introduce "experimental" subpackages
 
@@ -56,8 +56,7 @@ ones currently available on the main branch.
 The profiling methods and interfaces will be made available in a `profiles`
 subpackage.
 
-See [PR
-#10253](https://github.com/open-telemetry/opentelemetry-collector/pull/10253)
+See [PR #10253](https://github.com/open-telemetry/opentelemetry-collector/pull/10253)
 for an example.
 
 ### Mark specific APIs as `experimental`
@@ -87,10 +86,10 @@ The user-specified configuration will let users specify a `profiles` pipeline:
 
 ```
 service:
-	pipelines:
-		profiles:
-			receivers: [otlp]
-			exporters: [otlp]
+  pipelines:
+    profiles:
+      receivers: [otlp]
+      exporters: [otlp]
 ```
 
 When an experimental signal is being used, the collector will log a warning at
