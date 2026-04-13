@@ -317,7 +317,7 @@ type ValidationRules struct {
 	MaxLength *int
 	MinLength *int
 	Pattern   *string
-	Required  *bool
+	Required  bool
 }
 
 func (vr *ValidationRules) HasValueRule() bool {
@@ -325,7 +325,7 @@ func (vr *ValidationRules) HasValueRule() bool {
 }
 
 func (vr *ValidationRules) Enabled() bool {
-	return vr.HasValueRule() || vr.Required != nil
+	return vr.HasValueRule() || vr.Required
 }
 
 type Validator struct {
@@ -344,11 +344,8 @@ func collectValidators(md *ConfigMetadata, validators *[]Validator) {
 			MaxLength: prop.MaxLength,
 			MinLength: prop.MinLength,
 		}
-		isRequired := slices.Contains(md.Required, propName)
 
-		if isRequired {
-			rules.Required = &isRequired
-		}
+		rules.Required = slices.Contains(md.Required, propName)
 		if prop.Pattern != "" {
 			rules.Pattern = &prop.Pattern
 		}

@@ -1041,7 +1041,7 @@ func TestExtractValidators(t *testing.T) {
 					FieldType:  "string",
 					IsOptional: false,
 					IsPointer:  false,
-					Rules:      ValidationRules{Required: Ptr(true)},
+					Rules:      ValidationRules{Required: true},
 				},
 			},
 		},
@@ -1060,7 +1060,7 @@ func TestExtractValidators(t *testing.T) {
 					FieldType:  "string",
 					IsOptional: true,
 					IsPointer:  false,
-					Rules:      ValidationRules{Required: Ptr(true)},
+					Rules:      ValidationRules{Required: true},
 				},
 			},
 		},
@@ -1079,7 +1079,7 @@ func TestExtractValidators(t *testing.T) {
 					FieldType:  "string",
 					IsOptional: false,
 					IsPointer:  true,
-					Rules:      ValidationRules{Required: Ptr(true)},
+					Rules:      ValidationRules{Required: true},
 				},
 			},
 		},
@@ -1193,7 +1193,7 @@ func TestExtractValidators_StringValidators(t *testing.T) {
 				{
 					FieldName: "name",
 					FieldType: "string",
-					Rules:     ValidationRules{Required: Ptr(true), MinLength: &minLen, MaxLength: &maxLen, Pattern: Ptr(`^[a-z]+$`)},
+					Rules:     ValidationRules{Required: true, MinLength: &minLen, MaxLength: &maxLen, Pattern: Ptr(`^[a-z]+$`)},
 				},
 			},
 		},
@@ -1305,7 +1305,7 @@ func TestExtractValidators_RequiredAndCustomValidator(t *testing.T) {
 	// First validator is the required check
 	require.Equal(t, "http_client", result[0].FieldName)
 	require.NotNil(t, result[0].Rules.Required)
-	require.True(t, *result[0].Rules.Required)
+	require.True(t, result[0].Rules.Required)
 	require.Empty(t, result[0].CustomValidator)
 
 	// Second validator is the custom validator
@@ -1330,7 +1330,7 @@ func TestExtractValidators_RootCustomValidatorLast(t *testing.T) {
 	result := ExtractValidators(md)
 	require.Len(t, result, 2)
 	require.NotNil(t, result[1].Rules.Required)
-	require.True(t, *result[1].Rules.Required)
+	require.True(t, result[1].Rules.Required)
 	require.Empty(t, result[1].CustomValidator)
 	require.Equal(t, ".", result[0].FieldName)
 	require.Equal(t, "validateConfig", result[0].CustomValidator)
@@ -1364,7 +1364,7 @@ func TestValidationRules_HasValueRule(t *testing.T) {
 		},
 		{
 			name:     "only required",
-			rules:    ValidationRules{Required: Ptr(true)},
+			rules:    ValidationRules{Required: true},
 			expected: false,
 		},
 		{
@@ -1384,7 +1384,7 @@ func TestValidationRules_HasValueRule(t *testing.T) {
 		},
 		{
 			name:     "required and pattern",
-			rules:    ValidationRules{Required: Ptr(true), Pattern: Ptr(`^[a-z]+$`)},
+			rules:    ValidationRules{Required: true, Pattern: Ptr(`^[a-z]+$`)},
 			expected: true,
 		},
 		{
@@ -1418,7 +1418,7 @@ func TestNewCfgFns_ExtractValidators(t *testing.T) {
 	require.Len(t, result, 1)
 	require.Equal(t, "name", result[0].FieldName)
 	require.NotNil(t, result[0].Rules.Required)
-	require.True(t, *result[0].Rules.Required)
+	require.True(t, result[0].Rules.Required)
 }
 
 func Ptr[T any](v T) *T {
