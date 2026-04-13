@@ -5,6 +5,7 @@ package builder
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -186,7 +187,8 @@ func TestRelativePath(t *testing.T) {
 	// verify
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
-	assert.True(t, strings.HasPrefix(cfg.Extensions[0].Path, cwd))
+	normalizedCwd := filepath.ToSlash(cwd)
+	assert.True(t, strings.HasPrefix(cfg.Extensions[0].Path, normalizedCwd), "expected path %q to have prefix %q", cfg.Extensions[0].Path, normalizedCwd)
 }
 
 func TestModuleFromCore(t *testing.T) {
