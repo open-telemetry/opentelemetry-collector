@@ -56,14 +56,6 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return typeName
 		},
-		"hasValueValidators": func(v Validator) bool {
-			for k := range v.Validators {
-				if k != "required" {
-					return true
-				}
-			}
-			return false
-		},
 	}
 }
 
@@ -321,57 +313,53 @@ func ExtractValidators(md *ConfigMetadata) []Validator {
 	return validators
 }
 
+type ValidationRules struct {
+	MaxLength *int
+	MinLength *int
+	Pattern   *string
+	Required  *bool
+}
+
+func (vr *ValidationRules) HasValueRule() bool {
+	return vr.MaxLength != nil || vr.MinLength != nil || vr.Pattern != nil
+}
+
+func (vr *ValidationRules) Enabled() bool {
+	return vr.HasValueRule() || vr.Required != nil
+}
+
 type Validator struct {
 	FieldName       string
 	FieldType       string
 	IsPointer       bool
 	IsOptional      bool
-	Validators      map[string]any
+	Rules           ValidationRules
 	CustomValidator string
-}
-
-var supportedValidatorChecks = map[string]func(*ConfigMetadata) any{
-	"maxLength": func(md *ConfigMetadata) any {
-		if md.MaxLength == nil {
-			return nil
-		}
-		return *md.MaxLength
-	},
-	"minLength": func(md *ConfigMetadata) any {
-		if md.MinLength == nil {
-			return nil
-		}
-		return *md.MinLength
-	},
-	"pattern": func(md *ConfigMetadata) any {
-		if md.Pattern == "" {
-			return nil
-		}
-		return md.Pattern
-	},
 }
 
 func collectValidators(md *ConfigMetadata, validators *[]Validator) {
 	for _, propName := range slices.Sorted(maps.Keys(md.Properties)) {
 		prop := md.Properties[propName]
-		fieldValidators := make(map[string]any)
-		isRequired := slices.Contains(md.Required, propName)
-		if isRequired {
-			fieldValidators["required"] = true
+		rules := ValidationRules{
+			MaxLength: prop.MaxLength,
+			MinLength: prop.MinLength,
 		}
-		for validatorName, getField := range supportedValidatorChecks {
-			if val := getField(prop); val != nil {
-				fieldValidators[validatorName] = val
-			}
+		isRequired := slices.Contains(md.Required, propName)
+
+		if isRequired {
+			rules.Required = &isRequired
+		}
+		if prop.Pattern != "" {
+			rules.Pattern = &prop.Pattern
 		}
 
-		if len(fieldValidators) > 0 {
+		if rules.Enabled() {
 			*validators = append(*validators, Validator{
 				FieldName:  propName,
 				FieldType:  resolveType(prop),
 				IsPointer:  prop.IsPointer,
 				IsOptional: prop.IsOptional,
-				Validators: fieldValidators,
+				Rules:      rules,
 			})
 		}
 

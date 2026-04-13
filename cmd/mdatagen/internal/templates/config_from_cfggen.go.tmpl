@@ -112,38 +112,38 @@ type Config struct {
 {{- end -}}
 
 {{ define "maxLengthValidator" -}}
-    {{ $maxLength := index .Validators "maxLength" -}}
+    {{ $maxLength := .Rules.MaxLength -}}
     if len({{ template "fieldValue" . }}) > {{ $maxLength }} {
         err = errors.Join(err, errors.New("{{ .FieldName }} exceeds maximum length of {{ $maxLength }}"))
     }
 {{- end }}
 
 {{ define "minLengthValidator" -}}
-    {{ $minLength := index .Validators "minLength" -}}
+    {{ $minLength := .Rules.MinLength -}}
     if len({{ template "fieldValue" . }}) < {{ $minLength }} {
         err = errors.Join(err, errors.New("{{ .FieldName }} must have minimum length of {{ $minLength }}"))
     }
 {{- end }}
 
 {{ define "patternValidator" -}}
-    {{ $pattern := index .Validators "pattern" -}}
+    {{ $pattern := .Rules.Pattern -}}
     if matched, _ := regexp.MatchString(`{{ $pattern }}`, {{ template "fieldValue" . }}); !matched {
         err = errors.Join(err, errors.New("{{ .FieldName }} must match pattern `{{ $pattern }}`"))
     }
 {{- end }}
 
 {{ define "valueValidators" }}
-    {{ if index .Validators "maxLength" }}{{ template "maxLengthValidator" . }}{{ end }}
-    {{ if index .Validators "minLength" }}{{ template "minLengthValidator" . }}{{ end }}
-    {{ if index .Validators "pattern" }}{{ template "patternValidator" . }}{{ end }}
+    {{ if .Rules.MaxLength }}{{ template "maxLengthValidator" . }}{{ end }}
+    {{ if .Rules.MinLength }}{{ template "minLengthValidator" . }}{{ end }}
+    {{ if .Rules.Pattern }}{{ template "patternValidator" . }}{{ end }}
 {{ end -}}
 
 {{ define "validation" }}
 
-    {{ if index .Validators "required" -}}
+    {{ if .Rules.Required -}}
         {{ template "requiredValidator" . }}
     {{- end -}}
-    {{- if hasValueValidators . }}
+    {{- if .Rules.HasValueRule }}
         {{- $name := .FieldName | publicVar -}}
         {{- if .IsPointer }}if c.{{ $name }} != nil { {{ end -}}
         {{- if .IsOptional }}if c.{{ $name }}.HasValue() { {{ end -}}

@@ -1041,7 +1041,7 @@ func TestExtractValidators(t *testing.T) {
 					FieldType:  "string",
 					IsOptional: false,
 					IsPointer:  false,
-					Validators: map[string]any{"required": true},
+					Rules:      ValidationRules{Required: Ptr(true)},
 				},
 			},
 		},
@@ -1060,7 +1060,7 @@ func TestExtractValidators(t *testing.T) {
 					FieldType:  "string",
 					IsOptional: true,
 					IsPointer:  false,
-					Validators: map[string]any{"required": true},
+					Rules:      ValidationRules{Required: Ptr(true)},
 				},
 			},
 		},
@@ -1079,7 +1079,7 @@ func TestExtractValidators(t *testing.T) {
 					FieldType:  "string",
 					IsOptional: false,
 					IsPointer:  true,
-					Validators: map[string]any{"required": true},
+					Rules:      ValidationRules{Required: Ptr(true)},
 				},
 			},
 		},
@@ -1126,9 +1126,9 @@ func TestExtractValidators_StringValidators(t *testing.T) {
 			},
 			expected: []Validator{
 				{
-					FieldName:  "name",
-					FieldType:  "string",
-					Validators: map[string]any{"maxLength": maxLen},
+					FieldName: "name",
+					FieldType: "string",
+					Rules:     ValidationRules{MaxLength: &maxLen},
 				},
 			},
 		},
@@ -1142,9 +1142,9 @@ func TestExtractValidators_StringValidators(t *testing.T) {
 			},
 			expected: []Validator{
 				{
-					FieldName:  "name",
-					FieldType:  "string",
-					Validators: map[string]any{"minLength": minLen},
+					FieldName: "name",
+					FieldType: "string",
+					Rules:     ValidationRules{MinLength: &minLen},
 				},
 			},
 		},
@@ -1158,9 +1158,9 @@ func TestExtractValidators_StringValidators(t *testing.T) {
 			},
 			expected: []Validator{
 				{
-					FieldName:  "name",
-					FieldType:  "string",
-					Validators: map[string]any{"pattern": `^[a-z]+$`},
+					FieldName: "name",
+					FieldType: "string",
+					Rules:     ValidationRules{Pattern: Ptr(`^[a-z]+$`)},
 				},
 			},
 		},
@@ -1174,9 +1174,9 @@ func TestExtractValidators_StringValidators(t *testing.T) {
 			},
 			expected: []Validator{
 				{
-					FieldName:  "name",
-					FieldType:  "string",
-					Validators: map[string]any{"minLength": minLen, "maxLength": maxLen, "pattern": `^[a-z]+$`},
+					FieldName: "name",
+					FieldType: "string",
+					Rules:     ValidationRules{MinLength: &minLen, MaxLength: &maxLen, Pattern: Ptr(`^[a-z]+$`)},
 				},
 			},
 		},
@@ -1191,9 +1191,9 @@ func TestExtractValidators_StringValidators(t *testing.T) {
 			},
 			expected: []Validator{
 				{
-					FieldName:  "name",
-					FieldType:  "string",
-					Validators: map[string]any{"required": true, "minLength": minLen, "maxLength": maxLen, "pattern": `^[a-z]+$`},
+					FieldName: "name",
+					FieldType: "string",
+					Rules:     ValidationRules{Required: Ptr(true), MinLength: &minLen, MaxLength: &maxLen, Pattern: Ptr(`^[a-z]+$`)},
 				},
 			},
 		},
@@ -1281,7 +1281,7 @@ func TestExtractValidators_CustomValidator(t *testing.T) {
 	require.Len(t, result, 1)
 	require.Equal(t, "http_client", result[0].FieldName)
 	require.Equal(t, "validateHTTPClient", result[0].CustomValidator)
-	require.Empty(t, result[0].Validators)
+	require.Empty(t, result[0].Rules)
 	require.True(t, result[0].IsPointer)
 }
 
@@ -1304,12 +1304,13 @@ func TestExtractValidators_RequiredAndCustomValidator(t *testing.T) {
 
 	// First validator is the required check
 	require.Equal(t, "http_client", result[0].FieldName)
-	require.Equal(t, true, result[0].Validators["required"])
+	require.NotNil(t, result[0].Rules.Required)
+	require.True(t, *result[0].Rules.Required)
 	require.Empty(t, result[0].CustomValidator)
 
 	// Second validator is the custom validator
 	require.Equal(t, "http_client", result[1].FieldName)
-	require.Empty(t, result[1].Validators)
+	require.Empty(t, result[1].Rules)
 	require.Equal(t, "validateHTTPClient", result[1].CustomValidator)
 }
 
@@ -1328,7 +1329,8 @@ func TestExtractValidators_RootCustomValidatorLast(t *testing.T) {
 
 	result := ExtractValidators(md)
 	require.Len(t, result, 2)
-	require.Equal(t, true, result[1].Validators["required"])
+	require.NotNil(t, result[1].Rules.Required)
+	require.True(t, *result[1].Rules.Required)
 	require.Empty(t, result[1].CustomValidator)
 	require.Equal(t, ".", result[0].FieldName)
 	require.Equal(t, "validateConfig", result[0].CustomValidator)
@@ -1349,55 +1351,52 @@ func TestExtractValidators_NoCustomValidator(t *testing.T) {
 	require.Empty(t, result)
 }
 
-func TestNewCfgFns_HasValueValidators(t *testing.T) {
-	fns := NewCfgFns("", "")
-	hasValueValidators := fns["hasValueValidators"].(func(Validator) bool)
-
+func TestValidationRules_HasValueRule(t *testing.T) {
 	tests := []struct {
-		name      string
-		validator Validator
-		expected  bool
+		name     string
+		rules    ValidationRules
+		expected bool
 	}{
 		{
-			name:      "empty validators map",
-			validator: Validator{Validators: map[string]any{}},
-			expected:  false,
+			name:     "empty validators map",
+			rules:    ValidationRules{},
+			expected: false,
 		},
 		{
-			name:      "only required",
-			validator: Validator{Validators: map[string]any{"required": true}},
-			expected:  false,
+			name:     "only required",
+			rules:    ValidationRules{Required: Ptr(true)},
+			expected: false,
 		},
 		{
-			name:      "maxLength",
-			validator: Validator{Validators: map[string]any{"maxLength": 64}},
-			expected:  true,
+			name:     "maxLength",
+			rules:    ValidationRules{MaxLength: Ptr(64)},
+			expected: true,
 		},
 		{
-			name:      "minLength",
-			validator: Validator{Validators: map[string]any{"minLength": 1}},
-			expected:  true,
+			name:     "minLength",
+			rules:    ValidationRules{MinLength: Ptr(1)},
+			expected: true,
 		},
 		{
-			name:      "pattern",
-			validator: Validator{Validators: map[string]any{"pattern": `^[a-z]+$`}},
-			expected:  true,
+			name:     "pattern",
+			rules:    ValidationRules{Pattern: Ptr(`^[a-z]+$`)},
+			expected: true,
 		},
 		{
-			name:      "required and pattern",
-			validator: Validator{Validators: map[string]any{"required": true, "pattern": `^[a-z]+$`}},
-			expected:  true,
+			name:     "required and pattern",
+			rules:    ValidationRules{Required: Ptr(true), Pattern: Ptr(`^[a-z]+$`)},
+			expected: true,
 		},
 		{
-			name:      "nil validators map",
-			validator: Validator{Validators: nil},
-			expected:  false,
+			name:     "nil validators map",
+			rules:    ValidationRules{},
+			expected: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.expected, hasValueValidators(tt.validator))
+			require.Equal(t, tt.expected, tt.rules.HasValueRule())
 		})
 	}
 }
@@ -1418,5 +1417,10 @@ func TestNewCfgFns_ExtractValidators(t *testing.T) {
 	result := extractValidators(md)
 	require.Len(t, result, 1)
 	require.Equal(t, "name", result[0].FieldName)
-	require.Equal(t, true, result[0].Validators["required"])
+	require.NotNil(t, result[0].Rules.Required)
+	require.True(t, *result[0].Rules.Required)
+}
+
+func Ptr[T any](v T) *T {
+	return &v
 }
