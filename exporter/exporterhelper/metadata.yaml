@@ -49,37 +49,10 @@ telemetry:
         value_type: int
         monotonic: true
 
-    exporter_in_flight_log_records:
+    exporter_in_flight_requests:
       enabled: true
       stability: development
-      description: Number of log record export requests currently in-flight (including retry backoff).
-      unit: "{request}"
-      sum:
-        value_type: int
-        monotonic: false
-
-    exporter_in_flight_metric_points:
-      enabled: true
-      stability: development
-      description: Number of metric point export requests currently in-flight (including retry backoff).
-      unit: "{request}"
-      sum:
-        value_type: int
-        monotonic: false
-
-    exporter_in_flight_profile_samples:
-      enabled: true
-      stability: development
-      description: Number of profile sample export requests currently in-flight (including retry backoff).
-      unit: "{request}"
-      sum:
-        value_type: int
-        monotonic: false
-
-    exporter_in_flight_spans:
-      enabled: true
-      stability: development
-      description: Number of span export requests currently in-flight (including retry backoff).
+      description: Number of export requests currently in-flight (including retry backoff).
       unit: "{request}"
       sum:
         value_type: int

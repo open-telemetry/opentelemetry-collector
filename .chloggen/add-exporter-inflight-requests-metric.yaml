@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/exporterhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add per-signal `otelcol_exporter_in_flight_*` metrics to track the number of export requests currently in-flight per exporter.
+note: Add `otelcol_exporter_in_flight_requests` metric to track the number of export requests currently in-flight per exporter.
 
 # One or more tracking issues or pull requests related to the change
 issues: [15009]
