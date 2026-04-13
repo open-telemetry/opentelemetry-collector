@@ -104,7 +104,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 	}
 }
 
-func TestHttpServerTLS(t *testing.T) {
+func TestHTTPServerTLS(t *testing.T) {
 	tests := []struct {
 		name           string
 		tlsServerCreds configoptional.Optional[configtls.ServerConfig]
@@ -279,7 +279,7 @@ func TestHttpServerTLS(t *testing.T) {
 	}
 }
 
-func TestHttpServerTransport(t *testing.T) {
+func TestHTTPServerTransport(t *testing.T) {
 	if runtime.GOOS == "linux" {
 		t.Run("unix", func(t *testing.T) {
 			addr := "@" + t.Name() // abstract unix socket
@@ -309,7 +309,7 @@ func TestHttpServerTransport(t *testing.T) {
 	}
 }
 
-func TestHttpCors(t *testing.T) {
+func TestHTTPCors(t *testing.T) {
 	tests := []struct {
 		name string
 
@@ -399,7 +399,7 @@ func TestHttpCors(t *testing.T) {
 	}
 }
 
-func TestHttpCorsInvalidSettings(t *testing.T) {
+func TestHTTPCorsInvalidSettings(t *testing.T) {
 	sc := &ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "localhost:0",
@@ -419,7 +419,7 @@ func TestHttpCorsInvalidSettings(t *testing.T) {
 	require.NoError(t, s.Close())
 }
 
-func TestHttpCorsWithSettings(t *testing.T) {
+func TestHTTPCorsWithSettings(t *testing.T) {
 	sc := &ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "localhost:0",
@@ -455,7 +455,7 @@ func TestHttpCorsWithSettings(t *testing.T) {
 	assert.Equal(t, "*", rec.Header().Get("Access-Control-Allow-Origin"))
 }
 
-func TestHttpServerHeaders(t *testing.T) {
+func TestHTTPServerHeaders(t *testing.T) {
 	tests := []struct {
 		name    string
 		headers configopaque.MapList
@@ -861,7 +861,7 @@ func TestAuthWithQueryParams(t *testing.T) {
 	assert.True(t, authCalled)
 }
 
-func BenchmarkHttpRequest(b *testing.B) {
+func BenchmarkHTTPRequest(b *testing.B) {
 	tests := []struct {
 		name            string
 		forceHTTP1      bool

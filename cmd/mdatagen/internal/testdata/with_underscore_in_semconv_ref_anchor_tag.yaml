@@ -18,7 +18,7 @@ metrics:
     description: Time disk spent activated..
     stability: development
     semantic_convention:
-      ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemdiskio_time
+      ref: system/system-metrics.md#metric-systemdiskio_time
     unit: s
     sum:
       value_type: double

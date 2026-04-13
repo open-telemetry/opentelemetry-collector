@@ -19,7 +19,7 @@ func (ms {{ .structName }}) {{ .accessorFieldName }}() {{ .returnType }} {
 func (ms {{ .structName }}) Set{{ .accessorFieldName }}(v {{ .returnType }}) {
 	ms.state.AssertMutable()
 	var ov *internal.{{ .originStructType }}
-	if !internal.UseProtoPooling.IsEnabled() {
+	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 		ov = &internal.{{ .originStructType }}{}
 	} else {
 		ov = internal.ProtoPool{{ .oneOfName }}.Get().(*internal.{{ .originStructType }})

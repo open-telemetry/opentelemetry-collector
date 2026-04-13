@@ -184,10 +184,10 @@ type factoryWithConfig struct {
 }
 
 type controllerOptions struct {
-	tickerCh             <-chan time.Time
-	factoriesWithConfig   []factoryWithConfig
-	metricsSchedules      []MetricsSchedule
-	logsSchedules         []LogsSchedule
+	tickerCh            <-chan time.Time
+	factoriesWithConfig []factoryWithConfig
+	metricsSchedules    []MetricsSchedule
+	logsSchedules       []LogsSchedule
 }
 
 // NewLogsController creates a receiver.Logs with the configured options, that can control multiple scraper.Logs.
@@ -276,9 +276,9 @@ func scrapeLogs(c *controller.Controller[scraper.Logs], nextConsumer consumer.Lo
 	}
 
 	logRecordCount := logs.LogRecordCount()
-	ctx = c.Obsrecv().StartMetricsOp(ctx)
+	ctx = c.Obsrecv().StartLogsOp(ctx)
 	err := nextConsumer.ConsumeLogs(ctx, logs)
-	c.Obsrecv().EndMetricsOp(ctx, "", logRecordCount, err)
+	c.Obsrecv().EndLogsOp(ctx, "", logRecordCount, err)
 }
 
 func scrapeMetrics(c *controller.Controller[scraper.Metrics], nextConsumer consumer.Metrics) {
