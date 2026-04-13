@@ -30,9 +30,9 @@ Current phase of the pod
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| phase | The phase of the pod (Pending, Running, Succeeded, Failed, Unknown) | Str: ``Pending``, ``Running``, ``Succeeded``, ``Failed``, ``Unknown`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| phase | The phase of the pod (Pending, Running, Succeeded, Failed, Unknown) | Str: ``Pending``, ``Running``, ``Succeeded``, ``Failed``, ``Unknown`` | Recommended | - |
 
 ### k8s.replicaset.desired
 
@@ -44,13 +44,13 @@ Number of desired replicas
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| k8s.namespace.name | The name of the Kubernetes Namespace | Any Str | true |
-| k8s.pod.name | The name of the Kubernetes Pod | Any Str | true |
-| k8s.pod.uid | The UID of the Kubernetes Pod | Any Str | true |
-| k8s.replicaset.name | The name of the Kubernetes ReplicaSet | Any Str | true |
-| k8s.replicaset.uid | The UID of the Kubernetes ReplicaSet | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| k8s.namespace.name | The name of the Kubernetes Namespace | Any Str | true | - |
+| k8s.pod.name | The name of the Kubernetes Pod | Any Str | true | - |
+| k8s.pod.uid | The UID of the Kubernetes Pod | Any Str | true | - |
+| k8s.replicaset.name | The name of the Kubernetes ReplicaSet | Any Str | true | - |
+| k8s.replicaset.uid | The UID of the Kubernetes ReplicaSet | Any Str | true | - |
 
 ## Entities
 

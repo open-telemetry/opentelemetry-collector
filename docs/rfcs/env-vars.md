@@ -15,7 +15,7 @@ describes:
 
 ### Out of scope
 
-CLI environment variable resolution has a single syntax (`--config env:ENV`) 
+CLI environment variable resolution has a single syntax (`--config env:ENV`)
 and it is considered out of scope for this document, focusing
 instead on expansion within the Collector configuration.
 
@@ -35,7 +35,7 @@ The following are considered goals of the expansion system:
 3.  ***Multiple expansion methods, if present, should have similar behavior.***
     Switching from `${env:ENV}` to `${ENV}` or vice versa
     should not lead to any surprises.
-4.  ***When the syntax overlaps, expansion should be aligned with*** 
+4.  ***When the syntax overlaps, expansion should be aligned with***
     [***the expansion defined by the Configuration Working Group***](https://github.com/open-telemetry/opentelemetry-specification/blob/032213cedde54a2171dfbd234a371501a3537919/specification/configuration/file-configuration.md#environment-variable-substitution). See [opentelemetry-specification/issues/3963](https://github.com/open-telemetry/opentelemetry-specification/issues/3963) for the counterpart to this line of work in the SDK File spec.
 
 ## Current behavior
@@ -103,7 +103,7 @@ environment variable whose name is stored in the URL
 
 The environment variable value is parsed by the yaml.v3 parser to an
 any-typed variable. The yaml.v3 parser mostly follows the YAML v1.2
-specification with [*some exceptions*](https://github.com/go-yaml/yaml#compatibility). 
+specification with [*some exceptions*](https://github.com/go-yaml/yaml#compatibility).
 You can see how it works for some edge cases in
 [this go.dev/play example](https://go.dev/play/p/3vNLznwSZQe).
 
@@ -171,13 +171,13 @@ syntax as the Configuration WG.
 
 The naked syntax supported in Bash is not supported in the Collector.
 Escaping is supported by using two dollar signs. Escaping is also
-honored for unsupported identifiers like `${1}` (i.e. anything that 
+honored for unsupported identifiers like `${1}` (i.e. anything that
 matches `\${[^$}]+}`).
 
 ### Type casting rules
 
 The environment variable value is parsed by the yaml.v3 parser to an
-any-typed variable and the original representation as a string is also stored. 
+any-typed variable and the original representation as a string is also stored.
 The `yaml.v3` parser mostly follows the YAML v1.2 specification with [*some
 exceptions*](https://github.com/go-yaml/yaml#compatibility). You can see
 how it works for some edge cases in this example:

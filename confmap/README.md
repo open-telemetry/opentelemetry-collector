@@ -126,7 +126,6 @@ service:
   extensions: [ file_storage ]
 ```
 
-
 ```yaml
 # extra_extension.yaml
 extensions:
