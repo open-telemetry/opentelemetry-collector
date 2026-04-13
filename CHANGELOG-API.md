@@ -7,6 +7,14 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.56.0/v0.150.0
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Add custom validation support for Go config structs (#14563)
+
+<!-- previous-version -->
+
 ## v1.55.0/v0.149.0
 
 ### 💡 Enhancements 💡
