@@ -38,7 +38,7 @@ func (f *otelconfFactory) createTracerProvider(
 		return &noopNoContextTracerProvider{}, nil
 	}
 
-	resourceConfig, err := f.createResourceConfigOnce(ctx, set.BuildInfo, componentConfig)
+	resourceConfig, err := createResourceConfig(ctx, set.BuildInfo, &cfg.Resource, set.Resource)
 	if err != nil {
 		return nil, err
 	}

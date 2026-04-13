@@ -23,7 +23,7 @@ func (f *otelconfFactory) createLogger(
 ) (*zap.Logger, component.ShutdownFunc, error) {
 	cfg := componentConfig.(*Config)
 
-	resourceConfig, err := f.createResourceConfigOnce(ctx, set.BuildInfo, componentConfig)
+	resourceConfig, err := createResourceConfig(ctx, set.BuildInfo, &cfg.Resource, set.Resource)
 	if err != nil {
 		return nil, nil, err
 	}

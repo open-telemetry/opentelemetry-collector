@@ -7,7 +7,7 @@ import (
 	"time"
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
-	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
@@ -16,9 +16,7 @@ import (
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
-type otelconfFactory struct {
-	resourceCache resourceCache
-}
+type otelconfFactory struct{}
 
 // NewFactory creates a new telemetry.Factory that uses otelconf
 // to configure opentelemetry-go SDK telemetry providers.

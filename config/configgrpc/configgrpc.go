@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"math"
 	"net"
-	"regexp"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -254,16 +254,44 @@ func (cc *ClientConfig) Validate() error {
 	return nil
 }
 
-// sanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.ClientConfig.Endpoint.
+// sanitizedEndpoint strips the URI scheme and authority from the endpoint to
+// extract the host:port for validation. It handles http://, https://, and any
+// gRPC resolver scheme URI (e.g. dns:///host:port, passthrough:///host:port).
+// For gRPC URIs of the form "scheme://[authority]/endpoint", the authority is
+// also stripped, matching the parsing behavior of grpc-go's url.Parse approach.
 func (cc *ClientConfig) sanitizedEndpoint() string {
 	switch {
 	case cc.isSchemeHTTP():
 		return strings.TrimPrefix(cc.Endpoint, "http://")
 	case cc.isSchemeHTTPS():
 		return strings.TrimPrefix(cc.Endpoint, "https://")
-	case strings.HasPrefix(cc.Endpoint, "dns://"):
-		r := regexp.MustCompile(`^dns:///?`)
-		return r.ReplaceAllString(cc.Endpoint, "")
+	default:
+		// Only attempt URI parsing if the endpoint contains "://", which
+		// distinguishes a scheme URI (e.g. "dns:///host:port") from a bare
+		// host:port. Without this check, url.Parse("host:port") would
+		// misinterpret "host" as the scheme.
+		if !strings.Contains(cc.Endpoint, "://") {
+			return cc.Endpoint
+		}
+		// Parse as a URI to strip scheme and authority, matching how grpc-go
+		// parses target URIs via url.Parse in grpc.NewClient.
+		u, err := url.Parse(cc.Endpoint)
+		if err != nil {
+			return cc.Endpoint
+		}
+		return strings.TrimPrefix(u.Path, "/")
+	}
+}
+
+// grpcDialTarget returns the target string to pass to grpc.NewClient.
+// For http:// and https:// prefixes (which are not gRPC resolver schemes),
+// the prefix is stripped. For all other endpoints, the value is passed through
+// to grpc.NewClient as-is, allowing any gRPC resolver scheme (e.g. dns:///,
+// passthrough:///, xds:///) to be used directly.
+func (cc *ClientConfig) grpcDialTarget() string {
+	switch {
+	case cc.isSchemeHTTP(), cc.isSchemeHTTPS():
+		return cc.sanitizedEndpoint()
 	default:
 		return cc.Endpoint
 	}
@@ -310,7 +338,7 @@ func (cc *ClientConfig) ToClientConn(
 	if err != nil {
 		return nil, err
 	}
-	conn, err := grpc.NewClient(cc.sanitizedEndpoint(), grpcOpts...)
+	conn, err := grpc.NewClient(cc.grpcDialTarget(), grpcOpts...)
 	if err != nil {
 		return nil, err
 	}

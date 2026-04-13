@@ -213,4 +213,15 @@ func TestResourceConfigV030UnmarshalDeclarativeFormat(t *testing.T) {
 		var cfg ResourceConfigV030
 		require.Error(t, conf.Unmarshal(&cfg))
 	})
+
+	t.Run("declarative null value validation error", func(t *testing.T) {
+		conf := confmap.NewFromStringMap(map[string]any{
+			"attributes": []any{
+				map[string]any{"name": "service.name", "value": nil},
+			},
+		})
+		var cfg ResourceConfigV030
+		require.NoError(t, conf.Unmarshal(&cfg))
+		require.ErrorContains(t, xconfmap.Validate(&cfg), "resource attribute \"service.name\" must not be null")
+	})
 }

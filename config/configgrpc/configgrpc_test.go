@@ -266,11 +266,64 @@ func TestAllGrpcClientSettings(t *testing.T) {
 func TestSanitizeEndpoint(t *testing.T) {
 	cfg := NewDefaultClientConfig()
 	cfg.Endpoint = "dns://authority/backend.example.com:4317"
-	assert.Equal(t, "authority/backend.example.com:4317", cfg.sanitizedEndpoint())
+	assert.Equal(t, "backend.example.com:4317", cfg.sanitizedEndpoint())
 	cfg.Endpoint = "dns:///backend.example.com:4317"
 	assert.Equal(t, "backend.example.com:4317", cfg.sanitizedEndpoint())
 	cfg.Endpoint = "dns:////backend.example.com:4317"
 	assert.Equal(t, "/backend.example.com:4317", cfg.sanitizedEndpoint())
+	cfg.Endpoint = "passthrough:///backend.example.com:4317"
+	assert.Equal(t, "backend.example.com:4317", cfg.sanitizedEndpoint())
+	cfg.Endpoint = "xds:///my-service:4317"
+	assert.Equal(t, "my-service:4317", cfg.sanitizedEndpoint())
+	// Unparseable URI with :// falls back to returning the endpoint as-is.
+	cfg.Endpoint = "bad\x7f://host:4317"
+	assert.Equal(t, "bad\x7f://host:4317", cfg.sanitizedEndpoint())
+}
+
+func TestGrpcDialTarget(t *testing.T) {
+	tests := []struct {
+		name     string
+		endpoint string
+		expected string
+	}{
+		{
+			name:     "bare endpoint passed as-is",
+			endpoint: "backend.example.com:4317",
+			expected: "backend.example.com:4317",
+		},
+		{
+			name:     "http prefix is stripped",
+			endpoint: "http://backend.example.com:4317",
+			expected: "backend.example.com:4317",
+		},
+		{
+			name:     "https prefix is stripped",
+			endpoint: "https://backend.example.com:4317",
+			expected: "backend.example.com:4317",
+		},
+		{
+			name:     "dns scheme is preserved for grpc",
+			endpoint: "dns:///backend.example.com:4317",
+			expected: "dns:///backend.example.com:4317",
+		},
+		{
+			name:     "passthrough scheme is preserved for grpc",
+			endpoint: "passthrough:///backend.example.com:4317",
+			expected: "passthrough:///backend.example.com:4317",
+		},
+		{
+			name:     "xds scheme is preserved for grpc",
+			endpoint: "xds:///my-service:4317",
+			expected: "xds:///my-service:4317",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := NewDefaultClientConfig()
+			cfg.Endpoint = tt.endpoint
+			assert.Equal(t, tt.expected, cfg.grpcDialTarget())
+		})
+	}
 }
 
 func TestValidateEndpoint(t *testing.T) {
@@ -279,6 +332,27 @@ func TestValidateEndpoint(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 	cfg.Endpoint = "unix:///my/unix/socket.sock"
 	assert.NoError(t, cfg.Validate())
+}
+
+func TestValidateGrpcSchemeEndpoint(t *testing.T) {
+	cfg := NewDefaultClientConfig()
+	cfg.Endpoint = "passthrough:///backend.example.com:4317"
+	assert.NoError(t, cfg.Validate())
+	cfg.Endpoint = "dns:///backend.example.com:4317"
+	assert.NoError(t, cfg.Validate())
+}
+
+func TestToClientConnWithPassthroughEndpoint(t *testing.T) {
+	cfg := ClientConfig{
+		Endpoint: "passthrough:///localhost:1234",
+		TLS: configtls.ClientConfig{
+			Insecure: true,
+		},
+	}
+	conn, err := cfg.ToClientConn(context.Background(), nil, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+	require.NotNil(t, conn)
+	assert.NoError(t, conn.Close())
 }
 
 func TestHeaders(t *testing.T) {

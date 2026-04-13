@@ -239,6 +239,12 @@ func (cfg *ResourceConfigV030) Validate() error {
 		}
 	}
 
+	for _, attr := range cfg.Attributes {
+		if attr.Value == nil {
+			return fmt.Errorf("resource attribute %q must not be null", attr.Name)
+		}
+	}
+
 	return nil
 }
 
