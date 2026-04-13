@@ -118,6 +118,12 @@ func (c *MetricsConfigV030) Unmarshal(conf *confmap.Conf) error {
 		// change the host), unset *bool fields default to nil which the
 		// Prometheus exporter treats as false. This ensures the defaults
 		// match the implicit/default configuration where these are true.
+		//
+		// This is necessary because specifying any metric readers in the
+		// SDK config completely overwrites the list of readers, so the
+		// Prometheus exporter is treated as a new config without any of
+		// the defaults set in the createDefaultConfig function in
+		// otelconftelemetry. We must re-apply those defaults here.
 		if r.Pull != nil && r.Pull.Exporter.Prometheus != nil {
 			applyPrometheusDefaults(r.Pull.Exporter.Prometheus)
 		}

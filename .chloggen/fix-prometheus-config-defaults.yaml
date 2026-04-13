@@ -1,5 +1,5 @@
 change_type: bug_fix
-component: service/telemetry
+component: pkg/service
 note: Fix Prometheus config defaults mismatch when host is explicitly set in telemetry configuration.
 subtext: |
   When users explicitly configured the telemetry metrics section (e.g. to change the host),
