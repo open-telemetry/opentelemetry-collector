@@ -292,6 +292,7 @@ func (c *Config) parseModules(mods []Module, usedNames map[string]int) ([]Module
 			} else {
 				mod.Path = absPath
 			}
+			mod.Path = filepath.ToSlash(mod.Path)
 
 			// Check if the path exists using the absolute path
 			if _, err := os.Stat(absPath); os.IsNotExist(err) {
