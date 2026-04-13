@@ -589,6 +589,7 @@ func TestLoadMetadata(t *testing.T) {
 			name: "testdata/parent.yaml",
 			want: Metadata{
 				Type:                 "subcomponent",
+				DisplayName:          "Subcomponent",
 				Parent:               "parentComponent",
 				GeneratedPackageName: "metadata",
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
@@ -601,6 +602,7 @@ func TestLoadMetadata(t *testing.T) {
 			name: "testdata/generated_package_name.yaml",
 			want: Metadata{
 				Type:                 "custom",
+				DisplayName:          "Custom Receiver",
 				GeneratedPackageName: "customname",
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
@@ -620,6 +622,7 @@ func TestLoadMetadata(t *testing.T) {
 			name: "testdata/empty_test_config.yaml",
 			want: Metadata{
 				Type:                 "test",
+				DisplayName:          "Test Receiver",
 				GeneratedPackageName: "metadata",
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
@@ -726,22 +729,8 @@ func TestLoadMetadata(t *testing.T) {
 			},
 		},
 		{
-			name: "testdata/no_display_name.yaml",
-			want: Metadata{
-				Type:                 "nodisplayname",
-				DisplayName:          "",
-				GeneratedPackageName: "metadata",
-				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
-				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
-				ShortFolderName:      "testdata",
-				Tests:                Tests{Host: "newMdatagenNopHost()"},
-				Status: &Status{
-					Class: "receiver",
-					Stability: map[component.StabilityLevel][]string{
-						component.StabilityLevelBeta: {"logs"},
-					},
-				},
-			},
+			name:    "testdata/no_display_name.yaml",
+			wantErr: "missing display_name",
 		},
 		{
 			name: "testdata/with_description.yaml",
@@ -766,6 +755,7 @@ func TestLoadMetadata(t *testing.T) {
 			name: "testdata/with_underscore_in_semconv_ref_anchor_tag.yaml",
 			want: Metadata{
 				Type:                 "metricreceiver",
+				DisplayName:          "Metric Receiver",
 				GeneratedPackageName: "metadata",
 				SemConvVersion:       "1.40.0",
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",

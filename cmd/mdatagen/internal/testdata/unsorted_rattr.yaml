@@ -1,4 +1,5 @@
 type: sample
+display_name: Sample Component
 
 status:
   class: receiver

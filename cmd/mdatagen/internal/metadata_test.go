@@ -611,7 +611,8 @@ func TestValidateConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			md := &Metadata{
-				Type: "test",
+				Type:        "test",
+				DisplayName: "Test Component",
 				Status: &Status{
 					Class: "exporter",
 					Stability: StabilityMap{

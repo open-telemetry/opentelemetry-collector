@@ -1,4 +1,5 @@
 type: metricreceiver
+display_name: Metric Receiver
 status:
   class: exporter
   stability:

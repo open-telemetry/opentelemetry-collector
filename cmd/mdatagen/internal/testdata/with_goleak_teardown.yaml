@@ -1,4 +1,5 @@
 type: foobar
+display_name: Foobar Component
 
 status:
   disable_codecov_badge: true

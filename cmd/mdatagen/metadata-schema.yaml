@@ -4,7 +4,7 @@ type:
 # Optional: A deprecated type that is still available as an alias.
 deprecated_type: string
 
-# Optional: Human-readable display name for the component. Used as the title in generated README files.
+# Required: Human-readable display name for the component. Used as the title in generated README files.
 display_name: string
 
 # Optional: Brief description of the component that will be included in the generated README.
