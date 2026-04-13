@@ -171,42 +171,42 @@ func (c *Config) ParseModules() error {
 	var err error
 	usedNames := make(map[string]int)
 
-	c.Extensions, err = parseModules(c.Extensions, usedNames, c.Distribution.UseRelativeReplacePaths, c.Distribution.OutputPath)
+	c.Extensions, err = c.parseModules(c.Extensions, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.Receivers, err = parseModules(c.Receivers, usedNames, c.Distribution.UseRelativeReplacePaths, c.Distribution.OutputPath)
+	c.Receivers, err = c.parseModules(c.Receivers, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.Exporters, err = parseModules(c.Exporters, usedNames, c.Distribution.UseRelativeReplacePaths, c.Distribution.OutputPath)
+	c.Exporters, err = c.parseModules(c.Exporters, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.Processors, err = parseModules(c.Processors, usedNames, c.Distribution.UseRelativeReplacePaths, c.Distribution.OutputPath)
+	c.Processors, err = c.parseModules(c.Processors, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.Connectors, err = parseModules(c.Connectors, usedNames, c.Distribution.UseRelativeReplacePaths, c.Distribution.OutputPath)
+	c.Connectors, err = c.parseModules(c.Connectors, usedNames)
 	if err != nil {
 		return err
 	}
 
-	telemetry, err := parseModules([]Module{c.Telemetry}, usedNames, c.Distribution.UseRelativeReplacePaths, c.Distribution.OutputPath)
+	telemetry, err := c.parseModules([]Module{c.Telemetry}, usedNames)
 	if err != nil {
 		return err
 	}
 	c.Telemetry = telemetry[0]
 
-	c.ConfmapProviders, err = parseModules(c.ConfmapProviders, usedNames, c.Distribution.UseRelativeReplacePaths, c.Distribution.OutputPath)
+	c.ConfmapProviders, err = c.parseModules(c.ConfmapProviders, usedNames)
 	if err != nil {
 		return err
 	}
-	c.ConfmapConverters, err = parseModules(c.ConfmapConverters, usedNames, c.Distribution.UseRelativeReplacePaths, c.Distribution.OutputPath)
+	c.ConfmapConverters, err = c.parseModules(c.ConfmapConverters, usedNames)
 	if err != nil {
 		return err
 	}
@@ -245,7 +245,7 @@ func validateTelemetry(c *Config) error {
 	return nil
 }
 
-func parseModules(mods []Module, usedNames map[string]int, useRelativePaths bool, outputPath string) ([]Module, error) {
+func (c *Config) parseModules(mods []Module, usedNames map[string]int) ([]Module, error) {
 	var parsedModules []Module
 	for _, mod := range mods {
 		if mod.Import == "" {
@@ -280,10 +280,10 @@ func parseModules(mods []Module, usedNames map[string]int, useRelativePaths bool
 				return mods, fmt.Errorf("failed to resolve absolute path for %s: %w", mod.Path, err)
 			}
 
-			if useRelativePaths {
-				absOutputPath, err := filepath.Abs(outputPath)
+			if c.Distribution.UseRelativeReplacePaths {
+				absOutputPath, err := filepath.Abs(c.Distribution.OutputPath)
 				if err != nil {
-					return mods, fmt.Errorf("failed to resolve absolute path for output dir %s: %w", outputPath, err)
+					return mods, fmt.Errorf("failed to resolve absolute path for output dir %s: %w", c.Distribution.OutputPath, err)
 				}
 				mod.Path, err = filepath.Rel(absOutputPath, absPath)
 				if err != nil {
