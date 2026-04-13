@@ -593,9 +593,24 @@ func checkScopes(t *testing.T, logger *zap.Logger, consoleLogs *observer.Observe
 	require.NoError(t, err)
 	fieldsStr := strings.TrimSuffix(fieldsBuf.String(), "\n")
 
-	require.Len(t, *otlpLogs, 1)
-	req := (*otlpLogs)[0]
+	require.NotEmpty(t, *otlpLogs)
+	var req plogotlp.ExportRequest
+	for _, candidate := range *otlpLogs {
+		rls := candidate.Logs().ResourceLogs()
+		if rls.Len() == 0 {
+			continue
+		}
+		sls := rls.At(0).ScopeLogs()
+		if sls.Len() == 0 || sls.At(0).LogRecords().Len() == 0 {
+			continue
+		}
+		if sls.At(0).LogRecords().At(0).Body().AsString() == "Test log message" {
+			req = candidate
+			break
+		}
+	}
 	*otlpLogs = nil
+	require.NotEqual(t, 0, req.Logs().ResourceLogs().Len(), "expected exported OTLP log for Test log message")
 	rls := req.Logs().ResourceLogs()
 	require.Equal(t, 1, rls.Len())
 	sls := rls.At(0).ScopeLogs()

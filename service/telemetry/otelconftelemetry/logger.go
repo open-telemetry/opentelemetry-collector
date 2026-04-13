@@ -59,7 +59,6 @@ func (f *otelconfFactory) createLogger(
 	if err != nil {
 		return nil, nil, err
 	}
-	warnLegacyResourceAttributes(logger, cfg)
 
 	// The attributes in res.Attributes(), which are generated in resource.go,
 	// are added to logs exported through the LoggerProvider instantiated below.
@@ -112,6 +111,7 @@ func (f *otelconfFactory) createLogger(
 		}
 		return provider.newCore()
 	}))
+	warnLegacyResourceAttributes(logger, cfg)
 
 	return logger, sdk.Shutdown, nil
 }
