@@ -44,7 +44,7 @@ import (
 
     {{ $defValidators := extractValidators $def }}
     {{- if $defValidators }}
-        // Validate validates the {{$defName}} fields.
+        // Validate validates the {{$typeName}} fields according to schema annotations.
         func (c *{{ $typeName }}) Validate() error {
             var err error
             {{ range $validator := $defValidators -}}
@@ -55,13 +55,16 @@ import (
         }
     {{- end }}
 
-    func createDefault{{ $typeName }}() {{ $typeName }} {
+    // NewDefault{{ $typeName }} returns a new {{ $typeName }} with default values consistent with the annotations in the schema.
+    {{- if hasDefaultValue $def }}
+    func NewDefault{{ $typeName }}() {{ $typeName }} {
     cfg := {{ $typeName }}{}
 
     {{- template "defaultValueSetter" $def }}
 
     return cfg
     }
+    {{- end }}
 
 {{ end }}
 
@@ -134,9 +137,6 @@ type Config struct {
 {{- end }}
 
 {{- define "defaultValueSetter" }}
-    {{- range .AllOf }}
-
-    {{- end }}
     {{- range $propName, $prop := .Properties }}
         {{- $defaultValue := formatDefaultValue $prop $propName $prop.Default }}
         {{- if $defaultValue }}

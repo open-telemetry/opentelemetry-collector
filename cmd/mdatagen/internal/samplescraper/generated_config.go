@@ -20,7 +20,7 @@ type TargetsItem struct {
 	Options    map[string]string                      `mapstructure:"options"`
 }
 
-// Validate validates the targets_item fields.
+// Validate validates the TargetsItem fields according to schema annotations.
 func (c *TargetsItem) Validate() error {
 	var err error
 
@@ -34,10 +34,11 @@ func (c *TargetsItem) Validate() error {
 	return err
 }
 
-func createDefaultTargetsItem() TargetsItem {
+// NewDefaultTargetsItem returns a new TargetsItem with default values consistent with the annotations in the schema.
+func NewDefaultTargetsItem() TargetsItem {
 	cfg := TargetsItem{}
 	cfg.Interval = configoptional.Some(10 * time.Second)
-	cfg.Options = map[string]string{"option2": "value2", "option1": "value1"}
+	cfg.Options = map[string]string{"option1": "value1", "option2": "value2"}
 
 	return cfg
 }
@@ -65,7 +66,7 @@ func (c *Config) Validate() error {
 
 func createDefaultConfig() component.Config {
 	cfg := Config{}
-	cfg.Targets = &[]TargetsItem{createDefaultTargetsItem()}
+	cfg.Targets = &[]TargetsItem{NewDefaultTargetsItem()}
 
 	return &cfg
 }

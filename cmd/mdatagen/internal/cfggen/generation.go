@@ -58,8 +58,13 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return typeName
 		},
-		"formatDefaultValue": FormatDefaultValue,
-		"mapCustomDefaults":  MapCustomDefaults,
+		"formatDefaultValue": func(md *ConfigMetadata, name string, defaultValue any) string {
+			return FormatDefaultValue(md, name, defaultValue, rootPackage, componentPackage)
+		},
+		"mapCustomDefaults": func(schema *ConfigMetadata, defaultValue any) []string {
+			return MapCustomDefaults(schema, defaultValue, rootPackage, componentPackage)
+		},
+		"hasDefaultValue": hasDefaultValue,
 	}
 }
 
@@ -386,7 +391,7 @@ func resolveType(md *ConfigMetadata) string {
 	}
 }
 
-func MapCustomDefaults(schema *ConfigMetadata, defaultValue any) []string {
+func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, componentPackage string) []string {
 	exps := make([]string, 0)
 
 	switch typedValue := defaultValue.(type) {
@@ -399,7 +404,7 @@ func MapCustomDefaults(schema *ConfigMetadata, defaultValue any) []string {
 					panic("schema does not contain required property: " + key)
 				}
 				varName, _ := helpers.FormatIdentifier(key, true)
-				exp := fmt.Sprintf(".%s = %s", varName, FormatDefaultValue(propSchema, key, value))
+				exp := fmt.Sprintf(".%s = %s", varName, FormatDefaultValue(propSchema, key, value, rootPackage, componentPackage))
 				exps = append(exps, exp)
 			}
 		} else if schema.AdditionalProperties.Type == "object" { // is a map of object
@@ -411,7 +416,7 @@ func MapCustomDefaults(schema *ConfigMetadata, defaultValue any) []string {
 			panic("unsupported default value type for custom mapping")
 		}
 		for i, item := range typedValue {
-			nestedExps := MapCustomDefaults(schema.Items, item)
+			nestedExps := MapCustomDefaults(schema.Items, item, rootPackage, componentPackage)
 			for _, exp := range nestedExps {
 				exps = append(exps, fmt.Sprintf("[%d]%s", i, exp))
 			}
@@ -421,8 +426,8 @@ func MapCustomDefaults(schema *ConfigMetadata, defaultValue any) []string {
 	return exps
 }
 
-func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue any) string {
-	exp := formatSimpleValue(md, name, defaultValue)
+func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue any, rootPackage, componentPackage string) string {
+	exp := formatSimpleValue(md, name, defaultValue, rootPackage, componentPackage)
 	if md.IsPointer {
 		exp = "&" + exp
 	}
@@ -432,23 +437,46 @@ func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue any) strin
 	return exp
 }
 
-func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any) string {
-	// handle references
-	if md.ResolvedFrom != "" {
-		refDesc := NewRef(md.ResolvedFrom)
-
-		if refDesc.isInternal() {
-			typeName, _ := helpers.FormatIdentifier(refDesc.defName, true)
-			return fmt.Sprintf("createDefault%s()", typeName)
-		}
-
-		// todo: handle external references
-		return ""
+func hasDefaultValue(md *ConfigMetadata) bool {
+	if md.Default != nil {
+		return true
 	}
-	// handle internal structs
-	if md.Type == "object" && md.AdditionalProperties == nil {
-		typeName, _ := helpers.FormatIdentifier(name, true)
-		return fmt.Sprintf("createDefault%s()", typeName)
+	for _, prop := range md.Properties {
+		if hasDefaultValue(prop) {
+			return true
+		}
+	}
+	for _, sub := range md.AllOf {
+		if hasDefaultValue(sub) {
+			return true
+		}
+	}
+	return false
+}
+
+func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPackage, componentPackage string) string {
+	// handle references
+	isReference := md.ResolvedFrom != ""
+	isSubStruct := md.Type == "object" && md.AdditionalProperties == nil
+	if isReference || isSubStruct {
+		if hasDefaultValue(md) {
+			if isReference {
+				refType, err := ResolveGoTypeRef(md.ResolvedFrom, rootPackage, componentPackage)
+				if err != nil {
+					panic(err)
+				}
+
+				fnCall := fmt.Sprintf("NewDefault%s()", refType.TypeName)
+				if refType.Qualifier() != "" {
+					fnCall = refType.Qualifier() + "." + fnCall
+				}
+				return fnCall
+			}
+			typeName, _ := helpers.FormatIdentifier(name, true)
+			return fmt.Sprintf("NewDefault%s()", typeName)
+		}
+		// no defaults, skip it
+		return ""
 	}
 
 	// do not process further if "default" attribute not defined
@@ -463,7 +491,7 @@ func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any) string
 			if defaultValues, ok := defaultValue.([]any); ok {
 				exps := make([]string, 0, len(defaultValues))
 				for _, defaultValue := range defaultValues {
-					exps = append(exps, FormatDefaultValue(md.Items, name+"_item", defaultValue))
+					exps = append(exps, FormatDefaultValue(md.Items, name+"_item", defaultValue, rootPackage, componentPackage))
 				}
 				return fmt.Sprintf("[]%s{%s}", typeExpr, strings.Join(exps, ", "))
 			}
@@ -478,7 +506,7 @@ func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any) string
 				for keyName, value := range defaultValues {
 					exps = append(
 						exps,
-						fmt.Sprintf("%q: %v", keyName, FormatDefaultValue(md.AdditionalProperties, name, value)))
+						fmt.Sprintf("%q: %v", keyName, FormatDefaultValue(md.AdditionalProperties, name, value, rootPackage, componentPackage)))
 				}
 				return fmt.Sprintf("map[string]%s{%s}", typeExpr, strings.Join(exps, ", "))
 			}
