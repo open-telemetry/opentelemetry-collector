@@ -61,3 +61,93 @@ func TestResourceBuilder(t *testing.T) {
 		})
 	}
 }
+
+func TestResourceBuilderOverrideValue(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "override_set")
+	rb := NewResourceBuilder(cfg)
+	rb.SetK8sNamespaceName("k8s.namespace.name-val")
+	rb.SetK8sPodName("k8s.pod.name-val")
+	rb.SetK8sPodUID("k8s.pod.uid-val")
+	rb.SetK8sReplicasetName("k8s.replicaset.name-val")
+	rb.SetK8sReplicasetUID("k8s.replicaset.uid-val")
+
+	res := rb.Emit()
+	{
+		val, ok := res.Attributes().Get("k8s.namespace.name")
+		assert.True(t, ok, "k8s.namespace.name should be present")
+		if ok {
+			assert.Equal(t, "override-k8s.namespace.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("k8s.pod.name")
+		assert.True(t, ok, "k8s.pod.name should be present")
+		if ok {
+			assert.Equal(t, "override-k8s.pod.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("k8s.pod.uid")
+		assert.True(t, ok, "k8s.pod.uid should be present")
+		if ok {
+			assert.Equal(t, "override-k8s.pod.uid", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("k8s.replicaset.name")
+		assert.True(t, ok, "k8s.replicaset.name should be present")
+		if ok {
+			assert.Equal(t, "override-k8s.replicaset.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("k8s.replicaset.uid")
+		assert.True(t, ok, "k8s.replicaset.uid should be present")
+		if ok {
+			assert.Equal(t, "override-k8s.replicaset.uid", val.Str())
+		}
+	}
+}
+
+func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "override_set")
+	rb := NewResourceBuilder(cfg)
+	// Do not call any Set* methods — override should still apply via Emit().
+
+	res := rb.Emit()
+	{
+		val, ok := res.Attributes().Get("k8s.namespace.name")
+		assert.True(t, ok, "k8s.namespace.name should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-k8s.namespace.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("k8s.pod.name")
+		assert.True(t, ok, "k8s.pod.name should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-k8s.pod.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("k8s.pod.uid")
+		assert.True(t, ok, "k8s.pod.uid should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-k8s.pod.uid", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("k8s.replicaset.name")
+		assert.True(t, ok, "k8s.replicaset.name should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-k8s.replicaset.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("k8s.replicaset.uid")
+		assert.True(t, ok, "k8s.replicaset.uid should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-k8s.replicaset.uid", val.Str())
+		}
+	}
+}

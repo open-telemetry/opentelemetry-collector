@@ -9,6 +9,10 @@ import (
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to set a static value for this resource attribute,
+	// overriding any value set programmatically by the component.
+	// The value must be compatible with the attribute's type.
+	OverrideValue any `mapstructure:"override_value"`
 
 	enabledSetByUser bool
 }

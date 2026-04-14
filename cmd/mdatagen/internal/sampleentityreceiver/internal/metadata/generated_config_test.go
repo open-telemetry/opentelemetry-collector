@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/confmap"
@@ -126,6 +127,15 @@ func TestResourceAttributesConfig(t *testing.T) {
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+
+func TestResourceAttributesOverrideConfig(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "override_set")
+	assert.NotNil(t, cfg.K8sNamespaceName.OverrideValue, "override_value should be set for k8s.namespace.name")
+	assert.NotNil(t, cfg.K8sPodName.OverrideValue, "override_value should be set for k8s.pod.name")
+	assert.NotNil(t, cfg.K8sPodUID.OverrideValue, "override_value should be set for k8s.pod.uid")
+	assert.NotNil(t, cfg.K8sReplicasetName.OverrideValue, "override_value should be set for k8s.replicaset.name")
+	assert.NotNil(t, cfg.K8sReplicasetUID.OverrideValue, "override_value should be set for k8s.replicaset.uid")
 }
 
 func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesConfig {

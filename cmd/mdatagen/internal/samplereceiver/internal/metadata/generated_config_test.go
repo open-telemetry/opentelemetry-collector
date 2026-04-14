@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/confmap"
@@ -220,6 +221,19 @@ func TestResourceAttributesConfig(t *testing.T) {
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+
+func TestResourceAttributesOverrideConfig(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "override_set")
+	assert.NotNil(t, cfg.MapResourceAttr.OverrideValue, "override_value should be set for map.resource.attr")
+	assert.NotNil(t, cfg.OptionalResourceAttr.OverrideValue, "override_value should be set for optional.resource.attr")
+	assert.NotNil(t, cfg.SliceResourceAttr.OverrideValue, "override_value should be set for slice.resource.attr")
+	assert.NotNil(t, cfg.StringEnumResourceAttr.OverrideValue, "override_value should be set for string.enum.resource.attr")
+	assert.NotNil(t, cfg.StringResourceAttr.OverrideValue, "override_value should be set for string.resource.attr")
+	assert.NotNil(t, cfg.StringResourceAttrDisableWarning.OverrideValue, "override_value should be set for string.resource.attr_disable_warning")
+	assert.NotNil(t, cfg.StringResourceAttrRemoveWarning.OverrideValue, "override_value should be set for string.resource.attr_remove_warning")
+	assert.NotNil(t, cfg.StringResourceAttrToBeRemoved.OverrideValue, "override_value should be set for string.resource.attr_to_be_removed")
+	assert.NotNil(t, cfg.StringResourceDisabledAttrToBeRemoved.OverrideValue, "override_value should be set for string.resource.disabled_attr_to_be_removed")
 }
 
 func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesConfig {

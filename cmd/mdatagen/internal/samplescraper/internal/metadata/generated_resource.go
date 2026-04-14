@@ -86,6 +86,30 @@ func (rb *ResourceBuilder) SetStringResourceAttrToBeRemoved(val string) {
 
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
+	if rb.config.MapResourceAttr.Enabled && rb.config.MapResourceAttr.OverrideValue != nil {
+		rb.res.Attributes().PutEmpty("map.resource.attr").FromRaw(rb.config.MapResourceAttr.OverrideValue)
+	}
+	if rb.config.OptionalResourceAttr.Enabled && rb.config.OptionalResourceAttr.OverrideValue != nil {
+		rb.res.Attributes().PutEmpty("optional.resource.attr").FromRaw(rb.config.OptionalResourceAttr.OverrideValue)
+	}
+	if rb.config.SliceResourceAttr.Enabled && rb.config.SliceResourceAttr.OverrideValue != nil {
+		rb.res.Attributes().PutEmpty("slice.resource.attr").FromRaw(rb.config.SliceResourceAttr.OverrideValue)
+	}
+	if rb.config.StringEnumResourceAttr.Enabled && rb.config.StringEnumResourceAttr.OverrideValue != nil {
+		rb.res.Attributes().PutEmpty("string.enum.resource.attr").FromRaw(rb.config.StringEnumResourceAttr.OverrideValue)
+	}
+	if rb.config.StringResourceAttr.Enabled && rb.config.StringResourceAttr.OverrideValue != nil {
+		rb.res.Attributes().PutEmpty("string.resource.attr").FromRaw(rb.config.StringResourceAttr.OverrideValue)
+	}
+	if rb.config.StringResourceAttrDisableWarning.Enabled && rb.config.StringResourceAttrDisableWarning.OverrideValue != nil {
+		rb.res.Attributes().PutEmpty("string.resource.attr_disable_warning").FromRaw(rb.config.StringResourceAttrDisableWarning.OverrideValue)
+	}
+	if rb.config.StringResourceAttrRemoveWarning.Enabled && rb.config.StringResourceAttrRemoveWarning.OverrideValue != nil {
+		rb.res.Attributes().PutEmpty("string.resource.attr_remove_warning").FromRaw(rb.config.StringResourceAttrRemoveWarning.OverrideValue)
+	}
+	if rb.config.StringResourceAttrToBeRemoved.Enabled && rb.config.StringResourceAttrToBeRemoved.OverrideValue != nil {
+		rb.res.Attributes().PutEmpty("string.resource.attr_to_be_removed").FromRaw(rb.config.StringResourceAttrToBeRemoved.OverrideValue)
+	}
 	r := rb.res
 	rb.res = pcommon.NewResource()
 	return r
