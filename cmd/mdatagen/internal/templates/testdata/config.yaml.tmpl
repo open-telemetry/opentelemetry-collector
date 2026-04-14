@@ -80,6 +80,28 @@ none_set:
       enabled: false
     {{- end }}
   {{- end }}
+{{- if .ResourceAttributes }}
+override_set:
+  resource_attributes:
+    {{- range $name, $attr := .ResourceAttributes }}
+    {{ $name }}:
+      enabled: true
+      {{- if eq $attr.Type.String "Str" }}
+      override_value: "override-{{ $name }}"
+      {{- else if eq $attr.Type.String "Int" }}
+      override_value: 123
+      {{- else if eq $attr.Type.String "Double" }}
+      override_value: 123.456
+      {{- else if eq $attr.Type.String "Bool" }}
+      override_value: true
+      {{- else if eq $attr.Type.String "Slice" }}
+      override_value: ["override-item1", "override-item2"]
+      {{- else if eq $attr.Type.String "Map" }}
+      override_value:
+        override_key: "override-val"
+      {{- end }}
+    {{- end }}
+{{- end }}
 {{- if and (or .Metrics .Events) .ResourceAttributes }}
 filter_set_include:
   resource_attributes:

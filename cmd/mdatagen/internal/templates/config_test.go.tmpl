@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/confmap"
@@ -146,6 +147,13 @@ func TestResourceAttributesConfig(t *testing.T) {
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+
+func TestResourceAttributesOverrideConfig(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "override_set")
+	{{- range $name, $_ := .ResourceAttributes }}
+	assert.NotNil(t, cfg.{{ $name.Render }}.OverrideValue, "override_value should be set for {{ $name }}")
+	{{- end }}
 }
 
 func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesConfig {
