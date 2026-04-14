@@ -176,14 +176,22 @@ func TestResourceConfigV030UnmarshalDeclarativeFormat(t *testing.T) {
 	t.Run("schema keys with legacy attributes", func(t *testing.T) {
 		conf := confmap.NewFromStringMap(map[string]any{
 			"schema_url":  "https://opentelemetry.io/schemas/1.38.0",
-			"attributes":  []any{map[string]any{"name": "service.name", "value": "svc"}},
 			"legacy.attr": "value",
 			"remove.attr": nil,
 		})
 		var cfg ResourceConfigV030
 		require.NoError(t, conf.Unmarshal(&cfg))
-		assert.Len(t, cfg.Attributes, 1)
 		assert.Equal(t, "value", cfg.LegacyAttributes["legacy.attr"])
+	})
+
+	t.Run("attributes with legacy attributes validation error", func(t *testing.T) {
+		conf := confmap.NewFromStringMap(map[string]any{
+			"attributes":  []any{map[string]any{"name": "service.name", "value": "svc"}},
+			"legacy.attr": "value",
+		})
+		var cfg ResourceConfigV030
+		require.NoError(t, conf.Unmarshal(&cfg))
+		require.ErrorContains(t, xconfmap.Validate(&cfg), "resource::attributes cannot be used together with legacy inline resource attributes")
 	})
 
 	t.Run("declarative only with detectors", func(t *testing.T) {
@@ -214,7 +222,7 @@ func TestResourceConfigV030UnmarshalDeclarativeFormat(t *testing.T) {
 		require.Error(t, conf.Unmarshal(&cfg))
 	})
 
-	t.Run("declarative null value validation error", func(t *testing.T) {
+	t.Run("declarative null value allowed", func(t *testing.T) {
 		conf := confmap.NewFromStringMap(map[string]any{
 			"attributes": []any{
 				map[string]any{"name": "service.name", "value": nil},
@@ -222,6 +230,6 @@ func TestResourceConfigV030UnmarshalDeclarativeFormat(t *testing.T) {
 		})
 		var cfg ResourceConfigV030
 		require.NoError(t, conf.Unmarshal(&cfg))
-		require.ErrorContains(t, xconfmap.Validate(&cfg), "resource attribute \"service.name\" must not be null")
+		require.NoError(t, xconfmap.Validate(&cfg))
 	})
 }

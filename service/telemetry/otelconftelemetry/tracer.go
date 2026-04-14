@@ -27,7 +27,7 @@ const (
 	b3Propagator           = "b3"
 )
 
-func (f *otelconfFactory) createTracerProvider(
+func createTracerProvider(
 	ctx context.Context,
 	set telemetry.TracerSettings,
 	componentConfig component.Config,
@@ -38,7 +38,7 @@ func (f *otelconfFactory) createTracerProvider(
 		return &noopNoContextTracerProvider{}, nil
 	}
 
-	resourceConfig, err := createResourceConfig(ctx, set.BuildInfo, &cfg.Resource, set.Resource)
+	resourceConfig, err := createFixedResourceConfig(&cfg.Resource, set.Resource)
 	if err != nil {
 		return nil, err
 	}
@@ -49,9 +49,10 @@ func (f *otelconfFactory) createTracerProvider(
 	}
 	otel.SetTextMapPropagator(propagator)
 
-	sdk, err := newSDK(ctx, resourceConfig, otelconf.OpenTelemetryConfiguration{
+	sdk, err := otelconf.NewSDK(otelconf.WithContext(ctx), otelconf.WithOpenTelemetryConfiguration(otelconf.OpenTelemetryConfiguration{
+		Resource:       resourceConfig,
 		TracerProvider: &cfg.Traces.TracerProvider,
-	})
+	}))
 	if err != nil {
 		return nil, err
 	}

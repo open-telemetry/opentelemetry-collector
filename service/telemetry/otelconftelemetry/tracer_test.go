@@ -44,13 +44,12 @@ func TestCreateTracerProvider(t *testing.T) {
 	cfg.Traces.Propagators = []string{"b3", "tracecontext"}
 	cfg.Traces.Processors = []config.SpanProcessor{newOTLPSimpleSpanProcessor(srv)}
 
-	var f otelconfFactory
-	resource, err := f.createResource(t.Context(), telemetry.Settings{
+	resource, err := createResource(t.Context(), telemetry.Settings{
 		BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"},
 	}, cfg)
 	require.NoError(t, err)
 
-	provider, err := f.createTracerProvider(t.Context(), telemetry.TracerSettings{
+	provider, err := createTracerProvider(t.Context(), telemetry.TracerSettings{
 		Settings: telemetry.Settings{
 			BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"},
 			Resource:  &resource,
@@ -82,11 +81,10 @@ func TestCreateTracerProvider_Invalid(t *testing.T) {
 			},
 		},
 	}}
-	var f otelconfFactory
-	resource, err := f.createResource(t.Context(), telemetry.Settings{}, cfg)
+	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
 
-	_, err = f.createTracerProvider(t.Context(), telemetry.TracerSettings{
+	_, err = createTracerProvider(t.Context(), telemetry.TracerSettings{
 		Settings: telemetry.Settings{Resource: &resource},
 	}, cfg)
 	require.EqualError(t, err, "no valid span exporter")
@@ -102,13 +100,12 @@ func TestCreateTracerProvider_Propagators(t *testing.T) {
 	cfg.Traces.Propagators = []string{"b3", "tracecontext"}
 	cfg.Traces.Processors = []config.SpanProcessor{newOTLPSimpleSpanProcessor(srv)}
 
-	var f otelconfFactory
-	resource, err := f.createResource(t.Context(), telemetry.Settings{
+	resource, err := createResource(t.Context(), telemetry.Settings{
 		BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"},
 	}, cfg)
 	require.NoError(t, err)
 
-	provider, err := f.createTracerProvider(t.Context(), telemetry.TracerSettings{
+	provider, err := createTracerProvider(t.Context(), telemetry.TracerSettings{
 		Settings: telemetry.Settings{
 			BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"},
 			Resource:  &resource,
@@ -136,11 +133,10 @@ func TestCreateTracerProvider_InvalidPropagator(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Traces.Propagators = []string{"invalid"}
 
-	var f otelconfFactory
-	resource, err := f.createResource(t.Context(), telemetry.Settings{}, cfg)
+	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
 
-	_, err = f.createTracerProvider(t.Context(), telemetry.TracerSettings{
+	_, err = createTracerProvider(t.Context(), telemetry.TracerSettings{
 		Settings: telemetry.Settings{Resource: &resource},
 	}, cfg)
 	assert.EqualError(t, err, "error creating propagator: unsupported trace propagator")
@@ -161,8 +157,7 @@ func TestCreateTracerProvider_Disabled(t *testing.T) {
 
 	core, observedLogs := observer.New(zapcore.DebugLevel)
 
-	var f otelconfFactory
-	resource, err := f.createResource(t.Context(), telemetry.Settings{
+	resource, err := createResource(t.Context(), telemetry.Settings{
 		BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"},
 	}, cfg)
 	require.NoError(t, err)
@@ -175,7 +170,7 @@ func TestCreateTracerProvider_Disabled(t *testing.T) {
 		Logger: zap.New(core),
 	}
 
-	provider, err := f.createTracerProvider(t.Context(), settings, cfg)
+	provider, err := createTracerProvider(t.Context(), settings, cfg)
 	require.NoError(t, err)
 	defer func() {
 		assert.NoError(t, provider.Shutdown(t.Context()))

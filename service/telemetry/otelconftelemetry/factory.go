@@ -16,18 +16,15 @@ import (
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
-type otelconfFactory struct{}
-
 // NewFactory creates a new telemetry.Factory that uses otelconf
 // to configure opentelemetry-go SDK telemetry providers.
 func NewFactory() telemetry.Factory {
-	var factory otelconfFactory
 	return telemetry.NewFactory(
 		createDefaultConfig,
-		telemetry.WithCreateResource(factory.createResource),
-		telemetry.WithCreateLogger(factory.createLogger),
-		telemetry.WithCreateMeterProvider(factory.createMeterProvider),
-		telemetry.WithCreateTracerProvider(factory.createTracerProvider),
+		telemetry.WithCreateResource(createResource),
+		telemetry.WithCreateLogger(createLogger),
+		telemetry.WithCreateMeterProvider(createMeterProvider),
+		telemetry.WithCreateTracerProvider(createTracerProvider),
 	)
 }
 

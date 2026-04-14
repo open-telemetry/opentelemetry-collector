@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
-func (f *otelconfFactory) createMeterProvider(
+func createMeterProvider(
 	ctx context.Context,
 	set telemetry.MeterSettings,
 	componentConfig component.Config,
@@ -27,15 +27,16 @@ func (f *otelconfFactory) createMeterProvider(
 		cfg.Metrics.Views = set.DefaultViews(cfg.Metrics.Level)
 	}
 
-	resourceConfig, err := createResourceConfig(ctx, set.BuildInfo, &cfg.Resource, set.Resource)
+	resourceConfig, err := createFixedResourceConfig(&cfg.Resource, set.Resource)
 	if err != nil {
 		return nil, err
 	}
 
 	mpConfig := cfg.Metrics.MeterProvider
-	sdk, err := newSDK(ctx, resourceConfig, otelconf.OpenTelemetryConfiguration{
+	sdk, err := otelconf.NewSDK(otelconf.WithContext(ctx), otelconf.WithOpenTelemetryConfiguration(otelconf.OpenTelemetryConfiguration{
+		Resource:      resourceConfig,
 		MeterProvider: &mpConfig,
-	})
+	}))
 	if err != nil {
 		return nil, err
 	}

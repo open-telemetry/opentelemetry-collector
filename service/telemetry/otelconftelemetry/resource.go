@@ -5,18 +5,33 @@ package otelconftelemetry // import "go.opentelemetry.io/collector/service/telem
 
 import (
 	"context"
+	"errors"
 
+	"github.com/google/uuid"
 	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	internalresource "go.opentelemetry.io/collector/service/internal/resource"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
-var defaultAttributeValues = internalresource.DefaultAttributeValues
+var errMissingCollectorResource = errors.New("collector resource must be initialized before creating telemetry providers")
 
-func buildSDKResourceConfig(buildInfo component.BuildInfo, cfg *ResourceConfig) (*otelconf.Resource, error) {
+// defaultAttributeValues is a variable so tests can stub the generated defaults.
+var defaultAttributeValues = func(buildInfo component.BuildInfo) (map[string]string, error) {
+	instanceUUID, err := uuid.NewRandom()
+	if err != nil {
+		return nil, err
+	}
+	return map[string]string{
+		string(semconv.ServiceNameKey):       buildInfo.Command,
+		string(semconv.ServiceVersionKey):    buildInfo.Version,
+		string(semconv.ServiceInstanceIDKey): instanceUUID.String(),
+	}, nil
+}
+
+func createInitialResourceConfig(buildInfo component.BuildInfo, cfg *ResourceConfig) (*otelconf.Resource, error) {
 	defaults, err := defaultAttributeValues(buildInfo)
 	if err != nil {
 		return nil, err
@@ -50,18 +65,9 @@ func buildSDKResourceConfig(buildInfo component.BuildInfo, cfg *ResourceConfig) 
 	return &sdkCfg, nil
 }
 
-func createResourceConfig(
-	ctx context.Context,
-	buildInfo component.BuildInfo,
-	cfg *ResourceConfig,
-	res *pcommon.Resource,
-) (*otelconf.Resource, error) {
+func createFixedResourceConfig(cfg *ResourceConfig, res *pcommon.Resource) (*otelconf.Resource, error) {
 	if res == nil {
-		generated, err := createConfiguredResource(ctx, buildInfo, cfg)
-		if err != nil {
-			return nil, err
-		}
-		res = &generated
+		return nil, errMissingCollectorResource
 	}
 
 	providerConfig := &otelconf.Resource{
@@ -83,12 +89,12 @@ func createResourceConfig(
 	return providerConfig, nil
 }
 
-func createConfiguredResource(
+func createCollectorResource(
 	ctx context.Context,
 	buildInfo component.BuildInfo,
 	cfg *ResourceConfig,
 ) (pcommon.Resource, error) {
-	sdkCfg, err := buildSDKResourceConfig(buildInfo, cfg)
+	sdkCfg, err := createInitialResourceConfig(buildInfo, cfg)
 	if err != nil {
 		return pcommon.Resource{}, err
 	}
@@ -117,10 +123,10 @@ func createConfiguredResource(
 	return pcommonResource, nil
 }
 
-func (f *otelconfFactory) createResource(
+func createResource(
 	ctx context.Context,
 	set telemetry.Settings,
 	componentConfig component.Config,
 ) (pcommon.Resource, error) {
-	return createConfiguredResource(ctx, set.BuildInfo, &componentConfig.(*Config).Resource)
+	return createCollectorResource(ctx, set.BuildInfo, &componentConfig.(*Config).Resource)
 }

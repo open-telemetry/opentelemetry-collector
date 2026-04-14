@@ -16,14 +16,14 @@ import (
 )
 
 // createLogger creates a Logger and a LoggerProvider from Config.
-func (f *otelconfFactory) createLogger(
+func createLogger(
 	ctx context.Context,
 	set telemetry.LoggerSettings,
 	componentConfig component.Config,
 ) (*zap.Logger, component.ShutdownFunc, error) {
 	cfg := componentConfig.(*Config)
 
-	resourceConfig, err := createResourceConfig(ctx, set.BuildInfo, &cfg.Resource, set.Resource)
+	resourceConfig, err := createFixedResourceConfig(&cfg.Resource, set.Resource)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -90,11 +90,12 @@ func (f *otelconfFactory) createLogger(
 		}))
 	}
 
-	sdk, err := newSDK(ctx, resourceConfig, otelconf.OpenTelemetryConfiguration{
+	sdk, err := otelconf.NewSDK(otelconf.WithContext(ctx), otelconf.WithOpenTelemetryConfiguration(otelconf.OpenTelemetryConfiguration{
+		Resource: resourceConfig,
 		LoggerProvider: &otelconf.LoggerProvider{
 			Processors: cfg.Logs.Processors,
 		},
-	})
+	}))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -126,7 +127,7 @@ func warnLegacyResourceAttributes(logger *zap.Logger, cfg *Config) {
 	}
 	sort.Strings(legacyKeys)
 	logger.Warn(
-		"Using legacy service.telemetry.resource inline map format; prefer service.telemetry.resource.attributes",
+		"Using legacy service.telemetry.resource inline map format; prefer service.telemetry.resource.attributes (array of maps with `name` and `value` keys)",
 		zap.Strings("legacy_resource_attributes", legacyKeys),
 	)
 }
