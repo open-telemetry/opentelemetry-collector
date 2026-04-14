@@ -85,7 +85,7 @@ package is internal, then the scope name should be that of the module which cont
 There are two straightforward measurements that can be made on any pdata:
 
 1. A count of "items" (spans, data points, or log records). These are low cost but broadly useful, so they should be enabled by default.
-2. A measure of size, based on [ProtoMarshaler.Sizer()](https://github.com/open-telemetry/opentelemetry-collector/blob/9907ba50df0d5853c34d2962cf21da42e15a560d/pdata/ptrace/pb.go#l11).
+2. A measure of size, based on [ProtoMarshaler.Sizer()](https://github.com/open-telemetry/opentelemetry-collector/blob/main/pdata/ptrace/pb.go).
   These may be high cost to compute, so by default they should be disabled (and not calculated). This default setting may change in the future if it is demonstrated that the cost is generally acceptable.
 
 Additionally, for log pipelines, there is a signal-specific measurement:
