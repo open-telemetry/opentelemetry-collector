@@ -403,7 +403,7 @@ merge:
 3. _Mix append and prepend in a single fragment_:
 
 ```yaml
-# fragement.yaml
+# fragment.yaml
 processors:
   transform/enrich:
   memory_limiter:
