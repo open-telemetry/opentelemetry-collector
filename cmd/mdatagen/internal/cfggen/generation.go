@@ -446,12 +446,7 @@ func hasDefaultValue(md *ConfigMetadata) bool {
 			return true
 		}
 	}
-	for _, sub := range md.AllOf {
-		if hasDefaultValue(sub) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(md.AllOf, hasDefaultValue)
 }
 
 func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPackage, componentPackage string) string {
@@ -503,7 +498,8 @@ func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPa
 		if err == nil {
 			if defaultValues, ok := defaultValue.(map[string]any); ok {
 				exps := make([]string, 0, len(defaultValues))
-				for keyName, value := range defaultValues {
+				for _, keyName := range slices.Sorted(maps.Keys(defaultValues)) {
+					value := defaultValues[keyName]
 					exps = append(
 						exps,
 						fmt.Sprintf("%q: %v", keyName, FormatDefaultValue(md.AdditionalProperties, name, value, rootPackage, componentPackage)))
