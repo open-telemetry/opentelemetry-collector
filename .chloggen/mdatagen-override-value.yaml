@@ -21,12 +21,4 @@ subtext: |
   when receivers have no knowledge of certain resource attributes (e.g. service.namespace,
   service.name for remote database instances) and users need to specify them directly.
 
-# If your change doesn't affect end users or the exported elements of any package,
-# you should instead start your pull request title with [chore] or use the "Skip Changelog"
-# label.
-# Optional: The change log or logs in which this entry should be included.
-# e.g. '[user]}', currentl'[api]' or '[user, api]'
-# Include 'user' if the change is relevant to end users.
-# Include 'api' if there is a change to a library API.
-# Default: '[user]'
 change_logs: []
