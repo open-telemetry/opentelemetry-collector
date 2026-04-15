@@ -7,10 +7,12 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver/internal/metadata"
+	"go.opentelemetry.io/collector/component"
 )
 
 // Config defines the configuration for Sample Receiver component.
 type Config struct {
+	// MetricsBuilderConfig is a configuration for sample metrics builder.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	// The endpoint to scrape metrics from.
 	Endpoint string `mapstructure:"endpoint"`
@@ -27,4 +29,12 @@ func (c *Config) Validate() error {
 	}
 
 	return err
+}
+
+func createDefaultConfig() component.Config {
+	cfg := Config{}
+	cfg.Endpoint = "localhost:12345"
+	cfg.Timeout = 10 * time.Second
+
+	return &cfg
 }
