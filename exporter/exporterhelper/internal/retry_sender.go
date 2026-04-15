@@ -127,13 +127,13 @@ func (rs *retrySender) Send(ctx context.Context, req request.Request) error {
 		retryNum++
 		backoffDelayStr := backoffDelay.String()
 		span.AddEvent(
-			"Transient error, will retry the request after interval.",
+			"Exporting failed. Transient error, will retry the request after interval.",
 			trace.WithAttributes(
 				attribute.String("interval", backoffDelayStr),
 				attribute.Int64("retry_num", retryNum),
 				attribute.String("error", err.Error())))
 		rs.logger.Info(
-			"Transient error, will retry the request after interval.",
+			"Exporting failed. Transient error, will retry the request after interval.",
 			zap.Error(err),
 			zap.String("interval", backoffDelayStr),
 			zap.Int64("retry_num", retryNum),

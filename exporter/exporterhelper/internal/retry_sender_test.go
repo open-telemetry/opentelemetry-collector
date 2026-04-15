@@ -114,7 +114,7 @@ func TestRetrySenderWithContextTimeout(t *testing.T) {
 		rs.Send(ctx, &requesttest.FakeRequest{Items: 2}),
 		"request will be cancelled before next retry: transient error")
 	assert.Len(t, observed.All(), 1)
-	assert.Equal(t, "Transient error, will retry the request after interval.", observed.All()[0].Message)
+	assert.Equal(t, "Exporting failed. Transient error, will retry the request after interval.", observed.All()[0].Message)
 	assert.Equal(t, int64(1), observed.All()[0].ContextMap()["retry_num"])
 	require.Less(t, time.Since(start), testTimeout/2)
 	require.NoError(t, rs.Shutdown(context.Background()))
