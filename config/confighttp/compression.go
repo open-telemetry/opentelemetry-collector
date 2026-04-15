@@ -250,6 +250,7 @@ func (d *decompressor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if newBody != nil {
+		newBody = &panicRecoverReadCloser{inner: newBody}
 		defer newBody.Close()
 		// "Content-Encoding" header is removed to avoid decompressing twice
 		// in case the next handler(s) have implemented a similar mechanism.

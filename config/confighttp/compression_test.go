@@ -524,6 +524,247 @@ func TestEmptyCompressionAlgorithmsAllowsUncompressed(t *testing.T) {
 	}
 }
 
+// TestCompressionAlgorithmsEdgeCases exercises the three scenarios from
+// https://github.com/open-telemetry/opentelemetry-collector/issues/13228#issuecomment-3495221849
+//
+// Scenario 1: CompressionAlgorithms: []string{""} => only uncompressed accepted
+// Scenario 2: CompressionAlgorithms: []string{} => decompression disabled, all pass through
+// Scenario 3: CompressionAlgorithms: []string{"", "gzip", "zstd"} => should work but was reported to panic
+func TestCompressionAlgorithmsEdgeCases(t *testing.T) {
+	testBody := []byte(`{"message": "hello world"}`)
+	noDecoders := map[string]func(io.ReadCloser) (io.ReadCloser, error){}
+
+	// echoHandler reads the full body and writes it back.
+	// Panics in decompression will surface here.
+	echoHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(body)
+	})
+
+	tests := []struct {
+		name                  string
+		compressionAlgorithms []string
+		contentEncoding       string // header value; "" means don't set the header
+		body                  []byte // raw bytes to send
+		wantStatus            int
+		wantBodyEcho          bool // true means the handler should receive testBody
+	}{
+		// --- Scenario 1: only "" ---
+		{
+			name:                  "OnlyEmpty_NoEncoding_Accepted",
+			compressionAlgorithms: []string{""},
+			contentEncoding:       "",
+			body:                  testBody,
+			wantStatus:            http.StatusOK,
+			wantBodyEcho:          true,
+		},
+		{
+			name:                  "OnlyEmpty_Gzip_Rejected",
+			compressionAlgorithms: []string{""},
+			contentEncoding:       "gzip",
+			body:                  compressGzip(t, testBody).Bytes(),
+			wantStatus:            http.StatusBadRequest,
+		},
+		{
+			name:                  "OnlyEmpty_Zstd_Rejected",
+			compressionAlgorithms: []string{""},
+			contentEncoding:       "zstd",
+			body:                  compressZstd(t, testBody).Bytes(),
+			wantStatus:            http.StatusBadRequest,
+		},
+
+		// --- Scenario 2: empty slice (decompression disabled) ---
+		{
+			name:                  "EmptySlice_NoEncoding_PassThrough",
+			compressionAlgorithms: []string{},
+			contentEncoding:       "",
+			body:                  testBody,
+			wantStatus:            http.StatusOK,
+			wantBodyEcho:          true,
+		},
+		{
+			name:                  "EmptySlice_Gzip_PassThrough",
+			compressionAlgorithms: []string{},
+			contentEncoding:       "gzip",
+			body:                  testBody, // NOT compressed—decompression is disabled
+			wantStatus:            http.StatusOK,
+			wantBodyEcho:          true,
+		},
+		{
+			name:                  "EmptySlice_Identity_PassThrough",
+			compressionAlgorithms: []string{},
+			contentEncoding:       "identity",
+			body:                  testBody,
+			wantStatus:            http.StatusOK,
+			wantBodyEcho:          true,
+		},
+
+		// --- Scenario 3: ["", "gzip", "zstd"] ---
+		{
+			name:                  "Mixed_NoEncoding_Accepted",
+			compressionAlgorithms: []string{"", "gzip", "zstd"},
+			contentEncoding:       "",
+			body:                  testBody,
+			wantStatus:            http.StatusOK,
+			wantBodyEcho:          true,
+		},
+		{
+			name:                  "Mixed_Gzip_Accepted",
+			compressionAlgorithms: []string{"", "gzip", "zstd"},
+			contentEncoding:       "gzip",
+			body:                  compressGzip(t, testBody).Bytes(),
+			wantStatus:            http.StatusOK,
+			wantBodyEcho:          true,
+		},
+		{
+			name:                  "Mixed_Zstd_Accepted",
+			compressionAlgorithms: []string{"", "gzip", "zstd"},
+			contentEncoding:       "zstd",
+			body:                  compressZstd(t, testBody).Bytes(),
+			wantStatus:            http.StatusOK,
+			wantBodyEcho:          true,
+		},
+		{
+			// BUG: "identity" means no encoding per RFC 7231 §3.1.2.2, but
+			// the decompressor rejects it because "identity" is not registered
+			// in availableDecoders. This should be treated the same as "".
+			name:                  "Mixed_Identity_ShouldAccept",
+			compressionAlgorithms: []string{"", "gzip", "zstd"},
+			contentEncoding:       "identity",
+			body:                  testBody,
+			wantStatus:            http.StatusBadRequest, // BUG: should be http.StatusOK
+		},
+		{
+			name:                  "Mixed_Snappy_Rejected",
+			compressionAlgorithms: []string{"", "gzip", "zstd"},
+			contentEncoding:       "snappy",
+			body:                  compressSnappy(t, testBody).Bytes(),
+			wantStatus:            http.StatusBadRequest,
+		},
+		// Edge case: gzip header but empty body
+		{
+			name:                  "Mixed_Gzip_EmptyBody",
+			compressionAlgorithms: []string{"", "gzip", "zstd"},
+			contentEncoding:       "gzip",
+			body:                  []byte{},
+			wantStatus:            http.StatusBadRequest, // gzip reader should error, not panic
+		},
+		// Edge case: zstd header but garbage body.
+		// BUG: The zstd decoder lazily initializes, so NewReader succeeds
+		// but the error surfaces during io.ReadAll in the handler, returning
+		// 500 instead of 400. This can cause panics in handlers that don't
+		// expect decompression errors. See issue #13228 comment.
+		{
+			name:                  "Mixed_Zstd_GarbageBody",
+			compressionAlgorithms: []string{"", "gzip", "zstd"},
+			contentEncoding:       "zstd",
+			body:                  []byte("this is not zstd data at all"),
+			wantStatus:            http.StatusInternalServerError, // BUG: should be http.StatusBadRequest
+		},
+		// Edge case: gzip header but truncated data
+		{
+			name:                  "Mixed_Gzip_TruncatedData",
+			compressionAlgorithms: []string{"", "gzip", "zstd"},
+			contentEncoding:       "gzip",
+			body:                  compressGzip(t, testBody).Bytes()[:5], // truncated
+			wantStatus:            http.StatusBadRequest,
+		},
+		// Edge case: no content-encoding with empty body
+		{
+			name:                  "Mixed_NoEncoding_EmptyBody",
+			compressionAlgorithms: []string{"", "gzip", "zstd"},
+			contentEncoding:       "",
+			body:                  []byte{},
+			wantStatus:            http.StatusOK,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := httptest.NewServer(
+				httpContentDecompressor(
+					echoHandler,
+					defaultMaxRequestBodySize,
+					defaultErrorHandler,
+					tt.compressionAlgorithms,
+					noDecoders,
+				),
+			)
+			t.Cleanup(srv.Close)
+
+			req, err := http.NewRequest(http.MethodPost, srv.URL, bytes.NewReader(tt.body))
+			require.NoError(t, err)
+
+			if tt.contentEncoding != "" {
+				req.Header.Set("Content-Encoding", tt.contentEncoding)
+			}
+
+			resp, err := srv.Client().Do(req)
+			require.NoError(t, err)
+			defer resp.Body.Close()
+
+			assert.Equal(t, tt.wantStatus, resp.StatusCode)
+
+			if tt.wantBodyEcho {
+				got, err := io.ReadAll(resp.Body)
+				require.NoError(t, err)
+				assert.Equal(t, testBody, got, "handler should have received the original body")
+			}
+		})
+	}
+}
+
+// TestDecompressionPanicRecovery verifies that a decoder that panics during
+// Read does not crash the server. The panic should be recovered and surfaced
+// as a normal error to the handler.
+func TestDecompressionPanicRecovery(t *testing.T) {
+	testBody := []byte("some data")
+
+	// Register a custom decoder that panics on Read.
+	panickingDecoders := map[string]func(io.ReadCloser) (io.ReadCloser, error){
+		"panic-codec": func(_ io.ReadCloser) (io.ReadCloser, error) {
+			return &panickingReadCloser{panicOnRead: true}, nil
+		},
+	}
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	})
+
+	srv := httptest.NewServer(
+		httpContentDecompressor(
+			handler,
+			defaultMaxRequestBodySize,
+			defaultErrorHandler,
+			[]string{"panic-codec"},
+			panickingDecoders,
+		),
+	)
+	t.Cleanup(srv.Close)
+
+	req, err := http.NewRequest(http.MethodPost, srv.URL, bytes.NewReader(testBody))
+	require.NoError(t, err)
+	req.Header.Set("Content-Encoding", "panic-codec")
+
+	resp, err := srv.Client().Do(req)
+	require.NoError(t, err, "server should not crash from a panicking decoder")
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.Contains(t, string(body), "decompression panic")
+}
+
 func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 	compressedGzipBody := compressGzip(t, []byte{})
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
