@@ -391,6 +391,10 @@ chlog-preview:
 chlog-update:
 	$(GO_TOOL) chloggen update --config $(CHLOGGEN_CONFIG) --version $(VERSION)
 
+.PHONY: checktemplates
+checktemplates:
+	@./internal/buildscripts/check-templates.sh
+
 .PHONY: builder-integration-test
 builder-integration-test:
 	cd ./cmd/builder && ./test/test.sh

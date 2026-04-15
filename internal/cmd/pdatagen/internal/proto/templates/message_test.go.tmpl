@@ -13,119 +13,119 @@ import (
 )
 
 func TestCopy{{ .messageName }}(t *testing.T) {
-    for name, src := range genTestEncodingValues{{ .messageName }}() {
-        for _, pooling := range []bool{true, false} {
-            t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
-                prevPooling := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
-                require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), pooling))
-                defer func() {
-                    require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prevPooling))
-                }()
+	for name, src := range genTestEncodingValues{{ .messageName }}() {
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prevPooling))
+				}()
 
-                dest := New{{ .messageName }}()
-                Copy{{ .messageName }}(dest, src)
-                assert.Equal(t, src, dest)
-                Copy{{ .messageName }}(dest, dest)
-                assert.Equal(t, src, dest)
-            })
-        }
-    }
+				dest := New{{ .messageName }}()
+				Copy{{ .messageName }}(dest, src)
+				assert.Equal(t, src, dest)
+				Copy{{ .messageName }}(dest, dest)
+				assert.Equal(t, src, dest)
+			})
+		}
+	}
 }
 
 func TestCopy{{ .messageName }}Slice(t *testing.T) {
-    src := []{{ .messageName }}{}
-    dest := []{{ .messageName }}{}
-    // Test CopyTo empty
-    dest = Copy{{ .messageName }}Slice(dest, src)
-    assert.Equal(t, []{{ .messageName }}{}, dest)
+	src := []{{ .messageName }}{}
+	dest := []{{ .messageName }}{}
+	// Test CopyTo empty
+	dest = Copy{{ .messageName }}Slice(dest, src)
+	assert.Equal(t, []{{ .messageName }}{}, dest)
 
-    // Test CopyTo larger slice
-    src = GenTest{{ .messageName }}Slice()
-    dest = Copy{{ .messageName }}Slice(dest, src)
-    assert.Equal(t, GenTest{{ .messageName }}Slice(), dest)
+	// Test CopyTo larger slice
+	src = GenTest{{ .messageName }}Slice()
+	dest = Copy{{ .messageName }}Slice(dest, src)
+	assert.Equal(t, GenTest{{ .messageName }}Slice(), dest)
 
-    // Test CopyTo same size slice
-    dest = Copy{{ .messageName }}Slice(dest, src)
-    assert.Equal(t, GenTest{{ .messageName }}Slice(), dest)
+	// Test CopyTo same size slice
+	dest = Copy{{ .messageName }}Slice(dest, src)
+	assert.Equal(t, GenTest{{ .messageName }}Slice(), dest)
 
-    // Test CopyTo smaller size slice
-    dest = Copy{{ .messageName }}Slice(dest, []{{ .messageName }}{})
-    assert.Len(t, dest, 0)
+	// Test CopyTo smaller size slice
+	dest = Copy{{ .messageName }}Slice(dest, []{{ .messageName }}{})
+	assert.Len(t, dest, 0)
 
-    // Test CopyTo larger slice with enough capacity
-    dest = Copy{{ .messageName }}Slice(dest, src)
-    assert.Equal(t, GenTest{{ .messageName }}Slice(), dest)
+	// Test CopyTo larger slice with enough capacity
+	dest = Copy{{ .messageName }}Slice(dest, src)
+	assert.Equal(t, GenTest{{ .messageName }}Slice(), dest)
 }
 
 func TestCopy{{ .messageName }}PtrSlice(t *testing.T) {
-    src := []*{{ .messageName }}{}
-    dest := []*{{ .messageName }}{}
-    // Test CopyTo empty
-    dest = Copy{{ .messageName }}PtrSlice(dest, src)
-    assert.Equal(t, []*{{ .messageName }}{}, dest)
+	src := []*{{ .messageName }}{}
+	dest := []*{{ .messageName }}{}
+	// Test CopyTo empty
+	dest = Copy{{ .messageName }}PtrSlice(dest, src)
+	assert.Equal(t, []*{{ .messageName }}{}, dest)
 
-    // Test CopyTo larger slice
-    src = GenTest{{ .messageName }}PtrSlice()
-    dest = Copy{{ .messageName }}PtrSlice(dest, src)
-    assert.Equal(t, GenTest{{ .messageName }}PtrSlice(), dest)
+	// Test CopyTo larger slice
+	src = GenTest{{ .messageName }}PtrSlice()
+	dest = Copy{{ .messageName }}PtrSlice(dest, src)
+	assert.Equal(t, GenTest{{ .messageName }}PtrSlice(), dest)
 
-    // Test CopyTo same size slice
-    dest = Copy{{ .messageName }}PtrSlice(dest, src)
-    assert.Equal(t, GenTest{{ .messageName }}PtrSlice(), dest)
+	// Test CopyTo same size slice
+	dest = Copy{{ .messageName }}PtrSlice(dest, src)
+	assert.Equal(t, GenTest{{ .messageName }}PtrSlice(), dest)
 
-    // Test CopyTo smaller size slice
-    dest = Copy{{ .messageName }}PtrSlice(dest, []*{{ .messageName }}{})
-    assert.Len(t, dest, 0)
+	// Test CopyTo smaller size slice
+	dest = Copy{{ .messageName }}PtrSlice(dest, []*{{ .messageName }}{})
+	assert.Len(t, dest, 0)
 
-    // Test CopyTo larger slice with enough capacity
-    dest = Copy{{ .messageName }}PtrSlice(dest, src)
-    assert.Equal(t, GenTest{{ .messageName }}PtrSlice(), dest)
+	// Test CopyTo larger slice with enough capacity
+	dest = Copy{{ .messageName }}PtrSlice(dest, src)
+	assert.Equal(t, GenTest{{ .messageName }}PtrSlice(), dest)
 }
 
 func TestMarshalAndUnmarshalJSON{{ .messageName }}Unknown(t *testing.T) {
 	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
 	dest := New{{ .messageName }}()
-    dest.UnmarshalJSON(iter)
+	dest.UnmarshalJSON(iter)
 	require.NoError(t, iter.Error())
 	assert.Equal(t, New{{ .messageName }}(), dest)
 }
 
 func TestMarshalAndUnmarshalJSON{{ .messageName }}(t *testing.T) {
 	for name, src := range genTestEncodingValues{{ .messageName }}() {
-        for _, pooling := range []bool{true, false} {
-            t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
-                prevPooling := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
-                require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), pooling))
-                defer func() {
-                    require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prevPooling))
-                }()
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prevPooling))
+				}()
 
-                stream := json.BorrowStream(nil)
-                defer json.ReturnStream(stream)
-                src.MarshalJSON(stream)
-                require.NoError(t, stream.Error())
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				src.MarshalJSON(stream)
+				require.NoError(t, stream.Error())
 
-                iter := json.BorrowIterator(stream.Buffer())
-                defer json.ReturnIterator(iter)
-                dest := New{{ .messageName }}()
-                dest.UnmarshalJSON(iter)
-                require.NoError(t, iter.Error())
+				iter := json.BorrowIterator(stream.Buffer())
+				defer json.ReturnIterator(iter)
+				dest := New{{ .messageName }}()
+				dest.UnmarshalJSON(iter)
+				require.NoError(t, iter.Error())
 
-                assert.Equal(t, src, dest)
-                Delete{{ .messageName }}(dest, true)
-            })
-        }
+				assert.Equal(t, src, dest)
+				Delete{{ .messageName }}(dest, true)
+			})
+		}
 	}
 }
 
 func TestMarshalAndUnmarshalProto{{ .messageName }}Failing(t *testing.T) {
-    for name, buf := range genTestFailingUnmarshalProtoValues{{ .messageName }}() {
-        t.Run(name, func(t *testing.T) {
-            dest := New{{ .messageName }}()
-            require.Error(t, dest.UnmarshalProto(buf))
-        })
-    }
+	for name, buf := range genTestFailingUnmarshalProtoValues{{ .messageName }}() {
+		t.Run(name, func(t *testing.T) {
+			dest := New{{ .messageName }}()
+			require.Error(t, dest.UnmarshalProto(buf))
+		})
+	}
 }
 
 func TestMarshalAndUnmarshalProto{{ .messageName }}Unknown(t *testing.T) {
@@ -137,53 +137,53 @@ func TestMarshalAndUnmarshalProto{{ .messageName }}Unknown(t *testing.T) {
 
 func TestMarshalAndUnmarshalProto{{ .messageName }}(t *testing.T) {
 	for name, src := range genTestEncodingValues{{ .messageName }}(){
-        for _, pooling := range []bool{true, false} {
-            t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
-                prevPooling := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
-                require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), pooling))
-                defer func() {
-                    require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prevPooling))
-                }()
+		for _, pooling := range []bool{true, false} {
+			t.Run(name+"/Pooling="+strconv.FormatBool(pooling), func(t *testing.T) {
+				prevPooling := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), pooling))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prevPooling))
+				}()
 
-                buf := make([]byte, src.SizeProto())
-                gotSize := src.MarshalProto(buf)
-                assert.Equal(t, len(buf), gotSize)
+				buf := make([]byte, src.SizeProto())
+				gotSize := src.MarshalProto(buf)
+				assert.Equal(t, len(buf), gotSize)
 
-                dest := New{{ .messageName }}()
-                require.NoError(t, dest.UnmarshalProto(buf))
+				dest := New{{ .messageName }}()
+				require.NoError(t, dest.UnmarshalProto(buf))
 
-                assert.Equal(t, src, dest)
-                Delete{{ .messageName }}(dest, true)
-            })
-        }
+				assert.Equal(t, src, dest)
+				Delete{{ .messageName }}(dest, true)
+			})
+		}
 	}
 }
 
 func TestMarshalAndUnmarshalProtoViaProtobuf{{ .messageName }}(t *testing.T) {
 	for name, src := range genTestEncodingValues{{ .messageName }}(){
 		t.Run(name, func(t *testing.T) {
-            buf := make([]byte, src.SizeProto())
-            gotSize := src.MarshalProto(buf)
-            assert.Equal(t, len(buf), gotSize)
+			buf := make([]byte, src.SizeProto())
+			gotSize := src.MarshalProto(buf)
+			assert.Equal(t, len(buf), gotSize)
 
-            goDest := &{{ .upstreamMessage }}{}
-            require.NoError(t, proto.Unmarshal(buf, goDest))
+			goDest := &{{ .upstreamMessage }}{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
 
-            goBuf, err := proto.Marshal(goDest)
-            require.NoError(t, err)
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
 
-            dest := New{{ .messageName }}()
-            require.NoError(t, dest.UnmarshalProto(goBuf))
-            assert.Equal(t, src, dest)
-        })
+			dest := New{{ .messageName }}()
+			require.NoError(t, dest.UnmarshalProto(goBuf))
+			assert.Equal(t, src, dest)
+		})
 	}
 }
 
 func genTestFailingUnmarshalProtoValues{{ .messageName }}() map[string][]byte {
-    return map[string][]byte{
+	return map[string][]byte{
 		"invalid_field": { 0x02 },
-        {{- range .fields }}{{ .GenTestFailingUnmarshalProtoValues }}{{- end }}
-    }
+		{{- range .fields }}{{ .GenTestFailingUnmarshalProtoValues }}{{- end }}
+	}
 }
 
 func genTestEncodingValues{{ .messageName }}() map[string]*{{ .messageName }} {

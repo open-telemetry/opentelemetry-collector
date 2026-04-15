@@ -30,5 +30,5 @@ func New{{ .structName }}Wrapper(orig *{{ .originName }}, state *State) {{ .stru
 }
 
 func GenTest{{ .structName }}Wrapper() {{ .structName }}Wrapper {
-    return New{{ .structName }}Wrapper(GenTest{{ .originName }}(), NewState())
+	return New{{ .structName }}Wrapper(GenTest{{ .originName }}(), NewState())
 }

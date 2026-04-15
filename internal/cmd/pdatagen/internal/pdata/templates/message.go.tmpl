@@ -64,7 +64,7 @@ func (ms {{ .structName }}) MoveTo(dest {{ .structName }}) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms {{ .structName }}) CopyTo(dest {{ .structName }}) {
 	dest.{{ .stateAccessor }}.AssertMutable()
-    internal.Copy{{ .originName }}(dest.{{ .origAccessor }}, ms.{{ .origAccessor }})
+	internal.Copy{{ .originName }}(dest.{{ .origAccessor }}, ms.{{ .origAccessor }})
 }
 
 {{ if .hasWrapper -}}

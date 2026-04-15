@@ -30,6 +30,6 @@ func New{{ .structName }}Wrapper(orig *[]{{ if .elementNullable }}*{{ end }}{{ .
 }
 
 func GenTest{{ .structName }}Wrapper() {{ .structName }}Wrapper {
-    orig := GenTest{{ .elementOriginName }}{{ if .elementNullable }}Ptr{{ end }}Slice()
-    return New{{ .structName }}Wrapper(&orig, NewState())
+	orig := GenTest{{ .elementOriginName }}{{ if .elementNullable }}Ptr{{ end }}Slice()
+	return New{{ .structName }}Wrapper(&orig, NewState())
 }

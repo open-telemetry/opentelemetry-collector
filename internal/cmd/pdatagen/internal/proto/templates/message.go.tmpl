@@ -19,10 +19,10 @@ import (
 {{ .description }}
 type {{ .messageName }} struct {
 {{- range .fields }}
-    {{ .GenMessageField }}
+	{{ .GenMessageField }}
 {{- end }}
 {{ if gt .metadataSize 0 -}}
-    metadata [{{ .metadataSize }}]uint64
+	metadata [{{ .metadataSize }}]uint64
 {{ end -}}
 }
 
@@ -31,52 +31,52 @@ var (
 	    New: func() any {
 		    return &{{ .messageName }}{}
 	    },
-    }
-    {{- range .fields }}{{ .GenPool }}{{- end }}
+	}
+	{{- range .fields }}{{ .GenPool }}{{- end }}
 )
 
 
 func New{{ .messageName }}() *{{ .messageName }} {
-    if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-        return &{{ .messageName }}{}
-    }
-    return protoPool{{ .messageName }}.Get().(*{{ .messageName }})
+	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
+		return &{{ .messageName }}{}
+	}
+	return protoPool{{ .messageName }}.Get().(*{{ .messageName }})
 }
 
 func Delete{{ .messageName }}(orig *{{ .messageName }}, nullable bool) {
-    if orig == nil {
-        return
-    }
+	if orig == nil {
+		return
+	}
 
-    if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-        orig.Reset()
-        return
-    }
+	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
+		orig.Reset()
+		return
+	}
 
-    {{- range .fields }}
-        {{ .GenDelete }}
-    {{- end }}
-    orig.Reset()
-    if nullable {
-        protoPool{{ .messageName }}.Put(orig)
-    }
+	{{- range .fields }}
+		{{ .GenDelete }}
+	{{- end }}
+	orig.Reset()
+	if nullable {
+		protoPool{{ .messageName }}.Put(orig)
+	}
 }
 
 func Copy{{ .messageName }}(dest, src *{{ .messageName }}) *{{ .messageName }}{
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
-    }
+	}
 
-    if src == nil {
-        return nil;
-    }
+	if src == nil {
+		return nil;
+	}
 
-    if dest == nil {
-        dest = New{{ .messageName }}();
-    }
+	if dest == nil {
+		dest = New{{ .messageName }}();
+	}
 
-    {{- range .fields }}
+	{{- range .fields }}
 	{{ .GenCopy }}
 	{{- end }}
 
@@ -84,51 +84,51 @@ func Copy{{ .messageName }}(dest, src *{{ .messageName }}) *{{ .messageName }}{
 }
 
 func Copy{{ .messageName }}Slice(dest, src []{{ .messageName }}) []{{ .messageName }} {
-    var newDest []{{ .messageName }}
-    if cap(dest) < len(src) {
-        newDest = make([]{{ .messageName }}, len(src))
-    } else {
-        newDest = dest[:len(src)]
-        // Cleanup the rest of the elements so GC can free the memory.
-        // This can happen when len(src) < len(dest) < cap(dest).
-        for i := len(src); i < len(dest); i++ {
-            Delete{{ .messageName }}(&dest[i], false)
-        }
-    }
-    for i := range src {
-        Copy{{ .messageName }}(&newDest[i], &src[i])
-    }
-    return newDest
+	var newDest []{{ .messageName }}
+	if cap(dest) < len(src) {
+		newDest = make([]{{ .messageName }}, len(src))
+	} else {
+		newDest = dest[:len(src)]
+		// Cleanup the rest of the elements so GC can free the memory.
+		// This can happen when len(src) < len(dest) < cap(dest).
+		for i := len(src); i < len(dest); i++ {
+			Delete{{ .messageName }}(&dest[i], false)
+		}
+	}
+	for i := range src {
+		Copy{{ .messageName }}(&newDest[i], &src[i])
+	}
+	return newDest
 }
 
 func Copy{{ .messageName }}PtrSlice(dest, src []*{{ .messageName }}) []*{{ .messageName }} {
-    var newDest []*{{ .messageName }}
-    if cap(dest) < len(src) {
-        newDest = make([]*{{ .messageName }}, len(src))
-        // Copy old pointers to re-use.
-        copy(newDest, dest)
-        // Add new pointers for missing elements from len(dest) to len(srt).
-        for i := len(dest); i < len(src); i++ {
-            newDest[i] = New{{ .messageName }}()
-        }
+	var newDest []*{{ .messageName }}
+	if cap(dest) < len(src) {
+		newDest = make([]*{{ .messageName }}, len(src))
+		// Copy old pointers to re-use.
+		copy(newDest, dest)
+		// Add new pointers for missing elements from len(dest) to len(srt).
+		for i := len(dest); i < len(src); i++ {
+			newDest[i] = New{{ .messageName }}()
+		}
 	} else {
-        newDest = dest[:len(src)]
-        // Cleanup the rest of the elements so GC can free the memory.
-        // This can happen when len(src) < len(dest) < cap(dest).
-        for i := len(src); i < len(dest); i++ {
-            Delete{{ .messageName }}(dest[i], true)
-            dest[i] = nil
-        }
-        // Add new pointers for missing elements.
-        // This can happen when len(dest) < len(src) < cap(dest).
-        for i := len(dest); i < len(src); i++ {
-            newDest[i] = New{{ .messageName }}()
-        }
-    }
-    for i := range src {
-        Copy{{ .messageName }}(newDest[i], src[i])
-    }
-    return newDest
+		newDest = dest[:len(src)]
+		// Cleanup the rest of the elements so GC can free the memory.
+		// This can happen when len(src) < len(dest) < cap(dest).
+		for i := len(src); i < len(dest); i++ {
+			Delete{{ .messageName }}(dest[i], true)
+			dest[i] = nil
+		}
+		// Add new pointers for missing elements.
+		// This can happen when len(dest) < len(src) < cap(dest).
+		for i := len(dest); i < len(src); i++ {
+			newDest[i] = New{{ .messageName }}()
+		}
+	}
+	for i := range src {
+		Copy{{ .messageName }}(newDest[i], src[i])
+	}
+	return newDest
 }
 
 
@@ -210,26 +210,26 @@ func (orig *{{ .messageName }}) UnmarshalProto(buf []byte) error {
 {{ end -}}
 
 func GenTest{{ .messageName }}() *{{ .messageName }} {
-    orig := New{{ .messageName }}()
-    {{- range .fields }}
-    {{ .GenTest }}
-    {{- end }}
-    return orig
+	orig := New{{ .messageName }}()
+	{{- range .fields }}
+	{{ .GenTest }}
+	{{- end }}
+	return orig
 }
 
 func GenTest{{ .messageName }}PtrSlice() []*{{ .messageName }} {
-    orig := make([]*{{ .messageName }}, 5)
-    orig[0] = New{{ .messageName }}()
-    orig[1] = GenTest{{ .messageName }}()
-    orig[2] = New{{ .messageName }}()
-    orig[3] = GenTest{{ .messageName }}()
-    orig[4] = New{{ .messageName }}()
-    return orig
+	orig := make([]*{{ .messageName }}, 5)
+	orig[0] = New{{ .messageName }}()
+	orig[1] = GenTest{{ .messageName }}()
+	orig[2] = New{{ .messageName }}()
+	orig[3] = GenTest{{ .messageName }}()
+	orig[4] = New{{ .messageName }}()
+	return orig
 }
 
 func GenTest{{ .messageName }}Slice() []{{ .messageName }} {
-    orig := make([]{{ .messageName }}, 5)
-    orig[1] = *GenTest{{ .messageName }}()
-    orig[3] = *GenTest{{ .messageName }}()
-    return orig
+	orig := make([]{{ .messageName }}, 5)
+	orig[1] = *GenTest{{ .messageName }}()
+	orig[3] = *GenTest{{ .messageName }}()
+	return orig
 }

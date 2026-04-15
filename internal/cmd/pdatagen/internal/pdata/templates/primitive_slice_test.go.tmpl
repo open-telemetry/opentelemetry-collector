@@ -135,22 +135,22 @@ func Test{{ .structName }}All(t *testing.T) {
 
 
 func Test{{ .structName }}MoveAndAppendTo(t *testing.T) {
-  // Test moving from an empty slice
-  ms := New{{ .structName }}()
-  ms2 := New{{ .structName }}()
-  ms.MoveAndAppendTo(ms2)
-  assert.Equal(t, New{{ .structName }}(), ms2)
-  assert.Equal(t, ms.Len(), 0)
+	// Test moving from an empty slice
+	ms := New{{ .structName }}()
+	ms2 := New{{ .structName }}()
+	ms.MoveAndAppendTo(ms2)
+	assert.Equal(t, New{{ .structName }}(), ms2)
+	assert.Equal(t, ms.Len(), 0)
 
-  // Test moving to empty slice
-  ms.FromRaw([]{{ .itemType }}{ {{ .testOrigVal }} })
-  ms.MoveAndAppendTo(ms2)
-  assert.Equal(t, ms2.Len(), 3)
+	// Test moving to empty slice
+	ms.FromRaw([]{{ .itemType }}{ {{ .testOrigVal }} })
+	ms.MoveAndAppendTo(ms2)
+	assert.Equal(t, ms2.Len(), 3)
 
-  // Test moving to a non empty slice
-  ms.FromRaw([]{{ .itemType }}{ {{ .testOrigVal }} })
-  ms.MoveAndAppendTo(ms2)
-  assert.Equal(t, ms2.Len(), 6)
+	// Test moving to a non empty slice
+	ms.FromRaw([]{{ .itemType }}{ {{ .testOrigVal }} })
+	ms.MoveAndAppendTo(ms2)
+	assert.Equal(t, ms2.Len(), 6)
 }
 
 func Test{{ .structName }}RemoveIf(t *testing.T) {
