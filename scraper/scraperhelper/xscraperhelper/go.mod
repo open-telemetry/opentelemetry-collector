@@ -40,6 +40,8 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/consumer v1.56.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.150.0 // indirect
+	go.opentelemetry.io/collector/extension v1.56.0 // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.150.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.56.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.150.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.56.0 // indirect
@@ -92,5 +94,9 @@ replace go.opentelemetry.io/collector/component => ../../../component
 replace go.opentelemetry.io/collector/receiver/receivertest => ../../../receiver/receivertest
 
 replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../../pipeline/xpipeline
+
+replace go.opentelemetry.io/collector/extension => ../../../extension
+
+replace go.opentelemetry.io/collector/extension/xextension => ../../../extension/xextension
 
 replace go.opentelemetry.io/collector/internal/componentalias => ../../../internal/componentalias
