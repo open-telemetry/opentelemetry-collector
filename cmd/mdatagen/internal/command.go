@@ -554,7 +554,11 @@ func generateConfigFiles(md Metadata, mdDir, _ string) error {
 			return fmt.Errorf("failed to write config schema: %w", err)
 		}
 
-		if err := generateConfigGoStruct(md, mdDir); err != nil {
+		// do a shallow copy of Metadata and replace Config with resolved schema
+		mdWithConfig := md
+		mdWithConfig.Config = resolvedSchema
+
+		if err := generateConfigGoStruct(mdWithConfig, mdDir); err != nil {
 			return fmt.Errorf("failed to generate config Go struct: %w", err)
 		}
 	}
