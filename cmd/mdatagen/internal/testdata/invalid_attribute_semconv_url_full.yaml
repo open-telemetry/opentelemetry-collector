@@ -1,6 +1,6 @@
 type: metricreceiver
 
-sem_conv_version: 1.38.0
+sem_conv_version: 1.40.0
 
 status:
   class: receiver
@@ -14,7 +14,7 @@ attributes:
     description: Used attribute.
     type: string
     semantic_convention:
-      ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/registry/attributes/system.md#system-memory-state
+      ref: https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/system.md#system-memory-state
 
 metrics:
   metric:

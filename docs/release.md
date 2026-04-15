@@ -172,8 +172,6 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Core Release manager  | Contrib release manager | 'Releases' release manager |
 |------------|----------|-----------------------|-------------------------|----------------------------|
-| 2026-03-30 | v0.149.0 | [@codeboten][8]       | [@codeboten][8]         | [@codeboten][8]            |
-| 2026-04-13 | v0.150.0 | [@dmathieu][12]       | [@andrzej-stencel][4]   | [@crobert-1][20]           |
 | 2026-04-27 | v0.151.0 | [@bogdandrutu][9]     | [@bogdandrutu][9]       | [@bogdandrutu][9]          |
 | 2026-05-11 | v0.152.0 | [@jade-guiton-dd][10] | [@ChrsMark][19]         | [@dehaansa][16]            |
 | 2026-05-25 | v0.153.0 | [@axw][18]            | [@braydonk][13]         | [@MovieStoreGuy][17]       |
@@ -183,7 +181,9 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2026-07-20 | v0.157.0 | [@TylerHelmuth][3]    | [@TylerHelmuth][3]      | [@mowies][15]              |
 | 2026-08-03 | v0.158.0 | [@evan-bradley][2]    | [@evan-bradley][2]      | [@evan-bradley][2]         |
 | 2026-08-17 | v0.159.0 | [@songy23][6]         | [@songy23][6]           | [@songy23][6]              |
-| 2026-08-31 | v0.148.0 | [@dmitryax][7]        | [@dmitryax][7]          | [@dmitryax][7]             |
+| 2026-08-31 | v0.160.0 | [@dmitryax][7]        | [@dmitryax][7]          | [@dmitryax][7]             |
+| 2026-09-14 | v0.161.0 | [@codeboten][8]       | [@codeboten][8]         | [@codeboten][8]            |
+| 2026-09-28 | v0.162.0 | [@dmathieu][12]       | [@andrzej-stencel][4]   | [@crobert-1][20]           |
 
 [1]: https://github.com/jmacd
 [2]: https://github.com/evan-bradley

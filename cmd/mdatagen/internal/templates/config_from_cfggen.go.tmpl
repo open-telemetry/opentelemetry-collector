@@ -4,7 +4,7 @@ package {{ .Package }}
 
 {{- $validators := extractValidators .Metadata.Config }}
 {{ $imports := extractImports .Metadata.Config }}
-{{- if or $imports $validators }}
+
 import (
 {{- if $validators }}
     "errors"
@@ -12,8 +12,8 @@ import (
 {{- range $imports }}
 	"{{ . }}"
 {{- end }}
+    "go.opentelemetry.io/collector/component"
 )
-{{- end }}
 
 {{ define "struct" }}
     {{- if .AllOf }}
@@ -21,7 +21,7 @@ import (
         {{- if .Description }}
     // {{ .Description }}
         {{- end }}
-    	{{ .Ref | publicType }} `mapstructure:",squash"`
+    	{{ .ResolvedFrom | publicType }} `mapstructure:",squash"`
     {{- end }}
     {{- end }}
     {{- range $propName, $prop := .Properties }}
@@ -37,14 +37,15 @@ import (
     {{- if $def.Description }}
         // {{ $defName | publicVar }} {{ $def.Description }}
     {{- end }}
-    type {{ $defName | publicVar }} struct {
-        {{ template "struct" $def }}
+    {{- $typeName := $defName | publicVar }}
+    type {{ $typeName }} struct {
+        {{- template "struct" $def }}
     }
 
     {{ $defValidators := extractValidators $def }}
     {{- if $defValidators }}
-        // Validate validates the {{$defName}} fields.
-        func (c *{{ $defName | publicVar }}) Validate() error {
+        // Validate validates the {{$typeName}} fields according to schema annotations.
+        func (c *{{ $typeName }}) Validate() error {
             var err error
             {{ range $validator := $defValidators -}}
                 {{- template "validation" $validator }}
@@ -52,6 +53,17 @@ import (
 
             return err
         }
+    {{- end }}
+
+    // NewDefault{{ $typeName }} returns a new {{ $typeName }} with default values consistent with the annotations in the schema.
+    {{- if hasDefaultValue $def }}
+    func NewDefault{{ $typeName }}() {{ $typeName }} {
+    cfg := {{ $typeName }}{}
+
+    {{- template "defaultValueSetter" $def }}
+
+    return cfg
+    }
     {{- end }}
 
 {{ end }}
@@ -62,7 +74,7 @@ import (
     // Config defines the configuration for {{ .Metadata.DisplayName }} component.
 {{- end }}
 type Config struct {
-    {{ template "struct" .Metadata.Config }}
+    {{- template "struct" .Metadata.Config }}
 }
 
 {{ define "customValidator" -}}
@@ -123,3 +135,24 @@ type Config struct {
         return err
     }
 {{- end }}
+
+{{- define "defaultValueSetter" }}
+    {{- range $propName, $prop := .Properties }}
+        {{- $defaultValue := formatDefaultValue $prop $propName $prop.Default }}
+        {{- if $defaultValue }}
+        cfg.{{ $propName | publicVar }} = {{ $defaultValue }}
+        {{- end }}
+        {{- $exprs := mapCustomDefaults $prop $prop.Default }}
+        {{- range $expr := $exprs }}
+            cfg.{{ $propName | publicVar }}{{ $expr }}
+        {{- end }}
+    {{- end }}
+{{- end }}
+
+func createDefaultConfig() component.Config {
+    cfg := Config{}
+
+    {{- template "defaultValueSetter" .Metadata.Config }}
+
+    return &cfg
+}
