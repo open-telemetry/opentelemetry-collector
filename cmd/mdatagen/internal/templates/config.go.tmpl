@@ -15,7 +15,7 @@ import (
 	{{- end }}
 
 	"go.opentelemetry.io/collector/confmap"
-	{{ if and .Metrics .ResourceAttributes -}}
+	{{- if and .Metrics .ResourceAttributes }}
 	"go.opentelemetry.io/collector/filter"
 	{{- end }}
 	{{- if .ResourceAttributes }}

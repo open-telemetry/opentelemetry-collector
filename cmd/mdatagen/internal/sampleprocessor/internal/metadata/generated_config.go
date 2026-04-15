@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/confmap"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
