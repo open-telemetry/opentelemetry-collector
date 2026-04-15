@@ -727,7 +727,7 @@ func TestDecompressionPanicRecovery(t *testing.T) {
 
 	// Register a custom decoder that panics on Read.
 	panickingDecoders := map[string]func(io.ReadCloser) (io.ReadCloser, error){
-		"panic-codec": func(_ io.ReadCloser) (io.ReadCloser, error) {
+		"panic-codec": func(_ io.ReadCloser) (io.ReadCloser, error) { //nolint:unparam
 			return &panickingReadCloser{panicOnRead: true}, nil
 		},
 	}
