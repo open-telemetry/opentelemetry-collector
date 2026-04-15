@@ -32,6 +32,21 @@ func newObsReport(set processor.Settings) (*obsReport, error) {
 	}, nil
 }
 
+// recordLimits records the configured hard and spike memory limits as gauges.
+// Call this once during processor Start, after the MemoryLimiter is initialized.
+func (or *obsReport) recordLimits(ctx context.Context, allocLimitBytes, spikeLimitBytes uint64) {
+	or.telemetryBuilder.ProcessorMemoryLimiterLimitBytes.Record(
+		ctx,
+		int64(allocLimitBytes),
+		or.otelAttrs,
+	)
+	or.telemetryBuilder.ProcessorMemoryLimiterSpikeLimitBytes.Record(
+		ctx,
+		int64(spikeLimitBytes),
+		or.otelAttrs,
+	)
+}
+
 // accepted reports that the num data was accepted.
 func (or *obsReport) accepted(ctx context.Context, num int, signal pipeline.Signal) {
 	switch signal {

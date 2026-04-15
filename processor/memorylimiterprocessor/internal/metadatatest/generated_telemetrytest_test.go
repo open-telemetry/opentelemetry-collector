@@ -22,6 +22,8 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ProcessorAcceptedLogRecords.Add(context.Background(), 1)
 	tb.ProcessorAcceptedMetricPoints.Add(context.Background(), 1)
 	tb.ProcessorAcceptedSpans.Add(context.Background(), 1)
+	tb.ProcessorMemoryLimiterLimitBytes.Record(context.Background(), 1)
+	tb.ProcessorMemoryLimiterSpikeLimitBytes.Record(context.Background(), 1)
 	tb.ProcessorRefusedLogRecords.Add(context.Background(), 1)
 	tb.ProcessorRefusedMetricPoints.Add(context.Background(), 1)
 	tb.ProcessorRefusedSpans.Add(context.Background(), 1)
@@ -32,6 +34,12 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorAcceptedSpans(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorMemoryLimiterLimitBytes(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorMemoryLimiterSpikeLimitBytes(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorRefusedLogRecords(t, testTel,

@@ -130,6 +130,16 @@ func (ml *MemoryLimiter) MustRefuse() bool {
 	return ml.mustRefuse.Load()
 }
 
+// AllocLimit returns the resolved hard memory limit in bytes.
+func (ml *MemoryLimiter) AllocLimit() uint64 {
+	return ml.usageChecker.memAllocLimit
+}
+
+// SpikeLimit returns the resolved spike memory limit in bytes.
+func (ml *MemoryLimiter) SpikeLimit() uint64 {
+	return ml.usageChecker.memSpikeLimit
+}
+
 func getMemUsageChecker(cfg *Config, logger *zap.Logger) (*memUsageChecker, error) {
 	memAllocLimit := uint64(cfg.MemoryLimitMiB) * mibBytes
 	memSpikeLimit := uint64(cfg.MemorySpikeLimitMiB) * mibBytes
