@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/extension/xextension/extensionscrapercontroller"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -831,4 +832,215 @@ func TestNewMetricsController_ScraperIDInErrorLogs(t *testing.T) {
 	receiverLog := allLogs[1]
 	assert.Equal(t, "test log from receiver", receiverLog.Message)
 	assert.NotContains(t, receiverLog.ContextMap(), "scraper")
+}
+
+// mockHost implements component.Host with configurable extensions.
+type mockHost struct {
+	ext map[component.ID]component.Component
+}
+
+func (h *mockHost) GetExtensions() map[component.ID]component.Component {
+	return h.ext
+}
+
+// mockControllerExtension implements extensionscrapercontroller.ControllerExtension.
+type mockControllerExtension struct {
+	component.StartFunc
+	component.ShutdownFunc
+	scrapeFunc   func(context.Context) error
+	deregistered bool
+}
+
+func (m *mockControllerExtension) RegisterScraper(_ context.Context, scrapeFunc func(context.Context) error) (extensionscrapercontroller.RegistrationHandle, error) {
+	m.scrapeFunc = scrapeFunc
+	return extensionscrapercontroller.DeregisterFunc(func(context.Context) error {
+		m.deregistered = true
+		return nil
+	}), nil
+}
+
+func TestExtensionTriggersMetricsScrape(t *testing.T) {
+	t.Parallel()
+
+	scrapeCh := make(chan int, 10)
+	ts := &testScrape{ch: scrapeCh}
+
+	scp, err := scraper.NewMetrics(ts.scrapeMetrics)
+	require.NoError(t, err)
+
+	extID := component.MustNewID("myext")
+	mockExt := &mockControllerExtension{}
+
+	cfg := &ControllerConfig{
+		CollectionInterval: 0,
+		InitialDelay:       0,
+		Controllers:        []component.ID{extID},
+	}
+
+	recv, err := NewMetricsController(
+		cfg,
+		receivertest.NewNopSettings(receivertest.NopType),
+		new(consumertest.MetricsSink),
+		AddMetricsScraper(component.MustNewType("scraper"), scp),
+	)
+	require.NoError(t, err)
+
+	host := &mockHost{ext: map[component.ID]component.Component{extID: mockExt}}
+	require.NoError(t, recv.Start(context.Background(), host))
+
+	// Extension triggers a scrape
+	require.NotNil(t, mockExt.scrapeFunc, "scrapeFunc should have been registered")
+	require.NoError(t, mockExt.scrapeFunc(context.Background()))
+
+	// Verify scrape was called
+	select {
+	case <-scrapeCh:
+	case <-time.After(time.Second):
+		t.Fatal("expected scrape to be triggered by extension")
+	}
+
+	require.NoError(t, recv.Shutdown(context.Background()))
+	assert.True(t, mockExt.deregistered, "expected deregister to be called on shutdown")
+}
+
+func TestExtensionAndTimerBothTriggerScrapes(t *testing.T) {
+	t.Parallel()
+
+	scrapeCh := make(chan int, 10)
+	ts := &testScrape{ch: scrapeCh}
+
+	scp, err := scraper.NewMetrics(ts.scrapeMetrics)
+	require.NoError(t, err)
+
+	extID := component.MustNewID("myext")
+	mockExt := &mockControllerExtension{}
+
+	tickerCh := make(chan time.Time)
+
+	cfg := &ControllerConfig{
+		CollectionInterval: time.Second,
+		InitialDelay:       0,
+		Controllers:        []component.ID{extID},
+	}
+
+	recv, err := NewMetricsController(
+		cfg,
+		receivertest.NewNopSettings(receivertest.NopType),
+		new(consumertest.MetricsSink),
+		AddMetricsScraper(component.MustNewType("scraper"), scp),
+		WithTickerChannel(tickerCh),
+	)
+	require.NoError(t, err)
+
+	host := &mockHost{ext: map[component.ID]component.Component{extID: mockExt}}
+	require.NoError(t, recv.Start(context.Background(), host))
+
+	// Initial scrape on start (from ticker goroutine)
+	<-scrapeCh
+
+	// Extension triggers a scrape
+	require.NoError(t, mockExt.scrapeFunc(context.Background()))
+	<-scrapeCh
+
+	// Ticker triggers a scrape
+	tickerCh <- time.Now()
+	<-scrapeCh
+
+	require.NoError(t, recv.Shutdown(context.Background()))
+	assert.True(t, mockExt.deregistered)
+}
+
+func TestExtensionNotFound(t *testing.T) {
+	t.Parallel()
+
+	scp, err := scraper.NewMetrics(func(context.Context) (pmetric.Metrics, error) {
+		return pmetric.NewMetrics(), nil
+	})
+	require.NoError(t, err)
+
+	cfg := &ControllerConfig{
+		CollectionInterval: 0,
+		InitialDelay:       0,
+		Controllers:        []component.ID{component.MustNewID("missing")},
+	}
+
+	recv, err := NewMetricsController(
+		cfg,
+		receivertest.NewNopSettings(receivertest.NopType),
+		new(consumertest.MetricsSink),
+		AddMetricsScraper(component.MustNewType("scraper"), scp),
+	)
+	require.NoError(t, err)
+
+	host := &mockHost{ext: map[component.ID]component.Component{}}
+	err = recv.Start(context.Background(), host)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `extension "missing" not found`)
+}
+
+func TestExtensionWrongType(t *testing.T) {
+	t.Parallel()
+
+	scp, err := scraper.NewMetrics(func(context.Context) (pmetric.Metrics, error) {
+		return pmetric.NewMetrics(), nil
+	})
+	require.NoError(t, err)
+
+	extID := component.MustNewID("wrongtype")
+
+	cfg := &ControllerConfig{
+		CollectionInterval: 0,
+		InitialDelay:       0,
+		Controllers:        []component.ID{extID},
+	}
+
+	recv, err := NewMetricsController(
+		cfg,
+		receivertest.NewNopSettings(receivertest.NopType),
+		new(consumertest.MetricsSink),
+		AddMetricsScraper(component.MustNewType("scraper"), scp),
+	)
+	require.NoError(t, err)
+
+	// Use a plain component that does not implement ControllerExtension
+	host := &mockHost{ext: map[component.ID]component.Component{extID: &struct {
+		component.StartFunc
+		component.ShutdownFunc
+	}{}}}
+	err = recv.Start(context.Background(), host)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `extension "wrongtype" is not a scraper controller extension`)
+}
+
+func TestDeregisterOnShutdown(t *testing.T) {
+	t.Parallel()
+
+	scp, err := scraper.NewMetrics(func(context.Context) (pmetric.Metrics, error) {
+		return pmetric.NewMetrics(), nil
+	})
+	require.NoError(t, err)
+
+	extID := component.MustNewID("myext")
+	mockExt := &mockControllerExtension{}
+
+	cfg := &ControllerConfig{
+		CollectionInterval: 0,
+		InitialDelay:       0,
+		Controllers:        []component.ID{extID},
+	}
+
+	recv, err := NewMetricsController(
+		cfg,
+		receivertest.NewNopSettings(receivertest.NopType),
+		new(consumertest.MetricsSink),
+		AddMetricsScraper(component.MustNewType("scraper"), scp),
+	)
+	require.NoError(t, err)
+
+	host := &mockHost{ext: map[component.ID]component.Component{extID: mockExt}}
+	require.NoError(t, recv.Start(context.Background(), host))
+	assert.False(t, mockExt.deregistered)
+
+	require.NoError(t, recv.Shutdown(context.Background()))
+	assert.True(t, mockExt.deregistered)
 }

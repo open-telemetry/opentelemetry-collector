@@ -40,12 +40,19 @@ type ControllerExtension interface {
     // RegisterScraper registers a scraper with this controller extension.
     // The extension will invoke the provided scrape function according to its implementation.
     // Returns a registration handle that can be used to deregister the scraper.
-    RegisterScraper(ctx context.Context, scraperID component.ID, scrapeFunc func(context.Context) error) (RegistrationHandle, error)
+    //
+    // Implementations may call scrapeFunc concurrently. After Deregister on the
+    // returned handle returns, implementations must not start new invocations of
+    // scrapeFunc; already in-flight invocations may continue to run.
+    RegisterScraper(ctx context.Context, scrapeFunc func(context.Context) error) (RegistrationHandle, error)
 }
 
 // RegistrationHandle provides a way to deregister a scraper from a controller extension
 type RegistrationHandle interface {
-    // Deregister removes the scraper from the controller extension
+    // Deregister removes the scraper from the controller extension.
+    // After Deregister returns, the extension must not start any new
+    // invocations of the associated scrapeFunc. Deregister need not wait
+    // for in-flight invocations to complete.
     Deregister(ctx context.Context) error
 }
 ```
@@ -76,8 +83,8 @@ Modify `ControllerConfig` to support:
 ```golang
 type ControllerConfig struct {
     // CollectionInterval sets how frequently the scraper should be called.
-    // If zero or negative, the timer-based scraping is disabled.
-    // At least one controller extension must be configured if timer is disabled.
+    // Must be positive, or zero to disable timer-based scraping. If zero,
+    // at least one controller extension must be configured.
     CollectionInterval time.Duration `mapstructure:"collection_interval"`
 
     // InitialDelay sets the initial start delay for the scraper timer.
@@ -96,7 +103,7 @@ type ControllerConfig struct {
 ### 3. Controller Implementation Changes
 
 Modify `controller.Controller` to:
-- Support disabling the timer when `CollectionInterval <= 0`
+- Support disabling the timer when `CollectionInterval == 0` (negative values remain invalid)
 - Register scrapers with configured controller extensions during `Start()`
 - Deregister scrapers during `Shutdown()`
 - Validate that at least one controller extension is configured if timer is disabled
