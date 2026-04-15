@@ -7,6 +7,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 func TestResourceBuilder(t *testing.T) {
@@ -65,7 +67,7 @@ func TestResourceBuilder(t *testing.T) {
 
 func TestResourceBuilderOverrideValue(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
-	require.NoError(t, cfg.Validate())
+	require.NoError(t, xconfmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 	rb.SetK8sNamespaceName("k8s.namespace.name-val")
 	rb.SetK8sPodName("k8s.pod.name-val")
@@ -113,7 +115,7 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 
 func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
-	require.NoError(t, cfg.Validate())
+	require.NoError(t, xconfmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 	// Do not call any Set* methods — override should still apply via Emit().
 
@@ -163,7 +165,7 @@ func TestResourceBuilderOverrideDisabled(t *testing.T) {
 	cfg.K8sPodUID.Enabled = false
 	cfg.K8sReplicasetName.Enabled = false
 	cfg.K8sReplicasetUID.Enabled = false
-	require.NoError(t, cfg.Validate())
+	require.NoError(t, xconfmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 
 	res := rb.Emit()
@@ -172,13 +174,13 @@ func TestResourceBuilderOverrideDisabled(t *testing.T) {
 
 func TestResourceBuilderNoOverride(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "all_set")
-	// No override_value set — Validate should still succeed and overrideValSet stays false.
-	require.NoError(t, cfg.Validate())
-	assert.False(t, cfg.K8sNamespaceName.overrideValSet, "overrideValSet should be false for k8s.namespace.name")
-	assert.False(t, cfg.K8sPodName.overrideValSet, "overrideValSet should be false for k8s.pod.name")
-	assert.False(t, cfg.K8sPodUID.overrideValSet, "overrideValSet should be false for k8s.pod.uid")
-	assert.False(t, cfg.K8sReplicasetName.overrideValSet, "overrideValSet should be false for k8s.replicaset.name")
-	assert.False(t, cfg.K8sReplicasetUID.overrideValSet, "overrideValSet should be false for k8s.replicaset.uid")
+	// No override_value set — Validate should still succeed.
+	require.NoError(t, xconfmap.Validate(cfg))
+	assert.Nil(t, cfg.K8sNamespaceName.OverrideValue, "OverrideValue should be nil for k8s.namespace.name")
+	assert.Nil(t, cfg.K8sPodName.OverrideValue, "OverrideValue should be nil for k8s.pod.name")
+	assert.Nil(t, cfg.K8sPodUID.OverrideValue, "OverrideValue should be nil for k8s.pod.uid")
+	assert.Nil(t, cfg.K8sReplicasetName.OverrideValue, "OverrideValue should be nil for k8s.replicaset.name")
+	assert.Nil(t, cfg.K8sReplicasetUID.OverrideValue, "OverrideValue should be nil for k8s.replicaset.uid")
 	rb := NewResourceBuilder(cfg)
 	rb.SetK8sNamespaceName("k8s.namespace.name-val")
 	rb.SetK8sPodName("k8s.pod.name-val")

@@ -7,6 +7,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 func TestResourceBuilder(t *testing.T) {
@@ -83,7 +85,7 @@ func TestResourceBuilder(t *testing.T) {
 
 func TestResourceBuilderOverrideValue(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
-	require.NoError(t, cfg.Validate())
+	require.NoError(t, xconfmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 	rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
 	rb.SetOptionalResourceAttr("optional.resource.attr-val")
@@ -155,7 +157,7 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 
 func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
-	require.NoError(t, cfg.Validate())
+	require.NoError(t, xconfmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 	// Do not call any Set* methods — override should still apply via Emit().
 
@@ -229,7 +231,7 @@ func TestResourceBuilderOverrideDisabled(t *testing.T) {
 	cfg.StringResourceAttrDisableWarning.Enabled = false
 	cfg.StringResourceAttrRemoveWarning.Enabled = false
 	cfg.StringResourceAttrToBeRemoved.Enabled = false
-	require.NoError(t, cfg.Validate())
+	require.NoError(t, xconfmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 
 	res := rb.Emit()
@@ -238,16 +240,16 @@ func TestResourceBuilderOverrideDisabled(t *testing.T) {
 
 func TestResourceBuilderNoOverride(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "all_set")
-	// No override_value set — Validate should still succeed and overrideValSet stays false.
-	require.NoError(t, cfg.Validate())
-	assert.False(t, cfg.MapResourceAttr.overrideValSet, "overrideValSet should be false for map.resource.attr")
-	assert.False(t, cfg.OptionalResourceAttr.overrideValSet, "overrideValSet should be false for optional.resource.attr")
-	assert.False(t, cfg.SliceResourceAttr.overrideValSet, "overrideValSet should be false for slice.resource.attr")
-	assert.False(t, cfg.StringEnumResourceAttr.overrideValSet, "overrideValSet should be false for string.enum.resource.attr")
-	assert.False(t, cfg.StringResourceAttr.overrideValSet, "overrideValSet should be false for string.resource.attr")
-	assert.False(t, cfg.StringResourceAttrDisableWarning.overrideValSet, "overrideValSet should be false for string.resource.attr_disable_warning")
-	assert.False(t, cfg.StringResourceAttrRemoveWarning.overrideValSet, "overrideValSet should be false for string.resource.attr_remove_warning")
-	assert.False(t, cfg.StringResourceAttrToBeRemoved.overrideValSet, "overrideValSet should be false for string.resource.attr_to_be_removed")
+	// No override_value set — Validate should still succeed.
+	require.NoError(t, xconfmap.Validate(cfg))
+	assert.Nil(t, cfg.MapResourceAttr.OverrideValue, "OverrideValue should be nil for map.resource.attr")
+	assert.Nil(t, cfg.OptionalResourceAttr.OverrideValue, "OverrideValue should be nil for optional.resource.attr")
+	assert.Nil(t, cfg.SliceResourceAttr.OverrideValue, "OverrideValue should be nil for slice.resource.attr")
+	assert.Nil(t, cfg.StringEnumResourceAttr.OverrideValue, "OverrideValue should be nil for string.enum.resource.attr")
+	assert.Nil(t, cfg.StringResourceAttr.OverrideValue, "OverrideValue should be nil for string.resource.attr")
+	assert.Nil(t, cfg.StringResourceAttrDisableWarning.OverrideValue, "OverrideValue should be nil for string.resource.attr_disable_warning")
+	assert.Nil(t, cfg.StringResourceAttrRemoveWarning.OverrideValue, "OverrideValue should be nil for string.resource.attr_remove_warning")
+	assert.Nil(t, cfg.StringResourceAttrToBeRemoved.OverrideValue, "OverrideValue should be nil for string.resource.attr_to_be_removed")
 	rb := NewResourceBuilder(cfg)
 	rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
 	rb.SetOptionalResourceAttr("optional.resource.attr-val")

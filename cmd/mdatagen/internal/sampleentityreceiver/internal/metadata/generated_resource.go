@@ -58,21 +58,7 @@ func (rb *ResourceBuilder) SetK8sReplicasetUID(val string) {
 
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
-	if rb.config.K8sNamespaceName.Enabled && rb.config.K8sNamespaceName.overrideValSet {
-		rb.config.K8sNamespaceName.overrideVal.CopyTo(rb.res.Attributes().PutEmpty("k8s.namespace.name"))
-	}
-	if rb.config.K8sPodName.Enabled && rb.config.K8sPodName.overrideValSet {
-		rb.config.K8sPodName.overrideVal.CopyTo(rb.res.Attributes().PutEmpty("k8s.pod.name"))
-	}
-	if rb.config.K8sPodUID.Enabled && rb.config.K8sPodUID.overrideValSet {
-		rb.config.K8sPodUID.overrideVal.CopyTo(rb.res.Attributes().PutEmpty("k8s.pod.uid"))
-	}
-	if rb.config.K8sReplicasetName.Enabled && rb.config.K8sReplicasetName.overrideValSet {
-		rb.config.K8sReplicasetName.overrideVal.CopyTo(rb.res.Attributes().PutEmpty("k8s.replicaset.name"))
-	}
-	if rb.config.K8sReplicasetUID.Enabled && rb.config.K8sReplicasetUID.overrideValSet {
-		rb.config.K8sReplicasetUID.overrideVal.CopyTo(rb.res.Attributes().PutEmpty("k8s.replicaset.uid"))
-	}
+	rb.config.ApplyOverrideValues(rb.res)
 	r := rb.res
 	rb.res = pcommon.NewResource()
 	return r

@@ -325,13 +325,11 @@ func DefaultMetricsConfig() MetricsConfig {
 	}
 }
 
-// ResourceAttributeConfig provides common config for a particular resource attribute.
-type ResourceAttributeConfig struct {
+// MapResourceAttrResourceAttributeConfig provides config for the map.resource.attr resource attribute.
+type MapResourceAttrResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
-	// OverrideValue allows users to set a static value for this resource attribute,
-	// overriding any value set programmatically by the component.
-	// The value must be compatible with the attribute's type.
-	OverrideValue any `mapstructure:"override_value"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue map[string]any `mapstructure:"override_value"`
 	// Experimental: MetricsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
 	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
@@ -341,12 +339,217 @@ type ResourceAttributeConfig struct {
 	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
 
 	enabledSetByUser bool
-	// overrideVal is the pre-parsed pcommon.Value of OverrideValue, set during Validate.
-	overrideVal    pcommon.Value
-	overrideValSet bool
 }
 
-func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+func (rac *MapResourceAttrResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OptionalResourceAttrResourceAttributeConfig provides config for the optional.resource.attr resource attribute.
+type OptionalResourceAttrResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *OptionalResourceAttrResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SliceResourceAttrResourceAttributeConfig provides config for the slice.resource.attr resource attribute.
+type SliceResourceAttrResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue []any `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *SliceResourceAttrResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// StringEnumResourceAttrResourceAttributeConfig provides config for the string.enum.resource.attr resource attribute.
+type StringEnumResourceAttrResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	// Must be one of: one, two.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *StringEnumResourceAttrResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (rac *StringEnumResourceAttrResourceAttributeConfig) Validate() error {
+	if rac.OverrideValue != nil {
+		switch *rac.OverrideValue {
+		case "one", "two":
+		default:
+			return fmt.Errorf("override_value for string.enum.resource.attr must be one of [one, two], got %q", *rac.OverrideValue)
+		}
+	}
+	return nil
+}
+
+// StringResourceAttrResourceAttributeConfig provides config for the string.resource.attr resource attribute.
+type StringResourceAttrResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *StringResourceAttrResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// StringResourceAttrDisableWarningResourceAttributeConfig provides config for the string.resource.attr_disable_warning resource attribute.
+type StringResourceAttrDisableWarningResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *StringResourceAttrDisableWarningResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// StringResourceAttrRemoveWarningResourceAttributeConfig provides config for the string.resource.attr_remove_warning resource attribute.
+type StringResourceAttrRemoveWarningResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *StringResourceAttrRemoveWarningResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// StringResourceAttrToBeRemovedResourceAttributeConfig provides config for the string.resource.attr_to_be_removed resource attribute.
+type StringResourceAttrToBeRemovedResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *StringResourceAttrToBeRemovedResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -360,140 +563,73 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for sample resource attributes.
 type ResourceAttributesConfig struct {
-	MapResourceAttr                  ResourceAttributeConfig `mapstructure:"map.resource.attr"`
-	OptionalResourceAttr             ResourceAttributeConfig `mapstructure:"optional.resource.attr"`
-	SliceResourceAttr                ResourceAttributeConfig `mapstructure:"slice.resource.attr"`
-	StringEnumResourceAttr           ResourceAttributeConfig `mapstructure:"string.enum.resource.attr"`
-	StringResourceAttr               ResourceAttributeConfig `mapstructure:"string.resource.attr"`
-	StringResourceAttrDisableWarning ResourceAttributeConfig `mapstructure:"string.resource.attr_disable_warning"`
-	StringResourceAttrRemoveWarning  ResourceAttributeConfig `mapstructure:"string.resource.attr_remove_warning"`
-	StringResourceAttrToBeRemoved    ResourceAttributeConfig `mapstructure:"string.resource.attr_to_be_removed"`
+	MapResourceAttr                  MapResourceAttrResourceAttributeConfig                  `mapstructure:"map.resource.attr"`
+	OptionalResourceAttr             OptionalResourceAttrResourceAttributeConfig             `mapstructure:"optional.resource.attr"`
+	SliceResourceAttr                SliceResourceAttrResourceAttributeConfig                `mapstructure:"slice.resource.attr"`
+	StringEnumResourceAttr           StringEnumResourceAttrResourceAttributeConfig           `mapstructure:"string.enum.resource.attr"`
+	StringResourceAttr               StringResourceAttrResourceAttributeConfig               `mapstructure:"string.resource.attr"`
+	StringResourceAttrDisableWarning StringResourceAttrDisableWarningResourceAttributeConfig `mapstructure:"string.resource.attr_disable_warning"`
+	StringResourceAttrRemoveWarning  StringResourceAttrRemoveWarningResourceAttributeConfig  `mapstructure:"string.resource.attr_remove_warning"`
+	StringResourceAttrToBeRemoved    StringResourceAttrToBeRemovedResourceAttributeConfig    `mapstructure:"string.resource.attr_to_be_removed"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
-		MapResourceAttr: ResourceAttributeConfig{
+		MapResourceAttr: MapResourceAttrResourceAttributeConfig{
 			Enabled: true,
 		},
-		OptionalResourceAttr: ResourceAttributeConfig{
+		OptionalResourceAttr: OptionalResourceAttrResourceAttributeConfig{
 			Enabled: false,
 		},
-		SliceResourceAttr: ResourceAttributeConfig{
+		SliceResourceAttr: SliceResourceAttrResourceAttributeConfig{
 			Enabled: true,
 		},
-		StringEnumResourceAttr: ResourceAttributeConfig{
+		StringEnumResourceAttr: StringEnumResourceAttrResourceAttributeConfig{
 			Enabled: true,
 		},
-		StringResourceAttr: ResourceAttributeConfig{
+		StringResourceAttr: StringResourceAttrResourceAttributeConfig{
 			Enabled: true,
 		},
-		StringResourceAttrDisableWarning: ResourceAttributeConfig{
+		StringResourceAttrDisableWarning: StringResourceAttrDisableWarningResourceAttributeConfig{
 			Enabled: true,
 		},
-		StringResourceAttrRemoveWarning: ResourceAttributeConfig{
+		StringResourceAttrRemoveWarning: StringResourceAttrRemoveWarningResourceAttributeConfig{
 			Enabled: false,
 		},
-		StringResourceAttrToBeRemoved: ResourceAttributeConfig{
+		StringResourceAttrToBeRemoved: StringResourceAttrToBeRemovedResourceAttributeConfig{
 			Enabled: true,
 		},
 	}
 }
 
-func (rac *ResourceAttributesConfig) Validate() error {
-	if rac.MapResourceAttr.OverrideValue != nil {
-		val := pcommon.NewValueEmpty()
-		if err := val.FromRaw(rac.MapResourceAttr.OverrideValue); err != nil {
-			return fmt.Errorf("override_value for map.resource.attr: %w", err)
-		}
-		if val.Type() != pcommon.ValueTypeMap {
-			return fmt.Errorf("override_value for map.resource.attr must be a map, got %v", val.Type())
-		}
-		rac.MapResourceAttr.overrideVal = val
-		rac.MapResourceAttr.overrideValSet = true
+// ApplyOverrideValues applies override values to the given resource.
+// For each enabled resource attribute with a non-nil OverrideValue,
+// the override replaces any existing value in the resource.
+func (rac *ResourceAttributesConfig) ApplyOverrideValues(res pcommon.Resource) {
+	if rac.MapResourceAttr.Enabled && rac.MapResourceAttr.OverrideValue != nil {
+		res.Attributes().PutEmptyMap("map.resource.attr").FromRaw(rac.MapResourceAttr.OverrideValue)
 	}
-	if rac.OptionalResourceAttr.OverrideValue != nil {
-		val := pcommon.NewValueEmpty()
-		if err := val.FromRaw(rac.OptionalResourceAttr.OverrideValue); err != nil {
-			return fmt.Errorf("override_value for optional.resource.attr: %w", err)
-		}
-		if val.Type() != pcommon.ValueTypeStr {
-			return fmt.Errorf("override_value for optional.resource.attr must be a string, got %v", val.Type())
-		}
-		rac.OptionalResourceAttr.overrideVal = val
-		rac.OptionalResourceAttr.overrideValSet = true
+	if rac.OptionalResourceAttr.Enabled && rac.OptionalResourceAttr.OverrideValue != nil {
+		res.Attributes().PutStr("optional.resource.attr", *rac.OptionalResourceAttr.OverrideValue)
 	}
-	if rac.SliceResourceAttr.OverrideValue != nil {
-		val := pcommon.NewValueEmpty()
-		if err := val.FromRaw(rac.SliceResourceAttr.OverrideValue); err != nil {
-			return fmt.Errorf("override_value for slice.resource.attr: %w", err)
-		}
-		if val.Type() != pcommon.ValueTypeSlice {
-			return fmt.Errorf("override_value for slice.resource.attr must be a slice, got %v", val.Type())
-		}
-		rac.SliceResourceAttr.overrideVal = val
-		rac.SliceResourceAttr.overrideValSet = true
+	if rac.SliceResourceAttr.Enabled && rac.SliceResourceAttr.OverrideValue != nil {
+		res.Attributes().PutEmptySlice("slice.resource.attr").FromRaw(rac.SliceResourceAttr.OverrideValue)
 	}
-	if rac.StringEnumResourceAttr.OverrideValue != nil {
-		val := pcommon.NewValueEmpty()
-		if err := val.FromRaw(rac.StringEnumResourceAttr.OverrideValue); err != nil {
-			return fmt.Errorf("override_value for string.enum.resource.attr: %w", err)
-		}
-		if val.Type() != pcommon.ValueTypeStr {
-			return fmt.Errorf("override_value for string.enum.resource.attr must be a string, got %v", val.Type())
-		}
-		switch val.Str() {
-		case "one", "two":
-		default:
-			return fmt.Errorf("override_value for string.enum.resource.attr must be one of [one, two], got %q", val.Str())
-		}
-		rac.StringEnumResourceAttr.overrideVal = val
-		rac.StringEnumResourceAttr.overrideValSet = true
+	if rac.StringEnumResourceAttr.Enabled && rac.StringEnumResourceAttr.OverrideValue != nil {
+		res.Attributes().PutStr("string.enum.resource.attr", *rac.StringEnumResourceAttr.OverrideValue)
 	}
-	if rac.StringResourceAttr.OverrideValue != nil {
-		val := pcommon.NewValueEmpty()
-		if err := val.FromRaw(rac.StringResourceAttr.OverrideValue); err != nil {
-			return fmt.Errorf("override_value for string.resource.attr: %w", err)
-		}
-		if val.Type() != pcommon.ValueTypeStr {
-			return fmt.Errorf("override_value for string.resource.attr must be a string, got %v", val.Type())
-		}
-		rac.StringResourceAttr.overrideVal = val
-		rac.StringResourceAttr.overrideValSet = true
+	if rac.StringResourceAttr.Enabled && rac.StringResourceAttr.OverrideValue != nil {
+		res.Attributes().PutStr("string.resource.attr", *rac.StringResourceAttr.OverrideValue)
 	}
-	if rac.StringResourceAttrDisableWarning.OverrideValue != nil {
-		val := pcommon.NewValueEmpty()
-		if err := val.FromRaw(rac.StringResourceAttrDisableWarning.OverrideValue); err != nil {
-			return fmt.Errorf("override_value for string.resource.attr_disable_warning: %w", err)
-		}
-		if val.Type() != pcommon.ValueTypeStr {
-			return fmt.Errorf("override_value for string.resource.attr_disable_warning must be a string, got %v", val.Type())
-		}
-		rac.StringResourceAttrDisableWarning.overrideVal = val
-		rac.StringResourceAttrDisableWarning.overrideValSet = true
+	if rac.StringResourceAttrDisableWarning.Enabled && rac.StringResourceAttrDisableWarning.OverrideValue != nil {
+		res.Attributes().PutStr("string.resource.attr_disable_warning", *rac.StringResourceAttrDisableWarning.OverrideValue)
 	}
-	if rac.StringResourceAttrRemoveWarning.OverrideValue != nil {
-		val := pcommon.NewValueEmpty()
-		if err := val.FromRaw(rac.StringResourceAttrRemoveWarning.OverrideValue); err != nil {
-			return fmt.Errorf("override_value for string.resource.attr_remove_warning: %w", err)
-		}
-		if val.Type() != pcommon.ValueTypeStr {
-			return fmt.Errorf("override_value for string.resource.attr_remove_warning must be a string, got %v", val.Type())
-		}
-		rac.StringResourceAttrRemoveWarning.overrideVal = val
-		rac.StringResourceAttrRemoveWarning.overrideValSet = true
+	if rac.StringResourceAttrRemoveWarning.Enabled && rac.StringResourceAttrRemoveWarning.OverrideValue != nil {
+		res.Attributes().PutStr("string.resource.attr_remove_warning", *rac.StringResourceAttrRemoveWarning.OverrideValue)
 	}
-	if rac.StringResourceAttrToBeRemoved.OverrideValue != nil {
-		val := pcommon.NewValueEmpty()
-		if err := val.FromRaw(rac.StringResourceAttrToBeRemoved.OverrideValue); err != nil {
-			return fmt.Errorf("override_value for string.resource.attr_to_be_removed: %w", err)
-		}
-		if val.Type() != pcommon.ValueTypeStr {
-			return fmt.Errorf("override_value for string.resource.attr_to_be_removed must be a string, got %v", val.Type())
-		}
-		rac.StringResourceAttrToBeRemoved.overrideVal = val
-		rac.StringResourceAttrToBeRemoved.overrideValSet = true
+	if rac.StringResourceAttrToBeRemoved.Enabled && rac.StringResourceAttrToBeRemoved.OverrideValue != nil {
+		res.Attributes().PutStr("string.resource.attr_to_be_removed", *rac.StringResourceAttrToBeRemoved.OverrideValue)
 	}
-	return nil
 }
 
 // MetricsBuilderConfig is a configuration for sample metrics builder.

@@ -39,11 +39,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					K8sNamespaceName:  ResourceAttributeConfig{Enabled: true},
-					K8sPodName:        ResourceAttributeConfig{Enabled: true},
-					K8sPodUID:         ResourceAttributeConfig{Enabled: true},
-					K8sReplicasetName: ResourceAttributeConfig{Enabled: true},
-					K8sReplicasetUID:  ResourceAttributeConfig{Enabled: true},
+					K8sNamespaceName:  K8sNamespaceNameResourceAttributeConfig{Enabled: true},
+					K8sPodName:        K8sPodNameResourceAttributeConfig{Enabled: true},
+					K8sPodUID:         K8sPodUIDResourceAttributeConfig{Enabled: true},
+					K8sReplicasetName: K8sReplicasetNameResourceAttributeConfig{Enabled: true},
+					K8sReplicasetUID:  K8sReplicasetUIDResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -62,11 +62,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					K8sNamespaceName:  ResourceAttributeConfig{Enabled: false},
-					K8sPodName:        ResourceAttributeConfig{Enabled: false},
-					K8sPodUID:         ResourceAttributeConfig{Enabled: false},
-					K8sReplicasetName: ResourceAttributeConfig{Enabled: false},
-					K8sReplicasetUID:  ResourceAttributeConfig{Enabled: false},
+					K8sNamespaceName:  K8sNamespaceNameResourceAttributeConfig{Enabled: false},
+					K8sPodName:        K8sPodNameResourceAttributeConfig{Enabled: false},
+					K8sPodUID:         K8sPodUIDResourceAttributeConfig{Enabled: false},
+					K8sReplicasetName: K8sReplicasetNameResourceAttributeConfig{Enabled: false},
+					K8sReplicasetUID:  K8sReplicasetUIDResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -74,7 +74,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, K8sNamespaceNameResourceAttributeConfig{}, K8sPodNameResourceAttributeConfig{}, K8sPodUIDResourceAttributeConfig{}, K8sReplicasetNameResourceAttributeConfig{}, K8sReplicasetUIDResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -102,28 +102,28 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				K8sNamespaceName:  ResourceAttributeConfig{Enabled: true},
-				K8sPodName:        ResourceAttributeConfig{Enabled: true},
-				K8sPodUID:         ResourceAttributeConfig{Enabled: true},
-				K8sReplicasetName: ResourceAttributeConfig{Enabled: true},
-				K8sReplicasetUID:  ResourceAttributeConfig{Enabled: true},
+				K8sNamespaceName:  K8sNamespaceNameResourceAttributeConfig{Enabled: true},
+				K8sPodName:        K8sPodNameResourceAttributeConfig{Enabled: true},
+				K8sPodUID:         K8sPodUIDResourceAttributeConfig{Enabled: true},
+				K8sReplicasetName: K8sReplicasetNameResourceAttributeConfig{Enabled: true},
+				K8sReplicasetUID:  K8sReplicasetUIDResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				K8sNamespaceName:  ResourceAttributeConfig{Enabled: false},
-				K8sPodName:        ResourceAttributeConfig{Enabled: false},
-				K8sPodUID:         ResourceAttributeConfig{Enabled: false},
-				K8sReplicasetName: ResourceAttributeConfig{Enabled: false},
-				K8sReplicasetUID:  ResourceAttributeConfig{Enabled: false},
+				K8sNamespaceName:  K8sNamespaceNameResourceAttributeConfig{Enabled: false},
+				K8sPodName:        K8sPodNameResourceAttributeConfig{Enabled: false},
+				K8sPodUID:         K8sPodUIDResourceAttributeConfig{Enabled: false},
+				K8sReplicasetName: K8sReplicasetNameResourceAttributeConfig{Enabled: false},
+				K8sReplicasetUID:  K8sReplicasetUIDResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(K8sNamespaceNameResourceAttributeConfig{}, K8sPodNameResourceAttributeConfig{}, K8sPodUIDResourceAttributeConfig{}, K8sReplicasetNameResourceAttributeConfig{}, K8sReplicasetUIDResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -136,22 +136,6 @@ func TestResourceAttributesOverrideConfig(t *testing.T) {
 	assert.NotNil(t, cfg.K8sPodUID.OverrideValue, "override_value should be set for k8s.pod.uid")
 	assert.NotNil(t, cfg.K8sReplicasetName.OverrideValue, "override_value should be set for k8s.replicaset.name")
 	assert.NotNil(t, cfg.K8sReplicasetUID.OverrideValue, "override_value should be set for k8s.replicaset.uid")
-	require.NoError(t, cfg.Validate())
-	assert.True(t, cfg.K8sNamespaceName.overrideValSet, "overrideValSet should be true for k8s.namespace.name")
-	assert.True(t, cfg.K8sPodName.overrideValSet, "overrideValSet should be true for k8s.pod.name")
-	assert.True(t, cfg.K8sPodUID.overrideValSet, "overrideValSet should be true for k8s.pod.uid")
-	assert.True(t, cfg.K8sReplicasetName.overrideValSet, "overrideValSet should be true for k8s.replicaset.name")
-	assert.True(t, cfg.K8sReplicasetUID.overrideValSet, "overrideValSet should be true for k8s.replicaset.uid")
-}
-
-func TestResourceAttributesOverrideValidation(t *testing.T) {
-	cfg := DefaultResourceAttributesConfig()
-	cfg.K8sNamespaceName.OverrideValue = 123
-	cfg.K8sPodName.OverrideValue = 123
-	cfg.K8sPodUID.OverrideValue = 123
-	cfg.K8sReplicasetName.OverrideValue = 123
-	cfg.K8sReplicasetUID.OverrideValue = 123
-	assert.Error(t, cfg.Validate())
 }
 
 func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesConfig {

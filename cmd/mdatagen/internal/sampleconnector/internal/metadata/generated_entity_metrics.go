@@ -50,6 +50,9 @@ func (e *TestEntityEntity) copyToResource(cfg ResourceAttributesConfig, res pcom
 			res.Attributes().PutEmptyMap("map.resource.attr").FromRaw(e.mapResourceAttr)
 		}
 	}
+
+	// Apply override values for resource attributes.
+	cfg.ApplyOverrideValues(res)
 }
 
 // TestEntityMetricsBuilder records metrics for the test.entity entity.

@@ -47,6 +47,9 @@ func (e *K8sReplicasetEntity) copyToResource(cfg ResourceAttributesConfig, res p
 			res.Attributes().PutStr("k8s.replicaset.name", e.k8sReplicasetName)
 		}
 	}
+
+	// Apply override values for resource attributes.
+	cfg.ApplyOverrideValues(res)
 }
 
 // K8sPodEntity represents a k8s.pod entity.
@@ -113,6 +116,9 @@ func (e *K8sPodEntity) copyToResource(cfg ResourceAttributesConfig, res pcommon.
 			res.Attributes().PutStr("k8s.namespace.name", e.k8sNamespaceName)
 		}
 	}
+
+	// Apply override values for resource attributes.
+	cfg.ApplyOverrideValues(res)
 }
 
 // K8sReplicasetMetricsBuilder records metrics for the k8s.replicaset entity.

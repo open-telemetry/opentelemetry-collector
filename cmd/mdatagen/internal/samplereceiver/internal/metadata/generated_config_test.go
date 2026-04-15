@@ -73,15 +73,15 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					MapResourceAttr:                       ResourceAttributeConfig{Enabled: true},
-					OptionalResourceAttr:                  ResourceAttributeConfig{Enabled: true},
-					SliceResourceAttr:                     ResourceAttributeConfig{Enabled: true},
-					StringEnumResourceAttr:                ResourceAttributeConfig{Enabled: true},
-					StringResourceAttr:                    ResourceAttributeConfig{Enabled: true},
-					StringResourceAttrDisableWarning:      ResourceAttributeConfig{Enabled: true},
-					StringResourceAttrRemoveWarning:       ResourceAttributeConfig{Enabled: true},
-					StringResourceAttrToBeRemoved:         ResourceAttributeConfig{Enabled: true},
-					StringResourceDisabledAttrToBeRemoved: ResourceAttributeConfig{Enabled: true},
+					MapResourceAttr:                       MapResourceAttrResourceAttributeConfig{Enabled: true},
+					OptionalResourceAttr:                  OptionalResourceAttrResourceAttributeConfig{Enabled: true},
+					SliceResourceAttr:                     SliceResourceAttrResourceAttributeConfig{Enabled: true},
+					StringEnumResourceAttr:                StringEnumResourceAttrResourceAttributeConfig{Enabled: true},
+					StringResourceAttr:                    StringResourceAttrResourceAttributeConfig{Enabled: true},
+					StringResourceAttrDisableWarning:      StringResourceAttrDisableWarningResourceAttributeConfig{Enabled: true},
+					StringResourceAttrRemoveWarning:       StringResourceAttrRemoveWarningResourceAttributeConfig{Enabled: true},
+					StringResourceAttrToBeRemoved:         StringResourceAttrToBeRemovedResourceAttributeConfig{Enabled: true},
+					StringResourceDisabledAttrToBeRemoved: StringResourceDisabledAttrToBeRemovedResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -134,15 +134,15 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					MapResourceAttr:                       ResourceAttributeConfig{Enabled: false},
-					OptionalResourceAttr:                  ResourceAttributeConfig{Enabled: false},
-					SliceResourceAttr:                     ResourceAttributeConfig{Enabled: false},
-					StringEnumResourceAttr:                ResourceAttributeConfig{Enabled: false},
-					StringResourceAttr:                    ResourceAttributeConfig{Enabled: false},
-					StringResourceAttrDisableWarning:      ResourceAttributeConfig{Enabled: false},
-					StringResourceAttrRemoveWarning:       ResourceAttributeConfig{Enabled: false},
-					StringResourceAttrToBeRemoved:         ResourceAttributeConfig{Enabled: false},
-					StringResourceDisabledAttrToBeRemoved: ResourceAttributeConfig{Enabled: false},
+					MapResourceAttr:                       MapResourceAttrResourceAttributeConfig{Enabled: false},
+					OptionalResourceAttr:                  OptionalResourceAttrResourceAttributeConfig{Enabled: false},
+					SliceResourceAttr:                     SliceResourceAttrResourceAttributeConfig{Enabled: false},
+					StringEnumResourceAttr:                StringEnumResourceAttrResourceAttributeConfig{Enabled: false},
+					StringResourceAttr:                    StringResourceAttrResourceAttributeConfig{Enabled: false},
+					StringResourceAttrDisableWarning:      StringResourceAttrDisableWarningResourceAttributeConfig{Enabled: false},
+					StringResourceAttrRemoveWarning:       StringResourceAttrRemoveWarningResourceAttributeConfig{Enabled: false},
+					StringResourceAttrToBeRemoved:         StringResourceAttrToBeRemovedResourceAttributeConfig{Enabled: false},
+					StringResourceDisabledAttrToBeRemoved: StringResourceDisabledAttrToBeRemovedResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -150,7 +150,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(DefaultMetricMetricConfig{}, DefaultMetricToBeRemovedMetricConfig{}, MetricInputTypeMetricConfig{}, OptionalMetricMetricConfig{}, OptionalMetricEmptyUnitMetricConfig{}, ReaggregateMetricMetricConfig{}, ReaggregateMetricWithRequiredMetricConfig{}, SystemCPUTimeMetricConfig{}, SystemMemoryUsageMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(DefaultMetricMetricConfig{}, DefaultMetricToBeRemovedMetricConfig{}, MetricInputTypeMetricConfig{}, OptionalMetricMetricConfig{}, OptionalMetricEmptyUnitMetricConfig{}, ReaggregateMetricMetricConfig{}, ReaggregateMetricWithRequiredMetricConfig{}, SystemCPUTimeMetricConfig{}, SystemMemoryUsageMetricConfig{}, MapResourceAttrResourceAttributeConfig{}, OptionalResourceAttrResourceAttributeConfig{}, SliceResourceAttrResourceAttributeConfig{}, StringEnumResourceAttrResourceAttributeConfig{}, StringResourceAttrResourceAttributeConfig{}, StringResourceAttrDisableWarningResourceAttributeConfig{}, StringResourceAttrRemoveWarningResourceAttributeConfig{}, StringResourceAttrToBeRemovedResourceAttributeConfig{}, StringResourceDisabledAttrToBeRemovedResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -188,36 +188,36 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				MapResourceAttr:                       ResourceAttributeConfig{Enabled: true},
-				OptionalResourceAttr:                  ResourceAttributeConfig{Enabled: true},
-				SliceResourceAttr:                     ResourceAttributeConfig{Enabled: true},
-				StringEnumResourceAttr:                ResourceAttributeConfig{Enabled: true},
-				StringResourceAttr:                    ResourceAttributeConfig{Enabled: true},
-				StringResourceAttrDisableWarning:      ResourceAttributeConfig{Enabled: true},
-				StringResourceAttrRemoveWarning:       ResourceAttributeConfig{Enabled: true},
-				StringResourceAttrToBeRemoved:         ResourceAttributeConfig{Enabled: true},
-				StringResourceDisabledAttrToBeRemoved: ResourceAttributeConfig{Enabled: true},
+				MapResourceAttr:                       MapResourceAttrResourceAttributeConfig{Enabled: true},
+				OptionalResourceAttr:                  OptionalResourceAttrResourceAttributeConfig{Enabled: true},
+				SliceResourceAttr:                     SliceResourceAttrResourceAttributeConfig{Enabled: true},
+				StringEnumResourceAttr:                StringEnumResourceAttrResourceAttributeConfig{Enabled: true},
+				StringResourceAttr:                    StringResourceAttrResourceAttributeConfig{Enabled: true},
+				StringResourceAttrDisableWarning:      StringResourceAttrDisableWarningResourceAttributeConfig{Enabled: true},
+				StringResourceAttrRemoveWarning:       StringResourceAttrRemoveWarningResourceAttributeConfig{Enabled: true},
+				StringResourceAttrToBeRemoved:         StringResourceAttrToBeRemovedResourceAttributeConfig{Enabled: true},
+				StringResourceDisabledAttrToBeRemoved: StringResourceDisabledAttrToBeRemovedResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				MapResourceAttr:                       ResourceAttributeConfig{Enabled: false},
-				OptionalResourceAttr:                  ResourceAttributeConfig{Enabled: false},
-				SliceResourceAttr:                     ResourceAttributeConfig{Enabled: false},
-				StringEnumResourceAttr:                ResourceAttributeConfig{Enabled: false},
-				StringResourceAttr:                    ResourceAttributeConfig{Enabled: false},
-				StringResourceAttrDisableWarning:      ResourceAttributeConfig{Enabled: false},
-				StringResourceAttrRemoveWarning:       ResourceAttributeConfig{Enabled: false},
-				StringResourceAttrToBeRemoved:         ResourceAttributeConfig{Enabled: false},
-				StringResourceDisabledAttrToBeRemoved: ResourceAttributeConfig{Enabled: false},
+				MapResourceAttr:                       MapResourceAttrResourceAttributeConfig{Enabled: false},
+				OptionalResourceAttr:                  OptionalResourceAttrResourceAttributeConfig{Enabled: false},
+				SliceResourceAttr:                     SliceResourceAttrResourceAttributeConfig{Enabled: false},
+				StringEnumResourceAttr:                StringEnumResourceAttrResourceAttributeConfig{Enabled: false},
+				StringResourceAttr:                    StringResourceAttrResourceAttributeConfig{Enabled: false},
+				StringResourceAttrDisableWarning:      StringResourceAttrDisableWarningResourceAttributeConfig{Enabled: false},
+				StringResourceAttrRemoveWarning:       StringResourceAttrRemoveWarningResourceAttributeConfig{Enabled: false},
+				StringResourceAttrToBeRemoved:         StringResourceAttrToBeRemovedResourceAttributeConfig{Enabled: false},
+				StringResourceDisabledAttrToBeRemoved: StringResourceDisabledAttrToBeRemovedResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MapResourceAttrResourceAttributeConfig{}, OptionalResourceAttrResourceAttributeConfig{}, SliceResourceAttrResourceAttributeConfig{}, StringEnumResourceAttrResourceAttributeConfig{}, StringResourceAttrResourceAttributeConfig{}, StringResourceAttrDisableWarningResourceAttributeConfig{}, StringResourceAttrRemoveWarningResourceAttributeConfig{}, StringResourceAttrToBeRemovedResourceAttributeConfig{}, StringResourceDisabledAttrToBeRemovedResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -234,36 +234,17 @@ func TestResourceAttributesOverrideConfig(t *testing.T) {
 	assert.NotNil(t, cfg.StringResourceAttrRemoveWarning.OverrideValue, "override_value should be set for string.resource.attr_remove_warning")
 	assert.NotNil(t, cfg.StringResourceAttrToBeRemoved.OverrideValue, "override_value should be set for string.resource.attr_to_be_removed")
 	assert.NotNil(t, cfg.StringResourceDisabledAttrToBeRemoved.OverrideValue, "override_value should be set for string.resource.disabled_attr_to_be_removed")
-	require.NoError(t, cfg.Validate())
-	assert.True(t, cfg.MapResourceAttr.overrideValSet, "overrideValSet should be true for map.resource.attr")
-	assert.True(t, cfg.OptionalResourceAttr.overrideValSet, "overrideValSet should be true for optional.resource.attr")
-	assert.True(t, cfg.SliceResourceAttr.overrideValSet, "overrideValSet should be true for slice.resource.attr")
-	assert.True(t, cfg.StringEnumResourceAttr.overrideValSet, "overrideValSet should be true for string.enum.resource.attr")
-	assert.True(t, cfg.StringResourceAttr.overrideValSet, "overrideValSet should be true for string.resource.attr")
-	assert.True(t, cfg.StringResourceAttrDisableWarning.overrideValSet, "overrideValSet should be true for string.resource.attr_disable_warning")
-	assert.True(t, cfg.StringResourceAttrRemoveWarning.overrideValSet, "overrideValSet should be true for string.resource.attr_remove_warning")
-	assert.True(t, cfg.StringResourceAttrToBeRemoved.overrideValSet, "overrideValSet should be true for string.resource.attr_to_be_removed")
-	assert.True(t, cfg.StringResourceDisabledAttrToBeRemoved.overrideValSet, "overrideValSet should be true for string.resource.disabled_attr_to_be_removed")
-}
-
-func TestResourceAttributesOverrideValidation(t *testing.T) {
-	cfg := DefaultResourceAttributesConfig()
-	cfg.MapResourceAttr.OverrideValue = "not-a-map"
-	cfg.OptionalResourceAttr.OverrideValue = 123
-	cfg.SliceResourceAttr.OverrideValue = "not-a-slice"
-	cfg.StringEnumResourceAttr.OverrideValue = 123
-	cfg.StringResourceAttr.OverrideValue = 123
-	cfg.StringResourceAttrDisableWarning.OverrideValue = 123
-	cfg.StringResourceAttrRemoveWarning.OverrideValue = 123
-	cfg.StringResourceAttrToBeRemoved.OverrideValue = 123
-	cfg.StringResourceDisabledAttrToBeRemoved.OverrideValue = 123
-	assert.Error(t, cfg.Validate())
 }
 
 func TestResourceAttributesOverrideEnumValidation(t *testing.T) {
-	cfg := DefaultResourceAttributesConfig()
-	cfg.StringEnumResourceAttr.OverrideValue = "invalid-enum-value"
-	assert.Error(t, cfg.Validate())
+	{
+		invalidVal := "invalid-enum-value"
+		cfg := StringEnumResourceAttrResourceAttributeConfig{
+			Enabled:       true,
+			OverrideValue: &invalidVal,
+		}
+		assert.Error(t, cfg.Validate())
+	}
 }
 
 func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesConfig {
