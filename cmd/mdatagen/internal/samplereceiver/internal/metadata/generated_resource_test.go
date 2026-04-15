@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestResourceBuilder(t *testing.T) {
@@ -88,6 +89,7 @@ func TestResourceBuilder(t *testing.T) {
 
 func TestResourceBuilderOverrideValue(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
+	require.NoError(t, cfg.Validate())
 	rb := NewResourceBuilder(cfg)
 	rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
 	rb.SetOptionalResourceAttr("optional.resource.attr-val")
@@ -125,7 +127,7 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 		val, ok := res.Attributes().Get("string.enum.resource.attr")
 		assert.True(t, ok, "string.enum.resource.attr should be present")
 		if ok {
-			assert.Equal(t, "override-string.enum.resource.attr", val.Str())
+			assert.Equal(t, "one", val.Str())
 		}
 	}
 	{
@@ -167,6 +169,7 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 
 func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
+	require.NoError(t, cfg.Validate())
 	rb := NewResourceBuilder(cfg)
 	// Do not call any Set* methods — override should still apply via Emit().
 
@@ -196,7 +199,7 @@ func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 		val, ok := res.Attributes().Get("string.enum.resource.attr")
 		assert.True(t, ok, "string.enum.resource.attr should be present even without calling Set")
 		if ok {
-			assert.Equal(t, "override-string.enum.resource.attr", val.Str())
+			assert.Equal(t, "one", val.Str())
 		}
 	}
 	{
@@ -233,5 +236,97 @@ func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 		if ok {
 			assert.Equal(t, "override-string.resource.disabled_attr_to_be_removed", val.Str())
 		}
+	}
+}
+
+func TestResourceBuilderOverrideDisabled(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "override_set")
+	// Disable all attributes — override should not apply.
+	cfg.MapResourceAttr.Enabled = false
+	cfg.OptionalResourceAttr.Enabled = false
+	cfg.SliceResourceAttr.Enabled = false
+	cfg.StringEnumResourceAttr.Enabled = false
+	cfg.StringResourceAttr.Enabled = false
+	cfg.StringResourceAttrDisableWarning.Enabled = false
+	cfg.StringResourceAttrRemoveWarning.Enabled = false
+	cfg.StringResourceAttrToBeRemoved.Enabled = false
+	cfg.StringResourceDisabledAttrToBeRemoved.Enabled = false
+	require.NoError(t, cfg.Validate())
+	rb := NewResourceBuilder(cfg)
+
+	res := rb.Emit()
+	assert.Equal(t, 0, res.Attributes().Len(), "disabled attributes with override should not be emitted")
+}
+
+func TestResourceBuilderNoOverride(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "all_set")
+	// No override_value set — Validate should still succeed and overrideValSet stays false.
+	require.NoError(t, cfg.Validate())
+	assert.False(t, cfg.MapResourceAttr.overrideValSet, "overrideValSet should be false for map.resource.attr")
+	assert.False(t, cfg.OptionalResourceAttr.overrideValSet, "overrideValSet should be false for optional.resource.attr")
+	assert.False(t, cfg.SliceResourceAttr.overrideValSet, "overrideValSet should be false for slice.resource.attr")
+	assert.False(t, cfg.StringEnumResourceAttr.overrideValSet, "overrideValSet should be false for string.enum.resource.attr")
+	assert.False(t, cfg.StringResourceAttr.overrideValSet, "overrideValSet should be false for string.resource.attr")
+	assert.False(t, cfg.StringResourceAttrDisableWarning.overrideValSet, "overrideValSet should be false for string.resource.attr_disable_warning")
+	assert.False(t, cfg.StringResourceAttrRemoveWarning.overrideValSet, "overrideValSet should be false for string.resource.attr_remove_warning")
+	assert.False(t, cfg.StringResourceAttrToBeRemoved.overrideValSet, "overrideValSet should be false for string.resource.attr_to_be_removed")
+	assert.False(t, cfg.StringResourceDisabledAttrToBeRemoved.overrideValSet, "overrideValSet should be false for string.resource.disabled_attr_to_be_removed")
+	rb := NewResourceBuilder(cfg)
+	rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
+	rb.SetOptionalResourceAttr("optional.resource.attr-val")
+	rb.SetSliceResourceAttr([]any{"slice.resource.attr-item1", "slice.resource.attr-item2"})
+	rb.SetStringEnumResourceAttrOne()
+	rb.SetStringResourceAttr("string.resource.attr-val")
+	rb.SetStringResourceAttrDisableWarning("string.resource.attr_disable_warning-val")
+	rb.SetStringResourceAttrRemoveWarning("string.resource.attr_remove_warning-val")
+	rb.SetStringResourceAttrToBeRemoved("string.resource.attr_to_be_removed-val")
+	rb.SetStringResourceDisabledAttrToBeRemoved("string.resource.disabled_attr_to_be_removed-val")
+
+	res := rb.Emit()
+	assert.Equal(t, 9, res.Attributes().Len())
+	mapResourceAttrAttrVal, ok := res.Attributes().Get("map.resource.attr")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"}, mapResourceAttrAttrVal.Map().AsRaw())
+	}
+	optionalResourceAttrAttrVal, ok := res.Attributes().Get("optional.resource.attr")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "optional.resource.attr-val", optionalResourceAttrAttrVal.Str())
+	}
+	sliceResourceAttrAttrVal, ok := res.Attributes().Get("slice.resource.attr")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, []any{"slice.resource.attr-item1", "slice.resource.attr-item2"}, sliceResourceAttrAttrVal.Slice().AsRaw())
+	}
+	stringEnumResourceAttrAttrVal, ok := res.Attributes().Get("string.enum.resource.attr")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "one", stringEnumResourceAttrAttrVal.Str())
+	}
+	stringResourceAttrAttrVal, ok := res.Attributes().Get("string.resource.attr")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "string.resource.attr-val", stringResourceAttrAttrVal.Str())
+	}
+	stringResourceAttrDisableWarningAttrVal, ok := res.Attributes().Get("string.resource.attr_disable_warning")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "string.resource.attr_disable_warning-val", stringResourceAttrDisableWarningAttrVal.Str())
+	}
+	stringResourceAttrRemoveWarningAttrVal, ok := res.Attributes().Get("string.resource.attr_remove_warning")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "string.resource.attr_remove_warning-val", stringResourceAttrRemoveWarningAttrVal.Str())
+	}
+	stringResourceAttrToBeRemovedAttrVal, ok := res.Attributes().Get("string.resource.attr_to_be_removed")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "string.resource.attr_to_be_removed-val", stringResourceAttrToBeRemovedAttrVal.Str())
+	}
+	stringResourceDisabledAttrToBeRemovedAttrVal, ok := res.Attributes().Get("string.resource.disabled_attr_to_be_removed")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "string.resource.disabled_attr_to_be_removed-val", stringResourceDisabledAttrToBeRemovedAttrVal.Str())
 	}
 }

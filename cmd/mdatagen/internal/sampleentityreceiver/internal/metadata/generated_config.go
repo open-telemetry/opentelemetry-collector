@@ -3,8 +3,11 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // MetricConfig provides common config for a particular metric.
@@ -64,6 +67,9 @@ type ResourceAttributeConfig struct {
 	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
 
 	enabledSetByUser bool
+	// overrideVal is the pre-parsed pcommon.Value of OverrideValue, set during Validate.
+	overrideVal    pcommon.Value
+	overrideValSet bool
 }
 
 func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
@@ -105,6 +111,65 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 	}
+}
+
+func (rac *ResourceAttributesConfig) Validate() error {
+	if rac.K8sNamespaceName.OverrideValue != nil {
+		val := pcommon.NewValueEmpty()
+		if err := val.FromRaw(rac.K8sNamespaceName.OverrideValue); err != nil {
+			return fmt.Errorf("override_value for k8s.namespace.name: %w", err)
+		}
+		if val.Type() != pcommon.ValueTypeStr {
+			return fmt.Errorf("override_value for k8s.namespace.name must be a string, got %v", val.Type())
+		}
+		rac.K8sNamespaceName.overrideVal = val
+		rac.K8sNamespaceName.overrideValSet = true
+	}
+	if rac.K8sPodName.OverrideValue != nil {
+		val := pcommon.NewValueEmpty()
+		if err := val.FromRaw(rac.K8sPodName.OverrideValue); err != nil {
+			return fmt.Errorf("override_value for k8s.pod.name: %w", err)
+		}
+		if val.Type() != pcommon.ValueTypeStr {
+			return fmt.Errorf("override_value for k8s.pod.name must be a string, got %v", val.Type())
+		}
+		rac.K8sPodName.overrideVal = val
+		rac.K8sPodName.overrideValSet = true
+	}
+	if rac.K8sPodUID.OverrideValue != nil {
+		val := pcommon.NewValueEmpty()
+		if err := val.FromRaw(rac.K8sPodUID.OverrideValue); err != nil {
+			return fmt.Errorf("override_value for k8s.pod.uid: %w", err)
+		}
+		if val.Type() != pcommon.ValueTypeStr {
+			return fmt.Errorf("override_value for k8s.pod.uid must be a string, got %v", val.Type())
+		}
+		rac.K8sPodUID.overrideVal = val
+		rac.K8sPodUID.overrideValSet = true
+	}
+	if rac.K8sReplicasetName.OverrideValue != nil {
+		val := pcommon.NewValueEmpty()
+		if err := val.FromRaw(rac.K8sReplicasetName.OverrideValue); err != nil {
+			return fmt.Errorf("override_value for k8s.replicaset.name: %w", err)
+		}
+		if val.Type() != pcommon.ValueTypeStr {
+			return fmt.Errorf("override_value for k8s.replicaset.name must be a string, got %v", val.Type())
+		}
+		rac.K8sReplicasetName.overrideVal = val
+		rac.K8sReplicasetName.overrideValSet = true
+	}
+	if rac.K8sReplicasetUID.OverrideValue != nil {
+		val := pcommon.NewValueEmpty()
+		if err := val.FromRaw(rac.K8sReplicasetUID.OverrideValue); err != nil {
+			return fmt.Errorf("override_value for k8s.replicaset.uid: %w", err)
+		}
+		if val.Type() != pcommon.ValueTypeStr {
+			return fmt.Errorf("override_value for k8s.replicaset.uid must be a string, got %v", val.Type())
+		}
+		rac.K8sReplicasetUID.overrideVal = val
+		rac.K8sReplicasetUID.overrideValSet = true
+	}
+	return nil
 }
 
 // MetricsBuilderConfig is a configuration for sampleentity metrics builder.

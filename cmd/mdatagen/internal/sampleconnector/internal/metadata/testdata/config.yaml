@@ -121,7 +121,7 @@ override_set:
       override_value: ["override-item1", "override-item2"]
     string.enum.resource.attr:
       enabled: true
-      override_value: "override-string.enum.resource.attr"
+      override_value: "one"
     string.resource.attr:
       enabled: true
       override_value: "override-string.resource.attr"

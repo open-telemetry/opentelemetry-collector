@@ -7,6 +7,7 @@ import (
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // DefaultMetricMetricAttributeKey specifies the key of an attribute for the default.metric metric.
@@ -364,6 +365,9 @@ type ResourceAttributeConfig struct {
 	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
 
 	enabledSetByUser bool
+	// overrideVal is the pre-parsed pcommon.Value of OverrideValue, set during Validate.
+	overrideVal    pcommon.Value
+	overrideValSet bool
 }
 
 func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
@@ -417,6 +421,103 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 	}
+}
+
+func (rac *ResourceAttributesConfig) Validate() error {
+	if rac.MapResourceAttr.OverrideValue != nil {
+		val := pcommon.NewValueEmpty()
+		if err := val.FromRaw(rac.MapResourceAttr.OverrideValue); err != nil {
+			return fmt.Errorf("override_value for map.resource.attr: %w", err)
+		}
+		if val.Type() != pcommon.ValueTypeMap {
+			return fmt.Errorf("override_value for map.resource.attr must be a map, got %v", val.Type())
+		}
+		rac.MapResourceAttr.overrideVal = val
+		rac.MapResourceAttr.overrideValSet = true
+	}
+	if rac.OptionalResourceAttr.OverrideValue != nil {
+		val := pcommon.NewValueEmpty()
+		if err := val.FromRaw(rac.OptionalResourceAttr.OverrideValue); err != nil {
+			return fmt.Errorf("override_value for optional.resource.attr: %w", err)
+		}
+		if val.Type() != pcommon.ValueTypeStr {
+			return fmt.Errorf("override_value for optional.resource.attr must be a string, got %v", val.Type())
+		}
+		rac.OptionalResourceAttr.overrideVal = val
+		rac.OptionalResourceAttr.overrideValSet = true
+	}
+	if rac.SliceResourceAttr.OverrideValue != nil {
+		val := pcommon.NewValueEmpty()
+		if err := val.FromRaw(rac.SliceResourceAttr.OverrideValue); err != nil {
+			return fmt.Errorf("override_value for slice.resource.attr: %w", err)
+		}
+		if val.Type() != pcommon.ValueTypeSlice {
+			return fmt.Errorf("override_value for slice.resource.attr must be a slice, got %v", val.Type())
+		}
+		rac.SliceResourceAttr.overrideVal = val
+		rac.SliceResourceAttr.overrideValSet = true
+	}
+	if rac.StringEnumResourceAttr.OverrideValue != nil {
+		val := pcommon.NewValueEmpty()
+		if err := val.FromRaw(rac.StringEnumResourceAttr.OverrideValue); err != nil {
+			return fmt.Errorf("override_value for string.enum.resource.attr: %w", err)
+		}
+		if val.Type() != pcommon.ValueTypeStr {
+			return fmt.Errorf("override_value for string.enum.resource.attr must be a string, got %v", val.Type())
+		}
+		switch val.Str() {
+		case "one", "two":
+		default:
+			return fmt.Errorf("override_value for string.enum.resource.attr must be one of [one, two], got %q", val.Str())
+		}
+		rac.StringEnumResourceAttr.overrideVal = val
+		rac.StringEnumResourceAttr.overrideValSet = true
+	}
+	if rac.StringResourceAttr.OverrideValue != nil {
+		val := pcommon.NewValueEmpty()
+		if err := val.FromRaw(rac.StringResourceAttr.OverrideValue); err != nil {
+			return fmt.Errorf("override_value for string.resource.attr: %w", err)
+		}
+		if val.Type() != pcommon.ValueTypeStr {
+			return fmt.Errorf("override_value for string.resource.attr must be a string, got %v", val.Type())
+		}
+		rac.StringResourceAttr.overrideVal = val
+		rac.StringResourceAttr.overrideValSet = true
+	}
+	if rac.StringResourceAttrDisableWarning.OverrideValue != nil {
+		val := pcommon.NewValueEmpty()
+		if err := val.FromRaw(rac.StringResourceAttrDisableWarning.OverrideValue); err != nil {
+			return fmt.Errorf("override_value for string.resource.attr_disable_warning: %w", err)
+		}
+		if val.Type() != pcommon.ValueTypeStr {
+			return fmt.Errorf("override_value for string.resource.attr_disable_warning must be a string, got %v", val.Type())
+		}
+		rac.StringResourceAttrDisableWarning.overrideVal = val
+		rac.StringResourceAttrDisableWarning.overrideValSet = true
+	}
+	if rac.StringResourceAttrRemoveWarning.OverrideValue != nil {
+		val := pcommon.NewValueEmpty()
+		if err := val.FromRaw(rac.StringResourceAttrRemoveWarning.OverrideValue); err != nil {
+			return fmt.Errorf("override_value for string.resource.attr_remove_warning: %w", err)
+		}
+		if val.Type() != pcommon.ValueTypeStr {
+			return fmt.Errorf("override_value for string.resource.attr_remove_warning must be a string, got %v", val.Type())
+		}
+		rac.StringResourceAttrRemoveWarning.overrideVal = val
+		rac.StringResourceAttrRemoveWarning.overrideValSet = true
+	}
+	if rac.StringResourceAttrToBeRemoved.OverrideValue != nil {
+		val := pcommon.NewValueEmpty()
+		if err := val.FromRaw(rac.StringResourceAttrToBeRemoved.OverrideValue); err != nil {
+			return fmt.Errorf("override_value for string.resource.attr_to_be_removed: %w", err)
+		}
+		if val.Type() != pcommon.ValueTypeStr {
+			return fmt.Errorf("override_value for string.resource.attr_to_be_removed must be a string, got %v", val.Type())
+		}
+		rac.StringResourceAttrToBeRemoved.overrideVal = val
+		rac.StringResourceAttrToBeRemoved.overrideValSet = true
+	}
+	return nil
 }
 
 // MetricsBuilderConfig is a configuration for sample metrics builder.

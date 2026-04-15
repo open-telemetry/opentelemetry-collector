@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestResourceBuilder(t *testing.T) {
@@ -64,6 +65,7 @@ func TestResourceBuilder(t *testing.T) {
 
 func TestResourceBuilderOverrideValue(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
+	require.NoError(t, cfg.Validate())
 	rb := NewResourceBuilder(cfg)
 	rb.SetK8sNamespaceName("k8s.namespace.name-val")
 	rb.SetK8sPodName("k8s.pod.name-val")
@@ -111,6 +113,7 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 
 func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
+	require.NoError(t, cfg.Validate())
 	rb := NewResourceBuilder(cfg)
 	// Do not call any Set* methods — override should still apply via Emit().
 
@@ -149,5 +152,65 @@ func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 		if ok {
 			assert.Equal(t, "override-k8s.replicaset.uid", val.Str())
 		}
+	}
+}
+
+func TestResourceBuilderOverrideDisabled(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "override_set")
+	// Disable all attributes — override should not apply.
+	cfg.K8sNamespaceName.Enabled = false
+	cfg.K8sPodName.Enabled = false
+	cfg.K8sPodUID.Enabled = false
+	cfg.K8sReplicasetName.Enabled = false
+	cfg.K8sReplicasetUID.Enabled = false
+	require.NoError(t, cfg.Validate())
+	rb := NewResourceBuilder(cfg)
+
+	res := rb.Emit()
+	assert.Equal(t, 0, res.Attributes().Len(), "disabled attributes with override should not be emitted")
+}
+
+func TestResourceBuilderNoOverride(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "all_set")
+	// No override_value set — Validate should still succeed and overrideValSet stays false.
+	require.NoError(t, cfg.Validate())
+	assert.False(t, cfg.K8sNamespaceName.overrideValSet, "overrideValSet should be false for k8s.namespace.name")
+	assert.False(t, cfg.K8sPodName.overrideValSet, "overrideValSet should be false for k8s.pod.name")
+	assert.False(t, cfg.K8sPodUID.overrideValSet, "overrideValSet should be false for k8s.pod.uid")
+	assert.False(t, cfg.K8sReplicasetName.overrideValSet, "overrideValSet should be false for k8s.replicaset.name")
+	assert.False(t, cfg.K8sReplicasetUID.overrideValSet, "overrideValSet should be false for k8s.replicaset.uid")
+	rb := NewResourceBuilder(cfg)
+	rb.SetK8sNamespaceName("k8s.namespace.name-val")
+	rb.SetK8sPodName("k8s.pod.name-val")
+	rb.SetK8sPodUID("k8s.pod.uid-val")
+	rb.SetK8sReplicasetName("k8s.replicaset.name-val")
+	rb.SetK8sReplicasetUID("k8s.replicaset.uid-val")
+
+	res := rb.Emit()
+	assert.Equal(t, 5, res.Attributes().Len())
+	k8sNamespaceNameAttrVal, ok := res.Attributes().Get("k8s.namespace.name")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "k8s.namespace.name-val", k8sNamespaceNameAttrVal.Str())
+	}
+	k8sPodNameAttrVal, ok := res.Attributes().Get("k8s.pod.name")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "k8s.pod.name-val", k8sPodNameAttrVal.Str())
+	}
+	k8sPodUIDAttrVal, ok := res.Attributes().Get("k8s.pod.uid")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "k8s.pod.uid-val", k8sPodUIDAttrVal.Str())
+	}
+	k8sReplicasetNameAttrVal, ok := res.Attributes().Get("k8s.replicaset.name")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "k8s.replicaset.name-val", k8sReplicasetNameAttrVal.Str())
+	}
+	k8sReplicasetUIDAttrVal, ok := res.Attributes().Get("k8s.replicaset.uid")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "k8s.replicaset.uid-val", k8sReplicasetUIDAttrVal.Str())
 	}
 }

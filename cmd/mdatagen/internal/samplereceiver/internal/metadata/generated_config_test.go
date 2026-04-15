@@ -234,6 +234,36 @@ func TestResourceAttributesOverrideConfig(t *testing.T) {
 	assert.NotNil(t, cfg.StringResourceAttrRemoveWarning.OverrideValue, "override_value should be set for string.resource.attr_remove_warning")
 	assert.NotNil(t, cfg.StringResourceAttrToBeRemoved.OverrideValue, "override_value should be set for string.resource.attr_to_be_removed")
 	assert.NotNil(t, cfg.StringResourceDisabledAttrToBeRemoved.OverrideValue, "override_value should be set for string.resource.disabled_attr_to_be_removed")
+	require.NoError(t, cfg.Validate())
+	assert.True(t, cfg.MapResourceAttr.overrideValSet, "overrideValSet should be true for map.resource.attr")
+	assert.True(t, cfg.OptionalResourceAttr.overrideValSet, "overrideValSet should be true for optional.resource.attr")
+	assert.True(t, cfg.SliceResourceAttr.overrideValSet, "overrideValSet should be true for slice.resource.attr")
+	assert.True(t, cfg.StringEnumResourceAttr.overrideValSet, "overrideValSet should be true for string.enum.resource.attr")
+	assert.True(t, cfg.StringResourceAttr.overrideValSet, "overrideValSet should be true for string.resource.attr")
+	assert.True(t, cfg.StringResourceAttrDisableWarning.overrideValSet, "overrideValSet should be true for string.resource.attr_disable_warning")
+	assert.True(t, cfg.StringResourceAttrRemoveWarning.overrideValSet, "overrideValSet should be true for string.resource.attr_remove_warning")
+	assert.True(t, cfg.StringResourceAttrToBeRemoved.overrideValSet, "overrideValSet should be true for string.resource.attr_to_be_removed")
+	assert.True(t, cfg.StringResourceDisabledAttrToBeRemoved.overrideValSet, "overrideValSet should be true for string.resource.disabled_attr_to_be_removed")
+}
+
+func TestResourceAttributesOverrideValidation(t *testing.T) {
+	cfg := DefaultResourceAttributesConfig()
+	cfg.MapResourceAttr.OverrideValue = "not-a-map"
+	cfg.OptionalResourceAttr.OverrideValue = 123
+	cfg.SliceResourceAttr.OverrideValue = "not-a-slice"
+	cfg.StringEnumResourceAttr.OverrideValue = 123
+	cfg.StringResourceAttr.OverrideValue = 123
+	cfg.StringResourceAttrDisableWarning.OverrideValue = 123
+	cfg.StringResourceAttrRemoveWarning.OverrideValue = 123
+	cfg.StringResourceAttrToBeRemoved.OverrideValue = 123
+	cfg.StringResourceDisabledAttrToBeRemoved.OverrideValue = 123
+	assert.Error(t, cfg.Validate())
+}
+
+func TestResourceAttributesOverrideEnumValidation(t *testing.T) {
+	cfg := DefaultResourceAttributesConfig()
+	cfg.StringEnumResourceAttr.OverrideValue = "invalid-enum-value"
+	assert.Error(t, cfg.Validate())
 }
 
 func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesConfig {
