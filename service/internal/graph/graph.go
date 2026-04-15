@@ -21,6 +21,7 @@ import (
 
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
@@ -37,6 +38,7 @@ import (
 	"go.opentelemetry.io/collector/service/hostcapabilities"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
+	"go.opentelemetry.io/collector/service/internal/componentattribute"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
@@ -55,6 +57,10 @@ type Settings struct {
 	PipelineConfigs pipelines.Config
 
 	ReportStatus status.ServiceStatusFunc
+
+	// ComponentLogLevels holds per-component log level overrides, keyed by
+	// component kind then component ID.
+	ComponentLogLevels map[component.Kind]map[component.ID]zapcore.Level
 }
 
 type Graph struct {
@@ -300,14 +306,14 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 	for _, node := range slices.Backward(nodes) {
 		switch n := node.(type) {
 		case *receiverNode:
-			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(n.ID()))
+			err = n.buildComponent(ctx, telWithComponentLogLevel(set.Telemetry, component.KindReceiver, n.componentID, set.ComponentLogLevels), set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(n.ID()))
 		case *processorNode:
 			// nextConsumers is guaranteed to be length 1.  Either it is the next processor or it is the fanout node for the exporters.
-			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ProcessorBuilder, g.nextConsumers(n.ID())[0])
+			err = n.buildComponent(ctx, telWithComponentLogLevel(set.Telemetry, component.KindProcessor, n.componentID, set.ComponentLogLevels), set.BuildInfo, set.ProcessorBuilder, g.nextConsumers(n.ID())[0])
 		case *exporterNode:
-			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ExporterBuilder)
+			err = n.buildComponent(ctx, telWithComponentLogLevel(set.Telemetry, component.KindExporter, n.componentID, set.ComponentLogLevels), set.BuildInfo, set.ExporterBuilder)
 		case *connectorNode:
-			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ConnectorBuilder, g.nextConsumers(n.ID()))
+			err = n.buildComponent(ctx, telWithComponentLogLevel(set.Telemetry, component.KindConnector, n.componentID, set.ComponentLogLevels), set.BuildInfo, set.ConnectorBuilder, g.nextConsumers(n.ID()))
 		case *capabilitiesNode:
 			capability := consumer.Capabilities{
 				// The fanOutNode represents the aggregate capabilities of the exporters in the pipeline.
@@ -627,4 +633,13 @@ type HostWrapper struct {
 
 func (host *HostWrapper) Report(event *componentstatus.Event) {
 	host.Reporter.ReportStatus(host.InstanceID, event)
+}
+
+func telWithComponentLogLevel(tel component.TelemetrySettings, kind component.Kind, id component.ID, logLevels map[component.Kind]map[component.ID]zapcore.Level) component.TelemetrySettings {
+	if kindLevels, ok := logLevels[kind]; ok {
+		if level, ok := kindLevels[id]; ok {
+			tel.Logger = componentattribute.LoggerWithLevel(tel.Logger, level)
+		}
+	}
+	return tel
 }

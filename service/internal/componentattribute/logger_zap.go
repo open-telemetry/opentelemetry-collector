@@ -79,3 +79,37 @@ func (cwa coreWithAttributes) DropInjectedAttributes(droppedAttrs ...string) zap
 	cwa.Core = cwa.sourceCore.With(append([]zap.Field{makeScopeField(cwa.attrs)}, cwa.withFields...))
 	return cwa
 }
+
+// LoggerWithLevel returns a logger whose effective minimum level is overridden.
+// This fully replaces the level gate: it can both raise the level to silence a
+// noisy component and lower it to enable debug logging for a single component
+// even when the service-level logger is set to a higher level.
+func LoggerWithLevel(logger *zap.Logger, level zapcore.Level) *zap.Logger {
+	return logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
+		return &levelOverrideCore{Core: c, level: level}
+	}))
+}
+
+// levelOverrideCore wraps a zapcore.Core and fully replaces its level gate.
+// It bypasses the inner core's Check (which contains the original level filter)
+// and registers itself as the writer via ce.After, delegating Write to the
+// inner core which performs encoding and output without re-checking the level.
+type levelOverrideCore struct {
+	zapcore.Core
+	level zapcore.Level
+}
+
+func (c *levelOverrideCore) Enabled(lvl zapcore.Level) bool {
+	return lvl >= c.level
+}
+
+func (c *levelOverrideCore) Check(ent zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
+	if ent.Level >= c.level {
+		return ce.AddCore(ent, c)
+	}
+	return ce
+}
+
+func (c *levelOverrideCore) With(fields []zapcore.Field) zapcore.Core {
+	return &levelOverrideCore{Core: c.Core.With(fields), level: c.level}
+}

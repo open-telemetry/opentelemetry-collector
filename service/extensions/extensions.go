@@ -12,6 +12,7 @@ import (
 
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -177,6 +178,10 @@ type Settings struct {
 
 	// Extensions builder for extensions.
 	Extensions builders.Extension
+
+	// ComponentLogLevels holds per-component log level overrides, keyed by
+	// component kind then component ID.
+	ComponentLogLevels map[component.Kind]map[component.ID]zapcore.Level
 }
 
 type Option interface {
@@ -211,9 +216,15 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 
 	for _, extID := range cfg {
 		instanceID := componentstatus.NewInstanceID(extID, component.KindExtension)
+		tel := set.Telemetry
+		if kindLevels, ok := set.ComponentLogLevels[component.KindExtension]; ok {
+			if level, ok := kindLevels[extID]; ok {
+				tel.Logger = componentattribute.LoggerWithLevel(tel.Logger, level)
+			}
+		}
 		extSet := extension.Settings{
 			ID:                extID,
-			TelemetrySettings: componentattribute.TelemetrySettingsWithAttributes(set.Telemetry, *attribute.Extension(extID).Set()),
+			TelemetrySettings: componentattribute.TelemetrySettingsWithAttributes(tel, *attribute.Extension(extID).Set()),
 			BuildInfo:         set.BuildInfo,
 		}
 

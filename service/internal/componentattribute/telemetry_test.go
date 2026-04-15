@@ -193,3 +193,64 @@ func TestTelemetryWithAttributes(t *testing.T) {
 		testTelemetryWithAttributes(t, false)
 	})
 }
+
+func TestLoggerWithLevel(t *testing.T) {
+	t.Run("raise_level_filters_messages", func(t *testing.T) {
+		core, obs := observer.New(zap.DebugLevel)
+		logger := zap.New(core)
+
+		filtered := componentattribute.LoggerWithLevel(logger, zapcore.ErrorLevel)
+		filtered.Debug("should be dropped")
+		filtered.Info("should be dropped")
+		filtered.Warn("should be dropped")
+		filtered.Error("should appear")
+
+		logs := obs.TakeAll()
+		require.Len(t, logs, 1)
+		assert.Equal(t, "should appear", logs[0].Message)
+		assert.Equal(t, zapcore.ErrorLevel, logs[0].Level)
+	})
+
+	t.Run("same_level_preserves_messages", func(t *testing.T) {
+		core, obs := observer.New(zap.InfoLevel)
+		logger := zap.New(core)
+
+		filtered := componentattribute.LoggerWithLevel(logger, zapcore.InfoLevel)
+		filtered.Debug("should be dropped")
+		filtered.Info("should appear")
+		filtered.Warn("should appear")
+
+		logs := obs.TakeAll()
+		require.Len(t, logs, 2)
+		assert.Equal(t, "should appear", logs[0].Message)
+	})
+
+	t.Run("with_preserves_level", func(t *testing.T) {
+		core, obs := observer.New(zap.DebugLevel)
+		logger := zap.New(core)
+
+		filtered := componentattribute.LoggerWithLevel(logger, zapcore.WarnLevel)
+		child := filtered.With(zap.String("key", "val"))
+		child.Info("should be dropped")
+		child.Warn("should appear")
+
+		logs := obs.TakeAll()
+		require.Len(t, logs, 1)
+		assert.Equal(t, "should appear", logs[0].Message)
+	})
+
+	t.Run("lower_level_enables_debug", func(t *testing.T) {
+		core, obs := observer.New(zap.InfoLevel)
+		logger := zap.New(core)
+
+		filtered := componentattribute.LoggerWithLevel(logger, zapcore.DebugLevel)
+		filtered.Debug("debug should appear")
+		filtered.Info("info should appear")
+
+		logs := obs.TakeAll()
+		require.Len(t, logs, 2)
+		assert.Equal(t, "debug should appear", logs[0].Message)
+		assert.Equal(t, zapcore.DebugLevel, logs[0].Level)
+		assert.Equal(t, "info should appear", logs[1].Message)
+	})
+}
