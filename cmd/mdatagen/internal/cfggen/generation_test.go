@@ -1129,3 +1129,57 @@ func TestNewCfgFns_ExtractValidators(t *testing.T) {
 	require.Equal(t, "name", result[0].FieldName)
 	require.True(t, result[0].IsRequired)
 }
+
+func TestNewCfgFns_ExtractStdlibImports(t *testing.T) {
+	fns := NewCfgFns("go.opentelemetry.io/collector", "go.opentelemetry.io/collector/comp")
+	extractStdlibImports := fns["extractStdlibImports"].(func(*ConfigMetadata) []string)
+
+	// nil input returns nil
+	require.Nil(t, extractStdlibImports(nil))
+
+	// stdlib imports (no dot in path) are returned
+	md := &ConfigMetadata{Type: "string", Format: "duration"}
+	result := extractStdlibImports(md)
+	require.Contains(t, result, "time")
+
+	// non-stdlib imports are excluded
+	for _, imp := range result {
+		require.NotContains(t, imp, ".")
+	}
+
+	// error case: returns empty slice
+	errMd := &ConfigMetadata{GoType: "github.com/pkg."}
+	result = extractStdlibImports(errMd)
+	require.Empty(t, result)
+}
+
+func TestNewCfgFns_ExtractNonStdlibImports(t *testing.T) {
+	fns := NewCfgFns("go.opentelemetry.io/collector", "go.opentelemetry.io/collector/comp")
+	extractNonStdlibImports := fns["extractNonStdlibImports"].(func(*ConfigMetadata) []string)
+
+	// nil input returns nil
+	require.Nil(t, extractNonStdlibImports(nil))
+
+	// non-stdlib imports (contain a dot) are returned
+	md := &ConfigMetadata{
+		Type:   "string",
+		IsOptional: true,
+	}
+	result := extractNonStdlibImports(md)
+	require.Contains(t, result, "go.opentelemetry.io/collector/config/configoptional")
+
+	// stdlib imports are excluded
+	for _, imp := range result {
+		require.Contains(t, imp, ".")
+	}
+
+	// error case: returns empty slice
+	errMd := &ConfigMetadata{GoType: "github.com/pkg."}
+	result = extractNonStdlibImports(errMd)
+	require.Empty(t, result)
+
+	// external ref import is included
+	refMd := &ConfigMetadata{Ref: "go.opentelemetry.io/collector/component.Config"}
+	result = extractNonStdlibImports(refMd)
+	require.Contains(t, result, "go.opentelemetry.io/collector/component")
+}
