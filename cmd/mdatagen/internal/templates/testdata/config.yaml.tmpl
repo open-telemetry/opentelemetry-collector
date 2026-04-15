@@ -86,7 +86,9 @@ override_set:
     {{- range $name, $attr := .ResourceAttributes }}
     {{ $name }}:
       enabled: true
-      {{- if eq $attr.Type.String "Str" }}
+      {{- if $attr.Enum }}
+      override_value: "{{ index $attr.Enum 0 }}"
+      {{- else if eq $attr.Type.String "Str" }}
       override_value: "override-{{ $name }}"
       {{- else if eq $attr.Type.String "Int" }}
       override_value: 123

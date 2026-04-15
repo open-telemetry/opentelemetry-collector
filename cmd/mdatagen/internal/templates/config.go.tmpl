@@ -7,14 +7,19 @@ package {{ .Package }}
 {{- range $name, $metric := .Metrics }}{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}{{- $hasReagMetrics = true }}{{- end }}{{- end }}
 
 import (
-	{{- if $hasReagMetrics }}
+	{{- if or $hasReagMetrics .ResourceAttributes }}
 	"fmt"
+	{{- end }}
+	{{- if $hasReagMetrics }}
 	"slices"
 	{{- end }}
 
 	"go.opentelemetry.io/collector/confmap"
 	{{ if and .Metrics .ResourceAttributes -}}
 	"go.opentelemetry.io/collector/filter"
+	{{- end }}
+	{{- if .ResourceAttributes }}
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	{{- end }}
 )
 {{ if .Metrics -}}
@@ -177,6 +182,9 @@ type ResourceAttributeConfig struct {
 	{{- end }}
 
 	enabledSetByUser bool
+	// overrideVal is the pre-parsed pcommon.Value of OverrideValue, set during Validate.
+	overrideVal    pcommon.Value
+	overrideValSet bool
 }
 
 func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
@@ -206,6 +214,61 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		{{- end }}
 	}
+}
+
+func (rac *ResourceAttributesConfig) Validate() error {
+	{{- range $name, $attr := .ResourceAttributes }}
+	if rac.{{ $name.Render }}.OverrideValue != nil {
+		val := pcommon.NewValueEmpty()
+		if err := val.FromRaw(rac.{{ $name.Render }}.OverrideValue); err != nil {
+			return fmt.Errorf("override_value for {{ $name }}: %w", err)
+		}
+		{{- if $attr.Enum }}
+		if val.Type() != pcommon.ValueTypeStr {
+			return fmt.Errorf("override_value for {{ $name }} must be a string, got %v", val.Type())
+		}
+		switch val.Str() {
+		case {{ range $i, $e := $attr.Enum }}{{ if $i }}, {{ end }}"{{ $e }}"{{ end }}:
+		default:
+			return fmt.Errorf("override_value for {{ $name }} must be one of [{{ range $i, $e := $attr.Enum }}{{ if $i }}, {{ end }}{{ $e }}{{ end }}], got %q", val.Str())
+		}
+		{{- else if eq $attr.Type.String "Str" }}
+		if val.Type() != pcommon.ValueTypeStr {
+			return fmt.Errorf("override_value for {{ $name }} must be a string, got %v", val.Type())
+		}
+		{{- else if eq $attr.Type.String "Int" }}
+		if val.Type() != pcommon.ValueTypeInt {
+			return fmt.Errorf("override_value for {{ $name }} must be an int, got %v", val.Type())
+		}
+		{{- else if eq $attr.Type.String "Double" }}
+		if val.Type() != pcommon.ValueTypeDouble && val.Type() != pcommon.ValueTypeInt {
+			return fmt.Errorf("override_value for {{ $name }} must be a number, got %v", val.Type())
+		}
+		if val.Type() == pcommon.ValueTypeInt {
+			val = pcommon.NewValueDouble(float64(val.Int()))
+		}
+		{{- else if eq $attr.Type.String "Bool" }}
+		if val.Type() != pcommon.ValueTypeBool {
+			return fmt.Errorf("override_value for {{ $name }} must be a bool, got %v", val.Type())
+		}
+		{{- else if eq $attr.Type.String "Bytes" }}
+		if val.Type() != pcommon.ValueTypeBytes {
+			return fmt.Errorf("override_value for {{ $name }} must be bytes, got %v", val.Type())
+		}
+		{{- else if eq $attr.Type.String "Slice" }}
+		if val.Type() != pcommon.ValueTypeSlice {
+			return fmt.Errorf("override_value for {{ $name }} must be a slice, got %v", val.Type())
+		}
+		{{- else if eq $attr.Type.String "Map" }}
+		if val.Type() != pcommon.ValueTypeMap {
+			return fmt.Errorf("override_value for {{ $name }} must be a map, got %v", val.Type())
+		}
+		{{- end }}
+		rac.{{ $name.Render }}.overrideVal = val
+		rac.{{ $name.Render }}.overrideValSet = true
+	}
+	{{- end }}
+	return nil
 }
 {{- end }}
 

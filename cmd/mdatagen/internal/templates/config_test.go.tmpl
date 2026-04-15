@@ -154,7 +154,64 @@ func TestResourceAttributesOverrideConfig(t *testing.T) {
 	{{- range $name, $_ := .ResourceAttributes }}
 	assert.NotNil(t, cfg.{{ $name.Render }}.OverrideValue, "override_value should be set for {{ $name }}")
 	{{- end }}
+	require.NoError(t, cfg.Validate())
+	{{- range $name, $_ := .ResourceAttributes }}
+	assert.True(t, cfg.{{ $name.Render }}.overrideValSet, "overrideValSet should be true for {{ $name }}")
+	{{- end }}
 }
+
+func TestResourceAttributesOverrideValidation(t *testing.T) {
+	cfg := DefaultResourceAttributesConfig()
+	{{- range $name, $attr := .ResourceAttributes }}
+	{{- if eq $attr.Type.String "Str" }}
+	cfg.{{ $name.Render }}.OverrideValue = 123
+	{{- else if eq $attr.Type.String "Int" }}
+	cfg.{{ $name.Render }}.OverrideValue = "not-an-int"
+	{{- else if eq $attr.Type.String "Double" }}
+	cfg.{{ $name.Render }}.OverrideValue = "not-a-number"
+	{{- else if eq $attr.Type.String "Bool" }}
+	cfg.{{ $name.Render }}.OverrideValue = "not-a-bool"
+	{{- else if eq $attr.Type.String "Slice" }}
+	cfg.{{ $name.Render }}.OverrideValue = "not-a-slice"
+	{{- else if eq $attr.Type.String "Map" }}
+	cfg.{{ $name.Render }}.OverrideValue = "not-a-map"
+	{{- end }}
+	{{- end }}
+	assert.Error(t, cfg.Validate())
+}
+
+{{ $hasEnum := false }}
+{{- range $_, $attr := .ResourceAttributes }}{{- if $attr.Enum }}{{ $hasEnum = true }}{{- end }}{{- end }}
+{{- if $hasEnum }}
+func TestResourceAttributesOverrideEnumValidation(t *testing.T) {
+	cfg := DefaultResourceAttributesConfig()
+	{{- range $name, $attr := .ResourceAttributes }}
+	{{- if $attr.Enum }}
+	cfg.{{ $name.Render }}.OverrideValue = "invalid-enum-value"
+	{{- end }}
+	{{- end }}
+	assert.Error(t, cfg.Validate())
+}
+{{- end }}
+
+{{ $hasDouble := false }}
+{{- range $_, $attr := .ResourceAttributes }}{{- if eq $attr.Type.String "Double" }}{{ $hasDouble = true }}{{- end }}{{- end }}
+{{- if $hasDouble }}
+func TestResourceAttributesOverrideDoubleFromInt(t *testing.T) {
+	cfg := DefaultResourceAttributesConfig()
+	{{- range $name, $attr := .ResourceAttributes }}
+	{{- if eq $attr.Type.String "Double" }}
+	cfg.{{ $name.Render }}.OverrideValue = int64(42)
+	{{- end }}
+	{{- end }}
+	require.NoError(t, cfg.Validate())
+	{{- range $name, $attr := .ResourceAttributes }}
+	{{- if eq $attr.Type.String "Double" }}
+	assert.True(t, cfg.{{ $name.Render }}.overrideValSet)
+	{{- end }}
+	{{- end }}
+}
+{{- end }}
 
 func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
