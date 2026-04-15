@@ -7,6 +7,7 @@ package receiverhelper // import "go.opentelemetry.io/collector/receiver/receive
 
 import (
 	"context"
+	"reflect"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -178,6 +179,17 @@ func (rec *ObsReport) endOp(
 	err error,
 	signal pipeline.Signal,
 ) {
+	// Normalize typed nil errors to avoid nil pointer dereference when calling err.Error().
+	if err != nil {
+		v := reflect.ValueOf(err)
+		switch v.Kind() {
+		case reflect.Ptr, reflect.Interface, reflect.Chan, reflect.Func, reflect.Map, reflect.Slice:
+			if v.IsNil() {
+				err = nil
+			}
+		}
+	}
+
 	numAccepted := numReceivedItems
 	numRefused := 0
 	numFailedErrors := 0

@@ -779,3 +779,43 @@ func testTelemetry(t *testing.T, testFunc func(t *testing.T, tt *componenttest.T
 
 	testFunc(t, tt)
 }
+
+// typedNilErr is a concrete error type used to construct typed nil errors in tests.
+type typedNilErr struct{}
+
+func (*typedNilErr) Error() string { panic("must not be called") }
+
+func TestTypedNilError(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	settings := ObsReportSettings{
+		ReceiverID:             receiverID,
+		Transport:              transport,
+		ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+	}
+
+	var typedNil *typedNilErr
+	// Wrap typed nil pointer as error interface — non-nil interface, nil data.
+	var typedNilAsErr error = typedNil
+
+	rec, err := newReceiver(settings)
+	require.NoError(t, err)
+
+	assert.NotPanics(t, func() {
+		ctx := rec.StartTracesOp(context.Background())
+		rec.EndTracesOp(ctx, format, 1, typedNilAsErr)
+	})
+	assert.NotPanics(t, func() {
+		ctx := rec.StartLogsOp(context.Background())
+		rec.EndLogsOp(ctx, format, 1, typedNilAsErr)
+	})
+	assert.NotPanics(t, func() {
+		ctx := rec.StartMetricsOp(context.Background())
+		rec.EndMetricsOp(ctx, format, 1, typedNilAsErr)
+	})
+	assert.NotPanics(t, func() {
+		ctx := rec.StartProfilesOp(context.Background())
+		rec.EndProfilesOp(ctx, format, 1, typedNilAsErr)
+	})
+}
