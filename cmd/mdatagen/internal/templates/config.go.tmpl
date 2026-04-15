@@ -155,14 +155,22 @@ func DefaultEventsConfig() EventsConfig {
 {{- end }}
 
 {{ if .ResourceAttributes -}}
-// ResourceAttributeConfig provides common config for a particular resource attribute.
-type ResourceAttributeConfig struct {
+{{- range $name, $attr := .ResourceAttributes }}
+// {{ $name.Render }}ResourceAttributeConfig provides config for the {{ $name }} resource attribute.
+type {{ $name.Render }}ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
-	// OverrideValue allows users to set a static value for this resource attribute,
-	// overriding any value set programmatically by the component.
-	// The value must be compatible with the attribute's type.
-	OverrideValue any `mapstructure:"override_value"`
-	{{- if .Metrics }}
+	{{- if $attr.Enum }}
+	// OverrideValue allows users to override the value of this resource attribute.
+	// Must be one of: {{ range $i, $e := $attr.Enum }}{{ if $i }}, {{ end }}{{ $e }}{{ end }}.
+	OverrideValue *string `mapstructure:"override_value"`
+	{{- else if or (eq $attr.Type.String "Slice") (eq $attr.Type.String "Map") (eq $attr.Type.String "Bytes") }}
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue {{ $attr.Type.Primitive }} `mapstructure:"override_value"`
+	{{- else }}
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *{{ $attr.Type.Primitive }} `mapstructure:"override_value"`
+	{{- end }}
+	{{- if $.Metrics }}
 	// Experimental: MetricsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
 	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
@@ -171,7 +179,7 @@ type ResourceAttributeConfig struct {
 	// MetricsInclude has higher priority than MetricsExclude.
 	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
 	{{- end }}
-	{{- if .Events }}
+	{{- if $.Events }}
 	// Experimental: EventsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only events with matching resource attribute values will be emitted.
 	EventsInclude []filter.Config `mapstructure:"events_include"`
@@ -182,12 +190,9 @@ type ResourceAttributeConfig struct {
 	{{- end }}
 
 	enabledSetByUser bool
-	// overrideVal is the pre-parsed pcommon.Value of OverrideValue, set during Validate.
-	overrideVal    pcommon.Value
-	overrideValSet bool
 }
 
-func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+func (rac *{{ $name.Render }}ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -199,76 +204,53 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+{{- if $attr.Enum }}
+
+func (rac *{{ $name.Render }}ResourceAttributeConfig) Validate() error {
+	if rac.OverrideValue != nil {
+		switch *rac.OverrideValue {
+		case {{ range $i, $e := $attr.Enum }}{{ if $i }}, {{ end }}"{{ $e }}"{{ end }}:
+		default:
+			return fmt.Errorf("override_value for {{ $name }} must be one of [{{ range $i, $e := $attr.Enum }}{{ if $i }}, {{ end }}{{ $e }}{{ end }}], got %q", *rac.OverrideValue)
+		}
+	}
+	return nil
+}
+{{- end }}
+{{ end }}
+
 // ResourceAttributesConfig provides config for {{ .Type }} resource attributes.
 type ResourceAttributesConfig struct {
 	{{- range $name, $attr := .ResourceAttributes }}
-	{{ $name.Render }} ResourceAttributeConfig `mapstructure:"{{ $name }}"`
+	{{ $name.Render }} {{ $name.Render }}ResourceAttributeConfig `mapstructure:"{{ $name }}"`
 	{{- end }}
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		{{- range $name, $attr := .ResourceAttributes }}
-		{{ $name.Render }}: ResourceAttributeConfig {
+		{{ $name.Render }}: {{ $name.Render }}ResourceAttributeConfig {
 			Enabled: {{ $attr.Enabled }},
 		},
 		{{- end }}
 	}
 }
 
-func (rac *ResourceAttributesConfig) Validate() error {
+// ApplyOverrideValues applies override values to the given resource.
+// For each enabled resource attribute with a non-nil OverrideValue,
+// the override replaces any existing value in the resource.
+func (rac *ResourceAttributesConfig) ApplyOverrideValues(res pcommon.Resource) {
 	{{- range $name, $attr := .ResourceAttributes }}
-	if rac.{{ $name.Render }}.OverrideValue != nil {
-		val := pcommon.NewValueEmpty()
-		if err := val.FromRaw(rac.{{ $name.Render }}.OverrideValue); err != nil {
-			return fmt.Errorf("override_value for {{ $name }}: %w", err)
-		}
+	if rac.{{ $name.Render }}.Enabled && rac.{{ $name.Render }}.OverrideValue != nil {
 		{{- if $attr.Enum }}
-		if val.Type() != pcommon.ValueTypeStr {
-			return fmt.Errorf("override_value for {{ $name }} must be a string, got %v", val.Type())
-		}
-		switch val.Str() {
-		case {{ range $i, $e := $attr.Enum }}{{ if $i }}, {{ end }}"{{ $e }}"{{ end }}:
-		default:
-			return fmt.Errorf("override_value for {{ $name }} must be one of [{{ range $i, $e := $attr.Enum }}{{ if $i }}, {{ end }}{{ $e }}{{ end }}], got %q", val.Str())
-		}
-		{{- else if eq $attr.Type.String "Str" }}
-		if val.Type() != pcommon.ValueTypeStr {
-			return fmt.Errorf("override_value for {{ $name }} must be a string, got %v", val.Type())
-		}
-		{{- else if eq $attr.Type.String "Int" }}
-		if val.Type() != pcommon.ValueTypeInt {
-			return fmt.Errorf("override_value for {{ $name }} must be an int, got %v", val.Type())
-		}
-		{{- else if eq $attr.Type.String "Double" }}
-		if val.Type() != pcommon.ValueTypeDouble && val.Type() != pcommon.ValueTypeInt {
-			return fmt.Errorf("override_value for {{ $name }} must be a number, got %v", val.Type())
-		}
-		if val.Type() == pcommon.ValueTypeInt {
-			val = pcommon.NewValueDouble(float64(val.Int()))
-		}
-		{{- else if eq $attr.Type.String "Bool" }}
-		if val.Type() != pcommon.ValueTypeBool {
-			return fmt.Errorf("override_value for {{ $name }} must be a bool, got %v", val.Type())
-		}
-		{{- else if eq $attr.Type.String "Bytes" }}
-		if val.Type() != pcommon.ValueTypeBytes {
-			return fmt.Errorf("override_value for {{ $name }} must be bytes, got %v", val.Type())
-		}
-		{{- else if eq $attr.Type.String "Slice" }}
-		if val.Type() != pcommon.ValueTypeSlice {
-			return fmt.Errorf("override_value for {{ $name }} must be a slice, got %v", val.Type())
-		}
-		{{- else if eq $attr.Type.String "Map" }}
-		if val.Type() != pcommon.ValueTypeMap {
-			return fmt.Errorf("override_value for {{ $name }} must be a map, got %v", val.Type())
-		}
+		res.Attributes().PutStr("{{ $name }}", *rac.{{ $name.Render }}.OverrideValue)
+		{{- else if or (eq $attr.Type.String "Bytes") (eq $attr.Type.String "Slice") (eq $attr.Type.String "Map") }}
+		res.Attributes().PutEmpty{{ $attr.Type }}("{{ $name }}").FromRaw(rac.{{ $name.Render }}.OverrideValue)
+		{{- else }}
+		res.Attributes().Put{{ $attr.Type }}("{{ $name }}", *rac.{{ $name.Render }}.OverrideValue)
 		{{- end }}
-		rac.{{ $name.Render }}.overrideVal = val
-		rac.{{ $name.Render }}.overrideValSet = true
 	}
 	{{- end }}
-	return nil
 }
 {{- end }}
 

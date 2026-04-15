@@ -45,7 +45,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				{{- if .ResourceAttributes }}
 				ResourceAttributes: ResourceAttributesConfig{
 					{{- range $name, $_ := .ResourceAttributes }}
-					{{ $name.Render }}: ResourceAttributeConfig{Enabled: true},
+					{{ $name.Render }}: {{ $name.Render }}ResourceAttributeConfig{Enabled: true},
 					{{- end }}
 				},
 				{{- end }}
@@ -69,7 +69,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				{{- if .ResourceAttributes }}
 				ResourceAttributes: ResourceAttributesConfig{
 					{{- range $name, $_ := .ResourceAttributes }}
-					{{ $name.Render }}: ResourceAttributeConfig{Enabled: false},
+					{{ $name.Render }}: {{ $name.Render }}ResourceAttributeConfig{Enabled: false},
 					{{- end }}
 				},
 				{{- end }}
@@ -83,7 +83,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				{{- if $reag }}
 				{{- range $name, $metric := .Metrics }}{{ $name.Render }}MetricConfig{}, {{ end }}
 				{{- else }}MetricConfig{},{{ end }}
-				{{- if .ResourceAttributes }}ResourceAttributeConfig{},{{ end }}
+				{{- range $name, $_ := .ResourceAttributes }}{{ $name.Render }}ResourceAttributeConfig{}, {{ end }}
 			))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
@@ -127,7 +127,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 			name: "all_set",
 			want: ResourceAttributesConfig{
 				{{- range $name, $_ := .ResourceAttributes }}
-				{{ $name.Render }}: ResourceAttributeConfig{Enabled: true},
+				{{ $name.Render }}: {{ $name.Render }}ResourceAttributeConfig{Enabled: true},
 				{{- end }}
 			},
 		},
@@ -135,7 +135,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 			name: "none_set",
 			want: ResourceAttributesConfig{
 				{{- range $name, $_ := .ResourceAttributes }}
-				{{ $name.Render }}: ResourceAttributeConfig{Enabled: false},
+				{{ $name.Render }}: {{ $name.Render }}ResourceAttributeConfig{Enabled: false},
 				{{- end }}
 			},
 		},
@@ -143,7 +143,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported({{ range $name, $_ := .ResourceAttributes }}{{ $name.Render }}ResourceAttributeConfig{}, {{ end }}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -154,60 +154,22 @@ func TestResourceAttributesOverrideConfig(t *testing.T) {
 	{{- range $name, $_ := .ResourceAttributes }}
 	assert.NotNil(t, cfg.{{ $name.Render }}.OverrideValue, "override_value should be set for {{ $name }}")
 	{{- end }}
-	require.NoError(t, cfg.Validate())
-	{{- range $name, $_ := .ResourceAttributes }}
-	assert.True(t, cfg.{{ $name.Render }}.overrideValSet, "overrideValSet should be true for {{ $name }}")
-	{{- end }}
-}
-
-func TestResourceAttributesOverrideValidation(t *testing.T) {
-	cfg := DefaultResourceAttributesConfig()
-	{{- range $name, $attr := .ResourceAttributes }}
-	{{- if eq $attr.Type.String "Str" }}
-	cfg.{{ $name.Render }}.OverrideValue = 123
-	{{- else if eq $attr.Type.String "Int" }}
-	cfg.{{ $name.Render }}.OverrideValue = "not-an-int"
-	{{- else if eq $attr.Type.String "Double" }}
-	cfg.{{ $name.Render }}.OverrideValue = "not-a-number"
-	{{- else if eq $attr.Type.String "Bool" }}
-	cfg.{{ $name.Render }}.OverrideValue = "not-a-bool"
-	{{- else if eq $attr.Type.String "Slice" }}
-	cfg.{{ $name.Render }}.OverrideValue = "not-a-slice"
-	{{- else if eq $attr.Type.String "Map" }}
-	cfg.{{ $name.Render }}.OverrideValue = "not-a-map"
-	{{- end }}
-	{{- end }}
-	assert.Error(t, cfg.Validate())
 }
 
 {{ $hasEnum := false }}
 {{- range $_, $attr := .ResourceAttributes }}{{- if $attr.Enum }}{{ $hasEnum = true }}{{- end }}{{- end }}
 {{- if $hasEnum }}
 func TestResourceAttributesOverrideEnumValidation(t *testing.T) {
-	cfg := DefaultResourceAttributesConfig()
 	{{- range $name, $attr := .ResourceAttributes }}
 	{{- if $attr.Enum }}
-	cfg.{{ $name.Render }}.OverrideValue = "invalid-enum-value"
-	{{- end }}
-	{{- end }}
-	assert.Error(t, cfg.Validate())
-}
-{{- end }}
-
-{{ $hasDouble := false }}
-{{- range $_, $attr := .ResourceAttributes }}{{- if eq $attr.Type.String "Double" }}{{ $hasDouble = true }}{{- end }}{{- end }}
-{{- if $hasDouble }}
-func TestResourceAttributesOverrideDoubleFromInt(t *testing.T) {
-	cfg := DefaultResourceAttributesConfig()
-	{{- range $name, $attr := .ResourceAttributes }}
-	{{- if eq $attr.Type.String "Double" }}
-	cfg.{{ $name.Render }}.OverrideValue = int64(42)
-	{{- end }}
-	{{- end }}
-	require.NoError(t, cfg.Validate())
-	{{- range $name, $attr := .ResourceAttributes }}
-	{{- if eq $attr.Type.String "Double" }}
-	assert.True(t, cfg.{{ $name.Render }}.overrideValSet)
+	{
+		invalidVal := "invalid-enum-value"
+		cfg := {{ $name.Render }}ResourceAttributeConfig{
+			Enabled: true,
+			OverrideValue: &invalidVal,
+		}
+		assert.Error(t, cfg.Validate())
+	}
 	{{- end }}
 	{{- end }}
 }
