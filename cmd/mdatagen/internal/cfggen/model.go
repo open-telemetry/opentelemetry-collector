@@ -59,22 +59,39 @@ type ConfigMetadata struct {
 
 type GoStructConfig struct {
 	CustomValidator *CustomValidatorConfig `mapstructure:"custom_validator" json:"-"`
+	CustomDefault   *CustomDefaultConfig   `mapstructure:"custom_default" json:"-"`
 }
 
 type CustomValidatorConfig struct {
 	Name string `mapstructure:"name,omitempty" json:"-"`
 }
 
+type CustomDefaultConfig struct {
+	Name string `mapstructure:"name,omitempty" json:"-"`
+}
+
 func (g *GoStructConfig) Unmarshal(parser *confmap.Conf) error {
-	if !parser.IsSet("custom_validator") {
-		return nil
+	if parser.IsSet("custom_validator") {
+		sub, err := parser.Sub("custom_validator")
+		if err != nil {
+			return fmt.Errorf("invalid custom_validator: %w", err)
+		}
+		g.CustomValidator = &CustomValidatorConfig{}
+		if err = sub.Unmarshal(g.CustomValidator); err != nil {
+			return err
+		}
 	}
-	sub, err := parser.Sub("custom_validator")
-	if err != nil {
-		return fmt.Errorf("invalid custom_validator: %w", err)
+	if parser.IsSet("custom_default") {
+		sub, err := parser.Sub("custom_default")
+		if err != nil {
+			return fmt.Errorf("invalid custom_default: %w", err)
+		}
+		g.CustomDefault = &CustomDefaultConfig{}
+		if err = sub.Unmarshal(g.CustomDefault); err != nil {
+			return err
+		}
 	}
-	g.CustomValidator = &CustomValidatorConfig{}
-	return sub.Unmarshal(g.CustomValidator)
+	return nil
 }
 
 func (md *ConfigMetadata) ToJSON() ([]byte, error) {
