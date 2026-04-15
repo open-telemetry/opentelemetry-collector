@@ -130,13 +130,13 @@ func TestMergeSplitLogs(t *testing.T) {
 
 func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 	tests := []struct {
-		name               string
-		szt                request.SizerType
-		maxSize            int
-		lr1                request.Request
-		lr2                request.Request
-		expected           []request.Request
-		expectPartialError bool
+		name                 string
+		szt                  request.SizerType
+		maxSize              int
+		lr1                  request.Request
+		lr2                  request.Request
+		expected             []request.Request
+		expectOversizedError bool
 	}{
 		{
 			name:     "both_requests_empty",
@@ -231,9 +231,13 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(string(make([]byte, 100)))
 				return ld
 			}()),
-			lr2:                nil,
-			expected:           []request.Request{},
-			expectPartialError: true,
+			lr2: nil,
+			expected: []request.Request{newLogsRequest(func() plog.Logs {
+				ld := testdata.GenerateLogs(1)
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(string(make([]byte, 100)))
+				return ld
+			}())},
+			expectOversizedError: true,
 		},
 		{
 			name:    "splittable_then_unsplittable_log",
@@ -246,19 +250,31 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 				return ld
 			}()),
 			lr2: nil,
-			expected: []request.Request{newLogsRequest(func() plog.Logs {
-				ld := testdata.GenerateLogs(1)
-				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(string(make([]byte, 10)))
-				return ld
-			}())},
-			expectPartialError: true,
+			expected: []request.Request{
+				newLogsRequest(func() plog.Logs {
+					ld := testdata.GenerateLogs(1)
+					ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(string(make([]byte, 10)))
+					return ld
+				}()),
+				newLogsRequest(func() plog.Logs {
+					ld := testdata.GenerateLogs(2)
+					// Remove the first log record (fillLogOne) to keep only the second (fillLogTwo).
+					ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().RemoveIf(func(lr plog.LogRecord) bool {
+						_, hasApp := lr.Attributes().Get("app")
+						return hasApp
+					})
+					ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(string(make([]byte, 1001)))
+					return ld
+				}()),
+			},
+			expectOversizedError: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.lr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.lr2)
-			if tt.expectPartialError {
-				require.ErrorContains(t, err, "one log record size is greater than max size, dropping")
+			if tt.expectOversizedError {
+				require.ErrorContains(t, err, "one log record size exceeds max batch size")
 			} else {
 				require.NoError(t, err)
 			}

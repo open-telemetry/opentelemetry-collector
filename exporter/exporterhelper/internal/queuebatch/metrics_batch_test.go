@@ -309,13 +309,13 @@ func BenchmarkSplittingBasedOnItemCountHugeMetrics(b *testing.B) {
 
 func TestMergeSplitMetricsBasedOnByteSize(t *testing.T) {
 	tests := []struct {
-		name             string
-		szt              request.SizerType
-		maxSize          int
-		mr1              request.Request
-		mr2              request.Request
-		expected         []request.Request
-		expectSplitError bool
+		name                 string
+		szt                  request.SizerType
+		maxSize              int
+		mr1                  request.Request
+		mr2                  request.Request
+		expected             []request.Request
+		expectOversizedError bool
 	}{
 		{
 			name:     "both_requests_empty",
@@ -434,9 +434,13 @@ func TestMergeSplitMetricsBasedOnByteSize(t *testing.T) {
 				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetDescription(string(make([]byte, 100)))
 				return md
 			}()),
-			mr2:              nil,
-			expected:         []request.Request{},
-			expectSplitError: true,
+			mr2: nil,
+			expected: []request.Request{newMetricsRequest(func() pmetric.Metrics {
+				md := testdata.GenerateMetrics(1)
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetDescription(string(make([]byte, 100)))
+				return md
+			}())},
+			expectOversizedError: true,
 		},
 		{
 			name:    "splittable_then_unsplittable_metric",
@@ -449,19 +453,30 @@ func TestMergeSplitMetricsBasedOnByteSize(t *testing.T) {
 				return md
 			}()),
 			mr2: nil,
-			expected: []request.Request{newMetricsRequest(func() pmetric.Metrics {
-				md := testdata.GenerateMetrics(1)
-				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetDescription(string(make([]byte, 10)))
-				return md
-			}())},
-			expectSplitError: true,
+			expected: []request.Request{
+				newMetricsRequest(func() pmetric.Metrics {
+					md := testdata.GenerateMetrics(1)
+					md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetDescription(string(make([]byte, 10)))
+					return md
+				}()),
+				newMetricsRequest(func() pmetric.Metrics {
+					md := testdata.GenerateMetrics(2)
+					// Remove the first metric (gauge-int) to keep only the second (gauge-double).
+					md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(m pmetric.Metric) bool {
+						return m.Name() == "gauge-int"
+					})
+					md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetDescription(string(make([]byte, 1001)))
+					return md
+				}()),
+			},
+			expectOversizedError: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.mr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.mr2)
-			if tt.expectSplitError {
-				require.ErrorContains(t, err, "one datapoint size is greater than max size, dropping items:")
+			if tt.expectOversizedError {
+				require.ErrorContains(t, err, "one datapoint size exceeds max batch size")
 			} else {
 				require.NoError(t, err)
 			}
