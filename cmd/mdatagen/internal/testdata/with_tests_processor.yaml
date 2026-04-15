@@ -1,4 +1,5 @@
 type: metric
+display_name: Metric Component
 
 status:
   class: processor

@@ -1,4 +1,5 @@
 type: custom
+display_name: Custom Receiver
 
 generated_package_name: customname
 

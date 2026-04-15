@@ -103,6 +103,10 @@ func (md *Metadata) Validate() error {
 		errs = errors.Join(errs, err)
 	}
 
+	if err := md.validateDisplayName(); err != nil {
+		errs = errors.Join(errs, err)
+	}
+
 	if md.Parent != "" {
 		if md.Status != nil {
 			// status is not required for subcomponents.
@@ -154,6 +158,13 @@ func (md *Metadata) validateType() error {
 
 	if !typeRegexp.MatchString(md.Type) {
 		return fmt.Errorf("invalid character(s) in type %q", md.Type)
+	}
+	return nil
+}
+
+func (md *Metadata) validateDisplayName() error {
+	if md.DisplayName == "" {
+		return errors.New("missing display_name")
 	}
 	return nil
 }

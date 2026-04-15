@@ -1,4 +1,5 @@
 type: test
+display_name: Test Component
 
 status:
   class: receiver

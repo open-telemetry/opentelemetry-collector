@@ -1,4 +1,5 @@
 type: receiver
+display_name: Test Receiver
 
 status:
   class: receiver
