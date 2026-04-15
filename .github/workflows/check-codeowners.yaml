@@ -36,7 +36,7 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
-      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         id: go-setup
         with:
           go-version: oldstable
@@ -48,7 +48,7 @@ jobs:
           repository: ${{github.event.pull_request.head.repo.full_name}}
           path: pr
 
-      - uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
+      - uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
         id: otelbot-token
         with:
           app-id: ${{ vars.OTELBOT_APP_ID }}

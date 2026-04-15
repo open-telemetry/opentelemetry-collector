@@ -7,7 +7,7 @@ reaggregation_enabled: true
 scope_name: go.opentelemetry.io/collector/internal/receiver/samplereceiver
 github_project: open-telemetry/opentelemetry-collector
 
-sem_conv_version: 1.38.0
+sem_conv_version: 1.40.0
 
 feature_gates:
   - id: receiver.sample.featuregate.example
@@ -96,6 +96,13 @@ resource_attributes:
     description: Resource attribute with any string value.
     type: string
     enabled: true
+    warnings:
+      if_enabled: This resource_attribute is deprecated and will be removed soon.
+
+  string.resource.disabled_attr_to_be_removed:
+    description: Resource attribute with any string value.
+    type: string
+    enabled: false
     warnings:
       if_enabled: This resource_attribute is deprecated and will be removed soon.
 

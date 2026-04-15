@@ -50,7 +50,7 @@ func TestLoadMetadata(t *testing.T) {
 				Type:                 "sample",
 				DisplayName:          "Sample Receiver",
 				Description:          "This receiver is used for testing purposes to check the output of mdatagen.",
-				SemConvVersion:       "1.38.0",
+				SemConvVersion:       "1.40.0",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver",
 				ReaggregationEnabled: true,
 				Status: &Status{
@@ -180,6 +180,18 @@ func TestLoadMetadata(t *testing.T) {
 						FullName:         "string.resource.attr_to_be_removed",
 						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
+					"string.resource.disabled_attr_to_be_removed": {
+						Description: "Resource attribute with any string value.",
+						Warnings: Warnings{
+							IfEnabled: "This resource_attribute is deprecated and will be removed soon.",
+						},
+						EnabledPtr: boolPtr(false),
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName:         "string.resource.disabled_attr_to_be_removed",
+						RequirementLevel: AttributeRequirementLevelRecommended,
+					},
 				},
 
 				Attributes: map[AttributeName]Attribute{
@@ -292,7 +304,7 @@ func TestLoadMetadata(t *testing.T) {
 						FullName:         "state",
 						RequirementLevel: AttributeRequirementLevelRecommended,
 						SemanticConvention: &SemanticConvention{
-							SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/registry/attributes/system.md#system-memory-state",
+							SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/system.md#system-memory-state",
 						},
 					},
 				},
@@ -347,7 +359,7 @@ func TestLoadMetadata(t *testing.T) {
 						Signal: Signal{
 							Enabled:               true,
 							Stability:             component.StabilityLevelBeta,
-							SemanticConvention:    &SemanticConvention{SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime"},
+							SemanticConvention:    &SemanticConvention{SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/system/system-metrics.md#metric-systemcputime"},
 							Description:           "Monotonic cumulative sum int metric enabled by default.",
 							ExtendedDocumentation: "The metric will be become optional soon.",
 							Attributes:            []AttributeName{"cpu"},
@@ -755,7 +767,7 @@ func TestLoadMetadata(t *testing.T) {
 			want: Metadata{
 				Type:                 "metricreceiver",
 				GeneratedPackageName: "metadata",
-				SemConvVersion:       "1.38.0",
+				SemConvVersion:       "1.40.0",
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
@@ -777,7 +789,7 @@ func TestLoadMetadata(t *testing.T) {
 							Description: "Time disk spent activated..",
 							Stability:   component.StabilityLevelDevelopment,
 							SemanticConvention: &SemanticConvention{
-								SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemdiskio_time",
+								SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/system/system-metrics.md#metric-systemdiskio_time",
 							},
 						},
 						Unit: strPtr("s"),

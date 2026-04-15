@@ -40,6 +40,7 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	rb.SetStringResourceAttrDisableWarning("string.resource.attr_disable_warning-val")
 	rb.SetStringResourceAttrRemoveWarning("string.resource.attr_remove_warning-val")
 	rb.SetStringResourceAttrToBeRemoved("string.resource.attr_to_be_removed-val")
+	rb.SetStringResourceDisabledAttrToBeRemoved("string.resource.disabled_attr_to_be_removed-val")
 	res := rb.Emit()
 
 	// append the first log record
@@ -154,6 +155,10 @@ func TestLogsBuilder(t *testing.T) {
 				assert.Equal(t, "[WARNING] `string.resource.attr_to_be_removed` should not be enabled: This resource_attribute is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
+			if tt.resAttrsSet == eventTestDataSetAll {
+				assert.Equal(t, "[WARNING] `string.resource.disabled_attr_to_be_removed` should not be enabled: This resource_attribute is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
 
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -178,6 +183,7 @@ func TestLogsBuilder(t *testing.T) {
 			rb.SetStringResourceAttrDisableWarning("string.resource.attr_disable_warning-val")
 			rb.SetStringResourceAttrRemoveWarning("string.resource.attr_remove_warning-val")
 			rb.SetStringResourceAttrToBeRemoved("string.resource.attr_to_be_removed-val")
+			rb.SetStringResourceDisabledAttrToBeRemoved("string.resource.disabled_attr_to_be_removed-val")
 			res := rb.Emit()
 			logs := lb.Emit(WithLogsResource(res))
 

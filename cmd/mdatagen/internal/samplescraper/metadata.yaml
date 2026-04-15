@@ -6,7 +6,7 @@ description: This scraper is used for testing purposes to check the output of md
 reaggregation_enabled: true
 github_project: open-telemetry/opentelemetry-collector
 
-sem_conv_version: 1.38.0
+sem_conv_version: 1.40.0
 
 status:
   disable_codecov_badge: true
@@ -25,8 +25,10 @@ config:
   type: object
   description: Configuration for the Sample Scraper.
   allOf:
+    - $ref: ./internal/metadata.metrics_builder_config
     - $ref: /scraper/scraperhelper.controller_config
-  $defs:
+      default:
+        timeout: 30s
   properties:
     targets:
       description: Targets configuration for the scraper.
@@ -37,16 +39,23 @@ config:
         properties:
           http_client:
             $ref: /config/confighttp.client_config
-            x-pointer: true
+            go_struct:
+              custom_validator:
           interval:
             type: string
             format: duration
             x-optional: true
+            default: 10s
           options:
             type: object
             additionalProperties:
               type: string
+            default:
+              option1: value1
+              option2: value2
         required: [http_client, options]
+      default:
+        - {} # one item with default values
   required: [targets]
 
 resource_attributes:

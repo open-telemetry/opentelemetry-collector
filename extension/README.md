@@ -5,7 +5,7 @@ collector. Generally, extensions are used for implementing components that can
 be added to the Collector, but which do not require direct access to telemetry
 data and are not part of the pipelines (like receivers, processors or
 exporters). Example extensions are: Memory Limiter extension that prevents
-out of memory situations or zPages extension that provides live data for 
+out of memory situations or zPages extension that provides live data for
 debugging different components.
 
 Supported service extensions (sorted alphabetically):
