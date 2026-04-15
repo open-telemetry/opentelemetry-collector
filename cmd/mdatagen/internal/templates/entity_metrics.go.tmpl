@@ -170,6 +170,9 @@ func (e *{{ $entityStructType }}) copyToResource(cfg ResourceAttributesConfig, r
 		}
 		{{- end }}
 	}
+
+	// Apply override values for resource attributes.
+	cfg.ApplyOverrideValues(res)
 }
 
 {{ end }}
