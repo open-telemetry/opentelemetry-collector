@@ -424,9 +424,10 @@ func marshalJSONNoHTMLEscape(v any) string {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 	enc.SetEscapeHTML(false)
-	if err := enc.Encode(v); err != nil {
-		return ""
-	}
+	// Encode cannot fail for the map/slice values produced by AsRaw(), which
+	// only contain primitive types, so the error is intentionally ignored —
+	// consistent with the json.Marshal calls it replaces.
+	_ = enc.Encode(v)
 	// json.Encoder.Encode always appends a trailing newline; strip it so the
 	// output matches json.Marshal.
 	return strings.TrimRight(buf.String(), "\n")
