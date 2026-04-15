@@ -53,6 +53,8 @@ type ConfigMetadata struct {
 	GoType     string         `mapstructure:"x-customType,omitempty" json:"-" yaml:"x-customType,omitempty"`
 	IsPointer  bool           `mapstructure:"x-pointer,omitempty" json:"-" yaml:"x-pointer,omitempty"`
 	IsOptional bool           `mapstructure:"x-optional,omitempty" json:"-" yaml:"x-optional,omitempty"`
+	// internal
+	ResolvedFrom string `mapstructure:"-" json:"-" yaml:"-"`
 }
 
 type GoStructConfig struct {

@@ -30,6 +30,28 @@ func TestWriteJSONSchema(t *testing.T) {
 	require.Contains(t, string(content), `"endpoint"`)
 }
 
+func TestWriteJSONSchema_OmitsInternalResolvedFrom(t *testing.T) {
+	dir := t.TempDir()
+	md := &ConfigMetadata{
+		Schema:       schemaVersion,
+		Type:         "object",
+		ResolvedFrom: "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
+		Properties: map[string]*ConfigMetadata{
+			"endpoint": {
+				Type:         "string",
+				ResolvedFrom: "string",
+			},
+		},
+	}
+
+	err := WriteJSONSchema(dir, md)
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(filepath.Join(dir, fileName)) // #nosec G304
+	require.NoError(t, err)
+	require.NotContains(t, string(content), "ResolvedFrom")
+}
+
 func TestWriteJSONSchema_InvalidDir(t *testing.T) {
 	md := &ConfigMetadata{Type: "object"}
 	err := WriteJSONSchema("/nonexistent/path/that/does/not/exist", md)
