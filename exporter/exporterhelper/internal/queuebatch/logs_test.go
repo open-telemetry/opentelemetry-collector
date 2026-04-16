@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
-func TestLogsRequest(t *testing.T) {
+func TestLogsRequestOnError(t *testing.T) {
 	lr := newLogsRequest(testdata.GenerateLogs(1))
 	req := lr.(*logsRequest)
 	req.cachedSize = 123

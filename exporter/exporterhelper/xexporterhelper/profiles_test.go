@@ -48,14 +48,13 @@ const (
 
 var fakeProfilesExporterConfig = struct{}{}
 
-func TestProfilesRequest(t *testing.T) {
+func TestProfilesRequestOnError(t *testing.T) {
 	pr := newProfilesRequest(testdata.GenerateProfiles(1))
 	req := pr.(*profilesRequest)
 	req.cachedSize = 123
 
 	remaining := pprofile.NewProfiles()
 	profileErr := xconsumererror.NewProfiles(errors.New("some error"), remaining)
-	// handled := pr.(RequestErrorHandler).OnError(profileErr)
 	handled := pr.(request.ErrorHandler).OnError(profileErr)
 	assert.Same(t, req, handled)
 	assert.Equal(t, remaining, req.pd)
