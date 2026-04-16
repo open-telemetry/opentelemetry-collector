@@ -224,8 +224,15 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 		}
 	}
 
-	if md.Type == "string" && strings.HasPrefix(md.GoType, "time.") {
+	if md.Type == "string" && (strings.HasPrefix(md.GoType, "time.") || md.Format == "duration" || md.Format == "date-time") {
 		imports["time"] = true
+	}
+
+	if md.Ref != "" {
+		ref, err := ResolveGoTypeRef(md.Ref, rootPackage, componentPackage)
+		if err == nil && ref.ImportPath != "" {
+			imports[ref.ImportPath] = true
+		}
 	}
 
 	if md.IsOptional {

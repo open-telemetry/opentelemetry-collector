@@ -16,7 +16,7 @@ import (
 {{ range extractNonStdlibImports .Metadata.Config }}
 	"{{ . }}"
 {{- end }}
-    "go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component"
 )
 
 {{ define "struct" }}
@@ -25,7 +25,7 @@ import (
 		{{- if .Description }}
 	// {{ .Description }}
 		{{- end }}
-	{{ .Ref | publicType }} `mapstructure:",squash"`
+	{{ .ResolvedFrom | publicType }} `mapstructure:",squash"`
 	{{- end }}
 	{{- end }}
 	{{- range $propName, $prop := .Properties }}
@@ -34,70 +34,41 @@ import (
 		{{- end }}
 	{{ $propName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}"`
 	{{- end }}
-    {{- if .AllOf }}
-    {{- range .AllOf }}
-        {{- if .Description }}
-    // {{ .Description }}
-        {{- end }}
-    	{{ .ResolvedFrom | publicType }} `mapstructure:",squash"`
-    {{- end }}
-    {{- end }}
-    {{- range $propName, $prop := .Properties }}
-        {{- if $prop.Description }}
-    // {{ $prop.Description }}
-        {{- end }}
-    	{{ $propName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}"`
-    {{- end }}
 {{ end }}
 
 {{- $defs := extractDefs .Metadata.Config }}
 {{ range $defName, $def := $defs }}
+	{{- $typeName := $defName | publicVar }}
 	{{- if $def.Description }}
-	// {{ $defName | publicVar }} {{ $def.Description }}
+	// {{ $typeName }} {{ $def.Description }}
 	{{- end }}
-	type {{ $defName | publicVar }} struct {
+	type {{ $typeName }} struct {
 		{{ template "struct" $def }}
 	}
 
 	{{ $defValidators := extractValidators $def }}
 	{{- if $defValidators }}
-	// Validate validates the {{$defName}} fields.
-	func (c *{{ $defName | publicVar }}) Validate() error {
+	// Validate validates the {{$typeName}} fields.
+	func (c *{{ $typeName }}) Validate() error {
 		var err error
 		{{ range $validator := $defValidators -}}
 			{{- template "validation" $validator }}
 		{{- end }}
-    {{- if $def.Description }}
-        // {{ $defName | publicVar }} {{ $def.Description }}
-    {{- end }}
-    {{- $typeName := $defName | publicVar }}
-    type {{ $typeName }} struct {
-        {{- template "struct" $def }}
-    }
-
-    {{ $defValidators := extractValidators $def }}
-    {{- if $defValidators }}
-        // Validate validates the {{$typeName}} fields according to schema annotations.
-        func (c *{{ $typeName }}) Validate() error {
-            var err error
-            {{ range $validator := $defValidators -}}
-                {{- template "validation" $validator }}
-            {{- end }}
 
 		return err
 	}
 	{{- end }}
 
-    // NewDefault{{ $typeName }} returns a new {{ $typeName }} with default values consistent with the annotations in the schema.
-    {{- if hasDefaultValue $def }}
-    func NewDefault{{ $typeName }}() {{ $typeName }} {
-    cfg := {{ $typeName }}{}
+	{{- if hasDefaultValue $def }}
+	// NewDefault{{ $typeName }} returns a new {{ $typeName }} with default values consistent with the annotations in the schema.
+	func NewDefault{{ $typeName }}() {{ $typeName }} {
+	cfg := {{ $typeName }}{}
 
-    {{- template "defaultValueSetter" $def }}
+	{{- template "defaultValueSetter" $def }}
 
-    return cfg
-    }
-    {{- end }}
+	return cfg
+	}
+	{{- end }}
 
 {{ end }}
 
@@ -108,18 +79,17 @@ import (
 {{- end }}
 type Config struct {
 	{{ template "struct" .Metadata.Config }}
-    {{- template "struct" .Metadata.Config }}
 }
 
 {{ define "customValidator" -}}
-    {{ $name := .FieldName | publicVar -}}
-    {{ $value := "c" }}
-    {{- if ne .FieldName "." }}
-        {{ $value = printf "c.%s" $name -}}
-    {{ end }}
-    if inner_err := {{ .CustomValidator }}({{ $value }}); inner_err != nil {
-        err = errors.Join(err, inner_err)
-    }
+	{{ $name := .FieldName | publicVar -}}
+	{{ $value := "c" }}
+	{{- if ne .FieldName "." }}
+		{{ $value = printf "c.%s" $name -}}
+	{{ end }}
+	if inner_err := {{ .CustomValidator }}({{ $value }}); inner_err != nil {
+		err = errors.Join(err, inner_err)
+	}
 {{- end }}
 
 {{ define "requiredValidator" -}}
@@ -153,39 +123,9 @@ type Config struct {
 	{{- if .IsRequired -}}
 		{{ template "requiredValidator" . }}
 	{{- end -}}
-    {{ $name := .FieldName | publicVar -}}
-    {{- if .IsPointer }}
-        {{- if or (eq .FieldType "array") (eq .FieldType "map") }}
-        if c.{{ $name }} == nil || len(*c.{{ $name }}) == 0 {
-            err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
-        }
-        {{- else }}
-        if c.{{ $name }} == nil {
-            err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
-        }
-        {{- end }}
-    {{- else if eq .FieldType "string" }}
-        if c.{{ $name }} == "" {
-            err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
-        }
-    {{- else if eq .FieldType "array" }}
-        if len(c.{{ $name }}) == 0 {
-            err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
-        }
-    {{- else if eq .FieldType "map" }}
-        if c.{{ $name }} == nil || len(c.{{ $name }}) == 0 {
-            err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
-        }
-    {{- end -}}
-{{- end }}
-
-{{- define "validation" -}}
-    {{- if .IsRequired -}}
-        {{ template "requiredValidator" . }}
-    {{- end -}}
-    {{- if .CustomValidator }}
-        {{ template "customValidator" . }}
-    {{- end -}}
+	{{- if .CustomValidator }}
+		{{ template "customValidator" . }}
+	{{- end -}}
 {{- end }}
 
 {{- if $validators }}
@@ -201,22 +141,22 @@ func (c *Config) Validate() error {
 {{- end }}
 
 {{- define "defaultValueSetter" }}
-    {{- range $propName, $prop := .Properties }}
-        {{- $defaultValue := formatDefaultValue $prop $propName $prop.Default }}
-        {{- if $defaultValue }}
-        cfg.{{ $propName | publicVar }} = {{ $defaultValue }}
-        {{- end }}
-        {{- $exprs := mapCustomDefaults $prop $prop.Default }}
-        {{- range $expr := $exprs }}
-            cfg.{{ $propName | publicVar }}{{ $expr }}
-        {{- end }}
-    {{- end }}
+	{{- range $propName, $prop := .Properties }}
+		{{- $defaultValue := formatDefaultValue $prop $propName $prop.Default }}
+		{{- if $defaultValue }}
+		cfg.{{ $propName | publicVar }} = {{ $defaultValue }}
+		{{- end }}
+		{{- $exprs := mapCustomDefaults $prop $prop.Default }}
+		{{- range $expr := $exprs }}
+			cfg.{{ $propName | publicVar }}{{ $expr }}
+		{{- end }}
+	{{- end }}
 {{- end }}
 
 func createDefaultConfig() component.Config {
-    cfg := Config{}
+	cfg := Config{}
 
-    {{- template "defaultValueSetter" .Metadata.Config }}
+	{{- template "defaultValueSetter" .Metadata.Config }}
 
-    return &cfg
+	return &cfg
 }

@@ -1375,6 +1375,8 @@ func TestNewCfgFns_ExtractNonStdlibImports(t *testing.T) {
 	refMd := &ConfigMetadata{Ref: "go.opentelemetry.io/collector/component.Config"}
 	result = extractNonStdlibImports(refMd)
 	require.Contains(t, result, "go.opentelemetry.io/collector/component")
+}
+
 func TestFormatDefaultValue_ScalarDefaults(t *testing.T) {
 	tests := []struct {
 		name         string
