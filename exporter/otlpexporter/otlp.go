@@ -10,7 +10,6 @@ import (
 	"runtime"
 
 	"go.uber.org/zap"
-	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -186,7 +185,7 @@ func processError(err error) error {
 	// Now, this is a real error.
 	retryInfo := statusutil.GetRetryInfo(st)
 
-	if !shouldRetry(st.Code(), retryInfo) {
+	if !shouldRetry(st.Code()) {
 		// It is not a retryable error, we should not retry.
 		return consumererror.NewPermanent(err)
 	}
@@ -202,20 +201,17 @@ func processError(err error) error {
 	return err
 }
 
-func shouldRetry(code codes.Code, retryInfo *errdetails.RetryInfo) bool {
+func shouldRetry(code codes.Code) bool {
 	switch code {
 	case codes.Canceled,
 		codes.DeadlineExceeded,
 		codes.Aborted,
 		codes.OutOfRange,
 		codes.Unavailable,
-		codes.DataLoss:
+		codes.DataLoss,
+		codes.ResourceExhausted:
 		// These are retryable errors.
 		return true
-	case codes.ResourceExhausted:
-		// Retry only if RetryInfo was supplied by the server.
-		// This indicates that the server can still recover from resource exhaustion.
-		return retryInfo != nil
 	}
 	// Don't retry on any other code.
 	return false

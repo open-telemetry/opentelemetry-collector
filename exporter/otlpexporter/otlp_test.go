@@ -723,9 +723,9 @@ func TestSendTracesOnResourceExhaustion(t *testing.T) {
 	td := ptrace.NewTraces()
 	require.NoError(t, exp.ConsumeTraces(context.Background(), td))
 
-	assert.Never(t, func() bool {
+	assert.Eventually(t, func() bool {
 		return rcv.requestCount.Load() > 1
-	}, 1*time.Second, 5*time.Millisecond, "Should not retry if RetryInfo is not included into status details by the server.")
+	}, 10*time.Second, 5*time.Millisecond, "Should retry on ResourceExhausted even without RetryInfo.")
 
 	rcv.requestCount.Swap(0)
 

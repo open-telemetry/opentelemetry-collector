@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"go.uber.org/zap"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -69,16 +70,24 @@ func (ml *memoryLimiterExtension) GetGRPCServerOptions(_ context.Context) ([]grp
 		grpc.ChainUnaryInterceptor(
 			func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 				if ml.MustRefuse() {
-					return nil, status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
+					return nil, resourceExhaustedStatus()
 				}
 				return handler(ctx, req)
 			}),
 		grpc.ChainStreamInterceptor(
 			func(srv any, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 				if ml.MustRefuse() {
-					return status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
+					return resourceExhaustedStatus()
 				}
 				return handler(srv, ss)
 			}),
 	}, nil
+}
+
+func resourceExhaustedStatus() error {
+	st, err := status.New(codes.ResourceExhausted, "RESOURCE_EXHAUSTED").WithDetails(&errdetails.RetryInfo{})
+	if err != nil {
+		return status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
+	}
+	return st.Err()
 }
