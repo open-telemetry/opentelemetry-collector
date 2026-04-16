@@ -65,7 +65,12 @@ func (c *Config) Validate() error {
 	if c.JobName == "" {
 		err = errors.Join(err, errors.New("job_name is required"))
 	}
-
+	if len(c.JobName) > 255 {
+		err = errors.Join(err, errors.New("job_name exceeds maximum length of 255"))
+	}
+	if len(c.JobName) < 1 {
+		err = errors.Join(err, errors.New("job_name must have minimum length of 1"))
+	}
 	if matched, _ := regexp.MatchString(`^[a-zA-Z0-9_.-]+$`, c.JobName); !matched {
 		err = errors.Join(err, errors.New("job_name must match pattern `^[a-zA-Z0-9_.-]+$`"))
 	}

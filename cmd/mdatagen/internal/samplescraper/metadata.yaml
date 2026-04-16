@@ -62,7 +62,7 @@ config:
             default:
               option1: value1
               option2: value2
-        required: [http_client, labels]
+        required: [labels]
       default:
         - {} # one item with default values
   required: [job_name, targets]

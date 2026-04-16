@@ -13,8 +13,16 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	require.NotNil(t, cfg)
 }
+
 func TestConfigValidate_DefaultValid(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
 	require.NoError(t, cfg.Validate())
+}
+
+func TestConfigValidate_RequiredEndpoint(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = ""
+
+	require.ErrorContains(t, cfg.Validate(), "endpoint is required")
 }

@@ -13,14 +13,36 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	require.NotNil(t, cfg)
 }
+
 func TestConfigValidate_DefaultValid(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
 	require.NoError(t, cfg.Validate())
 }
 
+func TestConfigValidate_RequiredJobName(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.JobName = ""
+
+	require.ErrorContains(t, cfg.Validate(), "job_name is required")
+}
+
+func TestConfigValidate_RequiredTargets(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Targets = nil
+
+	require.ErrorContains(t, cfg.Validate(), "targets is required")
+}
+
 func TestTargetsItemValidate_DefaultValid(t *testing.T) {
 	cfg := NewDefaultTargetsItem()
 
 	require.NoError(t, cfg.Validate())
+}
+
+func TestConfigValidate_RequiredLabels(t *testing.T) {
+	cfg := NewDefaultTargetsItem()
+	clear(cfg.Labels)
+
+	require.ErrorContains(t, cfg.Validate(), "labels is required")
 }

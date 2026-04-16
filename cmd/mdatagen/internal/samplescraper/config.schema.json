@@ -593,6 +593,8 @@
       "description": "Name of the scrape job, used to identify the source in telemetry.",
       "type": "string",
       "default": "test_job",
+      "maxLength": 255,
+      "minLength": 1,
       "pattern": "^[a-zA-Z0-9_.-]+$"
     },
     "targets": {
@@ -841,7 +843,6 @@
           }
         },
         "required": [
-          "http_client",
           "labels"
         ]
       }
