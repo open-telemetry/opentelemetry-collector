@@ -170,9 +170,6 @@ func (e *{{ $entityStructType }}) copyToResource(cfg ResourceAttributesConfig, r
 		}
 		{{- end }}
 	}
-
-	// Apply override values for resource attributes.
-	cfg.ApplyOverrideValues(res)
 }
 
 {{ end }}
@@ -247,6 +244,7 @@ func (eb *{{ $builderType }}) Emit() {
 		eb.entity.{{ toLowerCamelCase $rel.Type }}{{ publicVar $rel.Target }}.copyToResource(cfg, res)
 	}
 	{{- end }}
+	cfg.ApplyOverrideValues(res)
 	eb.mb.EmitForResource(withResourceMoved(res))
 }
 
