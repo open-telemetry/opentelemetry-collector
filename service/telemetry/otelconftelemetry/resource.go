@@ -74,6 +74,7 @@ func createFixedResourceConfig(cfg *ResourceConfig, res *pcommon.Resource) (*ote
 		Attributes: make([]otelconf.AttributeNameValue, 0, res.Attributes().Len()),
 	}
 	if cfg.SchemaUrl != nil {
+		// Preserve the configured schema URL separately because it is not exposed by pcommon.Resource.
 		schemaURL := *cfg.SchemaUrl
 		providerConfig.SchemaUrl = &schemaURL
 	}
@@ -89,12 +90,12 @@ func createFixedResourceConfig(cfg *ResourceConfig, res *pcommon.Resource) (*ote
 	return providerConfig, nil
 }
 
-func createCollectorResource(
+func createResource(
 	ctx context.Context,
-	buildInfo component.BuildInfo,
-	cfg *ResourceConfig,
+	set telemetry.Settings,
+	componentConfig component.Config,
 ) (pcommon.Resource, error) {
-	sdkCfg, err := createInitialResourceConfig(buildInfo, cfg)
+	sdkCfg, err := createInitialResourceConfig(set.BuildInfo, &componentConfig.(*Config).Resource)
 	if err != nil {
 		return pcommon.Resource{}, err
 	}
@@ -121,12 +122,4 @@ func createCollectorResource(
 	}
 
 	return pcommonResource, nil
-}
-
-func createResource(
-	ctx context.Context,
-	set telemetry.Settings,
-	componentConfig component.Config,
-) (pcommon.Resource, error) {
-	return createCollectorResource(ctx, set.BuildInfo, &componentConfig.(*Config).Resource)
 }
