@@ -190,6 +190,17 @@ func TestEnvWithDefaultValue(t *testing.T) {
 	assert.NoError(t, env.Shutdown(context.Background()))
 }
 
+func TestEmptyDefaultReturnsEmptyString(t *testing.T) {
+	env := createProvider()
+	ret, err := env.Retrieve(context.Background(), "env:MY_VAR:-", nil)
+	require.NoError(t, err)
+
+	raw, err := ret.AsRaw()
+	require.NoError(t, err)
+	require.IsType(t, "", raw, "empty default should resolve to empty string, not nil")
+	assert.Empty(t, raw)
+}
+
 func createProvider() confmap.Provider {
 	return NewFactory().Create(confmaptest.NewNopProviderSettings())
 }
