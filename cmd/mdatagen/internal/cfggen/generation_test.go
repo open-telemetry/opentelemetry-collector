@@ -1355,7 +1355,7 @@ func TestNewCfgFns_ExtractNonStdlibImports(t *testing.T) {
 
 	// non-stdlib imports (contain a dot) are returned
 	md := &ConfigMetadata{
-		Type:   "string",
+		Type:       "string",
 		IsOptional: true,
 	}
 	result := extractNonStdlibImports(md)
