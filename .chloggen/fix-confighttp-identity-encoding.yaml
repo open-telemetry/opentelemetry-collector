@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: pkg/confighttp
+note: Accept "identity" Content-Encoding header as a valid no-compression encoding per RFC 9110.
+issues: [15122]
