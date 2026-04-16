@@ -43,12 +43,12 @@ import (
 	// {{ $typeName }} {{ $def.Description }}
 	{{- end }}
 	type {{ $typeName }} struct {
-		{{ template "struct" $def }}
+		{{- template "struct" $def }}
 	}
 
 	{{ $defValidators := extractValidators $def }}
 	{{- if $defValidators }}
-	// Validate validates the {{$typeName}} fields.
+	// Validate validates the {{$typeName}} fields according to schema annotations.
 	func (c *{{ $typeName }}) Validate() error {
 		var err error
 		{{ range $validator := $defValidators -}}
@@ -78,7 +78,7 @@ import (
 // Config defines the configuration for {{ .Metadata.DisplayName }} component.
 {{- end }}
 type Config struct {
-	{{ template "struct" .Metadata.Config }}
+	{{- template "struct" .Metadata.Config }}
 }
 
 {{ define "customValidator" -}}
@@ -95,7 +95,7 @@ type Config struct {
 {{ define "requiredValidator" -}}
 	{{ $name := .FieldName | publicVar -}}
 	{{- if .IsPointer }}
-		{{- if or (eq .FieldType "array") (eq .FieldType "object") }}
+		{{- if or (eq .FieldType "array") (eq .FieldType "map") }}
 		if c.{{ $name }} == nil || len(*c.{{ $name }}) == 0 {
 			err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
 		}
@@ -112,7 +112,7 @@ type Config struct {
 		if len(c.{{ $name }}) == 0 {
 			err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
 		}
-	{{- else if eq .FieldType "object" }}
+	{{- else if eq .FieldType "map" }}
 		if c.{{ $name }} == nil || len(c.{{ $name }}) == 0 {
 			err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
 		}
