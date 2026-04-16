@@ -1,7 +1,7 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: enhancement
+change_type: breaking
 
 # The name of the component, e.g. pkg/confighttp, receiver/otlp, exporter/debug
 component: cmd/mdatagen
@@ -20,5 +20,8 @@ subtext: |
   configuration, overriding values set programmatically by the component. This is useful
   when receivers have no knowledge of certain resource attributes (e.g. service.namespace,
   service.name for remote database instances) and users need to specify them directly.
+  The shared `ResourceAttributeConfig` type is replaced with per-attribute types
+  (e.g., `StringResourceAttrResourceAttributeConfig`). Regenerate your component's
+  metadata to pick up the new types.
 
-change_logs: []
+change_logs: [api]
