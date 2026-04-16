@@ -16,6 +16,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"go.uber.org/multierr"
@@ -296,9 +297,7 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 		return cycleErr(err, topo.DirectedCyclesIn(g.componentGraph))
 	}
 
-	for i := len(nodes) - 1; i >= 0; i-- {
-		node := nodes[i]
-
+	for _, node := range slices.Backward(nodes) {
 		switch n := node.(type) {
 		case *receiverNode:
 			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(n.ID()))
@@ -414,8 +413,7 @@ func (g *Graph) StartAll(ctx context.Context, host *Host) error {
 	// Start in reverse topological order so that downstream components
 	// are started before upstream components. This ensures that each
 	// component's consumer is ready to consume.
-	for i := len(nodes) - 1; i >= 0; i-- {
-		node := nodes[i]
+	for _, node := range slices.Backward(nodes) {
 		comp, ok := node.(component.Component)
 
 		if !ok {

@@ -25,8 +25,10 @@ config:
   type: object
   description: Configuration for the Sample Scraper.
   allOf:
+    - $ref: ./internal/metadata.metrics_builder_config
     - $ref: /scraper/scraperhelper.controller_config
-  $defs:
+      default:
+        timeout: 30s
   properties:
     targets:
       description: Targets configuration for the scraper.
@@ -37,18 +39,23 @@ config:
         properties:
           http_client:
             $ref: /config/confighttp.client_config
-            x-pointer: true
             go_struct:
               custom_validator:
           interval:
             type: string
             format: duration
             x-optional: true
+            default: 10s
           options:
             type: object
             additionalProperties:
               type: string
+            default:
+              option1: value1
+              option2: value2
         required: [http_client, options]
+      default:
+        - {} # one item with default values
   required: [targets]
 
 resource_attributes:
