@@ -80,6 +80,11 @@ func TestLoadMetadata(t *testing.T) {
 					AllOf: []*cfggen.ConfigMetadata{
 						{
 							Ref: "./internal/metadata.metrics_builder_config",
+							GoStruct: cfggen.GoStructConfig{
+								CustomDefault: &cfggen.CustomDefaultConfig{
+									Name: "./internal/metadata.DefaultMetricsBuilderConfig",
+								},
+							},
 						},
 					},
 					Properties: map[string]*cfggen.ConfigMetadata{

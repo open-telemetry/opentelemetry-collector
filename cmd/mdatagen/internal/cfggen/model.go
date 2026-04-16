@@ -77,7 +77,7 @@ func (g *GoStructConfig) Unmarshal(parser *confmap.Conf) error {
 			return fmt.Errorf("invalid custom_validator: %w", err)
 		}
 		g.CustomValidator = &CustomValidatorConfig{}
-		if err = sub.Unmarshal(g.CustomValidator); err != nil {
+		if err := sub.Unmarshal(g.CustomValidator); err != nil {
 			return err
 		}
 	}
@@ -87,7 +87,7 @@ func (g *GoStructConfig) Unmarshal(parser *confmap.Conf) error {
 			return fmt.Errorf("invalid custom_default: %w", err)
 		}
 		g.CustomDefault = &CustomDefaultConfig{}
-		if err = sub.Unmarshal(g.CustomDefault); err != nil {
+		if err := sub.Unmarshal(g.CustomDefault); err != nil {
 			return err
 		}
 	}

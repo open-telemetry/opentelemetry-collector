@@ -26,6 +26,9 @@ config:
   description: Configuration for the Sample Scraper.
   allOf:
     - $ref: ./internal/metadata.metrics_builder_config
+      go_struct:
+        custom_default:
+          name: ./internal/metadata.DefaultMetricsBuilderConfig
     - $ref: /scraper/scraperhelper.controller_config
       default:
         timeout: 30s

@@ -328,6 +328,7 @@ func TestGoStructConfig_Unmarshal(t *testing.T) {
 		name                  string
 		input                 map[string]any
 		expectCustomValidator bool
+		expectCustomDefault   bool
 	}{
 		{
 			name:                  "custom_validator present with empty map",
@@ -349,6 +350,27 @@ func TestGoStructConfig_Unmarshal(t *testing.T) {
 			input:                 map[string]any{"something_else": true},
 			expectCustomValidator: false,
 		},
+		{
+			name:                "custom_default present with name",
+			input:               map[string]any{"custom_default": map[string]any{"name": "pkg.NewDefaultFoo"}},
+			expectCustomDefault: true,
+		},
+		{
+			name:                "custom_default present with empty map",
+			input:               map[string]any{"custom_default": map[string]any{}},
+			expectCustomDefault: true,
+		},
+		{
+			name:                "custom_default absent",
+			input:               map[string]any{},
+			expectCustomDefault: false,
+		},
+		{
+			name:                  "both custom_validator and custom_default present",
+			input:                 map[string]any{"custom_validator": map[string]any{}, "custom_default": map[string]any{"name": "pkg.NewDefaultFoo"}},
+			expectCustomValidator: true,
+			expectCustomDefault:   true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -362,6 +384,21 @@ func TestGoStructConfig_Unmarshal(t *testing.T) {
 			} else {
 				assert.Nil(t, g.CustomValidator, "CustomValidator should be nil when key is absent")
 			}
+			if tt.expectCustomDefault {
+				assert.NotNil(t, g.CustomDefault, "CustomDefault should be non-nil when key is present")
+			} else {
+				assert.Nil(t, g.CustomDefault, "CustomDefault should be nil when key is absent")
+			}
 		})
 	}
+}
+
+func TestGoStructConfig_Unmarshal_CustomDefault_Name(t *testing.T) {
+	parser := confmap.NewFromStringMap(map[string]any{
+		"custom_default": map[string]any{"name": "./internal/metadata.DefaultMetricsBuilderConfig"},
+	})
+	var g GoStructConfig
+	require.NoError(t, g.Unmarshal(parser))
+	require.NotNil(t, g.CustomDefault)
+	assert.Equal(t, "./internal/metadata.DefaultMetricsBuilderConfig", g.CustomDefault.Name)
 }

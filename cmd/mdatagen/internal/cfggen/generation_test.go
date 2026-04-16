@@ -967,6 +967,7 @@ func TestWithCfgFns(t *testing.T) {
 	require.Contains(t, result, "mapCustomDefaults")
 	require.Contains(t, result, "hasDefaultValue")
 	require.Contains(t, result, "publicType")
+	require.Contains(t, result, "embeddedName")
 }
 
 func TestResolveGoType_CustomTypeFormatError(t *testing.T) {
@@ -1457,6 +1458,104 @@ func TestMapCustomDefaults_ArrayOfObjectsOverrides(t *testing.T) {
 
 func TestMapCustomDefaults_EmptyInput(t *testing.T) {
 	require.Empty(t, MapCustomDefaults(&ConfigMetadata{Type: "string"}, nil, "", ""))
+}
+
+func TestFormatDefaultValue_CustomDefault_WithExplicitName(t *testing.T) {
+	// When CustomDefault.Name is set, FormatDefaultValue should call that function.
+	rootPkg := "go.opentelemetry.io/collector"
+	compPkg := "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"
+	md := &ConfigMetadata{
+		Type: "object",
+		GoStruct: GoStructConfig{
+			CustomDefault: &CustomDefaultConfig{
+				Name: "./internal/metadata.DefaultMetricsBuilderConfig",
+			},
+		},
+	}
+
+	result := FormatDefaultValue(md, "MetricsBuilderConfig", nil, rootPkg, compPkg)
+	require.Equal(t, "metadata.DefaultMetricsBuilderConfig()", result)
+}
+
+func TestFormatDefaultValue_CustomDefault_WithoutName(t *testing.T) {
+	// When CustomDefault is set but Name is empty, FormatDefaultValue should
+	// generate a "NewDefault<FieldName>()" call.
+	md := &ConfigMetadata{
+		Type: "object",
+		GoStruct: GoStructConfig{
+			CustomDefault: &CustomDefaultConfig{},
+		},
+	}
+
+	result := FormatDefaultValue(md, "MyConfig", nil, "", "")
+	require.Equal(t, "NewDefaultMyConfig()", result)
+}
+
+func TestFormatDefaultValue_CustomDefault_Pointer(t *testing.T) {
+	rootPkg := "go.opentelemetry.io/collector"
+	compPkg := "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"
+	md := &ConfigMetadata{
+		Type:      "object",
+		IsPointer: true,
+		GoStruct: GoStructConfig{
+			CustomDefault: &CustomDefaultConfig{
+				Name: "./internal/metadata.DefaultMetricsBuilderConfig",
+			},
+		},
+	}
+
+	result := FormatDefaultValue(md, "MetricsBuilderConfig", nil, rootPkg, compPkg)
+	require.Equal(t, "&metadata.DefaultMetricsBuilderConfig()", result)
+}
+
+func TestExtractImports_CustomDefault(t *testing.T) {
+	rootPkg := "go.opentelemetry.io/collector"
+	compPkg := "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"
+	md := &ConfigMetadata{
+		Type: "object",
+		AllOf: []*ConfigMetadata{
+			{
+				ResolvedFrom: "./internal/metadata.metrics_builder_config",
+				GoStruct: GoStructConfig{
+					CustomDefault: &CustomDefaultConfig{
+						Name: "./internal/metadata.DefaultMetricsBuilderConfig",
+					},
+				},
+			},
+		},
+	}
+
+	result, err := ExtractImports(md, rootPkg, compPkg)
+	require.NoError(t, err)
+	require.Contains(t, result, "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper/internal/metadata")
+}
+
+func TestExtractImports_CustomDefault_EmptyName(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"cfg": {
+				Type: "object",
+				GoStruct: GoStructConfig{
+					CustomDefault: &CustomDefaultConfig{},
+				},
+			},
+		},
+	}
+
+	result, err := ExtractImports(md, "", "")
+	require.NoError(t, err)
+	require.Empty(t, result)
+}
+
+func TestNewCfgFns_EmbeddedName(t *testing.T) {
+	fns := NewCfgFns("go.opentelemetry.io/collector", "go.opentelemetry.io/collector/comp")
+	embeddedName := fns["embeddedName"].(func(string) string)
+
+	require.Equal(t, "MetricsBuilderConfig", embeddedName("./internal/metadata.metrics_builder_config"))
+	require.Equal(t, "ControllerConfig", embeddedName("/scraper/scraperhelper.controller_config"))
+
+	require.Panics(t, func() { embeddedName("") })
 }
 
 func TestNewCfgFns_DefaultHelpers(t *testing.T) {

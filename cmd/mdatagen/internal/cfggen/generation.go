@@ -58,6 +58,14 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return typeName
 		},
+		"embeddedName": func(ref string) string {
+			if ref == "" {
+				panic("attempted to use embedded name with an empty ref")
+			}
+			refDesc := NewRef(ref)
+			name, _ := helpers.FormatIdentifier(refDesc.defName, true)
+			return name
+		},
 		"formatDefaultValue": func(md *ConfigMetadata, name string, defaultValue any) string {
 			return FormatDefaultValue(md, name, defaultValue, rootPackage, componentPackage)
 		},
@@ -196,6 +204,16 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 
 	if md.IsOptional {
 		imports["go.opentelemetry.io/collector/config/configoptional"] = true
+	}
+
+	if md.GoStruct.CustomDefault != nil {
+		fnRef := md.GoStruct.CustomDefault.Name
+		if fnRef != "" {
+			refDesc, err := ResolveGoTypeRef(md.GoStruct.CustomDefault.Name, rootPackage, componentPackage)
+			if err == nil {
+				imports[refDesc.ImportPath] = true
+			}
+		}
 	}
 
 	if md.ResolvedFrom != "" {
@@ -427,7 +445,21 @@ func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, co
 }
 
 func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue any, rootPackage, componentPackage string) string {
-	exp := formatSimpleValue(md, name, defaultValue, rootPackage, componentPackage)
+	var exp string
+	if md.GoStruct.CustomDefault != nil {
+		fnName := "NewDefault" + name
+		if md.GoStruct.CustomDefault.Name != "" {
+			refDesc, err := ResolveGoTypeRef(md.GoStruct.CustomDefault.Name, rootPackage, componentPackage)
+			if err != nil {
+				panic("Failed to resolve custom default function: " + err.Error())
+			}
+
+			fnName = refDesc.String()
+		}
+		exp = fnName + "()"
+	} else {
+		exp = formatSimpleValue(md, name, defaultValue, rootPackage, componentPackage)
+	}
 	if md.IsPointer {
 		exp = "&" + exp
 	}
