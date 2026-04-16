@@ -75,7 +75,7 @@ type Distribution struct {
 	BuildTags               string `mapstructure:"build_tags"`
 	DebugCompilation        bool   `mapstructure:"debug_compilation"`
 	CGoEnabled              bool   `mapstructure:"cgo_enabled"`
-	UseRelativeReplacePaths bool   `mapstructure:"use_relative_replace_paths"`
+	UseAbsoluteReplacePaths bool   `mapstructure:"use_absolute_replace_paths"`
 }
 
 // Module represents a receiver, exporter, processor or extension for the distribution
@@ -280,7 +280,9 @@ func (c *Config) parseModules(mods []Module, usedNames map[string]int) ([]Module
 				return mods, fmt.Errorf("failed to resolve absolute path for %s: %w", mod.Path, err)
 			}
 
-			if c.Distribution.UseRelativeReplacePaths {
+			if c.Distribution.UseAbsoluteReplacePaths {
+				mod.Path = absPath
+			} else {
 				absOutputPath, err := filepath.Abs(c.Distribution.OutputPath)
 				if err != nil {
 					return mods, fmt.Errorf("failed to resolve absolute path for output dir %s: %w", c.Distribution.OutputPath, err)
@@ -289,8 +291,6 @@ func (c *Config) parseModules(mods []Module, usedNames map[string]int) ([]Module
 				if err != nil {
 					return mods, fmt.Errorf("failed to make path relative to output dir: %w", err)
 				}
-			} else {
-				mod.Path = absPath
 			}
 			mod.Path = filepath.ToSlash(mod.Path)
 

@@ -174,6 +174,9 @@ func TestInvalidConverter(t *testing.T) {
 func TestRelativePath(t *testing.T) {
 	// prepare
 	cfg := Config{
+		Distribution: Distribution{
+			UseAbsoluteReplacePaths: true,
+		},
 		Extensions: []Module{{
 			GoMod: "some-module",
 			Path:  "./templates",
@@ -398,11 +401,10 @@ func TestSkipsNilFieldValidation(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 }
 
-func TestParseModulesRelativePathFlag(t *testing.T) {
+func TestParseModulesDefaultRelativePath(t *testing.T) {
 	cfg := Config{
 		Distribution: Distribution{
-			OutputPath:              "./output",
-			UseRelativeReplacePaths: true,
+			OutputPath: "./output",
 		},
 		Extensions: []Module{{
 			GoMod: "some-module",
@@ -414,4 +416,25 @@ func TestParseModulesRelativePathFlag(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "../templates", cfg.Extensions[0].Path)
+}
+
+func TestParseModulesAbsoluteReplacePathsFlag(t *testing.T) {
+	cfg := Config{
+		Distribution: Distribution{
+			OutputPath:              "./output",
+			UseAbsoluteReplacePaths: true,
+		},
+		Extensions: []Module{{
+			GoMod: "some-module",
+			Path:  "./templates",
+		}},
+	}
+
+	err := cfg.ParseModules()
+	require.NoError(t, err)
+
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+	expectedPath := filepath.ToSlash(filepath.Join(cwd, "templates"))
+	assert.Equal(t, expectedPath, cfg.Extensions[0].Path)
 }
