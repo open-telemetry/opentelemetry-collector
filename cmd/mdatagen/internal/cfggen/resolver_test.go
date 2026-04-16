@@ -379,18 +379,19 @@ func TestResolver_ResolveSchema_DurationFormat(t *testing.T) {
 	result, err := resolver.ResolveSchema(src)
 	require.NoError(t, err)
 
-	// Check timeout field - should have pattern instead of format
+	// Check timeout field - format should be cleared, GoType and Pattern set
 	require.NotNil(t, result.Properties["timeout"])
 	require.Equal(t, "string", result.Properties["timeout"].Type)
 	require.Empty(t, result.Properties["timeout"].Format, "format should be cleared")
+	require.Equal(t, "time.Duration", result.Properties["timeout"].GoType)
 	require.Equal(t, `^([0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$`, result.Properties["timeout"].Pattern)
-	require.Contains(t, result.Properties["timeout"].Description, "duration format")
-	require.Contains(t, result.Properties["timeout"].Description, "Request timeout")
+	require.Equal(t, "Request timeout", result.Properties["timeout"].Description)
 
-	// Check interval field - should have pattern and auto-generated description hint
+	// Check interval field - format should be cleared, GoType and Pattern set
 	require.NotNil(t, result.Properties["interval"])
 	require.Equal(t, "string", result.Properties["interval"].Type)
 	require.Empty(t, result.Properties["interval"].Format)
+	require.Equal(t, "time.Duration", result.Properties["interval"].GoType)
 	require.Equal(t, `^([0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$`, result.Properties["interval"].Pattern)
 }
 
