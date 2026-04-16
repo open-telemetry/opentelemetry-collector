@@ -293,6 +293,12 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			respCode: http.StatusOK,
 		},
 		{
+			name:     "IdentityEncoding",
+			encoding: "identity",
+			reqBody:  bytes.NewBuffer(testBody),
+			respCode: http.StatusOK,
+		},
+		{
 			name:     "InvalidDeflate",
 			encoding: "deflate",
 			reqBody:  bytes.NewBuffer(testBody),

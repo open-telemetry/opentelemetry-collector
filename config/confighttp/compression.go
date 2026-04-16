@@ -25,7 +25,7 @@ import (
 )
 
 func defaultCompressionAlgorithms() []string {
-	return []string{"", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4", "x-snappy-framed"}
+	return []string{"", "identity", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4", "x-snappy-framed"}
 }
 
 type compressRoundTripper struct {
@@ -63,6 +63,10 @@ func (pzrc *pooledZstdReadCloser) Close() error {
 var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, error){
 	"": func(io.ReadCloser) (io.ReadCloser, error) {
 		// Not a compressed payload. Nothing to do.
+		return nil, nil
+	},
+	"identity": func(io.ReadCloser) (io.ReadCloser, error) {
+		// Per RFC 9110, "identity" means no encoding. Same as empty string.
 		return nil, nil
 	},
 	"gzip": func(body io.ReadCloser) (io.ReadCloser, error) {
