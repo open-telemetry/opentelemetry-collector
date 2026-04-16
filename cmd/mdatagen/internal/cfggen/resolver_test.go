@@ -1225,13 +1225,13 @@ func TestResolver_ResolveSchema_PreservesIntAndFloatPointers(t *testing.T) {
 
 	score := result.Properties["score"]
 	require.NotNil(t, score.Minimum)
-	require.Equal(t, minimum, *score.Minimum)
+	require.InEpsilon(t, minimum, *score.Minimum, 1e-9)
 	require.NotNil(t, score.Maximum)
-	require.Equal(t, maximum, *score.Maximum)
+	require.InEpsilon(t, maximum, *score.Maximum, 1e-9)
 	require.NotNil(t, score.ExclusiveMinimum)
-	require.Equal(t, exclMin, *score.ExclusiveMinimum)
+	require.InDelta(t, exclMin, *score.ExclusiveMinimum, 1e-9)
 	require.NotNil(t, score.ExclusiveMaximum)
-	require.Equal(t, exclMax, *score.ExclusiveMaximum)
+	require.InEpsilon(t, exclMax, *score.ExclusiveMaximum, 1e-9)
 	require.NotNil(t, score.MultipleOf)
-	require.Equal(t, multipleOf, *score.MultipleOf)
+	require.InEpsilon(t, multipleOf, *score.MultipleOf, 1e-9)
 }
