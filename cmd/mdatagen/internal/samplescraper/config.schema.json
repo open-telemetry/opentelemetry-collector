@@ -592,6 +592,7 @@
     "job_name": {
       "description": "Name of the scrape job, used to identify the source in telemetry.",
       "type": "string",
+      "default": "test_job",
       "pattern": "^[a-zA-Z0-9_.-]+$"
     },
     "targets": {

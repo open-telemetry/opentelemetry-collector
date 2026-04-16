@@ -79,6 +79,7 @@ func (c *Config) Validate() error {
 
 func createDefaultConfig() component.Config {
 	cfg := Config{}
+	cfg.JobName = "test_job"
 	cfg.Targets = &[]TargetsItem{NewDefaultTargetsItem()}
 
 	return &cfg

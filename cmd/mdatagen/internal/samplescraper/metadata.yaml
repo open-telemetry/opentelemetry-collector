@@ -36,6 +36,7 @@ config:
       minLength: 1
       maxLength: 255
       pattern: "^[a-zA-Z0-9_.-]+$"
+      default: "test_job"
     targets:
       description: List of targets to scrape metrics from.
       x-pointer: true
