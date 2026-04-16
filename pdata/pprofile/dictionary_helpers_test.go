@@ -417,9 +417,11 @@ func TestConvertMapToReferencesExistingKeyRef(t *testing.T) {
 
 	convertKeyValueToReferences(getStringIndex, mapKeyValues(attrs))
 
-	// KeyStrindex should remain unchanged
+	// Key is set, so KeyStrindex must be updated to the new index
 	kv := &(*mapOrig)[0]
-	assert.Equal(t, int32(5), kv.KeyStrindex)
+	assert.Equal(t, int32(99), kv.KeyStrindex)
+	// Key must be cleared when KeyStrindex is set
+	assert.Empty(t, kv.Key)
 }
 
 func TestResolveAnyValueReferenceNonStringTypes(t *testing.T) {

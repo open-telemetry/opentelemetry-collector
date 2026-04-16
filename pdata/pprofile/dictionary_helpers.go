@@ -120,8 +120,11 @@ func convertKeyValueToReferences(getStringIndex func(string) int32, kvs []intern
 	for i := range kvs {
 		kv := &kvs[i]
 
-		// Convert key to reference
-		if kv.Key != "" && kv.KeyStrindex == 0 {
+		// Convert key to reference. Always re-index when Key is set,
+		// because KeyStrindex may be stale after a MergeTo that changed
+		// the dictionary (resolveProfilesReferences keeps KeyStrindex
+		// set after unmarshal, but MergeTo does not update it).
+		if kv.Key != "" {
 			kv.KeyStrindex = getStringIndex(kv.Key)
 			kv.Key = ""
 		}
