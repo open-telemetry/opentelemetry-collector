@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"strings"
 
+	"go.opentelemetry.io/contrib/bridges/otelzap"
+	otelconf "go.opentelemetry.io/contrib/otelconf/x"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -57,9 +59,9 @@ type Settings struct {
 
 	ReportStatus status.ServiceStatusFunc
 
-	// ComponentLogLevels holds per-component log level overrides, keyed by
-	// component kind then component ID.
-	ComponentLogLevels map[component.Kind]map[component.ID]zapcore.Level
+	// ComponentOtelConf holds per-component OpenTelemetry SDK configurations,
+	// keyed by component kind then component ID.
+	ComponentOtelConf map[component.Kind]map[component.ID]otelconf.OpenTelemetryConfiguration
 }
 
 type Graph struct {
@@ -307,14 +309,18 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 
 		switch n := node.(type) {
 		case *receiverNode:
-			err = n.buildComponent(ctx, telWithComponentLogLevel(set.Telemetry, component.KindReceiver, n.componentID, set.ComponentLogLevels), set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(n.ID()))
+			tel := telWithComponentOtelConf(ctx, set.Telemetry, component.KindReceiver, n.componentID, set.ComponentOtelConf)
+			err = n.buildComponent(ctx, tel, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(n.ID()))
 		case *processorNode:
+			tel := telWithComponentOtelConf(ctx, set.Telemetry, component.KindProcessor, n.componentID, set.ComponentOtelConf)
 			// nextConsumers is guaranteed to be length 1.  Either it is the next processor or it is the fanout node for the exporters.
-			err = n.buildComponent(ctx, telWithComponentLogLevel(set.Telemetry, component.KindProcessor, n.componentID, set.ComponentLogLevels), set.BuildInfo, set.ProcessorBuilder, g.nextConsumers(n.ID())[0])
+			err = n.buildComponent(ctx, tel, set.BuildInfo, set.ProcessorBuilder, g.nextConsumers(n.ID())[0])
 		case *exporterNode:
-			err = n.buildComponent(ctx, telWithComponentLogLevel(set.Telemetry, component.KindExporter, n.componentID, set.ComponentLogLevels), set.BuildInfo, set.ExporterBuilder)
+			tel := telWithComponentOtelConf(ctx, set.Telemetry, component.KindExporter, n.componentID, set.ComponentOtelConf)
+			err = n.buildComponent(ctx, tel, set.BuildInfo, set.ExporterBuilder)
 		case *connectorNode:
-			err = n.buildComponent(ctx, telWithComponentLogLevel(set.Telemetry, component.KindConnector, n.componentID, set.ComponentLogLevels), set.BuildInfo, set.ConnectorBuilder, g.nextConsumers(n.ID()))
+			tel := telWithComponentOtelConf(ctx, set.Telemetry, component.KindConnector, n.componentID, set.ComponentOtelConf)
+			err = n.buildComponent(ctx, tel, set.BuildInfo, set.ConnectorBuilder, g.nextConsumers(n.ID()))
 		case *capabilitiesNode:
 			capability := consumer.Capabilities{
 				// The fanOutNode represents the aggregate capabilities of the exporters in the pipeline.
@@ -637,11 +643,101 @@ func (host *HostWrapper) Report(event *componentstatus.Event) {
 	host.Reporter.ReportStatus(host.InstanceID, event)
 }
 
-func telWithComponentLogLevel(tel component.TelemetrySettings, kind component.Kind, id component.ID, logLevels map[component.Kind]map[component.ID]zapcore.Level) component.TelemetrySettings {
-	if kindLevels, ok := logLevels[kind]; ok {
-		if level, ok := kindLevels[id]; ok {
-			tel.Logger = componentattribute.LoggerWithLevel(tel.Logger, level)
+// telWithComponentOtelConf creates a per-component OTel SDK from the component's
+// telemetry configuration and wraps the zap logger with an otelzap bridge core
+// backed by the SDK's LoggerProvider. This allows per-component log routing
+// (e.g., sending one component's logs to a different OTLP endpoint) and in the
+// future per-component metrics/traces providers.
+func telWithComponentOtelConf(
+	ctx context.Context,
+	tel component.TelemetrySettings,
+	kind component.Kind,
+	id component.ID,
+	otelCfgs map[component.Kind]map[component.ID]otelconf.OpenTelemetryConfiguration,
+) component.TelemetrySettings {
+	kindCfgs, ok := otelCfgs[kind]
+	if !ok {
+		return tel
+	}
+	cfg, ok := kindCfgs[id]
+	if !ok {
+		return tel
+	}
+
+	sdk, err := otelconf.NewSDK(
+		otelconf.WithContext(ctx),
+		otelconf.WithOpenTelemetryConfiguration(cfg),
+	)
+	if err != nil {
+		tel.Logger.Error("failed to create per-component OTel SDK, using service defaults",
+			zap.String("component", id.String()),
+			zap.Error(err),
+		)
+		return tel
+	}
+
+	// Apply log level override from the OTel config's log_level field.
+	if cfg.LogLevel != nil {
+		if zapLevel, ok := severityToZapLevel(*cfg.LogLevel); ok {
+			tel.Logger = componentattribute.LoggerWithLevel(tel.Logger, zapLevel)
 		}
 	}
+
+	scopeName := kind.String() + "/" + id.String()
+	lp := sdk.LoggerProvider()
+	tel.Logger = tel.Logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
+		otelCore := otelzap.NewCore(scopeName, otelzap.WithLoggerProvider(lp))
+		return zapcore.NewTee(c, &safeOtelzapCore{Core: otelCore})
+	}))
+
+	// TODO: shutdown the SDK when the component is stopped. For this PoC we
+	// accept the leak; a production implementation should track the SDK and
+	// call sdk.Shutdown in the graph's ShutdownAll.
+	_ = sdk
+
 	return tel
+}
+
+func severityToZapLevel(sev otelconf.SeverityNumber) (zapcore.Level, bool) {
+	switch sev {
+	case otelconf.SeverityNumberTrace, otelconf.SeverityNumberTrace2,
+		otelconf.SeverityNumberTrace3, otelconf.SeverityNumberTrace4,
+		otelconf.SeverityNumberDebug, otelconf.SeverityNumberDebug2,
+		otelconf.SeverityNumberDebug3, otelconf.SeverityNumberDebug4:
+		return zapcore.DebugLevel, true
+	case otelconf.SeverityNumberInfo, otelconf.SeverityNumberInfo2,
+		otelconf.SeverityNumberInfo3, otelconf.SeverityNumberInfo4:
+		return zapcore.InfoLevel, true
+	case otelconf.SeverityNumberWarn, otelconf.SeverityNumberWarn2,
+		otelconf.SeverityNumberWarn3, otelconf.SeverityNumberWarn4:
+		return zapcore.WarnLevel, true
+	case otelconf.SeverityNumberError, otelconf.SeverityNumberError2,
+		otelconf.SeverityNumberError3, otelconf.SeverityNumberError4:
+		return zapcore.ErrorLevel, true
+	case otelconf.SeverityNumberFatal, otelconf.SeverityNumberFatal2,
+		otelconf.SeverityNumberFatal3, otelconf.SeverityNumberFatal4:
+		return zapcore.FatalLevel, true
+	default:
+		return zapcore.InfoLevel, false
+	}
+}
+
+// safeOtelzapCore wraps an otelzap core so that unsupported zap field types
+// (e.g. the collector's custom InlineMarshaler scope fields) don't panic
+// inside the otelzap bridge.
+type safeOtelzapCore struct {
+	zapcore.Core
+}
+
+func (s *safeOtelzapCore) With(fields []zapcore.Field) (c zapcore.Core) {
+	defer func() {
+		if r := recover(); r != nil {
+			c = s
+		}
+	}()
+	return &safeOtelzapCore{Core: s.Core.With(fields)}
+}
+
+func (s *safeOtelzapCore) Check(ent zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
+	return s.Core.Check(ent, ce)
 }

@@ -1,0 +1,39 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+  otlp/verbose:
+    # Enable debug-level logging for this receiver and export its logs
+    # to the console via the OTel SDK.
+    telemetry:
+      log_level: debug
+      logger_provider:
+        processors:
+          - simple:
+              exporter:
+                console: {}
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4318
+
+exporters:
+  debug:
+  debug/quiet:
+    # Suppress all logs below error for this exporter.
+    telemetry:
+      log_level: error
+      logger_provider:
+        processors:
+          - simple:
+              exporter:
+                console: {}
+
+service:
+  telemetry:
+    logs:
+      level: info
+  pipelines:
+    traces:
+      receivers: [otlp, otlp/verbose]
+      exporters: [debug, debug/quiet]

@@ -7,24 +7,17 @@ import (
 	"errors"
 	"fmt"
 
-	"go.uber.org/zap/zapcore"
+	otelconf "go.opentelemetry.io/contrib/otelconf/x"
 	"golang.org/x/exp/maps"
+	"gopkg.in/yaml.v3"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 )
 
-type componentTelemetryConfig struct {
-	Logs componentLogConfig `mapstructure:"logs"`
-}
-
-type componentLogConfig struct {
-	Level zapcore.Level `mapstructure:"level"`
-}
-
 type Configs[F component.Factory] struct {
-	cfgs      map[component.ID]component.Config
-	logLevels map[component.ID]zapcore.Level
+	cfgs     map[component.ID]component.Config
+	otelCfgs map[component.ID]otelconf.OpenTelemetryConfiguration
 
 	factories map[component.Type]F
 }
@@ -41,7 +34,7 @@ func (c *Configs[F]) Unmarshal(conf *confmap.Conf) error {
 
 	// Prepare resulting map.
 	c.cfgs = make(map[component.ID]component.Config)
-	c.logLevels = make(map[component.ID]zapcore.Level)
+	c.otelCfgs = make(map[component.ID]otelconf.OpenTelemetryConfiguration)
 	// Iterate over raw configs and create a config for each.
 	for id := range rawCfgs {
 		// Find factory based on component kind and type that we read from config source.
@@ -56,20 +49,32 @@ func (c *Configs[F]) Unmarshal(conf *confmap.Conf) error {
 			return errorUnmarshalError(id, err)
 		}
 
-		// Extract per-component telemetry config before component unmarshalling.
-		// The key is stripped so the component's unmarshaller doesn't fail on unknown fields.
+		// Extract per-component OTel SDK configuration before component unmarshalling.
+		// The "telemetry" key follows the OpenTelemetry Configuration schema and can
+		// configure a LoggerProvider (and in the future MeterProvider/TracerProvider)
+		// per component. The key is stripped so the component's unmarshaller doesn't
+		// fail on unknown fields.
 		if sub.IsSet("telemetry") {
 			telSub, err := sub.Sub("telemetry")
 			if err != nil {
 				return errorUnmarshalError(id, err)
 			}
-			var telCfg componentTelemetryConfig
-			if err := telSub.Unmarshal(&telCfg); err != nil {
+			// Use otelconf.ParseYAML instead of confmap.Unmarshal because
+			// the otelconf generated types use `interface{}` with ",remain"
+			// tags that are incompatible with confmap's mapstructure decoder.
+			telMap := telSub.ToStringMap()
+			if _, ok := telMap["file_format"]; !ok {
+				telMap["file_format"] = "0.3"
+			}
+			yamlBytes, err := yaml.Marshal(telMap)
+			if err != nil {
 				return errorUnmarshalError(id, fmt.Errorf("invalid telemetry config: %w", err))
 			}
-			if telSub.IsSet("logs::level") {
-				c.logLevels[id] = telCfg.Logs.Level
+			otelCfg, err := otelconf.ParseYAML(yamlBytes)
+			if err != nil {
+				return errorUnmarshalError(id, fmt.Errorf("invalid telemetry config: %w", err))
 			}
+			c.otelCfgs[id] = *otelCfg
 			sub.Delete("telemetry")
 		}
 
@@ -92,10 +97,10 @@ func (c *Configs[F]) Configs() map[component.ID]component.Config {
 	return c.cfgs
 }
 
-// LogLevels returns per-component log level overrides extracted from the
-// "telemetry::logs::level" key in each component's configuration section.
-func (c *Configs[F]) LogLevels() map[component.ID]zapcore.Level {
-	return c.logLevels
+// OtelConfigs returns per-component OpenTelemetry SDK configurations extracted
+// from the "telemetry" key in each component's configuration section.
+func (c *Configs[F]) OtelConfigs() map[component.ID]otelconf.OpenTelemetryConfiguration {
+	return c.otelCfgs
 }
 
 func errorUnknownType(id component.ID, factories []component.Type) error {

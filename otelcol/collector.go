@@ -223,7 +223,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		ExtensionsConfigs:   cfg.Extensions,
 		ExtensionsFactories: factories.Extensions,
 
-		ComponentLogLevels: cfg.ComponentLogLevels,
+		ComponentOtelConf: cfg.ComponentOtelConf,
 
 		ModuleInfos: service.ModuleInfos{
 			Receiver:  buildModuleInfo(factories.ReceiverModules),

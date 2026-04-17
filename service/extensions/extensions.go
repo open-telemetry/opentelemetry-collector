@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"sort"
 
+	"go.opentelemetry.io/contrib/bridges/otelzap"
+	otelconf "go.opentelemetry.io/contrib/otelconf/x"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -179,9 +181,9 @@ type Settings struct {
 	// Extensions builder for extensions.
 	Extensions builders.Extension
 
-	// ComponentLogLevels holds per-component log level overrides, keyed by
-	// component kind then component ID.
-	ComponentLogLevels map[component.Kind]map[component.ID]zapcore.Level
+	// ComponentOtelConf holds per-component OpenTelemetry SDK configurations,
+	// keyed by component kind then component ID.
+	ComponentOtelConf map[component.Kind]map[component.ID]otelconf.OpenTelemetryConfiguration
 }
 
 type Option interface {
@@ -217,9 +219,23 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 	for _, extID := range cfg {
 		instanceID := componentstatus.NewInstanceID(extID, component.KindExtension)
 		tel := set.Telemetry
-		if kindLevels, ok := set.ComponentLogLevels[component.KindExtension]; ok {
-			if level, ok := kindLevels[extID]; ok {
-				tel.Logger = componentattribute.LoggerWithLevel(tel.Logger, level)
+		if kindCfgs, ok := set.ComponentOtelConf[component.KindExtension]; ok {
+			if cfg, ok := kindCfgs[extID]; ok {
+				sdk, sdkErr := otelconf.NewSDK(
+					otelconf.WithContext(ctx),
+					otelconf.WithOpenTelemetryConfiguration(cfg),
+				)
+				if sdkErr != nil {
+					return nil, fmt.Errorf("failed to create per-component OTel SDK for extension %q: %w", extID, sdkErr)
+				}
+				scopeName := component.KindExtension.String() + "/" + extID.String()
+				tel.Logger = tel.Logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
+					return zapcore.NewTee(c, otelzap.NewCore(scopeName, otelzap.WithLoggerProvider(sdk.LoggerProvider())))
+				}))
+				// TODO: shutdown the SDK when the component is stopped. For this PoC we
+				// accept the leak; a production implementation should track the SDK and
+				// call sdk.Shutdown in the graph's ShutdownAll.
+				_ = sdk
 			}
 		}
 		extSet := extension.Settings{

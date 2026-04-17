@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 
-	"go.uber.org/zap/zapcore"
+	otelconf "go.opentelemetry.io/contrib/otelconf/x"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -66,33 +66,33 @@ func (cm *ConfigProvider) Get(ctx context.Context, factories Factories) (*Config
 		return nil, fmt.Errorf("cannot unmarshal the configuration: %w", err)
 	}
 
-	var logLevels map[component.Kind]map[component.ID]zapcore.Level
+	var otelCfgs map[component.Kind]map[component.ID]otelconf.OpenTelemetryConfiguration
 	for _, entry := range []struct {
-		kind   component.Kind
-		levels map[component.ID]zapcore.Level
+		kind  component.Kind
+		cfgs  map[component.ID]otelconf.OpenTelemetryConfiguration
 	}{
-		{component.KindReceiver, cfg.Receivers.LogLevels()},
-		{component.KindProcessor, cfg.Processors.LogLevels()},
-		{component.KindExporter, cfg.Exporters.LogLevels()},
-		{component.KindConnector, cfg.Connectors.LogLevels()},
-		{component.KindExtension, cfg.Extensions.LogLevels()},
+		{component.KindReceiver, cfg.Receivers.OtelConfigs()},
+		{component.KindProcessor, cfg.Processors.OtelConfigs()},
+		{component.KindExporter, cfg.Exporters.OtelConfigs()},
+		{component.KindConnector, cfg.Connectors.OtelConfigs()},
+		{component.KindExtension, cfg.Extensions.OtelConfigs()},
 	} {
-		if len(entry.levels) > 0 {
-			if logLevels == nil {
-				logLevels = make(map[component.Kind]map[component.ID]zapcore.Level)
+		if len(entry.cfgs) > 0 {
+			if otelCfgs == nil {
+				otelCfgs = make(map[component.Kind]map[component.ID]otelconf.OpenTelemetryConfiguration)
 			}
-			logLevels[entry.kind] = entry.levels
+			otelCfgs[entry.kind] = entry.cfgs
 		}
 	}
 
 	return &Config{
-		Receivers:          cfg.Receivers.Configs(),
-		Processors:         cfg.Processors.Configs(),
-		Exporters:          cfg.Exporters.Configs(),
-		Connectors:         cfg.Connectors.Configs(),
-		Extensions:         cfg.Extensions.Configs(),
-		Service:            cfg.Service,
-		ComponentLogLevels: logLevels,
+		Receivers:         cfg.Receivers.Configs(),
+		Processors:        cfg.Processors.Configs(),
+		Exporters:         cfg.Exporters.Configs(),
+		Connectors:        cfg.Connectors.Configs(),
+		Extensions:        cfg.Extensions.Configs(),
+		Service:           cfg.Service,
+		ComponentOtelConf: otelCfgs,
 	}, nil
 }
 
