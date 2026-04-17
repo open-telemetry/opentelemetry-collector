@@ -44,6 +44,9 @@ import (
 
 var errMetadataNotFound = errors.New("no request metadata found")
 
+// DefaultBalancerName is the name of the default load balancer.
+const DefaultBalancerName = "round_robin"
+
 // KeepaliveClientConfig exposes the keepalive.ClientParameters to be used by the exporter.
 // Refer to the original data-structure for the meaning of each parameter:
 // https://godoc.org/google.golang.org/grpc/keepalive#ClientParameters
@@ -64,8 +67,10 @@ func NewDefaultKeepaliveClientConfig() KeepaliveClientConfig {
 }
 
 // BalancerName returns a string with default load balancer value
+//
+// Deprecated[v0.151.0]: Use the DefaultBalancerName constant instead.
 func BalancerName() string {
-	return "round_robin"
+	return DefaultBalancerName
 }
 
 // ClientConfig defines common settings for a gRPC client configuration.
@@ -120,7 +125,7 @@ func NewDefaultClientConfig() ClientConfig {
 	return ClientConfig{
 		TLS:          configtls.NewDefaultClientConfig(),
 		Keepalive:    configoptional.Some(NewDefaultKeepaliveClientConfig()),
-		BalancerName: BalancerName(),
+		BalancerName: DefaultBalancerName,
 	}
 }
 

@@ -65,7 +65,7 @@ func TestNewDefaultClientConfig(t *testing.T) {
 	expected := ClientConfig{
 		TLS:          configtls.NewDefaultClientConfig(),
 		Keepalive:    configoptional.Some(keepalive),
-		BalancerName: BalancerName(),
+		BalancerName: DefaultBalancerName,
 	}
 
 	result := NewDefaultClientConfig()
