@@ -1,3 +1,9 @@
 type: consumererror/xconsumererror
 parent: consumererror
 github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  class: pkg
+  stability:
+    alpha: [profiles]

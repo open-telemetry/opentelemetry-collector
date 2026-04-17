@@ -1,3 +1,7 @@
 type: extensionauth/extensionauthtest
 parent: extensionauth
 github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  class: pkg

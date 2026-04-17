@@ -1,3 +1,7 @@
 type: otelcol/otelcoltest
 parent: otelcol
 github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  class: pkg
