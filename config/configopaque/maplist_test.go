@@ -11,7 +11,6 @@ import (
 
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 const headersList = `
@@ -56,7 +55,7 @@ func TestMapListDuality(t *testing.T) {
 	require.NoError(t, err)
 	var tc1 testConfig
 	require.NoError(t, conf1.Unmarshal(&tc1))
-	assert.NoError(t, xconfmap.Validate(&tc1))
+	assert.NoError(t, confmap.Validate(&tc1))
 
 	retrieved2, err := confmap.NewRetrievedFromYAML([]byte(headersMap))
 	require.NoError(t, err)
@@ -64,7 +63,7 @@ func TestMapListDuality(t *testing.T) {
 	require.NoError(t, err)
 	var tc2 testConfig
 	require.NoError(t, conf2.Unmarshal(&tc2))
-	assert.NoError(t, xconfmap.Validate(&tc2))
+	assert.NoError(t, confmap.Validate(&tc2))
 
 	assert.Equal(t, tc1, tc2)
 }
@@ -98,7 +97,7 @@ func TestMapListValidate(t *testing.T) {
 	require.NoError(t, err)
 	var tc testConfig
 	require.NoError(t, conf.Unmarshal(&tc))
-	require.EqualError(t, xconfmap.Validate(&tc), `headers: duplicate keys in map-style list: [foo]`)
+	require.EqualError(t, confmap.Validate(&tc), `headers: duplicate keys in map-style list: [foo]`)
 }
 
 func TestMapListMethods(t *testing.T) {

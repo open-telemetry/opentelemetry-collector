@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -37,7 +36,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NoError(t, cm.Unmarshal(&cfg))
-	require.NoError(t, xconfmap.Validate(&cfg))
+	require.NoError(t, confmap.Validate(&cfg))
 	assert.Equal(t,
 		&Config{
 			TimeoutConfig: exporterhelper.TimeoutConfig{
@@ -94,7 +93,7 @@ func TestUnmarshalDefaultBatchConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NoError(t, cm.Unmarshal(&cfg))
-	require.NoError(t, xconfmap.Validate(&cfg))
+	require.NoError(t, confmap.Validate(&cfg))
 	assert.Equal(t,
 		&Config{
 			TimeoutConfig: exporterhelper.TimeoutConfig{
@@ -170,7 +169,7 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 			sub, err := cm.Sub(tt.name)
 			require.NoError(t, err)
 			assert.NoError(t, sub.Unmarshal(&cfg))
-			assert.ErrorContains(t, xconfmap.Validate(cfg), tt.errorMsg)
+			assert.ErrorContains(t, confmap.Validate(cfg), tt.errorMsg)
 		})
 	}
 }
@@ -179,12 +178,12 @@ func TestValidDNSEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = "dns://authority/backend.example.com:4317"
-	assert.NoError(t, xconfmap.Validate(cfg))
+	assert.NoError(t, confmap.Validate(cfg))
 }
 
 func TestValidUnixSocketEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = "unix:///my/unix/socket.sock"
-	assert.NoError(t, xconfmap.Validate(cfg))
+	assert.NoError(t, confmap.Validate(cfg))
 }
