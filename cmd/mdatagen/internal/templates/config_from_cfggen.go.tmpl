@@ -55,8 +55,8 @@ import (
         }
     {{- end }}
 
-    // NewDefault{{ $typeName }} returns a new {{ $typeName }} with default values consistent with the annotations in the schema.
     {{- if hasDefaultValue $def }}
+    // NewDefault{{ $typeName }} returns a new {{ $typeName }} with default values consistent with the annotations in the schema.
     func NewDefault{{ $typeName }}() {{ $typeName }} {
     cfg := {{ $typeName }}{}
 
