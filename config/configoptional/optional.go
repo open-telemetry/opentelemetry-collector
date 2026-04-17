@@ -246,10 +246,10 @@ func (o Optional[T]) Marshal(conf *confmap.Conf) error {
 	return nil
 }
 
-var _ xconfmap.Validator = (*Optional[any])(nil)
+var _ confmap.Validator = (*Optional[any])(nil)
 
-// Validate implements [xconfmap.Validator]. This is required because the
-// private fields in [xconfmap.Validator] can't be seen by the reflection used
+// Validate implements [confmap.Validator]. This is required because the
+// private fields in [confmap.Validator] can't be seen by the reflection used
 // by [xconfmap.Validate], and therefore we have to continue the validation
 // chain manually. This method isn't meant to be called directly, and should
 // generally only be called by [xconfmap.Validate].

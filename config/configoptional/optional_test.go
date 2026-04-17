@@ -771,7 +771,7 @@ func (invalid) Validate() error {
 	return errors.New("invalid")
 }
 
-var _ xconfmap.Validator = invalid{}
+var _ confmap.Validator = invalid{}
 
 type hasNested struct {
 	CouldBe Optional[invalid]
@@ -794,7 +794,7 @@ type validatedConfig struct {
 	Some    Optional[someConfig]     `mapstructure:"some"`
 }
 
-var _ xconfmap.Validator = (*optionalConfig)(nil)
+var _ confmap.Validator = (*optionalConfig)(nil)
 
 type optionalConfig struct {
 	StringVal string `mapstructure:"string_val"`

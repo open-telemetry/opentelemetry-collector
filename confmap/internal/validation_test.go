@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package xconfmap
+package internal // import "go.opentelemetry.io/collector/confmap/internal"
 
 import (
 	"errors"
@@ -109,6 +109,22 @@ type sliceTypeAlias []configChildSlice
 
 func (sliceTypeAlias) Validate() error {
 	return errors.New("sliceTypeAlias error")
+}
+
+type configWithArray struct {
+	Child [2]errValidateConfig
+}
+
+type configWithNilPtr struct {
+	Child *errValidateConfig
+}
+
+type configWithUnexported struct {
+	unexported errValidateConfig
+}
+
+type configWithEmbedded struct {
+	errValidateConfig
 }
 
 func TestValidateConfig(t *testing.T) {
@@ -240,7 +256,7 @@ func TestValidateConfig(t *testing.T) {
 		{
 			name:     "child map key pointer",
 			cfg:      &configChildMapKey{ChildPtr: map[*errType]string{newErrType("child map key pointer"): ""}},
-			expected: errors.New("childptr::[*xconfmap.errType key]: child map key pointer"),
+			expected: errors.New("childptr::[*internal.errType key]: child map key pointer"),
 		},
 		{
 			name:     "map with stringified non-string key type",
@@ -280,7 +296,7 @@ func TestValidateConfig(t *testing.T) {
 		{
 			name:     "nested map key error",
 			cfg:      configDeeplyNested{MapKeyChild: map[configChildStruct]string{{Child: errValidateConfig{err: errors.New("child key error")}}: "val"}},
-			expected: errors.New("mapkeychild::[xconfmap.configChildStruct key]::child: child key error"),
+			expected: errors.New("mapkeychild::[internal.configChildStruct key]::child: child key error"),
 		},
 		{
 			name:     "nested map value error",
@@ -307,6 +323,39 @@ func TestValidateConfig(t *testing.T) {
 			cfg:      sliceTypeAlias{},
 			expected: errors.New("sliceTypeAlias error"),
 		},
+		{
+			name:     "fixed-size array element error",
+			cfg:      configWithArray{Child: [2]errValidateConfig{{}, {err: errors.New("array error")}}},
+			expected: errors.New("child::1: array error"),
+		},
+		{
+			name:     "nil pointer field",
+			cfg:      configWithNilPtr{},
+			expected: nil,
+		},
+		{
+			name:     "unexported field skipped",
+			cfg:      configWithUnexported{unexported: errValidateConfig{err: errors.New("should be skipped")}},
+			expected: nil,
+		},
+		{
+			// errValidateConfig is an unexported type, so the embedded field is
+			// skipped by the IsExported() check in field traversal. The error is
+			// still surfaced because *configWithEmbedded implements Validator via
+			// the promoted method, so it is caught at the struct level with no
+			// path prefix.
+			name:     "embedded unexported struct field error",
+			cfg:      configWithEmbedded{errValidateConfig: errValidateConfig{err: errors.New("embedded error")}},
+			expected: errors.New("embedded error"),
+		},
+		{
+			name: "multiple fields failing",
+			cfg: configChildStruct{
+				Child:    errValidateConfig{err: errors.New("child error")},
+				ChildPtr: &errValidateConfig{err: errors.New("childptr error")},
+			},
+			expected: errors.New("child: child error\nchildptr: childptr error"),
+		},
 	}
 
 	for _, tt := range tests {
@@ -320,4 +369,22 @@ func TestValidateConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPathErrorIsSingle(t *testing.T) {
+	sentinel := errors.New("sentinel error")
+	pe := pathError{err: sentinel, path: []string{"field"}}
+	assert.ErrorIs(t, pe, sentinel)
+}
+
+func TestValidateErrorIsMultiple(t *testing.T) {
+	err1 := errors.New("first error")
+	err2 := errors.New("second error")
+	cfg := configChildStruct{
+		Child:    errValidateConfig{err: err1},
+		ChildPtr: &errValidateConfig{err: err2},
+	}
+	err := Validate(cfg)
+	assert.ErrorIs(t, err, err1)
+	assert.ErrorIs(t, err, err2)
 }
