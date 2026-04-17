@@ -1,0 +1,19 @@
+type: metric
+
+status:
+  class: receiver
+  stability:
+    beta: [traces, logs, metrics]
+
+telemetry:
+  metrics:
+    request_size:
+      description: Size of requests in bytes
+      unit: By
+      enabled: true
+      stability: alpha
+      histogram:
+        value_type: double
+        aggregation: exponential
+        max_size: 160
+        max_scale: 10

@@ -179,6 +179,18 @@ func TestValidate(t *testing.T) {
 			name:    "testdata/entity_metrics_events_valid.yaml",
 			wantErr: "",
 		},
+		{
+			name:    "testdata/with_exponential_histogram_telemetry.yaml",
+			wantErr: "",
+		},
+		{
+			name:    "testdata/invalid_exponential_histogram_with_boundaries.yaml",
+			wantErr: "bucket_boundaries must not be set when aggregation is \"exponential\"",
+		},
+		{
+			name:    "testdata/invalid_histogram_aggregation.yaml",
+			wantErr: "invalid aggregation \"invalid_aggregation_type\"",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -273,6 +273,14 @@ func TestRunContents(t *testing.T) {
 			yml:        "with_invalid_config_ref.yaml",
 			wantRunErr: true,
 		},
+		{
+			yml:                        "with_exponential_histogram_telemetry.yaml",
+			wantStatusGenerated:        true,
+			wantTelemetryGenerated:     true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
+			wantLogsGenerated:          true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.yml, func(t *testing.T) {
@@ -1183,6 +1191,50 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 			require.Equal(t, tt.expected, string(actual))
 		})
 	}
+}
+
+func TestGenerateTelemetryMetadata_ExponentialHistogram(t *testing.T) {
+	unit := "By"
+	md := Metadata{
+		Type: "foo",
+		Status: &Status{
+			Stability:     map[component.StabilityLevel][]string{component.StabilityLevelBeta: {"metrics"}},
+			Distributions: []string{"contrib"},
+			Class:         "receiver",
+		},
+		Telemetry: Telemetry{
+			Metrics: map[MetricName]Metric{
+				"request_size": {
+					Signal: Signal{
+						Enabled:     true,
+						Description: "Size of requests",
+						Stability:   component.StabilityLevelAlpha,
+					},
+					Unit: &unit,
+					Histogram: &Histogram{
+						Aggregation: HistogramAggregationExponential,
+						MaxSize:     160,
+						MaxScale:    10,
+					},
+				},
+			},
+		},
+	}
+
+	tmpdir := t.TempDir()
+	err := generateFile("templates/telemetry.go.tmpl",
+		filepath.Join(tmpdir, "generated_telemetry.go"), md, "metadata", "go.opentelemetry.io/collector")
+	require.NoError(t, err)
+
+	actual, err := os.ReadFile(filepath.Clean(filepath.Join(tmpdir, "generated_telemetry.go")))
+	require.NoError(t, err)
+
+	content := string(actual)
+	assert.Contains(t, content, `sdkmetric "go.opentelemetry.io/otel/sdk/metric"`)
+	assert.Contains(t, content, "func Views()")
+	assert.Contains(t, content, "sdkmetric.AggregationBase2ExponentialHistogram")
+	assert.Contains(t, content, "MaxSize:  160")
+	assert.Contains(t, content, "MaxScale: 10")
 }
 
 func TestGenerateConfigSchema_LocalizesSameRootRefs(t *testing.T) {
