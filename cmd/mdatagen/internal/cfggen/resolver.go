@@ -6,7 +6,6 @@ package cfggen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cf
 import (
 	"fmt"
 	"reflect"
-	"strings"
 )
 
 const (
@@ -52,30 +51,48 @@ func (r *Resolver) ResolveSchema(src *ConfigMetadata) (*ConfigMetadata, error) {
 	return target, nil
 }
 
-// transformDurationFormat converts JSON Schema format: duration to Go duration pattern.
-// JSON Schema duration format expects ISO 8601 (e.g., "PT30S"), but Go uses a different
-// format (e.g., "30s", "1h30m"). This function replaces the format with a pattern that
-// validates Go duration strings.
-func transformDurationFormat(md *ConfigMetadata) {
-	if md.Type == "string" && md.Format == "duration" {
-		md.Format = ""
-		md.Pattern = goDurationPattern
-		if md.Description != "" && !strings.Contains(md.Description, "duration") {
-			md.Description += " (duration format, e.g., \"30s\", \"1h30m\")"
-		}
-	}
-}
-
 func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *Ref) error {
 	if current.Ref != "" {
 		resolved, err := r.resolveRef(root, current, origin)
 		if err != nil {
 			return fmt.Errorf("failed to resolve $ref %q: %w", current.Ref, err)
 		}
-		current = resolved
-	}
 
-	transformDurationFormat(current)
+		// Preserve custom extensions defined on the reference node
+		customGoType := current.GoType
+		customIsPointer := current.IsPointer
+		customIsOptional := current.IsOptional
+		customDescription := current.Description
+		customDefault := current.Default
+		customEnum := current.Enum
+
+		// Copy the resolved node
+		newCurrent := *resolved
+		newCurrent.ResolvedFrom = current.Ref
+		newCurrent.GoStruct = current.GoStruct
+
+		// Restore custom extensions if they were explicitly set on the reference
+		if customGoType != "" {
+			newCurrent.GoType = customGoType
+		}
+		if customIsPointer {
+			newCurrent.IsPointer = customIsPointer
+		}
+		if customIsOptional {
+			newCurrent.IsOptional = customIsOptional
+		}
+		if customDescription != "" {
+			newCurrent.Description = customDescription
+		}
+		if customDefault != nil {
+			newCurrent.Default = customDefault
+		}
+		if len(customEnum) > 0 {
+			newCurrent.Enum = customEnum
+		}
+
+		current = &newCurrent
+	}
 
 	currRef := reflect.ValueOf(current).Elem()
 	targetRef := reflect.ValueOf(target).Elem()
@@ -139,6 +156,7 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 			targetField.Set(field)
 		}
 	}
+	enhanceTimeTypes(target)
 	target.Defs = nil // Clear defs after resolution to avoid confusion
 	return nil
 }
@@ -197,4 +215,17 @@ func (r *Resolver) loadExternalRef(ref *Ref) (*ConfigMetadata, error) {
 	}
 
 	return nil, fmt.Errorf("type %q not found in loaded schema for reference %s", ref.DefName(), ref)
+}
+
+func enhanceTimeTypes(md *ConfigMetadata) {
+	if md.Type == "string" {
+		switch md.Format {
+		case "duration":
+			md.Format = ""
+			md.GoType = "time.Duration"
+			md.Pattern = goDurationPattern
+		case "date-time":
+			md.GoType = "time.Time"
+		}
+	}
 }

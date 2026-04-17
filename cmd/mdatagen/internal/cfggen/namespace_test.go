@@ -198,10 +198,22 @@ func TestWithOrigin(t *testing.T) {
 			expected: "go.opentelemetry.io/collector/config/confighttp.target_type",
 		},
 		{
-			name:     "no version propagated when origin has no version",
-			refPath:  "/config/configauth.config",
+			name:     "local relative ref with local absolute resolves to local absolute schema ID",
+			refPath:  "./internal.timeout_config",
+			origin:   "/config/confighttp",
+			expected: "/config/confighttp/internal.timeout_config",
+		},
+		{
+			name:     "local relative ref with external origin resolves to external schema ID",
+			refPath:  "./internal.timeout_config",
 			origin:   "go.opentelemetry.io/collector/config/confighttp",
-			expected: "go.opentelemetry.io/collector/config/configauth.config",
+			expected: "go.opentelemetry.io/collector/config/confighttp/internal.timeout_config",
+		},
+		{
+			name:     "local absolute ref with local absolute origin keeps original schema ID",
+			refPath:  "/config/confighttp.timeout_config",
+			origin:   "/config/confignet.connection_config",
+			expected: "/config/confighttp.timeout_config",
 		},
 	}
 
@@ -294,6 +306,42 @@ func TestRef_URL(t *testing.T) {
 			version:  "main",
 			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/main/processor/batchprocessor/config.schema.yaml",
 		},
+		{
+			name:     "collector pseudo-version uses commit hash",
+			refPath:  "go.opentelemetry.io/collector/scraper/scraperhelper.controller_config",
+			version:  "v0.147.1-0.20260317033252-665ab5d0143d",
+			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/665ab5d0143d/scraper/scraperhelper/config.schema.yaml",
+		},
+		{
+			name:     "pseudo-version with incompatible suffix uses commit hash",
+			refPath:  "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver.config",
+			version:  "v0.95.1-0.20260317033252-665ab5d0143d+incompatible",
+			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/665ab5d0143d/receiver/mysqlreceiver/config.schema.yaml",
+		},
+		{
+			name:     "dirty version uses trimmed version string",
+			refPath:  "go.opentelemetry.io/collector/scraper/scraperhelper.controller_config",
+			version:  "v1.0.0+dirty",
+			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/v1.0.0/scraper/scraperhelper/config.schema.yaml",
+		},
+		{
+			name:     "unrecognized suffix uses raw version string",
+			refPath:  "go.opentelemetry.io/collector/scraper/scraperhelper.controller_config",
+			version:  "v1.0.0-xxx-yyy+dirty",
+			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/v1.0.0-xxx-yyy/scraper/scraperhelper/config.schema.yaml",
+		},
+		{
+			name:     "pre-release version passes through unchanged",
+			refPath:  "go.opentelemetry.io/collector/scraper/scraperhelper.controller_config",
+			version:  "v1.0.0-rc.1",
+			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/v1.0.0-rc.1/scraper/scraperhelper/config.schema.yaml",
+		},
+		{
+			name:     "pre-release tag that looks like a pseudo-version passes through unchanged",
+			refPath:  "go.opentelemetry.io/collector/scraper/scraperhelper.controller_config",
+			version:  "v1.0.0-beta-abc123abcdef",
+			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/v1.0.0-beta-abc123abcdef/scraper/scraperhelper/config.schema.yaml",
+		},
 	}
 
 	for _, tt := range tests {
@@ -338,4 +386,32 @@ func TestNamespaceOf_FallbackLastSlash(t *testing.T) {
 func TestNamespaceOf_NoSlash(t *testing.T) {
 	result := namespaceOf("noslash")
 	require.Empty(t, result)
+}
+
+func TestLocalizeRef(t *testing.T) {
+	tests := []struct {
+		name           string
+		refPath        string
+		importRootPath string
+		expected       string
+	}{
+		{
+			name:           "same root collector ref becomes local absolute",
+			refPath:        "go.opentelemetry.io/collector/filter.config",
+			importRootPath: "go.opentelemetry.io/collector",
+			expected:       "/filter.config",
+		},
+		{
+			name:           "different root ref stays external",
+			refPath:        "go.opentelemetry.io/collector/filter.config",
+			importRootPath: "github.com/open-telemetry/opentelemetry-collector-contrib",
+			expected:       "go.opentelemetry.io/collector/filter.config",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, LocalizeRef(tt.refPath, tt.importRootPath))
+		})
+	}
 }

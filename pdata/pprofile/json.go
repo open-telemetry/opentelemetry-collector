@@ -13,11 +13,24 @@ import (
 // JSONMarshaler marshals pprofile.Profiles to JSON bytes using the OTLP/JSON format.
 type JSONMarshaler struct{}
 
-// MarshalProfiles to the OTLP/JSON format.
+// MarshalProfiles marshals Profiles to OTLP/JSON format bytes.
+// If the input data is read-only, it will be copied to a mutable
+// instance before mutation.
 func (*JSONMarshaler) MarshalProfiles(pd Profiles) ([]byte, error) {
+	// Only copy if data is shared/read-only to avoid unnecessary allocation
+	pdToUse := pd
+	if pd.IsReadOnly() {
+		pdCopy := NewProfiles()
+		pd.CopyTo(pdCopy)
+		pdToUse = pdCopy
+	}
+
+	// Convert strings to references for efficient transmission
+	convertProfilesToReferences(pdToUse)
+
 	dest := json.BorrowStream(nil)
 	defer json.ReturnStream(dest)
-	pd.getOrig().MarshalJSON(dest)
+	pdToUse.getOrig().MarshalJSON(dest)
 	if dest.Error() != nil {
 		return nil, dest.Error()
 	}
@@ -37,5 +50,10 @@ func (*JSONUnmarshaler) UnmarshalProfiles(buf []byte) (Profiles, error) {
 		return Profiles{}, iter.Error()
 	}
 	otlp.MigrateProfiles(pd.getOrig().ResourceProfiles)
+
+	// Resolve all string_value_ref and key_ref to their actual strings
+	// so the pdata API works transparently
+	resolveProfilesReferences(pd)
+
 	return pd, nil
 }

@@ -60,7 +60,7 @@ You can run `cd cmd/mdatagen && $(GOCMD) install .` to install the `mdatagen` to
 
 ### Component Config Documentation
 
-The metadata generator supports automatic generation of configuration schemas for components. 
+The metadata generator supports automatic generation of configuration schemas for components.
 This generates JSON Schema files that enable IDE autocompletion, validation, and documentation for component configuration.
 In the future it will also generate Go config structs and human-readable documentation for configuration options
 
@@ -97,6 +97,94 @@ The `config` section is based on [JSON Schema standard](https://json-schema.org/
 - **References**: Internal (`$ref: definition_name`), external (`$ref: package.path.type`), or relative (`$ref: ./internal/config.type`)
 - **Reusable definitions**: Define common schemas in `$defs` and reference them with `$ref`
 - **Schema composition**: Use `allOf` for complex configurations
+
+### Metrics Builder Configuration
+
+For receivers, scrapers, and other components that emit metrics, `mdatagen` can generate metrics builder
+configuration from `metadata.yaml`.
+
+```yaml
+type: myreceiver
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+
+resource_attributes:
+  transport:
+    description: Transport used by the request.
+    type: string
+    enabled: true
+
+attributes:
+  status_code:
+    description: Response status code.
+    type: int
+    requirement_level: opt_in
+
+metrics:
+  http.server.request.count:
+    enabled: true
+    description: Number of received requests.
+    unit: "{request}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [status_code]
+```
+
+This lets users:
+
+- enable or disable individual metrics
+- enable or disable resource attributes
+- use `metrics_include` and `metrics_exclude` on resource attributes to only emit metrics with matching resource attribute values
+
+### Metric Reaggregation Configuration
+
+Set `reaggregation_enabled: true` to let users reduce metric cardinality by dropping selected metric
+attributes and aggregating the resulting datapoints.
+
+```yaml
+reaggregation_enabled: true
+
+attributes:
+  transport:
+    description: Transport used by the request.
+    type: string
+    requirement_level: recommended
+  status_code:
+    description: Response status code.
+    type: int
+    requirement_level: opt_in
+```
+
+This adds two per-metric settings for metrics that declare attributes:
+
+- `attributes`: the subset of metric attributes to keep in the emitted metric stream
+- `aggregation_strategy`: how collapsed datapoints are merged, using `sum`, `avg`, `min`, or `max`
+
+Defaults:
+
+- sum metrics use `sum`; gauge metrics use `avg`
+- `required` attributes are always kept
+- `recommended` and `conditionally_required` attributes are kept by default, but users can remove them
+- `opt_in` attributes are omitted by default, so that dimension is aggregated unless the user adds it
+
+Example user configuration:
+
+```yaml
+receivers:
+  myreceiver:
+    metrics:
+      http.server.request.count:
+        enabled: true
+        aggregation_strategy: sum
+        attributes: [transport]
+```
+
+In this example, datapoints that only differ by `status_code` are aggregated together, while
+`transport` remains part of the output identity.
 
 ### Feature Gates Documentation
 

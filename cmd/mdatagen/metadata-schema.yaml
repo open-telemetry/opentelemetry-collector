@@ -1,6 +1,9 @@
 # Required: The type of the component - Usually the name. The type and class combined uniquely identify the component (eg. receiver/otlp) or subcomponent (eg. receiver/hostmetricsreceiver/cpu)
 type:
 
+# Optional: A deprecated type that is still available as an alias.
+deprecated_type: string
+
 # Optional: Human-readable display name for the component. Used as the title in generated README files.
 display_name: string
 
@@ -15,6 +18,11 @@ scope_name: string
 
 # Optional: The name of the package that mdatagen generates. If not set, the name "metadata" will be used.
 generated_package_name: string
+
+# Optional: Enables per-metric reaggregation config generation for metrics with attributes.
+# When enabled, generated metrics config includes `aggregation_strategy` and `attributes`
+# fields that let users reduce metric cardinality by choosing which dimensions are kept.
+reaggregation_enabled: bool
 
 # Required for components (Optional for subcomponents): A high-level view of the development status and use of this component
 status:
@@ -163,6 +171,13 @@ resource_attributes:
       # A warning that will be displayed if the resource_attribute is configured by user in any way.
       # Should be used for deprecated optional resource_attributes that will be removed soon.
       if_configured:
+    # Optional: the reference to a semantic convention
+    # Relative path to the semantic convention definition (e.g., "system.md#system-memory-state")
+    # The full URL is constructed using sem_conv_version: {base}/v{version}/docs/registry/attributes/{ref}
+    # An example of a full url is: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/registry/attributes/system.md#system-memory-state
+    semantic_convention:
+      ref:
+
 
 # Optional: array of entity definitions. Entities organize resource attributes into logical entities
 # with identity and description attributes.
@@ -211,6 +226,12 @@ attributes:
     # - recommended (default behavior): the attribute is included by default but can be disabled via configuration.
     # - opt_in: the attribute is not included unless explicitly enabled in user config.
     requirement_level: <required|conditionally_required|recommended|opt_in>
+    # Optional: the reference to a semantic convention
+    # Relative path to the semantic convention definition (e.g., "system.md#system-memory-state")
+    # The full URL is constructed using sem_conv_version: {base}/v{version}/docs/registry/attributes/{ref}
+    # An example of a full url is: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/registry/attributes/system.md#system-memory-state
+    semantic_convention:
+      ref:
 
 # Optional: map of metric names with the key being the metric name and value
 # being described below.
@@ -262,6 +283,9 @@ metrics:
       # Required: migration note
       note:
     # Optional: the reference to a semantic convention
+    # Relative path to the semantic convention definition (e.g., "system/system-metrics.md#metric-systemcputime")
+    # The full URL is constructed using sem_conv_version: {base}/v{version}/docs/{ref}
+    # An example of a full url is: https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/system/system-metrics.md#metric-systemcputime
     semantic_convention:
       ref:
 

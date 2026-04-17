@@ -21,13 +21,13 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/xprocessor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
+	"go.opentelemetry.io/collector/service/internal/metadata"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
 
@@ -311,9 +311,9 @@ func (e errComponent) Shutdown(context.Context) error {
 }
 
 func setObsConsumerGateForTest(t *testing.T, enabled bool) {
-	initial := telemetry.NewPipelineTelemetryGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(telemetry.NewPipelineTelemetryGate.ID(), enabled))
+	initial := metadata.TelemetryNewPipelineTelemetryFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.TelemetryNewPipelineTelemetryFeatureGate.ID(), enabled))
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(telemetry.NewPipelineTelemetryGate.ID(), initial))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.TelemetryNewPipelineTelemetryFeatureGate.ID(), initial))
 	})
 }

@@ -2,8 +2,71 @@
 
 package samplescraper
 
-import _ "go.opentelemetry.io/collector/scraper/scraperhelper"
+import (
+	"errors"
+	"time"
 
-// This is temporary placeholder for the generated config file.
-// The actual content will be generated in upcoming PR.
-// Currently used only to satisfy required imports.
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper/internal/metadata"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
+)
+
+type TargetsItem struct {
+	// ClientConfig defines settings for creating an HTTP client.
+	HTTPClient confighttp.ClientConfig                `mapstructure:"http_client"`
+	Interval   configoptional.Optional[time.Duration] `mapstructure:"interval"`
+	Options    map[string]string                      `mapstructure:"options"`
+}
+
+// Validate validates the TargetsItem fields according to schema annotations.
+func (c *TargetsItem) Validate() error {
+	var err error
+
+	if inner_err := validateHTTPClient(c.HTTPClient); inner_err != nil {
+		err = errors.Join(err, inner_err)
+	}
+	if c.Options == nil || len(c.Options) == 0 {
+		err = errors.Join(err, errors.New("options is required"))
+	}
+
+	return err
+}
+
+// NewDefaultTargetsItem returns a new TargetsItem with default values consistent with the annotations in the schema.
+func NewDefaultTargetsItem() TargetsItem {
+	cfg := TargetsItem{}
+	cfg.Interval = configoptional.Some(10 * time.Second)
+	cfg.Options = map[string]string{"option1": "value1", "option2": "value2"}
+
+	return cfg
+}
+
+// Configuration for the Sample Scraper.
+type Config struct {
+	// MetricsBuilderConfig is a configuration for sample metrics builder.
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	// ControllerConfig defines common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed.
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	// Targets configuration for the scraper.
+	Targets *[]TargetsItem `mapstructure:"targets"`
+}
+
+// Validate validates the Config fields.
+func (c *Config) Validate() error {
+	var err error
+
+	if c.Targets == nil || len(*c.Targets) == 0 {
+		err = errors.Join(err, errors.New("targets is required"))
+	}
+
+	return err
+}
+
+func createDefaultConfig() component.Config {
+	cfg := Config{}
+	cfg.Targets = &[]TargetsItem{NewDefaultTargetsItem()}
+
+	return &cfg
+}

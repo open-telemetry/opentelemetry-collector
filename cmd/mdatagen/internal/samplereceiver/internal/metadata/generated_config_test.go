@@ -27,48 +27,60 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					DefaultMetric: MetricConfig{
+					DefaultMetric: DefaultMetricMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr", "conditional_int_attr", "conditional_string_attr", "opt_in_bool_attr"},
+						EnabledAttributes:   []DefaultMetricMetricAttributeKey{DefaultMetricMetricAttributeKeyStringAttr, DefaultMetricMetricAttributeKeyOverriddenIntAttr, DefaultMetricMetricAttributeKeyEnumAttr, DefaultMetricMetricAttributeKeySliceAttr, DefaultMetricMetricAttributeKeyMapAttr, DefaultMetricMetricAttributeKeyConditionalIntAttr, DefaultMetricMetricAttributeKeyConditionalStringAttr, DefaultMetricMetricAttributeKeyOptInBoolAttr},
 					},
-					DefaultMetricToBeRemoved: MetricConfig{Enabled: true},
-					MetricInputType: MetricConfig{
+					DefaultMetricToBeRemoved: DefaultMetricToBeRemovedMetricConfig{
+						Enabled: true,
+					},
+					MetricInputType: MetricInputTypeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr"},
+						EnabledAttributes:   []MetricInputTypeMetricAttributeKey{MetricInputTypeMetricAttributeKeyStringAttr, MetricInputTypeMetricAttributeKeyOverriddenIntAttr, MetricInputTypeMetricAttributeKeyEnumAttr, MetricInputTypeMetricAttributeKeySliceAttr, MetricInputTypeMetricAttributeKeyMapAttr},
 					},
-					OptionalMetric: MetricConfig{
+					OptionalMetric: OptionalMetricMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"string_attr", "boolean_attr", "boolean_attr2", "conditional_string_attr"},
+						EnabledAttributes:   []OptionalMetricMetricAttributeKey{OptionalMetricMetricAttributeKeyStringAttr, OptionalMetricMetricAttributeKeyBooleanAttr, OptionalMetricMetricAttributeKeyBooleanAttr2, OptionalMetricMetricAttributeKeyConditionalStringAttr},
 					},
-					OptionalMetricEmptyUnit: MetricConfig{
+					OptionalMetricEmptyUnit: OptionalMetricEmptyUnitMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"string_attr", "boolean_attr"},
+						EnabledAttributes:   []OptionalMetricEmptyUnitMetricAttributeKey{OptionalMetricEmptyUnitMetricAttributeKeyStringAttr, OptionalMetricEmptyUnitMetricAttributeKeyBooleanAttr},
 					},
-					ReaggregateMetric: MetricConfig{
+					ReaggregateMetric: ReaggregateMetricMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"string_attr", "boolean_attr"},
+						EnabledAttributes:   []ReaggregateMetricMetricAttributeKey{ReaggregateMetricMetricAttributeKeyStringAttr, ReaggregateMetricMetricAttributeKeyBooleanAttr},
 					},
-					ReaggregateMetricWithRequired: MetricConfig{
+					ReaggregateMetricWithRequired: ReaggregateMetricWithRequiredMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"required_string_attr", "string_attr", "boolean_attr"},
+						EnabledAttributes:   []ReaggregateMetricWithRequiredMetricAttributeKey{ReaggregateMetricWithRequiredMetricAttributeKeyRequiredStringAttr, ReaggregateMetricWithRequiredMetricAttributeKeyStringAttr, ReaggregateMetricWithRequiredMetricAttributeKeyBooleanAttr},
 					},
-					SystemCPUTime: MetricConfig{Enabled: true},
+					SystemCPUTime: SystemCPUTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemCPUTimeMetricAttributeKey{SystemCPUTimeMetricAttributeKeyCpu},
+					},
+					SystemMemoryUsage: SystemMemoryUsageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemMemoryUsageMetricAttributeKey{SystemMemoryUsageMetricAttributeKeyState},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					MapResourceAttr:                  ResourceAttributeConfig{Enabled: true},
-					OptionalResourceAttr:             ResourceAttributeConfig{Enabled: true},
-					SliceResourceAttr:                ResourceAttributeConfig{Enabled: true},
-					StringEnumResourceAttr:           ResourceAttributeConfig{Enabled: true},
-					StringResourceAttr:               ResourceAttributeConfig{Enabled: true},
-					StringResourceAttrDisableWarning: ResourceAttributeConfig{Enabled: true},
-					StringResourceAttrRemoveWarning:  ResourceAttributeConfig{Enabled: true},
-					StringResourceAttrToBeRemoved:    ResourceAttributeConfig{Enabled: true},
+					MapResourceAttr:                       ResourceAttributeConfig{Enabled: true},
+					OptionalResourceAttr:                  ResourceAttributeConfig{Enabled: true},
+					SliceResourceAttr:                     ResourceAttributeConfig{Enabled: true},
+					StringEnumResourceAttr:                ResourceAttributeConfig{Enabled: true},
+					StringResourceAttr:                    ResourceAttributeConfig{Enabled: true},
+					StringResourceAttrDisableWarning:      ResourceAttributeConfig{Enabled: true},
+					StringResourceAttrRemoveWarning:       ResourceAttributeConfig{Enabled: true},
+					StringResourceAttrToBeRemoved:         ResourceAttributeConfig{Enabled: true},
+					StringResourceDisabledAttrToBeRemoved: ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -76,48 +88,60 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					DefaultMetric: MetricConfig{
+					DefaultMetric: DefaultMetricMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr", "conditional_int_attr", "conditional_string_attr", "opt_in_bool_attr"},
+						EnabledAttributes:   []DefaultMetricMetricAttributeKey{DefaultMetricMetricAttributeKeyStringAttr, DefaultMetricMetricAttributeKeyOverriddenIntAttr, DefaultMetricMetricAttributeKeyEnumAttr, DefaultMetricMetricAttributeKeySliceAttr, DefaultMetricMetricAttributeKeyMapAttr, DefaultMetricMetricAttributeKeyConditionalIntAttr, DefaultMetricMetricAttributeKeyConditionalStringAttr, DefaultMetricMetricAttributeKeyOptInBoolAttr},
 					},
-					DefaultMetricToBeRemoved: MetricConfig{Enabled: false},
-					MetricInputType: MetricConfig{
+					DefaultMetricToBeRemoved: DefaultMetricToBeRemovedMetricConfig{
+						Enabled: false,
+					},
+					MetricInputType: MetricInputTypeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr"},
+						EnabledAttributes:   []MetricInputTypeMetricAttributeKey{MetricInputTypeMetricAttributeKeyStringAttr, MetricInputTypeMetricAttributeKeyOverriddenIntAttr, MetricInputTypeMetricAttributeKeyEnumAttr, MetricInputTypeMetricAttributeKeySliceAttr, MetricInputTypeMetricAttributeKeyMapAttr},
 					},
-					OptionalMetric: MetricConfig{
+					OptionalMetric: OptionalMetricMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"string_attr", "boolean_attr", "boolean_attr2", "conditional_string_attr"},
+						EnabledAttributes:   []OptionalMetricMetricAttributeKey{OptionalMetricMetricAttributeKeyStringAttr, OptionalMetricMetricAttributeKeyBooleanAttr, OptionalMetricMetricAttributeKeyBooleanAttr2, OptionalMetricMetricAttributeKeyConditionalStringAttr},
 					},
-					OptionalMetricEmptyUnit: MetricConfig{
+					OptionalMetricEmptyUnit: OptionalMetricEmptyUnitMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"string_attr", "boolean_attr"},
+						EnabledAttributes:   []OptionalMetricEmptyUnitMetricAttributeKey{OptionalMetricEmptyUnitMetricAttributeKeyStringAttr, OptionalMetricEmptyUnitMetricAttributeKeyBooleanAttr},
 					},
-					ReaggregateMetric: MetricConfig{
+					ReaggregateMetric: ReaggregateMetricMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"string_attr", "boolean_attr"},
+						EnabledAttributes:   []ReaggregateMetricMetricAttributeKey{ReaggregateMetricMetricAttributeKeyStringAttr, ReaggregateMetricMetricAttributeKeyBooleanAttr},
 					},
-					ReaggregateMetricWithRequired: MetricConfig{
+					ReaggregateMetricWithRequired: ReaggregateMetricWithRequiredMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"required_string_attr", "string_attr", "boolean_attr"},
+						EnabledAttributes:   []ReaggregateMetricWithRequiredMetricAttributeKey{ReaggregateMetricWithRequiredMetricAttributeKeyRequiredStringAttr, ReaggregateMetricWithRequiredMetricAttributeKeyStringAttr, ReaggregateMetricWithRequiredMetricAttributeKeyBooleanAttr},
 					},
-					SystemCPUTime: MetricConfig{Enabled: false},
+					SystemCPUTime: SystemCPUTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemCPUTimeMetricAttributeKey{SystemCPUTimeMetricAttributeKeyCpu},
+					},
+					SystemMemoryUsage: SystemMemoryUsageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemMemoryUsageMetricAttributeKey{SystemMemoryUsageMetricAttributeKeyState},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					MapResourceAttr:                  ResourceAttributeConfig{Enabled: false},
-					OptionalResourceAttr:             ResourceAttributeConfig{Enabled: false},
-					SliceResourceAttr:                ResourceAttributeConfig{Enabled: false},
-					StringEnumResourceAttr:           ResourceAttributeConfig{Enabled: false},
-					StringResourceAttr:               ResourceAttributeConfig{Enabled: false},
-					StringResourceAttrDisableWarning: ResourceAttributeConfig{Enabled: false},
-					StringResourceAttrRemoveWarning:  ResourceAttributeConfig{Enabled: false},
-					StringResourceAttrToBeRemoved:    ResourceAttributeConfig{Enabled: false},
+					MapResourceAttr:                       ResourceAttributeConfig{Enabled: false},
+					OptionalResourceAttr:                  ResourceAttributeConfig{Enabled: false},
+					SliceResourceAttr:                     ResourceAttributeConfig{Enabled: false},
+					StringEnumResourceAttr:                ResourceAttributeConfig{Enabled: false},
+					StringResourceAttr:                    ResourceAttributeConfig{Enabled: false},
+					StringResourceAttrDisableWarning:      ResourceAttributeConfig{Enabled: false},
+					StringResourceAttrRemoveWarning:       ResourceAttributeConfig{Enabled: false},
+					StringResourceAttrToBeRemoved:         ResourceAttributeConfig{Enabled: false},
+					StringResourceDisabledAttrToBeRemoved: ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -125,7 +149,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(DefaultMetricMetricConfig{}, DefaultMetricToBeRemovedMetricConfig{}, MetricInputTypeMetricConfig{}, OptionalMetricMetricConfig{}, OptionalMetricEmptyUnitMetricConfig{}, ReaggregateMetricMetricConfig{}, ReaggregateMetricWithRequiredMetricConfig{}, SystemCPUTimeMetricConfig{}, SystemMemoryUsageMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -163,27 +187,29 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				MapResourceAttr:                  ResourceAttributeConfig{Enabled: true},
-				OptionalResourceAttr:             ResourceAttributeConfig{Enabled: true},
-				SliceResourceAttr:                ResourceAttributeConfig{Enabled: true},
-				StringEnumResourceAttr:           ResourceAttributeConfig{Enabled: true},
-				StringResourceAttr:               ResourceAttributeConfig{Enabled: true},
-				StringResourceAttrDisableWarning: ResourceAttributeConfig{Enabled: true},
-				StringResourceAttrRemoveWarning:  ResourceAttributeConfig{Enabled: true},
-				StringResourceAttrToBeRemoved:    ResourceAttributeConfig{Enabled: true},
+				MapResourceAttr:                       ResourceAttributeConfig{Enabled: true},
+				OptionalResourceAttr:                  ResourceAttributeConfig{Enabled: true},
+				SliceResourceAttr:                     ResourceAttributeConfig{Enabled: true},
+				StringEnumResourceAttr:                ResourceAttributeConfig{Enabled: true},
+				StringResourceAttr:                    ResourceAttributeConfig{Enabled: true},
+				StringResourceAttrDisableWarning:      ResourceAttributeConfig{Enabled: true},
+				StringResourceAttrRemoveWarning:       ResourceAttributeConfig{Enabled: true},
+				StringResourceAttrToBeRemoved:         ResourceAttributeConfig{Enabled: true},
+				StringResourceDisabledAttrToBeRemoved: ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				MapResourceAttr:                  ResourceAttributeConfig{Enabled: false},
-				OptionalResourceAttr:             ResourceAttributeConfig{Enabled: false},
-				SliceResourceAttr:                ResourceAttributeConfig{Enabled: false},
-				StringEnumResourceAttr:           ResourceAttributeConfig{Enabled: false},
-				StringResourceAttr:               ResourceAttributeConfig{Enabled: false},
-				StringResourceAttrDisableWarning: ResourceAttributeConfig{Enabled: false},
-				StringResourceAttrRemoveWarning:  ResourceAttributeConfig{Enabled: false},
-				StringResourceAttrToBeRemoved:    ResourceAttributeConfig{Enabled: false},
+				MapResourceAttr:                       ResourceAttributeConfig{Enabled: false},
+				OptionalResourceAttr:                  ResourceAttributeConfig{Enabled: false},
+				SliceResourceAttr:                     ResourceAttributeConfig{Enabled: false},
+				StringEnumResourceAttr:                ResourceAttributeConfig{Enabled: false},
+				StringResourceAttr:                    ResourceAttributeConfig{Enabled: false},
+				StringResourceAttrDisableWarning:      ResourceAttributeConfig{Enabled: false},
+				StringResourceAttrRemoveWarning:       ResourceAttributeConfig{Enabled: false},
+				StringResourceAttrToBeRemoved:         ResourceAttributeConfig{Enabled: false},
+				StringResourceDisabledAttrToBeRemoved: ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

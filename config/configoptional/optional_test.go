@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/config/configoptional/internal/metadata"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -511,9 +512,11 @@ func TestAddFieldEnabledFeatureGate(t *testing.T) {
 		},
 	}
 
-	oldVal := addEnabledFieldFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, true))
-	defer func() { require.NoError(t, featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, oldVal)) }()
+	oldVal := metadata.ConfigoptionalAddEnabledFieldFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConfigoptionalAddEnabledFieldFeatureGate.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConfigoptionalAddEnabledFieldFeatureGate.ID(), oldVal))
+	}()
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -529,9 +532,11 @@ func TestAddFieldEnabledFeatureGate(t *testing.T) {
 }
 
 func TestEnabledFalseResetsValue(t *testing.T) {
-	oldVal := addEnabledFieldFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, true))
-	defer func() { require.NoError(t, featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, oldVal)) }()
+	oldVal := metadata.ConfigoptionalAddEnabledFieldFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConfigoptionalAddEnabledFieldFeatureGate.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConfigoptionalAddEnabledFieldFeatureGate.ID(), oldVal))
+	}()
 
 	cfg := Config[Sub]{Sub1: Some(Sub{Foo: "initial"})}
 	require.True(t, cfg.Sub1.HasValue())
@@ -544,9 +549,11 @@ func TestEnabledFalseResetsValue(t *testing.T) {
 }
 
 func TestUnmarshalErrorEnabledInvalidType(t *testing.T) {
-	oldVal := addEnabledFieldFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, true))
-	defer func() { require.NoError(t, featuregate.GlobalRegistry().Set(addEnabledFieldFeatureGateID, oldVal)) }()
+	oldVal := metadata.ConfigoptionalAddEnabledFieldFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConfigoptionalAddEnabledFieldFeatureGate.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConfigoptionalAddEnabledFieldFeatureGate.ID(), oldVal))
+	}()
 
 	cm := confmap.NewFromStringMap(map[string]any{
 		"sub": map[string]any{
