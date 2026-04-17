@@ -698,16 +698,16 @@ func TestProfilesMergeTo_ResourceAttributeRoundTrip(t *testing.T) {
 	finalResA := attrMapToStrings(finalProfiles.ResourceProfiles().At(0).Resource().Attributes())
 	finalResB := attrMapToStrings(finalProfiles.ResourceProfiles().At(1).Resource().Attributes())
 	assert.Equal(t, origResA, finalResA,
-		"destination resource attributes corrupted after round-trip")
+		"first resource attributes corrupted after round-trip")
 	assert.Equal(t, origResB, finalResB,
-		"source resource attributes corrupted after round-trip")
+		"second resource attributes corrupted after round-trip")
 
 	finalScopeA := attrMapToStrings(finalProfiles.ResourceProfiles().At(0).ScopeProfiles().At(0).Scope().Attributes())
 	finalScopeB := attrMapToStrings(finalProfiles.ResourceProfiles().At(1).ScopeProfiles().At(0).Scope().Attributes())
 	assert.Equal(t, origScopeA, finalScopeA,
-		"destination scope attributes corrupted after round-trip")
+		"first scope attributes corrupted after round-trip")
 	assert.Equal(t, origScopeB, finalScopeB,
-		"source scope attributes corrupted after round-trip")
+		"second scope attributes corrupted after round-trip")
 }
 
 func attrMapToStrings(m pcommon.Map) map[string]string {
