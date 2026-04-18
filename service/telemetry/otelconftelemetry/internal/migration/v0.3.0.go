@@ -173,7 +173,9 @@ type LogsConfigV030 struct {
 	// "stdout" and "stderr" are interpreted as os.Stdout and os.Stderr.
 	// see details at Open in zap/writer.go.
 	//
-	// Note that this setting only affects the zap internal logger errors.
+	// Note that this setting only affects zap's own internal errors (e.g., failures
+	// to write to the configured output). It does NOT route application error-level
+	// log messages. To control where application logs go, use output_paths instead.
 	// (default = ["stderr"])
 	ErrorOutputPaths []string `mapstructure:"error_output_paths"`
 
