@@ -8,6 +8,7 @@ import (
 	"time"
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -40,7 +41,7 @@ func (c *TracesConfigV030) Unmarshal(conf *confmap.Conf) error {
 			// compatibility attempts
 			return err
 		}
-		// TODO: add a warning log to tell users to migrate their config
+		zap.L().Warn("Deprecated telemetry traces configuration format (v0.2.0) detected; auto-migrating to v0.3.0. Please update your configuration.")
 		return tracesConfigV02ToV03(v2TracesConfig, c)
 	}
 	// ensure endpoint normalization occurs
@@ -95,7 +96,7 @@ func (c *MetricsConfigV030) Unmarshal(conf *confmap.Conf) error {
 			// compatibility attempts
 			return err
 		}
-		// TODO: add a warning log to tell users to migrate their config
+		zap.L().Warn("Deprecated telemetry metrics configuration format (v0.2.0) detected; auto-migrating to v0.3.0. Please update your configuration.")
 		return metricsConfigV02ToV03(v02, c)
 	}
 	// ensure endpoint normalization occurs
@@ -229,7 +230,7 @@ func (c *LogsConfigV030) Unmarshal(conf *confmap.Conf) error {
 			// compatibility attempts
 			return err
 		}
-		// TODO: add a warning log to tell users to migrate their config
+		zap.L().Warn("Deprecated telemetry logs configuration format (v0.2.0) detected; auto-migrating to v0.3.0. Please update your configuration.")
 		return logsConfigV02ToV03(v02, c)
 	}
 	// ensure endpoint normalization occurs
