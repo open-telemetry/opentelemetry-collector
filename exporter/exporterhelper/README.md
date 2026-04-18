@@ -23,7 +23,7 @@ The following configuration options can be modified:
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
   - `wait_for_result` (default = false): Determines if incoming requests are blocked until the request is processed or not.
   - `block_on_overflow` (default = false): If true, blocks the request until the queue has space otherwise rejects the data immediately; ignored if `enabled` is `false`
-  - `sizer` (default = requests): How the queue and batching is measured. Available options: 
+  - `sizer` (default = requests): How the queue and batching is measured. Available options:
     - `requests`: number of incoming batches of metrics, logs, traces (the most performant option);
     - `items`: number of the smallest parts of each signal (spans, metric data points, log records);
     - `bytes`: the size of serialized data in bytes (the least performant option).
@@ -47,11 +47,11 @@ batch settings, use `batch: {}`. When `batch` is defined, the settings are:
 - `sizer`: see below.
 - `partition`: see below.
 
-The `batch::sizer` field is given special treatment because the queue itself also defines a `sizer`. This field supports using different size limits for the queue and batch-related logic. 
+The `batch::sizer` field is given special treatment because the queue itself also defines a `sizer`. This field supports using different size limits for the queue and batch-related logic.
 
-If the `batch::sizer` field is not set, it takes its value from the parent structure. 
+If the `batch::sizer` field is not set, it takes its value from the parent structure.
 
-If `sending_queue::sizer` is not set, `batch::sizer` defaults to `items`. 
+If `sending_queue::sizer` is not set, `batch::sizer` defaults to `items`.
 
 Available `batch::sizer` options:
 
@@ -71,7 +71,7 @@ Available `batch::partition` options:
 
 - `timeout` (default = 5s): Time to wait per individual attempt to send data to a backend
 
-The `initial_interval`, `max_interval`, `max_elapsed_time`, and `timeout` options accept 
+The `initial_interval`, `max_interval`, `max_elapsed_time`, and `timeout` options accept
 [duration strings](https://pkg.go.dev/time#ParseDuration),
 valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 

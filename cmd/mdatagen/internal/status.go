@@ -62,6 +62,7 @@ type DeprecationInfo struct {
 
 var validClasses = []string{
 	"cmd",
+	"docs",
 	"connector",
 	"converter",
 	"exporter",
@@ -128,8 +129,10 @@ func (s *Status) Validate() error {
 		errs = errors.Join(errs, err)
 	}
 
-	if err := s.Stability.Validate(); err != nil {
-		errs = errors.Join(errs, err)
+	if !slices.Contains(nonComponents, s.Class) {
+		if err := s.Stability.Validate(); err != nil {
+			errs = errors.Join(errs, err)
+		}
 	}
 	if err := s.Deprecation.Validate(s.Stability); err != nil {
 		errs = errors.Join(errs, err)
