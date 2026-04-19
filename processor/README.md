@@ -30,8 +30,17 @@ processor documentation for more information.
 1. [memory_limiter](memorylimiterprocessor/README.md)
 2. Any sampling or initial filtering processors
 3. Any processor relying on sending source from `Context` (e.g. `k8sattributes`)
-3. [batch](batchprocessor/README.md), although prefer using the exporter's batching capabilities
-4. Any other processors
+4. Any processors that transform, enrich, or filter data (e.g. `transform`, `attributes`, `filter`)
+5. [batch](batchprocessor/README.md), although prefer using the exporter's batching capabilities
+
+Placing filtering and transformation processors **before** `batch` is
+preferred because it avoids batching data that may be discarded or modified.
+The `batch` processor works most efficiently as the last processor before
+the exporter, operating on data that is already in its final form.
+
+The `batch` processor should still come **after** `memory_limiter` and
+context-dependent processors (like `k8sattributes`), which need to run
+early in the pipeline to function correctly.
 
 ## Data Ownership
 
@@ -106,6 +115,18 @@ data cloning described in Exclusive Ownership section.
 
 The order processors are specified in a pipeline is important as this is the
 order in which each processor is applied.
+
+As a general rule:
+- **Protection first**: `memory_limiter` should always be first to prevent
+  out-of-memory situations.
+- **Context-dependent processors early**: Processors that rely on connection
+  or context metadata (e.g. `k8sattributes`) must run before any processor
+  that might decouple data from the original request context.
+- **Filter and transform before batching**: Running filtering and
+  transformation before `batch` avoids unnecessary work on data that will be
+  dropped and keeps batches consistent.
+- **Batch last** (when used): The `batch` processor is most effective as the
+  last step before export, grouping finalized data for efficient transmission.
 
 ## Creating Custom Processors
 
