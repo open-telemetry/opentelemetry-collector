@@ -315,7 +315,7 @@ func TestPersistentQueue_FullCapacity(t *testing.T) {
 			// The consumer picks first request. Wait until the consumer is blocked on done.
 			require.NoError(t, pq.Offer(context.Background(), intRequest(10)))
 			assert.Equal(t, 1*tt.sizeMultiplier, pq.Size())
-			_, _, done, ok := pq.Read(context.Background())
+			_, _, _, done, ok := pq.Read(context.Background())
 			assert.True(t, ok)
 			done.OnDone(nil)
 			assert.Equal(t, int64(0), pq.Size())
@@ -376,11 +376,14 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 		t.Run(fmt.Sprintf("#messages: %d #consumers: %d", c.numMessagesProduced, c.numConsumers), func(t *testing.T) {
 			consumed := &atomic.Int64{}
 
-			pq := newPersistentQueue[intRequest](newSettingsWithStorage(request.SizerTypeRequests, 1000))
-			aq := newAsyncQueue[intRequest](pq, c.numConsumers, func(_ context.Context, _ intRequest, done Done) {
+			set := newSettingsWithStorage(request.SizerTypeRequests, 1000)
+			set.NumConsumers = c.numConsumers
+			pq := newPersistentQueue[intRequest](set)
+			aq, err := newAsyncQueue[intRequest](pq, set, func(_ context.Context, _ intRequest, done Done) {
 				consumed.Add(int64(1))
 				done.OnDone(nil)
-			}, nil)
+			})
+			require.NoError(t, err)
 			require.NoError(t, aq.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{
 				{}: storagetest.NewMockStorageExtension(nil),
 			},
@@ -419,12 +422,14 @@ func TestPersistentBlockingQueue(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			set := newSettingsWithStorage(tt.sizerType, 1000)
 			set.BlockOnOverflow = true
+			set.NumConsumers = 10
 			pq := newPersistentQueue[intRequest](set)
 			consumed := &atomic.Int64{}
-			ac := newAsyncQueue(pq, 10, func(_ context.Context, _ intRequest, done Done) {
+			ac, err := newAsyncQueue(pq, set, func(_ context.Context, _ intRequest, done Done) {
 				consumed.Add(1)
 				done.OnDone(nil)
-			}, set.ReferenceCounter)
+			})
+			require.NoError(t, err)
 			require.NoError(t, ac.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{
 				{}: storagetest.NewMockStorageExtension(nil),
 			})))
@@ -630,13 +635,13 @@ func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{})
 
 	// Takes index 0 in process.
-	_, readReq, _, found := ps.Read(context.Background())
+	_, readReq, _, _, found := ps.Read(context.Background())
 	require.True(t, found)
 	assert.Equal(t, req, readReq)
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{0})
 
 	// This takes item 1 to process.
-	_, secondReadReq, secondDone, found := ps.Read(context.Background())
+	_, secondReadReq, _, secondDone, found := ps.Read(context.Background())
 	require.True(t, found)
 	assert.Equal(t, req, secondReadReq)
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{0, 1})
@@ -770,7 +775,7 @@ func TestPersistentQueue_PutCloseReadClose(t *testing.T) {
 	require.NoError(t, ps.Offer(context.Background(), req))
 	assert.Equal(t, int64(2), ps.Size())
 	// TODO: Remove this, after the initialization writes the readIndex.
-	_, _, _, _ = ps.Read(context.Background())
+	_, _, _, _, _ = ps.Read(context.Background())
 	require.NoError(t, ps.Shutdown(context.Background()))
 
 	newPs := createTestPersistentQueueWithRequestsSizer(t, ext, 1000)
@@ -876,7 +881,7 @@ func TestPersistentQueue_ShutdownWhileConsuming(t *testing.T) {
 
 	require.NoError(t, ps.Offer(context.Background(), intRequest(50)))
 
-	_, _, done, ok := ps.Read(context.Background())
+	_, _, _, done, ok := ps.Read(context.Background())
 	require.True(t, ok)
 	assert.False(t, ps.client.(*storagetest.MockStorageClient).IsClosed())
 	require.NoError(t, ps.Shutdown(context.Background()))

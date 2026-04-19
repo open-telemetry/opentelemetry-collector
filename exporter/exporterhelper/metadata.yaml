@@ -49,6 +49,14 @@ telemetry:
         value_type: int
         monotonic: true
 
+    exporter_queue_batch_send_age:
+      enabled: true
+      description: Age in ms of a queued batch when it is handed off for sending.
+      stability: development
+      unit: ms
+      histogram:
+        value_type: int
+
     exporter_queue_batch_send_size:
       enabled: true
       description: Number of units in the batch
@@ -112,6 +120,15 @@ telemetry:
       stability: alpha
       description: Fixed capacity of the retry queue (in batches).
       unit: "{batch}"
+      gauge:
+        value_type: int
+        async: true
+
+    exporter_queue_oldest_batch_age:
+      enabled: true
+      stability: development
+      description: Age in ms of the oldest batch currently in the retry queue.
+      unit: ms
       gauge:
         value_type: int
         async: true

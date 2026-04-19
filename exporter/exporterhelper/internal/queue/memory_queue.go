@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -100,8 +101,9 @@ func (mq *memoryQueue[T]) Offer(ctx context.Context, el T) error {
 	}
 
 	done, err := mq.add(ctx, memoryQueueItem[T]{
-		ctx:     storedCtx,
-		request: el,
+		ctx:        storedCtx,
+		request:    el,
+		enqueuedAt: time.Now(),
 	}, elSize)
 	if err != nil {
 		// Unref in case of an error since there will not be any async worker to pick it up.
@@ -139,7 +141,8 @@ func (mq *memoryQueue[T]) offerEncoded(ctx context.Context, el T, elSize int64) 
 	}
 
 	done, err := mq.add(ctx, memoryQueueItem[T]{
-		payload: payload,
+		payload:    payload,
+		enqueuedAt: time.Now(),
 	}, elSize)
 	if err != nil {
 		return err
@@ -184,7 +187,7 @@ func (mq *memoryQueue[T]) add(ctx context.Context, el memoryQueueItem[T], elSize
 // Read removes the element from the queue and returns it.
 // The call blocks until there is an item available or the queue is stopped.
 // The function returns true when an item is consumed or false if the queue is stopped and emptied.
-func (mq *memoryQueue[T]) Read(context.Context) (context.Context, T, Done, bool) {
+func (mq *memoryQueue[T]) Read(context.Context) (context.Context, T, time.Time, Done, bool) {
 	mq.mu.Lock()
 	defer mq.mu.Unlock()
 
@@ -192,7 +195,7 @@ func (mq *memoryQueue[T]) Read(context.Context) (context.Context, T, Done, bool)
 		if mq.items.hasElements() {
 			item, done := mq.items.pop()
 			if !mq.useEncodingForInMemory {
-				return item.ctx, item.request, done, true
+				return item.ctx, item.request, item.enqueuedAt, done, true
 			}
 
 			elCtx, el, err := mq.encoding.Unmarshal(item.payload)
@@ -203,12 +206,12 @@ func (mq *memoryQueue[T]) Read(context.Context) (context.Context, T, Done, bool)
 				}
 				continue
 			}
-			return elCtx, el, done, true
+			return elCtx, el, item.enqueuedAt, done, true
 		}
 
 		if mq.stopped {
 			var el T
-			return context.Background(), el, nil, false
+			return context.Background(), el, time.Time{}, nil, false
 		}
 
 		// TODO: Need to change the Queue interface to return an error to allow distinguish between shutdown and context canceled.
@@ -253,10 +256,20 @@ func (mq *memoryQueue[T]) Capacity() int64 {
 	return mq.cap
 }
 
+func (mq *memoryQueue[T]) OldestTimestamp() time.Time {
+	mq.mu.Lock()
+	defer mq.mu.Unlock()
+	if mq.items.head == nil {
+		return time.Time{}
+	}
+	return mq.items.head.data.enqueuedAt
+}
+
 type memoryQueueItem[T request.Request] struct {
-	ctx     context.Context
-	request T
-	payload []byte
+	ctx        context.Context
+	request    T
+	payload    []byte
+	enqueuedAt time.Time
 }
 
 type node[T any] struct {

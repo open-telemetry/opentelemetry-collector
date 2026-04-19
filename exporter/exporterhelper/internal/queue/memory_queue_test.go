@@ -140,7 +140,7 @@ func TestMemoryQueueWaitForResultPassErrorBack(t *testing.T) {
 	q := newMemoryQueue[intRequest](set)
 	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 	wg.Go(func() {
-		_, req, done, ok := q.Read(context.Background())
+		_, req, _, done, ok := q.Read(context.Background())
 		assert.True(t, ok)
 		assert.EqualValues(t, 1, req)
 		done.OnDone(myErr)
@@ -160,7 +160,7 @@ func TestMemoryQueueWaitForResultCancelIncomingRequest(t *testing.T) {
 
 	// Consume async new data.
 	wg.Go(func() {
-		_, _, done, ok := q.Read(context.Background())
+		_, _, _, done, ok := q.Read(context.Background())
 		assert.True(t, ok)
 		<-stop
 		done.OnDone(nil)
@@ -187,7 +187,7 @@ func TestMemoryQueueWaitForResultSizeAndCapacity(t *testing.T) {
 
 	// Consume async new data.
 	wg.Go(func() {
-		_, _, done, ok := q.Read(context.Background())
+		_, _, _, done, ok := q.Read(context.Background())
 		assert.True(t, ok)
 		<-stop
 		done.OnDone(nil)
@@ -216,7 +216,7 @@ func BenchmarkMemoryQueueWaitForResult(b *testing.B) {
 	// Consume async new data.
 	wg.Go(func() {
 		for {
-			_, req, done, ok := q.Read(context.Background())
+			_, req, _, done, ok := q.Read(context.Background())
 			if !ok {
 				return
 			}
@@ -315,7 +315,7 @@ func (decodeErrEncoding) Unmarshal([]byte) (context.Context, intRequest, error) 
 }
 
 func consume[T any](q readableQueue[T], consumeFunc func(context.Context, T) error) bool {
-	ctx, req, done, ok := q.Read(context.Background())
+	ctx, req, _, done, ok := q.Read(context.Background())
 	if !ok {
 		return false
 	}

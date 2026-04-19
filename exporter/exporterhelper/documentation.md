@@ -38,6 +38,14 @@ Number of spans failed to be added to the sending queue.
 | ---- | ----------- | ---------- | --------- | --------- |
 | {span} | Sum | Int | true | Alpha |
 
+### otelcol_exporter_queue_batch_send_age
+
+Age in ms of a queued batch when it is handed off for sending.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Histogram | Int | Development |
+
 ### otelcol_exporter_queue_batch_send_size
 
 Number of units in the batch
@@ -61,6 +69,14 @@ Fixed capacity of the retry queue (in batches).
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {batch} | Gauge | Int | Alpha |
+
+### otelcol_exporter_queue_oldest_batch_age
+
+Age in ms of the oldest batch currently in the retry queue.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Gauge | Int | Development |
 
 ### otelcol_exporter_queue_size
 

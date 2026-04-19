@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
@@ -30,6 +31,7 @@ type fakeQueue[T any] struct {
 	offerErr error
 	size     int64
 	capacity int64
+	oldest   time.Time
 }
 
 func (fq *fakeQueue[T]) Size() int64 {
@@ -42,6 +44,10 @@ func (fq *fakeQueue[T]) Capacity() int64 {
 
 func (fq *fakeQueue[T]) Offer(context.Context, T) error {
 	return fq.offerErr
+}
+
+func (fq *fakeQueue[T]) OldestTimestamp() time.Time {
+	return fq.oldest
 }
 
 func newFakeQueue[T request.Request](offerErr error, size, capacity int64) Queue[T] {
@@ -358,4 +364,30 @@ func TestObsQueueProfilesBatchSize(t *testing.T) {
 				Sum:          22,
 			},
 		}, metricdatatest.IgnoreTimestamp())
+}
+
+func TestObsQueueLogsOldestBatchAge(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	queue := &fakeQueue[request.Request]{
+		size:     7,
+		capacity: 9,
+		oldest:   time.Now().Add(-25 * time.Millisecond),
+	}
+
+	te, err := newObsQueue[request.Request](Settings[request.Request]{
+		Signal:    pipeline.SignalLogs,
+		ID:        exporterID,
+		Telemetry: tt.NewTelemetrySettings(),
+	}, queue)
+	require.NoError(t, err)
+
+	require.NoError(t, te.Offer(context.Background(), &requesttest.FakeRequest{Items: 2, Bytes: 100}))
+	metric, err := tt.GetMetric("otelcol_exporter_queue_oldest_batch_age")
+	require.NoError(t, err)
+	gauge, ok := metric.Data.(metricdata.Gauge[int64])
+	require.True(t, ok)
+	require.Len(t, gauge.DataPoints, 1)
+	require.Greater(t, gauge.DataPoints[0].Value, int64(0))
 }

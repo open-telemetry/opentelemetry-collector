@@ -5,6 +5,7 @@ package queue // import "go.opentelemetry.io/collector/exporter/exporterhelper/i
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -59,6 +60,14 @@ func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T
 		return nil, err
 	}
 
+	err = tb.RegisterExporterQueueOldestBatchAgeCallback(func(_ context.Context, o metric.Int64Observer) error {
+		o.Observe(ageMillisSince(delegate.OldestTimestamp()), asyncAttr)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	tracer := metadata.Tracer(set.Telemetry)
 
 	or := &obsQueue[T]{
@@ -107,4 +116,16 @@ func (or *obsQueue[T]) Offer(ctx context.Context, req T) error {
 		or.enqueueFailedInst.Add(ctx, int64(numItems), or.metricAttr)
 	}
 	return err
+}
+
+func ageMillisSince(ts time.Time) int64 {
+	if ts.IsZero() {
+		return 0
+	}
+
+	age := time.Since(ts).Milliseconds()
+	if age < 0 {
+		return 0
+	}
+	return age
 }

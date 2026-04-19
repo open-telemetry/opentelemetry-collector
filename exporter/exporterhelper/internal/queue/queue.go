@@ -6,6 +6,7 @@ package queue // import "go.opentelemetry.io/collector/exporter/exporterhelper/i
 import (
 	"context"
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -61,6 +62,8 @@ type Queue[T any] interface {
 	Size() int64
 	// Capacity returns the capacity of the queue.
 	Capacity() int64
+	// OldestTimestamp returns the enqueue time of the oldest item currently tracked by the queue.
+	OldestTimestamp() time.Time
 }
 
 // Settings define internal parameters for a new Queue creation.
@@ -85,7 +88,11 @@ func NewQueue[T request.Request](set Settings[T], next ConsumeFunc[T]) (Queue[T]
 	}
 
 	q := newBaseQueue(set)
-	oq, err := newObsQueue(set, newAsyncQueue(q, set.NumConsumers, next, set.ReferenceCounter))
+	aq, err := newAsyncQueue(q, set, next)
+	if err != nil {
+		return nil, err
+	}
+	oq, err := newObsQueue(set, aq)
 	if err != nil {
 		return nil, err
 	}
@@ -109,5 +116,5 @@ type readableQueue[T any] interface {
 	// finished, the done callback must be called to clean up the storage.
 	// The function blocks until an item is available or if the queue is stopped.
 	// If the queue is stopped returns false, otherwise true.
-	Read(context.Context) (context.Context, T, Done, bool)
+	Read(context.Context) (context.Context, T, time.Time, Done, bool)
 }

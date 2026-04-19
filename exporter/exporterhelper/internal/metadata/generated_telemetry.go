@@ -32,9 +32,11 @@ type TelemetryBuilder struct {
 	ExporterEnqueueFailedMetricPoints   metric.Int64Counter
 	ExporterEnqueueFailedProfileSamples metric.Int64Counter
 	ExporterEnqueueFailedSpans          metric.Int64Counter
+	ExporterQueueBatchSendAge           metric.Int64Histogram
 	ExporterQueueBatchSendSize          metric.Int64Histogram
 	ExporterQueueBatchSendSizeBytes     metric.Int64Histogram
 	ExporterQueueCapacity               metric.Int64ObservableGauge
+	ExporterQueueOldestBatchAge         metric.Int64ObservableGauge
 	ExporterQueueSize                   metric.Int64ObservableGauge
 	ExporterSendFailedLogRecords        metric.Int64Counter
 	ExporterSendFailedMetricPoints      metric.Int64Counter
@@ -63,6 +65,21 @@ func (builder *TelemetryBuilder) RegisterExporterQueueCapacityCallback(cb metric
 		cb(ctx, &observerInt64{inst: builder.ExporterQueueCapacity, obs: o})
 		return nil
 	}, builder.ExporterQueueCapacity)
+	if err != nil {
+		return err
+	}
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	builder.registrations = append(builder.registrations, reg)
+	return nil
+}
+
+// RegisterExporterQueueOldestBatchAgeCallback sets callback for observable ExporterQueueOldestBatchAge metric.
+func (builder *TelemetryBuilder) RegisterExporterQueueOldestBatchAgeCallback(cb metric.Int64Callback) error {
+	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
+		cb(ctx, &observerInt64{inst: builder.ExporterQueueOldestBatchAge, obs: o})
+		return nil
+	}, builder.ExporterQueueOldestBatchAge)
 	if err != nil {
 		return err
 	}
@@ -139,6 +156,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("{span}"),
 	)
 	errs = errors.Join(errs, err)
+	builder.ExporterQueueBatchSendAge, err = builder.meter.Int64Histogram(
+		"otelcol_exporter_queue_batch_send_age",
+		metric.WithDescription("Age in ms of a queued batch when it is handed off for sending. [Development]"),
+		metric.WithUnit("ms"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ExporterQueueBatchSendSize, err = builder.meter.Int64Histogram(
 		"otelcol_exporter_queue_batch_send_size",
 		metric.WithDescription("Number of units in the batch [Development]"),
@@ -157,6 +180,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_exporter_queue_capacity",
 		metric.WithDescription("Fixed capacity of the retry queue (in batches). [Alpha]"),
 		metric.WithUnit("{batch}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterQueueOldestBatchAge, err = builder.meter.Int64ObservableGauge(
+		"otelcol_exporter_queue_oldest_batch_age",
+		metric.WithDescription("Age in ms of the oldest batch currently in the retry queue. [Development]"),
+		metric.WithUnit("ms"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterQueueSize, err = builder.meter.Int64ObservableGauge(
