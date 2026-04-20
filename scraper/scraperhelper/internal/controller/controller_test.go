@@ -30,7 +30,7 @@ func newTestController(t *testing.T, cfg *ControllerConfig, scrapers []component
 		cfg,
 		receivertest.NewNopSettings(receivertest.NopType),
 		scrapers,
-		func(*Controller[component.Component]) {},
+		func(context.Context, *Controller[component.Component]) error { return nil },
 		tickerCh,
 	)
 	require.NoError(t, err)
@@ -40,7 +40,7 @@ func newTestController(t *testing.T, cfg *ControllerConfig, scrapers []component
 func TestNewController(t *testing.T) {
 	t.Parallel()
 
-	scrapeFunc := func(*Controller[component.Component]) {}
+	scrapeFunc := func(context.Context, *Controller[component.Component]) error { return nil }
 
 	for _, tc := range []struct {
 		name     string
@@ -145,8 +145,9 @@ func TestStartScrapingWithNilTickerCh(t *testing.T) {
 	t.Parallel()
 
 	var scrapeCount atomic.Int32
-	scrapeFunc := func(*Controller[component.Component]) {
+	scrapeFunc := func(context.Context, *Controller[component.Component]) error {
 		scrapeCount.Add(1)
+		return nil
 	}
 
 	cfg := &ControllerConfig{
@@ -226,8 +227,9 @@ func TestStartScraping(t *testing.T) {
 
 	tickerCh := make(chan time.Time)
 	var scrapeCount atomic.Int32
-	scrapeFunc := func(*Controller[component.Component]) {
+	scrapeFunc := func(context.Context, *Controller[component.Component]) error {
 		scrapeCount.Add(1)
+		return nil
 	}
 
 	cfg := &ControllerConfig{
@@ -263,8 +265,9 @@ func TestStartScrapingWithInitialDelay(t *testing.T) {
 
 	tickerCh := make(chan time.Time)
 	var scrapeCount atomic.Int32
-	scrapeFunc := func(*Controller[component.Component]) {
+	scrapeFunc := func(context.Context, *Controller[component.Component]) error {
 		scrapeCount.Add(1)
+		return nil
 	}
 
 	cfg := &ControllerConfig{
@@ -294,8 +297,9 @@ func TestStartScrapingShutdownDuringInitialDelay(t *testing.T) {
 	t.Parallel()
 
 	var scraped atomic.Bool
-	scrapeFunc := func(*Controller[component.Component]) {
+	scrapeFunc := func(context.Context, *Controller[component.Component]) error {
 		scraped.Store(true)
+		return nil
 	}
 
 	cfg := &ControllerConfig{
@@ -330,25 +334,107 @@ func TestGetSettings(t *testing.T) {
 	assert.Equal(t, rSet.BuildInfo, sSet.BuildInfo)
 }
 
-func TestWithScrapeContext(t *testing.T) {
+func TestScrapeFuncAppliesTimeout(t *testing.T) {
 	t.Parallel()
 
-	t.Run("zero timeout returns context without deadline", func(t *testing.T) {
-		t.Parallel()
-		ctx, cancel := WithScrapeContext(0)
-		defer cancel()
-		_, hasDeadline := ctx.Deadline()
-		assert.False(t, hasDeadline)
-	})
+	timeout := 5 * time.Second
+	var deadline time.Time
+	var hasDeadline bool
+	scrapeFunc := func(ctx context.Context, _ *Controller[component.Component]) error {
+		deadline, hasDeadline = ctx.Deadline()
+		return nil
+	}
 
-	t.Run("positive timeout returns context with deadline", func(t *testing.T) {
-		t.Parallel()
-		timeout := 5 * time.Second
-		ctx, cancel := WithScrapeContext(timeout)
-		defer cancel()
-		deadline, hasDeadline := ctx.Deadline()
-		assert.True(t, hasDeadline)
-		// The deadline should be approximately now + timeout.
-		assert.WithinDuration(t, time.Now().Add(timeout), deadline, time.Second)
-	})
+	cfg := &ControllerConfig{
+		CollectionInterval: time.Minute,
+		Timeout:            timeout,
+	}
+	ctrl, err := NewController(
+		cfg,
+		receivertest.NewNopSettings(receivertest.NopType),
+		[]component.Component{},
+		scrapeFunc,
+		nil,
+	)
+	require.NoError(t, err)
+
+	require.NoError(t, ctrl.scrapeFunc(context.Background(), ctrl))
+	assert.True(t, hasDeadline)
+	assert.WithinDuration(t, time.Now().Add(timeout), deadline, time.Second)
+}
+
+func TestScrapeFuncNoTimeout(t *testing.T) {
+	t.Parallel()
+
+	var hasDeadline bool
+	scrapeFunc := func(ctx context.Context, _ *Controller[component.Component]) error {
+		_, hasDeadline = ctx.Deadline()
+		return nil
+	}
+
+	cfg := &ControllerConfig{
+		CollectionInterval: time.Minute,
+	}
+	ctrl, err := NewController(
+		cfg,
+		receivertest.NewNopSettings(receivertest.NopType),
+		[]component.Component{},
+		scrapeFunc,
+		nil,
+	)
+	require.NoError(t, err)
+
+	require.NoError(t, ctrl.scrapeFunc(context.Background(), ctrl))
+	assert.False(t, hasDeadline)
+}
+
+func TestScrapeFuncPropagatesParentCancellation(t *testing.T) {
+	t.Parallel()
+
+	var gotErr error
+	scrapeFunc := func(ctx context.Context, _ *Controller[component.Component]) error {
+		gotErr = ctx.Err()
+		return nil
+	}
+
+	cfg := &ControllerConfig{
+		CollectionInterval: time.Minute,
+		Timeout:            time.Hour,
+	}
+	ctrl, err := NewController(
+		cfg,
+		receivertest.NewNopSettings(receivertest.NopType),
+		[]component.Component{},
+		scrapeFunc,
+		nil,
+	)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	require.NoError(t, ctrl.scrapeFunc(ctx, ctrl))
+	assert.ErrorIs(t, gotErr, context.Canceled)
+}
+
+func TestScrapeFuncReturnsError(t *testing.T) {
+	t.Parallel()
+
+	scrapeErr := errors.New("scrape failed")
+	scrapeFunc := func(context.Context, *Controller[component.Component]) error {
+		return scrapeErr
+	}
+
+	cfg := &ControllerConfig{
+		CollectionInterval: time.Minute,
+	}
+	ctrl, err := NewController(
+		cfg,
+		receivertest.NewNopSettings(receivertest.NopType),
+		[]component.Component{},
+		scrapeFunc,
+		nil,
+	)
+	require.NoError(t, err)
+
+	assert.ErrorIs(t, ctrl.scrapeFunc(context.Background(), ctrl), scrapeErr)
 }

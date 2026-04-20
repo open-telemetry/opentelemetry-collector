@@ -6,6 +6,7 @@ package xscraperhelper // import "go.opentelemetry.io/collector/scraper/scraperh
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -106,7 +107,9 @@ func NewProfilesController(cfg *scraperhelper.ControllerConfig,
 		scrapers = append(scrapers, s)
 	}
 	return controller.NewController[xscraper.Profiles](
-		cfg, rSet, scrapers, func(c *controller.Controller[xscraper.Profiles]) { scrapeProfiles(c, nextConsumer) }, co.tickerCh)
+		cfg, rSet, scrapers, func(ctx context.Context, c *controller.Controller[xscraper.Profiles]) error {
+			return scrapeProfiles(ctx, c, nextConsumer)
+		}, co.tickerCh)
 }
 
 func getOptions(options []ControllerOption) controllerOptions {
@@ -117,20 +120,21 @@ func getOptions(options []ControllerOption) controllerOptions {
 	return co
 }
 
-func scrapeProfiles(c *controller.Controller[xscraper.Profiles], nextConsumer xconsumer.Profiles) {
-	ctx, done := controller.WithScrapeContext(c.Timeout)
-	defer done()
-
+func scrapeProfiles(ctx context.Context, c *controller.Controller[xscraper.Profiles], nextConsumer xconsumer.Profiles) error {
+	var errs []error
 	profiles := pprofile.NewProfiles()
 	for i := range c.Scrapers {
 		md, err := c.Scrapers[i].ScrapeProfiles(ctx)
-		if err != nil && !scrapererror.IsPartialScrapeError(err) {
-			continue
+		if err != nil {
+			errs = append(errs, err)
+			if !scrapererror.IsPartialScrapeError(err) {
+				continue
+			}
 		}
 		md.ResourceProfiles().MoveAndAppendTo(profiles.ResourceProfiles())
 	}
 
 	// TODO: Add proper receiver observability for profiles when receiverhelper supports it
 	// For now, we skip the obs report and just consume the profiles directly
-	_ = nextConsumer.ConsumeProfiles(ctx, profiles)
+	return errors.Join(append(errs, nextConsumer.ConsumeProfiles(ctx, profiles))...)
 }
