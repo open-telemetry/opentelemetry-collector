@@ -62,9 +62,8 @@ func NewController[T component.Component](
 	}
 
 	if cfg.Timeout > 0 {
-		timeout := cfg.Timeout
 		cs.scrapeFunc = func(ctx context.Context, c *Controller[T]) error {
-			ctx, cancel := context.WithTimeout(ctx, timeout)
+			ctx, cancel := context.WithTimeout(ctx, cfg.Timeout)
 			defer cancel()
 			return scrapeFunc(ctx, c)
 		}
