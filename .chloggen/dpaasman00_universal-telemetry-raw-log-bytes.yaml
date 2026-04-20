@@ -7,7 +7,7 @@ change_type: 'enhancement'
 component: service/graph
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Emit a new component universal telemetry metric, `body.size`. Only emitted by log components.
+note: Emit a new component universal telemetry metric, `body.bytes.processed`. Only emitted by log components.
 
 # One or more tracking issues or pull requests related to the change
 issues: [14812]

@@ -44,25 +44,25 @@ func TestSetupTelemetry(t *testing.T) {
 		observer.Observe(1)
 		return nil
 	}))
-	tb.ConnectorConsumedBodySize.Add(context.Background(), 1)
+	tb.ConnectorConsumedBodyBytesProcessed.Add(context.Background(), 1)
 	tb.ConnectorConsumedItems.Add(context.Background(), 1)
 	tb.ConnectorConsumedSize.Add(context.Background(), 1)
-	tb.ConnectorProducedBodySize.Add(context.Background(), 1)
+	tb.ConnectorProducedBodyBytesProcessed.Add(context.Background(), 1)
 	tb.ConnectorProducedItems.Add(context.Background(), 1)
 	tb.ConnectorProducedSize.Add(context.Background(), 1)
-	tb.ExporterConsumedBodySize.Add(context.Background(), 1)
+	tb.ExporterConsumedBodyBytesProcessed.Add(context.Background(), 1)
 	tb.ExporterConsumedItems.Add(context.Background(), 1)
 	tb.ExporterConsumedSize.Add(context.Background(), 1)
-	tb.ProcessorConsumedBodySize.Add(context.Background(), 1)
+	tb.ProcessorConsumedBodyBytesProcessed.Add(context.Background(), 1)
 	tb.ProcessorConsumedItems.Add(context.Background(), 1)
 	tb.ProcessorConsumedSize.Add(context.Background(), 1)
-	tb.ProcessorProducedBodySize.Add(context.Background(), 1)
+	tb.ProcessorProducedBodyBytesProcessed.Add(context.Background(), 1)
 	tb.ProcessorProducedItems.Add(context.Background(), 1)
 	tb.ProcessorProducedSize.Add(context.Background(), 1)
-	tb.ReceiverProducedBodySize.Add(context.Background(), 1)
+	tb.ReceiverProducedBodyBytesProcessed.Add(context.Background(), 1)
 	tb.ReceiverProducedItems.Add(context.Background(), 1)
 	tb.ReceiverProducedSize.Add(context.Background(), 1)
-	AssertEqualConnectorConsumedBodySize(t, testTel,
+	AssertEqualConnectorConsumedBodyBytesProcessed(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualConnectorConsumedItems(t, testTel,
@@ -71,7 +71,7 @@ func TestSetupTelemetry(t *testing.T) {
 	AssertEqualConnectorConsumedSize(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualConnectorProducedBodySize(t, testTel,
+	AssertEqualConnectorProducedBodyBytesProcessed(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualConnectorProducedItems(t, testTel,
@@ -80,7 +80,7 @@ func TestSetupTelemetry(t *testing.T) {
 	AssertEqualConnectorProducedSize(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualExporterConsumedBodySize(t, testTel,
+	AssertEqualExporterConsumedBodyBytesProcessed(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterConsumedItems(t, testTel,
@@ -107,7 +107,7 @@ func TestSetupTelemetry(t *testing.T) {
 	AssertEqualProcessUptime(t, testTel,
 		[]metricdata.DataPoint[float64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorConsumedBodySize(t, testTel,
+	AssertEqualProcessorConsumedBodyBytesProcessed(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorConsumedItems(t, testTel,
@@ -116,7 +116,7 @@ func TestSetupTelemetry(t *testing.T) {
 	AssertEqualProcessorConsumedSize(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorProducedBodySize(t, testTel,
+	AssertEqualProcessorProducedBodyBytesProcessed(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorProducedItems(t, testTel,
@@ -125,7 +125,7 @@ func TestSetupTelemetry(t *testing.T) {
 	AssertEqualProcessorProducedSize(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualReceiverProducedBodySize(t, testTel,
+	AssertEqualReceiverProducedBodyBytesProcessed(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualReceiverProducedItems(t, testTel,

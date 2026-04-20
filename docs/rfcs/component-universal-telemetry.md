@@ -197,42 +197,42 @@ Errors should be "tagged as coming from downstream" the same way permanent error
         value_type: int
         monotonic: true
 
-    otelcol.receiver.produced.body.size:
+    otelcol.receiver.produced.body.bytes.processed:
       enabled: false
       description: Total byte size of log record bodies emitted from the receiver.
       unit: "By"
       sum:
         value_type: int
         monotonic: true
-    otelcol.processor.consumed.body.size:
+    otelcol.processor.consumed.body.bytes.processed:
       enabled: false
       description: Total byte size of log record bodies passed to the processor.
       unit: "By"
       sum:
         value_type: int
         monotonic: true
-    otelcol.processor.produced.body.size:
+    otelcol.processor.produced.body.bytes.processed:
       enabled: false
       description: Total byte size of log record bodies emitted from the processor.
       unit: "By"
       sum:
         value_type: int
         monotonic: true
-    otelcol.connector.consumed.body.size:
+    otelcol.connector.consumed.body.bytes.processed:
       enabled: false
       description: Total byte size of log record bodies passed to the connector.
       unit: "By"
       sum:
         value_type: int
         monotonic: true
-    otelcol.connector.produced.body.size:
+    otelcol.connector.produced.body.bytes.processed:
       enabled: false
       description: Total byte size of log record bodies emitted from the connector.
       unit: "By"
       sum:
         value_type: int
         monotonic: true
-    otelcol.exporter.consumed.body.size:
+    otelcol.exporter.consumed.body.bytes.processed:
       enabled: false
       description: Total byte size of log record bodies passed to the exporter.
       unit: "By"

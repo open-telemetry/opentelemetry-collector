@@ -436,7 +436,7 @@ func TestComponentInstrumentation(t *testing.T) {
 					attribute.String(obsconsumer.ComponentOutcome, "success"),
 				): 1363,
 			},
-			"otelcol.receiver.produced.body.size": simpleMetric{
+			"otelcol.receiver.produced.body.bytes.processed": simpleMetric{
 				attribute.NewSet(
 					attribute.String(obsconsumer.ComponentOutcome, "success"),
 				): 255, // 4*21("This is a log message") + 3*18("something happened") + 3*21 + 3*18
@@ -468,12 +468,12 @@ func TestComponentInstrumentation(t *testing.T) {
 					attribute.String(obsconsumer.ComponentOutcome, "success"),
 				): 1363,
 			},
-			"otelcol.processor.consumed.body.size": simpleMetric{
+			"otelcol.processor.consumed.body.bytes.processed": simpleMetric{
 				attribute.NewSet(
 					attribute.String(obsconsumer.ComponentOutcome, "success"),
 				): 255,
 			},
-			"otelcol.processor.produced.body.size": simpleMetric{
+			"otelcol.processor.produced.body.bytes.processed": simpleMetric{
 				attribute.NewSet(
 					attribute.String(obsconsumer.ComponentOutcome, "success"),
 				): 255,
@@ -515,12 +515,12 @@ func TestComponentInstrumentation(t *testing.T) {
 					attribute.String("otelcol.pipeline.id", "logs/left"),
 				): 626,
 			},
-			"otelcol.connector.consumed.body.size": simpleMetric{
+			"otelcol.connector.consumed.body.bytes.processed": simpleMetric{
 				attribute.NewSet(
 					attribute.String(obsconsumer.ComponentOutcome, "success"),
 				): 255,
 			},
-			"otelcol.connector.produced.body.size": simpleMetric{
+			"otelcol.connector.produced.body.bytes.processed": simpleMetric{
 				attribute.NewSet(
 					attribute.String(obsconsumer.ComponentOutcome, "success"),
 					attribute.String("otelcol.pipeline.id", "logs/right"),
@@ -546,7 +546,7 @@ func TestComponentInstrumentation(t *testing.T) {
 					attribute.String(obsconsumer.ComponentOutcome, "success"),
 				): 737,
 			},
-			"otelcol.exporter.consumed.body.size": simpleMetric{
+			"otelcol.exporter.consumed.body.bytes.processed": simpleMetric{
 				attribute.NewSet(
 					attribute.String(obsconsumer.ComponentOutcome, "success"),
 				): 138,
@@ -567,7 +567,7 @@ func TestComponentInstrumentation(t *testing.T) {
 					attribute.String(obsconsumer.ComponentOutcome, "success"),
 				): 626,
 			},
-			"otelcol.exporter.consumed.body.size": simpleMetric{
+			"otelcol.exporter.consumed.body.bytes.processed": simpleMetric{
 				attribute.NewSet(
 					attribute.String(obsconsumer.ComponentOutcome, "success"),
 				): 117,

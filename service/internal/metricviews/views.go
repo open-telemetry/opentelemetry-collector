@@ -143,11 +143,11 @@ func DefaultViews(level configtelemetry.Level) []config.View {
 			}),
 			dropViewOption(&config.ViewSelector{
 				MeterName:      graphScope,
-				InstrumentName: ptr("otelcol.*.consumed.body.size"),
+				InstrumentName: ptr("otelcol.*.consumed.body.bytes.processed"),
 			}),
 			dropViewOption(&config.ViewSelector{
 				MeterName:      graphScope,
-				InstrumentName: ptr("otelcol.*.produced.body.size"),
+				InstrumentName: ptr("otelcol.*.produced.body.bytes.processed"),
 			}))
 	}
 

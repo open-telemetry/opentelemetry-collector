@@ -32,10 +32,10 @@ func NewLogs(cons consumer.Logs, set Settings, opts ...Option) consumer.Logs {
 	}
 
 	consumerSet := Settings{
-		ItemCounter:     set.ItemCounter,
-		SizeCounter:     set.SizeCounter,
-		BodySizeCounter: set.BodySizeCounter,
-		Logger:          set.Logger.With(telemetry.ToZapFields(o.staticDataPointAttributes)...),
+		ItemCounter:               set.ItemCounter,
+		SizeCounter:               set.SizeCounter,
+		BodyBytesProcessedCounter: set.BodyBytesProcessedCounter,
+		Logger:                    set.Logger.With(telemetry.ToZapFields(o.staticDataPointAttributes)...),
 	}
 
 	return obsLogs{
@@ -68,10 +68,10 @@ func (c obsLogs) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		}()
 	}
 
-	if isEnabled(ctx, c.set.BodySizeCounter) {
+	if isEnabled(ctx, c.set.BodyBytesProcessedCounter) {
 		bodySize := logBodySize(ld)
 		defer func() {
-			c.set.BodySizeCounter.Add(ctx, bodySize, *attrs)
+			c.set.BodyBytesProcessedCounter.Add(ctx, bodySize, *attrs)
 		}()
 	}
 

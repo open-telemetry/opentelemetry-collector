@@ -11,7 +11,7 @@ status:
 
 telemetry:
   metrics:
-    connector.consumed.body.size:
+    connector.consumed.body.bytes.processed:
       prefix: otelcol.
       enabled: false
       stability: development
@@ -41,7 +41,7 @@ telemetry:
         value_type: int
         monotonic: true
 
-    connector.produced.body.size:
+    connector.produced.body.bytes.processed:
       prefix: otelcol.
       enabled: false
       stability: development
@@ -71,7 +71,7 @@ telemetry:
         value_type: int
         monotonic: true
 
-    exporter.consumed.body.size:
+    exporter.consumed.body.bytes.processed:
       prefix: otelcol.
       enabled: false
       stability: development
@@ -158,7 +158,7 @@ telemetry:
         value_type: double
         monotonic: true
 
-    processor.consumed.body.size:
+    processor.consumed.body.bytes.processed:
       prefix: otelcol.
       enabled: false
       stability: development
@@ -188,7 +188,7 @@ telemetry:
         value_type: int
         monotonic: true
 
-    processor.produced.body.size:
+    processor.produced.body.bytes.processed:
       prefix: otelcol.
       enabled: false
       stability: development
@@ -218,7 +218,7 @@ telemetry:
         value_type: int
         monotonic: true
 
-    receiver.produced.body.size:
+    receiver.produced.body.bytes.processed:
       prefix: otelcol.
       enabled: false
       stability: development

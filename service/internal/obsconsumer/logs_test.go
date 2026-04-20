@@ -46,11 +46,11 @@ func TestLogsNopWhenGateDisabled(t *testing.T) {
 	require.NoError(t, err)
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
-	bodySizeCounter, err := meter.Int64Counter("body_size_counter")
+	bodyBytesProcessedCounter, err := meter.Int64Counter("body_bytes_processed_counter")
 	require.NoError(t, err)
 
 	cons := consumertest.NewNop()
-	require.Equal(t, cons, obsconsumer.NewLogs(cons, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, BodySizeCounter: bodySizeCounter, Logger: zap.NewNop()}))
+	require.Equal(t, cons, obsconsumer.NewLogs(cons, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, BodyBytesProcessedCounter: bodyBytesProcessedCounter, Logger: zap.NewNop()}))
 }
 
 func TestLogsItemsOnly(t *testing.T) {
@@ -67,13 +67,13 @@ func TestLogsItemsOnly(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 	sizeCounterDisabled := newDisabledCounter(sizeCounter)
-	bodySizeCounter, err := meter.Int64Counter("body_size_counter")
+	bodyBytesProcessedCounter, err := meter.Int64Counter("body_bytes_processed_counter")
 	require.NoError(t, err)
-	bodySizeCounterDisabled := newDisabledCounter(bodySizeCounter)
+	bodyBytesProcessedCounterDisabled := newDisabledCounter(bodyBytesProcessedCounter)
 
 	core, logs := observer.New(zap.DebugLevel)
 	logger := zap.New(core)
-	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounterDisabled, BodySizeCounter: bodySizeCounterDisabled, Logger: logger})
+	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounterDisabled, BodyBytesProcessedCounter: bodyBytesProcessedCounterDisabled, Logger: logger})
 
 	ld := plog.NewLogs()
 	r := ld.ResourceLogs().AppendEmpty()
@@ -120,12 +120,12 @@ func TestLogsConsumeSuccess(t *testing.T) {
 	require.NoError(t, err)
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
-	bodySizeCounter, err := meter.Int64Counter("body_size_counter")
+	bodyBytesProcessedCounter, err := meter.Int64Counter("body_bytes_processed_counter")
 	require.NoError(t, err)
 
 	core, logs := observer.New(zap.DebugLevel)
 	logger := zap.New(core)
-	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, BodySizeCounter: bodySizeCounter, Logger: logger})
+	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, BodyBytesProcessedCounter: bodyBytesProcessedCounter, Logger: logger})
 
 	ld := plog.NewLogs()
 	r := ld.ResourceLogs().AppendEmpty()
@@ -141,20 +141,20 @@ func TestLogsConsumeSuccess(t *testing.T) {
 	require.Len(t, rm.ScopeMetrics, 1)
 	require.Len(t, rm.ScopeMetrics[0].Metrics, 3)
 
-	var itemMetric, sizeMetric, bodySizeMetric metricdata.Metrics
+	var itemMetric, sizeMetric, bodyBytesProcessedMetric metricdata.Metrics
 	for _, m := range rm.ScopeMetrics[0].Metrics {
 		switch m.Name {
 		case "item_counter":
 			itemMetric = m
 		case "size_counter":
 			sizeMetric = m
-		case "body_size_counter":
-			bodySizeMetric = m
+		case "body_bytes_processed_counter":
+			bodyBytesProcessedMetric = m
 		}
 	}
 	require.NotNil(t, itemMetric)
 	require.NotNil(t, sizeMetric)
-	require.NotNil(t, bodySizeMetric)
+	require.NotNil(t, bodyBytesProcessedMetric)
 
 	itemData := itemMetric.Data.(metricdata.Sum[int64])
 	require.Len(t, itemData.DataPoints, 1)
@@ -176,13 +176,13 @@ func TestLogsConsumeSuccess(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, "success", val.Emit())
 
-	bodySizeData := bodySizeMetric.Data.(metricdata.Sum[int64])
-	require.Len(t, bodySizeData.DataPoints, 1)
-	require.Equal(t, int64(5), bodySizeData.DataPoints[0].Value) // len("hello") == 5
+	bodyBytesProcessedData := bodyBytesProcessedMetric.Data.(metricdata.Sum[int64])
+	require.Len(t, bodyBytesProcessedData.DataPoints, 1)
+	require.Equal(t, int64(5), bodyBytesProcessedData.DataPoints[0].Value) // len("hello") == 5
 
-	bodySizeAttrs := bodySizeData.DataPoints[0].Attributes
-	require.Equal(t, 1, bodySizeAttrs.Len())
-	val, ok = bodySizeAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
+	bodyBytesProcessedAttrs := bodyBytesProcessedData.DataPoints[0].Attributes
+	require.Equal(t, 1, bodyBytesProcessedAttrs.Len())
+	val, ok = bodyBytesProcessedAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "success", val.Emit())
 
@@ -206,12 +206,12 @@ func TestLogsConsumeFailure(t *testing.T) {
 	require.NoError(t, err)
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
-	bodySizeCounter, err := meter.Int64Counter("body_size_counter")
+	bodyBytesProcessedCounter, err := meter.Int64Counter("body_bytes_processed_counter")
 	require.NoError(t, err)
 
 	core, logs := observer.New(zap.DebugLevel)
 	logger := zap.New(core)
-	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, BodySizeCounter: bodySizeCounter, Logger: logger})
+	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, BodyBytesProcessedCounter: bodyBytesProcessedCounter, Logger: logger})
 
 	ld := plog.NewLogs()
 	r := ld.ResourceLogs().AppendEmpty()
@@ -227,20 +227,20 @@ func TestLogsConsumeFailure(t *testing.T) {
 	require.Len(t, rm.ScopeMetrics, 1)
 	require.Len(t, rm.ScopeMetrics[0].Metrics, 3)
 
-	var itemMetric, sizeMetric, bodySizeMetric metricdata.Metrics
+	var itemMetric, sizeMetric, bodyBytesProcessedMetric metricdata.Metrics
 	for _, m := range rm.ScopeMetrics[0].Metrics {
 		switch m.Name {
 		case "item_counter":
 			itemMetric = m
 		case "size_counter":
 			sizeMetric = m
-		case "body_size_counter":
-			bodySizeMetric = m
+		case "body_bytes_processed_counter":
+			bodyBytesProcessedMetric = m
 		}
 	}
 	require.NotNil(t, itemMetric)
 	require.NotNil(t, sizeMetric)
-	require.NotNil(t, bodySizeMetric)
+	require.NotNil(t, bodyBytesProcessedMetric)
 
 	itemData := itemMetric.Data.(metricdata.Sum[int64])
 	require.Len(t, itemData.DataPoints, 1)
@@ -263,13 +263,13 @@ func TestLogsConsumeFailure(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, "failure", val.Emit())
 
-	bodySizeData := bodySizeMetric.Data.(metricdata.Sum[int64])
-	require.Len(t, bodySizeData.DataPoints, 1)
-	require.Equal(t, int64(5), bodySizeData.DataPoints[0].Value) // len("hello") == 5
+	bodyBytesProcessedData := bodyBytesProcessedMetric.Data.(metricdata.Sum[int64])
+	require.Len(t, bodyBytesProcessedData.DataPoints, 1)
+	require.Equal(t, int64(5), bodyBytesProcessedData.DataPoints[0].Value) // len("hello") == 5
 
-	bodySizeAttrs := bodySizeData.DataPoints[0].Attributes
-	require.Equal(t, 1, bodySizeAttrs.Len())
-	val, ok = bodySizeAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
+	bodyBytesProcessedAttrs := bodyBytesProcessedData.DataPoints[0].Attributes
+	require.Equal(t, 1, bodyBytesProcessedAttrs.Len())
+	val, ok = bodyBytesProcessedAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "failure", val.Emit())
 
@@ -292,13 +292,13 @@ func TestLogsWithStaticAttributes(t *testing.T) {
 	require.NoError(t, err)
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
-	bodySizeCounter, err := meter.Int64Counter("body_size_counter")
+	bodyBytesProcessedCounter, err := meter.Int64Counter("body_bytes_processed_counter")
 	require.NoError(t, err)
 
 	staticAttr := attribute.String("test", "value")
 	core, logs := observer.New(zap.DebugLevel)
 	logger := zap.New(core)
-	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, BodySizeCounter: bodySizeCounter, Logger: logger},
+	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, BodyBytesProcessedCounter: bodyBytesProcessedCounter, Logger: logger},
 		obsconsumer.WithStaticDataPointAttribute(staticAttr))
 
 	ld := plog.NewLogs()
@@ -315,15 +315,15 @@ func TestLogsWithStaticAttributes(t *testing.T) {
 	require.Len(t, rm.ScopeMetrics, 1)
 	require.Len(t, rm.ScopeMetrics[0].Metrics, 3)
 
-	var itemMetric, sizeMetric, bodySizeMetric metricdata.Metrics
+	var itemMetric, sizeMetric, bodyBytesProcessedMetric metricdata.Metrics
 	for _, m := range rm.ScopeMetrics[0].Metrics {
 		switch m.Name {
 		case "item_counter":
 			itemMetric = m
 		case "size_counter":
 			sizeMetric = m
-		case "body_size_counter":
-			bodySizeMetric = m
+		case "body_bytes_processed_counter":
+			bodyBytesProcessedMetric = m
 		}
 	}
 	require.NotNil(t, itemMetric)
@@ -354,16 +354,16 @@ func TestLogsWithStaticAttributes(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, "success", val.Emit())
 
-	bodySizeData := bodySizeMetric.Data.(metricdata.Sum[int64])
-	require.Len(t, bodySizeData.DataPoints, 1)
-	require.Equal(t, int64(5), bodySizeData.DataPoints[0].Value) // len("hello") == 5
+	bodyBytesProcessedData := bodyBytesProcessedMetric.Data.(metricdata.Sum[int64])
+	require.Len(t, bodyBytesProcessedData.DataPoints, 1)
+	require.Equal(t, int64(5), bodyBytesProcessedData.DataPoints[0].Value) // len("hello") == 5
 
-	bodySizeAttrs := bodySizeData.DataPoints[0].Attributes
-	require.Equal(t, 2, bodySizeAttrs.Len())
-	val, ok = bodySizeAttrs.Value(attribute.Key("test"))
+	bodyBytesProcessedAttrs := bodyBytesProcessedData.DataPoints[0].Attributes
+	require.Equal(t, 2, bodyBytesProcessedAttrs.Len())
+	val, ok = bodyBytesProcessedAttrs.Value(attribute.Key("test"))
 	require.True(t, ok)
 	require.Equal(t, "value", val.Emit())
-	val, ok = bodySizeAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
+	val, ok = bodyBytesProcessedAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "success", val.Emit())
 
@@ -387,12 +387,12 @@ func TestLogsMultipleItemsMixedOutcomes(t *testing.T) {
 	require.NoError(t, err)
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
-	bodySizeCounter, err := meter.Int64Counter("body_size_counter")
+	bodyBytesProcessedCounter, err := meter.Int64Counter("body_bytes_processed_counter")
 	require.NoError(t, err)
 
 	core, logs := observer.New(zap.DebugLevel)
 	logger := zap.New(core)
-	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, BodySizeCounter: bodySizeCounter, Logger: logger})
+	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, BodyBytesProcessedCounter: bodyBytesProcessedCounter, Logger: logger})
 
 	// First batch: 2 successful items with body "ab" (2 bytes each)
 	ld1 := plog.NewLogs()
@@ -439,27 +439,27 @@ func TestLogsMultipleItemsMixedOutcomes(t *testing.T) {
 	require.Len(t, rm.ScopeMetrics, 1)
 	require.Len(t, rm.ScopeMetrics[0].Metrics, 3)
 
-	var itemMetric, sizeMetric, bodySizeMetric metricdata.Metrics
+	var itemMetric, sizeMetric, bodyBytesProcessedMetric metricdata.Metrics
 	for _, m := range rm.ScopeMetrics[0].Metrics {
 		switch m.Name {
 		case "item_counter":
 			itemMetric = m
 		case "size_counter":
 			sizeMetric = m
-		case "body_size_counter":
-			bodySizeMetric = m
+		case "body_bytes_processed_counter":
+			bodyBytesProcessedMetric = m
 		}
 	}
 	require.NotNil(t, itemMetric)
 	require.NotNil(t, sizeMetric)
-	require.NotNil(t, bodySizeMetric)
+	require.NotNil(t, bodyBytesProcessedMetric)
 
 	itemData := itemMetric.Data.(metricdata.Sum[int64])
 	require.Len(t, itemData.DataPoints, 2)
 	sizeData := sizeMetric.Data.(metricdata.Sum[int64])
 	require.Len(t, sizeData.DataPoints, 2)
-	bodySizeData := bodySizeMetric.Data.(metricdata.Sum[int64])
-	require.Len(t, bodySizeData.DataPoints, 2)
+	bodyBytesProcessedData := bodyBytesProcessedMetric.Data.(metricdata.Sum[int64])
+	require.Len(t, bodyBytesProcessedData.DataPoints, 2)
 
 	var successDP, failureDP metricdata.DataPoint[int64]
 	for _, dp := range itemData.DataPoints {
@@ -486,17 +486,17 @@ func TestLogsMultipleItemsMixedOutcomes(t *testing.T) {
 	require.Positive(t, successSizeDP.Value)
 	require.Positive(t, failureSizeDP.Value)
 
-	var successBodySizeDP, failureBodySizeDP metricdata.DataPoint[int64]
-	for _, dp := range bodySizeData.DataPoints {
+	var successBodyBytesProcessedDP, failureBodyBytesProcessedDP metricdata.DataPoint[int64]
+	for _, dp := range bodyBytesProcessedData.DataPoints {
 		val, ok := dp.Attributes.Value(attribute.Key(obsconsumer.ComponentOutcome))
 		if ok && val.Emit() == "success" {
-			successBodySizeDP = dp
+			successBodyBytesProcessedDP = dp
 		} else {
-			failureBodySizeDP = dp
+			failureBodyBytesProcessedDP = dp
 		}
 	}
-	require.Equal(t, int64(8), successBodySizeDP.Value) // 2*2 + 2*2 = 8 bytes ("ab" * 4)
-	require.Equal(t, int64(6), failureBodySizeDP.Value) // 3 + 3 = 6 bytes ("abc" * 2)
+	require.Equal(t, int64(8), successBodyBytesProcessedDP.Value) // 2*2 + 2*2 = 8 bytes ("ab" * 4)
+	require.Equal(t, int64(6), failureBodyBytesProcessedDP.Value) // 3 + 3 = 6 bytes ("abc" * 2)
 
 	// Check that the logger was called for errors
 	require.Len(t, logs.All(), 2)
@@ -505,7 +505,7 @@ func TestLogsMultipleItemsMixedOutcomes(t *testing.T) {
 	}
 }
 
-func TestLogsBodySizeDisabled(t *testing.T) {
+func TestLogsBodyBytesProcessedDisabled(t *testing.T) {
 	setGateForTest(t, true)
 
 	ctx := context.Background()
@@ -519,15 +519,15 @@ func TestLogsBodySizeDisabled(t *testing.T) {
 	require.NoError(t, err)
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
-	bodySizeCounter, err := meter.Int64Counter("body_size_counter")
+	bodyBytesProcessedCounter, err := meter.Int64Counter("body_bytes_processed_counter")
 	require.NoError(t, err)
-	bodySizeCounterDisabled := newDisabledCounter(bodySizeCounter)
+	bodyBytesProcessedCounterDisabled := newDisabledCounter(bodyBytesProcessedCounter)
 
 	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{
-		ItemCounter:     itemCounter,
-		SizeCounter:     sizeCounter,
-		BodySizeCounter: bodySizeCounterDisabled,
-		Logger:          zap.NewNop(),
+		ItemCounter:               itemCounter,
+		SizeCounter:               sizeCounter,
+		BodyBytesProcessedCounter: bodyBytesProcessedCounterDisabled,
+		Logger:                    zap.NewNop(),
 	})
 
 	ld := plog.NewLogs()
@@ -545,11 +545,11 @@ func TestLogsBodySizeDisabled(t *testing.T) {
 	require.Len(t, rm.ScopeMetrics[0].Metrics, 2) // only item_counter and size_counter
 
 	for _, m := range rm.ScopeMetrics[0].Metrics {
-		require.NotEqual(t, "body_size_counter", m.Name)
+		require.NotEqual(t, "body_bytes_processed_counter", m.Name)
 	}
 }
 
-func TestLogsBodySizeStructuredBodies(t *testing.T) {
+func TestLogsBodyBytesProcessedStructuredBodies(t *testing.T) {
 	setGateForTest(t, true)
 
 	type bodySetup func(body pcommon.Value)
@@ -884,14 +884,14 @@ func TestLogsBodySizeStructuredBodies(t *testing.T) {
 			sizeCounter, err := meter.Int64Counter("size_counter")
 			require.NoError(t, err)
 			sizeCounterDisabled := newDisabledCounter(sizeCounter)
-			bodySizeCounter, err := meter.Int64Counter("body_size_counter")
+			bodyBytesProcessedCounter, err := meter.Int64Counter("body_bytes_processed_counter")
 			require.NoError(t, err)
 
 			consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{
-				ItemCounter:     itemCounter,
-				SizeCounter:     sizeCounterDisabled,
-				BodySizeCounter: bodySizeCounter,
-				Logger:          zap.NewNop(),
+				ItemCounter:               itemCounter,
+				SizeCounter:               sizeCounterDisabled,
+				BodyBytesProcessedCounter: bodyBytesProcessedCounter,
+				Logger:                    zap.NewNop(),
 			})
 
 			ld := plog.NewLogs()
@@ -907,14 +907,14 @@ func TestLogsBodySizeStructuredBodies(t *testing.T) {
 			require.Len(t, rm.ScopeMetrics, 1)
 
 			for _, m := range rm.ScopeMetrics[0].Metrics {
-				if m.Name == "body_size_counter" {
+				if m.Name == "body_bytes_processed_counter" {
 					data := m.Data.(metricdata.Sum[int64])
 					require.Len(t, data.DataPoints, 1)
 					assert.Equal(t, tt.expected, data.DataPoints[0].Value)
 					return
 				}
 			}
-			t.Fatal("body_size_counter metric not found")
+			t.Fatal("body_bytes_processed_counter metric not found")
 		})
 	}
 }

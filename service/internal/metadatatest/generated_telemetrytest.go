@@ -12,9 +12,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 )
 
-func AssertEqualConnectorConsumedBodySize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualConnectorConsumedBodyBytesProcessed(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol.connector.consumed.body.size",
+		Name:        "otelcol.connector.consumed.body.bytes.processed",
 		Description: "Total byte size of log record bodies passed to the connector. [Development]",
 		Unit:        "By",
 		Data: metricdata.Sum[int64]{
@@ -23,7 +23,7 @@ func AssertEqualConnectorConsumedBodySize(t *testing.T, tt *componenttest.Teleme
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol.connector.consumed.body.size")
+	got, err := tt.GetMetric("otelcol.connector.consumed.body.bytes.processed")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
@@ -60,9 +60,9 @@ func AssertEqualConnectorConsumedSize(t *testing.T, tt *componenttest.Telemetry,
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualConnectorProducedBodySize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualConnectorProducedBodyBytesProcessed(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol.connector.produced.body.size",
+		Name:        "otelcol.connector.produced.body.bytes.processed",
 		Description: "Total byte size of log record bodies emitted from the connector. [Development]",
 		Unit:        "By",
 		Data: metricdata.Sum[int64]{
@@ -71,7 +71,7 @@ func AssertEqualConnectorProducedBodySize(t *testing.T, tt *componenttest.Teleme
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol.connector.produced.body.size")
+	got, err := tt.GetMetric("otelcol.connector.produced.body.bytes.processed")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
@@ -108,9 +108,9 @@ func AssertEqualConnectorProducedSize(t *testing.T, tt *componenttest.Telemetry,
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualExporterConsumedBodySize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualExporterConsumedBodyBytesProcessed(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol.exporter.consumed.body.size",
+		Name:        "otelcol.exporter.consumed.body.bytes.processed",
 		Description: "Total byte size of log record bodies passed to the exporter. [Development]",
 		Unit:        "By",
 		Data: metricdata.Sum[int64]{
@@ -119,7 +119,7 @@ func AssertEqualExporterConsumedBodySize(t *testing.T, tt *componenttest.Telemet
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol.exporter.consumed.body.size")
+	got, err := tt.GetMetric("otelcol.exporter.consumed.body.bytes.processed")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
@@ -246,9 +246,9 @@ func AssertEqualProcessUptime(t *testing.T, tt *componenttest.Telemetry, dps []m
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorConsumedBodySize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorConsumedBodyBytesProcessed(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol.processor.consumed.body.size",
+		Name:        "otelcol.processor.consumed.body.bytes.processed",
 		Description: "Total byte size of log record bodies passed to the processor. [Development]",
 		Unit:        "By",
 		Data: metricdata.Sum[int64]{
@@ -257,7 +257,7 @@ func AssertEqualProcessorConsumedBodySize(t *testing.T, tt *componenttest.Teleme
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol.processor.consumed.body.size")
+	got, err := tt.GetMetric("otelcol.processor.consumed.body.bytes.processed")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
@@ -294,9 +294,9 @@ func AssertEqualProcessorConsumedSize(t *testing.T, tt *componenttest.Telemetry,
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorProducedBodySize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorProducedBodyBytesProcessed(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol.processor.produced.body.size",
+		Name:        "otelcol.processor.produced.body.bytes.processed",
 		Description: "Total byte size of log record bodies emitted from the processor. [Development]",
 		Unit:        "By",
 		Data: metricdata.Sum[int64]{
@@ -305,7 +305,7 @@ func AssertEqualProcessorProducedBodySize(t *testing.T, tt *componenttest.Teleme
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol.processor.produced.body.size")
+	got, err := tt.GetMetric("otelcol.processor.produced.body.bytes.processed")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
@@ -342,9 +342,9 @@ func AssertEqualProcessorProducedSize(t *testing.T, tt *componenttest.Telemetry,
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualReceiverProducedBodySize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualReceiverProducedBodyBytesProcessed(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol.receiver.produced.body.size",
+		Name:        "otelcol.receiver.produced.body.bytes.processed",
 		Description: "Total byte size of log record bodies emitted from the receiver. [Development]",
 		Unit:        "By",
 		Data: metricdata.Sum[int64]{
@@ -353,7 +353,7 @@ func AssertEqualReceiverProducedBodySize(t *testing.T, tt *componenttest.Telemet
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol.receiver.produced.body.size")
+	got, err := tt.GetMetric("otelcol.receiver.produced.body.bytes.processed")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
