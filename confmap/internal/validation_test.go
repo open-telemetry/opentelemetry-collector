@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type configChildStruct struct {
@@ -374,7 +375,7 @@ func TestValidateConfig(t *testing.T) {
 func TestPathErrorIsSingle(t *testing.T) {
 	sentinel := errors.New("sentinel error")
 	pe := pathError{err: sentinel, path: []string{"field"}}
-	assert.ErrorIs(t, pe, sentinel)
+	require.ErrorIs(t, pe, sentinel)
 }
 
 func TestValidateErrorIsMultiple(t *testing.T) {
@@ -385,6 +386,6 @@ func TestValidateErrorIsMultiple(t *testing.T) {
 		ChildPtr: &errValidateConfig{err: err2},
 	}
 	err := Validate(cfg)
-	assert.ErrorIs(t, err, err1)
-	assert.ErrorIs(t, err, err2)
+	require.ErrorIs(t, err, err1)
+	require.ErrorIs(t, err, err2)
 }
