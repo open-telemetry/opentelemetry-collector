@@ -997,7 +997,7 @@
       "default": "localhost:12345"
     },
     "timeout": {
-      "description": "Timeout for scraping metrics. (duration format, e.g., \"30s\", \"1h30m\")",
+      "description": "Timeout for scraping metrics.",
       "type": "string",
       "default": "10s",
       "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"

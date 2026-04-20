@@ -7,7 +7,7 @@ reaggregation_enabled: true
 scope_name: go.opentelemetry.io/collector/internal/receiver/samplereceiver
 github_project: open-telemetry/opentelemetry-collector
 
-sem_conv_version: 1.38.0
+sem_conv_version: 1.40.0
 
 feature_gates:
   - id: receiver.sample.featuregate.example

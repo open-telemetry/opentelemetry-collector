@@ -11,6 +11,7 @@ status:
 feature_gates:
   - id: confighttp.framedSnappy
     description: "Content encoding 'snappy' will compress/decompress block snappy format while 'x-snappy-framed' will compress/decompress framed snappy format."
-    stage: beta
+    stage: stable
     from_version: 'v0.125.0'
+    to_version: 'v0.151.0'
     reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/issues/10584'
