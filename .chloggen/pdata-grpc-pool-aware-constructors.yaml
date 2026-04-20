@@ -1,6 +1,6 @@
 change_type: bug_fix
 
-component: pdata
+component: pkg/pdata
 
 note: Use pool-aware constructors in gRPC service handlers so top-level request structs participate in the sync.Pool lifecycle.
 
