@@ -5,14 +5,14 @@ go 1.25.0
 require (
 	github.com/json-iterator/go v1.1.12
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/featuregate v1.55.0
-	go.opentelemetry.io/collector/internal/testutil v0.149.0
+	go.opentelemetry.io/collector/featuregate v1.56.0
+	go.opentelemetry.io/collector/internal/testutil v0.150.0
 	go.opentelemetry.io/proto/slim/otlp v1.10.0
 	go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development v0.3.0
 	go.opentelemetry.io/proto/slim/otlp/profiles/v1development v0.3.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
-	google.golang.org/grpc v1.79.3
+	google.golang.org/grpc v1.80.0
 	google.golang.org/protobuf v1.36.11
 )
 
@@ -25,7 +25,7 @@ require (
 	golang.org/x/net v0.51.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251222181119-0a764e51fe1b // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260120221211-b8f7ae30c516 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

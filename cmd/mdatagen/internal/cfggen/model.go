@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"go.opentelemetry.io/collector/confmap"
 )
 
 // ConfigMetadata represents a JSON schema object, draft 2020-12 (limited), with additional custom fields.
@@ -47,9 +49,32 @@ type ConfigMetadata struct {
 	ExclusiveMinimum     *float64                   `mapstructure:"exclusiveMinimum,omitempty" json:"exclusiveMinimum,omitempty" yaml:"exclusiveMinimum,omitempty"`
 	Defs                 map[string]*ConfigMetadata `mapstructure:"$defs,omitempty" json:"-" yaml:"$defs,omitempty"`
 	// Additional custom fields
-	GoType     string `mapstructure:"x-customType,omitempty" json:"-" yaml:"x-customType,omitempty"`
-	IsPointer  bool   `mapstructure:"x-pointer,omitempty" json:"-" yaml:"x-pointer,omitempty"`
-	IsOptional bool   `mapstructure:"x-optional,omitempty" json:"-" yaml:"x-optional,omitempty"`
+	GoStruct   GoStructConfig `mapstructure:"go_struct,omitempty" json:"-"`
+	GoType     string         `mapstructure:"x-customType,omitempty" json:"-" yaml:"x-customType,omitempty"`
+	IsPointer  bool           `mapstructure:"x-pointer,omitempty" json:"-" yaml:"x-pointer,omitempty"`
+	IsOptional bool           `mapstructure:"x-optional,omitempty" json:"-" yaml:"x-optional,omitempty"`
+	// internal
+	ResolvedFrom string `mapstructure:"-" json:"-" yaml:"-"`
+}
+
+type GoStructConfig struct {
+	CustomValidator *CustomValidatorConfig `mapstructure:"custom_validator" json:"-"`
+}
+
+type CustomValidatorConfig struct {
+	Name string `mapstructure:"name,omitempty" json:"-"`
+}
+
+func (g *GoStructConfig) Unmarshal(parser *confmap.Conf) error {
+	if !parser.IsSet("custom_validator") {
+		return nil
+	}
+	sub, err := parser.Sub("custom_validator")
+	if err != nil {
+		return fmt.Errorf("invalid custom_validator: %w", err)
+	}
+	g.CustomValidator = &CustomValidatorConfig{}
+	return sub.Unmarshal(g.CustomValidator)
 }
 
 func (md *ConfigMetadata) ToJSON() ([]byte, error) {

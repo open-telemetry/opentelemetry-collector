@@ -4,7 +4,7 @@ package {{ .Package }}
 
 {{- $validators := extractValidators .Metadata.Config }}
 {{ $imports := extractImports .Metadata.Config }}
-{{- if or $imports $validators }}
+
 import (
 {{- if $validators }}
     "errors"
@@ -12,8 +12,8 @@ import (
 {{- range $imports }}
 	"{{ . }}"
 {{- end }}
+    "go.opentelemetry.io/collector/component"
 )
-{{- end }}
 
 {{ define "struct" }}
     {{- if .AllOf }}
@@ -21,7 +21,7 @@ import (
         {{- if .Description }}
     // {{ .Description }}
         {{- end }}
-    	{{ .Ref | publicType }} `mapstructure:",squash"`
+    	{{ .ResolvedFrom | publicType }} `mapstructure:",squash"`
     {{- end }}
     {{- end }}
     {{- range $propName, $prop := .Properties }}
@@ -37,14 +37,15 @@ import (
     {{- if $def.Description }}
         // {{ $defName | publicVar }} {{ $def.Description }}
     {{- end }}
-    type {{ $defName | publicVar }} struct {
-        {{ template "struct" $def }}
+    {{- $typeName := $defName | publicVar }}
+    type {{ $typeName }} struct {
+        {{- template "struct" $def }}
     }
 
     {{ $defValidators := extractValidators $def }}
     {{- if $defValidators }}
-        // Validate validates the {{$defName}} fields.
-        func (c *{{ $defName | publicVar }}) Validate() error {
+        // Validate validates the {{$typeName}} fields according to schema annotations.
+        func (c *{{ $typeName }}) Validate() error {
             var err error
             {{ range $validator := $defValidators -}}
                 {{- template "validation" $validator }}
@@ -52,6 +53,17 @@ import (
 
             return err
         }
+    {{- end }}
+
+    // NewDefault{{ $typeName }} returns a new {{ $typeName }} with default values consistent with the annotations in the schema.
+    {{- if hasDefaultValue $def }}
+    func NewDefault{{ $typeName }}() {{ $typeName }} {
+    cfg := {{ $typeName }}{}
+
+    {{- template "defaultValueSetter" $def }}
+
+    return cfg
+    }
     {{- end }}
 
 {{ end }}
@@ -62,13 +74,24 @@ import (
     // Config defines the configuration for {{ .Metadata.DisplayName }} component.
 {{- end }}
 type Config struct {
-    {{ template "struct" .Metadata.Config }}
+    {{- template "struct" .Metadata.Config }}
 }
+
+{{ define "customValidator" -}}
+    {{ $name := .FieldName | publicVar -}}
+    {{ $value := "c" }}
+    {{- if ne .FieldName "." }}
+        {{ $value = printf "c.%s" $name -}}
+    {{ end }}
+    if inner_err := {{ .CustomValidator }}({{ $value }}); inner_err != nil {
+        err = errors.Join(err, inner_err)
+    }
+{{- end }}
 
 {{ define "requiredValidator" -}}
     {{ $name := .FieldName | publicVar -}}
     {{- if .IsPointer }}
-        {{- if or (eq .FieldType "array") (eq .FieldType "object") }}
+        {{- if or (eq .FieldType "array") (eq .FieldType "map") }}
         if c.{{ $name }} == nil || len(*c.{{ $name }}) == 0 {
             err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
         }
@@ -85,18 +108,64 @@ type Config struct {
         if len(c.{{ $name }}) == 0 {
             err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
         }
-    {{- else if eq .FieldType "object" }}
+    {{- else if eq .FieldType "map" }}
         if c.{{ $name }} == nil || len(c.{{ $name }}) == 0 {
             err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
         }
     {{- end -}}
 {{- end }}
 
-{{- define "validation" -}}
-    {{- if .IsRequired -}}
+{{- define "fieldValue" -}}
+    {{- $name := .FieldName | publicVar -}}
+    {{- if .IsPointer }}*c.{{ $name -}}
+    {{- else if .IsOptional }}*c.{{ $name }}.Get()
+    {{- else }}c.{{ $name -}}
+    {{- end -}}
+{{- end -}}
+
+{{ define "maxLengthValidator" -}}
+    {{ $maxLength := .Rules.MaxLength -}}
+    if len({{ template "fieldValue" . }}) > {{ $maxLength }} {
+        err = errors.Join(err, errors.New("{{ .FieldName }} exceeds maximum length of {{ $maxLength }}"))
+    }
+{{- end }}
+
+{{ define "minLengthValidator" -}}
+    {{ $minLength := .Rules.MinLength -}}
+    if len({{ template "fieldValue" . }}) < {{ $minLength }} {
+        err = errors.Join(err, errors.New("{{ .FieldName }} must have minimum length of {{ $minLength }}"))
+    }
+{{- end }}
+
+{{ define "patternValidator" -}}
+    {{ $pattern := .Rules.Pattern -}}
+    if matched, _ := regexp.MatchString(`{{ $pattern }}`, {{ template "fieldValue" . }}); !matched {
+        err = errors.Join(err, errors.New("{{ .FieldName }} must match pattern `{{ $pattern }}`"))
+    }
+{{- end }}
+
+{{ define "valueValidators" }}
+    {{ if .Rules.MaxLength }}{{ template "maxLengthValidator" . }}{{ end }}
+    {{ if .Rules.MinLength }}{{ template "minLengthValidator" . }}{{ end }}
+    {{ if .Rules.Pattern }}{{ template "patternValidator" . }}{{ end }}
+{{ end -}}
+
+{{ define "validation" }}
+
+    {{ if .Rules.Required -}}
         {{ template "requiredValidator" . }}
     {{- end -}}
-{{- end }}
+    {{- if .Rules.HasValueRule }}
+        {{- $name := .FieldName | publicVar -}}
+        {{- if .IsPointer }}if c.{{ $name }} != nil { {{ end -}}
+        {{- if .IsOptional }}if c.{{ $name }}.HasValue() { {{ end -}}
+            {{ template "valueValidators" . }}
+        {{- if or .IsPointer .IsOptional }}}{{ end -}}
+    {{- end -}}
+    {{- if .CustomValidator }}
+        {{ template "customValidator" . }}
+    {{- end -}}
+{{ end }}
 
 {{- if $validators }}
     // Validate validates the Config fields.
@@ -109,3 +178,24 @@ type Config struct {
         return err
     }
 {{- end }}
+
+{{- define "defaultValueSetter" }}
+    {{- range $propName, $prop := .Properties }}
+        {{- $defaultValue := formatDefaultValue $prop $propName $prop.Default }}
+        {{- if $defaultValue }}
+        cfg.{{ $propName | publicVar }} = {{ $defaultValue }}
+        {{- end }}
+        {{- $exprs := mapCustomDefaults $prop $prop.Default }}
+        {{- range $expr := $exprs }}
+            cfg.{{ $propName | publicVar }}{{ $expr }}
+        {{- end }}
+    {{- end }}
+{{- end }}
+
+func createDefaultConfig() component.Config {
+    cfg := Config{}
+
+    {{- template "defaultValueSetter" .Metadata.Config }}
+
+    return &cfg
+}
