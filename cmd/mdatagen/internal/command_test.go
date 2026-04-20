@@ -669,6 +669,105 @@ func TestGenerateConfigGoStruct_InternalResolvedRefGeneratesLocalType(t *testing
 	require.Contains(t, generated, "cfg.Config = NewDefaultPlainConfig()")
 }
 
+func TestGenerateConfigGoStruct_AllOfCustomMapstructureTag(t *testing.T) {
+	root := t.TempDir()
+	outputDir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(outputDir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	md := Metadata{
+		Type:        "test",
+		PackageName: "testmodule/shortname",
+		Status:      &Status{Class: "receiver"},
+		Config: &cfggen.ConfigMetadata{
+			Type: "object",
+			AllOf: []*cfggen.ConfigMetadata{
+				{
+					Type:         "object",
+					ResolvedFrom: "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
+					GoStruct:     cfggen.GoStructConfig{Mapstructure: "protocols"},
+				},
+			},
+		},
+	}
+
+	err := generateConfigGoStruct(md, outputDir)
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(filepath.Join(outputDir, "generated_config.go")) // #nosec G304
+	require.NoError(t, err)
+
+	generated := string(content)
+	// Custom tag "protocols" must be used instead of the default ",squash"
+	require.Contains(t, generated, "`mapstructure:\"protocols\"`")
+	require.NotContains(t, generated, `mapstructure:",squash"`)
+}
+
+func TestGenerateConfigGoStruct_AllOfDefaultSquashTag(t *testing.T) {
+	root := t.TempDir()
+	outputDir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(outputDir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	md := Metadata{
+		Type:        "test",
+		PackageName: "testmodule/shortname",
+		Status:      &Status{Class: "receiver"},
+		Config: &cfggen.ConfigMetadata{
+			Type: "object",
+			AllOf: []*cfggen.ConfigMetadata{
+				{
+					Type:         "object",
+					ResolvedFrom: "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
+					// No custom GoStruct.Mapstructure — should default to ",squash"
+				},
+			},
+		},
+	}
+
+	err := generateConfigGoStruct(md, outputDir)
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(filepath.Join(outputDir, "generated_config.go")) // #nosec G304
+	require.NoError(t, err)
+
+	require.Contains(t, string(content), "`mapstructure:\",squash\"`")
+}
+
+func TestGenerateConfigGoStruct_PropertyCustomMapstructureTag(t *testing.T) {
+	root := t.TempDir()
+	outputDir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(outputDir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	md := Metadata{
+		Type:        "test",
+		PackageName: "testmodule/shortname",
+		Status:      &Status{Class: "receiver"},
+		Config: &cfggen.ConfigMetadata{
+			Type: "object",
+			Properties: map[string]*cfggen.ConfigMetadata{
+				"timeout": {
+					Type:     "string",
+					GoType:   "time.Duration",
+					GoStruct: cfggen.GoStructConfig{Mapstructure: "interval"},
+				},
+			},
+		},
+	}
+
+	err := generateConfigGoStruct(md, outputDir)
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(filepath.Join(outputDir, "generated_config.go")) // #nosec G304
+	require.NoError(t, err)
+
+	generated := string(content)
+	// Custom tag "interval" must be used instead of the property name "timeout"
+	require.Contains(t, generated, "`mapstructure:\"interval\"`")
+	require.NotContains(t, generated, "`mapstructure:\"timeout\"`")
+}
+
 func TestGenerateConfigFiles_GoStructError(t *testing.T) {
 	// generateConfigGoStruct fails because tmpdir has no go.mod in any ancestor
 	md := Metadata{

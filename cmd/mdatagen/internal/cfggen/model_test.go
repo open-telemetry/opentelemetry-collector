@@ -328,6 +328,8 @@ func TestGoStructConfig_Unmarshal(t *testing.T) {
 		name                  string
 		input                 map[string]any
 		expectCustomValidator bool
+		expectMapstructure    string
+		expectErr             bool
 	}{
 		{
 			name:                  "custom_validator present with empty map",
@@ -345,9 +347,25 @@ func TestGoStructConfig_Unmarshal(t *testing.T) {
 			expectCustomValidator: false,
 		},
 		{
-			name:                  "unrelated keys only",
-			input:                 map[string]any{"something_else": true},
-			expectCustomValidator: false,
+			name:      "unknown key returns error",
+			input:     map[string]any{"something_else": true},
+			expectErr: true,
+		},
+		{
+			name:               "mapstructure tag set",
+			input:              map[string]any{"mapstructure": "protocols"},
+			expectMapstructure: "protocols",
+		},
+		{
+			name:                  "mapstructure tag and custom_validator both set",
+			input:                 map[string]any{"mapstructure": "protocols", "custom_validator": map[string]any{"name": "validateProtocols"}},
+			expectMapstructure:    "protocols",
+			expectCustomValidator: true,
+		},
+		{
+			name:               "mapstructure tag empty string when absent",
+			input:              map[string]any{},
+			expectMapstructure: "",
 		},
 	}
 
@@ -356,12 +374,17 @@ func TestGoStructConfig_Unmarshal(t *testing.T) {
 			parser := confmap.NewFromStringMap(tt.input)
 			var g GoStructConfig
 			err := g.Unmarshal(parser)
+			if tt.expectErr {
+				require.Error(t, err)
+				return
+			}
 			require.NoError(t, err)
 			if tt.expectCustomValidator {
 				assert.NotNil(t, g.CustomValidator, "CustomValidator should be non-nil when key is present")
 			} else {
 				assert.Nil(t, g.CustomValidator, "CustomValidator should be nil when key is absent")
 			}
+			assert.Equal(t, tt.expectMapstructure, g.Mapstructure)
 		})
 	}
 }

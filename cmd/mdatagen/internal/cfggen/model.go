@@ -58,6 +58,7 @@ type ConfigMetadata struct {
 }
 
 type GoStructConfig struct {
+	Mapstructure    string                 `mapstructure:"mapstructure" json:"-"`
 	CustomValidator *CustomValidatorConfig `mapstructure:"custom_validator" json:"-"`
 }
 
@@ -66,7 +67,11 @@ type CustomValidatorConfig struct {
 }
 
 func (g *GoStructConfig) Unmarshal(parser *confmap.Conf) error {
+	if err := parser.Unmarshal(g); err != nil {
+		return err
+	}
 	if !parser.IsSet("custom_validator") {
+		g.CustomValidator = nil
 		return nil
 	}
 	sub, err := parser.Sub("custom_validator")

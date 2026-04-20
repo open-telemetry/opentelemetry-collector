@@ -21,14 +21,14 @@ import (
         {{- if .Description }}
     // {{ .Description }}
         {{- end }}
-    	{{ .ResolvedFrom | publicType }} `mapstructure:",squash"`
+    	{{ .ResolvedFrom | publicType }} `mapstructure:"{{ or .GoStruct.Mapstructure ",squash" }}"`
     {{- end }}
     {{- end }}
     {{- range $propName, $prop := .Properties }}
         {{- if $prop.Description }}
     // {{ $prop.Description }}
         {{- end }}
-    	{{ $propName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}"`
+    	{{ $propName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ or .GoStruct.Mapstructure $propName }}"`
     {{- end }}
 {{ end }}
 
