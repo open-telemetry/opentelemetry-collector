@@ -589,8 +589,16 @@
     }
   ],
   "properties": {
+    "job_name": {
+      "description": "Name of the scrape job, used to identify the source in telemetry.",
+      "type": "string",
+      "default": "test_job",
+      "maxLength": 255,
+      "minLength": 1,
+      "pattern": "^[a-zA-Z0-9_.-]+$"
+    },
     "targets": {
-      "description": "Targets configuration for the scraper.",
+      "description": "List of targets to scrape metrics from.",
       "type": "array",
       "default": [
         {}
@@ -599,7 +607,7 @@
         "type": "object",
         "properties": {
           "http_client": {
-            "description": "ClientConfig defines settings for creating an HTTP client.",
+            "description": "HTTP client configuration for the target endpoint.",
             "type": "object",
             "properties": {
               "auth": {
@@ -822,7 +830,8 @@
             "default": "10s",
             "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
           },
-          "options": {
+          "labels": {
+            "description": "Static key-value labels attached to all metrics from this target.",
             "type": "object",
             "default": {
               "option1": "value1",
@@ -834,13 +843,13 @@
           }
         },
         "required": [
-          "http_client",
-          "options"
+          "labels"
         ]
       }
     }
   },
   "required": [
+    "job_name",
     "targets"
   ]
 }

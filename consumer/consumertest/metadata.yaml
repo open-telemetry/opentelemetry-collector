@@ -1,4 +1,5 @@
 type: consumer/consumertest
+parent: consumer
 github_project: open-telemetry/opentelemetry-collector
 
 status:
