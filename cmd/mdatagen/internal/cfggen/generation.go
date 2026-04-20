@@ -276,6 +276,7 @@ func collectDefs(md *ConfigMetadata, defs map[string]*ConfigMetadata) {
 		if !refDesc.isInternal() {
 			return
 		}
+		defs[md.ResolvedFrom] = md
 	}
 
 	for _, name := range slices.Sorted(maps.Keys(md.Defs)) {
