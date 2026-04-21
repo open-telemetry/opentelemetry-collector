@@ -331,6 +331,9 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
 						assert.True(t, ok)
 						{{- else if eq (attributeInfo $attr).RequirementLevel.String "Conditionally Required" }}
+						{{ $attr.RenderUnexported }}AttrVal, ok := dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
+						assert.True(t, ok)
+						{{- template "assertMetricAttributeValue" $attr }}
 						{{- else }}
 						_, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
 						assert.False(t, ok)
