@@ -19,7 +19,7 @@ This RFC provides general guidelines for semantic convention-mandated migrations
 The migration mechanism should have the following characteristics:
 
 1. **Collector native**: the mechanism should work in a similar way to other Collector migrations
-   and should feel natural and intuitive to users. 
+   and should feel natural and intuitive to users.
 2. **Simple**: a user should have to make a small number of changes to their Collector deployment to
    migrate to a new set of conventions.
 3. **Easy to understand**: It should be easy to understand how to migrate a particular set of
@@ -29,7 +29,7 @@ The migration mechanism should have the following characteristics:
 6. **Flexible (other conventions)**: The mechanism should still allow for evolution of other
    semantic conventions that are not being migrated.
 
-## Background 
+## Background
 
 ### Setup
 
@@ -38,7 +38,7 @@ We want to write guidance for when we have a component that emits telemetry from
 document we refer to the **v0** conventions and the **v1** conventions, which are the conventions
 in this area before and after the migration.
 
-When the semantic conventions are specific to a component we use 
+When the semantic conventions are specific to a component we use
 - `kind` to refer to the component kind (receiver, exporter...)
 - `id` for the component id (e.g. `hostmetrics`)
 
@@ -125,7 +125,7 @@ From [semconv v1.38.0][3]:
 
 > When existing K8s instrumentations published by OpenTelemetry are
 > updated to the stable K8s semantic conventions, they:
-> 
+>
 > - SHOULD introduce an environment variable `OTEL_SEMCONV_STABILITY_OPT_IN` in
 >   their existing major version, which accepts:
 >   - `k8s` - emit the stable k8s conventions, and stop emitting
@@ -214,7 +214,7 @@ environment variable mechanism explicitly does not support.
 
 The granularity of the feature gates described could be changed: we could have a pair per convention
 or even a pair for the whole Collector. I argue 'per component' strikes the right balance between
-simplicity and flexibility: 
+simplicity and flexibility:
 - per convention would lead to dozens of feature gates on some of the areas we want to stabilize. It
   would also be unclear how these interact on edge cases (semantic conventions may only make sense
   holistically)

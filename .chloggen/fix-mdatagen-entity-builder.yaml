@@ -1,4 +1,0 @@
-change_type: bug_fix
-component: cmd/mdatagen
-note: Fix entity code generation so `extra_attributes` are emitted as resource attributes instead of entity descriptive attributes.
-issues: [14778]

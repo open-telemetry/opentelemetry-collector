@@ -16,7 +16,6 @@ import (
 	"github.com/pierrec/lz4/v4"
 
 	"go.opentelemetry.io/collector/config/configcompression"
-	"go.opentelemetry.io/collector/config/confighttp/internal/metadata"
 )
 
 type writeCloserReset interface {
@@ -68,20 +67,10 @@ func newWriteCloserResetFunc(compressionType configcompression.Type, compression
 			return w
 		}, nil
 	case configcompression.TypeSnappyFramed:
-		if !metadata.ConfighttpFramedSnappyFeatureGate.IsEnabled() {
-			return nil, errors.New("x-snappy-framed is not enabled")
-		}
 		return func() writeCloserReset {
 			return snappy.NewBufferedWriter(nil)
 		}, nil
 	case configcompression.TypeSnappy:
-		if !metadata.ConfighttpFramedSnappyFeatureGate.IsEnabled() {
-			// If framed snappy feature gate is not enabled, we keep the current behavior
-			// where the 'Content-Encoding: snappy' is compressed as the framed snappy format.
-			return func() writeCloserReset {
-				return snappy.NewBufferedWriter(nil)
-			}, nil
-		}
 		return func() writeCloserReset {
 			// If framed snappy feature gate is enabled, we use the correct behavior
 			// where the 'Content-Encoding: snappy' is compressed as the block snappy format.
