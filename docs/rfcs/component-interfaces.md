@@ -4,7 +4,7 @@
 
 The OpenTelemetry Collector has a number of public interfaces and
 extension points that require careful attention to avoid breaking
-changes for users. 
+changes for users.
 
 These guidelines describe how to achieve safe interface evolution in
 Golang. This approach is recommended for all Golang modules that want
@@ -48,7 +48,7 @@ servers. The public interface type `http.Handler`:
 ```go
 // A Handler responds to an HTTP request.
 type Handler interface {
-	ServeHTTP(ResponseWriter, *Request)
+  ServeHTTP(ResponseWriter, *Request)
 }
 ```
 
@@ -63,14 +63,14 @@ type HandlerFunc func(ResponseWriter, *Request)
 
 // ServeHTTP calls f(w, r).
 func (f HandlerFunc) ServeHTTP(w ResponseWriter, r *Request) {
-	f(w, r)
+  f(w, r)
 }
 ```
 
 We use this pattern extensively, however there are important
 differences with ours and this specific case:
 
-- Public interfaces can only refer to other public interfaces, not 
+- Public interfaces can only refer to other public interfaces, not
   concrete types. The `*Request` (pointer-to-struct) is not compatible
   with safe interface evolution.
 - Every function type must have a simple "no-op" behavior
@@ -92,7 +92,7 @@ func (f HandlerFunc) ServeHTTP(w ResponseWriter, r Request) {
     if f == nil {
         return
     }
-	f(w, r)
+  f(w, r)
 }
 ```
 
