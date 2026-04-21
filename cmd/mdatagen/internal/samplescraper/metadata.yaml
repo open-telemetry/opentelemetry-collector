@@ -25,31 +25,47 @@ config:
   type: object
   description: Configuration for the Sample Scraper.
   allOf:
+    - $ref: ./internal/metadata.metrics_builder_config
     - $ref: /scraper/scraperhelper.controller_config
-  $defs:
+      default:
+        timeout: 30s
   properties:
+    job_name:
+      description: Name of the scrape job, used to identify the source in telemetry.
+      type: string
+      minLength: 1
+      maxLength: 255
+      pattern: "^[a-zA-Z0-9_.-]+$"
+      default: "test_job"
     targets:
-      description: Targets configuration for the scraper.
+      description: List of targets to scrape metrics from.
       x-pointer: true
       type: array
       items:
         type: object
         properties:
           http_client:
+            description: HTTP client configuration for the target endpoint.
             $ref: /config/confighttp.client_config
-            x-pointer: true
             go_struct:
               custom_validator:
           interval:
             type: string
             format: duration
             x-optional: true
-          options:
+            default: 10s
+          labels:
+            description: Static key-value labels attached to all metrics from this target.
             type: object
             additionalProperties:
               type: string
-        required: [http_client, options]
-  required: [targets]
+            default:
+              option1: value1
+              option2: value2
+        required: [labels]
+      default:
+        - {} # one item with default values
+  required: [job_name, targets]
 
 resource_attributes:
   map.resource.attr:
