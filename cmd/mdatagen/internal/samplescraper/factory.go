@@ -19,7 +19,7 @@ import (
 func NewFactory() scraper.Factory {
 	return xscraper.NewFactory(
 		metadata.Type,
-		func() component.Config { return &struct{}{} },
+		createDefaultConfig,
 		xscraper.WithMetrics(createMetrics, metadata.MetricsStability),
 		xscraper.WithLogs(createLogs, metadata.LogsStability),
 		xscraper.WithProfiles(createProfiles, metadata.ProfilesStability),
