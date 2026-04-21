@@ -111,6 +111,10 @@ type Collector struct {
 	shutdownChan chan struct{}
 	shutdownOnce sync.Once
 
+	// runWG tracks active Run calls so that Shutdown can block until
+	// Run has finished all cleanup, following the http.Server pattern.
+	runWG sync.WaitGroup
+
 	// signalsChannel is used to receive termination signals from the OS.
 	signalsChannel chan os.Signal
 	// asyncErrorChannel is used to signal a fatal error from any component.
@@ -156,10 +160,19 @@ func (col *Collector) GetState() State {
 }
 
 // Shutdown shuts down the collector server.
+//
+// It can safely be called before, during, or after Run:
+//   - If called before Run, the subsequent Run will exit quickly.
+//   - If called while Run is active, Shutdown blocks until Run completes
+//     all cleanup and the state reaches StateClosed.
+//   - If called after Run has finished, it returns immediately.
 func (col *Collector) Shutdown() {
 	col.shutdownOnce.Do(func() {
 		close(col.shutdownChan)
 	})
+	// Wait for Run to finish all cleanup. If Run was never called or
+	// has already returned, this returns immediately.
+	col.runWG.Wait()
 }
 
 func buildModuleInfo(m map[component.Type]string) map[component.Type]service.ModuleInfo {
@@ -325,6 +338,9 @@ func newFallbackLogger(options []zap.Option) (*zap.Logger, error) {
 // Consecutive calls to Run are not allowed, Run shouldn't be called once a collector is shut down.
 // Sets up the control logic for config reloading and shutdown.
 func (col *Collector) Run(ctx context.Context) error {
+	col.runWG.Add(1)
+	defer col.runWG.Done()
+
 	// setupConfigurationComponents is the "main" function responsible for startup
 	if err := col.setupConfigurationComponents(ctx); err != nil {
 		col.setCollectorState(StateClosed)
