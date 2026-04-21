@@ -8,8 +8,9 @@ import (
 
 var ConfighttpFramedSnappyFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"confighttp.framedSnappy",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("Content encoding 'snappy' will compress/decompress block snappy format while 'x-snappy-framed' will compress/decompress framed snappy format."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/10584"),
 	featuregate.WithRegisterFromVersion("v0.125.0"),
+	featuregate.WithRegisterToVersion("v0.151.0"),
 )

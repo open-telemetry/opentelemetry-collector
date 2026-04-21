@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
 	"sort"
 
 	"go.uber.org/multierr"
@@ -67,8 +68,7 @@ func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 func (bes *Extensions) Shutdown(ctx context.Context) error {
 	bes.telemetry.Logger.Info("Stopping extensions...")
 	var errs error
-	for i := len(bes.extensionIDs) - 1; i >= 0; i-- {
-		extID := bes.extensionIDs[i]
+	for _, extID := range slices.Backward(bes.extensionIDs) {
 		instanceID := bes.instanceIDs[extID]
 		ext := bes.extMap[extID]
 		bes.reporter.ReportStatus(
