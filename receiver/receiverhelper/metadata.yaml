@@ -11,7 +11,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: Number of log records successfully pushed into the pipeline.
-      unit: "{records}"
+      unit: "{record}"
       sum:
         value_type: int
         monotonic: true
@@ -19,7 +19,7 @@ telemetry:
       stability: alpha
       enabled: true
       description: Number of metric points successfully pushed into the pipeline.
-      unit: "{datapoints}"
+      unit: "{datapoint}"
       sum:
         value_type: int
         monotonic: true
@@ -27,7 +27,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: Number of profile samples successfully pushed into the pipeline.
-      unit: "{samples}"
+      unit: "{sample}"
       sum:
         value_type: int
         monotonic: true
@@ -35,7 +35,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: Number of spans successfully pushed into the pipeline.
-      unit: "{spans}"
+      unit: "{span}"
       sum:
         value_type: int
         monotonic: true
@@ -43,7 +43,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: The number of log records that failed to be processed by the receiver due to internal errors.
-      unit: "{records}"
+      unit: "{record}"
       sum:
         value_type: int
         monotonic: true
@@ -51,7 +51,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: The number of metric points that failed to be processed by the receiver due to internal errors.
-      unit: "{datapoints}"
+      unit: "{datapoint}"
       sum:
         value_type: int
         monotonic: true
@@ -59,7 +59,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: The number of profile samples that failed to be processed by the receiver due to internal errors.
-      unit: "{samples}"
+      unit: "{sample}"
       sum:
         value_type: int
         monotonic: true
@@ -67,7 +67,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: The number of spans that failed to be processed by the receiver due to internal errors.
-      unit: "{spans}"
+      unit: "{span}"
       sum:
         value_type: int
         monotonic: true
@@ -75,7 +75,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: Number of log records that could not be pushed into the pipeline.
-      unit: "{records}"
+      unit: "{record}"
       sum:
         value_type: int
         monotonic: true
@@ -83,7 +83,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: Number of metric points that could not be pushed into the pipeline.
-      unit: "{datapoints}"
+      unit: "{datapoint}"
       sum:
         value_type: int
         monotonic: true
@@ -91,7 +91,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: Number of profile samples that could not be pushed into the pipeline.
-      unit: "{samples}"
+      unit: "{sample}"
       sum:
         value_type: int
         monotonic: true
@@ -99,7 +99,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: Number of spans that could not be pushed into the pipeline.
-      unit: "{spans}"
+      unit: "{span}"
       sum:
         value_type: int
         monotonic: true
@@ -107,7 +107,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: The number of requests performed.
-      unit: "{requests}"
+      unit: "{request}"
       sum:
         value_type: int
         monotonic: true
@@ -121,3 +121,10 @@ attributes:
       - success
       - refused
       - failure
+
+feature_gates:
+  - id: receiverhelper.newReceiverMetrics
+    description: 'Controls whether receivers emit new metrics and span attributes to distinguish downstream errors from internal errors. This is a breaking change for the semantics of the otelcol_receiver_refused_metric_points,  otelcol_receiver_refused_log_records and otelcol_receiver_refused_spans.'
+    stage: alpha
+    from_version: 'v0.138.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/pull/12802'

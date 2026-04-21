@@ -116,6 +116,7 @@ func (b *dataBuffer) logMetricDescriptor(md pmetric.Metric) {
 	b.logEntry("     -> Description: %s", md.Description())
 	b.logEntry("     -> Unit: %s", md.Unit())
 	b.logEntry("     -> DataType: %s", md.Type().String())
+	b.logAttributes("     -> Metadata", md.Metadata())
 }
 
 func (b *dataBuffer) logMetricDataPoints(m pmetric.Metric) {
@@ -349,8 +350,18 @@ func (b *dataBuffer) logProfileSamples(ss pprofile.SampleSlice, dic pprofile.Pro
 		if lai := sample.AttributeIndices().Len(); lai > 0 {
 			b.logEntry("        Attributes:")
 			for j := range lai {
-				attr := dic.AttributeTable().At(int(sample.AttributeIndices().At(j)))
-				b.logEntry("             -> %s: %s", dic.StringTable().At(int(attr.KeyStrindex())), attr.Value().AsRaw())
+				attrIdx := int(sample.AttributeIndices().At(j))
+				if attrIdx >= dic.AttributeTable().Len() {
+					b.logEntry("             -> [Missing Dictionary AttributeTable Item #%d]", attrIdx)
+					continue
+				}
+				attr := dic.AttributeTable().At(attrIdx)
+				keyIdx := int(attr.KeyStrindex())
+				key := fmt.Sprintf("[Missing Dictionary Key String Item #%d]", keyIdx)
+				if keyIdx < dic.StringTable().Len() {
+					key = dic.StringTable().At(keyIdx)
+				}
+				b.logEntry("             -> %s: %s", key, attr.Value().AsRaw())
 			}
 		}
 	}

@@ -16,7 +16,7 @@ func AssertEqualProcessorIncomingItems(t *testing.T, tt *componenttest.Telemetry
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_incoming_items",
 		Description: "Number of items passed to the processor. [Alpha]",
-		Unit:        "{items}",
+		Unit:        "{item}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -47,7 +47,7 @@ func AssertEqualProcessorOutgoingItems(t *testing.T, tt *componenttest.Telemetry
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_outgoing_items",
 		Description: "Number of items emitted from the processor. [Alpha]",
-		Unit:        "{items}",
+		Unit:        "{item}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,

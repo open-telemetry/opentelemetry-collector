@@ -1,0 +1,19 @@
+type: receiver
+
+status:
+  class: receiver
+  stability:
+    beta: [logs]
+  distributions: [contrib]
+
+# config has a local $ref without a definition name, which passes LoadMetadata
+# validation but causes generateConfigFiles to return an error during schema resolution.
+config:
+  type: object
+  properties:
+    sub:
+      $ref: "/config/configauth"
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	{{- range .ConfmapConverters}}
 	{{.Name}} "{{.Import}}"
-	{{- end}}	
+	{{- end}}
 	{{- range .ConfmapProviders}}
 	{{.Name}} "{{.Import}}"
 	{{- end}}
@@ -50,7 +50,7 @@ func main() {
 			{{- range .ConfmapProviders}}
 			{{.Name}}.NewFactory().Create(confmap.ProviderSettings{}).Scheme(): "{{.GoMod}}",
 			{{- end}}
-    	},
+		},
 		ConverterModules: []string{
 			{{- range .ConfmapConverters}}
 			"{{.GoMod}}",
@@ -59,8 +59,8 @@ func main() {
 	}
 
 	if err := run(set); err != nil {
-	 // The error message is logged by cobra, so we intentionally
-    // avoid logging it again here to prevent duplicate output.
+		// The error message is logged by cobra, so we intentionally
+		// avoid logging it again here to prevent duplicate output.
 		os.Exit(1)
 	}
 }

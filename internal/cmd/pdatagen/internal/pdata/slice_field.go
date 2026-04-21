@@ -5,7 +5,7 @@ package pdata // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/int
 
 import (
 	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/proto"
-	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/tmplutil"
 )
 
 const sliceAccessorTemplate = `// {{ .fieldName }} returns the {{ .fieldName }} associated with this {{ .structName }}.
@@ -42,21 +42,21 @@ func (sf *SliceField) GenerateAccessors(ms *messageStruct) string {
 	if sf.hideAccessors {
 		return ""
 	}
-	t := template.Parse("sliceAccessorTemplate", []byte(sliceAccessorTemplate))
-	return template.Execute(t, sf.templateFields(ms))
+	t := tmplutil.Parse("sliceAccessorTemplate", []byte(sliceAccessorTemplate))
+	return tmplutil.Execute(t, sf.templateFields(ms))
 }
 
 func (sf *SliceField) GenerateAccessorsTest(ms *messageStruct) string {
 	if sf.hideAccessors {
 		return ""
 	}
-	t := template.Parse("sliceAccessorsTestTemplate", []byte(sliceAccessorsTestTemplate))
-	return template.Execute(t, sf.templateFields(ms))
+	t := tmplutil.Parse("sliceAccessorsTestTemplate", []byte(sliceAccessorsTestTemplate))
+	return tmplutil.Execute(t, sf.templateFields(ms))
 }
 
 func (sf *SliceField) GenerateTestValue(ms *messageStruct) string {
-	t := template.Parse("sliceSetTestTemplate", []byte(sliceSetTestTemplate))
-	return template.Execute(t, sf.templateFields(ms))
+	t := tmplutil.Parse("sliceSetTestTemplate", []byte(sliceSetTestTemplate))
+	return tmplutil.Execute(t, sf.templateFields(ms))
 }
 
 func (sf *SliceField) toProtoField(ms *messageStruct) proto.FieldInterface {

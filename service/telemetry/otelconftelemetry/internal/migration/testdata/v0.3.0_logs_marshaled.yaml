@@ -1,0 +1,25 @@
+level: "info"
+processors:
+  - batch:
+      exporter:
+        otlp:
+          protocol: http/protobuf
+          endpoint: https://127.0.0.1:4317
+          headers:
+          - name: "key1"
+            value: "[REDACTED]"
+  - simple:
+      exporter:
+        console: {}
+  - simple:
+      exporter:
+        otlp:
+          protocol: http/protobuf
+          endpoint: http://127.0.0.1:4317
+          headers:
+          - name: "key1"
+            value: "[REDACTED]"
+error_output_paths: []
+output_paths: []
+encoding: ""
+sampling: null

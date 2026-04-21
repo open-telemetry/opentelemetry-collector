@@ -6,6 +6,7 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -101,6 +102,22 @@ type BatchConfig struct {
 
 	// MaxSize defines the configuration for the maximum size of a batch.
 	MaxSize int64 `mapstructure:"max_size"`
+
+	// Partition defines the partitioning of the batches configuration.
+	Partition PartitionConfig `mapstructure:"partition"`
+}
+
+// PartitionConfig defines a configuration for partitioning requests based on metadata keys.
+type PartitionConfig struct {
+	// MetadataKeys is a list of client.Metadata keys that will be used to partition
+	// the data into batches. If this setting is empty, a single batcher instance
+	// will be used. When this setting is not empty, one batcher will be used per
+	// distinct combination of values for the listed metadata keys.
+	//
+	// Empty value and unset metadata are treated as distinct cases.
+	//
+	// Entries are case-insensitive. Duplicated entries will trigger a validation error.
+	MetadataKeys []string `mapstructure:"metadata_keys"`
 }
 
 func (cfg *BatchConfig) Validate() error {
@@ -127,6 +144,24 @@ func (cfg *BatchConfig) Validate() error {
 
 	if cfg.MaxSize > 0 && cfg.MaxSize < cfg.MinSize {
 		return fmt.Errorf("`max_size` (%d) must be greater or equal to `min_size` (%d)", cfg.MaxSize, cfg.MinSize)
+	}
+
+	return nil
+}
+
+func (cfg *PartitionConfig) Validate() error {
+	if cfg == nil {
+		return nil
+	}
+
+	// Validate metadata_keys for duplicates (case-insensitive)
+	uniq := map[string]bool{}
+	for _, k := range cfg.MetadataKeys {
+		l := strings.ToLower(k)
+		if _, has := uniq[l]; has {
+			return fmt.Errorf("duplicate entry in metadata_keys: %q (case-insensitive)", l)
+		}
+		uniq[l] = true
 	}
 
 	return nil

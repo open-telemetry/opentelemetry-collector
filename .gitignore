@@ -1,6 +1,7 @@
 bin/
 dist/
 /local
+.schemas
 
 # GoLand IDEA
 /.idea/

@@ -12,6 +12,9 @@ ALL_SRC := $(shell find . -name '*.go' \
 ALL_DOC := $(shell find . \( -name "*.md" -o -name "*.yaml" \) \
                                 -type f | sort)
 
+# All Markdown files. Used in markdownlint.
+ALL_MD := $(shell find . -name "*.md" -type f | sort)
+
 # ALL_MODULES includes ./* dirs (excludes . dir)
 ALL_MODULES := $(shell find . -mindepth 2 \
 				-type f \
@@ -37,7 +40,7 @@ endef
 .DEFAULT_GOAL := all
 
 .PHONY: all
-all: checklicense checkdoc misspell goimpi goporto multimod-verify golint gotest
+all: checklicense checkdoc misspell markdownlint goimpi goporto multimod-verify golint gotest
 
 all-modules:
 	@echo $(ALL_MODULES) | tr ' ' '\n' | sort
@@ -134,6 +137,10 @@ checklicense:
 misspell:
 	$(GO_TOOL) misspell -error $(ALL_DOC)
 
+.PHONY: markdownlint
+markdownlint:
+	npx -y markdownlint-cli@0.48.0 -c .markdownlint.yaml --ignore-path .markdownlintignore -- $(ALL_MD)
+
 .PHONY: misspell-correction
 misspell-correction:
 	$(GO_TOOL) misspell -w $(ALL_DOC)
@@ -225,7 +232,6 @@ check-contrib:
 .PHONY: generate-contrib
 generate-contrib:
 	@echo -e "\nGenerating files in contrib"
-	$(MAKE) -C $(CONTRIB_PATH) -B install-tools
 	$(MAKE) -C $(CONTRIB_PATH) generate GROUP=all
 
 # Restores contrib to its original state after running check-contrib.

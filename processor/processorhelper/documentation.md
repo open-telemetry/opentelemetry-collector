@@ -12,7 +12,7 @@ Number of items passed to the processor.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {items} | Sum | Int | true | Alpha |
+| {item} | Sum | Int | true | Alpha |
 
 ### otelcol_processor_internal_duration
 
@@ -28,4 +28,4 @@ Number of items emitted from the processor.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {items} | Sum | Int | true | Alpha |
+| {item} | Sum | Int | true | Alpha |

@@ -3,15 +3,17 @@
 
 package configoptional // import "go.opentelemetry.io/collector/config/configoptional"
 
+//go:generate mdatagen metadata.yaml
+
 import (
 	"errors"
 	"fmt"
 	"reflect"
 	"strings"
 
+	"go.opentelemetry.io/collector/config/configoptional/internal/metadata"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
-	"go.opentelemetry.io/collector/featuregate"
 )
 
 type flavor int
@@ -167,17 +169,6 @@ func (o *Optional[T]) GetOrInsertDefault() *T {
 
 var _ confmap.Unmarshaler = (*Optional[any])(nil)
 
-var (
-	addEnabledFieldFeatureGateID = "configoptional.AddEnabledField"
-	addEnabledFieldFeatureGate   = featuregate.GlobalRegistry().MustRegister(
-		addEnabledFieldFeatureGateID,
-		featuregate.StageBeta,
-		featuregate.WithRegisterFromVersion("v0.138.0"),
-		featuregate.WithRegisterDescription("Allows optional fields to be toggled via an 'enabled' field."),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/14021"),
-	)
-)
-
 // Unmarshal the configuration into the Optional value.
 //
 // The behavior of this method depends on the state of the Optional:
@@ -205,7 +196,7 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	isEnabled := true
-	if addEnabledFieldFeatureGate.IsEnabled() && conf.IsSet("enabled") {
+	if metadata.ConfigoptionalAddEnabledFieldFeatureGate.IsEnabled() && conf.IsSet("enabled") {
 		enabled := conf.Get("enabled")
 		conf.Delete("enabled")
 		var ok bool

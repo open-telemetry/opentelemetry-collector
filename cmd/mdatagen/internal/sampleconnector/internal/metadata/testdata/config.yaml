@@ -6,7 +6,6 @@ all_set:
       attributes: ["string_attr","state","enum_attr","slice_attr","map_attr"]
     default.metric.to_be_removed:
       enabled: true
-      attributes: []
     metric.input_type:
       enabled: true
       attributes: ["string_attr","state","enum_attr","slice_attr","map_attr"]
@@ -43,7 +42,6 @@ reaggregate_set:
       attributes: []
     default.metric.to_be_removed:
       enabled: true
-      attributes: []
     metric.input_type:
       enabled: true
       attributes: []
@@ -80,7 +78,6 @@ none_set:
       attributes: ["string_attr","state","enum_attr","slice_attr","map_attr"]
     default.metric.to_be_removed:
       enabled: false
-      attributes: []
     metric.input_type:
       enabled: false
       attributes: ["string_attr","state","enum_attr","slice_attr","map_attr"]

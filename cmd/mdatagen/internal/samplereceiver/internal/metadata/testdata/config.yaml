@@ -6,7 +6,6 @@ all_set:
       attributes: ["string_attr","state","enum_attr","slice_attr","map_attr","conditional_int_attr","conditional_string_attr","opt_in_bool_attr"]
     default.metric.to_be_removed:
       enabled: true
-      attributes: []
     metric.input_type:
       enabled: true
       attributes: ["string_attr","state","enum_attr","slice_attr","map_attr"]
@@ -24,7 +23,10 @@ all_set:
       attributes: ["required_string_attr","string_attr","boolean_attr"]
     system.cpu.time:
       enabled: true
-      attributes: []
+      attributes: ["cpu"]
+    system.memory.usage:
+      enabled: true
+      attributes: ["state"]
   events:
     default.event:
       enabled: true
@@ -49,6 +51,8 @@ all_set:
       enabled: true
     string.resource.attr_to_be_removed:
       enabled: true
+    string.resource.disabled_attr_to_be_removed:
+      enabled: true
 reaggregate_set:
   metrics:
     default.metric:
@@ -56,7 +60,6 @@ reaggregate_set:
       attributes: []
     default.metric.to_be_removed:
       enabled: true
-      attributes: []
     metric.input_type:
       enabled: true
       attributes: []
@@ -75,6 +78,9 @@ reaggregate_set:
     system.cpu.time:
       enabled: true
       attributes: []
+    system.memory.usage:
+      enabled: true
+      attributes: []
   events:
     default.event:
       enabled: true
@@ -99,6 +105,8 @@ reaggregate_set:
       enabled: true
     string.resource.attr_to_be_removed:
       enabled: true
+    string.resource.disabled_attr_to_be_removed:
+      enabled: true
 none_set:
   metrics:
     default.metric:
@@ -106,7 +114,6 @@ none_set:
       attributes: ["string_attr","state","enum_attr","slice_attr","map_attr","conditional_int_attr","conditional_string_attr","opt_in_bool_attr"]
     default.metric.to_be_removed:
       enabled: false
-      attributes: []
     metric.input_type:
       enabled: false
       attributes: ["string_attr","state","enum_attr","slice_attr","map_attr"]
@@ -124,7 +131,10 @@ none_set:
       attributes: ["required_string_attr","string_attr","boolean_attr"]
     system.cpu.time:
       enabled: false
-      attributes: []
+      attributes: ["cpu"]
+    system.memory.usage:
+      enabled: false
+      attributes: ["state"]
   events:
     default.event:
       enabled: false
@@ -148,6 +158,8 @@ none_set:
     string.resource.attr_remove_warning:
       enabled: false
     string.resource.attr_to_be_removed:
+      enabled: false
+    string.resource.disabled_attr_to_be_removed:
       enabled: false
 filter_set_include:
   resource_attributes:
@@ -194,6 +206,12 @@ filter_set_include:
       events_include:
         - regexp: ".*"
     string.resource.attr_to_be_removed:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    string.resource.disabled_attr_to_be_removed:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -249,3 +267,9 @@ filter_set_exclude:
         - strict: "string.resource.attr_to_be_removed-val"
       events_exclude:
         - strict: "string.resource.attr_to_be_removed-val"
+    string.resource.disabled_attr_to_be_removed:
+      enabled: true
+      metrics_exclude:
+        - strict: "string.resource.disabled_attr_to_be_removed-val"
+      events_exclude:
+        - strict: "string.resource.disabled_attr_to_be_removed-val"

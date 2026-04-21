@@ -23,13 +23,13 @@ $defs:
         type: string
       ca_pem:
         description: In memory PEM encoded cert. (optional)
-        $ref: go.opentelemetry.io/collector/config/configopaque.string
+        $ref: /config/configopaque.string
       cert_file:
         description: Path to the TLS cert to use for TLS required connections. (optional)
         type: string
       cert_pem:
         description: In memory PEM encoded TLS cert to use for TLS required connections. (optional)
-        $ref: go.opentelemetry.io/collector/config/configopaque.string
+        $ref: /config/configopaque.string
       cipher_suites:
         description: CipherSuites is a list of TLS cipher suites that the TLS transport can use. If left blank, a safe default list is used. See https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites.
         type: array
@@ -48,7 +48,7 @@ $defs:
         type: string
       key_pem:
         description: In memory PEM encoded TLS key to use for TLS required connections. (optional)
-        $ref: go.opentelemetry.io/collector/config/configopaque.string
+        $ref: /config/configopaque.string
       max_version:
         description: MaxVersion sets the maximum TLS version that is acceptable. If not set, refer to crypto/tls for defaults. (optional)
         type: string

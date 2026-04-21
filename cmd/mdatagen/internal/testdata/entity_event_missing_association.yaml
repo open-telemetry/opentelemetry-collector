@@ -1,0 +1,38 @@
+type: sample
+status:
+  class: receiver
+  stability:
+    stable: [metrics]
+
+resource_attributes:
+  host.id:
+    description: The unique host identifier
+    type: string
+    enabled: true
+  process.pid:
+    description: The process identifier
+    type: int
+    enabled: true
+
+entities:
+  - type: host
+    brief: A host instance.
+    stability: stable
+    identity:
+      - ref: host.id
+  - type: process
+    brief: A process instance.
+    stability: stable
+    identity:
+      - ref: process.pid
+
+attributes:
+  test.attr:
+    description: Test attribute
+    type: string
+
+events:
+  host.restart:
+    enabled: true
+    description: Host restart event
+    attributes: [test.attr]

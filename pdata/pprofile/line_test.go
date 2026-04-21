@@ -164,26 +164,26 @@ func TestLineSwitchDictionary(t *testing.T) {
 			}(),
 			dst: func() ProfilesDictionary {
 				d := NewProfilesDictionary()
-				d.StringTable().Append("", "foo")
+				d.StringTable().Append("", "test")
 
 				d.FunctionTable().AppendEmpty()
-				d.FunctionTable().AppendEmpty()
+				f := d.FunctionTable().AppendEmpty()
+				f.SetNameStrindex(1)
 				return d
 			}(),
 
 			wantLine: func() Line {
 				l := NewLine()
-				l.SetFunctionIndex(2)
+				l.SetFunctionIndex(1)
 				return l
 			}(),
 			wantDictionary: func() ProfilesDictionary {
 				d := NewProfilesDictionary()
-				d.StringTable().Append("", "foo", "test")
+				d.StringTable().Append("", "test")
 
 				d.FunctionTable().AppendEmpty()
-				d.FunctionTable().AppendEmpty()
 				f := d.FunctionTable().AppendEmpty()
-				f.SetNameStrindex(2)
+				f.SetNameStrindex(1)
 				return d
 			}(),
 		},

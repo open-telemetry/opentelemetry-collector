@@ -7,7 +7,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/internal/telemetry"
+	"go.opentelemetry.io/collector/service/internal/metadata"
 )
 
 func TelemetrySettingsWithAttributes(ts component.TelemetrySettings, attrSet attribute.Set) component.TelemetrySettings {
@@ -17,7 +17,7 @@ func TelemetrySettingsWithAttributes(ts component.TelemetrySettings, attrSet att
 		TracerProvider: ts.TracerProvider,
 		attrs:          attrs,
 	}
-	if telemetry.NewPipelineTelemetryGate.IsEnabled() {
+	if metadata.TelemetryNewPipelineTelemetryFeatureGate.IsEnabled() {
 		ts.MeterProvider = meterProviderWithAttributes{
 			MeterProvider: ts.MeterProvider,
 			attrs:         attrs,

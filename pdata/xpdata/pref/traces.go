@@ -7,7 +7,9 @@ import (
 	"reflect"
 
 	"go.opentelemetry.io/collector/pdata/internal"
+	pmetadata "go.opentelemetry.io/collector/pdata/internal/metadata"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/xpdata/internal/metadata"
 )
 
 // MarkPipelineOwnedTraces marks the ptrace.Traces data as owned by the pipeline, returns true if the data were
@@ -21,12 +23,12 @@ func RefTraces(td ptrace.Traces) {
 }
 
 func UnrefTraces(td ptrace.Traces) {
-	if EnableRefCounting.IsEnabled() {
+	if metadata.PdataEnableRefCountingFeatureGate.IsEnabled() {
 		if !internal.GetTracesState(internal.TracesWrapper(td)).Unref() {
 			return
 		}
 		// Don't call DeleteExportLogsServiceRequest without the gate because we reset the data and that may still cause issues.
-		if internal.UseProtoPooling.IsEnabled() {
+		if pmetadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			internal.DeleteExportTraceServiceRequest(internal.GetTracesOrig(internal.TracesWrapper(td)), true)
 		}
 	}

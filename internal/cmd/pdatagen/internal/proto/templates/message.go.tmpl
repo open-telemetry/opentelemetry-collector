@@ -37,7 +37,7 @@ var (
 
 
 func New{{ .messageName }}() *{{ .messageName }} {
-    if !UseProtoPooling.IsEnabled() {
+    if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
         return &{{ .messageName }}{}
     }
     return protoPool{{ .messageName }}.Get().(*{{ .messageName }})
@@ -48,7 +48,7 @@ func Delete{{ .messageName }}(orig *{{ .messageName }}, nullable bool) {
         return
     }
 
-    if !UseProtoPooling.IsEnabled() {
+    if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
         orig.Reset()
         return
     }

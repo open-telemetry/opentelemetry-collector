@@ -12,21 +12,22 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-var reNonAlnum = regexp.MustCompile(`[^a-z0-9]+`)
+var reNonAlnum = regexp.MustCompile(`[^a-z0-9_]+`)
 
 type MetricName string
 
 func (mn MetricName) Render() (string, error) {
-	return FormatIdentifier(string(mn), true)
+	return helpers.FormatIdentifier(string(mn), true)
 }
 
 func (mn MetricName) RenderUnexported() (string, error) {
-	return FormatIdentifier(string(mn), false)
+	return helpers.FormatIdentifier(string(mn), false)
 }
 
 type Metric struct {

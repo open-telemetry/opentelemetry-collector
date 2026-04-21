@@ -30,26 +30,26 @@ const (
 {{- end }}
 
 func TestLogsBuilderAppendLogRecord(t *testing.T) {
-    observedZapCore, _ := observer.New(zap.WarnLevel)
-    {{- if or isReceiver isScraper }}
-    settings := {{ .Status.Class }}test.NewNopSettings({{ .Status.Class }}test.NopType)
-    {{- end }}
-    settings.Logger = zap.New(observedZapCore)
-    lb := NewLogsBuilder({{ if .Events }}loadLogsBuilderConfig(t, "all_set"), {{ end }}settings)
+	observedZapCore, _ := observer.New(zap.WarnLevel)
+	{{- if or isReceiver isScraper }}
+	settings := {{ .Status.Class }}test.NewNopSettings({{ .Status.Class }}test.NopType)
+	{{- end }}
+	settings.Logger = zap.New(observedZapCore)
+	lb := NewLogsBuilder({{ if .Events }}loadLogsBuilderConfig(t, "all_set"), {{ end }}settings)
 
-    {{ if .ResourceAttributes }}
-    rb := lb.NewResourceBuilder()
-    {{- range $name, $attr := .ResourceAttributes }}
-    {{- if $attr.Enum }}
-    rb.Set{{ $attr.Name.Render }}{{ index $attr.Enum 0 | publicVar }}()
-    {{- else }}
-    rb.Set{{ $attr.Name.Render }}({{ $attr.TestValue }})
-    {{- end }}
-    {{- end }}
-    res := rb.Emit()
-    {{- else }}
-    res := pcommon.NewResource()
-    {{- end }}
+	{{ if .ResourceAttributes }}
+	rb := lb.NewResourceBuilder()
+	{{- range $name, $attr := .ResourceAttributes }}
+	{{- if $attr.Enum }}
+	rb.Set{{ $attr.Name.Render }}{{ index $attr.Enum 0 | publicVar }}()
+	{{- else }}
+	rb.Set{{ $attr.Name.Render }}({{ $attr.TestValue }})
+	{{- end }}
+	{{- end }}
+	res := rb.Emit()
+	{{- else }}
+	res := pcommon.NewResource()
+	{{- end }}
 
 	// append the first log record
 	lr := plog.NewLogRecord()
@@ -136,15 +136,15 @@ func TestLogsBuilder(t *testing.T) {
 				TraceID:    trace.TraceID(traceID),
 				SpanID:     trace.SpanID(spanID),
 				TraceFlags: trace.FlagsSampled,
-            }))
+			}))
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-        	{{- if or isReceiver isScraper }}
-            settings := {{ .Status.Class }}test.NewNopSettings({{ .Status.Class }}test.NopType)
-	        {{- end }}
+			{{- if or isReceiver isScraper }}
+			settings := {{ .Status.Class }}test.NewNopSettings({{ .Status.Class }}test.NopType)
+			{{- end }}
 			settings.Logger = zap.New(observedZapCore)
 			lb := NewLogsBuilder(loadLogsBuilderConfig(t, tt.name), settings)
 
-            expectedWarnings := 0
+			expectedWarnings := 0
 			{{- range $name, $event := .Events }}
 			{{- if and $event.Enabled $event.Warnings.IfEnabled }}
 			if tt.eventsSet == eventTestDataSetDefault || tt.eventsSet == eventTestDataSetAll {
@@ -166,8 +166,8 @@ func TestLogsBuilder(t *testing.T) {
 			{{- end }}
 			{{- end }}
 			{{- range $name, $attr := .ResourceAttributes }}
-			{{- if and $attr.Enabled $attr.Warnings.IfEnabled }}
-			if tt.resAttrsSet == eventTestDataSetDefault || tt.resAttrsSet == eventTestDataSetAll {
+			{{- if $attr.Warnings.IfEnabled }}
+			if {{- if $attr.Enabled }} tt.resAttrsSet == eventTestDataSetDefault || {{- end }} tt.resAttrsSet == eventTestDataSetAll {
 				assert.Equal(t, "[WARNING] `{{ $name }}` should not be enabled: {{ $attr.Warnings.IfEnabled }}", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
@@ -201,11 +201,11 @@ func TestLogsBuilder(t *testing.T) {
 				{{- end -}}
 				{{- end -}}
 				{{- range $event.Attributes -}}
-                {{- if (attributeInfo .).IsConditional -}}
-                    , With{{ .Render }}EventAttribute({{- template "getAttributeValue" . -}})
-                {{- end -}}
-                {{- end -}}
-                )
+				{{- if (attributeInfo .).IsConditional -}}
+					, With{{ .Render }}EventAttribute({{- template "getAttributeValue" . -}})
+				{{- end -}}
+				{{- end -}}
+				)
 			{{- end }}
 
 			{{ if .ResourceAttributes }}

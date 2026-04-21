@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 )
 
-func TestHttpRetryAfter(t *testing.T) {
+func TestHTTPRetryAfter(t *testing.T) {
 	tests := []struct {
 		name                  string
 		contentType           string

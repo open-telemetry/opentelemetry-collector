@@ -12,7 +12,7 @@ Number of profile records that were unable to be scraped.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoints} | Sum | Int | true | Alpha |
+| {datapoint} | Sum | Int | true | Alpha |
 
 ### otelcol_scraper_scraped_profile_records
 
@@ -20,4 +20,4 @@ Number of profile records successfully scraped.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoints} | Sum | Int | true | Alpha |
+| {datapoint} | Sum | Int | true | Alpha |

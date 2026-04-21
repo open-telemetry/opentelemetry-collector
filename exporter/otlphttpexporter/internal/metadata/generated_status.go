@@ -7,12 +7,13 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("otlp_http")
-	ScopeName = "go.opentelemetry.io/collector/exporter/otlphttpexporter"
+	Type           = component.MustNewType("otlp_http")
+	DeprecatedType = component.MustNewType("otlphttp")
+	ScopeName      = "go.opentelemetry.io/collector/exporter/otlphttpexporter"
 )
 
 const (
-	ProfilesStability = component.StabilityLevelDevelopment
+	ProfilesStability = component.StabilityLevelAlpha
 	TracesStability   = component.StabilityLevelStable
 	MetricsStability  = component.StabilityLevelStable
 	LogsStability     = component.StabilityLevelStable

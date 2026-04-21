@@ -32,30 +32,32 @@ type testClientMiddleware struct {
 func newTestClientMiddleware(name string) component.Component {
 	return &testClientMiddleware{
 		Extension: extensionmiddlewaretest.NewNop(),
-		GetHTTPRoundTripperFunc: func(transport http.RoundTripper) (http.RoundTripper, error) {
-			return extensionmiddlewaretest.RoundTripperFunc(
-				func(req *http.Request) (*http.Response, error) {
-					resp, err := transport.RoundTrip(req)
-					if err != nil {
-						return resp, err
-					}
+		GetHTTPRoundTripperFunc: func(_ context.Context) (extensionmiddleware.WrapHTTPRoundTripperFunc, error) {
+			return func(_ context.Context, transport http.RoundTripper) (http.RoundTripper, error) {
+				return extensionmiddlewaretest.RoundTripperFunc(
+					func(req *http.Request) (*http.Response, error) {
+						resp, err := transport.RoundTrip(req)
+						if err != nil {
+							return resp, err
+						}
 
-					// Read the original body
-					body, err := io.ReadAll(resp.Body)
-					if err != nil {
-						return resp, err
-					}
-					_ = resp.Body.Close()
+						// Read the original body
+						body, err := io.ReadAll(resp.Body)
+						if err != nil {
+							return resp, err
+						}
+						_ = resp.Body.Close()
 
-					// Create a new body with the appended text
-					newBody := string(body) + "\r\noutput by " + name
+						// Create a new body with the appended text
+						newBody := string(body) + "\r\noutput by " + name
 
-					// Replace the response body
-					resp.Body = io.NopCloser(strings.NewReader(newBody))
-					resp.ContentLength = int64(len(newBody))
+						// Replace the response body
+						resp.Body = io.NopCloser(strings.NewReader(newBody))
+						resp.ContentLength = int64(len(newBody))
 
-					return resp, nil
-				}), nil
+						return resp, nil
+					}), nil
+			}, nil
 		},
 	}
 }

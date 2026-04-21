@@ -6,7 +6,7 @@ package proto // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/int
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/tmplutil"
 )
 
 const marshalProtoFloat = `{{ if .repeated -}}
@@ -253,19 +253,19 @@ func (pf *Field) GenMarshalProto() string {
 	tf := pf.getTemplateFields()
 	switch pf.Type {
 	case TypeDouble, TypeFloat:
-		return template.Execute(template.Parse("marshalProtoFloat", []byte(marshalProtoFloat)), tf)
+		return tmplutil.Execute(tmplutil.Parse("marshalProtoFloat", []byte(marshalProtoFloat)), tf)
 	case TypeFixed64, TypeSFixed64, TypeFixed32, TypeSFixed32:
-		return template.Execute(template.Parse("marshalProtoFixed", []byte(marshalProtoFixed)), tf)
+		return tmplutil.Execute(tmplutil.Parse("marshalProtoFixed", []byte(marshalProtoFixed)), tf)
 	case TypeInt32, TypeInt64, TypeUint32, TypeUint64, TypeEnum:
-		return template.Execute(template.Parse("marshalProtoVarint", []byte(marshalProtoVarint)), tf)
+		return tmplutil.Execute(tmplutil.Parse("marshalProtoVarint", []byte(marshalProtoVarint)), tf)
 	case TypeBool:
-		return template.Execute(template.Parse("marshalProtoBool", []byte(marshalProtoBool)), tf)
+		return tmplutil.Execute(tmplutil.Parse("marshalProtoBool", []byte(marshalProtoBool)), tf)
 	case TypeBytes, TypeString:
-		return template.Execute(template.Parse("marshalProtoBytesString", []byte(marshalProtoBytesString)), tf)
+		return tmplutil.Execute(tmplutil.Parse("marshalProtoBytesString", []byte(marshalProtoBytesString)), tf)
 	case TypeMessage:
-		return template.Execute(template.Parse("marshalProtoMessage", []byte(marshalProtoMessage)), tf)
+		return tmplutil.Execute(tmplutil.Parse("marshalProtoMessage", []byte(marshalProtoMessage)), tf)
 	case TypeSInt32, TypeSInt64:
-		return template.Execute(template.Parse("marshalProtoSignedVarint", []byte(marshalProtoSignedVarint)), tf)
+		return tmplutil.Execute(tmplutil.Parse("marshalProtoSignedVarint", []byte(marshalProtoSignedVarint)), tf)
 	}
 	panic(fmt.Sprintf("unhandled case %T", pf.Type))
 }

@@ -1,0 +1,25 @@
+type: receiver
+
+status:
+  class: receiver
+  stability:
+    beta: [logs]
+  distributions: [contrib]
+
+config:
+  type: object
+  properties:
+    endpoint:
+      description: The endpoint to connect to.
+      type: string
+      default: "localhost:4317"
+    timeout:
+      description: Timeout for requests.
+      type: string
+      format: duration
+      default: 10s
+  required: [endpoint]
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

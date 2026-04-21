@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/service/internal/componentattribute"
+	"go.opentelemetry.io/collector/service/internal/metadata"
 )
 
 func findScopeAttributesField(context []zap.Field) ([]attribute.KeyValue, bool) {
@@ -116,10 +117,10 @@ type tracerProviderWrapper struct {
 }
 
 func testTelemetryWithAttributes(t *testing.T, useTraceSdk bool) {
-	prevState := telemetry.NewPipelineTelemetryGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(telemetry.NewPipelineTelemetryGate.ID(), true))
+	prevState := metadata.TelemetryNewPipelineTelemetryFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.TelemetryNewPipelineTelemetryFeatureGate.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(telemetry.NewPipelineTelemetryGate.ID(), prevState))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.TelemetryNewPipelineTelemetryFeatureGate.ID(), prevState))
 	}()
 
 	// Setup mock TelemetrySettings

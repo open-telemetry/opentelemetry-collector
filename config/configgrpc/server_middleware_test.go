@@ -46,7 +46,7 @@ type testServerMiddleware struct {
 func newTestServerMiddleware(name string) extension.Extension {
 	return &testServerMiddleware{
 		Extension: extensionmiddlewaretest.NewNop(),
-		GetGRPCServerOptionsFunc: func() ([]grpc.ServerOption, error) {
+		GetGRPCServerOptionsFunc: func(_ context.Context) ([]grpc.ServerOption, error) {
 			return []grpc.ServerOption{grpc.ChainUnaryInterceptor(
 				func(
 					ctx context.Context,

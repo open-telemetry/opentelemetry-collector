@@ -5,9 +5,12 @@ all_set:
   {{- if .Metrics }}
   metrics:
     {{- range $name, $metric := .Metrics }}
+    {{- $metricReag := and $reag (hasAggregatableAttributes $metric.Attributes) }}
     {{ $name }}:
       enabled: true
+      {{- if $metricReag }}
       attributes: [{{- range $index, $element := $metric.Attributes -}}{{ if $index }},{{ end }}"{{ (attributeInfo $element).Name }}"{{ end -}}]
+      {{- end }}
     {{- end }}
   {{- end }}
   {{- if .Events }}
@@ -29,9 +32,10 @@ reaggregate_set:
   {{- if .Metrics }}
   metrics:
     {{- range $name, $metric := .Metrics }}
+    {{- $metricReag := and $reag (hasAggregatableAttributes $metric.Attributes) }}
     {{ $name }}:
       enabled: true
-      {{- if $reag }}
+      {{- if $metricReag }}
       attributes: [{{- range $index, $attr := requiredAttributes $metric.Attributes -}}{{ if $index }},{{ end }}"{{ $attr }}"{{- end -}}]
       {{- end }}
     {{- end }}
@@ -54,9 +58,10 @@ none_set:
   {{- if .Metrics }}
   metrics:
     {{- range $name, $metric := .Metrics }}
+    {{- $metricReag := and $reag (hasAggregatableAttributes $metric.Attributes) }}
     {{ $name }}:
       enabled: false
-      {{- if $reag }}
+      {{- if $metricReag }}
       attributes: [{{- range $index, $element := $metric.Attributes -}}{{ if $index }},{{ end }}"{{ (attributeInfo $element).Name }}"{{ end -}}]
       {{- end }}
     {{- end }}

@@ -59,11 +59,6 @@ func (ms Sample) SetStackIndex(v int32) {
 	ms.orig.StackIndex = v
 }
 
-// Values returns the Values associated with this Sample.
-func (ms Sample) Values() pcommon.Int64Slice {
-	return pcommon.Int64Slice(internal.NewInt64SliceWrapper(&ms.orig.Values, ms.state))
-}
-
 // AttributeIndices returns the AttributeIndices associated with this Sample.
 func (ms Sample) AttributeIndices() pcommon.Int32Slice {
 	return pcommon.Int32Slice(internal.NewInt32SliceWrapper(&ms.orig.AttributeIndices, ms.state))
@@ -78,6 +73,11 @@ func (ms Sample) LinkIndex() int32 {
 func (ms Sample) SetLinkIndex(v int32) {
 	ms.state.AssertMutable()
 	ms.orig.LinkIndex = v
+}
+
+// Values returns the Values associated with this Sample.
+func (ms Sample) Values() pcommon.Int64Slice {
+	return pcommon.Int64Slice(internal.NewInt64SliceWrapper(&ms.orig.Values, ms.state))
 }
 
 // TimestampsUnixNano returns the TimestampsUnixNano associated with this Sample.

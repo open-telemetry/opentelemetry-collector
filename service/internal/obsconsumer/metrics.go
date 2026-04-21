@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/service/internal/metadata"
 )
 
 var (
@@ -20,7 +21,7 @@ var (
 )
 
 func NewMetrics(cons consumer.Metrics, set Settings, opts ...Option) consumer.Metrics {
-	if !telemetry.NewPipelineTelemetryGate.IsEnabled() {
+	if !metadata.TelemetryNewPipelineTelemetryFeatureGate.IsEnabled() {
 		return cons
 	}
 

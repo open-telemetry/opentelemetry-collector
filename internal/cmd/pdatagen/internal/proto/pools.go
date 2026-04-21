@@ -4,7 +4,7 @@
 package proto // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/proto"
 
 import (
-	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/tmplutil"
 )
 
 const poolVarOrigTemplate = `
@@ -18,7 +18,7 @@ const poolVarOrigTemplate = `
 func (pf *Field) GenPool() string {
 	tf := pf.getTemplateFields()
 	if pf.OneOfGroup != "" {
-		return template.Execute(template.Parse("poolVarOrigTemplate", []byte(poolVarOrigTemplate)), tf)
+		return tmplutil.Execute(tmplutil.Parse("poolVarOrigTemplate", []byte(poolVarOrigTemplate)), tf)
 	}
 	return ""
 }

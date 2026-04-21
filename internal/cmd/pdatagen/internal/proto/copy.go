@@ -4,14 +4,14 @@
 package proto // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/proto"
 
 import (
-	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/template"
+	"go.opentelemetry.io/collector/internal/cmd/pdatagen/internal/tmplutil"
 )
 
 const copyOther = `{{ if .repeated -}}
 	dest.{{ .fieldName }} = append(dest.{{ .fieldName }}[:0], src.{{ .fieldName }}...)
 {{ else if ne .oneOfGroup "" -}}
 	var ov *{{ .oneOfMessageName }}
-	if !UseProtoPooling.IsEnabled() {
+	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 		ov = &{{ .oneOfMessageName }}{}
 	} else {
 		ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
@@ -32,7 +32,7 @@ const copyMessage = `{{ if .repeated -}}
 	dest.{{ .fieldName }} = Copy{{ .messageName }}{{ if .nullable }}Ptr{{ end }}Slice(dest.{{ .fieldName }}, src.{{ .fieldName }})
 {{- else if ne .oneOfGroup "" -}}
 	var ov *{{ .oneOfMessageName }}
-	if !UseProtoPooling.IsEnabled() {
+	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 		ov = &{{ .oneOfMessageName }}{}
 	} else {
 		ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
@@ -50,7 +50,7 @@ const copyMessage = `{{ if .repeated -}}
 func (pf *Field) GenCopy() string {
 	tf := pf.getTemplateFields()
 	if pf.Type == TypeMessage {
-		return template.Execute(template.Parse("copyMessage", []byte(copyMessage)), tf)
+		return tmplutil.Execute(tmplutil.Parse("copyMessage", []byte(copyMessage)), tf)
 	}
-	return template.Execute(template.Parse("copyOther", []byte(copyOther)), tf)
+	return tmplutil.Execute(tmplutil.Parse("copyOther", []byte(copyOther)), tf)
 }

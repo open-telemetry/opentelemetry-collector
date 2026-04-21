@@ -1,11 +1,12 @@
-type: xextension
+type: xextension/storage
+parent: xextension
 github_project: open-telemetry/opentelemetry-collector
 
 status:
   disable_codecov_badge: true
-  class: extension
+  class: pkg
   codeowners:
     active:
       - swiatekm
   stability:
-    development: [profiles]
+    alpha: [profiles]

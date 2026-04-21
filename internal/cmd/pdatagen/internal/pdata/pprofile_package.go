@@ -409,21 +409,21 @@ var sample = &messageStruct{
 			protoType: proto.TypeInt32,
 		},
 		&SliceField{
-			fieldName:   "Values",
-			protoID:     2,
-			protoType:   proto.TypeInt64,
-			returnSlice: int64Slice,
-		},
-		&SliceField{
 			fieldName:   "AttributeIndices",
-			protoID:     3,
+			protoID:     2,
 			protoType:   proto.TypeInt32,
 			returnSlice: int32Slice,
 		},
 		&PrimitiveField{
 			fieldName: "LinkIndex",
-			protoID:   4,
+			protoID:   3,
 			protoType: proto.TypeInt32,
+		},
+		&SliceField{
+			fieldName:   "Values",
+			protoID:     4,
+			protoType:   proto.TypeInt64,
+			returnSlice: int64Slice,
 		},
 		&SliceField{
 			fieldName:   "TimestampsUnixNano",

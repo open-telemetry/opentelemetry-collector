@@ -66,7 +66,7 @@ func (e *event{{ $name.Render }}) recordEvent(ctx context.Context, timestamp pco
 	{{- end }}
 	{{- end }}
 
-    {{ if $event.HasConditionalAttributes $.Attributes }}
+	{{ if $event.HasConditionalAttributes $.Attributes }}
 	for _, op := range options {
 		op.apply(dp)
 	}
@@ -75,7 +75,7 @@ func (e *event{{ $name.Render }}) recordEvent(ctx context.Context, timestamp pco
 
 // emit appends recorded event data to a events slice and prepares it for recording another set of log records.
 func (e *event{{ $name.Render }}) emit(lrs plog.LogRecordSlice) {
-    if e.config.Enabled && e.data.Len() > 0 {
+	if e.config.Enabled && e.data.Len() > 0 {
 		e.data.MoveAndAppendTo(lrs)
 	}
 }
@@ -93,7 +93,7 @@ func newEvent{{ $name.Render }}(cfg EventConfig) event{{ $name.Render }} {
 // LogsBuilder provides an interface for scrapers to report logs while taking care of all the transformations
 // required to produce log representation defined in metadata and user config.
 type LogsBuilder struct {
-    {{- if .Events }}
+	{{- if .Events }}
 	config              LogsBuilderConfig    // config of the logs builder.
 	{{- end }}
 	logsBuffer          plog.Logs
@@ -110,7 +110,7 @@ type LogsBuilder struct {
 
 // LogBuilderOption applies changes to default logs builder.
 type LogBuilderOption interface {
-    apply(*LogsBuilder)
+	apply(*LogsBuilder)
 }
 
 {{- if or isReceiver isScraper }}
@@ -190,13 +190,13 @@ func (lb *LogsBuilder) NewResourceBuilder() *ResourceBuilder {
 
 // ResourceLogsOption applies changes to provided resource logs.
 type ResourceLogsOption interface {
-    apply(plog.ResourceLogs)
+	apply(plog.ResourceLogs)
 }
 
 type resourceLogsOptionFunc func(plog.ResourceLogs)
 
 func (rlof resourceLogsOptionFunc) apply(rl plog.ResourceLogs) {
-    rlof(rl)
+	rlof(rl)
 }
 
 // WithLogsResource sets the provided resource on the emitted ResourceLogs.
@@ -226,7 +226,7 @@ func (lb *LogsBuilder) EmitForResource(options ...ResourceLogsOption) {
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(lb.buildInfo.Version)
 
-    {{- range $name, $event := .Events }}
+	{{- range $name, $event := .Events }}
 	lb.event{{- $name.Render }}.emit(ils.LogRecords())
 	{{- end }}
 
@@ -234,12 +234,12 @@ func (lb *LogsBuilder) EmitForResource(options ...ResourceLogsOption) {
 		op.apply(rl)
 	}
 
-    if lb.logRecordsBuffer.Len() > 0 {
-        lb.logRecordsBuffer.MoveAndAppendTo(ils.LogRecords())
-        lb.logRecordsBuffer = plog.NewLogRecordSlice()
-    }
+	if lb.logRecordsBuffer.Len() > 0 {
+		lb.logRecordsBuffer.MoveAndAppendTo(ils.LogRecords())
+		lb.logRecordsBuffer = plog.NewLogRecordSlice()
+	}
 
-    {{ if and .Events .ResourceAttributes -}}
+	{{ if and .Events .ResourceAttributes -}}
 	for attr, filter := range lb.resourceAttributeIncludeFilter {
 		if val, ok := rl.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
 			return
@@ -262,8 +262,8 @@ func (lb *LogsBuilder) EmitForResource(options ...ResourceLogsOption) {
 // produce logs representation defined in metadata and user config.
 func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 	lb.EmitForResource(options...)
-    logs := lb.logsBuffer
-    lb.logsBuffer = plog.NewLogs()
+	logs := lb.logsBuffer
+	lb.logsBuffer = plog.NewLogs()
 	return logs
 }
 

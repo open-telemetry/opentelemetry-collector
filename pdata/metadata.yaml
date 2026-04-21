@@ -10,3 +10,16 @@ status:
       - dmitryax
   stability:
     stable: [traces, metrics, logs]
+
+feature_gates:
+  - id: pdata.useCustomProtoEncoding
+    description: 'When enabled, enable custom proto encoding. This is a required step to enable featuregate pdata.useProtoPooling.'
+    stage: stable
+    from_version: 'v0.133.0'
+    to_version: 'v0.137.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/issues/13631'
+  - id: pdata.useProtoPooling
+    description: 'When enabled, enable using local memory pools for underlying data that the pdata messages are pushed to.'
+    stage: alpha
+    from_version: 'v0.133.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/issues/13631'

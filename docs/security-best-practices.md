@@ -78,7 +78,7 @@ helper functions.
 
 ## Safeguards against denial of service attacks
 
-See the [Collector configuration security documentation](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to learn how to safeguard against denial of service attacks. 
+See the [Collector configuration security documentation](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to learn how to safeguard against denial of service attacks.
 
 ## Extensions
 

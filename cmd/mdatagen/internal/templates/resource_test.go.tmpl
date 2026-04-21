@@ -43,26 +43,16 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
 
-			{{ $assignSign := ":=" }}
 			{{- range $name, $attr := .ResourceAttributes }}
-			val, ok {{ $assignSign }} res.Attributes().Get("{{ $name }}")
+			{{ $name.RenderUnexported }}AttrVal, ok := res.Attributes().Get("{{ $name }}")
 			{{- if $attr.Enabled }}
 			assert.True(t, ok)
 			{{- else }}
 			assert.Equal(t, tt == "all_set", ok)
 			{{- end }}
 			if ok {
-				{{- if eq $attr.Type.String "Int" -}}
-				assert.EqualValues(t, {{ $attr.TestValue }}, val.{{ $attr.Type }}()
-				{{- else -}}
-				assert.Equal(t, {{ $attr.TestValue }}, val.{{ $attr.Type }}()
-				{{- end -}}
-				{{- if or (eq $attr.Type.String "Bytes") (eq $attr.Type.String "Slice") (eq $attr.Type.String "Map") -}}
-				.AsRaw()
-				{{- end -}}
-				)
+				{{- template "assertResourceAttributeValue" $attr }}
 			}
-			{{- $assignSign = "=" }}
 			{{- end }}
 		})
 	}
