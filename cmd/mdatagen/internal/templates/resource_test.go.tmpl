@@ -6,9 +6,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	{{- if .OverrideValueEnabled }}
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	{{- end }}
 )
 
 {{- $enabledAttrCount := 0 }}
@@ -60,6 +62,8 @@ func TestResourceBuilder(t *testing.T) {
 		})
 	}
 }
+
+{{- if .OverrideValueEnabled }}
 
 func TestResourceBuilderOverrideValue(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
@@ -170,3 +174,4 @@ func TestResourceBuilderNoOverride(t *testing.T) {
 	}
 	{{- end }}
 }
+{{- end }}

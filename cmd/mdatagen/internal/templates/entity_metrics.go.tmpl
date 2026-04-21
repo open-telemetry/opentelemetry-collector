@@ -244,7 +244,9 @@ func (eb *{{ $builderType }}) Emit() {
 		eb.entity.{{ toLowerCamelCase $rel.Type }}{{ publicVar $rel.Target }}.copyToResource(cfg, res)
 	}
 	{{- end }}
+	{{- if $.OverrideValueEnabled }}
 	cfg.ApplyOverrideValues(res)
+	{{- end }}
 	eb.mb.EmitForResource(withResourceMoved(res))
 }
 
