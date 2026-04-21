@@ -179,6 +179,10 @@ func TestValidate(t *testing.T) {
 			name:    "testdata/entity_metrics_events_valid.yaml",
 			wantErr: "",
 		},
+		{
+			name:    "testdata/no_stability_noncomponent.yaml",
+			wantErr: "",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

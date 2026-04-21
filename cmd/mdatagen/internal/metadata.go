@@ -103,12 +103,8 @@ func (md *Metadata) Validate() error {
 		errs = errors.Join(errs, err)
 	}
 
-	if md.Parent != "" {
-		if md.Status != nil {
-			// status is not required for subcomponents.
-			errs = errors.Join(errs, errors.New("status must be empty for subcomponents"))
-		}
-	} else {
+	// status is optional for subcomponents but required for components.
+	if md.Parent == "" || md.Status != nil {
 		errs = errors.Join(errs, md.Status.Validate())
 	}
 
