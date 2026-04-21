@@ -18,7 +18,7 @@ func TestEntityBuilders(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
 	settings := {{ .Status.Class }}test.NewNopSettings({{ .Status.Class }}test.NopType)
-	mb := NewMetricsBuilder(DefaultMetricsBuilderConfig(), settings, WithStartTime(start))
+	mb := NewMetricsBuilder(NewDefaultMetricsBuilderConfig(), settings, WithStartTime(start))
 
 	{{- range $ent := .Entities }}
 	{{ $entityType := $ent.Type }}
@@ -137,7 +137,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("{{ $entityType }}/disabled_identity_attr", func(t *testing.T) {
 		// When an identity attribute is disabled, the entity is not produced but
 		// other enabled attributes are still added to the resource directly.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		{{- range $idAttr := $ent.Identity }}
 		cfg.ResourceAttributes.{{ publicVar $idAttr.Ref.Render }}.Enabled = false
 		{{- end }}
@@ -190,7 +190,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("{{ $entityType }}/disabled_descriptive_attr", func(t *testing.T) {
 		// When a descriptive attribute is disabled, the entity is still produced
 		// with its identity but the disabled attribute is not added.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		{{- range $descAttr := $ent.Description }}
 		cfg.ResourceAttributes.{{ publicVar $descAttr.Ref.Render }}.Enabled = false
 		{{- end }}
