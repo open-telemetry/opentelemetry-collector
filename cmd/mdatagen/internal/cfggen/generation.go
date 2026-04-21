@@ -58,6 +58,14 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return typeName
 		},
+		"embeddedName": func(ref string) string {
+			if ref == "" {
+				panic("attempted to use embedded name with an empty ref")
+			}
+			refDesc := NewRef(ref)
+			name, _ := helpers.FormatIdentifier(refDesc.defName, true)
+			return name
+		},
 		"formatDefaultValue": func(md *ConfigMetadata, name string, defaultValue any) string {
 			return FormatDefaultValue(md, name, defaultValue, rootPackage, componentPackage)
 		},
@@ -479,6 +487,13 @@ func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue any, rootP
 func hasDefaultValue(md *ConfigMetadata) bool {
 	if md.Default != nil {
 		return true
+	}
+	if md.ResolvedFrom != "" {
+		refDesc := NewRef(md.ResolvedFrom)
+		// assume that every external ref should have default constructor
+		if refDesc.kind != Internal {
+			return true
+		}
 	}
 	for _, prop := range md.Properties {
 		if hasDefaultValue(prop) {
