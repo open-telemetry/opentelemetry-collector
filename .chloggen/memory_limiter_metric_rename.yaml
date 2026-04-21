@@ -1,6 +1,6 @@
 change_type: enhancement
 
-component: processor/memorylimiter
+component: processor/memory_limiter
 
 note: Rename deprecated memory limiter metrics to include the `memory_limiter` prefix (e.g. `otelcol_processor_memory_limiter_*`) to clarify they are specific to this processor.
 
