@@ -62,9 +62,6 @@ func createDefaultConfig() component.Config {
 							WithoutTypeSuffix: ptr(true),
 							Host:              &metricsHost,
 							Port:              ptr(8888),
-							WithResourceConstantLabels: &config.IncludeExclude{
-								Included: []string{},
-							},
 						}}},
 					},
 				},

@@ -19,6 +19,7 @@ import (
 	"text/template"
 
 	"github.com/spf13/cobra"
+	"go.uber.org/multierr"
 	"go.yaml.in/yaml/v3"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -554,7 +555,11 @@ func generateConfigFiles(md Metadata, mdDir, _ string) error {
 			return fmt.Errorf("failed to write config schema: %w", err)
 		}
 
-		if err := generateConfigGoStruct(md, mdDir); err != nil {
+		// do a shallow copy of Metadata and replace Config with resolved schema
+		mdWithConfig := md
+		mdWithConfig.Config = resolvedSchema
+
+		if err := generateConfigGoStruct(mdWithConfig, mdDir); err != nil {
 			return fmt.Errorf("failed to generate config Go struct: %w", err)
 		}
 	}
@@ -568,11 +573,23 @@ func generateConfigGoStruct(md Metadata, outputDir string) error {
 	}
 
 	packageName := filepath.Base(outputDir)
-	tmplFile := filepath.Join("templates", "config_from_cfggen.go.tmpl")
-	dstFile := filepath.Join(outputDir, "generated_config.go")
 
 	fns := cfggen.WithCfgFns(getTemplateFuncMap(md, rootPkg), rootPkg, md.PackageName)
-	return generateFileWithFns(tmplFile, dstFile, md, packageName, rootPkg, fns)
+
+	files := []struct{ tmpl, dst string }{
+		{tmpl: "config_from_cfggen.go.tmpl", dst: "generated_config.go"},
+		{tmpl: "config_from_cfggen_test.go.tmpl", dst: "generated_config_test.go"},
+	}
+
+	var allErrs error
+	for _, file := range files {
+		tmplFile := filepath.Join("templates", file.tmpl)
+		dstFile := filepath.Join(outputDir, file.dst)
+
+		allErrs = multierr.Append(allErrs, generateFileWithFns(tmplFile, dstFile, md, packageName, rootPkg, fns))
+	}
+
+	return allErrs
 }
 
 func joinCamelCase(parts []string, exported bool) string {

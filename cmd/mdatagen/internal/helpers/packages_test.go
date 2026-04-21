@@ -5,7 +5,6 @@ package helpers
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -13,26 +12,55 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRepoRoot(t *testing.T) {
-	t.Run("returns_repo_root_from_subdirectory", func(t *testing.T) {
-		wd, err := os.Getwd()
-		require.NoError(t, err)
-
-		root, err := repoRoot(wd)
-		require.NoError(t, err)
-		assert.DirExists(t, root)
-		assert.FileExists(t, filepath.Join(root, "go.mod"))
-	})
-
-	t.Run("error_for_nonexistent_directory", func(t *testing.T) {
-		_, err := repoRoot("/nonexistent/path/that/does/not/exist")
-		require.Error(t, err)
-	})
-
-	t.Run("error_outside_git_repo", func(t *testing.T) {
+func TestRootModuleDir(t *testing.T) {
+	t.Run("finds_go_mod_in_parent", func(t *testing.T) {
 		tmp := t.TempDir()
-		_, err := repoRoot(tmp)
+		subDir := filepath.Join(tmp, "sub")
+		require.NoError(t, os.MkdirAll(subDir, 0o700))
+
+		require.NoError(t, os.WriteFile(filepath.Join(tmp, "go.mod"), []byte("module example.com/root\n"), 0o600))
+
+		dir, err := rootModuleDir(subDir)
+		require.NoError(t, err)
+		assert.Equal(t, tmp, dir)
+	})
+
+	t.Run("finds_go_mod_in_intermediate_directory", func(t *testing.T) {
+		tmp := t.TempDir()
+		projectDir := filepath.Join(tmp, "project")
+		componentDir := filepath.Join(projectDir, "receiver", "foo")
+		require.NoError(t, os.MkdirAll(componentDir, 0o700))
+
+		// No go.mod at tmp root; go.mod is in project/ subdirectory
+		require.NoError(t, os.WriteFile(filepath.Join(projectDir, "go.mod"), []byte("module example.com/project\n"), 0o600))
+
+		dir, err := rootModuleDir(componentDir)
+		require.NoError(t, err)
+		assert.Equal(t, projectDir, dir)
+	})
+
+	t.Run("prefers_highest_go_mod", func(t *testing.T) {
+		tmp := t.TempDir()
+		componentDir := filepath.Join(tmp, "project", "receiver", "foo")
+		require.NoError(t, os.MkdirAll(componentDir, 0o700))
+
+		// go.mod at both levels
+		require.NoError(t, os.WriteFile(filepath.Join(tmp, "go.mod"), []byte("module example.com/root\n"), 0o600))
+		require.NoError(t, os.WriteFile(filepath.Join(tmp, "project", "go.mod"), []byte("module example.com/project\n"), 0o600))
+
+		dir, err := rootModuleDir(componentDir)
+		require.NoError(t, err)
+		assert.Equal(t, tmp, dir)
+	})
+
+	t.Run("error_when_no_go_mod_found", func(t *testing.T) {
+		tmp := t.TempDir()
+		subDir := filepath.Join(tmp, "sub")
+		require.NoError(t, os.MkdirAll(subDir, 0o700))
+
+		_, err := rootModuleDir(subDir)
 		require.Error(t, err)
+		assert.Contains(t, err.Error(), "no go.mod found")
 	})
 }
 
@@ -51,41 +79,11 @@ func TestRootPackage(t *testing.T) {
 		require.Error(t, err)
 	})
 
-	t.Run("error_when_go_mod_missing", func(t *testing.T) {
-		tmp := t.TempDir()
-		subDir := filepath.Join(tmp, "sub")
-		require.NoError(t, os.MkdirAll(subDir, 0o700))
-
-		gitInit(t, tmp)
-
-		_, err := RootPackage(subDir)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "go.mod")
-	})
-
-	t.Run("error_when_go_mod_has_no_module_directive", func(t *testing.T) {
-		tmp := t.TempDir()
-		subDir := filepath.Join(tmp, "sub")
-		require.NoError(t, os.MkdirAll(subDir, 0o700))
-
-		gitInit(t, tmp)
-		require.NoError(t, os.WriteFile(
-			filepath.Join(tmp, "go.mod"),
-			[]byte("go 1.21\n"),
-			0o600,
-		))
-
-		_, err := RootPackage(subDir)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "module directive not found")
-	})
-
-	t.Run("parses_module_from_synthetic_go_mod", func(t *testing.T) {
+	t.Run("resolves_module_from_synthetic_go_mod", func(t *testing.T) {
 		tmp := t.TempDir()
 		subDir := filepath.Join(tmp, "pkg", "foo")
 		require.NoError(t, os.MkdirAll(subDir, 0o700))
 
-		gitInit(t, tmp)
 		require.NoError(t, os.WriteFile(
 			filepath.Join(tmp, "go.mod"),
 			[]byte("module example.com/my-project\n\ngo 1.21\n"),
@@ -96,12 +94,22 @@ func TestRootPackage(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "example.com/my-project", pkg)
 	})
-}
 
-func gitInit(t *testing.T, dir string) {
-	t.Helper()
-	cmd := exec.Command("git", "init")
-	cmd.Dir = dir
-	out, err := cmd.CombinedOutput()
-	require.NoError(t, err, "git init failed: %s", out)
+	t.Run("monorepo_go_mod_not_at_top_level", func(t *testing.T) {
+		tmp := t.TempDir()
+		projectDir := filepath.Join(tmp, "collector")
+		componentDir := filepath.Join(projectDir, "receiver", "foo")
+		require.NoError(t, os.MkdirAll(componentDir, 0o700))
+
+		// No go.mod at top level; only in collector/ subdirectory
+		require.NoError(t, os.WriteFile(
+			filepath.Join(projectDir, "go.mod"),
+			[]byte("module go.opentelemetry.io/collector\n\ngo 1.21\n"),
+			0o600,
+		))
+
+		pkg, err := RootPackage(componentDir)
+		require.NoError(t, err)
+		assert.Equal(t, "go.opentelemetry.io/collector", pkg)
+	})
 }

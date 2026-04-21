@@ -12,7 +12,7 @@ var (
 )
 
 const (
-	ProfilesToProfilesStability = component.StabilityLevelDevelopment
+	ProfilesToProfilesStability = component.StabilityLevelAlpha
 	TracesToTracesStability     = component.StabilityLevelBeta
 	MetricsToMetricsStability   = component.StabilityLevelBeta
 	LogsToLogsStability         = component.StabilityLevelBeta

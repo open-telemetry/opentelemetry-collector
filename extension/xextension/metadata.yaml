@@ -6,4 +6,4 @@ status:
   class: pkg
   codeowners:
   stability:
-    development: [profiles]
+    alpha: [profiles]

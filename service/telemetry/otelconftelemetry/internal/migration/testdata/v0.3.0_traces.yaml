@@ -1,4 +1,4 @@
-level: "none"
+level: "None"
 processors:
   - batch:
       exporter:
@@ -19,6 +19,7 @@ processors:
           headers:
           - name: "key1"
             value: "value1"
+propagators: []
 sampler:
   parent_based:
     root:

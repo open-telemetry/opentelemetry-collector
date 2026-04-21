@@ -100,7 +100,7 @@ func (e *K8sPodEntity) copyToResource(cfg ResourceAttributesConfig, res pcommon.
 			ent.DescriptiveAttributes().PutStr("k8s.pod.name", e.k8sPodName)
 		}
 		if cfg.K8sNamespaceName.Enabled {
-			ent.DescriptiveAttributes().PutStr("k8s.namespace.name", e.k8sNamespaceName)
+			res.Attributes().PutStr("k8s.namespace.name", e.k8sNamespaceName)
 		}
 	} else {
 		if cfg.K8sPodUID.Enabled {

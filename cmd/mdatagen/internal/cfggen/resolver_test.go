@@ -83,7 +83,7 @@ func TestResolver_ResolveSchema_UnknownInternalReference(t *testing.T) {
 	// Should use "any" type because the internal reference doesn't exist
 	result, err := resolver.ResolveSchema(src)
 	require.NoError(t, err)
-	require.Nil(t, result.Properties["config"].Type)
+	require.Empty(t, result.Properties["config"].Type)
 }
 
 func TestResolver_ResolveSchema_NestedStructures(t *testing.T) {
@@ -379,18 +379,19 @@ func TestResolver_ResolveSchema_DurationFormat(t *testing.T) {
 	result, err := resolver.ResolveSchema(src)
 	require.NoError(t, err)
 
-	// Check timeout field - should have pattern instead of format
+	// Check timeout field - format should be cleared, GoType and Pattern set
 	require.NotNil(t, result.Properties["timeout"])
 	require.Equal(t, "string", result.Properties["timeout"].Type)
 	require.Empty(t, result.Properties["timeout"].Format, "format should be cleared")
+	require.Equal(t, "time.Duration", result.Properties["timeout"].GoType)
 	require.Equal(t, `^([0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$`, result.Properties["timeout"].Pattern)
-	require.Contains(t, result.Properties["timeout"].Description, "duration format")
-	require.Contains(t, result.Properties["timeout"].Description, "Request timeout")
+	require.Equal(t, "Request timeout", result.Properties["timeout"].Description)
 
-	// Check interval field - should have pattern and auto-generated description hint
+	// Check interval field - format should be cleared, GoType and Pattern set
 	require.NotNil(t, result.Properties["interval"])
 	require.Equal(t, "string", result.Properties["interval"].Type)
 	require.Empty(t, result.Properties["interval"].Format)
+	require.Equal(t, "time.Duration", result.Properties["interval"].GoType)
 	require.Equal(t, `^([0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$`, result.Properties["interval"].Pattern)
 }
 
@@ -1152,4 +1153,85 @@ func TestResolver_ResolveSchema_RefWithoutCustomExtensions(t *testing.T) {
 	require.Equal(t, "object", base.Type)
 	require.Equal(t, "Base configuration from the target schema", base.Description)
 	require.Equal(t, "BaseConfig", base.GoType)
+}
+
+func TestResolver_ResolveSchema_PreservesIntAndFloatPointers(t *testing.T) {
+	// Regression test: *int and *float64 pointer fields must be copied by the resolver.
+	// Previously, only *ConfigMetadata pointers were handled; all other pointer types
+	// were silently dropped, causing MinLength, MaxLength, Minimum, Maximum, etc. to be nil.
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: NewLoader(""),
+	}
+
+	minLen, maxLen := 1, 255
+	minItems, maxItems := 2, 10
+	minProps, maxProps := 1, 5
+	minimum, maximum := 0.5, 100.0
+	exclMin, exclMax := 0.0, 101.0
+	multipleOf := 0.5
+
+	src := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"name": {
+				Type:      "string",
+				MinLength: &minLen,
+				MaxLength: &maxLen,
+			},
+			"tags": {
+				Type:     "array",
+				MinItems: &minItems,
+				MaxItems: &maxItems,
+			},
+			"meta": {
+				Type:          "object",
+				MinProperties: &minProps,
+				MaxProperties: &maxProps,
+			},
+			"score": {
+				Type:             "number",
+				Minimum:          &minimum,
+				Maximum:          &maximum,
+				ExclusiveMinimum: &exclMin,
+				ExclusiveMaximum: &exclMax,
+				MultipleOf:       &multipleOf,
+			},
+		},
+	}
+
+	result, err := resolver.ResolveSchema(src)
+	require.NoError(t, err)
+
+	name := result.Properties["name"]
+	require.NotNil(t, name.MinLength)
+	require.Equal(t, minLen, *name.MinLength)
+	require.NotNil(t, name.MaxLength)
+	require.Equal(t, maxLen, *name.MaxLength)
+
+	tags := result.Properties["tags"]
+	require.NotNil(t, tags.MinItems)
+	require.Equal(t, minItems, *tags.MinItems)
+	require.NotNil(t, tags.MaxItems)
+	require.Equal(t, maxItems, *tags.MaxItems)
+
+	meta := result.Properties["meta"]
+	require.NotNil(t, meta.MinProperties)
+	require.Equal(t, minProps, *meta.MinProperties)
+	require.NotNil(t, meta.MaxProperties)
+	require.Equal(t, maxProps, *meta.MaxProperties)
+
+	score := result.Properties["score"]
+	require.NotNil(t, score.Minimum)
+	require.InEpsilon(t, minimum, *score.Minimum, 1e-9)
+	require.NotNil(t, score.Maximum)
+	require.InEpsilon(t, maximum, *score.Maximum, 1e-9)
+	require.NotNil(t, score.ExclusiveMinimum)
+	require.InDelta(t, exclMin, *score.ExclusiveMinimum, 1e-9)
+	require.NotNil(t, score.ExclusiveMaximum)
+	require.InEpsilon(t, exclMax, *score.ExclusiveMaximum, 1e-9)
+	require.NotNil(t, score.MultipleOf)
+	require.InEpsilon(t, multipleOf, *score.MultipleOf, 1e-9)
 }

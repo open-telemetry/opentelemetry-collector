@@ -15,8 +15,6 @@ var profileStartTimestamp = pcommon.NewTimestampFromTime(time.Date(2020, 2, 11, 
 // GenerateProfiles generates dummy profiling data for tests
 func GenerateProfiles(profilesCount int) pprofile.Profiles {
 	td := pprofile.NewProfiles()
-	initResource(td.ResourceProfiles().AppendEmpty().Resource())
-	ss := td.ResourceProfiles().At(0).ScopeProfiles().AppendEmpty().Profiles()
 
 	dic := td.Dictionary()
 	// By convention, the first element is empty
@@ -31,6 +29,16 @@ func GenerateProfiles(profilesCount int) pprofile.Profiles {
 	attr2 := dic.AttributeTable().AppendEmpty()
 	attr2.SetKeyStrindex(1)
 	attr2.Value().SetStr("value-2")
+
+	// By convention, the first element is empty in all dictionary tables
+	dic.MappingTable().AppendEmpty()
+	dic.LocationTable().AppendEmpty()
+	dic.FunctionTable().AppendEmpty()
+	dic.LinkTable().AppendEmpty()
+	dic.StackTable().AppendEmpty()
+
+	initResource(td.ResourceProfiles().AppendEmpty().Resource())
+	ss := td.ResourceProfiles().At(0).ScopeProfiles().AppendEmpty().Profiles()
 
 	ss.EnsureCapacity(profilesCount)
 	for i := range profilesCount {

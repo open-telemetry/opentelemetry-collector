@@ -17,7 +17,7 @@ func TestEntityBuilders(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
 	settings := connectortest.NewNopSettings(connectortest.NopType)
-	mb := NewMetricsBuilder(DefaultMetricsBuilderConfig(), settings, WithStartTime(start))
+	mb := NewMetricsBuilder(NewDefaultMetricsBuilderConfig(), settings, WithStartTime(start))
 
 	t.Run("test.entity", func(t *testing.T) {
 		e := NewTestEntityEntity("string.resource.attr-val")
@@ -41,6 +41,9 @@ func TestEntityBuilders(t *testing.T) {
 		stringResourceAttrAttrVal, ok := entityVal.IdentifyingAttributes().Get("string.resource.attr")
 		require.True(t, ok)
 		assert.Equal(t, "string.resource.attr-val", stringResourceAttrAttrVal.Str())
+		mapResourceAttrAttrVal, ok := entityVal.DescriptiveAttributes().Get("map.resource.attr")
+		require.True(t, ok)
+		assert.Equal(t, map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"}, mapResourceAttrAttrVal.Map().AsRaw())
 
 		require.Equal(t, 1, rm.ScopeMetrics().Len())
 		ms := rm.ScopeMetrics().At(0).Metrics()
@@ -49,7 +52,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("test.entity/disabled_identity_attr", func(t *testing.T) {
 		// When an identity attribute is disabled, the entity is not produced but
 		// other enabled attributes are still added to the resource directly.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.StringResourceAttr.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
@@ -78,7 +81,7 @@ func TestEntityBuilders(t *testing.T) {
 	t.Run("test.entity/disabled_descriptive_attr", func(t *testing.T) {
 		// When a descriptive attribute is disabled, the entity is still produced
 		// with its identity but the disabled attribute is not added.
-		cfg := DefaultMetricsBuilderConfig()
+		cfg := NewDefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.MapResourceAttr.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 

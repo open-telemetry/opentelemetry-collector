@@ -194,3 +194,32 @@ func TestRoundTripWithReferences(t *testing.T) {
 	assert.LessOrEqual(t, dictRestored.StringTable().Len(), 7,
 		"String table should deduplicate strings efficiently")
 }
+
+func TestProtoMarshalReadOnlyProfiles(t *testing.T) {
+	profiles := NewProfiles()
+	dict := profiles.Dictionary()
+	dict.StringTable().Append("") // index 0
+
+	rp := profiles.ResourceProfiles().AppendEmpty()
+	rp.Resource().Attributes().PutStr("service.name", "test-service")
+	rp.Resource().Attributes().PutStr("host.name", "test-host")
+
+	sp := rp.ScopeProfiles().AppendEmpty()
+	sp.Scope().Attributes().PutStr("scope.attr", "scope-value")
+
+	marshaler := ProtoMarshaler{}
+
+	// Mark as read-only to simulate sharing across multiple exporters
+	profiles.MarkReadOnly()
+
+	// MarshalProfiles should not panic or fail when given read-only data
+	bytes, err := marshaler.MarshalProfiles(profiles)
+	require.NoError(t, err)
+	require.NotEmpty(t, bytes)
+
+	// Verify the original profiles is still usable and hasn't been mutated
+	rp = profiles.ResourceProfiles().At(0)
+	serviceNameVal, ok := rp.Resource().Attributes().Get("service.name")
+	assert.True(t, ok, "service.name should still be accessible")
+	assert.Equal(t, "test-service", serviceNameVal.Str())
+}

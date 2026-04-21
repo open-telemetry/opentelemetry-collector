@@ -112,6 +112,7 @@ func (e *{{ $entityStructType }}) copyToResource(cfg ResourceAttributesConfig, r
 		ent.IdentifyingAttributes().PutEmpty("{{ $idAttr.Ref }}").Set{{ $attr.Type.ValueType }}(e.{{ $idAttr.Ref.RenderUnexported }})
 		{{- end }}
 		{{- end }}
+
 		{{- range $descAttr := $ent.Description }}
 		{{- $attr := index $resourceAttributes $descAttr.Ref }}
 		if cfg.{{ publicVar $descAttr.Ref.Render }}.Enabled {
@@ -124,15 +125,16 @@ func (e *{{ $entityStructType }}) copyToResource(cfg ResourceAttributesConfig, r
 			{{- end }}
 		}
 		{{- end }}
+
 		{{- range $extraAttr := $ent.ExtraAttributes }}
 		{{- $attr := index $resourceAttributes $extraAttr.Ref }}
 		if cfg.{{ publicVar $extraAttr.Ref.Render }}.Enabled {
 			{{- if eq $attr.Type.ValueType.String "Str" }}
-			ent.DescriptiveAttributes().PutStr("{{ $extraAttr.Ref }}", e.{{ $extraAttr.Ref.RenderUnexported }})
+			res.Attributes().PutStr("{{ $extraAttr.Ref }}", e.{{ $extraAttr.Ref.RenderUnexported }})
 			{{- else if or (eq $attr.Type.ValueType.String "Map") (eq $attr.Type.ValueType.String "Slice") (eq $attr.Type.ValueType.String "Bytes") }}
-			ent.DescriptiveAttributes().PutEmpty("{{ $extraAttr.Ref }}").SetEmpty{{ $attr.Type.ValueType }}().FromRaw(e.{{ $extraAttr.Ref.RenderUnexported }})
+			res.Attributes().PutEmpty("{{ $extraAttr.Ref }}").SetEmpty{{ $attr.Type.ValueType }}().FromRaw(e.{{ $extraAttr.Ref.RenderUnexported }})
 			{{- else }}
-			ent.DescriptiveAttributes().PutEmpty("{{ $extraAttr.Ref }}").Set{{ $attr.Type.ValueType }}(e.{{ $extraAttr.Ref.RenderUnexported }})
+			res.Attributes().PutEmpty("{{ $extraAttr.Ref }}").Set{{ $attr.Type.ValueType }}(e.{{ $extraAttr.Ref.RenderUnexported }})
 			{{- end }}
 		}
 		{{- end }}

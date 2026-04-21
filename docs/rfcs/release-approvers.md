@@ -8,12 +8,12 @@ different from the set of contributors for the Collector codebase. We are missin
 people who are more interested in these aspects. We can see this with the examples of the
 OpenTelemetry Operator repository and the OpenTelemetry Collector Helm Chart repository; they are
 able to work independently from the other Collector repositories and have been able to create an
-independent community. 
+independent community.
 
 We also have a [growing backlog][1] of issues related to the release process that would benefit from
 a dedicated set of people.
 
-## Overview 
+## Overview
 
 I propose we create a new `collector-releases-approvers` Github team that are [approvers][2] on the
 [opentelemetry-collector-releases][3] repository and code owners for the Builder and release
