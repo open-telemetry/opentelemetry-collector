@@ -250,7 +250,7 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 		}
 	}
 
-	if md.Pattern != "" {
+	if md.Pattern != "" && !strings.HasPrefix(md.GoType, "time.") {
 		imports["regexp"] = true
 	}
 
