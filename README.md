@@ -109,13 +109,15 @@ See [Stability Levels and versioning](docs/component-stability.md) for more deta
 
 ## Compatibility
 
-When used as a library, the OpenTelemetry Collector attempts to track the currently supported versions of Go, as [defined by the Go team](https://go.dev/doc/devel/release#policy).
+When used as a library, the OpenTelemetry Collector attempts to track the currently supported Go minor versions, as [defined by the Go team](https://go.dev/doc/devel/release#policy).
 Removing support for an unsupported Go version is not considered a breaking change.
 
 Support for Go versions on the OpenTelemetry Collector is updated as follows:
 
 1. The first release after the release of a new Go minor version `N` will add build and tests steps for the new Go minor version.
 2. The first release after the release of a new Go minor version `N` will remove support for Go version `N-2`.
+
+Within supported Go minor versions, the minimum supported patch version may increase over time, for example to accommodate dependency updates or security fixes. Increasing the minimum supported patch version within a supported Go minor version is not considered a breaking change.
 
 Official OpenTelemetry Collector distro binaries will be built with a release in the latest Go minor version series.
 

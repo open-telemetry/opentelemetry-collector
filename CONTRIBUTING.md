@@ -209,7 +209,7 @@ section of the general project contributing guide.
 Working with the project sources requires the following tools:
 
 1. [git](https://git-scm.com/)
-2. [go](https://golang.org/) (version 1.25 and up)
+2. [go](https://golang.org/) (the version declared in the relevant `go.mod` file, or newer)
 3. [make](https://www.gnu.org/software/make/)
 4. [docker](https://www.docker.com/)
 
@@ -268,7 +268,7 @@ before merging (but see the above paragraph about writing good commit messages i
 
 ## General Notes
 
-This project uses Go 1.25.* and [Github Actions.](https://github.com/features/actions)
+This project uses Go 1.25.x and [Github Actions.](https://github.com/features/actions) The exact minimum supported patch version is defined by the repository's `go.mod` files and may increase over time within a supported Go minor version.
 
 It is recommended to run `make gofmt all` before submitting your PR.
 
