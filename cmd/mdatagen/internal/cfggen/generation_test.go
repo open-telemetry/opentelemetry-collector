@@ -1714,7 +1714,7 @@ func TestFormatDefaultValue_ResolvedReferenceWithoutDefaults(t *testing.T) {
 		ResolvedFrom: "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
 	}
 
-	require.Equal(t, "",
+	require.Empty(t,
 		FormatDefaultValue(md, "client", map[string]any{}, "go.opentelemetry.io/collector", "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"),
 	)
 }
