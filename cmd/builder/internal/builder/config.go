@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 	"time"
@@ -27,7 +28,7 @@ var errMissingGoMod = errors.New("missing gomod specification for module")
 
 // Config holds the builder's configuration
 type Config struct {
-	Logger *zap.Logger
+	Logger *zap.Logger `mapstructure:"-"`
 
 	OtelColVersion       string `mapstructure:"-"` // only used be the go.mod template
 	SkipGenerate         bool   `mapstructure:"-"`
@@ -41,18 +42,18 @@ type Config struct {
 	Verbose              bool   `mapstructure:"-"`
 
 	Distribution      Distribution `mapstructure:"dist"`
-	Exporters         []Module     `mapstructure:"exporters"`
-	Extensions        []Module     `mapstructure:"extensions"`
-	Receivers         []Module     `mapstructure:"receivers"`
-	Processors        []Module     `mapstructure:"processors"`
-	Connectors        []Module     `mapstructure:"connectors"`
-	Telemetry         Module       `mapstructure:"telemetry"`
-	ConfmapProviders  []Module     `mapstructure:"providers"`
-	ConfmapConverters []Module     `mapstructure:"converters"`
-	Replaces          []string     `mapstructure:"replaces"`
-	Excludes          []string     `mapstructure:"excludes"`
+	Exporters         []Module     `mapstructure:"exporters,omitempty"`
+	Extensions        []Module     `mapstructure:"extensions,omitempty"`
+	Receivers         []Module     `mapstructure:"receivers,omitempty"`
+	Processors        []Module     `mapstructure:"processors,omitempty"`
+	Connectors        []Module     `mapstructure:"connectors,omitempty"`
+	Telemetry         Module       `mapstructure:"telemetry,omitempty"`
+	ConfmapProviders  []Module     `mapstructure:"providers,omitempty"`
+	ConfmapConverters []Module     `mapstructure:"converters,omitempty"`
+	Replaces          []string     `mapstructure:"replaces,omitempty"`
+	Excludes          []string     `mapstructure:"excludes,omitempty"`
 
-	ConfResolver ConfResolver `mapstructure:"conf_resolver"`
+	ConfResolver ConfResolver `mapstructure:"conf_resolver,omitempty"`
 
 	downloadModules retry `mapstructure:"-"`
 }
@@ -61,28 +62,28 @@ type ConfResolver struct {
 	// When set, will be used to set the CollectorSettings.ConfResolver.DefaultScheme value,
 	// which determines how the Collector interprets URIs that have no scheme, such as ${ENV}.
 	// See https://pkg.go.dev/go.opentelemetry.io/collector/confmap#ResolverSettings for more details.
-	DefaultURIScheme string `mapstructure:"default_uri_scheme"`
+	DefaultURIScheme string `mapstructure:"default_uri_scheme,omitempty"`
 }
 
 // Distribution holds the parameters for the final binary
 type Distribution struct {
-	Module           string `mapstructure:"module"`
+	Module           string `mapstructure:"module,omitempty"`
 	Name             string `mapstructure:"name"`
-	Go               string `mapstructure:"go"`
+	Go               string `mapstructure:"go,omitempty"`
 	Description      string `mapstructure:"description"`
 	OutputPath       string `mapstructure:"output_path"`
-	Version          string `mapstructure:"version"`
-	BuildTags        string `mapstructure:"build_tags"`
-	DebugCompilation bool   `mapstructure:"debug_compilation"`
-	CGoEnabled       bool   `mapstructure:"cgo_enabled"`
+	Version          string `mapstructure:"version,omitempty"`
+	BuildTags        string `mapstructure:"build_tags,omitempty"`
+	DebugCompilation bool   `mapstructure:"debug_compilation,omitempty"`
+	CGoEnabled       bool   `mapstructure:"cgo_enabled,omitempty"`
 }
 
 // Module represents a receiver, exporter, processor or extension for the distribution
 type Module struct {
-	Name   string `mapstructure:"name"`   // if not specified, this is package part of the go mod (last part of the path)
-	Import string `mapstructure:"import"` // if not specified, this is the path part of the go mods
-	GoMod  string `mapstructure:"gomod"`  // a gomod-compatible spec for the module
-	Path   string `mapstructure:"path"`   // an optional path to the local version of this module
+	Name   string `mapstructure:"name,omitempty"`   // if not specified, this is package part of the go mod (last part of the path)
+	Import string `mapstructure:"import,omitempty"` // if not specified, this is the path part of the go mods
+	GoMod  string `mapstructure:"gomod,omitempty"`  // a gomod-compatible spec for the module
+	Path   string `mapstructure:"path,omitempty"`   // an optional path to the local version of this module
 }
 
 type retry struct {
@@ -288,4 +289,91 @@ func parseModules(mods []Module, usedNames map[string]int) ([]Module, error) {
 	}
 
 	return parsedModules, nil
+}
+
+// MarshalYAML encodes Config to YAML using mapstructure tags, omitting zero values.
+func (c Config) MarshalYAML() (any, error) {
+	return structToMap(c), nil
+}
+
+// structToMap converts a struct to a map[string]any using mapstructure tags.
+// Fields tagged with mapstructure:"-" are skipped.
+// Fields tagged with omitempty are omitted when zero.
+func structToMap(v any) map[string]any {
+	rv := reflect.ValueOf(v)
+	rt := rv.Type()
+	result := make(map[string]any)
+
+	for i := 0; i < rt.NumField(); i++ {
+		field := rt.Field(i)
+		fv := rv.Field(i)
+
+		if !field.IsExported() {
+			continue
+		}
+
+		tag := field.Tag.Get("mapstructure")
+		if tag == "" {
+			continue
+		}
+
+		parts := strings.SplitN(tag, ",", 2)
+		key := parts[0]
+		if key == "-" {
+			continue
+		}
+		omitempty := len(parts) == 2 && parts[1] == "omitempty"
+
+		val := encodeValue(fv)
+		if omitempty && isEmpty(val) {
+			continue
+		}
+
+		result[key] = val
+	}
+
+	return result
+}
+
+// encodeValue recursively encodes a reflect.Value for use in a YAML map.
+// Structs are converted via structToMap, slices are encoded element by element,
+// pointers are dereferenced (nil pointers become nil), and all other kinds are
+// returned as-is.
+func encodeValue(rv reflect.Value) any {
+	switch rv.Kind() {
+	case reflect.Struct:
+		return structToMap(rv.Interface())
+	case reflect.Ptr:
+		if rv.IsNil() {
+			return nil
+		}
+		return encodeValue(rv.Elem())
+	case reflect.Slice:
+		if rv.IsNil() {
+			return nil
+		}
+		s := make([]any, rv.Len())
+		for i := range rv.Len() {
+			s[i] = encodeValue(rv.Index(i))
+		}
+		return s
+	default:
+		return rv.Interface()
+	}
+}
+
+func isEmpty(v any) bool {
+	if v == nil {
+		return true
+	}
+	rv := reflect.ValueOf(v)
+	//nolint:exhaustive
+	switch rv.Kind() {
+	case reflect.Map:
+		return rv.Len() == 0
+	case reflect.Slice:
+		return rv.IsNil() || rv.Len() == 0
+	default:
+		return rv.IsZero()
+	}
 }

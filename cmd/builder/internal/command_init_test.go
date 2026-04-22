@@ -8,9 +8,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/file"
-	"github.com/knadh/koanf/v2"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -69,6 +66,31 @@ func TestRunInit(t *testing.T) {
 	}
 }
 
+func TestBuildManifest(t *testing.T) {
+	dir := t.TempDir()
+	meta := metadata{
+		Name:        "myCollector",
+		Description: defaultDescription,
+		BetaVersion: builder.DefaultBetaOtelColVersion,
+	}
+	require.NoError(t, buildManifest(dir, meta))
+
+	content, err := os.ReadFile(filepath.Join(dir, "manifest.yaml")) //nolint:gosec // G304: path is test-controlled
+	require.NoError(t, err)
+
+	expected := `dist:
+    description: Custom OpenTelemetry Collector
+    name: myCollector
+    output_path: ./build/collector
+exporters:
+    - gomod: go.opentelemetry.io/collector/exporter/otlpexporter ` + builder.DefaultBetaOtelColVersion + `
+receivers:
+    - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver ` + builder.DefaultBetaOtelColVersion + `
+`
+
+	assert.Equal(t, expected, string(content))
+}
+
 func validateCollector(t *testing.T, path string) {
 	require.FileExists(t, filepath.Join(path, ".gitignore"))
 	require.FileExists(t, filepath.Join(path, "README.md"))
@@ -77,17 +99,4 @@ func validateCollector(t *testing.T, path string) {
 	require.FileExists(t, filepath.Join(path, "go.sum"))
 	require.FileExists(t, filepath.Join(path, "Makefile"))
 	require.FileExists(t, filepath.Join(path, "config.yaml"))
-
-	k := koanf.New(".")
-	err := k.Load(file.Provider(filepath.Join(path, "manifest.yaml")), yaml.Parser())
-	require.NoError(t, err)
-
-	cfg := builder.Config{}
-	err = k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{
-		Tag: "mapstructure",
-	})
-	require.NoError(t, err)
-
-	assert.Equal(t, distributionName, cfg.Distribution.Name)
-	assert.Equal(t, defaultDescription, cfg.Distribution.Description)
 }
