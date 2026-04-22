@@ -1116,6 +1116,34 @@ func TestExtractImports_NoPatternNoRegexpImport(t *testing.T) {
 	require.NotContains(t, result, "regexp")
 }
 
+func TestExtractImports_TimeTypeWithPatternNoRegexpImport(t *testing.T) {
+	tests := []struct {
+		name   string
+		goType string
+	}{
+		{
+			name:   "time.Duration with pattern does not add regexp",
+			goType: "time.Duration",
+		},
+		{
+			name:   "time.Time with pattern does not add regexp",
+			goType: "time.Time",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			md := &ConfigMetadata{
+				Type:    "string",
+				GoType:  tt.goType,
+				Pattern: `^[0-9]+s$`,
+			}
+			result, err := ExtractImports(md, "", "")
+			require.NoError(t, err)
+			require.NotContains(t, result, "regexp")
+		})
+	}
+}
+
 func TestExtractValidators(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -1311,6 +1339,26 @@ func TestExtractValidators_StringValidators(t *testing.T) {
 				Type: "object",
 				Properties: map[string]*ConfigMetadata{
 					"name": {Type: "string"},
+				},
+			},
+			expected: []Validator{},
+		},
+		{
+			name: "time.Duration with pattern produces no pattern validator",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"timeout": {Type: "string", GoType: "time.Duration", Pattern: `^[0-9]+s$`},
+				},
+			},
+			expected: []Validator{},
+		},
+		{
+			name: "time.Time with pattern produces no pattern validator",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"timestamp": {Type: "string", GoType: "time.Time", Pattern: `^[0-9]+$`},
 				},
 			},
 			expected: []Validator{},
