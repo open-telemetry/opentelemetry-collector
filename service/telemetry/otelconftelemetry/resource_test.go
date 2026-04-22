@@ -283,21 +283,21 @@ func TestFactoryDoesNotCacheResourceAcrossConfigs(t *testing.T) {
 	factory := NewFactory()
 
 	cfg1 := createDefaultConfig().(*Config)
-	cfg1.Resource.Attributes = []config.AttributeNameValue{
-		{Name: "service.name", Value: "service-a"},
-	}
-	buildInfo1 := component.BuildInfo{Command: "cmd-a", Version: "1.0.0"}
-	res1, err := factory.CreateResource(t.Context(), telemetry.Settings{BuildInfo: buildInfo1}, cfg1)
-	require.NoError(t, err)
+	cfg1.Resource.Attributes = []config.AttributeNameValue{{Name: "service.name", Value: "svc-1"}}
 
 	cfg2 := createDefaultConfig().(*Config)
-	cfg2.Resource.Attributes = []config.AttributeNameValue{
-		{Name: "service.name", Value: "service-b"},
-	}
-	buildInfo2 := component.BuildInfo{Command: "cmd-b", Version: "2.0.0"}
-	res2, err := factory.CreateResource(t.Context(), telemetry.Settings{BuildInfo: buildInfo2}, cfg2)
+	cfg2.Resource.Attributes = []config.AttributeNameValue{{Name: "service.name", Value: "svc-2"}}
+
+	res1, err := factory.CreateResource(t.Context(), telemetry.Settings{
+		BuildInfo: component.BuildInfo{Command: "otelcol", Version: "1.0.0"},
+	}, cfg1)
 	require.NoError(t, err)
 
-	assert.Equal(t, "service-a", res1.Attributes().AsRaw()["service.name"])
-	assert.Equal(t, "service-b", res2.Attributes().AsRaw()["service.name"])
+	res2, err := factory.CreateResource(t.Context(), telemetry.Settings{
+		BuildInfo: component.BuildInfo{Command: "otelcol", Version: "2.0.0"},
+	}, cfg2)
+	require.NoError(t, err)
+
+	assert.Equal(t, "svc-1", res1.Attributes().AsRaw()["service.name"])
+	assert.Equal(t, "svc-2", res2.Attributes().AsRaw()["service.name"])
 }
