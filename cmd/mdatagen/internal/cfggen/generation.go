@@ -488,13 +488,6 @@ func hasDefaultValue(md *ConfigMetadata) bool {
 	if md.Default != nil {
 		return true
 	}
-	if md.ResolvedFrom != "" {
-		refDesc := NewRef(md.ResolvedFrom)
-		// assume that every external ref should have default constructor
-		if refDesc.kind != Internal {
-			return true
-		}
-	}
 	for _, prop := range md.Properties {
 		if hasDefaultValue(prop) {
 			return true

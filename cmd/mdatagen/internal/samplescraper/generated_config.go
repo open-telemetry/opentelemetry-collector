@@ -40,7 +40,6 @@ func (c *TargetsItem) Validate() error {
 // NewDefaultTargetsItem returns a new TargetsItem with default values consistent with the annotations in the schema.
 func NewDefaultTargetsItem() TargetsItem {
 	cfg := TargetsItem{}
-	cfg.HTTPClient = confighttp.NewDefaultClientConfig()
 	cfg.Interval = configoptional.Some(10 * time.Second)
 	cfg.Labels = map[string]string{"option1": "value1", "option2": "value2"}
 
