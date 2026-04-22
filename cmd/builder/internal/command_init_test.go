@@ -23,33 +23,36 @@ func TestInitCommand(t *testing.T) {
 	assert.Equal(t, "init", cmd.Use)
 }
 
+const distributionName = "test-distro"
+
 func TestRunInit(t *testing.T) {
 	for _, tt := range []struct {
 		name      string
-		buildPath func(string) string
+		buildPath func(*testing.T) string
 
 		wantErr string
 	}{
 		{
 			name:      "without a path",
-			buildPath: func(string) string { return "" },
+			buildPath: func(*testing.T) string { return "" },
 			wantErr:   "argument must be a folder",
 		},
 		{
 			name:      "with a relative path",
-			buildPath: func(string) string { return "./tmp/init" },
+			buildPath: func(*testing.T) string { return "./" + distributionName },
 			wantErr:   "",
 		},
 		{
 			name:      "with an absolute path",
-			buildPath: func(dir string) string { return dir },
+			buildPath: func(t *testing.T) string { return filepath.Join(t.TempDir(), distributionName) },
 			wantErr:   "",
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpdir := filepath.Join(t.TempDir(), "init")
-			path := tt.buildPath(tmpdir)
-			defer os.RemoveAll(path)
+			path := tt.buildPath(t)
+			t.Cleanup(func() {
+				os.RemoveAll(path)
+			})
 
 			err := run(path)
 
@@ -61,16 +64,6 @@ func TestRunInit(t *testing.T) {
 			}
 		})
 	}
-}
-
-func validateCollector(t *testing.T, path string) {
-	require.FileExists(t, filepath.Join(path, ".gitignore"))
-	require.FileExists(t, filepath.Join(path, "README.md"))
-	require.FileExists(t, filepath.Join(path, "manifest.yaml"))
-	require.FileExists(t, filepath.Join(path, "go.mod"))
-	require.FileExists(t, filepath.Join(path, "go.sum"))
-	require.FileExists(t, filepath.Join(path, "Makefile"))
-	require.FileExists(t, filepath.Join(path, "config.yaml"))
 }
 
 func TestBuildManifest(t *testing.T) {
@@ -86,14 +79,24 @@ func TestBuildManifest(t *testing.T) {
 	require.NoError(t, err)
 
 	expected := `dist:
-    description: Custom OpenTelemetry Collector
-    name: myCollector
-    output_path: ./build/collector
+description: Custom OpenTelemetry Collector
+	name: myCollector
+	output_path: ./build/collector
 exporters:
-    - gomod: go.opentelemetry.io/collector/exporter/otlpexporter ` + builder.DefaultBetaOtelColVersion + `
+	- gomod: go.opentelemetry.io/collector/exporter/otlpexporter ` + builder.DefaultBetaOtelColVersion + `
 receivers:
-    - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver ` + builder.DefaultBetaOtelColVersion + `
+	- gomod: go.opentelemetry.io/collector/receiver/otlpreceiver ` + builder.DefaultBetaOtelColVersion + `
 `
 
 	assert.Equal(t, expected, string(content))
+}
+
+func validateCollector(t *testing.T, path string) {
+	require.FileExists(t, filepath.Join(path, ".gitignore"))
+	require.FileExists(t, filepath.Join(path, "README.md"))
+	require.FileExists(t, filepath.Join(path, "manifest.yaml"))
+	require.FileExists(t, filepath.Join(path, "go.mod"))
+	require.FileExists(t, filepath.Join(path, "go.sum"))
+	require.FileExists(t, filepath.Join(path, "Makefile"))
+	require.FileExists(t, filepath.Join(path, "config.yaml"))
 }
