@@ -15,7 +15,15 @@ import (
 
 // MergeSplit splits and/or merges the provided metrics request and the current request into one or more requests
 // conforming with the MaxSizeConfig.
-func (req *metricsRequest) MergeSplit(_ context.Context, maxSize int, szt request.SizerType, r2 request.Request) ([]request.Request, error) {
+func (req *metricsRequest) MergeSplit(_ context.Context, limits map[request.SizerType]int64, r2 request.Request) ([]request.Request, error) {
+	var maxSize int
+	var szt request.SizerType
+	for k, v := range limits {
+		szt = k
+		maxSize = int(v)
+		break
+	}
+
 	var sz sizer.MetricsSizer
 	switch szt {
 	case request.SizerTypeItems:

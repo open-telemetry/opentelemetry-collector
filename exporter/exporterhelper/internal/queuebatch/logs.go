@@ -38,14 +38,14 @@ var (
 )
 
 type logsRequest struct {
-	ld         plog.Logs
-	cachedSize int
+	ld          plog.Logs
+	cachedSizes map[request.SizerType]int
 }
 
 func newLogsRequest(ld plog.Logs) request.Request {
 	return &logsRequest{
-		ld:         ld,
-		cachedSize: -1,
+		ld:          ld,
+		cachedSizes: make(map[request.SizerType]int),
 	}
 }
 
@@ -104,15 +104,23 @@ func (req *logsRequest) ItemsCount() int {
 	return req.ld.LogRecordCount()
 }
 
-func (req *logsRequest) size(sizer sizer.LogsSizer) int {
-	if req.cachedSize == -1 {
-		req.cachedSize = sizer.LogsSize(req.ld)
+func (req *logsRequest) size(szt request.SizerType, sizer sizer.LogsSizer) int {
+	if req.cachedSizes == nil {
+		req.cachedSizes = make(map[request.SizerType]int)
 	}
-	return req.cachedSize
+	if size, ok := req.cachedSizes[szt]; ok {
+		return size
+	}
+	size := sizer.LogsSize(req.ld)
+	req.cachedSizes[szt] = size
+	return size
 }
 
-func (req *logsRequest) setCachedSize(size int) {
-	req.cachedSize = size
+func (req *logsRequest) setCachedSize(szt request.SizerType, size int) {
+	if req.cachedSizes == nil {
+		req.cachedSizes = make(map[request.SizerType]int)
+	}
+	req.cachedSizes[szt] = size
 }
 
 func (req *logsRequest) BytesSize() int {

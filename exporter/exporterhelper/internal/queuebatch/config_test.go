@@ -45,6 +45,7 @@ func TestConfig_Validate(t *testing.T) {
 
 	cfg = newTestConfig()
 	cfg.Batch.Get().Sizer = request.SizerType{}
+	cfg.Batch.Get().Limits = nil
 	require.EqualError(t, xconfmap.Validate(cfg), "batch: `batch` supports only `items` or `bytes` sizer, found \"\"")
 
 	cfg = newTestConfig()
@@ -177,6 +178,7 @@ func TestUnmarshal(t *testing.T) {
 					// Sizer has been overridden by parent sizer
 					Sizer:   request.SizerTypeBytes,
 					MinSize: 100,
+					Limits:  map[request.SizerType]SizerLimit{request.SizerTypeItems: {MinSize: 100, MaxSize: 0}},
 				})
 				return cfg
 			},
@@ -191,6 +193,7 @@ func TestUnmarshal(t *testing.T) {
 					// Sizer has NOT been overridden by parent sizer
 					Sizer:   request.SizerTypeItems,
 					MinSize: 100,
+					Limits:  map[request.SizerType]SizerLimit{request.SizerTypeItems: {MinSize: 100, MaxSize: 0}},
 				})
 				return cfg
 			},

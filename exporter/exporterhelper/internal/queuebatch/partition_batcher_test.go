@@ -63,6 +63,9 @@ func TestPartitionBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T)
 				FlushTimeout: 0,
 				Sizer:        tt.sizerType,
 				MinSize:      0,
+				Limits: map[request.SizerType]SizerLimit{
+					tt.sizerType: {MinSize: 0},
+				},
 			}
 
 			sink := requesttest.NewSink()
@@ -129,6 +132,9 @@ func TestPartitionBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 				FlushTimeout: 0,
 				Sizer:        tt.sizerType,
 				MinSize:      10,
+				Limits: map[request.SizerType]SizerLimit{
+					tt.sizerType: {MinSize: 10},
+				},
 			}
 
 			sink := requesttest.NewSink()
@@ -210,6 +216,9 @@ func TestPartitionBatcher_NoSplit_WithTimeout(t *testing.T) {
 				FlushTimeout: 50 * time.Millisecond,
 				Sizer:        tt.sizerType,
 				MinSize:      100,
+				Limits: map[request.SizerType]SizerLimit{
+					tt.sizerType: {MinSize: 100},
+				},
 			}
 
 			sink := requesttest.NewSink()
@@ -282,6 +291,9 @@ func TestPartitionBatcher_Split_TimeoutDisabled(t *testing.T) {
 				Sizer:        tt.sizerType,
 				MinSize:      100,
 				MaxSize:      100,
+				Limits: map[request.SizerType]SizerLimit{
+					tt.sizerType: {MinSize: 100, MaxSize: 100},
+				},
 			}
 
 			sink := requesttest.NewSink()
@@ -330,6 +342,9 @@ func TestPartitionBatcher_Shutdown(t *testing.T) {
 		FlushTimeout: 100 * time.Second,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      10,
+		Limits: map[request.SizerType]SizerLimit{
+			request.SizerTypeItems: {MinSize: 10},
+		},
 	}
 
 	sink := requesttest.NewSink()
@@ -359,6 +374,9 @@ func TestPartitionBatcher_MergeError(t *testing.T) {
 		Sizer:        request.SizerTypeItems,
 		MinSize:      5,
 		MaxSize:      7,
+		Limits: map[request.SizerType]SizerLimit{
+			request.SizerTypeItems: {MinSize: 5, MaxSize: 7},
+		},
 	}
 
 	sink := requesttest.NewSink()
@@ -371,7 +389,10 @@ func TestPartitionBatcher_MergeError(t *testing.T) {
 	done := newFakeDone()
 	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 9, Bytes: 9}, done)
 	assert.Eventually(t, func() bool {
-		return sink.RequestsCount() == 1 && sink.ItemsCount() == 7
+		count := sink.RequestsCount()
+		items := sink.ItemsCount()
+		t.Logf("RequestsCount: %d, ItemsCount: %d", count, items)
+		return count == 1 && items == 7
 	}, 1*time.Second, 10*time.Millisecond)
 
 	sink.SetExportErr(errors.New("transient error"))
@@ -391,6 +412,9 @@ func TestPartitionBatcher_PartialSuccessError(t *testing.T) {
 		Sizer:        request.SizerTypeBytes,
 		MinSize:      10,
 		MaxSize:      15,
+		Limits: map[request.SizerType]SizerLimit{
+			request.SizerTypeBytes: {MinSize: 10, MaxSize: 15},
+		},
 	}
 
 	core, observed := observer.New(zap.WarnLevel)
@@ -433,6 +457,9 @@ func TestSPartitionBatcher_PartialSuccessError_AfterOkRequest(t *testing.T) {
 		Sizer:        request.SizerTypeBytes,
 		MinSize:      10,
 		MaxSize:      15,
+		Limits: map[request.SizerType]SizerLimit{
+			request.SizerTypeBytes: {MinSize: 10, MaxSize: 15},
+		},
 	}
 
 	core, observed := observer.New(zap.WarnLevel)
@@ -546,6 +573,9 @@ func TestPartitionBatcher_ContextMerging(t *testing.T) {
 				FlushTimeout: 0,
 				Sizer:        request.SizerTypeItems,
 				MinSize:      10,
+				Limits: map[request.SizerType]SizerLimit{
+					request.SizerTypeItems: {MinSize: 10},
+				},
 			}
 			sink := requesttest.NewSink()
 			ba := newPartitionBatcher(cfg, request.NewItemsSizer(), tt.mergeCtxFunc, newWorkerPool(1), sink.Export, zap.NewNop(), nil)
@@ -567,6 +597,9 @@ func TestPartitionBatcher_OnEmptyCallbackTriggered(t *testing.T) {
 		FlushTimeout: 10 * time.Millisecond,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      100, // High min size to ensure data doesn't flush immediately
+		Limits: map[request.SizerType]SizerLimit{
+			request.SizerTypeItems: {MinSize: 100},
+		},
 	}
 
 	sink := requesttest.NewSink()
@@ -603,6 +636,9 @@ func TestPartitionBatcher_OnEmptyNotCalledWithActiveData(t *testing.T) {
 		FlushTimeout: 20 * time.Millisecond,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      5,
+		Limits: map[request.SizerType]SizerLimit{
+			request.SizerTypeItems: {MinSize: 5},
+		},
 	}
 
 	sink := requesttest.NewSink()

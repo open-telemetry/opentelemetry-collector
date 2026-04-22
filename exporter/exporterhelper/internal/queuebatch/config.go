@@ -95,16 +95,48 @@ type BatchConfig struct {
 	// Sizer determines the type of size measurement used by the batch.
 	// If not configured, use the same configuration as the queue.
 	// It accepts "requests", "items", or "bytes".
+	// Deprecated: Use Limits instead if multiple sizers are needed.
 	Sizer request.SizerType `mapstructure:"sizer"`
 
 	// MinSize defines the configuration for the minimum size of a batch.
+	// Deprecated: Use Limits instead.
 	MinSize int64 `mapstructure:"min_size"`
 
 	// MaxSize defines the configuration for the maximum size of a batch.
+	// Deprecated: Use Limits instead.
 	MaxSize int64 `mapstructure:"max_size"`
+
+	// Limits allows configuring multiple sizing constraints.
+	// The key is the SizerType (e.g., "bytes", "items").
+	Limits map[request.SizerType]SizerLimit `mapstructure:"limits"`
 
 	// Partition defines the partitioning of the batches configuration.
 	Partition PartitionConfig `mapstructure:"partition"`
+}
+
+// SizerLimit defines the configuration for the minimum and maximum size of a batch for a specific sizer.
+type SizerLimit struct {
+	MinSize int64 `mapstructure:"min_size"`
+	MaxSize int64 `mapstructure:"max_size"`
+}
+
+func (cfg *BatchConfig) Unmarshal(conf *confmap.Conf) error {
+	if err := conf.Unmarshal(cfg); err != nil {
+		return err
+	}
+	if cfg.Sizer.String() != "" {
+		if cfg.Limits == nil {
+			cfg.Limits = make(map[request.SizerType]SizerLimit)
+		}
+		if _, ok := cfg.Limits[cfg.Sizer]; ok {
+			return fmt.Errorf("sizer %q defined in both `sizer` and `limits`", cfg.Sizer.String())
+		}
+		cfg.Limits[cfg.Sizer] = SizerLimit{
+			MinSize: cfg.MinSize,
+			MaxSize: cfg.MaxSize,
+		}
+	}
+	return nil
 }
 
 // PartitionConfig defines a configuration for partitioning requests based on metadata keys.
@@ -125,25 +157,38 @@ func (cfg *BatchConfig) Validate() error {
 		return nil
 	}
 
-	// Only support items or bytes sizer for batch at this moment.
-	if cfg.Sizer != request.SizerTypeItems && cfg.Sizer != request.SizerTypeBytes {
-		return fmt.Errorf("`batch` supports only `items` or `bytes` sizer, found %q", cfg.Sizer.String())
-	}
-
 	if cfg.FlushTimeout <= 0 {
 		return fmt.Errorf("`flush_timeout` must be positive, found %d", cfg.FlushTimeout)
 	}
 
-	if cfg.MinSize < 0 {
-		return fmt.Errorf("`min_size` must be non-negative, found %d", cfg.MinSize)
-	}
-
-	if cfg.MaxSize < 0 {
-		return fmt.Errorf("`max_size` must be non-negative, found %d", cfg.MaxSize)
-	}
-
-	if cfg.MaxSize > 0 && cfg.MaxSize < cfg.MinSize {
-		return fmt.Errorf("`max_size` (%d) must be greater or equal to `min_size` (%d)", cfg.MaxSize, cfg.MinSize)
+	if len(cfg.Limits) == 0 {
+		if cfg.Sizer.String() == "" || (cfg.Sizer != request.SizerTypeItems && cfg.Sizer != request.SizerTypeBytes) {
+			return fmt.Errorf("`batch` supports only `items` or `bytes` sizer, found %q", cfg.Sizer.String())
+		}
+		if cfg.MinSize < 0 {
+			return fmt.Errorf("`min_size` must be non-negative, found %d", cfg.MinSize)
+		}
+		if cfg.MaxSize < 0 {
+			return fmt.Errorf("`max_size` must be non-negative, found %d", cfg.MaxSize)
+		}
+		if cfg.MaxSize > 0 && cfg.MaxSize < cfg.MinSize {
+			return fmt.Errorf("`max_size` (%d) must be greater or equal to `min_size` (%d)", cfg.MaxSize, cfg.MinSize)
+		}
+	} else {
+		for szt, limit := range cfg.Limits {
+			if szt != request.SizerTypeItems && szt != request.SizerTypeBytes {
+				return fmt.Errorf("`batch` supports only `items` or `bytes` sizer, found %q", szt.String())
+			}
+			if limit.MinSize < 0 {
+				return fmt.Errorf("`min_size` must be non-negative for sizer %q, found %d", szt.String(), limit.MinSize)
+			}
+			if limit.MaxSize < 0 {
+				return fmt.Errorf("`max_size` must be non-negative for sizer %q, found %d", szt.String(), limit.MaxSize)
+			}
+			if limit.MaxSize > 0 && limit.MaxSize < limit.MinSize {
+				return fmt.Errorf("`max_size` (%d) must be greater or equal to `min_size` (%d) for sizer %q", limit.MaxSize, limit.MinSize, szt.String())
+			}
+		}
 	}
 
 	return nil

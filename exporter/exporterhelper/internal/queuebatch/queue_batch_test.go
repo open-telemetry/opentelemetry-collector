@@ -134,6 +134,9 @@ func TestQueueBatchDifferentSizers(t *testing.T) {
 			Sizer:        request.SizerTypeItems,
 			MinSize:      100,
 			MaxSize:      200,
+			Limits: map[request.SizerType]SizerLimit{
+				request.SizerTypeItems: {MinSize: 100, MaxSize: 200},
+			},
 		}),
 	}
 	sink := requesttest.NewSink()
@@ -251,6 +254,9 @@ func TestQueueBatch_Merge(t *testing.T) {
 				FlushTimeout: 100 * time.Millisecond,
 				Sizer:        request.SizerTypeItems,
 				MinSize:      10,
+				Limits: map[request.SizerType]SizerLimit{
+					request.SizerTypeItems: {MinSize: 10},
+				},
 			},
 		},
 		{
@@ -260,6 +266,9 @@ func TestQueueBatch_Merge(t *testing.T) {
 				Sizer:        request.SizerTypeItems,
 				MinSize:      10,
 				MaxSize:      1000,
+				Limits: map[request.SizerType]SizerLimit{
+					request.SizerTypeItems: {MinSize: 10, MaxSize: 1000},
+				},
 			},
 		},
 	}
@@ -318,6 +327,9 @@ func TestQueueBatch_BatchExportError(t *testing.T) {
 				FlushTimeout: 200 * time.Millisecond,
 				Sizer:        request.SizerTypeItems,
 				MinSize:      10,
+				Limits: map[request.SizerType]SizerLimit{
+					request.SizerTypeItems: {MinSize: 10},
+				},
 			},
 		},
 		{
@@ -327,6 +339,9 @@ func TestQueueBatch_BatchExportError(t *testing.T) {
 				Sizer:        request.SizerTypeItems,
 				MinSize:      10,
 				MaxSize:      200,
+				Limits: map[request.SizerType]SizerLimit{
+					request.SizerTypeItems: {MinSize: 10, MaxSize: 200},
+				},
 			},
 		},
 		{
@@ -336,6 +351,9 @@ func TestQueueBatch_BatchExportError(t *testing.T) {
 				Sizer:        request.SizerTypeItems,
 				MinSize:      10,
 				MaxSize:      20,
+				Limits: map[request.SizerType]SizerLimit{
+					request.SizerTypeItems: {MinSize: 10, MaxSize: 20},
+				},
 			},
 			expectedRequests: 1,
 			expectedItems:    8,
@@ -382,6 +400,9 @@ func TestQueueBatch_MergeOrSplit(t *testing.T) {
 		Sizer:        request.SizerTypeItems,
 		MinSize:      5,
 		MaxSize:      10,
+		Limits: map[request.SizerType]SizerLimit{
+			request.SizerTypeItems: {MinSize: 5, MaxSize: 10},
+		},
 	})
 	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
 	require.NoError(t, err)
@@ -420,6 +441,9 @@ func TestQueueBatch_MergeOrSplit_Multibatch(t *testing.T) {
 		FlushTimeout: 100 * time.Millisecond,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      10,
+		Limits: map[request.SizerType]SizerLimit{
+			request.SizerTypeItems: {MinSize: 10},
+		},
 	})
 
 	type partitionKey struct{}
@@ -478,7 +502,13 @@ func TestQueueBatch_BatchBlocking(t *testing.T) {
 	sink := requesttest.NewSink()
 	cfg := newTestConfig()
 	cfg.WaitForResult = true
-	cfg.Batch = configoptional.Some(BatchConfig{Sizer: request.SizerTypeItems, MinSize: 3})
+	cfg.Batch = configoptional.Some(BatchConfig{
+		Sizer:   request.SizerTypeItems,
+		MinSize: 3,
+		Limits: map[request.SizerType]SizerLimit{
+			request.SizerTypeItems: {MinSize: 3},
+		},
+	})
 	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
 	require.NoError(t, err)
 	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
@@ -503,7 +533,13 @@ func TestQueueBatch_DrainActiveRequests(t *testing.T) {
 	sink := requesttest.NewSink()
 	cfg := newTestConfig()
 	cfg.WaitForResult = true
-	cfg.Batch = configoptional.Some(BatchConfig{Sizer: request.SizerTypeItems, MinSize: 2})
+	cfg.Batch = configoptional.Some(BatchConfig{
+		Sizer:   request.SizerTypeItems,
+		MinSize: 2,
+		Limits: map[request.SizerType]SizerLimit{
+			request.SizerTypeItems: {MinSize: 2},
+		},
+	})
 	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
 	require.NoError(t, err)
 	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
@@ -534,7 +570,14 @@ func TestQueueBatchTimerResetNoConflict(t *testing.T) {
 	sink := requesttest.NewSink()
 	cfg := newTestConfig()
 	cfg.WaitForResult = true
-	cfg.Batch = configoptional.Some(BatchConfig{FlushTimeout: 100 * time.Millisecond, MinSize: 8})
+	cfg.Batch = configoptional.Some(BatchConfig{
+		FlushTimeout: 100 * time.Millisecond,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      8,
+		Limits: map[request.SizerType]SizerLimit{
+			request.SizerTypeItems: {MinSize: 8},
+		},
+	})
 	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
 	require.NoError(t, err)
 	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
@@ -564,7 +607,14 @@ func TestQueueBatchTimerFlush(t *testing.T) {
 	sink := requesttest.NewSink()
 	cfg := newTestConfig()
 	cfg.WaitForResult = true
-	cfg.Batch = configoptional.Some(BatchConfig{FlushTimeout: 100 * time.Millisecond, Sizer: request.SizerTypeItems, MinSize: 8})
+	cfg.Batch = configoptional.Some(BatchConfig{
+		FlushTimeout: 100 * time.Millisecond,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      8,
+		Limits: map[request.SizerType]SizerLimit{
+			request.SizerTypeItems: {MinSize: 8},
+		},
+	})
 	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
 	require.NoError(t, err)
 	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
@@ -610,6 +660,9 @@ func newTestConfig() Config {
 			FlushTimeout: 200 * time.Millisecond,
 			Sizer:        request.SizerTypeItems,
 			MinSize:      2048,
+			Limits: map[request.SizerType]SizerLimit{
+				request.SizerTypeItems: {MinSize: 2048},
+			},
 		}),
 	}
 }

@@ -81,7 +81,11 @@ func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Req
 	isActive := qb.active
 	qb.lastDataTime = time.Now()
 	if qb.currentBatch == nil {
-		reqList, mergeSplitErr := req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.cfg.Sizer, nil)
+		maxLimits := make(map[request.SizerType]int64)
+		for szt, limit := range qb.cfg.Limits {
+			maxLimits[szt] = limit.MaxSize
+		}
+		reqList, mergeSplitErr := req.MergeSplit(ctx, maxLimits, nil)
 		if mergeSplitErr != nil {
 			// Do not return in case of error if there are data, try to export as much as possible.
 			qb.logger.Warn("Failed to split request.", zap.Error(mergeSplitErr))
@@ -128,7 +132,11 @@ func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Req
 		return isActive
 	}
 
-	reqList, mergeSplitErr := qb.currentBatch.req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.cfg.Sizer, req)
+	maxLimits := make(map[request.SizerType]int64)
+	for szt, limit := range qb.cfg.Limits {
+		maxLimits[szt] = limit.MaxSize
+	}
+	reqList, mergeSplitErr := qb.currentBatch.req.MergeSplit(ctx, maxLimits, req)
 	// If failed to merge signal all Done callbacks from the current batch as well as the current request and reset the current batch.
 	if mergeSplitErr != nil {
 		// Do not return in case of error if there are data, try to export as much as possible.
