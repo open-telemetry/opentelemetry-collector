@@ -10,48 +10,67 @@ import (
 // K8sReplicasetEntity represents a k8s.replicaset entity.
 // Create one with NewK8sReplicasetEntity and pass it to EmitForEntity.
 type K8sReplicasetEntity struct {
-	ent entity.Entity
+	k8sReplicasetUID  string
+	k8sReplicasetName string
 }
 
 // NewK8sReplicasetEntity creates a new K8sReplicasetEntity.
 // Identity attributes are required and must be provided at construction time.
-func NewK8sReplicasetEntity(K8sreplicasetuid string) *K8sReplicasetEntity {
-	e := &K8sReplicasetEntity{
-		ent: entity.NewEntity("k8s.replicaset"),
+func NewK8sReplicasetEntity(k8sReplicasetUID string) *K8sReplicasetEntity {
+	return &K8sReplicasetEntity{
+		k8sReplicasetUID: k8sReplicasetUID,
 	}
-	e.ent.IdentifyingAttributes().PutStr("k8s.replicaset.uid", K8sreplicasetuid)
-	return e
 }
 
 // Description attribute setters for k8s.replicaset.
 
 // SetK8sReplicasetName sets the k8s.replicaset.name description attribute.
 func (e *K8sReplicasetEntity) SetK8sReplicasetName(val string) {
-	e.ent.DescriptiveAttributes().PutStr("k8s.replicaset.name", val)
+	e.k8sReplicasetName = val
+}
+
+// copyToResource populates res with the entity's attributes according to cfg.
+// If all identity attributes are enabled, an entity ref is produced; otherwise
+// the enabled attributes are written directly as plain resource attributes.
+func (e *K8sReplicasetEntity) copyToResource(cfg ResourceAttributesConfig, res pcommon.Resource) {
+	if cfg.K8sReplicasetUID.Enabled {
+		ent := entity.ResourceEntities(res).PutEmpty("k8s.replicaset")
+		ent.IdentifyingAttributes().PutStr("k8s.replicaset.uid", e.k8sReplicasetUID)
+		if cfg.K8sReplicasetName.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.replicaset.name", e.k8sReplicasetName)
+		}
+	} else {
+		if cfg.K8sReplicasetUID.Enabled {
+			res.Attributes().PutStr("k8s.replicaset.uid", e.k8sReplicasetUID)
+		}
+		if cfg.K8sReplicasetName.Enabled {
+			res.Attributes().PutStr("k8s.replicaset.name", e.k8sReplicasetName)
+		}
+	}
 }
 
 // K8sPodEntity represents a k8s.pod entity.
 // Create one with NewK8sPodEntity and pass it to EmitForEntity.
 type K8sPodEntity struct {
-	ent                       entity.Entity
-	ControlledByK8sReplicaset *K8sReplicasetEntity
+	k8sPodUID                 string
+	k8sPodName                string
+	k8sNamespaceName          string
+	controlledByK8sReplicaset *K8sReplicasetEntity
 }
 
 // NewK8sPodEntity creates a new K8sPodEntity.
 // Identity attributes are required and must be provided at construction time.
-func NewK8sPodEntity(K8spoduid string) *K8sPodEntity {
-	e := &K8sPodEntity{
-		ent: entity.NewEntity("k8s.pod"),
+func NewK8sPodEntity(k8sPodUID string) *K8sPodEntity {
+	return &K8sPodEntity{
+		k8sPodUID: k8sPodUID,
 	}
-	e.ent.IdentifyingAttributes().PutStr("k8s.pod.uid", K8spoduid)
-	return e
 }
 
 // Description attribute setters for k8s.pod.
 
 // SetK8sPodName sets the k8s.pod.name description attribute.
 func (e *K8sPodEntity) SetK8sPodName(val string) {
-	e.ent.DescriptiveAttributes().PutStr("k8s.pod.name", val)
+	e.k8sPodName = val
 }
 
 // Extra attribute setters for k8s.pod.
@@ -59,7 +78,7 @@ func (e *K8sPodEntity) SetK8sPodName(val string) {
 
 // SetK8sNamespaceName sets the k8s.namespace.name extra attribute on the resource.
 func (e *K8sPodEntity) SetK8sNamespaceName(val string) {
-	e.ent.DescriptiveAttributes().PutStr("k8s.namespace.name", val)
+	e.k8sNamespaceName = val
 }
 
 // Relationship setters for k8s.pod.
@@ -67,7 +86,33 @@ func (e *K8sPodEntity) SetK8sNamespaceName(val string) {
 // SetControlledByK8sReplicaset sets the controlled_by relationship to a k8s.replicaset entity.
 // The related entity will be emitted alongside this entity's metrics.
 func (e *K8sPodEntity) SetControlledByK8sReplicaset(target *K8sReplicasetEntity) {
-	e.ControlledByK8sReplicaset = target
+	e.controlledByK8sReplicaset = target
+}
+
+// copyToResource populates res with the entity's attributes according to cfg.
+// If all identity attributes are enabled, an entity ref is produced; otherwise
+// the enabled attributes are written directly as plain resource attributes.
+func (e *K8sPodEntity) copyToResource(cfg ResourceAttributesConfig, res pcommon.Resource) {
+	if cfg.K8sPodUID.Enabled {
+		ent := entity.ResourceEntities(res).PutEmpty("k8s.pod")
+		ent.IdentifyingAttributes().PutStr("k8s.pod.uid", e.k8sPodUID)
+		if cfg.K8sPodName.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.pod.name", e.k8sPodName)
+		}
+		if cfg.K8sNamespaceName.Enabled {
+			res.Attributes().PutStr("k8s.namespace.name", e.k8sNamespaceName)
+		}
+	} else {
+		if cfg.K8sPodUID.Enabled {
+			res.Attributes().PutStr("k8s.pod.uid", e.k8sPodUID)
+		}
+		if cfg.K8sPodName.Enabled {
+			res.Attributes().PutStr("k8s.pod.name", e.k8sPodName)
+		}
+		if cfg.K8sNamespaceName.Enabled {
+			res.Attributes().PutStr("k8s.namespace.name", e.k8sNamespaceName)
+		}
+	}
 }
 
 // K8sReplicasetMetricsBuilder records metrics for the k8s.replicaset entity.
@@ -82,12 +127,13 @@ func (eb *K8sReplicasetMetricsBuilder) RecordK8sReplicasetDesiredDataPoint(ts pc
 	eb.mb.metricK8sReplicasetDesired.recordDataPoint(eb.mb.startTime, ts, val)
 }
 
-// Emit emits all pending metrics for the entity passed to ForK8sReplicaset and resets
-// the internal state. The entity's identity and description attributes are added to the resource.
-// If any relationships have been set on the entity, the related entities are also added to the resource.
+// Emit emits all pending metrics for the entity. Resource attributes are filtered by config:
+// disabled identity attributes suppress the entity (other enabled attributes are added directly
+// to the resource); disabled descriptive/extra attributes are omitted entirely.
 func (eb *K8sReplicasetMetricsBuilder) Emit() {
 	res := pcommon.NewResource()
-	eb.entity.ent.CopyToResource(res)
+	cfg := eb.mb.config.ResourceAttributes
+	eb.entity.copyToResource(cfg, res)
 	eb.mb.EmitForResource(withResourceMoved(res))
 }
 
@@ -108,14 +154,15 @@ func (eb *K8sPodMetricsBuilder) RecordK8sPodPhaseDataPoint(ts pcommon.Timestamp,
 	eb.mb.metricK8sPodPhase.recordDataPoint(eb.mb.startTime, ts, val, phaseAttributeValue.String())
 }
 
-// Emit emits all pending metrics for the entity passed to ForK8sPod and resets
-// the internal state. The entity's identity and description attributes are added to the resource.
-// If any relationships have been set on the entity, the related entities are also added to the resource.
+// Emit emits all pending metrics for the entity. Resource attributes are filtered by config:
+// disabled identity attributes suppress the entity (other enabled attributes are added directly
+// to the resource); disabled descriptive/extra attributes are omitted entirely.
 func (eb *K8sPodMetricsBuilder) Emit() {
 	res := pcommon.NewResource()
-	eb.entity.ent.CopyToResource(res)
-	if eb.entity.ControlledByK8sReplicaset != nil {
-		eb.entity.ControlledByK8sReplicaset.ent.CopyToResource(res)
+	cfg := eb.mb.config.ResourceAttributes
+	eb.entity.copyToResource(cfg, res)
+	if eb.entity.controlledByK8sReplicaset != nil {
+		eb.entity.controlledByK8sReplicaset.copyToResource(cfg, res)
 	}
 	eb.mb.EmitForResource(withResourceMoved(res))
 }

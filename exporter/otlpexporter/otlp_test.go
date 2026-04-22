@@ -397,7 +397,7 @@ func TestSendTraces(t *testing.T) {
 	assert.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
 }
 
-func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
+func TestSendTracesWhenEndpointHasHTTPScheme(t *testing.T) {
 	tests := []struct {
 		name               string
 		useTLS             bool
@@ -1010,7 +1010,7 @@ func TestPushProfilesBeforeStart(t *testing.T) {
 	assert.Contains(t, err.Error(), "not started")
 }
 
-func TestSendProfilesWhenEndpointHasHttpScheme(t *testing.T) {
+func TestSendProfilesWhenEndpointHasHTTPScheme(t *testing.T) {
 	tests := []struct {
 		name               string
 		useTLS             bool

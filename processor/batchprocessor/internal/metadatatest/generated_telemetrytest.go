@@ -26,7 +26,7 @@ func AssertEqualProcessorBatchBatchSendSize(t *testing.T, tt *componenttest.Tele
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_batch_batch_send_size",
 		Description: "Number of units in the batch [Development]",
-		Unit:        "{units}",
+		Unit:        "{unit}",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			DataPoints:  dps,
@@ -56,7 +56,7 @@ func AssertEqualProcessorBatchBatchSizeTriggerSend(t *testing.T, tt *componentte
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_batch_batch_size_trigger_send",
 		Description: "Number of times the batch was sent due to a size trigger [Development]",
-		Unit:        "{times}",
+		Unit:        "{time}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -72,7 +72,7 @@ func AssertEqualProcessorBatchMetadataCardinality(t *testing.T, tt *componenttes
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_batch_metadata_cardinality",
 		Description: "Number of distinct metadata value combinations being processed [Development]",
-		Unit:        "{combinations}",
+		Unit:        "{combination}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: false,
@@ -88,7 +88,7 @@ func AssertEqualProcessorBatchTimeoutTriggerSend(t *testing.T, tt *componenttest
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_batch_timeout_trigger_send",
 		Description: "Number of times the batch was sent due to a timeout trigger [Development]",
-		Unit:        "{times}",
+		Unit:        "{time}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,

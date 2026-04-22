@@ -7,7 +7,7 @@ status:
   distributions: [core, contrib]
   stability:
     beta: [metrics, traces, logs]
-    development: [profiles]
+    alpha: [profiles]
 
 feature_gates:
   - id: otelcol.printInitialConfig

@@ -121,3 +121,49 @@ func TestMultiBatcher_Timeout(t *testing.T) {
 
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 }
+
+func TestMultiBatcher_PartitionRemovedAfterIdleTimeout(t *testing.T) {
+	// Use a short FlushTimeout so the idle threshold (partitionIdleCycles*FlushTimeout) is reached quickly.
+	cfg := BatchConfig{
+		FlushTimeout: 10 * time.Millisecond,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      100, // High min size to prevent immediate flush
+	}
+	sink := requesttest.NewSink()
+
+	type partitionKey struct{}
+
+	ba, err := newMultiBatcher(cfg,
+		request.NewItemsSizer(),
+		newWorkerPool(1),
+		NewPartitioner(func(ctx context.Context, _ request.Request) string {
+			return ctx.Value(partitionKey{}).(string)
+		}),
+		nil,
+		sink.Export,
+		zap.NewNop(),
+	)
+
+	require.NoError(t, err)
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, ba.Shutdown(context.Background()))
+	})
+
+	done := newFakeDone()
+
+	// Create a partition
+	ba.Consume(context.WithValue(context.Background(), partitionKey{}, "p1"), &requesttest.FakeRequest{Items: 5}, done)
+	assert.Equal(t, int64(1), ba.getActivePartitionsCount())
+
+	// Wait for the batch to flush via timeout
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() == 1
+	}, 500*time.Millisecond, 10*time.Millisecond)
+
+	// Wait for idle timeout (partitionIdleCycles * FlushTimeout = 10 * 10ms = 100ms)
+	// After this, the partition should be removed from the LRU cache.
+	assert.Eventually(t, func() bool {
+		return ba.getActivePartitionsCount() == 0
+	}, 500*time.Millisecond, 10*time.Millisecond)
+}

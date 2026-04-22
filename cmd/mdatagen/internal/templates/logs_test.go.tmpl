@@ -166,8 +166,8 @@ func TestLogsBuilder(t *testing.T) {
 			{{- end }}
 			{{- end }}
 			{{- range $name, $attr := .ResourceAttributes }}
-			{{- if and $attr.Enabled $attr.Warnings.IfEnabled }}
-			if tt.resAttrsSet == eventTestDataSetDefault || tt.resAttrsSet == eventTestDataSetAll {
+			{{- if $attr.Warnings.IfEnabled }}
+			if {{- if $attr.Enabled }} tt.resAttrsSet == eventTestDataSetDefault || {{- end }} tt.resAttrsSet == eventTestDataSetAll {
 				assert.Equal(t, "[WARNING] `{{ $name }}` should not be enabled: {{ $attr.Warnings.IfEnabled }}", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}

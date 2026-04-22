@@ -5,7 +5,7 @@ This scraper is used for testing purposes to check the output of mdatagen.
 
 | Status        |           |
 | ------------- |-----------|
-| Stability     | [development]: logs   |
+| Stability     | [development]: logs, profiles   |
 |               | [stable]: metrics   |
 | Unsupported Platforms | freebsd, illumos |
 | Distributions | [] |

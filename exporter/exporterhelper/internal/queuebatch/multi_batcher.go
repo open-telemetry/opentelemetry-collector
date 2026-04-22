@@ -63,15 +63,20 @@ func newMultiBatcher(
 func (mb *multiBatcher) getPartition(ctx context.Context, req request.Request) *partitionBatcher {
 	key := mb.partitioner.GetKey(ctx, req)
 
-	// Fast path: partition already exists
 	mb.lock.Lock()
 	defer mb.lock.Unlock()
+
+	// Fast path: partition already exists
 	if pb, ok := mb.partitions.Get(key); ok {
 		return pb
 	}
 
-	// Create new partition
-	newPB := newPartitionBatcher(mb.cfg, mb.sizer, mb.mergeCtx, mb.wp, mb.consumeFunc, mb.logger)
+	// Create new partition with onEmpty callback to remove from LRU after idle timeout
+	newPB := newPartitionBatcher(mb.cfg, mb.sizer, mb.mergeCtx, mb.wp, mb.consumeFunc, mb.logger, func() {
+		mb.lock.Lock()
+		defer mb.lock.Unlock()
+		mb.partitions.Remove(key)
+	})
 	_ = mb.partitions.Add(key, newPB)
 	_ = newPB.Start(ctx, nil)
 	return newPB

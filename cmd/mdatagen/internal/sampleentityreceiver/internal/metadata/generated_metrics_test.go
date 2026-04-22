@@ -144,9 +144,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("phase")
+					phaseAttrVal, ok := dp.Attributes().Get("phase")
 					assert.True(t, ok)
-					assert.Equal(t, "Pending", attrVal.Str())
+					assert.Equal(t, "Pending", phaseAttrVal.Str())
 				case "k8s.replicaset.desired":
 					assert.False(t, validatedMetrics["k8s.replicaset.desired"], "Found a duplicate in the metrics slice: k8s.replicaset.desired")
 					validatedMetrics["k8s.replicaset.desired"] = true

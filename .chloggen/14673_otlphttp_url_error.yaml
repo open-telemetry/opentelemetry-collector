@@ -1,7 +1,0 @@
-change_type: "bug_fix"
-component: "exporter/otlp_http"
-note: "Show the actual destination URL in error messages when request URL is modified by middleware."
-issues: [14673]
-subtext: |
-  Unwraps the `*url.Error` returned by `http.Client.Do()` to prevent misleading error logs when a middleware extension dynamically updates the endpoint.
-change_logs: ["user"]

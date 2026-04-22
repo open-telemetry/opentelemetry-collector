@@ -171,16 +171,14 @@ To keep naming patterns consistent across the project, enumeration patterns are 
   - `pcommon.ValueTypeStr` for `pcommon.ValueType`
   - `pmetric.MetricTypeGauge` for `pmetric.MetricType`
 
-
 ## Recommended Libraries / Defaults
 
 In order to simplify development within the project, we have made certain library recommendations that should be followed.
 
-| Scenario 	 | Recommended                   	                | Rationale                                                                                                                  |
+| Scenario   | Recommended                                    | Rationale                                                                                                                  |
 |------------|------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
-| Hashing  	 | ["hashing/fnv"](https://pkg.go.dev/hash/fnv) 	 | The project adopted this as the default hashing method due to the efficiency and is reasonable for non-cryptographic use 	 |
-| Testing  	 | Use `t.Parallel()` where possible            	 | Enabling more tests to be run in parallel will speed up the feedback process when working on the project.                 	 |
-
+| Hashing    | ["hashing/fnv"](https://pkg.go.dev/hash/fnv)   | The project adopted this as the default hashing method due to the efficiency and is reasonable for non-cryptographic use   |
+| Testing    | Use `t.Parallel()` where possible              | Enabling more tests to be run in parallel will speed up the feedback process when working on the project.                   |
 
 Within the project, there are some packages that have yet to follow the recommendations and are being addressed. However, any new code should adhere to the recommendations.
 
@@ -411,7 +409,7 @@ It's also important to check for any open issues that may already propose these 
 If no such Semantic Conventions are defined in the Semantic Conventions project, the component’s code owners
 should consider initiating that process first
 (refer to Semantic Conventions'
-[contribution guidelines](https://github.com/open-telemetry/semantic-conventions/blob/main/CONTRIBUTING.md) 
+[contribution guidelines](https://github.com/open-telemetry/semantic-conventions/blob/main/CONTRIBUTING.md)
 for specific details).
 The implementation of the component can still be submitted as a draft PR to demonstrate how the proposed
 Semantic Conventions would be used while working in parallel to contribute the relevant updates to
@@ -565,6 +563,12 @@ approach. This is a well-known approach in other projects such as Kubernetes. A 
 three stages: alpha, beta and stable. The intent of these stages is to decouple other software
 changes from the breaking change; some users may adopt the change early, while other users may delay
 its adoption.
+
+#### Defining feature gates
+
+Feature gates should be defined declaratively in the component's `metadata.yaml`
+file whenever possible. See the [feature gate documentation](../featuregate/README.md)
+for details on the declarative approach and the supported fields.
 
 #### Feature gate IDs
 

@@ -5,21 +5,21 @@ $defs:
     type: object
     properties:
       k8s.pod.cpu_time:
-        description: "K8sPodCPUTimeConfig provides config for the k8s.pod.cpu_time metric."
+        description: "K8sPodCPUTimeMetricConfig provides config for the k8s.pod.cpu_time metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.pod.phase:
-        description: "K8sPodPhaseConfig provides config for the k8s.pod.phase metric."
+        description: "K8sPodPhaseMetricConfig provides config for the k8s.pod.phase metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       k8s.replicaset.desired:
-        description: "K8sReplicasetDesiredConfig provides config for the k8s.replicaset.desired metric."
+        description: "K8sReplicasetDesiredMetricConfig provides config for the k8s.replicaset.desired metric."
         type: object
         properties:
           enabled:
@@ -40,12 +40,12 @@ $defs:
             description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           metrics_exclude:
             description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
       k8s.pod.name:
         description: ResourceAttributeConfig provides common config for a k8s.pod.name resource attribute.
         type: object
@@ -57,12 +57,12 @@ $defs:
             description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           metrics_exclude:
             description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
       k8s.pod.uid:
         description: ResourceAttributeConfig provides common config for a k8s.pod.uid resource attribute.
         type: object
@@ -74,12 +74,12 @@ $defs:
             description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           metrics_exclude:
             description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
       k8s.replicaset.name:
         description: ResourceAttributeConfig provides common config for a k8s.replicaset.name resource attribute.
         type: object
@@ -91,12 +91,12 @@ $defs:
             description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           metrics_exclude:
             description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
       k8s.replicaset.uid:
         description: ResourceAttributeConfig provides common config for a k8s.replicaset.uid resource attribute.
         type: object
@@ -108,12 +108,12 @@ $defs:
             description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
           metrics_exclude:
             description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
             type: array
             items:
-              $ref: go.opentelemetry.io/collector/filter.config
+              $ref: /filter.config
   metrics_builder_config:
     description: MetricsBuilderConfig is a configuration for sampleentity metrics builder.
     type: object
