@@ -1,0 +1,30 @@
+name: "Approve Pending Workflows"
+on:
+  issue_comment:
+    types:
+      - created
+
+permissions: read-all
+
+jobs:
+  approve-workflows:
+    if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '/workflow-approve') && github.repository_owner == 'open-telemetry' }}
+    permissions:
+      actions: write
+      contents: read
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
+        id: otelbot-token
+        with:
+          app-id: ${{ vars.OTELBOT_APP_ID }}
+          private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
+      - name: Run approve-workflows.sh
+        run: ./.github/workflows/scripts/approve-workflows.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ORG_TOKEN: ${{ steps.otelbot-token.outputs.token }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          COMMENT: ${{ github.event.comment.body }}
+          SENDER: ${{ github.event.comment.user.login }}
