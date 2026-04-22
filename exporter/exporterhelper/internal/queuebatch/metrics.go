@@ -35,14 +35,14 @@ var (
 )
 
 type metricsRequest struct {
-	md         pmetric.Metrics
-	cachedSize int
+	md          pmetric.Metrics
+	cachedSizes map[request.SizerType]int
 }
 
 func newMetricsRequest(md pmetric.Metrics) request.Request {
 	return &metricsRequest{
-		md:         md,
-		cachedSize: -1,
+		md:          md,
+		cachedSizes: make(map[request.SizerType]int),
 	}
 }
 
@@ -100,15 +100,17 @@ func (req *metricsRequest) ItemsCount() int {
 	return req.md.DataPointCount()
 }
 
-func (req *metricsRequest) size(sizer sizer.MetricsSizer) int {
-	if req.cachedSize == -1 {
-		req.cachedSize = sizer.MetricsSize(req.md)
+func (req *metricsRequest) size(szt request.SizerType, sizer sizer.MetricsSizer) int {
+	if sz, ok := req.cachedSizes[szt]; ok {
+		return sz
 	}
-	return req.cachedSize
+	sz := sizer.MetricsSize(req.md)
+	req.cachedSizes[szt] = sz
+	return sz
 }
 
-func (req *metricsRequest) setCachedSize(count int) {
-	req.cachedSize = count
+func (req *metricsRequest) setCachedSize(szt request.SizerType, count int) {
+	req.cachedSizes[szt] = count
 }
 
 func (req *metricsRequest) BytesSize() int {

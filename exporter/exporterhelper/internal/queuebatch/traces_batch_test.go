@@ -297,10 +297,10 @@ func TestMergeSplitTracesInputNotModifiedIfErrorReturned(t *testing.T) {
 func TestExtractTraces(t *testing.T) {
 	for i := range 10 {
 		td := testdata.GenerateTraces(10)
-		extractedTraces, removedSize := extractTraces(td, i, &sizer.TracesCountSizer{})
+		extractedTraces, removedSizes := extractTraces(td, map[request.SizerType]int64{request.SizerTypeItems: int64(i)}, map[request.SizerType]sizer.TracesSizer{request.SizerTypeItems: &sizer.TracesCountSizer{}})
 		assert.Equal(t, i, extractedTraces.SpanCount())
 		assert.Equal(t, 10-i, td.SpanCount())
-		assert.Equal(t, i, removedSize)
+		assert.Equal(t, i, removedSizes[request.SizerTypeItems])
 	}
 }
 

@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
@@ -16,22 +17,16 @@ import (
 // MergeSplit splits and/or merges the provided metrics request and the current request into one or more requests
 // conforming with the MaxSizeConfig.
 func (req *metricsRequest) MergeSplit(_ context.Context, limits map[request.SizerType]int64, r2 request.Request) ([]request.Request, error) {
-	var maxSize int
-	var szt request.SizerType
-	for k, v := range limits {
-		szt = k
-		maxSize = int(v)
-		break
-	}
-
-	var sz sizer.MetricsSizer
-	switch szt {
-	case request.SizerTypeItems:
-		sz = &sizer.MetricsCountSizer{}
-	case request.SizerTypeBytes:
-		sz = &sizer.MetricsBytesSizer{}
-	default:
-		return nil, errors.New("unknown sizer type")
+	sizers := make(map[request.SizerType]sizer.MetricsSizer)
+	for szt := range limits {
+		switch szt {
+		case request.SizerTypeItems:
+			sizers[szt] = &sizer.MetricsCountSizer{}
+		case request.SizerTypeBytes:
+			sizers[szt] = &sizer.MetricsBytesSizer{}
+		default:
+			return nil, errors.New("unknown sizer type")
+		}
 	}
 
 	if r2 != nil {
@@ -39,32 +34,54 @@ func (req *metricsRequest) MergeSplit(_ context.Context, limits map[request.Size
 		if !ok {
 			return nil, errors.New("invalid input type")
 		}
-		req2.mergeTo(req, sz)
+		req2.mergeTo(req, sizers)
 	}
 
-	// If no limit we can simply merge the new request into the current and return.
-	if maxSize == 0 {
+	// If no limits we can simply merge the new request into the current and return.
+	if len(limits) == 0 {
 		return []request.Request{req}, nil
 	}
-	return req.split(maxSize, sz)
+	return req.split(limits, sizers)
 }
 
-func (req *metricsRequest) mergeTo(dst *metricsRequest, sz sizer.MetricsSizer) {
-	if sz != nil {
-		dst.setCachedSize(dst.size(sz) + req.size(sz))
-		req.setCachedSize(0)
+func (req *metricsRequest) mergeTo(dst *metricsRequest, sizers map[request.SizerType]sizer.MetricsSizer) {
+	for szt, sz := range sizers {
+		dst.setCachedSize(szt, dst.size(szt, sz)+req.size(szt, sz))
+		req.setCachedSize(szt, 0)
 	}
 	req.md.ResourceMetrics().MoveAndAppendTo(dst.md.ResourceMetrics())
 }
 
-func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer) ([]request.Request, error) {
+func (req *metricsRequest) split(limits map[request.SizerType]int64, sizers map[request.SizerType]sizer.MetricsSizer) ([]request.Request, error) {
 	var res []request.Request
-	for req.size(sz) > maxSize {
-		md, rmSize := extractMetrics(req.md, maxSize, sz)
+	for {
+		exceeded := false
+		for szt, limit := range limits {
+			sz := sizers[szt]
+			if limit > 0 && int64(req.size(szt, sz)) > limit {
+				exceeded = true
+				break
+			}
+		}
+		if !exceeded {
+			break
+		}
+
+		adjustedLimits := make(map[request.SizerType]int64)
+		for szt, limit := range limits {
+			if limit == 0 {
+				adjustedLimits[szt] = math.MaxInt64
+			} else {
+				adjustedLimits[szt] = limit
+			}
+		}
+		md, rmSizes := extractMetrics(req.md, adjustedLimits, sizers)
 		if md.DataPointCount() == 0 {
 			return res, fmt.Errorf("one datapoint size is greater than max size, dropping items: %d", req.md.DataPointCount())
 		}
-		req.setCachedSize(req.size(sz) - rmSize)
+		for szt, sz := range sizers {
+			req.setCachedSize(szt, req.size(szt, sz)-rmSizes[szt])
+		}
 		res = append(res, newMetricsRequest(md))
 	}
 	res = append(res, req)
@@ -72,141 +89,222 @@ func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer) ([]request.
 }
 
 // extractMetrics extracts metrics from srcMetrics until capacity is reached.
-func extractMetrics(srcMetrics pmetric.Metrics, capacity int, sz sizer.MetricsSizer) (pmetric.Metrics, int) {
+func extractMetrics(srcMetrics pmetric.Metrics, limits map[request.SizerType]int64, sizers map[request.SizerType]sizer.MetricsSizer) (pmetric.Metrics, map[request.SizerType]int) {
 	destMetrics := pmetric.NewMetrics()
-	capacityLeft := capacity - sz.MetricsSize(destMetrics)
-	removedSize := 0
+	capacityLeft := make(map[request.SizerType]int)
+	removedSizes := make(map[request.SizerType]int)
+
+	for szt, limit := range limits {
+		sz := sizers[szt]
+		capacityLeft[szt] = int(limit) - sz.MetricsSize(destMetrics)
+		removedSizes[szt] = 0
+	}
+
 	srcMetrics.ResourceMetrics().RemoveIf(func(srcRM pmetric.ResourceMetrics) bool {
-		// If the no more capacity left just return.
-		if capacityLeft == 0 {
-			return false
+		for _, cap := range capacityLeft {
+			if cap <= 0 {
+				return false
+			}
 		}
-		rawRlSize := sz.ResourceMetricsSize(srcRM)
-		rlSize := sz.DeltaSize(rawRlSize)
-		if rlSize > capacityLeft {
-			extSrcRM, extRmSize := extractResourceMetrics(srcRM, capacityLeft, sz)
-			// This cannot make it to exactly 0 for the bytes,
-			// force it to be 0 since that is the stopping condition.
-			capacityLeft = 0
-			removedSize += extRmSize
-			// There represents the delta between the delta sizes.
-			removedSize += rlSize - rawRlSize - (sz.DeltaSize(rawRlSize-extRmSize) - (rawRlSize - extRmSize))
-			// It is possible that for the bytes scenario, the extracted field contains no scope metrics.
-			// Do not add it to the destination if that is the case.
+
+		fitsAll := true
+		for szt, sz := range sizers {
+			rawRlSize := sz.ResourceMetricsSize(srcRM)
+			rlSize := sz.DeltaSize(rawRlSize)
+			if rlSize > capacityLeft[szt] {
+				fitsAll = false
+				break
+			}
+		}
+
+		if !fitsAll {
+			extSrcRM, extRmSizes := extractResourceMetrics(srcRM, capacityLeft, sizers)
+			
+			for szt := range sizers {
+				capacityLeft[szt] = 0
+			}
+			
+			for szt, sz := range sizers {
+				rawRlSize := sz.ResourceMetricsSize(srcRM)
+				rlSize := sz.DeltaSize(rawRlSize)
+				extRmSize := extRmSizes[szt]
+				removedSizes[szt] += extRmSize
+				removedSizes[szt] += rlSize - rawRlSize - (sz.DeltaSize(rawRlSize-extRmSize) - (rawRlSize - extRmSize))
+			}
+
 			if extSrcRM.ScopeMetrics().Len() > 0 {
 				extSrcRM.MoveTo(destMetrics.ResourceMetrics().AppendEmpty())
 			}
 			return extSrcRM.ScopeMetrics().Len() != 0
 		}
-		capacityLeft -= rlSize
-		removedSize += rlSize
+
+		for szt, sz := range sizers {
+			rawRlSize := sz.ResourceMetricsSize(srcRM)
+			rlSize := sz.DeltaSize(rawRlSize)
+			capacityLeft[szt] -= rlSize
+			removedSizes[szt] += rlSize
+		}
 		srcRM.MoveTo(destMetrics.ResourceMetrics().AppendEmpty())
 		return true
 	})
-	return destMetrics, removedSize
+	return destMetrics, removedSizes
 }
 
 // extractResourceMetrics extracts resource metrics and returns a new resource metrics with the specified number of data points.
-func extractResourceMetrics(srcRM pmetric.ResourceMetrics, capacity int, sz sizer.MetricsSizer) (pmetric.ResourceMetrics, int) {
+func extractResourceMetrics(srcRM pmetric.ResourceMetrics, limits map[request.SizerType]int, sizers map[request.SizerType]sizer.MetricsSizer) (pmetric.ResourceMetrics, map[request.SizerType]int) {
 	destRM := pmetric.NewResourceMetrics()
 	destRM.SetSchemaUrl(srcRM.SchemaUrl())
 	srcRM.Resource().CopyTo(destRM.Resource())
-	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
-	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.ResourceMetricsSize(destRM)
-	removedSize := 0
+	
+	capacityLeft := make(map[request.SizerType]int)
+	removedSizes := make(map[request.SizerType]int)
+	
+	for szt, limit := range limits {
+		sz := sizers[szt]
+		capacityLeft[szt] = limit - (sz.DeltaSize(limit) - limit) - sz.ResourceMetricsSize(destRM)
+		removedSizes[szt] = 0
+	}
+
 	srcRM.ScopeMetrics().RemoveIf(func(srcSM pmetric.ScopeMetrics) bool {
-		// If the no more capacity left just return.
-		if capacityLeft == 0 {
-			return false
+		for _, cap := range capacityLeft {
+			if cap <= 0 {
+				return false
+			}
 		}
-		rawSmSize := sz.ScopeMetricsSize(srcSM)
-		smSize := sz.DeltaSize(rawSmSize)
-		if smSize > capacityLeft {
-			extSrcSM, extSmSize := extractScopeMetrics(srcSM, capacityLeft, sz)
-			// This cannot make it to exactly 0 for the bytes,
-			// force it to be 0 since that is the stopping condition.
-			capacityLeft = 0
-			removedSize += extSmSize
-			// There represents the delta between the delta sizes.
-			removedSize += smSize - rawSmSize - (sz.DeltaSize(rawSmSize-extSmSize) - (rawSmSize - extSmSize))
-			// It is possible that for the bytes scenario, the extracted field contains no scope metrics.
-			// Do not add it to the destination if that is the case.
+
+		fitsAll := true
+		for szt, sz := range sizers {
+			rawSmSize := sz.ScopeMetricsSize(srcSM)
+			smSize := sz.DeltaSize(rawSmSize)
+			if smSize > capacityLeft[szt] {
+				fitsAll = false
+				break
+			}
+		}
+
+		if !fitsAll {
+			extSrcSM, extSmSizes := extractScopeMetrics(srcSM, capacityLeft, sizers)
+			
+			for szt := range sizers {
+				capacityLeft[szt] = 0
+			}
+			
+			for szt, sz := range sizers {
+				rawSmSize := sz.ScopeMetricsSize(srcSM)
+				smSize := sz.DeltaSize(rawSmSize)
+				extSmSize := extSmSizes[szt]
+				removedSizes[szt] += extSmSize
+				removedSizes[szt] += smSize - rawSmSize - (sz.DeltaSize(rawSmSize-extSmSize) - (rawSmSize - extSmSize))
+			}
+
 			if extSrcSM.Metrics().Len() > 0 {
 				extSrcSM.MoveTo(destRM.ScopeMetrics().AppendEmpty())
 			}
 			return extSrcSM.Metrics().Len() != 0
 		}
-		capacityLeft -= smSize
-		removedSize += smSize
+
+		for szt, sz := range sizers {
+			rawSmSize := sz.ScopeMetricsSize(srcSM)
+			smSize := sz.DeltaSize(rawSmSize)
+			capacityLeft[szt] -= smSize
+			removedSizes[szt] += smSize
+		}
 		srcSM.MoveTo(destRM.ScopeMetrics().AppendEmpty())
 		return true
 	})
-	return destRM, removedSize
+	return destRM, removedSizes
 }
 
 // extractScopeMetrics extracts scope metrics and returns a new scope metrics with the specified number of data points.
-func extractScopeMetrics(srcSM pmetric.ScopeMetrics, capacity int, sz sizer.MetricsSizer) (pmetric.ScopeMetrics, int) {
+func extractScopeMetrics(srcSM pmetric.ScopeMetrics, limits map[request.SizerType]int, sizers map[request.SizerType]sizer.MetricsSizer) (pmetric.ScopeMetrics, map[request.SizerType]int) {
 	destSM := pmetric.NewScopeMetrics()
 	destSM.SetSchemaUrl(srcSM.SchemaUrl())
 	srcSM.Scope().CopyTo(destSM.Scope())
-	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
-	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.ScopeMetricsSize(destSM)
-	removedSize := 0
+	
+	capacityLeft := make(map[request.SizerType]int)
+	removedSizes := make(map[request.SizerType]int)
+	
+	for szt, limit := range limits {
+		sz := sizers[szt]
+		capacityLeft[szt] = limit - (sz.DeltaSize(limit) - limit) - sz.ScopeMetricsSize(destSM)
+		removedSizes[szt] = 0
+	}
+
 	srcSM.Metrics().RemoveIf(func(srcSM pmetric.Metric) bool {
-		// If the no more capacity left just return.
-		if capacityLeft == 0 {
-			return false
+		for _, cap := range capacityLeft {
+			if cap <= 0 {
+				return false
+			}
 		}
-		rawRmSize := sz.MetricSize(srcSM)
-		rmSize := sz.DeltaSize(rawRmSize)
-		if rmSize > capacityLeft {
-			extSrcDP, extRmSize := extractMetricDataPoints(srcSM, capacityLeft, sz)
-			// This cannot make it to exactly 0 for the bytes,
-			// force it to be 0 since that is the stopping condition.
-			capacityLeft = 0
-			removedSize += extRmSize
-			// There represents the delta between the delta sizes.
-			removedSize += rmSize - rawRmSize - (sz.DeltaSize(rawRmSize-extRmSize) - (rawRmSize - extRmSize))
-			// It is possible that for the bytes scenario, the extracted field contains no datapoints.
-			// Do not add it to the destination if that is the case.
+
+		fitsAll := true
+		for szt, sz := range sizers {
+			rawRmSize := sz.MetricSize(srcSM)
+			rmSize := sz.DeltaSize(rawRmSize)
+			if rmSize > capacityLeft[szt] {
+				fitsAll = false
+				break
+			}
+		}
+
+		if !fitsAll {
+			extSrcDP, extRmSizes := extractMetricDataPoints(srcSM, capacityLeft, sizers)
+			
+			for szt := range sizers {
+				capacityLeft[szt] = 0
+			}
+			
+			for szt, sz := range sizers {
+				rawRmSize := sz.MetricSize(srcSM)
+				rmSize := sz.DeltaSize(rawRmSize)
+				extRmSize := extRmSizes[szt]
+				removedSizes[szt] += extRmSize
+				removedSizes[szt] += rmSize - rawRmSize - (sz.DeltaSize(rawRmSize-extRmSize) - (rawRmSize - extRmSize))
+			}
+
 			if dataPointsLen(extSrcDP) > 0 {
 				extSrcDP.MoveTo(destSM.Metrics().AppendEmpty())
 			}
 			return dataPointsLen(extSrcDP) != 0
 		}
-		capacityLeft -= rmSize
-		removedSize += rmSize
+
+		for szt, sz := range sizers {
+			rawRmSize := sz.MetricSize(srcSM)
+			rmSize := sz.DeltaSize(rawRmSize)
+			capacityLeft[szt] -= rmSize
+			removedSizes[szt] += rmSize
+		}
 		srcSM.MoveTo(destSM.Metrics().AppendEmpty())
 		return true
 	})
-	return destSM, removedSize
+	return destSM, removedSizes
 }
 
-func extractMetricDataPoints(srcMetric pmetric.Metric, capacity int, sz sizer.MetricsSizer) (pmetric.Metric, int) {
+func extractMetricDataPoints(srcMetric pmetric.Metric, limits map[request.SizerType]int, sizers map[request.SizerType]sizer.MetricsSizer) (pmetric.Metric, map[request.SizerType]int) {
 	destMetric := pmetric.NewMetric()
 	destMetric.SetName(srcMetric.Name())
 	destMetric.SetDescription(srcMetric.Description())
 	destMetric.SetUnit(srcMetric.Unit())
 	srcMetric.Metadata().CopyTo(destMetric.Metadata())
 
-	var removedSize int
+	var removedSizes map[request.SizerType]int
 	switch srcMetric.Type() {
 	case pmetric.MetricTypeGauge:
-		removedSize = extractGaugeDataPoints(srcMetric.Gauge(), destMetric, capacity, sz)
+		removedSizes = extractGaugeDataPoints(srcMetric.Gauge(), destMetric, limits, sizers)
 	case pmetric.MetricTypeSum:
-		removedSize = extractSumDataPoints(srcMetric.Sum(), destMetric, capacity, sz)
+		removedSizes = extractSumDataPoints(srcMetric.Sum(), destMetric, limits, sizers)
 		destMetric.Sum().SetIsMonotonic(srcMetric.Sum().IsMonotonic())
 		destMetric.Sum().SetAggregationTemporality(srcMetric.Sum().AggregationTemporality())
 	case pmetric.MetricTypeHistogram:
-		removedSize = extractHistogramDataPoints(srcMetric.Histogram(), destMetric, capacity, sz)
+		removedSizes = extractHistogramDataPoints(srcMetric.Histogram(), destMetric, limits, sizers)
 		destMetric.Histogram().SetAggregationTemporality(srcMetric.Histogram().AggregationTemporality())
 	case pmetric.MetricTypeExponentialHistogram:
-		removedSize = extractExponentialHistogramDataPoints(srcMetric.ExponentialHistogram(), destMetric, capacity, sz)
+		removedSizes = extractExponentialHistogramDataPoints(srcMetric.ExponentialHistogram(), destMetric, limits, sizers)
 		destMetric.ExponentialHistogram().SetAggregationTemporality(srcMetric.ExponentialHistogram().AggregationTemporality())
 	case pmetric.MetricTypeSummary:
-		removedSize = extractSummaryDataPoints(srcMetric.Summary(), destMetric, capacity, sz)
+		removedSizes = extractSummaryDataPoints(srcMetric.Summary(), destMetric, limits, sizers)
 	}
-	return destMetric, removedSize
+	return destMetric, removedSizes
 }
 
 func dataPointsLen(m pmetric.Metric) int {
@@ -225,134 +323,232 @@ func dataPointsLen(m pmetric.Metric) int {
 	return 0
 }
 
-func extractGaugeDataPoints(srcGauge pmetric.Gauge, destMetric pmetric.Metric, capacity int, sz sizer.MetricsSizer) int {
+func extractGaugeDataPoints(srcGauge pmetric.Gauge, destMetric pmetric.Metric, limits map[request.SizerType]int, sizers map[request.SizerType]sizer.MetricsSizer) map[request.SizerType]int {
 	destGauge := destMetric.SetEmptyGauge()
 
-	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
-	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.MetricSize(destMetric)
-	removedSize := 0
+	capacityLeft := make(map[request.SizerType]int)
+	removedSizes := make(map[request.SizerType]int)
+
+	for szt, limit := range limits {
+		sz := sizers[szt]
+		capacityLeft[szt] = limit - (sz.DeltaSize(limit) - limit) - sz.MetricSize(destMetric)
+		removedSizes[szt] = 0
+	}
 
 	srcGauge.DataPoints().RemoveIf(func(srcDP pmetric.NumberDataPoint) bool {
-		// If the no more capacity left just return.
-		if capacityLeft == 0 {
+		for _, cap := range capacityLeft {
+			if cap <= 0 {
+				return false
+			}
+		}
+
+		fitsAll := true
+		for szt, sz := range sizers {
+			rdSize := sz.DeltaSize(sz.NumberDataPointSize(srcDP))
+			if rdSize > capacityLeft[szt] {
+				fitsAll = false
+				break
+			}
+		}
+
+		if !fitsAll {
+			for szt := range sizers {
+				capacityLeft[szt] = 0
+			}
 			return false
 		}
 
-		rdSize := sz.DeltaSize(sz.NumberDataPointSize(srcDP))
-		if rdSize > capacityLeft {
-			// This cannot make it to exactly 0 for the bytes,
-			// force it to be 0 since that is the stopping condition.
-			capacityLeft = 0
-			return false
+		for szt, sz := range sizers {
+			rdSize := sz.DeltaSize(sz.NumberDataPointSize(srcDP))
+			capacityLeft[szt] -= rdSize
+			removedSizes[szt] += rdSize
 		}
-		capacityLeft -= rdSize
-		removedSize += rdSize
 		srcDP.MoveTo(destGauge.DataPoints().AppendEmpty())
 		return true
 	})
-	return removedSize
+	return removedSizes
 }
 
-func extractSumDataPoints(srcSum pmetric.Sum, destMetric pmetric.Metric, capacity int, sz sizer.MetricsSizer) int {
+func extractSumDataPoints(srcSum pmetric.Sum, destMetric pmetric.Metric, limits map[request.SizerType]int, sizers map[request.SizerType]sizer.MetricsSizer) map[request.SizerType]int {
 	destSum := destMetric.SetEmptySum()
-	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
-	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.MetricSize(destMetric)
-	removedSize := 0
+
+	capacityLeft := make(map[request.SizerType]int)
+	removedSizes := make(map[request.SizerType]int)
+
+	for szt, limit := range limits {
+		sz := sizers[szt]
+		capacityLeft[szt] = limit - (sz.DeltaSize(limit) - limit) - sz.MetricSize(destMetric)
+		removedSizes[szt] = 0
+	}
+
 	srcSum.DataPoints().RemoveIf(func(srcDP pmetric.NumberDataPoint) bool {
-		// If the no more capacity left just return.
-		if capacityLeft == 0 {
+		for _, cap := range capacityLeft {
+			if cap <= 0 {
+				return false
+			}
+		}
+
+		fitsAll := true
+		for szt, sz := range sizers {
+			rdSize := sz.DeltaSize(sz.NumberDataPointSize(srcDP))
+			if rdSize > capacityLeft[szt] {
+				fitsAll = false
+				break
+			}
+		}
+
+		if !fitsAll {
+			for szt := range sizers {
+				capacityLeft[szt] = 0
+			}
 			return false
 		}
 
-		rdSize := sz.DeltaSize(sz.NumberDataPointSize(srcDP))
-		if rdSize > capacityLeft {
-			// This cannot make it to exactly 0 for the bytes,
-			// force it to be 0 since that is the stopping condition.
-			capacityLeft = 0
-			return false
+		for szt, sz := range sizers {
+			rdSize := sz.DeltaSize(sz.NumberDataPointSize(srcDP))
+			capacityLeft[szt] -= rdSize
+			removedSizes[szt] += rdSize
 		}
-		capacityLeft -= rdSize
-		removedSize += rdSize
 		srcDP.MoveTo(destSum.DataPoints().AppendEmpty())
 		return true
 	})
-	return removedSize
+	return removedSizes
 }
 
-func extractHistogramDataPoints(srcHistogram pmetric.Histogram, destMetric pmetric.Metric, capacity int, sz sizer.MetricsSizer) int {
+func extractHistogramDataPoints(srcHistogram pmetric.Histogram, destMetric pmetric.Metric, limits map[request.SizerType]int, sizers map[request.SizerType]sizer.MetricsSizer) map[request.SizerType]int {
 	destHistogram := destMetric.SetEmptyHistogram()
-	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
-	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.MetricSize(destMetric)
-	removedSize := 0
+
+	capacityLeft := make(map[request.SizerType]int)
+	removedSizes := make(map[request.SizerType]int)
+
+	for szt, limit := range limits {
+		sz := sizers[szt]
+		capacityLeft[szt] = limit - (sz.DeltaSize(limit) - limit) - sz.MetricSize(destMetric)
+		removedSizes[szt] = 0
+	}
+
 	srcHistogram.DataPoints().RemoveIf(func(srcDP pmetric.HistogramDataPoint) bool {
-		// If the no more capacity left just return.
-		if capacityLeft == 0 {
+		for _, cap := range capacityLeft {
+			if cap <= 0 {
+				return false
+			}
+		}
+
+		fitsAll := true
+		for szt, sz := range sizers {
+			rdSize := sz.DeltaSize(sz.HistogramDataPointSize(srcDP))
+			if rdSize > capacityLeft[szt] {
+				fitsAll = false
+				break
+			}
+		}
+
+		if !fitsAll {
+			for szt := range sizers {
+				capacityLeft[szt] = 0
+			}
 			return false
 		}
 
-		rdSize := sz.DeltaSize(sz.HistogramDataPointSize(srcDP))
-		if rdSize > capacityLeft {
-			// This cannot make it to exactly 0 for the bytes,
-			// force it to be 0 since that is the stopping condition.
-			capacityLeft = 0
-			return false
+		for szt, sz := range sizers {
+			rdSize := sz.DeltaSize(sz.HistogramDataPointSize(srcDP))
+			capacityLeft[szt] -= rdSize
+			removedSizes[szt] += rdSize
 		}
-		capacityLeft -= rdSize
-		removedSize += rdSize
 		srcDP.MoveTo(destHistogram.DataPoints().AppendEmpty())
 		return true
 	})
-	return removedSize
+	return removedSizes
 }
 
-func extractExponentialHistogramDataPoints(srcExponentialHistogram pmetric.ExponentialHistogram, destMetric pmetric.Metric, capacity int, sz sizer.MetricsSizer) int {
+func extractExponentialHistogramDataPoints(srcExponentialHistogram pmetric.ExponentialHistogram, destMetric pmetric.Metric, limits map[request.SizerType]int, sizers map[request.SizerType]sizer.MetricsSizer) map[request.SizerType]int {
 	destExponentialHistogram := destMetric.SetEmptyExponentialHistogram()
-	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
-	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.MetricSize(destMetric)
-	removedSize := 0
+
+	capacityLeft := make(map[request.SizerType]int)
+	removedSizes := make(map[request.SizerType]int)
+
+	for szt, limit := range limits {
+		sz := sizers[szt]
+		capacityLeft[szt] = limit - (sz.DeltaSize(limit) - limit) - sz.MetricSize(destMetric)
+		removedSizes[szt] = 0
+	}
+
 	srcExponentialHistogram.DataPoints().RemoveIf(func(srcDP pmetric.ExponentialHistogramDataPoint) bool {
-		// If the no more capacity left just return.
-		if capacityLeft == 0 {
+		for _, cap := range capacityLeft {
+			if cap <= 0 {
+				return false
+			}
+		}
+
+		fitsAll := true
+		for szt, sz := range sizers {
+			rdSize := sz.DeltaSize(sz.ExponentialHistogramDataPointSize(srcDP))
+			if rdSize > capacityLeft[szt] {
+				fitsAll = false
+				break
+			}
+		}
+
+		if !fitsAll {
+			for szt := range sizers {
+				capacityLeft[szt] = 0
+			}
 			return false
 		}
 
-		rdSize := sz.DeltaSize(sz.ExponentialHistogramDataPointSize(srcDP))
-		if rdSize > capacityLeft {
-			// This cannot make it to exactly 0 for the bytes,
-			// force it to be 0 since that is the stopping condition.
-			capacityLeft = 0
-			return false
+		for szt, sz := range sizers {
+			rdSize := sz.DeltaSize(sz.ExponentialHistogramDataPointSize(srcDP))
+			capacityLeft[szt] -= rdSize
+			removedSizes[szt] += rdSize
 		}
-		capacityLeft -= rdSize
-		removedSize += rdSize
 		srcDP.MoveTo(destExponentialHistogram.DataPoints().AppendEmpty())
 		return true
 	})
-	return removedSize
+	return removedSizes
 }
 
-func extractSummaryDataPoints(srcSummary pmetric.Summary, destMetric pmetric.Metric, capacity int, sz sizer.MetricsSizer) int {
+func extractSummaryDataPoints(srcSummary pmetric.Summary, destMetric pmetric.Metric, limits map[request.SizerType]int, sizers map[request.SizerType]sizer.MetricsSizer) map[request.SizerType]int {
 	destSummary := destMetric.SetEmptySummary()
-	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
-	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.MetricSize(destMetric)
-	removedSize := 0
+
+	capacityLeft := make(map[request.SizerType]int)
+	removedSizes := make(map[request.SizerType]int)
+
+	for szt, limit := range limits {
+		sz := sizers[szt]
+		capacityLeft[szt] = limit - (sz.DeltaSize(limit) - limit) - sz.MetricSize(destMetric)
+		removedSizes[szt] = 0
+	}
+
 	srcSummary.DataPoints().RemoveIf(func(srcDP pmetric.SummaryDataPoint) bool {
-		// If the no more capacity left just return.
-		if capacityLeft == 0 {
+		for _, cap := range capacityLeft {
+			if cap <= 0 {
+				return false
+			}
+		}
+
+		fitsAll := true
+		for szt, sz := range sizers {
+			rdSize := sz.DeltaSize(sz.SummaryDataPointSize(srcDP))
+			if rdSize > capacityLeft[szt] {
+				fitsAll = false
+				break
+			}
+		}
+
+		if !fitsAll {
+			for szt := range sizers {
+				capacityLeft[szt] = 0
+			}
 			return false
 		}
 
-		rdSize := sz.DeltaSize(sz.SummaryDataPointSize(srcDP))
-		if rdSize > capacityLeft {
-			// This cannot make it to exactly 0 for the bytes,
-			// force it to be 0 since that is the stopping condition.
-			capacityLeft = 0
-			return false
+		for szt, sz := range sizers {
+			rdSize := sz.DeltaSize(sz.SummaryDataPointSize(srcDP))
+			capacityLeft[szt] -= rdSize
+			removedSizes[szt] += rdSize
 		}
-		capacityLeft -= rdSize
-		removedSize += rdSize
 		srcDP.MoveTo(destSummary.DataPoints().AppendEmpty())
 		return true
 	})
-	return removedSize
+	return removedSizes
 }
