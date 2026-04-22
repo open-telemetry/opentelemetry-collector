@@ -26,33 +26,36 @@ func TestInitCommand(t *testing.T) {
 	assert.Equal(t, "init", cmd.Use)
 }
 
+const distributionName = "test-distro"
+
 func TestRunInit(t *testing.T) {
 	for _, tt := range []struct {
 		name      string
-		buildPath func(string) string
+		buildPath func(*testing.T) string
 
 		wantErr string
 	}{
 		{
 			name:      "without a path",
-			buildPath: func(string) string { return "" },
+			buildPath: func(*testing.T) string { return "" },
 			wantErr:   "argument must be a folder",
 		},
 		{
 			name:      "with a relative path",
-			buildPath: func(string) string { return "./tmp/init" },
+			buildPath: func(*testing.T) string { return "./" + distributionName },
 			wantErr:   "",
 		},
 		{
 			name:      "with an absolute path",
-			buildPath: func(dir string) string { return dir },
+			buildPath: func(t *testing.T) string { return filepath.Join(t.TempDir(), distributionName) },
 			wantErr:   "",
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpdir := filepath.Join(t.TempDir(), "init")
-			path := tt.buildPath(tmpdir)
-			defer os.RemoveAll(path)
+			path := tt.buildPath(t)
+			t.Cleanup(func() {
+				os.RemoveAll(path)
+			})
 
 			err := run(path)
 
@@ -85,6 +88,6 @@ func validateCollector(t *testing.T, path string) {
 	})
 	require.NoError(t, err)
 
-	assert.Equal(t, "init", cfg.Distribution.Name)
+	assert.Equal(t, distributionName, cfg.Distribution.Name)
 	assert.Equal(t, defaultDescription, cfg.Distribution.Description)
 }

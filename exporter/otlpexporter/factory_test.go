@@ -36,7 +36,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, configoptional.Some(exporterhelper.NewDefaultQueueConfig()), ocfg.QueueConfig)
 	assert.Equal(t, exporterhelper.NewDefaultTimeoutConfig(), ocfg.TimeoutConfig)
 	assert.Equal(t, configcompression.TypeGzip, ocfg.ClientConfig.Compression)
-	assert.Equal(t, configgrpc.BalancerName(), ocfg.ClientConfig.BalancerName)
+	assert.Equal(t, configgrpc.DefaultBalancerName, ocfg.ClientConfig.BalancerName)
 }
 
 func TestCreateMetrics(t *testing.T) {
