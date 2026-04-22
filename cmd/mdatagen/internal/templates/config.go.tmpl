@@ -3,7 +3,6 @@
 package {{ .Package }}
 
 {{ $reag := .ReaggregationEnabled }}
-{{- $overrideValue := .OverrideValueEnabled }}
 {{- $hasReagMetrics := false }}
 {{- $hasReagMetricsWithRequired := false }}
 {{- range $name, $metric := .Metrics }}{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}{{- $hasReagMetrics = true }}{{- range $element := $metric.Attributes }}{{- if (attributeInfo $element).IsRequired }}{{- $hasReagMetricsWithRequired = true }}{{- end }}{{- end }}{{- end }}{{- end }}
@@ -11,7 +10,7 @@ package {{ .Package }}
 {{- range $_, $attr := .ResourceAttributes }}{{- if $attr.Enum }}{{- $hasEnumResourceAttr = true }}{{- end }}{{- end }}
 
 import (
-	{{- if or $hasReagMetrics (and $overrideValue $hasEnumResourceAttr) }}
+	{{- if or $hasReagMetrics (and .OverrideValueEnabled $hasEnumResourceAttr) }}
 	"fmt"
 	{{- end }}
 	{{- if $hasReagMetricsWithRequired }}
@@ -22,7 +21,7 @@ import (
 	{{- if and .Metrics .ResourceAttributes }}
 	"go.opentelemetry.io/collector/filter"
 	{{- end }}
-	{{- if and $overrideValue .ResourceAttributes }}
+	{{- if and .OverrideValueEnabled .ResourceAttributes }}
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	{{- end }}
 )
@@ -159,7 +158,7 @@ func DefaultEventsConfig() EventsConfig {
 {{- end }}
 
 {{ if .ResourceAttributes -}}
-{{- if not $overrideValue }}
+{{- if not .OverrideValueEnabled }}
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
@@ -265,21 +264,21 @@ func (rac *{{ $name.Render }}ResourceAttributeConfig) Validate() error {
 // ResourceAttributesConfig provides config for {{ .Type }} resource attributes.
 type ResourceAttributesConfig struct {
 	{{- range $name, $attr := .ResourceAttributes }}
-	{{ $name.Render }} {{ if $overrideValue }}{{ $name.Render }}{{ end }}ResourceAttributeConfig `mapstructure:"{{ $name }}"`
+	{{ $name.Render }} {{ if $.OverrideValueEnabled }}{{ $name.Render }}{{ end }}ResourceAttributeConfig `mapstructure:"{{ $name }}"`
 	{{- end }}
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		{{- range $name, $attr := .ResourceAttributes }}
-		{{ $name.Render }}: {{ if $overrideValue }}{{ $name.Render }}{{ end }}ResourceAttributeConfig {
+		{{ $name.Render }}: {{ if $.OverrideValueEnabled }}{{ $name.Render }}{{ end }}ResourceAttributeConfig {
 			Enabled: {{ $attr.Enabled }},
 		},
 		{{- end }}
 	}
 }
 
-{{- if $overrideValue }}
+{{- if .OverrideValueEnabled }}
 
 // ApplyOverrideValues applies override values to the given resource.
 // For each enabled resource attribute with a non-nil OverrideValue,

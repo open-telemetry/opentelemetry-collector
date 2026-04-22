@@ -1,5 +1,5 @@
 {{- $reag := .ReaggregationEnabled -}}
-{{- $overrideValue := .OverrideValueEnabled -}}
+
 default:
 all_set:
 {{- if $reag }}
@@ -81,7 +81,7 @@ none_set:
       enabled: false
     {{- end }}
   {{- end }}
-{{- if and $overrideValue .ResourceAttributes }}
+{{- if and .OverrideValueEnabled .ResourceAttributes }}
 override_set:
   resource_attributes:
     {{- range $name, $attr := .ResourceAttributes }}

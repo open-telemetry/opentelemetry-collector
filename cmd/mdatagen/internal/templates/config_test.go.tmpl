@@ -20,7 +20,6 @@ import (
 )
 
 {{ $reag := .ReaggregationEnabled }}
-{{ $overrideValue := .OverrideValueEnabled }}
 
 {{ if .Metrics }}
 func TestMetricsBuilderConfig(t *testing.T) {
@@ -50,7 +49,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				{{- if .ResourceAttributes }}
 				ResourceAttributes: ResourceAttributesConfig{
 					{{- range $name, $_ := .ResourceAttributes }}
-					{{ $name.Render }}: {{ if $overrideValue }}{{ $name.Render }}{{ end }}ResourceAttributeConfig{Enabled: true},
+					{{ $name.Render }}: {{ if $.OverrideValueEnabled }}{{ $name.Render }}{{ end }}ResourceAttributeConfig{Enabled: true},
 					{{- end }}
 				},
 				{{- end }}
@@ -74,7 +73,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				{{- if .ResourceAttributes }}
 				ResourceAttributes: ResourceAttributesConfig{
 					{{- range $name, $_ := .ResourceAttributes }}
-					{{ $name.Render }}: {{ if $overrideValue }}{{ $name.Render }}{{ end }}ResourceAttributeConfig{Enabled: false},
+					{{ $name.Render }}: {{ if $.OverrideValueEnabled }}{{ $name.Render }}{{ end }}ResourceAttributeConfig{Enabled: false},
 					{{- end }}
 				},
 				{{- end }}
@@ -88,7 +87,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				{{- if $reag }}
 				{{- range $name, $metric := .Metrics }}{{ $name.Render }}MetricConfig{}, {{ end }}
 				{{- else }}MetricConfig{},{{ end }}
-				{{- if $overrideValue }}
+				{{- if $.OverrideValueEnabled }}
 				{{- range $name, $_ := .ResourceAttributes }}{{ $name.Render }}ResourceAttributeConfig{}, {{ end }}
 				{{- else }}
 				{{- if .ResourceAttributes }}ResourceAttributeConfig{},{{ end }}
@@ -136,7 +135,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 			name: "all_set",
 			want: ResourceAttributesConfig{
 				{{- range $name, $_ := .ResourceAttributes }}
-				{{ $name.Render }}: {{ if $overrideValue }}{{ $name.Render }}{{ end }}ResourceAttributeConfig{Enabled: true},
+				{{ $name.Render }}: {{ if $.OverrideValueEnabled }}{{ $name.Render }}{{ end }}ResourceAttributeConfig{Enabled: true},
 				{{- end }}
 			},
 		},
@@ -144,7 +143,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 			name: "none_set",
 			want: ResourceAttributesConfig{
 				{{- range $name, $_ := .ResourceAttributes }}
-				{{ $name.Render }}: {{ if $overrideValue }}{{ $name.Render }}{{ end }}ResourceAttributeConfig{Enabled: false},
+				{{ $name.Render }}: {{ if $.OverrideValueEnabled }}{{ $name.Render }}{{ end }}ResourceAttributeConfig{Enabled: false},
 				{{- end }}
 			},
 		},
@@ -153,7 +152,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
 			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(
-				{{- if $overrideValue }}
+				{{- if $.OverrideValueEnabled }}
 				{{- range $name, $_ := .ResourceAttributes }}{{ $name.Render }}ResourceAttributeConfig{}, {{ end }}
 				{{- else }}ResourceAttributeConfig{}, {{ end }}
 			))
@@ -162,7 +161,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 	}
 }
 
-{{- if $overrideValue }}
+{{- if $.OverrideValueEnabled }}
 
 func TestResourceAttributesOverrideConfig(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
