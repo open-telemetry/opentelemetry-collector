@@ -4,6 +4,8 @@
 package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper"
 
 import (
+	"go.opentelemetry.io/otel/attribute"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
@@ -42,4 +44,10 @@ func WithRetry(config configretry.BackOffConfig) Option {
 // TODO: Verify if we can change the default to be mutable as we do for processors.
 func WithCapabilities(capabilities consumer.Capabilities) Option {
 	return internal.WithCapabilities(capabilities)
+}
+
+// WithAttrs adds extra attributes to the metrics produced by the exporter
+// The default set of extra attribute is empty
+func WithAttrs(attrs ...attribute.KeyValue) Option {
+	return internal.WithAttributes(attrs...)
 }
