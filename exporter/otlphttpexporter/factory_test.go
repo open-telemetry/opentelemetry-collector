@@ -5,12 +5,15 @@ package otlphttpexporter
 
 import (
 	"context"
+	"net/url"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -229,29 +232,61 @@ func TestComposeSignalURL(t *testing.T) {
 	cfg.ClientConfig.Endpoint = "http://localhost:4318/"
 	url, err := composeSignalURL(cfg, "", "traces", "v1")
 	require.NoError(t, err)
-	assert.Equal(t, "http://localhost:4318/v1/traces", url)
+	assert.Equal(t, "http://localhost:4318/v1/traces", url.String())
 
 	// No slash at end
 	cfg.ClientConfig.Endpoint = "http://localhost:4318"
 	url, err = composeSignalURL(cfg, "", "traces", "v1")
 	require.NoError(t, err)
-	assert.Equal(t, "http://localhost:4318/v1/traces", url)
+	assert.Equal(t, "http://localhost:4318/v1/traces", url.String())
 
 	// Different version
 	cfg.ClientConfig.Endpoint = "http://localhost:4318"
 	url, err = composeSignalURL(cfg, "", "traces", "v2")
 	require.NoError(t, err)
-	assert.Equal(t, "http://localhost:4318/v2/traces", url)
+	assert.Equal(t, "http://localhost:4318/v2/traces", url.String())
 
 	// Test profiles endpoint with v1development
 	cfg.ClientConfig.Endpoint = "http://localhost:4318"
 	url, err = composeSignalURL(cfg, "", "profiles", "v1development")
 	require.NoError(t, err)
-	assert.Equal(t, "http://localhost:4318/v1development/profiles", url)
+	assert.Equal(t, "http://localhost:4318/v1development/profiles", url.String())
 
 	// Test with custom profiles endpoint override
 	cfg.ClientConfig.Endpoint = "http://localhost:4318"
 	url, err = composeSignalURL(cfg, "http://custom:9090/profiles", "profiles", "v1development")
 	require.NoError(t, err)
-	assert.Equal(t, "http://custom:9090/profiles", url)
+	assert.Equal(t, "http://custom:9090/profiles", url.String())
+}
+
+func TestEndpointAttributes(t *testing.T) {
+	tests := []struct {
+		name     string
+		endpoint string
+		expected []attribute.KeyValue
+	}{
+		{
+			name:     "AllFields",
+			endpoint: "http://opentelemetry.io:443/ingest",
+			expected: []attribute.KeyValue{semconv.ServerAddress("opentelemetry.io"), semconv.URLPath("/ingest"), semconv.ServerPort(443)},
+		},
+		{
+			name:     "MissingPort",
+			endpoint: "http://opentelemetry.io/ingest",
+			expected: []attribute.KeyValue{semconv.ServerAddress("opentelemetry.io"), semconv.URLPath("/ingest")},
+		},
+		{
+			name:     "EmptyPath",
+			endpoint: "http://opentelemetry.io",
+			expected: []attribute.KeyValue{semconv.ServerAddress("opentelemetry.io")},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			parsed, err := url.Parse(tt.endpoint)
+			require.NoError(t, err)
+			attrs := endpointAttributes(parsed)
+			assert.Equal(t, tt.expected, attrs)
+		})
+	}
 }

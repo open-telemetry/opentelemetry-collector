@@ -115,6 +115,8 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 					}
 					targetField.Set(reflect.ValueOf(newMeta))
 				}
+			} else {
+				targetField.Set(field)
 			}
 		case reflect.Map:
 			if field.Type().Elem() == reflect.TypeFor[*ConfigMetadata]() {
