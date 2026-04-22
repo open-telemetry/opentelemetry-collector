@@ -172,7 +172,7 @@ func TestInvalidConverter(t *testing.T) {
 	require.Error(t, err, "expected an error when parsing invalid modules")
 }
 
-func TestRelativePath(t *testing.T) {
+func TestAbsoluteReplacePaths(t *testing.T) {
 	// prepare
 	cfg := Config{
 		Distribution: Distribution{
