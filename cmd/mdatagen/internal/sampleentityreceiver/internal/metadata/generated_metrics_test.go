@@ -164,3 +164,17 @@ func TestMetricsBuilder(t *testing.T) {
 		})
 	}
 }
+
+func TestDeprecatedRecordMethods(t *testing.T) {
+	start := pcommon.Timestamp(1_000_000_000)
+	ts := pcommon.Timestamp(1_000_001_000)
+	settings := receivertest.NewNopSettings(receivertest.NopType)
+	settings.Logger = zap.NewNop()
+	mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+	mb.RecordK8sPodCPUTimeDataPoint(ts, 1)
+	mb.RecordK8sPodPhaseDataPoint(ts, 1, AttributePhasePending)
+	mb.RecordK8sReplicasetDesiredDataPoint(ts, 1)
+
+	metrics := mb.Emit()
+	assert.Greater(t, metrics.ResourceMetrics().Len(), 0)
+}
