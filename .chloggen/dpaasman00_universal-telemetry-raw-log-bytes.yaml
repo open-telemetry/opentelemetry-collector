@@ -4,7 +4,7 @@
 change_type: 'enhancement'
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
-component: service/graph
+component: pkg/service
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Emit a new component universal telemetry metric, `body.bytes.processed`. Only emitted by log components.
