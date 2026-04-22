@@ -31,7 +31,6 @@ func TestTwoPackagesInDirectory(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "package1.go"), []byte("package package1"), 0o600))
 	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "package2.go"), []byte("package package2"), 0o600))
 	require.NoError(t, os.WriteFile(metadataPath, contents, 0o600))
-
 	_, err = LoadMetadata(metadataPath)
 	require.Error(t, err)
 	require.ErrorContains(t, err, "unable to determine package name: [go list -f {{.ImportPath}}] failed: (stderr) found packages package1 (package1.go) and package2 (package2.go)")

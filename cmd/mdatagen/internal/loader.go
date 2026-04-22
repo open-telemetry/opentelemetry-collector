@@ -4,6 +4,7 @@
 package internal // import "go.opentelemetry.io/collector/cmd/mdatagen/internal"
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 )
@@ -122,6 +124,9 @@ func getPackageName(filePath string) (string, error) {
 	return strings.TrimSpace(string(output)), nil
 }
 
+// findRepoRoot walks up from start looking for .github/component_labels.txt.
+// It purposefully searches for that file (repo marker) and is separate from
+// helpers.RootModuleDir which finds the module root (go.mod parent).
 func findRepoRoot(start string) (string, error) {
 	dir := start
 	for {
@@ -136,25 +141,33 @@ func findRepoRoot(start string) (string, error) {
 	}
 }
 
+// loadComponentLabels parses the component_labels.txt file into a map of repoPath->label.
+// It ignores empty lines and comment lines beginning with '#'.
 func loadComponentLabels(path string) (map[string]string, error) {
-	data, err := os.ReadFile(path) // #nosec G304
+	f, err := os.Open(path) // #nosec G304 - path controlled by repo discovery
 	if err != nil {
 		return nil, err
 	}
+	defer f.Close()
 
 	labels := make(map[string]string)
-	for line := range strings.Lines(string(data)) {
-		line = strings.TrimSpace(line)
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
 		parts := strings.Fields(line)
 		if len(parts) != 2 {
+			// ignore malformed lines
 			continue
 		}
 		repoPath := parts[0]
 		label := parts[1]
 		labels[repoPath] = label
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
 	}
 	return labels, nil
 }
@@ -163,7 +176,16 @@ func getComponentLabelFromRepo(filePath string) string {
 	// Find the repo root (directory that has .github/component_labels.txt)
 	repoRoot, err := findRepoRoot(filepath.Dir(filePath))
 	if err != nil {
-		return ""
+		// fallback: if the labels file exists at the module root, use that.
+		if mr, merr := helpers.RootModuleDir(filepath.Dir(filePath)); merr == nil {
+			candidate := filepath.Join(mr, componentLabelsRelPath)
+			if info, ferr := os.Stat(candidate); ferr == nil && !info.IsDir() {
+				repoRoot = mr
+			}
+		}
+		if repoRoot == "" {
+			return ""
+		}
 	}
 
 	// Load labels file

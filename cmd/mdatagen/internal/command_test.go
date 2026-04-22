@@ -1346,7 +1346,7 @@ func TestReadmeIssuesLabel_StoragePath_GenerateFile(t *testing.T) {
 	tmpdir := t.TempDir()
 	out := filepath.Join(tmpdir, "README.md")
 
-	require.NoError(t, generateFile("templates/readme.md.tmpl", out, md, "metadata"))
+	require.NoError(t, generateFile("templates/readme.md.tmpl", out, md, "metadata", tmpdir))
 
 	b, err := os.ReadFile(out) //nolint:gosec
 	require.NoError(t, err)
