@@ -613,7 +613,19 @@ func TestContextWithClient(t *testing.T) {
 			},
 			expected: client.Info{
 				Addr: &net.IPAddr{
-					IP: net.IPv4(1, 2, 3, 4),
+					IP: net.IPv4(1, 2, 3, 4).To4(),
+				},
+			},
+		},
+		{
+			name: "request with IPv6 client IP and zone",
+			input: &http.Request{
+				RemoteAddr: "[fe80::1%eth0]:12345",
+			},
+			expected: client.Info{
+				Addr: &net.IPAddr{
+					IP:   net.ParseIP("fe80::1"),
+					Zone: "eth0",
 				},
 			},
 		},

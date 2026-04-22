@@ -1,0 +1,8 @@
+# cspell:ignore netip
+change_type: bug_fix
+component: pkg/confighttp
+note: Fix parseIP to support IPv6 addresses with zone IDs
+issues: [14545]
+subtext: |
+  Replaces `net.ParseIP` with `netip.ParseAddr` to correctly handle and retain zone identifiers for link-local IPv6 addresses.
+change_logs: [user]
