@@ -1052,6 +1052,14 @@ func TestNewCfgFns_PublicType(t *testing.T) {
 	require.Equal(t, "component.Config", publicType("go.opentelemetry.io/collector/component.Config"))
 }
 
+func TestNewCfgFns_EmbeddedName(t *testing.T) {
+	fns := NewCfgFns("", "")
+	embeddedName := fns["embeddedName"].(func(string) string)
+
+	require.Equal(t, "MyType", embeddedName("my_type"))
+	require.Panics(t, func() { embeddedName("") })
+}
+
 func TestWithCfgFns(t *testing.T) {
 	base := map[string]any{"existing": "value"}
 	result := WithCfgFns(base, "", "")
