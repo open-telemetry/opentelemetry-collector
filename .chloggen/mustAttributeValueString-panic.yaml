@@ -7,7 +7,7 @@ change_type: 'bug_fix'
 component: pkg/service
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Replace panic() with proper error handling
+note: Non-string resource attributes in telemetry configuration now return an error instead of panicking
 
 # One or more tracking issues or pull requests related to the change
 issues: [15171]
