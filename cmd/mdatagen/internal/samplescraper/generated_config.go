@@ -4,14 +4,14 @@ package samplescraper
 
 import (
 	"errors"
+	"oracle-loadgen/config/confighttp"
+	"oracle-loadgen/scraper/scraperhelper"
 	"regexp"
 	"time"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper/internal/metadata"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
-	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
 type TargetsItem struct {

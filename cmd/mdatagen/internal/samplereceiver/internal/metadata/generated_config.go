@@ -4,7 +4,7 @@ package metadata
 
 import (
 	"fmt"
-	"slices"
+	"time"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
@@ -26,8 +26,11 @@ const (
 
 // DefaultMetricMetricConfig provides config for the default.metric metric.
 type DefaultMetricMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 
 	AggregationStrategy string                            `mapstructure:"aggregation_strategy"`
 	EnabledAttributes   []DefaultMetricMetricAttributeKey `mapstructure:"attributes"`
@@ -67,8 +70,11 @@ func (ms *DefaultMetricMetricConfig) Validate() error {
 
 // DefaultMetricToBeRemovedMetricConfig provides config for the default.metric.to_be_removed metric.
 type DefaultMetricToBeRemovedMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *DefaultMetricToBeRemovedMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -98,8 +104,11 @@ const (
 
 // MetricInputTypeMetricConfig provides config for the metric.input_type metric.
 type MetricInputTypeMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 
 	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
 	EnabledAttributes   []MetricInputTypeMetricAttributeKey `mapstructure:"attributes"`
@@ -149,8 +158,11 @@ const (
 
 // OptionalMetricMetricConfig provides config for the optional.metric metric.
 type OptionalMetricMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 
 	AggregationStrategy string                             `mapstructure:"aggregation_strategy"`
 	EnabledAttributes   []OptionalMetricMetricAttributeKey `mapstructure:"attributes"`
@@ -198,8 +210,11 @@ const (
 
 // OptionalMetricEmptyUnitMetricConfig provides config for the optional.metric.empty_unit metric.
 type OptionalMetricEmptyUnitMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 
 	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
 	EnabledAttributes   []OptionalMetricEmptyUnitMetricAttributeKey `mapstructure:"attributes"`
@@ -247,8 +262,11 @@ const (
 
 // ReaggregateMetricMetricConfig provides config for the reaggregate.metric metric.
 type ReaggregateMetricMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 
 	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
 	EnabledAttributes   []ReaggregateMetricMetricAttributeKey `mapstructure:"attributes"`
@@ -297,8 +315,11 @@ const (
 
 // ReaggregateMetricWithRequiredMetricConfig provides config for the reaggregate.metric.with_required metric.
 type ReaggregateMetricWithRequiredMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 
 	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
 	EnabledAttributes   []ReaggregateMetricWithRequiredMetricAttributeKey `mapstructure:"attributes"`
@@ -326,8 +347,17 @@ func (ms *ReaggregateMetricWithRequiredMetricConfig) Validate() error {
 			return fmt.Errorf("metric reaggregate.metric.with_required doesn't have an attribute %v, valid attributes: [required_string_attr, string_attr, boolean_attr]", val)
 		}
 	}
-	if !slices.Contains(ms.EnabledAttributes, ReaggregateMetricWithRequiredMetricAttributeKeyRequiredStringAttr) {
-		return fmt.Errorf("required_string_attr is a required attribute for reaggregate.metric.with_required metric and must be included")
+	{
+		var found bool
+		for _, a := range ms.EnabledAttributes {
+			if a == ReaggregateMetricWithRequiredMetricAttributeKeyRequiredStringAttr {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("required_string_attr is a required attribute for reaggregate.metric.with_required metric and must be included")
+		}
 	}
 
 	switch ms.AggregationStrategy {
@@ -348,8 +378,11 @@ const (
 
 // SystemCPUTimeMetricConfig provides config for the system.cpu.time metric.
 type SystemCPUTimeMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 
 	AggregationStrategy string                            `mapstructure:"aggregation_strategy"`
 	EnabledAttributes   []SystemCPUTimeMetricAttributeKey `mapstructure:"attributes"`
@@ -396,8 +429,11 @@ const (
 
 // SystemMemoryUsageMetricConfig provides config for the system.memory.usage metric.
 type SystemMemoryUsageMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 
 	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
 	EnabledAttributes   []SystemMemoryUsageMetricAttributeKey `mapstructure:"attributes"`
@@ -499,6 +535,9 @@ func DefaultMetricsConfig() MetricsConfig {
 // EventConfig provides common config for a particular event.
 type EventConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this event is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 
 	enabledSetByUser bool
 }

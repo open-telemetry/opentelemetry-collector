@@ -51,6 +51,11 @@
                     ]
                   }
                 },
+                "collection_interval": {
+                  "description": "Optional scrape interval for this metric; zero uses the receiver collection_interval.",
+                  "type": "string",
+                  "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+                },
                 "enabled": {
                   "type": "boolean",
                   "default": true
@@ -61,6 +66,11 @@
               "description": "DefaultMetricToBeRemovedMetricConfig provides config for the default.metric.to_be_removed metric.",
               "type": "object",
               "properties": {
+                "collection_interval": {
+                  "description": "Optional scrape interval for this metric; zero uses the receiver collection_interval.",
+                  "type": "string",
+                  "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+                },
                 "enabled": {
                   "type": "boolean",
                   "default": true
@@ -101,6 +111,11 @@
                     ]
                   }
                 },
+                "collection_interval": {
+                  "description": "Optional scrape interval for this metric; zero uses the receiver collection_interval.",
+                  "type": "string",
+                  "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+                },
                 "enabled": {
                   "type": "boolean",
                   "default": true
@@ -139,6 +154,11 @@
                     ]
                   }
                 },
+                "collection_interval": {
+                  "description": "Optional scrape interval for this metric; zero uses the receiver collection_interval.",
+                  "type": "string",
+                  "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+                },
                 "enabled": {
                   "type": "boolean",
                   "default": false
@@ -173,6 +193,11 @@
                     ]
                   }
                 },
+                "collection_interval": {
+                  "description": "Optional scrape interval for this metric; zero uses the receiver collection_interval.",
+                  "type": "string",
+                  "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+                },
                 "enabled": {
                   "type": "boolean",
                   "default": false
@@ -206,6 +231,11 @@
                       "boolean_attr"
                     ]
                   }
+                },
+                "collection_interval": {
+                  "description": "Optional scrape interval for this metric; zero uses the receiver collection_interval.",
+                  "type": "string",
+                  "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
                 },
                 "enabled": {
                   "type": "boolean",
@@ -243,6 +273,11 @@
                     ]
                   }
                 },
+                "collection_interval": {
+                  "description": "Optional scrape interval for this metric; zero uses the receiver collection_interval.",
+                  "type": "string",
+                  "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+                },
                 "enabled": {
                   "type": "boolean",
                   "default": true
@@ -275,6 +310,11 @@
                     ]
                   }
                 },
+                "collection_interval": {
+                  "description": "Optional scrape interval for this metric; zero uses the receiver collection_interval.",
+                  "type": "string",
+                  "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+                },
                 "enabled": {
                   "type": "boolean",
                   "default": true
@@ -306,6 +346,11 @@
                       "state"
                     ]
                   }
+                },
+                "collection_interval": {
+                  "description": "Optional scrape interval for this metric; zero uses the receiver collection_interval.",
+                  "type": "string",
+                  "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
                 },
                 "enabled": {
                   "type": "boolean",
