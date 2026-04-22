@@ -80,12 +80,12 @@ func TestBuildManifest(t *testing.T) {
 
 	expected := `dist:
 description: Custom OpenTelemetry Collector
-	name: myCollector
-	output_path: ./build/collector
+  name: myCollector
+  output_path: ./build/collector
 exporters:
-	- gomod: go.opentelemetry.io/collector/exporter/otlpexporter ` + builder.DefaultBetaOtelColVersion + `
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter ` + builder.DefaultBetaOtelColVersion + `
 receivers:
-	- gomod: go.opentelemetry.io/collector/receiver/otlpreceiver ` + builder.DefaultBetaOtelColVersion + `
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver ` + builder.DefaultBetaOtelColVersion + `
 `
 
 	assert.Equal(t, expected, string(content))
