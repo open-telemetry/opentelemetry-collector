@@ -162,7 +162,7 @@ func DefaultEventsConfig() EventsConfig {
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
-	{{- if $.Metrics }}
+	{{- if .Metrics }}
 	// Experimental: MetricsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
 	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
@@ -171,7 +171,7 @@ type ResourceAttributeConfig struct {
 	// MetricsInclude has higher priority than MetricsExclude.
 	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
 	{{- end }}
-	{{- if $.Events }}
+	{{- if .Events }}
 	// Experimental: EventsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only events with matching resource attribute values will be emitted.
 	EventsInclude []filter.Config `mapstructure:"events_include"`
