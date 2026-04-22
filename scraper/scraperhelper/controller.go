@@ -72,6 +72,20 @@ func AddFactoryWithConfig(f scraper.Factory, cfg component.Config) ControllerOpt
 	})
 }
 
+// AddFactoryWithCollectionInterval configures the scraper.Factory like
+// [AddFactoryWithConfig] but overrides the collection interval for this scraper
+// only. When collectionInterval is zero, the controller-level
+// [ControllerConfig.CollectionInterval] is used.
+func AddFactoryWithCollectionInterval(f scraper.Factory, cfg component.Config, collectionInterval time.Duration) ControllerOption {
+	return optionFunc(func(o *controllerOptions) {
+		o.factoriesWithConfig = append(o.factoriesWithConfig, factoryWithConfig{
+			f:                  f,
+			cfg:                cfg,
+			collectionInterval: collectionInterval,
+		})
+	})
+}
+
 // WithTickerChannel allows you to override the scraper controller's ticker
 // channel to specify when scrape is called. This is only expected to be
 // used by tests.
@@ -84,6 +98,8 @@ func WithTickerChannel(tickerCh <-chan time.Time) ControllerOption {
 type factoryWithConfig struct {
 	f   scraper.Factory
 	cfg component.Config
+	// collectionInterval, when positive, overrides ControllerConfig.CollectionInterval for this scraper.
+	collectionInterval time.Duration
 }
 
 type controllerOptions struct {
@@ -99,6 +115,7 @@ func NewLogsController(cfg *ControllerConfig,
 ) (receiver.Logs, error) {
 	co := getOptions(options)
 	scrapers := make([]scraper.Logs, 0, len(co.factoriesWithConfig))
+	intervals := make([]time.Duration, 0, len(co.factoriesWithConfig))
 	for _, fwc := range co.factoriesWithConfig {
 		set := controller.GetSettings(fwc.f.Type(), rSet)
 		s, err := fwc.f.CreateLogs(context.Background(), set, fwc.cfg)
@@ -110,9 +127,18 @@ func NewLogsController(cfg *ControllerConfig,
 			return nil, err
 		}
 		scrapers = append(scrapers, s)
+		intervals = append(intervals, fwc.collectionInterval)
 	}
 	return controller.NewController[scraper.Logs](
-		cfg, rSet, scrapers, func(c *controller.Controller[scraper.Logs]) { scrapeLogs(c, nextConsumer) }, co.tickerCh)
+		cfg,
+		rSet,
+		scrapers,
+		func(c *controller.Controller[scraper.Logs], indices []int) {
+			scrapeLogs(c, nextConsumer, indices)
+		},
+		co.tickerCh,
+		intervals,
+	)
 }
 
 // NewMetricsController creates a receiver.Metrics with the configured options, that can control multiple scraper.Metrics.
@@ -123,6 +149,7 @@ func NewMetricsController(cfg *ControllerConfig,
 ) (receiver.Metrics, error) {
 	co := getOptions(options)
 	scrapers := make([]scraper.Metrics, 0, len(co.factoriesWithConfig))
+	intervals := make([]time.Duration, 0, len(co.factoriesWithConfig))
 	for _, fwc := range co.factoriesWithConfig {
 		set := controller.GetSettings(fwc.f.Type(), rSet)
 		s, err := fwc.f.CreateMetrics(context.Background(), set, fwc.cfg)
@@ -134,22 +161,42 @@ func NewMetricsController(cfg *ControllerConfig,
 			return nil, err
 		}
 		scrapers = append(scrapers, s)
+		intervals = append(intervals, fwc.collectionInterval)
 	}
 	return controller.NewController[scraper.Metrics](
-		cfg, rSet, scrapers, func(c *controller.Controller[scraper.Metrics]) { scrapeMetrics(c, nextConsumer) }, co.tickerCh)
+		cfg,
+		rSet,
+		scrapers,
+		func(c *controller.Controller[scraper.Metrics], indices []int) {
+			scrapeMetrics(c, nextConsumer, indices)
+		},
+		co.tickerCh,
+		intervals,
+	)
 }
 
-func scrapeLogs(c *controller.Controller[scraper.Logs], nextConsumer consumer.Logs) {
+func scrapeLogs(c *controller.Controller[scraper.Logs], nextConsumer consumer.Logs, indices []int) {
 	ctx, done := controller.WithScrapeContext(c.Timeout)
 	defer done()
 
 	logs := plog.NewLogs()
-	for i := range c.Scrapers {
+	scrapeAt := func(i int) {
 		md, err := c.Scrapers[i].ScrapeLogs(ctx)
 		if err != nil && !scrapererror.IsPartialScrapeError(err) {
-			continue
+			return
 		}
 		md.ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
+	}
+	if indices == nil {
+		for i := range c.Scrapers {
+			scrapeAt(i)
+		}
+	} else {
+		for _, i := range indices {
+			if i >= 0 && i < len(c.Scrapers) {
+				scrapeAt(i)
+			}
+		}
 	}
 
 	logRecordCount := logs.LogRecordCount()
@@ -158,17 +205,28 @@ func scrapeLogs(c *controller.Controller[scraper.Logs], nextConsumer consumer.Lo
 	c.Obsrecv.EndLogsOp(ctx, "", logRecordCount, err)
 }
 
-func scrapeMetrics(c *controller.Controller[scraper.Metrics], nextConsumer consumer.Metrics) {
+func scrapeMetrics(c *controller.Controller[scraper.Metrics], nextConsumer consumer.Metrics, indices []int) {
 	ctx, done := controller.WithScrapeContext(c.Timeout)
 	defer done()
 
 	metrics := pmetric.NewMetrics()
-	for i := range c.Scrapers {
+	scrapeAt := func(i int) {
 		md, err := c.Scrapers[i].ScrapeMetrics(ctx)
 		if err != nil && !scrapererror.IsPartialScrapeError(err) {
-			continue
+			return
 		}
 		md.ResourceMetrics().MoveAndAppendTo(metrics.ResourceMetrics())
+	}
+	if indices == nil {
+		for i := range c.Scrapers {
+			scrapeAt(i)
+		}
+	} else {
+		for _, i := range indices {
+			if i >= 0 && i < len(c.Scrapers) {
+				scrapeAt(i)
+			}
+		}
 	}
 
 	dataPointCount := metrics.DataPointCount()

@@ -15,6 +15,11 @@ $defs:
           enabled:
             type: boolean
             default: {{ $metric.Enabled }}
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
           {{- if $metricReag }}
           aggregation_strategy:
             type: string
@@ -58,6 +63,11 @@ $defs:
           enabled:
             type: boolean
             default: {{ $event.Enabled }}
+          collection_interval:
+            description: Optional scrape interval for this event; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       {{- end }}
 {{- end }}
 {{- if .ResourceAttributes }}

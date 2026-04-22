@@ -7,6 +7,9 @@ package controller // import "go.opentelemetry.io/collector/scraper/scraperhelpe
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"slices"
 	"sync"
 	"time"
 
@@ -24,9 +27,12 @@ type Controller[T component.Component] struct {
 	initialDelay       time.Duration
 	Timeout            time.Duration
 
-	Scrapers   []T
-	scrapeFunc func(*Controller[T])
-	tickerCh   <-chan time.Time
+	Scrapers []T
+	// scraperCollectionIntervals holds optional per-scraper collection intervals.
+	// A value of zero means use collectionInterval for that scraper.
+	scraperCollectionIntervals []time.Duration
+	scrapeFunc                 func(*Controller[T], []int)
+	tickerCh                   <-chan time.Time
 
 	done chan struct{}
 	wg   sync.WaitGroup
@@ -38,9 +44,21 @@ func NewController[T component.Component](
 	cfg *ControllerConfig,
 	rSet receiver.Settings,
 	scrapers []T,
-	scrapeFunc func(*Controller[T]),
+	scrapeFunc func(*Controller[T], []int),
 	tickerCh <-chan time.Time,
+	scraperCollectionIntervals []time.Duration,
 ) (*Controller[T], error) {
+	if len(scraperCollectionIntervals) == 0 {
+		scraperCollectionIntervals = make([]time.Duration, len(scrapers))
+	} else if len(scraperCollectionIntervals) != len(scrapers) {
+		return nil, fmt.Errorf("scraperhelper: scraper collection intervals length %d must match scrapers length %d", len(scraperCollectionIntervals), len(scrapers))
+	}
+	for _, d := range scraperCollectionIntervals {
+		if d < 0 {
+			return nil, errors.New("scraperhelper: per-scraper collection_interval must not be negative")
+		}
+	}
+
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             rSet.ID,
 		Transport:              "",
@@ -51,14 +69,15 @@ func NewController[T component.Component](
 	}
 
 	cs := &Controller[T]{
-		collectionInterval: cfg.CollectionInterval,
-		initialDelay:       cfg.InitialDelay,
-		Timeout:            cfg.Timeout,
-		Scrapers:           scrapers,
-		scrapeFunc:         scrapeFunc,
-		done:               make(chan struct{}),
-		tickerCh:           tickerCh,
-		Obsrecv:            obsrecv,
+		collectionInterval:         cfg.CollectionInterval,
+		initialDelay:               cfg.InitialDelay,
+		Timeout:                    cfg.Timeout,
+		Scrapers:                   scrapers,
+		scraperCollectionIntervals: scraperCollectionIntervals,
+		scrapeFunc:                 scrapeFunc,
+		done:                       make(chan struct{}),
+		tickerCh:                   tickerCh,
+		Obsrecv:                    obsrecv,
 	}
 
 	return cs, nil
@@ -89,8 +108,9 @@ func (sc *Controller[T]) Shutdown(ctx context.Context) error {
 	return errs
 }
 
-// startScraping initiates a ticker that calls Scrape based on the configured
-// collection interval.
+// startScraping initiates tickers that call Scrape based on the configured
+// collection intervals. When tickerCh is set (tests), every tick scrapes all
+// scrapers and per-scraper intervals are ignored for scheduling.
 func (sc *Controller[T]) startScraping() {
 	sc.wg.Go(func() {
 		if sc.initialDelay > 0 {
@@ -101,24 +121,55 @@ func (sc *Controller[T]) startScraping() {
 			}
 		}
 
-		if sc.tickerCh == nil {
-			ticker := time.NewTicker(sc.collectionInterval)
-			defer ticker.Stop()
-
-			sc.tickerCh = ticker.C
-		}
-		// Call scrape method during initialization to ensure
-		// that scrapers start from when the component starts
-		// instead of waiting for the full duration to start.
-		sc.scrapeFunc(sc)
-		for {
-			select {
-			case <-sc.tickerCh:
-				sc.scrapeFunc(sc)
-			case <-sc.done:
-				return
+		// Test hook: a single external channel drives full scrapes.
+		if sc.tickerCh != nil {
+			sc.scrapeFunc(sc, nil)
+			for {
+				select {
+				case <-sc.tickerCh:
+					sc.scrapeFunc(sc, nil)
+				case <-sc.done:
+					return
+				}
 			}
 		}
+
+		// Initial scrape includes all scrapers.
+		sc.scrapeFunc(sc, nil)
+
+		effective := make([]time.Duration, len(sc.Scrapers))
+		for i := range sc.Scrapers {
+			d := sc.scraperCollectionIntervals[i]
+			if d <= 0 {
+				d = sc.collectionInterval
+			}
+			effective[i] = d
+		}
+
+		groups := map[time.Duration][]int{}
+		for i, d := range effective {
+			groups[d] = append(groups[d], i)
+		}
+
+		var inner sync.WaitGroup
+		for interval, groupIndices := range groups {
+			inner.Add(1)
+			clonedIndices := slices.Clone(groupIndices)
+			go func() {
+				defer inner.Done()
+				ticker := time.NewTicker(interval)
+				defer ticker.Stop()
+				for {
+					select {
+					case <-ticker.C:
+						sc.scrapeFunc(sc, clonedIndices)
+					case <-sc.done:
+						return
+					}
+				}
+			}()
+		}
+		inner.Wait()
 	})
 }
 
