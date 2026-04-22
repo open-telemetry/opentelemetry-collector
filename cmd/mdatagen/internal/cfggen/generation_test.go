@@ -1060,6 +1060,21 @@ func TestNewCfgFns_EmbeddedName(t *testing.T) {
 	require.Panics(t, func() { embeddedName("") })
 }
 
+func TestCamelVar(t *testing.T) {
+	require.Equal(t, "controllerConfig",
+		CamelVar("go.opentelemetry.io/collector/scraper/scraperhelper.controller_config"))
+	require.Equal(t, "plainConfig", CamelVar("plain_config"))
+	require.Panics(t, func() { CamelVar("") })
+}
+
+func TestNewCfgFns_CamelVar(t *testing.T) {
+	fns := NewCfgFns("", "")
+	camelVar := fns["camelVar"].(func(string) string)
+	require.Equal(t, "controllerConfig",
+		camelVar("go.opentelemetry.io/collector/scraper/scraperhelper.controller_config"))
+	require.Panics(t, func() { camelVar("") })
+}
+
 func TestWithCfgFns(t *testing.T) {
 	base := map[string]any{"existing": "value"}
 	result := WithCfgFns(base, "", "")
@@ -1072,6 +1087,7 @@ func TestWithCfgFns(t *testing.T) {
 	require.Contains(t, result, "mapCustomDefaults")
 	require.Contains(t, result, "hasDefaultValue")
 	require.Contains(t, result, "publicType")
+	require.Contains(t, result, "camelVar")
 }
 
 func TestResolveGoType_CustomTypeFormatError(t *testing.T) {
@@ -1659,6 +1675,20 @@ func TestFormatDefaultValue_ScalarDefaults(t *testing.T) {
 			propName:     "timeout",
 			defaultValue: "30s",
 			expected:     "30*time.Second",
+		},
+		{
+			name:         "duration zero int",
+			schema:       &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+			propName:     "timeout",
+			defaultValue: 0,
+			expected:     "0",
+		},
+		{
+			name:         "duration zero float",
+			schema:       &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+			propName:     "timeout",
+			defaultValue: float64(0),
+			expected:     "0",
 		},
 		{
 			name:         "optional duration",
