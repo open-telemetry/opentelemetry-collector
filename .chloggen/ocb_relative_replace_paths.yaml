@@ -19,7 +19,7 @@ subtext: >
   We expect that this will not break existing use-cases where the generated collector is only used in an interim manner for builds.
   It enables the possibility of tracking the generated Collector code as a longer living artifact, allowing it to be run on any
   machine (whereas absolute paths will be different depending on the machine the Collector source is generated on.)
-  We have added `dist::use_relative_replace_paths` to go back to the absolute path behaviour in the case where there is an
+  We have added `dist::use_absolute_replace_paths` to go back to the absolute path behaviour in the case where there is an
   unforeseen use-case that requires absolute paths.
 
 # Optional: The change log or logs in which this entry should be included.
