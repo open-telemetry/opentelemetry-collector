@@ -379,3 +379,38 @@ func TestMetricsBuilder(t *testing.T) {
 		})
 	}
 }
+
+{{- $hasEntityMetrics := false }}
+{{- range $name, $metric := .Metrics }}{{- if $metric.Entity }}{{- $hasEntityMetrics = true }}{{- end }}{{- end }}
+{{- if $hasEntityMetrics }}
+
+func TestDeprecatedRecordMethods(t *testing.T) {
+	start := pcommon.Timestamp(1_000_000_000)
+	ts := pcommon.Timestamp(1_000_001_000)
+	{{- if or isReceiver isScraper isConnector }}
+	settings := {{ .Status.Class }}test.NewNopSettings({{ .Status.Class }}test.NopType)
+	{{- end }}
+	settings.Logger = zap.NewNop()
+	mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+	{{- range $name, $metric := .Metrics }}
+	{{- if $metric.Entity }}
+	mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
+	{{- range $metric.Attributes -}}
+	{{- if not (attributeInfo .).IsConditional -}}
+		, {{- template "getAttributeValue" . -}}
+	{{- end -}}
+	{{- end -}}
+	{{- range $metric.Attributes -}}
+	{{- if (attributeInfo .).IsConditional -}}
+		, With{{ .Render }}MetricAttribute({{- template "getConditionalAttributeValue" . -}})
+	{{- end -}}
+	{{- end -}}
+	)
+	{{- end }}
+	{{- end }}
+
+	metrics := mb.Emit()
+	assert.Greater(t, metrics.ResourceMetrics().Len(), 0)
+}
+{{- end }}

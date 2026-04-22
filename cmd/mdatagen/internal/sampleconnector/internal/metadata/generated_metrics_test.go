@@ -482,3 +482,20 @@ func TestMetricsBuilder(t *testing.T) {
 		})
 	}
 }
+
+func TestDeprecatedRecordMethods(t *testing.T) {
+	start := pcommon.Timestamp(1_000_000_000)
+	ts := pcommon.Timestamp(1_000_001_000)
+	settings := connectortest.NewNopSettings(connectortest.NopType)
+	settings.Logger = zap.NewNop()
+	mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+	mb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, WithEnumAttrMetricAttribute(AttributeEnumAttrRed.String()))
+	mb.RecordDefaultMetricToBeRemovedDataPoint(ts, 1)
+	mb.RecordMetricInputTypeDataPoint(ts, "1", "string_attr-val", 19, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, WithEnumAttrMetricAttribute(AttributeEnumAttrRed.String()))
+	mb.RecordOptionalMetricDataPoint(ts, 1, "string_attr-val", true, false)
+	mb.RecordOptionalMetricEmptyUnitDataPoint(ts, 1, "string_attr-val", true)
+	mb.RecordReaggregateMetricDataPoint(ts, 1, "string_attr-val", true)
+
+	metrics := mb.Emit()
+	assert.Greater(t, metrics.ResourceMetrics().Len(), 0)
+}
