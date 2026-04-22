@@ -162,32 +162,21 @@ func (cfg *BatchConfig) Validate() error {
 	}
 
 	if len(cfg.Limits) == 0 {
-		if cfg.Sizer.String() == "" || (cfg.Sizer != request.SizerTypeItems && cfg.Sizer != request.SizerTypeBytes) {
-			return fmt.Errorf("`batch` supports only `items` or `bytes` sizer, found %q", cfg.Sizer.String())
+		return errors.New("`batch` requires at least one sizer limit")
+	}
+
+	for szt, limit := range cfg.Limits {
+		if szt != request.SizerTypeItems && szt != request.SizerTypeBytes {
+			return fmt.Errorf("`batch` supports only `items` or `bytes` sizer, found %q", szt.String())
 		}
-		if cfg.MinSize < 0 {
-			return fmt.Errorf("`min_size` must be non-negative, found %d", cfg.MinSize)
+		if limit.MinSize < 0 {
+			return fmt.Errorf("`min_size` must be non-negative for sizer %q, found %d", szt.String(), limit.MinSize)
 		}
-		if cfg.MaxSize < 0 {
-			return fmt.Errorf("`max_size` must be non-negative, found %d", cfg.MaxSize)
+		if limit.MaxSize < 0 {
+			return fmt.Errorf("`max_size` must be non-negative for sizer %q, found %d", szt.String(), limit.MaxSize)
 		}
-		if cfg.MaxSize > 0 && cfg.MaxSize < cfg.MinSize {
-			return fmt.Errorf("`max_size` (%d) must be greater or equal to `min_size` (%d)", cfg.MaxSize, cfg.MinSize)
-		}
-	} else {
-		for szt, limit := range cfg.Limits {
-			if szt != request.SizerTypeItems && szt != request.SizerTypeBytes {
-				return fmt.Errorf("`batch` supports only `items` or `bytes` sizer, found %q", szt.String())
-			}
-			if limit.MinSize < 0 {
-				return fmt.Errorf("`min_size` must be non-negative for sizer %q, found %d", szt.String(), limit.MinSize)
-			}
-			if limit.MaxSize < 0 {
-				return fmt.Errorf("`max_size` must be non-negative for sizer %q, found %d", szt.String(), limit.MaxSize)
-			}
-			if limit.MaxSize > 0 && limit.MaxSize < limit.MinSize {
-				return fmt.Errorf("`max_size` (%d) must be greater or equal to `min_size` (%d) for sizer %q", limit.MaxSize, limit.MinSize, szt.String())
-			}
+		if limit.MaxSize > 0 && limit.MaxSize < limit.MinSize {
+			return fmt.Errorf("`max_size` (%d) must be greater or equal to `min_size` (%d) for sizer %q", limit.MaxSize, limit.MinSize, szt.String())
 		}
 	}
 

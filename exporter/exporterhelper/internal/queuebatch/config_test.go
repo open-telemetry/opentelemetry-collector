@@ -46,7 +46,7 @@ func TestConfig_Validate(t *testing.T) {
 	cfg = newTestConfig()
 	cfg.Batch.Get().Sizer = request.SizerType{}
 	cfg.Batch.Get().Limits = nil
-	require.EqualError(t, xconfmap.Validate(cfg), "batch: `batch` supports only `items` or `bytes` sizer, found \"\"")
+	require.EqualError(t, xconfmap.Validate(cfg), "batch: `batch` requires at least one sizer limit")
 
 	cfg = newTestConfig()
 	cfg.Sizer = request.SizerTypeBytes
@@ -101,25 +101,27 @@ func TestBatchConfig_Validate(t *testing.T) {
 	require.EqualError(t, xconfmap.Validate(cfg), "`flush_timeout` must be positive, found 0")
 
 	cfg = newTestBatchConfig()
-	cfg.MinSize = -1
-	require.EqualError(t, xconfmap.Validate(cfg), "`min_size` must be non-negative, found -1")
+	cfg.Limits[request.SizerTypeItems] = SizerLimit{MinSize: -1}
+	require.EqualError(t, xconfmap.Validate(cfg), "`min_size` must be non-negative for sizer \"items\", found -1")
 
 	cfg = newTestBatchConfig()
-	cfg.MaxSize = -1
-	require.EqualError(t, xconfmap.Validate(cfg), "`max_size` must be non-negative, found -1")
+	cfg.Limits[request.SizerTypeItems] = SizerLimit{MaxSize: -1}
+	require.EqualError(t, xconfmap.Validate(cfg), "`max_size` must be non-negative for sizer \"items\", found -1")
 
 	cfg = newTestBatchConfig()
-	cfg.Sizer = request.SizerTypeRequests
+	cfg.Limits = map[request.SizerType]SizerLimit{
+		request.SizerTypeRequests: {MinSize: 1},
+	}
 	require.EqualError(t, xconfmap.Validate(cfg), "`batch` supports only `items` or `bytes` sizer, found \"requests\"")
 
 	cfg = newTestBatchConfig()
+	cfg.Limits = nil
 	cfg.Sizer = request.SizerType{}
-	require.EqualError(t, xconfmap.Validate(cfg), "`batch` supports only `items` or `bytes` sizer, found \"\"")
+	require.EqualError(t, xconfmap.Validate(cfg), "`batch` requires at least one sizer limit")
 
 	cfg = newTestBatchConfig()
-	cfg.MinSize = 2048
-	cfg.MaxSize = 1024
-	require.EqualError(t, xconfmap.Validate(cfg), "`max_size` (1024) must be greater or equal to `min_size` (2048)")
+	cfg.Limits[request.SizerTypeItems] = SizerLimit{MinSize: 2048, MaxSize: 1024}
+	require.EqualError(t, xconfmap.Validate(cfg), "`max_size` (1024) must be greater or equal to `min_size` (2048) for sizer \"items\"")
 }
 
 func newTestBatchConfig() BatchConfig {
@@ -128,6 +130,9 @@ func newTestBatchConfig() BatchConfig {
 		Sizer:        request.SizerTypeItems,
 		MinSize:      2048,
 		MaxSize:      0,
+		Limits: map[request.SizerType]SizerLimit{
+			request.SizerTypeItems: {MinSize: 2048},
+		},
 	}
 }
 
