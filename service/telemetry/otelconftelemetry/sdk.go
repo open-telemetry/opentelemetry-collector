@@ -15,9 +15,13 @@ func newSDK(ctx context.Context, res *sdkresource.Resource, conf config.OpenTele
 	resourceAttrs := make([]config.AttributeNameValue, 0, res.Len())
 	for _, r := range res.Attributes() {
 		key := string(r.Key)
+		value, err := attributeValueString(key, r.Value)
+		if err != nil {
+			return config.SDK{}, err
+		}
 		resourceAttrs = append(resourceAttrs, config.AttributeNameValue{
 			Name:  key,
-			Value: mustAttributeValueString(key, r.Value),
+			Value: value,
 		})
 	}
 	conf.Resource = &config.Resource{
