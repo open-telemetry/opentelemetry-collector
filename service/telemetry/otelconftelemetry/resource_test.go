@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service/telemetry"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry/internal/migration"
 )
@@ -176,6 +177,21 @@ func TestCreateResource(t *testing.T) {
 		raw := res.Attributes().AsRaw()
 		assert.Equal(t, "(1+2i)", raw["complex.attr"])
 	})
+}
+
+func TestCreateResource_DefaultAttributeValuesError(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+
+	orig := defaultAttributeValues
+	t.Cleanup(func() { defaultAttributeValues = orig })
+	defaultAttributeValues = func(component.BuildInfo) (map[string]string, error) {
+		return nil, assert.AnError
+	}
+
+	res, err := createResource(t.Context(), set, cfg)
+	require.ErrorIs(t, err, assert.AnError)
+	assert.Equal(t, pcommon.Resource{}, res)
 }
 
 func TestDefaultAttributeValues(t *testing.T) {

@@ -169,6 +169,31 @@ func TestCreateLogger(t *testing.T) {
 	}
 }
 
+func TestCreateLogger_MissingResource(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+
+	_, shutdown, err := createLogger(t.Context(), telemetry.LoggerSettings{
+		BuildZapLogger: zap.Config.Build,
+	}, cfg)
+	require.ErrorIs(t, err, errMissingCollectorResource)
+	assert.Nil(t, shutdown)
+}
+
+func TestCreateLogger_BuildZapLoggerError(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	require.NoError(t, err)
+
+	_, shutdown, err := createLogger(t.Context(), telemetry.LoggerSettings{
+		Settings: telemetry.Settings{Resource: &resource},
+		BuildZapLogger: func(zap.Config, ...zap.Option) (*zap.Logger, error) {
+			return nil, assert.AnError
+		},
+	}, cfg)
+	require.ErrorIs(t, err, assert.AnError)
+	assert.Nil(t, shutdown)
+}
+
 func TestCreateLoggerWithResource(t *testing.T) {
 	tests := []struct {
 		name           string

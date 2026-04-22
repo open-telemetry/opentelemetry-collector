@@ -90,6 +90,14 @@ func TestCreateTracerProvider_Invalid(t *testing.T) {
 	require.EqualError(t, err, "no valid span exporter")
 }
 
+func TestCreateTracerProvider_MissingResource(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+
+	provider, err := createTracerProvider(t.Context(), telemetry.TracerSettings{}, cfg)
+	require.ErrorIs(t, err, errMissingCollectorResource)
+	assert.Nil(t, provider)
+}
+
 func TestCreateTracerProvider_Propagators(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/traces", func(http.ResponseWriter, *http.Request) {})

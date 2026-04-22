@@ -262,6 +262,14 @@ func TestCreateMeterProvider_Invalid(t *testing.T) {
 	require.EqualError(t, err, "no valid metric exporter")
 }
 
+func TestCreateMeterProvider_MissingResource(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+
+	mp, err := createMeterProvider(t.Context(), telemetry.MeterSettings{}, cfg)
+	require.ErrorIs(t, err, errMissingCollectorResource)
+	assert.Nil(t, mp)
+}
+
 func TestCreateMeterProvider_Disabled(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Metrics.Readers = []config.MetricReader{{
