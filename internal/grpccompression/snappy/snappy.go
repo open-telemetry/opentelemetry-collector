@@ -17,11 +17,16 @@ import (
 const Name = "snappy"
 
 func init() {
-	if encoding.GetCompressor(Name) != nil {
-		return
+	registerCompressor(encoding.GetCompressor, encoding.RegisterCompressor)
+}
+
+func registerCompressor(get func(string) encoding.Compressor, register func(encoding.Compressor)) bool {
+	if get(Name) != nil {
+		return false
 	}
 
-	encoding.RegisterCompressor(newCompressor())
+	register(newCompressor())
+	return true
 }
 
 type compressor struct {

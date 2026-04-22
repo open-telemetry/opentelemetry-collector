@@ -29,12 +29,29 @@ var decoderOptions = []zstd.DOption{
 	zstd.WithDecoderConcurrency(1),
 }
 
+var zstdNewWriter = zstd.NewWriter
+
+var zstdNewReader = zstd.NewReader
+
+var zstdEncoderReset = func(enc *zstd.Encoder, w io.Writer) {
+	enc.Reset(w)
+}
+
+var zstdDecoderReset = func(dec *zstd.Decoder, r io.Reader) error {
+	return dec.Reset(r)
+}
+
 func init() {
-	if encoding.GetCompressor(Name) != nil {
-		return
+	registerCompressor(encoding.GetCompressor, encoding.RegisterCompressor)
+}
+
+func registerCompressor(get func(string) encoding.Compressor, register func(encoding.Compressor)) bool {
+	if get(Name) != nil {
+		return false
 	}
 
-	encoding.RegisterCompressor(&compressor{})
+	register(&compressor{})
+	return true
 }
 
 type compressor struct {
@@ -46,24 +63,19 @@ func (c *compressor) Compress(w io.Writer) (io.WriteCloser, error) {
 	enc, ok := c.encoderPool.Get().(*zstd.Encoder)
 	if !ok {
 		var err error
-		enc, err = zstd.NewWriter(w, encoderOptions...)
+		enc, err = zstdNewWriter(w, encoderOptions...)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		enc.Reset(w)
+		zstdEncoderReset(enc, w)
 	}
 
 	wrapper := &encoderWrapper{
 		Encoder: enc,
 		pool:    &c.encoderPool,
 	}
-	runtime.SetFinalizer(wrapper, func(ew *encoderWrapper) {
-		ew.release(func() {
-			ew.Encoder.Reset(nil)
-			ew.pool.Put(ew.Encoder)
-		})
-	})
+	runtime.SetFinalizer(wrapper, (*encoderWrapper).finalize)
 	return wrapper, nil
 }
 
@@ -71,11 +83,11 @@ func (c *compressor) Decompress(r io.Reader) (io.Reader, error) {
 	dec, ok := c.decoderPool.Get().(*zstd.Decoder)
 	if !ok {
 		var err error
-		dec, err = zstd.NewReader(r, decoderOptions...)
+		dec, err = zstdNewReader(r, decoderOptions...)
 		if err != nil {
 			return nil, err
 		}
-	} else if err := dec.Reset(r); err != nil {
+	} else if err := zstdDecoderReset(dec, r); err != nil {
 		c.decoderPool.Put(dec)
 		return nil, err
 	}
@@ -84,9 +96,7 @@ func (c *compressor) Decompress(r io.Reader) (io.Reader, error) {
 		Decoder: dec,
 		pool:    &c.decoderPool,
 	}
-	runtime.SetFinalizer(wrapper, func(dw *decoderWrapper) {
-		dw.release()
-	})
+	runtime.SetFinalizer(wrapper, (*decoderWrapper).finalize)
 	return wrapper, nil
 }
 
@@ -108,6 +118,13 @@ func (w *encoderWrapper) Close() error {
 	return err
 }
 
+func (w *encoderWrapper) finalize() {
+	w.release(func() {
+		zstdEncoderReset(w.Encoder, nil)
+		w.pool.Put(w.Encoder)
+	})
+}
+
 func (w *encoderWrapper) release(fn func()) {
 	w.once.Do(fn)
 }
@@ -126,9 +143,13 @@ func (d *decoderWrapper) Read(p []byte) (int, error) {
 	return n, err
 }
 
+func (d *decoderWrapper) finalize() {
+	d.release()
+}
+
 func (d *decoderWrapper) release() {
 	d.once.Do(func() {
-		if err := d.Decoder.Reset(nil); err == nil {
+		if err := zstdDecoderReset(d.Decoder, nil); err == nil {
 			d.pool.Put(d.Decoder)
 		}
 	})

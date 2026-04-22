@@ -8,16 +8,13 @@ import (
 	"io"
 	"testing"
 
+	snappylib "github.com/golang/snappy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/encoding"
 )
 
 func TestRegisteredCompression(t *testing.T) {
-	comp := encoding.GetCompressor(Name)
-	require.NotNil(t, comp)
-	assert.Equal(t, Name, comp.Name())
-
 	for _, tt := range []struct {
 		name    string
 		payload []byte
@@ -27,6 +24,7 @@ func TestRegisteredCompression(t *testing.T) {
 		{name: "large", payload: bytes.Repeat([]byte("snappy payload "), 1024)},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			comp := newCompressor()
 			got := roundTripCompression(t, comp, tt.payload)
 			if len(tt.payload) == 0 {
 				assert.Empty(t, got)
@@ -37,24 +35,54 @@ func TestRegisteredCompression(t *testing.T) {
 	}
 }
 
-func TestDecoderReturnedToPoolOnReadCompletion(t *testing.T) {
+func TestInitRegistration(t *testing.T) {
 	comp := encoding.GetCompressor(Name)
 	require.NotNil(t, comp)
+	assert.Equal(t, Name, comp.Name())
+}
 
-	c, ok := comp.(*compressor)
-	require.True(t, ok)
+func TestRegisterCompressor(t *testing.T) {
+	t.Run("registers when missing", func(t *testing.T) {
+		var registered encoding.Compressor
+		ok := registerCompressor(
+			func(string) encoding.Compressor { return nil },
+			func(c encoding.Compressor) { registered = c },
+		)
+		require.True(t, ok)
+		require.NotNil(t, registered)
+		assert.Equal(t, Name, registered.Name())
+	})
 
-	compressed := compressPayload(t, comp, []byte("snappy pool check"))
+	t.Run("skips when already registered", func(t *testing.T) {
+		var called bool
+		ok := registerCompressor(
+			func(string) encoding.Compressor { return newCompressor() },
+			func(encoding.Compressor) { called = true },
+		)
+		require.False(t, ok)
+		assert.False(t, called)
+	})
+}
+
+func TestDecompressReusesPooledReader(t *testing.T) {
+	c := newCompressor()
+	seed := &reader{
+		Reader: snappylib.NewReader(bytes.NewReader(nil)),
+		pool:   &c.poolDecompressor,
+	}
+	c.poolDecompressor.New = func() any { return seed }
+
+	compressed := compressPayload(t, c, []byte("snappy reuse check"))
 
 	r, err := c.Decompress(bytes.NewReader(compressed))
 	require.NoError(t, err)
+	got, ok := r.(*reader)
+	require.True(t, ok)
+	assert.Same(t, seed, got)
 
-	_, err = io.ReadAll(r)
+	out, err := io.ReadAll(got)
 	require.NoError(t, err)
-
-	pooled, ok := c.poolDecompressor.Get().(*reader)
-	require.True(t, ok, "expected decoder to be returned to the pool")
-	c.poolDecompressor.Put(pooled)
+	assert.Equal(t, []byte("snappy reuse check"), out)
 }
 
 func compressPayload(t *testing.T, comp encoding.Compressor, payload []byte) []byte {
