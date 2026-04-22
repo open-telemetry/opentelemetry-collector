@@ -4,7 +4,7 @@ component: pkg/pdata
 
 note: Use pool-aware constructors in gRPC service handlers so top-level request structs participate in the sync.Pool lifecycle.
 
-issues: []
+issues: [14763]
 
 subtext: |
   The gRPC service handlers for all signal types allocated the top-level
