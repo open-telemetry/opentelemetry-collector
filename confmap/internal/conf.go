@@ -11,6 +11,7 @@ import (
 	"github.com/knadh/koanf/maps"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/v2"
+	"go.opentelemetry.io/collector/confmap/internal/metadata"
 )
 
 const (
@@ -96,8 +97,7 @@ func (l *Conf) IsSet(key string) bool {
 // Merge merges the input given configuration into the existing config.
 // Note that the given map may be modified.
 func (l *Conf) Merge(in *Conf) error {
-	if EnableMergeAppendOption.IsEnabled() {
-		// only use MergeAppend when EnableMergeAppendOption featuregate is enabled.
+	if metadata.ConfmapEnableMergeAppendOptionFeatureGate.IsEnabled() {
 		return l.mergeAppend(in)
 	}
 	l.isNil = l.isNil && in.isNil
@@ -177,6 +177,10 @@ func (l *Conf) toStringMapWithExpand() map[string]any {
 // ToStringMap will return map[string]any(nil).
 func (l *Conf) ToStringMap() map[string]any {
 	return sanitize(l.toStringMapWithExpand()).(map[string]any)
+}
+
+func ToStringMapRaw(conf *Conf) map[string]any {
+	return conf.toStringMapWithExpand()
 }
 
 func (l *Conf) unsanitizedGet(key string) any {

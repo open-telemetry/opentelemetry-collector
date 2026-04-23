@@ -65,7 +65,7 @@ func Decode(input, result any, settings UnmarshalOptions, skipTopLevelUnmarshale
 		unmarshalerHookFunc(result, skipTopLevelUnmarshaler),
 		// after the main unmarshaler hook is called,
 		// we unmarshal the embedded structs if present to merge with the result:
-		unmarshalerEmbeddedStructsHookFunc(),
+		unmarshalerEmbeddedStructsHookFunc(settings),
 		zeroSliceAndMapHookFunc(),
 	)
 	dc := &mapstructure.DecoderConfig{

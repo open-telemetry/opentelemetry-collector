@@ -5,7 +5,9 @@ package xconfmap
 
 import (
 	"errors"
+	"fmt"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,31 +22,24 @@ type nullableWrapperType[T any] struct {
 	wasNil bool
 }
 
-func (n *nullableWrapperType[T]) UnmarshalScalar(val any) error {
-	if val == nil {
+func (n *nullableWrapperType[T]) UnmarshalScalar(val ScalarValue) error {
+	raw := val.GetRaw()
+	if raw == nil || (reflect.ValueOf(raw).Kind() == reflect.Map && reflect.ValueOf(raw).IsNil()) {
 		n.wasNil = true
 		return nil
 	}
-	v, ok := val.(T)
-	if !ok {
-		return errors.New("nullableWrapperType: wrong type")
+	var v T
+	if err := val.Unmarshal(&v); err != nil {
+		return fmt.Errorf("nullableWrapperType: %w", err)
 	}
 	n.inner = v
 	return nil
 }
 
-func (n *nullableWrapperType[T]) ScalarType() any {
-	return n.inner
-}
-
 type failingScalarUnmarshaler struct{}
 
-func (f *failingScalarUnmarshaler) UnmarshalScalar(_ any) error {
+func (f *failingScalarUnmarshaler) UnmarshalScalar(_ ScalarValue) error {
 	return errors.New("always fails")
-}
-
-func (f *failingScalarUnmarshaler) ScalarType() any {
-	return 0
 }
 
 func TestUnmarshalConfig(t *testing.T) {

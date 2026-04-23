@@ -87,11 +87,10 @@ func (wt wrapperType[T]) GetScalarValue() (any, error) {
 	return wt.inner, nil
 }
 
-func (wt *wrapperType[T]) UnmarshalScalar(val any) error {
-	v, ok := val.(T)
-
-	if !ok {
-		return fmt.Errorf("could not unmarshal scalar: val is %T, not %T", val, v)
+func (wt *wrapperType[T]) UnmarshalScalar(val ScalarValue) error {
+	var v T
+	if err := val.Unmarshal(&v); err != nil {
+		return fmt.Errorf("could not unmarshal scalar: %w", err)
 	}
 
 	wt.inner = v

@@ -190,7 +190,7 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 		}
 	}
 
-	if err := conf.Unmarshal(&o.value, xconfmap.WithForceUnmarshaler(), xconfmap.WithScalarMarshaler()); err != nil {
+	if err := conf.Unmarshal(&o.value, xconfmap.WithForceUnmarshaler(), xconfmap.WithScalarUnmarshaler()); err != nil {
 		return err
 	}
 
@@ -211,25 +211,28 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 // A `nil` value will set the Optional to None, disabling it as setting
 // `enabled: false` for a struct-type Optional or `null` for a pointer field
 // would.
-func (o *Optional[T]) UnmarshalScalar(val any) error {
-	if val == nil {
-		var zero T
-		o.value = zero
-		o.flavor = noneFlavor
+func (o *Optional[T]) UnmarshalScalar(scalarValue xconfmap.ScalarValue) error {
+	val := scalarValue.GetRaw()
+	if reflect.TypeOf(val).Kind() == reflect.Map {
+		if reflect.ValueOf(val).IsNil() {
+			if deref(reflect.TypeOf(o.value)).Kind() == reflect.Struct {
+				// Defer to Unmarshal behavior
+				return o.Unmarshal(confmap.NewFromStringMap(nil))
+			}
+			// For scalar types, a nil map represents `null` and clears to None.
+			var zero T
+			o.value = zero
+			o.flavor = noneFlavor
+		}
 		return nil
 	}
 
-	v, ok := val.(T)
-	if !ok {
-		return fmt.Errorf("val is %T, not %T", val, v)
+	if err := scalarValue.Unmarshal(&o.value); err != nil {
+		return err
 	}
-	o.value = v
 	o.flavor = someFlavor
-	return nil
-}
 
-func (o *Optional[T]) ScalarType() any {
-	return o.value
+	return nil
 }
 
 var (

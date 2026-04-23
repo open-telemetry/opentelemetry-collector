@@ -699,42 +699,6 @@ func newInvalidDefaultConfig() validatedConfig {
 	}
 }
 
-func TestScalarType(t *testing.T) {
-	// This won't be used in practice, but should work regardless.
-	t.Run("struct_T", func(t *testing.T) {
-		noneOpt := None[Sub]()
-		assert.Equal(t, Sub{}, noneOpt.ScalarType())
-
-		defaultOpt := Default(subDefault)
-		assert.Equal(t, subDefault, defaultOpt.ScalarType())
-
-		someOpt := Some(Sub{Foo: "bar"})
-		assert.Equal(t, Sub{Foo: "bar"}, someOpt.ScalarType())
-	})
-
-	t.Run("int_T", func(t *testing.T) {
-		noneOpt := None[int]()
-		assert.Equal(t, 0, noneOpt.ScalarType())
-
-		defaultOpt := Default(42)
-		assert.Equal(t, 42, defaultOpt.ScalarType())
-
-		someOpt := Some(7)
-		assert.Equal(t, 7, someOpt.ScalarType())
-	})
-
-	t.Run("string_T", func(t *testing.T) {
-		noneOpt := None[string]()
-		assert.Equal(t, "", noneOpt.ScalarType())
-
-		defaultOpt := Default("default")
-		assert.Equal(t, "default", defaultOpt.ScalarType())
-
-		someOpt := Some("hello")
-		assert.Equal(t, "hello", someOpt.ScalarType())
-	})
-}
-
 func TestUnmarshalScalar(t *testing.T) {
 	type IntConfig struct {
 		Val Optional[int] `mapstructure:"val"`
