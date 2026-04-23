@@ -26,7 +26,6 @@ func Encode(rawVal any, set MarshalOptions) (any, error) {
 func EncoderConfig(rawVal any, opts MarshalOptions) *encoder.EncoderConfig {
 	hooks := []mapstructure.DecodeHookFunc{
 		encoder.YamlMarshalerHookFunc(),
-		encoder.TextMarshalerHookFunc(),
 	}
 
 	if opts.OpaqueUnredacted {
@@ -38,7 +37,10 @@ func EncoderConfig(rawVal any, opts MarshalOptions) *encoder.EncoderConfig {
 	}
 
 	// This hook must come after the scalar marshaling hook, if present.
-	hooks = append(hooks, marshalerHookFunc(rawVal))
+	hooks = append(hooks,
+		encoder.TextMarshalerHookFunc(),
+		marshalerHookFunc(rawVal),
+	)
 
 	return &encoder.EncoderConfig{
 		EncodeHook: mapstructure.ComposeDecodeHookFunc(hooks...),
