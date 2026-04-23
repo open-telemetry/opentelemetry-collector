@@ -972,9 +972,9 @@ func TestScalarMarshalingRoundTrip(t *testing.T) {
 		expectAfterHasVal bool
 		expectAfterVal    string
 	}{
-		// {name: "none", initial: None[string](), expectAfterHasVal: false},
-		// // Default marshals as nil -> round-trips to None (not Default).
-		// {name: "default", initial: Default("hello"), expectAfterHasVal: false},
+		{name: "none", initial: None[string](), expectAfterHasVal: false},
+		// Default marshals as nil -> round-trips to None (not Default).
+		{name: "default", initial: Default("hello"), expectAfterHasVal: false},
 		{name: "some", initial: Some("hello"), expectAfterHasVal: true, expectAfterVal: "hello"},
 	}
 
