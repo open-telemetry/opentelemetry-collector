@@ -240,7 +240,7 @@ func TestMergeSplitMetricsInputNotModifiedIfErrorReturned(t *testing.T) {
 func TestExtractMetrics(t *testing.T) {
 	for i := range 20 {
 		md := testdata.GenerateMetrics(10)
-		extractedMetrics, _ := extractMetrics(md, map[request.SizerType]int64{request.SizerTypeItems: int64(i)}, map[request.SizerType]sizer.MetricsSizer{request.SizerTypeItems: &sizer.MetricsCountSizer{}})
+		extractedMetrics, _ := extractMetrics(md, i, &sizer.MetricsCountSizer{})
 		assert.Equal(t, i, extractedMetrics.DataPointCount())
 		assert.Equal(t, 20-i, md.DataPointCount())
 	}
@@ -248,7 +248,7 @@ func TestExtractMetrics(t *testing.T) {
 
 func TestExtractMetricsInvalidMetric(t *testing.T) {
 	md := testdata.GenerateMetricsMetricTypeInvalid()
-	extractedMetrics, _ := extractMetrics(md, map[request.SizerType]int64{request.SizerTypeItems: 10}, map[request.SizerType]sizer.MetricsSizer{request.SizerTypeItems: &sizer.MetricsCountSizer{}})
+	extractedMetrics, _ := extractMetrics(md, 10, &sizer.MetricsCountSizer{})
 	assert.Equal(t, testdata.GenerateMetricsMetricTypeInvalid(), extractedMetrics)
 	assert.Equal(t, 0, md.ResourceMetrics().Len())
 }
@@ -515,11 +515,11 @@ func TestExtractGaugeDataPoints(t *testing.T) {
 			sz := &mockMetricsSizer{dpSize: 1}
 
 			destMetric := pmetric.NewMetric()
-			removedSizes := extractGaugeDataPoints(gauge, destMetric, map[request.SizerType]int{request.SizerTypeItems: tt.capacity}, map[request.SizerType]sizer.MetricsSizer{request.SizerTypeItems: sz})
+			removedSizes := extractGaugeDataPoints(gauge, destMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Gauge().DataPoints().Len())
 			if tt.expectedPoints > 0 {
-				assert.Equal(t, tt.expectedPoints, removedSizes[request.SizerTypeItems])
+				assert.Equal(t, tt.expectedPoints, removedSizes)
 			}
 		})
 	}
@@ -564,11 +564,11 @@ func TestExtractSumDataPoints(t *testing.T) {
 			sz := &mockMetricsSizer{dpSize: 1}
 
 			destMetric := pmetric.NewMetric()
-			removedSizes := extractSumDataPoints(sum, destMetric, map[request.SizerType]int{request.SizerTypeItems: tt.capacity}, map[request.SizerType]sizer.MetricsSizer{request.SizerTypeItems: sz})
+			removedSizes := extractSumDataPoints(sum, destMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Sum().DataPoints().Len())
 			if tt.expectedPoints > 0 {
-				assert.Equal(t, tt.expectedPoints, removedSizes[request.SizerTypeItems])
+				assert.Equal(t, tt.expectedPoints, removedSizes)
 			}
 		})
 	}
@@ -614,11 +614,11 @@ func TestExtractHistogramDataPoints(t *testing.T) {
 			sz := &mockMetricsSizer{dpSize: 1}
 
 			destMetric := pmetric.NewMetric()
-			removedSizes := extractHistogramDataPoints(histogram, destMetric, map[request.SizerType]int{request.SizerTypeItems: tt.capacity}, map[request.SizerType]sizer.MetricsSizer{request.SizerTypeItems: sz})
+			removedSizes := extractHistogramDataPoints(histogram, destMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Histogram().DataPoints().Len())
 			if tt.expectedPoints > 0 {
-				assert.Equal(t, tt.expectedPoints, removedSizes[request.SizerTypeItems])
+				assert.Equal(t, tt.expectedPoints, removedSizes)
 			}
 		})
 	}
@@ -663,11 +663,11 @@ func TestExtractExponentialHistogramDataPoints(t *testing.T) {
 			sz := &mockMetricsSizer{dpSize: 1}
 
 			destMetric := pmetric.NewMetric()
-			removedSizes := extractExponentialHistogramDataPoints(expHistogram, destMetric, map[request.SizerType]int{request.SizerTypeItems: tt.capacity}, map[request.SizerType]sizer.MetricsSizer{request.SizerTypeItems: sz})
+			removedSizes := extractExponentialHistogramDataPoints(expHistogram, destMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.ExponentialHistogram().DataPoints().Len())
 			if tt.expectedPoints > 0 {
-				assert.Equal(t, tt.expectedPoints, removedSizes[request.SizerTypeItems])
+				assert.Equal(t, tt.expectedPoints, removedSizes)
 			}
 		})
 	}
@@ -712,11 +712,11 @@ func TestExtractSummaryDataPoints(t *testing.T) {
 			sz := &mockMetricsSizer{dpSize: 1}
 
 			destMetric := pmetric.NewMetric()
-			removedSizes := extractSummaryDataPoints(summary, destMetric, map[request.SizerType]int{request.SizerTypeItems: tt.capacity}, map[request.SizerType]sizer.MetricsSizer{request.SizerTypeItems: sz})
+			removedSizes := extractSummaryDataPoints(summary, destMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Summary().DataPoints().Len())
 			if tt.expectedPoints > 0 {
-				assert.Equal(t, tt.expectedPoints, removedSizes[request.SizerTypeItems])
+				assert.Equal(t, tt.expectedPoints, removedSizes)
 			}
 		})
 	}
