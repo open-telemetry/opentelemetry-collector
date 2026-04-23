@@ -1052,6 +1052,14 @@ func TestNewCfgFns_PublicType(t *testing.T) {
 	require.Equal(t, "component.Config", publicType("go.opentelemetry.io/collector/component.Config"))
 }
 
+func TestNewCfgFns_EmbeddedName(t *testing.T) {
+	fns := NewCfgFns("", "")
+	embeddedName := fns["embeddedName"].(func(string) string)
+
+	require.Equal(t, "MyType", embeddedName("my_type"))
+	require.Panics(t, func() { embeddedName("") })
+}
+
 func TestWithCfgFns(t *testing.T) {
 	base := map[string]any{"existing": "value"}
 	result := WithCfgFns(base, "", "")
@@ -1707,6 +1715,18 @@ func TestFormatDefaultValue_ResolvedReferenceWithDefaults(t *testing.T) {
 	)
 }
 
+func TestFormatDefaultValue_ResolvedReferenceWithoutDefaults(t *testing.T) {
+	// An external ref with no property defaults must not generate a NewDefault... call.
+	md := &ConfigMetadata{
+		Type:         "object",
+		ResolvedFrom: "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
+	}
+
+	require.Empty(t,
+		FormatDefaultValue(md, "client", map[string]any{}, "go.opentelemetry.io/collector", "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"),
+	)
+}
+
 func TestHasDefaultValue(t *testing.T) {
 	require.False(t, hasDefaultValue(&ConfigMetadata{Type: "object"}))
 	require.True(t, hasDefaultValue(&ConfigMetadata{Type: "string", Default: "value"}))
@@ -1721,6 +1741,11 @@ func TestHasDefaultValue(t *testing.T) {
 		AllOf: []*ConfigMetadata{
 			{Type: "object", Default: map[string]any{"enabled": true}},
 		},
+	}))
+	// External ref without any property defaults must not be treated as having defaults.
+	require.False(t, hasDefaultValue(&ConfigMetadata{
+		Type:         "object",
+		ResolvedFrom: "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
 	}))
 }
 
