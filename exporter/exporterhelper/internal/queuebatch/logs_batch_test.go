@@ -5,6 +5,7 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -367,6 +368,51 @@ func BenchmarkSplittingBasedOnItemCountManyLogsSlightlyAboveLimit(b *testing.B) 
 			merged = append(merged[0:len(merged)-1], res...)
 		}
 		assert.Len(b, merged, 11)
+	}
+}
+
+func TestMergeSplitLogsMultiSizerOrder(t *testing.T) {
+	pb := plog.ProtoMarshaler{}
+	
+	// Create 4 distinct logs in order.
+	ld := plog.NewLogs()
+	rl := ld.ResourceLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	for i := 0; i < 4; i++ {
+		lr := sl.LogRecords().AppendEmpty()
+		lr.Body().SetStr(fmt.Sprintf("log-%d", i))
+	}
+	
+	// Calculate size of 2 logs to set byte limit.
+	ld2 := plog.NewLogs()
+	rl2 := ld2.ResourceLogs().AppendEmpty()
+	sl2 := rl2.ScopeLogs().AppendEmpty()
+	for i := 0; i < 2; i++ {
+		lr := sl2.LogRecords().AppendEmpty()
+		lr.Body().SetStr(fmt.Sprintf("log-%d", i))
+	}
+	limitBytes := int64(pb.LogsSize(ld2) - 1)
+	
+	limits := map[request.SizerType]int64{
+		request.SizerTypeItems: 2,
+		request.SizerTypeBytes: limitBytes,
+	}
+	
+	req := newLogsRequest(ld)
+	res, err := req.MergeSplit(context.Background(), limits, nil)
+	require.NoError(t, err)
+	
+	// We expect 4 batches, each with 1 log record.
+	assert.Len(t, res, 4)
+	
+	// Verify order by checking the body of the log record in each batch!
+	for i := 0; i < 4; i++ {
+		lrReq := res[i].(*logsRequest)
+		assert.Equal(t, 1, lrReq.ItemsCount())
+		
+		// Extract the body string
+		body := lrReq.ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str()
+		assert.Equal(t, fmt.Sprintf("log-%d", i), body)
 	}
 }
 

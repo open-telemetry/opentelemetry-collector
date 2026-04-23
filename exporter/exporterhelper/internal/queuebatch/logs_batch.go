@@ -55,6 +55,7 @@ func (req *logsRequest) mergeTo(dst *logsRequest, sizers map[request.SizerType]s
 
 func (req *logsRequest) split(limits map[request.SizerType]int64, sizers map[request.SizerType]sizer.LogsSizer) ([]request.Request, error) {
 	var res []request.Request
+	sortedSzt := getSortedSizerTypes(limits)
 	for {
 		if req.ld.LogRecordCount() == 0 {
 			break
@@ -63,8 +64,6 @@ func (req *logsRequest) split(limits map[request.SizerType]int64, sizers map[req
 		ld := req.ld
 		isInitial := true
 		exceededAny := false
-		sortedSzt := getSortedSizerTypes(limits)
-
 		for _, szt := range sortedSzt {
 			limit := limits[szt]
 			sz := sizers[szt]
