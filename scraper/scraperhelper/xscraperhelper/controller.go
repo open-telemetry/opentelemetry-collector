@@ -131,7 +131,9 @@ func scrapeProfiles(ctx context.Context, c *controller.Controller[xscraper.Profi
 				continue
 			}
 		}
-		md.ResourceProfiles().MoveAndAppendTo(profiles.ResourceProfiles())
+		if mergeErr := md.MergeTo(profiles); mergeErr != nil {
+			continue
+		}
 	}
 
 	// TODO: Add proper receiver observability for profiles when receiverhelper supports it

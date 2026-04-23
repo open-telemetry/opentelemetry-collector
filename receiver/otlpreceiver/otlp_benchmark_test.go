@@ -47,7 +47,7 @@ func startLogsReceiver(b *testing.B, cfg *Config, sink *consumertest.LogsSink) {
 func BenchmarkGRPCLogsSequential(b *testing.B) {
 	endpoint := testutil.GetAvailableLocalAddress(b)
 	cfg := createDefaultConfig().(*Config)
-	cfg.GRPC.GetOrInsertDefault().NetAddr.Endpoint = endpoint
+	cfg.Protocols.GRPC.GetOrInsertDefault().NetAddr.Endpoint = endpoint
 	var sink consumertest.LogsSink
 	startLogsReceiver(b, cfg, &sink)
 
@@ -71,7 +71,7 @@ func BenchmarkGRPCLogsSequential(b *testing.B) {
 func BenchmarkHTTPProtoLogsSequential(b *testing.B) {
 	endpoint := testutil.GetAvailableLocalAddress(b)
 	cfg := createDefaultConfig().(*Config)
-	cfg.HTTP.GetOrInsertDefault().ServerConfig.NetAddr.Endpoint = endpoint
+	cfg.Protocols.HTTP.GetOrInsertDefault().ServerConfig.NetAddr.Endpoint = endpoint
 	var sink consumertest.LogsSink
 	startLogsReceiver(b, cfg, &sink)
 

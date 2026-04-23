@@ -195,6 +195,51 @@ func getMetricsFromPrometheus(t *testing.T, endpoint string) map[string]*io_prom
 	return parsed
 }
 
+func TestCreateMeterProvider_020MigrationWarning(t *testing.T) {
+	core, observedLogs := observer.New(zapcore.DebugLevel)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Metrics.MigratedFromV02 = true
+
+	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	require.NoError(t, err)
+
+	mp, err := createMeterProvider(t.Context(), telemetry.MeterSettings{
+		Settings: telemetry.Settings{Resource: &resource},
+		Logger:   zap.New(core),
+	}, cfg)
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, mp.Shutdown(t.Context()))
+	}()
+
+	require.Equal(t, 1, observedLogs.Len())
+	entry := observedLogs.All()[0]
+	assert.Equal(t, zapcore.WarnLevel, entry.Level)
+	assert.Equal(t, "Telemetry metrics configuration is using the deprecated v0.2.0 Declarative Configuration format, please migrate to the v0.3.0 format", entry.Message)
+	assert.Equal(t, "https://opentelemetry.io/docs/specs/otel/configuration/#declarative-configuration", entry.ContextMap()["url"])
+}
+
+func TestCreateMeterProvider_NoMigrationWarning(t *testing.T) {
+	core, observedLogs := observer.New(zapcore.DebugLevel)
+
+	cfg := createDefaultConfig().(*Config)
+
+	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	require.NoError(t, err)
+
+	mp, err := createMeterProvider(t.Context(), telemetry.MeterSettings{
+		Settings: telemetry.Settings{Resource: &resource},
+		Logger:   zap.New(core),
+	}, cfg)
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, mp.Shutdown(t.Context()))
+	}()
+
+	assert.Zero(t, observedLogs.Len())
+}
+
 func TestCreateMeterProvider_Invalid(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Logs.Level = zapcore.FatalLevel
