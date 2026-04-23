@@ -40,6 +40,7 @@ func TestCreateDefaultConfig_BatchMaxSizeBytes(t *testing.T) {
 	assert.Equal(t, int64(defaultMaxRequestBodySize), batchCfg.MaxSize)
 	assert.Greater(t, batchCfg.FlushTimeout, time.Duration(0))
 }
+
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
