@@ -8,6 +8,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestProfilesMergeTo(t *testing.T) {
@@ -617,4 +619,102 @@ func TestProfilesMergeToError(t *testing.T) {
 	require.Error(t, err)
 
 	assert.Equal(t, 0, dest.ResourceProfiles().Len())
+}
+
+// TestProfilesMergeTo_ResourceAttributeRoundTrip verifies that resource and
+// scope attributes survive a marshal→unmarshal→merge→marshal→unmarshal
+// round-trip without corruption of KeyStrindex references.
+// This is the core scenario from
+// https://github.com/open-telemetry/opentelemetry-collector/issues/15084.
+func TestProfilesMergeTo_ResourceAttributeRoundTrip(t *testing.T) {
+	marshaler := &ProtoMarshaler{}
+	unmarshaler := &ProtoUnmarshaler{}
+
+	// Build two spec-conformant profiles with DIFFERENT string tables so that
+	// after merge the destination string table differs from the source's
+	// original indices, which is what triggers the stale-KeyStrindex bug.
+	buildProfile := func(periodType, periodUnit, serviceName, extraKey, extraVal string) Profiles {
+		p := NewProfiles()
+		// Sentinel entries at index 0 (required by spec).
+		p.Dictionary().StringTable().Append("")
+		p.Dictionary().AttributeTable().AppendEmpty()
+		p.Dictionary().StackTable().AppendEmpty()
+		p.Dictionary().LocationTable().AppendEmpty()
+		p.Dictionary().FunctionTable().AppendEmpty()
+		p.Dictionary().MappingTable().AppendEmpty()
+		p.Dictionary().LinkTable().AppendEmpty()
+
+		p.Dictionary().StringTable().Append(periodType) // 1
+		p.Dictionary().StringTable().Append(periodUnit) // 2
+
+		rp := p.ResourceProfiles().AppendEmpty()
+		rp.Resource().Attributes().PutStr("service.name", serviceName)
+		rp.Resource().Attributes().PutStr(extraKey, extraVal)
+
+		sp := rp.ScopeProfiles().AppendEmpty()
+		sp.Scope().Attributes().PutStr("scope.version", "v1")
+
+		pr := sp.Profiles().AppendEmpty()
+		pr.PeriodType().SetTypeStrindex(1)
+		pr.PeriodType().SetUnitStrindex(2)
+		return p
+	}
+
+	profileA := buildProfile("cpu", "nanoseconds", "service-A", "deployment", "prod")
+	profileB := buildProfile("memory", "bytes", "service-B", "host.name", "host-1")
+
+	// Record original attributes before any serialization.
+	origResA := attrMapToStrings(profileA.ResourceProfiles().At(0).Resource().Attributes())
+	origResB := attrMapToStrings(profileB.ResourceProfiles().At(0).Resource().Attributes())
+	origScopeA := attrMapToStrings(profileA.ResourceProfiles().At(0).ScopeProfiles().At(0).Scope().Attributes())
+	origScopeB := attrMapToStrings(profileB.ResourceProfiles().At(0).ScopeProfiles().At(0).Scope().Attributes())
+
+	// Marshal → Unmarshal (simulates Kafka write/read).
+	bytesA, err := marshaler.MarshalProfiles(profileA)
+	require.NoError(t, err)
+	bytesB, err := marshaler.MarshalProfiles(profileB)
+	require.NoError(t, err)
+
+	dstProfiles, err := unmarshaler.UnmarshalProfiles(bytesA)
+	require.NoError(t, err)
+	srcProfiles, err := unmarshaler.UnmarshalProfiles(bytesB)
+	require.NoError(t, err)
+
+	// MergeTo — merges src into dst, which changes the dictionary.
+	require.NoError(t, srcProfiles.MergeTo(dstProfiles))
+
+	// Re-marshal the merged result.
+	mergedBytes, err := marshaler.MarshalProfiles(dstProfiles)
+	require.NoError(t, err)
+
+	// Re-unmarshal (simulates consumer reading from Kafka).
+	finalProfiles, err := unmarshaler.UnmarshalProfiles(mergedBytes)
+	require.NoError(t, err)
+
+	// After the full round-trip, resource and scope attributes must match.
+	require.Equal(t, 2, finalProfiles.ResourceProfiles().Len(),
+		"merged profiles should have 2 resource profiles")
+
+	finalResA := attrMapToStrings(finalProfiles.ResourceProfiles().At(0).Resource().Attributes())
+	finalResB := attrMapToStrings(finalProfiles.ResourceProfiles().At(1).Resource().Attributes())
+	assert.Equal(t, origResA, finalResA,
+		"first resource attributes corrupted after round-trip")
+	assert.Equal(t, origResB, finalResB,
+		"second resource attributes corrupted after round-trip")
+
+	finalScopeA := attrMapToStrings(finalProfiles.ResourceProfiles().At(0).ScopeProfiles().At(0).Scope().Attributes())
+	finalScopeB := attrMapToStrings(finalProfiles.ResourceProfiles().At(1).ScopeProfiles().At(0).Scope().Attributes())
+	assert.Equal(t, origScopeA, finalScopeA,
+		"first scope attributes corrupted after round-trip")
+	assert.Equal(t, origScopeB, finalScopeB,
+		"second scope attributes corrupted after round-trip")
+}
+
+func attrMapToStrings(m pcommon.Map) map[string]string {
+	result := make(map[string]string, m.Len())
+	m.Range(func(k string, v pcommon.Value) bool {
+		result[k] = v.AsString()
+		return true
+	})
+	return result
 }

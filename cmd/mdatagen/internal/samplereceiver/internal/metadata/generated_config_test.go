@@ -21,7 +21,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
@@ -72,14 +72,15 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					MapResourceAttr:                  ResourceAttributeConfig{Enabled: true},
-					OptionalResourceAttr:             ResourceAttributeConfig{Enabled: true},
-					SliceResourceAttr:                ResourceAttributeConfig{Enabled: true},
-					StringEnumResourceAttr:           ResourceAttributeConfig{Enabled: true},
-					StringResourceAttr:               ResourceAttributeConfig{Enabled: true},
-					StringResourceAttrDisableWarning: ResourceAttributeConfig{Enabled: true},
-					StringResourceAttrRemoveWarning:  ResourceAttributeConfig{Enabled: true},
-					StringResourceAttrToBeRemoved:    ResourceAttributeConfig{Enabled: true},
+					MapResourceAttr:                       ResourceAttributeConfig{Enabled: true},
+					OptionalResourceAttr:                  ResourceAttributeConfig{Enabled: true},
+					SliceResourceAttr:                     ResourceAttributeConfig{Enabled: true},
+					StringEnumResourceAttr:                ResourceAttributeConfig{Enabled: true},
+					StringResourceAttr:                    ResourceAttributeConfig{Enabled: true},
+					StringResourceAttrDisableWarning:      ResourceAttributeConfig{Enabled: true},
+					StringResourceAttrRemoveWarning:       ResourceAttributeConfig{Enabled: true},
+					StringResourceAttrToBeRemoved:         ResourceAttributeConfig{Enabled: true},
+					StringResourceDisabledAttrToBeRemoved: ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -132,14 +133,15 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					MapResourceAttr:                  ResourceAttributeConfig{Enabled: false},
-					OptionalResourceAttr:             ResourceAttributeConfig{Enabled: false},
-					SliceResourceAttr:                ResourceAttributeConfig{Enabled: false},
-					StringEnumResourceAttr:           ResourceAttributeConfig{Enabled: false},
-					StringResourceAttr:               ResourceAttributeConfig{Enabled: false},
-					StringResourceAttrDisableWarning: ResourceAttributeConfig{Enabled: false},
-					StringResourceAttrRemoveWarning:  ResourceAttributeConfig{Enabled: false},
-					StringResourceAttrToBeRemoved:    ResourceAttributeConfig{Enabled: false},
+					MapResourceAttr:                       ResourceAttributeConfig{Enabled: false},
+					OptionalResourceAttr:                  ResourceAttributeConfig{Enabled: false},
+					SliceResourceAttr:                     ResourceAttributeConfig{Enabled: false},
+					StringEnumResourceAttr:                ResourceAttributeConfig{Enabled: false},
+					StringResourceAttr:                    ResourceAttributeConfig{Enabled: false},
+					StringResourceAttrDisableWarning:      ResourceAttributeConfig{Enabled: false},
+					StringResourceAttrRemoveWarning:       ResourceAttributeConfig{Enabled: false},
+					StringResourceAttrToBeRemoved:         ResourceAttributeConfig{Enabled: false},
+					StringResourceDisabledAttrToBeRemoved: ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -158,7 +160,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }
@@ -185,27 +187,29 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				MapResourceAttr:                  ResourceAttributeConfig{Enabled: true},
-				OptionalResourceAttr:             ResourceAttributeConfig{Enabled: true},
-				SliceResourceAttr:                ResourceAttributeConfig{Enabled: true},
-				StringEnumResourceAttr:           ResourceAttributeConfig{Enabled: true},
-				StringResourceAttr:               ResourceAttributeConfig{Enabled: true},
-				StringResourceAttrDisableWarning: ResourceAttributeConfig{Enabled: true},
-				StringResourceAttrRemoveWarning:  ResourceAttributeConfig{Enabled: true},
-				StringResourceAttrToBeRemoved:    ResourceAttributeConfig{Enabled: true},
+				MapResourceAttr:                       ResourceAttributeConfig{Enabled: true},
+				OptionalResourceAttr:                  ResourceAttributeConfig{Enabled: true},
+				SliceResourceAttr:                     ResourceAttributeConfig{Enabled: true},
+				StringEnumResourceAttr:                ResourceAttributeConfig{Enabled: true},
+				StringResourceAttr:                    ResourceAttributeConfig{Enabled: true},
+				StringResourceAttrDisableWarning:      ResourceAttributeConfig{Enabled: true},
+				StringResourceAttrRemoveWarning:       ResourceAttributeConfig{Enabled: true},
+				StringResourceAttrToBeRemoved:         ResourceAttributeConfig{Enabled: true},
+				StringResourceDisabledAttrToBeRemoved: ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				MapResourceAttr:                  ResourceAttributeConfig{Enabled: false},
-				OptionalResourceAttr:             ResourceAttributeConfig{Enabled: false},
-				SliceResourceAttr:                ResourceAttributeConfig{Enabled: false},
-				StringEnumResourceAttr:           ResourceAttributeConfig{Enabled: false},
-				StringResourceAttr:               ResourceAttributeConfig{Enabled: false},
-				StringResourceAttrDisableWarning: ResourceAttributeConfig{Enabled: false},
-				StringResourceAttrRemoveWarning:  ResourceAttributeConfig{Enabled: false},
-				StringResourceAttrToBeRemoved:    ResourceAttributeConfig{Enabled: false},
+				MapResourceAttr:                       ResourceAttributeConfig{Enabled: false},
+				OptionalResourceAttr:                  ResourceAttributeConfig{Enabled: false},
+				SliceResourceAttr:                     ResourceAttributeConfig{Enabled: false},
+				StringEnumResourceAttr:                ResourceAttributeConfig{Enabled: false},
+				StringResourceAttr:                    ResourceAttributeConfig{Enabled: false},
+				StringResourceAttrDisableWarning:      ResourceAttributeConfig{Enabled: false},
+				StringResourceAttrRemoveWarning:       ResourceAttributeConfig{Enabled: false},
+				StringResourceAttrToBeRemoved:         ResourceAttributeConfig{Enabled: false},
+				StringResourceDisabledAttrToBeRemoved: ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

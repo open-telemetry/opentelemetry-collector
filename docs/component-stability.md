@@ -215,7 +215,7 @@ The internal telemetry of a stable pipeline component should allow observing the
 
     - How much data is currently held by the component, and how much can be held if there is a fixed
         capacity.
-    
+
         This would typically be an UpDownCounter keeping track of the size of an internal queue, along
         with a gauge exposing the queue's capacity.
 
@@ -223,17 +223,17 @@ The internal telemetry of a stable pipeline component should allow observing the
 
     This could include spans for each operation of the component, or a histogram of end-to-end
     component latency.
-    
+
     The goal is to be able to easily pinpoint the source of latency in the Collector pipeline, so
     this should either:
     - only include time spent processing inside the component, or;
     - allow distinguishing this latency from that caused by an external service, or from time spent
         in downstream Collector components.
-    
+
     As an application of this, components which hold items in a queue should allow differentiating
     between time spent processing a batch of data and time where the batch is simply waiting in the
     queue.
-    
+
     If multiple spans are emitted for a given batch (before and after a queue for example), they
     should either belong to the same trace, or have span links between them, so that they can be
     correlated.
@@ -363,7 +363,7 @@ individual signals within a component.
 bar than having individual signals stable, as it represents a commitment that the component is
 production-ready, well-maintained, and has demonstrated real-world adoption.
 
-A component MAY have some signals at stable while the component itself is not yet graduated. 
+A component MAY have some signals at stable while the component itself is not yet graduated.
 Component graduation is optional but signals a stronger commitment to the end-user community.
 
 ### Requirements for component graduation

@@ -106,6 +106,10 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Equal(t, "[WARNING] `string.resource.attr_to_be_removed` should not be enabled: This resource_attribute is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
+			if tt.resAttrsSet == testDataSetAll {
+				assert.Equal(t, "[WARNING] `string.resource.disabled_attr_to_be_removed` should not be enabled: This resource_attribute is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
 			if tt.metricsSet != testDataSetReag {
 				assert.Equal(t, expectedWarnings, observedLogs.Len())
 			}
@@ -180,6 +184,7 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetStringResourceAttrDisableWarning("string.resource.attr_disable_warning-val")
 			rb.SetStringResourceAttrRemoveWarning("string.resource.attr_remove_warning-val")
 			rb.SetStringResourceAttrToBeRemoved("string.resource.attr_to_be_removed-val")
+			rb.SetStringResourceDisabledAttrToBeRemoved("string.resource.disabled_attr_to_be_removed-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {

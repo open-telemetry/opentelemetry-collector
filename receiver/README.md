@@ -2,7 +2,7 @@
 
 A receiver is how data gets into the OpenTelemetry Collector. Generally, a
 receiver accepts data in a specified format, translates it into the internal
-format and passes it to [processors](../processor/README.md) and [exporters](../exporter/README.md) defined 
+format and passes it to [processors](../processor/README.md) and [exporters](../exporter/README.md) defined
 in the applicable pipelines.
 
 This repository hosts the following receiver available in traces, metrics

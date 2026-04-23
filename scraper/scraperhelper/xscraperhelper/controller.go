@@ -127,7 +127,9 @@ func scrapeProfiles(c *controller.Controller[xscraper.Profiles], nextConsumer xc
 		if err != nil && !scrapererror.IsPartialScrapeError(err) {
 			continue
 		}
-		md.ResourceProfiles().MoveAndAppendTo(profiles.ResourceProfiles())
+		if mergeErr := md.MergeTo(profiles); mergeErr != nil {
+			continue
+		}
 	}
 
 	// TODO: Add proper receiver observability for profiles when receiverhelper supports it

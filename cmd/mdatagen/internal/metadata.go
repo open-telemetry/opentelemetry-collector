@@ -103,12 +103,8 @@ func (md *Metadata) Validate() error {
 		errs = errors.Join(errs, err)
 	}
 
-	if md.Parent != "" {
-		if md.Status != nil {
-			// status is not required for subcomponents.
-			errs = errors.Join(errs, errors.New("status must be empty for subcomponents"))
-		}
-	} else {
+	// status is optional for subcomponents but required for components.
+	if md.Parent == "" || md.Status != nil {
 		errs = errors.Join(errs, md.Status.Validate())
 	}
 
@@ -440,6 +436,10 @@ func (md *Metadata) validateFeatureGates() error {
 		// Validate that stable/deprecated gates should have to_version
 		if (gate.Stage == FeatureGateStageStable || gate.Stage == FeatureGateStageDeprecated) && gate.ToVersion == "" {
 			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": to_version is required for %v stage gates`, gate.ID, gate.Stage))
+		}
+		// Any gate other than stable/deprecated shouldn't have to_version
+		if gate.Stage != FeatureGateStageStable && gate.Stage != FeatureGateStageDeprecated && gate.ToVersion != "" {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": to_version is not supported for the %v stage`, gate.ID, gate.Stage))
 		}
 	}
 	return errs

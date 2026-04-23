@@ -38,6 +38,14 @@ mentioned above, this audience also cares about Go API compatibility of Go modul
 impact to end-users. See the [Breaking changes](docs/coding-guidelines.md#breaking-changes) section
 in the coding guidelines for more information on how to perform changes affecting this audience.
 
+The [`docs/rfcs`](./docs/rfcs) area of the repository includes a number of internal design documents
+covering important sub-projects, internal redesign, and coding guidelines. For example,
+
+- [Component interface patterns](./docs/rfcs/component-interfaces.md)
+- [Automatic component-level telemetry](./docs/rfcs/component-universal-telemetry.md)
+- [Environment variables in configuration](./docs/rfcs/env-vars.md)
+- [Optional configuration type](./docs/rfcs/optional-config-type.md)
+
 ### Collector library users
 
 A third audience uses the OpenTelemetry Collector as a library to build their own distributions or other projects based
@@ -63,7 +71,7 @@ Components refer to connectors, exporters, extensions, processors, and receivers
 * Provide a configuration structure which defines the configuration of the component
 * Provide the implementation that performs the component operation
 
-For more details on components, see the [Donating New Components](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#donating-new-components) document and the tutorial [Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) which provides a detailed example of building a component.
+For more details on components, see the [Donating New Components](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#donating-new-components) document and the tutorial [Building a Trace Receiver](https://opentelemetry.io/docs/collector/extend/custom-component/receiver/) which provides a detailed example of building a component.
 
 When adding a new component to the OpenTelemetry Collector, ensure that any configuration structs used by the component include fields with the `configopaque.String` type for sensitive data. This ensures that the data is masked when serialized to prevent accidental exposure.
 
@@ -144,6 +152,16 @@ Example rerun comment:
 /rerun
 ```
 
+### Approving Workflows for Outside Contributors
+
+Members of the [triagers](./README.md#triagers), [approvers](./README.md#approvers) or [maintainers](./README.md#maintainers) teams can approve pending GitHub Actions workflow runs for outside contributors by commenting `/workflow-approve` on the pull request. This will approve all workflow runs with an `action_required` conclusion for the PR's latest commit.
+
+Example approve comment:
+
+```
+/workflow-approve
+```
+
 ## How to contribute
 
 ### Before you start
@@ -208,10 +226,10 @@ section of the general project contributing guide.
 
 Working with the project sources requires the following tools:
 
-1. [git](https://git-scm.com/)
-2. [go](https://golang.org/) (version 1.25 and up)
-3. [make](https://www.gnu.org/software/make/)
-4. [docker](https://www.docker.com/)
+1. [Git](https://git-scm.com/)
+2. [Go](https://go.dev/) (version 1.25 and up)
+3. [GNU Make](https://www.gnu.org/software/make/)
+4. [Docker](https://www.docker.com/)
 
 ## Repository Setup
 
@@ -383,8 +401,8 @@ Build fails due to dependency issues, e.g.
 
 ```sh
 go: github.com/golangci/golangci-lint@v1.31.0 requires
-	github.com/tommy-muehle/go-mnd@v1.3.1-0.20200224220436-e6f9a994e8fa: invalid pseudo-version: git fetch --unshallow -f origin in /root/go/pkg/mod/cache/vcs/053b1e985f53e43f78db2b3feaeb7e40a2ae482c92734ba3982ca463d5bf19ce: exit status 128:
-	fatal: git fetch-pack: expected shallow list
+  github.com/tommy-muehle/go-mnd@v1.3.1-0.20200224220436-e6f9a994e8fa: invalid pseudo-version: git fetch --unshallow -f origin in /root/go/pkg/mod/cache/vcs/053b1e985f53e43f78db2b3feaeb7e40a2ae482c92734ba3982ca463d5bf19ce: exit status 128:
+  fatal: git fetch-pack: expected shallow list
  ```
 
 `go env GOPROXY` should return `https://proxy.golang.org,direct`. If it does not, set it as an environment variable:

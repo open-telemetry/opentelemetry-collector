@@ -27,7 +27,7 @@ The following settings are required:
 - `endpoint` (no default): The target base URL to send data to (e.g.: https://example.com:4318).
   To send each signal a corresponding path will be added to this base URL, i.e. for traces
   "/v1/traces" will appended, for metrics "/v1/metrics" will be appended, for logs
-  "/v1/logs" will be appended. 
+  "/v1/logs" will be appended.
 
 The following settings can be optionally configured:
 
