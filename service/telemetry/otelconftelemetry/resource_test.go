@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service/telemetry"
@@ -46,5 +47,38 @@ func TestCreateResource(t *testing.T) {
 			"service.name":    "custom-service",
 			"service.version": "0.1.0",
 		}, raw)
+	})
+}
+
+func TestAttributeValueString(t *testing.T) {
+	t.Run("string attribute", func(t *testing.T) {
+		val := attribute.StringValue("test-value")
+		result, err := attributeValueString("test.attr", val)
+		require.NoError(t, err)
+		assert.Equal(t, "test-value", result)
+	})
+
+	t.Run("int64 attribute returns error", func(t *testing.T) {
+		val := attribute.Int64Value(42)
+		result, err := attributeValueString("test.attr", val)
+		require.Error(t, err)
+		assert.Empty(t, result)
+		assert.Contains(t, err.Error(), `attribute "test.attr": expected string, got INT64`)
+	})
+
+	t.Run("bool attribute returns error", func(t *testing.T) {
+		val := attribute.BoolValue(true)
+		result, err := attributeValueString("test.attr", val)
+		require.Error(t, err)
+		assert.Empty(t, result)
+		assert.Contains(t, err.Error(), `attribute "test.attr": expected string, got BOOL`)
+	})
+
+	t.Run("float64 attribute returns error", func(t *testing.T) {
+		val := attribute.Float64Value(3.14)
+		result, err := attributeValueString("test.attr", val)
+		require.Error(t, err)
+		assert.Empty(t, result)
+		assert.Contains(t, err.Error(), `attribute "test.attr": expected string, got FLOAT64`)
 	})
 }

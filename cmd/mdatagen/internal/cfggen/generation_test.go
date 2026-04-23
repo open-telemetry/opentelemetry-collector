@@ -898,6 +898,103 @@ func TestExtractDefs_EmptyInput(t *testing.T) {
 	require.Empty(t, result)
 }
 
+func TestExtractDefs_AllOfInternalRef(t *testing.T) {
+	// Mirrors the schema:
+	//   type: object
+	//   $defs:
+	//     embedded_type:
+	//       type: object
+	//       properties:
+	//         field: {type: string}
+	//   allOf:
+	//     - $ref: embedded_type
+	//
+	// After resolver runs, the allOf entry carries ResolvedFrom: "embedded_type".
+	// ExtractDefs must emit "embedded_type" so that EmbeddedType struct is generated.
+	embeddedType := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"field": {Type: "string"},
+		},
+		ResolvedFrom: "embedded_type",
+	}
+	md := &ConfigMetadata{
+		Type:  "object",
+		AllOf: []*ConfigMetadata{embeddedType},
+	}
+
+	result := ExtractDefs(md)
+	require.Len(t, result, 1)
+	require.Contains(t, result, "embedded_type")
+	require.Same(t, embeddedType, result["embedded_type"])
+}
+
+func TestExtractDefs_AllOfMultipleInternalRefs(t *testing.T) {
+	// Two allOf entries, each resolving from a distinct internal definition.
+	typeA := &ConfigMetadata{
+		Type:         "object",
+		ResolvedFrom: "type_a",
+		Properties:   map[string]*ConfigMetadata{"x": {Type: "string"}},
+	}
+	typeB := &ConfigMetadata{
+		Type:         "object",
+		ResolvedFrom: "type_b",
+		Properties:   map[string]*ConfigMetadata{"y": {Type: "integer"}},
+	}
+	md := &ConfigMetadata{
+		Type:  "object",
+		AllOf: []*ConfigMetadata{typeA, typeB},
+	}
+
+	result := ExtractDefs(md)
+	require.Len(t, result, 2)
+	require.Same(t, typeA, result["type_a"])
+	require.Same(t, typeB, result["type_b"])
+}
+
+func TestExtractDefs_AllOfExternalRefSkipped(t *testing.T) {
+	// An allOf entry that resolved from an external reference must NOT be emitted
+	// (there is nothing to generate for it locally).
+	md := &ConfigMetadata{
+		Type: "object",
+		AllOf: []*ConfigMetadata{
+			{
+				Type:         "object",
+				ResolvedFrom: "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
+				Properties:   map[string]*ConfigMetadata{"timeout": {Type: "string"}},
+			},
+		},
+	}
+
+	result := ExtractDefs(md)
+	require.Empty(t, result)
+}
+
+func TestExtractDefs_AllOfInternalRefWithNestedProperties(t *testing.T) {
+	// An allOf-referenced type that itself contains an inline nested object must
+	// also emit the nested type definition.
+	embedded := &ConfigMetadata{
+		Type:         "object",
+		ResolvedFrom: "embedded_type",
+		Properties: map[string]*ConfigMetadata{
+			"nested": {
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"value": {Type: "string"},
+				},
+			},
+		},
+	}
+	md := &ConfigMetadata{
+		Type:  "object",
+		AllOf: []*ConfigMetadata{embedded},
+	}
+
+	result := ExtractDefs(md)
+	require.Contains(t, result, "embedded_type")
+	require.Contains(t, result, "nested")
+}
+
 func TestNewCfgFns_ExtractImports(t *testing.T) {
 	fns := NewCfgFns("go.opentelemetry.io/collector", "go.opentelemetry.io/collector/comp")
 
@@ -953,6 +1050,14 @@ func TestNewCfgFns_PublicType(t *testing.T) {
 
 	require.Equal(t, "MyType", publicType("my_type"))
 	require.Equal(t, "component.Config", publicType("go.opentelemetry.io/collector/component.Config"))
+}
+
+func TestNewCfgFns_EmbeddedName(t *testing.T) {
+	fns := NewCfgFns("", "")
+	embeddedName := fns["embeddedName"].(func(string) string)
+
+	require.Equal(t, "MyType", embeddedName("my_type"))
+	require.Panics(t, func() { embeddedName("") })
 }
 
 func TestWithCfgFns(t *testing.T) {
@@ -1712,6 +1817,18 @@ func TestFormatDefaultValue_ResolvedReferenceWithDefaults(t *testing.T) {
 	)
 }
 
+func TestFormatDefaultValue_ResolvedReferenceWithoutDefaults(t *testing.T) {
+	// An external ref with no property defaults must not generate a NewDefault... call.
+	md := &ConfigMetadata{
+		Type:         "object",
+		ResolvedFrom: "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
+	}
+
+	require.Empty(t,
+		FormatDefaultValue(md, "client", map[string]any{}, "go.opentelemetry.io/collector", "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"),
+	)
+}
+
 func TestHasDefaultValue(t *testing.T) {
 	require.False(t, hasDefaultValue(&ConfigMetadata{Type: "object"}))
 	require.True(t, hasDefaultValue(&ConfigMetadata{Type: "string", Default: "value"}))
@@ -1726,6 +1843,11 @@ func TestHasDefaultValue(t *testing.T) {
 		AllOf: []*ConfigMetadata{
 			{Type: "object", Default: map[string]any{"enabled": true}},
 		},
+	}))
+	// External ref without any property defaults must not be treated as having defaults.
+	require.False(t, hasDefaultValue(&ConfigMetadata{
+		Type:         "object",
+		ResolvedFrom: "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
 	}))
 }
 

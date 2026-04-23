@@ -193,6 +193,27 @@ func (c *Config) Validate() error {
 			cfg.{{ $propName | publicVar }}{{ $expr }}
 		{{- end }}
 	{{- end }}
+    {{- range $schema := .AllOf }}
+        {{- $name := embeddedName $schema.ResolvedFrom }}
+        {{- $defaultValue := formatDefaultValue $schema $name $schema.Default }}
+        {{- if $defaultValue }}
+            cfg.{{ $name }} = {{ $defaultValue }}
+        {{- end }}
+        {{- $exprs := mapCustomDefaults $schema $schema.Default }}
+        {{- range $expr := $exprs }}
+            cfg.{{ $name }}{{ $expr }}
+        {{- end }}
+    {{- end }}
+    {{- range $propName, $prop := .Properties }}
+        {{- $defaultValue := formatDefaultValue $prop $propName $prop.Default }}
+        {{- if $defaultValue }}
+        cfg.{{ $propName | publicVar }} = {{ $defaultValue }}
+        {{- end }}
+        {{- $exprs := mapCustomDefaults $prop $prop.Default }}
+        {{- range $expr := $exprs }}
+            cfg.{{ $propName | publicVar }}{{ $expr }}
+        {{- end }}
+    {{- end }}
 {{- end }}
 
 func createDefaultConfig() component.Config {

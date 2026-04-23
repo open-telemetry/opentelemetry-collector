@@ -9,6 +9,7 @@ import (
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -21,6 +22,10 @@ func createMeterProvider(
 	componentConfig component.Config,
 ) (telemetry.MeterProvider, error) {
 	cfg := componentConfig.(*Config)
+	if cfg.Metrics.MigratedFromV02 {
+		set.Logger.Warn("Telemetry metrics configuration is using the deprecated v0.2.0 Declarative Configuration format, please migrate to the v0.3.0 format",
+			zap.String("url", "https://opentelemetry.io/docs/specs/otel/configuration/#declarative-configuration"))
+	}
 	if cfg.Metrics.Level == configtelemetry.LevelNone {
 		set.Logger.Info("Internal metrics telemetry disabled")
 		return noopMeterProvider{MeterProvider: noopmetric.NewMeterProvider()}, nil
