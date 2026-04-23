@@ -47,14 +47,14 @@ var (
 )
 
 type profilesRequest struct {
-	pd         pprofile.Profiles
-	cachedSize int
+	pd          pprofile.Profiles
+	cachedSizes map[request.SizerType]int
 }
 
 func newProfilesRequest(pd pprofile.Profiles) Request {
 	return &profilesRequest{
-		pd:         pd,
-		cachedSize: -1,
+		pd:          pd,
+		cachedSizes: make(map[request.SizerType]int),
 	}
 }
 
@@ -112,15 +112,17 @@ func (req *profilesRequest) ItemsCount() int {
 	return req.pd.SampleCount()
 }
 
-func (req *profilesRequest) size(sizer sizer.ProfilesSizer) int {
-	if req.cachedSize == -1 {
-		req.cachedSize = sizer.ProfilesSize(req.pd)
+func (req *profilesRequest) size(szt request.SizerType, sz sizer.ProfilesSizer) int {
+	if size, ok := req.cachedSizes[szt]; ok {
+		return size
 	}
-	return req.cachedSize
+	size := sz.ProfilesSize(req.pd)
+	req.cachedSizes[szt] = size
+	return size
 }
 
-func (req *profilesRequest) setCachedSize(size int) {
-	req.cachedSize = size
+func (req *profilesRequest) setCachedSize(szt request.SizerType, size int) {
+	req.cachedSizes[szt] = size
 }
 
 func (req *profilesRequest) BytesSize() int {

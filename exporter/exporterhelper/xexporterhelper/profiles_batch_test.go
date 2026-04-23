@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -20,7 +21,7 @@ import (
 func TestMergeProfiles(t *testing.T) {
 	pr1 := newProfilesRequest(testdata.GenerateProfiles(2))
 	pr2 := newProfilesRequest(testdata.GenerateProfiles(3))
-	res, err := pr1.MergeSplit(context.Background(), 0, exporterhelper.RequestSizerTypeItems, pr2)
+	res, err := pr1.MergeSplit(context.Background(), map[request.SizerType]int64{request.SizerTypeItems: 0}, pr2)
 	require.NoError(t, err)
 	assert.Len(t, res, 1)
 	assert.Equal(t, 5, res[0].ItemsCount())
@@ -28,7 +29,7 @@ func TestMergeProfiles(t *testing.T) {
 
 func TestMergeProfilesInvalidInput(t *testing.T) {
 	pr2 := newProfilesRequest(testdata.GenerateProfiles(3))
-	_, err := pr2.MergeSplit(context.Background(), 0, exporterhelper.RequestSizerTypeItems, &requesttest.FakeRequest{Items: 1})
+	_, err := pr2.MergeSplit(context.Background(), map[request.SizerType]int64{request.SizerTypeItems: 0}, &requesttest.FakeRequest{Items: 1})
 	require.Error(t, err)
 }
 
@@ -127,7 +128,7 @@ func TestMergeSplitProfiles(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := tt.pr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.pr2)
+			res, err := tt.pr1.MergeSplit(context.Background(), map[request.SizerType]int64{request.SizerType(tt.szt): int64(tt.maxSize)}, tt.pr2)
 			require.NoError(t, err)
 			require.Len(t, res, len(tt.expected))
 			for i, r := range res {
@@ -292,7 +293,7 @@ func TestMergeSplitProfilesBasedOnByteSize(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := tt.pr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.pr2)
+			res, err := tt.pr1.MergeSplit(context.Background(), map[request.SizerType]int64{request.SizerType(tt.szt): int64(tt.maxSize)}, tt.pr2)
 			require.NoError(t, err)
 			require.Len(t, res, len(tt.expected))
 			for i, r := range res {
@@ -316,7 +317,7 @@ func TestMergeSplitManySmallProfiles(t *testing.T) {
 	merged := []Request{newProfilesRequest(testdata.GenerateProfiles(1))}
 	for range 1000 {
 		pr2 := newProfilesRequest(testdata.GenerateProfiles(10))
-		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, exporterhelper.RequestSizerTypeItems, pr2)
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), map[request.SizerType]int64{request.SizerTypeItems: 10000}, pr2)
 		merged = append(merged[0:len(merged)-1], res...)
 	}
 	assert.Len(t, merged, 2)
@@ -331,8 +332,7 @@ func BenchmarkSplittingBasedOnByteSizeManySmallProfiles(b *testing.B) {
 			pr2 := newProfilesRequest(testdata.GenerateProfiles(10))
 			res, _ := merged[len(merged)-1].MergeSplit(
 				context.Background(),
-				profilesMarshaler.ProfilesSize(testdata.GenerateProfiles(11000)),
-				exporterhelper.RequestSizerTypeBytes,
+				map[request.SizerType]int64{request.SizerTypeBytes: int64(profilesMarshaler.ProfilesSize(testdata.GenerateProfiles(11000)))},
 				pr2,
 			)
 			merged = append(merged[0:len(merged)-1], res...)
@@ -350,8 +350,7 @@ func BenchmarkSplittingBasedOnByteSizeManyProfilesSlightlyAboveLimit(b *testing.
 			pr2 := newProfilesRequest(testdata.GenerateProfiles(10001))
 			res, _ := merged[len(merged)-1].MergeSplit(
 				context.Background(),
-				profilesMarshaler.ProfilesSize(testdata.GenerateProfiles(10000)),
-				exporterhelper.RequestSizerTypeBytes,
+				map[request.SizerType]int64{request.SizerTypeBytes: int64(profilesMarshaler.ProfilesSize(testdata.GenerateProfiles(10000)))},
 				pr2,
 			)
 			assert.Len(b, res, 2)
@@ -369,8 +368,7 @@ func BenchmarkSplittingBasedOnByteSizeHugeProfiles(b *testing.B) {
 		pr2 := newProfilesRequest(testdata.GenerateProfiles(100000))
 		res, _ := merged[len(merged)-1].MergeSplit(
 			context.Background(),
-			profilesMarshaler.ProfilesSize(testdata.GenerateProfiles(10010)),
-			exporterhelper.RequestSizerTypeBytes,
+			map[request.SizerType]int64{request.SizerTypeBytes: int64(profilesMarshaler.ProfilesSize(testdata.GenerateProfiles(10010)))},
 			pr2,
 		)
 		merged = append(merged[0:len(merged)-1], res...)

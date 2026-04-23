@@ -7,8 +7,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
@@ -17,15 +18,17 @@ import (
 //
 // Following the OTLP 1.7.0 upgrade, this is currently a noop.
 // See https://github.com/open-telemetry/opentelemetry-collector/issues/13106
-func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt exporterhelper.RequestSizerType, r2 Request) ([]Request, error) {
-	var sz sizer.ProfilesSizer
-	switch szt {
-	case exporterhelper.RequestSizerTypeItems:
-		sz = &sizer.ProfilesCountSizer{}
-	case exporterhelper.RequestSizerTypeBytes:
-		sz = &sizer.ProfilesBytesSizer{}
-	default:
-		return nil, errors.New("unknown sizer type")
+func (req *profilesRequest) MergeSplit(_ context.Context, maxSizePerSizer map[request.SizerType]int64, r2 request.Request) ([]request.Request, error) {
+	sizers := make(map[request.SizerType]sizer.ProfilesSizer)
+	for szt := range maxSizePerSizer {
+		switch szt {
+		case request.SizerTypeItems:
+			sizers[szt] = &sizer.ProfilesCountSizer{}
+		case request.SizerTypeBytes:
+			sizers[szt] = &sizer.ProfilesBytesSizer{}
+		default:
+			return nil, errors.New("unknown sizer type")
+		}
 	}
 
 	if r2 != nil && r2.ItemsCount() > 0 {
@@ -33,38 +36,71 @@ func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt expor
 		if !ok {
 			return nil, errors.New("invalid input type")
 		}
-		err := req2.mergeTo(req, sz)
+		err := req2.mergeTo(req, sizers)
 		if err != nil {
 			return nil, fmt.Errorf("failed merging profiles; %w", err)
 		}
 	}
 
-	// If no limit we can simply merge the new request into the current and return.
-	if maxSize == 0 {
-		return []Request{req}, nil
+	// If no limits we can simply merge the new request into the current and return.
+	if len(maxSizePerSizer) == 0 {
+		return []request.Request{req}, nil
 	}
-	return req.split(maxSize, sz)
+
+	return req.split(maxSizePerSizer, sizers)
 }
 
-func (req *profilesRequest) mergeTo(dst *profilesRequest, sz sizer.ProfilesSizer) error {
-	if sz != nil {
-		dst.setCachedSize(dst.size(sz) + req.size(sz))
-		req.setCachedSize(0)
+func (req *profilesRequest) mergeTo(dst *profilesRequest, sizers map[request.SizerType]sizer.ProfilesSizer) error {
+	for szt, sz := range sizers {
+		dst.setCachedSize(szt, dst.size(szt, sz)+req.size(szt, sz))
+		req.setCachedSize(szt, 0)
 	}
 	return req.pd.MergeTo(dst.pd)
 }
 
-func (req *profilesRequest) split(maxSize int, sz sizer.ProfilesSizer) ([]Request, error) {
-	var res []Request
-	for req.size(sz) > maxSize {
-		pd, rmSize := extractProfiles(req.pd, maxSize, sz)
-		if pd.SampleCount() == 0 {
-			return res, fmt.Errorf("one sample size is greater than max size, dropping items: %d", req.pd.SampleCount())
+func (req *profilesRequest) split(maxSizePerSizer map[request.SizerType]int64, sizers map[request.SizerType]sizer.ProfilesSizer) ([]request.Request, error) {
+	var res []request.Request
+	for {
+		if req.pd.SampleCount() == 0 {
+			break
 		}
-		req.setCachedSize(req.size(sz) - rmSize)
+
+		pd := req.pd
+		isInitial := true
+		exceededAny := false
+		sortedSzt := getSortedSizerTypes(maxSizePerSizer)
+
+		for _, szt := range sortedSzt {
+			maxSize := maxSizePerSizer[szt]
+			sz := sizers[szt]
+			if maxSize > 0 && int64(sz.ProfilesSize(pd)) > maxSize {
+				exceededAny = true
+				pdNew, _ := extractProfiles(pd, int(maxSize), sz)
+				if pdNew.SampleCount() == 0 {
+					return res, fmt.Errorf("one sample size is greater than max size, dropping items: %d", pd.SampleCount())
+				}
+				
+				if isInitial {
+					isInitial = false
+				} else {
+					// Prepend remainder to req.pd to maintain order!
+					newReqPd := pprofile.NewProfiles()
+					pd.ResourceProfiles().MoveAndAppendTo(newReqPd.ResourceProfiles())
+					req.pd.ResourceProfiles().MoveAndAppendTo(newReqPd.ResourceProfiles())
+					req.pd = newReqPd
+				}
+				
+				pd = pdNew
+			}
+		}
+
+		if !exceededAny {
+			break
+		}
+
+		req.cachedSizes = make(map[request.SizerType]int)
 		res = append(res, newProfilesRequest(pd))
 	}
-
 	res = append(res, req)
 	return res, nil
 }
@@ -174,4 +210,15 @@ func extractScopeProfiles(srcSS pprofile.ScopeProfiles, capacity int, sz sizer.P
 		return true
 	})
 	return destSS, removedSize
+}
+
+func getSortedSizerTypes[T any](m map[request.SizerType]T) []request.SizerType {
+	keys := make([]request.SizerType, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i].String() < keys[j].String()
+	})
+	return keys
 }
