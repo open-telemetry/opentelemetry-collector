@@ -7,7 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
+	"sort"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
@@ -56,28 +56,45 @@ func (req *logsRequest) mergeTo(dst *logsRequest, sizers map[request.SizerType]s
 func (req *logsRequest) split(limits map[request.SizerType]int64, sizers map[request.SizerType]sizer.LogsSizer) ([]request.Request, error) {
 	var res []request.Request
 	for {
-		exceeded := false
-		for szt, limit := range limits {
-			sz := sizers[szt]
-			if limit > 0 && int64(req.size(szt, sz)) > limit {
-				exceeded = true
-				break
-			}
-		}
-		if !exceeded {
+		if req.ld.LogRecordCount() == 0 {
 			break
 		}
 
-		intLimits := make(map[request.SizerType]int)
-		for szt, limit := range limits {
-			intLimits[szt] = int(limit)
+		ld := req.ld
+		isInitial := true
+		exceededAny := false
+		sortedSzt := getSortedSizerTypes(limits)
+
+		for _, szt := range sortedSzt {
+			limit := limits[szt]
+			sz := sizers[szt]
+			if limit > 0 && int64(sz.LogsSize(ld)) > limit {
+				exceededAny = true
+				ldNew, _ := extractLogs(ld, int(limit), sz)
+				if ldNew.LogRecordCount() == 0 {
+					return res, fmt.Errorf("one log record size is greater than max size, dropping items")
+				}
+				
+				if isInitial {
+					// ld was req.ld. Remainder is already in req.ld due to in-place modification by extractLogs.
+					isInitial = false
+				} else {
+					// ld was not req.ld. Remainder is in ld, and we must prepend it to req.ld to maintain order.
+					newReqLd := plog.NewLogs()
+					ld.ResourceLogs().MoveAndAppendTo(newReqLd.ResourceLogs())
+					req.ld.ResourceLogs().MoveAndAppendTo(newReqLd.ResourceLogs())
+					req.ld = newReqLd
+				}
+				
+				ld = ldNew
+			}
 		}
 
-		ld, _ := extractLogs(req.ld, intLimits, sizers)
-		if ld.LogRecordCount() == 0 {
-			return res, fmt.Errorf("one log record size is greater than max size, dropping items")
+		if !exceededAny {
+			break
 		}
-		req.cachedSizes = nil
+
+		req.cachedSizes = make(map[request.SizerType]int)
 		res = append(res, newLogsRequest(ld))
 	}
 	res = append(res, req)
@@ -85,181 +102,113 @@ func (req *logsRequest) split(limits map[request.SizerType]int64, sizers map[req
 }
 
 // extractLogs extracts logs from the input logs and returns a new logs with the specified number of log records.
-func extractLogs(srcLogs plog.Logs, limits map[request.SizerType]int, sizers map[request.SizerType]sizer.LogsSizer) (plog.Logs, map[request.SizerType]int) {
+func extractLogs(srcLogs plog.Logs, capacity int, sz sizer.LogsSizer) (plog.Logs, int) {
 	destLogs := plog.NewLogs()
-	capacityLeft := make(map[request.SizerType]int)
-	removedSizes := make(map[request.SizerType]int)
-
-	for szt, limit := range limits {
-		sz := sizers[szt]
-		if limit == 0 {
-			capacityLeft[szt] = math.MaxInt
-		} else {
-			capacityLeft[szt] = limit - sz.LogsSize(destLogs)
-		}
-		removedSizes[szt] = 0
-	}
-
+	capacityLeft := capacity - sz.LogsSize(destLogs)
+	removedSize := 0
 	srcLogs.ResourceLogs().RemoveIf(func(srcRL plog.ResourceLogs) bool {
-		for _, cap := range capacityLeft {
-			if cap <= 0 {
-				return false
-			}
+		// If the no more capacity left just return.
+		if capacityLeft == 0 {
+			return false
 		}
-
-		fitsAll := true
-		for szt, sz := range sizers {
-			rawRlSize := sz.ResourceLogsSize(srcRL)
-			rlSize := sz.DeltaSize(rawRlSize)
-			if rlSize > capacityLeft[szt] {
-				fitsAll = false
-				break
-			}
-		}
-
-		if !fitsAll {
-			extSrcRL, extRlSizes := extractResourceLogs(srcRL, capacityLeft, sizers)
-			
-			for szt, sz := range sizers {
-				extRlSize := extRlSizes[szt]
-				capacityLeft[szt] = 0
-				removedSizes[szt] += extRlSize
-				
-				rawRlSize := sz.ResourceLogsSize(srcRL)
-				rlSize := sz.DeltaSize(rawRlSize)
-				removedSizes[szt] += rlSize - rawRlSize - (sz.DeltaSize(rawRlSize-extRlSize) - (rawRlSize - extRlSize))
-			}
-			
+		rawRlSize := sz.ResourceLogsSize(srcRL)
+		rlSize := sz.DeltaSize(rawRlSize)
+		if rlSize > capacityLeft {
+			extSrcRL, extRlSize := extractResourceLogs(srcRL, capacityLeft, sz)
+			// This cannot make it to exactly 0 for the bytes,
+			// force it to be 0 since that is the stopping condition.
+			capacityLeft = 0
+			removedSize += extRlSize
+			// There represents the delta between the delta sizes.
+			removedSize += rlSize - rawRlSize - (sz.DeltaSize(rawRlSize-extRlSize) - (rawRlSize - extRlSize))
+			// It is possible that for the bytes scenario, the extracted field contains no log records.
+			// Do not add it to the destination if that is the case.
 			if extSrcRL.ScopeLogs().Len() > 0 {
 				extSrcRL.MoveTo(destLogs.ResourceLogs().AppendEmpty())
 			}
 			return extSrcRL.ScopeLogs().Len() != 0
 		}
-
-		for szt, sz := range sizers {
-			rawRlSize := sz.ResourceLogsSize(srcRL)
-			rlSize := sz.DeltaSize(rawRlSize)
-			capacityLeft[szt] -= rlSize
-			removedSizes[szt] += rlSize
-		}
+		capacityLeft -= rlSize
+		removedSize += rlSize
 		srcRL.MoveTo(destLogs.ResourceLogs().AppendEmpty())
 		return true
 	})
-	return destLogs, removedSizes
+	return destLogs, removedSize
 }
 
 // extractResourceLogs extracts resource logs and returns a new resource logs with the specified number of log records.
-func extractResourceLogs(srcRL plog.ResourceLogs, limits map[request.SizerType]int, sizers map[request.SizerType]sizer.LogsSizer) (plog.ResourceLogs, map[request.SizerType]int) {
+func extractResourceLogs(srcRL plog.ResourceLogs, capacity int, sz sizer.LogsSizer) (plog.ResourceLogs, int) {
 	destRL := plog.NewResourceLogs()
 	destRL.SetSchemaUrl(srcRL.SchemaUrl())
 	srcRL.Resource().CopyTo(destRL.Resource())
-	
-	capacityLeft := make(map[request.SizerType]int)
-	removedSizes := make(map[request.SizerType]int)
-	
-	for szt, limit := range limits {
-		sz := sizers[szt]
-		capacityLeft[szt] = limit - (sz.DeltaSize(limit) - limit) - sz.ResourceLogsSize(destRL)
-		removedSizes[szt] = 0
-	}
-
+	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
+	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.ResourceLogsSize(destRL)
+	removedSize := 0
 	srcRL.ScopeLogs().RemoveIf(func(srcSL plog.ScopeLogs) bool {
-		for _, cap := range capacityLeft {
-			if cap <= 0 {
-				return false
-			}
+		// If the no more capacity left just return.
+		if capacityLeft == 0 {
+			return false
 		}
-
-		fitsAll := true
-		for szt, sz := range sizers {
-			rawSlSize := sz.ScopeLogsSize(srcSL)
-			slSize := sz.DeltaSize(rawSlSize)
-			if slSize > capacityLeft[szt] {
-				fitsAll = false
-				break
-			}
-		}
-
-		if !fitsAll {
-			extSrcSL, extSlSizes := extractScopeLogs(srcSL, capacityLeft, sizers)
-			
-			for szt, sz := range sizers {
-				extSlSize := extSlSizes[szt]
-				capacityLeft[szt] = 0
-				removedSizes[szt] += extSlSize
-				
-				rawSlSize := sz.ScopeLogsSize(srcSL)
-				slSize := sz.DeltaSize(rawSlSize)
-				removedSizes[szt] += slSize - rawSlSize - (sz.DeltaSize(rawSlSize-extSlSize) - (rawSlSize - extSlSize))
-			}
-			
+		rawSlSize := sz.ScopeLogsSize(srcSL)
+		slSize := sz.DeltaSize(rawSlSize)
+		if slSize > capacityLeft {
+			extSrcSL, extSlSize := extractScopeLogs(srcSL, capacityLeft, sz)
+			// This cannot make it to exactly 0 for the bytes,
+			// force it to be 0 since that is the stopping condition.
+			capacityLeft = 0
+			removedSize += extSlSize
+			// There represents the delta between the delta sizes.
+			removedSize += slSize - rawSlSize - (sz.DeltaSize(rawSlSize-extSlSize) - (rawSlSize - extSlSize))
+			// It is possible that for the bytes scenario, the extracted field contains no log records.
+			// Do not add it to the destination if that is the case.
 			if extSrcSL.LogRecords().Len() > 0 {
 				extSrcSL.MoveTo(destRL.ScopeLogs().AppendEmpty())
 			}
 			return extSrcSL.LogRecords().Len() != 0
 		}
-
-		for szt, sz := range sizers {
-			rawSlSize := sz.ScopeLogsSize(srcSL)
-			slSize := sz.DeltaSize(rawSlSize)
-			capacityLeft[szt] -= slSize
-			removedSizes[szt] += slSize
-		}
+		capacityLeft -= slSize
+		removedSize += slSize
 		srcSL.MoveTo(destRL.ScopeLogs().AppendEmpty())
 		return true
 	})
-	return destRL, removedSizes
+	return destRL, removedSize
 }
 
 // extractScopeLogs extracts scope logs and returns a new scope logs with the specified number of log records.
-func extractScopeLogs(srcSL plog.ScopeLogs, limits map[request.SizerType]int, sizers map[request.SizerType]sizer.LogsSizer) (plog.ScopeLogs, map[request.SizerType]int) {
+func extractScopeLogs(srcSL plog.ScopeLogs, capacity int, sz sizer.LogsSizer) (plog.ScopeLogs, int) {
 	destSL := plog.NewScopeLogs()
 	destSL.SetSchemaUrl(srcSL.SchemaUrl())
 	srcSL.Scope().CopyTo(destSL.Scope())
-	
-	capacityLeft := make(map[request.SizerType]int)
-	removedSizes := make(map[request.SizerType]int)
-	
-	for szt, limit := range limits {
-		sz := sizers[szt]
-		if limit == 0 {
-			capacityLeft[szt] = math.MaxInt
-		} else {
-			capacityLeft[szt] = limit - (sz.DeltaSize(limit) - limit) - sz.ScopeLogsSize(destSL)
-		}
-		removedSizes[szt] = 0
-	}
-
+	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
+	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.ScopeLogsSize(destSL)
+	removedSize := 0
 	srcSL.LogRecords().RemoveIf(func(srcLR plog.LogRecord) bool {
-		for _, cap := range capacityLeft {
-			if cap <= 0 {
-				return false
-			}
-		}
-
-		fitsAll := true
-		for szt, sz := range sizers {
-			rlSize := sz.DeltaSize(sz.LogRecordSize(srcLR))
-			if rlSize > capacityLeft[szt] {
-				fitsAll = false
-				break
-			}
-		}
-
-		if !fitsAll {
-			for szt := range sizers {
-				capacityLeft[szt] = 0
-			}
+		// If the no more capacity left just return.
+		if capacityLeft == 0 {
 			return false
 		}
-
-		for szt, sz := range sizers {
-			rlSize := sz.DeltaSize(sz.LogRecordSize(srcLR))
-			capacityLeft[szt] -= rlSize
-			removedSizes[szt] += rlSize
+		rlSize := sz.DeltaSize(sz.LogRecordSize(srcLR))
+		if rlSize > capacityLeft {
+			// This cannot make it to exactly 0 for the bytes,
+			// force it to be 0 since that is the stopping condition.
+			capacityLeft = 0
+			return false
 		}
+		capacityLeft -= rlSize
+		removedSize += rlSize
 		srcLR.MoveTo(destSL.LogRecords().AppendEmpty())
 		return true
 	})
-	return destSL, removedSizes
+	return destSL, removedSize
+}
+
+func getSortedSizerTypes[T any](m map[request.SizerType]T) []request.SizerType {
+	keys := make([]request.SizerType, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i].String() < keys[j].String()
+	})
+	return keys
 }

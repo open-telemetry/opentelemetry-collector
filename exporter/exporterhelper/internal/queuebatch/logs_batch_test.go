@@ -284,7 +284,7 @@ func TestMergeSplitLogsInputNotModifiedIfErrorReturned(t *testing.T) {
 func TestExtractLogs(t *testing.T) {
 	for i := 1; i < 10; i++ {
 		ld := testdata.GenerateLogs(10)
-		extractedLogs, _ := extractLogs(ld, map[request.SizerType]int{request.SizerTypeItems: i}, map[request.SizerType]sizer.LogsSizer{request.SizerTypeItems: &sizer.LogsCountSizer{}})
+		extractedLogs, _ := extractLogs(ld, i, &sizer.LogsCountSizer{})
 		assert.Equal(t, i, extractedLogs.LogRecordCount())
 		assert.Equal(t, 10-i, ld.LogRecordCount())
 	}
