@@ -16,6 +16,11 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
+type textMarshalerStruct struct {
+	id   int
+	data []byte
+}
+
 func (tms textMarshalerStruct) MarshalText() ([]byte, error) {
 	return tms.data, nil
 }
@@ -23,11 +28,6 @@ func (tms textMarshalerStruct) MarshalText() ([]byte, error) {
 func (tms *textMarshalerStruct) UnmarshalText(data []byte) error {
 	tms.data = data
 	return nil
-}
-
-type textMarshalerStruct struct {
-	id   int
-	data []byte
 }
 
 type nonTextMarshalerStruct struct {
@@ -138,7 +138,7 @@ func TestMarshalConfig(t *testing.T) {
 	}
 
 	require.NoError(t, conf.Marshal(cfg, WithScalarMarshaler()))
-	require.EqualValues(t, cm.ToStringMap(), conf.ToStringMap())
+	require.Equal(t, cm.ToStringMap(), conf.ToStringMap())
 }
 
 // failingScalarMarshaler always returns an error from MarshalScalar.

@@ -67,12 +67,12 @@ func scalarunmarshalerHookFunc(opts *internal.UnmarshalOptions) mapstructure.Dec
 			return from.Interface(), nil
 		}
 
-		scalarValue := scalarValue{
+		sv := scalarValue{
 			val:              from.Interface(),
 			unmarshalOptions: opts,
 		}
 
-		if err := unmarshaler.UnmarshalScalar(&scalarValue); err != nil {
+		if err := unmarshaler.UnmarshalScalar(&sv); err != nil {
 			return nil, err
 		}
 
