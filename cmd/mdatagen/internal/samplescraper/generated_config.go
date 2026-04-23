@@ -84,6 +84,9 @@ func (c *Config) Validate() error {
 
 func createDefaultConfig() component.Config {
 	cfg := Config{}
+	cfg.MetricsBuilderConfig = metadata.NewDefaultMetricsBuilderConfig()
+	cfg.ControllerConfig = scraperhelper.NewDefaultControllerConfig()
+	cfg.ControllerConfig.Timeout = 30 * time.Second
 	cfg.JobName = "test_job"
 	cfg.Targets = &[]TargetsItem{NewDefaultTargetsItem()}
 
