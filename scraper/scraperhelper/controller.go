@@ -5,6 +5,7 @@ package scraperhelper // import "go.opentelemetry.io/collector/scraper/scraperhe
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -112,7 +113,9 @@ func NewLogsController(cfg *ControllerConfig,
 		scrapers = append(scrapers, s)
 	}
 	return controller.NewController[scraper.Logs](
-		cfg, rSet, scrapers, func(c *controller.Controller[scraper.Logs]) { scrapeLogs(c, nextConsumer) }, co.tickerCh)
+		cfg, rSet, scrapers, func(ctx context.Context, c *controller.Controller[scraper.Logs]) error {
+			return scrapeLogs(ctx, c, nextConsumer)
+		}, co.tickerCh)
 }
 
 // NewMetricsController creates a receiver.Metrics with the configured options, that can control multiple scraper.Metrics.
@@ -136,18 +139,21 @@ func NewMetricsController(cfg *ControllerConfig,
 		scrapers = append(scrapers, s)
 	}
 	return controller.NewController[scraper.Metrics](
-		cfg, rSet, scrapers, func(c *controller.Controller[scraper.Metrics]) { scrapeMetrics(c, nextConsumer) }, co.tickerCh)
+		cfg, rSet, scrapers, func(ctx context.Context, c *controller.Controller[scraper.Metrics]) error {
+			return scrapeMetrics(ctx, c, nextConsumer)
+		}, co.tickerCh)
 }
 
-func scrapeLogs(c *controller.Controller[scraper.Logs], nextConsumer consumer.Logs) {
-	ctx, done := controller.WithScrapeContext(c.Timeout)
-	defer done()
-
+func scrapeLogs(ctx context.Context, c *controller.Controller[scraper.Logs], nextConsumer consumer.Logs) error {
+	var errs []error
 	logs := plog.NewLogs()
 	for i := range c.Scrapers {
 		md, err := c.Scrapers[i].ScrapeLogs(ctx)
-		if err != nil && !scrapererror.IsPartialScrapeError(err) {
-			continue
+		if err != nil {
+			errs = append(errs, err)
+			if !scrapererror.IsPartialScrapeError(err) {
+				continue
+			}
 		}
 		md.ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
 	}
@@ -156,17 +162,19 @@ func scrapeLogs(c *controller.Controller[scraper.Logs], nextConsumer consumer.Lo
 	ctx = c.Obsrecv.StartLogsOp(ctx)
 	err := nextConsumer.ConsumeLogs(ctx, logs)
 	c.Obsrecv.EndLogsOp(ctx, "", logRecordCount, err)
+	return errors.Join(append(errs, err)...)
 }
 
-func scrapeMetrics(c *controller.Controller[scraper.Metrics], nextConsumer consumer.Metrics) {
-	ctx, done := controller.WithScrapeContext(c.Timeout)
-	defer done()
-
+func scrapeMetrics(ctx context.Context, c *controller.Controller[scraper.Metrics], nextConsumer consumer.Metrics) error {
+	var errs []error
 	metrics := pmetric.NewMetrics()
 	for i := range c.Scrapers {
 		md, err := c.Scrapers[i].ScrapeMetrics(ctx)
-		if err != nil && !scrapererror.IsPartialScrapeError(err) {
-			continue
+		if err != nil {
+			errs = append(errs, err)
+			if !scrapererror.IsPartialScrapeError(err) {
+				continue
+			}
 		}
 		md.ResourceMetrics().MoveAndAppendTo(metrics.ResourceMetrics())
 	}
@@ -175,6 +183,7 @@ func scrapeMetrics(c *controller.Controller[scraper.Metrics], nextConsumer consu
 	ctx = c.Obsrecv.StartMetricsOp(ctx)
 	err := nextConsumer.ConsumeMetrics(ctx, metrics)
 	c.Obsrecv.EndMetricsOp(ctx, "", dataPointCount, err)
+	return errors.Join(append(errs, err)...)
 }
 
 func getOptions(options []ControllerOption) controllerOptions {
