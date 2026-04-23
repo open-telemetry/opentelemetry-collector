@@ -25,7 +25,11 @@ func createResource(
 	pcommonRes := pcommon.NewResource()
 	for _, keyValue := range res.Attributes() {
 		key := string(keyValue.Key)
-		pcommonRes.Attributes().PutStr(key, mustAttributeValueString(key, keyValue.Value))
+		value, err := attributeValueString(key, keyValue.Value)
+		if err != nil {
+			return pcommon.Resource{}, err
+		}
+		pcommonRes.Attributes().PutStr(key, value)
 	}
 	return pcommonRes, nil
 }
@@ -34,12 +38,12 @@ func newResource(set telemetry.Settings, cfg *Config) *sdkresource.Resource {
 	return resource.New(set.BuildInfo, cfg.Resource)
 }
 
-func mustAttributeValueString(k string, v attribute.Value) string {
+func attributeValueString(k string, v attribute.Value) (string, error) {
 	if v.Type() != attribute.STRING {
 		// We only support string-type resource attributes in the configuration.
-		panic(fmt.Errorf("attribute %q: expected string, got %s", k, v.Type()))
+		return "", fmt.Errorf("attribute %q: expected string, got %s", k, v.Type())
 	}
-	return v.AsString()
+	return v.AsString(), nil
 }
 
 // pcommonAttrsToOTelAttrs gets the Resource attributes to OpenTelemetry attribute.KeyValue slice.

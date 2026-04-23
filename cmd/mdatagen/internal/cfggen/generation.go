@@ -66,18 +66,14 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			name, _ := helpers.FormatIdentifier(refDesc.defName, true)
 			return name
 		},
-		"camelVar": func(ref string) string {
-			return CamelVar(ref)
-		},
+		"camelVar": CamelVar,
 		"formatDefaultValue": func(md *ConfigMetadata, name string, defaultValue any) string {
 			return FormatDefaultValue(md, name, defaultValue, rootPackage, componentPackage)
 		},
 		"formatBaseValue": func(md *ConfigMetadata, name string, defaultValue any) string {
 			return FormatBaseValue(md, name, defaultValue, rootPackage, componentPackage)
 		},
-		"wrapDefaultValue": func(md *ConfigMetadata, varName string) string {
-			return WrapDefaultValue(md, varName)
-		},
+		"wrapDefaultValue": WrapDefaultValue,
 		"mapCustomDefaults": func(schema *ConfigMetadata, defaultValue any) []string {
 			return MapCustomDefaults(schema, defaultValue, rootPackage, componentPackage)
 		},
