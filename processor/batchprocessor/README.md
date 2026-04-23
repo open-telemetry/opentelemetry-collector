@@ -75,6 +75,12 @@ processors:
 Refer to [config.yaml](./testdata/config.yaml) for detailed
 examples on using the processor.
 
+## Failure behavior
+
+If sending data to the next consumer fails, the batch processor drops the affected batch and does not retry.
+
+Retry behavior should be configured in downstream components, such as exporters using `retry_on_failure` or `sending_queue`.
+
 ## Batching and client metadata
 
 Batching by metadata enables support for multi-tenant OpenTelemetry
