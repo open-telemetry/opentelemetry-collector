@@ -160,6 +160,7 @@ dist:
     version: "1.0.0" # the version for your custom OpenTelemetry Collector. Optional.
     go: "/usr/bin/go" # which Go binary to use to compile the generated sources. Optional.
     debug_compilation: false # enabling this causes the builder to keep the debug symbols in the resulting binary. Optional.
+    use_absolute_replace_paths: false # when using local path overrides, uses absolute paths instead of relative paths. Optional.
 exporters:
   - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.146.0" # the Go module for the component. Required.
     import: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter" # the import path for the component. Optional.
