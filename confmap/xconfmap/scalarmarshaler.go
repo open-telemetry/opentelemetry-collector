@@ -24,7 +24,7 @@ type ScalarMarshaler interface {
 	// GetScalarValue gets the scalar value and marshals it.
 	// The struct implementing the interface is free to
 	// do any pre-processing to the value as part of marshaling.
-	GetScalarValue() (any, error)
+	MarshalScalar(ScalarValue) error
 }
 
 // Provides a mechanism for individual structs to define their own unmarshal logic,
@@ -37,20 +37,19 @@ func scalarmarshalerHookFunc(mo *internal.MarshalOptions) mapstructure.DecodeHoo
 			return from.Interface(), nil
 		}
 
-		v, err := marshaler.GetScalarValue()
+		res := scalarValue{
+			val:            from.Interface(),
+			marshalOptions: mo,
+		}
+		err := marshaler.MarshalScalar(&res)
 		if err != nil {
 			return nil, err
 		}
 
-		res, err := internal.Encode(v, *mo)
-		if err != nil {
-			return nil, err
-		}
-
-		if res == nil {
+		if res.GetRaw() == nil {
 			return nil, nil
 		}
 
-		return res, nil
+		return res.GetRaw(), nil
 	})
 }

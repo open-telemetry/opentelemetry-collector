@@ -5,6 +5,7 @@ package xconfmap
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -77,16 +78,8 @@ func (wt wrapperType[T]) Marshal(conf *confmap.Conf) error {
 	return nil
 }
 
-func (wt wrapperType[T]) MarshalScalar(in *string) (any, error) {
-	if in != nil {
-		return *in, nil
-	}
-
-	return wt.inner, nil
-}
-
-func (wt wrapperType[T]) GetScalarValue() (any, error) {
-	return wt.inner, nil
+func (wt wrapperType[T]) MarshalScalar(sv ScalarValue) error {
+	return sv.Marshal(wt.inner, WithScalarMarshaler())
 }
 
 func (wt *wrapperType[T]) UnmarshalScalar(val ScalarValue) error {
@@ -97,10 +90,6 @@ func (wt *wrapperType[T]) UnmarshalScalar(val ScalarValue) error {
 
 	wt.inner = v
 	return nil
-}
-
-func (wt *wrapperType[T]) ScalarType() any {
-	return wt.inner
 }
 
 type testConfig struct {
@@ -150,4 +139,52 @@ func TestMarshalConfig(t *testing.T) {
 
 	require.NoError(t, conf.Marshal(cfg, WithScalarMarshaler()))
 	require.EqualValues(t, cm.ToStringMap(), conf.ToStringMap())
+}
+
+// failingScalarMarshaler always returns an error from MarshalScalar.
+type failingScalarMarshaler struct{}
+
+func (f failingScalarMarshaler) MarshalScalar(_ ScalarValue) error {
+	return errors.New("marshal always fails")
+}
+
+// TestMarshalScalarErrorPropagation verifies that an error returned by
+// MarshalScalar surfaces as an error from confmap.Marshal.
+func TestMarshalScalarErrorPropagation(t *testing.T) {
+	type cfgWithFailing struct {
+		Val failingScalarMarshaler `mapstructure:"val"`
+	}
+
+	cfg := cfgWithFailing{Val: failingScalarMarshaler{}}
+	conf := confmap.New()
+	err := conf.Marshal(&cfg, WithScalarMarshaler())
+	require.Error(t, err)
+	require.ErrorContains(t, err, "marshal always fails")
+}
+
+// TestMarshalNonImplementingTypesUnaffected verifies that fields whose types do
+// not implement ScalarMarshaler are encoded normally by mapstructure (as empty
+// maps for unexported-field structs), while implementing fields produce their
+// scalar representation.
+func TestMarshalNonImplementingTypesUnaffected(t *testing.T) {
+	type mixedCfg struct {
+		Impl    wrapperType[int]        `mapstructure:"impl"`
+		NonImpl NonImplWrapperType[int] `mapstructure:"non_impl"`
+		Plain   int                     `mapstructure:"plain"`
+	}
+
+	cfg := &mixedCfg{
+		Impl:    wrapperType[int]{inner: 42},
+		NonImpl: NonImplWrapperType[int]{inner: 7},
+		Plain:   99,
+	}
+	conf := confmap.New()
+	require.NoError(t, conf.Marshal(cfg, WithScalarMarshaler()))
+
+	m := conf.ToStringMap()
+	require.Equal(t, 42, m["impl"], "implementing field should be encoded as scalar")
+	require.Equal(t, 99, m["plain"], "plain field should be encoded as scalar")
+	// NonImplWrapperType has no exported fields, so mapstructure encodes it as an empty map.
+	_, ok := m["non_impl"]
+	require.True(t, ok, "non-implementing field should still appear in output")
 }

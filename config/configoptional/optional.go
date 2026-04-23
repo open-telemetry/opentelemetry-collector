@@ -259,12 +259,18 @@ func (o Optional[T]) Marshal(conf *confmap.Conf) error {
 	return nil
 }
 
-func (o Optional[T]) GetScalarValue() (any, error) {
-	if o.flavor == noneFlavor || o.flavor == defaultFlavor {
-		return nil, nil
+func (o Optional[T]) MarshalScalar(scalarValue xconfmap.ScalarValue) error {
+	if deref(reflect.TypeOf(o.value)).Kind() == reflect.Struct {
+		// Defer to Unmarshal behavior
+		return nil
 	}
 
-	return o.value, nil
+	if o.flavor == noneFlavor || o.flavor == defaultFlavor {
+		// An Optional of type None or Default should marshal as nil.
+		return scalarValue.Marshal(nil)
+	}
+
+	return scalarValue.Marshal(o.value)
 }
 
 var _ xconfmap.Validator = (*Optional[any])(nil)

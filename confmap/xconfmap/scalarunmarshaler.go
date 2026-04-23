@@ -34,7 +34,9 @@ type ScalarUnmarshaler interface {
 type ScalarValue interface {
 	GetRaw() any
 
-	Unmarshal(result any) error
+	Unmarshal(result any, opts ...internal.UnmarshalOption) error
+
+	Marshal(result any, opts ...internal.MarshalOption) error
 
 	// Seal the interface so it can't be implemented outside this package.
 	_unexported()
@@ -66,11 +68,11 @@ func scalarunmarshalerHookFunc(opts *internal.UnmarshalOptions) mapstructure.Dec
 		}
 
 		scalarValue := scalarValue{
-			val:  from.Interface(),
-			opts: opts,
+			val:              from.Interface(),
+			unmarshalOptions: opts,
 		}
 
-		if err := unmarshaler.UnmarshalScalar(scalarValue); err != nil {
+		if err := unmarshaler.UnmarshalScalar(&scalarValue); err != nil {
 			return nil, err
 		}
 
@@ -83,18 +85,35 @@ var _ ScalarValue = (*scalarValue)(nil)
 type scalarValue struct {
 	val any
 
-	opts *internal.UnmarshalOptions
+	unmarshalOptions *internal.UnmarshalOptions
+	marshalOptions   *internal.MarshalOptions
 }
 
-func (s scalarValue) GetRaw() any {
+func (s *scalarValue) GetRaw() any {
 	return s.val
 }
 
-func (s scalarValue) Unmarshal(result any) error {
-	return internal.Decode(s.val, result, *s.opts, false)
+func (s *scalarValue) Unmarshal(result any, opts ...internal.UnmarshalOption) error {
+	settings := internal.ApplyUnmarshalOptions(s.unmarshalOptions, opts)
+	return internal.Decode(s.val, result, *settings, false)
 }
 
-func (s scalarValue) _unexported() {}
+func (s *scalarValue) Marshal(value any, opts ...internal.MarshalOption) error {
+	if value == nil {
+		return nil
+	}
+
+	settings := internal.ApplyMarshalOptions(s.marshalOptions, opts)
+	data, err := internal.Encode(value, *settings)
+	if err != nil {
+		return err
+	}
+	s.val = data
+
+	return nil
+}
+
+func (s *scalarValue) _unexported() {}
 
 // safeWrapDecodeHookFunc wraps a DecodeHookFuncValue to ensure fromVal is a valid `reflect.Value`
 // object and therefore it is safe to call `reflect.Value` methods on fromVal.
