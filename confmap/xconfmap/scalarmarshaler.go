@@ -31,7 +31,7 @@ type ScalarMarshaler interface {
 // by implementing the Unmarshaler interface, unless skipTopLevelUnmarshaler is
 // true and the struct matches the top level object being unmarshaled.
 func scalarmarshalerHookFunc(mo *internal.MarshalOptions) mapstructure.DecodeHookFuncValue {
-	return safeWrapDecodeHookFunc(func(from reflect.Value, _ reflect.Value) (any, error) {
+	return safeWrapDecodeHookFunc(func(from, _ reflect.Value) (any, error) {
 		marshaler, ok := from.Interface().(ScalarMarshaler)
 		if !ok {
 			return from.Interface(), nil

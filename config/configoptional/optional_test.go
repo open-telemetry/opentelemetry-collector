@@ -716,26 +716,44 @@ func TestUnmarshalScalar(t *testing.T) {
 			expectVal    int
 		}{
 			// Present scalar value overrides all initial flavors.
-			{name: "none_with_value", config: map[string]any{"val": 42},
-				initial: IntConfig{Val: None[int]()}, expectHasVal: true, expectVal: 42},
-			{name: "default_with_value", config: map[string]any{"val": 42},
-				initial: IntConfig{Val: Default(5)}, expectHasVal: true, expectVal: 42},
-			{name: "some_with_value", config: map[string]any{"val": 42},
-				initial: IntConfig{Val: Some(1)}, expectHasVal: true, expectVal: 42},
+			{
+				name: "none_with_value", config: map[string]any{"val": 42},
+				initial: IntConfig{Val: None[int]()}, expectHasVal: true, expectVal: 42,
+			},
+			{
+				name: "default_with_value", config: map[string]any{"val": 42},
+				initial: IntConfig{Val: Default(5)}, expectHasVal: true, expectVal: 42,
+			},
+			{
+				name: "some_with_value", config: map[string]any{"val": 42},
+				initial: IntConfig{Val: Some(1)}, expectHasVal: true, expectVal: 42,
+			},
 			// Absent key leaves the Optional unchanged.
-			{name: "none_absent_key", config: map[string]any{},
-				initial: IntConfig{Val: None[int]()}, expectHasVal: false},
-			{name: "default_absent_key", config: map[string]any{},
-				initial: IntConfig{Val: Default(5)}, expectHasVal: false}, // Default.HasValue() == false
-			{name: "some_absent_key", config: map[string]any{},
-				initial: IntConfig{Val: Some(3)}, expectHasVal: true, expectVal: 3},
+			{
+				name: "none_absent_key", config: map[string]any{},
+				initial: IntConfig{Val: None[int]()}, expectHasVal: false,
+			},
+			{
+				name: "default_absent_key", config: map[string]any{},
+				initial: IntConfig{Val: Default(5)}, expectHasVal: false,
+			}, // Default.HasValue() == false
+			{
+				name: "some_absent_key", config: map[string]any{},
+				initial: IntConfig{Val: Some(3)}, expectHasVal: true, expectVal: 3,
+			},
 			// Null (as a nil map) explicitly clears to None.
-			{name: "none_null_map", config: map[string]any{"val": map[string]any(nil)},
-				initial: IntConfig{Val: None[int]()}, expectHasVal: false},
-			{name: "default_null_map", config: map[string]any{"val": map[string]any(nil)},
-				initial: IntConfig{Val: Default(5)}, expectHasVal: false},
-			{name: "some_null_map", config: map[string]any{"val": map[string]any(nil)},
-				initial: IntConfig{Val: Some(3)}, expectHasVal: false},
+			{
+				name: "none_null_map", config: map[string]any{"val": map[string]any(nil)},
+				initial: IntConfig{Val: None[int]()}, expectHasVal: false,
+			},
+			{
+				name: "default_null_map", config: map[string]any{"val": map[string]any(nil)},
+				initial: IntConfig{Val: Default(5)}, expectHasVal: false,
+			},
+			{
+				name: "some_null_map", config: map[string]any{"val": map[string]any(nil)},
+				initial: IntConfig{Val: Some(3)}, expectHasVal: false,
+			},
 		}
 
 		for _, tc := range tests {
@@ -764,24 +782,42 @@ func TestUnmarshalScalar(t *testing.T) {
 			expectHasVal bool
 			expectVal    []int
 		}{
-			{name: "none_with_value", config: map[string]any{"val": []any{1, 2, 3}},
-				initial: SliceIntConfig{Val: None[[]int]()}, expectHasVal: true, expectVal: []int{1, 2, 3}},
-			{name: "default_with_value", config: map[string]any{"val": []any{4, 5}},
-				initial: SliceIntConfig{Val: Default([]int{1})}, expectHasVal: true, expectVal: []int{4, 5}},
-			{name: "some_with_value", config: map[string]any{"val": []any{7}},
-				initial: SliceIntConfig{Val: Some([]int{1, 2})}, expectHasVal: true, expectVal: []int{7}},
-			{name: "none_absent_key", config: map[string]any{},
-				initial: SliceIntConfig{Val: None[[]int]()}, expectHasVal: false},
-			{name: "default_absent_key", config: map[string]any{},
-				initial: SliceIntConfig{Val: Default([]int{1})}, expectHasVal: false},
-			{name: "some_absent_key", config: map[string]any{},
-				initial: SliceIntConfig{Val: Some([]int{1, 2})}, expectHasVal: true, expectVal: []int{1, 2}},
-			{name: "none_null", config: map[string]any{"val": map[string]any(nil)},
-				initial: SliceIntConfig{Val: None[[]int]()}, expectHasVal: false},
-			{name: "default_null", config: map[string]any{"val": map[string]any(nil)},
-				initial: SliceIntConfig{Val: Default([]int{1})}, expectHasVal: false},
-			{name: "some_null", config: map[string]any{"val": map[string]any(nil)},
-				initial: SliceIntConfig{Val: Some([]int{1, 2})}, expectHasVal: false},
+			{
+				name: "none_with_value", config: map[string]any{"val": []any{1, 2, 3}},
+				initial: SliceIntConfig{Val: None[[]int]()}, expectHasVal: true, expectVal: []int{1, 2, 3},
+			},
+			{
+				name: "default_with_value", config: map[string]any{"val": []any{4, 5}},
+				initial: SliceIntConfig{Val: Default([]int{1})}, expectHasVal: true, expectVal: []int{4, 5},
+			},
+			{
+				name: "some_with_value", config: map[string]any{"val": []any{7}},
+				initial: SliceIntConfig{Val: Some([]int{1, 2})}, expectHasVal: true, expectVal: []int{7},
+			},
+			{
+				name: "none_absent_key", config: map[string]any{},
+				initial: SliceIntConfig{Val: None[[]int]()}, expectHasVal: false,
+			},
+			{
+				name: "default_absent_key", config: map[string]any{},
+				initial: SliceIntConfig{Val: Default([]int{1})}, expectHasVal: false,
+			},
+			{
+				name: "some_absent_key", config: map[string]any{},
+				initial: SliceIntConfig{Val: Some([]int{1, 2})}, expectHasVal: true, expectVal: []int{1, 2},
+			},
+			{
+				name: "none_null", config: map[string]any{"val": map[string]any(nil)},
+				initial: SliceIntConfig{Val: None[[]int]()}, expectHasVal: false,
+			},
+			{
+				name: "default_null", config: map[string]any{"val": map[string]any(nil)},
+				initial: SliceIntConfig{Val: Default([]int{1})}, expectHasVal: false,
+			},
+			{
+				name: "some_null", config: map[string]any{"val": map[string]any(nil)},
+				initial: SliceIntConfig{Val: Some([]int{1, 2})}, expectHasVal: false,
+			},
 		}
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
@@ -842,19 +878,29 @@ func TestUnmarshalScalar(t *testing.T) {
 			expectHasVal bool
 			expectVal    []textLevel
 		}{
-			{name: "none_with_values", config: map[string]any{"val": []any{"high", "low"}},
+			{
+				name: "none_with_values", config: map[string]any{"val": []any{"high", "low"}},
 				initial: SliceTextConfig{Val: None[[]textLevel]()}, expectHasVal: true,
-				expectVal: []textLevel{textLevelHigh, textLevelLow}},
-			{name: "default_with_values", config: map[string]any{"val": []any{"none"}},
+				expectVal: []textLevel{textLevelHigh, textLevelLow},
+			},
+			{
+				name: "default_with_values", config: map[string]any{"val": []any{"none"}},
 				initial: SliceTextConfig{Val: Default([]textLevel{textLevelHigh})}, expectHasVal: true,
-				expectVal: []textLevel{textLevelNone}},
-			{name: "some_with_values", config: map[string]any{"val": []any{"low", "high"}},
+				expectVal: []textLevel{textLevelNone},
+			},
+			{
+				name: "some_with_values", config: map[string]any{"val": []any{"low", "high"}},
 				initial: SliceTextConfig{Val: Some([]textLevel{textLevelNone})}, expectHasVal: true,
-				expectVal: []textLevel{textLevelLow, textLevelHigh}},
-			{name: "absent_key", config: map[string]any{},
-				initial: SliceTextConfig{Val: None[[]textLevel]()}, expectHasVal: false},
-			{name: "null", config: map[string]any{"val": map[string]any(nil)},
-				initial: SliceTextConfig{Val: Some([]textLevel{textLevelHigh})}, expectHasVal: false},
+				expectVal: []textLevel{textLevelLow, textLevelHigh},
+			},
+			{
+				name: "absent_key", config: map[string]any{},
+				initial: SliceTextConfig{Val: None[[]textLevel]()}, expectHasVal: false,
+			},
+			{
+				name: "null", config: map[string]any{"val": map[string]any(nil)},
+				initial: SliceTextConfig{Val: Some([]textLevel{textLevelHigh})}, expectHasVal: false,
+			},
 		}
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
@@ -892,11 +938,15 @@ func TestUnmarshalScalar(t *testing.T) {
 				expectHasVal: true,
 				expectVal:    []customUnmarshalerStruct{{Val: "a"}, {Val: "b"}},
 			},
-			{name: "absent_key", config: map[string]any{},
-				initial: SliceUnmarshalerConfig{Val: None[[]customUnmarshalerStruct]()}, expectHasVal: false},
-			{name: "null", config: map[string]any{"val": map[string]any(nil)},
+			{
+				name: "absent_key", config: map[string]any{},
+				initial: SliceUnmarshalerConfig{Val: None[[]customUnmarshalerStruct]()}, expectHasVal: false,
+			},
+			{
+				name: "null", config: map[string]any{"val": map[string]any(nil)},
 				initial:      SliceUnmarshalerConfig{Val: Some([]customUnmarshalerStruct{{Val: "x"}})},
-				expectHasVal: false},
+				expectHasVal: false,
+			},
 		}
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
@@ -1013,38 +1063,60 @@ func TestUnmarshalFromYAML(t *testing.T) {
 			expectFoo    string
 		}{
 			// None: value present -> Some with provided value.
-			{name: "none/with_value", key: "struct_with_value",
-				initial: Config[Sub]{Sub1: None[Sub]()}, expectHasVal: true, expectFoo: "bar"},
+			{
+				name: "none/with_value", key: "struct_with_value",
+				initial: Config[Sub]{Sub1: None[Sub]()}, expectHasVal: true, expectFoo: "bar",
+			},
 			// None: null -> stays None.
-			{name: "none/null", key: "struct_null",
-				initial: Config[Sub]{Sub1: None[Sub]()}, expectHasVal: false},
+			{
+				name: "none/null", key: "struct_null",
+				initial: Config[Sub]{Sub1: None[Sub]()}, expectHasVal: false,
+			},
 			// None: empty map -> Some with zero value.
-			{name: "none/empty", key: "struct_empty",
-				initial: Config[Sub]{Sub1: None[Sub]()}, expectHasVal: true, expectFoo: ""},
+			{
+				name: "none/empty", key: "struct_empty",
+				initial: Config[Sub]{Sub1: None[Sub]()}, expectHasVal: true, expectFoo: "",
+			},
 			// None: absent key -> stays None.
-			{name: "none/absent", key: "struct_absent",
-				initial: Config[Sub]{Sub1: None[Sub]()}, expectHasVal: false},
+			{
+				name: "none/absent", key: "struct_absent",
+				initial: Config[Sub]{Sub1: None[Sub]()}, expectHasVal: false,
+			},
 			// Default: value present -> Some, input value overrides default.
-			{name: "default/with_value", key: "struct_with_value",
-				initial: Config[Sub]{Sub1: Default(subDefault)}, expectHasVal: true, expectFoo: "bar"},
+			{
+				name: "default/with_value", key: "struct_with_value",
+				initial: Config[Sub]{Sub1: Default(subDefault)}, expectHasVal: true, expectFoo: "bar",
+			},
 			// Default: null -> Some, default value applies.
-			{name: "default/null", key: "struct_null",
-				initial: Config[Sub]{Sub1: Default(subDefault)}, expectHasVal: true, expectFoo: "foobar"},
+			{
+				name: "default/null", key: "struct_null",
+				initial: Config[Sub]{Sub1: Default(subDefault)}, expectHasVal: true, expectFoo: "foobar",
+			},
 			// Default: empty map -> Some, default value applies.
-			{name: "default/empty", key: "struct_empty",
-				initial: Config[Sub]{Sub1: Default(subDefault)}, expectHasVal: true, expectFoo: "foobar"},
+			{
+				name: "default/empty", key: "struct_empty",
+				initial: Config[Sub]{Sub1: Default(subDefault)}, expectHasVal: true, expectFoo: "foobar",
+			},
 			// Default: absent key -> stays None (HasValue false).
-			{name: "default/absent", key: "struct_absent",
-				initial: Config[Sub]{Sub1: Default(subDefault)}, expectHasVal: false},
+			{
+				name: "default/absent", key: "struct_absent",
+				initial: Config[Sub]{Sub1: Default(subDefault)}, expectHasVal: false,
+			},
 			// Some: null -> keeps existing value.
-			{name: "some/null", key: "struct_null",
-				initial: Config[Sub]{Sub1: Some(Sub{Foo: "foobar"})}, expectHasVal: true, expectFoo: "foobar"},
+			{
+				name: "some/null", key: "struct_null",
+				initial: Config[Sub]{Sub1: Some(Sub{Foo: "foobar"})}, expectHasVal: true, expectFoo: "foobar",
+			},
 			// Some: value present -> input value overrides existing.
-			{name: "some/with_value", key: "struct_with_value",
-				initial: Config[Sub]{Sub1: Some(Sub{Foo: "foobar"})}, expectHasVal: true, expectFoo: "bar"},
+			{
+				name: "some/with_value", key: "struct_with_value",
+				initial: Config[Sub]{Sub1: Some(Sub{Foo: "foobar"})}, expectHasVal: true, expectFoo: "bar",
+			},
 			// Some: absent key -> unchanged.
-			{name: "some/absent", key: "struct_absent",
-				initial: Config[Sub]{Sub1: Some(Sub{Foo: "foobar"})}, expectHasVal: true, expectFoo: "foobar"},
+			{
+				name: "some/absent", key: "struct_absent",
+				initial: Config[Sub]{Sub1: Some(Sub{Foo: "foobar"})}, expectHasVal: true, expectFoo: "foobar",
+			},
 		}
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
@@ -1078,22 +1150,36 @@ func TestUnmarshalFromYAML(t *testing.T) {
 				expectVal    int
 			}{
 				// Present value overrides all initial flavors.
-				{name: "none/with_value", key: "int_with_value",
-					initial: IntConfig{Val: None[int]()}, expectHasVal: true, expectVal: 42},
-				{name: "default/with_value", key: "int_with_value",
-					initial: IntConfig{Val: Default(5)}, expectHasVal: true, expectVal: 42},
-				{name: "some/with_value", key: "int_with_value",
-					initial: IntConfig{Val: Some(1)}, expectHasVal: true, expectVal: 42},
+				{
+					name: "none/with_value", key: "int_with_value",
+					initial: IntConfig{Val: None[int]()}, expectHasVal: true, expectVal: 42,
+				},
+				{
+					name: "default/with_value", key: "int_with_value",
+					initial: IntConfig{Val: Default(5)}, expectHasVal: true, expectVal: 42,
+				},
+				{
+					name: "some/with_value", key: "int_with_value",
+					initial: IntConfig{Val: Some(1)}, expectHasVal: true, expectVal: 42,
+				},
 				// Null explicitly clears to None.
-				{name: "some/null", key: "int_null",
-					initial: IntConfig{Val: Some(3)}, expectHasVal: false},
-				{name: "default/null", key: "int_null",
-					initial: IntConfig{Val: Default(5)}, expectHasVal: false},
+				{
+					name: "some/null", key: "int_null",
+					initial: IntConfig{Val: Some(3)}, expectHasVal: false,
+				},
+				{
+					name: "default/null", key: "int_null",
+					initial: IntConfig{Val: Default(5)}, expectHasVal: false,
+				},
 				// Absent key leaves Optional unchanged.
-				{name: "none/absent", key: "int_absent",
-					initial: IntConfig{Val: None[int]()}, expectHasVal: false},
-				{name: "some/absent", key: "int_absent",
-					initial: IntConfig{Val: Some(3)}, expectHasVal: true, expectVal: 3},
+				{
+					name: "none/absent", key: "int_absent",
+					initial: IntConfig{Val: None[int]()}, expectHasVal: false,
+				},
+				{
+					name: "some/absent", key: "int_absent",
+					initial: IntConfig{Val: Some(3)}, expectHasVal: true, expectVal: 3,
+				},
 			}
 			for _, tc := range tests {
 				t.Run(tc.name, func(t *testing.T) {
@@ -1117,16 +1203,26 @@ func TestUnmarshalFromYAML(t *testing.T) {
 				expectHasVal bool
 				expectVal    string
 			}{
-				{name: "none/with_value", key: "str_with_value",
-					initial: StrConfig{Val: None[string]()}, expectHasVal: true, expectVal: "hello"},
-				{name: "default/with_value", key: "str_with_value",
-					initial: StrConfig{Val: Default("default")}, expectHasVal: true, expectVal: "hello"},
-				{name: "some/with_value", key: "str_with_value",
-					initial: StrConfig{Val: Some("old")}, expectHasVal: true, expectVal: "hello"},
-				{name: "none/null", key: "int_null",
-					initial: StrConfig{Val: None[string]()}, expectHasVal: false},
-				{name: "some/null", key: "int_null",
-					initial: StrConfig{Val: Some("old")}, expectHasVal: false},
+				{
+					name: "none/with_value", key: "str_with_value",
+					initial: StrConfig{Val: None[string]()}, expectHasVal: true, expectVal: "hello",
+				},
+				{
+					name: "default/with_value", key: "str_with_value",
+					initial: StrConfig{Val: Default("default")}, expectHasVal: true, expectVal: "hello",
+				},
+				{
+					name: "some/with_value", key: "str_with_value",
+					initial: StrConfig{Val: Some("old")}, expectHasVal: true, expectVal: "hello",
+				},
+				{
+					name: "none/null", key: "int_null",
+					initial: StrConfig{Val: None[string]()}, expectHasVal: false,
+				},
+				{
+					name: "some/null", key: "int_null",
+					initial: StrConfig{Val: Some("old")}, expectHasVal: false,
+				},
 			}
 			for _, tc := range tests {
 				t.Run(tc.name, func(t *testing.T) {
@@ -1150,16 +1246,26 @@ func TestUnmarshalFromYAML(t *testing.T) {
 				expectHasVal bool
 				expectVal    []int
 			}{
-				{name: "none/with_values", key: "slice_with_values",
-					initial: SliceIntConfig{Val: None[[]int]()}, expectHasVal: true, expectVal: []int{1, 2, 3}},
-				{name: "default/with_values", key: "slice_with_values",
-					initial: SliceIntConfig{Val: Default([]int{9})}, expectHasVal: true, expectVal: []int{1, 2, 3}},
-				{name: "some/null", key: "int_null",
-					initial: SliceIntConfig{Val: Some([]int{1, 2})}, expectHasVal: false},
-				{name: "none/absent", key: "int_absent",
-					initial: SliceIntConfig{Val: None[[]int]()}, expectHasVal: false},
-				{name: "some/absent", key: "int_absent",
-					initial: SliceIntConfig{Val: Some([]int{1, 2})}, expectHasVal: true, expectVal: []int{1, 2}},
+				{
+					name: "none/with_values", key: "slice_with_values",
+					initial: SliceIntConfig{Val: None[[]int]()}, expectHasVal: true, expectVal: []int{1, 2, 3},
+				},
+				{
+					name: "default/with_values", key: "slice_with_values",
+					initial: SliceIntConfig{Val: Default([]int{9})}, expectHasVal: true, expectVal: []int{1, 2, 3},
+				},
+				{
+					name: "some/null", key: "int_null",
+					initial: SliceIntConfig{Val: Some([]int{1, 2})}, expectHasVal: false,
+				},
+				{
+					name: "none/absent", key: "int_absent",
+					initial: SliceIntConfig{Val: None[[]int]()}, expectHasVal: false,
+				},
+				{
+					name: "some/absent", key: "int_absent",
+					initial: SliceIntConfig{Val: Some([]int{1, 2})}, expectHasVal: true, expectVal: []int{1, 2},
+				},
 			}
 			for _, tc := range tests {
 				t.Run(tc.name, func(t *testing.T) {

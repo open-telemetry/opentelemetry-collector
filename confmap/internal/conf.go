@@ -11,6 +11,7 @@ import (
 	"github.com/knadh/koanf/maps"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/v2"
+
 	"go.opentelemetry.io/collector/confmap/internal/metadata"
 )
 

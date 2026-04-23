@@ -51,9 +51,11 @@ type NonImplWrapperType[T any] struct {
 	inner T `mapstructure:"-"`
 }
 
-var _ confmap.Unmarshaler = (*wrapperType[any])(nil)
-var _ ScalarMarshaler = wrapperType[any]{}
-var _ ScalarUnmarshaler = (*wrapperType[any])(nil)
+var (
+	_ confmap.Unmarshaler = (*wrapperType[any])(nil)
+	_ ScalarMarshaler     = wrapperType[any]{}
+	_ ScalarUnmarshaler   = (*wrapperType[any])(nil)
+)
 
 type wrapperType[T any] struct {
 	inner T `mapstructure:"-"`

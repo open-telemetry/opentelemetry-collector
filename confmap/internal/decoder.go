@@ -62,7 +62,7 @@ func Decode(input, result any, settings UnmarshalOptions, skipTopLevelUnmarshale
 	}
 	hooks = append(hooks, settings.AdditionalDecodeHookFuncs...)
 	hooks = append(hooks,
-		unmarshalerHookFunc(result, skipTopLevelUnmarshaler),
+		unmarshalerHookFunc(result, skipTopLevelUnmarshaler && !settings.ForceUnmarshaler),
 		// after the main unmarshaler hook is called,
 		// we unmarshal the embedded structs if present to merge with the result:
 		unmarshalerEmbeddedStructsHookFunc(settings),
