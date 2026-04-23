@@ -67,15 +67,16 @@ type ConfResolver struct {
 
 // Distribution holds the parameters for the final binary
 type Distribution struct {
-	Module           string `mapstructure:"module,omitempty"`
-	Name             string `mapstructure:"name"`
-	Go               string `mapstructure:"go,omitempty"`
-	Description      string `mapstructure:"description"`
-	OutputPath       string `mapstructure:"output_path"`
-	Version          string `mapstructure:"version,omitempty"`
-	BuildTags        string `mapstructure:"build_tags,omitempty"`
-	DebugCompilation bool   `mapstructure:"debug_compilation,omitempty"`
-	CGoEnabled       bool   `mapstructure:"cgo_enabled,omitempty"`
+	Module                  string `mapstructure:"module,omitempty"`
+	Name                    string `mapstructure:"name"`
+	Go                      string `mapstructure:"go,omitempty"`
+	Description             string `mapstructure:"description"`
+	OutputPath              string `mapstructure:"output_path"`
+	Version                 string `mapstructure:"version,omitempty"`
+	BuildTags               string `mapstructure:"build_tags,omitempty"`
+	DebugCompilation        bool   `mapstructure:"debug_compilation,omitempty"`
+	CGoEnabled              bool   `mapstructure:"cgo_enabled,omitempty"`
+	UseAbsoluteReplacePaths bool   `mapstructure:"use_absolute_replace_paths,omitempty"`
 }
 
 // Module represents a receiver, exporter, processor or extension for the distribution
@@ -171,42 +172,42 @@ func (c *Config) ParseModules() error {
 	var err error
 	usedNames := make(map[string]int)
 
-	c.Extensions, err = parseModules(c.Extensions, usedNames)
+	c.Extensions, err = c.parseModules(c.Extensions, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.Receivers, err = parseModules(c.Receivers, usedNames)
+	c.Receivers, err = c.parseModules(c.Receivers, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.Exporters, err = parseModules(c.Exporters, usedNames)
+	c.Exporters, err = c.parseModules(c.Exporters, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.Processors, err = parseModules(c.Processors, usedNames)
+	c.Processors, err = c.parseModules(c.Processors, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.Connectors, err = parseModules(c.Connectors, usedNames)
+	c.Connectors, err = c.parseModules(c.Connectors, usedNames)
 	if err != nil {
 		return err
 	}
 
-	telemetry, err := parseModules([]Module{c.Telemetry}, usedNames)
+	telemetry, err := c.parseModules([]Module{c.Telemetry}, usedNames)
 	if err != nil {
 		return err
 	}
 	c.Telemetry = telemetry[0]
 
-	c.ConfmapProviders, err = parseModules(c.ConfmapProviders, usedNames)
+	c.ConfmapProviders, err = c.parseModules(c.ConfmapProviders, usedNames)
 	if err != nil {
 		return err
 	}
-	c.ConfmapConverters, err = parseModules(c.ConfmapConverters, usedNames)
+	c.ConfmapConverters, err = c.parseModules(c.ConfmapConverters, usedNames)
 	if err != nil {
 		return err
 	}
@@ -245,7 +246,7 @@ func validateTelemetry(c *Config) error {
 	return nil
 }
 
-func parseModules(mods []Module, usedNames map[string]int) ([]Module, error) {
+func (c *Config) parseModules(mods []Module, usedNames map[string]int) ([]Module, error) {
 	var parsedModules []Module
 	for _, mod := range mods {
 		if mod.Import == "" {
@@ -275,13 +276,28 @@ func parseModules(mods []Module, usedNames map[string]int) ([]Module, error) {
 		// Check if path is empty, otherwise filepath.Abs replaces it with current path ".".
 		if mod.Path != "" {
 			var err error
-			mod.Path, err = filepath.Abs(mod.Path)
+			absPath, err := filepath.Abs(mod.Path)
 			if err != nil {
-				return mods, fmt.Errorf("module has a relative \"path\" element, but we couldn't resolve the current working dir: %w", err)
+				return mods, fmt.Errorf("failed to resolve absolute path for %s: %w", mod.Path, err)
 			}
-			// Check if the path exists
-			if _, err := os.Stat(mod.Path); os.IsNotExist(err) {
-				return mods, fmt.Errorf("filepath does not exist: %s", mod.Path)
+
+			if c.Distribution.UseAbsoluteReplacePaths {
+				mod.Path = absPath
+			} else {
+				absOutputPath, err := filepath.Abs(c.Distribution.OutputPath)
+				if err != nil {
+					return mods, fmt.Errorf("failed to resolve absolute path for output dir %s: %w", c.Distribution.OutputPath, err)
+				}
+				mod.Path, err = filepath.Rel(absOutputPath, absPath)
+				if err != nil {
+					return mods, fmt.Errorf("failed to make path relative to output dir: %w", err)
+				}
+			}
+			mod.Path = filepath.ToSlash(mod.Path)
+
+			// Check if the path exists using the absolute path
+			if _, err := os.Stat(absPath); os.IsNotExist(err) {
+				return mods, fmt.Errorf("filepath does not exist: %s", absPath)
 			}
 		}
 
