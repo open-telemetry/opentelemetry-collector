@@ -30,8 +30,9 @@ func newTestController(t *testing.T, cfg *ControllerConfig, scrapers []component
 		cfg,
 		receivertest.NewNopSettings(receivertest.NopType),
 		scrapers,
-		func(*Controller[component.Component]) {},
+		func(*Controller[component.Component], []int) {},
 		tickerCh,
+		nil,
 	)
 	require.NoError(t, err)
 	return ctrl
@@ -40,7 +41,7 @@ func newTestController(t *testing.T, cfg *ControllerConfig, scrapers []component
 func TestNewController(t *testing.T) {
 	t.Parallel()
 
-	scrapeFunc := func(*Controller[component.Component]) {}
+	scrapeFunc := func(*Controller[component.Component], []int) {}
 
 	for _, tc := range []struct {
 		name     string
@@ -86,6 +87,7 @@ func TestNewController(t *testing.T) {
 				scrapers,
 				scrapeFunc,
 				tc.tickerCh,
+				nil,
 			)
 
 			require.NoError(t, err)
@@ -145,19 +147,23 @@ func TestStartScrapingWithNilTickerCh(t *testing.T) {
 	t.Parallel()
 
 	var scrapeCount atomic.Int32
-	scrapeFunc := func(*Controller[component.Component]) {
+	scrapeFunc := func(*Controller[component.Component], []int) {
 		scrapeCount.Add(1)
 	}
 
 	cfg := &ControllerConfig{
 		CollectionInterval: 50 * time.Millisecond,
 	}
+	scrapers := []component.Component{
+		&mockScraper{},
+	}
 	ctrl, err := NewController(
 		cfg,
 		receivertest.NewNopSettings(receivertest.NopType),
-		[]component.Component{},
+		scrapers,
 		scrapeFunc,
-		nil, // nil tickerCh — will create a real ticker internally.
+		nil, // nil tickerCh — per-scraper tickers use collection_interval.
+		nil,
 	)
 	require.NoError(t, err)
 
@@ -226,7 +232,7 @@ func TestStartScraping(t *testing.T) {
 
 	tickerCh := make(chan time.Time)
 	var scrapeCount atomic.Int32
-	scrapeFunc := func(*Controller[component.Component]) {
+	scrapeFunc := func(*Controller[component.Component], []int) {
 		scrapeCount.Add(1)
 	}
 
@@ -239,6 +245,7 @@ func TestStartScraping(t *testing.T) {
 		[]component.Component{},
 		scrapeFunc,
 		tickerCh,
+		nil,
 	)
 	require.NoError(t, err)
 
@@ -263,7 +270,7 @@ func TestStartScrapingWithInitialDelay(t *testing.T) {
 
 	tickerCh := make(chan time.Time)
 	var scrapeCount atomic.Int32
-	scrapeFunc := func(*Controller[component.Component]) {
+	scrapeFunc := func(*Controller[component.Component], []int) {
 		scrapeCount.Add(1)
 	}
 
@@ -277,6 +284,7 @@ func TestStartScrapingWithInitialDelay(t *testing.T) {
 		[]component.Component{},
 		scrapeFunc,
 		tickerCh,
+		nil,
 	)
 	require.NoError(t, err)
 
@@ -294,7 +302,7 @@ func TestStartScrapingShutdownDuringInitialDelay(t *testing.T) {
 	t.Parallel()
 
 	var scraped atomic.Bool
-	scrapeFunc := func(*Controller[component.Component]) {
+	scrapeFunc := func(*Controller[component.Component], []int) {
 		scraped.Store(true)
 	}
 
@@ -308,6 +316,7 @@ func TestStartScrapingShutdownDuringInitialDelay(t *testing.T) {
 		[]component.Component{},
 		scrapeFunc,
 		nil,
+		nil,
 	)
 	require.NoError(t, err)
 
@@ -316,6 +325,49 @@ func TestStartScrapingShutdownDuringInitialDelay(t *testing.T) {
 	require.NoError(t, ctrl.Shutdown(context.Background()))
 
 	assert.False(t, scraped.Load(), "scrapeFunc should not have been called")
+}
+
+func TestPerScraperCollectionIntervals(t *testing.T) {
+	t.Parallel()
+
+	cfg := &ControllerConfig{
+		CollectionInterval: 200 * time.Millisecond,
+	}
+	var fullCalls, idx0Calls, idx1Calls atomic.Int32
+	scrapeFunc := func(_ *Controller[component.Component], indices []int) {
+		if indices == nil {
+			fullCalls.Add(1)
+			return
+		}
+		for _, i := range indices {
+			switch i {
+			case 0:
+				idx0Calls.Add(1)
+			case 1:
+				idx1Calls.Add(1)
+			}
+		}
+	}
+	scrapers := []component.Component{&mockScraper{}, &mockScraper{}}
+	intervals := []time.Duration{40 * time.Millisecond, 120 * time.Millisecond}
+	ctrl, err := NewController(
+		cfg,
+		receivertest.NewNopSettings(receivertest.NopType),
+		scrapers,
+		scrapeFunc,
+		nil,
+		intervals,
+	)
+	require.NoError(t, err)
+	require.NoError(t, ctrl.Start(context.Background(), componenttest.NewNopHost()))
+
+	require.Eventually(t, func() bool { return fullCalls.Load() >= 1 }, time.Second, 5*time.Millisecond)
+
+	time.Sleep(300 * time.Millisecond)
+	require.NoError(t, ctrl.Shutdown(context.Background()))
+
+	assert.GreaterOrEqual(t, idx0Calls.Load(), int32(4), "faster scraper should run more often")
+	assert.Greater(t, idx0Calls.Load(), idx1Calls.Load(), "faster interval should produce more scrapes than slower")
 }
 
 func TestGetSettings(t *testing.T) {

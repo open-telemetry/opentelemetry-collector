@@ -31,8 +31,9 @@ const (
 )
 
 type factoryWithConfig struct {
-	f   xscraper.Factory
-	cfg component.Config
+	f                  xscraper.Factory
+	cfg                component.Config
+	collectionInterval time.Duration
 }
 
 type controllerOptions struct {
@@ -76,6 +77,20 @@ func AddFactoryWithConfig(f xscraper.Factory, cfg component.Config) ControllerOp
 	})
 }
 
+// AddFactoryWithCollectionInterval configures the xscraper.Factory like
+// [AddFactoryWithConfig] but overrides the collection interval for this scraper
+// only. When collectionInterval is zero, the controller-level
+// [scraperhelper.ControllerConfig.CollectionInterval] is used.
+func AddFactoryWithCollectionInterval(f xscraper.Factory, cfg component.Config, collectionInterval time.Duration) ControllerOption {
+	return optionFunc(func(o *controllerOptions) {
+		o.factoriesWithConfig = append(o.factoriesWithConfig, factoryWithConfig{
+			f:                  f,
+			cfg:                cfg,
+			collectionInterval: collectionInterval,
+		})
+	})
+}
+
 // WithTickerChannel allows you to override the scraper controller's ticker
 // channel to specify when scrape is called. This is only expected to be
 // used by tests.
@@ -93,6 +108,7 @@ func NewProfilesController(cfg *scraperhelper.ControllerConfig,
 ) (xreceiver.Profiles, error) {
 	co := getOptions(options)
 	scrapers := make([]xscraper.Profiles, 0, len(co.factoriesWithConfig))
+	intervals := make([]time.Duration, 0, len(co.factoriesWithConfig))
 	for _, fwc := range co.factoriesWithConfig {
 		set := controller.GetSettings(fwc.f.Type(), rSet)
 		s, err := fwc.f.CreateProfiles(context.Background(), set, fwc.cfg)
@@ -104,9 +120,18 @@ func NewProfilesController(cfg *scraperhelper.ControllerConfig,
 			return nil, err
 		}
 		scrapers = append(scrapers, s)
+		intervals = append(intervals, fwc.collectionInterval)
 	}
 	return controller.NewController[xscraper.Profiles](
-		cfg, rSet, scrapers, func(c *controller.Controller[xscraper.Profiles]) { scrapeProfiles(c, nextConsumer) }, co.tickerCh)
+		cfg,
+		rSet,
+		scrapers,
+		func(c *controller.Controller[xscraper.Profiles], indices []int) {
+			scrapeProfiles(c, nextConsumer, indices)
+		},
+		co.tickerCh,
+		intervals,
+	)
 }
 
 func getOptions(options []ControllerOption) controllerOptions {
@@ -117,18 +142,29 @@ func getOptions(options []ControllerOption) controllerOptions {
 	return co
 }
 
-func scrapeProfiles(c *controller.Controller[xscraper.Profiles], nextConsumer xconsumer.Profiles) {
+func scrapeProfiles(c *controller.Controller[xscraper.Profiles], nextConsumer xconsumer.Profiles, indices []int) {
 	ctx, done := controller.WithScrapeContext(c.Timeout)
 	defer done()
 
 	profiles := pprofile.NewProfiles()
-	for i := range c.Scrapers {
+	scrapeAt := func(i int) {
 		md, err := c.Scrapers[i].ScrapeProfiles(ctx)
 		if err != nil && !scrapererror.IsPartialScrapeError(err) {
-			continue
+			return
 		}
 		if mergeErr := md.MergeTo(profiles); mergeErr != nil {
 			continue
+		}
+	}
+	if indices == nil {
+		for i := range c.Scrapers {
+			scrapeAt(i)
+		}
+	} else {
+		for _, i := range indices {
+			if i >= 0 && i < len(c.Scrapers) {
+				scrapeAt(i)
+			}
 		}
 	}
 

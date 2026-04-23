@@ -3,14 +3,19 @@
 package metadata
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {

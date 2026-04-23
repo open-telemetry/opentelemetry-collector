@@ -9,7 +9,9 @@ package {{ .Package }}
 import (
 	{{- if $hasReagMetrics }}
 	"fmt"
-	"slices"
+	{{- end }}
+	{{- if or .Metrics .Events }}
+	"time"
 	{{- end }}
 
 	"go.opentelemetry.io/collector/confmap"
@@ -23,6 +25,9 @@ import (
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 	enabledSetByUser bool
 }
 
@@ -46,6 +51,9 @@ const (
 // {{ $name.Render }}MetricConfig provides config for the {{ $name }} metric.
 type {{ $name.Render }}MetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 	enabledSetByUser bool
 	{{- if hasAggregatableAttributes $metric.Attributes }}
 
@@ -70,8 +78,17 @@ func (ms *{{ $name.Render }}MetricConfig) Validate() error {
 
 	{{- range $element := $metric.Attributes }}
 	{{- if (attributeInfo $element).IsRequired }}
-	if !slices.Contains(ms.EnabledAttributes, {{ $name.Render }}MetricAttributeKey{{ $element.Render }}) {
-		return fmt.Errorf("{{ (attributeInfo $element).Name }} is a required attribute for {{ $name }} metric and must be included")
+	{
+		var found bool
+		for _, a := range ms.EnabledAttributes {
+			if a == {{ $name.Render }}MetricAttributeKey{{ $element.Render }} {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("{{ (attributeInfo $element).Name }} is a required attribute for {{ $name }} metric and must be included")
+		}
 	}
 	{{- end }}
 	{{- end }}
@@ -115,6 +132,9 @@ func DefaultMetricsConfig() MetricsConfig {
 // EventConfig provides common config for a particular event.
 type EventConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this event is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 
 	enabledSetByUser bool
 }
