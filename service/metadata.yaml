@@ -209,3 +209,8 @@ feature_gates:
     stage: alpha
     from_version: 'v0.123.0'
     reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/component-universal-telemetry.md'
+  - id: telemetry.noDefaultMetricsReader
+    description: 'When enabled, the collector will not bind any default Prometheus metrics endpoint on port 8888. Users must explicitly configure service::telemetry::metrics::readers.'
+    stage: alpha
+    from_version: 'v0.148.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/issues/14727'

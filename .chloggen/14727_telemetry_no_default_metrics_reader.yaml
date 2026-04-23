@@ -1,0 +1,10 @@
+change_type: "breaking"
+component: "pkg/service"
+note: "Add feature gate `telemetry.noDefaultMetricsReader` to stop binding port 8888 by default for internal metrics."
+issues: [14727]
+subtext: |
+  When the `telemetry.noDefaultMetricsReader` feature gate is enabled, the collector will not
+  start a Prometheus metrics server on port 8888 by default. Users must explicitly configure
+  `service::telemetry::metrics::readers` to expose internal metrics. This gate is currently
+  Alpha (disabled by default) and will graduate to Beta in a future release.
+change_logs: ["user"]
