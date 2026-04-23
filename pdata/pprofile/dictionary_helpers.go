@@ -121,7 +121,7 @@ func convertKeyValueToReferences(getStringIndex func(string) int32, kvs []intern
 		kv := &kvs[i]
 
 		// Convert key to reference
-		if kv.Key != "" && kv.KeyStrindex == 0 {
+		if kv.Key != "" {
 			kv.KeyStrindex = getStringIndex(kv.Key)
 			kv.Key = ""
 		}
