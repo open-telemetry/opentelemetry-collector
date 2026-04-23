@@ -9,10 +9,8 @@
 # opentelemetry-collector maintainers are workflow managers for it.
 #
 # IMPORTANT NOTE: Changes to this script need changes to the "Data Variables"
-# definition of the Slack webhook. Variables are prefixed with the repo name
-# (with '-' replaced by '_') to allow multiple repos to share the workflow.
+# definition of the Slack webhook.
 # Current defined variables are:
-#
 # - "opentelemetry_collector_ready_to_merge_url"
 # - "opentelemetry_collector_ready_to_merge_count"
 # - "opentelemetry_collector_final_comment_period_url"
