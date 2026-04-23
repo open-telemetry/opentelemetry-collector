@@ -25,6 +25,10 @@ type TracesConfigV030 struct {
 	Propagators []string `mapstructure:"propagators"`
 
 	config.TracerProvider `mapstructure:",squash"`
+
+	// MigratedFromV02 is set when the config was transparently migrated from the v0.2.0
+	// format. It is not part of the config schema and is used to emit a deprecation warning.
+	MigratedFromV02 bool `mapstructure:"-"`
 }
 
 func (c *TracesConfigV030) Unmarshal(conf *confmap.Conf) error {
@@ -40,7 +44,7 @@ func (c *TracesConfigV030) Unmarshal(conf *confmap.Conf) error {
 			// compatibility attempts
 			return err
 		}
-		// TODO: add a warning log to tell users to migrate their config
+		c.MigratedFromV02 = true
 		return tracesConfigV02ToV03(v2TracesConfig, c)
 	}
 	// ensure endpoint normalization occurs
@@ -81,6 +85,10 @@ type MetricsConfigV030 struct {
 	Level configtelemetry.Level `mapstructure:"level"`
 
 	config.MeterProvider `mapstructure:",squash"`
+
+	// MigratedFromV02 is set when the config was transparently migrated from the v0.2.0
+	// format. It is not part of the config schema and is used to emit a deprecation warning.
+	MigratedFromV02 bool `mapstructure:"-"`
 }
 
 func (c *MetricsConfigV030) Unmarshal(conf *confmap.Conf) error {
@@ -95,7 +103,7 @@ func (c *MetricsConfigV030) Unmarshal(conf *confmap.Conf) error {
 			// compatibility attempts
 			return err
 		}
-		// TODO: add a warning log to tell users to migrate their config
+		c.MigratedFromV02 = true
 		return metricsConfigV02ToV03(v02, c)
 	}
 	// ensure endpoint normalization occurs
@@ -192,6 +200,10 @@ type LogsConfigV030 struct {
 
 	// DisableZapResource disables adding resource attributes to logs exported through Zap. This does not affect logs exported through OTLP.
 	DisableZapResource bool `mapstructure:"disable_zap_resource,omitempty"`
+
+	// MigratedFromV02 is set when the config was transparently migrated from the v0.2.0
+	// format. It is not part of the config schema and is used to emit a deprecation warning.
+	MigratedFromV02 bool `mapstructure:"-"`
 }
 
 // LogsSamplingConfig sets a sampling strategy for the logger. Sampling caps the
@@ -229,7 +241,7 @@ func (c *LogsConfigV030) Unmarshal(conf *confmap.Conf) error {
 			// compatibility attempts
 			return err
 		}
-		// TODO: add a warning log to tell users to migrate their config
+		c.MigratedFromV02 = true
 		return logsConfigV02ToV03(v02, c)
 	}
 	// ensure endpoint normalization occurs

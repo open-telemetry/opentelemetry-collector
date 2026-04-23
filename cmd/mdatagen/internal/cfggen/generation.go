@@ -58,6 +58,14 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return typeName
 		},
+		"embeddedName": func(ref string) string {
+			if ref == "" {
+				panic("attempted to use embedded name with an empty ref")
+			}
+			refDesc := NewRef(ref)
+			name, _ := helpers.FormatIdentifier(refDesc.defName, true)
+			return name
+		},
 		"formatDefaultValue": func(md *ConfigMetadata, name string, defaultValue any) string {
 			return FormatDefaultValue(md, name, defaultValue, rootPackage, componentPackage)
 		},
