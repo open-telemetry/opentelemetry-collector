@@ -1,4 +1,4 @@
-change_type: enhancement
+change_type: breaking
 
 component: processor/memory_limiter
 
