@@ -5,10 +5,19 @@
 #
 # Posts a summary of open PRs with specific labels to Slack.
 #
-# The Slack payload uses the rich_text block so bullets render as real list
-# items. See https://docs.slack.dev/reference/block-kit/blocks/rich-text-block
-# for the schema, and https://app.slack.com/block-kit-builder to preview
-# a payload.
+# The Slack workflow is named "OTel Collector Weekly summary" (ID: Wf0AUBDM76KH).
+# opentelemetry-collector maintainers are workflow managers for it.
+#
+# IMPORTANT NOTE: Changes to this script need changes to the "Data Variables"
+# definition of the Slack webhook. Variables are prefixed with the repo name
+# (with '-' replaced by '_') to allow multiple repos to share the workflow.
+# Current defined variables are:
+#
+# - "opentelemetry_collector_ready_to_merge_url"
+# - "opentelemetry_collector_ready_to_merge_count"
+# - "opentelemetry_collector_final_comment_period_url"
+# - "opentelemetry_collector_final_comment_period_count"
+
 
 set -euo pipefail
 
@@ -21,60 +30,27 @@ if (( ${#missing[@]} > 0 )); then
     exit 1
 fi
 
-LABELS=(
-    "ready-to-merge"
-    "rfc:final-comment-period"
+declare -A LABELS=(
+    ["ready-to-merge"]="ready_to_merge"
+    ["rfc:final-comment-period"]="final_comment_period"
 )
 
-items='[]'
-for label in "${LABELS[@]}"; do
+repo_prefix="${REPO##*/}"
+repo_prefix="${repo_prefix//-/_}"
+
+payload='{}'
+for label in "${!LABELS[@]}"; do
+    prefix="${repo_prefix}_${LABELS[$label]}"
     q="is:pr is:open repo:${REPO} label:\"${label}\""
     n=$(gh api -X GET search/issues -f q="${q}" --jq '.total_count')
-    if [[ "${n:-0}" -eq 0 ]]; then
-        echo "Skipping ${label}: no open PRs."
-        continue
-    fi
     url="https://github.com/${REPO}/pulls?q=$(jq -rn --arg q "${q}" '$q|@uri')"
-    items=$(jq \
-        --arg lbl "${label}" \
-        --argjson n "${n}" \
-        --arg url "${url}" \
-        '. + [{
-           type: "rich_text_section",
-           elements: [
-             { type: "text", text: "PRs with label " },
-             { type: "text", text: $lbl, style: { code: true } },
-             { type: "text", text: " (\($n)): " },
-             { type: "link", url: $url, text: "list" }
-           ]
-         }]' <<<"${items}")
+    payload=$(jq \
+        --arg count_key "${prefix}_count" \
+        --arg count_val "${n}" \
+        --arg url_key "${prefix}_url" \
+        --arg url_val "${url}" \
+        '. + {($count_key): $count_val, ($url_key): $url_val}' <<<"${payload}")
 done
-
-if [[ "$(jq 'length' <<<"${items}")" -eq 0 ]]; then
-    echo "No PRs match any tracked label; skipping Slack post."
-    exit 0
-fi
-
-payload=$(jq -n --argjson items "${items}" --arg repo "${REPO##*/}" '{
-    blocks: [{
-        type: "rich_text",
-        elements: [
-            {
-                type: "rich_text_section",
-                elements: [
-                    { type: "text",
-                      text: "Weekly PR summary for \($repo)",
-                      style: { bold: true } }
-                ]
-            },
-            {
-                type: "rich_text_list",
-                style: "bullet",
-                elements: $items
-            }
-        ]
-    }]
-}')
 
 curl -fsS -X POST -H 'Content-Type: application/json' \
     --data-binary @- "${SLACK_WEBHOOK_URL}" <<<"${payload}"
