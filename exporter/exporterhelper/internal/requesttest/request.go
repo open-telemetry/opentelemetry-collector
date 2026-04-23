@@ -48,10 +48,10 @@ func (r *FakeRequest) BytesSize() int {
 	return r.Bytes
 }
 
-func (r *FakeRequest) MergeSplit(_ context.Context, limits map[request.SizerType]int64, r2 request.Request) ([]request.Request, error) {
+func (r *FakeRequest) MergeSplit(_ context.Context, maxSizePerSizer map[request.SizerType]int64, r2 request.Request) ([]request.Request, error) {
 	var maxSize int
 	var szt request.SizerType
-	for k, v := range limits {
+	for k, v := range maxSizePerSizer {
 		szt = k
 		maxSize = int(v)
 		break

@@ -95,15 +95,15 @@ type BatchConfig struct {
 	// Sizer determines the type of size measurement used by the batch.
 	// If not configured, use the same configuration as the queue.
 	// It accepts "requests", "items", or "bytes".
-	// Deprecated: Use Limits instead if multiple sizers are needed.
+	// Deprecated: Use Sizers instead if multiple sizers are needed.
 	Sizer request.SizerType `mapstructure:"sizer"`
 
 	// MinSize defines the configuration for the minimum size of a batch.
-	// Deprecated: Use Limits instead.
+	// Deprecated: Use Sizers instead.
 	MinSize int64 `mapstructure:"min_size"`
 
 	// MaxSize defines the configuration for the maximum size of a batch.
-	// Deprecated: Use Limits instead.
+	// Deprecated: Use Sizers instead.
 	MaxSize int64 `mapstructure:"max_size"`
 
 	// Sizers allows configuring multiple sizing constraints.
