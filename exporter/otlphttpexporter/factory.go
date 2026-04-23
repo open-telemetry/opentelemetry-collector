@@ -27,6 +27,14 @@ import (
 	"go.opentelemetry.io/collector/exporter/xexporter"
 )
 
+const (
+	// defaultMaxRequestBodySize is the default maximum size of a batch in bytes.
+	// It matches the default MaxRequestBodySize of the otlpreceiver (20 MiB),
+	// preventing permanent HTTP 400 errors when sending to a default otlp/http receiver.
+	// See https://github.com/open-telemetry/opentelemetry-collector/issues/15177
+	defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20 MiB
+)
+
 // NewFactory creates a factory for OTLP exporter.
 func NewFactory() exporter.Factory {
 	return xexporter.NewFactory(
@@ -48,9 +56,17 @@ func createDefaultConfig() component.Config {
 	// We almost read 0 bytes, so no need to tune ReadBufferSize.
 	clientConfig.WriteBufferSize = 512 * 1024
 
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
+
+	queueCfg.Batch = configoptional.Some(exporterhelper.BatchConfig{
+		FlushTimeout: 200 * time.Millisecond,
+		Sizer:        exporterhelper.RequestSizerTypeBytes,
+		MinSize:      0,
+		MaxSize:      defaultMaxRequestBodySize,
+	})
 	return &Config{
 		RetryConfig:  configretry.NewDefaultBackOffConfig(),
-		QueueConfig:  configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+		QueueConfig:  configoptional.Some(queueCfg),
 		Encoding:     EncodingProto,
 		ClientConfig: clientConfig,
 	}
