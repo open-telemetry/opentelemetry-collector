@@ -5,6 +5,7 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -350,6 +351,51 @@ func BenchmarkSplittingBasedOnItemCountManySmallTraces(b *testing.B) {
 			merged = append(merged[0:len(merged)-1], res...)
 		}
 		assert.Len(b, merged, 1)
+	}
+}
+
+func TestMergeSplitTracesMultiSizerOrder(t *testing.T) {
+	var pbMarshaler ptrace.ProtoMarshaler
+	
+	// Create 4 distinct spans in order.
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+	for i := 0; i < 4; i++ {
+		span := ss.Spans().AppendEmpty()
+		span.SetName(fmt.Sprintf("span-%d", i))
+	}
+	
+	// Calculate size of 2 spans to set byte limit.
+	td2 := ptrace.NewTraces()
+	rs2 := td2.ResourceSpans().AppendEmpty()
+	ss2 := rs2.ScopeSpans().AppendEmpty()
+	for i := 0; i < 2; i++ {
+		span := ss2.Spans().AppendEmpty()
+		span.SetName(fmt.Sprintf("span-%d", i))
+	}
+	limitBytes := int64(pbMarshaler.TracesSize(td2) - 1)
+	
+	limits := map[request.SizerType]int64{
+		request.SizerTypeItems: 2,
+		request.SizerTypeBytes: limitBytes,
+	}
+	
+	req := newTracesRequest(td)
+	res, err := req.MergeSplit(context.Background(), limits, nil)
+	require.NoError(t, err)
+	
+	// We expect 4 batches, each with 1 span.
+	assert.Len(t, res, 4)
+	
+	// Verify order by checking the name of the span in each batch!
+	for i := 0; i < 4; i++ {
+		trReq := res[i].(*tracesRequest)
+		assert.Equal(t, 1, trReq.ItemsCount())
+		
+		// Extract the span name
+		name := trReq.td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name()
+		assert.Equal(t, fmt.Sprintf("span-%d", i), name)
 	}
 }
 
