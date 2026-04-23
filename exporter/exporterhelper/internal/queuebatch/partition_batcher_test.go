@@ -63,7 +63,7 @@ func TestPartitionBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T)
 				FlushTimeout: 0,
 				Sizer:        tt.sizerType,
 				MinSize:      0,
-				Limits: map[request.SizerType]SizerLimit{
+				Sizers: map[request.SizerType]SizerLimit{
 					tt.sizerType: {MinSize: 0},
 				},
 			}
@@ -132,7 +132,7 @@ func TestPartitionBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 				FlushTimeout: 0,
 				Sizer:        tt.sizerType,
 				MinSize:      10,
-				Limits: map[request.SizerType]SizerLimit{
+				Sizers: map[request.SizerType]SizerLimit{
 					tt.sizerType: {MinSize: 10},
 				},
 			}
@@ -216,7 +216,7 @@ func TestPartitionBatcher_NoSplit_WithTimeout(t *testing.T) {
 				FlushTimeout: 50 * time.Millisecond,
 				Sizer:        tt.sizerType,
 				MinSize:      100,
-				Limits: map[request.SizerType]SizerLimit{
+				Sizers: map[request.SizerType]SizerLimit{
 					tt.sizerType: {MinSize: 100},
 				},
 			}
@@ -291,7 +291,7 @@ func TestPartitionBatcher_Split_TimeoutDisabled(t *testing.T) {
 				Sizer:        tt.sizerType,
 				MinSize:      100,
 				MaxSize:      100,
-				Limits: map[request.SizerType]SizerLimit{
+				Sizers: map[request.SizerType]SizerLimit{
 					tt.sizerType: {MinSize: 100, MaxSize: 100},
 				},
 			}
@@ -342,7 +342,7 @@ func TestPartitionBatcher_Shutdown(t *testing.T) {
 		FlushTimeout: 100 * time.Second,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      10,
-		Limits: map[request.SizerType]SizerLimit{
+		Sizers: map[request.SizerType]SizerLimit{
 			request.SizerTypeItems: {MinSize: 10},
 		},
 	}
@@ -374,7 +374,7 @@ func TestPartitionBatcher_MergeError(t *testing.T) {
 		Sizer:        request.SizerTypeItems,
 		MinSize:      5,
 		MaxSize:      7,
-		Limits: map[request.SizerType]SizerLimit{
+		Sizers: map[request.SizerType]SizerLimit{
 			request.SizerTypeItems: {MinSize: 5, MaxSize: 7},
 		},
 	}
@@ -412,7 +412,7 @@ func TestPartitionBatcher_PartialSuccessError(t *testing.T) {
 		Sizer:        request.SizerTypeBytes,
 		MinSize:      10,
 		MaxSize:      15,
-		Limits: map[request.SizerType]SizerLimit{
+		Sizers: map[request.SizerType]SizerLimit{
 			request.SizerTypeBytes: {MinSize: 10, MaxSize: 15},
 		},
 	}
@@ -457,7 +457,7 @@ func TestSPartitionBatcher_PartialSuccessError_AfterOkRequest(t *testing.T) {
 		Sizer:        request.SizerTypeBytes,
 		MinSize:      10,
 		MaxSize:      15,
-		Limits: map[request.SizerType]SizerLimit{
+		Sizers: map[request.SizerType]SizerLimit{
 			request.SizerTypeBytes: {MinSize: 10, MaxSize: 15},
 		},
 	}
@@ -573,7 +573,7 @@ func TestPartitionBatcher_ContextMerging(t *testing.T) {
 				FlushTimeout: 0,
 				Sizer:        request.SizerTypeItems,
 				MinSize:      10,
-				Limits: map[request.SizerType]SizerLimit{
+				Sizers: map[request.SizerType]SizerLimit{
 					request.SizerTypeItems: {MinSize: 10},
 				},
 			}
@@ -597,7 +597,7 @@ func TestPartitionBatcher_OnEmptyCallbackTriggered(t *testing.T) {
 		FlushTimeout: 10 * time.Millisecond,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      100, // High min size to ensure data doesn't flush immediately
-		Limits: map[request.SizerType]SizerLimit{
+		Sizers: map[request.SizerType]SizerLimit{
 			request.SizerTypeItems: {MinSize: 100},
 		},
 	}
@@ -636,7 +636,7 @@ func TestPartitionBatcher_OnEmptyNotCalledWithActiveData(t *testing.T) {
 		FlushTimeout: 20 * time.Millisecond,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      5,
-		Limits: map[request.SizerType]SizerLimit{
+		Sizers: map[request.SizerType]SizerLimit{
 			request.SizerTypeItems: {MinSize: 5},
 		},
 	}

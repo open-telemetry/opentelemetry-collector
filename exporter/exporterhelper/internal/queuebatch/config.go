@@ -106,9 +106,9 @@ type BatchConfig struct {
 	// Deprecated: Use Limits instead.
 	MaxSize int64 `mapstructure:"max_size"`
 
-	// Limits allows configuring multiple sizing constraints.
+	// Sizers allows configuring multiple sizing constraints.
 	// The key is the SizerType (e.g., "bytes", "items").
-	Limits map[request.SizerType]SizerLimit `mapstructure:"limits"`
+	Sizers map[request.SizerType]SizerLimit `mapstructure:"sizers"`
 
 	// Partition defines the partitioning of the batches configuration.
 	Partition PartitionConfig `mapstructure:"partition"`
@@ -125,13 +125,13 @@ func (cfg *BatchConfig) Unmarshal(conf *confmap.Conf) error {
 		return err
 	}
 	if cfg.Sizer.String() != "" {
-		if cfg.Limits == nil {
-			cfg.Limits = make(map[request.SizerType]SizerLimit)
+		if cfg.Sizers == nil {
+			cfg.Sizers = make(map[request.SizerType]SizerLimit)
 		}
-		if _, ok := cfg.Limits[cfg.Sizer]; ok {
-			return fmt.Errorf("sizer %q defined in both `sizer` and `limits`", cfg.Sizer.String())
+		if _, ok := cfg.Sizers[cfg.Sizer]; ok {
+			return fmt.Errorf("sizer %q defined in both `sizer` and `sizers`", cfg.Sizer.String())
 		}
-		cfg.Limits[cfg.Sizer] = SizerLimit{
+		cfg.Sizers[cfg.Sizer] = SizerLimit{
 			MinSize: cfg.MinSize,
 			MaxSize: cfg.MaxSize,
 		}
@@ -161,11 +161,11 @@ func (cfg *BatchConfig) Validate() error {
 		return fmt.Errorf("`flush_timeout` must be positive, found %d", cfg.FlushTimeout)
 	}
 
-	if len(cfg.Limits) == 0 {
+	if len(cfg.Sizers) == 0 {
 		return errors.New("`batch` requires at least one sizer limit")
 	}
 
-	for szt, limit := range cfg.Limits {
+	for szt, limit := range cfg.Sizers {
 		if szt != request.SizerTypeItems && szt != request.SizerTypeBytes {
 			return fmt.Errorf("`batch` supports only `items` or `bytes` sizer, found %q", szt.String())
 		}

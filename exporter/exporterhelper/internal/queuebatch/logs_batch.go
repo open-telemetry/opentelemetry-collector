@@ -16,9 +16,9 @@ import (
 
 // MergeSplit splits and/or merges the provided logs request and the current request into one or more requests
 // conforming with the MaxSizeConfig.
-func (req *logsRequest) MergeSplit(_ context.Context, limits map[request.SizerType]int64, r2 request.Request) ([]request.Request, error) {
+func (req *logsRequest) MergeSplit(_ context.Context, maxSizePerSizer map[request.SizerType]int64, r2 request.Request) ([]request.Request, error) {
 	sizers := make(map[request.SizerType]sizer.LogsSizer)
-	for szt := range limits {
+	for szt := range maxSizePerSizer {
 		switch szt {
 		case request.SizerTypeItems:
 			sizers[szt] = &sizer.LogsCountSizer{}
@@ -38,11 +38,11 @@ func (req *logsRequest) MergeSplit(_ context.Context, limits map[request.SizerTy
 	}
 
 	// If no limits we can simply merge the new request into the current and return.
-	if len(limits) == 0 {
+	if len(maxSizePerSizer) == 0 {
 		return []request.Request{req}, nil
 	}
 
-	return req.split(limits, sizers)
+	return req.split(maxSizePerSizer, sizers)
 }
 
 func (req *logsRequest) mergeTo(dst *logsRequest, sizers map[request.SizerType]sizer.LogsSizer) {
@@ -53,9 +53,9 @@ func (req *logsRequest) mergeTo(dst *logsRequest, sizers map[request.SizerType]s
 	req.ld.ResourceLogs().MoveAndAppendTo(dst.ld.ResourceLogs())
 }
 
-func (req *logsRequest) split(limits map[request.SizerType]int64, sizers map[request.SizerType]sizer.LogsSizer) ([]request.Request, error) {
+func (req *logsRequest) split(maxSizePerSizer map[request.SizerType]int64, sizers map[request.SizerType]sizer.LogsSizer) ([]request.Request, error) {
 	var res []request.Request
-	sortedSzt := getSortedSizerTypes(limits)
+	sortedSzt := getSortedSizerTypes(maxSizePerSizer)
 	for {
 		if req.ld.LogRecordCount() == 0 {
 			break
@@ -65,11 +65,11 @@ func (req *logsRequest) split(limits map[request.SizerType]int64, sizers map[req
 		isInitial := true
 		exceededAny := false
 		for _, szt := range sortedSzt {
-			limit := limits[szt]
+			maxSize := maxSizePerSizer[szt]
 			sz := sizers[szt]
-			if limit > 0 && int64(sz.LogsSize(ld)) > limit {
+			if maxSize > 0 && int64(sz.LogsSize(ld)) > maxSize {
 				exceededAny = true
-				ldNew, _ := extractLogs(ld, int(limit), sz)
+				ldNew, _ := extractLogs(ld, int(maxSize), sz)
 				if ldNew.LogRecordCount() == 0 {
 					return res, fmt.Errorf("one log record size is greater than max size, dropping items")
 				}

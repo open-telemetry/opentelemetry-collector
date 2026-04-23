@@ -82,7 +82,7 @@ func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Req
 	qb.lastDataTime = time.Now()
 	if qb.currentBatch == nil {
 		maxLimits := make(map[request.SizerType]int64)
-		for szt, limit := range qb.cfg.Limits {
+		for szt, limit := range qb.cfg.Sizers {
 			maxLimits[szt] = limit.MaxSize
 		}
 		reqList, mergeSplitErr := req.MergeSplit(ctx, maxLimits, nil)
@@ -133,7 +133,7 @@ func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Req
 	}
 
 	maxLimits := make(map[request.SizerType]int64)
-	for szt, limit := range qb.cfg.Limits {
+	for szt, limit := range qb.cfg.Sizers {
 		maxLimits[szt] = limit.MaxSize
 	}
 	reqList, mergeSplitErr := qb.currentBatch.req.MergeSplit(ctx, maxLimits, req)
