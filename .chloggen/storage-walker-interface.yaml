@@ -1,0 +1,11 @@
+# Use this changelog template to create an entry for release notes.
+
+change_type: enhancement
+component: pkg/xextension/storage
+note: Add Walker interface, WalkFunc type, and SkipAll error value to support iterating over storage key/value entries.
+issues: [15190, 15191]
+subtext: |
+  A storage Client may optionally implement the Walker interface to allow
+  consumers to range through all stored entries. This enables use cases such
+  as storage migrations and TTL-based garbage collection.
+change_logs: [api]
