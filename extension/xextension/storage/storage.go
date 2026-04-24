@@ -54,6 +54,49 @@ type Client interface {
 	Close(ctx context.Context) error
 }
 
+// WalkFunc is the type of the function called by Walk to visit each entry in the storage.
+//
+// The key argument contains the key of the stored entry.
+// Key order is not guaranteed and may vary between storage implementations.
+//
+// The value bytes are only valid for the duration of the
+// function call and need to be copied if later access is needed.
+//
+// The function may return operations that are collected and applied in order
+// either when the end of the Walk is reached or after SkipAll is returned.
+// Returning a nil slice is valid and simply contributes no operations.
+// All operation types (Get, Set, Delete) are valid in the returned slice.
+// Get operations work as usual — the result is stored in the Operation instance.
+//
+// If the storage supports transactions, all returned operations must be
+// applied in the same transaction the key/value entries for WalkFunc were obtained from.
+//
+// The error result returned by the function controls how Walk continues:
+//
+// If the function returns the special value SkipAll, Walk skips all remaining
+// storage entries and all collected operations still get applied in order.
+//
+// Otherwise, if the function returns a non-nil error,
+// Walk stops entirely and returns that error without applying
+// any of the collected operations.
+type WalkFunc func(key string, value []byte) ([]*Operation, error)
+
+// SkipAll is used as a return value from WalkFunc to indicate that
+// all remaining storage entries are to be skipped.
+// The pending operations are still applied.
+var SkipAll = errors.New("skip everything and stop the walk")
+
+// Walker is the interface that a storage extension Client may implement
+// in order to support ranging through the storage entries.
+type Walker interface {
+	// Walk calls fn for every key/value pair in the storage.
+	//
+	// If fn returns a non-nil error other than SkipAll, or if Walk
+	// encounters an internal error, ranging stops immediately and no
+	// collected operations are applied.
+	Walk(ctx context.Context, fn WalkFunc) error
+}
+
 type OpType int
 
 const (
