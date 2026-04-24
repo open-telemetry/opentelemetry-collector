@@ -8,9 +8,14 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	{{- if and .OverrideValueEnabled .ResourceAttributes }}
+	"github.com/stretchr/testify/assert"
+	{{- end }}
 	"github.com/stretchr/testify/require"
 
+	{{- if .Metrics }}
 	"go.opentelemetry.io/collector/confmap"
+	{{- end }}
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -44,7 +49,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				{{- if .ResourceAttributes }}
 				ResourceAttributes: ResourceAttributesConfig{
 					{{- range $name, $_ := .ResourceAttributes }}
-					{{ $name.Render }}: ResourceAttributeConfig{Enabled: true},
+					{{ $name.Render }}: {{ if $.OverrideValueEnabled }}{{ $name.Render }}{{ end }}ResourceAttributeConfig{Enabled: true},
 					{{- end }}
 				},
 				{{- end }}
@@ -68,7 +73,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				{{- if .ResourceAttributes }}
 				ResourceAttributes: ResourceAttributesConfig{
 					{{- range $name, $_ := .ResourceAttributes }}
-					{{ $name.Render }}: ResourceAttributeConfig{Enabled: false},
+					{{ $name.Render }}: {{ if $.OverrideValueEnabled }}{{ $name.Render }}{{ end }}ResourceAttributeConfig{Enabled: false},
 					{{- end }}
 				},
 				{{- end }}
@@ -82,7 +87,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				{{- if $reag }}
 				{{- range $name, $metric := .Metrics }}{{ $name.Render }}MetricConfig{}, {{ end }}
 				{{- else }}MetricConfig{},{{ end }}
+				{{- if $.OverrideValueEnabled }}
+				{{- range $name, $_ := .ResourceAttributes }}{{ $name.Render }}ResourceAttributeConfig{}, {{ end }}
+				{{- else }}
 				{{- if .ResourceAttributes }}ResourceAttributeConfig{},{{ end }}
+				{{- end }}
 			))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
@@ -126,7 +135,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 			name: "all_set",
 			want: ResourceAttributesConfig{
 				{{- range $name, $_ := .ResourceAttributes }}
-				{{ $name.Render }}: ResourceAttributeConfig{Enabled: true},
+				{{ $name.Render }}: {{ if $.OverrideValueEnabled }}{{ $name.Render }}{{ end }}ResourceAttributeConfig{Enabled: true},
 				{{- end }}
 			},
 		},
@@ -134,7 +143,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 			name: "none_set",
 			want: ResourceAttributesConfig{
 				{{- range $name, $_ := .ResourceAttributes }}
-				{{ $name.Render }}: ResourceAttributeConfig{Enabled: false},
+				{{ $name.Render }}: {{ if $.OverrideValueEnabled }}{{ $name.Render }}{{ end }}ResourceAttributeConfig{Enabled: false},
 				{{- end }}
 			},
 		},
@@ -142,11 +151,44 @@ func TestResourceAttributesConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(
+				{{- if $.OverrideValueEnabled }}
+				{{- range $name, $_ := .ResourceAttributes }}{{ $name.Render }}ResourceAttributeConfig{}, {{ end }}
+				{{- else }}ResourceAttributeConfig{}, {{ end }}
+			))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }
+
+{{- if $.OverrideValueEnabled }}
+
+func TestResourceAttributesOverrideConfig(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "override_set")
+	{{- range $name, $_ := .ResourceAttributes }}
+	assert.NotNil(t, cfg.{{ $name.Render }}.OverrideValue, "override_value should be set for {{ $name }}")
+	{{- end }}
+}
+
+{{ $hasEnum := false }}
+{{- range $_, $attr := .ResourceAttributes }}{{- if $attr.Enum }}{{ $hasEnum = true }}{{- end }}{{- end }}
+{{- if $hasEnum }}
+func TestResourceAttributesOverrideEnumValidation(t *testing.T) {
+	{{- range $name, $attr := .ResourceAttributes }}
+	{{- if $attr.Enum }}
+	{
+		invalidVal := "invalid-enum-value"
+		cfg := {{ $name.Render }}ResourceAttributeConfig{
+			Enabled: true,
+			OverrideValue: &invalidVal,
+		}
+		assert.Error(t, cfg.Validate())
+	}
+	{{- end }}
+	{{- end }}
+}
+{{- end }}
+{{- end }}
 
 func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))

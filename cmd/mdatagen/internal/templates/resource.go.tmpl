@@ -46,6 +46,9 @@ func (rb *ResourceBuilder) Set{{ $name.Render }}(val {{ $attr.Type.Primitive }})
 
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
+	{{- if .OverrideValueEnabled }}
+	rb.config.applyOverrideValues(rb.res)
+	{{- end }}
 	r := rb.res
 	rb.res = pcommon.NewResource()
 	return r
