@@ -3,4 +3,4 @@ sizer: bytes
 queue_size: 2000 
 batch:
   # sizer is overridden here by parent sizer
-  min_size: 100 
+  flush_timeout: 2s
