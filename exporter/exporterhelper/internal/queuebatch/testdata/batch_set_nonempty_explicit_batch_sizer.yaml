@@ -1,0 +1,6 @@
+enabled: true
+sizer: bytes
+queue_size: 2000
+batch:
+  sizer: items
+  min_size: 100

@@ -207,6 +207,21 @@ func TestUnmarshal(t *testing.T) {
 			},
 		},
 		{
+			path:    "batch_set_nonempty_explicit_batch_sizer.yaml",
+			baseCfg: newLegacyBaseCfg,
+			expectedCfg: func() configoptional.Optional[Config] {
+				cfg := newLegacyBaseCfg()
+				cfg.Get().Sizer = request.SizerTypeBytes
+				cfg.Get().QueueSize = 2000
+				cfg.Get().Batch = configoptional.Some(BatchConfig{
+					FlushTimeout: 200 * time.Millisecond,
+					Sizer:        request.SizerTypeItems,
+					MinSize:      100,
+				})
+				return cfg
+			},
+		},
+		{
 			path: "batch_set_nonempty_multiple_sizers.yaml",
 			expectedCfg: func() configoptional.Optional[Config] {
 				cfg := newBaseCfg()
