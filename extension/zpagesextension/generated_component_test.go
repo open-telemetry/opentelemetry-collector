@@ -4,12 +4,15 @@ package zpagesextension
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.yaml.in/yaml/v3"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 )
@@ -22,6 +25,55 @@ func TestComponentFactoryType(t *testing.T) {
 
 func TestComponentConfigStruct(t *testing.T) {
 	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
+}
+
+func TestComponentConfigMarshal(t *testing.T) {
+	cfg := NewFactory().CreateDefaultConfig()
+	cm := confmap.New()
+	require.NoError(t, cm.Marshal(cfg))
+
+	data := cm.ToStringMap()
+	_, err := yaml.Marshal(data)
+	require.NoError(t, err)
+	_, err = json.Marshal(data)
+	require.NoError(t, err)
+
+	roundTrip := NewFactory().CreateDefaultConfig()
+	require.NoError(t, cm.Unmarshal(&roundTrip))
+	cmRoundTrip := confmap.New()
+	require.NoError(t, cmRoundTrip.Marshal(roundTrip))
+	roundTripAgain := NewFactory().CreateDefaultConfig()
+	require.NoError(t, cmRoundTrip.Unmarshal(&roundTripAgain))
+	cmRoundTripAgain := confmap.New()
+	require.NoError(t, cmRoundTripAgain.Marshal(roundTripAgain))
+	roundTripAgainMap := cmRoundTripAgain.ToStringMap()
+	roundTripThird := NewFactory().CreateDefaultConfig()
+	require.NoError(t, cmRoundTripAgain.Unmarshal(&roundTripThird))
+	cmRoundTripThird := confmap.New()
+	require.NoError(t, cmRoundTripThird.Marshal(roundTripThird))
+	require.Equal(t, roundTripAgainMap, cmRoundTripThird.ToStringMap())
+}
+
+func TestComponentConfigMarshalInvalid(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      map[string]any
+		expectedErr string
+	}{}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			cm := confmap.NewFromStringMap(tt.config)
+			err := cm.Unmarshal(&cfg)
+			require.Error(t, err)
+			if tt.expectedErr != "" {
+				require.ErrorContains(t, err, tt.expectedErr)
+			}
+		})
+	}
 }
 
 func TestComponentLifecycle(t *testing.T) {

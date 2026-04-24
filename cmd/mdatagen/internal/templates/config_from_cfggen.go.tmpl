@@ -4,15 +4,29 @@ package {{ .Package }}
 
 {{- $validators := extractValidators .Metadata.Config }}
 {{ $imports := extractImports .Metadata.Config }}
-
+{{ $stdImports := stdImports $imports }}
+{{ $thirdPartyImports := thirdPartyImports $imports }}
+{{ $localImports := localImports $imports }}
 import (
 {{- if $validators }}
-    "errors"
+	"errors"
 {{- end }}
-{{- range $imports }}
+{{- range $stdImports }}
 	"{{ . }}"
 {{- end }}
-    "go.opentelemetry.io/collector/component"
+{{- if and (or $validators $stdImports) (or $thirdPartyImports $localImports) }}
+
+{{- end }}
+{{- range $thirdPartyImports }}
+	"{{ . }}"
+{{- end }}
+{{- if and $thirdPartyImports $localImports }}
+
+{{- end }}
+{{- range $localImports }}
+	"{{ . }}"
+{{- end }}
+	"go.opentelemetry.io/collector/component"
 )
 
 {{ define "struct" }}
@@ -21,14 +35,14 @@ import (
         {{- if .Description }}
     // {{ .Description }}
         {{- end }}
-    	{{ .ResolvedFrom | publicType }} `mapstructure:",squash"`
+	{{ .ResolvedFrom | publicType }} `mapstructure:",squash"`
     {{- end }}
     {{- end }}
     {{- range $propName, $prop := .Properties }}
         {{- if $prop.Description }}
     // {{ $prop.Description }}
         {{- end }}
-    	{{ $propName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}"`
+	{{ $propName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}"`
     {{- end }}
 {{ end }}
 

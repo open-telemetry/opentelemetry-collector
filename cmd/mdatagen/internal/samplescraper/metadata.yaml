@@ -52,7 +52,6 @@ config:
           interval:
             type: string
             format: duration
-            x-optional: true
             default: 10s
           labels:
             description: Static key-value labels attached to all metrics from this target.

@@ -10,14 +10,13 @@ import (
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
 type TargetsItem struct {
 	// HTTP client configuration for the target endpoint.
-	HTTPClient confighttp.ClientConfig                `mapstructure:"http_client"`
-	Interval   configoptional.Optional[time.Duration] `mapstructure:"interval"`
+	HTTPClient confighttp.ClientConfig `mapstructure:"http_client"`
+	Interval   time.Duration           `mapstructure:"interval"`
 	// Static key-value labels attached to all metrics from this target.
 	Labels map[string]string `mapstructure:"labels"`
 }
@@ -40,7 +39,7 @@ func (c *TargetsItem) Validate() error {
 // NewDefaultTargetsItem returns a new TargetsItem with default values consistent with the annotations in the schema.
 func NewDefaultTargetsItem() TargetsItem {
 	cfg := TargetsItem{}
-	cfg.Interval = configoptional.Some(10 * time.Second)
+	cfg.Interval = 10 * time.Second
 	cfg.Labels = map[string]string{"option1": "value1", "option2": "value2"}
 
 	return cfg
