@@ -711,7 +711,7 @@ func TestExtractSummaryDataPoints(t *testing.T) {
 func TestMetricsMergeSplitUnknownSizerType(t *testing.T) {
 	req := newMetricsRequest(pmetric.NewMetrics())
 	// Call MergeSplit with invalid sizer
-	_, err := req.MergeSplit(context.Background(), map[request.SizerType]int64{{}: 0}, nil)
+	_, err := req.MergeSplit(context.Background(), map[request.SizerType]int64{"": 0}, nil)
 	require.EqualError(t, err, "unknown sizer type")
 }
 

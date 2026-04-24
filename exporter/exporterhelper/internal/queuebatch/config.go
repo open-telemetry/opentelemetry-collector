@@ -124,22 +124,7 @@ type SizerLimit struct {
 }
 
 func (cfg *BatchConfig) Unmarshal(conf *confmap.Conf) error {
-	if err := conf.Unmarshal(cfg); err != nil {
-		return err
-	}
-	if cfg.Sizer.String() != "" {
-		if cfg.Sizers == nil {
-			cfg.Sizers = make(map[request.SizerType]SizerLimit)
-		}
-		if _, ok := cfg.Sizers[cfg.Sizer]; ok {
-			return fmt.Errorf("sizer %q defined in both `sizer` and `sizers`", cfg.Sizer.String())
-		}
-		cfg.Sizers[cfg.Sizer] = SizerLimit{
-			MinSize: cfg.MinSize,
-			MaxSize: cfg.MaxSize,
-		}
-	}
-	return nil
+	return conf.Unmarshal(cfg)
 }
 
 // PartitionConfig defines a configuration for partitioning requests based on metadata keys.
@@ -164,22 +149,18 @@ func (cfg *BatchConfig) Validate() error {
 		return fmt.Errorf("`flush_timeout` must be positive, found %d", cfg.FlushTimeout)
 	}
 
-	if len(cfg.Sizers) == 0 {
-		return errors.New("`batch` requires at least one sizer limit")
-	}
-
 	for szt, limit := range cfg.Sizers {
 		if szt != request.SizerTypeItems && szt != request.SizerTypeBytes {
 			return fmt.Errorf("`batch` supports only `items` or `bytes` sizer, found %q", szt.String())
 		}
 		if limit.MinSize < 0 {
-			return fmt.Errorf("`min_size` must be non-negative for sizer %q, found %d", szt.String(), limit.MinSize)
+			return fmt.Errorf("`min_size` must be non-negative for sizer %q, found %d", szt, limit.MinSize)
 		}
 		if limit.MaxSize < 0 {
-			return fmt.Errorf("`max_size` must be non-negative for sizer %q, found %d", szt.String(), limit.MaxSize)
+			return fmt.Errorf("`max_size` must be non-negative for sizer %q, found %d", szt, limit.MaxSize)
 		}
 		if limit.MaxSize > 0 && limit.MaxSize < limit.MinSize {
-			return fmt.Errorf("`max_size` (%d) must be greater or equal to `min_size` (%d) for sizer %q", limit.MaxSize, limit.MinSize, szt.String())
+			return fmt.Errorf("`max_size` (%d) must be greater or equal to `min_size` (%d) for sizer %q", limit.MaxSize, limit.MinSize, szt)
 		}
 	}
 

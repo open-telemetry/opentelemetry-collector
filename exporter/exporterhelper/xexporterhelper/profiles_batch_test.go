@@ -128,7 +128,7 @@ func TestMergeSplitProfiles(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := tt.pr1.MergeSplit(context.Background(), map[request.SizerType]int64{request.SizerType(tt.szt): int64(tt.maxSize)}, tt.pr2)
+			res, err := tt.pr1.MergeSplit(context.Background(), map[request.SizerType]int64{tt.szt: int64(tt.maxSize)}, tt.pr2)
 			require.NoError(t, err)
 			require.Len(t, res, len(tt.expected))
 			for i, r := range res {
@@ -293,7 +293,7 @@ func TestMergeSplitProfilesBasedOnByteSize(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := tt.pr1.MergeSplit(context.Background(), map[request.SizerType]int64{request.SizerType(tt.szt): int64(tt.maxSize)}, tt.pr2)
+			res, err := tt.pr1.MergeSplit(context.Background(), map[request.SizerType]int64{tt.szt: int64(tt.maxSize)}, tt.pr2)
 			require.NoError(t, err)
 			require.Len(t, res, len(tt.expected))
 			for i, r := range res {

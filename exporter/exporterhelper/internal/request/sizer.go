@@ -3,42 +3,26 @@
 
 package request // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 
-import (
-	"encoding"
-	"fmt"
-)
+import "fmt"
 
 // TODO: Move this back to queuebatch when remove the circular dependency.
 
-var (
-	_ encoding.TextMarshaler   = (*SizerType)(nil)
-	_ encoding.TextUnmarshaler = (*SizerType)(nil)
-)
-
-type SizerType struct {
-	val string
-}
+type SizerType string
 
 const (
-	sizerTypeBytes    = "bytes"
-	sizerTypeItems    = "items"
-	sizerTypeRequests = "requests"
-)
-
-var (
-	SizerTypeBytes    = SizerType{val: sizerTypeBytes}
-	SizerTypeItems    = SizerType{val: sizerTypeItems}
-	SizerTypeRequests = SizerType{val: sizerTypeRequests}
+	SizerTypeBytes    SizerType = "bytes"
+	SizerTypeItems    SizerType = "items"
+	SizerTypeRequests SizerType = "requests"
 )
 
 // UnmarshalText implements TextUnmarshaler interface.
 func (s *SizerType) UnmarshalText(text []byte) error {
 	switch str := string(text); str {
-	case sizerTypeItems:
+	case string(SizerTypeItems):
 		*s = SizerTypeItems
-	case sizerTypeBytes:
+	case string(SizerTypeBytes):
 		*s = SizerTypeBytes
-	case sizerTypeRequests:
+	case string(SizerTypeRequests):
 		*s = SizerTypeRequests
 	default:
 		return fmt.Errorf("invalid sizer: %q", str)
@@ -46,12 +30,12 @@ func (s *SizerType) UnmarshalText(text []byte) error {
 	return nil
 }
 
-func (s *SizerType) MarshalText() ([]byte, error) {
-	return []byte(s.val), nil
+func (s SizerType) MarshalText() ([]byte, error) {
+	return []byte(s), nil
 }
 
-func (s *SizerType) String() string {
-	return s.val
+func (s SizerType) String() string {
+	return string(s)
 }
 
 // Sizer is an interface that returns the size of the given element.

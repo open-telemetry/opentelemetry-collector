@@ -322,7 +322,7 @@ func TestLogsMergeSplitExactItems(t *testing.T) {
 func TestLogsMergeSplitUnknownSizerType(t *testing.T) {
 	req := newLogsRequest(plog.NewLogs())
 	// Call MergeSplit with invalid sizer
-	_, err := req.MergeSplit(context.Background(), map[request.SizerType]int64{{}: 0}, nil)
+	_, err := req.MergeSplit(context.Background(), map[request.SizerType]int64{"": 0}, nil)
 	require.EqualError(t, err, "unknown sizer type: \"\"")
 }
 
