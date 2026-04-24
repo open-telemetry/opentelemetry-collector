@@ -41,7 +41,7 @@ func TestConfig_Validate(t *testing.T) {
 
 	cfg = newTestConfigWithSizers()
 	cfg.QueueSize = cfg.Batch.Get().Sizers[request.SizerTypeItems].MinSize - 1
-	require.EqualError(t, xconfmap.Validate(cfg), "`min_size` must be less than or equal to `queue_size`")
+	require.EqualError(t, xconfmap.Validate(cfg), "for sizer items, `min_size` (2048) must be less than or equal to `queue_size` (2047)")
 
 	cfg = newTestConfigWithSizers()
 	cfg.Batch.Get().Sizers = map[request.SizerType]SizerLimit{}
