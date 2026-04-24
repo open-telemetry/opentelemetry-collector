@@ -1,0 +1,12 @@
+enabled: true
+sizer: bytes
+queue_size: 2000 
+batch:
+  flush_timeout: 2s
+  sizers:
+    items:
+      min_size: 1
+      max_size: 12
+    bytes:
+      min_size: 1000
+      max_size: 1000

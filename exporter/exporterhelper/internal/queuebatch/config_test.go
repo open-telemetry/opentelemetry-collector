@@ -146,10 +146,22 @@ func TestUnmarshal(t *testing.T) {
 			}),
 		})
 	}
+
+	newLegacyBaseCfg := func() configoptional.Optional[Config] {
+		return configoptional.Some(Config{
+			Sizer:        request.SizerTypeRequests,
+			NumConsumers: 10,
+			QueueSize:    1_000,
+			Batch: configoptional.Default(BatchConfig{
+				FlushTimeout: 200 * time.Millisecond,
+			}),
+		})
+	}
 	tests := []struct {
 		path        string
 		expectedErr string
 		expectedCfg func() configoptional.Optional[Config]
+		baseCfg     func() configoptional.Optional[Config]
 	}{
 		{
 			path: "batch_set_empty_explicit_sizer.yaml",
@@ -171,6 +183,21 @@ func TestUnmarshal(t *testing.T) {
 		},
 		{
 			path: "batch_set_nonempty_explicit_sizer.yaml",
+			baseCfg: newLegacyBaseCfg,
+			expectedCfg: func() configoptional.Optional[Config] {
+				cfg := newLegacyBaseCfg()
+				cfg.Get().Sizer = request.SizerTypeBytes
+				cfg.Get().QueueSize = 2000
+				cfg.Get().Batch = configoptional.Some(BatchConfig{
+					FlushTimeout: 200 * time.Millisecond,
+					Sizer:        request.SizerTypeBytes,
+					MinSize:      100,
+				})
+				return cfg
+			},
+		},
+		{
+			path: "batch_set_nonempty_multiple_sizers.yaml",
 			expectedCfg: func() configoptional.Optional[Config] {
 				cfg := newBaseCfg()
 				cfg.Get().Sizer = request.SizerTypeBytes
@@ -178,8 +205,8 @@ func TestUnmarshal(t *testing.T) {
 				cfg.Get().Batch = configoptional.Some(BatchConfig{
 					FlushTimeout: 2 * time.Second,
 					Sizers: map[request.SizerType]SizerLimit{
-						request.SizerTypeItems: {MinSize: 8192},
-						request.SizerTypeBytes: {MinSize: 0, MaxSize: 0},
+						request.SizerTypeItems: {MinSize: 1, MaxSize: 12},
+						request.SizerTypeBytes: {MinSize: 1000, MaxSize: 1000},
 					},
 				})
 				return cfg
@@ -191,7 +218,8 @@ func TestUnmarshal(t *testing.T) {
 				cfg := newBaseCfg()
 				cfg.Get().QueueSize = 2000
 				cfg.Get().Batch = configoptional.Some(BatchConfig{
-					FlushTimeout: 2 * time.Second,
+					FlushTimeout: 200 * time.Millisecond,
+					MinSize:      100,
 					Sizers: map[request.SizerType]SizerLimit{
 						request.SizerTypeItems: {MinSize: 8192},
 					},
@@ -216,6 +244,9 @@ func TestUnmarshal(t *testing.T) {
 			require.NoError(t, err)
 
 			cfg := newBaseCfg()
+			if tt.baseCfg != nil {
+				cfg = tt.baseCfg()
+			}
 			err = cm.Unmarshal(&cfg)
 			if tt.expectedErr != "" {
 				assert.ErrorContains(t, err, tt.expectedErr)
