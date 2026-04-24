@@ -306,7 +306,7 @@ func TestMergeSplitProfilesBasedOnByteSize(t *testing.T) {
 func TestExtractProfiles(t *testing.T) {
 	for i := range 10 {
 		ld := testdata.GenerateProfiles(10)
-		extractedProfiles, _ := extractProfiles(ld, i, &sizer.ProfilesCountSizer{})
+		extractedProfiles := extractProfiles(ld, i, &sizer.ProfilesCountSizer{})
 		assert.Equal(t, i, extractedProfiles.SampleCount())
 		assert.Equal(t, 10-i, ld.SampleCount())
 	}

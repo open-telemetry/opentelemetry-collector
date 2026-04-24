@@ -53,26 +53,22 @@ func (req *tracesRequest) mergeTo(dst *tracesRequest, sizers map[request.SizerTy
 
 func (req *tracesRequest) split(maxSizePerSizer map[request.SizerType]int64, sizers map[request.SizerType]sizer.TracesSizer) ([]request.Request, error) {
 	var res []request.Request
-	for {
-		if req.td.SpanCount() == 0 {
-			break
-		}
-
+	sortedSzt := getSortedSizerTypes(maxSizePerSizer)
+	for req.td.SpanCount() > 0 {
 		td := req.td
 		isInitial := true
 		exceededAny := false
-		sortedSzt := getSortedSizerTypes(maxSizePerSizer)
 
 		for _, szt := range sortedSzt {
 			maxSize := maxSizePerSizer[szt]
 			sz := sizers[szt]
 			if maxSize > 0 && int64(sz.TracesSize(td)) > maxSize {
 				exceededAny = true
-				tdNew, _ := extractTraces(td, int(maxSize), sz)
+				tdNew := extractTraces(td, int(maxSize), sz)
 				if tdNew.SpanCount() == 0 {
 					return res, fmt.Errorf("one span size is greater than max size, dropping items: %d", td.SpanCount())
 				}
-				
+
 				if isInitial {
 					// td was req.td. Remainder is already in req.td due to in-place modification by extractTraces.
 					isInitial = false
@@ -83,7 +79,7 @@ func (req *tracesRequest) split(maxSizePerSizer map[request.SizerType]int64, siz
 					req.td.ResourceSpans().MoveAndAppendTo(newReqTd.ResourceSpans())
 					req.td = newReqTd
 				}
-				
+
 				td = tdNew
 			}
 		}
@@ -100,10 +96,9 @@ func (req *tracesRequest) split(maxSizePerSizer map[request.SizerType]int64, siz
 }
 
 // extractTraces extracts a new traces with a maximum number of spans.
-func extractTraces(srcTraces ptrace.Traces, capacity int, sz sizer.TracesSizer) (ptrace.Traces, int) {
+func extractTraces(srcTraces ptrace.Traces, capacity int, sz sizer.TracesSizer) ptrace.Traces {
 	destTraces := ptrace.NewTraces()
 	capacityLeft := capacity - sz.TracesSize(destTraces)
-	removedSize := 0
 
 	srcTraces.ResourceSpans().RemoveIf(func(srcRS ptrace.ResourceSpans) bool {
 		// If the no more capacity left just return.
@@ -114,36 +109,31 @@ func extractTraces(srcTraces ptrace.Traces, capacity int, sz sizer.TracesSizer) 
 		rsSize := sz.DeltaSize(rawRsSize)
 
 		if rsSize > capacityLeft {
-			extSrcRS, extRsSize := extractResourceSpans(srcRS, capacityLeft, sz)
+			extSrcRS := extractResourceSpans(srcRS, capacityLeft, sz)
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
-			removedSize += extRsSize
-			// There represents the delta between the delta sizes.
-			removedSize += rsSize - rawRsSize - (sz.DeltaSize(rawRsSize-extRsSize) - (rawRsSize - extRsSize))
 			if extSrcRS.ScopeSpans().Len() > 0 {
 				extSrcRS.MoveTo(destTraces.ResourceSpans().AppendEmpty())
 			}
 			return extSrcRS.ScopeSpans().Len() != 0
 		}
 		capacityLeft -= rsSize
-		removedSize += rsSize
 
 		srcRS.MoveTo(destTraces.ResourceSpans().AppendEmpty())
 		return true
 	})
-	return destTraces, removedSize
+	return destTraces
 }
 
 // extractResourceSpans extracts spans and returns a new resource spans with the specified number of spans.
-func extractResourceSpans(srcRS ptrace.ResourceSpans, capacity int, sz sizer.TracesSizer) (ptrace.ResourceSpans, int) {
+func extractResourceSpans(srcRS ptrace.ResourceSpans, capacity int, sz sizer.TracesSizer) ptrace.ResourceSpans {
 	destRS := ptrace.NewResourceSpans()
 	destRS.SetSchemaUrl(srcRS.SchemaUrl())
 	srcRS.Resource().CopyTo(destRS.Resource())
-	
+
 	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
 	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.ResourceSpansSize(destRS)
-	removedSize := 0
 	srcRS.ScopeSpans().RemoveIf(func(srcSS ptrace.ScopeSpans) bool {
 		// If the no more capacity left just return.
 		if capacityLeft == 0 {
@@ -152,35 +142,30 @@ func extractResourceSpans(srcRS ptrace.ResourceSpans, capacity int, sz sizer.Tra
 		rawSlSize := sz.ScopeSpansSize(srcSS)
 		ssSize := sz.DeltaSize(rawSlSize)
 		if ssSize > capacityLeft {
-			extSrcSS, extSsSize := extractScopeSpans(srcSS, capacityLeft, sz)
+			extSrcSS := extractScopeSpans(srcSS, capacityLeft, sz)
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
-			removedSize += extSsSize
-			// There represents the delta between the delta sizes.
-			removedSize += ssSize - rawSlSize - (sz.DeltaSize(rawSlSize-extSsSize) - (rawSlSize - extSsSize))
 			if extSrcSS.Spans().Len() > 0 {
 				extSrcSS.MoveTo(destRS.ScopeSpans().AppendEmpty())
 			}
 			return extSrcSS.Spans().Len() != 0
 		}
 		capacityLeft -= ssSize
-		removedSize += ssSize
 		srcSS.MoveTo(destRS.ScopeSpans().AppendEmpty())
 		return true
 	})
-	return destRS, removedSize
+	return destRS
 }
 
 // extractScopeSpans extracts spans and returns a new scope spans with the specified number of spans.
-func extractScopeSpans(srcSS ptrace.ScopeSpans, capacity int, sz sizer.TracesSizer) (ptrace.ScopeSpans, int) {
+func extractScopeSpans(srcSS ptrace.ScopeSpans, capacity int, sz sizer.TracesSizer) ptrace.ScopeSpans {
 	destSS := ptrace.NewScopeSpans()
 	destSS.SetSchemaUrl(srcSS.SchemaUrl())
 	srcSS.Scope().CopyTo(destSS.Scope())
-	
+
 	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
 	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.ScopeSpansSize(destSS)
-	removedSize := 0
 	srcSS.Spans().RemoveIf(func(srcSpan ptrace.Span) bool {
 		// If the no more capacity left just return.
 		if capacityLeft == 0 {
@@ -194,9 +179,8 @@ func extractScopeSpans(srcSS ptrace.ScopeSpans, capacity int, sz sizer.TracesSiz
 			return false
 		}
 		capacityLeft -= rsSize
-		removedSize += rsSize
 		srcSpan.MoveTo(destSS.Spans().AppendEmpty())
 		return true
 	})
-	return destSS, removedSize
+	return destSS
 }

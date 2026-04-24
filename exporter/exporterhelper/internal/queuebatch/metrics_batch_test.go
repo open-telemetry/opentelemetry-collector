@@ -241,7 +241,7 @@ func TestMergeSplitMetricsInputNotModifiedIfErrorReturned(t *testing.T) {
 func TestExtractMetrics(t *testing.T) {
 	for i := range 20 {
 		md := testdata.GenerateMetrics(10)
-		extractedMetrics, _ := extractMetrics(md, i, &sizer.MetricsCountSizer{})
+		extractedMetrics := extractMetrics(md, i, &sizer.MetricsCountSizer{})
 		assert.Equal(t, i, extractedMetrics.DataPointCount())
 		assert.Equal(t, 20-i, md.DataPointCount())
 	}
@@ -249,7 +249,7 @@ func TestExtractMetrics(t *testing.T) {
 
 func TestExtractMetricsInvalidMetric(t *testing.T) {
 	md := testdata.GenerateMetricsMetricTypeInvalid()
-	extractedMetrics, _ := extractMetrics(md, 10, &sizer.MetricsCountSizer{})
+	extractedMetrics := extractMetrics(md, 10, &sizer.MetricsCountSizer{})
 	assert.Equal(t, testdata.GenerateMetricsMetricTypeInvalid(), extractedMetrics)
 	assert.Equal(t, 0, md.ResourceMetrics().Len())
 }
@@ -516,12 +516,9 @@ func TestExtractGaugeDataPoints(t *testing.T) {
 			sz := &mockMetricsSizer{dpSize: 1}
 
 			destMetric := pmetric.NewMetric()
-			removedSizes := extractGaugeDataPoints(gauge, destMetric, tt.capacity, sz)
+			extractGaugeDataPoints(gauge, destMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Gauge().DataPoints().Len())
-			if tt.expectedPoints > 0 {
-				assert.Equal(t, tt.expectedPoints, removedSizes)
-			}
 		})
 	}
 }
@@ -565,12 +562,9 @@ func TestExtractSumDataPoints(t *testing.T) {
 			sz := &mockMetricsSizer{dpSize: 1}
 
 			destMetric := pmetric.NewMetric()
-			removedSizes := extractSumDataPoints(sum, destMetric, tt.capacity, sz)
+			extractSumDataPoints(sum, destMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Sum().DataPoints().Len())
-			if tt.expectedPoints > 0 {
-				assert.Equal(t, tt.expectedPoints, removedSizes)
-			}
 		})
 	}
 }
@@ -615,12 +609,9 @@ func TestExtractHistogramDataPoints(t *testing.T) {
 			sz := &mockMetricsSizer{dpSize: 1}
 
 			destMetric := pmetric.NewMetric()
-			removedSizes := extractHistogramDataPoints(histogram, destMetric, tt.capacity, sz)
+			extractHistogramDataPoints(histogram, destMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Histogram().DataPoints().Len())
-			if tt.expectedPoints > 0 {
-				assert.Equal(t, tt.expectedPoints, removedSizes)
-			}
 		})
 	}
 }
@@ -664,12 +655,9 @@ func TestExtractExponentialHistogramDataPoints(t *testing.T) {
 			sz := &mockMetricsSizer{dpSize: 1}
 
 			destMetric := pmetric.NewMetric()
-			removedSizes := extractExponentialHistogramDataPoints(expHistogram, destMetric, tt.capacity, sz)
+			extractExponentialHistogramDataPoints(expHistogram, destMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.ExponentialHistogram().DataPoints().Len())
-			if tt.expectedPoints > 0 {
-				assert.Equal(t, tt.expectedPoints, removedSizes)
-			}
 		})
 	}
 }
@@ -713,12 +701,9 @@ func TestExtractSummaryDataPoints(t *testing.T) {
 			sz := &mockMetricsSizer{dpSize: 1}
 
 			destMetric := pmetric.NewMetric()
-			removedSizes := extractSummaryDataPoints(summary, destMetric, tt.capacity, sz)
+			extractSummaryDataPoints(summary, destMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Summary().DataPoints().Len())
-			if tt.expectedPoints > 0 {
-				assert.Equal(t, tt.expectedPoints, removedSizes)
-			}
 		})
 	}
 }
@@ -776,7 +761,7 @@ func TestMergeSplitMetricsMultiSizerOrder(t *testing.T) {
 	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	sm := rm.ScopeMetrics().AppendEmpty()
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		m := sm.Metrics().AppendEmpty()
 		m.SetName(fmt.Sprintf("metric-%d", i))
 		// Data points are needed to make it non-empty!
@@ -788,7 +773,7 @@ func TestMergeSplitMetricsMultiSizerOrder(t *testing.T) {
 	md2 := pmetric.NewMetrics()
 	rm2 := md2.ResourceMetrics().AppendEmpty()
 	sm2 := rm2.ScopeMetrics().AppendEmpty()
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		m := sm2.Metrics().AppendEmpty()
 		m.SetName(fmt.Sprintf("metric-%d", i))
 		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
@@ -811,7 +796,7 @@ func TestMergeSplitMetricsMultiSizerOrder(t *testing.T) {
 	assert.Len(t, res, 4)
 
 	// Verify order by checking the name of the metric in each batch!
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		mrReq := res[i].(*metricsRequest)
 		assert.Equal(t, 1, mrReq.ItemsCount())
 

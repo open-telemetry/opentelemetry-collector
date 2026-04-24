@@ -60,26 +60,22 @@ func (req *profilesRequest) mergeTo(dst *profilesRequest, sizers map[request.Siz
 
 func (req *profilesRequest) split(maxSizePerSizer map[request.SizerType]int64, sizers map[request.SizerType]sizer.ProfilesSizer) ([]request.Request, error) {
 	var res []request.Request
-	for {
-		if req.pd.SampleCount() == 0 {
-			break
-		}
-
+	sortedSzt := getSortedSizerTypes(maxSizePerSizer)
+	for req.pd.SampleCount() > 0 {
 		pd := req.pd
 		isInitial := true
 		exceededAny := false
-		sortedSzt := getSortedSizerTypes(maxSizePerSizer)
 
 		for _, szt := range sortedSzt {
 			maxSize := maxSizePerSizer[szt]
 			sz := sizers[szt]
 			if maxSize > 0 && int64(sz.ProfilesSize(pd)) > maxSize {
 				exceededAny = true
-				pdNew, _ := extractProfiles(pd, int(maxSize), sz)
+				pdNew := extractProfiles(pd, int(maxSize), sz)
 				if pdNew.SampleCount() == 0 {
 					return res, fmt.Errorf("one sample size is greater than max size, dropping items: %d", pd.SampleCount())
 				}
-				
+
 				if isInitial {
 					isInitial = false
 				} else {
@@ -89,7 +85,7 @@ func (req *profilesRequest) split(maxSizePerSizer map[request.SizerType]int64, s
 					req.pd.ResourceProfiles().MoveAndAppendTo(newReqPd.ResourceProfiles())
 					req.pd = newReqPd
 				}
-				
+
 				pd = pdNew
 			}
 		}
@@ -106,10 +102,9 @@ func (req *profilesRequest) split(maxSizePerSizer map[request.SizerType]int64, s
 }
 
 // extractProfiles extracts a new profiles with a maximum number of samples.
-func extractProfiles(srcProfiles pprofile.Profiles, capacity int, sz sizer.ProfilesSizer) (pprofile.Profiles, int) {
+func extractProfiles(srcProfiles pprofile.Profiles, capacity int, sz sizer.ProfilesSizer) pprofile.Profiles {
 	destProfiles := pprofile.NewProfiles()
 	capacityLeft := capacity - sz.ProfilesSize(destProfiles)
-	removedSize := 0
 
 	srcProfiles.Dictionary().CopyTo(destProfiles.Dictionary())
 	srcProfiles.ResourceProfiles().RemoveIf(func(srcRP pprofile.ResourceProfiles) bool {
@@ -121,13 +116,10 @@ func extractProfiles(srcProfiles pprofile.Profiles, capacity int, sz sizer.Profi
 		rpSize := sz.DeltaSize(rawRpSize)
 
 		if rpSize > capacityLeft {
-			extSrcRP, extRpSize := extractResourceProfiles(srcRP, capacityLeft, sz)
+			extSrcRP := extractResourceProfiles(srcRP, capacityLeft, sz)
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
-			removedSize += extRpSize
-			// There represents the delta between the delta sizes.
-			removedSize += rpSize - rawRpSize - (sz.DeltaSize(rawRpSize-extRpSize) - (rawRpSize - extRpSize))
 			// It is possible that for the bytes scenario, the extracted field contains no profiles.
 			// Do not add it to the destination if that is the case.
 			if extSrcRP.ScopeProfiles().Len() > 0 {
@@ -136,22 +128,19 @@ func extractProfiles(srcProfiles pprofile.Profiles, capacity int, sz sizer.Profi
 			return extSrcRP.ScopeProfiles().Len() != 0
 		}
 		capacityLeft -= rpSize
-		removedSize += rpSize
 		srcRP.MoveTo(destProfiles.ResourceProfiles().AppendEmpty())
 		return true
 	})
-	return destProfiles, removedSize
+	return destProfiles
 }
 
 // extractResourceProfiles extracts profiles and returns a new resource profiles with the specified number of profiles.
-func extractResourceProfiles(srcRP pprofile.ResourceProfiles, capacity int, sz sizer.ProfilesSizer) (pprofile.ResourceProfiles, int) {
+func extractResourceProfiles(srcRP pprofile.ResourceProfiles, capacity int, sz sizer.ProfilesSizer) pprofile.ResourceProfiles {
 	destRP := pprofile.NewResourceProfiles()
 	destRP.SetSchemaUrl(srcRP.SchemaUrl())
 	srcRP.Resource().CopyTo(destRP.Resource())
 	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
 	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.ResourceProfilesSize(destRP)
-	removedSize := 0
-
 	srcRP.ScopeProfiles().RemoveIf(func(srcSS pprofile.ScopeProfiles) bool {
 		// If the no more capacity left just return.
 		if capacityLeft == 0 {
@@ -161,13 +150,10 @@ func extractResourceProfiles(srcRP pprofile.ResourceProfiles, capacity int, sz s
 		rawSlSize := sz.ScopeProfilesSize(srcSS)
 		ssSize := sz.DeltaSize(rawSlSize)
 		if ssSize > capacityLeft {
-			extSrcSS, extSsSize := extractScopeProfiles(srcSS, capacityLeft, sz)
+			extSrcSS := extractScopeProfiles(srcSS, capacityLeft, sz)
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
-			removedSize += extSsSize
-			// There represents the delta between the delta sizes.
-			removedSize += ssSize - rawSlSize - (sz.DeltaSize(rawSlSize-extSsSize) - (rawSlSize - extSsSize))
 			// It is possible that for the bytes scenario, the extracted field contains no profiles.
 			// Do not add it to the destination if that is the case.
 			if extSrcSS.Profiles().Len() > 0 {
@@ -176,22 +162,20 @@ func extractResourceProfiles(srcRP pprofile.ResourceProfiles, capacity int, sz s
 			return extSrcSS.Profiles().Len() != 0
 		}
 		capacityLeft -= ssSize
-		removedSize += ssSize
 		srcSS.MoveTo(destRP.ScopeProfiles().AppendEmpty())
 		return true
 	})
 
-	return destRP, removedSize
+	return destRP
 }
 
 // extractScopeProfiles extracts profiles and returns a new scope profiles with the specified number of profiles.
-func extractScopeProfiles(srcSS pprofile.ScopeProfiles, capacity int, sz sizer.ProfilesSizer) (pprofile.ScopeProfiles, int) {
+func extractScopeProfiles(srcSS pprofile.ScopeProfiles, capacity int, sz sizer.ProfilesSizer) pprofile.ScopeProfiles {
 	destSS := pprofile.NewScopeProfiles()
 	destSS.SetSchemaUrl(srcSS.SchemaUrl())
 	srcSS.Scope().CopyTo(destSS.Scope())
 	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
 	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.ScopeProfilesSize(destSS)
-	removedSize := 0
 	srcSS.Profiles().RemoveIf(func(srcProfile pprofile.Profile) bool {
 		// If the no more capacity left just return.
 		if capacityLeft == 0 {
@@ -205,11 +189,10 @@ func extractScopeProfiles(srcSS pprofile.ScopeProfiles, capacity int, sz sizer.P
 			return false
 		}
 		capacityLeft -= rsSize
-		removedSize += rsSize
 		srcProfile.MoveTo(destSS.Profiles().AppendEmpty())
 		return true
 	})
-	return destSS, removedSize
+	return destSS
 }
 
 func getSortedSizerTypes[T any](m map[request.SizerType]T) []request.SizerType {

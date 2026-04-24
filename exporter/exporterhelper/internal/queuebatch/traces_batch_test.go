@@ -298,10 +298,9 @@ func TestMergeSplitTracesInputNotModifiedIfErrorReturned(t *testing.T) {
 func TestExtractTraces(t *testing.T) {
 	for i := range 10 {
 		td := testdata.GenerateTraces(10)
-		extractedTraces, removedSizes := extractTraces(td, i, &sizer.TracesCountSizer{})
+		extractedTraces := extractTraces(td, i, &sizer.TracesCountSizer{})
 		assert.Equal(t, i, extractedTraces.SpanCount())
 		assert.Equal(t, 10-i, td.SpanCount())
-		assert.Equal(t, i, removedSizes)
 	}
 }
 
@@ -361,7 +360,7 @@ func TestMergeSplitTracesMultiSizerOrder(t *testing.T) {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	ss := rs.ScopeSpans().AppendEmpty()
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		span := ss.Spans().AppendEmpty()
 		span.SetName(fmt.Sprintf("span-%d", i))
 	}
@@ -370,7 +369,7 @@ func TestMergeSplitTracesMultiSizerOrder(t *testing.T) {
 	td2 := ptrace.NewTraces()
 	rs2 := td2.ResourceSpans().AppendEmpty()
 	ss2 := rs2.ScopeSpans().AppendEmpty()
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		span := ss2.Spans().AppendEmpty()
 		span.SetName(fmt.Sprintf("span-%d", i))
 	}
@@ -389,7 +388,7 @@ func TestMergeSplitTracesMultiSizerOrder(t *testing.T) {
 	assert.Len(t, res, 4)
 
 	// Verify order by checking the name of the span in each batch!
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		trReq := res[i].(*tracesRequest)
 		assert.Equal(t, 1, trReq.ItemsCount())
 

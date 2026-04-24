@@ -285,7 +285,7 @@ func TestMergeSplitLogsInputNotModifiedIfErrorReturned(t *testing.T) {
 func TestExtractLogs(t *testing.T) {
 	for i := 1; i < 10; i++ {
 		ld := testdata.GenerateLogs(10)
-		extractedLogs, _ := extractLogs(ld, i, &sizer.LogsCountSizer{})
+		extractedLogs := extractLogs(ld, i, &sizer.LogsCountSizer{})
 		assert.Equal(t, i, extractedLogs.LogRecordCount())
 		assert.Equal(t, 10-i, ld.LogRecordCount())
 	}
@@ -378,7 +378,7 @@ func TestMergeSplitLogsMultiSizerOrder(t *testing.T) {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		lr := sl.LogRecords().AppendEmpty()
 		lr.Body().SetStr(fmt.Sprintf("log-%d", i))
 	}
@@ -387,7 +387,7 @@ func TestMergeSplitLogsMultiSizerOrder(t *testing.T) {
 	ld2 := plog.NewLogs()
 	rl2 := ld2.ResourceLogs().AppendEmpty()
 	sl2 := rl2.ScopeLogs().AppendEmpty()
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		lr := sl2.LogRecords().AppendEmpty()
 		lr.Body().SetStr(fmt.Sprintf("log-%d", i))
 	}
@@ -406,7 +406,7 @@ func TestMergeSplitLogsMultiSizerOrder(t *testing.T) {
 	assert.Len(t, res, 4)
 
 	// Verify order by checking the body of the log record in each batch!
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		lrReq := res[i].(*logsRequest)
 		assert.Equal(t, 1, lrReq.ItemsCount())
 
