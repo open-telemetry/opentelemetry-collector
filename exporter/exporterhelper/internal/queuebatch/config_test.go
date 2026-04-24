@@ -13,7 +13,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -96,6 +95,10 @@ func TestBatchConfig_Validate_MetadataKeys(t *testing.T) {
 func TestBatchConfig_Validate(t *testing.T) {
 	cfg := newTestBatchConfig()
 	require.NoError(t, xconfmap.Validate(cfg))
+
+	cfg = newTestBatchConfig()
+	cfg.Sizer = request.SizerTypeItems
+	require.EqualError(t, xconfmap.Validate(cfg), "both `sizer` and `sizers` are specified, but only one is allowed, `sizers` is preferred")
 
 	cfg = newTestBatchConfig()
 	cfg.FlushTimeout = 0
@@ -219,21 +222,4 @@ func TestUnmarshal(t *testing.T) {
 			assert.NoError(t, xconfmap.Validate(cfg))
 		})
 	}
-}
-
-func TestBatchConfig_Unmarshal_Error(t *testing.T) {
-	conf := confmap.NewFromStringMap(map[string]any{
-		"sizer": "items",
-		"sizers": map[string]any{
-			"bytes": map[string]any{
-				"max_size": 100,
-			},
-		},
-	})
-	var cfg BatchConfig
-	err := conf.Unmarshal(&cfg)
-	require.NoError(t, err)
-	err = cfg.Validate()
-	require.Error(t, err)
-	assert.ErrorContains(t, err, "both `sizer` and `sizers` are specified, but only one is allowed, `sizers` is preferred")
 }
