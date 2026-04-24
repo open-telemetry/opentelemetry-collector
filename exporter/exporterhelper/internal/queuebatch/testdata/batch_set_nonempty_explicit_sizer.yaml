@@ -2,5 +2,8 @@ enabled: true
 sizer: bytes
 queue_size: 2000 
 batch:
-  # sizer is overridden here by parent sizer
   flush_timeout: 2s
+  sizers:
+    bytes:
+      min_size: 0
+      max_size: 0

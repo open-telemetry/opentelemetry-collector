@@ -204,6 +204,10 @@ func TestUnmarshal(t *testing.T) {
 			// Batch remains unset, sizer override does not apply.
 			expectedCfg: newBaseCfg,
 		},
+		{
+			path:        "batch_invalid_mixed_style.yaml",
+			expectedErr: "cannot specify both `sizers` and legacy fields (`min_size`, `max_size`, `sizer`) in `batch`",
+		},
 	}
 
 	for _, tt := range tests {

@@ -1,0 +1,6 @@
+enabled: true
+batch:
+  sizer: items
+  sizers:
+    items:
+      min_size: 10

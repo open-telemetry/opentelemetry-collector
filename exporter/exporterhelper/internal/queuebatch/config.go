@@ -51,20 +51,19 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 		return err
 	}
 
+	if conf.IsSet("batch") && conf.IsSet("batch::sizers") {
+		if conf.IsSet("batch::min_size") || conf.IsSet("batch::max_size") || conf.IsSet("batch::sizer") {
+			return errors.New("cannot specify both `sizers` and legacy fields (`min_size`, `max_size`, `sizer`) in `batch`")
+		}
+	}
+
 	// If all of the following hold:
 	// 1. the sizer is set,
-	// 2. the batch sizers is not set,
-	// 3. the batch sizer is not set, and
-	// 4. the batch section is nonempty,
+	// 2. the batch sizer is not set and
+	// 3. the batch section is nonempty,
 	// then use the same value as the queue sizer.
-	if conf.IsSet("sizer") && !conf.IsSet("batch::sizers") && !conf.IsSet("batch::sizer") && conf.IsSet("batch") && conf.Get("batch") != nil {
-		szt := cfg.Sizer
-		if szt == request.SizerTypeItems || szt == request.SizerTypeBytes {
-			cfg.Batch.Get().Sizers[szt] = SizerLimit{
-				MinSize: cfg.Batch.Get().MinSize,
-				MaxSize: cfg.Batch.Get().MaxSize,
-			}
-		}
+	if conf.IsSet("sizer") && !conf.IsSet("batch::sizer") && !conf.IsSet("batch::sizers") && conf.IsSet("batch") && conf.Get("batch") != nil {
+		cfg.Batch.Get().Sizer = cfg.Sizer
 	}
 	return nil
 }
