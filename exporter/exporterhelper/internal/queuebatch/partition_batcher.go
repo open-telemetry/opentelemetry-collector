@@ -80,15 +80,16 @@ func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Req
 	qb.currentBatchMu.Lock()
 	isActive := qb.active
 	qb.lastDataTime = time.Now()
-	if qb.currentBatch == nil {
-		maxLimits := make(map[request.SizerType]int64)
-		if len(qb.cfg.Sizers) > 0 {
-			for szt, limit := range qb.cfg.Sizers {
-				maxLimits[szt] = limit.MaxSize
-			}
-		} else if qb.cfg.Sizer.String() != "" {
-			maxLimits[qb.cfg.Sizer] = qb.cfg.MaxSize
+	maxLimits := make(map[request.SizerType]int64)
+	if len(qb.cfg.Sizers) > 0 {
+		for szt, limit := range qb.cfg.Sizers {
+			maxLimits[szt] = limit.MaxSize
 		}
+	} else if qb.cfg.Sizer.String() != "" {
+		maxLimits[qb.cfg.Sizer] = qb.cfg.MaxSize
+	}
+
+	if qb.currentBatch == nil {
 		reqList, mergeSplitErr := req.MergeSplit(ctx, maxLimits, nil)
 		if mergeSplitErr != nil {
 			// Do not return in case of error if there are data, try to export as much as possible.
@@ -136,14 +137,7 @@ func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Req
 		return isActive
 	}
 
-	maxLimits := make(map[request.SizerType]int64)
-	if len(qb.cfg.Sizers) > 0 {
-		for szt, limit := range qb.cfg.Sizers {
-			maxLimits[szt] = limit.MaxSize
-		}
-	} else if qb.cfg.Sizer.String() != "" {
-		maxLimits[qb.cfg.Sizer] = qb.cfg.MaxSize
-	}
+
 	reqList, mergeSplitErr := qb.currentBatch.req.MergeSplit(ctx, maxLimits, req)
 	// If failed to merge signal all Done callbacks from the current batch as well as the current request and reset the current batch.
 	if mergeSplitErr != nil {
