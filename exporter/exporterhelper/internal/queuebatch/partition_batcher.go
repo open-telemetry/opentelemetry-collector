@@ -71,7 +71,6 @@ func newPartitionBatcher(
 }
 
 func (qb *partitionBatcher) shouldFlush(req request.Request) bool {
-
 	if len(qb.cfg.Sizers) > 0 {
 		for szt, limit := range qb.cfg.Sizers {
 			szr := request.NewSizer(szt)

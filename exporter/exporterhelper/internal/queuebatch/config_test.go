@@ -182,7 +182,7 @@ func TestUnmarshal(t *testing.T) {
 			},
 		},
 		{
-			path: "batch_set_nonempty_explicit_sizer.yaml",
+			path:    "batch_set_nonempty_explicit_sizer.yaml",
 			baseCfg: newLegacyBaseCfg,
 			expectedCfg: func() configoptional.Optional[Config] {
 				cfg := newLegacyBaseCfg()

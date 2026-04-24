@@ -683,7 +683,7 @@ func TestPartitionBatcher_MultiSizer_MinThreshold(t *testing.T) {
 	})
 
 	done := newFakeDone()
-	
+
 	// 1. Send request below both min sizes.
 	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 5, Bytes: 50}, done)
 	// Should not flush yet.
@@ -691,7 +691,7 @@ func TestPartitionBatcher_MultiSizer_MinThreshold(t *testing.T) {
 
 	// 2. Send request that makes items reach min_size (5 + 5 = 10 >= 10).
 	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 5, Bytes: 10}, done)
-	
+
 	// Should flush now because items reached min_size.
 	assert.Eventually(t, func() bool {
 		return sink.RequestsCount() == 1 && sink.ItemsCount() == 10 && sink.BytesCount() == 60
