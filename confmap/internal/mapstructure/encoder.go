@@ -177,14 +177,6 @@ func (e *Encoder) encodeMap(value reflect.Value) (any, error) {
 			return nil, fmt.Errorf("error encoding key: %w", err)
 		}
 
-		if marshaler, ok := iterator.Key().Interface().(encoding.TextMarshaler); ok {
-			out, err := marshaler.MarshalText()
-			if err != nil {
-				return nil, fmt.Errorf("error marshaling key: %w", err)
-			}
-			encoded = string(out)
-		}
-
 		v := reflect.ValueOf(encoded)
 		var key string
 

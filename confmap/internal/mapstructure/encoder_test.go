@@ -212,8 +212,6 @@ func TestEncode(t *testing.T) {
 	got, err := enc.Encode(testCase)
 	require.NoError(t, err)
 	require.Equal(t, testCase, got)
-
-
 }
 
 func TestGetTagInfo(t *testing.T) {
