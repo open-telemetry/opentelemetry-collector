@@ -164,6 +164,15 @@ func (cfg *BatchConfig) Validate() error {
 		if cfg.Sizer != request.SizerTypeItems && cfg.Sizer != request.SizerTypeBytes {
 			return fmt.Errorf("`batch` supports only `items` or `bytes` sizer, found %q", cfg.Sizer.String())
 		}
+		if cfg.MinSize < 0 {
+			return fmt.Errorf("`min_size` must be non-negative, found %d", cfg.MinSize)
+		}
+		if cfg.MaxSize < 0 {
+			return fmt.Errorf("`max_size` must be non-negative, found %d", cfg.MaxSize)
+		}
+		if cfg.MaxSize > 0 && cfg.MaxSize < cfg.MinSize {
+			return fmt.Errorf("`max_size` (%d) must be greater or equal to `min_size` (%d)", cfg.MaxSize, cfg.MinSize)
+		}
 	}
 
 	if cfg.FlushTimeout <= 0 {
