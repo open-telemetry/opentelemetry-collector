@@ -137,7 +137,6 @@ func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Req
 		return isActive
 	}
 
-
 	reqList, mergeSplitErr := qb.currentBatch.req.MergeSplit(ctx, maxLimits, req)
 	// If failed to merge signal all Done callbacks from the current batch as well as the current request and reset the current batch.
 	if mergeSplitErr != nil {

@@ -126,7 +126,6 @@ type BatchConfig struct {
 
 	// Partition defines the partitioning of the batches configuration.
 	Partition PartitionConfig `mapstructure:"partition"`
-
 }
 
 // SizerLimit defines the configuration for the minimum and maximum size of a batch for a specific sizer.
