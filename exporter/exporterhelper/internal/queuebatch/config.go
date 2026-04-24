@@ -79,9 +79,18 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Batch.HasValue() {
 		batchCfg := cfg.Batch.Get()
-		if limit, ok := batchCfg.Sizers[cfg.Sizer]; ok {
-			if limit.MinSize > int64(cfg.QueueSize) {
+		// Check legacy fields
+		if batchCfg.Sizer == cfg.Sizer {
+			if batchCfg.MinSize > int64(cfg.QueueSize) {
 				return errors.New("`min_size` must be less than or equal to `queue_size`")
+			}
+		}
+		// Check Sizers map if only one sizer is specified and it matches queue sizer
+		if len(batchCfg.Sizers) == 1 {
+			if limit, ok := batchCfg.Sizers[cfg.Sizer]; ok {
+				if limit.MinSize > int64(cfg.QueueSize) {
+					return errors.New("`min_size` must be less than or equal to `queue_size`")
+				}
 			}
 		}
 	}
@@ -117,15 +126,17 @@ type BatchConfig struct {
 
 	// Partition defines the partitioning of the batches configuration.
 	Partition PartitionConfig `mapstructure:"partition"`
+
+	sizerSet  bool
+	sizersSet bool
 }
 
 func (cfg *BatchConfig) Unmarshal(conf *confmap.Conf) error {
 	if err := conf.Unmarshal(cfg); err != nil {
 		return err
 	}
-	if conf.IsSet("sizer") && conf.IsSet("sizers") {
-		return errors.New("both `sizer` and `sizers` are specified, but only one is allowed, `sizers` is preferred")
-	}
+	cfg.sizerSet = conf.IsSet("sizer")
+	cfg.sizersSet = conf.IsSet("sizers")
 	return nil
 }
 
@@ -151,6 +162,10 @@ type PartitionConfig struct {
 func (cfg *BatchConfig) Validate() error {
 	if cfg == nil {
 		return nil
+	}
+
+	if cfg.sizerSet && cfg.sizersSet {
+		return errors.New("both `sizer` and `sizers` are specified, but only one is allowed, `sizers` is preferred")
 	}
 
 	if cfg.FlushTimeout <= 0 {

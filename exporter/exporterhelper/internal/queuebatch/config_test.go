@@ -227,6 +227,8 @@ func TestBatchConfig_Unmarshal_Error(t *testing.T) {
 	})
 	var cfg BatchConfig
 	err := cfg.Unmarshal(conf)
+	require.NoError(t, err)
+	err = cfg.Validate()
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "both `sizer` and `sizers` are specified, but only one is allowed, `sizers` is preferred")
 }
