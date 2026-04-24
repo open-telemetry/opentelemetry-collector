@@ -73,7 +73,7 @@ func (req *logsRequest) split(maxSizePerSizer map[request.SizerType]int64, sizer
 				if ldNew.LogRecordCount() == 0 {
 					return res, fmt.Errorf("one log record size is greater than max size, dropping items")
 				}
-				
+
 				if isInitial {
 					// ld was req.ld. Remainder is already in req.ld due to in-place modification by extractLogs.
 					isInitial = false
@@ -84,7 +84,7 @@ func (req *logsRequest) split(maxSizePerSizer map[request.SizerType]int64, sizer
 					req.ld.ResourceLogs().MoveAndAppendTo(newReqLd.ResourceLogs())
 					req.ld = newReqLd
 				}
-				
+
 				ld = ldNew
 			}
 		}

@@ -72,7 +72,7 @@ func (req *metricsRequest) split(maxSizePerSizer map[request.SizerType]int64, si
 				if mdNew.DataPointCount() == 0 {
 					return res, fmt.Errorf("one datapoint size is greater than max size, dropping items: %d", md.DataPointCount())
 				}
-				
+
 				if isInitial {
 					// md was req.md. Remainder is already in req.md due to in-place modification by extractMetrics.
 					isInitial = false
@@ -83,7 +83,7 @@ func (req *metricsRequest) split(maxSizePerSizer map[request.SizerType]int64, si
 					req.md.ResourceMetrics().MoveAndAppendTo(newReqMd.ResourceMetrics())
 					req.md = newReqMd
 				}
-				
+
 				md = mdNew
 			}
 		}
@@ -142,7 +142,7 @@ func extractResourceMetrics(srcRM pmetric.ResourceMetrics, capacity int, sz size
 	destRM := pmetric.NewResourceMetrics()
 	destRM.SetSchemaUrl(srcRM.SchemaUrl())
 	srcRM.Resource().CopyTo(destRM.Resource())
-	
+
 	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
 	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.ResourceMetricsSize(destRM)
 	removedSize := 0
@@ -181,7 +181,7 @@ func extractScopeMetrics(srcSM pmetric.ScopeMetrics, capacity int, sz sizer.Metr
 	destSM := pmetric.NewScopeMetrics()
 	destSM.SetSchemaUrl(srcSM.SchemaUrl())
 	srcSM.Scope().CopyTo(destSM.Scope())
-	
+
 	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
 	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.ScopeMetricsSize(destSM)
 	removedSize := 0
@@ -222,7 +222,7 @@ func extractMetric(srcMetric pmetric.Metric, capacity int, sz sizer.MetricsSizer
 	destMetric.SetDescription(srcMetric.Description())
 	destMetric.SetUnit(srcMetric.Unit())
 	srcMetric.Metadata().CopyTo(destMetric.Metadata())
-	
+
 	var removedSize int
 	switch srcMetric.Type() {
 	case pmetric.MetricTypeGauge:

@@ -335,7 +335,7 @@ func TestTracesMergeSplitExactItems(t *testing.T) {
 func TestTracesMergeSplitUnknownSizerType(t *testing.T) {
 	req := newTracesRequest(ptrace.NewTraces())
 	// Call MergeSplit with invalid sizer
-	_, err := req.MergeSplit(context.Background(), map[request.SizerType]int64{request.SizerType{}: 0}, nil)
+	_, err := req.MergeSplit(context.Background(), map[request.SizerType]int64{{}: 0}, nil)
 	require.EqualError(t, err, "unknown sizer type")
 }
 
@@ -356,7 +356,7 @@ func BenchmarkSplittingBasedOnItemCountManySmallTraces(b *testing.B) {
 
 func TestMergeSplitTracesMultiSizerOrder(t *testing.T) {
 	var pbMarshaler ptrace.ProtoMarshaler
-	
+
 	// Create 4 distinct spans in order.
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
@@ -365,7 +365,7 @@ func TestMergeSplitTracesMultiSizerOrder(t *testing.T) {
 		span := ss.Spans().AppendEmpty()
 		span.SetName(fmt.Sprintf("span-%d", i))
 	}
-	
+
 	// Calculate size of 2 spans to set byte limit.
 	td2 := ptrace.NewTraces()
 	rs2 := td2.ResourceSpans().AppendEmpty()
@@ -375,24 +375,24 @@ func TestMergeSplitTracesMultiSizerOrder(t *testing.T) {
 		span.SetName(fmt.Sprintf("span-%d", i))
 	}
 	limitBytes := int64(pbMarshaler.TracesSize(td2) - 1)
-	
+
 	limits := map[request.SizerType]int64{
 		request.SizerTypeItems: 2,
 		request.SizerTypeBytes: limitBytes,
 	}
-	
+
 	req := newTracesRequest(td)
 	res, err := req.MergeSplit(context.Background(), limits, nil)
 	require.NoError(t, err)
-	
+
 	// We expect 4 batches, each with 1 span.
 	assert.Len(t, res, 4)
-	
+
 	// Verify order by checking the name of the span in each batch!
 	for i := 0; i < 4; i++ {
 		trReq := res[i].(*tracesRequest)
 		assert.Equal(t, 1, trReq.ItemsCount())
-		
+
 		// Extract the span name
 		name := trReq.td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name()
 		assert.Equal(t, fmt.Sprintf("span-%d", i), name)

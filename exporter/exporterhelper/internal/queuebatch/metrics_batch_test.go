@@ -726,7 +726,7 @@ func TestExtractSummaryDataPoints(t *testing.T) {
 func TestMetricsMergeSplitUnknownSizerType(t *testing.T) {
 	req := newMetricsRequest(pmetric.NewMetrics())
 	// Call MergeSplit with invalid sizer
-	_, err := req.MergeSplit(context.Background(), map[request.SizerType]int64{request.SizerType{}: 0}, nil)
+	_, err := req.MergeSplit(context.Background(), map[request.SizerType]int64{{}: 0}, nil)
 	require.EqualError(t, err, "unknown sizer type")
 }
 
@@ -783,7 +783,7 @@ func TestMergeSplitMetricsMultiSizerOrder(t *testing.T) {
 		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
 		dp.SetIntValue(int64(i))
 	}
-	
+
 	// Calculate size of 2 metrics to set byte limit.
 	md2 := pmetric.NewMetrics()
 	rm2 := md2.ResourceMetrics().AppendEmpty()
@@ -794,27 +794,27 @@ func TestMergeSplitMetricsMultiSizerOrder(t *testing.T) {
 		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
 		dp.SetIntValue(int64(i))
 	}
-	
+
 	var pbMarshaler pmetric.ProtoMarshaler
 	limitBytes := int64(pbMarshaler.MetricsSize(md2) - 1)
-	
+
 	limits := map[request.SizerType]int64{
 		request.SizerTypeItems: 2,
 		request.SizerTypeBytes: limitBytes,
 	}
-	
+
 	req := newMetricsRequest(md)
 	res, err := req.MergeSplit(context.Background(), limits, nil)
 	require.NoError(t, err)
-	
+
 	// We expect 4 batches, each with 1 data point (and 1 metric).
 	assert.Len(t, res, 4)
-	
+
 	// Verify order by checking the name of the metric in each batch!
 	for i := 0; i < 4; i++ {
 		mrReq := res[i].(*metricsRequest)
 		assert.Equal(t, 1, mrReq.ItemsCount())
-		
+
 		// Extract the metric name
 		name := mrReq.md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name()
 		assert.Equal(t, fmt.Sprintf("metric-%d", i), name)
