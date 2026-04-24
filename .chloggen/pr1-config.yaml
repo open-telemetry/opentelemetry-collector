@@ -1,5 +1,0 @@
-change_type: enhancement
-component: pkg/exporterhelper
-note: "Support multiple sizing constraints in exporter batching (multi-sizer)."
-issues: [0]
-change_logs: [user]
