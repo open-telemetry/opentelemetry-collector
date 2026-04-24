@@ -57,7 +57,6 @@ func TestUnmarshalConfig(t *testing.T) {
 				QueueSize:    100000,
 				Batch: configoptional.Some(exporterhelper.BatchConfig{
 					FlushTimeout: 200 * time.Millisecond,
-					Sizer:        exporterhelper.RequestSizerTypeItems,
 					MinSize:      1000,
 					MaxSize:      10000,
 					Sizers: map[exporterhelper.RequestSizerType]exporterhelper.SizerLimit{
