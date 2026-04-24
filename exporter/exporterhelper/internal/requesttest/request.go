@@ -49,14 +49,6 @@ func (r *FakeRequest) BytesSize() int {
 }
 
 func (r *FakeRequest) MergeSplit(_ context.Context, maxSizePerSizer map[request.SizerType]int64, r2 request.Request) ([]request.Request, error) {
-	var maxSize int
-	var szt request.SizerType
-	for k, v := range maxSizePerSizer {
-		szt = k
-		maxSize = int(v)
-		break
-	}
-
 	if r.MergeErr != nil {
 		return r.MergeErrResult, r.MergeErr
 	}
@@ -69,32 +61,63 @@ func (r *FakeRequest) MergeSplit(_ context.Context, maxSizePerSizer map[request.
 		fr2.mergeTo(r)
 	}
 
-	if maxSize == 0 {
+	if r.Items == 0 {
 		return []request.Request{r}, nil
 	}
 
+	// Calculate how many items to take per batch.
+	itemsToTake := r.Items
+	hasLimits := false
+
+	for szt, limit := range maxSizePerSizer {
+		if limit <= 0 {
+			continue
+		}
+		hasLimits = true
+		switch szt {
+		case request.SizerTypeItems:
+			if int(limit) < itemsToTake {
+				itemsToTake = int(limit)
+			}
+		case request.SizerTypeBytes:
+			if r.Bytes > 0 {
+				// Assume uniform distribution of bytes across items.
+				avgBytesPerItem := float64(r.Bytes) / float64(r.Items)
+				maxItemsByBytes := int(float64(limit) / avgBytesPerItem)
+				if maxItemsByBytes < itemsToTake {
+					itemsToTake = maxItemsByBytes
+				}
+			}
+		}
+	}
+
+	if !hasLimits {
+		return []request.Request{r}, nil
+	}
+
+	if itemsToTake <= 0 {
+		itemsToTake = 1 // Guarantee progress
+	}
+
 	var res []request.Request
-	switch szt {
-	case request.SizerTypeItems:
-		for r.Items != 0 {
-			if r.Items <= maxSize {
-				res = append(res, r)
-				break
-			}
-			res = append(res, &FakeRequest{Items: maxSize, Bytes: -1, Delay: r.Delay})
-			r.Items -= maxSize
-			r.Bytes = -1
+	avgBytesPerItem := float64(r.Bytes) / float64(r.Items)
+
+	for r.Items > 0 {
+		take := itemsToTake
+		if take > r.Items {
+			take = r.Items
 		}
-	case request.SizerTypeBytes:
-		for r.Bytes != 0 {
-			if r.Bytes <= maxSize {
-				res = append(res, r)
-				break
-			}
-			res = append(res, &FakeRequest{Items: -1, Bytes: maxSize, Delay: r.Delay})
-			r.Items = -1
-			r.Bytes -= maxSize
-		}
+
+		bytes := int(float64(take) * avgBytesPerItem)
+
+		res = append(res, &FakeRequest{
+			Items: take,
+			Bytes: bytes,
+			Delay: r.Delay,
+		})
+
+		r.Items -= take
+		r.Bytes -= bytes
 	}
 
 	return res, nil
