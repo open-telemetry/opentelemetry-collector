@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 func TestScrapeControllerSettings(t *testing.T) {
@@ -35,6 +37,41 @@ func TestScrapeControllerSettings(t *testing.T) {
 				Timeout:            -1 * time.Minute,
 			},
 			errVal: `"timeout": requires positive value`,
+		},
+		{
+			name: "zero interval with controllers",
+			set: ControllerConfig{
+				Controllers: []component.ID{component.MustNewID("myext")},
+			},
+			errVal: "",
+		},
+		{
+			name: "negative interval with controllers",
+			set: ControllerConfig{
+				CollectionInterval: -1,
+				Controllers:        []component.ID{component.MustNewID("myext")},
+			},
+			errVal: `"collection_interval": requires positive value`,
+		},
+		{
+			name: "positive interval with controllers",
+			set: ControllerConfig{
+				CollectionInterval: time.Minute,
+				Controllers:        []component.ID{component.MustNewID("myext")},
+			},
+			errVal: "",
+		},
+		{
+			name: "duplicate controllers",
+			set: ControllerConfig{
+				CollectionInterval: time.Minute,
+				Controllers: []component.ID{
+					component.MustNewID("myext"),
+					component.MustNewID("myext"),
+					component.MustNewID("myext"),
+				},
+			},
+			errVal: `"controllers": duplicate extension ID "myext"`,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

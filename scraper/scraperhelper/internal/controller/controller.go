@@ -7,6 +7,7 @@ package controller // import "go.opentelemetry.io/collector/scraper/scraperhelpe
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension/xextension/extensionscrapercontroller"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/scraper"
@@ -30,6 +32,9 @@ type Controller[T component.Component] struct {
 
 	done chan struct{}
 	wg   sync.WaitGroup
+
+	controllers []component.ID
+	handles     []extensionscrapercontroller.RegistrationHandle
 
 	Obsrecv *receiverhelper.ObsReport
 }
@@ -58,6 +63,7 @@ func NewController[T component.Component](
 		scrapeFunc:         scrapeFunc,
 		done:               make(chan struct{}),
 		tickerCh:           tickerCh,
+		controllers:        cfg.Controllers,
 		Obsrecv:            obsrecv,
 	}
 
@@ -74,22 +80,67 @@ func NewController[T component.Component](
 
 // Start the receiver, invoked during service start.
 func (sc *Controller[T]) Start(ctx context.Context, host component.Host) error {
+	var startedScrapers int
+	success := false
+	defer func() {
+		if success {
+			return
+		}
+		for _, handle := range sc.handles {
+			_ = handle.Deregister(ctx)
+		}
+		sc.handles = nil
+		for i := range startedScrapers {
+			_ = sc.Scrapers[i].Shutdown(ctx)
+		}
+	}()
+
 	for _, scrp := range sc.Scrapers {
 		if err := scrp.Start(ctx, host); err != nil {
 			return err
 		}
+		startedScrapers++
 	}
 
-	sc.startScraping()
+	for _, controllerID := range sc.controllers {
+		ext, found := host.GetExtensions()[controllerID]
+		if !found {
+			return fmt.Errorf("extension %q not found", controllerID)
+		}
+		ce, ok := ext.(extensionscrapercontroller.ControllerExtension)
+		if !ok {
+			return fmt.Errorf("extension %q is not a scraper controller extension", controllerID)
+		}
+		handle, err := ce.RegisterScraper(ctx, func(callCtx context.Context) error {
+			sc.wg.Add(1)
+			defer sc.wg.Done()
+			return sc.scrapeFunc(callCtx, sc)
+		})
+		if err != nil {
+			return fmt.Errorf("failed to register scraper with extension %q: %w", controllerID, err)
+		}
+		sc.handles = append(sc.handles, handle)
+	}
+
+	if sc.collectionInterval > 0 {
+		sc.startScraping()
+	}
+	success = true
 	return nil
 }
 
 // Shutdown the receiver, invoked during service shutdown.
 func (sc *Controller[T]) Shutdown(ctx context.Context) error {
-	// Signal the goroutine to stop.
+	// Signal the ticker goroutine to stop.
 	close(sc.done)
-	sc.wg.Wait()
 	var errs error
+	for _, handle := range sc.handles {
+		errs = multierr.Append(errs, handle.Deregister(ctx))
+	}
+	// Wait for the ticker goroutine and any in-flight extension-triggered
+	// scrapes to finish. After Deregister, no new extension-triggered
+	// scrapes will start.
+	sc.wg.Wait()
 	for _, scrp := range sc.Scrapers {
 		errs = multierr.Append(errs, scrp.Shutdown(ctx))
 	}
