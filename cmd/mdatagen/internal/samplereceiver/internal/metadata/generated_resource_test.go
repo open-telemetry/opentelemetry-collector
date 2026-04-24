@@ -169,11 +169,11 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 	}
 }
 
+// TestResourceBuilderOverrideWithoutSet does not call any Set* methods, but override should still apply via Emit().
 func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
 	require.NoError(t, xconfmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
-	// Do not call any Set* methods — override should still apply via Emit().
 
 	res := rb.Emit()
 	{
@@ -241,9 +241,9 @@ func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 	}
 }
 
+// TestResourceBuilderOverrideDisabled disables all attributes, so override should not apply.
 func TestResourceBuilderOverrideDisabled(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
-	// Disable all attributes — override should not apply.
 	cfg.MapResourceAttr.Enabled = false
 	cfg.OptionalResourceAttr.Enabled = false
 	cfg.SliceResourceAttr.Enabled = false
@@ -260,9 +260,9 @@ func TestResourceBuilderOverrideDisabled(t *testing.T) {
 	assert.Equal(t, 0, res.Attributes().Len(), "disabled attributes with override should not be emitted")
 }
 
+// TestResourceBuilderNoOverride has no override_value set, Validate should still succeed.
 func TestResourceBuilderNoOverride(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "all_set")
-	// No override_value set — Validate should still succeed.
 	require.NoError(t, xconfmap.Validate(cfg))
 	assert.Nil(t, cfg.MapResourceAttr.OverrideValue, "OverrideValue should be nil for map.resource.attr")
 	assert.Nil(t, cfg.OptionalResourceAttr.OverrideValue, "OverrideValue should be nil for optional.resource.attr")
