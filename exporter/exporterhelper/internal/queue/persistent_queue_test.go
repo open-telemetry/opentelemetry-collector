@@ -32,7 +32,7 @@ import (
 
 type intRequest int64
 
-func (i intRequest) MergeSplit(context.Context, int, request.SizerType, request.Request) ([]request.Request, error) {
+func (i intRequest) MergeSplit(context.Context, map[request.SizerType]int64, request.Request) ([]request.Request, error) {
 	panic("implement me")
 }
 

@@ -30,8 +30,9 @@ func NewDefaultQueueConfig() queuebatch.Config {
 		BlockOnOverflow: false,
 		Batch: configoptional.Default(queuebatch.BatchConfig{
 			FlushTimeout: 200 * time.Millisecond,
-			Sizer:        request.SizerTypeItems,
-			MinSize:      8192,
+			Sizers: map[request.SizerType]queuebatch.SizerLimit{
+				request.SizerTypeItems: {MinSize: 8192},
+			},
 		}),
 	}
 }

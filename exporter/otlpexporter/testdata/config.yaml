@@ -10,8 +10,10 @@ sending_queue:
   queue_size: 100000
   batch:
     flush_timeout: 200ms
-    min_size: 1000
-    max_size: 10000
+    sizers:
+      items:
+        min_size: 1000
+        max_size: 10000
 retry_on_failure:
   enabled: true
   initial_interval: 10s

@@ -38,14 +38,14 @@ var (
 )
 
 type tracesRequest struct {
-	td         ptrace.Traces
-	cachedSize int
+	td          ptrace.Traces
+	cachedSizes map[request.SizerType]int
 }
 
 func newTracesRequest(td ptrace.Traces) request.Request {
 	return &tracesRequest{
-		td:         td,
-		cachedSize: -1,
+		td:          td,
+		cachedSizes: make(map[request.SizerType]int),
 	}
 }
 
@@ -103,15 +103,17 @@ func (req *tracesRequest) ItemsCount() int {
 	return req.td.SpanCount()
 }
 
-func (req *tracesRequest) size(sizer sizer.TracesSizer) int {
-	if req.cachedSize == -1 {
-		req.cachedSize = sizer.TracesSize(req.td)
+func (req *tracesRequest) size(szt request.SizerType, sizer sizer.TracesSizer) int {
+	if sz, ok := req.cachedSizes[szt]; ok {
+		return sz
 	}
-	return req.cachedSize
+	sz := sizer.TracesSize(req.td)
+	req.cachedSizes[szt] = sz
+	return sz
 }
 
-func (req *tracesRequest) setCachedSize(size int) {
-	req.cachedSize = size
+func (req *tracesRequest) setCachedSize(szt request.SizerType, count int) {
+	req.cachedSizes[szt] = count
 }
 
 func (req *tracesRequest) BytesSize() int {

@@ -7,8 +7,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
@@ -17,15 +18,17 @@ import (
 //
 // Following the OTLP 1.7.0 upgrade, this is currently a noop.
 // See https://github.com/open-telemetry/opentelemetry-collector/issues/13106
-func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt exporterhelper.RequestSizerType, r2 Request) ([]Request, error) {
-	var sz sizer.ProfilesSizer
-	switch szt {
-	case exporterhelper.RequestSizerTypeItems:
-		sz = &sizer.ProfilesCountSizer{}
-	case exporterhelper.RequestSizerTypeBytes:
-		sz = &sizer.ProfilesBytesSizer{}
-	default:
-		return nil, errors.New("unknown sizer type")
+func (req *profilesRequest) MergeSplit(_ context.Context, maxSizePerSizer map[request.SizerType]int64, r2 request.Request) ([]request.Request, error) {
+	sizers := make(map[request.SizerType]sizer.ProfilesSizer)
+	for szt := range maxSizePerSizer {
+		switch szt {
+		case request.SizerTypeItems:
+			sizers[szt] = &sizer.ProfilesCountSizer{}
+		case request.SizerTypeBytes:
+			sizers[szt] = &sizer.ProfilesBytesSizer{}
+		default:
+			return nil, errors.New("unknown sizer type")
+		}
 	}
 
 	if r2 != nil && r2.ItemsCount() > 0 {
@@ -33,47 +36,75 @@ func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt expor
 		if !ok {
 			return nil, errors.New("invalid input type")
 		}
-		err := req2.mergeTo(req, sz)
+		err := req2.mergeTo(req, sizers)
 		if err != nil {
 			return nil, fmt.Errorf("failed merging profiles; %w", err)
 		}
 	}
 
-	// If no limit we can simply merge the new request into the current and return.
-	if maxSize == 0 {
-		return []Request{req}, nil
+	// If no limits we can simply merge the new request into the current and return.
+	if len(maxSizePerSizer) == 0 {
+		return []request.Request{req}, nil
 	}
-	return req.split(maxSize, sz)
+
+	return req.split(maxSizePerSizer, sizers)
 }
 
-func (req *profilesRequest) mergeTo(dst *profilesRequest, sz sizer.ProfilesSizer) error {
-	if sz != nil {
-		dst.setCachedSize(dst.size(sz) + req.size(sz))
-		req.setCachedSize(0)
+func (req *profilesRequest) mergeTo(dst *profilesRequest, sizers map[request.SizerType]sizer.ProfilesSizer) error {
+	for szt, sz := range sizers {
+		dst.setCachedSize(szt, dst.size(szt, sz)+req.size(szt, sz))
+		req.setCachedSize(szt, 0)
 	}
 	return req.pd.MergeTo(dst.pd)
 }
 
-func (req *profilesRequest) split(maxSize int, sz sizer.ProfilesSizer) ([]Request, error) {
-	var res []Request
-	for req.size(sz) > maxSize {
-		pd, rmSize := extractProfiles(req.pd, maxSize, sz)
-		if pd.SampleCount() == 0 {
-			return res, fmt.Errorf("one sample size is greater than max size, dropping items: %d", req.pd.SampleCount())
+func (req *profilesRequest) split(maxSizePerSizer map[request.SizerType]int64, sizers map[request.SizerType]sizer.ProfilesSizer) ([]request.Request, error) {
+	var res []request.Request
+	sortedSzt := getSortedSizerTypes(maxSizePerSizer)
+	for req.pd.SampleCount() > 0 {
+		pd := req.pd
+		isInitial := true
+		exceededAny := false
+
+		for _, szt := range sortedSzt {
+			maxSize := maxSizePerSizer[szt]
+			sz := sizers[szt]
+			if maxSize > 0 && int64(sz.ProfilesSize(pd)) > maxSize {
+				exceededAny = true
+				pdNew := extractProfiles(pd, int(maxSize), sz)
+				if pdNew.SampleCount() == 0 {
+					return res, fmt.Errorf("one sample size is greater than max size, dropping items: %d", pd.SampleCount())
+				}
+
+				if isInitial {
+					isInitial = false
+				} else {
+					// Prepend remainder to req.pd to maintain order!
+					newReqPd := pprofile.NewProfiles()
+					pd.ResourceProfiles().MoveAndAppendTo(newReqPd.ResourceProfiles())
+					req.pd.ResourceProfiles().MoveAndAppendTo(newReqPd.ResourceProfiles())
+					req.pd = newReqPd
+				}
+
+				pd = pdNew
+			}
 		}
-		req.setCachedSize(req.size(sz) - rmSize)
+
+		if !exceededAny {
+			break
+		}
+
+		req.cachedSizes = make(map[request.SizerType]int)
 		res = append(res, newProfilesRequest(pd))
 	}
-
 	res = append(res, req)
 	return res, nil
 }
 
 // extractProfiles extracts a new profiles with a maximum number of samples.
-func extractProfiles(srcProfiles pprofile.Profiles, capacity int, sz sizer.ProfilesSizer) (pprofile.Profiles, int) {
+func extractProfiles(srcProfiles pprofile.Profiles, capacity int, sz sizer.ProfilesSizer) pprofile.Profiles {
 	destProfiles := pprofile.NewProfiles()
 	capacityLeft := capacity - sz.ProfilesSize(destProfiles)
-	removedSize := 0
 
 	srcProfiles.Dictionary().CopyTo(destProfiles.Dictionary())
 	srcProfiles.ResourceProfiles().RemoveIf(func(srcRP pprofile.ResourceProfiles) bool {
@@ -85,13 +116,10 @@ func extractProfiles(srcProfiles pprofile.Profiles, capacity int, sz sizer.Profi
 		rpSize := sz.DeltaSize(rawRpSize)
 
 		if rpSize > capacityLeft {
-			extSrcRP, extRpSize := extractResourceProfiles(srcRP, capacityLeft, sz)
+			extSrcRP := extractResourceProfiles(srcRP, capacityLeft, sz)
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
-			removedSize += extRpSize
-			// There represents the delta between the delta sizes.
-			removedSize += rpSize - rawRpSize - (sz.DeltaSize(rawRpSize-extRpSize) - (rawRpSize - extRpSize))
 			// It is possible that for the bytes scenario, the extracted field contains no profiles.
 			// Do not add it to the destination if that is the case.
 			if extSrcRP.ScopeProfiles().Len() > 0 {
@@ -100,22 +128,19 @@ func extractProfiles(srcProfiles pprofile.Profiles, capacity int, sz sizer.Profi
 			return extSrcRP.ScopeProfiles().Len() != 0
 		}
 		capacityLeft -= rpSize
-		removedSize += rpSize
 		srcRP.MoveTo(destProfiles.ResourceProfiles().AppendEmpty())
 		return true
 	})
-	return destProfiles, removedSize
+	return destProfiles
 }
 
 // extractResourceProfiles extracts profiles and returns a new resource profiles with the specified number of profiles.
-func extractResourceProfiles(srcRP pprofile.ResourceProfiles, capacity int, sz sizer.ProfilesSizer) (pprofile.ResourceProfiles, int) {
+func extractResourceProfiles(srcRP pprofile.ResourceProfiles, capacity int, sz sizer.ProfilesSizer) pprofile.ResourceProfiles {
 	destRP := pprofile.NewResourceProfiles()
 	destRP.SetSchemaUrl(srcRP.SchemaUrl())
 	srcRP.Resource().CopyTo(destRP.Resource())
 	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
 	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.ResourceProfilesSize(destRP)
-	removedSize := 0
-
 	srcRP.ScopeProfiles().RemoveIf(func(srcSS pprofile.ScopeProfiles) bool {
 		// If the no more capacity left just return.
 		if capacityLeft == 0 {
@@ -125,13 +150,10 @@ func extractResourceProfiles(srcRP pprofile.ResourceProfiles, capacity int, sz s
 		rawSlSize := sz.ScopeProfilesSize(srcSS)
 		ssSize := sz.DeltaSize(rawSlSize)
 		if ssSize > capacityLeft {
-			extSrcSS, extSsSize := extractScopeProfiles(srcSS, capacityLeft, sz)
+			extSrcSS := extractScopeProfiles(srcSS, capacityLeft, sz)
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
-			removedSize += extSsSize
-			// There represents the delta between the delta sizes.
-			removedSize += ssSize - rawSlSize - (sz.DeltaSize(rawSlSize-extSsSize) - (rawSlSize - extSsSize))
 			// It is possible that for the bytes scenario, the extracted field contains no profiles.
 			// Do not add it to the destination if that is the case.
 			if extSrcSS.Profiles().Len() > 0 {
@@ -140,22 +162,20 @@ func extractResourceProfiles(srcRP pprofile.ResourceProfiles, capacity int, sz s
 			return extSrcSS.Profiles().Len() != 0
 		}
 		capacityLeft -= ssSize
-		removedSize += ssSize
 		srcSS.MoveTo(destRP.ScopeProfiles().AppendEmpty())
 		return true
 	})
 
-	return destRP, removedSize
+	return destRP
 }
 
 // extractScopeProfiles extracts profiles and returns a new scope profiles with the specified number of profiles.
-func extractScopeProfiles(srcSS pprofile.ScopeProfiles, capacity int, sz sizer.ProfilesSizer) (pprofile.ScopeProfiles, int) {
+func extractScopeProfiles(srcSS pprofile.ScopeProfiles, capacity int, sz sizer.ProfilesSizer) pprofile.ScopeProfiles {
 	destSS := pprofile.NewScopeProfiles()
 	destSS.SetSchemaUrl(srcSS.SchemaUrl())
 	srcSS.Scope().CopyTo(destSS.Scope())
 	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
 	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.ScopeProfilesSize(destSS)
-	removedSize := 0
 	srcSS.Profiles().RemoveIf(func(srcProfile pprofile.Profile) bool {
 		// If the no more capacity left just return.
 		if capacityLeft == 0 {
@@ -169,9 +189,19 @@ func extractScopeProfiles(srcSS pprofile.ScopeProfiles, capacity int, sz sizer.P
 			return false
 		}
 		capacityLeft -= rsSize
-		removedSize += rsSize
 		srcProfile.MoveTo(destSS.Profiles().AppendEmpty())
 		return true
 	})
-	return destSS, removedSize
+	return destSS
+}
+
+func getSortedSizerTypes[T any](m map[request.SizerType]T) []request.SizerType {
+	keys := make([]request.SizerType, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i].String() < keys[j].String()
+	})
+	return keys
 }

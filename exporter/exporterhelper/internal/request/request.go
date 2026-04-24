@@ -18,15 +18,15 @@ type Request interface {
 	// metric data points or log records.
 	ItemsCount() int
 	// MergeSplit is a function that merge and/or splits this request with another one into multiple requests based on the
-	// configured limit provided in maxSize.
-	// MergeSplit does not split if maxSize is zero.
-	// All the returned requests MUST have a number of items that does not exceed the maximum number of items.
+	// configured limits provided in maxSizePerSizer map.
+	// MergeSplit does not split if maxSizePerSizer map is empty.
+	// All the returned requests MUST have sizes that do not exceed the maximum limits.
 	// Size of the last returned request MUST be less or equal than the size of any other returned request.
 	// The original request MUST not be mutated if error is returned after mutation or if the exporter is
 	// marked as not mutable. The length of the returned slice MUST not be 0.
 	// Experimental: This API is at the early stage of development and may change without backward compatibility
 	// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-	MergeSplit(ctx context.Context, maxSize int, sizerType SizerType, req Request) ([]Request, error)
+	MergeSplit(ctx context.Context, maxSizePerSizer map[SizerType]int64, req Request) ([]Request, error)
 	// BytesSize returns the size of the request in bytes.
 	BytesSize() int
 }

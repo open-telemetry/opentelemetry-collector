@@ -5,6 +5,7 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,7 +21,7 @@ import (
 func TestMergeMetrics(t *testing.T) {
 	mr1 := newMetricsRequest(testdata.GenerateMetrics(2))
 	mr2 := newMetricsRequest(testdata.GenerateMetrics(3))
-	res, err := mr1.MergeSplit(context.Background(), 0, request.SizerTypeItems, mr2)
+	res, err := mr1.MergeSplit(context.Background(), map[request.SizerType]int64{request.SizerTypeItems: 0}, mr2)
 	require.NoError(t, err)
 	// Every metric has 2 data points.
 	assert.Equal(t, 2*5, res[0].ItemsCount())
@@ -124,13 +125,13 @@ func TestMergeSplitMetrics(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := tt.mr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.mr2)
+			res, err := tt.mr1.MergeSplit(context.Background(), map[request.SizerType]int64{tt.szt: int64(tt.maxSize)}, tt.mr2)
 			require.NoError(t, err)
 			assert.Len(t, res, len(tt.expected))
 			for i := range res {
 				expected := tt.expected[i].(*metricsRequest)
 				actual := res[i].(*metricsRequest)
-				assert.Equal(t, expected.size(&s), actual.size(&s))
+				assert.Equal(t, expected.size(tt.szt, &s), actual.size(tt.szt, &s))
 			}
 		})
 	}
@@ -208,7 +209,7 @@ func TestSplitMetricsWithDataPointSplit(t *testing.T) {
 			mr1 := newMetricsRequest(generateTestMetrics(tt.metricType))
 
 			// Split by data point, so maxSize is 1.
-			res, err := mr1.MergeSplit(context.Background(), 1, request.SizerTypeItems, nil)
+			res, err := mr1.MergeSplit(context.Background(), map[request.SizerType]int64{request.SizerTypeItems: 1}, nil)
 			require.NoError(t, err)
 			require.Len(t, res, 2)
 
@@ -232,7 +233,7 @@ func TestSplitMetricsWithDataPointSplit(t *testing.T) {
 func TestMergeSplitMetricsInputNotModifiedIfErrorReturned(t *testing.T) {
 	r1 := newMetricsRequest(testdata.GenerateMetrics(18)) // 18 metrics, 36 data points
 	r2 := newLogsRequest(testdata.GenerateLogs(3))
-	_, err := r1.MergeSplit(context.Background(), 10, request.SizerTypeItems, r2)
+	_, err := r1.MergeSplit(context.Background(), map[request.SizerType]int64{request.SizerTypeItems: 10}, r2)
 	require.Error(t, err)
 	assert.Equal(t, 36, r1.ItemsCount())
 }
@@ -240,7 +241,7 @@ func TestMergeSplitMetricsInputNotModifiedIfErrorReturned(t *testing.T) {
 func TestExtractMetrics(t *testing.T) {
 	for i := range 20 {
 		md := testdata.GenerateMetrics(10)
-		extractedMetrics, _ := extractMetrics(md, i, &sizer.MetricsCountSizer{})
+		extractedMetrics := extractMetrics(md, i, &sizer.MetricsCountSizer{})
 		assert.Equal(t, i, extractedMetrics.DataPointCount())
 		assert.Equal(t, 20-i, md.DataPointCount())
 	}
@@ -248,7 +249,7 @@ func TestExtractMetrics(t *testing.T) {
 
 func TestExtractMetricsInvalidMetric(t *testing.T) {
 	md := testdata.GenerateMetricsMetricTypeInvalid()
-	extractedMetrics, _ := extractMetrics(md, 10, &sizer.MetricsCountSizer{})
+	extractedMetrics := extractMetrics(md, 10, &sizer.MetricsCountSizer{})
 	assert.Equal(t, testdata.GenerateMetricsMetricTypeInvalid(), extractedMetrics)
 	assert.Equal(t, 0, md.ResourceMetrics().Len())
 }
@@ -258,7 +259,7 @@ func TestMergeSplitManySmallMetrics(t *testing.T) {
 	merged := []request.Request{newMetricsRequest(testdata.GenerateMetrics(1))}
 	for range 1000 {
 		lr2 := newMetricsRequest(testdata.GenerateMetrics(10))
-		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 20000, request.SizerTypeItems, lr2)
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), map[request.SizerType]int64{request.SizerTypeItems: 20000}, lr2)
 		merged = append(merged[0:len(merged)-1], res...)
 	}
 	assert.Len(t, merged, 2)
@@ -272,7 +273,7 @@ func BenchmarkSplittingBasedOnItemCountManySmallMetrics(b *testing.B) {
 		merged := []request.Request{newMetricsRequest(testdata.GenerateMetrics(10))}
 		for range 1000 {
 			lr2 := newMetricsRequest(testdata.GenerateMetrics(10))
-			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 20020, request.SizerTypeItems, lr2)
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), map[request.SizerType]int64{request.SizerTypeItems: 20020}, lr2)
 			merged = append(merged[0:len(merged)-1], res...)
 		}
 		assert.Len(b, merged, 1)
@@ -287,7 +288,7 @@ func BenchmarkSplittingBasedOnItemCountManyMetricsSlightlyAboveLimit(b *testing.
 		merged := []request.Request{newMetricsRequest(testdata.GenerateMetrics(0))}
 		for range 10 {
 			lr2 := newMetricsRequest(testdata.GenerateMetrics(10001))
-			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 20000, request.SizerTypeItems, lr2)
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), map[request.SizerType]int64{request.SizerTypeItems: 20000}, lr2)
 			merged = append(merged[0:len(merged)-1], res...)
 		}
 		assert.Len(b, merged, 11)
@@ -301,7 +302,7 @@ func BenchmarkSplittingBasedOnItemCountHugeMetrics(b *testing.B) {
 	for b.Loop() {
 		merged := []request.Request{newMetricsRequest(testdata.GenerateMetrics(0))}
 		lr2 := newMetricsRequest(testdata.GenerateMetrics(100000))
-		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 20000, request.SizerTypeItems, lr2)
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), map[request.SizerType]int64{request.SizerTypeItems: 20000}, lr2)
 		merged = append(merged[0:len(merged)-1], res...)
 		assert.Len(b, merged, 10)
 	}
@@ -459,7 +460,7 @@ func TestMergeSplitMetricsBasedOnByteSize(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := tt.mr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.mr2)
+			res, err := tt.mr1.MergeSplit(context.Background(), map[request.SizerType]int64{tt.szt: int64(tt.maxSize)}, tt.mr2)
 			if tt.expectSplitError {
 				require.ErrorContains(t, err, "one datapoint size is greater than max size, dropping items:")
 			} else {
@@ -515,12 +516,9 @@ func TestExtractGaugeDataPoints(t *testing.T) {
 			sz := &mockMetricsSizer{dpSize: 1}
 
 			destMetric := pmetric.NewMetric()
-			removedSize := extractGaugeDataPoints(gauge, destMetric, tt.capacity, sz)
+			extractGaugeDataPoints(gauge, destMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Gauge().DataPoints().Len())
-			if tt.expectedPoints > 0 {
-				assert.Equal(t, tt.expectedPoints, removedSize)
-			}
 		})
 	}
 }
@@ -564,12 +562,9 @@ func TestExtractSumDataPoints(t *testing.T) {
 			sz := &mockMetricsSizer{dpSize: 1}
 
 			destMetric := pmetric.NewMetric()
-			removedSize := extractSumDataPoints(sum, destMetric, tt.capacity, sz)
+			extractSumDataPoints(sum, destMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Sum().DataPoints().Len())
-			if tt.expectedPoints > 0 {
-				assert.Equal(t, tt.expectedPoints, removedSize)
-			}
 		})
 	}
 }
@@ -614,12 +609,9 @@ func TestExtractHistogramDataPoints(t *testing.T) {
 			sz := &mockMetricsSizer{dpSize: 1}
 
 			destMetric := pmetric.NewMetric()
-			removedSize := extractHistogramDataPoints(histogram, destMetric, tt.capacity, sz)
+			extractHistogramDataPoints(histogram, destMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Histogram().DataPoints().Len())
-			if tt.expectedPoints > 0 {
-				assert.Equal(t, tt.expectedPoints, removedSize)
-			}
 		})
 	}
 }
@@ -663,12 +655,9 @@ func TestExtractExponentialHistogramDataPoints(t *testing.T) {
 			sz := &mockMetricsSizer{dpSize: 1}
 
 			destMetric := pmetric.NewMetric()
-			removedSize := extractExponentialHistogramDataPoints(expHistogram, destMetric, tt.capacity, sz)
+			extractExponentialHistogramDataPoints(expHistogram, destMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.ExponentialHistogram().DataPoints().Len())
-			if tt.expectedPoints > 0 {
-				assert.Equal(t, tt.expectedPoints, removedSize)
-			}
 		})
 	}
 }
@@ -712,12 +701,9 @@ func TestExtractSummaryDataPoints(t *testing.T) {
 			sz := &mockMetricsSizer{dpSize: 1}
 
 			destMetric := pmetric.NewMetric()
-			removedSize := extractSummaryDataPoints(summary, destMetric, tt.capacity, sz)
+			extractSummaryDataPoints(summary, destMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Summary().DataPoints().Len())
-			if tt.expectedPoints > 0 {
-				assert.Equal(t, tt.expectedPoints, removedSize)
-			}
 		})
 	}
 }
@@ -725,7 +711,7 @@ func TestExtractSummaryDataPoints(t *testing.T) {
 func TestMetricsMergeSplitUnknownSizerType(t *testing.T) {
 	req := newMetricsRequest(pmetric.NewMetrics())
 	// Call MergeSplit with invalid sizer
-	_, err := req.MergeSplit(context.Background(), 0, request.SizerType{}, nil)
+	_, err := req.MergeSplit(context.Background(), map[request.SizerType]int64{{}: 0}, nil)
 	require.EqualError(t, err, "unknown sizer type")
 }
 
@@ -768,4 +754,54 @@ func (m *mockMetricsSizer) ScopeMetricsSize(_ pmetric.ScopeMetrics) int {
 
 func (m *mockMetricsSizer) DeltaSize(size int) int {
 	return size
+}
+
+func TestMergeSplitMetricsMultiSizerOrder(t *testing.T) {
+	// Create 4 distinct metrics in order.
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	sm := rm.ScopeMetrics().AppendEmpty()
+	for i := range 4 {
+		m := sm.Metrics().AppendEmpty()
+		m.SetName(fmt.Sprintf("metric-%d", i))
+		// Data points are needed to make it non-empty!
+		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+		dp.SetIntValue(int64(i))
+	}
+
+	// Calculate size of 2 metrics to set byte limit.
+	md2 := pmetric.NewMetrics()
+	rm2 := md2.ResourceMetrics().AppendEmpty()
+	sm2 := rm2.ScopeMetrics().AppendEmpty()
+	for i := range 2 {
+		m := sm2.Metrics().AppendEmpty()
+		m.SetName(fmt.Sprintf("metric-%d", i))
+		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+		dp.SetIntValue(int64(i))
+	}
+
+	var pbMarshaler pmetric.ProtoMarshaler
+	limitBytes := int64(pbMarshaler.MetricsSize(md2) - 1)
+
+	limits := map[request.SizerType]int64{
+		request.SizerTypeItems: 2,
+		request.SizerTypeBytes: limitBytes,
+	}
+
+	req := newMetricsRequest(md)
+	res, err := req.MergeSplit(context.Background(), limits, nil)
+	require.NoError(t, err)
+
+	// We expect 4 batches, each with 1 data point (and 1 metric).
+	assert.Len(t, res, 4)
+
+	// Verify order by checking the name of the metric in each batch!
+	for i := range 4 {
+		mrReq := res[i].(*metricsRequest)
+		assert.Equal(t, 1, mrReq.ItemsCount())
+
+		// Extract the metric name
+		name := mrReq.md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name()
+		assert.Equal(t, fmt.Sprintf("metric-%d", i), name)
+	}
 }

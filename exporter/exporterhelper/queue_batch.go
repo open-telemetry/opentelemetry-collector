@@ -25,6 +25,9 @@ type QueueBatchConfig = queuebatch.Config
 // BatchConfig defines a configuration for batching requests based on a timeout and a minimum number of items.
 type BatchConfig = queuebatch.BatchConfig
 
+// SizerLimit defines the configuration for a specific sizer.
+type SizerLimit = queuebatch.SizerLimit
+
 // QueueBatchEncoding defines the encoding to be used if persistent queue is configured.
 // Duplicate definition with queuebatch.Encoding since aliasing generics is not supported by default.
 type QueueBatchEncoding[T any] interface {
