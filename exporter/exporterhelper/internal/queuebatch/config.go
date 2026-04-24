@@ -88,13 +88,13 @@ func (cfg *Config) Validate() error {
 		// Check legacy fields
 		if batchCfg.Sizer == cfg.Sizer {
 			if batchCfg.MinSize > int64(cfg.QueueSize) {
-				return errors.New("`min_size` must be less than or equal to `queue_size`")
+				return fmt.Errorf("for sizer %s, `min_size` (%d) must be less than or equal to `queue_size` (%d)", cfg.Sizer, batchCfg.MinSize, cfg.QueueSize)
 			}
 		}
-		// Check Sizers map if it matches queue sizer (fixed bug here)
+		// If Sizers map includes the same sizer type as the main sizer, check that the min size is not greater than queue size.
 		if limit, ok := batchCfg.Sizers[cfg.Sizer]; ok {
 			if limit.MinSize > int64(cfg.QueueSize) {
-				return errors.New("`min_size` must be less than or equal to `queue_size`")
+				return fmt.Errorf("for sizer %s, `min_size` (%d) must be less than or equal to `queue_size` (%d)", cfg.Sizer, limit.MinSize, cfg.QueueSize)
 			}
 		}
 	}
