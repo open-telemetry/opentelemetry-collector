@@ -39,7 +39,7 @@ func createTracerProvider(
 		set.Logger.Warn("Telemetry traces configuration is using the deprecated v0.2.0 Declarative Configuration format, please migrate to the v0.3.0 format",
 			zap.String("url", "https://opentelemetry.io/docs/specs/otel/configuration/#declarative-configuration"))
 	}
-	if cfg.Traces.Level == configtelemetry.LevelNone {
+	if cfg.Traces.Level == configtelemetry.LevelNone || len(cfg.Traces.Processors) == 0 {
 		set.Logger.Info("Internal trace telemetry disabled")
 		return &noopNoContextTracerProvider{}, nil
 	}
