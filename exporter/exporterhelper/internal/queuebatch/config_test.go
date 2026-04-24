@@ -142,8 +142,9 @@ func TestUnmarshal(t *testing.T) {
 			QueueSize:    1_000,
 			Batch: configoptional.Default(BatchConfig{
 				FlushTimeout: 200 * time.Millisecond,
-				Sizer:        request.SizerTypeItems,
-				MinSize:      8192,
+				Sizers: map[request.SizerType]SizerLimit{
+					request.SizerTypeItems: {MinSize: 8192},
+				},
 			}),
 		})
 	}
@@ -178,9 +179,11 @@ func TestUnmarshal(t *testing.T) {
 				cfg.Get().QueueSize = 2000
 				cfg.Get().Batch = configoptional.Some(BatchConfig{
 					FlushTimeout: 200 * time.Millisecond,
-					// Sizer has been overridden by parent sizer
-					Sizer:   request.SizerTypeBytes,
-					MinSize: 100,
+					// Sizers has been overridden by parent sizer
+					MinSize:      100,
+					Sizers: map[request.SizerType]SizerLimit{
+						request.SizerTypeItems: {MinSize: 8192},
+					},
 				})
 				return cfg
 			},
@@ -192,9 +195,11 @@ func TestUnmarshal(t *testing.T) {
 				cfg.Get().QueueSize = 2000
 				cfg.Get().Batch = configoptional.Some(BatchConfig{
 					FlushTimeout: 200 * time.Millisecond,
-					// Sizer has NOT been overridden by parent sizer
-					Sizer:   request.SizerTypeItems,
-					MinSize: 100,
+					// Sizers has NOT been overridden by parent sizer
+					MinSize:      100,
+					Sizers: map[request.SizerType]SizerLimit{
+						request.SizerTypeItems: {MinSize: 8192},
+					},
 				})
 				return cfg
 			},

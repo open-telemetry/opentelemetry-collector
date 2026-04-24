@@ -47,7 +47,17 @@ type Config struct {
 }
 
 func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
-	return conf.Unmarshal(cfg)
+	if err := conf.Unmarshal(cfg); err != nil {
+		return err
+	}
+
+	if conf.IsSet("sizer") && !conf.IsSet("batch") {
+		szt := cfg.Sizer
+		if szt == request.SizerTypeItems || szt == request.SizerTypeBytes {
+			cfg.Batch.Get().Sizers[szt] = SizerLimit{MinSize: 8192}
+		}
+	}
+	return nil
 }
 
 // Validate checks if the Config is valid
