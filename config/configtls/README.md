@@ -83,6 +83,20 @@ See below for examples.
 
 - `tpm` (optional): Use the trusted platform module to retrieve the TLS key.
 
+## Insecure Cipher Suites
+
+**WARNING**: Insecure cipher suites can be enabled for legacy system compatibility but this should be used with extreme caution as it may expose your system to security vulnerabilities.
+
+- `include_insecure_cipher_suites`: (default = false): Whether to include insecure cipher suites returned by `tls.InsecureCipherSuites()` in addition to the secure ones
+
+Example:
+```
+  cipher_suites:
+    - TLS_RSA_WITH_RC4_128_SHA
+    - TLS_RSA_WITH_3DES_EDE_CBC_SHA
+  include_insecure_cipher_suites: true
+```
+
 ## Client Configuration
 
 [Exporters](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/README.md)
