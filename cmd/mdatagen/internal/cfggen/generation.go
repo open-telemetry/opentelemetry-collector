@@ -58,6 +58,14 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return typeName
 		},
+		"embeddedName": func(ref string) string {
+			if ref == "" {
+				panic("attempted to use embedded name with an empty ref")
+			}
+			refDesc := NewRef(ref)
+			name, _ := helpers.FormatIdentifier(refDesc.defName, true)
+			return name
+		},
 		"formatDefaultValue": func(md *ConfigMetadata, name string, defaultValue any) string {
 			return FormatDefaultValue(md, name, defaultValue, rootPackage, componentPackage)
 		},
@@ -209,6 +217,10 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 		}
 	}
 
+	if md.Pattern != "" {
+		imports["regexp"] = true
+	}
+
 	for _, prop := range md.Properties {
 		if err := collectImports(prop, imports, rootPackage, componentPackage); err != nil {
 			return err
@@ -272,6 +284,7 @@ func collectDefs(md *ConfigMetadata, defs map[string]*ConfigMetadata) {
 		if !refDesc.isInternal() {
 			return
 		}
+		defs[md.ResolvedFrom] = md
 	}
 
 	for _, name := range slices.Sorted(maps.Keys(md.Defs)) {
@@ -334,28 +347,53 @@ func ExtractValidators(md *ConfigMetadata) []Validator {
 	return validators
 }
 
+type ValidationRules struct {
+	MaxLength *int
+	MinLength *int
+	Pattern   *string
+	Required  bool
+}
+
+func (vr *ValidationRules) HasValueRule() bool {
+	return vr.MaxLength != nil || vr.MinLength != nil || vr.Pattern != nil
+}
+
+func (vr *ValidationRules) Enabled() bool {
+	return vr.HasValueRule() || vr.Required
+}
+
 type Validator struct {
 	FieldName       string
 	FieldType       string
-	IsRequired      bool
 	IsPointer       bool
 	IsOptional      bool
+	Rules           ValidationRules
 	CustomValidator string
 }
 
 func collectValidators(md *ConfigMetadata, validators *[]Validator) {
 	for _, propName := range slices.Sorted(maps.Keys(md.Properties)) {
 		prop := md.Properties[propName]
-		isRequired := slices.Contains(md.Required, propName)
-		if isRequired {
+		rules := ValidationRules{
+			MaxLength: prop.MaxLength,
+			MinLength: prop.MinLength,
+		}
+
+		rules.Required = slices.Contains(md.Required, propName)
+		if prop.Pattern != "" && !strings.HasPrefix(prop.GoType, "time.") {
+			rules.Pattern = &prop.Pattern
+		}
+
+		if rules.Enabled() {
 			*validators = append(*validators, Validator{
 				FieldName:  propName,
 				FieldType:  resolveType(prop),
-				IsRequired: isRequired,
 				IsPointer:  prop.IsPointer,
 				IsOptional: prop.IsOptional,
+				Rules:      rules,
 			})
 		}
+
 		if prop.GoStruct.CustomValidator != nil {
 			*validators = append(*validators, Validator{
 				FieldName:       propName,
@@ -367,6 +405,7 @@ func collectValidators(md *ConfigMetadata, validators *[]Validator) {
 		}
 	}
 
+	// root custom validation
 	if md.GoStruct.CustomValidator != nil {
 		*validators = append(*validators, Validator{
 			FieldName:       ".",
@@ -389,6 +428,14 @@ func resolveType(md *ConfigMetadata) string {
 	default:
 		return md.Type
 	}
+}
+
+func generateValidatorName(propName string, desc *CustomValidatorConfig) string {
+	if desc.Name != "" {
+		return desc.Name
+	}
+	id, _ := helpers.FormatIdentifier(propName, true)
+	return "validate" + id
 }
 
 func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, componentPackage string) []string {
@@ -562,12 +609,4 @@ func formatDurationAsGoExpr(d time.Duration) string {
 		}
 	}
 	return strings.Join(parts, " + ")
-}
-
-func generateValidatorName(propName string, desc *CustomValidatorConfig) string {
-	if desc.Name != "" {
-		return desc.Name
-	}
-	id, _ := helpers.FormatIdentifier(propName, true)
-	return "validate" + id
 }

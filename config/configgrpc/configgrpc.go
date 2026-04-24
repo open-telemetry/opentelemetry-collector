@@ -39,10 +39,14 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 )
 
 var errMetadataNotFound = errors.New("no request metadata found")
+
+// DefaultBalancerName is the name of the default load balancer.
+const DefaultBalancerName = "round_robin"
 
 // KeepaliveClientConfig exposes the keepalive.ClientParameters to be used by the exporter.
 // Refer to the original data-structure for the meaning of each parameter:
@@ -64,9 +68,13 @@ func NewDefaultKeepaliveClientConfig() KeepaliveClientConfig {
 }
 
 // BalancerName returns a string with default load balancer value
+//
+// Deprecated[v0.151.0]: Use the DefaultBalancerName constant instead.
 func BalancerName() string {
-	return "round_robin"
+	return DefaultBalancerName
 }
+
+var _ xconfmap.Validator = (*ClientConfig)(nil)
 
 // ClientConfig defines common settings for a gRPC client configuration.
 type ClientConfig struct {
@@ -113,6 +121,9 @@ type ClientConfig struct {
 
 	// Middlewares for the gRPC client.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultClientConfig returns a new instance of ClientConfig with default values.
@@ -120,7 +131,7 @@ func NewDefaultClientConfig() ClientConfig {
 	return ClientConfig{
 		TLS:          configtls.NewDefaultClientConfig(),
 		Keepalive:    configoptional.Some(NewDefaultKeepaliveClientConfig()),
-		BalancerName: BalancerName(),
+		BalancerName: DefaultBalancerName,
 	}
 }
 
@@ -172,6 +183,8 @@ type KeepaliveEnforcementPolicy struct {
 func NewDefaultKeepaliveEnforcementPolicy() KeepaliveEnforcementPolicy {
 	return KeepaliveEnforcementPolicy{}
 }
+
+var _ xconfmap.Validator = (*ServerConfig)(nil)
 
 // ServerConfig defines common settings for a gRPC server configuration.
 type ServerConfig struct {

@@ -5,6 +5,11 @@ package otlpexporter // import "go.opentelemetry.io/collector/exporter/otlpexpor
 
 import (
 	"context"
+	"net"
+	"strconv"
+
+	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -49,6 +54,21 @@ func createDefaultConfig() component.Config {
 	}
 }
 
+func endpointAttributes(cfg *Config) []attribute.KeyValue {
+	host, port, err := net.SplitHostPort(cfg.ClientConfig.Endpoint)
+	if err != nil {
+		// if an invalid endpoint makes it way through, we treat the entire thing as the server address
+		return []attribute.KeyValue{semconv.ServerAddress(cfg.ClientConfig.Endpoint)}
+	}
+	out := []attribute.KeyValue{
+		semconv.ServerAddress(host),
+	}
+	if portNumber, err := strconv.Atoi(port); err == nil {
+		out = append(out, semconv.ServerPort(portNumber))
+	}
+	return out
+}
+
 func createTraces(
 	ctx context.Context,
 	set exporter.Settings,
@@ -56,6 +76,7 @@ func createTraces(
 ) (exporter.Traces, error) {
 	oce := newExporter(cfg, set)
 	oCfg := cfg.(*Config)
+
 	return exporterhelper.NewTraces(ctx, set, cfg,
 		oce.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -64,6 +85,7 @@ func createTraces(
 		exporterhelper.WithQueue(oCfg.QueueConfig),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
+		exporterhelper.WithAttrs(endpointAttributes(oCfg)...),
 	)
 }
 
@@ -82,6 +104,7 @@ func createMetrics(
 		exporterhelper.WithQueue(oCfg.QueueConfig),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
+		exporterhelper.WithAttrs(endpointAttributes(oCfg)...),
 	)
 }
 
@@ -100,6 +123,7 @@ func createLogs(
 		exporterhelper.WithQueue(oCfg.QueueConfig),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
+		exporterhelper.WithAttrs(endpointAttributes(oCfg)...),
 	)
 }
 
@@ -118,5 +142,6 @@ func createProfilesExporter(
 		exporterhelper.WithQueue(oCfg.QueueConfig),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
+		exporterhelper.WithAttrs(endpointAttributes(oCfg)...),
 	)
 }
