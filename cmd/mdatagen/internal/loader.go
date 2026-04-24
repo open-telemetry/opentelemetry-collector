@@ -4,16 +4,21 @@
 package internal // import "go.opentelemetry.io/collector/cmd/mdatagen/internal"
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 )
+
+const componentLabelsRelPath = ".github/component_labels.txt"
 
 func setAttributeDefaultFields(attrs map[AttributeName]Attribute) {
 	for k, v := range attrs {
@@ -49,7 +54,7 @@ func LoadMetadata(filePath string) (Metadata, error) {
 	if err != nil {
 		return md, err
 	}
-	packageName, err := packageName(filepath.Dir(filePath))
+	packageName, err := getPackageName(filepath.Dir(filePath))
 	if err != nil {
 		return md, fmt.Errorf("unable to determine package name: %w", err)
 	}
@@ -70,6 +75,12 @@ func LoadMetadata(filePath string) (Metadata, error) {
 		return md, err
 	}
 
+	lbl := getComponentLabelFromRepo(filePath)
+	if lbl == "" && md.Status != nil {
+		lbl = deriveLabelFromClassAndShort(md.Status.Class, md.ShortFolderName)
+	}
+	md.Label = lbl
+
 	setAttributeDefaultFields(md.Attributes)
 	setAttributeDefaultFields(md.ResourceAttributes)
 
@@ -88,6 +99,9 @@ var componentTypes = []string{
 func shortFolderName(filePath string) string {
 	parentFolder := filepath.Base(filepath.Dir(filePath))
 	for _, cType := range componentTypes {
+		if parentFolder == cType {
+			return cType
+		}
 		if before, ok := strings.CutSuffix(parentFolder, cType); ok {
 			return before
 		}
@@ -95,7 +109,7 @@ func shortFolderName(filePath string) string {
 	return parentFolder
 }
 
-func packageName(filePath string) (string, error) {
+func getPackageName(filePath string) (string, error) {
 	cmd := exec.Command("go", "list", "-f", "{{.ImportPath}}")
 	cmd.Dir = filePath
 	output, err := cmd.Output()
@@ -108,4 +122,121 @@ func packageName(filePath string) (string, error) {
 		return "", fmt.Errorf("unable to determine package name: %v failed: %v %w", cmd.Args, string(output), err)
 	}
 	return strings.TrimSpace(string(output)), nil
+}
+
+// findRepoRoot walks up from start looking for .github/component_labels.txt.
+// It purposefully searches for that file (repo marker) and is separate from
+// helpers.RootModuleDir which finds the module root (go.mod parent).
+func findRepoRoot(start string) (string, error) {
+	dir := start
+	for {
+		if _, err := os.Stat(filepath.Join(dir, componentLabelsRelPath)); err == nil {
+			return dir, nil
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", fmt.Errorf("repo root not found from %s", start)
+		}
+		dir = parent
+	}
+}
+
+// loadComponentLabels parses the component_labels.txt file into a map of repoPath->label.
+// It ignores empty lines and comment lines beginning with '#'.
+func loadComponentLabels(path string) (map[string]string, error) {
+	f, err := os.Open(path) // #nosec G304 - path controlled by repo discovery
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	labels := make(map[string]string)
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		parts := strings.Fields(line)
+		if len(parts) != 2 {
+			// ignore malformed lines
+			continue
+		}
+		repoPath := parts[0]
+		label := parts[1]
+		labels[repoPath] = label
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+	return labels, nil
+}
+
+func getComponentLabelFromRepo(filePath string) string {
+	// Find the repo root (directory that has .github/component_labels.txt)
+	repoRoot, err := findRepoRoot(filepath.Dir(filePath))
+	if err != nil {
+		// fallback: if the labels file exists at the module root, use that.
+		if mr, merr := helpers.RootModuleDir(filepath.Dir(filePath)); merr == nil {
+			candidate := filepath.Join(mr, componentLabelsRelPath)
+			if info, ferr := os.Stat(candidate); ferr == nil && !info.IsDir() {
+				repoRoot = mr
+			}
+		}
+		if repoRoot == "" {
+			return ""
+		}
+	}
+
+	// Load labels file
+	labelsPath := filepath.Join(repoRoot, componentLabelsRelPath)
+	labelMap, err := loadComponentLabels(labelsPath)
+	if err != nil {
+		return ""
+	}
+
+	// Determine repo-relative directory for this component
+	compDir := filepath.Dir(filePath)
+	rel, err := filepath.Rel(repoRoot, compDir)
+	if err != nil {
+		return ""
+	}
+	rel = filepath.ToSlash(rel)
+
+	if lbl, ok := labelMap[rel]; ok {
+		return lbl
+	}
+	return ""
+}
+
+// deriveLabelFromClassAndShort returns the fallback label for a component given its class and short folder name.
+func deriveLabelFromClassAndShort(class, short string) string {
+	var label string
+	if class != "" && short != "" {
+		label = fmt.Sprintf("%s/%s", class, short)
+	} else if class != "" {
+		label = class
+	} else {
+		label = short
+	}
+
+	parts := strings.Split(label, "/")
+	last := parts[len(parts)-1]
+	if class == "" || last == "" {
+		return label
+	}
+
+	lowerLast := strings.ToLower(last)
+	lowerClass := strings.ToLower(class)
+	if !strings.HasSuffix(lowerLast, lowerClass) {
+		return label
+	}
+
+	trimmed := strings.TrimRight(last[:len(last)-len(class)], "-_")
+	if trimmed == "" {
+		return label
+	}
+
+	parts[len(parts)-1] = trimmed
+	return strings.Join(parts, "/")
 }

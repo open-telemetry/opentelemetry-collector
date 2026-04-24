@@ -4,7 +4,7 @@ type: sample
 display_name: Sample Processor
 description: This processor is used for testing purposes to check the output of mdatagen.
 reaggregation_enabled: true
-scope_name: go.opentelemetry.io/collector/internal/receiver/samplereceiver
+scope_name: go.opentelemetry.io/collector/internal/processor/sampleprocessor
 github_project: open-telemetry/opentelemetry-collector
 
 sem_conv_version: 1.9.0
