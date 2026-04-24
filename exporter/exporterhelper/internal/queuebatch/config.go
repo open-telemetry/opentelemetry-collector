@@ -157,6 +157,12 @@ func (cfg *BatchConfig) Validate() error {
 		return errors.New("both `sizer` and `sizers` are specified, but only one is allowed, `sizers` is preferred")
 	}
 
+	if len(cfg.Sizers) == 0 {
+		if cfg.Sizer != request.SizerTypeItems && cfg.Sizer != request.SizerTypeBytes {
+			return fmt.Errorf("`batch` supports only `items` or `bytes` sizer, found %q", cfg.Sizer.String())
+		}
+	}
+
 	if cfg.FlushTimeout <= 0 {
 		return fmt.Errorf("`flush_timeout` must be positive, found %d", cfg.FlushTimeout)
 	}
