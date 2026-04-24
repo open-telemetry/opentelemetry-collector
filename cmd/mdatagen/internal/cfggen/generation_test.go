@@ -1730,6 +1730,41 @@ func TestFormatDefaultValue_PointerArrayOfObjects(t *testing.T) {
 	require.Equal(t, "&[]TargetsItem{NewDefaultTargetsItem()}", FormatDefaultValue(md, "targets", []any{map[string]any{}}, "", ""))
 }
 
+func TestWrapDefaultValue(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected string
+	}{
+		{
+			name:     "plain value",
+			metadata: &ConfigMetadata{},
+			expected: "defaultValue",
+		},
+		{
+			name:     "pointer",
+			metadata: &ConfigMetadata{IsPointer: true},
+			expected: "&defaultValue",
+		},
+		{
+			name:     "optional",
+			metadata: &ConfigMetadata{IsOptional: true},
+			expected: "configoptional.Some(defaultValue)",
+		},
+		{
+			name:     "pointer optional",
+			metadata: &ConfigMetadata{IsPointer: true, IsOptional: true},
+			expected: "configoptional.Some(&defaultValue)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, WrapDefaultValue(tt.metadata, "defaultValue"))
+		})
+	}
+}
+
 func TestFormatDefaultValue_ResolvedReferenceWithDefaults(t *testing.T) {
 	md := &ConfigMetadata{
 		Type:         "object",
