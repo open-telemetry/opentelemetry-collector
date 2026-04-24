@@ -11,7 +11,7 @@ import (
 // TODO: Move this back to queuebatch when remove the circular dependency.
 
 var (
-	_ encoding.TextMarshaler   = (*SizerType)(nil)
+	_ encoding.TextMarshaler   = SizerType{}
 	_ encoding.TextUnmarshaler = (*SizerType)(nil)
 )
 
@@ -46,7 +46,7 @@ func (s *SizerType) UnmarshalText(text []byte) error {
 	return nil
 }
 
-func (s *SizerType) MarshalText() ([]byte, error) {
+func (s SizerType) MarshalText() ([]byte, error) {
 	return []byte(s.val), nil
 }
 
