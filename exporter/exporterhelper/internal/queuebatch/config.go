@@ -123,8 +123,6 @@ type SizerLimit struct {
 	MaxSize int64 `mapstructure:"max_size"`
 }
 
-
-
 // PartitionConfig defines a configuration for partitioning requests based on metadata keys.
 type PartitionConfig struct {
 	// MetadataKeys is a list of client.Metadata keys that will be used to partition
