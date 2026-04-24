@@ -127,17 +127,6 @@ type BatchConfig struct {
 	// Partition defines the partitioning of the batches configuration.
 	Partition PartitionConfig `mapstructure:"partition"`
 
-	sizerSet  bool
-	sizersSet bool
-}
-
-func (cfg *BatchConfig) Unmarshal(conf *confmap.Conf) error {
-	if err := conf.Unmarshal(cfg); err != nil {
-		return err
-	}
-	cfg.sizerSet = conf.IsSet("sizer")
-	cfg.sizersSet = conf.IsSet("sizers")
-	return nil
 }
 
 // SizerLimit defines the configuration for the minimum and maximum size of a batch for a specific sizer.
@@ -164,7 +153,7 @@ func (cfg *BatchConfig) Validate() error {
 		return nil
 	}
 
-	if cfg.sizerSet && cfg.sizersSet {
+	if cfg.Sizer.String() != "" && len(cfg.Sizers) > 0 {
 		return errors.New("both `sizer` and `sizers` are specified, but only one is allowed, `sizers` is preferred")
 	}
 

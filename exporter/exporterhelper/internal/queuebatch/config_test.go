@@ -226,7 +226,7 @@ func TestBatchConfig_Unmarshal_Error(t *testing.T) {
 		},
 	})
 	var cfg BatchConfig
-	err := cfg.Unmarshal(conf)
+	err := conf.Unmarshal(&cfg)
 	require.NoError(t, err)
 	err = cfg.Validate()
 	require.Error(t, err)
