@@ -5,11 +5,15 @@ package {{ .Package }}
 {{ $reag := .ReaggregationEnabled }}
 {{- $hasReagMetrics := false }}
 {{- range $name, $metric := .Metrics }}{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}{{- $hasReagMetrics = true }}{{- end }}{{- end }}
+{{- $hasRequiredReagAttr := false }}
+{{- range $name, $metric := .Metrics }}{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}{{- range $element := $metric.Attributes }}{{- if (attributeInfo $element).IsRequired }}{{- $hasRequiredReagAttr = true }}{{- end }}{{- end }}{{- end }}{{- end }}
 
 import (
 	{{- if $hasReagMetrics }}
 	"fmt"
+	{{- if $hasRequiredReagAttr }}
 	"slices"
+	{{- end }}
 	{{- end }}
 
 	"go.opentelemetry.io/collector/confmap"
