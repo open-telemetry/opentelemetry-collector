@@ -57,6 +57,12 @@ func (emp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 	if !exists {
 		if defaultValuePtr != nil {
 			val = *defaultValuePtr
+			// When the default value is empty (e.g. ${env:VAR:-}), return it
+			// directly as an empty string instead of passing it through YAML
+			// parsing, which would turn "" into nil.
+			if val == "" {
+				return confmap.NewRetrieved(val)
+			}
 		} else {
 			emp.logger.Warn("Configuration references unset environment variable", zap.String("name", envVarName))
 		}

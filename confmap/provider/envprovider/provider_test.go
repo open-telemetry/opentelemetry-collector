@@ -190,6 +190,25 @@ func TestEnvWithDefaultValue(t *testing.T) {
 	assert.NoError(t, env.Shutdown(context.Background()))
 }
 
+func TestEmptyDefaultValueResolvesToEmptyString(t *testing.T) {
+	// Regression test for https://github.com/open-telemetry/opentelemetry-collector/issues/14587
+	// ${env:VAR:-} with an unset VAR should resolve to "" (empty string), not nil.
+	env := createProvider()
+	ret, err := env.Retrieve(context.Background(), "env:UNSET_VAR_FOR_TEST:-", nil)
+	require.NoError(t, err)
+
+	raw, err := ret.AsRaw()
+	require.NoError(t, err)
+	assert.Equal(t, "", raw, "empty default should resolve to empty string, not nil")
+	assert.IsType(t, "", raw, "empty default should be a string type, not nil")
+
+	str, err := ret.AsString()
+	require.NoError(t, err)
+	assert.Equal(t, "", str)
+
+	assert.NoError(t, env.Shutdown(context.Background()))
+}
+
 func createProvider() confmap.Provider {
 	return NewFactory().Create(confmaptest.NewNopProviderSettings())
 }
