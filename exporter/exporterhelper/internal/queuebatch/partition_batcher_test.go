@@ -665,3 +665,47 @@ func TestPartitionBatcher_OnEmptyNotCalledWithActiveData(t *testing.T) {
 	// But data should have been flushed
 	assert.GreaterOrEqual(t, sink.RequestsCount(), 1)
 }
+
+func TestPartitionBatcher_MultiSizer_MinThreshold(t *testing.T) {
+	cfg := BatchConfig{
+		FlushTimeout: 0,
+		Sizers: map[request.SizerType]SizerLimit{
+			request.SizerTypeItems: {MinSize: 10, MaxSize: 100},
+			request.SizerTypeBytes: {MinSize: 100, MaxSize: 1000},
+		},
+	}
+
+	sink := requesttest.NewSink()
+	ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(1), sink.Export, zap.NewExample(), nil)
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, ba.Shutdown(context.Background()))
+	})
+
+	done := newFakeDone()
+	
+	// 1. Send request below both min sizes.
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 5, Bytes: 50}, done)
+	// Should not flush yet.
+	assert.Equal(t, 0, sink.RequestsCount())
+
+	// 2. Send request that makes items reach min_size (5 + 5 = 10 >= 10).
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 5, Bytes: 10}, done)
+	
+	// Should flush now because items reached min_size.
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() == 1 && sink.ItemsCount() == 10 && sink.BytesCount() == 60
+	}, 1*time.Second, 10*time.Millisecond)
+
+	// 3. Send request below both min sizes again.
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 2, Bytes: 20}, done)
+	assert.Equal(t, 1, sink.RequestsCount()) // Still 1
+
+	// 4. Send request that makes bytes reach min_size (20 + 90 = 110 >= 100).
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 2, Bytes: 90}, done)
+
+	// Should flush now because bytes reached min_size.
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() == 2 && sink.ItemsCount() == 14 && sink.BytesCount() == 170
+	}, 1*time.Second, 10*time.Millisecond)
+}
