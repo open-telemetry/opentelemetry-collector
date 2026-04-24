@@ -5,6 +5,7 @@ package builder
 
 import (
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -171,9 +172,12 @@ func TestInvalidConverter(t *testing.T) {
 	require.Error(t, err, "expected an error when parsing invalid modules")
 }
 
-func TestRelativePath(t *testing.T) {
+func TestAbsoluteReplacePaths(t *testing.T) {
 	// prepare
 	cfg := Config{
+		Distribution: Distribution{
+			UseAbsoluteReplacePaths: true,
+		},
 		Extensions: []Module{{
 			GoMod: "some-module",
 			Path:  "./templates",
@@ -187,7 +191,8 @@ func TestRelativePath(t *testing.T) {
 	// verify
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
-	assert.True(t, strings.HasPrefix(cfg.Extensions[0].Path, cwd))
+	normalizedCwd := filepath.ToSlash(cwd)
+	assert.True(t, strings.HasPrefix(cfg.Extensions[0].Path, normalizedCwd), "expected path %q to have prefix %q", cfg.Extensions[0].Path, normalizedCwd)
 }
 
 func TestModuleFromCore(t *testing.T) {
@@ -395,6 +400,44 @@ func TestSkipsNilFieldValidation(t *testing.T) {
 	cfg.ConfmapProviders = nil
 	cfg.ConfmapConverters = nil
 	assert.NoError(t, cfg.Validate())
+}
+
+func TestParseModulesDefaultRelativePath(t *testing.T) {
+	cfg := Config{
+		Distribution: Distribution{
+			OutputPath: "./output",
+		},
+		Extensions: []Module{{
+			GoMod: "some-module",
+			Path:  "./templates",
+		}},
+	}
+
+	err := cfg.ParseModules()
+	require.NoError(t, err)
+
+	assert.Equal(t, "../templates", cfg.Extensions[0].Path)
+}
+
+func TestParseModulesAbsoluteReplacePathsFlag(t *testing.T) {
+	cfg := Config{
+		Distribution: Distribution{
+			OutputPath:              "./output",
+			UseAbsoluteReplacePaths: true,
+		},
+		Extensions: []Module{{
+			GoMod: "some-module",
+			Path:  "./templates",
+		}},
+	}
+
+	err := cfg.ParseModules()
+	require.NoError(t, err)
+
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+	expectedPath := filepath.ToSlash(filepath.Join(cwd, "templates"))
+	assert.Equal(t, expectedPath, cfg.Extensions[0].Path)
 }
 
 func TestIsEmpty(t *testing.T) {

@@ -37,7 +37,7 @@ func testExporterConfig(endpoint string) component.Config {
 
 func testReceiverConfig(endpoint string) component.Config {
 	cfg := otlpreceiver.NewFactory().CreateDefaultConfig()
-	cfg.(*otlpreceiver.Config).GRPC.GetOrInsertDefault().NetAddr.Endpoint = endpoint
+	cfg.(*otlpreceiver.Config).Protocols.GRPC.GetOrInsertDefault().NetAddr.Endpoint = endpoint
 	return cfg
 }
 
