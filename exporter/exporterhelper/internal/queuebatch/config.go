@@ -77,10 +77,12 @@ func (cfg *Config) Validate() error {
 		return errors.New("`wait_for_result` is not supported with a persistent queue configured with `storage`")
 	}
 
-	if cfg.Batch.HasValue() && cfg.Batch.Get().Sizer == cfg.Sizer {
-		// Avoid situations where the queue is not able to hold any data.
-		if cfg.Batch.Get().MinSize > cfg.QueueSize {
-			return errors.New("`min_size` must be less than or equal to `queue_size`")
+	if cfg.Batch.HasValue() {
+		batchCfg := cfg.Batch.Get()
+		if limit, ok := batchCfg.Sizers[cfg.Sizer]; ok {
+			if limit.MinSize > int64(cfg.QueueSize) {
+				return errors.New("`min_size` must be less than or equal to `queue_size`")
+			}
 		}
 	}
 
@@ -115,6 +117,16 @@ type BatchConfig struct {
 
 	// Partition defines the partitioning of the batches configuration.
 	Partition PartitionConfig `mapstructure:"partition"`
+}
+
+func (cfg *BatchConfig) Unmarshal(conf *confmap.Conf) error {
+	if err := conf.Unmarshal(cfg); err != nil {
+		return err
+	}
+	if conf.IsSet("sizer") && conf.IsSet("sizers") {
+		return errors.New("both `sizer` and `sizers` are specified, but only one is allowed, `sizers` is preferred")
+	}
+	return nil
 }
 
 // SizerLimit defines the configuration for the minimum and maximum size of a batch for a specific sizer.

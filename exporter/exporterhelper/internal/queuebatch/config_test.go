@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -117,7 +118,6 @@ func TestBatchConfig_Validate(t *testing.T) {
 func newTestBatchConfig() BatchConfig {
 	return BatchConfig{
 		FlushTimeout: 200 * time.Millisecond,
-		Sizer:        request.SizerTypeItems,
 		MinSize:      2048,
 		MaxSize:      0,
 		Sizers: map[request.SizerType]SizerLimit{
@@ -214,4 +214,19 @@ func TestUnmarshal(t *testing.T) {
 			assert.NoError(t, xconfmap.Validate(cfg))
 		})
 	}
+}
+
+func TestBatchConfig_Unmarshal_Error(t *testing.T) {
+	conf := confmap.NewFromStringMap(map[string]any{
+		"sizer": "items",
+		"sizers": map[string]any{
+			"bytes": map[string]any{
+				"max_size": 100,
+			},
+		},
+	})
+	var cfg BatchConfig
+	err := cfg.Unmarshal(conf)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "both `sizer` and `sizers` are specified, but only one is allowed, `sizers` is preferred")
 }

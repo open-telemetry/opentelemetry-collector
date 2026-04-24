@@ -658,7 +658,6 @@ func newTestConfig() Config {
 		BlockOnOverflow: true,
 		Batch: configoptional.Some(BatchConfig{
 			FlushTimeout: 200 * time.Millisecond,
-			Sizer:        request.SizerTypeItems,
 			MinSize:      2048,
 			Sizers: map[request.SizerType]SizerLimit{
 				request.SizerTypeItems: {MinSize: 2048},
