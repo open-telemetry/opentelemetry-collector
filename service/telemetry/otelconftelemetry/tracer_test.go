@@ -130,8 +130,14 @@ func TestCreateTracerProvider_Propagators(t *testing.T) {
 }
 
 func TestCreateTracerProvider_InvalidPropagator(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/traces", func(http.ResponseWriter, *http.Request) {})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
 	cfg := createDefaultConfig().(*Config)
 	cfg.Traces.Propagators = []string{"invalid"}
+	cfg.Traces.Processors = []config.SpanProcessor{newOTLPSimpleSpanProcessor(srv)}
 
 	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
@@ -143,10 +149,16 @@ func TestCreateTracerProvider_InvalidPropagator(t *testing.T) {
 }
 
 func TestCreateTracerProvider_020MigrationWarning(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/traces", func(http.ResponseWriter, *http.Request) {})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
 	core, observedLogs := observer.New(zapcore.DebugLevel)
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.Traces.MigratedFromV02 = true
+	cfg.Traces.Processors = []config.SpanProcessor{newOTLPSimpleSpanProcessor(srv)}
 
 	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
@@ -168,9 +180,15 @@ func TestCreateTracerProvider_020MigrationWarning(t *testing.T) {
 }
 
 func TestCreateTracerProvider_NoMigrationWarning(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/traces", func(http.ResponseWriter, *http.Request) {})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
 	core, observedLogs := observer.New(zapcore.DebugLevel)
 
 	cfg := createDefaultConfig().(*Config)
+	cfg.Traces.Processors = []config.SpanProcessor{newOTLPSimpleSpanProcessor(srv)}
 
 	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
