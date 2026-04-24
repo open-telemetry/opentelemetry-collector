@@ -93,7 +93,7 @@ func (rb *ResourceBuilder) SetStringResourceDisabledAttrToBeRemoved(val string) 
 
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
-	rb.config.ApplyOverrideValues(rb.res)
+	rb.config.applyOverrideValues(rb.res)
 	r := rb.res
 	rb.res = pcommon.NewResource()
 	return r

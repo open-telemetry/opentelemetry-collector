@@ -218,10 +218,10 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// ApplyOverrideValues applies override values to the given resource.
+// applyOverrideValues applies override values to the given resource.
 // For each enabled resource attribute with a non-nil OverrideValue,
 // the override replaces any existing value in the resource.
-func (rac *ResourceAttributesConfig) ApplyOverrideValues(res pcommon.Resource) {
+func (rac *ResourceAttributesConfig) applyOverrideValues(res pcommon.Resource) {
 	if rac.K8sNamespaceName.Enabled && rac.K8sNamespaceName.OverrideValue != nil {
 		res.Attributes().PutStr("k8s.namespace.name", *rac.K8sNamespaceName.OverrideValue)
 	}
