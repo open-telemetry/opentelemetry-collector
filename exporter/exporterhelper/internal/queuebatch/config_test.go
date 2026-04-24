@@ -51,6 +51,27 @@ func TestConfig_Validate(t *testing.T) {
 	cfg = newTestConfigWithSizers()
 	cfg.Sizer = request.SizerTypeBytes
 	require.NoError(t, xconfmap.Validate(cfg))
+
+	// Scenario 1: batch::sizer matches queue sizer, min_size > queue_size -> error
+	cfg = newTestConfigWithSizers()
+	cfg.Batch = configoptional.Some(BatchConfig{
+		FlushTimeout: 200 * time.Millisecond,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      2048,
+	})
+	cfg.QueueSize = 2047
+	require.EqualError(t, xconfmap.Validate(cfg), "for sizer items, `min_size` (2048) must be less than or equal to `queue_size` (2047)")
+
+	// Scenario 3: batch::sizer does not match queue sizer, min_size > queue_size -> no error
+	cfg = newTestConfigWithSizers()
+	cfg.Sizer = request.SizerTypeBytes
+	cfg.Batch = configoptional.Some(BatchConfig{
+		FlushTimeout: 200 * time.Millisecond,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      2048,
+	})
+	cfg.QueueSize = 2047
+	require.NoError(t, xconfmap.Validate(cfg))
 }
 
 func TestBatchConfig_Validate_MetadataKeys(t *testing.T) {
