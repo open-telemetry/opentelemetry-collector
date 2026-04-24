@@ -301,6 +301,54 @@ func (ms *SystemCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+// SystemCPUUtilizationMetricAttributeKey specifies the key of an attribute for the system_cpu_utilization metric.
+type SystemCPUUtilizationMetricAttributeKey string
+
+const (
+	SystemCPUUtilizationMetricAttributeKeyStringAttr SystemCPUUtilizationMetricAttributeKey = "string_attr"
+)
+
+// SystemCPUUtilizationMetricConfig provides config for the system_cpu_utilization metric.
+type SystemCPUUtilizationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemCPUUtilizationMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemCPUUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemCPUUtilizationMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemCPUUtilizationMetricAttributeKeyStringAttr:
+		default:
+			return fmt.Errorf("metric system_cpu_utilization doesn't have an attribute %v, valid attributes: [string_attr]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MetricsConfig provides config for sample metrics.
 type MetricsConfig struct {
 	DefaultMetric            DefaultMetricMetricConfig            `mapstructure:"default.metric"`
@@ -310,6 +358,7 @@ type MetricsConfig struct {
 	OptionalMetricEmptyUnit  OptionalMetricEmptyUnitMetricConfig  `mapstructure:"optional.metric.empty_unit"`
 	ReaggregateMetric        ReaggregateMetricMetricConfig        `mapstructure:"reaggregate.metric"`
 	SystemCPUTime            SystemCPUTimeMetricConfig            `mapstructure:"system.cpu.time"`
+	SystemCPUUtilization     SystemCPUUtilizationMetricConfig     `mapstructure:"system_cpu_utilization"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -344,6 +393,11 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		SystemCPUTime: SystemCPUTimeMetricConfig{
 			Enabled: true,
+		},
+		SystemCPUUtilization: SystemCPUUtilizationMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SystemCPUUtilizationMetricAttributeKey{SystemCPUUtilizationMetricAttributeKeyStringAttr},
 		},
 	}
 }

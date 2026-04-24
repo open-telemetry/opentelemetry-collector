@@ -1,0 +1,7 @@
+change_type: bug_fix
+component: cmd/mdatagen
+note: Fix histogram metric code generation and exclude from simple reaggregation.
+issues: [14326]
+subtext: |
+  Update `mdatagen` templates to use the correct Histogram API (batched mode), isolate histograms from incompatible Sum/Avg reaggregation logic, and inline conditional attributes map injection.
+change_logs: [user]

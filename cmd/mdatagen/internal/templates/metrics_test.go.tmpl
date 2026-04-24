@@ -84,7 +84,7 @@ func TestMetricsBuilder(t *testing.T) {
 			{{- if $hasReagMetrics }}
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
 			{{- range $name, $metric := .Metrics }}
-			{{- if hasAggregatableAttributes $metric.Attributes }}
+			{{- if and (hasAggregatableAttributes $metric.Attributes) (ne $metric.Data.Type "histogram") }}
 			aggMap["{{ $name.Render }}"] = mb.metric{{ $name.Render }}.config.AggregationStrategy
 			{{- end }}
 			{{- end }}
@@ -153,10 +153,13 @@ func TestMetricsBuilder(t *testing.T) {
 			{{- end }}
 
 			{{- range $name, $metric := .Metrics }}
-
 			{{ if $metric.Enabled }}defaultMetricsCount++{{ end }}
 			allMetricsCount++
-			{{ if $metric.Entity }}eb{{ publicVar $metric.Entity }}{{ else }}mb{{ end }}.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
+			{{ if $metric.Entity }}eb{{ publicVar $metric.Entity }}{{ else }}mb{{ end }}.Record{{ $name.Render }}DataPoint(ts, 
+			{{- if eq $metric.Data.Type "Histogram" }} 1, 1, 1, 1, []uint64{1, 2, 3}
+			{{- else if $metric.Data.HasMetricInputType }} "1"
+			{{- else }} 1
+			{{- end }}
 			{{- range $metric.Attributes -}}
 			{{- if not (attributeInfo .).IsConditional -}}
 				, {{- template "getAttributeValue" . -}}
@@ -168,7 +171,7 @@ func TestMetricsBuilder(t *testing.T) {
 			{{- end -}}
 			{{- end -}}
 			)
-			{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}
+			{{- if and $reag (hasAggregatableAttributes $metric.Attributes) (ne $metric.Data.Type "Histogram") }}
 			if tt.name == "reaggregate_set" {
 				{{ if $metric.Entity }}eb{{ publicVar $metric.Entity }}{{ else }}mb{{ end }}.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"3"{{ else }}3{{ end }}
 				{{- range $metric.Attributes -}}
@@ -211,7 +214,7 @@ func TestMetricsBuilder(t *testing.T) {
 			{{- if $reag }}
 			if tt.name == "reaggregate_set" {
 				{{- range $name, $metric := .Metrics }}
-				{{- if hasAggregatableAttributes $metric.Attributes }}
+				{{- if and (hasAggregatableAttributes $metric.Attributes) (ne $metric.Data.Type "Histogram") }}
 				assert.Empty(t, mb.metric{{ $name.Render }}.aggDataPoints)
 				{{- end }}
 				{{- end }}
@@ -245,7 +248,7 @@ func TestMetricsBuilder(t *testing.T) {
 				switch mi.Name() {
 				{{- range $name, $metric := .Metrics }}
 				case "{{ $name }}":
-					{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}
+					{{- if and $reag (hasAggregatableAttributes $metric.Attributes) (ne $metric.Data.Type "Histogram") }}
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["{{ $name }}"], "Found a duplicate in the metrics slice: {{ $name }}")
 						validatedMetrics["{{ $name }}"] = true
@@ -357,22 +360,48 @@ func TestMetricsBuilder(t *testing.T) {
 					dp := mi.{{ $metric.Data.Type }}().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
+					
+					{{- if eq $metric.Data.Type "Histogram" }}
+					assert.Equal(t, uint64(1), dp.Count())
+					assert.Equal(t, float64(1), dp.Sum())
+					assert.Equal(t, float64(1), dp.Min())
+					assert.Equal(t, float64(1), dp.Max())
+					{{- else }}
 					assert.Equal(t, pmetric.NumberDataPointValueType{{ $metric.Data.MetricValueType }}, dp.ValueType())
 					{{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
 					assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
 					{{- else }}
 					assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
 					{{- end }}
+					{{- end }}
 
 					{{- range $i, $attr := $metric.Attributes }}
+					{{- if ne (attributeInfo $attr).RequirementLevel.String "Opt-In" }}
 					{{ $attr.RenderUnexported }}AttrVal, ok := dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
 					assert.True(t, ok)
 					{{- template "assertMetricAttributeValue" $attr }}
 					{{- end }}
 					{{- end }}
 					{{- end }}
+				{{- end }}
 				}
 			}
 		})
 	}
+}
+
+func TestWithStartTimeOverride(t *testing.T) {
+	rm := pmetric.NewResourceMetrics()
+	metrics := rm.ScopeMetrics().AppendEmpty().Metrics()
+
+	metrics.AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+	metrics.AppendEmpty().SetEmptySum().DataPoints().AppendEmpty()
+	metrics.AppendEmpty().SetEmptyHistogram().DataPoints().AppendEmpty()
+
+	opt := WithStartTimeOverride(pcommon.Timestamp(1234567890))
+	opt.apply(rm)
+
+	assert.Equal(t, pcommon.Timestamp(1234567890), metrics.At(0).Gauge().DataPoints().At(0).StartTimestamp())
+	assert.Equal(t, pcommon.Timestamp(1234567890), metrics.At(1).Sum().DataPoints().At(0).StartTimestamp())
+	assert.Equal(t, pcommon.Timestamp(1234567890), metrics.At(2).Histogram().DataPoints().At(0).StartTimestamp())
 }

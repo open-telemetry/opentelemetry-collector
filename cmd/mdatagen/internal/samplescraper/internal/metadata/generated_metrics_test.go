@@ -73,6 +73,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["OptionalMetric"] = mb.metricOptionalMetric.config.AggregationStrategy
 			aggMap["OptionalMetricEmptyUnit"] = mb.metricOptionalMetricEmptyUnit.config.AggregationStrategy
 			aggMap["ReaggregateMetric"] = mb.metricReaggregateMetric.config.AggregationStrategy
+			aggMap["SystemCPUUtilization"] = mb.metricSystemCPUUtilization.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet == testDataSetDefault {
@@ -109,18 +110,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 			if tt.name == "reaggregate_set" {
 				mb.RecordDefaultMetricDataPoint(ts, 3, "string_attr-val-2", 20, AttributeEnumAttrGreen, []any{"slice_attr-item3", "slice_attr-item4"}, map[string]any{"key3": "map_attr-val3", "key4": "map_attr-val4"})
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDefaultMetricToBeRemovedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMetricInputTypeDataPoint(ts, "1", "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
@@ -139,17 +137,18 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordOptionalMetricEmptyUnitDataPoint(ts, 3, "string_attr-val-2", false)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordReaggregateMetricDataPoint(ts, 1, "string_attr-val", true)
 			if tt.name == "reaggregate_set" {
 				mb.RecordReaggregateMetricDataPoint(ts, 3, "string_attr-val-2", false)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemCPUTimeDataPoint(ts, 1)
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemCPUUtilizationDataPoint(ts, 1, 1, 1, 1, []uint64{1, 2, 3}, "string_attr-val")
 
 			rb := mb.NewResourceBuilder()
 			rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
@@ -491,8 +490,42 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "system_cpu_utilization":
+					assert.False(t, validatedMetrics["system_cpu_utilization"], "Found a duplicate in the metrics slice: system_cpu_utilization")
+					validatedMetrics["system_cpu_utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeHistogram, mi.Type())
+					assert.Equal(t, 1, mi.Histogram().DataPoints().Len())
+					assert.Equal(t, "Histogram metric for testing histogram generation.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					assert.Equal(t, pmetric.AggregationTemporalityUnspecified, mi.Histogram().AggregationTemporality())
+					dp := mi.Histogram().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, uint64(1), dp.Count())
+					assert.Equal(t, float64(1), dp.Sum())
+					assert.Equal(t, float64(1), dp.Min())
+					assert.Equal(t, float64(1), dp.Max())
+					stringAttrAttrVal, ok := dp.Attributes().Get("string_attr")
+					assert.True(t, ok)
+					assert.Equal(t, "string_attr-val", stringAttrAttrVal.Str())
 				}
 			}
 		})
 	}
+}
+
+func TestWithStartTimeOverride(t *testing.T) {
+	rm := pmetric.NewResourceMetrics()
+	metrics := rm.ScopeMetrics().AppendEmpty().Metrics()
+
+	metrics.AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+	metrics.AppendEmpty().SetEmptySum().DataPoints().AppendEmpty()
+	metrics.AppendEmpty().SetEmptyHistogram().DataPoints().AppendEmpty()
+
+	opt := WithStartTimeOverride(pcommon.Timestamp(1234567890))
+	opt.apply(rm)
+
+	assert.Equal(t, pcommon.Timestamp(1234567890), metrics.At(0).Gauge().DataPoints().At(0).StartTimestamp())
+	assert.Equal(t, pcommon.Timestamp(1234567890), metrics.At(1).Sum().DataPoints().At(0).StartTimestamp())
+	assert.Equal(t, pcommon.Timestamp(1234567890), metrics.At(2).Histogram().DataPoints().At(0).StartTimestamp())
 }

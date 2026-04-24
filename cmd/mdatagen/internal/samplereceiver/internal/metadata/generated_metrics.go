@@ -147,24 +147,24 @@ type metricInfo struct {
 }
 
 type MetricAttributeOption interface {
-	apply(pmetric.NumberDataPoint)
+	apply(pcommon.Map)
 }
 
-type metricAttributeOptionFunc func(pmetric.NumberDataPoint)
+type metricAttributeOptionFunc func(pcommon.Map)
 
-func (maof metricAttributeOptionFunc) apply(dp pmetric.NumberDataPoint) {
-	maof(dp)
+func (maof metricAttributeOptionFunc) apply(attrs pcommon.Map) {
+	maof(attrs)
 }
 
 func WithConditionalIntAttrMetricAttribute(conditionalIntAttrAttributeValue int64) MetricAttributeOption {
-	return metricAttributeOptionFunc(func(dp pmetric.NumberDataPoint) {
-		dp.Attributes().PutInt("conditional_int_attr", conditionalIntAttrAttributeValue)
+	return metricAttributeOptionFunc(func(attrs pcommon.Map) {
+		attrs.PutInt("conditional_int_attr", conditionalIntAttrAttributeValue)
 	})
 }
 
 func WithConditionalStringAttrMetricAttribute(conditionalStringAttrAttributeValue string) MetricAttributeOption {
-	return metricAttributeOptionFunc(func(dp pmetric.NumberDataPoint) {
-		dp.Attributes().PutStr("conditional_string_attr", conditionalStringAttrAttributeValue)
+	return metricAttributeOptionFunc(func(attrs pcommon.Map) {
+		attrs.PutStr("conditional_string_attr", string(conditionalStringAttrAttributeValue))
 	})
 }
 
@@ -214,7 +214,7 @@ func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommo
 		dp.Attributes().PutBool("opt_in_bool_attr", optInBoolAttrAttributeValue)
 	}
 	for _, op := range options {
-		op.apply(dp)
+		op.apply(dp.Attributes())
 	}
 
 	var s string
@@ -467,7 +467,7 @@ func (m *metricOptionalMetric) recordDataPoint(start pcommon.Timestamp, ts pcomm
 		dp.Attributes().PutBool("boolean_attr2", booleanAttr2AttributeValue)
 	}
 	for _, op := range options {
-		op.apply(dp)
+		op.apply(dp.Attributes())
 	}
 
 	var s string
@@ -1167,17 +1167,24 @@ func WithResource(res pcommon.Resource) ResourceMetricsOption {
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 	return resourceMetricsOptionFunc(func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
 			switch metrics.At(i).Type() {
 			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
+				dps := metrics.At(i).Gauge().DataPoints()
+				for j := 0; j < dps.Len(); j++ {
+					dps.At(j).SetStartTimestamp(start)
+				}
 			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
+				dps := metrics.At(i).Sum().DataPoints()
+				for j := 0; j < dps.Len(); j++ {
+					dps.At(j).SetStartTimestamp(start)
+				}
+			case pmetric.MetricTypeHistogram:
+				dps := metrics.At(i).Histogram().DataPoints()
+				for j := 0; j < dps.Len(); j++ {
+					dps.At(j).SetStartTimestamp(start)
+				}
 			}
 		}
 	})
