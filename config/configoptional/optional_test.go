@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional/internal/metadata"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/featuregate"
 )
 
@@ -771,20 +770,20 @@ func (invalid) Validate() error {
 	return errors.New("invalid")
 }
 
-var _ xconfmap.Validator = invalid{}
+var _ confmap.Validator = invalid{}
 
 type hasNested struct {
 	CouldBe Optional[invalid]
 }
 
 func TestOptionalValidate(t *testing.T) {
-	require.NoError(t, xconfmap.Validate(hasNested{
+	require.NoError(t, confmap.Validate(hasNested{
 		CouldBe: None[invalid](),
 	}))
-	require.NoError(t, xconfmap.Validate(hasNested{
+	require.NoError(t, confmap.Validate(hasNested{
 		CouldBe: Default(invalid{}),
 	}))
-	require.Error(t, xconfmap.Validate(hasNested{
+	require.Error(t, confmap.Validate(hasNested{
 		CouldBe: Some(invalid{}),
 	}))
 }
@@ -794,7 +793,7 @@ type validatedConfig struct {
 	Some    Optional[someConfig]     `mapstructure:"some"`
 }
 
-var _ xconfmap.Validator = (*optionalConfig)(nil)
+var _ confmap.Validator = (*optionalConfig)(nil)
 
 type optionalConfig struct {
 	StringVal string `mapstructure:"string_val"`
@@ -875,7 +874,7 @@ func TestOptionalFileValidate(t *testing.T) {
 			err = conf.Unmarshal(&cfg)
 			require.NoError(t, err)
 
-			err = xconfmap.Validate(cfg)
+			err = confmap.Validate(cfg)
 			if tt.err == nil {
 				require.NoError(t, err)
 			} else {

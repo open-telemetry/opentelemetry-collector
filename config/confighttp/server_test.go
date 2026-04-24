@@ -29,8 +29,8 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 )
@@ -1102,7 +1102,7 @@ func TestServerUnmarshalYAMLWithMiddlewares(t *testing.T) {
 	require.NoError(t, serverSub.Unmarshal(&serverConfig))
 
 	// Validate the server configuration using reflection-based validation
-	require.NoError(t, xconfmap.Validate(&serverConfig), "Server configuration should be valid")
+	require.NoError(t, confmap.Validate(&serverConfig), "Server configuration should be valid")
 
 	assert.Equal(t, "0.0.0.0:4318", serverConfig.NetAddr.Endpoint)
 	require.Len(t, serverConfig.Middlewares, 2)
@@ -1123,7 +1123,7 @@ func TestServerUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 	require.NoError(t, serverSub.Unmarshal(&serverConfig))
 
 	// Validate the server configuration using reflection-based validation
-	require.NoError(t, xconfmap.Validate(&serverConfig), "Server configuration should be valid")
+	require.NoError(t, confmap.Validate(&serverConfig), "Server configuration should be valid")
 
 	// Verify basic fields
 	assert.Equal(t, "0.0.0.0:4318", serverConfig.NetAddr.Endpoint)

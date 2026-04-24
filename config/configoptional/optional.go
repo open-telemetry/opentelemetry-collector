@@ -246,13 +246,13 @@ func (o Optional[T]) Marshal(conf *confmap.Conf) error {
 	return nil
 }
 
-var _ xconfmap.Validator = (*Optional[any])(nil)
+var _ confmap.Validator = (*Optional[any])(nil)
 
-// Validate implements [xconfmap.Validator]. This is required because the
-// private fields in [xconfmap.Validator] can't be seen by the reflection used
-// by [xconfmap.Validate], and therefore we have to continue the validation
+// Validate implements [confmap.Validator]. This is required because the
+// private fields in [confmap.Validator] can't be seen by the reflection used
+// by [confmap.Validate], and therefore we have to continue the validation
 // chain manually. This method isn't meant to be called directly, and should
-// generally only be called by [xconfmap.Validate].
+// generally only be called by [confmap.Validate].
 func (o *Optional[T]) Validate() error {
 	// When the flavor is None, the user has not passed this value,
 	// and therefore we should not validate it. The parent struct holding
@@ -266,5 +266,5 @@ func (o *Optional[T]) Validate() error {
 	}
 
 	// For the some flavor, validate the actual value.
-	return xconfmap.Validate(o.value)
+	return confmap.Validate(o.value)
 }

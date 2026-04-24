@@ -151,7 +151,7 @@ func (pctx *printContext) printUnredactedConfig() error {
 
 	if pctx.validate {
 		// Validation serves prevent revealing invalid data.
-		if err = xconfmap.Validate(cfg); err != nil {
+		if err = confmap.Validate(cfg); err != nil {
 			return fmt.Errorf("invalid configuration: %w", err)
 		}
 		// Note: we discard the validated configuration.
@@ -172,7 +172,7 @@ func (pctx *printContext) printRedactedConfig() error {
 	}
 
 	if pctx.validate {
-		if err = xconfmap.Validate(cfg); err != nil {
+		if err = confmap.Validate(cfg); err != nil {
 			return fmt.Errorf("invalid configuration: %w", err)
 		}
 	}

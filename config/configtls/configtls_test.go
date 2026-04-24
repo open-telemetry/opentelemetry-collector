@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config/configopaque"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestNewDefaultConfig(t *testing.T) {
@@ -1049,7 +1049,7 @@ func TestServerConfigValidate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := xconfmap.Validate(test.serverConfig)
+			err := confmap.Validate(test.serverConfig)
 
 			if test.errorTxt == "" {
 				assert.NoError(t, err)
@@ -1134,7 +1134,7 @@ func TestClientConfigValidate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := xconfmap.Validate(test.clientConfig)
+			err := confmap.Validate(test.clientConfig)
 
 			if test.errorTxt == "" {
 				assert.NoError(t, err)

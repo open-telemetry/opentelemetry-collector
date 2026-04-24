@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service"
@@ -248,7 +248,7 @@ func TestConfigValidate(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.cfgFn()
-			err := xconfmap.Validate(cfg)
+			err := confmap.Validate(cfg)
 			if tt.expected != nil {
 				require.EqualError(t, err, tt.expected.Error())
 			} else {
@@ -264,7 +264,7 @@ func TestNoPipelinesFeatureGate(t *testing.T) {
 	cfg.Exporters = nil
 	cfg.Service.Pipelines = pipelines.Config{}
 
-	require.Error(t, xconfmap.Validate(cfg))
+	require.Error(t, confmap.Validate(cfg))
 
 	gate := pipelines.AllowNoPipelines
 	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
@@ -272,7 +272,7 @@ func TestNoPipelinesFeatureGate(t *testing.T) {
 		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), false))
 	}()
 
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 }
 
 func generateConfig() *Config {

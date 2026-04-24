@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
@@ -97,9 +97,9 @@ func TestConfigValidate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.cfgFn(t)
 			if tt.expected != nil {
-				require.ErrorContains(t, xconfmap.Validate(cfg), tt.expected.Error())
+				require.ErrorContains(t, confmap.Validate(cfg), tt.expected.Error())
 			} else {
-				require.NoError(t, xconfmap.Validate(cfg))
+				require.NoError(t, confmap.Validate(cfg))
 			}
 
 			// Clean up the profiles support gate, which may have been enabled in `cfgFn`.
@@ -111,7 +111,7 @@ func TestConfigValidate(t *testing.T) {
 func TestNoPipelinesFeatureGate(t *testing.T) {
 	cfg := Config{}
 
-	require.Error(t, xconfmap.Validate(cfg))
+	require.Error(t, confmap.Validate(cfg))
 
 	gate := AllowNoPipelines
 	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
@@ -119,7 +119,7 @@ func TestNoPipelinesFeatureGate(t *testing.T) {
 		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), false))
 	}()
 
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 }
 
 func generateConfig(t *testing.T) Config {
