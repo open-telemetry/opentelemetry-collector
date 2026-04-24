@@ -1,4 +1,4 @@
-// Copyright The OpenTelemetry Authors
+g// Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
 package otlpexporter

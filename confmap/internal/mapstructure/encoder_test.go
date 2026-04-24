@@ -212,6 +212,14 @@ func TestEncode(t *testing.T) {
 	got, err := enc.Encode(testCase)
 	require.NoError(t, err)
 	require.Equal(t, testCase, got)
+
+	// Test map with TextMarshaler key without the hook
+	testMap := map[TestID]string{
+		TestID("test"): "value",
+	}
+	gotMap, err := enc.Encode(testMap)
+	require.NoError(t, err)
+	require.Equal(t, map[string]any{"test_": "value"}, gotMap)
 }
 
 func TestGetTagInfo(t *testing.T) {

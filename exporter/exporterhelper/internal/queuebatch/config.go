@@ -123,9 +123,7 @@ type SizerLimit struct {
 	MaxSize int64 `mapstructure:"max_size"`
 }
 
-func (cfg *BatchConfig) Unmarshal(conf *confmap.Conf) error {
-	return conf.Unmarshal(cfg)
-}
+
 
 // PartitionConfig defines a configuration for partitioning requests based on metadata keys.
 type PartitionConfig struct {
@@ -154,13 +152,13 @@ func (cfg *BatchConfig) Validate() error {
 			return fmt.Errorf("`batch` supports only `items` or `bytes` sizer, found %q", szt.String())
 		}
 		if limit.MinSize < 0 {
-			return fmt.Errorf("`min_size` must be non-negative for sizer %q, found %d", szt, limit.MinSize)
+			return fmt.Errorf("`min_size` must be non-negative for sizer %q, found %d", szt.String(), limit.MinSize)
 		}
 		if limit.MaxSize < 0 {
-			return fmt.Errorf("`max_size` must be non-negative for sizer %q, found %d", szt, limit.MaxSize)
+			return fmt.Errorf("`max_size` must be non-negative for sizer %q, found %d", szt.String(), limit.MaxSize)
 		}
 		if limit.MaxSize > 0 && limit.MaxSize < limit.MinSize {
-			return fmt.Errorf("`max_size` (%d) must be greater or equal to `min_size` (%d) for sizer %q", limit.MaxSize, limit.MinSize, szt)
+			return fmt.Errorf("`max_size` (%d) must be greater or equal to `min_size` (%d) for sizer %q", limit.MaxSize, limit.MinSize, szt.String())
 		}
 	}
 

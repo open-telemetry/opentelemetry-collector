@@ -334,7 +334,7 @@ func TestTracesMergeSplitExactItems(t *testing.T) {
 func TestTracesMergeSplitUnknownSizerType(t *testing.T) {
 	req := newTracesRequest(ptrace.NewTraces())
 	// Call MergeSplit with invalid sizer
-	_, err := req.MergeSplit(context.Background(), map[request.SizerType]int64{"": 0}, nil)
+	_, err := req.MergeSplit(context.Background(), map[request.SizerType]int64{{}: 0}, nil)
 	require.EqualError(t, err, "unknown sizer type")
 }
 
