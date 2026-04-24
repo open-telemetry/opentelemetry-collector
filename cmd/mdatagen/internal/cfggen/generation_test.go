@@ -1706,6 +1706,30 @@ func TestFormatDefaultValue_ScalarDefaults(t *testing.T) {
 	}
 }
 
+func TestRenderDurationExpr_InvalidInputs(t *testing.T) {
+	tests := []struct {
+		name  string
+		value any
+	}{
+		{
+			name:  "invalid duration string",
+			value: "not-a-duration",
+		},
+		{
+			name:  "unsupported type",
+			value: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expr, ok := renderDurationExpr(tt.value)
+			require.False(t, ok)
+			require.Empty(t, expr)
+		})
+	}
+}
+
 func TestFormatDefaultValue_MapDefault(t *testing.T) {
 	md := &ConfigMetadata{
 		Type:                 "object",
