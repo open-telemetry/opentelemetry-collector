@@ -32,9 +32,9 @@ func (c *Config) Validate() error {
 }
 
 func createDefaultConfig() component.Config {
-	cfg := Config{}
-	cfg.Endpoint = "localhost:12345"
-	cfg.Timeout = 10 * time.Second
-
-	return &cfg
+	return &Config{
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+		Endpoint:             "localhost:12345",
+		Timeout:              10 * time.Second,
+	}
 }

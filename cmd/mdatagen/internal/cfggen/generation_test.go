@@ -1052,6 +1052,29 @@ func TestNewCfgFns_PublicType(t *testing.T) {
 	require.Equal(t, "component.Config", publicType("go.opentelemetry.io/collector/component.Config"))
 }
 
+func TestNewCfgFns_EmbeddedName(t *testing.T) {
+	fns := NewCfgFns("", "")
+	embeddedName := fns["embeddedName"].(func(string) string)
+
+	require.Equal(t, "MyType", embeddedName("my_type"))
+	require.Panics(t, func() { embeddedName("") })
+}
+
+func TestCamelVar(t *testing.T) {
+	require.Equal(t, "controllerConfig",
+		CamelVar("go.opentelemetry.io/collector/scraper/scraperhelper.controller_config"))
+	require.Equal(t, "plainConfig", CamelVar("plain_config"))
+	require.Panics(t, func() { CamelVar("") })
+}
+
+func TestNewCfgFns_CamelVar(t *testing.T) {
+	fns := NewCfgFns("", "")
+	camelVar := fns["camelVar"].(func(string) string)
+	require.Equal(t, "controllerConfig",
+		camelVar("go.opentelemetry.io/collector/scraper/scraperhelper.controller_config"))
+	require.Panics(t, func() { camelVar("") })
+}
+
 func TestWithCfgFns(t *testing.T) {
 	base := map[string]any{"existing": "value"}
 	result := WithCfgFns(base, "", "")
@@ -1064,6 +1087,7 @@ func TestWithCfgFns(t *testing.T) {
 	require.Contains(t, result, "mapCustomDefaults")
 	require.Contains(t, result, "hasDefaultValue")
 	require.Contains(t, result, "publicType")
+	require.Contains(t, result, "camelVar")
 }
 
 func TestResolveGoType_CustomTypeFormatError(t *testing.T) {
@@ -1653,6 +1677,20 @@ func TestFormatDefaultValue_ScalarDefaults(t *testing.T) {
 			expected:     "30*time.Second",
 		},
 		{
+			name:         "duration zero int",
+			schema:       &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+			propName:     "timeout",
+			defaultValue: 0,
+			expected:     "0",
+		},
+		{
+			name:         "duration zero float",
+			schema:       &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+			propName:     "timeout",
+			defaultValue: float64(0),
+			expected:     "0",
+		},
+		{
 			name:         "optional duration",
 			schema:       &ConfigMetadata{Type: "string", GoType: "time.Duration", IsOptional: true},
 			propName:     "interval",
@@ -1664,6 +1702,30 @@ func TestFormatDefaultValue_ScalarDefaults(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require.Equal(t, tt.expected, FormatDefaultValue(tt.schema, tt.propName, tt.defaultValue, "", ""))
+		})
+	}
+}
+
+func TestRenderDurationExpr_InvalidInputs(t *testing.T) {
+	tests := []struct {
+		name  string
+		value any
+	}{
+		{
+			name:  "invalid duration string",
+			value: "not-a-duration",
+		},
+		{
+			name:  "unsupported type",
+			value: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expr, ok := renderDurationExpr(tt.value)
+			require.False(t, ok)
+			require.Empty(t, expr)
 		})
 	}
 }
@@ -1692,6 +1754,41 @@ func TestFormatDefaultValue_PointerArrayOfObjects(t *testing.T) {
 	require.Equal(t, "&[]TargetsItem{NewDefaultTargetsItem()}", FormatDefaultValue(md, "targets", []any{map[string]any{}}, "", ""))
 }
 
+func TestWrapDefaultValue(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected string
+	}{
+		{
+			name:     "plain value",
+			metadata: &ConfigMetadata{},
+			expected: "defaultValue",
+		},
+		{
+			name:     "pointer",
+			metadata: &ConfigMetadata{IsPointer: true},
+			expected: "&defaultValue",
+		},
+		{
+			name:     "optional",
+			metadata: &ConfigMetadata{IsOptional: true},
+			expected: "configoptional.Some(defaultValue)",
+		},
+		{
+			name:     "pointer optional",
+			metadata: &ConfigMetadata{IsPointer: true, IsOptional: true},
+			expected: "configoptional.Some(&defaultValue)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, WrapDefaultValue(tt.metadata, "defaultValue"))
+		})
+	}
+}
+
 func TestFormatDefaultValue_ResolvedReferenceWithDefaults(t *testing.T) {
 	md := &ConfigMetadata{
 		Type:         "object",
@@ -1704,6 +1801,18 @@ func TestFormatDefaultValue_ResolvedReferenceWithDefaults(t *testing.T) {
 	require.Equal(t,
 		"confighttp.NewDefaultClientConfig()",
 		FormatDefaultValue(md, "client", map[string]any{"timeout": "30s"}, "go.opentelemetry.io/collector", "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"),
+	)
+}
+
+func TestFormatDefaultValue_ResolvedReferenceWithoutDefaults(t *testing.T) {
+	// An external ref with no property defaults must not generate a NewDefault... call.
+	md := &ConfigMetadata{
+		Type:         "object",
+		ResolvedFrom: "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
+	}
+
+	require.Empty(t,
+		FormatDefaultValue(md, "client", map[string]any{}, "go.opentelemetry.io/collector", "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"),
 	)
 }
 
@@ -1721,6 +1830,11 @@ func TestHasDefaultValue(t *testing.T) {
 		AllOf: []*ConfigMetadata{
 			{Type: "object", Default: map[string]any{"enabled": true}},
 		},
+	}))
+	// External ref without any property defaults must not be treated as having defaults.
+	require.False(t, hasDefaultValue(&ConfigMetadata{
+		Type:         "object",
+		ResolvedFrom: "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
 	}))
 }
 

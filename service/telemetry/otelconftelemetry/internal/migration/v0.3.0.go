@@ -4,6 +4,7 @@
 package migration // import "go.opentelemetry.io/collector/service/telemetry/otelconftelemetry/internal/migration"
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 type TracesConfigV030 struct {
@@ -25,6 +27,10 @@ type TracesConfigV030 struct {
 	Propagators []string `mapstructure:"propagators"`
 
 	config.TracerProvider `mapstructure:",squash"`
+
+	// MigratedFromV02 is set when the config was transparently migrated from the v0.2.0
+	// format. It is not part of the config schema and is used to emit a deprecation warning.
+	MigratedFromV02 bool `mapstructure:"-"`
 }
 
 func (c *TracesConfigV030) Unmarshal(conf *confmap.Conf) error {
@@ -40,7 +46,7 @@ func (c *TracesConfigV030) Unmarshal(conf *confmap.Conf) error {
 			// compatibility attempts
 			return err
 		}
-		// TODO: add a warning log to tell users to migrate their config
+		c.MigratedFromV02 = true
 		return tracesConfigV02ToV03(v2TracesConfig, c)
 	}
 	// ensure endpoint normalization occurs
@@ -81,6 +87,10 @@ type MetricsConfigV030 struct {
 	Level configtelemetry.Level `mapstructure:"level"`
 
 	config.MeterProvider `mapstructure:",squash"`
+
+	// MigratedFromV02 is set when the config was transparently migrated from the v0.2.0
+	// format. It is not part of the config schema and is used to emit a deprecation warning.
+	MigratedFromV02 bool `mapstructure:"-"`
 }
 
 func (c *MetricsConfigV030) Unmarshal(conf *confmap.Conf) error {
@@ -95,7 +105,7 @@ func (c *MetricsConfigV030) Unmarshal(conf *confmap.Conf) error {
 			// compatibility attempts
 			return err
 		}
-		// TODO: add a warning log to tell users to migrate their config
+		c.MigratedFromV02 = true
 		return metricsConfigV02ToV03(v02, c)
 	}
 	// ensure endpoint normalization occurs
@@ -192,6 +202,10 @@ type LogsConfigV030 struct {
 
 	// DisableZapResource disables adding resource attributes to logs exported through Zap. This does not affect logs exported through OTLP.
 	DisableZapResource bool `mapstructure:"disable_zap_resource,omitempty"`
+
+	// MigratedFromV02 is set when the config was transparently migrated from the v0.2.0
+	// format. It is not part of the config schema and is used to emit a deprecation warning.
+	MigratedFromV02 bool `mapstructure:"-"`
 }
 
 // LogsSamplingConfig sets a sampling strategy for the logger. Sampling caps the
@@ -207,6 +221,41 @@ type LogsSamplingConfig struct {
 	// Thereafter represents the sampling rate, every Nth message will be sampled after Initial messages are logged during each Tick.
 	// If Thereafter is zero, the logger will drop all the messages after the Initial each Tick.
 	Thereafter int `mapstructure:"thereafter"`
+}
+
+// ResourceConfigV030 represents the v0.3.0 resource configuration, with
+// backward-compatible support for the legacy map format.
+type ResourceConfigV030 struct {
+	config.Resource `mapstructure:",squash"`
+
+	LegacyAttributes map[string]any `mapstructure:",remain"`
+}
+
+var _ xconfmap.Validator = (*ResourceConfigV030)(nil)
+
+func (cfg *ResourceConfigV030) Validate() error {
+	// resource::attributes_list isn't currently supported by otelconf, so we have to put the default values under resource::attributes.
+	// However, resource::attributes_list theoretically has lower priority than resource::attributes,
+	// so if otelconf started supporting it, its values would be overridden by the defaults.
+	// To avoid this surprising behavior, we explicitly disallow the use of resource::attributes_list for now.
+	if cfg.AttributesList != nil {
+		return errors.New("resource::attributes_list is not currently supported, please use resource::attributes")
+	}
+
+	// mapstructure only supports map[string]any for ",remain" fields, but we need it to be equivalent to map[string]*string
+	for key, val := range cfg.LegacyAttributes {
+		switch val.(type) {
+		case nil, string:
+		default:
+			return fmt.Errorf("legacy resource attribute %q must be string or null", key)
+		}
+	}
+
+	if len(cfg.Attributes) > 0 && len(cfg.LegacyAttributes) > 0 {
+		return errors.New("resource::attributes cannot be used together with legacy inline resource attributes")
+	}
+
+	return nil
 }
 
 func (c *LogsConfigV030) Unmarshal(conf *confmap.Conf) error {
@@ -229,7 +278,7 @@ func (c *LogsConfigV030) Unmarshal(conf *confmap.Conf) error {
 			// compatibility attempts
 			return err
 		}
-		// TODO: add a warning log to tell users to migrate their config
+		c.MigratedFromV02 = true
 		return logsConfigV02ToV03(v02, c)
 	}
 	// ensure endpoint normalization occurs

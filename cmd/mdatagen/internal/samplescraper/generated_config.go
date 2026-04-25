@@ -39,11 +39,10 @@ func (c *TargetsItem) Validate() error {
 
 // NewDefaultTargetsItem returns a new TargetsItem with default values consistent with the annotations in the schema.
 func NewDefaultTargetsItem() TargetsItem {
-	cfg := TargetsItem{}
-	cfg.Interval = configoptional.Some(10 * time.Second)
-	cfg.Labels = map[string]string{"option1": "value1", "option2": "value2"}
-
-	return cfg
+	return TargetsItem{
+		Interval: configoptional.Some(10 * time.Second),
+		Labels:   map[string]string{"option1": "value1", "option2": "value2"},
+	}
 }
 
 // Configuration for the Sample Scraper.
@@ -83,9 +82,12 @@ func (c *Config) Validate() error {
 }
 
 func createDefaultConfig() component.Config {
-	cfg := Config{}
-	cfg.JobName = "test_job"
-	cfg.Targets = &[]TargetsItem{NewDefaultTargetsItem()}
-
-	return &cfg
+	controllerConfig := scraperhelper.NewDefaultControllerConfig()
+	controllerConfig.Timeout = 30 * time.Second
+	return &Config{
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+		ControllerConfig:     controllerConfig,
+		JobName:              "test_job",
+		Targets:              &[]TargetsItem{NewDefaultTargetsItem()},
+	}
 }

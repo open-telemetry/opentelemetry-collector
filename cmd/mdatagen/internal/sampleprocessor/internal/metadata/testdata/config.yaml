@@ -53,3 +53,30 @@ none_set:
       enabled: false
     string.resource.attr_to_be_removed:
       enabled: false
+override_set:
+  resource_attributes:
+    map.resource.attr:
+      enabled: true
+      override_value:
+        override_key: "override-val"
+    optional.resource.attr:
+      enabled: true
+      override_value: "override-optional.resource.attr"
+    slice.resource.attr:
+      enabled: true
+      override_value: ["override-item1", "override-item2"]
+    string.enum.resource.attr:
+      enabled: true
+      override_value: "one"
+    string.resource.attr:
+      enabled: true
+      override_value: "override-string.resource.attr"
+    string.resource.attr_disable_warning:
+      enabled: true
+      override_value: "override-string.resource.attr_disable_warning"
+    string.resource.attr_remove_warning:
+      enabled: true
+      override_value: "override-string.resource.attr_remove_warning"
+    string.resource.attr_to_be_removed:
+      enabled: true
+      override_value: "override-string.resource.attr_to_be_removed"

@@ -35,6 +35,8 @@ type Metadata struct {
 	Status *Status `mapstructure:"status"`
 	// Spatial Re-aggregation featuregate.
 	ReaggregationEnabled bool `mapstructure:"reaggregation_enabled"`
+	// Override value featuregate for resource attributes.
+	OverrideValueEnabled bool `mapstructure:"override_value_enabled"`
 	// The name of the package that will be generated.
 	GeneratedPackageName string `mapstructure:"generated_package_name"`
 	// Telemetry information for the component.

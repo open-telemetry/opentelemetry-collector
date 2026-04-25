@@ -58,9 +58,22 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return typeName
 		},
+		"embeddedName": func(ref string) string {
+			if ref == "" {
+				panic("attempted to use embedded name with an empty ref")
+			}
+			refDesc := NewRef(ref)
+			name, _ := helpers.FormatIdentifier(refDesc.defName, true)
+			return name
+		},
+		"camelVar": CamelVar,
 		"formatDefaultValue": func(md *ConfigMetadata, name string, defaultValue any) string {
 			return FormatDefaultValue(md, name, defaultValue, rootPackage, componentPackage)
 		},
+		"formatBaseValue": func(md *ConfigMetadata, name string, defaultValue any) string {
+			return FormatBaseValue(md, name, defaultValue, rootPackage, componentPackage)
+		},
+		"wrapDefaultValue": WrapDefaultValue,
 		"mapCustomDefaults": func(schema *ConfigMetadata, defaultValue any) []string {
 			return MapCustomDefaults(schema, defaultValue, rootPackage, componentPackage)
 		},
@@ -209,7 +222,7 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 		}
 	}
 
-	if md.Pattern != "" {
+	if md.Pattern != "" && !strings.HasPrefix(md.GoType, "time.") {
 		imports["regexp"] = true
 	}
 
@@ -476,6 +489,25 @@ func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue any, rootP
 	return exp
 }
 
+// FormatBaseValue returns the default value expression without IsPointer/IsOptional wrappers.
+// Use this when initializing a local variable that will be mutated before wrapping.
+func FormatBaseValue(md *ConfigMetadata, name string, defaultValue any, rootPackage, componentPackage string) string {
+	return formatSimpleValue(md, name, defaultValue, rootPackage, componentPackage)
+}
+
+// WrapDefaultValue wraps a variable name expression with IsPointer/IsOptional modifiers.
+// Use this to produce the final field assignment after mutation of the local variable.
+func WrapDefaultValue(md *ConfigMetadata, varName string) string {
+	exp := varName
+	if md.IsPointer {
+		exp = "&" + exp
+	}
+	if md.IsOptional {
+		exp = fmt.Sprintf("configoptional.Some(%s)", exp)
+	}
+	return exp
+}
+
 func hasDefaultValue(md *ConfigMetadata) bool {
 	if md.Default != nil {
 		return true
@@ -486,6 +518,16 @@ func hasDefaultValue(md *ConfigMetadata) bool {
 		}
 	}
 	return slices.ContainsFunc(md.AllOf, hasDefaultValue)
+}
+
+// CamelVar converts a reference string to an unexported Go identifier
+func CamelVar(ref string) string {
+	if ref == "" {
+		panic("attempted to use CamelVar with an empty ref")
+	}
+	refDesc := NewRef(ref)
+	name, _ := helpers.FormatIdentifier(refDesc.defName, false)
+	return name
 }
 
 func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPackage, componentPackage string) string {
@@ -565,15 +607,20 @@ func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPa
 }
 
 func renderDurationExpr(value any) (string, bool) {
-	s, ok := value.(string)
-	if !ok {
+	switch v := value.(type) {
+	case int:
+		return formatDurationAsGoExpr(time.Duration(v)), true
+	case float64:
+		return formatDurationAsGoExpr(time.Duration(v)), true
+	case string:
+		d, err := time.ParseDuration(v)
+		if err != nil {
+			return "", false
+		}
+		return formatDurationAsGoExpr(d), true
+	default:
 		return "", false
 	}
-	d, err := time.ParseDuration(s)
-	if err != nil {
-		return "", false
-	}
-	return formatDurationAsGoExpr(d), true
 }
 
 func formatDurationAsGoExpr(d time.Duration) string {
