@@ -1,0 +1,154 @@
+# Partial Reload for the OpenTelemetry Collector
+
+Support partial configuration reload to rebuild only affected components, reducing event loss and downtime during configuration changes. Rather than tearing down and rebuilding the entire pipeline graph on every configuration update, the collector will diff the old and new configurations and selectively restart only the components that have changed. This will be rolled out incrementally behind a feature flag, starting with receivers and expanding to all component types.
+
+## Motivation
+
+Currently, when a configuration change is applied to the OpenTelemetry Collector, the entire pipeline graph is torn down and rebuilt from scratch. This means every receiver, processor, exporter, and connector is stopped and restarted, regardless of whether it was affected by the change. This results in costly re-initialization of components, loss of accumulated in-memory state, disruption of consumption cursors and checkpoints, and unnecessary impact on external systems.
+
+A survey of components in the collector-contrib repository reveals the full scope of this problem across four categories of impact:
+
+### Expensive Startup
+
+Components with costly initialization that involves large state synchronization, service discovery, or log replay. Restarting these components introduces significant delays before they are fully operational.
+
+- `k8sclusterreceiver` - performs a full list/watch sync of the Kubernetes cluster state on startup, with a default timeout of 10 minutes. No metrics are emitted until the sync completes.
+- `prometheusreceiver` - re-runs all service discovery backends (Kubernetes SD, Consul SD, DNS SD, etc.) and rebuilds per-target scrape loops from scratch.
+- `prometheusremotewriteexporter` - replays unacknowledged write-ahead log (WAL) entries on startup before accepting new data, adding latency proportional to the WAL backlog.
+- `k8sattributesprocessor` - when configured with `wait_for_metadata: true`, blocks startup until its Kubernetes metadata cache is fully synced via informers, delaying the pipeline from accepting data.
+
+### Accumulated State Loss
+
+Many components maintain in-memory state (buffers, counters, accumulators, caches) that is permanently lost on restart. This causes metric gaps, trace loss, incorrect calculations, and false alerts visible to end users.
+
+- `tailsamplingprocessor` - buffers incomplete traces in memory while awaiting sampling decisions. On restart, all buffered traces and their accumulated span context are discarded, resulting in lost or incorrectly sampled traces.
+- `groupbytraceprocessor` - groups spans into complete traces in memory, holding them until a configured wait duration expires. On restart, incomplete traces waiting for additional spans are discarded and never forwarded.
+- `deltatocumulativeprocessor` - accumulates cumulative values from delta metric streams, indexed by stream identity. On restart, cumulative conversions lose continuity and restart from zero.
+- `cumulativetodeltaprocessor` - stores previous cumulative metric values needed to calculate deltas. On restart, the first cumulative value is treated as a reset, producing incorrect delta values until the next datapoint arrives.
+- `intervalprocessor` - aggregates metrics over a configured interval window. On restart, any metrics collected but not yet exported for the current interval are lost.
+- `logdedupprocessor` - tracks log deduplication counts, first-seen and last-seen timestamps per unique log entry. On restart, duplicate counts reset and previously seen logs are counted again.
+- `metricstarttimeprocessor` - caches first-seen metric datapoint values per resource to adjust start times. On restart, the processor cannot reconstruct original start times, causing inaccurate start time adjustments.
+- `statsdreceiver` - accumulates gauge, counter, histogram, and timing values from incoming StatsD packets between flush intervals. On restart, any partial aggregations not yet flushed are discarded.
+- `prometheusexporter` - maintains a metric registry storing the last known value for all time series exposed on the scrape endpoint. On restart, the endpoint returns empty metrics until new data arrives, potentially breaking alerting and dashboard rules.
+- `signalfxexporter` - buffers pending dimension metadata updates and correlation state for deduplication. On restart, pending dimension updates are lost and metadata associations must be re-established.
+- `k8sattributesprocessor` - maintains an in-memory metadata cache of Kubernetes resources (pods, namespaces, nodes, deployments) populated via informers. By default, the cache is refilled asynchronously so startup is not blocked, but data flowing through the processor during this period will have its Kubernetes metadata missing. With `wait_for_metadata: true`, the processor delays startup until the cache is fully synced, trading availability for correctness.
+
+### Cursor and Checkpoint Disruption
+
+Components that track consumption progress via file offsets, poll cursors, or partition checkpoints. When configured with a storage extension, these components persist their position and can recover on restart. Without a storage extension, positions are held in memory and lost on restart, causing duplicate ingestion or missed data.
+
+- `filelogreceiver` - tracks file read offsets and fingerprints for each monitored file. On restart without storage, all offsets are lost and files are re-read from the beginning, causing duplicate log ingestion.
+- `azureeventhubreceiver` - maintains partition-level sequence number checkpoints. On restart without storage, checkpoints are lost and the receiver reverts to the latest available message, causing missed events between shutdown and restart.
+- `awscloudwatchreceiver` - stores timestamp checkpoints per log group. On restart without storage, checkpoints reset to the configured `start_from` time, causing duplicate ingestion of logs already consumed.
+- `mongodbatlasreceiver` - stores the last recorded alert timestamp for polling. On restart without storage, the timestamp is lost and the receiver re-fetches alerts from the full polling window, causing alert duplication.
+
+### External System Disruption
+
+Components whose restart causes disruption to external systems or other instances beyond the collector itself.
+
+- `kafkareceiver` - shutting down the receiver sends a LeaveGroup request to the Kafka broker, triggering a consumer group rebalance that affects all members of the group.
+
+---
+
+By enabling partial reload, the collector can intelligently determine which components are affected by a configuration change and only restart those specific components. Pipelines and components that are unaffected by the change can continue operating without interruption, significantly reducing the impact of configuration updates.
+
+## Explanation
+
+When partial reload is enabled via the `service.partialReload` feature flag, the collector compares the incoming configuration with the current running configuration to determine the minimal set of components that need to be rebuilt. Components not affected by the change continue running without interruption, unless they are upstream of a changed component in the same pipeline, in which case they are also rebuilt to ensure a clean data path.
+
+### Component Changes
+
+- **Receiver modified**: Only the affected receiver is rebuilt. Downstream processors and exporters continue operating and will receive data from the new receiver instance once it starts.
+- **Processor modified**: The processor and all processors and receivers upstream of it in the pipeline are rebuilt. This ensures that no in-flight data is lost during the processor restart.
+- **Exporter modified**: The exporter, along with all processors and receivers upstream of it in the pipeline, are rebuilt. This provides a clean data path from ingestion to export.
+
+### Pipeline Changes
+
+- **Pipeline added**: Only the new pipeline is instantiated and started. Existing pipelines continue operating without interruption.
+- **Pipeline removed**: Only the removed pipeline is stopped and torn down. Other pipelines remain unaffected.
+- **Pipeline modified**: When a receiver, processor, or exporter is added to or removed from an existing pipeline, only that pipeline is rebuilt. Other pipelines remain unaffected.
+
+### Connector Changes
+
+Connectors require special handling since they bridge two pipelines:
+
+- **Connector added**: On the exporter side (the pipeline feeding into the connector), the entire upstream pipeline is rebuilt to establish the new data flow. On the receiver side (the pipeline receiving from the connector), the connector is started as a new receiver and downstream processors and exporters continue operating without interruption.
+- **Connector removed**: On the exporter side, the pipeline is rebuilt to remove the connector as a destination. On the receiver side, the connector is stopped. If the receiving pipeline has other receivers, they continue operating unaffected.
+
+The general principle is that changes are propagated "up the graph" from the point of change, rebuilding components upstream while leaving downstream components untouched. This keeps the blast radius of any configuration change as small as possible.
+
+### Telemetry and Extension Changes
+
+Changes to telemetry or extension configurations will always result in a full reload, as these are service-level settings that affect the entire collector.
+
+## Internal details
+
+### Feature Flag
+
+The partial reload functionality will be entirely behind a feature flag named `service.partialReload`. Only when this flag is explicitly enabled will the new partial reload code path be taken. When disabled, the collector continues to use the existing full reload behavior. This ensures that no existing behavior is changed by default.
+
+### Configuration Diff
+
+On each configuration change event, the collector performs a diff between the current and new configurations using `reflect.DeepEqual` to keep the comparison simple:
+
+1. Compare service-level settings (telemetry, extensions). If any have changed, fall back to full reload.
+2. Compare each component type (receivers, processors, exporters, connectors) to identify which specific component instances have been added, removed, or modified.
+3. For each pipeline, determine if the pipeline itself has changed (added, removed, or its component references modified).
+4. Based on the diff, calculate the minimal set of components to rebuild using the "up the graph" propagation rule.
+
+### Phased Rollout
+
+The implementation will follow a phased approach to minimize risk:
+
+Each phase will be validated independently before moving to the next. When a phase is not yet implemented, changes to those component types will fallback to a full reload.
+
+#### Phase 1 - Receivers
+
+Partial reload for receivers only, including adding, removing, and modifying receiver configurations. Since receivers are the initial senders in the pipeline graph, changes to them do not require rebuilding any other components in the pipeline. Downstream processors and exporters continue operating uninterrupted.
+
+#### Phase 2 - Processors
+
+Partial reload support for processors, including adding, removing, and modifying processor configurations. When a processor is changed, the receivers in that pipeline will also be re-created to ensure a clean data flow from ingestion through the updated processor.
+
+#### Phase 3 - Exporters
+
+Partial reload support for exporters, including adding, removing, and modifying exporter configurations. When an exporter is changed, the processors and receivers in that pipeline will also be re-created to ensure a clean data path from ingestion through to the updated exporter.
+
+#### Phase 4 - Pipeline
+
+Adding, removing, or updating entire pipelines. When a new pipeline is added, only that pipeline is created and started without affecting existing pipelines. When a pipeline is removed, only that pipeline is stopped and torn down. When a pipeline is updated, only that pipeline is rebuilt.
+
+#### Phase 5 - Connectors
+
+Partial reload support for connectors, including adding, removing, and modifying their configurations. Connectors bind two pipelines together, acting as an exporter in one pipeline and a receiver in another. Because of this, changes to a connector affect both pipelines. On the exporter side, the entire upstream pipeline is rebuilt to establish or remove the data flow. On the receiver side, the portion of the pipeline starting from the connector is rebuilt.
+
+### Error Handling
+
+- If partial reload fails mid-way (e.g., a new receiver fails to start), the graph may be in a partially modified state. In this case, the error is propagated and the collector exits, consistent with how full reload failures are handled today.
+- If the configuration diff determines that the change cannot be handled by the currently implemented phase, the collector falls back to a full reload transparently.
+
+### Corner Cases
+
+- **Shared components**: A receiver instance may be shared across multiple pipelines. The diff logic must account for this and only rebuild the receiver once, reconnecting it to all relevant pipelines.
+- **Connector bridging**: Connectors act as both an exporter in one pipeline and a receiver in another. Changes to connectors must propagate correctly to both sides.
+- **Rapid successive reloads**: If a new configuration change arrives while a partial reload is in progress, the behavior matches the existing full reload semantics (queue the change).
+
+## Trade-offs and mitigations
+
+**Increased code complexity**: The partial reload logic adds new code paths for diffing configurations and selectively rebuilding components. This is mitigated by:
+- Gating behind a feature flag so the new paths are only exercised when opted in.
+- Not modifying any existing core reload logic. The partial reload is an entirely separate code path.
+- Phased rollout that allows each component type to be validated independently.
+
+**Partial failure states**: If a component fails to start during partial reload, the pipeline graph may be in an inconsistent state. This is mitigated by treating partial reload failures the same as full reload failures (propagate the error). Future work could explore rollback semantics.
+
+**Configuration comparison overhead**: Diffing configurations on every change adds overhead. In practice, this overhead is negligible compared to the cost of tearing down and rebuilding components, and uses `reflect.DeepEqual` on configuration structs which is fast for typical collector configurations.
+
+## Open questions
+
+- What metrics and observability should be added to track partial reload performance and success rates?
+- Should partial reload eventually become the default behavior, replacing full reload entirely, or should it remain opt-in behind a feature flag?
+
+## Future possibilities
+
+- **Component hot reload**: Building on partial reload, a future enhancement could allow components to implement a `Reload` interface that accepts new configuration without requiring a stop/start cycle, further reducing disruption.
