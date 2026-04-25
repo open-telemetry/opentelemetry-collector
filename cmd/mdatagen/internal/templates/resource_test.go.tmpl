@@ -6,6 +6,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	{{- if .OverrideValueEnabled }}
+	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/confmap/xconfmap"
+	{{- end }}
 )
 
 {{- $enabledAttrCount := 0 }}
@@ -57,3 +62,116 @@ func TestResourceBuilder(t *testing.T) {
 		})
 	}
 }
+
+{{- if .OverrideValueEnabled }}
+
+func TestResourceBuilderOverrideValue(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "override_set")
+	require.NoError(t, xconfmap.Validate(cfg))
+	rb := NewResourceBuilder(cfg)
+	{{- range $name, $attr := .ResourceAttributes }}
+	{{- if $attr.Enum }}
+	rb.Set{{ $name.Render }}{{ index $attr.Enum 0 | publicVar }}()
+	{{- else }}
+	rb.Set{{ $name.Render }}({{ $attr.TestValue }})
+	{{- end }}
+	{{- end }}
+
+	res := rb.Emit()
+	{{- range $name, $attr := .ResourceAttributes }}
+	{
+		val, ok := res.Attributes().Get("{{ $name }}")
+		assert.True(t, ok, "{{ $name }} should be present")
+		if ok {
+			{{- if $attr.Enum }}
+			assert.Equal(t, "{{ index $attr.Enum 0 }}", val.Str())
+			{{- else if eq $attr.Type.String "Str" }}
+			assert.Equal(t, "override-{{ $name }}", val.Str())
+			{{- else if eq $attr.Type.String "Int" }}
+			assert.EqualValues(t, 123, val.Int())
+			{{- else if eq $attr.Type.String "Double" }}
+			assert.InDelta(t, 123.456, val.Double(), 0.001)
+			{{- else if eq $attr.Type.String "Bool" }}
+			assert.True(t, val.Bool())
+			{{- else if eq $attr.Type.String "Slice" }}
+			assert.Equal(t, []any{"override-item1", "override-item2"}, val.Slice().AsRaw())
+			{{- else if eq $attr.Type.String "Map" }}
+			assert.Equal(t, map[string]any{"override_key": "override-val"}, val.Map().AsRaw())
+			{{- end }}
+		}
+	}
+	{{- end }}
+}
+
+// TestResourceBuilderOverrideWithoutSet does not call any Set* methods, but override should still apply via Emit().
+func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "override_set")
+	require.NoError(t, xconfmap.Validate(cfg))
+	rb := NewResourceBuilder(cfg)
+
+	res := rb.Emit()
+	{{- range $name, $attr := .ResourceAttributes }}
+	{
+		val, ok := res.Attributes().Get("{{ $name }}")
+		assert.True(t, ok, "{{ $name }} should be present even without calling Set")
+		if ok {
+			{{- if $attr.Enum }}
+			assert.Equal(t, "{{ index $attr.Enum 0 }}", val.Str())
+			{{- else if eq $attr.Type.String "Str" }}
+			assert.Equal(t, "override-{{ $name }}", val.Str())
+			{{- else if eq $attr.Type.String "Int" }}
+			assert.EqualValues(t, 123, val.Int())
+			{{- else if eq $attr.Type.String "Double" }}
+			assert.InDelta(t, 123.456, val.Double(), 0.001)
+			{{- else if eq $attr.Type.String "Bool" }}
+			assert.True(t, val.Bool())
+			{{- else if eq $attr.Type.String "Slice" }}
+			assert.Equal(t, []any{"override-item1", "override-item2"}, val.Slice().AsRaw())
+			{{- else if eq $attr.Type.String "Map" }}
+			assert.Equal(t, map[string]any{"override_key": "override-val"}, val.Map().AsRaw())
+			{{- end }}
+		}
+	}
+	{{- end }}
+}
+
+// TestResourceBuilderOverrideDisabled disables all attributes, so override should not apply.
+func TestResourceBuilderOverrideDisabled(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "override_set")
+	{{- range $name, $_ := .ResourceAttributes }}
+	cfg.{{ $name.Render }}.Enabled = false
+	{{- end }}
+	require.NoError(t, xconfmap.Validate(cfg))
+	rb := NewResourceBuilder(cfg)
+
+	res := rb.Emit()
+	assert.Equal(t, 0, res.Attributes().Len(), "disabled attributes with override should not be emitted")
+}
+
+// TestResourceBuilderNoOverride has no override_value set, Validate should still succeed.
+func TestResourceBuilderNoOverride(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "all_set")
+	require.NoError(t, xconfmap.Validate(cfg))
+	{{- range $name, $_ := .ResourceAttributes }}
+	assert.Nil(t, cfg.{{ $name.Render }}.OverrideValue, "OverrideValue should be nil for {{ $name }}")
+	{{- end }}
+	rb := NewResourceBuilder(cfg)
+	{{- range $name, $attr := .ResourceAttributes }}
+	{{- if $attr.Enum }}
+	rb.Set{{ $name.Render }}{{ index $attr.Enum 0 | publicVar }}()
+	{{- else }}
+	rb.Set{{ $name.Render }}({{ $attr.TestValue }})
+	{{- end }}
+	{{- end }}
+
+	res := rb.Emit()
+	assert.Equal(t, {{ len .ResourceAttributes }}, res.Attributes().Len())
+	{{- range $name, $attr := .ResourceAttributes }}
+	{{ $name.RenderUnexported }}AttrVal, ok := res.Attributes().Get("{{ $name }}")
+	assert.True(t, ok)
+	if ok {
+		{{- template "assertResourceAttributeValue" $attr }}
+	}
+	{{- end }}
+}
+{{- end }}

@@ -1,0 +1,10 @@
+change_type: enhancement
+component: pkg/config/configgrpc
+note: Add `UserAgent` field to `ClientConfig` to allow overriding the default gRPC user-agent string.
+issues: [14686]
+subtext: |
+  The otlp gRPC exporter was unconditionally setting the User-Agent via
+  grpc.WithUserAgent() at dial time, which takes precedence over per-call
+  metadata, causing any user-configured User-Agent to be silently discarded.
+  A dedicated `UserAgent` field has been added to `ClientConfig` which, when
+  set, is used in the dial option directly instead of the default BuildInfo-derived string.

@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/service/internal/promtest"
 	"go.opentelemetry.io/collector/service/telemetry"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry/internal/migration"
 )
 
 const (
@@ -101,10 +102,14 @@ func TestCreateMeterProvider(t *testing.T) {
 				}},
 			},
 		}
-		cfg.Resource = map[string]*string{
-			"service.name":        ptr("otelcol"),
-			"service.version":     ptr("latest"),
-			"service.instance.id": ptr(testInstanceID),
+		cfg.Resource = migration.ResourceConfigV030{
+			Resource: config.Resource{
+				Attributes: []config.AttributeNameValue{
+					{Name: "service.name", Value: "otelcol"},
+					{Name: "service.version", Value: "latest"},
+					{Name: "service.instance.id", Value: testInstanceID},
+				},
+			},
 		}
 
 		t.Run(tt.name, func(t *testing.T) {
@@ -195,6 +200,51 @@ func getMetricsFromPrometheus(t *testing.T, endpoint string) map[string]*io_prom
 	return parsed
 }
 
+func TestCreateMeterProvider_020MigrationWarning(t *testing.T) {
+	core, observedLogs := observer.New(zapcore.DebugLevel)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Metrics.MigratedFromV02 = true
+
+	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	require.NoError(t, err)
+
+	mp, err := createMeterProvider(t.Context(), telemetry.MeterSettings{
+		Settings: telemetry.Settings{Resource: &resource},
+		Logger:   zap.New(core),
+	}, cfg)
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, mp.Shutdown(t.Context()))
+	}()
+
+	require.Equal(t, 1, observedLogs.Len())
+	entry := observedLogs.All()[0]
+	assert.Equal(t, zapcore.WarnLevel, entry.Level)
+	assert.Equal(t, "Telemetry metrics configuration is using the deprecated v0.2.0 Declarative Configuration format, please migrate to the v0.3.0 format", entry.Message)
+	assert.Equal(t, "https://opentelemetry.io/docs/specs/otel/configuration/#declarative-configuration", entry.ContextMap()["url"])
+}
+
+func TestCreateMeterProvider_NoMigrationWarning(t *testing.T) {
+	core, observedLogs := observer.New(zapcore.DebugLevel)
+
+	cfg := createDefaultConfig().(*Config)
+
+	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	require.NoError(t, err)
+
+	mp, err := createMeterProvider(t.Context(), telemetry.MeterSettings{
+		Settings: telemetry.Settings{Resource: &resource},
+		Logger:   zap.New(core),
+	}, cfg)
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, mp.Shutdown(t.Context()))
+	}()
+
+	assert.Zero(t, observedLogs.Len())
+}
+
 func TestCreateMeterProvider_Invalid(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Logs.Level = zapcore.FatalLevel
@@ -210,6 +260,14 @@ func TestCreateMeterProvider_Invalid(t *testing.T) {
 		Settings: telemetry.Settings{Resource: &resource},
 	}, cfg)
 	require.EqualError(t, err, "no valid metric exporter")
+}
+
+func TestCreateMeterProvider_MissingResource(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+
+	mp, err := createMeterProvider(t.Context(), telemetry.MeterSettings{}, cfg)
+	require.ErrorIs(t, err, errMissingCollectorResource)
+	assert.Nil(t, mp)
 }
 
 func TestCreateMeterProvider_Disabled(t *testing.T) {
@@ -372,7 +430,13 @@ func TestTelemetryMetrics_DefaultViews(t *testing.T) {
 			}}
 
 			factory := NewFactory()
-			settings := telemetry.MeterSettings{DefaultViews: defaultViews}
+			resource, err := factory.CreateResource(t.Context(), telemetry.Settings{}, cfg)
+			require.NoError(t, err)
+
+			settings := telemetry.MeterSettings{
+				Settings:     telemetry.Settings{Resource: &resource},
+				DefaultViews: defaultViews,
+			}
 			provider, err := factory.CreateMeterProvider(t.Context(), settings, cfg)
 			require.NoError(t, err)
 

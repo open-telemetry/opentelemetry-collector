@@ -45,7 +45,7 @@ jobs:
 
       - name: Run the benchmarks
         if: env.SKIP_BENCH != 'true'
-        uses: CodSpeedHQ/action@db35df748deb45fdef0960669f57d627c1956c30 # v4.13.1
+        uses: CodSpeedHQ/action@658a901452bb54c799643e060733b7afe9121b8d # v4.14.0
         with:
           mode: walltime
           run: make for-all-target TARGET="timebenchmark" GOMODULES="${{ env.TARGET_MODULES }}"

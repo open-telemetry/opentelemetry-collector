@@ -5,6 +5,7 @@ display_name: Sample Connector
 description: This connector is used for testing purposes to check the output of mdatagen.
 github_project: open-telemetry/opentelemetry-collector
 reaggregation_enabled: true
+override_value_enabled: true
 
 sem_conv_version: 1.9.0
 

@@ -12,6 +12,7 @@ require (
 	go.opentelemetry.io/collector/config/configoptional v1.56.0
 	go.opentelemetry.io/collector/confmap v1.56.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.56.0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.150.0
 	go.opentelemetry.io/collector/connector v0.150.0
 	go.opentelemetry.io/collector/connector/connectortest v0.150.0
 	go.opentelemetry.io/collector/connector/xconnector v0.150.0
@@ -41,6 +42,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.43.0
 	go.opentelemetry.io/otel/trace v1.43.0
 	go.uber.org/goleak v1.3.0
+	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.1
 	go.yaml.in/yaml/v3 v3.0.4
 	golang.org/x/mod v0.35.0
@@ -85,7 +87,6 @@ require (
 	go.opentelemetry.io/collector/config/confignet v1.56.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.56.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.56.0 // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.150.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.150.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.56.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.150.0 // indirect
@@ -96,7 +97,6 @@ require (
 	go.opentelemetry.io/collector/service v0.150.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.43.0 // indirect
-	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.50.0 // indirect
 	golang.org/x/net v0.53.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
