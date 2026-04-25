@@ -111,7 +111,7 @@ type BatchConfig struct {
 	// If not configured, use the same configuration as the queue.
 	// It accepts "requests", "items", or "bytes".
 	//
-	// Deprecated: Use Sizers instead. 
+	// Deprecated: Use Sizers instead.
 	Sizer request.SizerType `mapstructure:"sizer"`
 
 	// MinSize defines the configuration for the minimum size of a batch.
