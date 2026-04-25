@@ -101,6 +101,11 @@ $defs:
         type: array
         items:
           type: string
+      exposed_headers:
+        description: ExposedHeaders sets the value of the Access-Control-Expose-Headers response header, indicating which headers are safe to expose to the API of a CORS response.
+        type: array
+        items:
+          type: string
       max_age:
         description: MaxAge sets the value of the Access-Control-Max-Age response header. Set it to the number of seconds that browsers should cache a CORS preflight response for.
         type: integer
