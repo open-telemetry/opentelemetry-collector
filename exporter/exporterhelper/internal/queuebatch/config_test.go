@@ -19,36 +19,58 @@ import (
 )
 
 func TestConfig_Validate(t *testing.T) {
-	cfg := newTestConfig()
+	cfg := newTestConfigWithSizers()
 	require.NoError(t, xconfmap.Validate(cfg))
 
 	cfg.NumConsumers = 0
 	require.EqualError(t, xconfmap.Validate(cfg), "`num_consumers` must be positive")
 
-	cfg = newTestConfig()
+	cfg = newTestConfigWithSizers()
 	cfg.QueueSize = 0
 	require.EqualError(t, xconfmap.Validate(cfg), "`queue_size` must be positive")
 
-	cfg = newTestConfig()
+	cfg = newTestConfigWithSizers()
 	cfg.QueueSize = 0
 	require.EqualError(t, xconfmap.Validate(cfg), "`queue_size` must be positive")
 
 	storageID := component.MustNewID("test")
-	cfg = newTestConfig()
+	cfg = newTestConfigWithSizers()
 	cfg.WaitForResult = true
 	cfg.StorageID = &storageID
 	require.EqualError(t, xconfmap.Validate(cfg), "`wait_for_result` is not supported with a persistent queue configured with `storage`")
 
-	cfg = newTestConfig()
-	cfg.QueueSize = cfg.Batch.Get().MinSize - 1
-	require.EqualError(t, xconfmap.Validate(cfg), "`min_size` must be less than or equal to `queue_size`")
+	cfg = newTestConfigWithSizers()
+	cfg.QueueSize = cfg.Batch.Get().Sizers[request.SizerTypeItems].MinSize - 1
+	require.EqualError(t, xconfmap.Validate(cfg), "for sizer items, `min_size` (2048) must be less than or equal to `queue_size` (2047)")
 
-	cfg = newTestConfig()
+	cfg = newTestConfigWithSizers()
+	cfg.Batch.Get().Sizers = map[request.SizerType]SizerLimit{}
 	cfg.Batch.Get().Sizer = request.SizerType{}
 	require.EqualError(t, xconfmap.Validate(cfg), "batch: `batch` supports only `items` or `bytes` sizer, found \"\"")
 
-	cfg = newTestConfig()
+	cfg = newTestConfigWithSizers()
 	cfg.Sizer = request.SizerTypeBytes
+	require.NoError(t, xconfmap.Validate(cfg))
+
+	// Scenario 1: batch::sizer matches queue sizer, min_size > queue_size -> error
+	cfg = newTestConfigWithSizers()
+	cfg.Batch = configoptional.Some(BatchConfig{
+		FlushTimeout: 200 * time.Millisecond,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      2048,
+	})
+	cfg.QueueSize = 2047
+	require.EqualError(t, xconfmap.Validate(cfg), "for sizer items, `min_size` (2048) must be less than or equal to `queue_size` (2047)")
+
+	// Scenario 3: batch::sizer does not match queue sizer, min_size > queue_size -> no error
+	cfg = newTestConfigWithSizers()
+	cfg.Sizer = request.SizerTypeBytes
+	cfg.Batch = configoptional.Some(BatchConfig{
+		FlushTimeout: 200 * time.Millisecond,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      2048,
+	})
+	cfg.QueueSize = 2047
 	require.NoError(t, xconfmap.Validate(cfg))
 }
 
@@ -96,37 +118,83 @@ func TestBatchConfig_Validate(t *testing.T) {
 	require.NoError(t, xconfmap.Validate(cfg))
 
 	cfg = newTestBatchConfig()
+	cfg.Sizer = request.SizerTypeItems
+	require.EqualError(t, xconfmap.Validate(cfg), "both `sizer` and `sizers` are specified, but only one is allowed, `sizers` is preferred")
+
+	cfg = newTestBatchConfig()
 	cfg.FlushTimeout = 0
 	require.EqualError(t, xconfmap.Validate(cfg), "`flush_timeout` must be positive, found 0")
 
 	cfg = newTestBatchConfig()
-	cfg.MinSize = -1
-	require.EqualError(t, xconfmap.Validate(cfg), "`min_size` must be non-negative, found -1")
+	cfg.Sizers[request.SizerTypeItems] = SizerLimit{MinSize: -1}
+	require.EqualError(t, xconfmap.Validate(cfg), "`min_size` must be non-negative for sizer \"items\", found -1")
 
 	cfg = newTestBatchConfig()
-	cfg.MaxSize = -1
-	require.EqualError(t, xconfmap.Validate(cfg), "`max_size` must be non-negative, found -1")
+	cfg.Sizers[request.SizerTypeItems] = SizerLimit{MaxSize: -1}
+	require.EqualError(t, xconfmap.Validate(cfg), "`max_size` must be non-negative for sizer \"items\", found -1")
 
 	cfg = newTestBatchConfig()
-	cfg.Sizer = request.SizerTypeRequests
+	cfg.Sizers = map[request.SizerType]SizerLimit{
+		request.SizerTypeRequests: {MinSize: 1},
+	}
 	require.EqualError(t, xconfmap.Validate(cfg), "`batch` supports only `items` or `bytes` sizer, found \"requests\"")
 
 	cfg = newTestBatchConfig()
-	cfg.Sizer = request.SizerType{}
-	require.EqualError(t, xconfmap.Validate(cfg), "`batch` supports only `items` or `bytes` sizer, found \"\"")
+	cfg.Sizers[request.SizerTypeItems] = SizerLimit{MinSize: 2048, MaxSize: 1024}
+	require.EqualError(t, xconfmap.Validate(cfg), "`max_size` (1024) must be greater or equal to `min_size` (2048) for sizer \"items\"")
 
-	cfg = newTestBatchConfig()
-	cfg.MinSize = 2048
-	cfg.MaxSize = 1024
-	require.EqualError(t, xconfmap.Validate(cfg), "`max_size` (1024) must be greater or equal to `min_size` (2048)")
+	// Test legacy fields when Sizers is empty
+	cfg = BatchConfig{
+		FlushTimeout: 200 * time.Millisecond,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      10,
+	}
+	require.NoError(t, xconfmap.Validate(cfg))
+
+	cfg = BatchConfig{
+		FlushTimeout: 200 * time.Millisecond,
+		Sizer:        request.SizerTypeRequests,
+	}
+	require.EqualError(t, xconfmap.Validate(cfg), "`batch` supports only `items` or `bytes` sizer, found \"requests\"")
+
+	cfg = BatchConfig{
+		FlushTimeout: 200 * time.Millisecond,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      -1,
+	}
+	require.EqualError(t, xconfmap.Validate(cfg), "`min_size` must be non-negative, found -1")
+
+	cfg = BatchConfig{
+		FlushTimeout: 200 * time.Millisecond,
+		Sizer:        request.SizerTypeItems,
+		MaxSize:      -1,
+	}
+	require.EqualError(t, xconfmap.Validate(cfg), "`max_size` must be non-negative, found -1")
+
+	cfg = BatchConfig{
+		FlushTimeout: 200 * time.Millisecond,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      20,
+		MaxSize:      10,
+	}
+	require.EqualError(t, xconfmap.Validate(cfg), "`max_size` (10) must be greater or equal to `min_size` (20)")
 }
 
 func newTestBatchConfig() BatchConfig {
 	return BatchConfig{
 		FlushTimeout: 200 * time.Millisecond,
+		Sizers: map[request.SizerType]SizerLimit{
+			request.SizerTypeItems: {MinSize: 2048},
+		},
+	}
+}
+
+func newTestConfigWithSizers() Config {
+	return Config{
 		Sizer:        request.SizerTypeItems,
-		MinSize:      2048,
-		MaxSize:      0,
+		NumConsumers: 10,
+		QueueSize:    100_000,
+		Batch:        configoptional.Some(newTestBatchConfig()),
 	}
 }
 
@@ -138,15 +206,29 @@ func TestUnmarshal(t *testing.T) {
 			QueueSize:    1_000,
 			Batch: configoptional.Default(BatchConfig{
 				FlushTimeout: 200 * time.Millisecond,
-				Sizer:        request.SizerTypeItems,
-				MinSize:      8192,
+				Sizers: map[request.SizerType]SizerLimit{
+					request.SizerTypeItems: {MinSize: 8192},
+				},
 			}),
 		})
 	}
+
+	newLegacyBaseCfg := func() configoptional.Optional[Config] {
+		return configoptional.Some(Config{
+			Sizer:        request.SizerTypeRequests,
+			NumConsumers: 10,
+			QueueSize:    1_000,
+			Batch: configoptional.Default(BatchConfig{
+				FlushTimeout: 200 * time.Millisecond,
+			}),
+		})
+	}
+
 	tests := []struct {
 		path        string
 		expectedErr string
 		expectedCfg func() configoptional.Optional[Config]
+		baseCfg     func() configoptional.Optional[Config]
 	}{
 		{
 			path: "batch_set_empty_explicit_sizer.yaml",
@@ -167,16 +249,47 @@ func TestUnmarshal(t *testing.T) {
 			},
 		},
 		{
-			path: "batch_set_nonempty_explicit_sizer.yaml",
+			path:    "batch_set_nonempty_explicit_sizer.yaml",
+			baseCfg: newLegacyBaseCfg,
+			expectedCfg: func() configoptional.Optional[Config] {
+				cfg := newLegacyBaseCfg()
+				cfg.Get().Sizer = request.SizerTypeBytes
+				cfg.Get().QueueSize = 2000
+				cfg.Get().Batch = configoptional.Some(BatchConfig{
+					FlushTimeout: 200 * time.Millisecond,
+					Sizer:        request.SizerTypeBytes,
+					MinSize:      100,
+				})
+				return cfg
+			},
+		},
+		{
+			path:    "batch_set_nonempty_explicit_batch_sizer.yaml",
+			baseCfg: newLegacyBaseCfg,
+			expectedCfg: func() configoptional.Optional[Config] {
+				cfg := newLegacyBaseCfg()
+				cfg.Get().Sizer = request.SizerTypeBytes
+				cfg.Get().QueueSize = 2000
+				cfg.Get().Batch = configoptional.Some(BatchConfig{
+					FlushTimeout: 200 * time.Millisecond,
+					Sizer:        request.SizerTypeItems,
+					MinSize:      100,
+				})
+				return cfg
+			},
+		},
+		{
+			path: "batch_set_nonempty_multiple_sizers.yaml",
 			expectedCfg: func() configoptional.Optional[Config] {
 				cfg := newBaseCfg()
 				cfg.Get().Sizer = request.SizerTypeBytes
 				cfg.Get().QueueSize = 2000
 				cfg.Get().Batch = configoptional.Some(BatchConfig{
-					FlushTimeout: 200 * time.Millisecond,
-					// Sizer has been overridden by parent sizer
-					Sizer:   request.SizerTypeBytes,
-					MinSize: 100,
+					FlushTimeout: 2 * time.Second,
+					Sizers: map[request.SizerType]SizerLimit{
+						request.SizerTypeItems: {MinSize: 1, MaxSize: 12},
+						request.SizerTypeBytes: {MinSize: 1000, MaxSize: 1000},
+					},
 				})
 				return cfg
 			},
@@ -188,9 +301,10 @@ func TestUnmarshal(t *testing.T) {
 				cfg.Get().QueueSize = 2000
 				cfg.Get().Batch = configoptional.Some(BatchConfig{
 					FlushTimeout: 200 * time.Millisecond,
-					// Sizer has NOT been overridden by parent sizer
-					Sizer:   request.SizerTypeItems,
-					MinSize: 100,
+					MinSize:      100,
+					Sizers: map[request.SizerType]SizerLimit{
+						request.SizerTypeItems: {MinSize: 8192},
+					},
 				})
 				return cfg
 			},
@@ -200,6 +314,10 @@ func TestUnmarshal(t *testing.T) {
 			// Batch remains unset, sizer override does not apply.
 			expectedCfg: newBaseCfg,
 		},
+		{
+			path:        "batch_invalid_mixed_style.yaml",
+			expectedErr: "cannot specify both `sizers` and legacy fields (`min_size`, `max_size`, `sizer`) in `batch`",
+		},
 	}
 
 	for _, tt := range tests {
@@ -208,6 +326,9 @@ func TestUnmarshal(t *testing.T) {
 			require.NoError(t, err)
 
 			cfg := newBaseCfg()
+			if tt.baseCfg != nil {
+				cfg = tt.baseCfg()
+			}
 			err = cm.Unmarshal(&cfg)
 			if tt.expectedErr != "" {
 				assert.ErrorContains(t, err, tt.expectedErr)
