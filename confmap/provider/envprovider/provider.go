@@ -64,6 +64,10 @@ func (emp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 		emp.logger.Info("Configuration references empty environment variable", zap.String("name", envVarName))
 	}
 
+	if val == "" && !exists && defaultValuePtr != nil {
+		return confmap.NewRetrieved(val)
+	}
+
 	return confmap.NewRetrievedFromYAML([]byte(val))
 }
 
