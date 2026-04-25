@@ -20,10 +20,26 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/internal/testutil"
 )
+
+func TestCreateDefaultConfig_BatchMaxSizeBytes(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+
+	require.True(t, cfg.QueueConfig.HasValue(), "QueueConfig should have a value")
+	queueCfg := cfg.QueueConfig.Get()
+
+	require.True(t, queueCfg.Batch.HasValue(), "Batch should be set")
+	batchCfg := queueCfg.Batch.Get()
+	require.NotNil(t, batchCfg)
+
+	assert.Equal(t, exporterhelper.RequestSizerTypeBytes, batchCfg.Sizer)
+	assert.Equal(t, int64(defaultMaxRequestBodySize), batchCfg.MaxSize)
+	assert.Greater(t, batchCfg.FlushTimeout, time.Duration(0))
+}
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
