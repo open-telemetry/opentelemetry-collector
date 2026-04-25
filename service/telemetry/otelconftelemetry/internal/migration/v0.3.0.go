@@ -108,12 +108,26 @@ func (c *MetricsConfigV030) Unmarshal(conf *confmap.Conf) error {
 		c.MigratedFromV02 = true
 		return metricsConfigV02ToV03(v02, c)
 	}
-	// ensure endpoint normalization occurs
 	for _, r := range c.Readers {
+		// ensure endpoint normalization occurs
 		if r.Periodic != nil {
 			if r.Periodic.Exporter.OTLP != nil && r.Periodic.Exporter.OTLP.Endpoint != nil {
 				r.Periodic.Exporter.OTLP.Endpoint = normalizeEndpoint(*r.Periodic.Exporter.OTLP.Endpoint, r.Periodic.Exporter.OTLP.Insecure)
 			}
+		}
+		// Apply Prometheus exporter defaults for fields not explicitly set.
+		// When users explicitly configure the telemetry section (e.g. to
+		// change the host), unset *bool fields default to nil which the
+		// Prometheus exporter treats as false. This ensures the defaults
+		// match the implicit/default configuration where these are true.
+		//
+		// This is necessary because specifying any metric readers in the
+		// SDK config completely overwrites the list of readers, so the
+		// Prometheus exporter is treated as a new config without any of
+		// the defaults set in the createDefaultConfig function in
+		// otelconftelemetry. We must re-apply those defaults here.
+		if r.Pull != nil && r.Pull.Exporter.Prometheus != nil {
+			applyPrometheusDefaults(r.Pull.Exporter.Prometheus)
 		}
 	}
 	return nil
@@ -130,6 +144,24 @@ func (c MetricsConfigV030) Marshal(conf *confmap.Conf) error {
 	sm := conf.ToStringMap()
 	redactHeaders(sm, "readers.*.periodic.exporter.otlp.headers.*.value")
 	return conf.Marshal(sm)
+}
+
+func boolPtr(v bool) *bool {
+	return &v
+}
+
+// applyPrometheusDefaults sets default values for Prometheus exporter
+// fields that were not explicitly provided in the configuration.
+func applyPrometheusDefaults(p *config.Prometheus) {
+	if p.WithoutScopeInfo == nil {
+		p.WithoutScopeInfo = boolPtr(true)
+	}
+	if p.WithoutUnits == nil {
+		p.WithoutUnits = boolPtr(true)
+	}
+	if p.WithoutTypeSuffix == nil {
+		p.WithoutTypeSuffix = boolPtr(true)
+	}
 }
 
 type LogsConfigV030 struct {

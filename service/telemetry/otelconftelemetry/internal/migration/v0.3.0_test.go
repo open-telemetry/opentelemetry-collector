@@ -85,6 +85,35 @@ func TestUnmarshalMetricsConfigV030(t *testing.T) {
 	require.Equal(t, "https://127.0.0.1:4317", *cfg.Readers[0].Periodic.Exporter.OTLP.Endpoint)
 	// ensure migration flag is not set for native v0.3.0 config
 	require.False(t, cfg.MigratedFromV02)
+
+	// check that Prometheus exporter defaults are applied even when not explicitly set
+	prom := cfg.Readers[1].Pull.Exporter.Prometheus
+	require.NotNil(t, prom)
+	require.NotNil(t, prom.WithoutScopeInfo, "WithoutScopeInfo should default to non-nil")
+	require.True(t, *prom.WithoutScopeInfo, "WithoutScopeInfo should default to true")
+	require.NotNil(t, prom.WithoutUnits, "WithoutUnits should default to non-nil")
+	require.True(t, *prom.WithoutUnits, "WithoutUnits should default to true")
+	require.NotNil(t, prom.WithoutTypeSuffix, "WithoutTypeSuffix should default to non-nil")
+	require.True(t, *prom.WithoutTypeSuffix, "WithoutTypeSuffix should default to true")
+}
+
+func TestUnmarshalMetricsConfigV030_PrometheusExplicitFalse(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "v0.3.0_metrics_prom_explicit.yaml"))
+	require.NoError(t, err)
+
+	cfg := MetricsConfigV030{}
+	require.NoError(t, cm.Unmarshal(&cfg))
+	require.Len(t, cfg.Readers, 1)
+
+	// When explicitly set to false, values should remain false
+	prom := cfg.Readers[0].Pull.Exporter.Prometheus
+	require.NotNil(t, prom)
+	require.NotNil(t, prom.WithoutScopeInfo)
+	require.False(t, *prom.WithoutScopeInfo, "WithoutScopeInfo should be false when explicitly set")
+	require.NotNil(t, prom.WithoutUnits)
+	require.False(t, *prom.WithoutUnits, "WithoutUnits should be false when explicitly set")
+	require.NotNil(t, prom.WithoutTypeSuffix)
+	require.False(t, *prom.WithoutTypeSuffix, "WithoutTypeSuffix should be false when explicitly set")
 }
 
 func TestMarshalMetricsConfigV030(t *testing.T) {
