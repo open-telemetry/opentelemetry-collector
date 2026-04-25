@@ -36,6 +36,57 @@ func TestTwoPackagesInDirectory(t *testing.T) {
 	require.ErrorContains(t, err, "unable to determine package name: [go list -f {{.ImportPath}}] failed: (stderr) found packages package1 (package1.go) and package2 (package2.go)")
 }
 
+func TestShortFolderName(t *testing.T) {
+	tests := []struct {
+		name     string
+		filePath string
+		want     string
+	}{
+		{
+			name:     "simple receiver",
+			filePath: "receiver/samplereceiver/metadata.yaml",
+			want:     "sample",
+		},
+		{
+			name:     "simple extension",
+			filePath: "extension/filestorage/metadata.yaml",
+			want:     "filestorage",
+		},
+		{
+			name:     "extension with suffix",
+			filePath: "extension/filestorageextension/metadata.yaml",
+			want:     "filestorage",
+		},
+		{
+			name:     "nested storage extension",
+			filePath: "extension/storage/filestorage/metadata.yaml",
+			want:     "storage/filestorage",
+		},
+		{
+			name:     "nested storage extension with suffix",
+			filePath: "extension/storage/redisstorageextension/metadata.yaml",
+			want:     "storage/redisstorage",
+		},
+		{
+			name:     "deeply nested",
+			filePath: "receiver/hostmetrics/cpu/cpureceiver/metadata.yaml",
+			want:     "hostmetrics/cpu/cpu",
+		},
+		{
+			name:     "no component type in path",
+			filePath: "testdata/metadata.yaml",
+			want:     "testdata",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := shortFolderName(tt.filePath)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestLoadMetadata(t *testing.T) {
 	tests := []struct {
 		name    string
