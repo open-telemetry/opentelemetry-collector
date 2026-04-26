@@ -93,9 +93,10 @@ func (n *connectorNode) buildTraces(
 		Logger:      set.Logger,
 	}
 	consumedSettings := obsconsumer.Settings{
-		ItemCounter: tb.ConnectorConsumedItems,
-		SizeCounter: tb.ConnectorConsumedSize,
-		Logger:      set.Logger,
+		ItemCounter:               tb.ConnectorConsumedItems,
+		SizeCounter:               tb.ConnectorConsumedSize,
+		BodyBytesProcessedCounter: tb.ConnectorConsumedBodyBytesProcessed,
+		Logger:                    set.Logger,
 	}
 
 	consumers := make(map[pipeline.ID]consumer.Traces, len(nexts))
@@ -215,6 +216,7 @@ func (n *connectorNode) buildMetrics(
 		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), consumedSettings)
 		n.consumer = refconsumer.NewTraces(n.consumer.(consumer.Traces))
 	case pipeline.SignalLogs:
+		consumedSettings.BodyBytesProcessedCounter = tb.ConnectorConsumedBodyBytesProcessed
 		n.Component, err = builder.CreateLogsToMetrics(ctx, set, next)
 		if err != nil {
 			return err
@@ -244,9 +246,10 @@ func (n *connectorNode) buildLogs(
 	}
 
 	producedSettings := obsconsumer.Settings{
-		ItemCounter: tb.ConnectorProducedItems,
-		SizeCounter: tb.ConnectorProducedSize,
-		Logger:      set.Logger,
+		ItemCounter:               tb.ConnectorProducedItems,
+		SizeCounter:               tb.ConnectorProducedSize,
+		BodyBytesProcessedCounter: tb.ConnectorProducedBodyBytesProcessed,
+		Logger:                    set.Logger,
 	}
 	consumedSettings := obsconsumer.Settings{
 		ItemCounter: tb.ConnectorConsumedItems,
@@ -271,6 +274,7 @@ func (n *connectorNode) buildLogs(
 
 	switch n.exprPipelineType {
 	case pipeline.SignalLogs:
+		consumedSettings.BodyBytesProcessedCounter = tb.ConnectorConsumedBodyBytesProcessed
 		n.Component, err = builder.CreateLogsToLogs(ctx, set, next)
 		if err != nil {
 			return err
@@ -378,6 +382,7 @@ func (n *connectorNode) buildProfiles(
 		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), consumedSettings)
 		n.consumer = refconsumer.NewMetrics(n.consumer.(consumer.Metrics))
 	case pipeline.SignalLogs:
+		consumedSettings.BodyBytesProcessedCounter = tb.ConnectorConsumedBodyBytesProcessed
 		n.Component, err = builder.CreateLogsToProfiles(ctx, set, next)
 		if err != nil {
 			return err

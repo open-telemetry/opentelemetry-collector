@@ -16,6 +16,10 @@ type Settings struct {
 	// SizeCounter is the metric to count the size of items processed.
 	SizeCounter metric.Int64Counter
 
+	// BodyBytesProcessedCounter is the metric to count the total byte size of log record bodies.
+	// Only used for log signal consumers; nil for other signal types.
+	BodyBytesProcessedCounter metric.Int64Counter
+
 	// Logger is the logger for the obsconsumer package.
 	Logger *zap.Logger
 }

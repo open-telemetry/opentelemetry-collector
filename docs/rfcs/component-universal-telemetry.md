@@ -85,8 +85,14 @@ package is internal, then the scope name should be that of the module which cont
 There are two straightforward measurements that can be made on any pdata:
 
 1. A count of "items" (spans, data points, or log records). These are low cost but broadly useful, so they should be enabled by default.
-2. A measure of size, based on [ProtoMarshaler.Sizer()](https://github.com/open-telemetry/opentelemetry-collector/blob/9907ba50df0d5853c34d2962cf21da42e15a560d/pdata/ptrace/pb.go#l11).
+2. A measure of size, based on [ProtoMarshaler.Sizer()](https://github.com/open-telemetry/opentelemetry-collector/blob/main/pdata/ptrace/pb.go).
   These may be high cost to compute, so by default they should be disabled (and not calculated). This default setting may change in the future if it is demonstrated that the cost is generally acceptable.
+
+Additionally, for log pipelines, there is a signal-specific measurement:
+
+3. A measure of "body size", computed by summing the byte size of each log record body across all log records in a batch.
+  This measures the byte size of the underlying log data rather than the OTLP wire-format size, and is useful for capacity planning, billing correlation, and data reduction analysis.
+  Like the size metric, this is disabled by default and gated behind the `detailed` telemetry level. It only applies to log pipelines.
 
 The location of these measurements can be described in terms of whether the data is "consumed" or "produced", from the perspective of the
 component to which the telemetry is attributed. Metrics which contain the term "produced" describe data which is emitted from the component,
@@ -186,6 +192,49 @@ Errors should be "tagged as coming from downstream" the same way permanent error
     otelcol.exporter.consumed.size:
       enabled: false
       description: Size of items passed to the exporter.
+      unit: "By"
+      sum:
+        value_type: int
+        monotonic: true
+
+    otelcol.receiver.produced.body.bytes.processed:
+      enabled: false
+      description: Total byte size of log record bodies emitted from the receiver.
+      unit: "By"
+      sum:
+        value_type: int
+        monotonic: true
+    otelcol.processor.consumed.body.bytes.processed:
+      enabled: false
+      description: Total byte size of log record bodies passed to the processor.
+      unit: "By"
+      sum:
+        value_type: int
+        monotonic: true
+    otelcol.processor.produced.body.bytes.processed:
+      enabled: false
+      description: Total byte size of log record bodies emitted from the processor.
+      unit: "By"
+      sum:
+        value_type: int
+        monotonic: true
+    otelcol.connector.consumed.body.bytes.processed:
+      enabled: false
+      description: Total byte size of log record bodies passed to the connector.
+      unit: "By"
+      sum:
+        value_type: int
+        monotonic: true
+    otelcol.connector.produced.body.bytes.processed:
+      enabled: false
+      description: Total byte size of log record bodies emitted from the connector.
+      unit: "By"
+      sum:
+        value_type: int
+        monotonic: true
+    otelcol.exporter.consumed.body.bytes.processed:
+      enabled: false
+      description: Total byte size of log record bodies passed to the exporter.
       unit: "By"
       sum:
         value_type: int

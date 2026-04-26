@@ -63,9 +63,10 @@ func (n *exporterNode) buildComponent(
 	}
 
 	consumedSettings := obsconsumer.Settings{
-		ItemCounter: tb.ExporterConsumedItems,
-		SizeCounter: tb.ExporterConsumedSize,
-		Logger:      set.Logger,
+		ItemCounter:               tb.ExporterConsumedItems,
+		SizeCounter:               tb.ExporterConsumedSize,
+		BodyBytesProcessedCounter: tb.ExporterConsumedBodyBytesProcessed,
+		Logger:                    set.Logger,
 	}
 
 	switch n.pipelineType {

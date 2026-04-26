@@ -436,6 +436,11 @@ func TestComponentInstrumentation(t *testing.T) {
 					attribute.String(obsconsumer.ComponentOutcome, "success"),
 				): 1363,
 			},
+			"otelcol.receiver.produced.body.bytes.processed": simpleMetric{
+				attribute.NewSet(
+					attribute.String(obsconsumer.ComponentOutcome, "success"),
+				): 255, // 4*21("This is a log message") + 3*18("something happened") + 3*21 + 3*18
+			},
 		},
 		attribute.NewSet(
 			attribute.String("otelcol.component.kind", "processor"),
@@ -462,6 +467,16 @@ func TestComponentInstrumentation(t *testing.T) {
 				attribute.NewSet(
 					attribute.String(obsconsumer.ComponentOutcome, "success"),
 				): 1363,
+			},
+			"otelcol.processor.consumed.body.bytes.processed": simpleMetric{
+				attribute.NewSet(
+					attribute.String(obsconsumer.ComponentOutcome, "success"),
+				): 255,
+			},
+			"otelcol.processor.produced.body.bytes.processed": simpleMetric{
+				attribute.NewSet(
+					attribute.String(obsconsumer.ComponentOutcome, "success"),
+				): 255,
 			},
 		},
 		attribute.NewSet(
@@ -500,6 +515,21 @@ func TestComponentInstrumentation(t *testing.T) {
 					attribute.String("otelcol.pipeline.id", "logs/left"),
 				): 626,
 			},
+			"otelcol.connector.consumed.body.bytes.processed": simpleMetric{
+				attribute.NewSet(
+					attribute.String(obsconsumer.ComponentOutcome, "success"),
+				): 255,
+			},
+			"otelcol.connector.produced.body.bytes.processed": simpleMetric{
+				attribute.NewSet(
+					attribute.String(obsconsumer.ComponentOutcome, "success"),
+					attribute.String("otelcol.pipeline.id", "logs/right"),
+				): 138, // GenerateLogs(7): 4*21 + 3*18
+				attribute.NewSet(
+					attribute.String(obsconsumer.ComponentOutcome, "success"),
+					attribute.String("otelcol.pipeline.id", "logs/left"),
+				): 117, // GenerateLogs(6): 3*21 + 3*18
+			},
 		},
 		attribute.NewSet(
 			attribute.String("otelcol.component.kind", "exporter"),
@@ -516,6 +546,11 @@ func TestComponentInstrumentation(t *testing.T) {
 					attribute.String(obsconsumer.ComponentOutcome, "success"),
 				): 737,
 			},
+			"otelcol.exporter.consumed.body.bytes.processed": simpleMetric{
+				attribute.NewSet(
+					attribute.String(obsconsumer.ComponentOutcome, "success"),
+				): 138,
+			},
 		},
 		attribute.NewSet(
 			attribute.String("otelcol.component.kind", "exporter"),
@@ -531,6 +566,11 @@ func TestComponentInstrumentation(t *testing.T) {
 				attribute.NewSet(
 					attribute.String(obsconsumer.ComponentOutcome, "success"),
 				): 626,
+			},
+			"otelcol.exporter.consumed.body.bytes.processed": simpleMetric{
+				attribute.NewSet(
+					attribute.String(obsconsumer.ComponentOutcome, "success"),
+				): 117,
 			},
 		},
 
