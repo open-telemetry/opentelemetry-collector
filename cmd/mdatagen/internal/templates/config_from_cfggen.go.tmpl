@@ -69,6 +69,36 @@ import (
 	return cfg
 	}
 	{{- end }}
+    {{- if $def.Description }}
+        // {{ $defName | publicVar }} {{ $def.Description }}
+    {{- end }}
+    {{- $typeName := $defName | publicVar }}
+    type {{ $typeName }} struct {
+        {{- template "struct" $def }}
+    }
+
+    {{ $defValidators := extractValidators $def }}
+    {{- if $defValidators }}
+        // Validate validates the {{$typeName}} fields according to schema annotations.
+        func (c *{{ $typeName }}) Validate() error {
+            var err error
+            {{ range $validator := $defValidators -}}
+                {{- template "validation" $validator }}
+            {{- end }}
+
+            return err
+        }
+    {{- end }}
+
+    // NewDefault{{ $typeName }} returns a new {{ $typeName }} with default values consistent with the annotations in the schema.
+    {{- if hasDefaultValue $def }}
+    func NewDefault{{ $typeName }}() {{ $typeName }} {
+        {{- template "structLiteralVars" $def }}
+        return {{ $typeName }}{
+            {{- template "structLiteralFields" $def }}
+        }
+    }
+    {{- end }}
 
 {{ end }}
 
@@ -193,25 +223,58 @@ func (c *Config) Validate() error {
 			cfg.{{ $propName | publicVar }}{{ $expr }}
 		{{- end }}
 	{{- end }}
+{{- define "structLiteralVars" }}
+    {{- range $schema := .AllOf }}
+        {{- $exprs := mapCustomDefaults $schema $schema.Default }}
+        {{- if $exprs }}
+            {{- $varName := camelVar $schema.ResolvedFrom }}
+            {{- $name := embeddedName $schema.ResolvedFrom }}
+            {{- $defaultValue := formatBaseValue $schema $name $schema.Default }}
+    {{ $varName }} := {{ $defaultValue }}
+            {{- range $expr := $exprs }}
+    {{ $varName }}{{ $expr }}
+            {{- end }}
+
+        {{- end }}
+    {{- end }}
+    {{- range $propName, $prop := .Properties }}
+        {{- $exprs := mapCustomDefaults $prop $prop.Default }}
+        {{- if $exprs }}
+            {{- $varName := camelVar $propName }}
+            {{- $defaultValue := formatBaseValue $prop $propName $prop.Default }}
+    {{ $varName }} := {{ $defaultValue }}
+            {{- range $expr := $exprs }}
+    {{ $varName }}{{ $expr }}
+            {{- end }}
+
+        {{- end }}
+    {{- end }}
+{{- end }}
+
+{{- define "structLiteralFields" }}
     {{- range $schema := .AllOf }}
         {{- $name := embeddedName $schema.ResolvedFrom }}
         {{- $defaultValue := formatDefaultValue $schema $name $schema.Default }}
         {{- if $defaultValue }}
-            cfg.{{ $name }} = {{ $defaultValue }}
-        {{- end }}
-        {{- $exprs := mapCustomDefaults $schema $schema.Default }}
-        {{- range $expr := $exprs }}
-            cfg.{{ $name }}{{ $expr }}
+            {{- $exprs := mapCustomDefaults $schema $schema.Default }}
+            {{- if $exprs }}
+                {{- $varName := camelVar $schema.ResolvedFrom }}
+        {{ $name }}: {{ wrapDefaultValue $schema $varName }},
+            {{- else }}
+        {{ $name }}: {{ $defaultValue }},
+            {{- end }}
         {{- end }}
     {{- end }}
     {{- range $propName, $prop := .Properties }}
         {{- $defaultValue := formatDefaultValue $prop $propName $prop.Default }}
         {{- if $defaultValue }}
-        cfg.{{ $propName | publicVar }} = {{ $defaultValue }}
-        {{- end }}
-        {{- $exprs := mapCustomDefaults $prop $prop.Default }}
-        {{- range $expr := $exprs }}
-            cfg.{{ $propName | publicVar }}{{ $expr }}
+            {{- $exprs := mapCustomDefaults $prop $prop.Default }}
+            {{- if $exprs }}
+                {{- $varName := camelVar $propName }}
+        {{ $propName | publicVar }}: {{ wrapDefaultValue $prop $varName }},
+            {{- else }}
+        {{ $propName | publicVar }}: {{ $defaultValue }},
+            {{- end }}
         {{- end }}
     {{- end }}
 {{- end }}
@@ -222,4 +285,9 @@ func createDefaultConfig() component.Config {
 	{{- template "defaultValueSetter" .Metadata.Config }}
 
 	return &cfg
+}
+    {{- template "structLiteralVars" .Metadata.Config }}
+    return &Config{
+        {{- template "structLiteralFields" .Metadata.Config }}
+    }
 }

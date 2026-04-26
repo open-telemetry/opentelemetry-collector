@@ -622,7 +622,7 @@ func TestGenerateConfigGoStruct_PropertyDefaultsAndImports(t *testing.T) {
 	generated := string(content)
 	require.Contains(t, generated, `"time"`)
 	require.Contains(t, generated, "func createDefaultConfig() component.Config")
-	require.Contains(t, generated, "cfg.Timeout = 30 * time.Second")
+	require.Contains(t, generated, "Timeout: 30 * time.Second,")
 }
 
 func TestGenerateConfigGoStruct_InternalResolvedRefGeneratesLocalType(t *testing.T) {
@@ -664,9 +664,10 @@ func TestGenerateConfigGoStruct_InternalResolvedRefGeneratesLocalType(t *testing
 	require.Contains(t, generated, `"time"`)
 	require.Contains(t, generated, "type PlainConfig struct")
 	require.Contains(t, generated, "func NewDefaultPlainConfig() PlainConfig")
-	require.Contains(t, generated, "cfg.Timeout = 30 * time.Second")
+	require.Contains(t, generated, "Timeout: 30 * time.Second,")
 	require.Contains(t, generated, "Config PlainConfig `mapstructure:\"config\"`")
-	require.Contains(t, generated, "cfg.Config = NewDefaultPlainConfig()")
+	require.Contains(t, generated, "config := NewDefaultPlainConfig()")
+	require.Contains(t, generated, "Config: config,")
 }
 
 func TestGenerateConfigFiles_GoStructError(t *testing.T) {

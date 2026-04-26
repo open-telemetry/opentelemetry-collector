@@ -122,6 +122,7 @@ The following general labels are supported:
 | `arm64`                  | `arm64`                  |
 | `good first issue`       | `good-first-issue`       |
 | `help wanted`            | `help-wanted`            |
+| `needs triage`           | `needs-triage`           |
 | `discussion needed`      | `discussion-needed`      |
 | `os:macos`               | `os:macos`               |
 | `os:windows`             | `os:windows`             |
