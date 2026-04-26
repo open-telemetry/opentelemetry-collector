@@ -1,0 +1,10 @@
+change_type: enhancement
+component: pkg/exporterhelper
+note: >
+  Add `RequestMiddleware` interface support to the queue sender. This allows
+  extensions to intercept and manage export requests (e.g., for dynamic concurrency control).
+issues: [14080]
+subtext: |
+  The `RequestMiddleware` interface has been added to the `exporter/exporterhelper/xexporterhelper` package.
+  The `exporterhelper`'s sending queue can now be configured with a list of `request_middlewares` to delegate request execution logic to extensions.
+change_logs: [user, api]
