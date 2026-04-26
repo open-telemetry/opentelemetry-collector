@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/internal/memorylimiter/iruntime"
 )
 
@@ -59,6 +60,8 @@ type MemoryLimiter struct {
 	refCounter     int
 	waitGroup      sync.WaitGroup
 	closed         chan struct{}
+
+	host component.Host
 }
 
 // NewMemoryLimiter returns a new memory limiter component
@@ -87,7 +90,8 @@ func NewMemoryLimiter(cfg *Config, logger *zap.Logger) (*MemoryLimiter, error) {
 	}, nil
 }
 
-func (ml *MemoryLimiter) Start(_ context.Context, _ component.Host) error {
+func (ml *MemoryLimiter) Start(_ context.Context, host component.Host) error {
+	ml.host = host
 	ml.refCounterLock.Lock()
 	defer ml.refCounterLock.Unlock()
 
@@ -179,6 +183,7 @@ func (ml *MemoryLimiter) CheckMemLimits() {
 			// Was previously refusing but enough memory is available now, no need to limit.
 			ml.logger.Info("Memory usage back within limits. Resuming normal operation.", memstatToZapField(ms))
 		}
+		componentstatus.ReportStatus(ml.host, componentstatus.NewEvent(componentstatus.StatusOK))
 		ml.mustRefuse.Store(aboveSoftLimit)
 		return
 	}
@@ -204,7 +209,13 @@ func (ml *MemoryLimiter) CheckMemLimits() {
 	}
 
 	if !ml.mustRefuse.Load() && aboveSoftLimit {
+		componentstatus.ReportStatus(ml.host, componentstatus.NewRecoverableErrorEvent(ErrDataRefused))
 		ml.logger.Warn("Memory usage is above soft limit. Refusing data.", memstatToZapField(ms))
+	}
+
+	if !aboveSoftLimit {
+		// GC brought memory back within limits in this same tick — report OK immediately.
+		componentstatus.ReportStatus(ml.host, componentstatus.NewEvent(componentstatus.StatusOK))
 	}
 
 	ml.mustRefuse.Store(aboveSoftLimit)
