@@ -13,6 +13,8 @@ import (
 	{{- end }}
 	"github.com/stretchr/testify/require"
 
+	{{ if or .Metrics .Events }}"go.opentelemetry.io/collector/confmap"
+	{{ end }}"go.opentelemetry.io/collector/confmap/confmaptest"
 	{{- if .Metrics }}
 	"go.opentelemetry.io/collector/confmap"
 	{{- end }}

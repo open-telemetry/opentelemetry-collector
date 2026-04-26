@@ -1237,6 +1237,34 @@ func TestExtractImports_NoPatternNoRegexpImport(t *testing.T) {
 	require.NotContains(t, result, "regexp")
 }
 
+func TestExtractImports_TimeTypeWithPatternNoRegexpImport(t *testing.T) {
+	tests := []struct {
+		name   string
+		goType string
+	}{
+		{
+			name:   "time.Duration with pattern does not add regexp",
+			goType: "time.Duration",
+		},
+		{
+			name:   "time.Time with pattern does not add regexp",
+			goType: "time.Time",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			md := &ConfigMetadata{
+				Type:    "string",
+				GoType:  tt.goType,
+				Pattern: `^[0-9]+s$`,
+			}
+			result, err := ExtractImports(md, "", "")
+			require.NoError(t, err)
+			require.NotContains(t, result, "regexp")
+		})
+	}
+}
+
 func TestExtractValidators(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -1432,6 +1460,26 @@ func TestExtractValidators_StringValidators(t *testing.T) {
 				Type: "object",
 				Properties: map[string]*ConfigMetadata{
 					"name": {Type: "string"},
+				},
+			},
+			expected: []Validator{},
+		},
+		{
+			name: "time.Duration with pattern produces no pattern validator",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"timeout": {Type: "string", GoType: "time.Duration", Pattern: `^[0-9]+s$`},
+				},
+			},
+			expected: []Validator{},
+		},
+		{
+			name: "time.Time with pattern produces no pattern validator",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"timestamp": {Type: "string", GoType: "time.Time", Pattern: `^[0-9]+$`},
 				},
 			},
 			expected: []Validator{},
@@ -1652,6 +1700,60 @@ func TestNewCfgFns_ExtractValidators(t *testing.T) {
 
 func Ptr[T any](v T) *T {
 	return &v
+}
+
+func TestNewCfgFns_ExtractStdlibImports(t *testing.T) {
+	fns := NewCfgFns("go.opentelemetry.io/collector", "go.opentelemetry.io/collector/comp")
+	extractStdlibImports := fns["extractStdlibImports"].(func(*ConfigMetadata) []string)
+
+	// nil input returns nil
+	require.Nil(t, extractStdlibImports(nil))
+
+	// stdlib imports (no dot in path) are returned
+	md := &ConfigMetadata{Type: "string", Format: "duration"}
+	result := extractStdlibImports(md)
+	require.Contains(t, result, "time")
+
+	// non-stdlib imports are excluded
+	for _, imp := range result {
+		require.NotContains(t, imp, ".")
+	}
+
+	// error case: returns empty slice
+	errMd := &ConfigMetadata{GoType: "github.com/pkg."}
+	result = extractStdlibImports(errMd)
+	require.Empty(t, result)
+}
+
+func TestNewCfgFns_ExtractNonStdlibImports(t *testing.T) {
+	fns := NewCfgFns("go.opentelemetry.io/collector", "go.opentelemetry.io/collector/comp")
+	extractNonStdlibImports := fns["extractNonStdlibImports"].(func(*ConfigMetadata) []string)
+
+	// nil input returns nil
+	require.Nil(t, extractNonStdlibImports(nil))
+
+	// non-stdlib imports (contain a dot) are returned
+	md := &ConfigMetadata{
+		Type:       "string",
+		IsOptional: true,
+	}
+	result := extractNonStdlibImports(md)
+	require.Contains(t, result, "go.opentelemetry.io/collector/config/configoptional")
+
+	// stdlib imports are excluded
+	for _, imp := range result {
+		require.Contains(t, imp, ".")
+	}
+
+	// error case: returns empty slice
+	errMd := &ConfigMetadata{GoType: "github.com/pkg."}
+	result = extractNonStdlibImports(errMd)
+	require.Empty(t, result)
+
+	// external ref import is included
+	refMd := &ConfigMetadata{Ref: "go.opentelemetry.io/collector/component.Config"}
+	result = extractNonStdlibImports(refMd)
+	require.Contains(t, result, "go.opentelemetry.io/collector/component")
 }
 
 func TestFormatDefaultValue_ScalarDefaults(t *testing.T) {

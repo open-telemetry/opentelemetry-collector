@@ -16,6 +16,7 @@ import (
 	{{- end }}
 
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	{{- if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) }}
@@ -56,13 +57,16 @@ import (
 	{{- if isConnector }}
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
-	{{- if supportsProfiles }}
+	{{- if or supportsLogsToProfiles supportsMetricsToProfiles supportsTracesToProfiles supportsProfilesToLogs supportsProfilesToMetrics supportsProfilesToTraces supportsProfilesToProfiles }}
 	"go.opentelemetry.io/collector/connector/xconnector"
 	{{- end }}
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	{{- if or supportsLogsToProfiles supportsMetricsToProfiles supportsTracesToProfiles supportsProfilesToProfiles }}
+	"go.opentelemetry.io/collector/consumer/xconsumer"
+	{{- end }}
 	"go.opentelemetry.io/collector/pipeline"
-	{{- if supportsProfiles }}
+	{{- if or supportsLogsToProfiles supportsMetricsToProfiles supportsTracesToProfiles supportsProfilesToProfiles }}
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	{{- end }}
 	{{- end }}

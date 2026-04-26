@@ -4,6 +4,9 @@ package {{ .Package }}
 
 {{ $reag := .ReaggregationEnabled }}
 {{- $hasReagMetrics := false }}
+{{- range $name, $metric := .Metrics }}{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}{{- $hasReagMetrics = true }}{{- end }}{{- end }}
+{{- $hasRequiredReagAttrs := false }}
+{{- range $name, $metric := .Metrics }}{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}{{- range $element := $metric.Attributes }}{{- if (attributeInfo $element).IsRequired }}{{- $hasRequiredReagAttrs = true }}{{- end }}{{- end }}{{- end }}{{- end }}
 {{- $hasReagMetricsWithRequired := false }}
 {{- range $name, $metric := .Metrics }}{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}{{- $hasReagMetrics = true }}{{- range $element := $metric.Attributes }}{{- if (attributeInfo $element).IsRequired }}{{- $hasReagMetricsWithRequired = true }}{{- end }}{{- end }}{{- end }}{{- end }}
 {{- $hasEnumResourceAttr := false }}
@@ -13,6 +16,7 @@ import (
 	{{- if or $hasReagMetrics (and .OverrideValueEnabled $hasEnumResourceAttr) }}
 	"fmt"
 	{{- end }}
+	{{- if $hasRequiredReagAttrs }}
 	{{- if $hasReagMetricsWithRequired }}
 	"slices"
 	{{- end }}

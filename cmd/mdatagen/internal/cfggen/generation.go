@@ -29,6 +29,40 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return imports
 		},
+		"extractStdlibImports": func(cfg *ConfigMetadata) []string {
+			if cfg == nil {
+				return nil
+			}
+			imports, err := ExtractImports(cfg, rootPackage, componentPackage)
+			if err != nil {
+				return []string{}
+			}
+			var stdlib []string
+			for _, imp := range imports {
+				if !strings.Contains(imp, ".") {
+					stdlib = append(stdlib, imp)
+				}
+			}
+			slices.Sort(stdlib)
+			return stdlib
+		},
+		"extractNonStdlibImports": func(cfg *ConfigMetadata) []string {
+			if cfg == nil {
+				return nil
+			}
+			imports, err := ExtractImports(cfg, rootPackage, componentPackage)
+			if err != nil {
+				return []string{}
+			}
+			var nonStdlib []string
+			for _, imp := range imports {
+				if strings.Contains(imp, ".") {
+					nonStdlib = append(nonStdlib, imp)
+				}
+			}
+			slices.Sort(nonStdlib)
+			return nonStdlib
+		},
 		"extractDefs": func(cfg *ConfigMetadata) map[string]*ConfigMetadata {
 			if cfg == nil {
 				return nil
@@ -203,8 +237,15 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 		}
 	}
 
-	if md.Type == "string" && strings.HasPrefix(md.GoType, "time.") {
+	if md.Type == "string" && (strings.HasPrefix(md.GoType, "time.") || md.Format == "duration" || md.Format == "date-time") {
 		imports["time"] = true
+	}
+
+	if md.Ref != "" {
+		ref, err := ResolveGoTypeRef(md.Ref, rootPackage, componentPackage)
+		if err == nil && ref.ImportPath != "" {
+			imports[ref.ImportPath] = true
+		}
 	}
 
 	if md.IsOptional {
