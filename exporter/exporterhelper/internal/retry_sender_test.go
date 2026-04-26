@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -103,6 +104,7 @@ func TestRetrySenderWithContextTimeout(t *testing.T) {
 	// Second attempt is at twice the testTimeout
 	rCfg.Multiplier = float64(2 * testTimeout / rCfg.InitialInterval)
 	set := exportertest.NewNopSettings(exportertest.NopType)
+	set.ID = component.MustNewIDWithName(exportertest.NopType.String(), "with_name")
 	logger, observed := observer.New(zap.InfoLevel)
 	set.Logger = zap.New(logger)
 	rs := newRetrySender(rCfg, set, sender.NewSender(func(context.Context, request.Request) error { return errors.New("transient error") }))
@@ -115,6 +117,8 @@ func TestRetrySenderWithContextTimeout(t *testing.T) {
 		"request will be cancelled before next retry: transient error")
 	assert.Len(t, observed.All(), 1)
 	assert.Equal(t, "Exporting failed. Will retry the request after interval.", observed.All()[0].Message)
+	assert.Equal(t, "nop/with_name", observed.All()[0].ContextMap()["exporter"])
+	assert.Equal(t, "100ms", observed.All()[0].ContextMap()["interval"])
 	require.Less(t, time.Since(start), testTimeout/2)
 	require.NoError(t, rs.Shutdown(context.Background()))
 }
