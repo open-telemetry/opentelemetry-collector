@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -18,6 +19,8 @@ import (
 )
 
 type memoryLimiterProcessor struct {
+	host component.Host
+
 	memlimiter *memorylimiter.MemoryLimiter
 	obsrep     *obsReport
 }
@@ -42,22 +45,27 @@ func newMemoryLimiterProcessor(set processor.Settings, cfg *Config) (*memoryLimi
 }
 
 func (p *memoryLimiterProcessor) start(ctx context.Context, host component.Host) error {
+	p.host = host
+	componentstatus.ReportStatus(p.host, componentstatus.NewEvent(componentstatus.StatusStarting))
 	return p.memlimiter.Start(ctx, host)
 }
 
 func (p *memoryLimiterProcessor) shutdown(ctx context.Context) error {
+	componentstatus.ReportStatus(p.host, componentstatus.NewEvent(componentstatus.StatusStopping))
 	return p.memlimiter.Shutdown(ctx)
 }
 
 func (p *memoryLimiterProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	numSpans := td.SpanCount()
 	if p.memlimiter.MustRefuse() {
+		componentstatus.ReportStatus(p.host, componentstatus.NewRecoverableErrorEvent(memorylimiter.ErrDataRefused))
 		// TODO:
 		// https://github.com/open-telemetry/opentelemetry-collector/issues/12463
 		p.obsrep.refused(ctx, numSpans, pipeline.SignalTraces)
 		return td, memorylimiter.ErrDataRefused
 	}
 
+	componentstatus.ReportStatus(p.host, componentstatus.NewEvent(componentstatus.StatusOK))
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
 	p.obsrep.accepted(ctx, numSpans, pipeline.SignalTraces)
@@ -67,12 +75,14 @@ func (p *memoryLimiterProcessor) processTraces(ctx context.Context, td ptrace.Tr
 func (p *memoryLimiterProcessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	numDataPoints := md.DataPointCount()
 	if p.memlimiter.MustRefuse() {
+		componentstatus.ReportStatus(p.host, componentstatus.NewRecoverableErrorEvent(memorylimiter.ErrDataRefused))
 		// TODO:
 		// https://github.com/open-telemetry/opentelemetry-collector/issues/12463
 		p.obsrep.refused(ctx, numDataPoints, pipeline.SignalMetrics)
 		return md, memorylimiter.ErrDataRefused
 	}
 
+	componentstatus.ReportStatus(p.host, componentstatus.NewEvent(componentstatus.StatusOK))
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
 	p.obsrep.accepted(ctx, numDataPoints, pipeline.SignalMetrics)
@@ -82,12 +92,14 @@ func (p *memoryLimiterProcessor) processMetrics(ctx context.Context, md pmetric.
 func (p *memoryLimiterProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 	numRecords := ld.LogRecordCount()
 	if p.memlimiter.MustRefuse() {
+		componentstatus.ReportStatus(p.host, componentstatus.NewRecoverableErrorEvent(memorylimiter.ErrDataRefused))
 		// TODO:
 		// https://github.com/open-telemetry/opentelemetry-collector/issues/12463
 		p.obsrep.refused(ctx, numRecords, pipeline.SignalLogs)
 		return ld, memorylimiter.ErrDataRefused
 	}
 
+	componentstatus.ReportStatus(p.host, componentstatus.NewEvent(componentstatus.StatusOK))
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
 	p.obsrep.accepted(ctx, numRecords, pipeline.SignalLogs)
@@ -97,12 +109,14 @@ func (p *memoryLimiterProcessor) processLogs(ctx context.Context, ld plog.Logs) 
 func (p *memoryLimiterProcessor) processProfiles(ctx context.Context, td pprofile.Profiles) (pprofile.Profiles, error) {
 	numProfiles := td.SampleCount()
 	if p.memlimiter.MustRefuse() {
+		componentstatus.ReportStatus(p.host, componentstatus.NewRecoverableErrorEvent(memorylimiter.ErrDataRefused))
 		// TODO:
 		// https://github.com/open-telemetry/opentelemetry-collector/issues/12463
 		p.obsrep.refused(ctx, numProfiles, xpipeline.SignalProfiles)
 		return td, memorylimiter.ErrDataRefused
 	}
 
+	componentstatus.ReportStatus(p.host, componentstatus.NewEvent(componentstatus.StatusOK))
 	// Even if the next consumer returns error record the data as accepted by
 	// this processor.
 	p.obsrep.accepted(ctx, numProfiles, xpipeline.SignalProfiles)
