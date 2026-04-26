@@ -8,7 +8,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 )
+
+// GarbageCollectorConfig defines configuration for garbage collection.
+type GarbageCollectorConfig struct{}
 
 var (
 	errCheckIntervalOutOfRange        = errors.New("'check_interval' must be greater than zero")
@@ -37,8 +41,8 @@ type Config struct {
 	// GCs is a CPU-heavy operation and executing it too frequently may affect the recovery capabilities of the collector.
 	MinGCIntervalWhenHardLimited time.Duration `mapstructure:"min_gc_interval_when_hard_limited"`
 
-	// DisableGC disables forced garbage collection.
-	DisableGC bool `mapstructure:"disable_gc"`
+	// GarbageCollector configuration section. Use enabled: false to disable forced garbage collection.
+	GarbageCollector configoptional.Optional[GarbageCollectorConfig] `mapstructure:"garbage_collector"`
 
 	// MemoryLimitMiB is the maximum amount of memory, in MiB, targeted to be
 	// allocated by the process.
@@ -62,6 +66,7 @@ var _ component.Config = (*Config)(nil)
 func NewDefaultConfig() *Config {
 	return &Config{
 		MinGCIntervalWhenSoftLimited: 10 * time.Second,
+		GarbageCollector:             configoptional.Some(GarbageCollectorConfig{}),
 	}
 }
 

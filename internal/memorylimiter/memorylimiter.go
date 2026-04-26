@@ -81,7 +81,7 @@ func NewMemoryLimiter(cfg *Config, logger *zap.Logger) (*MemoryLimiter, error) {
 		minGCIntervalWhenSoftLimited: cfg.MinGCIntervalWhenSoftLimited,
 		minGCIntervalWhenHardLimited: cfg.MinGCIntervalWhenHardLimited,
 		lastGCDone:                   time.Now(),
-		gcDisabled:                   cfg.DisableGC,
+		gcDisabled:                   !cfg.GarbageCollector.HasValue(),
 		readMemStatsFn:               ReadMemStatsFn,
 		runGCFn:                      runtime.GC,
 		logger:                       logger,
