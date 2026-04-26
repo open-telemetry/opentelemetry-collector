@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/config/configoptional"
+
 	"go.opentelemetry.io/collector/internal/memorylimiter/iruntime"
 )
 
@@ -23,6 +25,7 @@ func TestMemoryPressureResponse(t *testing.T) {
 		CheckInterval:       1 * time.Minute,
 		MemoryLimitMiB:      1024,
 		MemorySpikeLimitMiB: 0,
+		GarbageCollector:    configoptional.Some(GarbageCollectorConfig{}),
 	}
 	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
 	require.NoError(t, err)
@@ -147,6 +150,7 @@ func TestCallGCWhenSoftLimit(t *testing.T) {
 				MinGCIntervalWhenSoftLimited: 10 * time.Second,
 				MemoryLimitMiB:               50,
 				MemorySpikeLimitMiB:          10,
+				GarbageCollector:             configoptional.Some(GarbageCollectorConfig{}),
 			},
 			memAllocMiB: [2]uint64{45, 45},
 			numGCs:      1,
@@ -158,6 +162,7 @@ func TestCallGCWhenSoftLimit(t *testing.T) {
 				MinGCIntervalWhenSoftLimited: 0,
 				MemoryLimitMiB:               50,
 				MemorySpikeLimitMiB:          10,
+				GarbageCollector:             configoptional.Some(GarbageCollectorConfig{}),
 			},
 			memAllocMiB: [2]uint64{45, 45},
 			numGCs:      2,
@@ -169,6 +174,7 @@ func TestCallGCWhenSoftLimit(t *testing.T) {
 				MinGCIntervalWhenHardLimited: 10 * time.Second,
 				MemoryLimitMiB:               50,
 				MemorySpikeLimitMiB:          10,
+				GarbageCollector:             configoptional.Some(GarbageCollectorConfig{}),
 			},
 			memAllocMiB: [2]uint64{55, 55},
 			numGCs:      1,
@@ -180,6 +186,7 @@ func TestCallGCWhenSoftLimit(t *testing.T) {
 				MinGCIntervalWhenHardLimited: 0,
 				MemoryLimitMiB:               50,
 				MemorySpikeLimitMiB:          10,
+				GarbageCollector:             configoptional.Some(GarbageCollectorConfig{}),
 			},
 			memAllocMiB: [2]uint64{55, 55},
 			numGCs:      2,
@@ -192,9 +199,34 @@ func TestCallGCWhenSoftLimit(t *testing.T) {
 				MinGCIntervalWhenHardLimited: 0,
 				MemoryLimitMiB:               50,
 				MemorySpikeLimitMiB:          10,
+				GarbageCollector:             configoptional.Some(GarbageCollectorConfig{}),
 			},
 			memAllocMiB: [2]uint64{45, 55},
 			numGCs:      2,
+		},
+		{
+			name: "No GC when soft limited and GC disabled",
+			mlCfg: &Config{
+				CheckInterval:                1 * time.Minute,
+				MinGCIntervalWhenSoftLimited: 0,
+				MemoryLimitMiB:               50,
+				MemorySpikeLimitMiB:          10,
+				GarbageCollector:             configoptional.None[GarbageCollectorConfig](),
+			},
+			memAllocMiB: [2]uint64{45, 45},
+			numGCs:      0,
+		},
+		{
+			name: "No GC when hard limited and GC disabled",
+			mlCfg: &Config{
+				CheckInterval:                1 * time.Minute,
+				MinGCIntervalWhenHardLimited: 0,
+				MemoryLimitMiB:               50,
+				MemorySpikeLimitMiB:          10,
+				GarbageCollector:             configoptional.None[GarbageCollectorConfig](),
+			},
+			memAllocMiB: [2]uint64{55, 55},
+			numGCs:      0,
 		},
 	}
 	for _, tt := range tests {

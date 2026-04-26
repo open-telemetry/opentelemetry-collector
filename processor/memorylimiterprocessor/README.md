@@ -135,6 +135,8 @@ measurements of memory usage. The value must be less than `limit_percentage`.
 This option is used to calculate `spike_limit_mib` from the total available memory.
 For instance setting of 25% with the total memory of 1GiB will result in the spike limit of 250MiB.
 This option is intended to be used only with `limit_percentage`.
+- `garbage_collector` (optional section, enabled by default): Controls forced garbage collection.
+Set `enabled: false` to disable GC. The processor will still refuse data when memory limits are exceeded.
 
 Examples:
 
