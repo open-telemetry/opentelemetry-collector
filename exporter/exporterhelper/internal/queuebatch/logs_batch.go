@@ -51,16 +51,20 @@ func (req *logsRequest) mergeTo(dst *logsRequest, sz sizer.LogsSizer) {
 
 func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer) ([]request.Request, error) {
 	var res []request.Request
+	var splitErr error
 	for req.size(sz) > maxSize {
 		ld, removedSize := extractLogs(req.ld, maxSize, sz)
 		if ld.LogRecordCount() == 0 {
-			return res, fmt.Errorf("one log record size is greater than max size, dropping items: %d", req.ld.LogRecordCount())
+			// A single item exceeds the max size. Cannot split further,
+			// send the oversized item as-is to avoid dropping data.
+			splitErr = fmt.Errorf("one log record size exceeds max batch size (maxSize=%d), sending oversized item as-is", maxSize)
+			break
 		}
 		req.setCachedSize(req.size(sz) - removedSize)
 		res = append(res, newLogsRequest(ld))
 	}
 	res = append(res, req)
-	return res, nil
+	return res, splitErr
 }
 
 // extractLogs extracts logs from the input logs and returns a new logs with the specified number of log records.

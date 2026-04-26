@@ -56,17 +56,21 @@ func (req *profilesRequest) mergeTo(dst *profilesRequest, sz sizer.ProfilesSizer
 
 func (req *profilesRequest) split(maxSize int, sz sizer.ProfilesSizer) ([]Request, error) {
 	var res []Request
+	var splitErr error
 	for req.size(sz) > maxSize {
 		pd, rmSize := extractProfiles(req.pd, maxSize, sz)
 		if pd.SampleCount() == 0 {
-			return res, fmt.Errorf("one sample size is greater than max size, dropping items: %d", req.pd.SampleCount())
+			// A single item exceeds the max size. Cannot split further,
+			// send the oversized item as-is to avoid dropping data.
+			splitErr = fmt.Errorf("one sample size exceeds max batch size (maxSize=%d), sending oversized item as-is", maxSize)
+			break
 		}
 		req.setCachedSize(req.size(sz) - rmSize)
 		res = append(res, newProfilesRequest(pd))
 	}
 
 	res = append(res, req)
-	return res, nil
+	return res, splitErr
 }
 
 // extractProfiles extracts a new profiles with a maximum number of samples.

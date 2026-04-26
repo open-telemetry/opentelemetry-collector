@@ -139,12 +139,13 @@ func TestMergeSplitProfiles(t *testing.T) {
 
 func TestMergeSplitProfilesBasedOnByteSize(t *testing.T) {
 	tests := []struct {
-		name     string
-		szt      exporterhelper.RequestSizerType
-		maxSize  int
-		pr1      Request
-		pr2      Request
-		expected []Request
+		name                 string
+		szt                  exporterhelper.RequestSizerType
+		maxSize              int
+		pr1                  Request
+		pr2                  Request
+		expected             []Request
+		expectOversizedError bool
 	}{
 		{
 			name:     "both_requests_empty",
@@ -289,11 +290,65 @@ func TestMergeSplitProfilesBasedOnByteSize(t *testing.T) {
 				newProfilesRequest(testdata.GenerateProfiles(7)),
 			},
 		},
+		{
+			name:    "unsplittable_large_profile",
+			szt:     exporterhelper.RequestSizerTypeBytes,
+			maxSize: 10,
+			pr1: newProfilesRequest(func() pprofile.Profiles {
+				pd := testdata.GenerateProfiles(1)
+				pd.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).SetDroppedAttributesCount(999999)
+				// Add a large attribute to make the single profile exceed maxSize.
+				pd.ResourceProfiles().At(0).Resource().Attributes().PutStr("large_attr", string(make([]byte, 100)))
+				return pd
+			}()),
+			pr2: nil,
+			expected: []Request{newProfilesRequest(func() pprofile.Profiles {
+				pd := testdata.GenerateProfiles(1)
+				pd.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).SetDroppedAttributesCount(999999)
+				pd.ResourceProfiles().At(0).Resource().Attributes().PutStr("large_attr", string(make([]byte, 100)))
+				return pd
+			}())},
+			expectOversizedError: true,
+		},
+		{
+			name:    "splittable_then_unsplittable_profile",
+			szt:     exporterhelper.RequestSizerTypeBytes,
+			maxSize: 1000,
+			pr1: newProfilesRequest(func() pprofile.Profiles {
+				pd := testdata.GenerateProfiles(2)
+				// First profile is small, second profile is oversized via OriginalPayloadFormat.
+				pd.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).SetOriginalPayloadFormat(string(make([]byte, 10)))
+				pd.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(1).SetOriginalPayloadFormat(string(make([]byte, 1001)))
+				return pd
+			}()),
+			pr2: nil,
+			expected: []Request{
+				newProfilesRequest(func() pprofile.Profiles {
+					pd := testdata.GenerateProfiles(1)
+					pd.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).SetOriginalPayloadFormat(string(make([]byte, 10)))
+					return pd
+				}()),
+				newProfilesRequest(func() pprofile.Profiles {
+					pd := testdata.GenerateProfiles(2)
+					// Remove the first profile (fillProfileOne) to keep only the second (fillProfileTwo).
+					pd.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().RemoveIf(func(p pprofile.Profile) bool {
+						return p.DroppedAttributesCount() == 1
+					})
+					pd.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).SetOriginalPayloadFormat(string(make([]byte, 1001)))
+					return pd
+				}()),
+			},
+			expectOversizedError: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.pr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.pr2)
-			require.NoError(t, err)
+			if tt.expectOversizedError {
+				require.ErrorContains(t, err, "one sample size exceeds max batch size")
+			} else {
+				require.NoError(t, err)
+			}
 			require.Len(t, res, len(tt.expected))
 			for i, r := range res {
 				assert.Equal(t, tt.expected[i].(*profilesRequest).pd.SampleCount(), r.(*profilesRequest).pd.SampleCount(), i)

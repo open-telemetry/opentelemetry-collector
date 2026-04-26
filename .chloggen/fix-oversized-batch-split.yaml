@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: pkg/exporterhelper
+note: Fix data loss when a single item exceeds the batch max_size. The oversized item is now sent as-is instead of being dropped.
+issues: [13189]
