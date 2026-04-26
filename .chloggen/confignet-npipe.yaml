@@ -1,0 +1,4 @@
+change_type: enhancement
+component: pkg/config/confignet
+note: Add support for Windows Named Pipe (npipe) transport
+issues: [15085]
