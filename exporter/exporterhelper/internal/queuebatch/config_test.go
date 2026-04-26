@@ -45,7 +45,7 @@ func TestConfig_Validate(t *testing.T) {
 
 	cfg = newTestConfig()
 	cfg.Batch.Get().Sizer = request.SizerType{}
-	require.EqualError(t, xconfmap.Validate(cfg), "batch: `batch` supports only `items` or `bytes` sizer, found \"\"")
+	require.EqualError(t, xconfmap.Validate(cfg), "batch: `batch` supports only `requests`, `items`, or `bytes` sizer, found \"\"")
 
 	cfg = newTestConfig()
 	cfg.Sizer = request.SizerTypeBytes
@@ -109,11 +109,11 @@ func TestBatchConfig_Validate(t *testing.T) {
 
 	cfg = newTestBatchConfig()
 	cfg.Sizer = request.SizerTypeRequests
-	require.EqualError(t, xconfmap.Validate(cfg), "`batch` supports only `items` or `bytes` sizer, found \"requests\"")
+	require.NoError(t, xconfmap.Validate(cfg))
 
 	cfg = newTestBatchConfig()
 	cfg.Sizer = request.SizerType{}
-	require.EqualError(t, xconfmap.Validate(cfg), "`batch` supports only `items` or `bytes` sizer, found \"\"")
+	require.EqualError(t, xconfmap.Validate(cfg), "`batch` supports only `requests`, `items`, or `bytes` sizer, found \"\"")
 
 	cfg = newTestBatchConfig()
 	cfg.MinSize = 2048
