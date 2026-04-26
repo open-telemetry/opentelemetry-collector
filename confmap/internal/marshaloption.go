@@ -3,6 +3,8 @@
 
 package internal // import "go.opentelemetry.io/collector/confmap/internal"
 
+import "github.com/go-viper/mapstructure/v2"
+
 type MarshalOption interface {
 	apply(*MarshalOptions)
 }
@@ -11,11 +13,22 @@ type MarshalOption interface {
 // It is in the `internal` package so experimental options can be added in xconfmap.
 type MarshalOptions struct {
 	// OpaqueUnredacted specifies whether opaque strings should be marshaled unredacted.
-	OpaqueUnredacted bool
+	OpaqueUnredacted               bool
+	ScalarMarshalingEncodeHookFunc mapstructure.DecodeHookFunc
 }
 
 type MarshalOptionFunc func(*MarshalOptions)
 
 func (fn MarshalOptionFunc) apply(set *MarshalOptions) {
 	fn(set)
+}
+
+func ApplyMarshalOptions(set *MarshalOptions, opts []MarshalOption) *MarshalOptions {
+	if set == nil {
+		set = &MarshalOptions{}
+	}
+	for _, opt := range opts {
+		opt.apply(set)
+	}
+	return set
 }
