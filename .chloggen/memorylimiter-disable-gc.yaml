@@ -2,7 +2,7 @@ change_type: enhancement
 
 component: processor/memory_limiter
 
-note: Add `disable_gc` option to allow disabling forced garbage collection.
+note: Add `garbage_collector` config section to allow disabling forced garbage collection via `enabled` field.
 
 issues: [15081]
 
