@@ -103,7 +103,7 @@ func newPersistentQueue[T request.Request](set Settings[T]) readableQueue[T] {
 		activeSizer:     request.NewSizer(set.SizerType),
 		itemsSizer:      request.NewItemsSizer(),
 		bytesSizer:      request.NewBytesSizer(),
-		storageID:       *set.StorageID,
+		storageID:       *set.StorageID.Get(),
 		id:              set.ID,
 		signal:          set.Signal,
 		blockOnOverflow: set.BlockOnOverflow,

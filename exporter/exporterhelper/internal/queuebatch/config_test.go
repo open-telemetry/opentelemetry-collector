@@ -33,10 +33,9 @@ func TestConfig_Validate(t *testing.T) {
 	cfg.QueueSize = 0
 	require.EqualError(t, xconfmap.Validate(cfg), "`queue_size` must be positive")
 
-	storageID := component.MustNewID("test")
 	cfg = newTestConfig()
 	cfg.WaitForResult = true
-	cfg.StorageID = &storageID
+	cfg.StorageID = configoptional.Some(component.MustNewID("test"))
 	require.EqualError(t, xconfmap.Validate(cfg), "`wait_for_result` is not supported with a persistent queue configured with `storage`")
 
 	cfg = newTestConfig()

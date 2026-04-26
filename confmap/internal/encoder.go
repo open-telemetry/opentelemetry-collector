@@ -11,6 +11,15 @@ import (
 	encoder "go.opentelemetry.io/collector/confmap/internal/mapstructure"
 )
 
+func Encode(rawVal any, set MarshalOptions) (any, error) {
+	enc := encoder.New(EncoderConfig(rawVal, set))
+	data, err := enc.Encode(rawVal)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
 // EncoderConfig returns a default encoder.EncoderConfig that includes
 // an EncodeHook that handles both TextMarshaler and Marshaler
 // interfaces.
@@ -23,6 +32,11 @@ func EncoderConfig(rawVal any, opts MarshalOptions) *encoder.EncoderConfig {
 		hooks = append(hooks, encoder.StringTextUnredactedHookFunc())
 	}
 
+	if opts.ScalarMarshalingEncodeHookFunc != nil {
+		hooks = append(hooks, opts.ScalarMarshalingEncodeHookFunc)
+	}
+
+	// This hook must come after the scalar marshaling hook, if present.
 	hooks = append(hooks,
 		encoder.TextMarshalerHookFunc(),
 		marshalerHookFunc(rawVal),

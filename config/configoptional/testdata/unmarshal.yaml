@@ -1,0 +1,23 @@
+struct_with_value:
+  sub:
+    foo: bar
+struct_null:
+  sub: null
+struct_empty:
+  sub: {}
+struct_absent: {}
+
+int_with_value:
+  val: 42
+int_null:
+  val: null
+int_absent: {}
+
+str_with_value:
+  val: hello
+
+slice_with_values:
+  val:
+    - 1
+    - 2
+    - 3
