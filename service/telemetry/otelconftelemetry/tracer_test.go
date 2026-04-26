@@ -138,8 +138,14 @@ func TestCreateTracerProvider_Propagators(t *testing.T) {
 }
 
 func TestCreateTracerProvider_InvalidPropagator(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/traces", func(http.ResponseWriter, *http.Request) {})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
 	cfg := createDefaultConfig().(*Config)
 	cfg.Traces.Propagators = []string{"invalid"}
+	cfg.Traces.Processors = []config.SpanProcessor{newOTLPSimpleSpanProcessor(srv)}
 
 	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
@@ -151,10 +157,16 @@ func TestCreateTracerProvider_InvalidPropagator(t *testing.T) {
 }
 
 func TestCreateTracerProvider_020MigrationWarning(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/traces", func(http.ResponseWriter, *http.Request) {})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
 	core, observedLogs := observer.New(zapcore.DebugLevel)
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.Traces.MigratedFromV02 = true
+	cfg.Traces.Processors = []config.SpanProcessor{newOTLPSimpleSpanProcessor(srv)}
 
 	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
@@ -176,9 +188,15 @@ func TestCreateTracerProvider_020MigrationWarning(t *testing.T) {
 }
 
 func TestCreateTracerProvider_NoMigrationWarning(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/traces", func(http.ResponseWriter, *http.Request) {})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
 	core, observedLogs := observer.New(zapcore.DebugLevel)
 
 	cfg := createDefaultConfig().(*Config)
+	cfg.Traces.Processors = []config.SpanProcessor{newOTLPSimpleSpanProcessor(srv)}
 
 	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
@@ -193,6 +211,37 @@ func TestCreateTracerProvider_NoMigrationWarning(t *testing.T) {
 	}()
 
 	assert.Zero(t, observedLogs.Len())
+}
+
+func TestCreateTracerProvider_NoProcessors(t *testing.T) {
+	core, observedLogs := observer.New(zapcore.DebugLevel)
+
+	cfg := createDefaultConfig().(*Config)
+	assert.Equal(t, configtelemetry.LevelBasic, cfg.Traces.Level)
+
+	resource, err := createResource(t.Context(), telemetry.Settings{
+		BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"},
+	}, cfg)
+	require.NoError(t, err)
+
+	provider, err := createTracerProvider(t.Context(), telemetry.TracerSettings{
+		Settings: telemetry.Settings{
+			BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"},
+			Resource:  &resource,
+		},
+		Logger: zap.New(core),
+	}, cfg)
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, provider.Shutdown(t.Context()))
+	}()
+
+	require.Equal(t, 1, observedLogs.Len())
+	assert.Equal(t, "Internal trace telemetry disabled", observedLogs.All()[0].Message)
+
+	tracer := provider.Tracer("test_tracer")
+	_, span := tracer.Start(context.Background(), "test_span")
+	span.End()
 }
 
 func TestCreateTracerProvider_Disabled(t *testing.T) {
