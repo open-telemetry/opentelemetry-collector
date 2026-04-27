@@ -808,6 +808,35 @@ func TestExtractDefs_EmbeddedObjects(t *testing.T) {
 	require.Equal(t, "object", result["config"].Type)
 }
 
+func TestExtractDefs_MapValueObject(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"labels": {
+				Type: "object",
+				AdditionalProperties: &ConfigMetadata{
+					Type: "object",
+					Properties: map[string]*ConfigMetadata{
+						"name": {Type: "string"},
+					},
+				},
+			},
+			"custom": {
+				Type:   "object",
+				GoType: "github.com/example/pkg.Custom",
+				Properties: map[string]*ConfigMetadata{
+					"ignored": {Type: "string"},
+				},
+			},
+		},
+	}
+
+	result := ExtractDefs(md)
+	require.Len(t, result, 1)
+	require.Contains(t, result, "labels")
+	require.Same(t, md.Properties["labels"].AdditionalProperties, result["labels"])
+}
+
 func TestExtractDefs_ArrayItems(t *testing.T) {
 	md := &ConfigMetadata{
 		Type: "object",
@@ -1041,6 +1070,9 @@ func TestNewCfgFns_MapGoType(t *testing.T) {
 
 	// valid input
 	require.Equal(t, "string", mapGoType(&ConfigMetadata{Type: "string"}, "field"))
+	require.Panics(t, func() {
+		mapGoType(&ConfigMetadata{GoType: "github.com/pkg."}, "field")
+	})
 }
 
 func TestNewCfgFns_PublicType(t *testing.T) {
@@ -1050,6 +1082,9 @@ func TestNewCfgFns_PublicType(t *testing.T) {
 
 	require.Equal(t, "MyType", publicType("my_type"))
 	require.Equal(t, "component.Config", publicType("go.opentelemetry.io/collector/component.Config"))
+	require.Panics(t, func() {
+		publicType("github.com/pkg.")
+	})
 }
 
 func TestNewCfgFns_EmbeddedName(t *testing.T) {
@@ -1630,6 +1665,49 @@ func TestValidationRules_HasValueRule(t *testing.T) {
 	}
 }
 
+func TestResolveType(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected string
+	}{
+		{
+			name:     "reference",
+			metadata: &ConfigMetadata{ResolvedFrom: "go.opentelemetry.io/collector/config/confighttp.ClientConfig"},
+			expected: "ref",
+		},
+		{
+			name:     "date time",
+			metadata: &ConfigMetadata{Type: "string", GoType: "time.Time"},
+			expected: "datetime",
+		},
+		{
+			name:     "duration",
+			metadata: &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+			expected: "duration",
+		},
+		{
+			name: "map",
+			metadata: &ConfigMetadata{
+				Type:                 "object",
+				AdditionalProperties: &ConfigMetadata{Type: "string"},
+			},
+			expected: "map",
+		},
+		{
+			name:     "plain type",
+			metadata: &ConfigMetadata{Type: "boolean"},
+			expected: "boolean",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, resolveType(tt.metadata))
+		})
+	}
+}
+
 func TestNewCfgFns_ExtractValidators(t *testing.T) {
 	fns := NewCfgFns("", "")
 	extractValidators := fns["extractValidators"].(func(*ConfigMetadata) []Validator)
@@ -1766,6 +1844,112 @@ func TestFormatDefaultValue_PointerArrayOfObjects(t *testing.T) {
 	require.Equal(t, "&[]TargetsItem{NewDefaultTargetsItem()}", FormatDefaultValue(md, "targets", defaultValue([]any{map[string]any{}}), "", ""))
 }
 
+func TestFormatDefaultValue_NilDefault(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected string
+	}{
+		{
+			name:     "plain",
+			metadata: &ConfigMetadata{Type: "string"},
+			expected: "",
+		},
+		{
+			name:     "pointer",
+			metadata: &ConfigMetadata{Type: "string", IsPointer: true},
+			expected: "nil",
+		},
+		{
+			name:     "optional",
+			metadata: &ConfigMetadata{Type: "string", IsOptional: true},
+			expected: "configoptional.None[string]()",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, FormatDefaultValue(tt.metadata, "endpoint", defaultValue(nil), "", ""))
+		})
+	}
+}
+
+func TestFormatBaseValue(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:       "string",
+		IsPointer:  true,
+		IsOptional: true,
+	}
+
+	require.Equal(t, `"localhost"`, FormatBaseValue(md, "endpoint", defaultValue("localhost"), "", ""))
+}
+
+func TestFormatDefaultValue_UnsetDefault(t *testing.T) {
+	require.Empty(t, FormatDefaultValue(&ConfigMetadata{Type: "integer"}, "port", DefaultValue{}, "", ""))
+}
+
+func TestFormatDefaultValue_Panics(t *testing.T) {
+	tests := []struct {
+		name         string
+		metadata     *ConfigMetadata
+		defaultValue DefaultValue
+	}{
+		{
+			name: "invalid reference",
+			metadata: &ConfigMetadata{
+				ResolvedFrom: "github.com/pkg.",
+				Default:      defaultValue(map[string]any{}),
+			},
+			defaultValue: defaultValue(map[string]any{}),
+		},
+		{
+			name: "invalid array default value",
+			metadata: &ConfigMetadata{
+				Type:  "array",
+				Items: &ConfigMetadata{Type: "string"},
+			},
+			defaultValue: defaultValue("localhost"),
+		},
+		{
+			name: "invalid array item type",
+			metadata: &ConfigMetadata{
+				Type:  "array",
+				Items: &ConfigMetadata{Type: "unknown"},
+			},
+			defaultValue: defaultValue([]any{"localhost"}),
+		},
+		{
+			name: "invalid map default value",
+			metadata: &ConfigMetadata{
+				Type:                 "object",
+				AdditionalProperties: &ConfigMetadata{Type: "string"},
+			},
+			defaultValue: defaultValue("localhost"),
+		},
+		{
+			name: "invalid map value type",
+			metadata: &ConfigMetadata{
+				Type:                 "object",
+				AdditionalProperties: &ConfigMetadata{Type: "unknown"},
+			},
+			defaultValue: defaultValue(map[string]any{"endpoint": "localhost"}),
+		},
+		{
+			name:         "invalid duration default value",
+			metadata:     &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+			defaultValue: defaultValue("invalid-duration"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Panics(t, func() {
+				FormatDefaultValue(tt.metadata, "endpoint", tt.defaultValue, "", "")
+			})
+		})
+	}
+}
+
 func TestWrapDefaultValue(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -1899,6 +2083,47 @@ func TestMapCustomDefaults_ArrayOfObjectsOverrides(t *testing.T) {
 	require.Equal(t, []string{`[0].Url = "http://example.com"`}, exprs)
 }
 
+func TestMapCustomDefaults_Panics(t *testing.T) {
+	tests := []struct {
+		name         string
+		metadata     *ConfigMetadata
+		defaultValue DefaultValue
+	}{
+		{
+			name: "missing property",
+			metadata: &ConfigMetadata{
+				Type:       "object",
+				Properties: map[string]*ConfigMetadata{},
+			},
+			defaultValue: defaultValue(map[string]any{"missing": "value"}),
+		},
+		{
+			name: "map of structs",
+			metadata: &ConfigMetadata{
+				Type:                 "object",
+				AdditionalProperties: &ConfigMetadata{Type: "object"},
+			},
+			defaultValue: defaultValue(map[string]any{"entry": map[string]any{}}),
+		},
+		{
+			name: "array without object items",
+			metadata: &ConfigMetadata{
+				Type:  "array",
+				Items: &ConfigMetadata{Type: "string"},
+			},
+			defaultValue: defaultValue([]any{"value"}),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Panics(t, func() {
+				MapCustomDefaults(tt.metadata, tt.defaultValue, "", "")
+			})
+		})
+	}
+}
+
 func TestMapCustomDefaults_EmptyInput(t *testing.T) {
 	require.Empty(t, MapCustomDefaults(&ConfigMetadata{Type: "string"}, DefaultValue{}, "", ""))
 }
@@ -1907,10 +2132,16 @@ func TestNewCfgFns_DefaultHelpers(t *testing.T) {
 	fns := NewCfgFns("", "")
 
 	formatDefaultValue := fns["formatDefaultValue"].(func(*ConfigMetadata, string, DefaultValue) string)
+	formatBaseValue := fns["formatBaseValue"].(func(*ConfigMetadata, string, DefaultValue) string)
 	mapCustomDefaults := fns["mapCustomDefaults"].(func(*ConfigMetadata, DefaultValue) []string)
 	hasDefaultValue := fns["hasDefaultValue"].(func(*ConfigMetadata) bool)
 
 	require.Equal(t, `"localhost"`, formatDefaultValue(&ConfigMetadata{Type: "string"}, "endpoint", defaultValue("localhost")))
+	require.Equal(t, `"localhost"`, formatBaseValue(
+		&ConfigMetadata{Type: "string", IsPointer: true, IsOptional: true},
+		"endpoint",
+		defaultValue("localhost"),
+	))
 	require.Equal(t, []string{`[0].Url = "http://example.com"`}, mapCustomDefaults(
 		&ConfigMetadata{
 			Type: "array",

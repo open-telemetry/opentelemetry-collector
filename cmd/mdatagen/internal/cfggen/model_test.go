@@ -96,6 +96,12 @@ default:
 	}
 }
 
+func TestDefaultValue_UnmarshalYAML_Error(t *testing.T) {
+	var dv DefaultValue
+	err := dv.UnmarshalYAML(&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!binary", Value: "not valid base64"})
+	require.Error(t, err)
+}
+
 func TestDefaultValue_MarshalJSON(t *testing.T) {
 	absent := &ConfigMetadata{Type: "string"}
 
@@ -108,6 +114,13 @@ func TestDefaultValue_MarshalJSON(t *testing.T) {
 	jsonData, err = explicitNull.ToJSON()
 	require.NoError(t, err)
 	require.Contains(t, string(jsonData), `"default": null`)
+}
+
+func TestDefaultValue_MarshalJSON_Unset(t *testing.T) {
+	var dv DefaultValue
+	data, err := dv.MarshalJSON()
+	require.NoError(t, err)
+	require.Equal(t, []byte("null"), data)
 }
 
 func TestConfigMetadata_UnmarshalConfMapDefaultValue(t *testing.T) {
@@ -134,6 +147,16 @@ func TestConfigMetadata_UnmarshalConfMapDefaultValue(t *testing.T) {
 	require.Nil(t, md.Properties["endpoint"].Default.Get())
 	require.True(t, md.Properties["headers"].Default.IsSet())
 	require.Equal(t, map[string]any{"env": "prod"}, md.Properties["headers"].Default.Get())
+}
+
+func TestConfigMetadata_UnmarshalConfMapError(t *testing.T) {
+	parser := confmap.NewFromStringMap(map[string]any{
+		"type":       "object",
+		"properties": "invalid",
+	})
+
+	var md ConfigMetadata
+	require.Error(t, parser.Unmarshal(&md))
 }
 
 func TestConfigMetadata_Validate_Valid(t *testing.T) {
