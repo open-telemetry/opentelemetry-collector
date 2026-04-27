@@ -25,12 +25,17 @@ status:
 config:
   type: object
   description: Configuration for the Sample Scraper.
-  allOf:
-    - $ref: ./internal/metadata.metrics_builder_config
-    - $ref: /scraper/scraperhelper.controller_config
+  properties:
+    metrics_builder_config:
+      $ref: ./internal/metadata.metrics_builder_config
+      embed: true
+      go_struct:
+        anonymous: true
+    controller_config:
+      $ref: /scraper/scraperhelper.controller_config
+      embed: true
       default:
         timeout: 30s
-  properties:
     job_name:
       description: Name of the scrape job, used to identify the source in telemetry.
       type: string

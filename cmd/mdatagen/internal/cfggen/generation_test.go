@@ -1054,10 +1054,11 @@ func TestNewCfgFns_PublicType(t *testing.T) {
 
 func TestNewCfgFns_EmbeddedName(t *testing.T) {
 	fns := NewCfgFns("", "")
-	embeddedName := fns["embeddedName"].(func(string) string)
+	embeddedName := fns["embeddedName"].(func(*ConfigMetadata) string)
 
-	require.Equal(t, "MyType", embeddedName("my_type"))
-	require.Panics(t, func() { embeddedName("") })
+	require.Equal(t, "MyType", embeddedName(&ConfigMetadata{EmbeddedName: "my_type"}))
+	require.Equal(t, "MyType", embeddedName(&ConfigMetadata{ResolvedFrom: "my_type"}))
+	require.Panics(t, func() { embeddedName(&ConfigMetadata{}) })
 }
 
 func TestCamelVar(t *testing.T) {
