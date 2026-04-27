@@ -206,6 +206,14 @@ func TestCreateTracerProvider_NoMigrationWarning(t *testing.T) {
 }
 
 func TestCreateTracerProvider_NoProcessors(t *testing.T) {
+	var received int
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/traces", func(http.ResponseWriter, *http.Request) {
+		received++
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
 	core, observedLogs := observer.New(zapcore.DebugLevel)
 
 	cfg := createDefaultConfig().(*Config)
@@ -235,6 +243,7 @@ func TestCreateTracerProvider_NoProcessors(t *testing.T) {
 	tracer := provider.Tracer("test_tracer")
 	_, span := tracer.Start(context.Background(), "test_span")
 	span.End()
+	assert.Equal(t, 0, received)
 }
 
 func TestCreateTracerProvider_Disabled(t *testing.T) {
