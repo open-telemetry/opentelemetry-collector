@@ -7,6 +7,27 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.56.0/v0.150.0
+
+### 💡 Enhancements 💡
+
+- `all`: Update semconv package from 1.38.0 to 1.40.0 (#15095)
+- `cmd/mdatagen`: Only allow the `ToVersion` feature flag attribute to be set for the `Stable` and `Deprecated` stages. (#15040)
+  To better match the feature flag README
+  (https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#feature-lifecycle).
+  
+
+### 🧰 Bug fixes 🧰
+
+- `exporter/debug`: Guard from out of bounds profiles dictionary indices (#14803)
+- `pdata/pprofile`: create a copy when the input is marked as read-only (#15080)
+- `pkg/otelcol`: Fix missing default values in unredacted print-config command by introducing confmap.WithUnredacted MarshalOption. (#14750)
+  Resolves an issue where the unredacted mode output omitted all default-valued options. By introducing a new MarshalOption to disable redaction directly at the confmap encoding level, the unredacted mode now preserves all component defaults natively without requiring post-processing.
+  
+- `pkg/service`: Headers on the internal telemetry OTLP exporter are now redacted when the configuration is marshaled (#14756)
+
+<!-- previous-version -->
+
 ## v1.55.0/v0.149.0
 
 ### 🛑 Breaking changes 🛑

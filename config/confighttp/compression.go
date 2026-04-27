@@ -22,14 +22,10 @@ import (
 	"github.com/pierrec/lz4/v4"
 
 	"go.opentelemetry.io/collector/config/configcompression"
-	"go.opentelemetry.io/collector/config/confighttp/internal/metadata"
 )
 
 func defaultCompressionAlgorithms() []string {
-	if metadata.ConfighttpFramedSnappyFeatureGate.IsEnabled() {
-		return []string{"", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4", "x-snappy-framed"}
-	}
-	return []string{"", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4"}
+	return []string{"", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4", "x-snappy-framed"}
 }
 
 type compressRoundTripper struct {
@@ -228,9 +224,6 @@ func httpContentDecompressor(h http.Handler, maxRequestBodySize int64, eh func(w
 
 	enabled := map[string]func(body io.ReadCloser) (io.ReadCloser, error){}
 	for _, dec := range enableDecoders {
-		if dec == "x-frame-snappy" && !metadata.ConfighttpFramedSnappyFeatureGate.IsEnabled() {
-			continue
-		}
 		enabled[dec] = availableDecoders[dec]
 
 		if dec == "deflate" {

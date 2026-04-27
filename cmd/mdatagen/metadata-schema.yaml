@@ -24,6 +24,12 @@ generated_package_name: string
 # fields that let users reduce metric cardinality by choosing which dimensions are kept.
 reaggregation_enabled: bool
 
+# Optional: Enables per-resource-attribute override_value config generation.
+# When enabled, generated resource attribute config includes typed `override_value`
+# fields that let users override resource attribute values in the collector config.
+# Components can opt in gradually; defaults to false (shared ResourceAttributeConfig).
+override_value_enabled: bool
+
 # Required for components (Optional for subcomponents): A high-level view of the development status and use of this component
 status:
   # Required: The class of the component (For example receiver)
@@ -285,7 +291,7 @@ metrics:
     # Optional: the reference to a semantic convention
     # Relative path to the semantic convention definition (e.g., "system/system-metrics.md#metric-systemcputime")
     # The full URL is constructed using sem_conv_version: {base}/v{version}/docs/{ref}
-    # An example of a full url is: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime
+    # An example of a full url is: https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/system/system-metrics.md#metric-systemcputime
     semantic_convention:
       ref:
 

@@ -38,9 +38,9 @@ func (r *Receiver) Export(ctx context.Context, req pprofileotlp.ExportRequest) (
 		return pprofileotlp.NewExportResponse(), nil
 	}
 
-	ctx = r.obsreport.StartTracesOp(ctx)
+	ctx = r.obsreport.StartProfilesOp(ctx)
 	err := r.nextConsumer.ConsumeProfiles(ctx, td)
-	r.obsreport.EndTracesOp(ctx, dataFormatProtobuf, numSamples, err)
+	r.obsreport.EndProfilesOp(ctx, dataFormatProtobuf, numSamples, err)
 
 	// Use appropriate status codes for permanent/non-permanent errors
 	// If we return the error straightaway, then the grpc implementation will set status code to Unknown

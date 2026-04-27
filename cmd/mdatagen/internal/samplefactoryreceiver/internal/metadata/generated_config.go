@@ -175,11 +175,17 @@ type MetricsBuilderConfig struct {
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+// NewDefaultMetricsBuilderConfig returns a MetricsBuilderConfig with default values.
+func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics:            DefaultMetricsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
+}
+
+// Deprecated: Use NewDefaultMetricsBuilderConfig.
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return NewDefaultMetricsBuilderConfig()
 }
 
 // LogsBuilderConfig is a configuration for sample logs builder.
@@ -188,9 +194,15 @@ type LogsBuilderConfig struct {
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
-func DefaultLogsBuilderConfig() LogsBuilderConfig {
+// NewDefaultLogsBuilderConfig returns a LogsBuilderConfig with default values.
+func NewDefaultLogsBuilderConfig() LogsBuilderConfig {
 	return LogsBuilderConfig{
 		Events:             DefaultEventsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
+}
+
+// Deprecated: Use NewDefaultLogsBuilderConfig.
+func DefaultLogsBuilderConfig() LogsBuilderConfig {
+	return NewDefaultLogsBuilderConfig()
 }

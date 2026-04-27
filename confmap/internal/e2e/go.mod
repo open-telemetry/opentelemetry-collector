@@ -4,12 +4,12 @@ go 1.25.0
 
 require (
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/config/configopaque v1.55.0
-	go.opentelemetry.io/collector/confmap v1.55.0
-	go.opentelemetry.io/collector/confmap/provider/envprovider v1.55.0
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.55.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.149.0
-	go.opentelemetry.io/collector/featuregate v1.55.0
+	go.opentelemetry.io/collector/config/configopaque v1.56.0
+	go.opentelemetry.io/collector/confmap v1.56.0
+	go.opentelemetry.io/collector/confmap/provider/envprovider v1.56.0
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.56.0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.150.0
+	go.opentelemetry.io/collector/featuregate v1.56.0
 )
 
 require (

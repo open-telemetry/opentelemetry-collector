@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
-	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -59,7 +59,7 @@ type obsReportSender[K request.Request] struct {
 	next            sender.Sender[K]
 }
 
-func newObsReportSender[K request.Request](set exporter.Settings, signal pipeline.Signal, next sender.Sender[K]) (sender.Sender[K], error) {
+func newObsReportSender[K request.Request](set exporter.Settings, signal pipeline.Signal, extraAttrs []attribute.KeyValue, next sender.Sender[K]) (sender.Sender[K], error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func newObsReportSender[K request.Request](set exporter.Settings, signal pipelin
 		spanName:   ExporterKey + spanNameSep + idStr + spanNameSep + signal.String(),
 		tracer:     metadata.Tracer(set.TelemetrySettings),
 		spanAttrs:  trace.WithAttributes(expAttr, attribute.String(DataTypeKey, signal.String())),
-		metricAttr: metric.WithAttributeSet(attribute.NewSet(expAttr)),
+		metricAttr: metric.WithAttributeSet(attribute.NewSet(append(extraAttrs, expAttr)...)),
 		next:       next,
 	}
 

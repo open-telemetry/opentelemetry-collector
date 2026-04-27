@@ -36,8 +36,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateSameReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPC.GetOrInsertDefault().NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
-	cfg.HTTP.GetOrInsertDefault().ServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.Protocols.GRPC.GetOrInsertDefault().NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.Protocols.HTTP.GetOrInsertDefault().ServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	creationSet := receivertest.NewNopSettings(factory.Type())
 	var droppedAttrs []string

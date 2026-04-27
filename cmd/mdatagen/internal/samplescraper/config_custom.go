@@ -7,6 +7,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
-func validateHTTPClient(_ *confighttp.ClientConfig) error {
+func validateHTTPClient(_ confighttp.ClientConfig) error {
 	return nil
 }
