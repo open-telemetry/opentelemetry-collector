@@ -210,6 +210,7 @@ func TestCreateTracerProvider_NoProcessors(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	assert.Equal(t, configtelemetry.LevelBasic, cfg.Traces.Level)
+	assert.Empty(t, cfg.Traces.Processors)
 
 	resource, err := createResource(t.Context(), telemetry.Settings{
 		BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"},
