@@ -493,10 +493,13 @@ func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue DefaultVal
 	}
 	exp := formatSimpleValue(md, name, defaultValue, rootPackage, componentPackage)
 	if md.IsPointer {
-		exp = "&" + exp
+		return "&" + exp
 	}
 	if md.IsOptional {
-		exp = fmt.Sprintf("configoptional.Some(%s)", exp)
+		if md.Type == "object" && md.Properties != nil {
+			return fmt.Sprintf("configoptional.Default(%s)", exp)
+		}
+		return fmt.Sprintf("configoptional.Some(%s)", exp)
 	}
 	return exp
 }
@@ -512,10 +515,13 @@ func FormatBaseValue(md *ConfigMetadata, name string, defaultValue DefaultValue,
 func WrapDefaultValue(md *ConfigMetadata, varName string) string {
 	exp := varName
 	if md.IsPointer {
-		exp = "&" + exp
+		return "&" + exp
 	}
 	if md.IsOptional {
-		exp = fmt.Sprintf("configoptional.Some(%s)", exp)
+		if md.Type == "object" && md.Properties != nil {
+			return fmt.Sprintf("configoptional.Default(%s)", exp)
+		}
+		return fmt.Sprintf("configoptional.Some(%s)", exp)
 	}
 	return exp
 }

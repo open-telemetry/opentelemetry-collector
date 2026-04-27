@@ -1739,6 +1739,18 @@ func TestFormatDefaultValue_MapDefault(t *testing.T) {
 	require.Equal(t, `map[string]string{"env": "prod"}`, FormatDefaultValue(md, "labels", defaultValue(map[string]any{"env": "prod"}), "", ""))
 }
 
+func TestFormatDefaultValue_OptionalObjectDefault(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:       "object",
+		IsOptional: true,
+		Properties: map[string]*ConfigMetadata{
+			"endpoint": {Type: "string", Default: defaultValue("localhost")},
+		},
+	}
+
+	require.Equal(t, "configoptional.Default(NewDefaultClient())", FormatDefaultValue(md, "client", defaultValue(map[string]any{"endpoint": "localhost"}), "", ""))
+}
+
 func TestFormatDefaultValue_PointerArrayOfObjects(t *testing.T) {
 	md := &ConfigMetadata{
 		Type:      "array",
@@ -1778,7 +1790,18 @@ func TestWrapDefaultValue(t *testing.T) {
 		{
 			name:     "pointer optional",
 			metadata: &ConfigMetadata{IsPointer: true, IsOptional: true},
-			expected: "configoptional.Some(&defaultValue)",
+			expected: "&defaultValue",
+		},
+		{
+			name: "optional object",
+			metadata: &ConfigMetadata{
+				Type:       "object",
+				IsOptional: true,
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string"},
+				},
+			},
+			expected: "configoptional.Default(defaultValue)",
 		},
 	}
 
