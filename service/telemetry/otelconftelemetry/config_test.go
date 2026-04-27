@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry/internal/migration"
 )
 
 func TestComponentConfigStruct(t *testing.T) {
@@ -125,4 +126,37 @@ func TestConfig(t *testing.T) {
 			assert.Equal(t, test.config, cfg)
 		})
 	}
+}
+
+func TestConfigMarshalResource(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Resource = migration.ResourceConfigV030{
+		Resource: config.Resource{
+			Attributes: []config.AttributeNameValue{
+				{Name: "service.name", Value: "custom-service"},
+			},
+		},
+		LegacyAttributes: map[string]any{
+			"legacy.attr":     "legacy-value",
+			"service.version": nil,
+		},
+	}
+
+	cm := confmap.New()
+	require.NoError(t, cm.Marshal(cfg))
+	raw := cm.ToStringMap()
+
+	resourceRaw, ok := raw["resource"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "legacy-value", resourceRaw["legacy.attr"])
+	assert.Contains(t, resourceRaw, "service.version")
+	assert.Nil(t, resourceRaw["service.version"])
+
+	attrs, ok := resourceRaw["attributes"].([]any)
+	require.True(t, ok)
+	require.Len(t, attrs, 1)
+	attr, ok := attrs[0].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "service.name", attr["name"])
+	assert.Equal(t, "custom-service", attr["value"])
 }

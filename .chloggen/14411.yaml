@@ -1,0 +1,48 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
+component: all
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Add declarative schema support for service telemetry resource configuration.
+
+# One or more tracking issues or pull requests related to the change
+issues: [14411]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  The `service::telemetry::resource` configuration now accepts the declarative schema with explicit name/value pairs:
+  ```yaml
+  service:
+    telemetry:
+      resource:
+        schema_url: https://opentelemetry.io/schemas/1.38.0
+        attributes:
+          - name: service.name
+            value: my-collector
+          - name: host.name
+            value: collector-host
+  ```
+
+  The legacy inline attribute map format is still supported for backward compatibility:
+  ```yaml
+  service:
+    telemetry:
+      resource:
+        service.name: my-collector
+        host.name: collector-host
+  ```
+
+  Note: `resource.detectors` is accepted for forward compatibility but is not yet applied by the collector.
+
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]
