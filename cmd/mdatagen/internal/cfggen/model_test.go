@@ -9,8 +9,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.yaml.in/yaml/v3"
+
 	"go.opentelemetry.io/collector/confmap"
 )
+
+func defaultValue(value any) DefaultValue {
+	return NewDefaultValue(value)
+}
 
 func TestConfigMetadata_ToJSON(t *testing.T) {
 	md := &ConfigMetadata{
@@ -26,6 +32,108 @@ func TestConfigMetadata_ToJSON(t *testing.T) {
 	assert.Contains(t, string(data), `"$schema"`)
 	assert.Contains(t, string(data), `"endpoint"`)
 	assert.Contains(t, string(data), `"The endpoint"`)
+}
+
+func TestDefaultValue_UnmarshalYAML(t *testing.T) {
+	tests := []struct {
+		name    string
+		yaml    string
+		wantSet bool
+		want    any
+	}{
+		{
+			name: "absent",
+			yaml: `
+type: string
+`,
+			wantSet: false,
+			want:    nil,
+		},
+		{
+			name: "scalar",
+			yaml: `
+type: string
+default: localhost
+`,
+			wantSet: true,
+			want:    "localhost",
+		},
+		{
+			name: "map",
+			yaml: `
+type: object
+default:
+  enabled: true
+  label: prod
+`,
+			wantSet: true,
+			want: map[string]any{
+				"enabled": true,
+				"label":   "prod",
+			},
+		},
+		{
+			name: "list",
+			yaml: `
+type: array
+default:
+  - one
+  - two
+`,
+			wantSet: true,
+			want:    []any{"one", "two"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var md ConfigMetadata
+			require.NoError(t, yaml.Unmarshal([]byte(tt.yaml), &md))
+
+			require.Equal(t, tt.wantSet, md.Default.IsSet())
+			require.Equal(t, tt.want, md.Default.Get())
+		})
+	}
+}
+
+func TestDefaultValue_MarshalJSON(t *testing.T) {
+	absent := &ConfigMetadata{Type: "string"}
+
+	jsonData, err := absent.ToJSON()
+	require.NoError(t, err)
+	require.NotContains(t, string(jsonData), `"default"`)
+
+	explicitNull := &ConfigMetadata{Type: "string", Default: defaultValue(nil)}
+
+	jsonData, err = explicitNull.ToJSON()
+	require.NoError(t, err)
+	require.Contains(t, string(jsonData), `"default": null`)
+}
+
+func TestConfigMetadata_UnmarshalConfMapDefaultValue(t *testing.T) {
+	parser := confmap.NewFromStringMap(map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			"endpoint": map[string]any{
+				"type":    "string",
+				"default": nil,
+			},
+			"headers": map[string]any{
+				"type": "object",
+				"default": map[string]any{
+					"env": "prod",
+				},
+			},
+		},
+	})
+
+	var md ConfigMetadata
+	require.NoError(t, parser.Unmarshal(&md))
+
+	require.True(t, md.Properties["endpoint"].Default.IsSet())
+	require.Nil(t, md.Properties["endpoint"].Default.Get())
+	require.True(t, md.Properties["headers"].Default.IsSet())
+	require.Equal(t, map[string]any{"env": "prod"}, md.Properties["headers"].Default.Get())
 }
 
 func TestConfigMetadata_Validate_Valid(t *testing.T) {

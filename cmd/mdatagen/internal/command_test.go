@@ -573,7 +573,7 @@ func TestGenerateConfigGoStruct_ResolvedImports(t *testing.T) {
 							GoType: "time.Duration",
 						},
 					},
-					Default: map[string]any{"timeout": "30s"},
+					Default: cfggen.NewDefaultValue(map[string]any{"timeout": "30s"}),
 				},
 			},
 		},
@@ -607,7 +607,7 @@ func TestGenerateConfigGoStruct_PropertyDefaultsAndImports(t *testing.T) {
 				"timeout": {
 					Type:    "string",
 					GoType:  "time.Duration",
-					Default: "30s",
+					Default: cfggen.NewDefaultValue("30s"),
 				},
 			},
 		},
@@ -641,12 +641,12 @@ func TestGenerateConfigGoStruct_InternalResolvedRefGeneratesLocalType(t *testing
 				"config": {
 					Type:         "object",
 					ResolvedFrom: "plain_config",
-					Default:      map[string]any{"timeout": "30s"},
+					Default:      cfggen.NewDefaultValue(map[string]any{"timeout": "30s"}),
 					Properties: map[string]*cfggen.ConfigMetadata{
 						"timeout": {
 							Type:    "string",
 							GoType:  "time.Duration",
-							Default: "30s",
+							Default: cfggen.NewDefaultValue("30s"),
 						},
 					},
 				},

@@ -67,14 +67,14 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			return name
 		},
 		"camelVar": CamelVar,
-		"formatDefaultValue": func(md *ConfigMetadata, name string, defaultValue any) string {
+		"formatDefaultValue": func(md *ConfigMetadata, name string, defaultValue DefaultValue) string {
 			return FormatDefaultValue(md, name, defaultValue, rootPackage, componentPackage)
 		},
-		"formatBaseValue": func(md *ConfigMetadata, name string, defaultValue any) string {
+		"formatBaseValue": func(md *ConfigMetadata, name string, defaultValue DefaultValue) string {
 			return FormatBaseValue(md, name, defaultValue, rootPackage, componentPackage)
 		},
 		"wrapDefaultValue": WrapDefaultValue,
-		"mapCustomDefaults": func(schema *ConfigMetadata, defaultValue any) []string {
+		"mapCustomDefaults": func(schema *ConfigMetadata, defaultValue DefaultValue) []string {
 			return MapCustomDefaults(schema, defaultValue, rootPackage, componentPackage)
 		},
 		"hasDefaultValue": hasDefaultValue,
@@ -443,10 +443,12 @@ func generateValidatorName(propName string, desc *CustomValidatorConfig) string 
 	return "validate" + id
 }
 
-func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, componentPackage string) []string {
+func MapCustomDefaults(schema *ConfigMetadata, defaultValue DefaultValue, rootPackage, componentPackage string) []string {
+	if !defaultValue.IsSet() {
+		return nil
+	}
 	exps := make([]string, 0)
-
-	switch typedValue := defaultValue.(type) {
+	switch typedValue := defaultValue.Get().(type) {
 	case map[string]any:
 		// is nested struct
 		if schema.AdditionalProperties == nil {
@@ -456,7 +458,7 @@ func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, co
 					panic("schema does not contain required property: " + key)
 				}
 				varName, _ := helpers.FormatIdentifier(key, true)
-				exp := fmt.Sprintf(".%s = %s", varName, FormatDefaultValue(propSchema, key, value, rootPackage, componentPackage))
+				exp := fmt.Sprintf(".%s = %s", varName, FormatDefaultValue(propSchema, key, NewDefaultValue(value), rootPackage, componentPackage))
 				exps = append(exps, exp)
 			}
 		} else if schema.AdditionalProperties.Type == "object" { // is a map of object
@@ -468,7 +470,7 @@ func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, co
 			panic("unsupported default value type for custom mapping")
 		}
 		for i, item := range typedValue {
-			nestedExps := MapCustomDefaults(schema.Items, item, rootPackage, componentPackage)
+			nestedExps := MapCustomDefaults(schema.Items, NewDefaultValue(item), rootPackage, componentPackage)
 			for _, exp := range nestedExps {
 				exps = append(exps, fmt.Sprintf("[%d]%s", i, exp))
 			}
@@ -478,7 +480,17 @@ func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, co
 	return exps
 }
 
-func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue any, rootPackage, componentPackage string) string {
+func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue DefaultValue, rootPackage, componentPackage string) string {
+	if defaultValue.IsSet() && defaultValue.Get() == nil {
+		if md.IsPointer {
+			return "nil"
+		}
+		if md.IsOptional {
+			t, _ := resolveGoType(md, name, rootPackage, componentPackage)
+			return fmt.Sprintf("configoptional.None[%s]()", t)
+		}
+		return ""
+	}
 	exp := formatSimpleValue(md, name, defaultValue, rootPackage, componentPackage)
 	if md.IsPointer {
 		exp = "&" + exp
@@ -491,7 +503,7 @@ func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue any, rootP
 
 // FormatBaseValue returns the default value expression without IsPointer/IsOptional wrappers.
 // Use this when initializing a local variable that will be mutated before wrapping.
-func FormatBaseValue(md *ConfigMetadata, name string, defaultValue any, rootPackage, componentPackage string) string {
+func FormatBaseValue(md *ConfigMetadata, name string, defaultValue DefaultValue, rootPackage, componentPackage string) string {
 	return formatSimpleValue(md, name, defaultValue, rootPackage, componentPackage)
 }
 
@@ -509,7 +521,7 @@ func WrapDefaultValue(md *ConfigMetadata, varName string) string {
 }
 
 func hasDefaultValue(md *ConfigMetadata) bool {
-	if md.Default != nil {
+	if md.Default.IsSet() {
 		return true
 	}
 	for _, prop := range md.Properties {
@@ -530,7 +542,7 @@ func CamelVar(ref string) string {
 	return name
 }
 
-func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPackage, componentPackage string) string {
+func formatSimpleValue(md *ConfigMetadata, name string, defaultValue DefaultValue, rootPackage, componentPackage string) string {
 	// handle references
 	isReference := md.ResolvedFrom != ""
 	isSubStruct := md.Type == "object" && md.AdditionalProperties == nil
@@ -556,7 +568,7 @@ func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPa
 	}
 
 	// do not process further if "default" attribute not defined
-	if defaultValue == nil {
+	if !defaultValue.IsSet() {
 		return ""
 	}
 
@@ -564,10 +576,10 @@ func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPa
 	case "array":
 		typeExpr, err := resolveGoType(md.Items, name+"_item", "", "")
 		if err == nil {
-			if defaultValues, ok := defaultValue.([]any); ok {
+			if defaultValues, ok := defaultValue.Get().([]any); ok {
 				exps := make([]string, 0, len(defaultValues))
 				for _, defaultValue := range defaultValues {
-					exps = append(exps, FormatDefaultValue(md.Items, name+"_item", defaultValue, rootPackage, componentPackage))
+					exps = append(exps, FormatDefaultValue(md.Items, name+"_item", NewDefaultValue(defaultValue), rootPackage, componentPackage))
 				}
 				return fmt.Sprintf("[]%s{%s}", typeExpr, strings.Join(exps, ", "))
 			}
@@ -577,13 +589,13 @@ func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPa
 	case "object":
 		typeExpr, err := resolveGoType(md.AdditionalProperties, name, "", "")
 		if err == nil {
-			if defaultValues, ok := defaultValue.(map[string]any); ok {
+			if defaultValues, ok := defaultValue.Get().(map[string]any); ok {
 				exps := make([]string, 0, len(defaultValues))
 				for _, keyName := range slices.Sorted(maps.Keys(defaultValues)) {
 					value := defaultValues[keyName]
 					exps = append(
 						exps,
-						fmt.Sprintf("%q: %v", keyName, FormatDefaultValue(md.AdditionalProperties, name, value, rootPackage, componentPackage)))
+						fmt.Sprintf("%q: %v", keyName, FormatDefaultValue(md.AdditionalProperties, name, NewDefaultValue(value), rootPackage, componentPackage)))
 				}
 				return fmt.Sprintf("map[string]%s{%s}", typeExpr, strings.Join(exps, ", "))
 			}
@@ -593,14 +605,14 @@ func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPa
 	case "string":
 		switch md.GoType {
 		case "time.Duration":
-			if durationExpr, ok := renderDurationExpr(defaultValue); ok {
+			if durationExpr, ok := renderDurationExpr(defaultValue.Get()); ok {
 				return durationExpr
 			}
 		default:
-			return fmt.Sprintf("%q", defaultValue)
+			return fmt.Sprintf("%q", defaultValue.Get())
 		}
 	default:
-		return fmt.Sprintf("%v", defaultValue)
+		return fmt.Sprintf("%v", defaultValue.Get())
 	}
 
 	panic("unreachable")

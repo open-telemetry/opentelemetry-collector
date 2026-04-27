@@ -510,7 +510,7 @@ func TestExtractImports_ResolvedReferenceUsesResolvedTypeOnly(t *testing.T) {
 				GoType: "time.Duration",
 			},
 		},
-		Default: map[string]any{"timeout": "30s"},
+		Default: defaultValue(map[string]any{"timeout": "30s"}),
 	}
 
 	result, err := ExtractImports(md, "", "")
@@ -1659,42 +1659,42 @@ func TestFormatDefaultValue_ScalarDefaults(t *testing.T) {
 		name         string
 		schema       *ConfigMetadata
 		propName     string
-		defaultValue any
+		defaultValue DefaultValue
 		expected     string
 	}{
 		{
 			name:         "string",
 			schema:       &ConfigMetadata{Type: "string"},
 			propName:     "endpoint",
-			defaultValue: "http://localhost:8080",
+			defaultValue: defaultValue("http://localhost:8080"),
 			expected:     `"http://localhost:8080"`,
 		},
 		{
 			name:         "duration",
 			schema:       &ConfigMetadata{Type: "string", GoType: "time.Duration"},
 			propName:     "timeout",
-			defaultValue: "30s",
+			defaultValue: defaultValue("30s"),
 			expected:     "30*time.Second",
 		},
 		{
 			name:         "duration zero int",
 			schema:       &ConfigMetadata{Type: "string", GoType: "time.Duration"},
 			propName:     "timeout",
-			defaultValue: 0,
+			defaultValue: defaultValue(0),
 			expected:     "0",
 		},
 		{
 			name:         "duration zero float",
 			schema:       &ConfigMetadata{Type: "string", GoType: "time.Duration"},
 			propName:     "timeout",
-			defaultValue: float64(0),
+			defaultValue: defaultValue(float64(0)),
 			expected:     "0",
 		},
 		{
 			name:         "optional duration",
 			schema:       &ConfigMetadata{Type: "string", GoType: "time.Duration", IsOptional: true},
 			propName:     "interval",
-			defaultValue: "10s",
+			defaultValue: defaultValue("10s"),
 			expected:     "configoptional.Some(10*time.Second)",
 		},
 	}
@@ -1736,7 +1736,7 @@ func TestFormatDefaultValue_MapDefault(t *testing.T) {
 		AdditionalProperties: &ConfigMetadata{Type: "string"},
 	}
 
-	require.Equal(t, `map[string]string{"env": "prod"}`, FormatDefaultValue(md, "labels", map[string]any{"env": "prod"}, "", ""))
+	require.Equal(t, `map[string]string{"env": "prod"}`, FormatDefaultValue(md, "labels", defaultValue(map[string]any{"env": "prod"}), "", ""))
 }
 
 func TestFormatDefaultValue_PointerArrayOfObjects(t *testing.T) {
@@ -1746,12 +1746,12 @@ func TestFormatDefaultValue_PointerArrayOfObjects(t *testing.T) {
 		Items: &ConfigMetadata{
 			Type: "object",
 			Properties: map[string]*ConfigMetadata{
-				"url": {Type: "string", Default: "http://example.com"},
+				"url": {Type: "string", Default: defaultValue("http://example.com")},
 			},
 		},
 	}
 
-	require.Equal(t, "&[]TargetsItem{NewDefaultTargetsItem()}", FormatDefaultValue(md, "targets", []any{map[string]any{}}, "", ""))
+	require.Equal(t, "&[]TargetsItem{NewDefaultTargetsItem()}", FormatDefaultValue(md, "targets", defaultValue([]any{map[string]any{}}), "", ""))
 }
 
 func TestWrapDefaultValue(t *testing.T) {
@@ -1794,13 +1794,13 @@ func TestFormatDefaultValue_ResolvedReferenceWithDefaults(t *testing.T) {
 		Type:         "object",
 		ResolvedFrom: "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
 		Properties: map[string]*ConfigMetadata{
-			"timeout": {Type: "string", GoType: "time.Duration", Default: "30s"},
+			"timeout": {Type: "string", GoType: "time.Duration", Default: defaultValue("30s")},
 		},
 	}
 
 	require.Equal(t,
 		"confighttp.NewDefaultClientConfig()",
-		FormatDefaultValue(md, "client", map[string]any{"timeout": "30s"}, "go.opentelemetry.io/collector", "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"),
+		FormatDefaultValue(md, "client", defaultValue(map[string]any{"timeout": "30s"}), "go.opentelemetry.io/collector", "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"),
 	)
 }
 
@@ -1812,23 +1812,23 @@ func TestFormatDefaultValue_ResolvedReferenceWithoutDefaults(t *testing.T) {
 	}
 
 	require.Empty(t,
-		FormatDefaultValue(md, "client", map[string]any{}, "go.opentelemetry.io/collector", "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"),
+		FormatDefaultValue(md, "client", defaultValue(map[string]any{}), "go.opentelemetry.io/collector", "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"),
 	)
 }
 
 func TestHasDefaultValue(t *testing.T) {
 	require.False(t, hasDefaultValue(&ConfigMetadata{Type: "object"}))
-	require.True(t, hasDefaultValue(&ConfigMetadata{Type: "string", Default: "value"}))
+	require.True(t, hasDefaultValue(&ConfigMetadata{Type: "string", Default: defaultValue("value")}))
 	require.True(t, hasDefaultValue(&ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
-			"timeout": {Type: "string", GoType: "time.Duration", Default: "30s"},
+			"timeout": {Type: "string", GoType: "time.Duration", Default: defaultValue("30s")},
 		},
 	}))
 	require.True(t, hasDefaultValue(&ConfigMetadata{
 		Type: "object",
 		AllOf: []*ConfigMetadata{
-			{Type: "object", Default: map[string]any{"enabled": true}},
+			{Type: "object", Default: defaultValue(map[string]any{"enabled": true})},
 		},
 	}))
 	// External ref without any property defaults must not be treated as having defaults.
@@ -1847,10 +1847,10 @@ func TestMapCustomDefaults_NestedObjectOverrides(t *testing.T) {
 		},
 	}
 
-	exprs := MapCustomDefaults(md, map[string]any{
+	exprs := MapCustomDefaults(md, defaultValue(map[string]any{
 		"host": "localhost",
 		"port": float64(9090),
-	}, "", "")
+	}), "", "")
 
 	require.ElementsMatch(t, []string{
 		`.Host = "localhost"`,
@@ -1869,25 +1869,25 @@ func TestMapCustomDefaults_ArrayOfObjectsOverrides(t *testing.T) {
 		},
 	}
 
-	exprs := MapCustomDefaults(md, []any{
+	exprs := MapCustomDefaults(md, defaultValue([]any{
 		map[string]any{"url": "http://example.com"},
-	}, "", "")
+	}), "", "")
 
 	require.Equal(t, []string{`[0].Url = "http://example.com"`}, exprs)
 }
 
 func TestMapCustomDefaults_EmptyInput(t *testing.T) {
-	require.Empty(t, MapCustomDefaults(&ConfigMetadata{Type: "string"}, nil, "", ""))
+	require.Empty(t, MapCustomDefaults(&ConfigMetadata{Type: "string"}, DefaultValue{}, "", ""))
 }
 
 func TestNewCfgFns_DefaultHelpers(t *testing.T) {
 	fns := NewCfgFns("", "")
 
-	formatDefaultValue := fns["formatDefaultValue"].(func(*ConfigMetadata, string, any) string)
-	mapCustomDefaults := fns["mapCustomDefaults"].(func(*ConfigMetadata, any) []string)
+	formatDefaultValue := fns["formatDefaultValue"].(func(*ConfigMetadata, string, DefaultValue) string)
+	mapCustomDefaults := fns["mapCustomDefaults"].(func(*ConfigMetadata, DefaultValue) []string)
 	hasDefaultValue := fns["hasDefaultValue"].(func(*ConfigMetadata) bool)
 
-	require.Equal(t, `"localhost"`, formatDefaultValue(&ConfigMetadata{Type: "string"}, "endpoint", "localhost"))
+	require.Equal(t, `"localhost"`, formatDefaultValue(&ConfigMetadata{Type: "string"}, "endpoint", defaultValue("localhost")))
 	require.Equal(t, []string{`[0].Url = "http://example.com"`}, mapCustomDefaults(
 		&ConfigMetadata{
 			Type: "array",
@@ -1898,8 +1898,8 @@ func TestNewCfgFns_DefaultHelpers(t *testing.T) {
 				},
 			},
 		},
-		[]any{map[string]any{"url": "http://example.com"}},
+		defaultValue([]any{map[string]any{"url": "http://example.com"}}),
 	))
-	require.True(t, hasDefaultValue(&ConfigMetadata{Type: "string", Default: "localhost"}))
+	require.True(t, hasDefaultValue(&ConfigMetadata{Type: "string", Default: defaultValue("localhost")}))
 	require.False(t, hasDefaultValue(&ConfigMetadata{Type: "string"}))
 }

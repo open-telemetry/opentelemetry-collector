@@ -84,7 +84,7 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 		if customDescription != "" {
 			newCurrent.Description = customDescription
 		}
-		if customDefault != nil {
+		if customDefault.IsSet() {
 			newCurrent.Default = customDefault
 		}
 		if len(customEnum) > 0 {
