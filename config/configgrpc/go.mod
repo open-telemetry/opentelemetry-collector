@@ -3,8 +3,8 @@ module go.opentelemetry.io/collector/config/configgrpc
 go 1.25.0
 
 require (
-	github.com/mostynb/go-grpc-compression v1.2.3
 	github.com/stretchr/testify v1.11.1
+	go.opentelemetry.io/collector v0.150.0
 	go.opentelemetry.io/collector/client v1.56.0
 	go.opentelemetry.io/collector/component v1.56.0
 	go.opentelemetry.io/collector/component/componenttest v0.150.0
@@ -74,6 +74,8 @@ require (
 )
 
 replace go.opentelemetry.io/collector/client => ../../client
+
+replace go.opentelemetry.io/collector => ../..
 
 replace go.opentelemetry.io/collector/config/configauth => ../configauth
 
