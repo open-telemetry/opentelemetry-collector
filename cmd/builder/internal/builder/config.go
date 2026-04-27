@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 	"time"
@@ -27,7 +28,7 @@ var errMissingGoMod = errors.New("missing gomod specification for module")
 
 // Config holds the builder's configuration
 type Config struct {
-	Logger *zap.Logger
+	Logger *zap.Logger `mapstructure:"-"`
 
 	OtelColVersion       string `mapstructure:"-"` // only used be the go.mod template
 	SkipGenerate         bool   `mapstructure:"-"`
@@ -41,18 +42,18 @@ type Config struct {
 	Verbose              bool   `mapstructure:"-"`
 
 	Distribution      Distribution `mapstructure:"dist"`
-	Exporters         []Module     `mapstructure:"exporters"`
-	Extensions        []Module     `mapstructure:"extensions"`
-	Receivers         []Module     `mapstructure:"receivers"`
-	Processors        []Module     `mapstructure:"processors"`
-	Connectors        []Module     `mapstructure:"connectors"`
-	Telemetry         Module       `mapstructure:"telemetry"`
-	ConfmapProviders  []Module     `mapstructure:"providers"`
-	ConfmapConverters []Module     `mapstructure:"converters"`
-	Replaces          []string     `mapstructure:"replaces"`
-	Excludes          []string     `mapstructure:"excludes"`
+	Exporters         []Module     `mapstructure:"exporters,omitempty"`
+	Extensions        []Module     `mapstructure:"extensions,omitempty"`
+	Receivers         []Module     `mapstructure:"receivers,omitempty"`
+	Processors        []Module     `mapstructure:"processors,omitempty"`
+	Connectors        []Module     `mapstructure:"connectors,omitempty"`
+	Telemetry         Module       `mapstructure:"telemetry,omitempty"`
+	ConfmapProviders  []Module     `mapstructure:"providers,omitempty"`
+	ConfmapConverters []Module     `mapstructure:"converters,omitempty"`
+	Replaces          []string     `mapstructure:"replaces,omitempty"`
+	Excludes          []string     `mapstructure:"excludes,omitempty"`
 
-	ConfResolver ConfResolver `mapstructure:"conf_resolver"`
+	ConfResolver ConfResolver `mapstructure:"conf_resolver,omitempty"`
 
 	downloadModules retry `mapstructure:"-"`
 }
@@ -61,28 +62,29 @@ type ConfResolver struct {
 	// When set, will be used to set the CollectorSettings.ConfResolver.DefaultScheme value,
 	// which determines how the Collector interprets URIs that have no scheme, such as ${ENV}.
 	// See https://pkg.go.dev/go.opentelemetry.io/collector/confmap#ResolverSettings for more details.
-	DefaultURIScheme string `mapstructure:"default_uri_scheme"`
+	DefaultURIScheme string `mapstructure:"default_uri_scheme,omitempty"`
 }
 
 // Distribution holds the parameters for the final binary
 type Distribution struct {
-	Module           string `mapstructure:"module"`
-	Name             string `mapstructure:"name"`
-	Go               string `mapstructure:"go"`
-	Description      string `mapstructure:"description"`
-	OutputPath       string `mapstructure:"output_path"`
-	Version          string `mapstructure:"version"`
-	BuildTags        string `mapstructure:"build_tags"`
-	DebugCompilation bool   `mapstructure:"debug_compilation"`
-	CGoEnabled       bool   `mapstructure:"cgo_enabled"`
+	Module                  string `mapstructure:"module,omitempty"`
+	Name                    string `mapstructure:"name"`
+	Go                      string `mapstructure:"go,omitempty"`
+	Description             string `mapstructure:"description"`
+	OutputPath              string `mapstructure:"output_path"`
+	Version                 string `mapstructure:"version,omitempty"`
+	BuildTags               string `mapstructure:"build_tags,omitempty"`
+	DebugCompilation        bool   `mapstructure:"debug_compilation,omitempty"`
+	CGoEnabled              bool   `mapstructure:"cgo_enabled,omitempty"`
+	UseAbsoluteReplacePaths bool   `mapstructure:"use_absolute_replace_paths,omitempty"`
 }
 
 // Module represents a receiver, exporter, processor or extension for the distribution
 type Module struct {
-	Name   string `mapstructure:"name"`   // if not specified, this is package part of the go mod (last part of the path)
-	Import string `mapstructure:"import"` // if not specified, this is the path part of the go mods
-	GoMod  string `mapstructure:"gomod"`  // a gomod-compatible spec for the module
-	Path   string `mapstructure:"path"`   // an optional path to the local version of this module
+	Name   string `mapstructure:"name,omitempty"`   // if not specified, this is package part of the go mod (last part of the path)
+	Import string `mapstructure:"import,omitempty"` // if not specified, this is the path part of the go mods
+	GoMod  string `mapstructure:"gomod,omitempty"`  // a gomod-compatible spec for the module
+	Path   string `mapstructure:"path,omitempty"`   // an optional path to the local version of this module
 }
 
 type retry struct {
@@ -170,42 +172,42 @@ func (c *Config) ParseModules() error {
 	var err error
 	usedNames := make(map[string]int)
 
-	c.Extensions, err = parseModules(c.Extensions, usedNames)
+	c.Extensions, err = c.parseModules(c.Extensions, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.Receivers, err = parseModules(c.Receivers, usedNames)
+	c.Receivers, err = c.parseModules(c.Receivers, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.Exporters, err = parseModules(c.Exporters, usedNames)
+	c.Exporters, err = c.parseModules(c.Exporters, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.Processors, err = parseModules(c.Processors, usedNames)
+	c.Processors, err = c.parseModules(c.Processors, usedNames)
 	if err != nil {
 		return err
 	}
 
-	c.Connectors, err = parseModules(c.Connectors, usedNames)
+	c.Connectors, err = c.parseModules(c.Connectors, usedNames)
 	if err != nil {
 		return err
 	}
 
-	telemetry, err := parseModules([]Module{c.Telemetry}, usedNames)
+	telemetry, err := c.parseModules([]Module{c.Telemetry}, usedNames)
 	if err != nil {
 		return err
 	}
 	c.Telemetry = telemetry[0]
 
-	c.ConfmapProviders, err = parseModules(c.ConfmapProviders, usedNames)
+	c.ConfmapProviders, err = c.parseModules(c.ConfmapProviders, usedNames)
 	if err != nil {
 		return err
 	}
-	c.ConfmapConverters, err = parseModules(c.ConfmapConverters, usedNames)
+	c.ConfmapConverters, err = c.parseModules(c.ConfmapConverters, usedNames)
 	if err != nil {
 		return err
 	}
@@ -244,7 +246,7 @@ func validateTelemetry(c *Config) error {
 	return nil
 }
 
-func parseModules(mods []Module, usedNames map[string]int) ([]Module, error) {
+func (c *Config) parseModules(mods []Module, usedNames map[string]int) ([]Module, error) {
 	var parsedModules []Module
 	for _, mod := range mods {
 		if mod.Import == "" {
@@ -274,13 +276,28 @@ func parseModules(mods []Module, usedNames map[string]int) ([]Module, error) {
 		// Check if path is empty, otherwise filepath.Abs replaces it with current path ".".
 		if mod.Path != "" {
 			var err error
-			mod.Path, err = filepath.Abs(mod.Path)
+			absPath, err := filepath.Abs(mod.Path)
 			if err != nil {
-				return mods, fmt.Errorf("module has a relative \"path\" element, but we couldn't resolve the current working dir: %w", err)
+				return mods, fmt.Errorf("failed to resolve absolute path for %s: %w", mod.Path, err)
 			}
-			// Check if the path exists
-			if _, err := os.Stat(mod.Path); os.IsNotExist(err) {
-				return mods, fmt.Errorf("filepath does not exist: %s", mod.Path)
+
+			if c.Distribution.UseAbsoluteReplacePaths {
+				mod.Path = absPath
+			} else {
+				absOutputPath, err := filepath.Abs(c.Distribution.OutputPath)
+				if err != nil {
+					return mods, fmt.Errorf("failed to resolve absolute path for output dir %s: %w", c.Distribution.OutputPath, err)
+				}
+				mod.Path, err = filepath.Rel(absOutputPath, absPath)
+				if err != nil {
+					return mods, fmt.Errorf("failed to make path relative to output dir: %w", err)
+				}
+			}
+			mod.Path = filepath.ToSlash(mod.Path)
+
+			// Check if the path exists using the absolute path
+			if _, err := os.Stat(absPath); os.IsNotExist(err) {
+				return mods, fmt.Errorf("filepath does not exist: %s", absPath)
 			}
 		}
 
@@ -288,4 +305,91 @@ func parseModules(mods []Module, usedNames map[string]int) ([]Module, error) {
 	}
 
 	return parsedModules, nil
+}
+
+// MarshalYAML encodes Config to YAML using mapstructure tags, omitting zero values.
+func (c Config) MarshalYAML() (any, error) {
+	return structToMap(c), nil
+}
+
+// structToMap converts a struct to a map[string]any using mapstructure tags.
+// Fields tagged with mapstructure:"-" are skipped.
+// Fields tagged with omitempty are omitted when zero.
+func structToMap(v any) map[string]any {
+	rv := reflect.ValueOf(v)
+	rt := rv.Type()
+	result := make(map[string]any)
+
+	for i := 0; i < rt.NumField(); i++ {
+		field := rt.Field(i)
+		fv := rv.Field(i)
+
+		if !field.IsExported() {
+			continue
+		}
+
+		tag := field.Tag.Get("mapstructure")
+		if tag == "" {
+			continue
+		}
+
+		parts := strings.SplitN(tag, ",", 2)
+		key := parts[0]
+		if key == "-" {
+			continue
+		}
+		omitempty := len(parts) == 2 && parts[1] == "omitempty"
+
+		val := encodeValue(fv)
+		if omitempty && isEmpty(val) {
+			continue
+		}
+
+		result[key] = val
+	}
+
+	return result
+}
+
+// encodeValue recursively encodes a reflect.Value for use in a YAML map.
+// Structs are converted via structToMap, slices are encoded element by element,
+// pointers are dereferenced (nil pointers become nil), and all other kinds are
+// returned as-is.
+func encodeValue(rv reflect.Value) any {
+	switch rv.Kind() {
+	case reflect.Struct:
+		return structToMap(rv.Interface())
+	case reflect.Ptr:
+		if rv.IsNil() {
+			return nil
+		}
+		return encodeValue(rv.Elem())
+	case reflect.Slice:
+		if rv.IsNil() {
+			return nil
+		}
+		s := make([]any, rv.Len())
+		for i := range rv.Len() {
+			s[i] = encodeValue(rv.Index(i))
+		}
+		return s
+	default:
+		return rv.Interface()
+	}
+}
+
+func isEmpty(v any) bool {
+	if v == nil {
+		return true
+	}
+	rv := reflect.ValueOf(v)
+	//nolint:exhaustive
+	switch rv.Kind() {
+	case reflect.Map:
+		return rv.Len() == 0
+	case reflect.Slice:
+		return rv.IsNil() || rv.Len() == 0
+	default:
+		return rv.IsZero()
+	}
 }

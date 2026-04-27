@@ -303,9 +303,19 @@ func TestValueAsString(t *testing.T) {
 			expected: "9e-9",
 		},
 		{
-			name:     "bad float64",
+			name:     "float64_positive_infinity",
 			input:    NewValueDouble(math.Inf(1)),
-			expected: "json: unsupported value: +Inf",
+			expected: "Infinity",
+		},
+		{
+			name:     "float64_negative_infinity",
+			input:    NewValueDouble(math.Inf(-1)),
+			expected: "-Infinity",
+		},
+		{
+			name:     "float64_nan",
+			input:    NewValueDouble(math.NaN()),
+			expected: "NaN",
 		},
 		{
 			name:     "boolean",

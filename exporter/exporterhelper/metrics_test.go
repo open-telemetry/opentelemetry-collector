@@ -183,6 +183,21 @@ func TestMetrics_WithRecordMetrics(t *testing.T) {
 	checkRecordedMetricsForMetrics(t, tt, fakeMetricsName, me, nil)
 }
 
+func TestMetrics_WithAttrs(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	attrs := []attribute.KeyValue{
+		attribute.Bool("test", true),
+		attribute.String("example", "value"),
+	}
+	me, err := NewMetrics(context.Background(), exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeMetricsConfig, newPushMetricsData(nil), WithAttrs(attrs...))
+	require.NoError(t, err)
+	require.NotNil(t, me)
+
+	checkRecordedMetricsForMetrics(t, tt, fakeMetricsName, me, nil, attrs...)
+}
+
 func TestMetrics_pMetricModifiedDownStream_WithRecordMetrics(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
@@ -336,7 +351,7 @@ func newPushMetricsDataModifiedDownstream(retError error) consumer.ConsumeMetric
 	}
 }
 
-func checkRecordedMetricsForMetrics(t *testing.T, tt *componenttest.Telemetry, id component.ID, me exporter.Metrics, wantError error) {
+func checkRecordedMetricsForMetrics(t *testing.T, tt *componenttest.Telemetry, id component.ID, me exporter.Metrics, wantError error, extraAttributes ...attribute.KeyValue) {
 	md := testdata.GenerateMetrics(2)
 	const numBatches = 7
 	for range numBatches {
@@ -349,10 +364,10 @@ func checkRecordedMetricsForMetrics(t *testing.T, tt *componenttest.Telemetry, i
 		metadatatest.AssertEqualExporterSendFailedMetricPoints(t, tt,
 			[]metricdata.DataPoint[int64]{
 				{
-					Attributes: attribute.NewSet(
+					Attributes: attribute.NewSet(append(extraAttributes,
 						attribute.String(internal.ExporterKey, id.String()),
 						attribute.String(string(semconv.ErrorTypeKey), "_OTHER"),
-						attribute.Bool(internal.ErrorPermanentKey, false)),
+						attribute.Bool(internal.ErrorPermanentKey, false))...),
 					Value: numPoints,
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -360,8 +375,8 @@ func checkRecordedMetricsForMetrics(t *testing.T, tt *componenttest.Telemetry, i
 		metadatatest.AssertEqualExporterSentMetricPoints(t, tt,
 			[]metricdata.DataPoint[int64]{
 				{
-					Attributes: attribute.NewSet(
-						attribute.String(internal.ExporterKey, id.String())),
+					Attributes: attribute.NewSet(append(extraAttributes,
+						attribute.String(internal.ExporterKey, id.String()))...),
 					Value: numPoints,
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
