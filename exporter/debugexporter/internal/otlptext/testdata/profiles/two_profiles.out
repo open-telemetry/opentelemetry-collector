@@ -1,4 +1,10 @@
 Mapping #0
+    Memory start: 0
+    Memory limit: 0
+    File offset: 0
+    File name: 0
+    Attributes: []
+Mapping #1
     Memory start: 2
     Memory limit: 3
     File offset: 4
@@ -6,13 +12,17 @@ Mapping #0
     Attributes: [7 8]
 Location #0
     Mapping index: 0
-    Address: 1
+    Address: 0
     Attributes: []
 Location #1
     Mapping index: 0
-    Address: 2
+    Address: 1
     Attributes: []
 Location #2
+    Mapping index: 0
+    Address: 2
+    Attributes: []
+Location #3
     Mapping index: 3
     Address: 4
     Line #0
@@ -21,6 +31,11 @@ Location #2
         Column: 3
     Attributes: [6 7]
 Function #0
+    Name: 0
+    System name: 0
+    Filename: 0
+    Start line: 0
+Function #1
     Name: 2
     System name: 3
     Filename: 4

@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: pkg/pdata
+note: "Use spec-compliant string representation for NaN, Infinity, and -Infinity in Value.AsString()."
+issues: [14487]
+change_logs: [user]

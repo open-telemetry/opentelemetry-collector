@@ -10,7 +10,7 @@ status:
   warnings:
     - Any additional information that should be brought to the consumer's attention
 
-sem_conv_version: 1.38.0
+sem_conv_version: 1.40.0
 
 metrics:
   system.disk.io_time:

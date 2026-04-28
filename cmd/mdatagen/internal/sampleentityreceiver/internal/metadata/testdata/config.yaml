@@ -37,6 +37,23 @@ none_set:
       enabled: false
     k8s.replicaset.uid:
       enabled: false
+override_set:
+  resource_attributes:
+    k8s.namespace.name:
+      enabled: true
+      override_value: "override-k8s.namespace.name"
+    k8s.pod.name:
+      enabled: true
+      override_value: "override-k8s.pod.name"
+    k8s.pod.uid:
+      enabled: true
+      override_value: "override-k8s.pod.uid"
+    k8s.replicaset.name:
+      enabled: true
+      override_value: "override-k8s.replicaset.name"
+    k8s.replicaset.uid:
+      enabled: true
+      override_value: "override-k8s.replicaset.uid"
 filter_set_include:
   resource_attributes:
     k8s.namespace.name:

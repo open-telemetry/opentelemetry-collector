@@ -10,13 +10,11 @@ import (
 	"fmt"
 	"math"
 	"net"
-	"regexp"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/mostynb/go-grpc-compression/nonclobbering/snappy"
-	"github.com/mostynb/go-grpc-compression/nonclobbering/zstd"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
@@ -39,10 +37,16 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.opentelemetry.io/collector/internal/grpccompression/snappy"
+	"go.opentelemetry.io/collector/internal/grpccompression/zstd"
 )
 
 var errMetadataNotFound = errors.New("no request metadata found")
+
+// DefaultBalancerName is the name of the default load balancer.
+const DefaultBalancerName = "round_robin"
 
 // KeepaliveClientConfig exposes the keepalive.ClientParameters to be used by the exporter.
 // Refer to the original data-structure for the meaning of each parameter:
@@ -64,9 +68,13 @@ func NewDefaultKeepaliveClientConfig() KeepaliveClientConfig {
 }
 
 // BalancerName returns a string with default load balancer value
+//
+// Deprecated[v0.151.0]: Use the DefaultBalancerName constant instead.
 func BalancerName() string {
-	return "round_robin"
+	return DefaultBalancerName
 }
+
+var _ xconfmap.Validator = (*ClientConfig)(nil)
 
 // ClientConfig defines common settings for a gRPC client configuration.
 type ClientConfig struct {
@@ -100,6 +108,11 @@ type ClientConfig struct {
 	// The headers associated with gRPC requests.
 	Headers configopaque.MapList `mapstructure:"headers,omitempty"`
 
+	// UserAgent overrides the default user-agent header sent on gRPC requests.
+	// The default is derived from the build info. When empty, the caller controls
+	// the user-agent via grpc.WithUserAgent or similar options.
+	UserAgent string `mapstructure:"user_agent,omitempty"`
+
 	// Sets the balancer in grpclb_policy to discover the servers. Default is pick_first.
 	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
 	BalancerName string `mapstructure:"balancer_name"`
@@ -113,6 +126,9 @@ type ClientConfig struct {
 
 	// Middlewares for the gRPC client.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultClientConfig returns a new instance of ClientConfig with default values.
@@ -120,7 +136,7 @@ func NewDefaultClientConfig() ClientConfig {
 	return ClientConfig{
 		TLS:          configtls.NewDefaultClientConfig(),
 		Keepalive:    configoptional.Some(NewDefaultKeepaliveClientConfig()),
-		BalancerName: BalancerName(),
+		BalancerName: DefaultBalancerName,
 	}
 }
 
@@ -172,6 +188,8 @@ type KeepaliveEnforcementPolicy struct {
 func NewDefaultKeepaliveEnforcementPolicy() KeepaliveEnforcementPolicy {
 	return KeepaliveEnforcementPolicy{}
 }
+
+var _ xconfmap.Validator = (*ServerConfig)(nil)
 
 // ServerConfig defines common settings for a gRPC server configuration.
 type ServerConfig struct {
@@ -254,16 +272,44 @@ func (cc *ClientConfig) Validate() error {
 	return nil
 }
 
-// sanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.ClientConfig.Endpoint.
+// sanitizedEndpoint strips the URI scheme and authority from the endpoint to
+// extract the host:port for validation. It handles http://, https://, and any
+// gRPC resolver scheme URI (e.g. dns:///host:port, passthrough:///host:port).
+// For gRPC URIs of the form "scheme://[authority]/endpoint", the authority is
+// also stripped, matching the parsing behavior of grpc-go's url.Parse approach.
 func (cc *ClientConfig) sanitizedEndpoint() string {
 	switch {
 	case cc.isSchemeHTTP():
 		return strings.TrimPrefix(cc.Endpoint, "http://")
 	case cc.isSchemeHTTPS():
 		return strings.TrimPrefix(cc.Endpoint, "https://")
-	case strings.HasPrefix(cc.Endpoint, "dns://"):
-		r := regexp.MustCompile(`^dns:///?`)
-		return r.ReplaceAllString(cc.Endpoint, "")
+	default:
+		// Only attempt URI parsing if the endpoint contains "://", which
+		// distinguishes a scheme URI (e.g. "dns:///host:port") from a bare
+		// host:port. Without this check, url.Parse("host:port") would
+		// misinterpret "host" as the scheme.
+		if !strings.Contains(cc.Endpoint, "://") {
+			return cc.Endpoint
+		}
+		// Parse as a URI to strip scheme and authority, matching how grpc-go
+		// parses target URIs via url.Parse in grpc.NewClient.
+		u, err := url.Parse(cc.Endpoint)
+		if err != nil {
+			return cc.Endpoint
+		}
+		return strings.TrimPrefix(u.Path, "/")
+	}
+}
+
+// grpcDialTarget returns the target string to pass to grpc.NewClient.
+// For http:// and https:// prefixes (which are not gRPC resolver schemes),
+// the prefix is stripped. For all other endpoints, the value is passed through
+// to grpc.NewClient as-is, allowing any gRPC resolver scheme (e.g. dns:///,
+// passthrough:///, xds:///) to be used directly.
+func (cc *ClientConfig) grpcDialTarget() string {
+	switch {
+	case cc.isSchemeHTTP(), cc.isSchemeHTTPS():
+		return cc.sanitizedEndpoint()
 	default:
 		return cc.Endpoint
 	}
@@ -310,7 +356,7 @@ func (cc *ClientConfig) ToClientConn(
 	if err != nil {
 		return nil, err
 	}
-	conn, err := grpc.NewClient(cc.sanitizedEndpoint(), grpcOpts...)
+	conn, err := grpc.NewClient(cc.grpcDialTarget(), grpcOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -439,6 +485,10 @@ func (cc *ClientConfig) getGrpcDialOptions(
 		if wrapper, ok := opt.(grpcDialOptionWrapper); ok {
 			opts = append(opts, wrapper.opt)
 		}
+	}
+
+	if cc.UserAgent != "" {
+		opts = append(opts, grpc.WithUserAgent(cc.UserAgent))
 	}
 
 	return opts, nil

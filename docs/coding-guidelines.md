@@ -564,6 +564,12 @@ three stages: alpha, beta and stable. The intent of these stages is to decouple 
 changes from the breaking change; some users may adopt the change early, while other users may delay
 its adoption.
 
+#### Defining feature gates
+
+Feature gates should be defined declaratively in the component's `metadata.yaml`
+file whenever possible. See the [feature gate documentation](../featuregate/README.md)
+for details on the declarative approach and the supported fields.
+
 #### Feature gate IDs
 
 Feature gate IDs should be namespaced using dots to denote the hierarchy. The namespace should be as

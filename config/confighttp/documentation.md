@@ -8,6 +8,6 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `confighttp.framedSnappy` | beta | Content encoding 'snappy' will compress/decompress block snappy format while 'x-snappy-framed' will compress/decompress framed snappy format. | v0.125.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/10584) |
+| `confighttp.framedSnappy` | stable | Content encoding 'snappy' will compress/decompress block snappy format while 'x-snappy-framed' will compress/decompress framed snappy format. | v0.125.0 | v0.151.0 | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/10584) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

@@ -3,25 +3,26 @@ module go.opentelemetry.io/collector/config/configgrpc
 go 1.25.0
 
 require (
-	github.com/mostynb/go-grpc-compression v1.2.3
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/client v1.55.0
-	go.opentelemetry.io/collector/component v1.55.0
-	go.opentelemetry.io/collector/component/componenttest v0.149.0
-	go.opentelemetry.io/collector/config/configauth v1.55.0
-	go.opentelemetry.io/collector/config/configcompression v1.55.0
-	go.opentelemetry.io/collector/config/configmiddleware v1.55.0
-	go.opentelemetry.io/collector/config/confignet v1.55.0
-	go.opentelemetry.io/collector/config/configopaque v1.55.0
-	go.opentelemetry.io/collector/config/configoptional v1.55.0
-	go.opentelemetry.io/collector/config/configtls v1.55.0
-	go.opentelemetry.io/collector/extension v1.55.0
-	go.opentelemetry.io/collector/extension/extensionauth v1.55.0
-	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.149.0
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.149.0
-	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.149.0
-	go.opentelemetry.io/collector/pdata v1.55.0
-	go.opentelemetry.io/collector/pdata/testdata v0.149.0
+	go.opentelemetry.io/collector v0.150.0
+	go.opentelemetry.io/collector/client v1.56.0
+	go.opentelemetry.io/collector/component v1.56.0
+	go.opentelemetry.io/collector/component/componenttest v0.150.0
+	go.opentelemetry.io/collector/config/configauth v1.56.0
+	go.opentelemetry.io/collector/config/configcompression v1.56.0
+	go.opentelemetry.io/collector/config/configmiddleware v1.56.0
+	go.opentelemetry.io/collector/config/confignet v1.56.0
+	go.opentelemetry.io/collector/config/configopaque v1.56.0
+	go.opentelemetry.io/collector/config/configoptional v1.56.0
+	go.opentelemetry.io/collector/config/configtls v1.56.0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.150.0
+	go.opentelemetry.io/collector/extension v1.56.0
+	go.opentelemetry.io/collector/extension/extensionauth v1.56.0
+	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.150.0
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.150.0
+	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.150.0
+	go.opentelemetry.io/collector/pdata v1.56.0
+	go.opentelemetry.io/collector/pdata/testdata v0.150.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.68.0
 	go.opentelemetry.io/otel v1.43.0
 	go.uber.org/goleak v1.3.0
@@ -29,6 +30,7 @@ require (
 )
 
 require (
+	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20251226215517-609e4778396f // indirect
@@ -42,7 +44,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.17.9 // indirect
+	github.com/klauspost/compress v1.18.5 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
 	github.com/knadh/koanf/v2 v2.3.4 // indirect
@@ -52,11 +54,10 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/confmap v1.55.0 // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.149.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.55.0 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.149.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.149.0 // indirect
+	go.opentelemetry.io/collector/confmap v1.56.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.56.0 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.150.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.150.0 // indirect
 	go.opentelemetry.io/otel/metric v1.43.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.43.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.43.0 // indirect
@@ -74,6 +75,8 @@ require (
 )
 
 replace go.opentelemetry.io/collector/client => ../../client
+
+replace go.opentelemetry.io/collector => ../..
 
 replace go.opentelemetry.io/collector/config/configauth => ../configauth
 

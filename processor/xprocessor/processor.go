@@ -36,7 +36,6 @@ type Profiles interface {
 }
 
 // CreateProfilesFunc is the equivalent of Factory.CreateProfiles().
-// CreateProfilesFunc is the equivalent of Factory.CreateProfiles().
 type CreateProfilesFunc func(context.Context, processor.Settings, component.Config, xconsumer.Profiles) (Profiles, error)
 
 // FactoryOption apply changes to ReceiverOptions.
@@ -45,7 +44,7 @@ type FactoryOption interface {
 	applyOption(o *factory)
 }
 
-// factoryOptionFunc is an ReceiverFactoryOption created through a function.
+// factoryOptionFunc is a FactoryOption created through a function.
 type factoryOptionFunc func(*factory)
 
 func (f factoryOptionFunc) applyOption(o *factory) {
