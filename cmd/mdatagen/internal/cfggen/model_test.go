@@ -374,3 +374,12 @@ func TestGoStructConfig_Unmarshal(t *testing.T) {
 		})
 	}
 }
+
+func TestGoStructConfig_UnmarshalError(t *testing.T) {
+	parser := confmap.NewFromStringMap(map[string]any{
+		"anonymous": "not-a-bool",
+	})
+
+	var g GoStructConfig
+	require.Error(t, g.Unmarshal(parser))
+}
