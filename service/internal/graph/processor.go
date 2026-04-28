@@ -7,6 +7,9 @@ import (
 	"context"
 	"fmt"
 
+	otelattr "go.opentelemetry.io/otel/attribute"
+	"gonum.org/v1/gonum/graph"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
@@ -20,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/service/internal/obsconsumer"
 	"go.opentelemetry.io/collector/service/internal/refconsumer"
 )
+
+const peerComponentIDAttrKey = "otelcol.peer.component.id"
 
 var _ consumerNode = (*processorNode)(nil)
 
@@ -49,8 +54,10 @@ func (n *processorNode) buildComponent(ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
 	builder *builders.ProcessorBuilder,
-	next baseConsumer,
+	next graph.Node,
 ) error {
+	nextConsumer := next.(consumerNode).getConsumer()
+
 	set := processor.Settings{
 		ID:                n.componentID,
 		TelemetrySettings: componentattribute.TelemetrySettingsWithAttributes(tel, *n.Set()),
@@ -73,10 +80,15 @@ func (n *processorNode) buildComponent(ctx context.Context,
 		Logger:      set.Logger,
 	}
 
+	var opts []obsconsumer.Option
+	if n, ok := next.(*processorNode); ok {
+		opts = []obsconsumer.Option{obsconsumer.WithStaticDataPointAttribute(otelattr.String(peerComponentIDAttrKey, n.componentID.String()))}
+	}
+
 	switch n.pipelineID.Signal() {
 	case pipeline.SignalTraces:
 		n.Component, err = builder.CreateTraces(ctx, set,
-			obsconsumer.NewTraces(next.(consumer.Traces), producedSettings),
+			obsconsumer.NewTraces(nextConsumer.(consumer.Traces), producedSettings, opts...),
 		)
 		if err != nil {
 			return fmt.Errorf("failed to create %q processor, in pipeline %q: %w", set.ID, n.pipelineID.String(), err)
@@ -85,7 +97,7 @@ func (n *processorNode) buildComponent(ctx context.Context,
 		n.consumer = refconsumer.NewTraces(n.consumer.(consumer.Traces))
 	case pipeline.SignalMetrics:
 		n.Component, err = builder.CreateMetrics(ctx, set,
-			obsconsumer.NewMetrics(next.(consumer.Metrics), producedSettings))
+			obsconsumer.NewMetrics(nextConsumer.(consumer.Metrics), producedSettings, opts...))
 		if err != nil {
 			return fmt.Errorf("failed to create %q processor, in pipeline %q: %w", set.ID, n.pipelineID.String(), err)
 		}
@@ -93,7 +105,7 @@ func (n *processorNode) buildComponent(ctx context.Context,
 		n.consumer = refconsumer.NewMetrics(n.consumer.(consumer.Metrics))
 	case pipeline.SignalLogs:
 		n.Component, err = builder.CreateLogs(ctx, set,
-			obsconsumer.NewLogs(next.(consumer.Logs), producedSettings))
+			obsconsumer.NewLogs(nextConsumer.(consumer.Logs), producedSettings, opts...))
 		if err != nil {
 			return fmt.Errorf("failed to create %q processor, in pipeline %q: %w", set.ID, n.pipelineID.String(), err)
 		}
@@ -101,7 +113,7 @@ func (n *processorNode) buildComponent(ctx context.Context,
 		n.consumer = refconsumer.NewLogs(n.consumer.(consumer.Logs))
 	case xpipeline.SignalProfiles:
 		n.Component, err = builder.CreateProfiles(ctx, set,
-			obsconsumer.NewProfiles(next.(xconsumer.Profiles), producedSettings))
+			obsconsumer.NewProfiles(nextConsumer.(xconsumer.Profiles), producedSettings, opts...))
 		if err != nil {
 			return fmt.Errorf("failed to create %q processor, in pipeline %q: %w", set.ID, n.pipelineID.String(), err)
 		}
