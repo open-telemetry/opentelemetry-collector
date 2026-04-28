@@ -63,6 +63,17 @@ type DialerConfig struct {
 	// Timeout is the maximum amount of time a dial will wait for
 	// a connect to complete. The default is no timeout.
 	Timeout time.Duration `mapstructure:"timeout,omitempty"`
+	// SecurityDescriptor is a Security Descriptor Definition Language (SDDL)
+	// string used when creating a Windows named pipe listener. It is ignored
+	// for any transport other than "npipe" and for client-side dials. When
+	// empty, Windows applies its default named pipe DACL, which is roughly
+	// equivalent to "D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;0x12019b;;;WD)(A;;0x12019b;;;AN)"
+	// — full control for LocalSystem (SY) and Administrators (BA), and
+	// read plus limited write for Everyone (WD) and Anonymous Logon (AN).
+	// See:
+	//   - https://learn.microsoft.com/en-us/windows/win32/ipc/named-pipe-security-and-access-rights
+	//   - https://learn.microsoft.com/en-us/windows/win32/secauthz/security-descriptor-definition-language
+	SecurityDescriptor string `mapstructure:"security_descriptor,omitempty"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -111,7 +122,7 @@ func (na *AddrConfig) Dial(ctx context.Context) (net.Conn, error) {
 // Listen equivalent with net.ListenConfig's Listen for this address.
 func (na *AddrConfig) Listen(ctx context.Context) (net.Listener, error) {
 	if na.Transport == TransportTypeNpipe {
-		return listenNpipe(na.Endpoint)
+		return listenNpipe(na.Endpoint, na.DialerConfig.SecurityDescriptor)
 	}
 	lc := net.ListenConfig{}
 	return lc.Listen(ctx, string(na.Transport), na.Endpoint)
