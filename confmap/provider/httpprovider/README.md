@@ -26,3 +26,31 @@ The scheme for this provider is `http`. Usage looks like the following passed to
 ```text
 --config=http://example.com/config.yaml
 ```
+
+### Polling
+
+The provider supports opt-in polling so the Collector can pick up
+configuration changes without a restart. Append a `polling_interval` query
+parameter to the URI:
+
+```text
+--config=http://example.com/config.yaml?polling_interval=30s
+```
+
+`polling_interval` accepts any value parseable by Go's
+[`time.ParseDuration`](https://pkg.go.dev/time#ParseDuration). Omitting the
+parameter or setting it to `0s` preserves the historical behavior — a single
+GET at startup and no further fetches.
+
+When polling is enabled the provider:
+
+- strips `polling_interval` from the request URL so it is never forwarded to
+  the configured server;
+- issues each refresh with `If-None-Match: "<previous ETag>"`, treating `304
+  Not Modified` as no change;
+- treats a `200 OK` whose `ETag` (or, when no `ETag` is advertised, whose
+  body SHA-256) differs from the previous response as a config change, and
+  triggers an in-process reload via the same path used by `SIGHUP`.
+
+Transport errors during a poll are logged at WARN and the next interval is
+awaited; they do not cause the Collector to shut down.

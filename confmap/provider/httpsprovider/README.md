@@ -28,6 +28,19 @@ to the Collector's command line invocation:
 --config=https://example.com/config.yaml
 ```
 
+### Polling
+
+The provider supports opt-in polling identical to the [HTTP
+provider](../httpprovider/README.md#polling). Append a `polling_interval` query
+parameter to the URI:
+
+```text
+--config=https://example.com/config.yaml?polling_interval=30s
+```
+
+See the HTTP provider documentation for the full semantics (URL stripping,
+`ETag` / body-hash change detection, error handling).
+
 ### Notes
 
 The provider currently only supports communicating with servers whose
