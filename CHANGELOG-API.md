@@ -7,6 +7,60 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.57.0/v0.151.0
+
+### 🛑 Breaking changes 🛑
+
+- `receiver/otlp`: `Config.Protocols` is now a named field instead of an anonymous embedded field. (#15178)
+  Access to `cfg.GRPC` and `cfg.HTTP` must be updated to `cfg.Protocols.GRPC` and `cfg.Protocols.HTTP`.
+
+### 🚩 Deprecations 🚩
+
+- `cmd/mdatagen`: The `DefaultMetricsBuilderConfig` function is deprecated. Use `NewDefaultMetricsBuilderConfig` instead. (#15165)
+  The generated `DefaultMetricsBuilderConfig` function has been renamed to `NewDefaultMetricsBuilderConfig`
+  to follow Go naming conventions. The old function is kept as a deprecated wrapper and will be removed
+  in a future release.
+  
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Handle default values for configuration fields in generated code in mdatagen. (#14560)
+- `cmd/mdatagen`: Add opt-in override_value support for resource_attributes config via `override_value_enabled` flag (#15109)
+  Components can opt in by setting `override_value_enabled: true` in their metadata.yaml.
+  When enabled, per-attribute config types are generated with typed `override_value` fields
+  that let users override resource attribute values in the collector configuration.
+  Components without the flag continue to use the shared `ResourceAttributeConfig` type.
+  
+- `cmd/mdatagen`: Extend mdatagen config code generation to correctly handle default values for allOf embedded references (#14560)
+- `cmd/mdatagen`: Handle string validators in generated config structs (#14807)
+  Supported validators include `minLength`, `maxLength` and `pattern`.
+- `pkg/config/configgrpc`: Add a `DefaultBalancerName` constant for the name of the default load balancer (#15139)
+  This replaces the `BalancerName` function.
+- `pkg/config/configgrpc`: Accept gRPC resolver scheme URIs in client endpoint (e.g. passthrough:///host:port) to allow control over name resolution (#14990)
+  After the migration to grpc.NewClient, some gRPC client components such as the OTLP
+  exporter experienced connection issues in dual-stack DNS environments. This can now be
+  fixed by using the passthrough:/// gRPC resolver scheme in the endpoint field.
+  
+- `pkg/exporterhelper`: Added the `WithAttrs` option to allow custom attributes on exporter metrics (#14998)
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Fix a bug in mdatagen where the `allOf` field was not being properly handled, resulting in incorrect generation of data models. (#15153)
+- `pkg/otelcol`: Synchronize Collector Run and Shutdown lifecycles so that Shutdown blocks until Run completes all cleanup. (#4947)
+  Shutdown now blocks until Run finishes cleanup, matching http.Server semantics.
+  If Shutdown is called before Run, the next Run call returns nil after cleaning up
+  the config provider.
+  
+- `pkg/pdata`: Use pool-aware constructors in gRPC service handlers so top-level request structs participate in the sync.Pool lifecycle. (#14763)
+  The gRPC service handlers for all signal types allocated the top-level
+  ExportXxxServiceRequest with bare new(), bypassing the sync.Pool when
+  pdata.useProtoPooling is enabled. This caused objects returned to the pool
+  via Delete to never be retrieved. The handlers now use the pool-aware
+  New*() constructors.
+  
+
+<!-- previous-version -->
+
 ## v1.56.0/v0.150.0
 
 ### 💡 Enhancements 💡

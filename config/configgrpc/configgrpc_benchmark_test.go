@@ -9,14 +9,14 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/mostynb/go-grpc-compression/nonclobbering/snappy"
-	"github.com/mostynb/go-grpc-compression/nonclobbering/zstd"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/encoding"
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/status"
 
+	"go.opentelemetry.io/collector/internal/grpccompression/snappy"
+	"go.opentelemetry.io/collector/internal/grpccompression/zstd"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
