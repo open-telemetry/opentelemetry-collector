@@ -1,5 +1,5 @@
 change_type: enhancement
 component: cmd/mdatagen
 note: Add generated go:generate bootstrap file for packages missing an mdatagen directive.
-issues: []
+issues: [15223]
 change_logs: [user]
