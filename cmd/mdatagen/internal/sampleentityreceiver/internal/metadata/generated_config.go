@@ -5,6 +5,7 @@ package metadata
 import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // MetricConfig provides common config for a particular metric.
@@ -48,9 +49,11 @@ func DefaultMetricsConfig() MetricsConfig {
 	}
 }
 
-// ResourceAttributeConfig provides common config for a particular resource attribute.
-type ResourceAttributeConfig struct {
+// K8sNamespaceNameResourceAttributeConfig provides config for the k8s.namespace.name resource attribute.
+type K8sNamespaceNameResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
 	// Experimental: MetricsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
 	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
@@ -62,7 +65,119 @@ type ResourceAttributeConfig struct {
 	enabledSetByUser bool
 }
 
-func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+func (rac *K8sNamespaceNameResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sPodNameResourceAttributeConfig provides config for the k8s.pod.name resource attribute.
+type K8sPodNameResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *K8sPodNameResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sPodUIDResourceAttributeConfig provides config for the k8s.pod.uid resource attribute.
+type K8sPodUIDResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *K8sPodUIDResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sReplicasetNameResourceAttributeConfig provides config for the k8s.replicaset.name resource attribute.
+type K8sReplicasetNameResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *K8sReplicasetNameResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sReplicasetUIDResourceAttributeConfig provides config for the k8s.replicaset.uid resource attribute.
+type K8sReplicasetUIDResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *K8sReplicasetUIDResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -76,30 +191,51 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for sampleentity resource attributes.
 type ResourceAttributesConfig struct {
-	K8sNamespaceName  ResourceAttributeConfig `mapstructure:"k8s.namespace.name"`
-	K8sPodName        ResourceAttributeConfig `mapstructure:"k8s.pod.name"`
-	K8sPodUID         ResourceAttributeConfig `mapstructure:"k8s.pod.uid"`
-	K8sReplicasetName ResourceAttributeConfig `mapstructure:"k8s.replicaset.name"`
-	K8sReplicasetUID  ResourceAttributeConfig `mapstructure:"k8s.replicaset.uid"`
+	K8sNamespaceName  K8sNamespaceNameResourceAttributeConfig  `mapstructure:"k8s.namespace.name"`
+	K8sPodName        K8sPodNameResourceAttributeConfig        `mapstructure:"k8s.pod.name"`
+	K8sPodUID         K8sPodUIDResourceAttributeConfig         `mapstructure:"k8s.pod.uid"`
+	K8sReplicasetName K8sReplicasetNameResourceAttributeConfig `mapstructure:"k8s.replicaset.name"`
+	K8sReplicasetUID  K8sReplicasetUIDResourceAttributeConfig  `mapstructure:"k8s.replicaset.uid"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
-		K8sNamespaceName: ResourceAttributeConfig{
+		K8sNamespaceName: K8sNamespaceNameResourceAttributeConfig{
 			Enabled: true,
 		},
-		K8sPodName: ResourceAttributeConfig{
+		K8sPodName: K8sPodNameResourceAttributeConfig{
 			Enabled: true,
 		},
-		K8sPodUID: ResourceAttributeConfig{
+		K8sPodUID: K8sPodUIDResourceAttributeConfig{
 			Enabled: true,
 		},
-		K8sReplicasetName: ResourceAttributeConfig{
+		K8sReplicasetName: K8sReplicasetNameResourceAttributeConfig{
 			Enabled: true,
 		},
-		K8sReplicasetUID: ResourceAttributeConfig{
+		K8sReplicasetUID: K8sReplicasetUIDResourceAttributeConfig{
 			Enabled: true,
 		},
+	}
+}
+
+// applyOverrideValues applies override values to the given resource.
+// For each enabled resource attribute with a non-nil OverrideValue,
+// the override replaces any existing value in the resource.
+func (rac *ResourceAttributesConfig) applyOverrideValues(res pcommon.Resource) {
+	if rac.K8sNamespaceName.Enabled && rac.K8sNamespaceName.OverrideValue != nil {
+		res.Attributes().PutStr("k8s.namespace.name", *rac.K8sNamespaceName.OverrideValue)
+	}
+	if rac.K8sPodName.Enabled && rac.K8sPodName.OverrideValue != nil {
+		res.Attributes().PutStr("k8s.pod.name", *rac.K8sPodName.OverrideValue)
+	}
+	if rac.K8sPodUID.Enabled && rac.K8sPodUID.OverrideValue != nil {
+		res.Attributes().PutStr("k8s.pod.uid", *rac.K8sPodUID.OverrideValue)
+	}
+	if rac.K8sReplicasetName.Enabled && rac.K8sReplicasetName.OverrideValue != nil {
+		res.Attributes().PutStr("k8s.replicaset.name", *rac.K8sReplicasetName.OverrideValue)
+	}
+	if rac.K8sReplicasetUID.Enabled && rac.K8sReplicasetUID.OverrideValue != nil {
+		res.Attributes().PutStr("k8s.replicaset.uid", *rac.K8sReplicasetUID.OverrideValue)
 	}
 }
 

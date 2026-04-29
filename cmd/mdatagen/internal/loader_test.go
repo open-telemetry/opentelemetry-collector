@@ -53,6 +53,7 @@ func TestLoadMetadata(t *testing.T) {
 				SemConvVersion:       "1.40.0",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver",
 				ReaggregationEnabled: true,
+				OverrideValueEnabled: true,
 				Status: &Status{
 					DisableCodeCov: true,
 					Class:          "receiver",

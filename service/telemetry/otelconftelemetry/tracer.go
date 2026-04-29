@@ -8,11 +8,10 @@ import (
 	"errors"
 	"fmt"
 
-	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
-	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/embedded"
 	"go.opentelemetry.io/otel/trace/noop"
@@ -44,17 +43,21 @@ func createTracerProvider(
 		return &noopNoContextTracerProvider{}, nil
 	}
 
+	resourceConfig, err := createFixedResourceConfig(&cfg.Resource, set.Resource)
+	if err != nil {
+		return nil, err
+	}
+
 	propagator, err := textMapPropagatorFromConfig(cfg.Traces.Propagators)
 	if err != nil {
 		return nil, fmt.Errorf("error creating propagator: %w", err)
 	}
 	otel.SetTextMapPropagator(propagator)
 
-	attrs := pcommonAttrsToOTelAttrs(set.Resource)
-	res := sdkresource.NewWithAttributes("", attrs...)
-	sdk, err := newSDK(ctx, res, config.OpenTelemetryConfiguration{
+	sdk, err := otelconf.NewSDK(otelconf.WithContext(ctx), otelconf.WithOpenTelemetryConfiguration(otelconf.OpenTelemetryConfiguration{
+		Resource:       resourceConfig,
 		TracerProvider: &cfg.Traces.TracerProvider,
-	})
+	}))
 	if err != nil {
 		return nil, err
 	}
