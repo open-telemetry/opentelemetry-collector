@@ -6,7 +6,9 @@ package cfggen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cf
 import (
 	"fmt"
 	"log"
+	"maps"
 	"reflect"
+	"slices"
 )
 
 const (
@@ -229,7 +231,8 @@ func handleEmbeddedStructs(md *ConfigMetadata) {
 		log.Printf("warning: found deprecated allOf, use properties with `embed: true` annotation instead\n")
 		embeddedStructs = md.AllOf
 	}
-	for propName, prop := range md.Properties {
+	for _, propName := range slices.Sorted(maps.Keys(md.Properties)) {
+		prop := md.Properties[propName]
 		if prop.Embed {
 			if !prop.GoStruct.Anonymous {
 				prop.EmbeddedName = propName
