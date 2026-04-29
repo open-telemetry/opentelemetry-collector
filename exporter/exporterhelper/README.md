@@ -67,6 +67,8 @@ Available `batch::partition` options:
   per distinct combination of values for the listed metadata keys. Empty value and unset metadata are
   treated as distinct cases. Entries are case-insensitive. Duplicated entries will trigger a validation error. Default is empty.
 
+- `cardinality_limit` (default = 10000): maximum number of active partitions allowed.
+
 ### Timeout
 
 - `timeout` (default = 5s): Time to wait per individual attempt to send data to a backend

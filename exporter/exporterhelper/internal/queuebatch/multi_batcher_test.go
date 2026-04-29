@@ -122,6 +122,54 @@ func TestMultiBatcher_Timeout(t *testing.T) {
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 }
 
+func TestMultiBatcher_CardinalityLimitReached(t *testing.T) {
+	cardinalityLimit := 2
+	cfg := BatchConfig{
+		FlushTimeout: 100 * time.Millisecond,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      100, // High min size to prevent immediate flush
+		Partition: PartitionConfig{
+			CardinalityLimit: &cardinalityLimit,
+		},
+	}
+	sink := requesttest.NewSink()
+
+	type partitionKey struct{}
+
+	ba, err := newMultiBatcher(cfg,
+		request.NewItemsSizer(),
+		newWorkerPool(1),
+		NewPartitioner(func(ctx context.Context, _ request.Request) string {
+			return ctx.Value(partitionKey{}).(string)
+		}),
+		nil,
+		sink.Export,
+		zap.NewNop(),
+	)
+
+	require.NoError(t, err)
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, ba.Shutdown(context.Background()))
+	})
+
+	done := newFakeDone()
+
+	// First two partitions should be accepted (below the limit).
+	ba.Consume(context.WithValue(context.Background(), partitionKey{}, "p1"), &requesttest.FakeRequest{Items: 5}, done)
+	ba.Consume(context.WithValue(context.Background(), partitionKey{}, "p2"), &requesttest.FakeRequest{Items: 5}, done)
+	assert.Equal(t, int64(2), ba.getActivePartitionsCount())
+
+	// Third new partition should be rejected — cardinality limit of 2 is reached.
+	ba.Consume(context.WithValue(context.Background(), partitionKey{}, "p3"), &requesttest.FakeRequest{Items: 5}, done)
+	assert.Equal(t, int64(2), ba.getActivePartitionsCount())
+	assert.EqualValues(t, 1, done.errors.Load())
+
+	// Sending to an already-active partition should still succeed (not a new partition).
+	ba.Consume(context.WithValue(context.Background(), partitionKey{}, "p1"), &requesttest.FakeRequest{Items: 5}, done)
+	assert.EqualValues(t, 1, done.errors.Load())
+}
+
 func TestMultiBatcher_PartitionRemovedAfterIdleTimeout(t *testing.T) {
 	// Use a short FlushTimeout so the idle threshold (partitionIdleCycles*FlushTimeout) is reached quickly.
 	cfg := BatchConfig{
