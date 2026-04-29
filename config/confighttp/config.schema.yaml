@@ -8,7 +8,9 @@ $defs:
         items:
           type: string
     allOf:
-      - $ref: go.opentelemetry.io/collector/config/configauth.config
+      - $ref: /config/configauth.config
+  cookies_config:
+    description: CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.
   client_config:
     description: ClientConfig defines settings for creating an HTTP client.
     type: object
@@ -16,13 +18,13 @@ $defs:
       auth:
         description: Auth configuration for outgoing HTTP calls.
         x-optional: true
-        $ref: go.opentelemetry.io/collector/config/configauth.config
+        $ref: /config/configauth.config
       compression:
         description: The compression key for supported compression types within collector.
-        $ref: go.opentelemetry.io/collector/config/configcompression.type
+        $ref: /config/configcompression.type
       compression_params:
         description: Advanced configuration options for the Compression
-        $ref: go.opentelemetry.io/collector/config/configcompression.compression_params
+        $ref: /config/configcompression.compression_params
       cookies:
         description: Cookies configures the cookie management of the HTTP client.
         x-optional: true
@@ -38,7 +40,7 @@ $defs:
         type: boolean
       headers:
         description: Additional headers attached to each HTTP request sent by the client. Existing header values are overwritten if collision happens. Header values are opaque since they may be sensitive.
-        $ref: go.opentelemetry.io/collector/config/configopaque.map_list
+        $ref: /config/configopaque.map_list
       http2_ping_timeout:
         description: HTTP2PingTimeout if there's no response to the ping within the configured value, the connection will be closed. If not set or set to 0, it defaults to 15s.
         type: string
@@ -67,7 +69,7 @@ $defs:
         description: Middlewares are used to add custom functionality to the HTTP client. Middleware handlers are called in the order they appear in this list, with the first middleware becoming the outermost handler.
         type: array
         items:
-          $ref: go.opentelemetry.io/collector/config/configmiddleware.config
+          $ref: /config/configmiddleware.config
       proxy_url:
         description: ProxyURL setting for the collector
         type: string
@@ -81,7 +83,7 @@ $defs:
         format: duration
       tls:
         description: TLS struct exposes TLS client configuration.
-        $ref: go.opentelemetry.io/collector/config/configtls.client_config
+        $ref: /config/configtls.client_config
       write_buffer_size:
         description: WriteBufferSize for HTTP client. See http.Transport.WriteBufferSize. Default is 0.
         type: integer
@@ -141,7 +143,7 @@ $defs:
         description: Middlewares are used to add custom functionality to the HTTP server. Middleware handlers are called in the order they appear in this list, with the first middleware becoming the outermost handler.
         type: array
         items:
-          $ref: go.opentelemetry.io/collector/config/configmiddleware.config
+          $ref: /config/configmiddleware.config
       read_header_timeout:
         description: ReadHeaderTimeout is the amount of time allowed to read request headers. The connection's read deadline is reset after reading the headers and the Handler can decide what is considered too slow for the body. If ReadHeaderTimeout is zero, the value of ReadTimeout is used. If both are zero, there is no timeout.
         type: string
@@ -154,11 +156,11 @@ $defs:
         format: duration
       response_headers:
         description: Additional headers attached to each HTTP response sent to the client. Header values are opaque since they may be sensitive.
-        $ref: go.opentelemetry.io/collector/config/configopaque.map_list
+        $ref: /config/configopaque.map_list
       tls:
         description: TLS struct exposes TLS client configuration.
         x-optional: true
-        $ref: go.opentelemetry.io/collector/config/configtls.server_config
+        $ref: /config/configtls.server_config
       write_timeout:
         description: WriteTimeout is the maximum duration before timing out writes of the response. It is reset whenever a new request's header is read. Like ReadTimeout, it does not let Handlers make decisions on a per-request basis. A zero or negative value means there will be no timeout.
         type: string

@@ -31,6 +31,7 @@ func splitTraces(size int, src ptrace.Traces) ptrace.Traces {
 
 		destRs := dest.ResourceSpans().AppendEmpty()
 		srcRs.Resource().CopyTo(destRs.Resource())
+		destRs.SetSchemaUrl(srcRs.SchemaUrl())
 		srcRs.ScopeSpans().RemoveIf(func(srcIls ptrace.ScopeSpans) bool {
 			// If we are done skip everything else.
 			if totalCopiedSpans == size {
@@ -47,6 +48,7 @@ func splitTraces(size int, src ptrace.Traces) ptrace.Traces {
 
 			destIls := destRs.ScopeSpans().AppendEmpty()
 			srcIls.Scope().CopyTo(destIls.Scope())
+			destIls.SetSchemaUrl(srcIls.SchemaUrl())
 			srcIls.Spans().RemoveIf(func(srcSpan ptrace.Span) bool {
 				// If we are done skip everything else.
 				if totalCopiedSpans == size {

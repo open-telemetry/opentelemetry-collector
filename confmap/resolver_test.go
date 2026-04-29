@@ -19,7 +19,7 @@ import (
 	"go.uber.org/zap"
 	"go.yaml.in/yaml/v3"
 
-	"go.opentelemetry.io/collector/confmap/internal"
+	"go.opentelemetry.io/collector/confmap/internal/metadata"
 	"go.opentelemetry.io/collector/featuregate"
 )
 
@@ -465,10 +465,10 @@ func TestMergeFunctionality(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.flagEnabled {
-				require.NoError(t, featuregate.GlobalRegistry().Set(internal.EnableMergeAppendOption.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConfmapEnableMergeAppendOptionFeatureGate.ID(), true))
 				defer func() {
 					// Restore previous value.
-					require.NoError(t, featuregate.GlobalRegistry().Set(internal.EnableMergeAppendOption.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConfmapEnableMergeAppendOptionFeatureGate.ID(), false))
 				}()
 			}
 			runScenario(t, tt.scenarioFile)

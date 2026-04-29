@@ -7,7 +7,36 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
+
+func TestNewEntity(t *testing.T) {
+	e := NewEntity("service")
+	assert.Equal(t, "service", e.Type())
+	assert.Empty(t, e.SchemaURL())
+}
+
+func TestEntity_CopyToResource(t *testing.T) {
+	e := NewEntity("service")
+	e.IdentifyingAttributes().PutStr("service.name", "my-service")
+	e.DescriptiveAttributes().PutStr("service.version", "1.0.0")
+
+	res := pcommon.NewResource()
+	e.CopyToResource(res)
+
+	entities := ResourceEntities(res)
+	copied, ok := entities.Get("service")
+	assert.True(t, ok)
+
+	idVal, ok := copied.IdentifyingAttributes().Get("service.name")
+	assert.True(t, ok)
+	assert.Equal(t, "my-service", idVal.Str())
+
+	descVal, ok := copied.DescriptiveAttributes().Get("service.version")
+	assert.True(t, ok)
+	assert.Equal(t, "1.0.0", descVal.Str())
+}
 
 func TestEntity_Type(t *testing.T) {
 	em := NewEntityMap()

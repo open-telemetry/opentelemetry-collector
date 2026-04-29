@@ -10,6 +10,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestEventValidate(t *testing.T) {
+	err := (&Event{}).validate()
+	require.ErrorContains(t, err, "missing event description")
+
+	err = (&Event{Signal: Signal{Description: "some event"}}).validate()
+	require.NoError(t, err)
+}
+
 func TestEventNameRender(t *testing.T) {
 	for _, tt := range []struct {
 		name               EventName

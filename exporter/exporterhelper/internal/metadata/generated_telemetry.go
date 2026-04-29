@@ -118,31 +118,31 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ExporterEnqueueFailedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_exporter_enqueue_failed_log_records",
 		metric.WithDescription("Number of log records failed to be added to the sending queue. [Alpha]"),
-		metric.WithUnit("{records}"),
+		metric.WithUnit("{record}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterEnqueueFailedMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_exporter_enqueue_failed_metric_points",
 		metric.WithDescription("Number of metric points failed to be added to the sending queue. [Alpha]"),
-		metric.WithUnit("{datapoints}"),
+		metric.WithUnit("{datapoint}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterEnqueueFailedProfileSamples, err = builder.meter.Int64Counter(
 		"otelcol_exporter_enqueue_failed_profile_samples",
 		metric.WithDescription("Number of profile samples failed to be added to the sending queue. [Development]"),
-		metric.WithUnit("{samples}"),
+		metric.WithUnit("{sample}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterEnqueueFailedSpans, err = builder.meter.Int64Counter(
 		"otelcol_exporter_enqueue_failed_spans",
 		metric.WithDescription("Number of spans failed to be added to the sending queue. [Alpha]"),
-		metric.WithUnit("{spans}"),
+		metric.WithUnit("{span}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterQueueBatchSendSize, err = builder.meter.Int64Histogram(
 		"otelcol_exporter_queue_batch_send_size",
 		metric.WithDescription("Number of units in the batch [Development]"),
-		metric.WithUnit("{units}"),
+		metric.WithUnit("{unit}"),
 		metric.WithExplicitBucketBoundaries([]float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000}...),
 	)
 	errs = errors.Join(errs, err)
@@ -156,61 +156,61 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ExporterQueueCapacity, err = builder.meter.Int64ObservableGauge(
 		"otelcol_exporter_queue_capacity",
 		metric.WithDescription("Fixed capacity of the retry queue (in batches). [Alpha]"),
-		metric.WithUnit("{batches}"),
+		metric.WithUnit("{batch}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterQueueSize, err = builder.meter.Int64ObservableGauge(
 		"otelcol_exporter_queue_size",
 		metric.WithDescription("Current size of the retry queue (in batches). [Alpha]"),
-		metric.WithUnit("{batches}"),
+		metric.WithUnit("{batch}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSendFailedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_exporter_send_failed_log_records",
 		metric.WithDescription("Number of log records in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent. [Alpha]"),
-		metric.WithUnit("{records}"),
+		metric.WithUnit("{record}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSendFailedMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_exporter_send_failed_metric_points",
 		metric.WithDescription("Number of metric points in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent. [Alpha]"),
-		metric.WithUnit("{datapoints}"),
+		metric.WithUnit("{datapoint}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSendFailedProfileSamples, err = builder.meter.Int64Counter(
 		"otelcol_exporter_send_failed_profile_samples",
 		metric.WithDescription("Number of profile samples in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent. [Development]"),
-		metric.WithUnit("{samples}"),
+		metric.WithUnit("{sample}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSendFailedSpans, err = builder.meter.Int64Counter(
 		"otelcol_exporter_send_failed_spans",
 		metric.WithDescription("Number of spans in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent. [Alpha]"),
-		metric.WithUnit("{spans}"),
+		metric.WithUnit("{span}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSentLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_exporter_sent_log_records",
 		metric.WithDescription("Number of log record successfully sent to destination. [Alpha]"),
-		metric.WithUnit("{records}"),
+		metric.WithUnit("{record}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSentMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_exporter_sent_metric_points",
 		metric.WithDescription("Number of metric points successfully sent to destination. [Alpha]"),
-		metric.WithUnit("{datapoints}"),
+		metric.WithUnit("{datapoint}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSentProfileSamples, err = builder.meter.Int64Counter(
 		"otelcol_exporter_sent_profile_samples",
 		metric.WithDescription("Number of profile samples successfully sent to destination. [Development]"),
-		metric.WithUnit("{samples}"),
+		metric.WithUnit("{sample}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSentSpans, err = builder.meter.Int64Counter(
 		"otelcol_exporter_sent_spans",
 		metric.WithDescription("Number of spans successfully sent to destination. [Alpha]"),
-		metric.WithUnit("{spans}"),
+		metric.WithUnit("{span}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

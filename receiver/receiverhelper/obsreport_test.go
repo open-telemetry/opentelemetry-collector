@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper/internal"
+	"go.opentelemetry.io/collector/receiver/receiverhelper/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/receiverhelper/internal/metadatatest"
 )
 
@@ -41,9 +42,9 @@ type testParams struct {
 }
 
 func TestReceiveTraceDataOp(t *testing.T) {
-	originalState := NewReceiverMetricsGate.IsEnabled()
+	originalState := metadata.ReceiverhelperNewReceiverMetricsFeatureGate.IsEnabled()
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(NewReceiverMetricsGate.ID(), originalState))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverhelperNewReceiverMetricsFeatureGate.ID(), originalState))
 	})
 
 	for _, tc := range []struct {
@@ -51,7 +52,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 		enabled bool
 	}{{"gate_enabled", true}, {"gate_disabled", false}} {
 		t.Run(tc.name, func(t *testing.T) {
-			require.NoError(t, featuregate.GlobalRegistry().Set(NewReceiverMetricsGate.ID(), tc.enabled))
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverhelperNewReceiverMetricsFeatureGate.ID(), tc.enabled))
 			testTelemetry(t, func(t *testing.T, tt *componenttest.Telemetry) {
 				parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 				defer parentSpan.End()
@@ -164,9 +165,9 @@ func TestReceiveTraceDataOp(t *testing.T) {
 }
 
 func TestReceiveLogsOp(t *testing.T) {
-	originalState := NewReceiverMetricsGate.IsEnabled()
+	originalState := metadata.ReceiverhelperNewReceiverMetricsFeatureGate.IsEnabled()
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(NewReceiverMetricsGate.ID(), originalState))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverhelperNewReceiverMetricsFeatureGate.ID(), originalState))
 	})
 
 	for _, tc := range []struct {
@@ -174,7 +175,7 @@ func TestReceiveLogsOp(t *testing.T) {
 		enabled bool
 	}{{"gate_enabled", true}, {"gate_disabled", false}} {
 		t.Run(tc.name, func(t *testing.T) {
-			require.NoError(t, featuregate.GlobalRegistry().Set(NewReceiverMetricsGate.ID(), tc.enabled))
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverhelperNewReceiverMetricsFeatureGate.ID(), tc.enabled))
 			testTelemetry(t, func(t *testing.T, tt *componenttest.Telemetry) {
 				parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 				defer parentSpan.End()
@@ -286,9 +287,9 @@ func TestReceiveLogsOp(t *testing.T) {
 }
 
 func TestReceiveMetricsOp(t *testing.T) {
-	originalState := NewReceiverMetricsGate.IsEnabled()
+	originalState := metadata.ReceiverhelperNewReceiverMetricsFeatureGate.IsEnabled()
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(NewReceiverMetricsGate.ID(), originalState))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverhelperNewReceiverMetricsFeatureGate.ID(), originalState))
 	})
 
 	for _, tc := range []struct {
@@ -296,7 +297,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 		enabled bool
 	}{{"gate_enabled", true}, {"gate_disabled", false}} {
 		t.Run(tc.name, func(t *testing.T) {
-			require.NoError(t, featuregate.GlobalRegistry().Set(NewReceiverMetricsGate.ID(), tc.enabled))
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverhelperNewReceiverMetricsFeatureGate.ID(), tc.enabled))
 			testTelemetry(t, func(t *testing.T, tt *componenttest.Telemetry) {
 				parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 				defer parentSpan.End()
@@ -410,9 +411,9 @@ func TestReceiveMetricsOp(t *testing.T) {
 }
 
 func TestReceiveProfilesOp(t *testing.T) {
-	originalState := NewReceiverMetricsGate.IsEnabled()
+	originalState := metadata.ReceiverhelperNewReceiverMetricsFeatureGate.IsEnabled()
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(NewReceiverMetricsGate.ID(), originalState))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverhelperNewReceiverMetricsFeatureGate.ID(), originalState))
 	})
 
 	for _, tc := range []struct {
@@ -420,7 +421,7 @@ func TestReceiveProfilesOp(t *testing.T) {
 		enabled bool
 	}{{"gate_enabled", true}, {"gate_disabled", false}} {
 		t.Run(tc.name, func(t *testing.T) {
-			require.NoError(t, featuregate.GlobalRegistry().Set(NewReceiverMetricsGate.ID(), tc.enabled))
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverhelperNewReceiverMetricsFeatureGate.ID(), tc.enabled))
 			testTelemetry(t, func(t *testing.T, tt *componenttest.Telemetry) {
 				parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 				defer parentSpan.End()
@@ -532,9 +533,9 @@ func TestReceiveProfilesOp(t *testing.T) {
 }
 
 func TestReceiveWithLongLivedCtx(t *testing.T) {
-	originalState := NewReceiverMetricsGate.IsEnabled()
+	originalState := metadata.ReceiverhelperNewReceiverMetricsFeatureGate.IsEnabled()
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(NewReceiverMetricsGate.ID(), originalState))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverhelperNewReceiverMetricsFeatureGate.ID(), originalState))
 	})
 
 	for _, tc := range []struct {
@@ -542,7 +543,7 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 		enabled bool
 	}{{"gate_enabled", true}, {"gate_disabled", false}} {
 		t.Run(tc.name, func(t *testing.T) {
-			require.NoError(t, featuregate.GlobalRegistry().Set(NewReceiverMetricsGate.ID(), tc.enabled))
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverhelperNewReceiverMetricsFeatureGate.ID(), tc.enabled))
 			tt := componenttest.NewTelemetry()
 			t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 

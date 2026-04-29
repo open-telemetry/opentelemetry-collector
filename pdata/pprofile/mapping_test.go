@@ -187,26 +187,27 @@ func TestMappingSwitchDictionary(t *testing.T) {
 			}(),
 			dst: func() ProfilesDictionary {
 				d := NewProfilesDictionary()
-				d.StringTable().Append("", "foo")
+				d.StringTable().Append("", "test")
 
 				d.AttributeTable().AppendEmpty()
-				d.AttributeTable().AppendEmpty()
+				a := d.AttributeTable().AppendEmpty()
+				a.SetKeyStrindex(1)
+
 				return d
 			}(),
 
 			wantMapping: func() Mapping {
 				m := NewMapping()
-				m.AttributeIndices().Append(2)
+				m.AttributeIndices().Append(1)
 				return m
 			}(),
 			wantDictionary: func() ProfilesDictionary {
 				d := NewProfilesDictionary()
-				d.StringTable().Append("", "foo", "test")
+				d.StringTable().Append("", "test")
 
 				d.AttributeTable().AppendEmpty()
-				d.AttributeTable().AppendEmpty()
 				a := d.AttributeTable().AppendEmpty()
-				a.SetKeyStrindex(2)
+				a.SetKeyStrindex(1)
 				return d
 			}(),
 		},

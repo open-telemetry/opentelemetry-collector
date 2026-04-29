@@ -14,8 +14,8 @@ By default, TLS is enabled:
   the exporter's HTTPs or gRPC connection. See
   [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure)
   for gRPC.
-- `curve_preferences` (default = []): specify your curve preferences  that will
-	 be used in an ECDHE handshake, in preference order. Accepted values are:
+- `curve_preferences` (default = []): specify your curve preferences that will
+  be used in an ECDHE handshake, in preference order. Accepted values are:
   - X25519
   - P521
   - P256

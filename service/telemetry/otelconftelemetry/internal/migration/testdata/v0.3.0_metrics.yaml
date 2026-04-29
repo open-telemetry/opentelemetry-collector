@@ -1,4 +1,4 @@
-level: detailed
+level: Detailed
 readers:
   - periodic:
       exporter:

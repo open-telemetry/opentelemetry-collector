@@ -111,5 +111,6 @@ This component has the following feature gates:
 | `service.AllowNoPipelines` | alpha | Allow starting the Collector without starting any pipelines. | v0.122.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/pull/12613) |
 | `service.profilesSupport` | alpha | Controls whether profiles support can be enabled | v0.112.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/pull/11477) |
 | `telemetry.UseLocalHostAsDefaultMetricsAddress` | beta | Controls whether default Prometheus metrics server use localhost as the default host for their endpoints | v0.111.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/pull/11251) |
+| `telemetry.newPipelineTelemetry` | alpha | Injects component-identifying scope attributes in internal Collector metrics | v0.123.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/component-universal-telemetry.md) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

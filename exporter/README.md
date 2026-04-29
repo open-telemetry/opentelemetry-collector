@@ -2,7 +2,7 @@
 
 An exporter defines how the pipeline data leaves the collector.
 
-This repository hosts the following exporters available in 
+This repository hosts the following exporters available in
 traces, metrics and logs pipelines (sorted alphabetically):
 
 - [Debug](debugexporter/README.md)

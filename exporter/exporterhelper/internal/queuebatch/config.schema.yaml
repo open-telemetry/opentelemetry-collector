@@ -16,10 +16,22 @@ $defs:
         description: MinSize defines the configuration for the minimum size of a batch.
         type: integer
         x-customType: int64
+      partition:
+        description: Partition defines the partitioning of the batches configuration.
+        $ref: partition_config
       sizer:
         description: Sizer determines the type of size measurement used by the batch. If not configured, use the same configuration as the queue. It accepts "requests", "items", or "bytes".
         type: string
         x-customType: go.opentelemetry.io/collector/exporter/exporterhelper/internal/request.SizerType
+  partition_config:
+    description: PartitionConfig defines a configuration for partitioning requests based on metadata keys.
+    type: object
+    properties:
+      metadata_keys:
+        description: MetadataKeys is a list of client.Metadata keys that will be used to partition the data into batches. If this setting is empty, a single batcher instance will be used. When this setting is not empty, one batcher will be used per distinct combination of values for the listed metadata keys. Empty value and unset metadata are treated as distinct cases. Entries are case-insensitive. Duplicated entries will trigger a validation error.
+        type: array
+        items:
+          type: string
   config:
     description: Config defines configuration for queueing and batching incoming requests.
     type: object

@@ -45,7 +45,7 @@ Some types of mutation include
 - Filtering out signals such as by removing all telemetry with a `http.target` of `/health`
 - Attach information from resource into telemetry, for example adding certain resource fields as metric dimensions
 
-The processors implementing this use case are `attributesprocessor`, `filterprocessor`, `metricstransformprocessor`, 
+The processors implementing this use case are `attributesprocessor`, `filterprocessor`, `metricstransformprocessor`,
 `resourceprocessor`, `spanprocessor`.
 
 ### Metric generation
@@ -107,7 +107,7 @@ the status message of a span is `status.message`. A map lookup can include the k
 
 Operations are scoped to the type of a signal (`span`, `metric`, `log`), with all of the flattened points of that
 signal being part of a transformation space. Virtual fields are added to access data from a higher level before flattening, for
-`resource`, `library_info`. For metrics, the structure presented for processing is actual data points, e.g. `NumberDataPoint`, 
+`resource`, `library_info`. For metrics, the structure presented for processing is actual data points, e.g. `NumberDataPoint`,
 `HistogramDataPoint`, with the information from higher levels like `Metric` or the data type available as virtual fields.
 
 Virtual fields for all signals: `resource`, `library_info`.  
@@ -136,7 +136,7 @@ the `resource`. In the future, we may allow shorthand for accessing scoped infor
 
 Having selected telemetry to operate on, any needed operations can be defined as functions. Known useful functions should
 be implemented within the collector itself, provide registration from extension modules to allow customization with
-contrib components, and in the future can even allow user plugins possibly through WASM, similar to work in 
+contrib components, and in the future can even allow user plugins possibly through WASM, similar to work in
 [HTTP proxies](https://github.com/proxy-wasm/spec). The arguments to operations will primarily be field expressions,
 allowing the operation to mutate telemetry as needed.
 
@@ -180,14 +180,14 @@ Reduce cardinality of a span name
 ```
 traces:
   replace_match(name, "GET /user/*/list/*", "GET /user/{userId}/list/{listId}")
-``` 
+```
 
 Reduce cardinality of any matching attribute
 
 ```
 traces:
   replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")
-``` 
+```
 
 Decrease the size of the telemetry payload by removing large resource attributes
 
@@ -221,7 +221,6 @@ traces:
   group_by(trace_id, 2m)
 ```
 
-
 Update a spans ID
 
 ```
@@ -240,7 +239,7 @@ metrics:
 ```
 
 A lot of processing. Queries are executed in order. While initially performance may degrade compared to more specialized
-processors, the expectation is that over time, the transform processor's engine would improve to be able to apply optimizations 
+processors, the expectation is that over time, the transform processor's engine would improve to be able to apply optimizations
 across queries, compile into machine code, etc.
 
 ```yaml
@@ -334,15 +333,15 @@ import "github.com/open-telemetry/opentelemetry/processors"
 processors.register("replace_match", replace_match)
 
 func replace_match(path processors.TelemetryPath, pattern regexp.Regexp, replacement string) processors.Result  {
-    val := path.Get()
-	if val == nil {
-		return processors.CONTINUE
-    }
-	
-	// replace finds placeholders in "replacement" and swaps them in for regex matched substrings.
-	replaced := replace(val, pattern, replacement)
-	path.Set(replaced)
-	return processors.CONTINUE
+  val := path.Get()
+  if val == nil {
+    return processors.CONTINUE
+  }
+
+  // replace finds placeholders in "replacement" and swaps them in for regex matched substrings.
+  replaced := replace(val, pattern, replacement)
+  path.Set(replaced)
+  return processors.CONTINUE
 }
 ```
 

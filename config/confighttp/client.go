@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -204,17 +205,16 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 	if len(cc.Middlewares) > 0 && extensions == nil {
 		return nil, errors.New("middlewares were configured but this component or its host does not support extensions")
 	}
-	for i := len(cc.Middlewares) - 1; i >= 0; i-- {
-		var wrapper func(http.RoundTripper) (http.RoundTripper, error)
-		wrapper, err = cc.Middlewares[i].GetHTTPClientRoundTripper(ctx, extensions)
+	for _, m := range slices.Backward(cc.Middlewares) {
+		getClient, rerr := m.GetHTTPClientRoundTripper(ctx, extensions)
 		// If we failed to get the middleware
-		if err != nil {
-			return nil, err
+		if rerr != nil {
+			return nil, rerr
 		}
-		clientTransport, err = wrapper(clientTransport)
+		clientTransport, rerr = getClient(ctx, clientTransport)
 		// If we failed to construct a wrapper
-		if err != nil {
-			return nil, err
+		if rerr != nil {
+			return nil, rerr
 		}
 	}
 

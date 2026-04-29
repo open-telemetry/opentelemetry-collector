@@ -95,7 +95,6 @@ For each listed deviation, the solution for unblocking component 1.0 is:
 - `Should component health reporting be an opt-in for component.Host implementations?` :white_check_mark:: Yes. A `component.Host` implementation is not required to provide a component status reporting feature. They may do so via an additional interface, such as `componentstatus.Reporter`.
 - `Component TelemetrySettings Requirements` :white_check_mark:: `component.TelemetrySettings.ReportStatus` has been removed. Instead, component status reporting is expected to be provided via an additional interface that `component.Host` implements. Components can check if the `component.Host` implements the desired interface, such as `componentstatus.Reporter` to access component status reporting features.
 
-
 ## Reference
 - Remove FatalError? Looking for opinions either way: https://github.com/open-telemetry/opentelemetry-collector/issues/9823
 - In order to prioritize lifecycle events over runtime events for status reporting, allow a component to transition from PermanentError -> Stopping: https://github.com/open-telemetry/opentelemetry-collector/issues/10058
@@ -113,7 +112,3 @@ For each listed deviation, the solution for unblocking component 1.0 is:
     - https://github.com/open-telemetry/opentelemetry-collector/pull/6560
   - Merged
     - https://github.com/open-telemetry/opentelemetry-collector/pull/8169
-
-
-
-

@@ -16,7 +16,7 @@ func AssertEqualReceiverAcceptedLogRecords(t *testing.T, tt *componenttest.Telem
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_accepted_log_records",
 		Description: "Number of log records successfully pushed into the pipeline. [Alpha]",
-		Unit:        "{records}",
+		Unit:        "{record}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -32,7 +32,7 @@ func AssertEqualReceiverAcceptedMetricPoints(t *testing.T, tt *componenttest.Tel
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_accepted_metric_points",
 		Description: "Number of metric points successfully pushed into the pipeline. [Alpha]",
-		Unit:        "{datapoints}",
+		Unit:        "{datapoint}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -48,7 +48,7 @@ func AssertEqualReceiverAcceptedProfileSamples(t *testing.T, tt *componenttest.T
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_accepted_profile_samples",
 		Description: "Number of profile samples successfully pushed into the pipeline. [Alpha]",
-		Unit:        "{samples}",
+		Unit:        "{sample}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -64,7 +64,7 @@ func AssertEqualReceiverAcceptedSpans(t *testing.T, tt *componenttest.Telemetry,
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_accepted_spans",
 		Description: "Number of spans successfully pushed into the pipeline. [Alpha]",
-		Unit:        "{spans}",
+		Unit:        "{span}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -80,7 +80,7 @@ func AssertEqualReceiverFailedLogRecords(t *testing.T, tt *componenttest.Telemet
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_failed_log_records",
 		Description: "The number of log records that failed to be processed by the receiver due to internal errors. [Alpha]",
-		Unit:        "{records}",
+		Unit:        "{record}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -96,7 +96,7 @@ func AssertEqualReceiverFailedMetricPoints(t *testing.T, tt *componenttest.Telem
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_failed_metric_points",
 		Description: "The number of metric points that failed to be processed by the receiver due to internal errors. [Alpha]",
-		Unit:        "{datapoints}",
+		Unit:        "{datapoint}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -112,7 +112,7 @@ func AssertEqualReceiverFailedProfileSamples(t *testing.T, tt *componenttest.Tel
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_failed_profile_samples",
 		Description: "The number of profile samples that failed to be processed by the receiver due to internal errors. [Alpha]",
-		Unit:        "{samples}",
+		Unit:        "{sample}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -128,7 +128,7 @@ func AssertEqualReceiverFailedSpans(t *testing.T, tt *componenttest.Telemetry, d
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_failed_spans",
 		Description: "The number of spans that failed to be processed by the receiver due to internal errors. [Alpha]",
-		Unit:        "{spans}",
+		Unit:        "{span}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -144,7 +144,7 @@ func AssertEqualReceiverRefusedLogRecords(t *testing.T, tt *componenttest.Teleme
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_refused_log_records",
 		Description: "Number of log records that could not be pushed into the pipeline. [Alpha]",
-		Unit:        "{records}",
+		Unit:        "{record}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -160,7 +160,7 @@ func AssertEqualReceiverRefusedMetricPoints(t *testing.T, tt *componenttest.Tele
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_refused_metric_points",
 		Description: "Number of metric points that could not be pushed into the pipeline. [Alpha]",
-		Unit:        "{datapoints}",
+		Unit:        "{datapoint}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -176,7 +176,7 @@ func AssertEqualReceiverRefusedProfileSamples(t *testing.T, tt *componenttest.Te
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_refused_profile_samples",
 		Description: "Number of profile samples that could not be pushed into the pipeline. [Alpha]",
-		Unit:        "{samples}",
+		Unit:        "{sample}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -192,7 +192,7 @@ func AssertEqualReceiverRefusedSpans(t *testing.T, tt *componenttest.Telemetry, 
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_refused_spans",
 		Description: "Number of spans that could not be pushed into the pipeline. [Alpha]",
-		Unit:        "{spans}",
+		Unit:        "{span}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -208,7 +208,7 @@ func AssertEqualReceiverRequests(t *testing.T, tt *componenttest.Telemetry, dps 
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_requests",
 		Description: "The number of requests performed. [Alpha]",
-		Unit:        "{requests}",
+		Unit:        "{request}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,

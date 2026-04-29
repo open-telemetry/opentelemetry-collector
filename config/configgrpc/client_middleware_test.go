@@ -40,7 +40,7 @@ func newTestMiddlewareConfig(name string) configmiddleware.Config {
 func newTestClientMiddleware(name string) extension.Extension {
 	return &testClientMiddleware{
 		Extension: extensionmiddlewaretest.NewNop(),
-		GetGRPCClientOptionsFunc: func() ([]grpc.DialOption, error) {
+		GetGRPCClientOptionsFunc: func(_ context.Context) ([]grpc.DialOption, error) {
 			return []grpc.DialOption{
 				grpc.WithChainUnaryInterceptor(
 					func(

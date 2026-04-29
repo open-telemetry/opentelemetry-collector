@@ -16,16 +16,7 @@ import (
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
-	"go.opentelemetry.io/collector/featuregate"
-)
-
-const featureGateName = "otelcol.printInitialConfig"
-
-var printCommandFeatureFlag = featuregate.GlobalRegistry().MustRegister(
-	featureGateName,
-	featuregate.StageBeta,
-	featuregate.WithRegisterFromVersion("v0.120.0"),
-	featuregate.WithRegisterDescription("if set to true, enable the print-config command"),
+	"go.opentelemetry.io/collector/otelcol/internal/metadata"
 )
 
 // newConfigPrintSubCommand constructs a new print-config command using the given CollectorSettings.
@@ -84,7 +75,7 @@ type printContext struct {
 }
 
 func (pctx *printContext) configPrintSubCommand(flagSet *flag.FlagSet, mode string) error {
-	if !printCommandFeatureFlag.IsEnabled() {
+	if !metadata.OtelcolPrintInitialConfigFeatureGate.IsEnabled() {
 		return errors.New("print-config is currently experimental, use the otelcol.printInitialConfig feature gate to enable this command")
 	}
 	err := updateSettingsUsingFlags(&pctx.set, flagSet)
@@ -149,36 +140,31 @@ func (pctx *printContext) getPrintableConfig() (any, error) {
 	return cfg, nil
 }
 
-// printUnredactedConfig prints resolved configuration before interpreting
-// with the intended types for each component, thus it shows the full
-// configuration without considering configuopaque. Use with caution.
+// printUnredactedConfig prints the resolved configuration before interpreting
+// with the intended types for each component. It uses unredacted mode to
+// reveal the full configuration including opaque values. Use with caution.
 func (pctx *printContext) printUnredactedConfig() error {
+	cfg, err := pctx.getPrintableConfig()
+	if err != nil {
+		return err
+	}
+
 	if pctx.validate {
 		// Validation serves prevent revealing invalid data.
-		cfg, err := pctx.getPrintableConfig()
-		if err != nil {
-			return err
-		}
 		if err = xconfmap.Validate(cfg); err != nil {
 			return fmt.Errorf("invalid configuration: %w", err)
 		}
-
 		// Note: we discard the validated configuration.
 	}
-	resolver, err := confmap.NewResolver(pctx.set.ConfigProviderSettings.ResolverSettings)
-	if err != nil {
-		return fmt.Errorf("failed to create new resolver: %w", err)
+
+	confMap := confmap.New()
+	if err := confMap.Marshal(cfg, xconfmap.WithUnredacted()); err != nil {
+		return fmt.Errorf("failed to marshal config: %w", err)
 	}
-	conf, err := resolver.Resolve(pctx.cmd.Context())
-	if err != nil {
-		return fmt.Errorf("error while resolving config: %w", err)
-	}
-	return pctx.printConfigData(conf.ToStringMap())
+
+	return pctx.printConfigData(confMap.ToStringMap())
 }
 
-// printRedactedConfig prints resolved configuration with its assigned
-// types, but without validation. Notably, configopaque strings are printed
-// as "[redacted]". This is the default.
 func (pctx *printContext) printRedactedConfig() error {
 	cfg, err := pctx.getPrintableConfig()
 	if err != nil {

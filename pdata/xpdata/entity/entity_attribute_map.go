@@ -3,7 +3,11 @@
 
 package entity // import "go.opentelemetry.io/collector/pdata/xpdata/entity"
 
-import "go.opentelemetry.io/collector/pdata/pcommon"
+import (
+	"iter"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+)
 
 // EntityAttributeMap is a wrapper around pcommon.Map that restricts operations to only the keys
 // that belong to a specific set of entity attributes (either ID or Description attributes).
@@ -100,4 +104,16 @@ func (m EntityAttributeMap) containsKey(key string) bool {
 		}
 	}
 	return false
+}
+
+// All returns an iterator over the key-value pairs of the attributes belonging to this map's key set.
+func (m EntityAttributeMap) All() iter.Seq2[string, pcommon.Value] {
+	return func(yield func(string, pcommon.Value) bool) {
+		for _, k := range m.keys.All() {
+			v, ok := m.attributes.Get(k)
+			if ok && !yield(k, v) {
+				return
+			}
+		}
+	}
 }

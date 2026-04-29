@@ -15,9 +15,9 @@ This support is built in for push-based receivers configured through
 receivers:
   otlp:
     protocols:
-	  http:
-	    middlewares:
-		- id: limitermiddleware
+      http:
+        middlewares:
+          - id: limitermiddleware
 ```
 
 ## Methods

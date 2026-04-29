@@ -2,7 +2,7 @@
 
 **Status: under development; This is currently just the interface**
 
-A storage extension persists state beyond the collector process. Other components can request a storage client from the storage extension and use it to manage state. 
+A storage extension persists state beyond the collector process. Other components can request a storage client from the storage extension and use it to manage state.
 
 The `storage.Extension` interface extends `component.Extension` by adding the following method:
 ```

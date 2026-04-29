@@ -29,3 +29,11 @@ var TelemetryUseLocalHostAsDefaultMetricsAddressFeatureGate = featuregate.Global
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/pull/11251"),
 	featuregate.WithRegisterFromVersion("v0.111.0"),
 )
+
+var TelemetryNewPipelineTelemetryFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"telemetry.newPipelineTelemetry",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Injects component-identifying scope attributes in internal Collector metrics"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/component-universal-telemetry.md"),
+	featuregate.WithRegisterFromVersion("v0.123.0"),
+)

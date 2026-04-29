@@ -324,14 +324,12 @@ func (mb *multiShardBatcher[T]) consume(ctx context.Context, data T) error {
 	// Get each metadata key value, form the corresponding
 	// attribute set for use as a map lookup key.
 	info := client.FromContext(ctx)
-	md := map[string][]string{}
-	var attrs []attribute.KeyValue
+	attrs := make([]attribute.KeyValue, 0, len(mb.metadataKeys))
 	for _, k := range mb.metadataKeys {
 		// Lookup the value in the incoming metadata, copy it
 		// into the outgoing metadata, and create a unique
 		// value for the attributeSet.
 		vs := info.Metadata.Get(k)
-		md[k] = vs
 		if len(vs) == 1 {
 			attrs = append(attrs, attribute.String(k, vs[0]))
 		} else {
@@ -351,6 +349,10 @@ func (mb *multiShardBatcher[T]) consume(ctx context.Context, data T) error {
 		// aset.ToSlice() returns the sorted, deduplicated,
 		// and name-lowercased list of attributes.
 		var loaded bool
+		md := make(map[string][]string, len(mb.metadataKeys))
+		for _, k := range mb.metadataKeys {
+			md[k] = info.Metadata.Get(k)
+		}
 		b, loaded = mb.batchers.LoadOrStore(aset, mb.processor.newShard(md))
 		if !loaded {
 			// Start the goroutine only if we added the object to the map, otherwise is already started.

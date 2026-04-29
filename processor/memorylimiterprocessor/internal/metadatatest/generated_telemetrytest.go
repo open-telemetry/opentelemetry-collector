@@ -26,7 +26,7 @@ func AssertEqualProcessorAcceptedLogRecords(t *testing.T, tt *componenttest.Tele
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_accepted_log_records",
 		Description: "Number of log records successfully pushed into the next component in the pipeline. [Deprecated]",
-		Unit:        "{records}",
+		Unit:        "{record}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -42,7 +42,7 @@ func AssertEqualProcessorAcceptedMetricPoints(t *testing.T, tt *componenttest.Te
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_accepted_metric_points",
 		Description: "Number of metric points successfully pushed into the next component in the pipeline. [Deprecated]",
-		Unit:        "{datapoints}",
+		Unit:        "{datapoint}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -58,7 +58,7 @@ func AssertEqualProcessorAcceptedSpans(t *testing.T, tt *componenttest.Telemetry
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_accepted_spans",
 		Description: "Number of spans successfully pushed into the next component in the pipeline. [Deprecated]",
-		Unit:        "{spans}",
+		Unit:        "{span}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -74,7 +74,7 @@ func AssertEqualProcessorRefusedLogRecords(t *testing.T, tt *componenttest.Telem
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_refused_log_records",
 		Description: "Number of log records that were rejected by the next component in the pipeline. [Deprecated]",
-		Unit:        "{records}",
+		Unit:        "{record}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -90,7 +90,7 @@ func AssertEqualProcessorRefusedMetricPoints(t *testing.T, tt *componenttest.Tel
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_refused_metric_points",
 		Description: "Number of metric points that were rejected by the next component in the pipeline. [Deprecated]",
-		Unit:        "{datapoints}",
+		Unit:        "{datapoint}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -106,7 +106,7 @@ func AssertEqualProcessorRefusedSpans(t *testing.T, tt *componenttest.Telemetry,
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_refused_spans",
 		Description: "Number of spans that were rejected by the next component in the pipeline. [Deprecated]",
-		Unit:        "{spans}",
+		Unit:        "{span}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,

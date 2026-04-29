@@ -150,6 +150,30 @@ func TestEntityAttributeMap_CanPut(t *testing.T) {
 	assert.True(t, m.CanPut("new-key"))
 }
 
+func TestEntityAttributeMap_All(t *testing.T) {
+	m := newTestEntityAttributeMap()
+	m.PutStr("k1", "v1")
+	m.PutStr("k2", "v2")
+
+	// Add an attribute not owned by this map — it should not appear in All().
+	m.attributes.PutStr("not-owned", "v3")
+
+	got := make(map[string]string)
+	for k, v := range m.All() {
+		got[k] = v.Str()
+	}
+
+	assert.Equal(t, map[string]string{"k1": "v1", "k2": "v2"}, got)
+
+	// Verify early termination: breaking out of the loop stops iteration.
+	var count int
+	for range m.All() {
+		count++
+		break
+	}
+	assert.Equal(t, 1, count)
+}
+
 func newTestEntityAttributeMap() EntityAttributeMap {
 	return EntityAttributeMap{
 		keys:       pcommon.NewStringSlice(),

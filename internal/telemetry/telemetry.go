@@ -10,15 +10,6 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
-)
-
-var NewPipelineTelemetryGate = featuregate.GlobalRegistry().MustRegister(
-	"telemetry.newPipelineTelemetry",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterFromVersion("v0.123.0"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/component-universal-telemetry.md"),
-	featuregate.WithRegisterDescription("Injects component-identifying scope attributes in internal Collector metrics"),
 )
 
 type injectorCore interface {

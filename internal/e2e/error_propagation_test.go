@@ -224,7 +224,7 @@ func assertOnGRPCCode(t *testing.T, l consumer.Logs, s *status.Status) {
 
 	rf := otlpreceiver.NewFactory()
 	rcfg := rf.CreateDefaultConfig().(*otlpreceiver.Config)
-	rcfg.GRPC = configoptional.Some(
+	rcfg.Protocols.GRPC = configoptional.Some(
 		configgrpc.ServerConfig{
 			NetAddr: confignet.AddrConfig{
 				Endpoint:  testutil.GetAvailableLocalAddress(t),
@@ -243,7 +243,7 @@ func assertOnGRPCCode(t *testing.T, l consumer.Logs, s *status.Status) {
 		require.NoError(t, r.Shutdown(context.Background()))
 	})
 
-	conn, err := grpc.NewClient(rcfg.GRPC.Get().NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(rcfg.Protocols.GRPC.Get().NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, conn.Close())
@@ -275,7 +275,7 @@ func assertOnHTTPCode(t *testing.T, l consumer.Logs, code int) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	rf := otlpreceiver.NewFactory()
 	rcfg := rf.CreateDefaultConfig().(*otlpreceiver.Config)
-	rcfg.HTTP = configoptional.Some(
+	rcfg.Protocols.HTTP = configoptional.Some(
 		otlpreceiver.HTTPConfig{
 			ServerConfig: confighttp.ServerConfig{
 				NetAddr: confignet.AddrConfig{

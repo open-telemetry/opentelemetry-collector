@@ -19,7 +19,7 @@ This issue has been highlighted in several discussions and feature requests:
 
 We’ve already implemented a feature gate and foundational logic that supports merging lists across configuration files. Currently, this logic is hardcoded to merge lists only for specific keys: receivers, exporters, and extensions. The relevant implementation can be found [here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/confmap/internal/merge.go).
 
-The current implementation lacks flexibility. Ideally, users should be able to specify which configuration paths should be merged, rather than relying on hardcoded defaults. 
+The current implementation lacks flexibility. Ideally, users should be able to specify which configuration paths should be merged, rather than relying on hardcoded defaults.
 This RFC proposes extending the existing functionality by introducing a user-configurable mechanism to define merge behavior.
 
 This RFC builds on top of feedback gathered from the [original PR](https://github.com/open-telemetry/opentelemetry-collector/pull/12097).
@@ -93,12 +93,12 @@ Our "custom" yaml tag will be in the format of URI query parameters. For starter
     - The value will be either of `append` or `prepend`.
     - Default: `append`
 2. `duplicates`:
-    - This setting controls the duplication of elements in the final list. 
+    - This setting controls the duplication of elements in the final list.
     - If the user wants to allow duplicates, they can simply turn this flag on.
     - Default: `false`
 3. `recursive`:
-    - This setting controls the merging of child elements of the given yaml path. 
-    - This is useful if user wants to merge all the lists under a give sub-tree. 
+    - This setting controls the merging of child elements of the given yaml path.
+    - This is useful if user wants to merge all the lists under a give sub-tree.
         - For eg. merging all the lists under the `service` section.
 
 #### Examples of first approach
@@ -150,7 +150,6 @@ service:
 ```
 
 2. _Merge all the lists under the `service::*` section_:
-
 
 ```yaml
 #main.yaml
@@ -204,14 +203,14 @@ service:
 
 ### Approach 2: URI params
 
-The proposed approach will rely on concept of URI query parameters([_RFC 3986_](https://datatracker.ietf.org/doc/html/rfc3986#page-23)). Our configuration URIs already adhere to this syntax and we can extend it to support query params instead adding new CLI flags. 
+The proposed approach will rely on concept of URI query parameters([_RFC 3986_](https://datatracker.ietf.org/doc/html/rfc3986#page-23)). Our configuration URIs already adhere to this syntax and we can extend it to support query params instead adding new CLI flags.
 
 For now, the new merging strategy is only enabled under `confmap.enableMergeAppendOption` gate. If user specifies the options and tries to run the collector without gate, we will merge as per default behaviour.
 
 We will support new parameters to config URIs as follows:
 1. `merge_paths`: A comma-separated list of glob patterns which will be used while config merging
     - This setting will control the paths user wants to merge from the given config.
-    - Example: 
+    - Example:
         - `otelcol --config main.yaml --config extra.yaml?merge_paths=service::extensions,service::**::receivers`
             - In this example, we will merge the list of extensions and receivers from pipeline, excluding lists in the rest of the config.
         - `otelcol --config main.yaml --config ext.yaml?merge_paths=service::extensions --config rec.yaml?merge_paths=service::**::receivers`
@@ -244,7 +243,6 @@ otelcol \
     - Merged extension(s) from `extra_extension.yaml`
     - Merged receiver(s) from `extra_receiver.yaml`
 
-
 3. _Prepend processors_:
 ```bash
 otelcol --config=main.yaml --config=extra_processor.yaml?merge_mode=prepend&merge_paths=service::**::processors --feature-gates=confmap.enableMergeAppendOption
@@ -267,8 +265,8 @@ otelcol --config=main.yaml --config=extra_components.yaml?merge_mode=append --co
         1. Error out.
         2. Log an error and merge the default way
 - What to do if an invalid query param is provided in config URI?
-    - In this case, I strongly feel that we should error out. 
+    - In this case, I strongly feel that we should error out.
 
-## Extensibility 
+## Extensibility
 
 This URI-based approach is highly extensible. In the future, it can enable advanced operations such as map overriding. Currently, it's impossible to do so.

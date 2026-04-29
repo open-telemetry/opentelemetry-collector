@@ -7,6 +7,7 @@ import (
 	"time"
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
@@ -32,6 +33,8 @@ func createDefaultConfig() component.Config {
 	if !metadata.TelemetryUseLocalHostAsDefaultMetricsAddressFeatureGate.IsEnabled() {
 		metricsHost = ""
 	}
+
+	schemaURL := semconv.SchemaURL
 
 	return &Config{
 		Logs: LogsConfig{
@@ -62,12 +65,14 @@ func createDefaultConfig() component.Config {
 							WithoutTypeSuffix: ptr(true),
 							Host:              &metricsHost,
 							Port:              ptr(8888),
-							WithResourceConstantLabels: &config.IncludeExclude{
-								Included: []string{},
-							},
 						}}},
 					},
 				},
+			},
+		},
+		Resource: ResourceConfig{
+			Resource: config.Resource{
+				SchemaUrl: &schemaURL,
 			},
 		},
 	}

@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/internal"
+	"go.opentelemetry.io/collector/confmap/internal/metadata"
 	"go.opentelemetry.io/collector/featuregate"
 )
 
@@ -60,12 +61,12 @@ func TestMapListWithExpandedValueIntValue(t *testing.T) {
 		},
 	}
 
-	originalState := internal.NewExpandedValueSanitizer.IsEnabled()
+	originalState := metadata.ConfmapNewExpandedValueSanitizerFeatureGate.IsEnabled()
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(internal.NewExpandedValueSanitizer.ID(), originalState))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConfmapNewExpandedValueSanitizerFeatureGate.ID(), originalState))
 	}()
 
-	require.NoError(t, featuregate.GlobalRegistry().Set(internal.NewExpandedValueSanitizer.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConfmapNewExpandedValueSanitizerFeatureGate.ID(), true))
 
 	conf := confmap.NewFromStringMap(data)
 	var tc testHeadersConfig
@@ -76,7 +77,7 @@ func TestMapListWithExpandedValueIntValue(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, configopaque.String("8080"), val)
 
-	require.NoError(t, featuregate.GlobalRegistry().Set(internal.NewExpandedValueSanitizer.ID(), false))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConfmapNewExpandedValueSanitizerFeatureGate.ID(), false))
 
 	// This will fail because when reverting to old behavior, ExpandedValues get decoded at collection time and doesn't
 	// take struct collections into account.
@@ -121,13 +122,13 @@ func TestStringyStructureWithExpandedValue(t *testing.T) {
 		},
 	}
 
-	originalState := internal.NewExpandedValueSanitizer.IsEnabled()
+	originalState := metadata.ConfmapNewExpandedValueSanitizerFeatureGate.IsEnabled()
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(internal.NewExpandedValueSanitizer.ID(), originalState))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConfmapNewExpandedValueSanitizerFeatureGate.ID(), originalState))
 	}()
 
 	// With feature gate disabled, useExpandValue should detect []string as stringy
-	require.NoError(t, featuregate.GlobalRegistry().Set(internal.NewExpandedValueSanitizer.ID(), false))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConfmapNewExpandedValueSanitizerFeatureGate.ID(), false))
 
 	conf := confmap.NewFromStringMap(data)
 	var tc testConfig
