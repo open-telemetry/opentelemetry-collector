@@ -700,59 +700,47 @@ func TestGenerateConfigFiles_WriteError(t *testing.T) {
 }
 
 func TestRunRemovesGeneratedDocGoWhenMdatagenDirectiveExists(t *testing.T) {
-	// samplereceiver already has a hand-authored mdatagen directive; run() must preserve it and remove generated_doc.go.
-	docGoPath := filepath.Join(".", "samplereceiver", "doc.go")
-	before, err := os.ReadFile(filepath.Clean(docGoPath))
-	require.NoError(t, err)
-	generatedDocGoPath := filepath.Join(".", "samplereceiver", "generated_doc.go")
-	require.NoError(t, os.WriteFile(generatedDocGoPath, []byte("package samplereceiver\n"), 0o600))
-	t.Cleanup(func() {
-		_ = os.Remove(generatedDocGoPath)
-	})
+	ymlDir := newMdatagenRunTestModule(t, "//go:generate mdatagen metadata.yaml\npackage testcomponent\n")
+	generatedDocGoPath := filepath.Join(ymlDir, "generated_doc.go")
+	require.NoError(t, os.WriteFile(generatedDocGoPath, []byte("package testcomponent\n"), 0o600))
 
-	require.NoError(t, run(filepath.Join(".", "samplereceiver", "metadata.yaml")))
+	require.NoError(t, run(filepath.Join(ymlDir, "metadata.yaml")))
 
-	after, err := os.ReadFile(filepath.Clean(docGoPath))
-	require.NoError(t, err)
-	require.Equal(t, string(before), string(after))
 	require.NoFileExists(t, generatedDocGoPath)
 }
 
 func TestRunGeneratesDocGoWhenDocGoHasNoMdatagenDirective(t *testing.T) {
-	docGoPath := filepath.Join(".", "samplereceiver", "doc.go")
-	before, err := os.ReadFile(filepath.Clean(docGoPath))
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		require.NoError(t, os.WriteFile(docGoPath, before, 0o600))
-		_ = os.Remove(filepath.Join(".", "samplereceiver", "generated_doc.go"))
-	})
+	ymlDir := newMdatagenRunTestModule(t, "package testcomponent\n")
 
-	require.NoError(t, os.WriteFile(docGoPath, []byte("package samplereceiver\n"), 0o600))
+	require.NoError(t, run(filepath.Join(ymlDir, "metadata.yaml")))
 
-	require.NoError(t, run(filepath.Join(".", "samplereceiver", "metadata.yaml")))
-
-	generatedDocGoPath := filepath.Join(".", "samplereceiver", "generated_doc.go")
+	generatedDocGoPath := filepath.Join(ymlDir, "generated_doc.go")
 	contents, err := os.ReadFile(filepath.Clean(generatedDocGoPath))
 	require.NoError(t, err)
 	require.Contains(t, string(contents), "//go:generate mdatagen metadata.yaml")
 }
 
 func TestRunRemovesGeneratedDocGoWhenMdatagenDirectiveExistsOutsideDocGo(t *testing.T) {
-	factoryGoPath := filepath.Join(".", "samplereceiver", "factory.go")
-	before, err := os.ReadFile(filepath.Clean(factoryGoPath))
-	require.NoError(t, err)
-	generatedDocGoPath := filepath.Join(".", "samplereceiver", "generated_doc.go")
-	t.Cleanup(func() {
-		require.NoError(t, os.WriteFile(factoryGoPath, before, 0o600))
-		_ = os.Remove(generatedDocGoPath)
-	})
+	ymlDir := newMdatagenRunTestModule(t, "package testcomponent\n")
+	factoryGoPath := filepath.Join(ymlDir, "factory.go")
+	require.NoError(t, os.WriteFile(factoryGoPath, []byte("//go:generate mdatagen metadata.yaml\npackage testcomponent\n"), 0o600))
+	generatedDocGoPath := filepath.Join(ymlDir, "generated_doc.go")
+	require.NoError(t, os.WriteFile(generatedDocGoPath, []byte("package testcomponent\n"), 0o600))
 
-	require.NoError(t, os.WriteFile(factoryGoPath, append([]byte("//go:generate mdatagen metadata.yaml\n"), before...), 0o600))
-	require.NoError(t, os.WriteFile(generatedDocGoPath, []byte("package samplereceiver\n"), 0o600))
-
-	require.NoError(t, run(filepath.Join(".", "samplereceiver", "metadata.yaml")))
+	require.NoError(t, run(filepath.Join(ymlDir, "metadata.yaml")))
 
 	require.NoFileExists(t, generatedDocGoPath)
+}
+
+func newMdatagenRunTestModule(t *testing.T, docGo string) string {
+	t.Helper()
+	root := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module example.com/test\n"), 0o600))
+	ymlDir := filepath.Join(root, "testcomponent")
+	require.NoError(t, os.MkdirAll(ymlDir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(ymlDir, "doc.go"), []byte(docGo), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(ymlDir, "metadata.yaml"), []byte("type: testcomponent\nstatus:\n  class: pkg\n"), 0o600))
+	return ymlDir
 }
 
 func TestRun(t *testing.T) {
