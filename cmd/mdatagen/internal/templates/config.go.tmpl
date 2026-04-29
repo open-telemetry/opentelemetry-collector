@@ -4,17 +4,25 @@ package {{ .Package }}
 
 {{ $reag := .ReaggregationEnabled }}
 {{- $hasReagMetrics := false }}
-{{- range $name, $metric := .Metrics }}{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}{{- $hasReagMetrics = true }}{{- end }}{{- end }}
+{{- $hasReagMetricsWithRequired := false }}
+{{- range $name, $metric := .Metrics }}{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}{{- $hasReagMetrics = true }}{{- range $element := $metric.Attributes }}{{- if (attributeInfo $element).IsRequired }}{{- $hasReagMetricsWithRequired = true }}{{- end }}{{- end }}{{- end }}{{- end }}
+{{- $hasEnumResourceAttr := false }}
+{{- range $_, $attr := .ResourceAttributes }}{{- if $attr.Enum }}{{- $hasEnumResourceAttr = true }}{{- end }}{{- end }}
 
 import (
-	{{- if $hasReagMetrics }}
+	{{- if or $hasReagMetrics (and .OverrideValueEnabled $hasEnumResourceAttr) }}
 	"fmt"
+	{{- end }}
+	{{- if $hasReagMetricsWithRequired }}
 	"slices"
 	{{- end }}
 
 	"go.opentelemetry.io/collector/confmap"
-	{{ if and .Metrics .ResourceAttributes -}}
+	{{- if and .Metrics .ResourceAttributes }}
 	"go.opentelemetry.io/collector/filter"
+	{{- end }}
+	{{- if and .OverrideValueEnabled .ResourceAttributes }}
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	{{- end }}
 )
 {{ if .Metrics -}}
@@ -150,6 +158,7 @@ func DefaultEventsConfig() EventsConfig {
 {{- end }}
 
 {{ if .ResourceAttributes -}}
+{{- if not .OverrideValueEnabled }}
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
@@ -186,23 +195,108 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	rac.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
+{{- else }}
+{{- range $name, $attr := .ResourceAttributes }}
+// {{ $name.Render }}ResourceAttributeConfig provides config for the {{ $name }} resource attribute.
+type {{ $name.Render }}ResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	{{- if $attr.Enum }}
+	// OverrideValue allows users to override the value of this resource attribute.
+	// Must be one of: {{ range $i, $e := $attr.Enum }}{{ if $i }}, {{ end }}{{ $e }}{{ end }}.
+	OverrideValue *string `mapstructure:"override_value"`
+	{{- else if or (eq $attr.Type.String "Slice") (eq $attr.Type.String "Map") (eq $attr.Type.String "Bytes") }}
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue {{ $attr.Type.Primitive }} `mapstructure:"override_value"`
+	{{- else }}
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *{{ $attr.Type.Primitive }} `mapstructure:"override_value"`
+	{{- end }}
+	{{- if $.Metrics }}
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	{{- end }}
+	{{- if $.Events }}
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+	{{- end }}
+
+	enabledSetByUser bool
+}
+
+func (rac *{{ $name.Render }}ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+{{- if $attr.Enum }}
+
+func (rac *{{ $name.Render }}ResourceAttributeConfig) Validate() error {
+	if rac.OverrideValue != nil {
+		switch *rac.OverrideValue {
+		case {{ range $i, $e := $attr.Enum }}{{ if $i }}, {{ end }}"{{ $e }}"{{ end }}:
+		default:
+			return fmt.Errorf("override_value for {{ $name }} must be one of [{{ range $i, $e := $attr.Enum }}{{ if $i }}, {{ end }}{{ $e }}{{ end }}], got %q", *rac.OverrideValue)
+		}
+	}
+	return nil
+}
+{{- end }}
+{{ end }}
+{{- end }}
 
 // ResourceAttributesConfig provides config for {{ .Type }} resource attributes.
 type ResourceAttributesConfig struct {
 	{{- range $name, $attr := .ResourceAttributes }}
-	{{ $name.Render }} ResourceAttributeConfig `mapstructure:"{{ $name }}"`
+	{{ $name.Render }} {{ if $.OverrideValueEnabled }}{{ $name.Render }}{{ end }}ResourceAttributeConfig `mapstructure:"{{ $name }}"`
 	{{- end }}
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		{{- range $name, $attr := .ResourceAttributes }}
-		{{ $name.Render }}: ResourceAttributeConfig {
+		{{ $name.Render }}: {{ if $.OverrideValueEnabled }}{{ $name.Render }}{{ end }}ResourceAttributeConfig {
 			Enabled: {{ $attr.Enabled }},
 		},
 		{{- end }}
 	}
 }
+
+{{- if .OverrideValueEnabled }}
+
+// applyOverrideValues applies override values to the given resource.
+// For each enabled resource attribute with a non-nil OverrideValue,
+// the override replaces any existing value in the resource.
+func (rac *ResourceAttributesConfig) applyOverrideValues(res pcommon.Resource) {
+	{{- range $name, $attr := .ResourceAttributes }}
+	if rac.{{ $name.Render }}.Enabled && rac.{{ $name.Render }}.OverrideValue != nil {
+		{{- if $attr.Enum }}
+		res.Attributes().PutStr("{{ $name }}", *rac.{{ $name.Render }}.OverrideValue)
+		{{- else if or (eq $attr.Type.String "Bytes") (eq $attr.Type.String "Slice") (eq $attr.Type.String "Map") }}
+		res.Attributes().PutEmpty{{ $attr.Type }}("{{ $name }}").FromRaw(rac.{{ $name.Render }}.OverrideValue)
+		{{- else }}
+		res.Attributes().Put{{ $attr.Type }}("{{ $name }}", *rac.{{ $name.Render }}.OverrideValue)
+		{{- end }}
+	}
+	{{- end }}
+}
+{{- end }}
 {{- end }}
 
 {{ if .Metrics -}}

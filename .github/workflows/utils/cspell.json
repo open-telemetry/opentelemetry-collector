@@ -336,6 +336,7 @@
       "nopreceiver",
       "nosuchprocessor",
       "notls",
+      "npipe",
       "obsreceiver",
       "obsreport",
       "obsreporttest",
