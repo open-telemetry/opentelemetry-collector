@@ -300,6 +300,7 @@
       "loggingexporter",
       "logstest",
       "lycheeverse",
+      "lifecycles",
       "mapconverter",
       "mapstructure",
       "marshalers",
