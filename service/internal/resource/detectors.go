@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 
+	ec2detector "go.opentelemetry.io/contrib/detectors/aws/ec2/v2"
 	"go.opentelemetry.io/otel/sdk/resource"
 )
 
@@ -17,11 +18,14 @@ type DetectorFactory func(context.Context) (resource.Detector, error)
 
 // The declarative configuration schema currently documents container/host/process/service detectors:
 // https://github.com/open-telemetry/opentelemetry-configuration/blob/ddc8c8f47085eb5637a4b1e084b65e384521f8b9/schema/resource.yaml#L74-L141
-// The collector extends that list with additional Go SDK detectors (env and host) to preserve parity
+// The collector extends that list with additional Go SDK detectors to preserve parity
 // with the resource detection features exposed directly by the SDKs.
 var detectorRegistry = map[string]DetectorFactory{
 	"env":  newEnvDetector,
 	"host": newHostDetector,
+	"aws/ec2": func(_ context.Context) (resource.Detector, error) {
+		return ec2detector.NewResourceDetector(), nil
+	},
 }
 
 func newEnvDetector(_ context.Context) (resource.Detector, error) {

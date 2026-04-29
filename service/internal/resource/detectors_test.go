@@ -33,6 +33,11 @@ func TestGetDetector(t *testing.T) {
 			wantErr:      false,
 		},
 		{
+			name:         "aws/ec2 detector",
+			detectorName: "aws/ec2",
+			wantErr:      false,
+		},
+		{
 			name:         "unknown detector",
 			detectorName: "unknown",
 			wantErr:      true,

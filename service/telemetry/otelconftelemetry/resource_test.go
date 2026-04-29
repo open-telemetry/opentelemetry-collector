@@ -109,22 +109,52 @@ func TestCreateResource(t *testing.T) {
 		assert.Contains(t, raw, "service.version")
 	})
 	t.Run("with detectors for forward compatibility", func(t *testing.T) {
+		t.Setenv("OTEL_RESOURCE_ATTRIBUTES", "detector.attr=detector-value")
+		t.Setenv("OTEL_SERVICE_NAME", "detected-service")
+
 		cfg := createDefaultConfig().(*Config)
 		cfg.Resource.Detectors = &config.Detectors{
 			Attributes: &config.DetectorsAttributes{
-				Included: []string{"host", "os"},
+				Included: []string{"env"},
 			},
-		}
-		cfg.Resource.Attributes = []config.AttributeNameValue{
-			{Name: "service.name", Value: "test-service"},
 		}
 		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
 		res, err := createResource(t.Context(), set, cfg)
 		require.NoError(t, err)
 
 		raw := res.Attributes().AsRaw()
-		assert.Contains(t, raw, "service.name")
-		assert.Equal(t, "test-service", raw["service.name"])
+		assert.Equal(t, "detected-service", raw["service.name"])
+		assert.Equal(t, "detector-value", raw["detector.attr"])
+	})
+	t.Run("with detectors explicit attributes still win", func(t *testing.T) {
+		t.Setenv("OTEL_SERVICE_NAME", "detected-service")
+
+		cfg := createDefaultConfig().(*Config)
+		cfg.Resource.Detectors = &config.Detectors{
+			Attributes: &config.DetectorsAttributes{
+				Included: []string{"env"},
+			},
+		}
+		cfg.Resource.Attributes = []config.AttributeNameValue{
+			{Name: "service.name", Value: "configured-service"},
+		}
+		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+		res, err := createResource(t.Context(), set, cfg)
+		require.NoError(t, err)
+
+		raw := res.Attributes().AsRaw()
+		assert.Equal(t, "configured-service", raw["service.name"])
+	})
+	t.Run("with unsupported detector returns error", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Resource.Detectors = &config.Detectors{
+			Attributes: &config.DetectorsAttributes{
+				Included: []string{"os"},
+			},
+		}
+		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+		_, err := createResource(t.Context(), set, cfg)
+		require.ErrorContains(t, err, `unknown detector: "os"`)
 	})
 	t.Run("with typed attributes", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
@@ -224,7 +254,7 @@ func TestDefaultAttributeValues(t *testing.T) {
 func TestCreateInitialResourceConfig(t *testing.T) {
 	t.Run("empty config defaults", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config).Resource
-		resourceConfig, err := createInitialResourceConfig(component.BuildInfo{Command: "cmd", Version: "1.0.0"}, &cfg)
+		resourceConfig, err := createInitialResourceConfig(t.Context(), component.BuildInfo{Command: "cmd", Version: "1.0.0"}, &cfg)
 		require.NoError(t, err)
 		assert.NotNil(t, resourceConfig.SchemaUrl)
 		assert.NotEmpty(t, resourceConfig.Attributes)
@@ -238,7 +268,7 @@ func TestCreateInitialResourceConfig(t *testing.T) {
 			"service.instance.id": nil,
 		})
 		require.NoError(t, legacy.Unmarshal(&cfg))
-		resourceConfig, err := createInitialResourceConfig(component.BuildInfo{Command: "cmd", Version: "1.0.0"}, &cfg)
+		resourceConfig, err := createInitialResourceConfig(t.Context(), component.BuildInfo{Command: "cmd", Version: "1.0.0"}, &cfg)
 		require.NoError(t, err)
 		for _, attr := range resourceConfig.Attributes {
 			assert.NotContains(t, []string{"service.name", "service.version", "service.instance.id"}, attr.Name)
@@ -254,8 +284,50 @@ func TestCreateInitialResourceConfig(t *testing.T) {
 			return nil, assert.AnError
 		}
 
-		_, err := createInitialResourceConfig(component.BuildInfo{Command: "cmd", Version: "1.0.0"}, &cfg)
+		_, err := createInitialResourceConfig(t.Context(), component.BuildInfo{Command: "cmd", Version: "1.0.0"}, &cfg)
 		require.ErrorContains(t, err, assert.AnError.Error())
+	})
+
+	t.Run("env detector contributes configured attributes", func(t *testing.T) {
+		t.Setenv("OTEL_RESOURCE_ATTRIBUTES", "detector.attr=detector-value")
+		t.Setenv("OTEL_SERVICE_NAME", "detected-service")
+
+		cfg := createDefaultConfig().(*Config).Resource
+		cfg.Detectors = &config.Detectors{
+			Attributes: &config.DetectorsAttributes{
+				Included: []string{"env"},
+			},
+		}
+
+		resourceConfig, err := createInitialResourceConfig(t.Context(), component.BuildInfo{Command: "cmd", Version: "1.0.0"}, &cfg)
+		require.NoError(t, err)
+
+		got := make(map[string]any, len(resourceConfig.Attributes))
+		for _, attr := range resourceConfig.Attributes {
+			got[attr.Name] = attr.Value
+		}
+
+		assert.Equal(t, "detector-value", got["detector.attr"])
+		assert.Equal(t, "detected-service", got["service.name"])
+	})
+
+	t.Run("excluded detector is not applied", func(t *testing.T) {
+		t.Setenv("OTEL_RESOURCE_ATTRIBUTES", "detector.attr=detector-value")
+
+		cfg := createDefaultConfig().(*Config).Resource
+		cfg.Detectors = &config.Detectors{
+			Attributes: &config.DetectorsAttributes{
+				Included: []string{"env"},
+				Excluded: []string{"env"},
+			},
+		}
+
+		resourceConfig, err := createInitialResourceConfig(t.Context(), component.BuildInfo{Command: "cmd", Version: "1.0.0"}, &cfg)
+		require.NoError(t, err)
+
+		for _, attr := range resourceConfig.Attributes {
+			assert.NotEqual(t, "detector.attr", attr.Name)
+		}
 	})
 }
 
