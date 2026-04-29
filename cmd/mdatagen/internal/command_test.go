@@ -699,6 +699,62 @@ func TestGenerateConfigFiles_WriteError(t *testing.T) {
 	require.Contains(t, err.Error(), "failed to write config schema")
 }
 
+func TestRunRemovesGeneratedDocGoWhenMdatagenDirectiveExists(t *testing.T) {
+	// samplereceiver already has a hand-authored mdatagen directive; run() must preserve it and remove generated_doc.go.
+	docGoPath := filepath.Join(".", "samplereceiver", "doc.go")
+	before, err := os.ReadFile(filepath.Clean(docGoPath))
+	require.NoError(t, err)
+	generatedDocGoPath := filepath.Join(".", "samplereceiver", "generated_doc.go")
+	require.NoError(t, os.WriteFile(generatedDocGoPath, []byte("package samplereceiver\n"), 0o600))
+	t.Cleanup(func() {
+		_ = os.Remove(generatedDocGoPath)
+	})
+
+	require.NoError(t, run(filepath.Join(".", "samplereceiver", "metadata.yaml")))
+
+	after, err := os.ReadFile(filepath.Clean(docGoPath))
+	require.NoError(t, err)
+	require.Equal(t, string(before), string(after))
+	require.NoFileExists(t, generatedDocGoPath)
+}
+
+func TestRunGeneratesDocGoWhenDocGoHasNoMdatagenDirective(t *testing.T) {
+	docGoPath := filepath.Join(".", "samplereceiver", "doc.go")
+	before, err := os.ReadFile(filepath.Clean(docGoPath))
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, os.WriteFile(docGoPath, before, 0o600))
+		_ = os.Remove(filepath.Join(".", "samplereceiver", "generated_doc.go"))
+	})
+
+	require.NoError(t, os.WriteFile(docGoPath, []byte("package samplereceiver\n"), 0o600))
+
+	require.NoError(t, run(filepath.Join(".", "samplereceiver", "metadata.yaml")))
+
+	generatedDocGoPath := filepath.Join(".", "samplereceiver", "generated_doc.go")
+	contents, err := os.ReadFile(filepath.Clean(generatedDocGoPath))
+	require.NoError(t, err)
+	require.Contains(t, string(contents), "//go:generate mdatagen metadata.yaml")
+}
+
+func TestRunRemovesGeneratedDocGoWhenMdatagenDirectiveExistsOutsideDocGo(t *testing.T) {
+	factoryGoPath := filepath.Join(".", "samplereceiver", "factory.go")
+	before, err := os.ReadFile(filepath.Clean(factoryGoPath))
+	require.NoError(t, err)
+	generatedDocGoPath := filepath.Join(".", "samplereceiver", "generated_doc.go")
+	t.Cleanup(func() {
+		require.NoError(t, os.WriteFile(factoryGoPath, before, 0o600))
+		_ = os.Remove(generatedDocGoPath)
+	})
+
+	require.NoError(t, os.WriteFile(factoryGoPath, append([]byte("//go:generate mdatagen metadata.yaml\n"), before...), 0o600))
+	require.NoError(t, os.WriteFile(generatedDocGoPath, []byte("package samplereceiver\n"), 0o600))
+
+	require.NoError(t, run(filepath.Join(".", "samplereceiver", "metadata.yaml")))
+
+	require.NoFileExists(t, generatedDocGoPath)
+}
+
 func TestRun(t *testing.T) {
 	type args struct {
 		ymlPath string
