@@ -56,13 +56,13 @@ By enabling partial reload, the collector can intelligently determine which comp
 
 When partial reload is enabled via the `service.partialReload` feature flag, the collector compares the incoming configuration with the current running configuration to determine the minimal set of components that need to be rebuilt. Components not affected by the change continue running without interruption, unless they are upstream of a changed component in the same pipeline, in which case they are also rebuilt to ensure a clean data path.
 
-### Component Changes
+### Component Configuration Changes
 
-- **Receiver modified**: Only the affected receiver is rebuilt. Downstream processors and exporters continue operating and will receive data from the new receiver instance once it starts.
-- **Processor modified**: The processor and all processors and receivers upstream of it in the pipeline are rebuilt. This ensures that no in-flight data is lost during the processor restart.
-- **Exporter modified**: The exporter, along with all processors and receivers upstream of it in the pipeline, are rebuilt. This provides a clean data path from ingestion to export.
+- **Receiver configuration modified**: Only the affected receiver instance(s) are rebuilt. Downstream processors and exporter instances continue operating and will receive data from the new receiver instance once it starts.
+- **Processor configuration modified**: The processor instance(s) and all processors and receiver instances upstream of it in any pipelines are rebuilt. This ensures that no in-flight data is lost during the processor instance(s) restart.
+- **Exporter configuration modified**: The exporter instance(s), along with all processors and receiver instances upstream of it in any pipelines, are rebuilt. This provides a clean data path from ingestion to export.
 
-### Pipeline Changes
+### Pipeline Configuration Changes
 
 - **Pipeline added**: Only the new pipeline is instantiated and started. Existing pipelines continue operating without interruption.
 - **Pipeline removed**: Only the removed pipeline is stopped and torn down. Other pipelines remain unaffected.
@@ -72,8 +72,8 @@ When partial reload is enabled via the `service.partialReload` feature flag, the
 
 Connectors require special handling since they bridge two pipelines:
 
-- **Connector added**: On the exporter side (the pipeline feeding into the connector), the entire upstream pipeline is rebuilt to establish the new data flow. On the receiver side (the pipeline receiving from the connector), the connector is started as a new receiver and downstream processors and exporters continue operating without interruption.
-- **Connector removed**: On the exporter side, the pipeline is rebuilt to remove the connector as a destination. On the receiver side, the connector is stopped. If the receiving pipeline has other receivers, they continue operating unaffected.
+- **Connector added**: On the exporter side (the pipeline feeding into the connector), the entire upstream pipeline is rebuilt to establish the new data flow. On the receiver side (the pipeline receiving from the connector), the connector instance is started as a new receiver and downstream processors and exporter instances continue operating without interruption.
+- **Connector removed**: On the exporter side, the pipeline is rebuilt to remove the connector instance as a destination. On the receiver side, the connector instance is stopped. If the receiving pipeline has other receivers, they continue operating unaffected.
 
 The general principle is that changes are propagated "up the graph" from the point of change, rebuilding components upstream while leaving downstream components untouched. This keeps the blast radius of any configuration change as small as possible.
 
