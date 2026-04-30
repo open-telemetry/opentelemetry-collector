@@ -4,6 +4,8 @@
 package cfggen
 
 import (
+	"maps"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -516,6 +518,88 @@ func TestExtractImports_ResolvedReferenceIncludesDefaultOverrideImports(t *testi
 	result, err := ExtractImports(md, "", "")
 	require.NoError(t, err)
 	require.ElementsMatch(t, []string{"go.opentelemetry.io/collector/scraper/scraperhelper", "time"}, result)
+}
+
+func TestCollectCustomDefaultImports(t *testing.T) {
+	tests := []struct {
+		name         string
+		metadata     *ConfigMetadata
+		defaultValue any
+		expected     []string
+	}{
+		{
+			name:         "nil metadata",
+			defaultValue: map[string]any{"timeout": "30s"},
+		},
+		{
+			name: "ignored default",
+			metadata: &ConfigMetadata{
+				Type:     "object",
+				GoStruct: GoStructConfig{IgnoreDefault: true},
+				Properties: map[string]*ConfigMetadata{
+					"timeout": {Type: "string", GoType: "time.Duration"},
+				},
+			},
+			defaultValue: map[string]any{"timeout": "30s"},
+		},
+		{
+			name: "map schema with additional properties does not inspect entries",
+			metadata: &ConfigMetadata{
+				Type:                 "object",
+				AdditionalProperties: &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+			},
+			defaultValue: map[string]any{"timeout": "30s"},
+		},
+		{
+			name: "missing property is ignored",
+			metadata: &ConfigMetadata{
+				Type:       "object",
+				Properties: map[string]*ConfigMetadata{},
+			},
+			defaultValue: map[string]any{"timeout": "30s"},
+		},
+		{
+			name: "map default imports overridden property types",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"timeout": {Type: "string", GoType: "time.Duration"},
+				},
+			},
+			defaultValue: map[string]any{"timeout": "30s"},
+			expected:     []string{"time"},
+		},
+		{
+			name: "array default imports object item property types",
+			metadata: &ConfigMetadata{
+				Type: "array",
+				Items: &ConfigMetadata{
+					Type: "object",
+					Properties: map[string]*ConfigMetadata{
+						"timestamp": {Type: "string", GoType: "time.Time"},
+					},
+				},
+			},
+			defaultValue: []any{map[string]any{"timestamp": "2026-04-30T00:00:00Z"}},
+			expected:     []string{"time"},
+		},
+		{
+			name: "array default with non-object item does not inspect entries",
+			metadata: &ConfigMetadata{
+				Type:  "array",
+				Items: &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+			},
+			defaultValue: []any{"30s"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			imports := map[string]bool{}
+			require.NoError(t, collectCustomDefaultImports(tt.metadata, tt.defaultValue, imports, "", ""))
+			require.ElementsMatch(t, tt.expected, slices.Collect(maps.Keys(imports)))
+		})
+	}
 }
 
 func TestExtractImports_InternalResolvedReferenceIncludesNestedImports(t *testing.T) {
@@ -1883,6 +1967,13 @@ func TestFormatBaseValue(t *testing.T) {
 	}
 
 	require.Equal(t, `"localhost"`, FormatBaseValue(md, "endpoint", defaultValue("localhost"), "", ""))
+	require.Empty(t, FormatBaseValue(
+		&ConfigMetadata{Type: "string", GoStruct: GoStructConfig{IgnoreDefault: true}},
+		"endpoint",
+		defaultValue("localhost"),
+		"",
+		"",
+	))
 }
 
 func TestFormatDefaultValue_UnsetDefault(t *testing.T) {
