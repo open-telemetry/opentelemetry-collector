@@ -58,12 +58,16 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return typeName
 		},
-		"embeddedName": func(ref string) string {
-			if ref == "" {
-				panic("attempted to use embedded name with an empty ref")
+		"embeddedName": func(md *ConfigMetadata) string {
+			id := md.EmbeddedName
+			if id == "" {
+				if md.ResolvedFrom == "" {
+					panic("attempted to use embedded name with an empty ref")
+				}
+				refDesc := NewRef(md.ResolvedFrom)
+				id = refDesc.DefName()
 			}
-			refDesc := NewRef(ref)
-			name, _ := helpers.FormatIdentifier(refDesc.defName, true)
+			name, _ := helpers.FormatIdentifier(id, true)
 			return name
 		},
 		"camelVar": CamelVar,

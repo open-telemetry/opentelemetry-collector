@@ -15,8 +15,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mostynb/go-grpc-compression/nonclobbering/snappy"
-	"github.com/mostynb/go-grpc-compression/nonclobbering/zstd"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
@@ -41,6 +39,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.opentelemetry.io/collector/internal/grpccompression/snappy"
+	"go.opentelemetry.io/collector/internal/grpccompression/zstd"
 )
 
 var errMetadataNotFound = errors.New("no request metadata found")

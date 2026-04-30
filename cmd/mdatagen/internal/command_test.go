@@ -591,6 +591,47 @@ func TestGenerateConfigGoStruct_ResolvedImports(t *testing.T) {
 	require.Contains(t, generated, "func createDefaultConfig() component.Config")
 }
 
+func TestGenerateConfigGoStruct_NamedEmbeddedStruct(t *testing.T) {
+	root := t.TempDir()
+	outputDir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(outputDir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	md := Metadata{
+		Type:        "test",
+		PackageName: "testmodule/shortname",
+		Status:      &Status{Class: "receiver"},
+		Config: &cfggen.ConfigMetadata{
+			Type: "object",
+			AllOf: []*cfggen.ConfigMetadata{
+				{
+					Type:         "object",
+					ResolvedFrom: "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
+					EmbeddedName: "controller_config",
+					Default:      map[string]any{"timeout": "30s"},
+					Properties: map[string]*cfggen.ConfigMetadata{
+						"timeout": {
+							Type:   "string",
+							GoType: "time.Duration",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err := generateConfigGoStruct(md, outputDir)
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(filepath.Join(outputDir, "generated_config.go")) // #nosec G304
+	require.NoError(t, err)
+
+	generated := string(content)
+	require.Contains(t, generated, "ControllerConfig scraperhelper.ControllerConfig `mapstructure:\",squash\"`")
+	require.Contains(t, generated, "controllerConfig := scraperhelper.NewDefaultControllerConfig()")
+	require.Contains(t, generated, "ControllerConfig: controllerConfig,")
+}
+
 func TestGenerateConfigGoStruct_PropertyDefaultsAndImports(t *testing.T) {
 	root := t.TempDir()
 	outputDir := filepath.Join(root, "shortname")

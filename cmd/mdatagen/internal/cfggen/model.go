@@ -51,12 +51,14 @@ type ConfigMetadata struct {
 	ExclusiveMinimum     *float64                   `mapstructure:"exclusiveMinimum,omitempty" json:"exclusiveMinimum,omitempty" yaml:"exclusiveMinimum,omitempty"`
 	Defs                 map[string]*ConfigMetadata `mapstructure:"$defs,omitempty" json:"-" yaml:"$defs,omitempty"`
 	// Additional custom fields
-	GoStruct   GoStructConfig `mapstructure:"go_struct,omitempty" json:"-"`
+	GoStruct   GoStructConfig `mapstructure:"go_struct,omitempty" json:"-" yaml:"go_struct,omitempty"`
 	GoType     string         `mapstructure:"x-customType,omitempty" json:"-" yaml:"x-customType,omitempty"`
 	IsPointer  bool           `mapstructure:"x-pointer,omitempty" json:"-" yaml:"x-pointer,omitempty"`
 	IsOptional bool           `mapstructure:"x-optional,omitempty" json:"-" yaml:"x-optional,omitempty"`
+	Embed      bool           `mapstructure:"embed,omitempty" json:"-" yaml:"embed,omitempty"`
 	// internal
 	ResolvedFrom string `mapstructure:"-" json:"-" yaml:"-"`
+	EmbeddedName string `mapstructure:"-" json:"-" yaml:"-"`
 }
 
 // DefaultValue distinguishes between an absent default attribute and an explicitly configured default value.
@@ -105,15 +107,20 @@ func (dv *DefaultValue) MarshalJSON() ([]byte, error) {
 }
 
 type GoStructConfig struct {
-	CustomValidator *CustomValidatorConfig `mapstructure:"custom_validator" json:"-"`
+	CustomValidator *CustomValidatorConfig `mapstructure:"custom_validator" json:"-" yaml:"custom_validator,omitempty"`
+	Anonymous       bool                   `mapstructure:"anonymous" json:"-" yaml:"anonymous,omitempty"`
 }
 
 type CustomValidatorConfig struct {
-	Name string `mapstructure:"name,omitempty" json:"-"`
+	Name string `mapstructure:"name,omitempty" json:"-" yaml:"name,omitempty"`
 }
 
 func (g *GoStructConfig) Unmarshal(parser *confmap.Conf) error {
-	if !parser.IsSet("custom_validator") {
+	type goStructConfig GoStructConfig
+	if err := parser.Unmarshal((*goStructConfig)(g), confmap.WithIgnoreUnused()); err != nil {
+		return err
+	}
+	if !parser.IsSet("custom_validator") || g.CustomValidator != nil {
 		return nil
 	}
 	sub, err := parser.Sub("custom_validator")
