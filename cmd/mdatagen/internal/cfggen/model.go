@@ -8,8 +8,6 @@ import (
 	"errors"
 	"fmt"
 
-	"go.yaml.in/yaml/v3"
-
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -22,7 +20,7 @@ type ConfigMetadata struct {
 	Comment              string                     `mapstructure:"$comment,omitempty" json:"$comment,omitempty" yaml:"$comment,omitempty"`
 	Type                 string                     `mapstructure:"type,omitempty" json:"type,omitempty" yaml:"type,omitempty"`
 	Ref                  string                     `mapstructure:"$ref,omitempty" json:"-" yaml:"$ref,omitempty"`
-	Default              DefaultValue               `mapstructure:"-" json:"default,omitzero" yaml:"default,omitempty"`
+	Default              any                        `mapstructure:"default,omitempty" json:"default,omitempty" yaml:"default,omitempty"`
 	Examples             []any                      `mapstructure:"examples,omitempty" json:"examples,omitempty" yaml:"examples,omitempty"`
 	Deprecated           bool                       `mapstructure:"deprecated,omitempty" json:"deprecated,omitempty" yaml:"deprecated,omitempty"`
 	Enum                 []any                      `mapstructure:"enum,omitempty" json:"enum,omitempty" yaml:"enum,omitempty"`
@@ -61,54 +59,10 @@ type ConfigMetadata struct {
 	EmbeddedName string `mapstructure:"-" json:"-" yaml:"-"`
 }
 
-// DefaultValue distinguishes between an absent default attribute and an explicitly configured default value.
-type DefaultValue struct {
-	value any
-	set   bool
-}
-
-// NewDefaultValue returns a DefaultValue wrapping the provided value.
-func NewDefaultValue(value any) DefaultValue {
-	return DefaultValue{
-		value: value,
-		set:   true,
-	}
-}
-
-// IsZero implements the interface used by encoding/json's omitzero tag.
-func (dv DefaultValue) IsZero() bool {
-	return !dv.set
-}
-
-// IsSet reports whether the default attribute was present in metadata.
-func (dv *DefaultValue) IsSet() bool {
-	return dv.set
-}
-
-// Get returns the configured default value.
-func (dv *DefaultValue) Get() any {
-	return dv.value
-}
-
-func (dv *DefaultValue) UnmarshalYAML(node *yaml.Node) error {
-	var value any
-	if err := node.Decode(&value); err != nil {
-		return err
-	}
-	*dv = NewDefaultValue(value)
-	return nil
-}
-
-func (dv *DefaultValue) MarshalJSON() ([]byte, error) {
-	if !dv.set {
-		return []byte("null"), nil
-	}
-	return json.Marshal(dv.value)
-}
-
 type GoStructConfig struct {
 	CustomValidator *CustomValidatorConfig `mapstructure:"custom_validator" json:"-" yaml:"custom_validator,omitempty"`
 	Anonymous       bool                   `mapstructure:"anonymous" json:"-" yaml:"anonymous,omitempty"`
+	IgnoreDefault   bool                   `mapstructure:"ignore_default" json:"-" yaml:"ignore_default,omitempty"`
 }
 
 type CustomValidatorConfig struct {
@@ -129,24 +83,6 @@ func (g *GoStructConfig) Unmarshal(parser *confmap.Conf) error {
 	}
 	g.CustomValidator = &CustomValidatorConfig{}
 	return sub.Unmarshal(g.CustomValidator)
-}
-
-func (md *ConfigMetadata) Unmarshal(parser *confmap.Conf) error {
-	raw := parser.ToStringMap()
-	defaultValue, hasDefault := raw["default"]
-	delete(raw, "default")
-
-	type configMetadata ConfigMetadata
-	var decoded configMetadata
-	if err := confmap.NewFromStringMap(raw).Unmarshal(&decoded); err != nil {
-		return err
-	}
-
-	*md = ConfigMetadata(decoded)
-	if hasDefault {
-		md.Default = NewDefaultValue(defaultValue)
-	}
-	return nil
 }
 
 func (md *ConfigMetadata) ToJSON() ([]byte, error) {

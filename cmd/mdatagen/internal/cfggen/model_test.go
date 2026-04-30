@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-func defaultValue(value any) DefaultValue {
-	return NewDefaultValue(value)
+func defaultValue(value any) any {
+	return value
 }
 
 func TestConfigMetadata_ToJSON(t *testing.T) {
@@ -33,20 +33,18 @@ func TestConfigMetadata_ToJSON(t *testing.T) {
 	assert.Contains(t, string(data), `"The endpoint"`)
 }
 
-func TestDefaultValue_UnmarshalYAML(t *testing.T) {
+func TestConfigMetadata_UnmarshalYAMLDefaultValue(t *testing.T) {
 	tests := []struct {
-		name    string
-		yaml    string
-		wantSet bool
-		want    any
+		name string
+		yaml string
+		want any
 	}{
 		{
-			name: "absent",
+			name: "absent default",
 			yaml: `
 type: string
 `,
-			wantSet: false,
-			want:    nil,
+			want: nil,
 		},
 		{
 			name: "scalar",
@@ -54,8 +52,7 @@ type: string
 type: string
 default: localhost
 `,
-			wantSet: true,
-			want:    "localhost",
+			want: "localhost",
 		},
 		{
 			name: "map",
@@ -65,7 +62,6 @@ default:
   enabled: true
   label: prod
 `,
-			wantSet: true,
 			want: map[string]any{
 				"enabled": true,
 				"label":   "prod",
@@ -79,8 +75,7 @@ default:
   - one
   - two
 `,
-			wantSet: true,
-			want:    []any{"one", "two"},
+			want: []any{"one", "two"},
 		},
 	}
 
@@ -89,37 +84,23 @@ default:
 			var md ConfigMetadata
 			require.NoError(t, yaml.Unmarshal([]byte(tt.yaml), &md))
 
-			require.Equal(t, tt.wantSet, md.Default.IsSet())
-			require.Equal(t, tt.want, md.Default.Get())
+			require.Equal(t, tt.want, md.Default)
 		})
 	}
 }
 
-func TestDefaultValue_UnmarshalYAML_Error(t *testing.T) {
-	var dv DefaultValue
-	err := dv.UnmarshalYAML(&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!binary", Value: "not valid base64"})
-	require.Error(t, err)
-}
-
-func TestDefaultValue_MarshalJSON(t *testing.T) {
+func TestConfigMetadata_ToJSONDefaultValue(t *testing.T) {
 	absent := &ConfigMetadata{Type: "string"}
 
 	jsonData, err := absent.ToJSON()
 	require.NoError(t, err)
 	require.NotContains(t, string(jsonData), `"default"`)
 
-	explicitNull := &ConfigMetadata{Type: "string", Default: defaultValue(nil)}
+	withDefault := &ConfigMetadata{Type: "string", Default: defaultValue("localhost")}
 
-	jsonData, err = explicitNull.ToJSON()
+	jsonData, err = withDefault.ToJSON()
 	require.NoError(t, err)
-	require.Contains(t, string(jsonData), `"default": null`)
-}
-
-func TestDefaultValue_MarshalJSON_Unset(t *testing.T) {
-	var dv DefaultValue
-	data, err := dv.MarshalJSON()
-	require.NoError(t, err)
-	require.Equal(t, []byte("null"), data)
+	require.Contains(t, string(jsonData), `"default": "localhost"`)
 }
 
 func TestConfigMetadata_UnmarshalConfMapDefaultValue(t *testing.T) {
@@ -142,10 +123,8 @@ func TestConfigMetadata_UnmarshalConfMapDefaultValue(t *testing.T) {
 	var md ConfigMetadata
 	require.NoError(t, parser.Unmarshal(&md))
 
-	require.True(t, md.Properties["endpoint"].Default.IsSet())
-	require.Nil(t, md.Properties["endpoint"].Default.Get())
-	require.True(t, md.Properties["headers"].Default.IsSet())
-	require.Equal(t, map[string]any{"env": "prod"}, md.Properties["headers"].Default.Get())
+	require.Nil(t, md.Properties["endpoint"].Default)
+	require.Equal(t, map[string]any{"env": "prod"}, md.Properties["headers"].Default)
 }
 
 func TestConfigMetadata_UnmarshalConfMapError(t *testing.T) {
@@ -477,13 +456,15 @@ func TestGoStructConfig_Unmarshal(t *testing.T) {
 		{
 			name: "go_struct fields decode through mapstructure",
 			input: map[string]any{
-				"anonymous": true,
+				"anonymous":      true,
+				"ignore_default": true,
 				"custom_validator": map[string]any{
 					"name": "validateConfig",
 				},
 			},
 			want: GoStructConfig{
 				Anonymous:       true,
+				IgnoreDefault:   true,
 				CustomValidator: &CustomValidatorConfig{Name: "validateConfig"},
 			},
 		},

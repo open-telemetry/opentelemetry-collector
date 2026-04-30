@@ -573,7 +573,7 @@ func TestGenerateConfigGoStruct_ResolvedImports(t *testing.T) {
 							GoType: "time.Duration",
 						},
 					},
-					Default: cfggen.NewDefaultValue(map[string]any{"timeout": "30s"}),
+					Default: map[string]any{"timeout": "30s"},
 				},
 			},
 		},
@@ -628,7 +628,9 @@ func TestGenerateConfigGoStruct_NamedEmbeddedStruct(t *testing.T) {
 
 	generated := string(content)
 	require.Contains(t, generated, "ControllerConfig scraperhelper.ControllerConfig `mapstructure:\",squash\"`")
+	require.Contains(t, generated, `"time"`)
 	require.Contains(t, generated, "controllerConfig := scraperhelper.NewDefaultControllerConfig()")
+	require.Contains(t, generated, "controllerConfig.Timeout = 30 * time.Second")
 	require.Contains(t, generated, "ControllerConfig: controllerConfig,")
 }
 
@@ -648,7 +650,7 @@ func TestGenerateConfigGoStruct_PropertyDefaultsAndImports(t *testing.T) {
 				"timeout": {
 					Type:    "string",
 					GoType:  "time.Duration",
-					Default: cfggen.NewDefaultValue("30s"),
+					Default: "30s",
 				},
 			},
 		},
@@ -682,12 +684,12 @@ func TestGenerateConfigGoStruct_InternalResolvedRefGeneratesLocalType(t *testing
 				"config": {
 					Type:         "object",
 					ResolvedFrom: "plain_config",
-					Default:      cfggen.NewDefaultValue(map[string]any{"timeout": "30s"}),
+					Default:      map[string]any{"timeout": "30s"},
 					Properties: map[string]*cfggen.ConfigMetadata{
 						"timeout": {
 							Type:    "string",
 							GoType:  "time.Duration",
-							Default: cfggen.NewDefaultValue("30s"),
+							Default: "30s",
 						},
 					},
 				},
@@ -708,6 +710,7 @@ func TestGenerateConfigGoStruct_InternalResolvedRefGeneratesLocalType(t *testing
 	require.Contains(t, generated, "Timeout: 30 * time.Second,")
 	require.Contains(t, generated, "Config PlainConfig `mapstructure:\"config\"`")
 	require.Contains(t, generated, "config := NewDefaultPlainConfig()")
+	require.Contains(t, generated, "config.Timeout = 30 * time.Second")
 	require.Contains(t, generated, "Config: config,")
 }
 

@@ -500,7 +500,7 @@ func TestExtractImports_Optional(t *testing.T) {
 	require.Contains(t, result, "go.opentelemetry.io/collector/config/configoptional")
 }
 
-func TestExtractImports_ResolvedReferenceUsesResolvedTypeOnly(t *testing.T) {
+func TestExtractImports_ResolvedReferenceIncludesDefaultOverrideImports(t *testing.T) {
 	md := &ConfigMetadata{
 		Type:         "object",
 		ResolvedFrom: "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
@@ -515,7 +515,7 @@ func TestExtractImports_ResolvedReferenceUsesResolvedTypeOnly(t *testing.T) {
 
 	result, err := ExtractImports(md, "", "")
 	require.NoError(t, err)
-	require.Equal(t, []string{"go.opentelemetry.io/collector/scraper/scraperhelper"}, result)
+	require.ElementsMatch(t, []string{"go.opentelemetry.io/collector/scraper/scraperhelper", "time"}, result)
 }
 
 func TestExtractImports_InternalResolvedReferenceIncludesNestedImports(t *testing.T) {
@@ -1738,7 +1738,7 @@ func TestFormatDefaultValue_ScalarDefaults(t *testing.T) {
 		name         string
 		schema       *ConfigMetadata
 		propName     string
-		defaultValue DefaultValue
+		defaultValue any
 		expected     string
 	}{
 		{
@@ -1886,14 +1886,14 @@ func TestFormatBaseValue(t *testing.T) {
 }
 
 func TestFormatDefaultValue_UnsetDefault(t *testing.T) {
-	require.Empty(t, FormatDefaultValue(&ConfigMetadata{Type: "integer"}, "port", DefaultValue{}, "", ""))
+	require.Empty(t, FormatDefaultValue(&ConfigMetadata{Type: "integer"}, "port", nil, "", ""))
 }
 
 func TestFormatDefaultValue_Panics(t *testing.T) {
 	tests := []struct {
 		name         string
 		metadata     *ConfigMetadata
-		defaultValue DefaultValue
+		defaultValue any
 	}{
 		{
 			name: "invalid reference",
@@ -2039,6 +2039,11 @@ func TestHasDefaultValue(t *testing.T) {
 			{Type: "object", Default: defaultValue(map[string]any{"enabled": true})},
 		},
 	}))
+	require.False(t, hasDefaultValue(&ConfigMetadata{
+		Type:     "string",
+		Default:  defaultValue("value"),
+		GoStruct: GoStructConfig{IgnoreDefault: true},
+	}))
 	// External ref without any property defaults must not be treated as having defaults.
 	require.False(t, hasDefaultValue(&ConfigMetadata{
 		Type:         "object",
@@ -2088,7 +2093,7 @@ func TestMapCustomDefaults_Panics(t *testing.T) {
 	tests := []struct {
 		name         string
 		metadata     *ConfigMetadata
-		defaultValue DefaultValue
+		defaultValue any
 	}{
 		{
 			name: "missing property",
@@ -2126,15 +2131,27 @@ func TestMapCustomDefaults_Panics(t *testing.T) {
 }
 
 func TestMapCustomDefaults_EmptyInput(t *testing.T) {
-	require.Empty(t, MapCustomDefaults(&ConfigMetadata{Type: "string"}, DefaultValue{}, "", ""))
+	require.Empty(t, MapCustomDefaults(&ConfigMetadata{Type: "string"}, nil, "", ""))
+}
+
+func TestMapCustomDefaults_IgnoreDefault(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:     "object",
+		GoStruct: GoStructConfig{IgnoreDefault: true},
+		Properties: map[string]*ConfigMetadata{
+			"host": {Type: "string"},
+		},
+	}
+
+	require.Empty(t, MapCustomDefaults(md, defaultValue(map[string]any{"host": "localhost"}), "", ""))
 }
 
 func TestNewCfgFns_DefaultHelpers(t *testing.T) {
 	fns := NewCfgFns("", "")
 
-	formatDefaultValue := fns["formatDefaultValue"].(func(*ConfigMetadata, string, DefaultValue) string)
-	formatBaseValue := fns["formatBaseValue"].(func(*ConfigMetadata, string, DefaultValue) string)
-	mapCustomDefaults := fns["mapCustomDefaults"].(func(*ConfigMetadata, DefaultValue) []string)
+	formatDefaultValue := fns["formatDefaultValue"].(func(*ConfigMetadata, string, any) string)
+	formatBaseValue := fns["formatBaseValue"].(func(*ConfigMetadata, string, any) string)
+	mapCustomDefaults := fns["mapCustomDefaults"].(func(*ConfigMetadata, any) []string)
 	hasDefaultValue := fns["hasDefaultValue"].(func(*ConfigMetadata) bool)
 
 	require.Equal(t, `"localhost"`, formatDefaultValue(&ConfigMetadata{Type: "string"}, "endpoint", defaultValue("localhost")))

@@ -1203,8 +1203,7 @@ func TestResolver_ResolveSchema_PreservesCustomExtensions(t *testing.T) {
 	// Description should come from the referencing node, not the target
 	require.Equal(t, "Request timeout for the endpoint", timeout.Description)
 	// Default should be preserved
-	require.True(t, timeout.Default.IsSet())
-	require.Equal(t, "30s", timeout.Default.Get())
+	require.Equal(t, "30s", timeout.Default)
 	// Enum should be preserved
 	require.Equal(t, []any{"10s", "30s", "60s"}, timeout.Enum)
 	// Type should come from the resolved schema

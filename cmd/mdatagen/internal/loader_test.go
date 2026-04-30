@@ -87,13 +87,13 @@ func TestLoadMetadata(t *testing.T) {
 						"endpoint": {
 							Description: "The endpoint to scrape metrics from.",
 							Type:        "string",
-							Default:     cfggen.NewDefaultValue("localhost:12345"),
+							Default:     "localhost:12345",
 						},
 						"timeout": {
 							Description: "Timeout for scraping metrics.",
 							Type:        "string",
 							Format:      "duration",
-							Default:     cfggen.NewDefaultValue("10s"),
+							Default:     "10s",
 						},
 					},
 					Required: []string{"endpoint"},
