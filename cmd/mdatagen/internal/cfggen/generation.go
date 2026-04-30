@@ -226,6 +226,10 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 		}
 	}
 
+	if hasValidators(md) {
+		imports["errors"] = true
+	}
+
 	if md.Pattern != "" && !strings.HasPrefix(md.GoType, "time.") {
 		imports["regexp"] = true
 	}
@@ -265,6 +269,12 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 	}
 
 	return nil
+}
+
+func hasValidators(md *ConfigMetadata) bool {
+	return md.GoStruct.CustomValidator != nil || // custom validation
+		len(md.Required) > 0 || // required validation
+		md.MinLength != nil || md.MaxLength != nil || md.Pattern != "" // string validation
 }
 
 // FormatTypeName resolves a reference string to a Go type expression using GoTypeRef.

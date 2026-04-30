@@ -18,6 +18,8 @@ type Config struct {
 	Endpoint string `mapstructure:"endpoint"`
 	// Timeout for scraping metrics.
 	Timeout time.Duration `mapstructure:"timeout"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Validate validates the Config fields.

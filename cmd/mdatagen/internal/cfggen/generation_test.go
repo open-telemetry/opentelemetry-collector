@@ -500,6 +500,56 @@ func TestExtractImports_Optional(t *testing.T) {
 	require.Contains(t, result, "go.opentelemetry.io/collector/config/configoptional")
 }
 
+func TestExtractImports_ValidatorsRequireErrors(t *testing.T) {
+	minLength := 1
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+	}{
+		{
+			name: "required fields",
+			metadata: &ConfigMetadata{
+				Type:     "object",
+				Required: []string{"endpoint"},
+				Properties: map[string]*ConfigMetadata{
+					"endpoint": {Type: "string"},
+				},
+			},
+		},
+		{
+			name: "nested string validation",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"endpoint": {Type: "string", MinLength: &minLength},
+				},
+			},
+		},
+		{
+			name: "custom validator",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"endpoint": {
+						Type: "string",
+						GoStruct: GoStructConfig{
+							CustomValidator: &CustomValidatorConfig{Name: "validateEndpoint"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := ExtractImports(tt.metadata, "", "")
+			require.NoError(t, err)
+			require.Contains(t, result, "errors")
+		})
+	}
+}
+
 func TestExtractImports_ResolvedReferenceUsesResolvedTypeOnly(t *testing.T) {
 	md := &ConfigMetadata{
 		Type:         "object",

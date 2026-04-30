@@ -51,6 +51,10 @@ func (r *Resolver) ResolveSchema(src *ConfigMetadata) (*ConfigMetadata, error) {
 	target.ID = r.pkgID
 	target.Title = fmt.Sprintf("%s/%s", r.class, r.name)
 
+	if len(src.Properties) > 0 {
+		target.Type = "object"
+	}
+
 	return target, nil
 }
 
@@ -164,7 +168,10 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 	}
 	handleEmbeddedStructs(target)
 	enhanceTimeTypes(target)
-	target.Defs = nil // Clear defs after resolution to avoid confusion
+
+	if len(target.Properties) > 0 {
+		target.Defs = nil // Clear defs after resolution to avoid confusion
+	}
 	return nil
 }
 
