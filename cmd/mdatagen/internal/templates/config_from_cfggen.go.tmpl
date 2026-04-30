@@ -21,7 +21,11 @@ import (
         {{- if .Description }}
     // {{ .Description }}
         {{- end }}
-    	{{ .ResolvedFrom | publicType }} `mapstructure:",squash"`
+            {{- if .EmbeddedName }}
+                {{ .EmbeddedName | publicType }} {{ .ResolvedFrom | publicType }} `mapstructure:",squash"`
+            {{- else }}
+                {{ .ResolvedFrom | publicType }} `mapstructure:",squash"`
+            {{- end }}
     {{- end }}
     {{- end }}
     {{- range $propName, $prop := .Properties }}
@@ -183,7 +187,7 @@ type Config struct {
         {{- $exprs := mapCustomDefaults $schema $schema.Default }}
         {{- if $exprs }}
             {{- $varName := camelVar $schema.ResolvedFrom }}
-            {{- $name := embeddedName $schema.ResolvedFrom }}
+            {{- $name := embeddedName $schema }}
             {{- $defaultValue := formatBaseValue $schema $name $schema.Default }}
     {{ $varName }} := {{ $defaultValue }}
             {{- range $expr := $exprs }}
@@ -208,7 +212,7 @@ type Config struct {
 
 {{- define "structLiteralFields" }}
     {{- range $schema := .AllOf }}
-        {{- $name := embeddedName $schema.ResolvedFrom }}
+        {{- $name := embeddedName $schema }}
         {{- $defaultValue := formatDefaultValue $schema $name $schema.Default }}
         {{- if $defaultValue }}
             {{- $exprs := mapCustomDefaults $schema $schema.Default }}
