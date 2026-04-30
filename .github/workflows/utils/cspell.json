@@ -295,6 +295,7 @@
       "koanf",
       "labeldrop",
       "ldflags",
+      "lifecycles",
       "limitermiddleware",
       "localhostgate",
       "loggingexporter",
