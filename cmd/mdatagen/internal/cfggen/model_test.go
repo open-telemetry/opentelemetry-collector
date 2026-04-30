@@ -325,29 +325,42 @@ func TestConfigMetadata_Validate_EdgeCases(t *testing.T) {
 
 func TestGoStructConfig_Unmarshal(t *testing.T) {
 	tests := []struct {
-		name                  string
-		input                 map[string]any
-		expectCustomValidator bool
+		name  string
+		input map[string]any
+		want  GoStructConfig
 	}{
 		{
-			name:                  "custom_validator present with empty map",
-			input:                 map[string]any{"custom_validator": map[string]any{}},
-			expectCustomValidator: true,
+			name:  "custom_validator present with empty map",
+			input: map[string]any{"custom_validator": map[string]any{}},
+			want:  GoStructConfig{CustomValidator: &CustomValidatorConfig{}},
 		},
 		{
-			name:                  "custom_validator present with nil value",
-			input:                 map[string]any{"custom_validator": nil},
-			expectCustomValidator: true,
+			name:  "custom_validator present with nil value",
+			input: map[string]any{"custom_validator": nil},
+			want:  GoStructConfig{CustomValidator: &CustomValidatorConfig{}},
 		},
 		{
-			name:                  "custom_validator absent",
-			input:                 map[string]any{},
-			expectCustomValidator: false,
+			name:  "custom_validator absent",
+			input: map[string]any{},
+			want:  GoStructConfig{},
 		},
 		{
-			name:                  "unrelated keys only",
-			input:                 map[string]any{"something_else": true},
-			expectCustomValidator: false,
+			name: "go_struct fields decode through mapstructure",
+			input: map[string]any{
+				"anonymous": true,
+				"custom_validator": map[string]any{
+					"name": "validateConfig",
+				},
+			},
+			want: GoStructConfig{
+				Anonymous:       true,
+				CustomValidator: &CustomValidatorConfig{Name: "validateConfig"},
+			},
+		},
+		{
+			name:  "unrelated keys only",
+			input: map[string]any{"something_else": true},
+			want:  GoStructConfig{},
 		},
 	}
 
@@ -357,11 +370,16 @@ func TestGoStructConfig_Unmarshal(t *testing.T) {
 			var g GoStructConfig
 			err := g.Unmarshal(parser)
 			require.NoError(t, err)
-			if tt.expectCustomValidator {
-				assert.NotNil(t, g.CustomValidator, "CustomValidator should be non-nil when key is present")
-			} else {
-				assert.Nil(t, g.CustomValidator, "CustomValidator should be nil when key is absent")
-			}
+			assert.Equal(t, tt.want, g)
 		})
 	}
+}
+
+func TestGoStructConfig_UnmarshalError(t *testing.T) {
+	parser := confmap.NewFromStringMap(map[string]any{
+		"anonymous": "not-a-bool",
+	})
+
+	var g GoStructConfig
+	require.Error(t, g.Unmarshal(parser))
 }

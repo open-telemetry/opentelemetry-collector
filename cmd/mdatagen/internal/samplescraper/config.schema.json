@@ -6,6 +6,30 @@
   "type": "object",
   "allOf": [
     {
+      "description": "ControllerConfig defines common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed.",
+      "type": "object",
+      "default": {
+        "timeout": "30s"
+      },
+      "properties": {
+        "collection_interval": {
+          "description": "CollectionInterval sets how frequently the scraper should be called and used as the context timeout to ensure that scrapers don't exceed the interval.",
+          "type": "string",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        },
+        "initial_delay": {
+          "description": "InitialDelay sets the initial start delay for the scraper, any non positive value is assumed to be immediately.",
+          "type": "string",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        },
+        "timeout": {
+          "description": "Timeout is an optional value used to set scraper's context deadline.",
+          "type": "string",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        }
+      }
+    },
+    {
       "description": "MetricsBuilderConfig is a configuration for sample metrics builder.",
       "type": "object",
       "properties": {
@@ -562,35 +586,19 @@
           }
         }
       }
-    },
-    {
-      "description": "ControllerConfig defines common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed.",
-      "type": "object",
-      "default": {
-        "timeout": "30s"
-      },
-      "properties": {
-        "collection_interval": {
-          "description": "CollectionInterval sets how frequently the scraper should be called and used as the context timeout to ensure that scrapers don't exceed the interval.",
-          "type": "string",
-          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
-        },
-        "initial_delay": {
-          "description": "InitialDelay sets the initial start delay for the scraper, any non positive value is assumed to be immediately.",
-          "type": "string",
-          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
-        },
-        "timeout": {
-          "description": "Timeout is an optional value used to set scraper's context deadline.",
-          "type": "string",
-          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
-        }
-      }
     }
   ],
   "properties": {
+    "job_name": {
+      "description": "Name of the scrape job, used to identify the source in telemetry.",
+      "type": "string",
+      "default": "test_job",
+      "maxLength": 255,
+      "minLength": 1,
+      "pattern": "^[a-zA-Z0-9_.-]+$"
+    },
     "targets": {
-      "description": "Targets configuration for the scraper.",
+      "description": "List of targets to scrape metrics from.",
       "type": "array",
       "default": [
         {}
@@ -599,7 +607,7 @@
         "type": "object",
         "properties": {
           "http_client": {
-            "description": "ClientConfig defines settings for creating an HTTP client.",
+            "description": "HTTP client configuration for the target endpoint.",
             "type": "object",
             "properties": {
               "auth": {
@@ -822,7 +830,8 @@
             "default": "10s",
             "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
           },
-          "options": {
+          "labels": {
+            "description": "Static key-value labels attached to all metrics from this target.",
             "type": "object",
             "default": {
               "option1": "value1",
@@ -834,13 +843,13 @@
           }
         },
         "required": [
-          "http_client",
-          "options"
+          "labels"
         ]
       }
     }
   },
   "required": [
+    "job_name",
     "targets"
   ]
 }

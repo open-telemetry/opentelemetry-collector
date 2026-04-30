@@ -1,4 +1,5 @@
 type: otelcol/otelcoltest
+parent: otelcol
 github_project: open-telemetry/opentelemetry-collector
 
 status:

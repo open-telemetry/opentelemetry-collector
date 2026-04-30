@@ -35,6 +35,8 @@ type Metadata struct {
 	Status *Status `mapstructure:"status"`
 	// Spatial Re-aggregation featuregate.
 	ReaggregationEnabled bool `mapstructure:"reaggregation_enabled"`
+	// Override value featuregate for resource attributes.
+	OverrideValueEnabled bool `mapstructure:"override_value_enabled"`
 	// The name of the package that will be generated.
 	GeneratedPackageName string `mapstructure:"generated_package_name"`
 	// Telemetry information for the component.
@@ -103,12 +105,8 @@ func (md *Metadata) Validate() error {
 		errs = errors.Join(errs, err)
 	}
 
-	if md.Parent != "" {
-		if md.Status != nil {
-			// status is not required for subcomponents.
-			errs = errors.Join(errs, errors.New("status must be empty for subcomponents"))
-		}
-	} else {
+	// status is optional for subcomponents but required for components.
+	if md.Parent == "" || md.Status != nil {
 		errs = errors.Join(errs, md.Status.Validate())
 	}
 

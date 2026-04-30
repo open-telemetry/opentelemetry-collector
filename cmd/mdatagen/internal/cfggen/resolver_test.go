@@ -155,6 +155,100 @@ func TestResolver_ResolveSchema_AllOf(t *testing.T) {
 	require.NotNil(t, result.AllOf[1].Properties["field2"])
 }
 
+func TestResolver_ResolveSchema_EmbeddedProperties(t *testing.T) {
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: NewLoader(""),
+	}
+
+	src := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"anonymous_config": {
+				Ref:      "anonymous_config",
+				Embed:    true,
+				GoStruct: GoStructConfig{Anonymous: true},
+			},
+			"named_config": {
+				Ref:   "named_config",
+				Embed: true,
+			},
+			"regular": {
+				Type: "string",
+			},
+		},
+		Defs: map[string]*ConfigMetadata{
+			"anonymous_config": {Type: "object"},
+			"named_config":     {Type: "object"},
+		},
+	}
+
+	result, err := resolver.ResolveSchema(src)
+	require.NoError(t, err)
+	require.Len(t, result.Properties, 1)
+	require.Contains(t, result.Properties, "regular")
+	require.Len(t, result.AllOf, 2)
+
+	named := findSchema(t, result.AllOf, func(md *ConfigMetadata) bool {
+		return md.ResolvedFrom == "named_config"
+	})
+	require.NotNil(t, named)
+	require.True(t, named.Embed)
+	require.Equal(t, "named_config", named.EmbeddedName)
+
+	anonymous := findSchema(t, result.AllOf, func(md *ConfigMetadata) bool {
+		return md.ResolvedFrom == "anonymous_config"
+	})
+	require.NotNil(t, anonymous)
+	require.True(t, anonymous.Embed)
+	require.True(t, anonymous.GoStruct.Anonymous)
+	require.Empty(t, anonymous.EmbeddedName)
+}
+
+func TestResolver_ResolveSchema_EmbeddedReferencePreservesExtensions(t *testing.T) {
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: NewLoader(""),
+	}
+
+	src := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"base": {
+				Ref:         "base_config",
+				Embed:       true,
+				GoStruct:    GoStructConfig{Anonymous: true},
+				Description: "Embedded base config",
+			},
+		},
+		Defs: map[string]*ConfigMetadata{
+			"base_config": {
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"endpoint": {Type: "string"},
+				},
+			},
+		},
+	}
+
+	result, err := resolver.ResolveSchema(src)
+	require.NoError(t, err)
+	require.Empty(t, result.Properties)
+	require.Len(t, result.AllOf, 1)
+
+	embedded := result.AllOf[0]
+	require.Equal(t, "base_config", embedded.ResolvedFrom)
+	require.True(t, embedded.Embed)
+	require.True(t, embedded.GoStruct.Anonymous)
+	require.Empty(t, embedded.EmbeddedName)
+	require.Equal(t, "Embedded base config", embedded.Description)
+	require.Contains(t, embedded.Properties, "endpoint")
+}
+
 func TestResolver_ResolveSchema_ArrayItems(t *testing.T) {
 	resolver := &Resolver{
 		pkgID:  "go.opentelemetry.io/collector/test/component",
@@ -398,6 +492,17 @@ func TestResolver_ResolveSchema_DurationFormat(t *testing.T) {
 // mockLoader is a test helper that returns pre-configured schemas keyed by cache key.
 type mockLoader struct {
 	schemas map[string]*ConfigMetadata
+}
+
+func findSchema(t *testing.T, schemas []*ConfigMetadata, match func(*ConfigMetadata) bool) *ConfigMetadata {
+	t.Helper()
+	for _, md := range schemas {
+		if match(md) {
+			return md
+		}
+	}
+	require.FailNow(t, "schema not found")
+	return nil
 }
 
 func (m *mockLoader) Load(ref Ref) (*ConfigMetadata, error) {
@@ -1153,4 +1258,85 @@ func TestResolver_ResolveSchema_RefWithoutCustomExtensions(t *testing.T) {
 	require.Equal(t, "object", base.Type)
 	require.Equal(t, "Base configuration from the target schema", base.Description)
 	require.Equal(t, "BaseConfig", base.GoType)
+}
+
+func TestResolver_ResolveSchema_PreservesIntAndFloatPointers(t *testing.T) {
+	// Regression test: *int and *float64 pointer fields must be copied by the resolver.
+	// Previously, only *ConfigMetadata pointers were handled; all other pointer types
+	// were silently dropped, causing MinLength, MaxLength, Minimum, Maximum, etc. to be nil.
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: NewLoader(""),
+	}
+
+	minLen, maxLen := 1, 255
+	minItems, maxItems := 2, 10
+	minProps, maxProps := 1, 5
+	minimum, maximum := 0.5, 100.0
+	exclMin, exclMax := 0.0, 101.0
+	multipleOf := 0.5
+
+	src := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"name": {
+				Type:      "string",
+				MinLength: &minLen,
+				MaxLength: &maxLen,
+			},
+			"tags": {
+				Type:     "array",
+				MinItems: &minItems,
+				MaxItems: &maxItems,
+			},
+			"meta": {
+				Type:          "object",
+				MinProperties: &minProps,
+				MaxProperties: &maxProps,
+			},
+			"score": {
+				Type:             "number",
+				Minimum:          &minimum,
+				Maximum:          &maximum,
+				ExclusiveMinimum: &exclMin,
+				ExclusiveMaximum: &exclMax,
+				MultipleOf:       &multipleOf,
+			},
+		},
+	}
+
+	result, err := resolver.ResolveSchema(src)
+	require.NoError(t, err)
+
+	name := result.Properties["name"]
+	require.NotNil(t, name.MinLength)
+	require.Equal(t, minLen, *name.MinLength)
+	require.NotNil(t, name.MaxLength)
+	require.Equal(t, maxLen, *name.MaxLength)
+
+	tags := result.Properties["tags"]
+	require.NotNil(t, tags.MinItems)
+	require.Equal(t, minItems, *tags.MinItems)
+	require.NotNil(t, tags.MaxItems)
+	require.Equal(t, maxItems, *tags.MaxItems)
+
+	meta := result.Properties["meta"]
+	require.NotNil(t, meta.MinProperties)
+	require.Equal(t, minProps, *meta.MinProperties)
+	require.NotNil(t, meta.MaxProperties)
+	require.Equal(t, maxProps, *meta.MaxProperties)
+
+	score := result.Properties["score"]
+	require.NotNil(t, score.Minimum)
+	require.InEpsilon(t, minimum, *score.Minimum, 1e-9)
+	require.NotNil(t, score.Maximum)
+	require.InEpsilon(t, maximum, *score.Maximum, 1e-9)
+	require.NotNil(t, score.ExclusiveMinimum)
+	require.InDelta(t, exclMin, *score.ExclusiveMinimum, 1e-9)
+	require.NotNil(t, score.ExclusiveMaximum)
+	require.InEpsilon(t, exclMax, *score.ExclusiveMaximum, 1e-9)
+	require.NotNil(t, score.MultipleOf)
+	require.InEpsilon(t, multipleOf, *score.MultipleOf, 1e-9)
 }

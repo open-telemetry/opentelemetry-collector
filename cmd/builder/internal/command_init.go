@@ -15,6 +15,7 @@ import (
 	"text/template"
 
 	"github.com/spf13/cobra"
+	"go.yaml.in/yaml/v3"
 
 	"go.opentelemetry.io/collector/cmd/builder/internal/builder"
 )
@@ -69,9 +70,9 @@ func run(path string) error {
 		BetaVersion:   builder.DefaultBetaOtelColVersion,
 	}
 
-	err = writeTemplate(path, "manifest.yaml", meta)
+	err = buildManifest(path, meta)
 	if err != nil {
-		return fmt.Errorf("failed writing manifest: %w", err)
+		return fmt.Errorf("failed building manifest: %w", err)
 	}
 
 	err = writeTemplate(path, ".gitignore", meta)
@@ -110,6 +111,29 @@ func run(path string) error {
 	}
 
 	return nil
+}
+
+func buildManifest(path string, meta metadata) error {
+	cfg := builder.Config{
+		Distribution: builder.Distribution{
+			Name:        meta.Name,
+			Description: meta.Description,
+			OutputPath:  "./build/collector",
+		},
+		Exporters: []builder.Module{
+			{GoMod: "go.opentelemetry.io/collector/exporter/otlpexporter " + meta.BetaVersion},
+		},
+		Receivers: []builder.Module{
+			{GoMod: "go.opentelemetry.io/collector/receiver/otlpreceiver " + meta.BetaVersion},
+		},
+	}
+
+	data, err := yaml.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("failed marshaling manifest: %w", err)
+	}
+
+	return os.WriteFile(filepath.Join(path, "manifest.yaml"), data, 0o600)
 }
 
 func writeTemplate(path, fn string, m metadata) error {
