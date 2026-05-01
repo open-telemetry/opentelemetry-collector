@@ -387,6 +387,50 @@ func TestGCBackoffEarlyResetWhenMemoryBecomesReclaimable(t *testing.T) {
 	assert.Equal(t, 1, ml.consecutiveIneffectiveGCs)
 }
 
+func TestGCBackoffEarlyResetAboveHardLimit(t *testing.T) {
+	// Same early-reset behavior as TestGCBackoffEarlyResetWhenMemoryBecomesReclaimable
+	// but verifies the hard-limit code path: memory stays above the hard limit
+	// while still dropping enough (>5%) versus the last forced-GC observation
+	// for the backoff to reset and a forced GC to fire on the next tick.
+	cfg := &Config{
+		CheckInterval:                1 * time.Second,
+		MinGCIntervalWhenHardLimited: 0,
+		MemoryLimitMiB:               50,
+		MemorySpikeLimitMiB:          10,
+	}
+	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
+	require.NoError(t, err)
+
+	var currentMemAllocMiB uint64
+	ml.readMemStatsFn = func(ms *runtime.MemStats) {
+		ms.Alloc = currentMemAllocMiB * mibBytes
+	}
+	ml.lastGCDone = ml.lastGCDone.Add(-time.Minute)
+	numGCs := 0
+	ml.runGCFn = func() {
+		numGCs++
+	}
+
+	// Build up backoff: memory stuck at 100 MiB (well above hard limit), GC ineffective.
+	currentMemAllocMiB = 100
+	ml.CheckMemLimits()
+	assert.Equal(t, 1, numGCs)
+	assert.Equal(t, 1, ml.consecutiveIneffectiveGCs)
+	assert.Equal(t, uint64(100*mibBytes), ml.lastAllocAfterGC)
+
+	// Memory drops to 60 MiB — still above hard limit (50), but dropped >5%
+	// versus the 100 MiB observed after the last forced GC.
+	currentMemAllocMiB = 60
+	// Only 1ms has passed — normally backoff would prevent forced GC.
+	ml.lastGCDone = ml.lastGCDone.Add(-1 * time.Millisecond)
+	ml.CheckMemLimits()
+
+	// Backoff should have been reset because Alloc dropped >5% vs
+	// lastAllocAfterGC, and a forced GC should have fired immediately.
+	assert.Equal(t, 2, numGCs, "GC should fire after early backoff reset on hard-limit path")
+	assert.Equal(t, 1, ml.consecutiveIneffectiveGCs)
+}
+
 func TestEffectiveGCInterval(t *testing.T) {
 	cfg := &Config{
 		CheckInterval:  1 * time.Second,

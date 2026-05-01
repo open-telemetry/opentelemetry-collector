@@ -227,13 +227,13 @@ func (ml *MemoryLimiter) effectiveGCInterval(baseInterval time.Duration) time.Du
 		interval = ml.memCheckWait
 	}
 	// Exponential backoff: double the interval for each consecutive ineffective GC.
-	// The cap never reduces the interval below the user-configured baseInterval,
-	// so a configured 60s minimum is always respected.
-	cap := max(maxGCBackoffInterval, baseInterval)
+	// The maxInterval never reduces below the user-configured baseInterval, so a
+	// configured 60s minimum is always respected.
+	maxInterval := max(maxGCBackoffInterval, baseInterval)
 	for range ml.consecutiveIneffectiveGCs {
 		interval *= 2
-		if interval >= cap {
-			return cap
+		if interval >= maxInterval {
+			return maxInterval
 		}
 	}
 	return interval
