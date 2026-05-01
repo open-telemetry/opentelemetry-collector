@@ -292,6 +292,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("map_attr")
 						assert.False(t, ok)
+						conditionalIntAttrAttrVal, ok := dp.Attributes().Get("conditional_int_attr")
+						assert.True(t, ok)
+						assert.EqualValues(t, 20, conditionalIntAttrAttrVal.Int())
+						conditionalStringAttrAttrVal, ok := dp.Attributes().Get("conditional_string_attr")
+						assert.True(t, ok)
+						assert.Equal(t, "conditional_string_attr-val", conditionalStringAttrAttrVal.Str())
 						_, ok = dp.Attributes().Get("opt_in_bool_attr")
 						assert.False(t, ok)
 					}
@@ -425,6 +431,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("boolean_attr2")
 						assert.False(t, ok)
+						conditionalStringAttrAttrVal, ok := dp.Attributes().Get("conditional_string_attr")
+						assert.True(t, ok)
+						assert.Equal(t, "conditional_string_attr-val", conditionalStringAttrAttrVal.Str())
 					}
 				case "optional.metric.empty_unit":
 					if tt.name != "reaggregate_set" {
