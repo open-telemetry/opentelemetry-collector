@@ -37,6 +37,7 @@ import (
 	"go.opentelemetry.io/collector/service/hostcapabilities"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
+	"go.opentelemetry.io/collector/service/internal/gate"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
@@ -304,10 +305,19 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 		case *processorNode:
 			// nextConsumers is guaranteed to be length 1.  Either it is the next processor or it is the fanout node for the exporters.
 			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ProcessorBuilder, g.nextConsumers(n.ID())[0])
+			if err == nil {
+				n.consumer = wrapConsumerWithGate(n.pipelineID.Signal(), n.consumer)
+			}
 		case *exporterNode:
 			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ExporterBuilder)
+			if err == nil {
+				n.consumer = wrapConsumerWithGate(n.pipelineType, n.consumer)
+			}
 		case *connectorNode:
 			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ConnectorBuilder, g.nextConsumers(n.ID()))
+			if err == nil {
+				n.consumer = wrapConsumerWithGate(n.exprPipelineType, n.consumer)
+			}
 		case *capabilitiesNode:
 			capability := consumer.Capabilities{
 				// The fanOutNode represents the aggregate capabilities of the exporters in the pipeline.
@@ -363,12 +373,28 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 				}
 				n.baseConsumer = fanoutconsumer.NewProfiles(consumers)
 			}
+			n.baseConsumer = wrapConsumerWithGate(n.pipelineID.Signal(), n.baseConsumer)
 		}
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// wrapConsumerWithGate wraps a baseConsumer with a signal-appropriate gate consumer.
+func wrapConsumerWithGate(signal pipeline.Signal, cons baseConsumer) baseConsumer {
+	switch signal {
+	case pipeline.SignalTraces:
+		return gate.NewTraces(cons.(consumer.Traces))
+	case pipeline.SignalMetrics:
+		return gate.NewMetrics(cons.(consumer.Metrics))
+	case pipeline.SignalLogs:
+		return gate.NewLogs(cons.(consumer.Logs))
+	case xpipeline.SignalProfiles:
+		return gate.NewProfiles(cons.(xconsumer.Profiles))
+	}
+	return cons
 }
 
 // Find all nodes
