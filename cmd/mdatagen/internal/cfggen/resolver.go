@@ -5,7 +5,10 @@ package cfggen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cf
 
 import (
 	"fmt"
+	"log"
+	"maps"
 	"reflect"
+	"slices"
 )
 
 const (
@@ -70,6 +73,7 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 		newCurrent := *resolved
 		newCurrent.ResolvedFrom = current.Ref
 		newCurrent.GoStruct = current.GoStruct
+		newCurrent.Embed = current.Embed
 
 		// Restore custom extensions if they were explicitly set on the reference
 		if customGoType != "" {
@@ -158,6 +162,7 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 			targetField.Set(field)
 		}
 	}
+	handleEmbeddedStructs(target)
 	enhanceTimeTypes(target)
 	target.Defs = nil // Clear defs after resolution to avoid confusion
 	return nil
@@ -217,6 +222,28 @@ func (r *Resolver) loadExternalRef(ref *Ref) (*ConfigMetadata, error) {
 	}
 
 	return nil, fmt.Errorf("type %q not found in loaded schema for reference %s", ref.DefName(), ref)
+}
+
+func handleEmbeddedStructs(md *ConfigMetadata) {
+	embeddedStructs := make([]*ConfigMetadata, 0)
+	properties := make(map[string]*ConfigMetadata)
+	if len(md.AllOf) > 0 {
+		log.Printf("warning: found deprecated allOf, use properties with `embed: true` annotation instead\n")
+		embeddedStructs = md.AllOf
+	}
+	for _, propName := range slices.Sorted(maps.Keys(md.Properties)) {
+		prop := md.Properties[propName]
+		if prop.Embed {
+			if !prop.GoStruct.Anonymous {
+				prop.EmbeddedName = propName
+			}
+			embeddedStructs = append(embeddedStructs, prop)
+		} else {
+			properties[propName] = prop
+		}
+	}
+	md.AllOf = embeddedStructs
+	md.Properties = properties
 }
 
 func enhanceTimeTypes(md *ConfigMetadata) {
