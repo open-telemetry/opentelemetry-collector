@@ -25,6 +25,9 @@ import (
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/connector"
@@ -32,11 +35,14 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
+	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/service/hostcapabilities"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
+	"go.opentelemetry.io/collector/service/internal/componentattribute"
+	"go.opentelemetry.io/collector/service/internal/metadata"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
@@ -88,7 +94,10 @@ func Build(ctx context.Context, set Settings) (*Graph, error) {
 	if err := pipelines.createNodes(set); err != nil {
 		return nil, err
 	}
-	pipelines.createEdges()
+
+	if err := pipelines.createEdges(ctx, set.Telemetry); err != nil {
+		return nil, err
+	}
 	err := pipelines.buildComponents(ctx, set)
 	return pipelines, err
 }
@@ -262,11 +271,36 @@ func (g *Graph) createConnector(exprPipelineID, rcvrPipelineID pipeline.ID, conn
 }
 
 // Iterates through the pipelines and creates edges between components.
-func (g *Graph) createEdges() {
-	for _, pg := range g.pipelines {
+func (g *Graph) createEdges(ctx context.Context, set component.TelemetrySettings) error {
+	for id, pg := range g.pipelines {
+		tb, err := metadata.NewTelemetryBuilder(componentattribute.TelemetrySettingsWithAttributes(set, attribute.NewSet(
+			attribute.String(telemetry.PipelineIDKey, id.String()),
+		)))
+		if err != nil {
+			return fmt.Errorf("initializing telemetrybuilder: %w", err)
+		}
+
+		infoMetric := tb.GraphEdgeConnected
+		var receiverTarget componentNode
+		if len(pg.processors) > 0 {
+			receiverTarget = pg.processors[0].(componentNode)
+		}
 		// Draw edges from each receiver to the capability node.
 		for _, receiver := range pg.receivers {
 			g.componentGraph.SetEdge(g.componentGraph.NewEdge(receiver, pg.capabilitiesNode))
+			if receiverTarget != nil {
+				infoMetric.Record(ctx, 1, metric.WithAttributes(
+					attribute.String("from", receiver.(componentNode).ComponentID().String()),
+					attribute.String("to", receiverTarget.ComponentID().String()),
+				))
+			} else if len(pg.exporters) > 0 {
+				for _, exporter := range pg.exporters {
+					infoMetric.Record(ctx, 1, metric.WithAttributes(
+						attribute.String("from", receiver.(componentNode).ComponentID().String()),
+						attribute.String("to", exporter.(componentNode).ComponentID().String()),
+					))
+				}
+			}
 		}
 
 		// Iterates through processors, chaining them together.  starts with the capabilities node.
@@ -275,6 +309,12 @@ func (g *Graph) createEdges() {
 		for _, processor := range pg.processors {
 			to = processor
 			g.componentGraph.SetEdge(g.componentGraph.NewEdge(from, to))
+			if pp, ok := from.(componentNode); ok {
+				infoMetric.Record(ctx, 1, metric.WithAttributes(
+					attribute.String("from", pp.ComponentID().String()),
+					attribute.String("to", to.(componentNode).ComponentID().String()),
+				))
+			}
 			from = processor
 		}
 		// Always inserts a fanout node before any exporters. If there is only one
@@ -284,8 +324,17 @@ func (g *Graph) createEdges() {
 
 		for _, exporter := range pg.exporters {
 			g.componentGraph.SetEdge(g.componentGraph.NewEdge(pg.fanOutNode, exporter))
+			if lastProcessor, ok := from.(componentNode); ok {
+				if exp, ok := exporter.(*exporterNode); ok {
+					infoMetric.Record(ctx, 1, metric.WithAttributes(
+						attribute.String("from", lastProcessor.ComponentID().String()),
+						attribute.String("to", exp.componentID.String()),
+					))
+				}
+			}
 		}
 	}
+	return nil
 }
 
 // Uses the already built graph g to instantiate the actual components for each component of each pipeline.

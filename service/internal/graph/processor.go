@@ -21,7 +21,10 @@ import (
 	"go.opentelemetry.io/collector/service/internal/refconsumer"
 )
 
-var _ consumerNode = (*processorNode)(nil)
+var (
+	_ consumerNode  = (*processorNode)(nil)
+	_ componentNode = (*processorNode)(nil)
+)
 
 // Every processor instance is unique to one pipeline.
 // Therefore, nodeID is derived from "pipeline ID" and "component ID".
@@ -43,6 +46,10 @@ func newProcessorNode(pipelineID pipeline.ID, procID component.ID) *processorNod
 
 func (n *processorNode) getConsumer() baseConsumer {
 	return n.consumer
+}
+
+func (n *processorNode) ComponentID() component.ID {
+	return n.componentID
 }
 
 func (n *processorNode) buildComponent(ctx context.Context,

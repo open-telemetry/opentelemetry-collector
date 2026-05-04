@@ -26,7 +26,10 @@ import (
 
 const pipelineIDAttrKey = "otelcol.pipeline.id"
 
-var _ consumerNode = (*connectorNode)(nil)
+var (
+	_ consumerNode  = (*connectorNode)(nil)
+	_ componentNode = (*connectorNode)(nil)
+)
 
 type connectorNode struct {
 	attribute.Attributes
@@ -48,6 +51,10 @@ func newConnectorNode(exprPipelineType, rcvrPipelineType pipeline.Signal, connID
 
 func (n *connectorNode) getConsumer() baseConsumer {
 	return n.consumer
+}
+
+func (n *connectorNode) ComponentID() component.ID {
+	return n.componentID
 }
 
 func (n *connectorNode) buildComponent(

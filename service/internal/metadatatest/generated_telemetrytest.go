@@ -108,6 +108,20 @@ func AssertEqualExporterConsumedSize(t *testing.T, tt *componenttest.Telemetry, 
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualGraphEdgeConnected(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol.graph.edge.connected",
+		Description: "Indicates connection between components (1 = connected, 0 = not connected) [Development]",
+		Unit:        "{item}",
+		Data: metricdata.Gauge[int64]{
+			DataPoints: dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol.graph.edge.connected")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualProcessCPUSeconds(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[float64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_process_cpu_seconds",

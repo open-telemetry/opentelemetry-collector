@@ -50,6 +50,7 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ConnectorProducedSize.Add(context.Background(), 1)
 	tb.ExporterConsumedItems.Add(context.Background(), 1)
 	tb.ExporterConsumedSize.Add(context.Background(), 1)
+	tb.GraphEdgeConnected.Record(context.Background(), 1)
 	tb.ProcessorConsumedItems.Add(context.Background(), 1)
 	tb.ProcessorConsumedSize.Add(context.Background(), 1)
 	tb.ProcessorProducedItems.Add(context.Background(), 1)
@@ -72,6 +73,9 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterConsumedSize(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualGraphEdgeConnected(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessCPUSeconds(t, testTel,

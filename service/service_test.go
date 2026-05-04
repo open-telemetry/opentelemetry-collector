@@ -178,6 +178,7 @@ func assertMetrics(t *testing.T, rm metricdata.ResourceMetrics) {
 		"otelcol_process_runtime_total_alloc_bytes",
 		"otelcol_process_runtime_total_sys_memory_bytes",
 		"otelcol_process_uptime",
+		"otelcol.graph.edge.connected",
 	}, actualNames)
 }
 

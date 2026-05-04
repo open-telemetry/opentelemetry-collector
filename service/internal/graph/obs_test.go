@@ -192,6 +192,147 @@ func TestComponentInstrumentation(t *testing.T) {
 
 	// TODO fix metric name prefix delimiter
 	expectedScopeMetrics := simpleScopeMetrics{
+		// Graph
+		attribute.NewSet(
+			attribute.String("otelcol.pipeline.id", "traces/in"),
+		): simpleMetricMap{
+			"otelcol.graph.edge.connected": simpleMetric{
+				attribute.NewSet(
+					attribute.String("from", rcvrID.String()),
+					attribute.String("to", procID.String()),
+				): 1,
+				attribute.NewSet(
+					attribute.String("from", procID.String()),
+					attribute.String("to", routerID.String()),
+				): 1,
+			},
+		},
+		attribute.NewSet(
+			attribute.String("otelcol.pipeline.id", "traces/left"),
+		): simpleMetricMap{
+			"otelcol.graph.edge.connected": simpleMetric{
+				attribute.NewSet(
+					attribute.String("from", routerID.String()),
+					attribute.String("to", expLeftID.String()),
+				): 1,
+			},
+		},
+		attribute.NewSet(
+			attribute.String("otelcol.pipeline.id", "traces/right"),
+		): simpleMetricMap{
+			"otelcol.graph.edge.connected": simpleMetric{
+				attribute.NewSet(
+					attribute.String("from", routerID.String()),
+					attribute.String("to", expRightID.String()),
+				): 1,
+			},
+		},
+
+		attribute.NewSet(
+			attribute.String("otelcol.pipeline.id", "profiles/in"),
+		): simpleMetricMap{
+			"otelcol.graph.edge.connected": simpleMetric{
+				attribute.NewSet(
+					attribute.String("from", rcvrID.String()),
+					attribute.String("to", procID.String()),
+				): 1,
+				attribute.NewSet(
+					attribute.String("from", procID.String()),
+					attribute.String("to", routerID.String()),
+				): 1,
+			},
+		},
+		attribute.NewSet(
+			attribute.String("otelcol.pipeline.id", "profiles/left"),
+		): simpleMetricMap{
+			"otelcol.graph.edge.connected": simpleMetric{
+				attribute.NewSet(
+					attribute.String("from", routerID.String()),
+					attribute.String("to", expLeftID.String()),
+				): 1,
+			},
+		},
+		attribute.NewSet(
+			attribute.String("otelcol.pipeline.id", "profiles/right"),
+		): simpleMetricMap{
+			"otelcol.graph.edge.connected": simpleMetric{
+				attribute.NewSet(
+					attribute.String("from", routerID.String()),
+					attribute.String("to", expRightID.String()),
+				): 1,
+			},
+		},
+
+		attribute.NewSet(
+			attribute.String("otelcol.pipeline.id", "logs/in"),
+		): simpleMetricMap{
+			"otelcol.graph.edge.connected": simpleMetric{
+				attribute.NewSet(
+					attribute.String("from", rcvrID.String()),
+					attribute.String("to", procID.String()),
+				): 1,
+				attribute.NewSet(
+					attribute.String("from", procID.String()),
+					attribute.String("to", routerID.String()),
+				): 1,
+			},
+		},
+		attribute.NewSet(
+			attribute.String("otelcol.pipeline.id", "logs/left"),
+		): simpleMetricMap{
+			"otelcol.graph.edge.connected": simpleMetric{
+				attribute.NewSet(
+					attribute.String("from", routerID.String()),
+					attribute.String("to", expLeftID.String()),
+				): 1,
+			},
+		},
+		attribute.NewSet(
+			attribute.String("otelcol.pipeline.id", "logs/right"),
+		): simpleMetricMap{
+			"otelcol.graph.edge.connected": simpleMetric{
+				attribute.NewSet(
+					attribute.String("from", routerID.String()),
+					attribute.String("to", expRightID.String()),
+				): 1,
+			},
+		},
+
+		attribute.NewSet(
+			attribute.String("otelcol.pipeline.id", "metrics/in"),
+		): simpleMetricMap{
+			"otelcol.graph.edge.connected": simpleMetric{
+				attribute.NewSet(
+					attribute.String("from", rcvrID.String()),
+					attribute.String("to", procID.String()),
+				): 1,
+				attribute.NewSet(
+					attribute.String("from", procID.String()),
+					attribute.String("to", routerID.String()),
+				): 1,
+			},
+		},
+		attribute.NewSet(
+			attribute.String("otelcol.pipeline.id", "metrics/left"),
+		): simpleMetricMap{
+			"otelcol.graph.edge.connected": simpleMetric{
+				attribute.NewSet(
+					attribute.String("from", routerID.String()),
+					attribute.String("to", expLeftID.String()),
+				): 1,
+			},
+		},
+		attribute.NewSet(
+			attribute.String("otelcol.pipeline.id", "metrics/right"),
+		): simpleMetricMap{
+			"otelcol.graph.edge.connected": simpleMetric{
+				attribute.NewSet(
+					attribute.String("from", routerID.String()),
+					attribute.String("to", expRightID.String()),
+				): 1,
+			},
+		},
+
 		// Traces
 		attribute.NewSet(
 			attribute.String("otelcol.component.kind", "receiver"),
@@ -664,13 +805,23 @@ func TestComponentInstrumentation(t *testing.T) {
 
 		for _, actualMetric := range actualScopeMetrics.Metrics {
 			expectedMetric, ok := expectedScopeMetrics[actualMetric.Name]
-			require.True(t, ok)
+			require.True(t, ok, "metric %s not found", actualMetric.Name)
 
-			for _, actualPoint := range actualMetric.Data.(metricdata.Sum[int64]).DataPoints {
-				expectedPoint, ok := expectedMetric[actualPoint.Attributes]
-				require.True(t, ok)
+			if sum, ok := actualMetric.Data.(metricdata.Sum[int64]); ok {
+				for _, actualPoint := range sum.DataPoints {
+					expectedPoint, ok := expectedMetric[actualPoint.Attributes]
+					require.True(t, ok)
 
-				assert.Equal(t, int64(expectedPoint), actualPoint.Value)
+					assert.Equal(t, int64(expectedPoint), actualPoint.Value)
+				}
+			}
+			if gauge, ok := actualMetric.Data.(metricdata.Gauge[int64]); ok {
+				for _, actualPoint := range gauge.DataPoints {
+					expectedPoint, ok := expectedMetric[actualPoint.Attributes]
+					require.True(t, ok)
+
+					assert.Equal(t, int64(expectedPoint), actualPoint.Value)
+				}
 			}
 		}
 	}

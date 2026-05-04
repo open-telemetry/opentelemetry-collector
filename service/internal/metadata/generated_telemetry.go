@@ -34,6 +34,7 @@ type TelemetryBuilder struct {
 	ConnectorProducedSize             metric.Int64Counter
 	ExporterConsumedItems             metric.Int64Counter
 	ExporterConsumedSize              metric.Int64Counter
+	GraphEdgeConnected                metric.Int64Gauge
 	ProcessCPUSeconds                 metric.Float64ObservableCounter
 	ProcessMemoryRss                  metric.Int64ObservableGauge
 	ProcessRuntimeHeapAllocBytes      metric.Int64ObservableGauge
@@ -220,6 +221,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ExporterConsumedSize, err = builder.meter.Int64Counter(
 		"otelcol.exporter.consumed.size",
 		metric.WithDescription("Size of items passed to the exporter, based on ProtoMarshaler.Sizer. [Development]"),
+		metric.WithUnit("{item}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.GraphEdgeConnected, err = builder.meter.Int64Gauge(
+		"otelcol.graph.edge.connected",
+		metric.WithDescription("Indicates connection between components (1 = connected, 0 = not connected) [Development]"),
 		metric.WithUnit("{item}"),
 	)
 	errs = errors.Join(errs, err)

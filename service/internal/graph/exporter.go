@@ -21,7 +21,10 @@ import (
 	"go.opentelemetry.io/collector/service/internal/refconsumer"
 )
 
-var _ consumerNode = (*exporterNode)(nil)
+var (
+	_ consumerNode  = (*exporterNode)(nil)
+	_ componentNode = (*exporterNode)(nil)
+)
 
 // An exporter instance can be shared by multiple pipelines of the same type.
 // Therefore, nodeID is derived from "pipeline type" and "component ID".
@@ -43,6 +46,10 @@ func newExporterNode(pipelineType pipeline.Signal, exprID component.ID) *exporte
 
 func (n *exporterNode) getConsumer() baseConsumer {
 	return n.consumer
+}
+
+func (n *exporterNode) ComponentID() component.ID {
+	return n.componentID
 }
 
 func (n *exporterNode) buildComponent(

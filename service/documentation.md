@@ -30,6 +30,14 @@ Number of items passed to the exporter.
 | ---- | ----------- | ---------- | --------- | --------- |
 | {item} | Sum | Int | true | Development |
 
+### otelcol.graph.edge.connected
+
+Indicates connection between components (1 = connected, 0 = not connected)
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {item} | Gauge | Int | Development |
+
 ### otelcol_process_cpu_seconds
 
 Total CPU user and system time in seconds

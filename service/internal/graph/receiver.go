@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/service/internal/obsconsumer"
 )
 
+var _ componentNode = (*receiverNode)(nil)
+
 // A receiver instance can be shared by multiple pipelines of the same type.
 // Therefore, nodeID is derived from "pipeline type" and "component ID".
 type receiverNode struct {
@@ -36,6 +38,10 @@ func newReceiverNode(pipelineType pipeline.Signal, recvID component.ID) *receive
 		componentID:  recvID,
 		pipelineType: pipelineType,
 	}
+}
+
+func (n *receiverNode) ComponentID() component.ID {
+	return n.componentID
 }
 
 func (n *receiverNode) buildComponent(ctx context.Context,

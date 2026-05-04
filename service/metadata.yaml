@@ -71,6 +71,15 @@ telemetry:
         value_type: int
         monotonic: true
 
+    graph.edge.connected:
+      prefix: otelcol.
+      enabled: true
+      stability: development
+      description: Indicates connection between components (1 = connected, 0 = not connected)
+      unit: "{item}"
+      gauge:
+        value_type: int
+
     process_cpu_seconds:
       enabled: true
       stability: alpha
@@ -190,22 +199,22 @@ telemetry:
 
 feature_gates:
   - id: service.AllowNoPipelines
-    description: 'Allow starting the Collector without starting any pipelines.'
+    description: "Allow starting the Collector without starting any pipelines."
     stage: alpha
-    from_version: 'v0.122.0'
-    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/pull/12613'
+    from_version: "v0.122.0"
+    reference_url: "https://github.com/open-telemetry/opentelemetry-collector/pull/12613"
   - id: service.profilesSupport
-    description: 'Controls whether profiles support can be enabled'
+    description: "Controls whether profiles support can be enabled"
     stage: alpha
-    from_version: 'v0.112.0'
-    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/pull/11477'
+    from_version: "v0.112.0"
+    reference_url: "https://github.com/open-telemetry/opentelemetry-collector/pull/11477"
   - id: telemetry.UseLocalHostAsDefaultMetricsAddress
-    description: 'Controls whether default Prometheus metrics server use localhost as the default host for their endpoints'
+    description: "Controls whether default Prometheus metrics server use localhost as the default host for their endpoints"
     stage: beta
-    from_version: 'v0.111.0'
-    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/pull/11251'
+    from_version: "v0.111.0"
+    reference_url: "https://github.com/open-telemetry/opentelemetry-collector/pull/11251"
   - id: telemetry.newPipelineTelemetry
-    description: 'Injects component-identifying scope attributes in internal Collector metrics'
+    description: "Injects component-identifying scope attributes in internal Collector metrics"
     stage: alpha
-    from_version: 'v0.123.0'
-    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/component-universal-telemetry.md'
+    from_version: "v0.123.0"
+    reference_url: "https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/component-universal-telemetry.md"
