@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package cfggen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
+package schemagen // import "go.opentelemetry.io/collector/internal/schemagen"
 
 import (
 	"errors"
@@ -61,10 +61,10 @@ func NewRef(refPath string) *Ref {
 	}
 
 	return &Ref{
-		namespace,
-		schemaID,
-		defName,
-		kind,
+		namespace: namespace,
+		schemaID:  schemaID,
+		defName:   defName,
+		kind:      kind,
 	}
 }
 
@@ -159,12 +159,24 @@ func (r *Ref) isInternal() bool {
 	return r.kind == Internal
 }
 
+func (r *Ref) IsInternal() bool {
+	return r.isInternal()
+}
+
 func (r *Ref) isLocal() bool {
 	return r.kind == Local
 }
 
 func (r *Ref) isExternal() bool {
 	return r.kind == External
+}
+
+func (r *Ref) IsLocal() bool {
+	return r.isLocal()
+}
+
+func (r *Ref) IsExternal() bool {
+	return r.isExternal()
 }
 
 func (r *Ref) Validate() error {
