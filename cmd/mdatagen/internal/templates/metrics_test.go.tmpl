@@ -85,7 +85,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
 			{{- range $name, $metric := .Metrics }}
 			{{- if hasAggregatableAttributes $metric.Attributes }}
-			aggMap["{{ $name.Render }}"] = mb.metric{{ $name.Render }}.config.AggregationStrategy
+			aggMap["{{ $name }}"] = mb.metric{{ $name.Render }}.config.AggregationStrategy
 			{{- end }}
 			{{- end }}
 			{{- end }}
