@@ -5,13 +5,15 @@ package cfggen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cf
 
 import "go.opentelemetry.io/collector/internal/schemagen"
 
-type ConfigMetadata = schemagen.ConfigMetadata
-type GoStructConfig = schemagen.GoStructConfig
-type CustomValidatorConfig = schemagen.CustomValidatorConfig
-type Loader = schemagen.Loader
-type Ref = schemagen.Ref
-type RefKind = schemagen.RefKind
-type Resolver = schemagen.Resolver
+type (
+	ConfigMetadata        = schemagen.ConfigMetadata
+	GoStructConfig        = schemagen.GoStructConfig
+	CustomValidatorConfig = schemagen.CustomValidatorConfig
+	Loader                = schemagen.Loader
+	Ref                   = schemagen.Ref
+	RefKind               = schemagen.RefKind
+	Resolver              = schemagen.Resolver
+)
 
 const (
 	External = schemagen.External
