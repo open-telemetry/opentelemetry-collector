@@ -1121,10 +1121,9 @@ func TestNewCfgFns_ExtractImports(t *testing.T) {
 	result := extractImports(md)
 	require.Contains(t, result, "time")
 
-	// input with unresolvable GoType: collectImports swallows the error, returns empty slice
+	// unresolvable GoType: extractImports panics
 	errMd := &ConfigMetadata{GoType: "github.com/pkg."}
-	result = extractImports(errMd)
-	require.Empty(t, result)
+	require.Panics(t, func() { extractImports(errMd) })
 }
 
 func TestNewCfgFns_ExtractDefs(t *testing.T) {
@@ -1262,17 +1261,136 @@ func TestResolveGoType_EmbeddedObjectNameError(t *testing.T) {
 }
 
 func TestExtractImports_PropError(t *testing.T) {
-	// A property with an invalid GoType propagates the error through collectImports
 	md := &ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"bad": {GoType: "github.com/pkg.", Type: "object"},
 		},
 	}
-	// collectImports swallows ResolveGoTypeRef errors (err == nil check), so no error expected;
-	// this exercises the properties loop path
 	_, err := ExtractImports(md, "", "")
-	require.NoError(t, err)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to resolve import for custom type")
+}
+
+func TestExtractImports_GoTypeError(t *testing.T) {
+	md := &ConfigMetadata{GoType: "github.com/pkg."}
+	_, err := ExtractImports(md, "", "")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to resolve import for custom type")
+}
+
+func TestExtractImports_ResolvedFromError(t *testing.T) {
+	md := &ConfigMetadata{ResolvedFrom: "github.com/pkg."}
+	_, err := ExtractImports(md, "", "")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to resolve import for reference")
+}
+
+func TestExtractImports_ItemsError(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:  "array",
+		Items: &ConfigMetadata{GoType: "github.com/pkg."},
+	}
+	_, err := ExtractImports(md, "", "")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to resolve import for custom type")
+}
+
+func TestExtractImports_AllOfError(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:  "object",
+		AllOf: []*ConfigMetadata{{GoType: "github.com/pkg."}},
+	}
+	_, err := ExtractImports(md, "", "")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to resolve import for custom type")
+}
+
+func TestExtractImports_DefsError(t *testing.T) {
+	md := &ConfigMetadata{
+		Defs: map[string]*ConfigMetadata{
+			"bad": {GoType: "github.com/pkg."},
+		},
+	}
+	_, err := ExtractImports(md, "", "")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to resolve import for custom type")
+}
+
+func TestExtractImports_AdditionalPropertiesError(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:                 "object",
+		AdditionalProperties: &ConfigMetadata{GoType: "github.com/pkg."},
+	}
+	_, err := ExtractImports(md, "", "")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to resolve import for custom type")
+}
+
+func TestExtractImports_ContentSchemaError(t *testing.T) {
+	md := &ConfigMetadata{
+		ContentSchema: &ConfigMetadata{GoType: "github.com/pkg."},
+	}
+	_, err := ExtractImports(md, "", "")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to resolve import for custom type")
+}
+
+func TestExtractImports_ExternalResolvedFromDefaultsError(t *testing.T) {
+	// collectImports on the prop itself fails (line 294-295 in collectCustomDefaultImports)
+	md := &ConfigMetadata{
+		ResolvedFrom: "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
+		Properties: map[string]*ConfigMetadata{
+			"timeout": {GoType: "github.com/pkg."},
+		},
+		Default: defaultValue(map[string]any{"timeout": "30s"}),
+	}
+	_, err := ExtractImports(md, "", "")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to resolve import for custom type")
+}
+
+func TestExtractImports_ExternalResolvedFromNestedDefaultsError(t *testing.T) {
+	// "nested" has an external ResolvedFrom with no Default, so collectImports(nested) succeeds:
+	// it short-circuits after processing nested.Default=nil without descending into nested.Properties.
+	// collectCustomDefaultImports(nested, {"bad": "x"}) then walks the override value and calls
+	// collectImports on nested.Properties["bad"] which has an invalid GoType — this error propagates
+	// back to the caller at line 297-298 in the outer collectCustomDefaultImports.
+	md := &ConfigMetadata{
+		ResolvedFrom: "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
+		Properties: map[string]*ConfigMetadata{
+			"nested": {
+				ResolvedFrom: "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
+				Properties: map[string]*ConfigMetadata{
+					"bad": {GoType: "github.com/pkg."},
+				},
+			},
+		},
+		Default: defaultValue(map[string]any{
+			"nested": map[string]any{"bad": "value"},
+		}),
+	}
+	_, err := ExtractImports(md, "", "")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to resolve import for custom type")
+}
+
+func TestExtractImports_ExternalResolvedFromArrayDefaultsError(t *testing.T) {
+	// collectCustomDefaultImports over array items fails (line 306-307)
+	md := &ConfigMetadata{
+		ResolvedFrom: "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
+		Type:         "array",
+		Items: &ConfigMetadata{
+			Type: "object",
+			Properties: map[string]*ConfigMetadata{
+				"bad": {GoType: "github.com/pkg."},
+			},
+		},
+		Default: defaultValue([]any{map[string]any{"bad": "value"}}),
+	}
+	_, err := ExtractImports(md, "", "")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to resolve import for custom type")
 }
 
 func TestExtractImports_ItemsPath(t *testing.T) {

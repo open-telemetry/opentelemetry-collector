@@ -25,7 +25,7 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			imports, err := ExtractImports(cfg, rootPackage, componentPackage)
 			if err != nil {
-				return []string{}
+				panic(err)
 			}
 			return imports
 		},
@@ -202,7 +202,10 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 
 	if md.GoType != "" {
 		ref, err := ResolveGoTypeRef(md.GoType, rootPackage, componentPackage)
-		if err == nil && ref.ImportPath != "" {
+		if err != nil {
+			return fmt.Errorf("failed to resolve import for custom type %q: %w", md.GoType, err)
+		}
+		if ref.ImportPath != "" {
 			imports[ref.ImportPath] = true
 		}
 	}
@@ -217,7 +220,10 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 
 	if md.ResolvedFrom != "" {
 		ref, err := ResolveGoTypeRef(md.ResolvedFrom, rootPackage, componentPackage)
-		if err == nil && ref.ImportPath != "" {
+		if err != nil {
+			return fmt.Errorf("failed to resolve import for reference %q: %w", md.ResolvedFrom, err)
+		}
+		if ref.ImportPath != "" {
 			imports[ref.ImportPath] = true
 		}
 		refDesc := NewRef(md.ResolvedFrom)
