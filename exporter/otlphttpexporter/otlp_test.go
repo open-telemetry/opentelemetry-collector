@@ -216,7 +216,8 @@ func TestErrorResponses(t *testing.T) {
 			checkErr: func(t *testing.T, err error, srv *httptest.Server) {
 				require.EqualError(t, err, exporterhelper.NewThrottleRetry(
 					status.New(codes.Unavailable, errMsgPrefix(srv)+"503, Message=Server overloaded, Details=[]").Err(),
-					time.Duration(30)*time.Second).Error())
+					time.Duration(30)*time.Second,
+				).Error())
 			},
 		},
 		{

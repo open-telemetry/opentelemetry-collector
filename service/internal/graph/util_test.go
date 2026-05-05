@@ -183,7 +183,8 @@ func newBadConnectorFactory() connector.Factory {
 }
 
 func newErrReceiverFactory() receiver.Factory {
-	return xreceiver.NewFactory(component.MustNewType("err"),
+	return xreceiver.NewFactory(
+		component.MustNewType("err"),
 		func() component.Config { return &struct{}{} },
 		xreceiver.WithTraces(func(context.Context, receiver.Settings, component.Config, consumer.Traces) (receiver.Traces, error) {
 			return &errComponent{}, nil
@@ -201,7 +202,8 @@ func newErrReceiverFactory() receiver.Factory {
 }
 
 func newErrProcessorFactory() processor.Factory {
-	return xprocessor.NewFactory(component.MustNewType("err"),
+	return xprocessor.NewFactory(
+		component.MustNewType("err"),
 		func() component.Config { return &struct{}{} },
 		xprocessor.WithTraces(func(context.Context, processor.Settings, component.Config, consumer.Traces) (processor.Traces, error) {
 			return &errComponent{}, nil
@@ -219,7 +221,8 @@ func newErrProcessorFactory() processor.Factory {
 }
 
 func newErrExporterFactory() exporter.Factory {
-	return xexporter.NewFactory(component.MustNewType("err"),
+	return xexporter.NewFactory(
+		component.MustNewType("err"),
 		func() component.Config { return &struct{}{} },
 		xexporter.WithTraces(func(context.Context, exporter.Settings, component.Config) (exporter.Traces, error) {
 			return &errComponent{}, nil
@@ -237,9 +240,10 @@ func newErrExporterFactory() exporter.Factory {
 }
 
 func newErrConnectorFactory() connector.Factory {
-	return xconnector.NewFactory(component.MustNewType("err"), func() component.Config {
-		return &struct{}{}
-	},
+	return xconnector.NewFactory(
+		component.MustNewType("err"), func() component.Config {
+			return &struct{}{}
+		},
 		xconnector.WithTracesToTraces(func(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUnmaintained),

@@ -552,20 +552,20 @@ func TestNewValueFromRaw(t *testing.T) {
 		{
 			name:  "slice",
 			input: []any{"v1", "v2"},
-			expected: (func() Value {
+			expected: func() Value {
 				s := NewValueSlice()
 				assert.NoError(t, s.Slice().FromRaw([]any{"v1", "v2"}))
 				return s
-			})(),
+			}(),
 		},
 		{
 			name:  "empty slice",
 			input: []any{},
-			expected: (func() Value {
+			expected: func() Value {
 				s := NewValueSlice()
 				assert.NoError(t, s.Slice().FromRaw([]any{}))
 				return s
-			})(),
+			}(),
 		},
 	}
 	for _, tt := range tests {

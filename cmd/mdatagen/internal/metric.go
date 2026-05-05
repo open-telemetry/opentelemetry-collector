@@ -120,7 +120,8 @@ func validateSemConvMetricURL(rawURL, semConvVersion, metricName string) error {
 
 	anchor := metricAnchor(metricName)
 	// Build a strict regex that enforces https, repo, blob, given version, any doc path, and exact anchor.
-	pattern := fmt.Sprintf(`^https://github\.com/open-telemetry/semantic-conventions/blob/%s/[^#\s]+#%s$`,
+	pattern := fmt.Sprintf(
+		`^https://github\.com/open-telemetry/semantic-conventions/blob/%s/[^#\s]+#%s$`,
 		semConvVersion,
 		anchor,
 	)
@@ -128,7 +129,8 @@ func validateSemConvMetricURL(rawURL, semConvVersion, metricName string) error {
 	if !re.MatchString(rawURL) {
 		return fmt.Errorf(
 			"invalid semantic-conventions URL: want https://github.com/open-telemetry/semantic-conventions/blob/%s/*#%s, got %q",
-			semConvVersion, anchor, rawURL)
+			semConvVersion, anchor, rawURL,
+		)
 	}
 	return nil
 }

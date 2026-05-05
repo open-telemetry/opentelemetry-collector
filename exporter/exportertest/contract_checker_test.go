@@ -45,7 +45,8 @@ func (mef *mockFactory) createMockTraces(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
-	return exporterhelper.NewTraces(ctx, set, cfg,
+	return exporterhelper.NewTraces(
+		ctx, set, cfg,
 		mef.mr.ConsumeTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(retryConfig),
@@ -57,7 +58,8 @@ func (mef *mockFactory) createMockMetrics(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
-	return exporterhelper.NewMetrics(ctx, set, cfg,
+	return exporterhelper.NewMetrics(
+		ctx, set, cfg,
 		mef.mr.ConsumeMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(retryConfig),
@@ -69,7 +71,8 @@ func (mef *mockFactory) createMockLogs(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	return exporterhelper.NewLogs(ctx, set, cfg,
+	return exporterhelper.NewLogs(
+		ctx, set, cfg,
 		mef.mr.ConsumeLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(retryConfig),
@@ -88,7 +91,8 @@ func newMockFactory(mr *mockReceiver) exporter.Factory {
 }
 
 func newMockReceiverFactory(mr *mockReceiver) receiver.Factory {
-	return receiver.NewFactory(component.MustNewType("pass_through_receiver"),
+	return receiver.NewFactory(
+		component.MustNewType("pass_through_receiver"),
 		func() component.Config { return &nopConfig{} },
 		receiver.WithTraces(func(_ context.Context, _ receiver.Settings, _ component.Config, c consumer.Traces) (receiver.Traces, error) {
 			mr.Traces = c

@@ -75,7 +75,8 @@ func (n *processorNode) buildComponent(ctx context.Context,
 
 	switch n.pipelineID.Signal() {
 	case pipeline.SignalTraces:
-		n.Component, err = builder.CreateTraces(ctx, set,
+		n.Component, err = builder.CreateTraces(
+			ctx, set,
 			obsconsumer.NewTraces(next.(consumer.Traces), producedSettings),
 		)
 		if err != nil {

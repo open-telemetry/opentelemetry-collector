@@ -115,7 +115,8 @@ func NewLogsController(cfg *ControllerConfig,
 	return controller.NewController[scraper.Logs](
 		cfg, rSet, scrapers, func(ctx context.Context, c *controller.Controller[scraper.Logs]) error {
 			return scrapeLogs(ctx, c, nextConsumer)
-		}, co.tickerCh)
+		}, co.tickerCh,
+	)
 }
 
 // NewMetricsController creates a receiver.Metrics with the configured options, that can control multiple scraper.Metrics.
@@ -141,7 +142,8 @@ func NewMetricsController(cfg *ControllerConfig,
 	return controller.NewController[scraper.Metrics](
 		cfg, rSet, scrapers, func(ctx context.Context, c *controller.Controller[scraper.Metrics]) error {
 			return scrapeMetrics(ctx, c, nextConsumer)
-		}, co.tickerCh)
+		}, co.tickerCh,
+	)
 }
 
 func scrapeLogs(ctx context.Context, c *controller.Controller[scraper.Logs], nextConsumer consumer.Logs) error {

@@ -20,7 +20,8 @@ func NewFactory() extension.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		create,
-		metadata.ExtensionStability)
+		metadata.ExtensionStability,
+	)
 }
 
 // CreateDefaultConfig creates the default configuration for extension. Notice

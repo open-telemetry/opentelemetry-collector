@@ -1799,7 +1799,8 @@ func TestFormatDefaultValue_ResolvedReferenceWithDefaults(t *testing.T) {
 		},
 	}
 
-	require.Equal(t,
+	require.Equal(
+		t,
 		"confighttp.NewDefaultClientConfig()",
 		FormatDefaultValue(md, "client", map[string]any{"timeout": "30s"}, "go.opentelemetry.io/collector", "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"),
 	)
@@ -1812,7 +1813,8 @@ func TestFormatDefaultValue_ResolvedReferenceWithoutDefaults(t *testing.T) {
 		ResolvedFrom: "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
 	}
 
-	require.Empty(t,
+	require.Empty(
+		t,
 		FormatDefaultValue(md, "client", map[string]any{}, "go.opentelemetry.io/collector", "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"),
 	)
 }

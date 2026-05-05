@@ -15,7 +15,8 @@ func DefaultViews(level configtelemetry.Level) []config.View {
 
 	if level < configtelemetry.LevelDetailed {
 		// Drop all otelhttp and otelgrpc metrics if the level is not detailed.
-		views = append(views,
+		views = append(
+			views,
 			dropViewOption(&config.ViewSelector{
 				MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"),
 			}),
@@ -34,7 +35,8 @@ func DefaultViews(level configtelemetry.Level) []config.View {
 	// See https://github.com/open-telemetry/otel-arrow/blob/c39257/pkg/otel/arrow_record/consumer.go#L174-L176
 	if level < configtelemetry.LevelNormal {
 		scope := ptr("otel-arrow/pkg/otel/arrow_record")
-		views = append(views,
+		views = append(
+			views,
 			dropViewOption(&config.ViewSelector{
 				MeterName:      scope,
 				InstrumentName: ptr("arrow_batch_records"),
@@ -57,7 +59,8 @@ func DefaultViews(level configtelemetry.Level) []config.View {
 	if level < configtelemetry.LevelDetailed {
 		scope := ptr("github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats")
 
-		views = append(views,
+		views = append(
+			views,
 			// Compressed size metrics.
 			dropViewOption(&config.ViewSelector{
 				MeterName:      scope,
@@ -93,7 +96,8 @@ func DefaultViews(level configtelemetry.Level) []config.View {
 	// Batch exporter metrics
 	if level < configtelemetry.LevelDetailed {
 		scope := ptr("go.opentelemetry.io/collector/exporter/exporterhelper")
-		views = append(views,
+		views = append(
+			views,
 			dropViewOption(&config.ViewSelector{
 				MeterName:      scope,
 				InstrumentName: ptr("otelcol_exporter_queue_batch_send_size_bytes"),

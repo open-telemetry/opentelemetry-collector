@@ -232,7 +232,8 @@ func testGraphFailToStartAndShutdown(t *testing.T) {
 			map[component.Type]receiver.Factory{
 				nopReceiverFactory.Type(): nopReceiverFactory,
 				errReceiverFactory.Type(): errReceiverFactory,
-			}),
+			},
+		),
 		ProcessorBuilder: builders.NewProcessor(
 			map[component.ID]component.Config{
 				component.NewID(nopProcessorFactory.Type()): nopProcessorFactory.CreateDefaultConfig(),
@@ -241,7 +242,8 @@ func testGraphFailToStartAndShutdown(t *testing.T) {
 			map[component.Type]processor.Factory{
 				nopProcessorFactory.Type(): nopProcessorFactory,
 				errProcessorFactory.Type(): errProcessorFactory,
-			}),
+			},
+		),
 		ExporterBuilder: builders.NewExporter(
 			map[component.ID]component.Config{
 				component.NewID(nopExporterFactory.Type()): nopExporterFactory.CreateDefaultConfig(),
@@ -250,7 +252,8 @@ func testGraphFailToStartAndShutdown(t *testing.T) {
 			map[component.Type]exporter.Factory{
 				nopExporterFactory.Type(): nopExporterFactory,
 				errExporterFactory.Type(): errExporterFactory,
-			}),
+			},
+		),
 		ConnectorBuilder: builders.NewConnector(
 			map[component.ID]component.Config{
 				component.NewIDWithName(nopConnectorFactory.Type(), "conn"): nopConnectorFactory.CreateDefaultConfig(),
@@ -259,7 +262,8 @@ func testGraphFailToStartAndShutdown(t *testing.T) {
 			map[component.Type]connector.Factory{
 				nopConnectorFactory.Type(): nopConnectorFactory,
 				errConnectorFactory.Type(): errConnectorFactory,
-			}),
+			},
+		),
 	}
 
 	dataTypes := []pipeline.Signal{pipeline.SignalTraces, pipeline.SignalMetrics, pipeline.SignalLogs}

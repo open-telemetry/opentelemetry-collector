@@ -23,7 +23,8 @@ func EncoderConfig(rawVal any, opts MarshalOptions) *encoder.EncoderConfig {
 		hooks = append(hooks, encoder.StringTextUnredactedHookFunc())
 	}
 
-	hooks = append(hooks,
+	hooks = append(
+		hooks,
 		encoder.TextMarshalerHookFunc(),
 		marshalerHookFunc(rawVal),
 	)

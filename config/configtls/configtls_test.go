@@ -917,7 +917,8 @@ func TestCurvePreferences(t *testing.T) {
 	// X25519 curves are not supported when GODEBUG=fips140=only is set, so we
 	// detect if it is and conditionally add test cases for those curves.
 	if !strings.Contains(os.Getenv("GODEBUG"), "fips140=only") {
-		tests = append(tests,
+		tests = append(
+			tests,
 			testCase{
 				name:             "X25519MLKEM768",
 				preferences:      []string{"X25519MLKEM768"},

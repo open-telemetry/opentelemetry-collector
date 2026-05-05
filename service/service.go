@@ -238,7 +238,8 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 // 3. Start all pipelines.
 // 4. Notify extensions that the pipeline is ready.
 func (srv *Service) Start(ctx context.Context) error {
-	srv.telemetrySettings.Logger.Info("Starting "+srv.buildInfo.Command+"...",
+	srv.telemetrySettings.Logger.Info(
+		"Starting "+srv.buildInfo.Command+"...",
 		zap.String("Version", srv.buildInfo.Version),
 		zap.Int("NumCPU", runtime.NumCPU()),
 	)

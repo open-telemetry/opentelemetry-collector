@@ -218,11 +218,13 @@ func (e *baseExporter) export(ctx context.Context, requestURL string, request []
 	if respStatus != nil {
 		errString = fmt.Sprintf(
 			"error exporting items, request to %s responded with HTTP Status Code %d, Message=%s, Details=%v",
-			requestURL, resp.StatusCode, respStatus.Message, respStatus.Details)
+			requestURL, resp.StatusCode, respStatus.Message, respStatus.Details,
+		)
 	} else {
 		errString = fmt.Sprintf(
 			"error exporting items, request to %s responded with HTTP Status Code %d",
-			requestURL, resp.StatusCode)
+			requestURL, resp.StatusCode,
+		)
 	}
 	formattedErr = statusutil.NewStatusFromMsgAndHTTPCode(errString, resp.StatusCode).Err()
 
@@ -362,7 +364,8 @@ func (e *baseExporter) tracesPartialSuccessHandler(protoBytes []byte, contentTyp
 
 	partialSuccess := exportResponse.PartialSuccess()
 	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedSpans() != 0 {
-		e.logger.Warn("Partial success response",
+		e.logger.Warn(
+			"Partial success response",
 			zap.String("message", exportResponse.PartialSuccess().ErrorMessage()),
 			zap.Int64("dropped_spans", exportResponse.PartialSuccess().RejectedSpans()),
 		)
@@ -392,7 +395,8 @@ func (e *baseExporter) metricsPartialSuccessHandler(protoBytes []byte, contentTy
 
 	partialSuccess := exportResponse.PartialSuccess()
 	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedDataPoints() != 0 {
-		e.logger.Warn("Partial success response",
+		e.logger.Warn(
+			"Partial success response",
 			zap.String("message", exportResponse.PartialSuccess().ErrorMessage()),
 			zap.Int64("dropped_data_points", exportResponse.PartialSuccess().RejectedDataPoints()),
 		)
@@ -422,7 +426,8 @@ func (e *baseExporter) logsPartialSuccessHandler(protoBytes []byte, contentType 
 
 	partialSuccess := exportResponse.PartialSuccess()
 	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedLogRecords() != 0 {
-		e.logger.Warn("Partial success response",
+		e.logger.Warn(
+			"Partial success response",
 			zap.String("message", exportResponse.PartialSuccess().ErrorMessage()),
 			zap.Int64("dropped_log_records", exportResponse.PartialSuccess().RejectedLogRecords()),
 		)
@@ -452,7 +457,8 @@ func (e *baseExporter) profilesPartialSuccessHandler(protoBytes []byte, contentT
 
 	partialSuccess := exportResponse.PartialSuccess()
 	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedProfiles() != 0 {
-		e.logger.Warn("Partial success response",
+		e.logger.Warn(
+			"Partial success response",
 			zap.String("message", exportResponse.PartialSuccess().ErrorMessage()),
 			zap.Int64("dropped_samples", exportResponse.PartialSuccess().RejectedProfiles()),
 		)

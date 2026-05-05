@@ -138,7 +138,8 @@ func run(ymlPath string) error {
 			err = inlineReplace(
 				filepath.Join(tmplDir, "readme.md.tmpl"),
 				filepath.Join(ymlDir, "README.md"),
-				md, statusStart, statusEnd, md.GeneratedPackageName, importRootPath)
+				md, statusStart, statusEnd, md.GeneratedPackageName, importRootPath,
+			)
 			if err != nil {
 				return err
 			}
@@ -411,7 +412,8 @@ func templatize(tmplFile string, funcMap template.FuncMap) *template.Template {
 			New(filepath.Base(tmplFile)).
 			Option("missingkey=error").
 			Funcs(funcMap).
-			ParseFS(TemplateFS, "templates/helper.tmpl", strings.ReplaceAll(tmplFile, "\\", "/")))
+			ParseFS(TemplateFS, "templates/helper.tmpl", strings.ReplaceAll(tmplFile, "\\", "/")),
+	)
 }
 
 func executeTemplate(tmplFile string, md Metadata, goPackage, importRootPath string, fns template.FuncMap) ([]byte, error) {

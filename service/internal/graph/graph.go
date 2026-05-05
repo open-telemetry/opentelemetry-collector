@@ -434,7 +434,8 @@ func (g *Graph) StartAll(ctx context.Context, host *Host) error {
 			)
 			// We log with zap.AddStacktrace(zap.DPanicLevel) to avoid adding the stack trace to the error log
 			g.telemetry.Logger.WithOptions(zap.AddStacktrace(zap.DPanicLevel)).
-				Error("Failed to start component",
+				Error(
+					"Failed to start component",
 					zap.Error(compErr),
 					zap.String("type", instanceID.Kind().String()),
 					zap.String("id", instanceID.ComponentID().String()),

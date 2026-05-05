@@ -2587,26 +2587,30 @@ func testGraphBuildErrors(t *testing.T) {
 					map[component.Type]receiver.Factory{
 						nopReceiverFactory.Type(): nopReceiverFactory,
 						badReceiverFactory.Type(): badReceiverFactory,
-					}),
+					},
+				),
 				ProcessorBuilder: builders.NewProcessor(
 					tt.processorCfgs,
 					map[component.Type]processor.Factory{
 						nopProcessorFactory.Type(): nopProcessorFactory,
 						badProcessorFactory.Type(): badProcessorFactory,
-					}),
+					},
+				),
 				ExporterBuilder: builders.NewExporter(
 					tt.exporterCfgs,
 					map[component.Type]exporter.Factory{
 						nopExporterFactory.Type(): nopExporterFactory,
 						badExporterFactory.Type(): badExporterFactory,
-					}),
+					},
+				),
 				ConnectorBuilder: builders.NewConnector(
 					tt.connectorCfgs,
 					map[component.Type]connector.Factory{
 						nopConnectorFactory.Type(): nopConnectorFactory,
 						badConnectorFactory.Type(): badConnectorFactory,
 						mfConnectorFactory.Type():  mfConnectorFactory,
-					}),
+					},
+				),
 				PipelineConfigs: tt.pipelineCfgs,
 			}
 			_, err := Build(context.Background(), set)

@@ -118,7 +118,8 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithTraces(createExampleReceiver, component.StabilityLevelAlpha))
+		receiver.WithTraces(createExampleReceiver, component.StabilityLevelAlpha),
+	)
 }
 
 func Example() {

@@ -186,7 +186,8 @@ func NewStatusWatcherExtensionFactory(
 		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
 			return &statusWatcherExtension{onStatusChanged: onStatusChanged}, nil
 		},
-		component.StabilityLevelStable)
+		component.StabilityLevelStable,
+	)
 }
 
 // statusWatcherExtension receives status events reported via component status reporting for testing
@@ -835,7 +836,8 @@ func TestCollectorLoggingOptions(t *testing.T) {
 	set := CollectorSettings{
 		BuildInfo: component.NewDefaultBuildInfo(),
 		Factories: func() (Factories, error) { return factories, nil },
-		ConfigProviderSettings: newDefaultConfigProviderSettings(t,
+		ConfigProviderSettings: newDefaultConfigProviderSettings(
+			t,
 			[]string{filepath.Join("testdata", "otelcol-nop.yaml")},
 		),
 		LoggingOptions: []zap.Option{

@@ -358,10 +358,11 @@ func TestServiceTelemetryShutdownError(t *testing.T) {
 
 	// Shutdown the service
 	err = srv.Shutdown(context.Background())
-	assert.EqualError(t, err, ""+
-		"failed to shutdown tracer provider: an exception occurred; "+
-		"failed to shutdown meter provider: an exception occurred; "+
-		"failed to shutdown logger: an exception occurred",
+	assert.EqualError(
+		t, err, ""+
+			"failed to shutdown tracer provider: an exception occurred; "+
+			"failed to shutdown meter provider: an exception occurred; "+
+			"failed to shutdown logger: an exception occurred",
 	)
 }
 

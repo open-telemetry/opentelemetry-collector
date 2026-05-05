@@ -35,7 +35,8 @@ func NewNopFactory() extension.Factory {
 		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
 			return nopInstance, nil
 		},
-		component.StabilityLevelStable)
+		component.StabilityLevelStable,
+	)
 }
 
 type nopConfig struct{}

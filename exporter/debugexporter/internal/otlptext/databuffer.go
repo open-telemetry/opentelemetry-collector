@@ -106,7 +106,8 @@ func (b *dataBuffer) logInstrumentationScope(il pcommon.InstrumentationScope) {
 	b.logEntry(
 		"InstrumentationScope %s %s",
 		il.Name(),
-		il.Version())
+		il.Version(),
+	)
 	b.logAttributes("InstrumentationScope attributes", il.Attributes())
 }
 

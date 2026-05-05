@@ -124,7 +124,8 @@ func TestGetRetryInfo(t *testing.T) {
 				st := status.New(codes.ResourceExhausted, "test")
 				dt, err := st.WithDetails(
 					&errdetails.ErrorInfo{Reason: "my reason"},
-					&errdetails.RetryInfo{RetryDelay: durationpb.New(1 * time.Second)})
+					&errdetails.RetryInfo{RetryDelay: durationpb.New(1 * time.Second)},
+				)
 				require.NoError(t, err)
 				return dt
 			}(),

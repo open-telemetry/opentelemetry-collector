@@ -161,7 +161,8 @@ func NewRetrievedFromYAML(yamlBytes []byte, opts ...RetrievedOption) (*Retrieved
 	if err := yaml.Unmarshal(yamlBytes, &rawConf); err != nil {
 		// If the string is not valid YAML, we try to use it verbatim as a string.
 		strRep := string(yamlBytes)
-		return NewRetrieved(strRep, append(opts,
+		return NewRetrieved(strRep, append(
+			opts,
 			withStringRepresentation(strRep),
 			withErrorHint(fmt.Errorf("assuming string type since contents are not valid YAML: %w", err)),
 		)...)
@@ -263,6 +264,7 @@ func checkRawConfType(rawConf any) error {
 	default:
 		return fmt.Errorf(
 			"unsupported type=%T for retrieved config,"+
-				" ensure that values are wrapped in quotes", rawConf)
+				" ensure that values are wrapped in quotes", rawConf,
+		)
 	}
 }

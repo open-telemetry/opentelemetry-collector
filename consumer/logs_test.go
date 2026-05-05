@@ -29,7 +29,8 @@ func TestNilFuncLogs(t *testing.T) {
 func TestWithCapabilitiesLogs(t *testing.T) {
 	cp, err := NewLogs(
 		func(context.Context, plog.Logs) error { return nil },
-		WithCapabilities(Capabilities{MutatesData: true}))
+		WithCapabilities(Capabilities{MutatesData: true}),
+	)
 	assert.NoError(t, err)
 	assert.NoError(t, cp.ConsumeLogs(context.Background(), plog.NewLogs()))
 	assert.Equal(t, Capabilities{MutatesData: true}, cp.Capabilities())

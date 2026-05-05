@@ -102,7 +102,8 @@ func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 	}
 	partialSuccess := resp.PartialSuccess()
 	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedSpans() != 0 {
-		e.settings.Logger.Warn("Partial success response",
+		e.settings.Logger.Warn(
+			"Partial success response",
 			zap.String("message", resp.PartialSuccess().ErrorMessage()),
 			zap.Int64("dropped_spans", resp.PartialSuccess().RejectedSpans()),
 		)
@@ -122,7 +123,8 @@ func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) erro
 	}
 	partialSuccess := resp.PartialSuccess()
 	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedDataPoints() != 0 {
-		e.settings.Logger.Warn("Partial success response",
+		e.settings.Logger.Warn(
+			"Partial success response",
 			zap.String("message", resp.PartialSuccess().ErrorMessage()),
 			zap.Int64("dropped_data_points", resp.PartialSuccess().RejectedDataPoints()),
 		)
@@ -142,7 +144,8 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	}
 	partialSuccess := resp.PartialSuccess()
 	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedLogRecords() != 0 {
-		e.settings.Logger.Warn("Partial success response",
+		e.settings.Logger.Warn(
+			"Partial success response",
 			zap.String("message", resp.PartialSuccess().ErrorMessage()),
 			zap.Int64("dropped_log_records", resp.PartialSuccess().RejectedLogRecords()),
 		)
@@ -162,7 +165,8 @@ func (e *baseExporter) pushProfiles(ctx context.Context, td pprofile.Profiles) e
 	}
 	partialSuccess := resp.PartialSuccess()
 	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedProfiles() != 0 {
-		e.settings.Logger.Warn("Partial success response",
+		e.settings.Logger.Warn(
+			"Partial success response",
 			zap.String("message", resp.PartialSuccess().ErrorMessage()),
 			zap.Int64("dropped_profiles", resp.PartialSuccess().RejectedProfiles()),
 		)

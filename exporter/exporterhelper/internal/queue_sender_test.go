@@ -34,7 +34,8 @@ func TestNewQueueSenderFailedRequestDropped(t *testing.T) {
 	qSet.Telemetry.Logger = zap.New(logger)
 	qCfg := NewDefaultQueueConfig()
 	be, err := NewQueueSender(
-		qSet, qCfg, "", sender.NewSender(func(context.Context, request.Request) error { return errors.New("some error") }))
+		qSet, qCfg, "", sender.NewSender(func(context.Context, request.Request) error { return errors.New("some error") }),
+	)
 	require.NoError(t, err)
 
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))

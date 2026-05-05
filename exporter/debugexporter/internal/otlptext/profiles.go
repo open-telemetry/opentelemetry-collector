@@ -28,12 +28,14 @@ func (textProfilesMarshaler) MarshalProfiles(pd pprofile.Profiles) ([]byte, erro
 	buf.logAttributesWithIndentation(
 		"Attribute table",
 		keyValueAndUnitsToMap(dic.AttributeTable()),
-		0)
+		0,
+	)
 
 	buf.logAttributesWithIndentation(
 		"Link table",
 		linkTableToMap(dic.LinkTable()),
-		0)
+		0,
+	)
 
 	buf.logStringTable(dic.StringTable())
 

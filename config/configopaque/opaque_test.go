@@ -53,7 +53,8 @@ func TestStringFmt(t *testing.T) {
 	for _, example := range examples {
 		for _, verb := range verbs {
 			t.Run(fmt.Sprintf("%s/%s", string(example), verb), func(t *testing.T) {
-				assert.Equal(t,
+				assert.Equal(
+					t,
 					fmt.Sprintf(verb, maskedString),
 					fmt.Sprintf(verb, example),
 				)
@@ -75,7 +76,8 @@ func TestStringFmt(t *testing.T) {
 					t.Errorf("unexpected verb %q", verb)
 				}
 
-				assert.Equal(t,
+				assert.Equal(
+					t,
 					expected,
 					fmt.Sprintf(verb, string(example)),
 				)

@@ -17,7 +17,8 @@ var (
 	errSpikeLimitOutOfRange           = errors.New("'spike_limit_mib' must be smaller than 'limit_mib'")
 	errSpikeLimitPercentageOutOfRange = errors.New("'spike_limit_percentage' must be smaller than 'limit_percentage'")
 	errLimitPercentageOutOfRange      = errors.New(
-		"'limit_percentage' and 'spike_limit_percentage' must be greater than zero and less than or equal to hundred")
+		"'limit_percentage' and 'spike_limit_percentage' must be greater than zero and less than or equal to hundred",
+	)
 )
 
 // Config defines configuration for memory memoryLimiter processor.

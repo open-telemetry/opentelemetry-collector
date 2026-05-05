@@ -403,7 +403,8 @@ func TestRecursiveMaps(t *testing.T) {
 	var cfg Target
 	err = conf.Unmarshal(&cfg)
 	require.NoError(t, err)
-	require.Equal(t,
+	require.Equal(
+		t,
 		Target{Field: ENV{
 			Env: ENV2{
 				Env2: Value{
@@ -420,7 +421,8 @@ func TestRecursiveMaps(t *testing.T) {
 	var cfgStr targetConfig[string]
 	err = confStr.Unmarshal(&cfgStr)
 	require.NoError(t, err)
-	require.Equal(t, `{env: "{env2: "{value: 123}"}", inline: "inline {env2: "{value: 123}"}"}`,
+	require.Equal(
+		t, `{env: "{env2: "{value: 123}"}", inline: "inline {env2: "{value: 123}"}"}`,
 		cfgStr.Field,
 	)
 }
@@ -430,42 +432,43 @@ func TestIssue10787(t *testing.T) {
 	resolver := NewResolver(t, "issue-10787-main.yaml")
 	conf, err := resolver.Resolve(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, map[string]any{
-		"exporters": map[string]any{
-			"debug": map[string]any{
-				"verbosity": "detailed",
+	assert.Equal(
+		t, map[string]any{
+			"exporters": map[string]any{
+				"debug": map[string]any{
+					"verbosity": "detailed",
+				},
 			},
-		},
-		"processors": map[string]any{
-			"memory_limiter": nil,
-		},
-		"receivers": map[string]any{
-			"otlp": map[string]any{
-				"protocols": map[string]any{
-					"grpc": map[string]any{
-						"endpoint": "0.0.0.0:4317",
+			"processors": map[string]any{
+				"memory_limiter": nil,
+			},
+			"receivers": map[string]any{
+				"otlp": map[string]any{
+					"protocols": map[string]any{
+						"grpc": map[string]any{
+							"endpoint": "0.0.0.0:4317",
+						},
+						"http": map[string]any{
+							"endpoint": "0.0.0.0:4318",
+						},
 					},
-					"http": map[string]any{
-						"endpoint": "0.0.0.0:4318",
+				},
+			},
+			"service": map[string]any{
+				"pipelines": map[string]any{
+					"traces": map[string]any{
+						"exporters":  []any{"debug"},
+						"processors": []any{"memory_limiter"},
+						"receivers":  []any{"otlp"},
+					},
+				},
+				"telemetry": map[string]any{
+					"metrics": map[string]any{
+						"level": "detailed",
 					},
 				},
 			},
-		},
-		"service": map[string]any{
-			"pipelines": map[string]any{
-				"traces": map[string]any{
-					"exporters":  []any{"debug"},
-					"processors": []any{"memory_limiter"},
-					"receivers":  []any{"otlp"},
-				},
-			},
-			"telemetry": map[string]any{
-				"metrics": map[string]any{
-					"level": "detailed",
-				},
-			},
-		},
-	}, conf.ToStringMap(),
+		}, conf.ToStringMap(),
 	)
 }
 
@@ -490,7 +493,8 @@ debug:
 	var cfg Target
 	err = conf.Unmarshal(&cfg)
 	require.NoError(t, err)
-	require.Equal(t,
+	require.Equal(
+		t,
 		Target{Field: Exporters{
 			Debug: Debug{
 				Verbosity: "detailed",
@@ -504,7 +508,8 @@ debug:
 	var cfgStr targetConfig[string]
 	err = confStr.Unmarshal(&cfgStr)
 	require.NoError(t, err)
-	require.Equal(t, `# this is a comment
+	require.Equal(
+		t, `# this is a comment
 debug:
   verbosity: detailed`,
 		cfgStr.Field,
@@ -533,7 +538,8 @@ debug:
 	var cfg Target
 	err = conf.Unmarshal(&cfg)
 	require.NoError(t, err)
-	require.Equal(t,
+	require.Equal(
+		t,
 		Target{Field: Exporters{
 			Debug: Debug{
 				Verbosity: "detailed",
@@ -547,7 +553,8 @@ debug:
 	var cfgStr targetConfig[string]
 	err = confStr.Unmarshal(&cfgStr)
 	require.NoError(t, err)
-	require.Equal(t, `# this is a comment with an expanded env var
+	require.Equal(
+		t, `# this is a comment with an expanded env var
 debug:
   verbosity: detailed`,
 		cfgStr.Field,

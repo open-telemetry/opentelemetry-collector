@@ -104,7 +104,8 @@ func TestBaseExporterExtraAttrs(t *testing.T) {
 	qCfg := NewDefaultQueueConfig()
 	qCfg.WaitForResult = true
 
-	bs, err := NewBaseExporter(set, pipeline.SignalMetrics, errExport,
+	bs, err := NewBaseExporter(
+		set, pipeline.SignalMetrics, errExport,
 		WithQueueBatchSettings(newFakeQueueBatch()),
 		WithQueue(configoptional.Some(qCfg)),
 		WithRetry(rCfg),

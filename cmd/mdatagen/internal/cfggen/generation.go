@@ -587,7 +587,8 @@ func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPa
 					value := defaultValues[keyName]
 					exps = append(
 						exps,
-						fmt.Sprintf("%q: %v", keyName, FormatDefaultValue(md.AdditionalProperties, name, value, rootPackage, componentPackage)))
+						fmt.Sprintf("%q: %v", keyName, FormatDefaultValue(md.AdditionalProperties, name, value, rootPackage, componentPackage)),
+					)
 				}
 				return fmt.Sprintf("map[string]%s{%s}", typeExpr, strings.Join(exps, ", "))
 			}

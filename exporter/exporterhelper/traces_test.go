@@ -201,7 +201,8 @@ func TestTraces_pLogModifiedDownStream_WithRecordMetrics(t *testing.T) {
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(internal.ExporterKey, fakeTracesName.String())),
+					attribute.String(internal.ExporterKey, fakeTracesName.String()),
+				),
 				Value: int64(2),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -357,7 +358,8 @@ func checkRecordedMetricsForTraces(t *testing.T, tt *componenttest.Telemetry, id
 					Attributes: attribute.NewSet(
 						attribute.String(internal.ExporterKey, id.String()),
 						attribute.String(string(semconv.ErrorTypeKey), "_OTHER"),
-						attribute.Bool(internal.ErrorPermanentKey, false)),
+						attribute.Bool(internal.ErrorPermanentKey, false),
+					),
 					Value: int64(numBatches * td.SpanCount()),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -366,7 +368,8 @@ func checkRecordedMetricsForTraces(t *testing.T, tt *componenttest.Telemetry, id
 			[]metricdata.DataPoint[int64]{
 				{
 					Attributes: attribute.NewSet(
-						attribute.String(internal.ExporterKey, id.String())),
+						attribute.String(internal.ExporterKey, id.String()),
+					),
 					Value: int64(numBatches * td.SpanCount()),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())

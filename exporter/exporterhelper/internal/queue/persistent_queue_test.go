@@ -381,9 +381,10 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 				consumed.Add(int64(1))
 				done.OnDone(nil)
 			}, nil)
-			require.NoError(t, aq.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{
-				{}: storagetest.NewMockStorageExtension(nil),
-			},
+			require.NoError(t, aq.Start(context.Background(), hosttest.NewHost(
+				map[component.ID]component.Component{
+					{}: storagetest.NewMockStorageExtension(nil),
+				},
 			)))
 
 			for i := 0; i < c.numMessagesProduced; i++ {

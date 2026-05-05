@@ -134,7 +134,8 @@ func TestNewRetrievedFromYAMLInvalidYAMLBytes(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = ret.AsConf()
-	require.EqualError(t, err,
+	require.EqualError(
+		t, err,
 		"retrieved value (type=string) cannot be used as a Conf: assuming string type since contents are not valid YAML: yaml: line 1: did not find expected node content",
 	)
 

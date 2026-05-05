@@ -35,5 +35,6 @@ func contextWithMergedLinks(mergedCtx, ctx1, ctx2 context.Context) context.Conte
 	return context.WithValue(
 		mergedCtx,
 		batchSpanLinksKey,
-		append(parentsFromContext(ctx1), parentsFromContext(ctx2)...))
+		append(parentsFromContext(ctx1), parentsFromContext(ctx2)...),
+	)
 }

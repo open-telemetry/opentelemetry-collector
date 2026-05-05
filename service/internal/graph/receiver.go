@@ -67,7 +67,8 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 		for _, next := range nexts {
 			consumers = append(consumers, next.(consumer.Traces))
 		}
-		n.Component, err = builder.CreateTraces(ctx, set,
+		n.Component, err = builder.CreateTraces(
+			ctx, set,
 			obsconsumer.NewTraces(fanoutconsumer.NewTraces(consumers), producedSettings),
 		)
 	case pipeline.SignalMetrics:

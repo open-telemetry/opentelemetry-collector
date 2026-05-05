@@ -30,7 +30,8 @@ func TestNewFactory(t *testing.T) {
 		func(context.Context, Settings, component.Config) (Extension, error) {
 			return nopExtensionInstance, nil
 		},
-		component.StabilityLevelDevelopment)
+		component.StabilityLevelDevelopment,
+	)
 	assert.Equal(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 

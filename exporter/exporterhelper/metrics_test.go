@@ -214,7 +214,8 @@ func TestMetrics_pMetricModifiedDownStream_WithRecordMetrics(t *testing.T) {
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(internal.ExporterKey, fakeMetricsName.String())),
+					attribute.String(internal.ExporterKey, fakeMetricsName.String()),
+				),
 				Value: int64(4),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())

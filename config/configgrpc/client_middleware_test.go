@@ -81,7 +81,8 @@ func newTestClientMiddleware(name string) extension.Extension {
 
 						// Continue the call with our updated context
 						return invoker(newCtx, method, req, reply, cc, opts...)
-					}),
+					},
+				),
 			}, nil
 		},
 	}

@@ -121,7 +121,8 @@ func TestStartScrapersStarted(t *testing.T) {
 	})
 
 	cfg := &ControllerConfig{CollectionInterval: time.Minute}
-	ctrl := newTestController(t, cfg, nopScrapeFunc,
+	ctrl := newTestController(
+		t, cfg, nopScrapeFunc,
 		&mockScraper{StartFunc: startFunc},
 		&mockScraper{StartFunc: startFunc},
 	)
@@ -136,7 +137,8 @@ func TestStartScraperError(t *testing.T) {
 
 	errScraper := errors.New("scraper start failed")
 	cfg := &ControllerConfig{CollectionInterval: time.Minute}
-	ctrl := newTestController(t, cfg, nopScrapeFunc,
+	ctrl := newTestController(
+		t, cfg, nopScrapeFunc,
 		&mockScraper{StartFunc: component.StartFunc(func(context.Context, component.Host) error {
 			return errScraper
 		})},
@@ -151,7 +153,8 @@ func TestShutdownScrapers(t *testing.T) {
 
 	var shutdownOrder []int
 	cfg := &ControllerConfig{CollectionInterval: time.Minute}
-	ctrl := newTestController(t, cfg, nopScrapeFunc,
+	ctrl := newTestController(
+		t, cfg, nopScrapeFunc,
 		&mockScraper{ShutdownFunc: component.ShutdownFunc(func(context.Context) error {
 			shutdownOrder = append(shutdownOrder, 1)
 			return nil
@@ -174,7 +177,8 @@ func TestShutdownScraperErrors(t *testing.T) {
 	errShutdown1 := errors.New("shutdown error 1")
 	errShutdown2 := errors.New("shutdown error 2")
 	cfg := &ControllerConfig{CollectionInterval: time.Minute}
-	ctrl := newTestController(t, cfg, nopScrapeFunc,
+	ctrl := newTestController(
+		t, cfg, nopScrapeFunc,
 		&mockScraper{ShutdownFunc: component.ShutdownFunc(func(context.Context) error {
 			return errShutdown1
 		})},

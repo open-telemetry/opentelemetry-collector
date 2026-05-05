@@ -283,7 +283,8 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 			}),
 			otelhttp.WithMeterProvider(settings.MeterProvider),
 		},
-		serverOpts.OtelhttpOpts...)
+		serverOpts.OtelhttpOpts...,
+	)
 
 	// Enable OpenTelemetry observability plugin.
 	handler = otelhttp.NewHandler(handler, "", otelOpts...)

@@ -855,7 +855,8 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 		context.Background(),
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
-		consumertest.NewNop())
+		consumertest.NewNop(),
+	)
 	require.NoError(t, err)
 	assert.NotNil(t, r)
 
@@ -926,7 +927,8 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 		context.Background(),
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
-		consumertest.NewNop())
+		consumertest.NewNop(),
+	)
 	require.NoError(t, err)
 	assert.NotNil(t, r)
 	assert.EqualError(t, r.Start(context.Background(), componenttest.NewNopHost()),
@@ -1174,7 +1176,8 @@ func TestShutdown(t *testing.T) {
 		context.Background(),
 		set,
 		cfg,
-		nextSink)
+		nextSink,
+	)
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -1413,7 +1416,8 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", transport)),
+							attribute.String("transport", transport),
+						),
 						Value: failed,
 					},
 				},
@@ -1434,7 +1438,8 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", transport)),
+							attribute.String("transport", transport),
+						),
 						Value: accepted,
 					},
 				},
@@ -1455,7 +1460,8 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", transport)),
+							attribute.String("transport", transport),
+						),
 						Value: refused,
 					},
 				},
@@ -1474,7 +1480,8 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 				Attributes: attribute.NewSet(
 					attribute.String("receiver", id.String()),
 					attribute.String("transport", transport),
-					attribute.String("outcome", "success")),
+					attribute.String("outcome", "success"),
+				),
 				Value: accepted,
 			})
 		}
@@ -1483,7 +1490,8 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 				Attributes: attribute.NewSet(
 					attribute.String("receiver", id.String()),
 					attribute.String("transport", transport),
-					attribute.String("outcome", outcome)),
+					attribute.String("outcome", outcome),
+				),
 				Value: rejected,
 			})
 		}
@@ -1532,7 +1540,8 @@ func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id compone
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", transport)),
+							attribute.String("transport", transport),
+						),
 						Value: failed,
 					},
 				},
@@ -1553,7 +1562,8 @@ func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id compone
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", transport)),
+							attribute.String("transport", transport),
+						),
 						Value: accepted,
 					},
 				},
@@ -1574,7 +1584,8 @@ func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id compone
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", transport)),
+							attribute.String("transport", transport),
+						),
 						Value: refused,
 					},
 				},
@@ -1593,7 +1604,8 @@ func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id compone
 				Attributes: attribute.NewSet(
 					attribute.String("receiver", id.String()),
 					attribute.String("transport", transport),
-					attribute.String("outcome", "success")),
+					attribute.String("outcome", "success"),
+				),
 				Value: accepted,
 			})
 		}
@@ -1602,7 +1614,8 @@ func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id compone
 				Attributes: attribute.NewSet(
 					attribute.String("receiver", id.String()),
 					attribute.String("transport", transport),
-					attribute.String("outcome", outcome)),
+					attribute.String("outcome", outcome),
+				),
 				Value: 1, // One request failed
 			})
 		}
@@ -1649,7 +1662,8 @@ func assertReceiverProfiles(t *testing.T, tt *componenttest.Telemetry, id compon
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", transport)),
+							attribute.String("transport", transport),
+						),
 						Value: failed,
 					},
 				},
@@ -1670,7 +1684,8 @@ func assertReceiverProfiles(t *testing.T, tt *componenttest.Telemetry, id compon
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", transport)),
+							attribute.String("transport", transport),
+						),
 						Value: accepted,
 					},
 				},
@@ -1691,7 +1706,8 @@ func assertReceiverProfiles(t *testing.T, tt *componenttest.Telemetry, id compon
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", transport)),
+							attribute.String("transport", transport),
+						),
 						Value: refused,
 					},
 				},
@@ -1708,7 +1724,8 @@ func assertReceiverProfiles(t *testing.T, tt *componenttest.Telemetry, id compon
 				Attributes: attribute.NewSet(
 					attribute.String("receiver", id.String()),
 					attribute.String("transport", transport),
-					attribute.String("outcome", "success")),
+					attribute.String("outcome", "success"),
+				),
 				Value: accepted,
 			})
 		}
@@ -1717,7 +1734,8 @@ func assertReceiverProfiles(t *testing.T, tt *componenttest.Telemetry, id compon
 				Attributes: attribute.NewSet(
 					attribute.String("receiver", id.String()),
 					attribute.String("transport", transport),
-					attribute.String("outcome", outcome)),
+					attribute.String("outcome", outcome),
+				),
 				Value: 1,
 			})
 		}

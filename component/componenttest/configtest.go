@@ -102,7 +102,8 @@ func checkStructFieldTags(f reflect.StructField) error {
 		case "squash":
 			if (f.Type.Kind() != reflect.Struct) && (f.Type.Kind() != reflect.Ptr || f.Type.Elem().Kind() != reflect.Struct) {
 				return fmt.Errorf(
-					"attempt to squash non-struct type on field %q", f.Name)
+					"attempt to squash non-struct type on field %q", f.Name,
+				)
 			}
 		case "remain":
 			if f.Type.Kind() != reflect.Map && f.Type.Kind() != reflect.Interface {
@@ -127,7 +128,8 @@ func checkStructFieldTags(f reflect.StructField) error {
 				"field %q has config tag %q which doesn't satisfy %q",
 				f.Name,
 				fieldTag,
-				configFieldTagRegExp.String())
+				configFieldTagRegExp.String(),
+			)
 		}
 	}
 

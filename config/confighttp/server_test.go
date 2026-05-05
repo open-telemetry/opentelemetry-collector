@@ -413,7 +413,8 @@ func TestHTTPCorsInvalidSettings(t *testing.T) {
 		context.Background(),
 		nil,
 		componenttest.NewNopTelemetrySettings(),
-		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
+	)
 	require.NoError(t, err)
 	require.NotNil(t, s)
 	require.NoError(t, s.Close())
