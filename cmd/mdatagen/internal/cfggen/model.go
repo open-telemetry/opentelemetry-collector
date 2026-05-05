@@ -93,7 +93,7 @@ func (md *ConfigMetadata) Validate() error {
 
 	hasDefs := len(md.Defs) > 0
 	hasConfigFields := len(md.Properties) > 0 || len(md.AllOf) > 0
-	if md.Type != "object" && !(md.Type == "" && hasDefs && !hasConfigFields) {
+	if md.Type != "object" && (md.Type != "" || !hasDefs || hasConfigFields) {
 		errs = errors.Join(errs, fmt.Errorf("config type must be \"object\", got %q", md.Type))
 	}
 	if !hasDefs && !hasConfigFields {
