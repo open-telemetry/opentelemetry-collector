@@ -4,6 +4,7 @@ type: sample
 display_name: Sample Scraper
 description: This scraper is used for testing purposes to check the output of mdatagen.
 reaggregation_enabled: true
+override_value_enabled: true
 github_project: open-telemetry/opentelemetry-collector
 
 sem_conv_version: 1.40.0
@@ -24,12 +25,17 @@ status:
 config:
   type: object
   description: Configuration for the Sample Scraper.
-  allOf:
-    - $ref: ./internal/metadata.metrics_builder_config
-    - $ref: /scraper/scraperhelper.controller_config
+  properties:
+    metrics_builder_config:
+      $ref: ./internal/metadata.metrics_builder_config
+      embed: true
+      go_struct:
+        anonymous: true
+    controller_config:
+      $ref: /scraper/scraperhelper.controller_config
+      embed: true
       default:
         timeout: 30s
-  properties:
     job_name:
       description: Name of the scrape job, used to identify the source in telemetry.
       type: string

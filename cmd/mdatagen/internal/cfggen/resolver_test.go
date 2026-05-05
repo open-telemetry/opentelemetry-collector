@@ -155,6 +155,100 @@ func TestResolver_ResolveSchema_AllOf(t *testing.T) {
 	require.NotNil(t, result.AllOf[1].Properties["field2"])
 }
 
+func TestResolver_ResolveSchema_EmbeddedProperties(t *testing.T) {
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: NewLoader(""),
+	}
+
+	src := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"anonymous_config": {
+				Ref:      "anonymous_config",
+				Embed:    true,
+				GoStruct: GoStructConfig{Anonymous: true},
+			},
+			"named_config": {
+				Ref:   "named_config",
+				Embed: true,
+			},
+			"regular": {
+				Type: "string",
+			},
+		},
+		Defs: map[string]*ConfigMetadata{
+			"anonymous_config": {Type: "object"},
+			"named_config":     {Type: "object"},
+		},
+	}
+
+	result, err := resolver.ResolveSchema(src)
+	require.NoError(t, err)
+	require.Len(t, result.Properties, 1)
+	require.Contains(t, result.Properties, "regular")
+	require.Len(t, result.AllOf, 2)
+
+	named := findSchema(t, result.AllOf, func(md *ConfigMetadata) bool {
+		return md.ResolvedFrom == "named_config"
+	})
+	require.NotNil(t, named)
+	require.True(t, named.Embed)
+	require.Equal(t, "named_config", named.EmbeddedName)
+
+	anonymous := findSchema(t, result.AllOf, func(md *ConfigMetadata) bool {
+		return md.ResolvedFrom == "anonymous_config"
+	})
+	require.NotNil(t, anonymous)
+	require.True(t, anonymous.Embed)
+	require.True(t, anonymous.GoStruct.Anonymous)
+	require.Empty(t, anonymous.EmbeddedName)
+}
+
+func TestResolver_ResolveSchema_EmbeddedReferencePreservesExtensions(t *testing.T) {
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: NewLoader(""),
+	}
+
+	src := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"base": {
+				Ref:         "base_config",
+				Embed:       true,
+				GoStruct:    GoStructConfig{Anonymous: true},
+				Description: "Embedded base config",
+			},
+		},
+		Defs: map[string]*ConfigMetadata{
+			"base_config": {
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"endpoint": {Type: "string"},
+				},
+			},
+		},
+	}
+
+	result, err := resolver.ResolveSchema(src)
+	require.NoError(t, err)
+	require.Empty(t, result.Properties)
+	require.Len(t, result.AllOf, 1)
+
+	embedded := result.AllOf[0]
+	require.Equal(t, "base_config", embedded.ResolvedFrom)
+	require.True(t, embedded.Embed)
+	require.True(t, embedded.GoStruct.Anonymous)
+	require.Empty(t, embedded.EmbeddedName)
+	require.Equal(t, "Embedded base config", embedded.Description)
+	require.Contains(t, embedded.Properties, "endpoint")
+}
+
 func TestResolver_ResolveSchema_ArrayItems(t *testing.T) {
 	resolver := &Resolver{
 		pkgID:  "go.opentelemetry.io/collector/test/component",
@@ -398,6 +492,17 @@ func TestResolver_ResolveSchema_DurationFormat(t *testing.T) {
 // mockLoader is a test helper that returns pre-configured schemas keyed by cache key.
 type mockLoader struct {
 	schemas map[string]*ConfigMetadata
+}
+
+func findSchema(t *testing.T, schemas []*ConfigMetadata, match func(*ConfigMetadata) bool) *ConfigMetadata {
+	t.Helper()
+	for _, md := range schemas {
+		if match(md) {
+			return md
+		}
+	}
+	require.FailNow(t, "schema not found")
+	return nil
 }
 
 func (m *mockLoader) Load(ref Ref) (*ConfigMetadata, error) {

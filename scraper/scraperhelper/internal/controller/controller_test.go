@@ -8,6 +8,7 @@ import (
 	"errors"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -24,14 +25,23 @@ type mockScraper struct {
 	component.ShutdownFunc
 }
 
-func newTestController(t *testing.T, cfg *ControllerConfig, scrapers []component.Component, tickerCh <-chan time.Time) *Controller[component.Component] {
+func nopScrapeFunc(context.Context, *Controller[component.Component]) error {
+	return nil
+}
+
+func newTestController(
+	t *testing.T,
+	cfg *ControllerConfig,
+	scrapeFunc func(context.Context, *Controller[component.Component]) error,
+	scrapers ...component.Component,
+) *Controller[component.Component] {
 	t.Helper()
 	ctrl, err := NewController(
 		cfg,
 		receivertest.NewNopSettings(receivertest.NopType),
 		scrapers,
-		func(context.Context, *Controller[component.Component]) error { return nil },
-		tickerCh,
+		scrapeFunc,
+		nil,
 	)
 	require.NoError(t, err)
 	return ctrl
@@ -109,14 +119,12 @@ func TestStartScrapersStarted(t *testing.T) {
 		started++
 		return nil
 	})
-	scrapers := []component.Component{
-		&mockScraper{StartFunc: startFunc},
-		&mockScraper{StartFunc: startFunc},
-	}
 
-	tickerCh := make(chan time.Time)
 	cfg := &ControllerConfig{CollectionInterval: time.Minute}
-	ctrl := newTestController(t, cfg, scrapers, tickerCh)
+	ctrl := newTestController(t, cfg, nopScrapeFunc,
+		&mockScraper{StartFunc: startFunc},
+		&mockScraper{StartFunc: startFunc},
+	)
 
 	require.NoError(t, ctrl.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Equal(t, 2, started)
@@ -127,56 +135,23 @@ func TestStartScraperError(t *testing.T) {
 	t.Parallel()
 
 	errScraper := errors.New("scraper start failed")
-	scrapers := []component.Component{
+	cfg := &ControllerConfig{CollectionInterval: time.Minute}
+	ctrl := newTestController(t, cfg, nopScrapeFunc,
 		&mockScraper{StartFunc: component.StartFunc(func(context.Context, component.Host) error {
 			return errScraper
 		})},
-	}
-
-	tickerCh := make(chan time.Time)
-	cfg := &ControllerConfig{CollectionInterval: time.Minute}
-	ctrl := newTestController(t, cfg, scrapers, tickerCh)
+	)
 
 	err := ctrl.Start(context.Background(), componenttest.NewNopHost())
 	require.ErrorIs(t, err, errScraper)
-}
-
-func TestStartScrapingWithNilTickerCh(t *testing.T) {
-	t.Parallel()
-
-	var scrapeCount atomic.Int32
-	scrapeFunc := func(context.Context, *Controller[component.Component]) error {
-		scrapeCount.Add(1)
-		return nil
-	}
-
-	cfg := &ControllerConfig{
-		CollectionInterval: 50 * time.Millisecond,
-	}
-	ctrl, err := NewController(
-		cfg,
-		receivertest.NewNopSettings(receivertest.NopType),
-		[]component.Component{},
-		scrapeFunc,
-		nil, // nil tickerCh — will create a real ticker internally.
-	)
-	require.NoError(t, err)
-
-	require.NoError(t, ctrl.Start(context.Background(), componenttest.NewNopHost()))
-
-	// Should get initial scrape + at least one ticker scrape.
-	require.Eventually(t, func() bool {
-		return scrapeCount.Load() >= 2
-	}, time.Second, 10*time.Millisecond)
-
-	require.NoError(t, ctrl.Shutdown(context.Background()))
 }
 
 func TestShutdownScrapers(t *testing.T) {
 	t.Parallel()
 
 	var shutdownOrder []int
-	scrapers := []component.Component{
+	cfg := &ControllerConfig{CollectionInterval: time.Minute}
+	ctrl := newTestController(t, cfg, nopScrapeFunc,
 		&mockScraper{ShutdownFunc: component.ShutdownFunc(func(context.Context) error {
 			shutdownOrder = append(shutdownOrder, 1)
 			return nil
@@ -185,11 +160,7 @@ func TestShutdownScrapers(t *testing.T) {
 			shutdownOrder = append(shutdownOrder, 2)
 			return nil
 		})},
-	}
-
-	tickerCh := make(chan time.Time)
-	cfg := &ControllerConfig{CollectionInterval: time.Minute}
-	ctrl := newTestController(t, cfg, scrapers, tickerCh)
+	)
 
 	require.NoError(t, ctrl.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, ctrl.Shutdown(context.Background()))
@@ -202,18 +173,15 @@ func TestShutdownScraperErrors(t *testing.T) {
 
 	errShutdown1 := errors.New("shutdown error 1")
 	errShutdown2 := errors.New("shutdown error 2")
-	scrapers := []component.Component{
+	cfg := &ControllerConfig{CollectionInterval: time.Minute}
+	ctrl := newTestController(t, cfg, nopScrapeFunc,
 		&mockScraper{ShutdownFunc: component.ShutdownFunc(func(context.Context) error {
 			return errShutdown1
 		})},
 		&mockScraper{ShutdownFunc: component.ShutdownFunc(func(context.Context) error {
 			return errShutdown2
 		})},
-	}
-
-	tickerCh := make(chan time.Time)
-	cfg := &ControllerConfig{CollectionInterval: time.Minute}
-	ctrl := newTestController(t, cfg, scrapers, tickerCh)
+	)
 
 	require.NoError(t, ctrl.Start(context.Background(), componenttest.NewNopHost()))
 	err := ctrl.Shutdown(context.Background())
@@ -224,73 +192,53 @@ func TestShutdownScraperErrors(t *testing.T) {
 
 func TestStartScraping(t *testing.T) {
 	t.Parallel()
+	synctest.Test(t, func(t *testing.T) {
+		var scrapeCount atomic.Int32
+		scrapeFunc := func(context.Context, *Controller[component.Component]) error {
+			scrapeCount.Add(1)
+			return nil
+		}
 
-	tickerCh := make(chan time.Time)
-	var scrapeCount atomic.Int32
-	scrapeFunc := func(context.Context, *Controller[component.Component]) error {
-		scrapeCount.Add(1)
-		return nil
-	}
+		cfg := &ControllerConfig{CollectionInterval: time.Minute}
+		ctrl := newTestController(t, cfg, scrapeFunc)
 
-	cfg := &ControllerConfig{
-		CollectionInterval: time.Minute,
-	}
-	ctrl, err := NewController(
-		cfg,
-		receivertest.NewNopSettings(receivertest.NopType),
-		[]component.Component{},
-		scrapeFunc,
-		tickerCh,
-	)
-	require.NoError(t, err)
+		require.NoError(t, ctrl.Start(context.Background(), componenttest.NewNopHost()))
+		synctest.Wait()
+		assert.Equal(t, int32(1), scrapeCount.Load())
 
-	require.NoError(t, ctrl.Start(context.Background(), componenttest.NewNopHost()))
+		time.Sleep(cfg.CollectionInterval)
+		synctest.Wait()
+		assert.Equal(t, int32(2), scrapeCount.Load())
 
-	// startScraping calls scrapeFunc immediately on start.
-	require.Eventually(t, func() bool {
-		return scrapeCount.Load() >= 1
-	}, time.Second, 10*time.Millisecond)
-
-	// Simulate a tick — should trigger another scrape.
-	tickerCh <- time.Now()
-	require.Eventually(t, func() bool {
-		return scrapeCount.Load() >= 2
-	}, time.Second, 10*time.Millisecond)
-
-	require.NoError(t, ctrl.Shutdown(context.Background()))
+		require.NoError(t, ctrl.Shutdown(context.Background()))
+	})
 }
 
 func TestStartScrapingWithInitialDelay(t *testing.T) {
 	t.Parallel()
+	synctest.Test(t, func(t *testing.T) {
+		var scrapeCount atomic.Int32
+		scrapeFunc := func(context.Context, *Controller[component.Component]) error {
+			scrapeCount.Add(1)
+			return nil
+		}
 
-	tickerCh := make(chan time.Time)
-	var scrapeCount atomic.Int32
-	scrapeFunc := func(context.Context, *Controller[component.Component]) error {
-		scrapeCount.Add(1)
-		return nil
-	}
+		cfg := &ControllerConfig{
+			CollectionInterval: time.Minute,
+			InitialDelay:       50 * time.Millisecond,
+		}
+		ctrl := newTestController(t, cfg, scrapeFunc)
 
-	cfg := &ControllerConfig{
-		CollectionInterval: time.Minute,
-		InitialDelay:       50 * time.Millisecond,
-	}
-	ctrl, err := NewController(
-		cfg,
-		receivertest.NewNopSettings(receivertest.NopType),
-		[]component.Component{},
-		scrapeFunc,
-		tickerCh,
-	)
-	require.NoError(t, err)
+		require.NoError(t, ctrl.Start(context.Background(), componenttest.NewNopHost()))
+		synctest.Wait()
+		assert.Equal(t, int32(0), scrapeCount.Load())
 
-	require.NoError(t, ctrl.Start(context.Background(), componenttest.NewNopHost()))
+		time.Sleep(cfg.InitialDelay)
+		synctest.Wait()
+		assert.Equal(t, int32(1), scrapeCount.Load())
 
-	// The initial scrape should happen after the initial delay.
-	require.Eventually(t, func() bool {
-		return scrapeCount.Load() >= 1
-	}, time.Second, 10*time.Millisecond)
-
-	require.NoError(t, ctrl.Shutdown(context.Background()))
+		require.NoError(t, ctrl.Shutdown(context.Background()))
+	})
 }
 
 func TestStartScrapingShutdownDuringInitialDelay(t *testing.T) {
@@ -306,14 +254,7 @@ func TestStartScrapingShutdownDuringInitialDelay(t *testing.T) {
 		CollectionInterval: time.Minute,
 		InitialDelay:       time.Hour, // Very long delay — we'll shut down before it expires.
 	}
-	ctrl, err := NewController(
-		cfg,
-		receivertest.NewNopSettings(receivertest.NopType),
-		[]component.Component{},
-		scrapeFunc,
-		nil,
-	)
-	require.NoError(t, err)
+	ctrl := newTestController(t, cfg, scrapeFunc)
 
 	require.NoError(t, ctrl.Start(context.Background(), componenttest.NewNopHost()))
 	// Shutdown immediately, which should cancel the initial delay wait.
@@ -349,14 +290,7 @@ func TestScrapeFuncAppliesTimeout(t *testing.T) {
 		CollectionInterval: time.Minute,
 		Timeout:            timeout,
 	}
-	ctrl, err := NewController(
-		cfg,
-		receivertest.NewNopSettings(receivertest.NopType),
-		[]component.Component{},
-		scrapeFunc,
-		nil,
-	)
-	require.NoError(t, err)
+	ctrl := newTestController(t, cfg, scrapeFunc)
 
 	require.NoError(t, ctrl.scrapeFunc(context.Background(), ctrl))
 	assert.True(t, hasDeadline)
@@ -372,17 +306,8 @@ func TestScrapeFuncNoTimeout(t *testing.T) {
 		return nil
 	}
 
-	cfg := &ControllerConfig{
-		CollectionInterval: time.Minute,
-	}
-	ctrl, err := NewController(
-		cfg,
-		receivertest.NewNopSettings(receivertest.NopType),
-		[]component.Component{},
-		scrapeFunc,
-		nil,
-	)
-	require.NoError(t, err)
+	cfg := &ControllerConfig{CollectionInterval: time.Minute}
+	ctrl := newTestController(t, cfg, scrapeFunc)
 
 	require.NoError(t, ctrl.scrapeFunc(context.Background(), ctrl))
 	assert.False(t, hasDeadline)
@@ -401,14 +326,7 @@ func TestScrapeFuncPropagatesParentCancellation(t *testing.T) {
 		CollectionInterval: time.Minute,
 		Timeout:            time.Hour,
 	}
-	ctrl, err := NewController(
-		cfg,
-		receivertest.NewNopSettings(receivertest.NopType),
-		[]component.Component{},
-		scrapeFunc,
-		nil,
-	)
-	require.NoError(t, err)
+	ctrl := newTestController(t, cfg, scrapeFunc)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -424,17 +342,8 @@ func TestScrapeFuncReturnsError(t *testing.T) {
 		return scrapeErr
 	}
 
-	cfg := &ControllerConfig{
-		CollectionInterval: time.Minute,
-	}
-	ctrl, err := NewController(
-		cfg,
-		receivertest.NewNopSettings(receivertest.NopType),
-		[]component.Component{},
-		scrapeFunc,
-		nil,
-	)
-	require.NoError(t, err)
+	cfg := &ControllerConfig{CollectionInterval: time.Minute}
+	ctrl := newTestController(t, cfg, scrapeFunc)
 
 	assert.ErrorIs(t, ctrl.scrapeFunc(context.Background(), ctrl), scrapeErr)
 }

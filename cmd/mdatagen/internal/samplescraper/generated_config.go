@@ -39,19 +39,18 @@ func (c *TargetsItem) Validate() error {
 
 // NewDefaultTargetsItem returns a new TargetsItem with default values consistent with the annotations in the schema.
 func NewDefaultTargetsItem() TargetsItem {
-	cfg := TargetsItem{}
-	cfg.Interval = configoptional.Some(10 * time.Second)
-	cfg.Labels = map[string]string{"option1": "value1", "option2": "value2"}
-
-	return cfg
+	return TargetsItem{
+		Interval: configoptional.Some(10 * time.Second),
+		Labels:   map[string]string{"option1": "value1", "option2": "value2"},
+	}
 }
 
 // Configuration for the Sample Scraper.
 type Config struct {
+	// ControllerConfig defines common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed.
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
 	// MetricsBuilderConfig is a configuration for sample metrics builder.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
-	// ControllerConfig defines common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed.
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	// Name of the scrape job, used to identify the source in telemetry.
 	JobName string `mapstructure:"job_name"`
 	// List of targets to scrape metrics from.
@@ -83,12 +82,12 @@ func (c *Config) Validate() error {
 }
 
 func createDefaultConfig() component.Config {
-	cfg := Config{}
-	cfg.MetricsBuilderConfig = metadata.NewDefaultMetricsBuilderConfig()
-	cfg.ControllerConfig = scraperhelper.NewDefaultControllerConfig()
-	cfg.ControllerConfig.Timeout = 30 * time.Second
-	cfg.JobName = "test_job"
-	cfg.Targets = &[]TargetsItem{NewDefaultTargetsItem()}
-
-	return &cfg
+	controllerConfig := scraperhelper.NewDefaultControllerConfig()
+	controllerConfig.Timeout = 30 * time.Second
+	return &Config{
+		ControllerConfig:     controllerConfig,
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+		JobName:              "test_job",
+		Targets:              &[]TargetsItem{NewDefaultTargetsItem()},
+	}
 }
