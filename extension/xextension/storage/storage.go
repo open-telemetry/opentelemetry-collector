@@ -84,7 +84,7 @@ type WalkFunc func(key string, value []byte) ([]*Operation, error)
 // SkipAll is used as a return value from WalkFunc to indicate that
 // all remaining storage entries are to be skipped.
 // The pending operations are still applied.
-var SkipAll = errors.New("skip everything and stop the walk") //nolint // mimics the existing API in the standard library, see filepath
+var SkipAll = errors.New("skip everything and stop the walk") //nolint:revive // mimics the existing API in the standard library, see filepath
 
 // Walker is the interface that a storage extension Client may implement
 // in order to support ranging through the storage entries.
