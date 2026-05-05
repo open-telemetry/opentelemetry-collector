@@ -1,13 +1,13 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: bug_fix
+change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
 component: cmd/mdatagen
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fix mdatagen handling of explicit null default values in configuration schemas.
+note: Add `go_struct.ignore_default` flag to suppress default value generation for individual config fields.
 
 # One or more tracking issues or pull requests related to the change
 issues: [15156]
@@ -16,7 +16,9 @@ issues: [15156]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Explicit `default: null` values are now distinguished from absent defaults, allowing generated code to correctly initialize pointer and optional fields.
+  Setting `go_struct.ignore_default: true` on a config field causes mdatagen to omit that field's default 
+  from the generated `createDefaultConfig` function, emitting `nil` for pointer fields 
+  and `configoptional.None` for optional fields.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
