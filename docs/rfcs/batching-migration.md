@@ -7,15 +7,19 @@ The Collector now offers two batching mechanisms:
 1. The `batchprocessor` component, used in pipelines for many years and
    widely deployed, notably as a default in the OpenTelemetry Helm
    chart and other distributions.
-2. The `exporterhelper` queue/batch sender, the modern replacement,
-   targeted as the standard default batching mechanism.
+2. The `exporterhelper` combined queue/batch sender, a replacement for
+   the batch processor, is ready to replace it.
 
-Neither alone is sufficient. We need a path that lets
-the project promote exporterhelper batching as the default *without*
-silently degrading the many pipelines that already use
-`batchprocessor`. This RFC summarizes the situation and proposes two
-new mechanisms — a feature gate and a runtime context marker — that
-together unblock the transition.
+We find there are a small number of users and known use-cases which
+require a batch processor. At the same time, the batch processor has
+several known defects, and fixing the defects will be a breaking
+change.
+
+Our goal is to migrate most users away from the batch processor and
+enable batching by default for all exporterhelper users. This will
+require a careful sequence of steps for a successful migration.
+
+## Background
 
 This RFC supersedes the unmerged draft in
 [#11947](https://github.com/open-telemetry/opentelemetry-collector/pull/11947)
@@ -28,54 +32,39 @@ and gives a more focused answer to the questions raised in
 [#12022](https://github.com/open-telemetry/opentelemetry-collector/issues/12022),
 and [#8122](https://github.com/open-telemetry/opentelemetry-collector/issues/8122).
 
-## Background
+### `batchprocessor` defects
 
-### The `batchprocessor` is good, and defective
+The processor is widely used. It has well-documented defects:
 
-The processor remains the most widely used way to batch in the
-Collector. It is well understood, easy to reason about, and works in
-the canonical receiver→processor→exporter mental model.
-
-It also has well-documented defects:
-
-- It suppresses errors (always returns `nil` to its caller).
-- It returns to the caller before the export has completed.
-- It has effective concurrency of 1.
+- Suppresses errors (always returns `nil`)
+- Returns to the caller before the export has completed
+- Single-export concurrency
+- Sizes batches by item count
 - It interrupts trace context and (without `metadata_keys`) drops
   client metadata.
 
-These defects motivated [#11947](https://github.com/open-telemetry/opentelemetry-collector/pull/11947)
-and the modernization attempt in
-[#13583](https://github.com/open-telemetry/opentelemetry-collector/pull/13583).
-
 ### The exporterhelper batcher is good, and not yet a drop-in replacement
 
-`exporterhelper`'s queue+batch sender resolves the defects above and
-adds important features (request-shaped batching, persistent queue,
-byte-sized limits, error propagation, real concurrency). It is the
-correct long-term default.
+The `exporterhelper` queue/batch sender resolves the known
+batchprocessor defects and integrates new features:
 
-As of this writing, `exporterhelper` batching has feature parity with
-`batchprocessor`, including `metadata_keys` batching
-([#10825](https://github.com/open-telemetry/opentelemetry-collector/issues/10825)).
-The transition is technically ready.
+- Choice of sizing logic by items, bytes, and requests
+- Optional synchronous or asynchronous behavior
+- Optional persistent storage extension
+- Optional blocking
 
-The remaining concern is metric naming: if `batchprocessor` is
-reimplemented on top of `exporterhelper`, it will emit metrics named
-for an `exporter` rather than a `processor`
-([#14038](https://github.com/open-telemetry/opentelemetry-collector/issues/14038)).
-This is a real follow-up, but it is scoped to the future
-helper-backed `batchprocessor` and does not block the default-shift
-proposed here. It can be resolved on its own timeline.
+At this time, the `exporterhelper` queue/batch sender has feature
+parity with `batchprocessor`.
 
 ### The double-batching problem
 
 Once `exporterhelper` batching is enabled by default in stable
-exporters, every pipeline that *also* contains a `batchprocessor` will
-batch twice. Double batching wastes CPU (every record is split,
-re-merged, re-timed, re-allocated) and can hurt latency. This
-prevents the project from turning on exporterhelper batching by
-default while `batchprocessor` is still common in user configurations.
+exporters, every pipeline that also contains a `batchprocessor` will
+apply batching twice.
+
+Double batching wastes CPU and can hurt latency. This prevents the
+project from turning on exporterhelper batching by default while
+`batchprocessor` is still common in user configurations.
 
 We have explored several escapes, none satisfying:
 
@@ -97,8 +86,7 @@ We have explored several escapes, none satisfying:
 
 1. Allow `exporterhelper` batching to become the default for stable
    exporters without silently double-batching existing pipelines.
-2. Preserve the `batchprocessor` for users who depend on it (in
-   particular `metadata_keys`, and the simple processor mental model).
+2. Preserve the `batchprocessor` for users who depend on it.
 3. Make the long-term direction reversible if a chosen mechanism
    proves wrong: no breaking renames, no irreversible config changes.
 4. Give distribution authors (e.g. the Helm chart) a single switch to
@@ -113,15 +101,18 @@ parts of the problem and compose cleanly.
 
 Introduce a single feature gate, e.g.
 `exporter.defaultBatching.enabled`, that controls whether stable
-exporters enable `exporterhelper`'s batch sender by default when the
-user has not explicitly configured `sending_queue.batch`.
+exporters enable the `exporterhelper` batch feature by default when
+the user has not explicitly configured `sending_queue.batch`.
 
-| Stage | Default | Behavior |
-| --- | --- | --- |
-| Alpha | off | Existing behavior. Opt-in only. |
-| Beta | off | Documentation, distribution guidance, telemetry to measure adoption. |
-| Stable | on | Exporters batch by default. Users (or distributions) opt out by disabling the gate or by explicitly setting `sending_queue.batch: null`. |
-| Removed | — | Default-on permanently. |
+| Stage   | Default | Behavior                                   |
+|---------|---------|--------------------------------------------|
+| Alpha   | off     | Existing behavior. Opt-in only.            |
+| Beta    | off     | Documentation, distribution guidance.      |
+| Stable  | on      | Exporters batch by default. Users opt out. |
+| Removed |         | Default-on permanently.                    |
+
+This is a global setting that will affect all exporters.
+
 
 An optional companion gate (e.g. `processor.batch.disabled`) MAY be
 added to let distributions short-circuit a `batch:` block that exists
