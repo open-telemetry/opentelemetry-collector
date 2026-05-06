@@ -67,7 +67,7 @@ func (sl *schemaLoader) load(ref Ref) (*ConfigMetadata, error) {
 		return nil, fmt.Errorf("failed to determine repo root: %w", err)
 	}
 
-	if ref.isLocal() {
+	if ref.IsLocal() {
 		var filePath string
 		if strings.HasPrefix(ref.schemaID, "/") {
 			filePath = filepath.Join(repoRoot, ref.SchemaID(), schemaFileName)
