@@ -17,6 +17,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -615,18 +616,25 @@ func TestPolling_InvalidIntervalReturnsError(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, fp.Shutdown(context.Background())) })
 
 	tests := []struct {
-		name     string
-		queryStr string
+		name      string
+		uri       string
+		errSubstr string
 	}{
-		{"unparseable", "polling_interval=not-a-duration"},
-		{"negative", "polling_interval=-1s"},
-		{"bare integer (no unit)", "polling_interval=30"},
+		{"unparseable", pts.retrieveURI("polling_interval=not-a-duration"), "polling_interval"},
+		{"negative", pts.retrieveURI("polling_interval=-1s"), "polling_interval"},
+		{"bare integer (no unit)", pts.retrieveURI("polling_interval=30"), "polling_interval"},
+		// %zz is an invalid percent-encoding sequence. url.Parse rejects
+		// it, so splitPollingInterval surfaces an "invalid uri" error from
+		// inside the polling-aware code path. This exercises the
+		// url.Parse error branch of splitPollingInterval that the
+		// other rows above bypass via time.ParseDuration.
+		{"malformed url with polling_interval", "http://example.com/%zz?polling_interval=1s", "invalid uri"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := fp.Retrieve(context.Background(), pts.retrieveURI(tt.queryStr), nil)
+			_, err := fp.Retrieve(context.Background(), tt.uri, nil)
 			require.Error(t, err)
-			assert.ErrorContains(t, err, "polling_interval")
+			assert.ErrorContains(t, err, tt.errSubstr)
 		})
 	}
 }
@@ -702,4 +710,165 @@ func TestPolling_MultipleRetrieveLifecyclesShareProviderCleanly(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, ret.Close(context.Background()))
 	}
+}
+
+func TestNew_NilLoggerDefaultsToNop(t *testing.T) {
+	// confmaptest.NewNopProviderSettings() always populates Logger, so the
+	// nil-logger fallback in New is only reachable when a caller passes
+	// confmap.ProviderSettings{} directly. Exercise that path and then run
+	// a real Retrieve to make sure the provider is fully usable without a
+	// caller-supplied logger.
+	pts := newPollingTestServer(t)
+
+	fp := newConfigurableHTTPProvider(HTTPScheme, confmap.ProviderSettings{})
+	t.Cleanup(func() { require.NoError(t, fp.Shutdown(context.Background())) })
+
+	require.NotNil(t, fp.logger, "New must default to a non-nil logger")
+
+	ret, err := fp.Retrieve(context.Background(), pts.URL(), nil)
+	require.NoError(t, err)
+	require.NoError(t, ret.Close(context.Background()))
+}
+
+func TestShutdown_CallerContextDeadlineWins(t *testing.T) {
+	// Shutdown's `select { case <-done: ; case <-ctx.Done(): }` only
+	// returns ctx.Err() when wg.Wait outlives the caller's context. To
+	// exercise that path deterministically (no HTTP timing, no ticker
+	// jitter), park a goroutine in fp.wg directly and then call Shutdown
+	// with a very short deadline.
+	fp := newConfigurableHTTPProvider(HTTPScheme, confmaptest.NewNopProviderSettings())
+
+	release := make(chan struct{})
+	// sync.OnceFunc lets us (a) close release as cleanup if the test fails
+	// early via require, draining the parked goroutine for goleak, and (b)
+	// also close it explicitly mid-test to set up the second Shutdown,
+	// without risking a double-close panic.
+	closeRelease := sync.OnceFunc(func() { close(release) })
+	t.Cleanup(closeRelease)
+	fp.wg.Go(func() { <-release })
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
+	err := fp.Shutdown(shutdownCtx)
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+
+	// Release the parked goroutine and verify a fresh Shutdown observes a
+	// clean drain.
+	closeRelease()
+	require.NoError(t, fp.Shutdown(context.Background()))
+}
+
+func TestRetrieve_NilContextSurfacesNewRequestError(t *testing.T) {
+	// http.NewRequestWithContext returns "net/http: nil Context" when its
+	// ctx is nil. fetch wraps that error with "unable to construct request"
+	// so the caller sees a meaningful message rather than a panic.
+	pts := newPollingTestServer(t)
+	fp := newConfigurableHTTPProvider(HTTPScheme, confmaptest.NewNopProviderSettings())
+	t.Cleanup(func() { require.NoError(t, fp.Shutdown(context.Background())) })
+
+	//nolint:staticcheck // intentionally exercising the defensive nil-context branch in fetch
+	_, err := fp.Retrieve(nil, pts.URL(), nil)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "unable to construct request")
+}
+
+func TestRetrieve_BodyReadFailureSurfacesAsError(t *testing.T) {
+	// Build a server that hijacks the connection, advertises a
+	// Content-Length of 1024, and then closes without sending any of those
+	// bytes. The Go HTTP client accepts the headers and io.ReadAll on the
+	// body returns io.ErrUnexpectedEOF. fetch wraps that as "fail to read
+	// the response body".
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		// testifylint's go-require rule forbids require.* inside an http
+		// handler (FailNow only kills the handler goroutine, leaving the
+		// test goroutine to wedge). httptest.NewServer's response writer
+		// is always a Hijacker and these writes are synchronous to a
+		// loopback socket - on the unlikely path that any of them errors,
+		// just return so the client sees an empty body and the test's
+		// downstream assertion fails with a meaningful message.
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			return
+		}
+		conn, bw, err := hj.Hijack()
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+		if _, err := bw.WriteString("HTTP/1.1 200 OK\r\nContent-Length: 1024\r\n\r\n"); err != nil {
+			return
+		}
+		_ = bw.Flush()
+		// Close immediately, well before the promised 1024 bytes arrive.
+	}))
+	t.Cleanup(srv.Close)
+
+	fp := newConfigurableHTTPProvider(HTTPScheme, confmaptest.NewNopProviderSettings())
+	t.Cleanup(func() { require.NoError(t, fp.Shutdown(context.Background())) })
+
+	_, err := fp.Retrieve(context.Background(), srv.URL, nil)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "fail to read the response body")
+}
+
+func TestPolling_SameETagOn200StaysQuiet(t *testing.T) {
+	// Some servers do not honor If-None-Match and instead always return a
+	// fresh 200 OK with the same ETag. The polling loop must treat an
+	// equal ETag pair as "no change" without consulting body bytes - this
+	// hits the `newEtag == etag` continue branch on line 260 and closes
+	// the matching && partials around it.
+	var (
+		mu       atomic.Pointer[pollingResponse]
+		reqCount atomic.Int64
+	)
+	mu.Store(&pollingResponse{body: "initial", etag: `"etag-stable"`})
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		reqCount.Add(1)
+		resp := mu.Load()
+		// Deliberately ignore If-None-Match: every poll gets a 200.
+		w.Header().Set("ETag", resp.etag)
+		w.WriteHeader(http.StatusOK)
+		_, _ = fmt.Fprint(w, resp.body)
+	}))
+	t.Cleanup(srv.Close)
+
+	fp := newConfigurableHTTPProvider(HTTPScheme, confmaptest.NewNopProviderSettings())
+	t.Cleanup(func() { require.NoError(t, fp.Shutdown(context.Background())) })
+
+	watcher, count, fired := makeWatcher()
+	uri := srv.URL + "?polling_interval=" + testPollInterval.String()
+	ret, err := fp.Retrieve(context.Background(), uri, watcher)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, ret.Close(context.Background())) })
+
+	expectQuiet(t, fired)
+	assert.Equal(t, int32(0), count.Load())
+	assert.Greater(t, reqCount.Load(), int64(1),
+		"polling goroutine should issue follow-up 200s even though ETag is stable")
+
+	// Now flip the ETag - the watcher must fire on the very next poll.
+	mu.Store(&pollingResponse{body: "initial", etag: `"etag-rotated"`})
+	waitForWatcher(t, fired)
+	assert.Equal(t, int32(1), count.Load())
+}
+
+func TestPolling_EmptyIntervalParamDisablesPolling(t *testing.T) {
+	// `?polling_interval=` (key present, value empty) must behave exactly
+	// like the missing-parameter case: no polling, no error. This covers
+	// the `if raw == ""` early-return branch in splitPollingInterval.
+	pts := newPollingTestServer(t)
+	fp := newConfigurableHTTPProvider(HTTPScheme, confmaptest.NewNopProviderSettings())
+	t.Cleanup(func() { require.NoError(t, fp.Shutdown(context.Background())) })
+
+	watcher, count, fired := makeWatcher()
+	ret, err := fp.Retrieve(context.Background(), pts.retrieveURI("polling_interval="), watcher)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, ret.Close(context.Background())) })
+
+	pts.setResponse("changed", `"etag-2"`)
+	expectQuiet(t, fired)
+	assert.Equal(t, int32(0), count.Load())
+	assert.EqualValues(t, 1, pts.requestCount.Load(),
+		"empty polling_interval value must disable polling, like an absent parameter")
 }
