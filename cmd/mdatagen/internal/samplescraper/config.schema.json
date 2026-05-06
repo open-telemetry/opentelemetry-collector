@@ -6,6 +6,30 @@
   "type": "object",
   "allOf": [
     {
+      "description": "ControllerConfig defines common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed.",
+      "type": "object",
+      "default": {
+        "timeout": "30s"
+      },
+      "properties": {
+        "collection_interval": {
+          "description": "CollectionInterval sets how frequently the scraper should be called and used as the context timeout to ensure that scrapers don't exceed the interval.",
+          "type": "string",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        },
+        "initial_delay": {
+          "description": "InitialDelay sets the initial start delay for the scraper, any non positive value is assumed to be immediately.",
+          "type": "string",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        },
+        "timeout": {
+          "description": "Timeout is an optional value used to set scraper's context deadline.",
+          "type": "string",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        }
+      }
+    },
+    {
       "description": "MetricsBuilderConfig is a configuration for sample metrics builder.",
       "type": "object",
       "properties": {
@@ -560,30 +584,6 @@
               }
             }
           }
-        }
-      }
-    },
-    {
-      "description": "ControllerConfig defines common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed.",
-      "type": "object",
-      "default": {
-        "timeout": "30s"
-      },
-      "properties": {
-        "collection_interval": {
-          "description": "CollectionInterval sets how frequently the scraper should be called and used as the context timeout to ensure that scrapers don't exceed the interval.",
-          "type": "string",
-          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
-        },
-        "initial_delay": {
-          "description": "InitialDelay sets the initial start delay for the scraper, any non positive value is assumed to be immediately.",
-          "type": "string",
-          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
-        },
-        "timeout": {
-          "description": "Timeout is an optional value used to set scraper's context deadline.",
-          "type": "string",
-          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
         }
       }
     }

@@ -25,7 +25,7 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			imports, err := ExtractImports(cfg, rootPackage, componentPackage)
 			if err != nil {
-				return []string{}
+				panic(err)
 			}
 			return imports
 		},
@@ -58,12 +58,16 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return typeName
 		},
-		"embeddedName": func(ref string) string {
-			if ref == "" {
-				panic("attempted to use embedded name with an empty ref")
+		"embeddedName": func(md *ConfigMetadata) string {
+			id := md.EmbeddedName
+			if id == "" {
+				if md.ResolvedFrom == "" {
+					panic("attempted to use embedded name with an empty ref")
+				}
+				refDesc := NewRef(md.ResolvedFrom)
+				id = refDesc.DefName()
 			}
-			refDesc := NewRef(ref)
-			name, _ := helpers.FormatIdentifier(refDesc.defName, true)
+			name, _ := helpers.FormatIdentifier(id, true)
 			return name
 		},
 		"camelVar": CamelVar,
@@ -198,7 +202,10 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 
 	if md.GoType != "" {
 		ref, err := ResolveGoTypeRef(md.GoType, rootPackage, componentPackage)
-		if err == nil && ref.ImportPath != "" {
+		if err != nil {
+			return fmt.Errorf("failed to resolve import for custom type %q: %w", md.GoType, err)
+		}
+		if ref.ImportPath != "" {
 			imports[ref.ImportPath] = true
 		}
 	}
@@ -213,11 +220,17 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 
 	if md.ResolvedFrom != "" {
 		ref, err := ResolveGoTypeRef(md.ResolvedFrom, rootPackage, componentPackage)
-		if err == nil && ref.ImportPath != "" {
+		if err != nil {
+			return fmt.Errorf("failed to resolve import for reference %q: %w", md.ResolvedFrom, err)
+		}
+		if ref.ImportPath != "" {
 			imports[ref.ImportPath] = true
 		}
 		refDesc := NewRef(md.ResolvedFrom)
 		if !refDesc.isInternal() {
+			if err := collectCustomDefaultImports(md, md.Default, imports, rootPackage, componentPackage); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -257,6 +270,42 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 	if md.ContentSchema != nil {
 		if err := collectImports(md.ContentSchema, imports, rootPackage, componentPackage); err != nil {
 			return err
+		}
+	}
+
+	return nil
+}
+
+func collectCustomDefaultImports(md *ConfigMetadata, defaultValue any, imports map[string]bool, rootPackage, componentPackage string) error {
+	if md == nil || md.GoStruct.IgnoreDefault {
+		return nil
+	}
+
+	switch typedValue := defaultValue.(type) {
+	case map[string]any:
+		if md.AdditionalProperties != nil {
+			return nil
+		}
+		for key, value := range typedValue {
+			prop := md.Properties[key]
+			if prop == nil {
+				continue
+			}
+			if err := collectImports(prop, imports, rootPackage, componentPackage); err != nil {
+				return err
+			}
+			if err := collectCustomDefaultImports(prop, value, imports, rootPackage, componentPackage); err != nil {
+				return err
+			}
+		}
+	case []any:
+		if md.Items == nil || md.Items.Type != "object" {
+			return nil
+		}
+		for _, item := range typedValue {
+			if err := collectCustomDefaultImports(md.Items, item, imports, rootPackage, componentPackage); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -444,8 +493,10 @@ func generateValidatorName(propName string, desc *CustomValidatorConfig) string 
 }
 
 func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, componentPackage string) []string {
+	if schema.GoStruct.IgnoreDefault {
+		return nil
+	}
 	exps := make([]string, 0)
-
 	switch typedValue := defaultValue.(type) {
 	case map[string]any:
 		// is nested struct
@@ -479,12 +530,25 @@ func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, co
 }
 
 func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue any, rootPackage, componentPackage string) string {
+	if md.GoStruct.IgnoreDefault || (defaultValue == nil && !hasDefaultValue(md)) {
+		if md.IsPointer {
+			return "nil"
+		}
+		if md.IsOptional {
+			t, _ := resolveGoType(md, name, rootPackage, componentPackage)
+			return fmt.Sprintf("configoptional.None[%s]()", t)
+		}
+		return ""
+	}
 	exp := formatSimpleValue(md, name, defaultValue, rootPackage, componentPackage)
 	if md.IsPointer {
-		exp = "&" + exp
+		return "&" + exp
 	}
 	if md.IsOptional {
-		exp = fmt.Sprintf("configoptional.Some(%s)", exp)
+		if md.Type == "object" && md.Properties != nil {
+			return fmt.Sprintf("configoptional.Default(%s)", exp)
+		}
+		return fmt.Sprintf("configoptional.Some(%s)", exp)
 	}
 	return exp
 }
@@ -500,16 +564,19 @@ func FormatBaseValue(md *ConfigMetadata, name string, defaultValue any, rootPack
 func WrapDefaultValue(md *ConfigMetadata, varName string) string {
 	exp := varName
 	if md.IsPointer {
-		exp = "&" + exp
+		return "&" + exp
 	}
 	if md.IsOptional {
-		exp = fmt.Sprintf("configoptional.Some(%s)", exp)
+		if md.Type == "object" && md.Properties != nil {
+			return fmt.Sprintf("configoptional.Default(%s)", exp)
+		}
+		return fmt.Sprintf("configoptional.Some(%s)", exp)
 	}
 	return exp
 }
 
 func hasDefaultValue(md *ConfigMetadata) bool {
-	if md.Default != nil {
+	if !md.GoStruct.IgnoreDefault && md.Default != nil {
 		return true
 	}
 	for _, prop := range md.Properties {
@@ -555,8 +622,8 @@ func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPa
 		return ""
 	}
 
-	// do not process further if "default" attribute not defined
-	if defaultValue == nil {
+	// do not process further if "ignore_default" attribute set
+	if md.GoStruct.IgnoreDefault {
 		return ""
 	}
 

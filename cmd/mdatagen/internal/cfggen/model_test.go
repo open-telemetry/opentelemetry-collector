@@ -8,9 +8,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.yaml.in/yaml/v3"
 
 	"go.opentelemetry.io/collector/confmap"
 )
+
+func defaultValue(value any) any {
+	return value
+}
 
 func TestConfigMetadata_ToJSON(t *testing.T) {
 	md := &ConfigMetadata{
@@ -26,6 +31,110 @@ func TestConfigMetadata_ToJSON(t *testing.T) {
 	assert.Contains(t, string(data), `"$schema"`)
 	assert.Contains(t, string(data), `"endpoint"`)
 	assert.Contains(t, string(data), `"The endpoint"`)
+}
+
+func TestConfigMetadata_UnmarshalYAMLDefaultValue(t *testing.T) {
+	tests := []struct {
+		name string
+		yaml string
+		want any
+	}{
+		{
+			name: "absent default",
+			yaml: `
+type: string
+`,
+			want: nil,
+		},
+		{
+			name: "scalar",
+			yaml: `
+type: string
+default: localhost
+`,
+			want: "localhost",
+		},
+		{
+			name: "map",
+			yaml: `
+type: object
+default:
+  enabled: true
+  label: prod
+`,
+			want: map[string]any{
+				"enabled": true,
+				"label":   "prod",
+			},
+		},
+		{
+			name: "list",
+			yaml: `
+type: array
+default:
+  - one
+  - two
+`,
+			want: []any{"one", "two"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var md ConfigMetadata
+			require.NoError(t, yaml.Unmarshal([]byte(tt.yaml), &md))
+
+			require.Equal(t, tt.want, md.Default)
+		})
+	}
+}
+
+func TestConfigMetadata_ToJSONDefaultValue(t *testing.T) {
+	absent := &ConfigMetadata{Type: "string"}
+
+	jsonData, err := absent.ToJSON()
+	require.NoError(t, err)
+	require.NotContains(t, string(jsonData), `"default"`)
+
+	withDefault := &ConfigMetadata{Type: "string", Default: defaultValue("localhost")}
+
+	jsonData, err = withDefault.ToJSON()
+	require.NoError(t, err)
+	require.Contains(t, string(jsonData), `"default": "localhost"`)
+}
+
+func TestConfigMetadata_UnmarshalConfMapDefaultValue(t *testing.T) {
+	parser := confmap.NewFromStringMap(map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			"endpoint": map[string]any{
+				"type":    "string",
+				"default": nil,
+			},
+			"headers": map[string]any{
+				"type": "object",
+				"default": map[string]any{
+					"env": "prod",
+				},
+			},
+		},
+	})
+
+	var md ConfigMetadata
+	require.NoError(t, parser.Unmarshal(&md))
+
+	require.Nil(t, md.Properties["endpoint"].Default)
+	require.Equal(t, map[string]any{"env": "prod"}, md.Properties["headers"].Default)
+}
+
+func TestConfigMetadata_UnmarshalConfMapError(t *testing.T) {
+	parser := confmap.NewFromStringMap(map[string]any{
+		"type":       "object",
+		"properties": "invalid",
+	})
+
+	var md ConfigMetadata
+	require.Error(t, parser.Unmarshal(&md))
 }
 
 func TestConfigMetadata_Validate_Valid(t *testing.T) {
@@ -325,29 +434,44 @@ func TestConfigMetadata_Validate_EdgeCases(t *testing.T) {
 
 func TestGoStructConfig_Unmarshal(t *testing.T) {
 	tests := []struct {
-		name                  string
-		input                 map[string]any
-		expectCustomValidator bool
+		name  string
+		input map[string]any
+		want  GoStructConfig
 	}{
 		{
-			name:                  "custom_validator present with empty map",
-			input:                 map[string]any{"custom_validator": map[string]any{}},
-			expectCustomValidator: true,
+			name:  "custom_validator present with empty map",
+			input: map[string]any{"custom_validator": map[string]any{}},
+			want:  GoStructConfig{CustomValidator: &CustomValidatorConfig{}},
 		},
 		{
-			name:                  "custom_validator present with nil value",
-			input:                 map[string]any{"custom_validator": nil},
-			expectCustomValidator: true,
+			name:  "custom_validator present with nil value",
+			input: map[string]any{"custom_validator": nil},
+			want:  GoStructConfig{CustomValidator: &CustomValidatorConfig{}},
 		},
 		{
-			name:                  "custom_validator absent",
-			input:                 map[string]any{},
-			expectCustomValidator: false,
+			name:  "custom_validator absent",
+			input: map[string]any{},
+			want:  GoStructConfig{},
 		},
 		{
-			name:                  "unrelated keys only",
-			input:                 map[string]any{"something_else": true},
-			expectCustomValidator: false,
+			name: "go_struct fields decode through mapstructure",
+			input: map[string]any{
+				"anonymous":      true,
+				"ignore_default": true,
+				"custom_validator": map[string]any{
+					"name": "validateConfig",
+				},
+			},
+			want: GoStructConfig{
+				Anonymous:       true,
+				IgnoreDefault:   true,
+				CustomValidator: &CustomValidatorConfig{Name: "validateConfig"},
+			},
+		},
+		{
+			name:  "unrelated keys only",
+			input: map[string]any{"something_else": true},
+			want:  GoStructConfig{},
 		},
 	}
 
@@ -357,11 +481,16 @@ func TestGoStructConfig_Unmarshal(t *testing.T) {
 			var g GoStructConfig
 			err := g.Unmarshal(parser)
 			require.NoError(t, err)
-			if tt.expectCustomValidator {
-				assert.NotNil(t, g.CustomValidator, "CustomValidator should be non-nil when key is present")
-			} else {
-				assert.Nil(t, g.CustomValidator, "CustomValidator should be nil when key is absent")
-			}
+			assert.Equal(t, tt.want, g)
 		})
 	}
+}
+
+func TestGoStructConfig_UnmarshalError(t *testing.T) {
+	parser := confmap.NewFromStringMap(map[string]any{
+		"anonymous": "not-a-bool",
+	})
+
+	var g GoStructConfig
+	require.Error(t, g.Unmarshal(parser))
 }

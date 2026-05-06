@@ -1,4 +1,5 @@
 // Copyright The OpenTelemetry Authors
+// Copyright 2021 gRPC authors.
 // SPDX-License-Identifier: Apache-2.0
 
 package snappy

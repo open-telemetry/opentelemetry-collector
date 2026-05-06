@@ -4,22 +4,25 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
-component: pkg/service
+component: cmd/mdatagen
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Emit a warning when using the old v0.2.0 declarative config format
+note: Add `go_struct.ignore_default` flag to suppress default value generation for individual config fields.
 
 # One or more tracking issues or pull requests related to the change
-issues: [15088]
+issues: [15156]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  Setting `go_struct.ignore_default: true` on a config field causes mdatagen to omit that field's default 
+  from the generated `createDefaultConfig` function, emitting `nil` for pointer fields 
+  and `configoptional.None` for optional fields.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: [user]
+change_logs: [api]
