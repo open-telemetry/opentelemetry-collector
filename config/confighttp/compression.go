@@ -151,6 +151,7 @@ func newSnappyHandler(maxRequestBodySize int64) func(io.ReadCloser) (io.ReadClos
 				orig:   body,
 			}, nil
 		}
+		defer body.Close()
 
 		compressed, err := io.ReadAll(br)
 		if err != nil {

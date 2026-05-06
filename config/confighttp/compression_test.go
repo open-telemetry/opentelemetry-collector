@@ -961,6 +961,46 @@ func TestSnappyBlockRejectsOversizedDecodedLen(t *testing.T) {
 	assert.False(t, downstreamCalled, "downstream handler must not run when request is rejected")
 }
 
+func TestSnappyBlockClosesOriginalBody(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name      string
+		maxBody   int64
+		payload   []byte
+		wantError string
+	}{
+		{
+			name:    "valid",
+			maxBody: 1024,
+			payload: snappy.Encode(nil, []byte("request body")),
+		},
+		{
+			name:      "oversized",
+			maxBody:   1024,
+			payload:   snappy.Encode(nil, make([]byte, 8*1024)),
+			wantError: "snappy: decoded size exceeds max request body size",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			body := &closeTrackingReadCloser{Reader: bytes.NewReader(tc.payload)}
+			newBody, err := newSnappyHandler(tc.maxBody)(body)
+
+			assert.True(t, body.closed)
+			if tc.wantError != "" {
+				require.EqualError(t, err, tc.wantError)
+				assert.Nil(t, newBody)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, newBody)
+			require.NoError(t, newBody.Close())
+		})
+	}
+}
+
 func TestPooledZstdReadCloserReadAfterClose(t *testing.T) {
 	h := httpContentDecompressor(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -991,6 +1031,16 @@ func TestPooledZstdReadCloserReadAfterClose(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, resp.Code, "Must match the expected code")
 	assert.Empty(t, resp.Body.String(), "Must match the returned string")
+}
+
+type closeTrackingReadCloser struct {
+	io.Reader
+	closed bool
+}
+
+func (ctrc *closeTrackingReadCloser) Close() error {
+	ctrc.closed = true
+	return nil
 }
 
 func compressGzip(tb testing.TB, body []byte) *bytes.Buffer {
