@@ -6,20 +6,21 @@ Support partial configuration reload to rebuild only affected components, reduci
 
 Currently, when a configuration change is applied to the OpenTelemetry Collector, the entire pipeline graph is torn down and rebuilt from scratch. This means every receiver, processor, exporter, and connector is stopped and restarted, regardless of whether it was affected by the change. This results in costly re-initialization of components, loss of accumulated in-memory state, disruption of consumption cursors and checkpoints, and unnecessary impact on external systems.
 
-A survey of components in the collector-contrib repository reveals the full scope of this problem across four categories of impact:
+A survey of components in the collector-contrib repository reveals the full scope of this problem across four categories of impact (many are in the priority for stabilization as well: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44130):
 
 ### Expensive Startup
 
 Components with costly initialization that involves large state synchronization, service discovery, or log replay. Restarting these components introduces significant delays before they are fully operational.
 
-- `k8sclusterreceiver` - performs a full list/watch sync of the Kubernetes cluster state on startup, with a default timeout of 10 minutes. No metrics are emitted until the sync completes.
+- `k8sclusterreceiver` - performs a full list/watch sync of the Kubernetes cluster state on startup, with a default timeout of 10 minutes. No metrics are emitted until the sync completes. Seems it can take 2-5 minutes, so 10 minutes was picked to be long enough (https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/842#discussion_r488211782).
 - `prometheusreceiver` - re-runs all service discovery backends (Kubernetes SD, Consul SD, DNS SD, etc.) and rebuilds per-target scrape loops from scratch.
 - `prometheusremotewriteexporter` - replays unacknowledged write-ahead log (WAL) entries on startup before accepting new data, adding latency proportional to the WAL backlog.
-- `k8sattributesprocessor` - when configured with `wait_for_metadata: true`, blocks startup until its Kubernetes metadata cache is fully synced via informers, delaying the pipeline from accepting data.
+- `k8sattributesprocessor` - when configured with `wait_for_metadata: true`, blocks startup until its Kubernetes metadata cache is fully synced via informers, delaying the pipeline from accepting data. It can take 4-5 minutes on a cluster (https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29305).
 
 ### Accumulated State Loss
 
-Many components maintain in-memory state (buffers, counters, accumulators, caches) that is permanently lost on restart. This causes metric gaps, trace loss, incorrect calculations, and false alerts visible to end users.
+Many components maintain in-memory state (buffers, counters, accumulators, caches) that is permanently lost on restart. This causes metric gaps, trace loss, incorrect calculations, and false alerts visible to end users. Adding a persistence layer doesn't directly solve this either because of the requirement of pulling from the
+persistence layer or re-filling a cache.
 
 - `tailsamplingprocessor` - buffers incomplete traces in memory while awaiting sampling decisions. On restart, all buffered traces and their accumulated span context are discarded, resulting in lost or incorrectly sampled traces.
 - `groupbytraceprocessor` - groups spans into complete traces in memory, holding them until a configured wait duration expires. On restart, incomplete traces waiting for additional spans are discarded and never forwarded.
@@ -36,6 +37,8 @@ Many components maintain in-memory state (buffers, counters, accumulators, cache
 ### Cursor and Checkpoint Disruption
 
 Components that track consumption progress via file offsets, poll cursors, or partition checkpoints. When configured with a storage extension, these components persist their position and can recover on restart. Without a storage extension, positions are held in memory and lost on restart, causing duplicate ingestion or missed data.
+
+With the storage extension there is still a cost, especially with the `filelogreceiver`. It must re-scan all files, read the first 1000 bytes of each file, create a fingerprint and then compare that fingerprint to the loaded data from the storage extension, then seek to the last position and start reading. Removing the need to do that when that receiver is not changed, is a savings on CPU and disk IO.
 
 - `filelogreceiver` - tracks file read offsets and fingerprints for each monitored file. On restart without storage, all offsets are lost and files are re-read from the beginning, causing duplicate log ingestion.
 - `azureeventhubreceiver` - maintains partition-level sequence number checkpoints. On restart without storage, checkpoints are lost and the receiver reverts to the latest available message, causing missed events between shutdown and restart.
@@ -76,6 +79,10 @@ Connectors require special handling since they bridge two pipelines:
 - **Connector removed**: On the exporter side, the pipeline is rebuilt to remove the connector instance as a destination. On the receiver side, the connector instance is stopped. If the receiving pipeline has other receivers, they continue operating unaffected.
 
 The general principle is that changes are propagated "up the graph" from the point of change, rebuilding components upstream while leaving downstream components untouched. This keeps the blast radius of any configuration change as small as possible.
+
+### Alternative To Restarting Upstream Components
+
+The above section highlights an implementation detail of restarting upstream components when a downstream component needs to be replaced. This is mentioned as a way of implementation as it allows no changes to be made to the current graph structure. An alternative approach is adding a gate between each component in the pipeline. The gate would allow pausing the flow of events (allowing those that already passed through the gate to return) which facilitates the ability to replace the components in the pipeline downstream of the gate without re-constructing the upstream components. See: https://github.com/open-telemetry/opentelemetry-collector/pull/15254 for gate design and benchmarks.
 
 ### Telemetry and Extension Changes
 
