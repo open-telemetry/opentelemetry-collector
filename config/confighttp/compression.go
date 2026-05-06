@@ -99,7 +99,7 @@ var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, erro
 		}
 		return zr, nil
 	},
-	"snappy": snappyHandler,
+	"snappy": newSnappyHandler(0),
 	//nolint:unparam // Ignoring the linter request to remove error return since it needs to match the method signature
 	"lz4": func(body io.ReadCloser) (io.ReadCloser, error) {
 		return &compressReadCloser{
@@ -122,7 +122,7 @@ var snappyFramingHeader = []byte{
 	0x73, 0x4e, 0x61, 0x50, 0x70, 0x59, // "sNaPpY"
 }
 
-// snappyHandler returns an io.ReadCloser that auto-detects the snappy format.
+// newSnappyHandler returns a factory for io.ReadCloser that auto-detects the snappy format.
 // This is necessary because the collector previously used "content-encoding: snappy"
 // but decompressed and compressed the payloads using the snappy framing format.
 // However, "content-encoding: snappy" is uses the block format, and "x-snappy-framed"
@@ -131,31 +131,46 @@ var snappyFramingHeader = []byte{
 //
 // See https://github.com/google/snappy/blob/6af9287fbdb913f0794d0148c6aa43b58e63c8e3/framing_format.txt#L27-L36
 // for more details on the framing format.
-func snappyHandler(body io.ReadCloser) (io.ReadCloser, error) {
-	br := bufio.NewReader(body)
+//
+// maxRequestBodySize bounds the decoded allocation in the block-format path
+// by checking snappy.DecodedLen before snappy.Decode, so a small compressed
+// body cannot amplify into a large in-memory buffer.
+func newSnappyHandler(maxRequestBodySize int64) func(io.ReadCloser) (io.ReadCloser, error) {
+	return func(body io.ReadCloser) (io.ReadCloser, error) {
+		br := bufio.NewReader(body)
 
-	peekBytes, err := br.Peek(len(snappyFramingHeader))
-	if err != nil && !errors.Is(err, io.EOF) {
-		return nil, err
-	}
+		peekBytes, err := br.Peek(len(snappyFramingHeader))
+		if err != nil && !errors.Is(err, io.EOF) {
+			return nil, err
+		}
 
-	isFramed := len(peekBytes) >= len(snappyFramingHeader) && bytes.Equal(peekBytes[:len(snappyFramingHeader)], snappyFramingHeader)
+		isFramed := len(peekBytes) >= len(snappyFramingHeader) && bytes.Equal(peekBytes[:len(snappyFramingHeader)], snappyFramingHeader)
+		if isFramed {
+			return &compressReadCloser{
+				Reader: snappy.NewReader(br),
+				orig:   body,
+			}, nil
+		}
 
-	if isFramed {
-		return &compressReadCloser{
-			Reader: snappy.NewReader(br),
-			orig:   body,
-		}, nil
+		compressed, err := io.ReadAll(br)
+		if err != nil {
+			return nil, err
+		}
+		if maxRequestBodySize > 0 {
+			decodedLen, decErr := snappy.DecodedLen(compressed)
+			if decErr != nil {
+				return nil, decErr
+			}
+			if int64(decodedLen) > maxRequestBodySize {
+				return nil, errors.New("snappy: decoded size exceeds max request body size")
+			}
+		}
+		decoded, err := snappy.Decode(nil, compressed)
+		if err != nil {
+			return nil, err
+		}
+		return io.NopCloser(bytes.NewReader(decoded)), nil
 	}
-	compressed, err := io.ReadAll(br)
-	if err != nil {
-		return nil, err
-	}
-	decoded, err := snappy.Decode(nil, compressed)
-	if err != nil {
-		return nil, err
-	}
-	return io.NopCloser(bytes.NewReader(decoded)), nil
 }
 
 func newCompressionParams(level configcompression.Level) configcompression.CompressionParams {
@@ -228,6 +243,9 @@ func httpContentDecompressor(h http.Handler, maxRequestBodySize int64, eh func(w
 
 		if dec == "deflate" {
 			enabled["deflate"] = availableDecoders["zlib"]
+		}
+		if dec == "snappy" {
+			enabled["snappy"] = newSnappyHandler(maxRequestBodySize)
 		}
 	}
 
