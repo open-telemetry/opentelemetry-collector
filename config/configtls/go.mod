@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20250903184740-5d135037bd4d
-	github.com/fsnotify/fsnotify v1.9.0
+	github.com/fsnotify/fsnotify v1.10.1
 	github.com/google/go-tpm v0.9.8
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/config/configopaque v1.57.0
