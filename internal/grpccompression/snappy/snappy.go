@@ -1,4 +1,5 @@
 // Copyright The OpenTelemetry Authors
+// Copyright 2017 gRPC authors.
 // SPDX-License-Identifier: Apache-2.0
 
 // Package snappy registers a gRPC snappy compressor compatible with the

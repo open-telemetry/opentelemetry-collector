@@ -12,14 +12,14 @@ go 1.25.0
 
 require (
 	github.com/golang/snappy v1.0.0
-	github.com/klauspost/compress v1.18.5
+	github.com/klauspost/compress v1.18.6
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/confmap v1.57.0
 	go.yaml.in/yaml/v3 v3.0.4
 	golang.org/x/mod v0.35.0
 	golang.org/x/tools v0.44.0
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260120221211-b8f7ae30c516
-	google.golang.org/grpc v1.80.0
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260226221140-a57be14db171
+	google.golang.org/grpc v1.81.0
 	google.golang.org/protobuf v1.36.11
 )
 
