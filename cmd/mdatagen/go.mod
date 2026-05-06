@@ -6,7 +6,6 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector v0.0.0
 	go.opentelemetry.io/collector/component v1.57.0
 	go.opentelemetry.io/collector/component/componenttest v0.151.0
 	go.opentelemetry.io/collector/config/confighttp v0.151.0
@@ -22,6 +21,7 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.151.0
 	go.opentelemetry.io/collector/featuregate v1.57.0
 	go.opentelemetry.io/collector/filter v0.151.0
+	go.opentelemetry.io/collector/internal/schemagen v0.0.0
 	go.opentelemetry.io/collector/pdata v1.57.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.151.0
 	go.opentelemetry.io/collector/pdata/xpdata v0.151.0
@@ -111,11 +111,11 @@ require (
 
 replace go.opentelemetry.io/collector/component => ../../component
 
-replace go.opentelemetry.io/collector => ../..
-
 replace go.opentelemetry.io/collector/component/componenttest => ../../component/componenttest
 
 replace go.opentelemetry.io/collector/confmap => ../../confmap
+
+replace go.opentelemetry.io/collector/internal/schemagen => ../../internal/schemagen
 
 replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../../confmap/provider/fileprovider
 
