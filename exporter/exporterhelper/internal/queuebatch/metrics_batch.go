@@ -51,15 +51,30 @@ func (req *metricsRequest) mergeTo(dst *metricsRequest, sz sizer.MetricsSizer) {
 
 func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer) ([]request.Request, error) {
 	var res []request.Request
-	for req.size(sz) > maxSize {
+	droppedItems := 0
+	for req.md.DataPointCount() > 0 && req.size(sz) > maxSize {
 		md, rmSize := extractMetrics(req.md, maxSize, sz)
 		if md.DataPointCount() == 0 {
-			return res, fmt.Errorf("one datapoint size is greater than max size, dropping items: %d", req.md.DataPointCount())
+			// Nothing fit into an empty destination batch, so the next remaining data point is
+			// individually larger than maxSize. Drop that single offending point and continue
+			// splitting the rest so one bad item does not block the whole request.
+			dropped := dropFirstRemainingDataPoint(req.md)
+			if dropped == 0 {
+				return res, errors.New("failed to drop oversized datapoint")
+			}
+			droppedItems += dropped
+			req.setCachedSize(-1)
+			continue
 		}
 		req.setCachedSize(req.size(sz) - rmSize)
 		res = append(res, newMetricsRequest(md))
 	}
-	res = append(res, req)
+	if req.md.DataPointCount() > 0 || (len(res) == 0 && droppedItems == 0) {
+		res = append(res, req)
+	}
+	if droppedItems > 0 {
+		return res, fmt.Errorf("one datapoint size is greater than max size, dropping items: %d", droppedItems)
+	}
 	return res, nil
 }
 
@@ -347,4 +362,87 @@ func extractSummaryDataPoints(srcSummary pmetric.Summary, destMetric pmetric.Met
 		return true
 	})
 	return removedSize
+}
+
+func dropFirstRemainingDataPoint(md pmetric.Metrics) int {
+	dropped := 0
+	md.ResourceMetrics().RemoveIf(func(srcRM pmetric.ResourceMetrics) bool {
+		srcRM.ScopeMetrics().RemoveIf(func(srcSM pmetric.ScopeMetrics) bool {
+			srcSM.Metrics().RemoveIf(func(srcMetric pmetric.Metric) bool {
+				if dropped > 0 {
+					return dataPointsLen(srcMetric) == 0
+				}
+				dropped = dropFirstRemainingMetricDataPoint(srcMetric)
+				return dataPointsLen(srcMetric) == 0
+			})
+			return srcSM.Metrics().Len() == 0
+		})
+		return srcRM.ScopeMetrics().Len() == 0
+	})
+	return dropped
+}
+
+func dropFirstRemainingMetricDataPoint(metric pmetric.Metric) int {
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
+		return dropFirstRemainingNumberDataPoint(metric.Gauge().DataPoints())
+	case pmetric.MetricTypeSum:
+		return dropFirstRemainingNumberDataPoint(metric.Sum().DataPoints())
+	case pmetric.MetricTypeHistogram:
+		return dropFirstRemainingHistogramDataPoint(metric.Histogram().DataPoints())
+	case pmetric.MetricTypeExponentialHistogram:
+		return dropFirstRemainingExponentialHistogramDataPoint(metric.ExponentialHistogram().DataPoints())
+	case pmetric.MetricTypeSummary:
+		return dropFirstRemainingSummaryDataPoint(metric.Summary().DataPoints())
+	default:
+		return 0
+	}
+}
+
+func dropFirstRemainingNumberDataPoint(dps pmetric.NumberDataPointSlice) int {
+	dropped := 0
+	dps.RemoveIf(func(_ pmetric.NumberDataPoint) bool {
+		if dropped > 0 {
+			return false
+		}
+		dropped = 1
+		return true
+	})
+	return dropped
+}
+
+func dropFirstRemainingHistogramDataPoint(dps pmetric.HistogramDataPointSlice) int {
+	dropped := 0
+	dps.RemoveIf(func(_ pmetric.HistogramDataPoint) bool {
+		if dropped > 0 {
+			return false
+		}
+		dropped = 1
+		return true
+	})
+	return dropped
+}
+
+func dropFirstRemainingExponentialHistogramDataPoint(dps pmetric.ExponentialHistogramDataPointSlice) int {
+	dropped := 0
+	dps.RemoveIf(func(_ pmetric.ExponentialHistogramDataPoint) bool {
+		if dropped > 0 {
+			return false
+		}
+		dropped = 1
+		return true
+	})
+	return dropped
+}
+
+func dropFirstRemainingSummaryDataPoint(dps pmetric.SummaryDataPointSlice) int {
+	dropped := 0
+	dps.RemoveIf(func(_ pmetric.SummaryDataPoint) bool {
+		if dropped > 0 {
+			return false
+		}
+		dropped = 1
+		return true
+	})
+	return dropped
 }
