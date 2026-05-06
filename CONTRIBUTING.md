@@ -231,6 +231,7 @@ Working with the project sources requires the following tools:
 2. [Go](https://go.dev/) (version 1.25 and up)
 3. [GNU Make](https://www.gnu.org/software/make/)
 4. [Docker](https://www.docker.com/)
+5. [OpenSSL Library](https://openssl-library.org/) (for the  `config/configtls` component)
 
 ## Repository Setup
 
