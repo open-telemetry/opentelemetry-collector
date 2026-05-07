@@ -196,7 +196,7 @@ func TestComponentInstrumentation(t *testing.T) {
 		attribute.NewSet(
 			attribute.String("otelcol.component.kind", "receiver"),
 			attribute.String("otelcol.component.id", "examplereceiver/foo"),
-			attribute.String("otelcol.signal", "traces"),
+			attribute.String("otelcol.signal.input", "traces"),
 		): simpleMetricMap{
 			"otelcol.receiver.produced.items": simpleMetric{
 				attribute.NewSet(
@@ -213,7 +213,7 @@ func TestComponentInstrumentation(t *testing.T) {
 			attribute.String("otelcol.component.kind", "processor"),
 			attribute.String("otelcol.component.id", "exampleprocessor/bar"),
 			attribute.String("otelcol.pipeline.id", "traces/in"),
-			attribute.String("otelcol.signal", "traces"),
+			attribute.String("otelcol.signal.input", "traces"),
 		): simpleMetricMap{
 			"otelcol.processor.consumed.items": simpleMetric{
 				attribute.NewSet(
@@ -239,7 +239,7 @@ func TestComponentInstrumentation(t *testing.T) {
 		attribute.NewSet(
 			attribute.String("otelcol.component.kind", "connector"),
 			attribute.String("otelcol.component.id", "examplerouter/baz"),
-			attribute.String("otelcol.signal", "traces"),
+			attribute.String("otelcol.signal.input", "traces"),
 			attribute.String("otelcol.signal.output", "traces"),
 		): simpleMetricMap{
 			"otelcol.connector.consumed.items": simpleMetric{
@@ -276,7 +276,7 @@ func TestComponentInstrumentation(t *testing.T) {
 		attribute.NewSet(
 			attribute.String("otelcol.component.kind", "exporter"),
 			attribute.String("otelcol.component.id", "exampleexporter/right"),
-			attribute.String("otelcol.signal", "traces"),
+			attribute.String("otelcol.signal.input", "traces"),
 		): simpleMetricMap{
 			"otelcol.exporter.consumed.items": simpleMetric{
 				attribute.NewSet(
@@ -292,7 +292,7 @@ func TestComponentInstrumentation(t *testing.T) {
 		attribute.NewSet(
 			attribute.String("otelcol.component.kind", "exporter"),
 			attribute.String("otelcol.component.id", "exampleexporter/left"),
-			attribute.String("otelcol.signal", "traces"),
+			attribute.String("otelcol.signal.input", "traces"),
 		): simpleMetricMap{
 			"otelcol.exporter.consumed.items": simpleMetric{
 				attribute.NewSet(
@@ -310,7 +310,7 @@ func TestComponentInstrumentation(t *testing.T) {
 		attribute.NewSet(
 			attribute.String("otelcol.component.kind", "receiver"),
 			attribute.String("otelcol.component.id", "examplereceiver/foo"),
-			attribute.String("otelcol.signal", "metrics"),
+			attribute.String("otelcol.signal.input", "metrics"),
 		): simpleMetricMap{
 			"otelcol.receiver.produced.items": simpleMetric{
 				attribute.NewSet(
@@ -327,7 +327,7 @@ func TestComponentInstrumentation(t *testing.T) {
 			attribute.String("otelcol.component.kind", "processor"),
 			attribute.String("otelcol.component.id", "exampleprocessor/bar"),
 			attribute.String("otelcol.pipeline.id", "metrics/in"),
-			attribute.String("otelcol.signal", "metrics"),
+			attribute.String("otelcol.signal.input", "metrics"),
 		): simpleMetricMap{
 			"otelcol.processor.consumed.items": simpleMetric{
 				attribute.NewSet(
@@ -353,7 +353,7 @@ func TestComponentInstrumentation(t *testing.T) {
 		attribute.NewSet(
 			attribute.String("otelcol.component.kind", "connector"),
 			attribute.String("otelcol.component.id", "examplerouter/baz"),
-			attribute.String("otelcol.signal", "metrics"),
+			attribute.String("otelcol.signal.input", "metrics"),
 			attribute.String("otelcol.signal.output", "metrics"),
 		): simpleMetricMap{
 			"otelcol.connector.consumed.items": simpleMetric{
@@ -390,7 +390,7 @@ func TestComponentInstrumentation(t *testing.T) {
 		attribute.NewSet(
 			attribute.String("otelcol.component.kind", "exporter"),
 			attribute.String("otelcol.component.id", "exampleexporter/right"),
-			attribute.String("otelcol.signal", "metrics"),
+			attribute.String("otelcol.signal.input", "metrics"),
 		): simpleMetricMap{
 			"otelcol.exporter.consumed.items": simpleMetric{
 				attribute.NewSet(
@@ -406,7 +406,7 @@ func TestComponentInstrumentation(t *testing.T) {
 		attribute.NewSet(
 			attribute.String("otelcol.component.kind", "exporter"),
 			attribute.String("otelcol.component.id", "exampleexporter/left"),
-			attribute.String("otelcol.signal", "metrics"),
+			attribute.String("otelcol.signal.input", "metrics"),
 		): simpleMetricMap{
 			"otelcol.exporter.consumed.items": simpleMetric{
 				attribute.NewSet(
@@ -424,7 +424,7 @@ func TestComponentInstrumentation(t *testing.T) {
 		attribute.NewSet(
 			attribute.String("otelcol.component.kind", "receiver"),
 			attribute.String("otelcol.component.id", "examplereceiver/foo"),
-			attribute.String("otelcol.signal", "logs"),
+			attribute.String("otelcol.signal.input", "logs"),
 		): simpleMetricMap{
 			"otelcol.receiver.produced.items": simpleMetric{
 				attribute.NewSet(
@@ -441,7 +441,7 @@ func TestComponentInstrumentation(t *testing.T) {
 			attribute.String("otelcol.component.kind", "processor"),
 			attribute.String("otelcol.component.id", "exampleprocessor/bar"),
 			attribute.String("otelcol.pipeline.id", "logs/in"),
-			attribute.String("otelcol.signal", "logs"),
+			attribute.String("otelcol.signal.input", "logs"),
 		): simpleMetricMap{
 			"otelcol.processor.consumed.items": simpleMetric{
 				attribute.NewSet(
@@ -467,7 +467,7 @@ func TestComponentInstrumentation(t *testing.T) {
 		attribute.NewSet(
 			attribute.String("otelcol.component.kind", "connector"),
 			attribute.String("otelcol.component.id", "examplerouter/baz"),
-			attribute.String("otelcol.signal", "logs"),
+			attribute.String("otelcol.signal.input", "logs"),
 			attribute.String("otelcol.signal.output", "logs"),
 		): simpleMetricMap{
 			"otelcol.connector.consumed.items": simpleMetric{
@@ -504,7 +504,7 @@ func TestComponentInstrumentation(t *testing.T) {
 		attribute.NewSet(
 			attribute.String("otelcol.component.kind", "exporter"),
 			attribute.String("otelcol.component.id", "exampleexporter/right"),
-			attribute.String("otelcol.signal", "logs"),
+			attribute.String("otelcol.signal.input", "logs"),
 		): simpleMetricMap{
 			"otelcol.exporter.consumed.items": simpleMetric{
 				attribute.NewSet(
@@ -520,7 +520,7 @@ func TestComponentInstrumentation(t *testing.T) {
 		attribute.NewSet(
 			attribute.String("otelcol.component.kind", "exporter"),
 			attribute.String("otelcol.component.id", "exampleexporter/left"),
-			attribute.String("otelcol.signal", "logs"),
+			attribute.String("otelcol.signal.input", "logs"),
 		): simpleMetricMap{
 			"otelcol.exporter.consumed.items": simpleMetric{
 				attribute.NewSet(
@@ -538,7 +538,7 @@ func TestComponentInstrumentation(t *testing.T) {
 		attribute.NewSet(
 			attribute.String("otelcol.component.kind", "receiver"),
 			attribute.String("otelcol.component.id", "examplereceiver/foo"),
-			attribute.String("otelcol.signal", "profiles"),
+			attribute.String("otelcol.signal.input", "profiles"),
 		): simpleMetricMap{
 			"otelcol.receiver.produced.items": simpleMetric{
 				attribute.NewSet(
@@ -555,7 +555,7 @@ func TestComponentInstrumentation(t *testing.T) {
 			attribute.String("otelcol.component.kind", "processor"),
 			attribute.String("otelcol.component.id", "exampleprocessor/bar"),
 			attribute.String("otelcol.pipeline.id", "profiles/in"),
-			attribute.String("otelcol.signal", "profiles"),
+			attribute.String("otelcol.signal.input", "profiles"),
 		): simpleMetricMap{
 			"otelcol.processor.consumed.items": simpleMetric{
 				attribute.NewSet(
@@ -581,7 +581,7 @@ func TestComponentInstrumentation(t *testing.T) {
 		attribute.NewSet(
 			attribute.String("otelcol.component.kind", "connector"),
 			attribute.String("otelcol.component.id", "examplerouter/baz"),
-			attribute.String("otelcol.signal", "profiles"),
+			attribute.String("otelcol.signal.input", "profiles"),
 			attribute.String("otelcol.signal.output", "profiles"),
 		): simpleMetricMap{
 			"otelcol.connector.consumed.items": simpleMetric{
@@ -618,7 +618,7 @@ func TestComponentInstrumentation(t *testing.T) {
 		attribute.NewSet(
 			attribute.String("otelcol.component.kind", "exporter"),
 			attribute.String("otelcol.component.id", "exampleexporter/right"),
-			attribute.String("otelcol.signal", "profiles"),
+			attribute.String("otelcol.signal.input", "profiles"),
 		): simpleMetricMap{
 			"otelcol.exporter.consumed.items": simpleMetric{
 				attribute.NewSet(
@@ -634,7 +634,7 @@ func TestComponentInstrumentation(t *testing.T) {
 		attribute.NewSet(
 			attribute.String("otelcol.component.kind", "exporter"),
 			attribute.String("otelcol.component.id", "exampleexporter/left"),
-			attribute.String("otelcol.signal", "profiles"),
+			attribute.String("otelcol.signal.input", "profiles"),
 		): simpleMetricMap{
 			"otelcol.exporter.consumed.items": simpleMetric{
 				attribute.NewSet(

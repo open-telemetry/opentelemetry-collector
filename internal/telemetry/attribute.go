@@ -12,7 +12,7 @@ const (
 	ComponentKindKey = "otelcol.component.kind"
 	ComponentIDKey   = "otelcol.component.id"
 	PipelineIDKey    = "otelcol.pipeline.id"
-	SignalKey        = "otelcol.signal"
+	SignalKey        = "otelcol.signal.input"
 	SignalOutputKey  = "otelcol.signal.output"
 )
 
