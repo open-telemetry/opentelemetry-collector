@@ -19,6 +19,16 @@ scope_name: string
 # Optional: The name of the package that mdatagen generates. If not set, the name "metadata" will be used.
 generated_package_name: string
 
+# Optional: Controls which artifacts are generated from the top-level config section.
+# Any omitted field defaults to true. If this block is omitted, all config artifacts are generated.
+generate_config:
+  # Optional: Whether to generate config.schema.json.
+  schema: bool
+  # Optional: Whether to generate generated_config.go and generated_config_test.go.
+  code: bool
+  # Optional: Whether to render the config section in README.md.
+  docs: bool
+
 # Optional: Enables per-metric reaggregation config generation for metrics with attributes.
 # When enabled, generated metrics config includes `aggregation_strategy` and `attributes`
 # fields that let users reduce metric cardinality by choosing which dimensions are kept.

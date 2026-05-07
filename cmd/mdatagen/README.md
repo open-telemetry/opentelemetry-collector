@@ -62,7 +62,8 @@ You can run `cd cmd/mdatagen && $(GOCMD) install .` to install the `mdatagen` to
 
 The metadata generator supports automatic generation of configuration schemas for components.
 This generates JSON Schema files that enable IDE autocompletion, validation, and documentation for component configuration.
-In the future it will also generate Go config structs and human-readable documentation for configuration options
+It can also generate Go config structs from the same metadata. In the future it will also generate
+human-readable documentation for configuration options.
 
 To define a configuration schema, add a `config` section to your `metadata.yaml`:
 
@@ -89,6 +90,18 @@ config:
       $ref: go.opentelemetry.io/collector/config/configtls.server_config
   required: [endpoint]
 ```
+
+By default, `mdatagen` generates all artifacts supported by the `config` section. Use the top-level
+`generate_config` block to skip individual artifacts:
+
+```yaml
+generate_config:
+  schema: true # Write config.schema.json.
+  code: true # Write generated_config.go and generated_config_test.go.
+  docs: true # Render the config section in README.md.
+```
+
+Omitted fields default to `true`, and omitting the entire block preserves the default behavior.
 
 The `config` section is based on [JSON Schema standard](https://json-schema.org/) (draft 2020-12) and supports:
 

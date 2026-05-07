@@ -78,6 +78,8 @@ func TestRunContents(t *testing.T) {
 		wantGoleakTeardown              bool
 		wantFeatureGatesGenerated       bool
 		wantConfigSchemaGenerated       bool
+		wantTopLevelConfigGenerated     bool
+		wantConfigDocsGenerated         bool
 		wantMetricsSchemaYamlGenerated  bool
 		wantErr                         bool
 		wantOrderErr                    bool
@@ -262,12 +264,30 @@ func TestRunContents(t *testing.T) {
 			wantMetricsSchemaYamlGenerated: true,
 		},
 		{
-			yml:                        "with_config.yaml",
+			yml:                         "with_config.yaml",
+			wantStatusGenerated:         true,
+			wantReadmeGenerated:         true,
+			wantLogsGenerated:           true,
+			wantComponentTestGenerated:  true,
+			wantConfigSchemaGenerated:   true,
+			wantTopLevelConfigGenerated: true,
+			wantConfigDocsGenerated:     true,
+		},
+		{
+			yml:                         "with_config_docs_disabled.yaml",
+			wantStatusGenerated:         true,
+			wantReadmeGenerated:         true,
+			wantLogsGenerated:           true,
+			wantComponentTestGenerated:  true,
+			wantConfigSchemaGenerated:   true,
+			wantTopLevelConfigGenerated: true,
+		},
+		{
+			yml:                        "with_config_generation_disabled.yaml",
 			wantStatusGenerated:        true,
 			wantReadmeGenerated:        true,
 			wantLogsGenerated:          true,
 			wantComponentTestGenerated: true,
-			wantConfigSchemaGenerated:  true,
 		},
 		{
 			yml:        "with_invalid_config_ref.yaml",
@@ -391,6 +411,12 @@ foo
 			} else {
 				require.Contains(t, string(contents), "foo")
 			}
+			if tt.wantConfigDocsGenerated {
+				require.Contains(t, string(contents), "## Configuration")
+				require.Contains(t, string(contents), "`endpoint`")
+			} else {
+				require.NotContains(t, string(contents), "## Configuration")
+			}
 
 			if tt.wantComponentTestGenerated {
 				require.FileExists(t, filepath.Join(tmpdir, "generated_component_test.go"))
@@ -441,6 +467,13 @@ foo
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, "config.schema.json"))
 			}
+			if tt.wantTopLevelConfigGenerated {
+				require.FileExists(t, filepath.Join(tmpdir, "generated_config.go"))
+				require.FileExists(t, filepath.Join(tmpdir, "generated_config_test.go"))
+			} else {
+				require.NoFileExists(t, filepath.Join(tmpdir, "generated_config.go"))
+				require.NoFileExists(t, filepath.Join(tmpdir, "generated_config_test.go"))
+			}
 
 			schemaYamlPath := filepath.Join(tmpdir, generatedPackageDir, "config.schema.yaml")
 			if tt.wantMetricsSchemaYamlGenerated {
@@ -469,10 +502,11 @@ foo
 
 func TestGenerateConfigFiles(t *testing.T) {
 	tests := []struct {
-		name    string
-		md      Metadata
-		wantErr bool
-		wantGen bool
+		name       string
+		md         Metadata
+		wantErr    bool
+		wantSchema bool
+		wantCode   bool
 	}{
 		{
 			name: "nil config skips generation",
@@ -483,10 +517,9 @@ func TestGenerateConfigFiles(t *testing.T) {
 				},
 				Config: nil,
 			},
-			wantGen: false,
 		},
 		{
-			name: "valid config generates schema file",
+			name: "valid config generates all config files by default",
 			md: Metadata{
 				Type:        "test",
 				PackageName: "shortname",
@@ -497,7 +530,59 @@ func TestGenerateConfigFiles(t *testing.T) {
 					Type: "object",
 				},
 			},
-			wantGen: true,
+			wantSchema: true,
+			wantCode:   true,
+		},
+		{
+			name: "schema false skips schema file",
+			md: Metadata{
+				Type:        "test",
+				PackageName: "shortname",
+				Status: &Status{
+					Class: "receiver",
+				},
+				Config: &cfggen.ConfigMetadata{
+					Type: "object",
+				},
+				GenerateConfig: &GenerateConfig{
+					Schema: boolPtr(false),
+				},
+			},
+			wantCode: true,
+		},
+		{
+			name: "code false skips generated config Go files",
+			md: Metadata{
+				Type:        "test",
+				PackageName: "shortname",
+				Status: &Status{
+					Class: "receiver",
+				},
+				Config: &cfggen.ConfigMetadata{
+					Type: "object",
+				},
+				GenerateConfig: &GenerateConfig{
+					Code: boolPtr(false),
+				},
+			},
+			wantSchema: true,
+		},
+		{
+			name: "schema and code false skip config generation",
+			md: Metadata{
+				Type:        "test",
+				PackageName: "shortname",
+				Status: &Status{
+					Class: "receiver",
+				},
+				Config: &cfggen.ConfigMetadata{
+					Ref: "/config/configauth",
+				},
+				GenerateConfig: &GenerateConfig{
+					Schema: boolPtr(false),
+					Code:   boolPtr(false),
+				},
+			},
 		},
 		{
 			name: "invalid ref in config causes resolve error",
@@ -529,10 +614,17 @@ func TestGenerateConfigFiles(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			if tt.wantGen {
+			if tt.wantSchema {
 				require.FileExists(t, filepath.Join(tmpdir, "config.schema.json"))
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, "config.schema.json"))
+			}
+			if tt.wantCode {
+				require.FileExists(t, filepath.Join(tmpdir, "generated_config.go"))
+				require.FileExists(t, filepath.Join(tmpdir, "generated_config_test.go"))
+			} else {
+				require.NoFileExists(t, filepath.Join(tmpdir, "generated_config.go"))
+				require.NoFileExists(t, filepath.Join(tmpdir, "generated_config_test.go"))
 			}
 		})
 	}

@@ -67,6 +67,30 @@ type Metadata struct {
 	FeatureGates []FeatureGate `mapstructure:"feature_gates"`
 	// Config is the configuration schema for the component.
 	Config *cfggen.ConfigMetadata `mapstructure:"config"`
+	// GenerateConfig controls which artifacts are generated from Config.
+	GenerateConfig *GenerateConfig `mapstructure:"generate_config"`
+}
+
+// GenerateConfig controls generation for artifacts derived from the top-level config section.
+type GenerateConfig struct {
+	Schema *bool `mapstructure:"schema"`
+	Code   *bool `mapstructure:"code"`
+	Docs   *bool `mapstructure:"docs"`
+}
+
+// SchemaEnabled reports whether mdatagen should generate config.schema.json.
+func (gc *GenerateConfig) SchemaEnabled() bool {
+	return gc == nil || gc.Schema == nil || *gc.Schema
+}
+
+// CodeEnabled reports whether mdatagen should generate config Go files.
+func (gc *GenerateConfig) CodeEnabled() bool {
+	return gc == nil || gc.Code == nil || *gc.Code
+}
+
+// DocsEnabled reports whether mdatagen should generate config docs.
+func (gc *GenerateConfig) DocsEnabled() bool {
+	return gc == nil || gc.Docs == nil || *gc.Docs
 }
 
 type Deprecated struct {

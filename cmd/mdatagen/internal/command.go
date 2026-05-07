@@ -352,8 +352,43 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 		"schemaRef": func(ref string) string {
 			return cfggen.LocalizeRef(ref, importRootPath)
 		},
-		"inc":       func(i int) int { return i + 1 },
-		"distroURL": distroURL,
+		"configDocsEnabled": func() bool {
+			return md.GenerateConfig.DocsEnabled()
+		},
+		"configRequired": func(name string) bool {
+			return slices.Contains(md.Config.Required, name)
+		},
+		"configType": func(schema *cfggen.ConfigMetadata) string {
+			if schema == nil {
+				return "any"
+			}
+			if schema.Ref != "" {
+				return schema.Ref
+			}
+			if schema.Type != "" {
+				if schema.Format != "" {
+					return schema.Type + " (" + schema.Format + ")"
+				}
+				return schema.Type
+			}
+			if len(schema.AllOf) > 0 {
+				return "allOf"
+			}
+			return "any"
+		},
+		"configDefault": func(schema *cfggen.ConfigMetadata) string {
+			if schema == nil || schema.Default == nil {
+				return "-"
+			}
+			defaultValue, err := yaml.Marshal(schema.Default)
+			if err != nil {
+				return markdownTableCell(fmt.Sprint(schema.Default))
+			}
+			return markdownTableCell(strings.TrimSpace(string(defaultValue)))
+		},
+		"markdownTableCell": markdownTableCell,
+		"inc":               func(i int) int { return i + 1 },
+		"distroURL":         distroURL,
 		"isExporter": func() bool {
 			return md.Status.Class == "exporter"
 		},
@@ -405,6 +440,17 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 	}
 }
 
+func markdownTableCell(s string) string {
+	s = strings.TrimSpace(s)
+	s = strings.TrimSuffix(s, "\n...")
+	s = strings.ReplaceAll(s, "\n", "<br>")
+	s = strings.ReplaceAll(s, "|", `\|`)
+	if s == "" {
+		return "-"
+	}
+	return s
+}
+
 func templatize(tmplFile string, funcMap template.FuncMap) *template.Template {
 	return template.Must(
 		template.
@@ -449,7 +495,7 @@ func inlineReplace(tmplFile, outputFile string, md Metadata, start, end, goPacka
 		return err
 	}
 
-	s := re.ReplaceAllString(string(readmeContents), string(buf))
+	s := re.ReplaceAllString(string(readmeContents), strings.TrimRight(string(buf), "\n"))
 	if err := os.WriteFile(outputFile, []byte(s), 0o600); err != nil {
 		return fmt.Errorf("failed writing %q: %w", outputFile, err)
 	}
@@ -543,24 +589,28 @@ func validateYAMLKeyOrder(raw []byte) error {
 }
 
 func generateConfigFiles(md Metadata, mdDir, _ string) error {
-	if md.Config != nil {
+	if md.Config != nil && (md.GenerateConfig.SchemaEnabled() || md.GenerateConfig.CodeEnabled()) {
 		resolver := cfggen.NewResolver(md.PackageName, md.Status.Class, md.Type, mdDir)
 		resolvedSchema, err := resolver.ResolveSchema(md.Config)
 		if err != nil {
 			return fmt.Errorf("failed to resolve config schema: %w", err)
 		}
 
-		err = cfggen.WriteJSONSchema(mdDir, resolvedSchema)
-		if err != nil {
-			return fmt.Errorf("failed to write config schema: %w", err)
+		if md.GenerateConfig.SchemaEnabled() {
+			err = cfggen.WriteJSONSchema(mdDir, resolvedSchema)
+			if err != nil {
+				return fmt.Errorf("failed to write config schema: %w", err)
+			}
 		}
 
 		// do a shallow copy of Metadata and replace Config with resolved schema
 		mdWithConfig := md
 		mdWithConfig.Config = resolvedSchema
 
-		if err := generateConfigGoStruct(mdWithConfig, mdDir); err != nil {
-			return fmt.Errorf("failed to generate config Go struct: %w", err)
+		if md.GenerateConfig.CodeEnabled() {
+			if err := generateConfigGoStruct(mdWithConfig, mdDir); err != nil {
+				return fmt.Errorf("failed to generate config Go struct: %w", err)
+			}
 		}
 	}
 	return nil

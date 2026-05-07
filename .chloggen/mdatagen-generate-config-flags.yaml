@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: cmd/mdatagen
+
+note: Add generate_config controls for selecting which top-level config artifacts mdatagen emits.
+
+issues: [15260]
+
+change_logs: [api]
