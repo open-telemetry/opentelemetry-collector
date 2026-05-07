@@ -159,7 +159,7 @@ processor: users will be guided in two directions:
    [#13583](https://github.com/open-telemetry/opentelemetry-collector/issues/13583). This
    component will support configuration identical with `queue_sender`
    but for use as a processor.
-   
+
 At the same time, an audit is required to clean up the many various
 initial conditions across exporters. We will define an Go package
 `batchmigration` with an enum to capture all the common initial
@@ -192,7 +192,7 @@ will be migrated using a new function,
 
 ```go
 func MigrateQueueConfig(migrate batchmigration.Existing) configoptional.Optional[queuebatch.Config] {
-    // Each case will reproduce exactly the behavior of a callsite 
+    // Each case will reproduce exactly the behavior of a callsite
     // somewhere in core or collector-contrib.
 }
 ```
@@ -266,7 +266,7 @@ users to choose a migration path through configuration.
     exporters have `wait_for_result: true` by default, which is
     overridden by defining a storage extension.
 12. Deprecate `MigrateQueueConfig`, `MigrateSpecifyQueueConfig`, and
-    the `batchmigration` package. Users of the migration helpers 
+    the `batchmigration` package. Users of the migration helpers
     will switch to `StandardQueueConfig` in most cases.
 
 ### Phase 4
