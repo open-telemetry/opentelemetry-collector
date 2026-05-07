@@ -265,7 +265,9 @@ users to choose a migration path through configuration.
     change while `batchprocessor` is simultaneously disabled. All
     exporters have `wait_for_result: true` by default, which is
     overridden by defining a storage extension.
-12. Deprecate `MigrateQueueConfig`, `MigrateSpecifyQueueConfig`, and
+12. Update standard Helm charts. Simply remove the batch processor,
+    because exporters batch by default excepting those that opt out.
+13. Deprecate `MigrateQueueConfig`, `MigrateSpecifyQueueConfig`, and
     the `batchmigration` package. Users of the migration helpers
     will switch to `StandardQueueConfig` in most cases.
 
@@ -273,9 +275,9 @@ users to choose a migration path through configuration.
 
 We will wait another 6 months before completing these steps.
 
-13. Remove the `batchprocessor` from the core distribution.
-14. Remove the two feature flags.
-15. Remove the deprecated migration package and functions.
+14. Remove the `batchprocessor` from the core distribution.
+15. Remove the two feature flags.
+16. Remove the deprecated migration package and functions.
 
 ## Conclusion
 
