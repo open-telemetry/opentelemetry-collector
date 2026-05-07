@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package cfggen
+package schemagen
 
 import (
 	"fmt"
@@ -387,7 +387,7 @@ func TestResolver_IsExternalRef(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := NewRef(tt.ref)
-			result := r.isExternal()
+			result := r.IsExternal()
 			require.Equal(t, tt.expected, result)
 		})
 	}

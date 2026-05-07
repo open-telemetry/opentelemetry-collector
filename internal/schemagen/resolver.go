@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package cfggen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
+package schemagen // import "go.opentelemetry.io/collector/internal/schemagen"
 
 import (
 	"fmt"
@@ -178,7 +178,7 @@ func (r *Resolver) resolveRef(root, current *ConfigMetadata, origin *Ref) (*Conf
 		return nil, fmt.Errorf("invalid reference format %q: %w", current.Ref, err)
 	}
 
-	if ref.isInternal() {
+	if ref.IsInternal() {
 		if root.Defs != nil {
 			if val, ok := root.Defs[ref.DefName()]; ok {
 				return val, nil
@@ -186,7 +186,7 @@ func (r *Resolver) resolveRef(root, current *ConfigMetadata, origin *Ref) (*Conf
 		}
 	}
 
-	if ref.isLocal() {
+	if ref.IsLocal() {
 		return r.loadExternalRef(ref)
 	}
 
