@@ -152,6 +152,7 @@ func newSnappyHandler(maxRequestBodySize int64) func(io.ReadCloser) (io.ReadClos
 				orig:   body,
 			}, nil
 		}
+		defer body.Close()
 
 		if maxRequestBodySize > 0 {
 			// Peek MaxVarintLen64 bytes so we can read the decoded length
