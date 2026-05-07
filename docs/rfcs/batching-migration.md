@@ -21,8 +21,16 @@ require a careful sequence of steps for a successful migration.
 
 ## Background
 
-This supersedes an unmerged draft in #11947 and answers #15047,
-#13766, #13582, #13583, #14038, #12022, #8122.
+This supersedes an unmerged draft in
+[#11947](https://github.com/open-telemetry/opentelemetry-collector/issues/11947)
+and answers
+[#15047](https://github.com/open-telemetry/opentelemetry-collector/issues/15047),
+[#13766](https://github.com/open-telemetry/opentelemetry-collector/issues/13766),
+[#13582](https://github.com/open-telemetry/opentelemetry-collector/issues/13582),
+[#13583](https://github.com/open-telemetry/opentelemetry-collector/issues/13583),
+[#14038](https://github.com/open-telemetry/opentelemetry-collector/issues/14038),
+[#12022](https://github.com/open-telemetry/opentelemetry-collector/issues/12022),
+[#8122](https://github.com/open-telemetry/opentelemetry-collector/issues/8122).
 
 ### `batchprocessor` defects
 
@@ -147,8 +155,10 @@ processor: users will be guided in two directions:
 2. In complex pipelines, a new core processor will be introduced as a
    from-scratch replacement, called the `queuebatchprocessor`. The new
    core processor will be implemented by exporterhelper internally, as
-   demonstrated in #13583. This component will support configuration
-   identical with `queue_sender` but for use as a processor.
+   demonstrated in
+   [#13583](https://github.com/open-telemetry/opentelemetry-collector/issues/13583). This
+   component will support configuration identical with `queue_sender`
+   but for use as a processor.
    
 At the same time, an audit is required to clean up the many various
 initial conditions across exporters. We will define an Go package
@@ -220,8 +230,10 @@ These are loosely dependent,
    type `configoptional.Optional[exporterhelper.QueueBatchConfig]`
 3. Define the two feature flags.
 4. Support a configurable metrics prefix to distinguish processor
-   batching from exporter batching (#14038).
-5. Implement `queuebatchprocessor` (#13583).
+   batching from exporter batching
+   ([#14038](https://github.com/open-telemetry/opentelemetry-collector/issues/14038)).
+5. Implement `queuebatchprocessor`
+   ([#13583](https://github.com/open-telemetry/opentelemetry-collector/issues/13583)).
 6. Implement `batchmigration` and two migration functions for
    non-standard callers.
 
@@ -245,7 +257,7 @@ users to choose a migration path through configuration.
 
 10. Update various documentation pointing to `queuebatchprocessor`,
     which will advise users to configure exporter batching in most
-    cases. (#13766)
+    cases. ([#13766](https://github.com/open-telemetry/opentelemetry-collector/issues/13766))
 11. After waiting the specified period, we will change both feature
     flags to Stable. At this time, the behavior of
     `StandardQueueConfig`, `MigrateQueueConfig`,
@@ -267,4 +279,5 @@ We will wait another 6 months before completing these steps.
 
 ## Conclusion
 
-At the end, we can close a whole bunch of issues going back to #8122.
+At the end, we can close a whole bunch of issues going back to
+[#8122](https://github.com/open-telemetry/opentelemetry-collector/issues/8122).
