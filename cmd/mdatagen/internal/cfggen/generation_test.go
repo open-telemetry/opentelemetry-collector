@@ -11,6 +11,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func defaultValue(value any) any {
+	return value
+}
+
 func TestMapGoType_BasicTypes(t *testing.T) {
 	tests := []struct {
 		name     string
