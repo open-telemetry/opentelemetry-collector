@@ -2359,6 +2359,66 @@ func TestMapCustomDefaults_IgnoreDefault(t *testing.T) {
 	require.Empty(t, MapCustomDefaults(md, defaultValue(map[string]any{"host": "localhost"}), "", ""))
 }
 
+func TestIsExternalRef(t *testing.T) {
+	fns := NewCfgFns("go.opentelemetry.io/collector", "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper")
+	isExternalRef := fns["isExternalRef"].(func(string) bool)
+
+	tests := []struct {
+		name     string
+		ref      string
+		expected bool
+	}{
+		{
+			name:     "empty ref",
+			ref:      "",
+			expected: false,
+		},
+		{
+			name:     "internal def name",
+			ref:      "plain_config",
+			expected: false,
+		},
+		{
+			name:     "external ref with namespace",
+			ref:      "go.opentelemetry.io/collector/scraper/scraperhelper.controller_config",
+			expected: true,
+		},
+		{
+			name:     "local absolute ref",
+			ref:      "/scraper/scraperhelper.controller_config",
+			expected: true,
+		},
+		{
+			name:     "local relative ref",
+			ref:      "./internal/metadata.metrics_builder_config",
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, isExternalRef(tt.ref))
+		})
+	}
+}
+
+func TestMapCustomDefaults_ExternalRefWithProperties(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:         "object",
+		ResolvedFrom: "go.opentelemetry.io/collector/scraper/scraperhelper.controller_config",
+		Properties: map[string]*ConfigMetadata{
+			"timeout": {
+				Type:   "string",
+				GoType: "time.Duration",
+			},
+		},
+	}
+
+	exprs := MapCustomDefaults(md, map[string]any{"timeout": "30s"}, "", "")
+	require.Len(t, exprs, 1)
+	require.Equal(t, ".Timeout = 30*time.Second", exprs[0])
+}
+
 func TestNewCfgFns_DefaultHelpers(t *testing.T) {
 	fns := NewCfgFns("", "")
 
