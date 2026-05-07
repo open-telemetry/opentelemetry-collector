@@ -22,12 +22,12 @@ require a careful sequence of steps for a successful migration.
 ## Background
 
 This supersedes an unmerged draft in
-[#11947](https://github.com/open-telemetry/opentelemetry-collector/issues/11947)
+[#11947](https://github.com/open-telemetry/opentelemetry-collector/pull/11947)
 and answers
 [#15047](https://github.com/open-telemetry/opentelemetry-collector/issues/15047),
 [#13766](https://github.com/open-telemetry/opentelemetry-collector/issues/13766),
 [#13582](https://github.com/open-telemetry/opentelemetry-collector/issues/13582),
-[#13583](https://github.com/open-telemetry/opentelemetry-collector/issues/13583),
+[#13583](https://github.com/open-telemetry/opentelemetry-collector/pull/13583),
 [#14038](https://github.com/open-telemetry/opentelemetry-collector/issues/14038),
 [#12022](https://github.com/open-telemetry/opentelemetry-collector/issues/12022),
 [#8122](https://github.com/open-telemetry/opentelemetry-collector/issues/8122).
@@ -156,7 +156,7 @@ processor: users will be guided in two directions:
    from-scratch replacement, called the `queuebatchprocessor`. The new
    core processor will be implemented by exporterhelper internally, as
    demonstrated in
-   [#13583](https://github.com/open-telemetry/opentelemetry-collector/issues/13583). This
+   [#13583](https://github.com/open-telemetry/opentelemetry-collector/pull/13583). This
    component will support configuration identical with `queue_sender`
    but for use as a processor.
 
@@ -233,7 +233,7 @@ These are loosely dependent,
    batching from exporter batching
    ([#14038](https://github.com/open-telemetry/opentelemetry-collector/issues/14038)).
 5. Implement `queuebatchprocessor`
-   ([#13583](https://github.com/open-telemetry/opentelemetry-collector/issues/13583)).
+   ([#13583](https://github.com/open-telemetry/opentelemetry-collector/pull/13583)).
 6. Implement `batchmigration` and two migration functions for
    non-standard callers.
 
