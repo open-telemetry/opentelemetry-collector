@@ -442,7 +442,7 @@ foo
 				require.NoFileExists(t, filepath.Join(tmpdir, "config.schema.json"))
 			}
 
-			schemaYamlPath := filepath.Join(tmpdir, generatedPackageDir, "config.schema.yaml")
+			schemaYamlPath := filepath.Join(tmpdir, generatedPackageDir, "metadata.yaml")
 			if tt.wantMetricsSchemaYamlGenerated {
 				require.FileExists(t, schemaYamlPath)
 				contents, err = os.ReadFile(filepath.Clean(schemaYamlPath))
