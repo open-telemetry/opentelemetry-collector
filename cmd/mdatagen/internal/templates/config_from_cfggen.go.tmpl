@@ -42,6 +42,9 @@ import (
         // {{ $defName | publicVar }} {{ $def.Description }}
     {{- end }}
     {{- $typeName := $defName | publicVar }}
+    {{- if isTypeAlias $def }}
+    type {{ $typeName }} = {{ typeAliasTarget $def }}
+    {{- else }}
     type {{ $typeName }} struct {
         {{- template "struct" $def }}
     }
@@ -69,6 +72,7 @@ import (
     }
     {{- end }}
 
+    {{- end }}
 {{ end }}
 
 {{- if .Metadata.Config.Description }}

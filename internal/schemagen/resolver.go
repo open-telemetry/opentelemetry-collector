@@ -60,6 +60,18 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 		if err != nil {
 			return fmt.Errorf("failed to resolve $ref %q: %w", current.Ref, err)
 		}
+		aliasTarget := ""
+		resolvedFromPureRef := isPureRefDefinition(resolved)
+		if resolved.Ref != "" && resolved != current {
+			resolvedTarget := &ConfigMetadata{}
+			if err := r.resolveSchema(root, resolved, resolvedTarget, origin); err != nil {
+				return err
+			}
+			if resolvedFromPureRef {
+				aliasTarget = resolvedTarget.ResolvedFrom
+			}
+			resolved = resolvedTarget
+		}
 
 		// Preserve custom extensions defined on the reference node
 		customGoType := current.GoType
@@ -72,6 +84,7 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 		// Copy the resolved node
 		newCurrent := *resolved
 		newCurrent.ResolvedFrom = current.Ref
+		newCurrent.TypeAlias = aliasTarget
 		newCurrent.GoStruct = current.GoStruct
 		newCurrent.Embed = current.Embed
 
@@ -130,9 +143,16 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 					key := iter.Key()
 					value := iter.Value()
 					if !value.IsNil() {
+						sourceMeta := value.Interface().(*ConfigMetadata)
+						if currRef.Type().Field(i).Name == "Defs" && !isPureRefDefinition(sourceMeta) {
+							continue
+						}
 						newMeta := &ConfigMetadata{}
-						if err := r.resolveSchema(root, value.Interface().(*ConfigMetadata), newMeta, origin); err != nil {
+						if err := r.resolveSchema(root, sourceMeta, newMeta, origin); err != nil {
 							return err
+						}
+						if currRef.Type().Field(i).Name == "Defs" {
+							newMeta.TypeAlias = newMeta.ResolvedFrom
 						}
 						newMap.SetMapIndex(key, reflect.ValueOf(newMeta))
 					}
@@ -164,8 +184,54 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 	}
 	handleEmbeddedStructs(target)
 	enhanceTimeTypes(target)
-	target.Defs = nil // Clear defs after resolution to avoid confusion
+	if len(target.Defs) == 0 {
+		target.Defs = nil // Clear defs after resolution to avoid confusion
+	}
 	return nil
+}
+
+func isPureRefDefinition(md *ConfigMetadata) bool {
+	return md != nil &&
+		md.Ref != "" &&
+		md.Schema == "" &&
+		md.ID == "" &&
+		md.Title == "" &&
+		md.Description == "" &&
+		md.Comment == "" &&
+		md.Type == "" &&
+		md.Default == nil &&
+		len(md.Examples) == 0 &&
+		!md.Deprecated &&
+		len(md.Enum) == 0 &&
+		md.Const == nil &&
+		len(md.AllOf) == 0 &&
+		len(md.Properties) == 0 &&
+		md.AdditionalProperties == nil &&
+		len(md.Required) == 0 &&
+		md.MinProperties == nil &&
+		md.MaxProperties == nil &&
+		md.Items == nil &&
+		md.MinItems == nil &&
+		md.MaxItems == nil &&
+		!md.UniqueItems &&
+		md.MaxLength == nil &&
+		md.MinLength == nil &&
+		md.Pattern == "" &&
+		md.Format == "" &&
+		md.ContentMediaType == "" &&
+		md.ContentEncoding == "" &&
+		md.ContentSchema == nil &&
+		md.MultipleOf == nil &&
+		md.Maximum == nil &&
+		md.ExclusiveMaximum == nil &&
+		md.Minimum == nil &&
+		md.ExclusiveMinimum == nil &&
+		len(md.Defs) == 0 &&
+		md.GoStruct == (GoStructConfig{}) &&
+		md.GoType == "" &&
+		!md.IsPointer &&
+		!md.IsOptional &&
+		!md.Embed
 }
 
 // resolveRef resolves a JSON Schema $ref, handling both internal and external references.

@@ -714,6 +714,61 @@ func TestGenerateConfigGoStruct_InternalResolvedRefGeneratesLocalType(t *testing
 	require.Contains(t, generated, "Config: config,")
 }
 
+func TestGenerateConfigGoStruct_TypeAliasDef(t *testing.T) {
+	root := t.TempDir()
+	outputDir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(outputDir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	md := Metadata{
+		Type:        "test",
+		PackageName: "testmodule/shortname",
+		Status:      &Status{Class: "receiver"},
+		Config: &cfggen.ConfigMetadata{
+			Type: "object",
+			Defs: map[string]*cfggen.ConfigMetadata{
+				"helper": {
+					Description: "ControllerConfig defines common settings.",
+					TypeAlias:   "/scraper/scraperhelper.controller_config",
+				},
+			},
+			AllOf: []*cfggen.ConfigMetadata{
+				{
+					Type:         "object",
+					ResolvedFrom: "helper",
+					TypeAlias:    "/scraper/scraperhelper.controller_config",
+					EmbeddedName: "controller_config",
+					Default:      map[string]any{"timeout": "30s"},
+					Properties: map[string]*cfggen.ConfigMetadata{
+						"timeout": {
+							Type:    "string",
+							GoType:  "time.Duration",
+							Default: "30s",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err := generateConfigGoStruct(md, outputDir)
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(filepath.Join(outputDir, "generated_config.go")) // #nosec G304
+	require.NoError(t, err)
+
+	generated := string(content)
+	require.Contains(t, generated, `"testmodule/scraper/scraperhelper"`)
+	require.Contains(t, generated, "// Helper ControllerConfig defines common settings.")
+	require.Contains(t, generated, "type Helper = scraperhelper.ControllerConfig")
+	require.Contains(t, generated, "ControllerConfig Helper `mapstructure:\",squash\"`")
+	require.Contains(t, generated, "helper := scraperhelper.NewDefaultControllerConfig()")
+	require.Contains(t, generated, "helper.Timeout = 30 * time.Second")
+	require.Contains(t, generated, "ControllerConfig: helper,")
+	require.NotContains(t, generated, "type Helper struct")
+	require.NotContains(t, generated, "NewDefaultHelper")
+}
+
 func TestGenerateConfigFiles_GoStructError(t *testing.T) {
 	// generateConfigGoStruct fails because tmpdir has no go.mod in any ancestor
 	md := Metadata{

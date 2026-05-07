@@ -63,6 +63,63 @@ func TestResolver_ResolveSchema_InternalReference(t *testing.T) {
 	require.Equal(t, "Target type description", result.Properties["config"].Description)
 }
 
+func TestResolver_ResolveSchema_PreservesPureRefDefsAsAliases(t *testing.T) {
+	helperSchema := &ConfigMetadata{
+		Type: "object",
+		Defs: map[string]*ConfigMetadata{
+			"controller_config": {
+				Type:        "object",
+				Description: "ControllerConfig defines common settings.",
+				Properties: map[string]*ConfigMetadata{
+					"timeout": {
+						Type:    "string",
+						Format:  "duration",
+						Default: "30s",
+					},
+				},
+			},
+		},
+	}
+	resolver := &Resolver{
+		pkgID: "go.opentelemetry.io/collector/test/component",
+		loader: &mockLoader{schemas: map[string]*ConfigMetadata{
+			"/scraper/scraperhelper.controller_config": helperSchema,
+		}},
+	}
+
+	src := &ConfigMetadata{
+		Type: "object",
+		Defs: map[string]*ConfigMetadata{
+			"helper": {
+				Ref: "/scraper/scraperhelper.controller_config",
+			},
+			"scratch": {
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string"},
+				},
+			},
+		},
+		Properties: map[string]*ConfigMetadata{
+			"controller_config": {
+				Ref:   "helper",
+				Embed: true,
+			},
+		},
+	}
+
+	result, err := resolver.ResolveSchema(src)
+	require.NoError(t, err)
+	require.Len(t, result.Defs, 1)
+	require.Equal(t, "/scraper/scraperhelper.controller_config", result.Defs["helper"].TypeAlias)
+	require.Equal(t, "ControllerConfig defines common settings.", result.Defs["helper"].Description)
+	require.Empty(t, result.Defs["helper"].Defs)
+	require.Len(t, result.AllOf, 1)
+	require.Equal(t, "helper", result.AllOf[0].ResolvedFrom)
+	require.Equal(t, "/scraper/scraperhelper.controller_config", result.AllOf[0].TypeAlias)
+	require.Equal(t, "time.Duration", result.AllOf[0].Properties["timeout"].GoType)
+}
+
 func TestResolver_ResolveSchema_UnknownInternalReference(t *testing.T) {
 	resolver := &Resolver{
 		pkgID:  "go.opentelemetry.io/collector/test/component",

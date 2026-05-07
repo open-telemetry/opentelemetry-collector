@@ -58,6 +58,14 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return typeName
 		},
+		"isTypeAlias": IsTypeAlias,
+		"typeAliasTarget": func(md *ConfigMetadata) string {
+			typeName, err := FormatTypeName(TypeAliasTarget(md), rootPackage, componentPackage)
+			if err != nil {
+				panic(err)
+			}
+			return typeName
+		},
 		"embeddedName": func(md *ConfigMetadata) string {
 			id := md.EmbeddedName
 			if id == "" {
@@ -210,6 +218,16 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 		}
 	}
 
+	if aliasTarget := TypeAliasTarget(md); aliasTarget != "" {
+		ref, err := ResolveGoTypeRef(aliasTarget, rootPackage, componentPackage)
+		if err != nil {
+			return fmt.Errorf("failed to resolve import for type alias %q: %w", aliasTarget, err)
+		}
+		if ref.ImportPath != "" {
+			imports[ref.ImportPath] = true
+		}
+	}
+
 	if md.Type == "string" && strings.HasPrefix(md.GoType, "time.") {
 		imports["time"] = true
 	}
@@ -321,6 +339,33 @@ func FormatTypeName(ref, rootPackage, componentPackage string) (string, error) {
 	return tr.String(), nil
 }
 
+// IsTypeAlias reports whether md represents a generated Go type alias.
+func IsTypeAlias(md *ConfigMetadata) bool {
+	return TypeAliasTarget(md) != ""
+}
+
+// TypeAliasTarget returns the raw metadata reference used as a Go type alias target.
+func TypeAliasTarget(md *ConfigMetadata) string {
+	if md == nil {
+		return ""
+	}
+	if md.TypeAlias != "" {
+		return md.TypeAlias
+	}
+	if md.Ref != "" &&
+		md.Type == "" &&
+		md.GoType == "" &&
+		md.ResolvedFrom == "" &&
+		len(md.Properties) == 0 &&
+		len(md.AllOf) == 0 &&
+		md.AdditionalProperties == nil &&
+		md.Items == nil &&
+		len(md.Defs) == 0 {
+		return md.Ref
+	}
+	return ""
+}
+
 // ExtractDefs recursively collects all definitions from the ConfigMetadata, including nested ones,
 // and returns a flat map of definition names to their corresponding ConfigMetadata.
 func ExtractDefs(md *ConfigMetadata) map[string]*ConfigMetadata {
@@ -331,6 +376,9 @@ func ExtractDefs(md *ConfigMetadata) map[string]*ConfigMetadata {
 
 func collectDefs(md *ConfigMetadata, defs map[string]*ConfigMetadata) {
 	if md == nil {
+		return
+	}
+	if IsTypeAlias(md) {
 		return
 	}
 	if md.ResolvedFrom != "" {
@@ -356,7 +404,7 @@ func collectDefs(md *ConfigMetadata, defs map[string]*ConfigMetadata) {
 }
 
 func collectDefsForSchema(propName string, md *ConfigMetadata, defs map[string]*ConfigMetadata) {
-	if md == nil || md.GoType != "" {
+	if md == nil || md.GoType != "" || IsTypeAlias(md) {
 		return
 	}
 
@@ -604,7 +652,11 @@ func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPa
 	if isReference || isSubStruct {
 		if hasDefaultValue(md) {
 			if isReference {
-				refType, err := ResolveGoTypeRef(md.ResolvedFrom, rootPackage, componentPackage)
+				defaultRef := md.ResolvedFrom
+				if md.TypeAlias != "" {
+					defaultRef = md.TypeAlias
+				}
+				refType, err := ResolveGoTypeRef(defaultRef, rootPackage, componentPackage)
 				if err != nil {
 					panic(err)
 				}

@@ -57,6 +57,7 @@ type ConfigMetadata struct {
 	// internal
 	ResolvedFrom string `mapstructure:"-" json:"-" yaml:"-"`
 	EmbeddedName string `mapstructure:"-" json:"-" yaml:"-"`
+	TypeAlias    string `mapstructure:"-" json:"-" yaml:"-"`
 }
 
 type GoStructConfig struct {

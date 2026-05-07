@@ -718,6 +718,20 @@ func TestExtractImports_Defs(t *testing.T) {
 	require.Contains(t, result, "time")
 }
 
+func TestExtractImports_TypeAlias(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Defs: map[string]*ConfigMetadata{
+			"helper": {
+				TypeAlias: "/scraper/scraperhelper.controller_config",
+			},
+		},
+	}
+	result, err := ExtractImports(md, "go.opentelemetry.io/collector", "")
+	require.NoError(t, err)
+	require.Contains(t, result, "go.opentelemetry.io/collector/scraper/scraperhelper")
+}
+
 func TestExtractImports_NilInput(t *testing.T) {
 	result, err := ExtractImports(nil, "", "")
 	require.NoError(t, err)
@@ -1000,6 +1014,24 @@ func TestExtractDefs_SkipsExternalResolvedReference(t *testing.T) {
 
 	result := ExtractDefs(md)
 	require.Empty(t, result)
+}
+
+func TestExtractDefs_PreservesTypeAliasDef(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Defs: map[string]*ConfigMetadata{
+			"helper": {
+				TypeAlias: "go.opentelemetry.io/collector/scraper/scraperhelper.controller_config",
+				Properties: map[string]*ConfigMetadata{
+					"timeout": {Type: "string"},
+				},
+			},
+		},
+	}
+
+	result := ExtractDefs(md)
+	require.Len(t, result, 1)
+	require.Same(t, md.Defs["helper"], result["helper"])
 }
 
 func TestExtractDefs_NilInput(t *testing.T) {

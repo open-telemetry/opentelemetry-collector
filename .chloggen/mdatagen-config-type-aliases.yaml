@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: cmd/mdatagen
+
+note: Support generating Go type aliases from pure `$ref` entries under config `$defs`.
+
+issues: [15261]
+
+change_logs: [api]
