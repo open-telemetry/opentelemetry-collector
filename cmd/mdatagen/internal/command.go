@@ -26,6 +26,7 @@ import (
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
+	"go.opentelemetry.io/collector/internal/schemagen"
 )
 
 const (
@@ -194,7 +195,6 @@ func run(ymlPath string) error {
 		toGenerate[filepath.Join(tmplDir, "testdata", "config.yaml.tmpl")] = filepath.Join(testdataDir, "config.yaml")
 		toGenerate[filepath.Join(tmplDir, "config.go.tmpl")] = filepath.Join(codeDir, "generated_config.go")
 		toGenerate[filepath.Join(tmplDir, "config_test.go.tmpl")] = filepath.Join(codeDir, "generated_config_test.go")
-		toGenerate[filepath.Join(tmplDir, "config.schema.yaml.tmpl")] = filepath.Join(codeDir, "metadata.yaml")
 	}
 
 	if len(md.ResourceAttributes) > 0 { // only generate resource files if resource attributes are configured
@@ -542,8 +542,40 @@ func validateYAMLKeyOrder(raw []byte) error {
 	return nil
 }
 
+func injectInternalMetadataDefs(md Metadata, mdDir string, src *cfggen.ConfigMetadata) error {
+	if len(md.Metrics) == 0 && len(md.Events) == 0 && len(md.ResourceAttributes) == 0 {
+		return nil
+	}
+	importRootPath, err := helpers.RootPackage(mdDir)
+	if err != nil {
+		return fmt.Errorf("unable to determine import root path: %w", err)
+	}
+	tmplFile := filepath.Join("templates", "config.schema.yaml.tmpl")
+	raw, err := executeTemplate(tmplFile, md, "metadata", importRootPath, getTemplateFuncMap(md, importRootPath))
+	if err != nil {
+		return fmt.Errorf("failed to render internal metadata defs: %w", err)
+	}
+	var wrapper schemagen.Metadata
+	if err := yaml.Unmarshal(raw, &wrapper); err != nil {
+		return fmt.Errorf("failed to parse internal metadata defs: %w", err)
+	}
+	if wrapper.Config == nil || len(wrapper.Config.Defs) == 0 {
+		return nil
+	}
+	if src.Defs == nil {
+		src.Defs = make(map[string]*cfggen.ConfigMetadata)
+	}
+	for name, def := range wrapper.Config.Defs {
+		src.Defs[name] = def
+	}
+	return nil
+}
+
 func generateConfigFiles(md Metadata, mdDir, _ string) error {
 	if md.Config != nil {
+		if err := injectInternalMetadataDefs(md, mdDir, md.Config); err != nil {
+			return err
+		}
 		resolver := cfggen.NewResolver(md.PackageName, md.Status.Class, md.Type, mdDir)
 		resolvedSchema, err := resolver.ResolveSchema(md.Config)
 		if err != nil {
