@@ -1,0 +1,2 @@
+endpoint: "http://localhost:4318"
+timeout: 30s
