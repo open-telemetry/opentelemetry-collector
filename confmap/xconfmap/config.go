@@ -10,13 +10,13 @@ import (
 
 // Validator defines an optional interface for configurations to implement to do validation.
 //
-// Deprecated [v0.151.0]: Use `confmap.Validator“ instead.
+// Deprecated [v0.152.0]: Use `confmap.Validator“ instead.
 type Validator = internal.Validator
 
 // Validate validates a config, by doing this:
 //   - Call Validate on the config itself if the config implements ConfigValidator.
 //
-// Deprecated [v0.151.0]: Use `confmap.Validate“ instead.
+// Deprecated [v0.152.0]: Use `confmap.Validate“ instead.
 func Validate(cfg any) error {
 	return internal.Validate(cfg)
 }
