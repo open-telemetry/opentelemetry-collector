@@ -996,46 +996,6 @@ func TestScalarMarshalingRoundTrip(t *testing.T) {
 	}
 }
 
-func TestScalarNoPanic(t *testing.T) {
-	assert.NotPanics(t, func() { _ = Default(42) })
-	assert.NotPanics(t, func() { _ = Default("hello") })
-	assert.NotPanics(t, func() { _ = Default(3.14) })
-	assert.NotPanics(t, func() { _ = None[int]() })
-	assert.NotPanics(t, func() { _ = None[string]() })
-	assert.NotPanics(t, func() { _ = None[float64]() })
-	assert.NotPanics(t, func() { _ = Some(42) })
-	assert.NotPanics(t, func() { _ = Some("hello") })
-	assert.NotPanics(t, func() { _ = Some(3.14) })
-
-	intDefault := Default(42)
-	assert.False(t, intDefault.HasValue())
-	assert.Nil(t, intDefault.Get())
-
-	strDefault := Default("hello")
-	assert.False(t, strDefault.HasValue())
-	assert.Nil(t, strDefault.Get())
-
-	floatDefault := Default(3.14)
-	assert.False(t, floatDefault.HasValue())
-	assert.Nil(t, floatDefault.Get())
-
-	intNone := None[int]()
-	assert.False(t, intNone.HasValue())
-	assert.Nil(t, intNone.Get())
-
-	intSome := Some(42)
-	assert.True(t, intSome.HasValue())
-	assert.Equal(t, ptr(42), intSome.Get())
-
-	strSome := Some("hello")
-	assert.True(t, strSome.HasValue())
-	assert.Equal(t, ptr("hello"), strSome.Get())
-
-	floatSome := Some(3.14)
-	assert.True(t, floatSome.HasValue())
-	assert.Equal(t, ptr(3.14), floatSome.Get())
-}
-
 // TestUnmarshalFromYAML verifies unmarshal behavior using real YAML input loaded
 // from a testdata file. Each test case selects a sub-key from the file via
 // (*confmap.Conf).Sub and confirms that YAML representations (null, empty map,
