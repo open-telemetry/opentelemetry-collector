@@ -21,7 +21,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/otelcol/internal/grpclog"
 	"go.opentelemetry.io/collector/service"
 )
@@ -103,9 +102,8 @@ type Collector struct {
 
 	configProvider *ConfigProvider
 
-	serviceConfig *service.Config
-	service       *service.Service
-	state         *atomic.Int64
+	service *service.Service
+	state   *atomic.Int64
 
 	// shutdownChan is used to terminate the collector.
 	shutdownChan chan struct{}
@@ -190,11 +188,9 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
 
-	if err = xconfmap.Validate(cfg); err != nil {
+	if err = confmap.Validate(cfg); err != nil {
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
-
-	col.serviceConfig = &cfg.Service
 
 	conf := confmap.New()
 
@@ -293,7 +289,7 @@ func (col *Collector) DryRun(ctx context.Context) error {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
 
-	if err := xconfmap.Validate(cfg); err != nil {
+	if err := confmap.Validate(cfg); err != nil {
 		return err
 	}
 

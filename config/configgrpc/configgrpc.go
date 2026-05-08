@@ -15,8 +15,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mostynb/go-grpc-compression/nonclobbering/snappy"
-	"github.com/mostynb/go-grpc-compression/nonclobbering/zstd"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
@@ -41,6 +39,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.opentelemetry.io/collector/internal/grpccompression/snappy"
+	"go.opentelemetry.io/collector/internal/grpccompression/zstd"
 )
 
 var errMetadataNotFound = errors.New("no request metadata found")
@@ -107,6 +107,11 @@ type ClientConfig struct {
 
 	// The headers associated with gRPC requests.
 	Headers configopaque.MapList `mapstructure:"headers,omitempty"`
+
+	// UserAgent overrides the default user-agent header sent on gRPC requests.
+	// The default is derived from the build info. When empty, the caller controls
+	// the user-agent via grpc.WithUserAgent or similar options.
+	UserAgent string `mapstructure:"user_agent,omitempty"`
 
 	// Sets the balancer in grpclb_policy to discover the servers. Default is pick_first.
 	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
@@ -480,6 +485,10 @@ func (cc *ClientConfig) getGrpcDialOptions(
 		if wrapper, ok := opt.(grpcDialOptionWrapper); ok {
 			opts = append(opts, wrapper.opt)
 		}
+	}
+
+	if cc.UserAgent != "" {
+		opts = append(opts, grpc.WithUserAgent(cc.UserAgent))
 	}
 
 	return opts, nil

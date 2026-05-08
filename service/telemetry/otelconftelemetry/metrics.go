@@ -6,9 +6,8 @@ package otelconftelemetry // import "go.opentelemetry.io/collector/service/telem
 import (
 	"context"
 
-	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
-	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -33,12 +32,16 @@ func createMeterProvider(
 		cfg.Metrics.Views = set.DefaultViews(cfg.Metrics.Level)
 	}
 
-	attrs := pcommonAttrsToOTelAttrs(set.Resource)
-	res := sdkresource.NewWithAttributes("", attrs...)
+	resourceConfig, err := createFixedResourceConfig(&cfg.Resource, set.Resource)
+	if err != nil {
+		return nil, err
+	}
+
 	mpConfig := cfg.Metrics.MeterProvider
-	sdk, err := newSDK(ctx, res, config.OpenTelemetryConfiguration{
+	sdk, err := otelconf.NewSDK(otelconf.WithContext(ctx), otelconf.WithOpenTelemetryConfiguration(otelconf.OpenTelemetryConfiguration{
+		Resource:      resourceConfig,
 		MeterProvider: &mpConfig,
-	})
+	}))
 	if err != nil {
 		return nil, err
 	}

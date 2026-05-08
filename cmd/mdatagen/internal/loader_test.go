@@ -53,6 +53,7 @@ func TestLoadMetadata(t *testing.T) {
 				SemConvVersion:       "1.40.0",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver",
 				ReaggregationEnabled: true,
+				OverrideValueEnabled: true,
 				Status: &Status{
 					DisableCodeCov: true,
 					Class:          "receiver",
@@ -77,12 +78,15 @@ func TestLoadMetadata(t *testing.T) {
 				},
 				Config: &cfggen.ConfigMetadata{
 					Type: "object",
-					AllOf: []*cfggen.ConfigMetadata{
-						{
-							Ref: "./internal/metadata.metrics_builder_config",
-						},
-					},
 					Properties: map[string]*cfggen.ConfigMetadata{
+						"metrics_builder_config": {
+							Ref:   "./internal/metadata.metrics_builder_config",
+							Embed: true,
+							GoStruct: cfggen.GoStructConfig{
+								Anonymous:     true,
+								IgnoreDefault: true,
+							},
+						},
 						"endpoint": {
 							Description: "The endpoint to scrape metrics from.",
 							Type:        "string",
