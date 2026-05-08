@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"go/format"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -565,9 +566,7 @@ func injectInternalMetadataDefs(md Metadata, mdDir string, src *cfggen.ConfigMet
 	if src.Defs == nil {
 		src.Defs = make(map[string]*cfggen.ConfigMetadata)
 	}
-	for name, def := range wrapper.Config.Defs {
-		src.Defs[name] = def
-	}
+	maps.Copy(src.Defs, wrapper.Config.Defs)
 	return nil
 }
 

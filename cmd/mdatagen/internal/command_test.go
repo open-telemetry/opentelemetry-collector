@@ -513,6 +513,104 @@ func TestGenerateConfigFiles(t *testing.T) {
 	}
 }
 
+func TestInjectInternalMetadataDefs(t *testing.T) {
+	t.Run("skips when metadata has no internal definitions", func(t *testing.T) {
+		src := &cfggen.ConfigMetadata{}
+
+		err := injectInternalMetadataDefs(Metadata{}, t.TempDir(), src)
+		require.NoError(t, err)
+		require.Nil(t, src.Defs)
+	})
+
+	t.Run("initializes source defs and injects resource attributes config", func(t *testing.T) {
+		mdDir := newTestModuleDir(t)
+		enabled := true
+		src := &cfggen.ConfigMetadata{}
+		md := Metadata{
+			Type: "sample",
+			ResourceAttributes: map[AttributeName]Attribute{
+				"service.name": {
+					EnabledPtr: &enabled,
+				},
+			},
+		}
+
+		err := injectInternalMetadataDefs(md, mdDir, src)
+		require.NoError(t, err)
+
+		require.Contains(t, src.Defs, "resource_attributes_config")
+		resourceAttributes := src.Defs["resource_attributes_config"]
+		require.Equal(t, "object", resourceAttributes.Type)
+		require.Contains(t, resourceAttributes.Properties, "service.name")
+
+		resourceAttribute := resourceAttributes.Properties["service.name"]
+		require.Contains(t, resourceAttribute.Properties, "enabled")
+		require.Equal(t, "boolean", resourceAttribute.Properties["enabled"].Type)
+		require.Equal(t, true, resourceAttribute.Properties["enabled"].Default)
+	})
+
+	t.Run("merges generated defs into existing source defs", func(t *testing.T) {
+		mdDir := newTestModuleDir(t)
+		existingDef := &cfggen.ConfigMetadata{
+			Type:        "object",
+			Description: "user-provided definition",
+		}
+		src := &cfggen.ConfigMetadata{
+			Defs: map[string]*cfggen.ConfigMetadata{
+				"user_config": existingDef,
+			},
+		}
+		md := Metadata{
+			Type: "sample",
+			Events: map[EventName]Event{
+				"sample.event": {
+					Signal: Signal{
+						Enabled: true,
+					},
+				},
+			},
+		}
+
+		err := injectInternalMetadataDefs(md, mdDir, src)
+		require.NoError(t, err)
+
+		require.Equal(t, existingDef, src.Defs["user_config"])
+		require.Contains(t, src.Defs, "events_config")
+		require.Contains(t, src.Defs, "logs_builder_config")
+
+		events := src.Defs["events_config"]
+		require.Contains(t, events.Properties, "sample.event")
+		require.Equal(t, true, events.Properties["sample.event"].Properties["enabled"].Default)
+	})
+
+	t.Run("returns root package error", func(t *testing.T) {
+		enabled := true
+		src := &cfggen.ConfigMetadata{}
+		md := Metadata{
+			Type: "sample",
+			ResourceAttributes: map[AttributeName]Attribute{
+				"service.name": {
+					EnabledPtr: &enabled,
+				},
+			},
+		}
+
+		err := injectInternalMetadataDefs(md, t.TempDir(), src)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "unable to determine import root path")
+	})
+}
+
+func newTestModuleDir(t *testing.T) string {
+	t.Helper()
+
+	root := t.TempDir()
+	mdDir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(mdDir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module go.opentelemetry.io/collector\n"), 0o600))
+	return mdDir
+}
+
 func TestGenerateConfigGoStruct_RootPackageError(t *testing.T) {
 	// tmpdir has no go.mod in any ancestor, so helpers.RootPackage fails
 	md := Metadata{
