@@ -1,0 +1,3 @@
+endpoint: "0.0.0.0:4318"
+idle_timeout: 120s
+keep_alives_enabled: false

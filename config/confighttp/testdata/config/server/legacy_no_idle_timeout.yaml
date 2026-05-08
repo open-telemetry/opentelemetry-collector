@@ -1,0 +1,2 @@
+endpoint: "0.0.0.0:4318"
+keep_alives_enabled: true

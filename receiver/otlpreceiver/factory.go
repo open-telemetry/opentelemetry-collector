@@ -51,7 +51,7 @@ func createDefaultConfig() component.Config {
 	httpCfg.TLS = configoptional.None[configtls.ServerConfig]()
 	httpCfg.WriteTimeout = 0
 	httpCfg.ReadHeaderTimeout = 0
-	httpCfg.IdleTimeout = 0
+	httpCfg.Keepalive.Get().IdleTimeout = 0
 
 	return &Config{
 		Protocols: Protocols{
