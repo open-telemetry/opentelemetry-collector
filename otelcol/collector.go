@@ -102,9 +102,8 @@ type Collector struct {
 
 	configProvider *ConfigProvider
 
-	serviceConfig *service.Config
-	service       *service.Service
-	state         *atomic.Int64
+	service *service.Service
+	state   *atomic.Int64
 
 	// shutdownChan is used to terminate the collector.
 	shutdownChan chan struct{}
@@ -192,8 +191,6 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	if err = confmap.Validate(cfg); err != nil {
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
-
-	col.serviceConfig = &cfg.Service
 
 	conf := confmap.New()
 

@@ -29,8 +29,8 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	require.NoError(t, cm.Unmarshal(&cfg))
 	expectedCfg := factory.CreateDefaultConfig().(*Config)
-	expectedCfg.GRPC.GetOrInsertDefault()
-	expectedCfg.HTTP.GetOrInsertDefault()
+	expectedCfg.Protocols.GRPC.GetOrInsertDefault()
+	expectedCfg.Protocols.HTTP.GetOrInsertDefault()
 	assert.Equal(t, expectedCfg, cfg)
 }
 
@@ -42,7 +42,7 @@ func TestUnmarshalConfigOnlyGRPC(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyGRPC := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyGRPC.GRPC.GetOrInsertDefault()
+	defaultOnlyGRPC.Protocols.GRPC.GetOrInsertDefault()
 	assert.Equal(t, defaultOnlyGRPC, cfg)
 }
 
@@ -54,7 +54,7 @@ func TestUnmarshalConfigOnlyHTTP(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyHTTP.HTTP.GetOrInsertDefault()
+	defaultOnlyHTTP.Protocols.HTTP.GetOrInsertDefault()
 	assert.Equal(t, defaultOnlyHTTP, cfg)
 }
 
@@ -66,7 +66,7 @@ func TestUnmarshalConfigOnlyHTTPNull(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyHTTP.HTTP.GetOrInsertDefault()
+	defaultOnlyHTTP.Protocols.HTTP.GetOrInsertDefault()
 	assert.Equal(t, defaultOnlyHTTP, cfg)
 }
 
@@ -78,7 +78,7 @@ func TestUnmarshalConfigOnlyHTTPEmptyMap(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyHTTP.HTTP.GetOrInsertDefault()
+	defaultOnlyHTTP.Protocols.HTTP.GetOrInsertDefault()
 	assert.Equal(t, defaultOnlyHTTP, cfg)
 }
 
