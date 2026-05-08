@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry/internal/migration"
 )
 
@@ -134,7 +133,7 @@ func TestConfig(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			err = xconfmap.Validate(cfg)
+			err = confmap.Validate(cfg)
 			if test.validateErr != "" {
 				assert.ErrorContains(t, err, test.validateErr)
 				return
