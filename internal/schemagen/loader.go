@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package cfggen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
+package schemagen // import "go.opentelemetry.io/collector/internal/schemagen"
 
 import (
 	"errors"
@@ -67,7 +67,7 @@ func (sl *schemaLoader) load(ref Ref) (*ConfigMetadata, error) {
 		return nil, fmt.Errorf("failed to determine repo root: %w", err)
 	}
 
-	if ref.isLocal() {
+	if ref.IsLocal() {
 		var filePath string
 		if strings.HasPrefix(ref.schemaID, "/") {
 			filePath = filepath.Join(repoRoot, ref.SchemaID(), schemaFileName)
