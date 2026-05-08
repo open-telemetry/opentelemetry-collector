@@ -556,6 +556,10 @@ func injectInternalMetadataDefs(md Metadata, mdDir string, src *cfggen.ConfigMet
 	if err != nil {
 		return fmt.Errorf("failed to render internal metadata defs: %w", err)
 	}
+	return mergeInternalMetadataDefs(raw, src)
+}
+
+func mergeInternalMetadataDefs(raw []byte, src *cfggen.ConfigMetadata) error {
 	var wrapper schemagen.Metadata
 	if err := yaml.Unmarshal(raw, &wrapper); err != nil {
 		return fmt.Errorf("failed to parse internal metadata defs: %w", err)

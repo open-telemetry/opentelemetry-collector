@@ -599,6 +599,45 @@ func TestInjectInternalMetadataDefs(t *testing.T) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "unable to determine import root path")
 	})
+
+	t.Run("returns template rendering error", func(t *testing.T) {
+		mdDir := newTestModuleDir(t)
+		src := &cfggen.ConfigMetadata{}
+		md := Metadata{
+			Type: "sample",
+			Metrics: map[MetricName]Metric{
+				"": {},
+			},
+		}
+
+		err := injectInternalMetadataDefs(md, mdDir, src)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to render internal metadata defs")
+		require.Contains(t, err.Error(), "string cannot be empty")
+	})
+
+	t.Run("returns generated YAML parse error", func(t *testing.T) {
+		mdDir := newTestModuleDir(t)
+		src := &cfggen.ConfigMetadata{}
+		md := Metadata{
+			Type: "sample",
+			Events: map[EventName]Event{
+				"*": {},
+			},
+		}
+
+		err := injectInternalMetadataDefs(md, mdDir, src)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to parse internal metadata defs")
+	})
+
+	t.Run("skips when generated YAML has no internal defs", func(t *testing.T) {
+		src := &cfggen.ConfigMetadata{}
+
+		err := mergeInternalMetadataDefs([]byte("config:\n  $defs: {}\n"), src)
+		require.NoError(t, err)
+		require.Nil(t, src.Defs)
+	})
 }
 
 func newTestModuleDir(t *testing.T) string {
@@ -798,6 +837,25 @@ func TestGenerateConfigFiles_GoStructError(t *testing.T) {
 	err := generateConfigFiles(md, t.TempDir(), "testmodule")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to generate config Go struct")
+}
+
+func TestGenerateConfigFiles_InternalMetadataDefsError(t *testing.T) {
+	enabled := true
+	md := Metadata{
+		Type:        "test",
+		PackageName: "shortname",
+		Status:      &Status{Class: "receiver"},
+		Config:      &cfggen.ConfigMetadata{Type: "object"},
+		ResourceAttributes: map[AttributeName]Attribute{
+			"service.name": {
+				EnabledPtr: &enabled,
+			},
+		},
+	}
+
+	err := generateConfigFiles(md, t.TempDir(), "testmodule")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "unable to determine import root path")
 }
 
 func TestGenerateConfigFiles_WriteError(t *testing.T) {
