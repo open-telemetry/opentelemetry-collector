@@ -325,6 +325,29 @@ func TestLogsMergeSplitUnknownSizerType(t *testing.T) {
 	require.EqualError(t, err, "unknown sizer type")
 }
 
+func TestLogsRequestBytesSizeUsesByteCacheAfterItemSizing(t *testing.T) {
+	req := newLogsRequest(testdata.GenerateLogs(7)).(*logsRequest)
+
+	assert.Equal(t, req.ItemsCount(), req.size(&sizer.LogsCountSizer{}, request.SizerTypeItems))
+
+	expected := logsMarshaler.LogsSize(req.ld)
+	assert.Equal(t, expected, req.BytesSize())
+	assert.Equal(t, expected, req.BytesSize())
+}
+
+func TestLogsRequestBytesSizeInvalidatedAfterItemMerge(t *testing.T) {
+	req := newLogsRequest(testdata.GenerateLogs(3)).(*logsRequest)
+	original := req.BytesSize()
+
+	res, err := req.MergeSplit(context.Background(), 0, request.SizerTypeItems, newLogsRequest(testdata.GenerateLogs(2)))
+	require.NoError(t, err)
+
+	merged := res[0].(*logsRequest)
+	expected := logsMarshaler.LogsSize(merged.ld)
+	assert.NotEqual(t, expected, original)
+	assert.Equal(t, expected, merged.BytesSize())
+}
+
 func BenchmarkSplittingBasedOnItemCountManySmallLogs(b *testing.B) {
 	testutil.SkipGCHeavyBench(b)
 	// All requests merge into a single batch.
@@ -409,5 +432,14 @@ func BenchmarkSplittingBasedOnByteSizeHugeLogs(b *testing.B) {
 		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), logsMarshaler.LogsSize(testdata.GenerateLogs(10010)), request.SizerTypeBytes, lr2)
 		merged = append(merged[0:len(merged)-1], res...)
 		assert.Len(b, merged, 10)
+	}
+}
+
+func BenchmarkLogsRequestBytesSizeRepeated(b *testing.B) {
+	req := newLogsRequest(testdata.GenerateLogs(1000)).(*logsRequest)
+
+	b.ReportAllocs()
+	for b.Loop() {
+		_ = req.BytesSize()
 	}
 }

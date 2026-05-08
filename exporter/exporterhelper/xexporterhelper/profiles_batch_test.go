@@ -322,6 +322,29 @@ func TestMergeSplitManySmallProfiles(t *testing.T) {
 	assert.Len(t, merged, 2)
 }
 
+func TestProfilesRequestBytesSizeUsesByteCacheAfterItemSizing(t *testing.T) {
+	req := newProfilesRequest(testdata.GenerateProfiles(7)).(*profilesRequest)
+
+	assert.Equal(t, req.ItemsCount(), req.size(&sizer.ProfilesCountSizer{}, exporterhelper.RequestSizerTypeItems))
+
+	expected := profilesMarshaler.ProfilesSize(req.pd)
+	assert.Equal(t, expected, req.BytesSize())
+	assert.Equal(t, expected, req.BytesSize())
+}
+
+func TestProfilesRequestBytesSizeInvalidatedAfterItemMerge(t *testing.T) {
+	req := newProfilesRequest(testdata.GenerateProfiles(3)).(*profilesRequest)
+	original := req.BytesSize()
+
+	res, err := req.MergeSplit(context.Background(), 0, exporterhelper.RequestSizerTypeItems, newProfilesRequest(testdata.GenerateProfiles(2)))
+	require.NoError(t, err)
+
+	merged := res[0].(*profilesRequest)
+	expected := profilesMarshaler.ProfilesSize(merged.pd)
+	assert.NotEqual(t, expected, original)
+	assert.Equal(t, expected, merged.BytesSize())
+}
+
 func BenchmarkSplittingBasedOnByteSizeManySmallProfiles(b *testing.B) {
 	// All requests merge into a single batch.
 	b.ReportAllocs()
@@ -375,5 +398,14 @@ func BenchmarkSplittingBasedOnByteSizeHugeProfiles(b *testing.B) {
 		)
 		merged = append(merged[0:len(merged)-1], res...)
 		assert.Len(b, merged, 10)
+	}
+}
+
+func BenchmarkProfilesRequestBytesSizeRepeated(b *testing.B) {
+	req := newProfilesRequest(testdata.GenerateProfiles(1000)).(*profilesRequest)
+
+	b.ReportAllocs()
+	for b.Loop() {
+		_ = req.BytesSize()
 	}
 }
