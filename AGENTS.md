@@ -38,3 +38,8 @@ Examples:
 Assisted-by: ChatGPT 5.2
 Assisted-by: Claude Opus 4.5
 ```
+
+Do NOT use a `Co-authored-by:` trailer to disclose AI assistance. Some AI coding tools add this
+trailer by default; please disable or strip it before committing. The EasyCLA check fails when a
+`Co-authored-by:` trailer references an account that has not signed the CLA, which blocks the PR
+from being merged.

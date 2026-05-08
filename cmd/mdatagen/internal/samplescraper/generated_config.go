@@ -14,6 +14,9 @@ import (
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
+// ControllerConfig ControllerConfig defines common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed.
+type ControllerConfig = scraperhelper.ControllerConfig
+
 type TargetsItem struct {
 	// HTTP client configuration for the target endpoint.
 	HTTPClient confighttp.ClientConfig                `mapstructure:"http_client"`
