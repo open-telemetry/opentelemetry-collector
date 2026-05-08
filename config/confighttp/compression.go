@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -153,18 +154,24 @@ func newSnappyHandler(maxRequestBodySize int64) func(io.ReadCloser) (io.ReadClos
 		}
 		defer body.Close()
 
-		compressed, err := io.ReadAll(br)
-		if err != nil {
-			return nil, err
-		}
 		if maxRequestBodySize > 0 {
-			decodedLen, decErr := snappy.DecodedLen(compressed)
+			// Peek MaxVarintLen64 bytes so we can read the decoded length
+			// before reading the full compressed request body.
+			lenBytes, peakErr := br.Peek(binary.MaxVarintLen64)
+			if peakErr != nil && !errors.Is(peakErr, io.EOF) {
+				return nil, peakErr
+			}
+			decodedLen, decErr := snappy.DecodedLen(lenBytes)
 			if decErr != nil {
 				return nil, decErr
 			}
 			if int64(decodedLen) > maxRequestBodySize {
 				return nil, errors.New("snappy: decoded size exceeds max request body size")
 			}
+		}
+		compressed, err := io.ReadAll(br)
+		if err != nil {
+			return nil, err
 		}
 		decoded, err := snappy.Decode(nil, compressed)
 		if err != nil {

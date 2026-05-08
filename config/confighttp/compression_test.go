@@ -8,6 +8,7 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -948,6 +949,41 @@ func TestSnappyBlockRejectsOversizedDecodedLen(t *testing.T) {
 		defaultErrorHandler,
 		defaultCompressionAlgorithms(),
 		nil, // let the decompressor install the size-aware snappy handler
+	)
+
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(payload))
+	req.Header.Set("Content-Encoding", "snappy")
+
+	resp := httptest.NewRecorder()
+	h.ServeHTTP(resp, req)
+
+	assert.Equal(t, http.StatusBadRequest, resp.Code)
+	assert.Contains(t, resp.Body.String(), "decoded size exceeds max request body size")
+	assert.False(t, downstreamCalled, "downstream handler must not run when request is rejected")
+}
+
+func TestSnappyBlockRejectsOversizedDecodedLenBeforeCompressedBodyLimit(t *testing.T) {
+	t.Parallel()
+
+	const maxBody = 1024
+
+	payload := make([]byte, binary.MaxVarintLen64+maxBody+1)
+	n := binary.PutUvarint(payload, maxBody+1)
+	payload = payload[:n+maxBody+1]
+	require.Greater(t, len(payload), maxBody)
+
+	downstreamCalled := false
+	h := maxRequestBodySizeInterceptor(
+		httpContentDecompressor(
+			http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+				downstreamCalled = true
+			}),
+			maxBody,
+			defaultErrorHandler,
+			defaultCompressionAlgorithms(),
+			nil,
+		),
+		maxBody,
 	)
 
 	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(payload))
