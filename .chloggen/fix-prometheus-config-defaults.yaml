@@ -1,0 +1,10 @@
+change_type: bug_fix
+component: pkg/service
+note: Fix Prometheus config defaults mismatch when host is explicitly set in telemetry configuration.
+subtext: |
+  When users explicitly configured the telemetry metrics section (e.g. to change the host),
+  the Prometheus exporter boolean fields (WithoutScopeInfo, WithoutUnits, WithoutTypeSuffix)
+  defaulted to nil/false instead of true, causing metric name format changes compared to the
+  implicit default configuration. This fix applies the correct defaults during config unmarshaling.
+issues: [13867]
+change_logs: [user]

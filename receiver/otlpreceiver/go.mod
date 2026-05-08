@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/receiver/otlpreceiver
 go 1.25.0
 
 require (
-	github.com/klauspost/compress v1.18.5
+	github.com/klauspost/compress v1.18.6
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector v0.151.0
 	go.opentelemetry.io/collector/component v1.57.0
@@ -16,7 +16,6 @@ require (
 	go.opentelemetry.io/collector/config/configoptional v1.57.0
 	go.opentelemetry.io/collector/config/configtls v1.57.0
 	go.opentelemetry.io/collector/confmap v1.57.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.151.0
 	go.opentelemetry.io/collector/consumer v1.57.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.151.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.151.0
@@ -36,7 +35,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260406210006-6f92a3bedf2d
-	google.golang.org/grpc v1.80.0
+	google.golang.org/grpc v1.81.0
 	google.golang.org/protobuf v1.36.11
 )
 
@@ -46,7 +45,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20251226215517-609e4778396f // indirect
-	github.com/fsnotify/fsnotify v1.9.0 // indirect
+	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
@@ -71,6 +70,7 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.57.0 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v1.57.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.57.0 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.151.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.57.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.151.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.57.0 // indirect

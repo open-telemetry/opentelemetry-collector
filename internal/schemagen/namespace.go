@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package cfggen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
+package schemagen // import "go.opentelemetry.io/collector/internal/schemagen"
 
 import (
 	"errors"
@@ -61,10 +61,10 @@ func NewRef(refPath string) *Ref {
 	}
 
 	return &Ref{
-		namespace,
-		schemaID,
-		defName,
-		kind,
+		namespace: namespace,
+		schemaID:  schemaID,
+		defName:   defName,
+		kind:      kind,
 	}
 }
 
@@ -74,7 +74,7 @@ func WithOrigin(refPath string, origin *Ref) *Ref {
 		return ref
 	}
 
-	if origin.isExternal() {
+	if origin.IsExternal() {
 		ref.namespace = origin.namespace
 		ref.kind = External
 		if strings.HasPrefix(ref.schemaID, "/") {
@@ -86,7 +86,7 @@ func WithOrigin(refPath string, origin *Ref) *Ref {
 		return ref
 	}
 	// check if it's a local ref with relative path, if so, resolve it against the origin schema ID
-	if ref.isLocal() && !strings.HasPrefix(ref.schemaID, "/") {
+	if ref.IsLocal() && !strings.HasPrefix(ref.schemaID, "/") {
 		ref.schemaID = path.Join(origin.schemaID, ref.schemaID)
 	}
 	return ref
@@ -155,15 +155,15 @@ func rawRefVersion(version string) string {
 	return trimmedVersion
 }
 
-func (r *Ref) isInternal() bool {
+func (r *Ref) IsInternal() bool {
 	return r.kind == Internal
 }
 
-func (r *Ref) isLocal() bool {
+func (r *Ref) IsLocal() bool {
 	return r.kind == Local
 }
 
-func (r *Ref) isExternal() bool {
+func (r *Ref) IsExternal() bool {
 	return r.kind == External
 }
 
@@ -175,7 +175,7 @@ func (r *Ref) Validate() error {
 	if r.defName == "" {
 		return errors.New("missing definition name")
 	}
-	if r.isLocal() && r.schemaID == "" {
+	if r.IsLocal() && r.schemaID == "" {
 		return errors.New("missing schema ID in local reference")
 	}
 

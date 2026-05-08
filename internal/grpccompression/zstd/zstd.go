@@ -1,4 +1,5 @@
 // Copyright The OpenTelemetry Authors
+// Copyright 2020 Mostyn Bramley-Moore.
 // SPDX-License-Identifier: Apache-2.0
 
 // Package zstd registers a gRPC zstd compressor compatible with the

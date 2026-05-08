@@ -38,9 +38,13 @@ status:
 
 config:
   type: object
-  allOf:
-    - $ref: ./internal/metadata.metrics_builder_config
   properties:
+    metrics_builder_config:
+      $ref: ./internal/metadata.metrics_builder_config
+      embed: true
+      go_struct:
+        anonymous: true
+        ignore_default: true
     endpoint:
       description: The endpoint to scrape metrics from.
       type: string
