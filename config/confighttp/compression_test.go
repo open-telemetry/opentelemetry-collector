@@ -995,6 +995,7 @@ func TestSnappyBlockRejectsOversizedDecodedLenBeforeCompressedBodyLimit(t *testi
 	assert.Equal(t, http.StatusBadRequest, resp.Code)
 	assert.Contains(t, resp.Body.String(), "decoded size exceeds max request body size")
 	assert.False(t, downstreamCalled, "downstream handler must not run when request is rejected")
+}
 
 func TestSnappyBlockClosesOriginalBody(t *testing.T) {
 	t.Parallel()
