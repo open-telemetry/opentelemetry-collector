@@ -32,12 +32,8 @@ func EncoderConfig(rawVal any, opts MarshalOptions) *encoder.EncoderConfig {
 		hooks = append(hooks, encoder.StringTextUnredactedHookFunc())
 	}
 
-	if opts.ScalarMarshalingEncodeHookFunc != nil {
-		hooks = append(hooks, opts.ScalarMarshalingEncodeHookFunc)
-	}
-
-	// This hook must come after the scalar marshaling hook, if present.
 	hooks = append(hooks,
+		ScalarmarshalerHookFunc(),
 		encoder.TextMarshalerHookFunc(),
 		marshalerHookFunc(rawVal),
 	)

@@ -59,8 +59,8 @@ func Decode(input, result any, settings UnmarshalOptions, skipTopLevelUnmarshale
 		mapKeyStringToMapKeyTextUnmarshalerHookFunc(),
 		mapstructure.StringToTimeDurationHookFunc(),
 		mapstructure.TextUnmarshallerHookFunc(),
+		ScalarunmarshalerHookFunc(),
 	}
-	hooks = append(hooks, settings.AdditionalDecodeHookFuncs...)
 	hooks = append(hooks,
 		unmarshalerHookFunc(result, skipTopLevelUnmarshaler && !settings.ForceUnmarshaler),
 		// after the main unmarshaler hook is called,

@@ -190,7 +190,7 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 		}
 	}
 
-	if err := conf.Unmarshal(&o.value, xconfmap.WithForceUnmarshaler(), xconfmap.WithScalarUnmarshaler()); err != nil {
+	if err := conf.Unmarshal(&o.value, xconfmap.WithForceUnmarshaler()); err != nil {
 		return err
 	}
 
@@ -250,7 +250,7 @@ func (o Optional[T]) Marshal(conf *confmap.Conf) error {
 		return conf.Marshal(map[string]any(nil))
 	}
 
-	if err := conf.Marshal(o.value, xconfmap.WithScalarMarshaler()); err != nil {
+	if err := conf.Marshal(o.value); err != nil {
 		return fmt.Errorf("configoptional: failed to marshal Optional value: %w", err)
 	}
 

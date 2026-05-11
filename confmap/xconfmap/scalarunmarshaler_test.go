@@ -55,7 +55,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	cfg := &testConfig{}
-	require.NoError(t, cm.Unmarshal(cfg, WithScalarUnmarshaler()))
+	require.NoError(t, cm.Unmarshal(cfg))
 
 	require.Equal(t, wantCfg, cfg)
 }
@@ -71,7 +71,7 @@ func TestUnmarshalScalarNullInput(t *testing.T) {
 	// A nil map value triggers the `from.Kind() == reflect.Map && from.IsNil()` branch.
 	cm := confmap.NewFromStringMap(map[string]any{"val": map[string]any(nil)})
 	var cfg cfgWithNullable
-	require.NoError(t, cm.Unmarshal(&cfg, WithScalarUnmarshaler()))
+	require.NoError(t, cm.Unmarshal(&cfg))
 	assert.True(t, cfg.Val.wasNil, "expected UnmarshalScalar to be called with nil")
 	assert.Equal(t, 0, cfg.Val.inner, "inner value should remain zero after nil")
 }
@@ -86,7 +86,7 @@ func TestUnmarshalScalarDecodeError(t *testing.T) {
 	// A slice cannot be decoded into an int; this exercises the internal.Decode error path.
 	cm := confmap.NewFromStringMap(map[string]any{"val": []string{"a", "b"}})
 	cfg := cfgWithInt{}
-	err := cm.Unmarshal(&cfg, WithScalarUnmarshaler())
+	err := cm.Unmarshal(&cfg)
 	require.Error(t, err)
 }
 
@@ -99,14 +99,14 @@ func TestUnmarshalScalarErrorPropagation(t *testing.T) {
 
 	cm := confmap.NewFromStringMap(map[string]any{"val": 42})
 	var cfg cfgWithFailing
-	err := cm.Unmarshal(&cfg, WithScalarUnmarshaler())
+	err := cm.Unmarshal(&cfg)
 	require.Error(t, err)
 	require.ErrorContains(t, err, "always fails")
 }
 
 // TestNonImplementingTypesUnaffected verifies that fields whose types do not
 // implement ScalarUnmarshaler are decoded normally by mapstructure, even when
-// WithScalarUnmarshaler is active alongside implementing fields.
+// implementing fields are present in the same struct.
 func TestNonImplementingTypesUnaffected(t *testing.T) {
 	type mixedCfg struct {
 		Impl    wrapperType[int]        `mapstructure:"impl"`
@@ -119,7 +119,7 @@ func TestNonImplementingTypesUnaffected(t *testing.T) {
 		"plain": 99,
 	})
 	var cfg mixedCfg
-	require.NoError(t, cm.Unmarshal(&cfg, WithScalarUnmarshaler()))
+	require.NoError(t, cm.Unmarshal(&cfg))
 	assert.Equal(t, 10, cfg.Impl.inner, "implementing field should be decoded via UnmarshalScalar")
 	assert.Equal(t, 99, cfg.Plain, "plain field should be decoded normally")
 	assert.Equal(t, 0, cfg.NonImpl.inner, "non-implementing field should remain zero")

@@ -63,7 +63,7 @@ type wrapperType[T any] struct {
 }
 
 func (wt *wrapperType[T]) Unmarshal(conf *confmap.Conf) error {
-	if err := conf.Unmarshal(&wt.inner, WithScalarUnmarshaler()); err != nil {
+	if err := conf.Unmarshal(&wt.inner); err != nil {
 		return err
 	}
 
@@ -71,7 +71,7 @@ func (wt *wrapperType[T]) Unmarshal(conf *confmap.Conf) error {
 }
 
 func (wt wrapperType[T]) Marshal(conf *confmap.Conf) error {
-	if err := conf.Marshal(wt.inner, WithScalarMarshaler()); err != nil {
+	if err := conf.Marshal(wt.inner); err != nil {
 		return fmt.Errorf("failed to marshal wrapperType value: %w", err)
 	}
 
@@ -79,7 +79,7 @@ func (wt wrapperType[T]) Marshal(conf *confmap.Conf) error {
 }
 
 func (wt wrapperType[T]) MarshalScalar(sv ScalarValue) error {
-	return sv.Marshal(wt.inner, WithScalarMarshaler())
+	return sv.Marshal(wt.inner)
 }
 
 func (wt *wrapperType[T]) UnmarshalScalar(val ScalarValue) error {
@@ -108,7 +108,7 @@ type testConfig struct {
 }
 
 func (cfg *testConfig) Unmarshal(conf *confmap.Conf) error {
-	if err := conf.Unmarshal(cfg, WithScalarUnmarshaler()); err != nil {
+	if err := conf.Unmarshal(cfg); err != nil {
 		return err
 	}
 
@@ -119,8 +119,8 @@ func TestMarshalConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	wantCfg := &testConfig{}
-	require.NoError(t, cm.Unmarshal(wantCfg, WithScalarUnmarshaler()))
-	require.NoError(t, cm.Marshal(wantCfg, WithScalarMarshaler()))
+	require.NoError(t, cm.Unmarshal(wantCfg))
+	require.NoError(t, cm.Marshal(wantCfg))
 
 	conf := confmap.New()
 	cfg := &testConfig{
@@ -137,7 +137,7 @@ func TestMarshalConfig(t *testing.T) {
 		Recursive:   wrapperType[wrapperType[textMarshalerStruct]]{inner: wrapperType[textMarshalerStruct]{inner: textMarshalerStruct{id: 2, data: []byte{80}}}},
 	}
 
-	require.NoError(t, conf.Marshal(cfg, WithScalarMarshaler()))
+	require.NoError(t, conf.Marshal(cfg))
 	require.Equal(t, cm.ToStringMap(), conf.ToStringMap())
 }
 
@@ -157,7 +157,7 @@ func TestMarshalScalarErrorPropagation(t *testing.T) {
 
 	cfg := cfgWithFailing{Val: failingScalarMarshaler{}}
 	conf := confmap.New()
-	err := conf.Marshal(&cfg, WithScalarMarshaler())
+	err := conf.Marshal(&cfg)
 	require.Error(t, err)
 	require.ErrorContains(t, err, "marshal always fails")
 }
@@ -179,7 +179,7 @@ func TestMarshalNonImplementingTypesUnaffected(t *testing.T) {
 		Plain:   99,
 	}
 	conf := confmap.New()
-	require.NoError(t, conf.Marshal(cfg, WithScalarMarshaler()))
+	require.NoError(t, conf.Marshal(cfg))
 
 	m := conf.ToStringMap()
 	require.Equal(t, 42, m["impl"], "implementing field should be encoded as scalar")

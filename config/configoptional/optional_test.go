@@ -14,7 +14,6 @@ import (
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 type Config[T any] struct {
@@ -395,7 +394,7 @@ func TestUnmarshalOptional(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := test.defaultCfg
 			conf := confmap.NewFromStringMap(test.config)
-			require.NoError(t, conf.Unmarshal(&cfg, xconfmap.WithScalarUnmarshaler()))
+			require.NoError(t, conf.Unmarshal(&cfg))
 			require.Equal(t, test.expectedSub, cfg.Sub1.HasValue())
 			if test.expectedSub {
 				require.Equal(t, test.expectedFoo, cfg.Sub1.Get().Foo)
@@ -424,7 +423,7 @@ func TestUnmarshalErrorEnabledField(t *testing.T) {
 	})
 	// Use zero value to avoid panic on constructor.
 	var none Optional[WithEnabled]
-	require.Error(t, cm.Unmarshal(&none, xconfmap.WithScalarUnmarshaler()))
+	require.Error(t, cm.Unmarshal(&none))
 }
 
 func TestUnmarshalConfigPointer(t *testing.T) {
@@ -435,7 +434,7 @@ func TestUnmarshalConfigPointer(t *testing.T) {
 	})
 
 	var cfg Config[*Sub]
-	err := cm.Unmarshal(&cfg, xconfmap.WithScalarUnmarshaler())
+	err := cm.Unmarshal(&cfg)
 	require.NoError(t, err)
 	assert.True(t, cfg.Sub1.HasValue())
 	assert.Equal(t, "bar", (*cfg.Sub1.Get()).Foo)
@@ -452,7 +451,7 @@ func TestUnmarshalErr(t *testing.T) {
 
 	assert.False(t, cfg.Sub1.HasValue())
 
-	err := cm.Unmarshal(&cfg, xconfmap.WithScalarUnmarshaler())
+	err := cm.Unmarshal(&cfg)
 	require.Error(t, err)
 	require.ErrorContains(t, err, "has invalid keys: field")
 	assert.False(t, cfg.Sub1.HasValue())
@@ -485,7 +484,7 @@ func TestSquashedOptional(t *testing.T) {
 		Default(myIntDefault),
 	}
 
-	err := cm.Unmarshal(&cfg, xconfmap.WithScalarUnmarshaler())
+	err := cm.Unmarshal(&cfg)
 	require.NoError(t, err)
 
 	assert.True(t, cfg.HasValue())
@@ -503,7 +502,7 @@ func TestListOptional(t *testing.T) {
 		List: Default(MyListConfig{Val: []string{"default"}}),
 	}
 
-	err := cm.Unmarshal(&cfg, xconfmap.WithScalarUnmarshaler())
+	err := cm.Unmarshal(&cfg)
 	require.NoError(t, err)
 
 	require.True(t, cfg.List.HasValue())
@@ -533,7 +532,7 @@ func TestComparePointerUnmarshal(t *testing.T) {
 		t.Run(test.yaml, func(t *testing.T) {
 			var optCfg Config[Sub]
 			conf := confFromYAML(t, test.yaml)
-			optErr := conf.Unmarshal(&optCfg, xconfmap.WithScalarUnmarshaler())
+			optErr := conf.Unmarshal(&optCfg)
 			require.NoError(t, optErr)
 
 			var ptrCfg struct {
@@ -584,7 +583,7 @@ func TestOptionalMarshal(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			conf := confmap.New()
-			require.NoError(t, conf.Marshal(test.value, xconfmap.WithScalarMarshaler()))
+			require.NoError(t, conf.Marshal(test.value))
 			assert.Equal(t, test.expected, conf.ToStringMap())
 		})
 	}
@@ -614,11 +613,11 @@ func TestComparePointerMarshal(t *testing.T) {
 		t.Run(fmt.Sprintf("%v vs %v", test.pointer, test.optional), func(t *testing.T) {
 			wrapPointer := Wrap[*Sub]{Sub1: test.pointer}
 			confPointer := confmap.NewFromStringMap(nil)
-			require.NoError(t, confPointer.Marshal(wrapPointer, xconfmap.WithScalarMarshaler()))
+			require.NoError(t, confPointer.Marshal(wrapPointer))
 
 			wrapOptional := Wrap[Optional[Sub]]{Sub1: test.optional}
 			confOptional := confmap.NewFromStringMap(nil)
-			require.NoError(t, confOptional.Marshal(wrapOptional, xconfmap.WithScalarMarshaler()))
+			require.NoError(t, confOptional.Marshal(wrapOptional))
 
 			assert.Equal(t, confPointer.ToStringMap(), confOptional.ToStringMap())
 		})
@@ -629,11 +628,11 @@ func TestComparePointerMarshal(t *testing.T) {
 		t.Run(fmt.Sprintf("%v vs %v (omitempty)", test.pointer, test.optional), func(t *testing.T) {
 			wrapPointer := WrapOmitEmpty[*Sub]{Sub1: test.pointer}
 			confPointer := confmap.NewFromStringMap(nil)
-			require.NoError(t, confPointer.Marshal(wrapPointer, xconfmap.WithScalarMarshaler()))
+			require.NoError(t, confPointer.Marshal(wrapPointer))
 
 			wrapOptional := WrapOmitEmpty[Optional[Sub]]{Sub1: test.optional}
 			confOptional := confmap.NewFromStringMap(nil)
-			require.NoError(t, confOptional.Marshal(wrapOptional, xconfmap.WithScalarMarshaler()))
+			require.NoError(t, confOptional.Marshal(wrapOptional))
 
 			assert.Equal(t, confPointer.ToStringMap(), confOptional.ToStringMap())
 		})
@@ -780,7 +779,7 @@ func TestUnmarshalScalar(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				cfg := tc.initial
 				conf := confmap.NewFromStringMap(tc.config)
-				require.NoError(t, conf.Unmarshal(&cfg, xconfmap.WithScalarUnmarshaler()))
+				require.NoError(t, conf.Unmarshal(&cfg))
 				require.Equal(t, tc.expectHasVal, cfg.Val.HasValue())
 				if tc.expectHasVal {
 					require.Equal(t, tc.expectVal, *cfg.Val.Get())
@@ -865,7 +864,7 @@ func TestUnmarshalScalar(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				cfg := tc.initial
 				conf := confmap.NewFromStringMap(tc.config)
-				require.NoError(t, conf.Unmarshal(&cfg, xconfmap.WithScalarUnmarshaler()))
+				require.NoError(t, conf.Unmarshal(&cfg))
 				require.Equal(t, tc.expectHasVal, cfg.Val.HasValue())
 				if tc.expectHasVal {
 					require.Equal(t, tc.expectVal, *cfg.Val.Get())
@@ -903,7 +902,7 @@ func TestUnmarshalScalar(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				cfg := tc.initial
 				conf := confmap.NewFromStringMap(tc.config)
-				require.NoError(t, conf.Unmarshal(&cfg, xconfmap.WithScalarUnmarshaler()))
+				require.NoError(t, conf.Unmarshal(&cfg))
 				require.Equal(t, tc.expectVal, cfg.Val)
 			})
 		}
@@ -958,7 +957,7 @@ func TestUnmarshalScalar(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				cfg := tc.initial
 				conf := confmap.NewFromStringMap(tc.config)
-				require.NoError(t, conf.Unmarshal(&cfg, xconfmap.WithScalarUnmarshaler()))
+				require.NoError(t, conf.Unmarshal(&cfg))
 				require.Equal(t, tc.expectHasVal, cfg.Val.HasValue())
 				if tc.expectHasVal {
 					require.Equal(t, tc.expectVal, *cfg.Val.Get())
@@ -1007,7 +1006,7 @@ func TestUnmarshalScalar(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				cfg := tc.initial
 				conf := confmap.NewFromStringMap(tc.config)
-				require.NoError(t, conf.Unmarshal(&cfg, xconfmap.WithScalarUnmarshaler()))
+				require.NoError(t, conf.Unmarshal(&cfg))
 				require.Equal(t, tc.expectHasVal, cfg.Val.HasValue())
 				if tc.expectHasVal {
 					require.Equal(t, tc.expectVal, *cfg.Val.Get())
@@ -1039,10 +1038,10 @@ func TestScalarMarshalingRoundTrip(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			conf := confmap.New()
-			require.NoError(t, conf.Marshal(strWrapper{Val: tc.initial}, xconfmap.WithScalarMarshaler()))
+			require.NoError(t, conf.Marshal(strWrapper{Val: tc.initial}))
 
 			var result strWrapper
-			require.NoError(t, conf.Unmarshal(&result, xconfmap.WithScalarUnmarshaler()))
+			require.NoError(t, conf.Unmarshal(&result))
 
 			require.Equal(t, tc.expectAfterHasVal, result.Val.HasValue())
 			if tc.expectAfterHasVal {
@@ -1162,7 +1161,7 @@ func TestUnmarshalFromYAML(t *testing.T) {
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
 				cfg := tc.initial
-				require.NoError(t, sub(t, tc.key).Unmarshal(&cfg, xconfmap.WithScalarUnmarshaler()))
+				require.NoError(t, sub(t, tc.key).Unmarshal(&cfg))
 				require.Equal(t, tc.expectHasVal, cfg.Sub1.HasValue())
 				if tc.expectHasVal {
 					require.Equal(t, tc.expectFoo, cfg.Sub1.Get().Foo)
@@ -1243,7 +1242,7 @@ func TestUnmarshalFromYAML(t *testing.T) {
 			for _, tc := range tests {
 				t.Run(tc.name, func(t *testing.T) {
 					cfg := tc.initial
-					require.NoError(t, sub(t, tc.key).Unmarshal(&cfg, xconfmap.WithScalarUnmarshaler()))
+					require.NoError(t, sub(t, tc.key).Unmarshal(&cfg))
 					require.Equal(t, tc.expectHasVal, cfg.Val.HasValue())
 					if tc.expectHasVal {
 						require.Equal(t, tc.expectVal, *cfg.Val.Get())
@@ -1299,7 +1298,7 @@ func TestUnmarshalFromYAML(t *testing.T) {
 			for _, tc := range tests {
 				t.Run(tc.name, func(t *testing.T) {
 					cfg := tc.initial
-					require.NoError(t, sub(t, tc.key).Unmarshal(&cfg, xconfmap.WithScalarUnmarshaler()))
+					require.NoError(t, sub(t, tc.key).Unmarshal(&cfg))
 					require.Equal(t, tc.expectHasVal, cfg.Val.HasValue())
 					if tc.expectHasVal {
 						require.Equal(t, tc.expectVal, *cfg.Val.Get())
@@ -1355,7 +1354,7 @@ func TestUnmarshalFromYAML(t *testing.T) {
 			for _, tc := range tests {
 				t.Run(tc.name, func(t *testing.T) {
 					cfg := tc.initial
-					require.NoError(t, sub(t, tc.key).Unmarshal(&cfg, xconfmap.WithScalarUnmarshaler()))
+					require.NoError(t, sub(t, tc.key).Unmarshal(&cfg))
 					require.Equal(t, tc.expectHasVal, cfg.Val.HasValue())
 					if tc.expectHasVal {
 						require.Equal(t, tc.expectVal, *cfg.Val.Get())
