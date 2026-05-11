@@ -82,6 +82,13 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			return MapCustomDefaults(schema, defaultValue, rootPackage, componentPackage)
 		},
 		"hasDefaultValue": hasDefaultValue,
+		"isExternalRef": func(ref string) bool {
+			if ref == "" {
+				return false
+			}
+			tr, err := ResolveGoTypeRef(ref, rootPackage, componentPackage)
+			return err == nil && tr.ImportPath != ""
+		},
 	}
 }
 
@@ -227,7 +234,7 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 			imports[ref.ImportPath] = true
 		}
 		refDesc := NewRef(md.ResolvedFrom)
-		if !refDesc.isInternal() {
+		if !refDesc.IsInternal() {
 			if err := collectCustomDefaultImports(md, md.Default, imports, rootPackage, componentPackage); err != nil {
 				return err
 			}
@@ -335,7 +342,7 @@ func collectDefs(md *ConfigMetadata, defs map[string]*ConfigMetadata) {
 	}
 	if md.ResolvedFrom != "" {
 		refDesc := NewRef(md.ResolvedFrom)
-		if !refDesc.isInternal() {
+		if !refDesc.IsInternal() {
 			return
 		}
 		defs[md.ResolvedFrom] = md
@@ -362,7 +369,7 @@ func collectDefsForSchema(propName string, md *ConfigMetadata, defs map[string]*
 
 	if md.ResolvedFrom != "" {
 		refDesc := NewRef(md.ResolvedFrom)
-		if refDesc.isInternal() {
+		if refDesc.IsInternal() {
 			defs[md.ResolvedFrom] = md
 			collectDefs(md, defs)
 		}
@@ -593,7 +600,7 @@ func CamelVar(ref string) string {
 		panic("attempted to use CamelVar with an empty ref")
 	}
 	refDesc := NewRef(ref)
-	name, _ := helpers.FormatIdentifier(refDesc.defName, false)
+	name, _ := helpers.FormatIdentifier(refDesc.DefName(), false)
 	return name
 }
 

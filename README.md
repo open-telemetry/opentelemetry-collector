@@ -190,7 +190,6 @@ the role of the [release manager](./docs/release.md#release-manager).
 
 - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
 - [Arthur Silva Sens](https://github.com/ArthurSens), Grafana Labs
-- [Chao Weng](https://github.com/sincejune), AppDynamics
 - [Vihas Makwana](https://github.com/VihasMakwana), Elastic
 - Actively seeking contributors to triage issues
 
@@ -201,6 +200,7 @@ For more information about the triager role, see the [community repository](http
 - [Alolita Sharma](https://github.com/alolita), Triager
 - [Andrew Hsu](https://github.com/andrewhsu), Triager
 - [Anthony Mirabella](https://github.com/Aneurysm9), Approver
+- [Chao Weng](https://github.com/sincejune), Triager
 - [Daniel Jaglowski](https://github.com/djaglowski), Approver
 - [James Bebbington](https://github.com/james-bebbington), Approver
 - [Jay Camp](https://github.com/jrcamp), Approver
