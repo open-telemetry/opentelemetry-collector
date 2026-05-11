@@ -7,8 +7,8 @@ require (
 	go.opentelemetry.io/collector/client v1.58.0
 	go.opentelemetry.io/collector/featuregate v1.58.0
 	go.opentelemetry.io/collector/pdata v1.58.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.151.0
-	go.opentelemetry.io/collector/pdata/testdata v0.151.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.152.0
+	go.opentelemetry.io/collector/pdata/testdata v0.152.0
 	go.opentelemetry.io/otel/trace v1.43.0
 	go.uber.org/goleak v1.3.0
 )
