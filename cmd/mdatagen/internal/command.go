@@ -27,7 +27,6 @@ import (
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
-	"go.opentelemetry.io/collector/internal/schemagen"
 )
 
 const (
@@ -560,17 +559,17 @@ func injectInternalMetadataDefs(md Metadata, mdDir string, src *cfggen.ConfigMet
 }
 
 func mergeInternalMetadataDefs(raw []byte, src *cfggen.ConfigMetadata) error {
-	var wrapper schemagen.Metadata
-	if err := yaml.Unmarshal(raw, &wrapper); err != nil {
+	var config cfggen.ConfigMetadata
+	if err := yaml.Unmarshal(raw, &config); err != nil {
 		return fmt.Errorf("failed to parse internal metadata defs: %w", err)
 	}
-	if wrapper.Config == nil || len(wrapper.Config.Defs) == 0 {
+	if len(config.Defs) == 0 {
 		return nil
 	}
 	if src.Defs == nil {
 		src.Defs = make(map[string]*cfggen.ConfigMetadata)
 	}
-	maps.Copy(src.Defs, wrapper.Config.Defs)
+	maps.Copy(src.Defs, config.Defs)
 	return nil
 }
 
