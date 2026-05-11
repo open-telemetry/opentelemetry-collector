@@ -150,8 +150,8 @@ func (o *Optional[T]) GetOrInsertDefault() *T {
 }
 
 var (
-	_ confmap.Unmarshaler        = (*Optional[any])(nil)
-	_ xconfmap.ScalarUnmarshaler = (*Optional[any])(nil)
+	_ confmap.Unmarshaler       = (*Optional[any])(nil)
+	_ confmap.ScalarUnmarshaler = (*Optional[any])(nil)
 )
 
 // Unmarshal the configuration into the Optional value.
@@ -211,7 +211,7 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 // A `nil` value will set the Optional to None, disabling it as setting
 // `enabled: false` for a struct-type Optional or `null` for a pointer field
 // would.
-func (o *Optional[T]) UnmarshalScalar(scalarValue xconfmap.ScalarValue) error {
+func (o *Optional[T]) UnmarshalScalar(scalarValue confmap.ScalarValue) error {
 	if scalarValue.GetRaw() == nil {
 		if deref(reflect.TypeOf(o.value)).Kind() == reflect.Struct {
 			// Defer to Unmarshal behavior
@@ -234,8 +234,8 @@ func (o *Optional[T]) UnmarshalScalar(scalarValue xconfmap.ScalarValue) error {
 }
 
 var (
-	_ confmap.Marshaler        = (*Optional[any])(nil)
-	_ xconfmap.ScalarMarshaler = (*Optional[any])(nil)
+	_ confmap.Marshaler       = (*Optional[any])(nil)
+	_ confmap.ScalarMarshaler = (*Optional[any])(nil)
 )
 
 // Marshal the Optional value into the configuration.
@@ -257,7 +257,7 @@ func (o Optional[T]) Marshal(conf *confmap.Conf) error {
 	return nil
 }
 
-func (o Optional[T]) MarshalScalar(scalarValue xconfmap.ScalarValue) error {
+func (o Optional[T]) MarshalScalar(scalarValue confmap.ScalarValue) error {
 	if deref(reflect.TypeOf(o.value)).Kind() == reflect.Struct {
 		// Defer to Marshal behavior
 		return nil
