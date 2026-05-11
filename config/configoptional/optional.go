@@ -261,7 +261,7 @@ func (o Optional[T]) Marshal(conf *confmap.Conf) error {
 
 func (o Optional[T]) MarshalScalar(scalarValue xconfmap.ScalarValue) error {
 	if deref(reflect.TypeOf(o.value)).Kind() == reflect.Struct {
-		// Defer to Unmarshal behavior
+		// Defer to Marshal behavior
 		return nil
 	}
 
