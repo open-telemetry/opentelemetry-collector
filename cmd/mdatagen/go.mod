@@ -21,7 +21,7 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.151.0
 	go.opentelemetry.io/collector/featuregate v1.57.0
 	go.opentelemetry.io/collector/filter v0.151.0
-	go.opentelemetry.io/collector/internal/schemagen v0.0.0
+	go.opentelemetry.io/collector/internal/schemagen v0.0.0-20260508160712-91b32efbbda0
 	go.opentelemetry.io/collector/pdata v1.57.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.151.0
 	go.opentelemetry.io/collector/pdata/xpdata v0.151.0
