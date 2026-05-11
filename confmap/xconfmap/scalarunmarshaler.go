@@ -57,18 +57,22 @@ func scalarunmarshalerHookFunc(opts *internal.UnmarshalOptions) mapstructure.Dec
 			return from.Interface(), nil
 		}
 
-		if to.Addr().IsNil() {
-			unmarshaler = reflect.New(to.Type()).Interface().(ScalarUnmarshaler)
-		}
+		val := from.Interface()
 
-		// Non-nil maps shouldn't be handled by this hook as they indicate
-		// struct-typed input.
-		if from.Kind() == reflect.Map && !from.IsNil() {
-			return from.Interface(), nil
+		if from.Kind() == reflect.Map {
+			// Non-nil maps shouldn't be handled by this hook as they indicate
+			// struct-typed input.
+			if !from.IsNil() {
+				return from.Interface(), nil
+			}
+
+			// Simplify nil value handling by making the value an any-typed nil
+			// value instead of a nil map.
+			val = nil
 		}
 
 		sv := scalarValue{
-			val:              from.Interface(),
+			val:              val,
 			unmarshalOptions: opts,
 		}
 

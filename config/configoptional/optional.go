@@ -212,18 +212,16 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 // `enabled: false` for a struct-type Optional or `null` for a pointer field
 // would.
 func (o *Optional[T]) UnmarshalScalar(scalarValue xconfmap.ScalarValue) error {
-	val := scalarValue.GetRaw()
-	if reflect.TypeOf(val).Kind() == reflect.Map {
-		if reflect.ValueOf(val).IsNil() {
-			if deref(reflect.TypeOf(o.value)).Kind() == reflect.Struct {
-				// Defer to Unmarshal behavior
-				return o.Unmarshal(confmap.NewFromStringMap(nil))
-			}
-			// For scalar types, a nil map represents `null` and clears to None.
-			var zero T
-			o.value = zero
-			o.flavor = noneFlavor
+	if scalarValue.GetRaw() == nil {
+		if deref(reflect.TypeOf(o.value)).Kind() == reflect.Struct {
+			// Defer to Unmarshal behavior
+			return o.Unmarshal(confmap.NewFromStringMap(nil))
 		}
+		// For scalar types, a nil map represents `null` and clears to None.
+		var zero T
+		o.value = zero
+		o.flavor = noneFlavor
+
 		return nil
 	}
 
