@@ -42,9 +42,13 @@ import (
         // {{ $defName | publicVar }} {{ $def.Description }}
     {{- end }}
     {{- $typeName := $defName | publicVar }}
-    type {{ $typeName }} struct {
+    {{- if isExternalRef $def.ResolvedFrom }}
+        type {{ $typeName }} = {{ $def.ResolvedFrom | publicType }}
+    {{- else }}
+        type {{ $typeName }} struct {
         {{- template "struct" $def }}
-    }
+        }
+    {{- end }}
 
     {{ $defValidators := extractValidators $def }}
     {{- if $defValidators }}
@@ -59,8 +63,8 @@ import (
         }
     {{- end }}
 
-    // NewDefault{{ $typeName }} returns a new {{ $typeName }} with default values consistent with the annotations in the schema.
     {{- if hasDefaultValue $def }}
+    // NewDefault{{ $typeName }} returns a new {{ $typeName }} with default values consistent with the annotations in the schema.
     func NewDefault{{ $typeName }}() {{ $typeName }} {
         {{- template "structLiteralVars" $def }}
         return {{ $typeName }}{

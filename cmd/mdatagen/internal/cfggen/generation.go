@@ -82,6 +82,13 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			return MapCustomDefaults(schema, defaultValue, rootPackage, componentPackage)
 		},
 		"hasDefaultValue": hasDefaultValue,
+		"isExternalRef": func(ref string) bool {
+			if ref == "" {
+				return false
+			}
+			tr, err := ResolveGoTypeRef(ref, rootPackage, componentPackage)
+			return err == nil && tr.ImportPath != ""
+		},
 	}
 }
 
