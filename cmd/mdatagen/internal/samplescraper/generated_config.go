@@ -23,6 +23,8 @@ type TargetsItem struct {
 	Interval   configoptional.Optional[time.Duration] `mapstructure:"interval"`
 	// Static key-value labels attached to all metrics from this target.
 	Labels map[string]string `mapstructure:"labels"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Validate validates the TargetsItem fields according to schema annotations.
@@ -58,6 +60,8 @@ type Config struct {
 	JobName string `mapstructure:"job_name"`
 	// List of targets to scrape metrics from.
 	Targets *[]TargetsItem `mapstructure:"targets"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Validate validates the Config fields.
