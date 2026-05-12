@@ -168,7 +168,9 @@ var (
 //   - if enabled is false: the Optional becomes None regardless of other configuration values.
 //
 // T must be derefenceable to a type with struct kind and not have an 'enabled' field.
-// Scalar values are not supported.
+// Scalar values are not supported, and will be handled by [UnmarshalScalar] instead.
+// We do not need to check this since the hook for [ScalarUnmarshaler] will be called
+// before the hook for [Unmarshaler].
 func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 	if err := assertNoEnabledField[T](); err != nil {
 		return err
@@ -243,7 +245,9 @@ var (
 // If the Optional is Some, it marshals the value into the configuration.
 //
 // T must be derefenceable to a type with struct kind.
-// Scalar values are not supported.
+// Scalar values are not supported, and will be handled by [MarshalScalar] instead.
+// We do not need to check this since the hook for [ScalarMarshaler] will be called
+// before the hook for [Marshaler].
 func (o Optional[T]) Marshal(conf *confmap.Conf) error {
 	if o.flavor == noneFlavor || o.flavor == defaultFlavor {
 		// Optional is None or Default, do not marshal anything.
