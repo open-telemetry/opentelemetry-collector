@@ -52,23 +52,6 @@ func WithForceUnmarshaler() UnmarshalOption {
 // Decodes time.Duration from strings. Allows custom unmarshaling for structs implementing
 // encoding.TextUnmarshaler. Allows custom unmarshaling for structs implementing confmap.Unmarshaler.
 func Decode(input, result any, settings UnmarshalOptions, skipTopLevelUnmarshaler bool) error {
-	hooks := []mapstructure.DecodeHookFunc{
-		useExpandValue(),
-		expandNilStructPointersHookFunc(),
-		mapstructure.StringToSliceHookFunc(","),
-		mapKeyStringToMapKeyTextUnmarshalerHookFunc(),
-		mapstructure.StringToTimeDurationHookFunc(),
-		mapstructure.TextUnmarshallerHookFunc(),
-		// This must come before unmarshalerHookFunc; the two may both want to trigger
-		// their corresponding interface for structs implementing both, and the scalar
-		// interfaces are the ones that will sometimes defer to the non-scalar interfaces.
-		scalarUnmarshalerHookFunc(),
-		unmarshalerHookFunc(result, skipTopLevelUnmarshaler && !settings.ForceUnmarshaler),
-		// after the main unmarshaler hook is called,
-		// we unmarshal the embedded structs if present to merge with the result:
-		unmarshalerEmbeddedStructsHookFunc(settings),
-		zeroSliceAndMapHookFunc(),
-	}
 	dc := &mapstructure.DecoderConfig{
 		ErrorUnused:      !settings.IgnoreUnused,
 		Result:           result,
@@ -76,9 +59,24 @@ func Decode(input, result any, settings UnmarshalOptions, skipTopLevelUnmarshale
 		WeaklyTypedInput: false,
 		MatchName:        caseSensitiveMatchName,
 		DecodeNil:        true,
-		DecodeHook:       composehook.ComposeDecodeHookFunc(hooks...),
+		DecodeHook: composehook.ComposeDecodeHookFunc(
+			useExpandValue(),
+			expandNilStructPointersHookFunc(),
+			mapstructure.StringToSliceHookFunc(","),
+			mapKeyStringToMapKeyTextUnmarshalerHookFunc(),
+			mapstructure.StringToTimeDurationHookFunc(),
+			mapstructure.TextUnmarshallerHookFunc(),
+			// This must come before unmarshalerHookFunc; the two may both want to trigger
+			// their corresponding interface for structs implementing both, and the scalar
+			// interfaces are the ones that will sometimes defer to the non-scalar interfaces.
+			scalarUnmarshalerHookFunc(),
+			unmarshalerHookFunc(result, skipTopLevelUnmarshaler && !settings.ForceUnmarshaler),
+			// after the main unmarshaler hook is called,
+			// we unmarshal the embedded structs if present to merge with the result:
+			unmarshalerEmbeddedStructsHookFunc(settings),
+			zeroSliceAndMapHookFunc(),
+		),
 	}
-
 	decoder, err := mapstructure.NewDecoder(dc)
 	if err != nil {
 		return err
