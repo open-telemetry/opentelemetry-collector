@@ -80,3 +80,11 @@ type ScalarUnmarshaler = internal.ScalarUnmarshaler
 // Experimental: This interface is experimental, and behavior may change without
 // backward compatibility until this notice is removed.
 type ScalarMarshaler = internal.ScalarMarshaler
+
+// ErrValueNotApplicable is returned when a value provided to a
+// ScalarUnmarshaler or ScalarMarshaler is not handled by the interface's method
+// call and should instead be handled by another mapstructure hook.
+//
+// Typically this should be used when a non-scalar value is received and should
+// instead be handled by the regular Unmarshaler or Marshaler interfaces.
+var ErrValueNotApplicable = internal.ErrValueNotApplicable

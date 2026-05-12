@@ -217,7 +217,7 @@ func (o *Optional[T]) UnmarshalScalar(scalarValue confmap.ScalarValue) error {
 	if scalarValue.GetRaw() == nil {
 		if deref(reflect.TypeOf(o.value)).Kind() == reflect.Struct {
 			// Defer to Unmarshal behavior
-			return o.Unmarshal(confmap.NewFromStringMap(nil))
+			return confmap.ErrValueNotApplicable
 		}
 		// For scalar types, a nil map represents `null` and clears to None.
 		var zero T
@@ -264,7 +264,7 @@ func (o Optional[T]) Marshal(conf *confmap.Conf) error {
 func (o Optional[T]) MarshalScalar(scalarValue confmap.ScalarValue) error {
 	if deref(reflect.TypeOf(o.value)).Kind() == reflect.Struct {
 		// Defer to Marshal behavior
-		return nil
+		return confmap.ErrValueNotApplicable
 	}
 
 	if o.flavor == noneFlavor || o.flavor == defaultFlavor {

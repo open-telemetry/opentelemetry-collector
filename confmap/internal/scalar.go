@@ -4,10 +4,19 @@
 package internal // import "go.opentelemetry.io/collector/confmap/internal"
 
 import (
+	"errors"
 	"reflect"
 
 	"github.com/go-viper/mapstructure/v2"
 )
+
+// ErrValueNotApplicable is returned when a value provided to a
+// ScalarUnmarshaler or ScalarMarshaler is not handled by the interface's method
+// call and should instead be handled by another mapstructure hook.
+//
+// Typically this should be used when a non-scalar value is received and should
+// instead be handled by the regular Unmarshaler or Marshaler interfaces.
+var ErrValueNotApplicable = errors.New("the provided value is not applicable for handling by this type")
 
 // ScalarValue provides access to a scalar configuration value and allows
 // calling back into the confmap decoding/encoding machinery.
@@ -68,7 +77,10 @@ func (s *scalarValue) Unmarshal(result any, opts ...UnmarshalOption) error {
 
 func (s *scalarValue) Marshal(value any, opts ...MarshalOption) error {
 	if value == nil {
-		return nil
+		// If we receive a nil value, we encode it as nil map, which is how
+		// mapstructure represents null values. We still pass it through the
+		// confmap machinery to give it the same handling as other values.
+		value = map[string]any(nil)
 	}
 
 	settings := ApplyMarshalOptions(nil, opts)
@@ -115,6 +127,10 @@ func scalarUnmarshalerHookFunc() mapstructure.DecodeHookFuncValue {
 		sv := &scalarValue{val: val}
 
 		if err := unmarshaler.UnmarshalScalar(sv); err != nil {
+			if errors.Is(err, ErrValueNotApplicable) {
+				return from.Interface(), nil
+			}
+
 			return nil, err
 		}
 
@@ -131,13 +147,13 @@ func scalarMarshalerHookFunc() mapstructure.DecodeHookFuncValue {
 			return from.Interface(), nil
 		}
 
-		res := &scalarValue{val: from.Interface()}
+		res := &scalarValue{}
 		if err := marshaler.MarshalScalar(res); err != nil {
-			return nil, err
-		}
+			if errors.Is(err, ErrValueNotApplicable) {
+				return from.Interface(), nil
+			}
 
-		if res.GetRaw() == nil {
-			return nil, nil
+			return nil, err
 		}
 
 		return res.GetRaw(), nil
