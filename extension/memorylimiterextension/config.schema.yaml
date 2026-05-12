@@ -1,0 +1,5 @@
+description: |
+  Config for the memory_limiter extension. Aliases the shared memorylimiter.Config. `check_interval` must be greater than zero; one of `limit_mib` or `limit_percentage` must be greater than zero; spike limits must be smaller than the corresponding hard limit; percentage values must not exceed 100.
+type: object
+allOf:
+  - $ref: /internal/memorylimiter.config

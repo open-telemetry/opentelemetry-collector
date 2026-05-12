@@ -1,0 +1,26 @@
+description: |
+  Config defines configuration for batch processor. `timeout` must be non-negative; when `send_batch_max_size` is non-zero it must be greater than or equal to `send_batch_size`; entries in `metadata_keys` are deduplicated case-insensitively.
+type: object
+properties:
+  metadata_cardinality_limit:
+    description: MetadataCardinalityLimit indicates the maximum number of batcher instances that will be created through a distinct combination of MetadataKeys.
+    type: integer
+    x-customType: uint32
+  metadata_keys:
+    description: MetadataKeys is a list of client.Metadata keys that will be used to form distinct batchers.  If this setting is empty, a single batcher instance will be used.  When this setting is not empty, one batcher will be used per distinct combination of values for the listed metadata keys. Empty value and unset metadata are treated as distinct cases. Entries are case-insensitive.  Duplicated entries will trigger a validation error.
+    type: array
+    items:
+      type: string
+  send_batch_max_size:
+    description: SendBatchMaxSize is the maximum size of a batch. It must be larger than SendBatchSize. Larger batches are split into smaller units. Default value is 0, that means no maximum size.
+    type: integer
+    x-customType: uint32
+  send_batch_size:
+    description: SendBatchSize is the size of a batch which after hit, will trigger it to be sent. When this is set to zero, the batch size is ignored and data will be sent immediately subject to only send_batch_max_size.
+    type: integer
+    x-customType: uint32
+  timeout:
+    description: Timeout sets the time after which a batch will be sent regardless of size. When this is set to zero, batched data will be sent immediately.
+    type: string
+    x-customType: time.Duration
+    format: duration

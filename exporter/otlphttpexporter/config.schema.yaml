@@ -1,0 +1,35 @@
+$defs:
+  encoding_type:
+    description: 'EncodingType defines the type for content encoding. Accepts "proto" or "json".'
+    type: string
+    enum:
+      - proto
+      - json
+description: |
+  Config defines configuration for OTLP/HTTP exporter. At least one of `endpoint` (from the squashed HTTP ClientConfig) or the per-signal `*_endpoint` fields must be specified.
+type: object
+properties:
+  encoding:
+    description: 'The encoding to export telemetry (default: "proto")'
+    $ref: encoding_type
+  logs_endpoint:
+    description: The URL to send logs to. If omitted the Endpoint + "/v1/logs" will be used.
+    type: string
+  metrics_endpoint:
+    description: The URL to send metrics to. If omitted the Endpoint + "/v1/metrics" will be used.
+    type: string
+  profiles_endpoint:
+    description: The URL to send profiles to. If omitted the Endpoint + "/v1development/profiles" will be used.
+    type: string
+  retry_on_failure:
+    description: Retry/back-off settings applied to failed export requests.
+    $ref: /config/configretry.back_off_config
+  sending_queue:
+    description: Configuration for the optional in-memory sending queue. When unset the exporter sends synchronously.
+    x-optional: true
+    $ref: /exporter/exporterhelper.queue_batch_config
+  traces_endpoint:
+    description: The URL to send traces to. If omitted the Endpoint + "/v1/traces" will be used.
+    type: string
+allOf:
+  - $ref: /config/confighttp.client_config
