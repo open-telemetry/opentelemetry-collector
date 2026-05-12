@@ -28,12 +28,12 @@ var _ Unmarshaler = (*JSONUnmarshaler)(nil)
 
 // JSONUnmarshaler unmarshals OTLP/JSON formatted-bytes to Logs.
 type JSONUnmarshaler struct {
+	// prevent unkeyed literal initialization
+	_ struct{}
 	// DisallowUnknownFields causes UnmarshalLogs to return an error when the
 	// input contains JSON object fields that are not defined by the OTLP
 	// schema. When false (the default), unknown fields are silently ignored.
 	DisallowUnknownFields bool
-	// prevent unkeyed literal initialization
-	_ struct{}
 }
 
 // UnmarshalLogs from OTLP/JSON format into Logs.
