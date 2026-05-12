@@ -97,6 +97,7 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 func WithCfgFns(fns map[string]any, rootPackage, componentPackage string) map[string]any {
 	cfgFns := NewCfgFns(rootPackage, componentPackage)
 	maps.Copy(fns, cfgFns)
+	maps.Copy(fns, NewCfgDocFns())
 	return fns
 }
 
