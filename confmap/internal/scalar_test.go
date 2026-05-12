@@ -8,10 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"reflect"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -93,17 +91,20 @@ func (wt *wrapperType[T]) UnmarshalScalar(val ScalarValue) error {
 
 type testScalarConf struct {
 	// Handled by confmap, treated as string
-	Tma         textMarshalerAlias                            `mapstructure:"text_marshaler_alias"`
-	Ntma        nonTextMarshalerAlias                         `mapstructure:"non_text_marshaler_alias"`
-	Nonimplint  NonImplWrapperType[int]                       `mapstructure:"non_impl_int"`
-	Nonimplstr  NonImplWrapperType[string]                    `mapstructure:"non_impl_str"`
-	Nonimpltms  NonImplWrapperType[textMarshalerStruct]       `mapstructure:"non_impl_text_marshaler_struct"`
-	Nonimplntms NonImplWrapperType[nonTextMarshalerStruct]    `mapstructure:"non_impl_non_text_marshaler_struct"`
-	Implint     wrapperType[int]                              `mapstructure:"impl_int"`
-	Implstr     wrapperType[string]                           `mapstructure:"impl_str"`
-	Impltms     wrapperType[textMarshalerStruct]              `mapstructure:"impl_text_marshaler_struct"`
-	Implntms    wrapperType[nonTextMarshalerStruct]           `mapstructure:"impl_non_text_marshaler_struct"`
-	Recursive   wrapperType[wrapperType[textMarshalerStruct]] `mapstructure:"recursive"`
+	Tma          textMarshalerAlias                            `mapstructure:"text_marshaler_alias"`
+	Ntma         nonTextMarshalerAlias                         `mapstructure:"non_text_marshaler_alias"`
+	Nonimplint   NonImplWrapperType[int]                       `mapstructure:"non_impl_int"`
+	Nonimplstr   NonImplWrapperType[string]                    `mapstructure:"non_impl_str"`
+	Nonimpltms   NonImplWrapperType[textMarshalerStruct]       `mapstructure:"non_impl_text_marshaler_struct"`
+	Nonimplntms  NonImplWrapperType[nonTextMarshalerStruct]    `mapstructure:"non_impl_non_text_marshaler_struct"`
+	Implint      wrapperType[int]                              `mapstructure:"impl_int"`
+	Implintptr   wrapperType[any]                              `mapstructure:"impl_int_ptr"`
+	ImplintNull  wrapperType[int]                              `mapstructure:"impl_int_null"`
+	ImplintUnset wrapperType[int]                              `mapstructure:"impl_int_unset"`
+	Implstr      wrapperType[string]                           `mapstructure:"impl_str"`
+	Impltms      wrapperType[textMarshalerStruct]              `mapstructure:"impl_text_marshaler_struct"`
+	Implntms     wrapperType[nonTextMarshalerStruct]           `mapstructure:"impl_non_text_marshaler_struct"`
+	Recursive    wrapperType[wrapperType[textMarshalerStruct]] `mapstructure:"recursive"`
 }
 
 func (cfg *testScalarConf) Unmarshal(conf *Conf) error {
@@ -111,6 +112,34 @@ func (cfg *testScalarConf) Unmarshal(conf *Conf) error {
 		return err
 	}
 
+	return nil
+}
+
+type failingScalarConfig struct{}
+
+func (f failingScalarConfig) MarshalScalar(_ ScalarValue) error {
+	return errors.New("always fails")
+}
+
+func (f *failingScalarConfig) UnmarshalScalar(_ ScalarValue) error {
+	return errors.New("always fails")
+}
+
+type nonApplicableScalarConfig struct{}
+
+func (f nonApplicableScalarConfig) MarshalScalar(_ ScalarValue) error {
+	return ErrValueNotApplicable
+}
+
+func (f *nonApplicableScalarConfig) Marshal(_ *Conf) error {
+	return nil
+}
+
+func (f *nonApplicableScalarConfig) UnmarshalScalar(_ ScalarValue) error {
+	return ErrValueNotApplicable
+}
+
+func (f *nonApplicableScalarConfig) Unmarshal(_ *Conf) error {
 	return nil
 }
 
@@ -129,6 +158,7 @@ func TestMarshalConfig(t *testing.T) {
 		Nonimpltms:  NonImplWrapperType[textMarshalerStruct]{inner: textMarshalerStruct{id: 0, data: []byte{47}}},
 		Nonimplntms: NonImplWrapperType[nonTextMarshalerStruct]{inner: nonTextMarshalerStruct{id: 2, data: []byte{48}}},
 		Implint:     wrapperType[int]{inner: 1},
+		Implintptr:  wrapperType[any]{inner: nil},
 		Implstr:     wrapperType[string]{inner: "test"},
 		Impltms:     wrapperType[textMarshalerStruct]{inner: textMarshalerStruct{id: 0, data: []byte{81}}},
 		Implntms:    wrapperType[nonTextMarshalerStruct]{inner: nonTextMarshalerStruct{id: 2, data: []byte{80}}},
@@ -139,114 +169,51 @@ func TestMarshalConfig(t *testing.T) {
 	require.Equal(t, cm.ToStringMap(), conf.ToStringMap())
 }
 
-// failingScalarMarshaler always returns an error from MarshalScalar.
-type failingScalarMarshaler struct{}
-
-func (f failingScalarMarshaler) MarshalScalar(_ ScalarValue) error {
-	return errors.New("marshal always fails")
-}
-
-// TestMarshalScalarErrorPropagation verifies that an error returned by
-// MarshalScalar surfaces as an error from Marshal.
 func TestMarshalScalarErrorPropagation(t *testing.T) {
 	type cfgWithFailing struct {
-		Val failingScalarMarshaler `mapstructure:"val"`
+		Val failingScalarConfig `mapstructure:"val"`
 	}
 
-	cfg := cfgWithFailing{Val: failingScalarMarshaler{}}
+	cfg := cfgWithFailing{Val: failingScalarConfig{}}
 	conf := New()
 	err := conf.Marshal(&cfg)
 	require.Error(t, err)
-	require.ErrorContains(t, err, "marshal always fails")
+	require.ErrorContains(t, err, "always fails")
 }
 
-// TestMarshalNonImplementingTypesUnaffected verifies that fields whose types do
-// not implement ScalarMarshaler are encoded normally by mapstructure (as empty
-// maps for unexported-field structs), while implementing fields produce their
-// scalar representation.
-func TestMarshalNonImplementingTypesUnaffected(t *testing.T) {
-	type mixedCfg struct {
-		Impl    wrapperType[int]        `mapstructure:"impl"`
-		NonImpl NonImplWrapperType[int] `mapstructure:"non_impl"`
-		Plain   int                     `mapstructure:"plain"`
+func TestMarshalNonApplicable(t *testing.T) {
+	type cfgWithNonApplicable struct {
+		Val nonApplicableScalarConfig `mapstructure:"val"`
 	}
 
-	cfg := &mixedCfg{
-		Impl:    wrapperType[int]{inner: 42},
-		NonImpl: NonImplWrapperType[int]{inner: 7},
-		Plain:   99,
-	}
+	cfg := cfgWithNonApplicable{Val: nonApplicableScalarConfig{}}
 	conf := New()
-	require.NoError(t, conf.Marshal(cfg))
-
-	m := conf.ToStringMap()
-	require.Equal(t, 42, m["impl"], "implementing field should be encoded as scalar")
-	require.Equal(t, 99, m["plain"], "plain field should be encoded as scalar")
-	// NonImplWrapperType has no exported fields, so mapstructure encodes it as an empty map.
-	_, ok := m["non_impl"]
-	require.True(t, ok, "non-implementing field should still appear in output")
-}
-
-type nullableWrapperType[T any] struct {
-	inner  T
-	wasNil bool
-}
-
-func (n *nullableWrapperType[T]) UnmarshalScalar(val ScalarValue) error {
-	raw := val.GetRaw()
-	if raw == nil || (reflect.ValueOf(raw).Kind() == reflect.Map && reflect.ValueOf(raw).IsNil()) {
-		n.wasNil = true
-		return nil
-	}
-	var v T
-	if err := val.Unmarshal(&v); err != nil {
-		return fmt.Errorf("nullableWrapperType: %w", err)
-	}
-	n.inner = v
-	return nil
-}
-
-type failingScalarUnmarshaler struct{}
-
-func (f *failingScalarUnmarshaler) UnmarshalScalar(_ ScalarValue) error {
-	return errors.New("always fails")
+	err := conf.Marshal(&cfg)
+	require.NoError(t, err)
 }
 
 func TestUnmarshalConfig(t *testing.T) {
 	wantCfg := &testScalarConf{
-		Tma:       textMarshalerAlias("test"),
-		Ntma:      nonTextMarshalerAlias("test"),
-		Implint:   wrapperType[int]{inner: 1},
-		Implstr:   wrapperType[string]{inner: "test"},
-		Impltms:   wrapperType[textMarshalerStruct]{inner: textMarshalerStruct{id: 0, data: []byte{81}}},
-		Recursive: wrapperType[wrapperType[textMarshalerStruct]]{inner: wrapperType[textMarshalerStruct]{inner: textMarshalerStruct{id: 0, data: []byte{80}}}},
+		Tma:          textMarshalerAlias("test"),
+		Ntma:         nonTextMarshalerAlias("test"),
+		Implint:      wrapperType[int]{inner: 1},
+		ImplintNull:  wrapperType[int]{inner: 0},
+		ImplintUnset: wrapperType[int]{inner: 3},
+		Implstr:      wrapperType[string]{inner: "test"},
+		Impltms:      wrapperType[textMarshalerStruct]{inner: textMarshalerStruct{id: 0, data: []byte{81}}},
+		Recursive:    wrapperType[wrapperType[textMarshalerStruct]]{inner: wrapperType[textMarshalerStruct]{inner: textMarshalerStruct{id: 0, data: []byte{80}}}},
 	}
 
 	cm := NewFromStringMap(newConfFromFile(t, filepath.Join("testdata", "scalar.yaml")))
-	cfg := &testScalarConf{}
+	cfg := &testScalarConf{
+		ImplintNull:  wrapperType[int]{inner: 2},
+		ImplintUnset: wrapperType[int]{inner: 3},
+	}
 	require.NoError(t, cm.Unmarshal(cfg))
 
 	require.Equal(t, wantCfg, cfg)
 }
 
-// TestUnmarshalScalarNullInput verifies that the hook calls UnmarshalScalar(nil)
-// when the source value is a nil map, which is how mapstructure represents a
-// YAML null for a map-typed value.
-func TestUnmarshalScalarNullInput(t *testing.T) {
-	type cfgWithNullable struct {
-		Val nullableWrapperType[int] `mapstructure:"val"`
-	}
-
-	// A nil map value triggers the `from.Kind() == reflect.Map && from.IsNil()` branch.
-	cm := NewFromStringMap(map[string]any{"val": map[string]any(nil)})
-	var cfg cfgWithNullable
-	require.NoError(t, cm.Unmarshal(&cfg))
-	assert.True(t, cfg.Val.wasNil, "expected UnmarshalScalar to be called with nil")
-	assert.Equal(t, 0, cfg.Val.inner, "inner value should remain zero after nil")
-}
-
-// TestUnmarshalScalarDecodeError verifies that errors from internal.Decode are
-// propagated when the source value cannot be decoded into ScalarType().
 func TestUnmarshalScalarDecodeError(t *testing.T) {
 	type cfgWithInt struct {
 		Val wrapperType[int] `mapstructure:"val"`
@@ -259,11 +226,9 @@ func TestUnmarshalScalarDecodeError(t *testing.T) {
 	require.Error(t, err)
 }
 
-// TestUnmarshalScalarErrorPropagation verifies that an error returned by
-// UnmarshalScalar surfaces as an error from Unmarshal.
 func TestUnmarshalScalarErrorPropagation(t *testing.T) {
 	type cfgWithFailing struct {
-		Val failingScalarUnmarshaler `mapstructure:"val"`
+		Val failingScalarConfig `mapstructure:"val"`
 	}
 
 	cm := NewFromStringMap(map[string]any{"val": 42})
@@ -273,23 +238,13 @@ func TestUnmarshalScalarErrorPropagation(t *testing.T) {
 	require.ErrorContains(t, err, "always fails")
 }
 
-// TestNonImplementingTypesUnaffected verifies that fields whose types do not
-// implement ScalarUnmarshaler are decoded normally by mapstructure, even when
-// implementing fields are present in the same struct.
-func TestNonImplementingTypesUnaffected(t *testing.T) {
-	type mixedCfg struct {
-		Impl    wrapperType[int]        `mapstructure:"impl"`
-		NonImpl NonImplWrapperType[int] `mapstructure:"non_impl"`
-		Plain   int                     `mapstructure:"plain"`
+func TestUnmarshalNonApplicable(t *testing.T) {
+	type cfgWithNonApplicable struct {
+		Val nonApplicableScalarConfig `mapstructure:"val"`
 	}
 
-	cm := NewFromStringMap(map[string]any{
-		"impl":  10,
-		"plain": 99,
-	})
-	var cfg mixedCfg
-	require.NoError(t, cm.Unmarshal(&cfg))
-	assert.Equal(t, 10, cfg.Impl.inner, "implementing field should be decoded via UnmarshalScalar")
-	assert.Equal(t, 99, cfg.Plain, "plain field should be decoded normally")
-	assert.Equal(t, 0, cfg.NonImpl.inner, "non-implementing field should remain zero")
+	cm := NewFromStringMap(map[string]any{"val": nil})
+	var cfg cfgWithNonApplicable
+	err := cm.Unmarshal(&cfg)
+	require.NoError(t, err)
 }

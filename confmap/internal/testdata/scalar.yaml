@@ -1,4 +1,5 @@
 impl_int: 1
+impl_int_null: null
 impl_non_text_marshaler_struct: {}
 impl_str: test
 impl_text_marshaler_struct: Q
