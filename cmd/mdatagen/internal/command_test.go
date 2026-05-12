@@ -1317,6 +1317,67 @@ func TestGenerateConfigGoStruct_TestFileNoValidateTestWhenNoValidators(t *testin
 	require.NotContains(t, string(content), "func TestConfigValidate_DefaultValid(")
 }
 
+func TestGenerateConfigGoStruct_DefsOnlyConfigGeneratesLibraryTypes(t *testing.T) {
+	root := t.TempDir()
+	outputDir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(outputDir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	minLength := 1
+	md := Metadata{
+		Type:        "test",
+		PackageName: "testmodule/shortname",
+		Status:      &Status{Class: "pkg"},
+		Config: &cfggen.ConfigMetadata{
+			Defs: map[string]*cfggen.ConfigMetadata{
+				"sample_config": {
+					Type: "object",
+					Properties: map[string]*cfggen.ConfigMetadata{
+						"host_name": {
+							Type:      "string",
+							Default:   "localhost",
+							MinLength: &minLength,
+						},
+						"port": {
+							Type:    "string",
+							Default: "8080",
+						},
+					},
+					Required: []string{"host_name", "port"},
+				},
+			},
+		},
+	}
+
+	require.NoError(t, generateConfigGoStruct(md, outputDir))
+
+	configGo, err := os.ReadFile(filepath.Join(outputDir, "generated_config.go")) // #nosec G304
+	require.NoError(t, err)
+	generatedConfig := string(configGo)
+	require.Contains(t, generatedConfig, `import (
+	"errors"
+)`)
+	require.Contains(t, generatedConfig, "type SampleConfig struct")
+	require.Contains(t, generatedConfig, "func (c *SampleConfig) Validate() error")
+	require.Contains(t, generatedConfig, "func NewDefaultSampleConfig() SampleConfig")
+	require.NotContains(t, generatedConfig, "type Config struct")
+	require.NotContains(t, generatedConfig, "func createDefaultConfig() component.Config")
+	require.NotContains(t, generatedConfig, `"go.opentelemetry.io/collector/component"`)
+
+	configTestGo, err := os.ReadFile(filepath.Join(outputDir, "generated_config_test.go")) // #nosec G304
+	require.NoError(t, err)
+	generatedTest := string(configTestGo)
+	require.Contains(t, generatedTest, `import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)`)
+	require.Contains(t, generatedTest, "func TestSampleConfigValidate_DefaultValid(")
+	require.Contains(t, generatedTest, "func TestConfigValidate_RequiredHostName(")
+	require.Contains(t, generatedTest, "func TestConfigValidate_RequiredPort(")
+	require.NotContains(t, generatedTest, "func TestCreateDefaultConfig(")
+}
+
 func TestGenerateConfigGoStruct_BothFileErrorsAccumulated(t *testing.T) {
 	root := t.TempDir()
 	// outputDir itself does not exist — both generateFileWithFns calls will fail
