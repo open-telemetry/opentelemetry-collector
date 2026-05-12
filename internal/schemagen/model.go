@@ -59,6 +59,10 @@ type ConfigMetadata struct {
 	EmbeddedName string `mapstructure:"-" json:"-" yaml:"-"`
 }
 
+type Metadata struct {
+	Config *ConfigMetadata `mapstructure:"config,omitempty" json:"config,omitempty" yaml:"config,omitempty"`
+}
+
 type GoStructConfig struct {
 	CustomValidator *CustomValidatorConfig `mapstructure:"custom_validator" json:"-" yaml:"custom_validator,omitempty"`
 	Anonymous       bool                   `mapstructure:"anonymous" json:"-" yaml:"anonymous,omitempty"`
