@@ -29,6 +29,8 @@ type JSONUnmarshaler struct {
 	// input contains JSON object fields that are not defined by the OTLP
 	// schema. When false (the default), unknown fields are silently ignored.
 	DisallowUnknownFields bool
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (u *JSONUnmarshaler) UnmarshalValue(buf []byte) (pcommon.Value, error) {
