@@ -2050,6 +2050,51 @@ func Ptr[T any](v T) *T {
 	return &v
 }
 
+func TestExternalDefaultCall(t *testing.T) {
+	rootPkg := "go.opentelemetry.io/collector"
+	compPkg := "go.opentelemetry.io/collector/scraper/scraperhelper"
+
+	tests := []struct {
+		name     string
+		ref      string
+		expected string
+	}{
+		{
+			name:     "fully qualified external ref",
+			ref:      "go.opentelemetry.io/collector/scraper/scraperhelper/internal/controller.controller_config",
+			expected: "controller.NewDefaultControllerConfig()",
+		},
+		{
+			name:     "relative local ref",
+			ref:      "./internal/controller.controller_config",
+			expected: "controller.NewDefaultControllerConfig()",
+		},
+		{
+			name:     "absolute local ref",
+			ref:      "/config/confighttp.client_config",
+			expected: "confighttp.NewDefaultClientConfig()",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := ExternalDefaultCall(tt.ref, rootPkg, compPkg)
+			require.NoError(t, err)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestNewCfgFns_ExternalDefaultCall(t *testing.T) {
+	rootPkg := "go.opentelemetry.io/collector"
+	compPkg := "go.opentelemetry.io/collector/scraper/scraperhelper"
+	fns := NewCfgFns(rootPkg, compPkg)
+	externalDefaultCall := fns["externalDefaultCall"].(func(string) string)
+
+	require.Equal(t, "controller.NewDefaultControllerConfig()", externalDefaultCall("./internal/controller.controller_config"))
+	require.Panics(t, func() { externalDefaultCall("github.com/pkg.") })
+}
+
 func TestFormatDefaultValue_ScalarDefaults(t *testing.T) {
 	tests := []struct {
 		name         string
