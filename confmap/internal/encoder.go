@@ -33,7 +33,10 @@ func EncoderConfig(rawVal any, opts MarshalOptions) *encoder.EncoderConfig {
 	}
 
 	hooks = append(hooks,
-		ScalarmarshalerHookFunc(),
+		// This must come before unmarshalerHookFunc; the two may both want to trigger
+		// their corresponding interface for structs implementing both, and the scalar
+		// interfaces are the ones that will sometimes defer to the non-scalar interfaces.
+		scalarMarshalerHookFunc(),
 		encoder.TextMarshalerHookFunc(),
 		marshalerHookFunc(rawVal),
 	)

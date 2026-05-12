@@ -56,6 +56,9 @@ type Marshaler = internal.Marshaler
 // This interface is only provided to methods used for [ScalarUnmarshaler] and
 // [ScalarMarshaler] implementations and cannot be implemented by types outside
 // the confmap package.
+//
+// Experimental: This interface is experimental, and behavior may change without
+// backward compatibility until this notice is removed.
 type ScalarValue = internal.ScalarValue
 
 // ScalarUnmarshaler is an interface which may be implemented by wrapper types
@@ -66,8 +69,14 @@ type ScalarValue = internal.ScalarValue
 // the wrapper type needs to implement custom logic for unmarshaling from a
 // scalar value (e.g. `5` for `Wrapper[int]`) into the wrapper type (e.g.
 // `Wrapper[int]{inner: 5}`).
+//
+// Experimental: This interface is experimental, and behavior may change without
+// backward compatibility until this notice is removed.
 type ScalarUnmarshaler = internal.ScalarUnmarshaler
 
 // ScalarMarshaler is an interface which may be implemented by wrapper types
 // to customize their behavior when the type under the wrapper is a scalar value.
+//
+// Experimental: This interface is experimental, and behavior may change without
+// backward compatibility until this notice is removed.
 type ScalarMarshaler = internal.ScalarMarshaler
