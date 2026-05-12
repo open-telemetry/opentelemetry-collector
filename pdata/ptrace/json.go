@@ -25,12 +25,18 @@ func (*JSONMarshaler) MarshalTraces(td Traces) ([]byte, error) {
 }
 
 // JSONUnmarshaler unmarshals OTLP/JSON formatted-bytes to Traces.
-type JSONUnmarshaler struct{}
+type JSONUnmarshaler struct {
+	// DisallowUnknownFields causes UnmarshalTraces to return an error when the
+	// input contains JSON object fields that are not defined by the OTLP
+	// schema. When false (the default), unknown fields are silently ignored.
+	DisallowUnknownFields bool
+}
 
 // UnmarshalTraces from OTLP/JSON format into Traces.
-func (*JSONUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
+func (u *JSONUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
 	iter := json.BorrowIterator(buf)
 	defer json.ReturnIterator(iter)
+	iter.SetDisallowUnknownFields(u.DisallowUnknownFields)
 	td := NewTraces()
 	td.getOrig().UnmarshalJSON(iter)
 	if iter.Error() != nil {

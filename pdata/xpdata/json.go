@@ -24,11 +24,17 @@ func (*JSONMarshaler) MarshalValue(value pcommon.Value) ([]byte, error) {
 	return slices.Clone(dest.Buffer()), nil
 }
 
-type JSONUnmarshaler struct{}
+type JSONUnmarshaler struct {
+	// DisallowUnknownFields causes UnmarshalValue to return an error when the
+	// input contains JSON object fields that are not defined by the OTLP
+	// schema. When false (the default), unknown fields are silently ignored.
+	DisallowUnknownFields bool
+}
 
-func (*JSONUnmarshaler) UnmarshalValue(buf []byte) (pcommon.Value, error) {
+func (u *JSONUnmarshaler) UnmarshalValue(buf []byte) (pcommon.Value, error) {
 	iter := json.BorrowIterator(buf)
 	defer json.ReturnIterator(iter)
+	iter.SetDisallowUnknownFields(u.DisallowUnknownFields)
 	value := &internal.AnyValue{}
 	value.UnmarshalJSON(iter)
 	if iter.Error() != nil {
