@@ -115,7 +115,7 @@ func ScalarUnmarshalerHookFunc() mapstructure.DecodeHookFuncValue {
 
 // ScalarmarshalerHookFunc handles encoding for types implementing the
 // ScalarMarshaler interface.
-func ScalarmarshalerHookFunc() mapstructure.DecodeHookFuncValue {
+func ScalarMarshalerHookFunc() mapstructure.DecodeHookFuncValue {
 	return safeWrapDecodeHookFunc(func(from, _ reflect.Value) (any, error) {
 		marshaler, ok := from.Interface().(ScalarMarshaler)
 		if !ok {
