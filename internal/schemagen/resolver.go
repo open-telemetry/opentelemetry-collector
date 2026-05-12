@@ -212,6 +212,12 @@ func (r *Resolver) resolveRef(root, current *ConfigMetadata, origin *Ref) (*Conf
 	}
 
 	if ref.IsLocal() {
+		// Local refs whose def is already in root.$defs (injected by the caller) can be resolved without loading a file.
+		if root.Defs != nil {
+			if val, ok := root.Defs[ref.DefName()]; ok {
+				return val, nil
+			}
+		}
 		return r.loadExternalRef(ref)
 	}
 
