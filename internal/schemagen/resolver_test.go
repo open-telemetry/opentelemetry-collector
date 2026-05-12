@@ -1154,6 +1154,44 @@ func TestResolver_ResolveSchema_LocalRef(t *testing.T) {
 	require.Equal(t, "Local target", result.Properties["local"].Description)
 }
 
+func TestResolver_ResolveSchema_LocalRefUsesRootDef(t *testing.T) {
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: &mockLoader{schemas: map[string]*ConfigMetadata{}},
+	}
+
+	src := &ConfigMetadata{
+		Type: "object",
+		Defs: map[string]*ConfigMetadata{
+			"resource_attributes_config": {
+				Type:        "object",
+				Description: "Injected resource attributes config",
+				Properties: map[string]*ConfigMetadata{
+					"service.name": {
+						Type: "string",
+					},
+				},
+			},
+		},
+		Properties: map[string]*ConfigMetadata{
+			"resource_attributes": {
+				Ref: "/config/metadata.resource_attributes_config",
+			},
+		},
+	}
+
+	result, err := resolver.ResolveSchema(src)
+	require.NoError(t, err)
+
+	resourceAttributes := result.Properties["resource_attributes"]
+	require.Equal(t, "object", resourceAttributes.Type)
+	require.Equal(t, "Injected resource attributes config", resourceAttributes.Description)
+	require.Contains(t, resourceAttributes.Properties, "service.name")
+	require.Equal(t, "string", resourceAttributes.Properties["service.name"].Type)
+}
+
 func TestResolver_ResolveSchema_MapValueError(t *testing.T) {
 	resolver := &Resolver{
 		pkgID:  "go.opentelemetry.io/collector/test/component",

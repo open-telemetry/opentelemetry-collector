@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	schemaFileName = "config.schema.yaml"
+	schemaFileName = "metadata.yaml"
 )
 
 // ErrNotFound indicates a schema was not found by any source.
@@ -89,12 +89,12 @@ func (sl *schemaLoader) loadFromFile(filePath string) (*ConfigMetadata, error) {
 		return nil, fmt.Errorf("failed to read schema from %s: %w", filePath, err)
 	}
 
-	var metadata ConfigMetadata
+	var metadata Metadata
 	if err := yaml.Unmarshal(body, &metadata); err != nil {
 		return nil, fmt.Errorf("failed to parse schema from %s: %w", filePath, err)
 	}
 
-	return &metadata, nil
+	return metadata.Config, nil
 }
 
 func (sl *schemaLoader) loadFromHTTP(ref Ref, fileCacheDir string) (*ConfigMetadata, error) {
@@ -145,12 +145,12 @@ func (sl *schemaLoader) tryLoad(ref Ref, version string) (*ConfigMetadata, error
 		return nil, fmt.Errorf("failed to read response body from %s: %w", url, err)
 	}
 
-	var metadata ConfigMetadata
+	var metadata Metadata
 	if err := yaml.Unmarshal(body, &metadata); err != nil {
 		return nil, fmt.Errorf("failed to parse schema from %s: %w", url, err)
 	}
 
-	return &metadata, nil
+	return metadata.Config, nil
 }
 
 func (sl *schemaLoader) persistToFile(filePath string, md *ConfigMetadata) error {
@@ -158,7 +158,7 @@ func (sl *schemaLoader) persistToFile(filePath string, md *ConfigMetadata) error
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	data, err := yaml.Marshal(md)
+	data, err := yaml.Marshal(Metadata{Config: md})
 	if err != nil {
 		return fmt.Errorf("failed to marshal metadata: %w", err)
 	}
