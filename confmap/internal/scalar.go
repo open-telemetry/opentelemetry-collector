@@ -76,7 +76,7 @@ func (s *scalarValue) _unexported() {}
 
 // ScalarunmarshalerHookFunc handles decoding for types implementing the
 // ScalarUnmarshaler interface.
-func ScalarunmarshalerHookFunc() mapstructure.DecodeHookFuncValue {
+func ScalarUnmarshalerHookFunc() mapstructure.DecodeHookFuncValue {
 	return safeWrapDecodeHookFunc(func(from, to reflect.Value) (any, error) {
 		if !to.CanAddr() {
 			return from.Interface(), nil
