@@ -113,6 +113,14 @@ require.NotNil(t, cfg)
             require.ErrorContains(t, cfg.Validate(), "{{ $validator.FieldName }} value must be less than {{ $exclMax }}")
             }
         {{ end }}
+        {{- if $validator.Rules.Enum }}
+            func TestConfigValidate_InvalidEnum{{ $validator.FieldName | publicVar }}(t *testing.T) {
+            cfg := createDefaultConfig().(*Config)
+            cfg.{{ $validator.FieldName | publicVar }} = {{ invalidTestValue $validator.FieldType }}
+
+            require.ErrorContains(t, cfg.Validate(), "{{ $validator.FieldName }} must be one of")
+            }
+        {{ end }}
     {{- end }}
 {{- end }}
 {{- end }}
@@ -212,6 +220,14 @@ require.NotNil(t, cfg)
                 {{- end }}
 
                 require.ErrorContains(t, cfg.Validate(), "{{ $validator.FieldName }} value must be less than {{ $exclMax }}")
+                }
+            {{ end }}
+            {{- if $validator.Rules.Enum }}
+                func Test{{ $defName | publicVar }}Validate_InvalidEnum{{ $validator.FieldName | publicVar }}(t *testing.T) {
+                cfg := NewDefault{{ $defName | publicVar }}()
+                cfg.{{ $validator.FieldName | publicVar }} = {{ invalidTestValue $validator.FieldType }}
+
+                require.ErrorContains(t, cfg.Validate(), "{{ $validator.FieldName }} must be one of")
                 }
             {{ end }}
         {{- end }}
