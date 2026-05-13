@@ -230,13 +230,42 @@ func run(ymlPath string) error {
 	}
 
 	for tmpl, dst := range toGenerate {
-		if err := generateFile(tmpl, dst, md, md.GeneratedPackageName, importRootPath); err != nil {
-			return err
+		if generateErr := generateFile(tmpl, dst, md, md.GeneratedPackageName, importRootPath); generateErr != nil {
+			return generateErr
 		}
 	}
 
-	if err := generateConfigFiles(md, ymlDir, importRootPath); err != nil {
-		return fmt.Errorf("failed to generate config files: %w", err)
+	if configErr := generateConfigFiles(md, ymlDir, importRootPath); configErr != nil {
+		return fmt.Errorf("failed to generate config files: %w", configErr)
+	}
+
+	generatedDocGoPath := filepath.Join(ymlDir, "generated_doc.go")
+	generateDocGo := true
+	goFiles, err := filepath.Glob(filepath.Join(ymlDir, "*.go"))
+	if err != nil {
+		return fmt.Errorf("failed listing Go files: %w", err)
+	}
+	for _, goFile := range goFiles {
+		if goFile == generatedDocGoPath {
+			continue
+		}
+		contents, readErr := os.ReadFile(filepath.Clean(goFile))
+		if readErr != nil {
+			return fmt.Errorf("failed reading Go file %q: %w", goFile, readErr)
+		}
+		if strings.Contains(string(contents), "go:generate") && strings.Contains(string(contents), "mdatagen") {
+			generateDocGo = false
+			if err = os.Remove(generatedDocGoPath); err != nil && !errors.Is(err, fs.ErrNotExist) {
+				return fmt.Errorf("unable to remove generated doc.go file: %w", err)
+			}
+			break
+		}
+	}
+	if generateDocGo {
+		if generateErr := generateFile(filepath.Join(tmplDir, "generated_doc.go.tmpl"), generatedDocGoPath,
+			Metadata{}, packageName, importRootPath); generateErr != nil {
+			return fmt.Errorf("failed to generate doc.go: %w", generateErr)
+		}
 	}
 
 	return nil

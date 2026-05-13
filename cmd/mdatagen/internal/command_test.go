@@ -874,6 +874,50 @@ func TestGenerateConfigFiles_WriteError(t *testing.T) {
 	require.Contains(t, err.Error(), "failed to write config schema")
 }
 
+func TestRunRemovesGeneratedDocGoWhenMdatagenDirectiveExists(t *testing.T) {
+	ymlDir := newMdatagenRunTestModule(t, "//go:generate mdatagen metadata.yaml\npackage testcomponent\n")
+	generatedDocGoPath := filepath.Join(ymlDir, "generated_doc.go")
+	require.NoError(t, os.WriteFile(generatedDocGoPath, []byte("package testcomponent\n"), 0o600))
+
+	require.NoError(t, run(filepath.Join(ymlDir, "metadata.yaml")))
+
+	require.NoFileExists(t, generatedDocGoPath)
+}
+
+func TestRunGeneratesDocGoWhenDocGoHasNoMdatagenDirective(t *testing.T) {
+	ymlDir := newMdatagenRunTestModule(t, "package testcomponent\n")
+
+	require.NoError(t, run(filepath.Join(ymlDir, "metadata.yaml")))
+
+	generatedDocGoPath := filepath.Join(ymlDir, "generated_doc.go")
+	contents, err := os.ReadFile(filepath.Clean(generatedDocGoPath))
+	require.NoError(t, err)
+	require.Contains(t, string(contents), "//go:generate mdatagen metadata.yaml")
+}
+
+func TestRunRemovesGeneratedDocGoWhenMdatagenDirectiveExistsOutsideDocGo(t *testing.T) {
+	ymlDir := newMdatagenRunTestModule(t, "package testcomponent\n")
+	factoryGoPath := filepath.Join(ymlDir, "factory.go")
+	require.NoError(t, os.WriteFile(factoryGoPath, []byte("//go:generate mdatagen metadata.yaml\npackage testcomponent\n"), 0o600))
+	generatedDocGoPath := filepath.Join(ymlDir, "generated_doc.go")
+	require.NoError(t, os.WriteFile(generatedDocGoPath, []byte("package testcomponent\n"), 0o600))
+
+	require.NoError(t, run(filepath.Join(ymlDir, "metadata.yaml")))
+
+	require.NoFileExists(t, generatedDocGoPath)
+}
+
+func newMdatagenRunTestModule(t *testing.T, docGo string) string {
+	t.Helper()
+	root := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module example.com/test\n"), 0o600))
+	ymlDir := filepath.Join(root, "testcomponent")
+	require.NoError(t, os.MkdirAll(ymlDir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(ymlDir, "doc.go"), []byte(docGo), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(ymlDir, "metadata.yaml"), []byte("type: testcomponent\nstatus:\n  class: pkg\n"), 0o600))
+	return ymlDir
+}
+
 func TestRun(t *testing.T) {
 	type args struct {
 		ymlPath string
