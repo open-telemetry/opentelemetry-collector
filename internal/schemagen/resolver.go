@@ -51,6 +51,10 @@ func (r *Resolver) ResolveSchema(src *ConfigMetadata) (*ConfigMetadata, error) {
 	target.ID = r.pkgID
 	target.Title = fmt.Sprintf("%s/%s", r.class, r.name)
 
+	if len(src.Properties) > 0 {
+		target.Type = "object"
+	}
+
 	return target, nil
 }
 
@@ -181,7 +185,10 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 	}
 	handleEmbeddedStructs(target)
 	enhanceTimeTypes(target)
-	cleanupDefs(target)
+
+	if len(target.Properties) > 0 {
+		cleanupDefs(target)
+	}
 
 	return nil
 }
@@ -205,6 +212,12 @@ func (r *Resolver) resolveRef(root, current *ConfigMetadata, origin *Ref) (*Conf
 	}
 
 	if ref.IsLocal() {
+		// Local refs whose def is already in root.$defs (injected by the caller) can be resolved without loading a file.
+		if root.Defs != nil {
+			if val, ok := root.Defs[ref.DefName()]; ok {
+				return val, nil
+			}
+		}
 		return r.loadExternalRef(ref)
 	}
 
