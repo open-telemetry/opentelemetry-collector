@@ -1,7 +1,7 @@
 {{- define "configSection" -}}
 {{- $sec := . -}}
 {{- if $sec.Title }}
-### {{ $sec.Title }}
+### <a id="{{ $sec.Anchor }}"></a>{{ $sec.Title }}
 {{ end -}}
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
