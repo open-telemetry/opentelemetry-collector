@@ -9,26 +9,20 @@ import (
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper/internal/metadata"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
-	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
 type TargetsItem struct {
-	// HTTP client configuration for the target endpoint.
-	HTTPClient confighttp.ClientConfig                `mapstructure:"http_client"`
-	Interval   configoptional.Optional[time.Duration] `mapstructure:"interval"`
+	Interval configoptional.Optional[time.Duration] `mapstructure:"interval"`
 	// Static key-value labels attached to all metrics from this target.
 	Labels map[string]string `mapstructure:"labels"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Validate validates the TargetsItem fields according to schema annotations.
 func (c *TargetsItem) Validate() error {
 	var err error
-
-	if inner_err := validateHTTPClient(c.HTTPClient); inner_err != nil {
-		err = errors.Join(err, inner_err)
-	}
 
 	if c.Labels == nil || len(c.Labels) == 0 {
 		err = errors.Join(err, errors.New("labels is required"))
@@ -39,23 +33,22 @@ func (c *TargetsItem) Validate() error {
 
 // NewDefaultTargetsItem returns a new TargetsItem with default values consistent with the annotations in the schema.
 func NewDefaultTargetsItem() TargetsItem {
-	cfg := TargetsItem{}
-	cfg.Interval = configoptional.Some(10 * time.Second)
-	cfg.Labels = map[string]string{"option1": "value1", "option2": "value2"}
-
-	return cfg
+	return TargetsItem{
+		Interval: configoptional.Some(10 * time.Second),
+		Labels:   map[string]string{"option1": "value1", "option2": "value2"},
+	}
 }
 
 // Configuration for the Sample Scraper.
 type Config struct {
 	// MetricsBuilderConfig is a configuration for sample metrics builder.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
-	// ControllerConfig defines common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed.
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	// Name of the scrape job, used to identify the source in telemetry.
 	JobName string `mapstructure:"job_name"`
 	// List of targets to scrape metrics from.
 	Targets *[]TargetsItem `mapstructure:"targets"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Validate validates the Config fields.
@@ -75,6 +68,10 @@ func (c *Config) Validate() error {
 		err = errors.Join(err, errors.New("job_name must match pattern `^[a-zA-Z0-9_.-]+$`"))
 	}
 
+	if inner_err := validateJobName(c.JobName); inner_err != nil {
+		err = errors.Join(err, inner_err)
+	}
+
 	if c.Targets == nil || len(*c.Targets) == 0 {
 		err = errors.Join(err, errors.New("targets is required"))
 	}
@@ -83,9 +80,9 @@ func (c *Config) Validate() error {
 }
 
 func createDefaultConfig() component.Config {
-	cfg := Config{}
-	cfg.JobName = "test_job"
-	cfg.Targets = &[]TargetsItem{NewDefaultTargetsItem()}
-
-	return &cfg
+	return &Config{
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+		JobName:              "test_job",
+		Targets:              &[]TargetsItem{NewDefaultTargetsItem()},
+	}
 }

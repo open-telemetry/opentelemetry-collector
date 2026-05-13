@@ -18,6 +18,8 @@ type Config struct {
 	Endpoint string `mapstructure:"endpoint"`
 	// Timeout for scraping metrics.
 	Timeout time.Duration `mapstructure:"timeout"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Validate validates the Config fields.
@@ -32,9 +34,8 @@ func (c *Config) Validate() error {
 }
 
 func createDefaultConfig() component.Config {
-	cfg := Config{}
-	cfg.Endpoint = "localhost:12345"
-	cfg.Timeout = 10 * time.Second
-
-	return &cfg
+	return &Config{
+		Endpoint: "localhost:12345",
+		Timeout:  10 * time.Second,
+	}
 }

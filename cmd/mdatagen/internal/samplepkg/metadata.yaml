@@ -1,0 +1,25 @@
+type: samplepkg
+display_name: Sample Package
+description: This package is used for testing purposes to check the output of mdatagen.
+
+status:
+  disable_codecov_badge: true
+  class: pkg
+
+config:
+  $defs:
+    sample_config:
+      type: object
+      properties:
+        host_name:
+          type: string
+          description: The host name to connect to.
+          default: "localhost"
+          minLength: 1
+        port:
+          type: string
+          description: The port to connect to.
+          default: "8080"
+      required:
+        - host_name
+        - port
