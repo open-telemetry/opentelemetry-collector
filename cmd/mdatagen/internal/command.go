@@ -138,10 +138,10 @@ func run(ymlPath string) error {
 		}
 
 		if _, err = os.Stat(filepath.Join(ymlDir, "README.md")); err == nil {
-			err = inlineReplace(
+			err = inlineReplaceWithFns(
 				filepath.Join(tmplDir, "readme.md.tmpl"),
 				filepath.Join(ymlDir, "README.md"),
-				md, statusStart, statusEnd, md.GeneratedPackageName, importRootPath)
+				md, statusStart, statusEnd, md.GeneratedPackageName, importRootPath, nil)
 			if err != nil {
 				return err
 			}
@@ -430,11 +430,10 @@ func generateFile(tmplFile, outputFile string, md Metadata, goPackage, importRoo
 	return generateFileWithFns(tmplFile, outputFile, md, goPackage, importRootPath, getTemplateFuncMap(md, importRootPath))
 }
 
-func inlineReplace(tmplFile, outputFile string, md Metadata, start, end, goPackage, importRootPath string) error {
-	return inlineReplaceWithFns(tmplFile, outputFile, md, start, end, goPackage, importRootPath, getTemplateFuncMap(md, importRootPath))
-}
-
 func inlineReplaceWithFns(tmplFile, outputFile string, md Metadata, start, end, goPackage, importRootPath string, fns template.FuncMap) error {
+	if fns == nil {
+		fns = getTemplateFuncMap(md, importRootPath)
+	}
 	var readmeContents []byte
 	var err error
 	if readmeContents, err = os.ReadFile(filepath.Clean(outputFile)); err != nil {
