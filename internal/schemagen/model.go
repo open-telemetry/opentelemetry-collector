@@ -47,7 +47,7 @@ type ConfigMetadata struct {
 	ExclusiveMaximum     *float64                   `mapstructure:"exclusiveMaximum,omitempty" json:"exclusiveMaximum,omitempty" yaml:"exclusiveMaximum,omitempty"`
 	Minimum              *float64                   `mapstructure:"minimum,omitempty" json:"minimum,omitempty" yaml:"minimum,omitempty"`
 	ExclusiveMinimum     *float64                   `mapstructure:"exclusiveMinimum,omitempty" json:"exclusiveMinimum,omitempty" yaml:"exclusiveMinimum,omitempty"`
-	Defs                 map[string]*ConfigMetadata `mapstructure:"$defs,omitempty" json:"-" yaml:"$defs,omitempty"`
+	Defs                 map[string]*ConfigMetadata `mapstructure:"$defs,omitempty" json:"$defs,omitempty" yaml:"$defs,omitempty"`
 	// Additional custom fields
 	GoStruct   GoStructConfig `mapstructure:"go_struct,omitempty" json:"-" yaml:"go_struct,omitempty"`
 	GoType     string         `mapstructure:"x-customType,omitempty" json:"-" yaml:"x-customType,omitempty"`
@@ -57,6 +57,10 @@ type ConfigMetadata struct {
 	// internal
 	ResolvedFrom string `mapstructure:"-" json:"-" yaml:"-"`
 	EmbeddedName string `mapstructure:"-" json:"-" yaml:"-"`
+}
+
+type Metadata struct {
+	Config *ConfigMetadata `mapstructure:"config,omitempty" json:"config,omitempty" yaml:"config,omitempty"`
 }
 
 type GoStructConfig struct {

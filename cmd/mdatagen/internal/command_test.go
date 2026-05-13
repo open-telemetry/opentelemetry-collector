@@ -115,13 +115,12 @@ func TestRunContents(t *testing.T) {
 			wantReadmeGenerated: true,
 		},
 		{
-			yml:                            "metrics_and_type.yaml",
-			wantMetricsGenerated:           true,
-			wantConfigGenerated:            true,
-			wantStatusGenerated:            true,
-			wantReadmeGenerated:            true,
-			wantComponentTestGenerated:     true,
-			wantMetricsSchemaYamlGenerated: true,
+			yml:                        "metrics_and_type.yaml",
+			wantMetricsGenerated:       true,
+			wantConfigGenerated:        true,
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
 		},
 		{
 			yml:                             "resource_attributes_only.yaml",
@@ -131,7 +130,6 @@ func TestRunContents(t *testing.T) {
 			wantReadmeGenerated:             true,
 			wantComponentTestGenerated:      true,
 			wantLogsGenerated:               true,
-			wantMetricsSchemaYamlGenerated:  true,
 		},
 		{
 			yml:                        "status_only.yaml",
@@ -220,13 +218,12 @@ func TestRunContents(t *testing.T) {
 			wantComponentTestGenerated: true,
 		},
 		{
-			yml:                            "async_metric.yaml",
-			wantMetricsGenerated:           true,
-			wantConfigGenerated:            true,
-			wantStatusGenerated:            true,
-			wantReadmeGenerated:            true,
-			wantComponentTestGenerated:     true,
-			wantMetricsSchemaYamlGenerated: true,
+			yml:                        "async_metric.yaml",
+			wantMetricsGenerated:       true,
+			wantConfigGenerated:        true,
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
 		},
 		{
 			yml:                        "custom_generated_package_name.yaml",
@@ -243,24 +240,22 @@ func TestRunContents(t *testing.T) {
 			wantFeatureGatesGenerated:  true,
 		},
 		{
-			yml:                            "with_conditional_attribute.yaml",
-			wantStatusGenerated:            true,
-			wantReadmeGenerated:            true,
-			wantMetricsGenerated:           true,
-			wantLogsGenerated:              true,
-			wantConfigGenerated:            true,
-			wantComponentTestGenerated:     true,
-			wantMetricsSchemaYamlGenerated: true,
+			yml:                        "with_conditional_attribute.yaml",
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantMetricsGenerated:       true,
+			wantLogsGenerated:          true,
+			wantConfigGenerated:        true,
+			wantComponentTestGenerated: true,
 		},
 		{
-			yml:                            "events/basic_event.yaml",
-			wantStatusGenerated:            true,
-			wantReadmeGenerated:            true,
-			wantComponentTestGenerated:     true,
-			wantConfigGenerated:            true,
-			wantEventsGenerated:            true,
-			wantLogsGenerated:              true,
-			wantMetricsSchemaYamlGenerated: true,
+			yml:                        "events/basic_event.yaml",
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
+			wantConfigGenerated:        true,
+			wantEventsGenerated:        true,
+			wantLogsGenerated:          true,
 		},
 		{
 			yml:                        "with_config.yaml",
@@ -559,6 +554,143 @@ func TestGenerateConfigFiles(t *testing.T) {
 	}
 }
 
+func TestInjectInternalMetadataDefs(t *testing.T) {
+	t.Run("skips when metadata has no internal definitions", func(t *testing.T) {
+		src := &cfggen.ConfigMetadata{}
+
+		err := injectInternalMetadataDefs(Metadata{}, t.TempDir(), src)
+		require.NoError(t, err)
+		require.Nil(t, src.Defs)
+	})
+
+	t.Run("initializes source defs and injects resource attributes config", func(t *testing.T) {
+		mdDir := newTestModuleDir(t)
+		enabled := true
+		src := &cfggen.ConfigMetadata{}
+		md := Metadata{
+			Type: "sample",
+			ResourceAttributes: map[AttributeName]Attribute{
+				"service.name": {
+					EnabledPtr: &enabled,
+				},
+			},
+		}
+
+		err := injectInternalMetadataDefs(md, mdDir, src)
+		require.NoError(t, err)
+
+		require.Contains(t, src.Defs, "resource_attributes_config")
+		resourceAttributes := src.Defs["resource_attributes_config"]
+		require.Equal(t, "object", resourceAttributes.Type)
+		require.Contains(t, resourceAttributes.Properties, "service.name")
+
+		resourceAttribute := resourceAttributes.Properties["service.name"]
+		require.Contains(t, resourceAttribute.Properties, "enabled")
+		require.Equal(t, "boolean", resourceAttribute.Properties["enabled"].Type)
+		require.Equal(t, true, resourceAttribute.Properties["enabled"].Default)
+	})
+
+	t.Run("merges generated defs into existing source defs", func(t *testing.T) {
+		mdDir := newTestModuleDir(t)
+		existingDef := &cfggen.ConfigMetadata{
+			Type:        "object",
+			Description: "user-provided definition",
+		}
+		src := &cfggen.ConfigMetadata{
+			Defs: map[string]*cfggen.ConfigMetadata{
+				"user_config": existingDef,
+			},
+		}
+		md := Metadata{
+			Type: "sample",
+			Events: map[EventName]Event{
+				"sample.event": {
+					Signal: Signal{
+						Enabled: true,
+					},
+				},
+			},
+		}
+
+		err := injectInternalMetadataDefs(md, mdDir, src)
+		require.NoError(t, err)
+
+		require.Equal(t, existingDef, src.Defs["user_config"])
+		require.Contains(t, src.Defs, "events_config")
+		require.Contains(t, src.Defs, "logs_builder_config")
+
+		events := src.Defs["events_config"]
+		require.Contains(t, events.Properties, "sample.event")
+		require.Equal(t, true, events.Properties["sample.event"].Properties["enabled"].Default)
+	})
+
+	t.Run("returns root package error", func(t *testing.T) {
+		enabled := true
+		src := &cfggen.ConfigMetadata{}
+		md := Metadata{
+			Type: "sample",
+			ResourceAttributes: map[AttributeName]Attribute{
+				"service.name": {
+					EnabledPtr: &enabled,
+				},
+			},
+		}
+
+		err := injectInternalMetadataDefs(md, t.TempDir(), src)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "unable to determine import root path")
+	})
+
+	t.Run("returns template rendering error", func(t *testing.T) {
+		mdDir := newTestModuleDir(t)
+		src := &cfggen.ConfigMetadata{}
+		md := Metadata{
+			Type: "sample",
+			Metrics: map[MetricName]Metric{
+				"": {},
+			},
+		}
+
+		err := injectInternalMetadataDefs(md, mdDir, src)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to render internal metadata defs")
+		require.Contains(t, err.Error(), "string cannot be empty")
+	})
+
+	t.Run("returns generated YAML parse error", func(t *testing.T) {
+		mdDir := newTestModuleDir(t)
+		src := &cfggen.ConfigMetadata{}
+		md := Metadata{
+			Type: "sample",
+			Events: map[EventName]Event{
+				"*": {},
+			},
+		}
+
+		err := injectInternalMetadataDefs(md, mdDir, src)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to parse internal metadata defs")
+	})
+
+	t.Run("skips when generated YAML has no internal defs", func(t *testing.T) {
+		src := &cfggen.ConfigMetadata{}
+
+		err := mergeInternalMetadataDefs([]byte("config:\n  $defs: {}\n"), src)
+		require.NoError(t, err)
+		require.Nil(t, src.Defs)
+	})
+}
+
+func newTestModuleDir(t *testing.T) string {
+	t.Helper()
+
+	root := t.TempDir()
+	mdDir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(mdDir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module go.opentelemetry.io/collector\n"), 0o600))
+	return mdDir
+}
+
 func TestGenerateConfigGoStruct_RootPackageError(t *testing.T) {
 	// tmpdir has no go.mod in any ancestor, so helpers.RootPackage fails
 	md := Metadata{
@@ -746,6 +878,25 @@ func TestGenerateConfigFiles_GoStructError(t *testing.T) {
 	err := generateConfigFiles(md, t.TempDir(), "testmodule")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to generate config Go struct")
+}
+
+func TestGenerateConfigFiles_InternalMetadataDefsError(t *testing.T) {
+	enabled := true
+	md := Metadata{
+		Type:        "test",
+		PackageName: "shortname",
+		Status:      &Status{Class: "receiver"},
+		Config:      &cfggen.ConfigMetadata{Type: "object"},
+		ResourceAttributes: map[AttributeName]Attribute{
+			"service.name": {
+				EnabledPtr: &enabled,
+			},
+		},
+	}
+
+	err := generateConfigFiles(md, t.TempDir(), "testmodule")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "unable to determine import root path")
 }
 
 func TestGenerateConfigFiles_WriteError(t *testing.T) {

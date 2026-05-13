@@ -69,10 +69,14 @@ import (
     {{- if hasDefaultValue $def }}
     // NewDefault{{ $typeName }} returns a new {{ $typeName }} with default values consistent with the annotations in the schema.
     func NewDefault{{ $typeName }}() {{ $typeName }} {
+        {{- if isExternalRef $def.ResolvedFrom }}
+        return {{ externalDefaultCall $def.ResolvedFrom }}
+        {{- else }}
         {{- template "structLiteralVars" $def }}
         return {{ $typeName }}{
             {{- template "structLiteralFields" $def }}
         }
+        {{- end }}
     }
     {{- end }}
 

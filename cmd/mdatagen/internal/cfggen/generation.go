@@ -89,7 +89,28 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			tr, err := ResolveGoTypeRef(ref, rootPackage, componentPackage)
 			return err == nil && tr.ImportPath != ""
 		},
+		"externalDefaultCall": func(ref string) string {
+			call, err := ExternalDefaultCall(ref, rootPackage, componentPackage)
+			if err != nil {
+				panic(err)
+			}
+			return call
+		},
 	}
+}
+
+// ExternalDefaultCall returns the Go expression that delegates to the upstream package's
+// NewDefault constructor for an external type reference (e.g. "controller.NewDefaultControllerConfig()").
+func ExternalDefaultCall(ref, rootPackage, componentPackage string) (string, error) {
+	tr, err := ResolveGoTypeRef(ref, rootPackage, componentPackage)
+	if err != nil {
+		return "", err
+	}
+	fnCall := fmt.Sprintf("NewDefault%s()", tr.TypeName)
+	if tr.Qualifier() != "" {
+		fnCall = tr.Qualifier() + "." + fnCall
+	}
+	return fnCall, nil
 }
 
 // WithCfgFns merges config generation template functions into the given function map.
