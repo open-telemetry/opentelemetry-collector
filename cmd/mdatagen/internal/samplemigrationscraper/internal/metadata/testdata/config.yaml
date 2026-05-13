@@ -1,0 +1,25 @@
+default:
+all_set:
+  metrics:
+    linux.memory.available:
+      enabled: true
+    system.cpu.foo:
+      enabled: true
+    system.cpu.utilization:
+      enabled: true
+    system.cpu.utilization@v1:
+      enabled: true
+    system.memory.linux.available:
+      enabled: true
+none_set:
+  metrics:
+    linux.memory.available:
+      enabled: false
+    system.cpu.foo:
+      enabled: false
+    system.cpu.utilization:
+      enabled: false
+    system.cpu.utilization@v1:
+      enabled: false
+    system.memory.linux.available:
+      enabled: false

@@ -311,6 +311,41 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 
 			return used
 		},
+		"getLegacyAttributes": func(targetMetricName MetricName) []AttributeName {
+			if legacyMetrics, ok := md.Metrics[MetricName(targetMetricName.EmittedName())]; ok {
+				if legacyMetrics.Migration == nil || legacyMetrics.Migration.To != targetMetricName {
+					return nil
+				}
+				return legacyMetrics.Attributes
+			}
+			return nil
+		},
+		"hasDifferentAttributes": func(legacyMetricName MetricName) bool {
+			legacyMetric := md.Metrics[legacyMetricName]
+			if legacyMetric.Migration == nil {
+				return false
+			}
+			targetMetric, exists := md.Metrics[legacyMetric.Migration.To]
+			if !exists {
+				return false
+			}
+			if legacyMetricName.EmittedName() != legacyMetric.Migration.To.EmittedName() {
+				return false
+			}
+			if len(legacyMetric.Attributes) != len(targetMetric.Attributes) {
+				return true
+			}
+			targetAttrSet := make(map[AttributeName]bool)
+			for _, attr := range targetMetric.Attributes {
+				targetAttrSet[attr] = true
+			}
+			for _, attr := range legacyMetric.Attributes {
+				if !targetAttrSet[attr] {
+					return true
+				}
+			}
+			return false
+		},
 		"metricInfo": func(mn MetricName) Metric {
 			return md.Metrics[mn]
 		},

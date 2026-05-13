@@ -294,6 +294,19 @@ metrics:
     # An example of a full url is: https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/system/system-metrics.md#metric-systemcputime
     semantic_convention:
       ref:
+    # Optional: migration/aliasing information to support dual-schema emission.
+    # When present, generated code will emit this metric and the target metric
+    # according to the gates specified below.
+    migration:
+      # Required: target metric key in this metadata file to emit to during migration.
+      to: string
+      # Required: feature gates controlling emission. The referenced gates must be
+      # declared under feature_gates below in this file.
+      through_gates:
+        # Required: when enabled, emission of the old (current) metric is disabled.
+        disable_old: string
+        # Required: when enabled, emission of the new (target) metric is enabled.
+        enable_new: string
 
 # Optional: map of event names with the key being the event name and value
 # being described below.

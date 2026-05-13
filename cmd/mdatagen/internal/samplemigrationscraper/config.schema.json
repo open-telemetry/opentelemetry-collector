@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplemigrationscraper",
+  "title": "scraper/sample",
+  "description": "Configuration for the Sample Migration Scraper.",
+  "type": "object",
+  "allOf": [
+    {
+      "description": "MetricsBuilderConfig is a configuration for sample metrics builder.",
+      "type": "object",
+      "properties": {
+        "metrics": {
+          "description": "MetricsConfig provides config for sample metrics.",
+          "type": "object",
+          "properties": {
+            "linux.memory.available": {
+              "description": "LinuxMemoryAvailableMetricConfig provides config for the linux.memory.available metric.",
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": false
+                }
+              }
+            },
+            "system.cpu.foo": {
+              "description": "SystemCPUFooMetricConfig provides config for the system.cpu.foo metric.",
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": false
+                }
+              }
+            },
+            "system.cpu.utilization": {
+              "description": "SystemCPUUtilizationMetricConfig provides config for the system.cpu.utilization metric.",
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                }
+              }
+            },
+            "system.cpu.utilization@v1": {
+              "description": "SystemCPUUtilizationV1MetricConfig provides config for the system.cpu.utilization@v1 metric.",
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": false
+                }
+              }
+            },
+            "system.memory.linux.available": {
+              "description": "SystemMemoryLinuxAvailableMetricConfig provides config for the system.memory.linux.available metric.",
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": false
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "properties": {
+    "emit_legacy_metrics": {
+      "description": "Whether to emit legacy metric names alongside new ones.",
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

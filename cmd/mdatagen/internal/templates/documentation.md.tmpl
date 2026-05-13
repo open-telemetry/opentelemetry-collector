@@ -24,6 +24,24 @@
 **Deprecation note**: {{ $metric.Deprecated.Note }}
 {{- end }}{{ end }}
 
+{{- if $metric.Versioned }}
+
+Emitted Name: `{{ $metricName.EmittedName }}`
+
+{{- end }}
+
+{{- if $metric.Migration }}
+
+#### Migration
+
+- Target Metric: `{{ $metric.Migration.To }}`
+- Disable Old Gate: `{{ $metric.Migration.ThroughGates.DisableOld }}`
+- Enable New Gate: `{{ $metric.Migration.ThroughGates.EnableNew }}`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, dual emission occurs.
+
+{{- end }}
+
 {{- if $metric.Attributes }}
 
 #### Attributes

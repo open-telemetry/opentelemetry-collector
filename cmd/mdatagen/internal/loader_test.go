@@ -821,6 +821,61 @@ func TestLoadMetadata(t *testing.T) {
 	}
 }
 
+func TestSetMetricDefaultFields(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    map[MetricName]Metric
+		expected map[MetricName]Metric
+	}{
+		{
+			name: "no name set, no slash in key",
+			input: map[MetricName]Metric{
+				"system.cpu.time": {Signal: Signal{Description: "test"}},
+			},
+			expected: map[MetricName]Metric{
+				"system.cpu.time": {Signal: Signal{Description: "test"}},
+			},
+		},
+		{
+			name: "no name set, At ('@') in key",
+			input: map[MetricName]Metric{
+				"system.cpu.time@v2": {Signal: Signal{Description: "test"}},
+			},
+			expected: map[MetricName]Metric{
+				"system.cpu.time@v2": {Signal: Signal{Description: "test"}, Versioned: true},
+			},
+		},
+		{
+			name: "name already set",
+			input: map[MetricName]Metric{
+				"some.key": {Signal: Signal{Description: "test"}},
+			},
+			expected: map[MetricName]Metric{
+				"some.key": {Signal: Signal{Description: "test"}},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setMetricVersioned(tt.input)
+			require.Equal(t, tt.expected, tt.input)
+		})
+	}
+}
+
+func TestVersionedMetricName(t *testing.T) {
+	md, err := LoadMetadata("testdata/versioned_metric.yaml")
+	require.NoError(t, err)
+
+	// Legacy metric - Name should be empty (uses map key)
+	legacy := md.Metrics["system.cpu.time"]
+	require.False(t, legacy.Versioned)
+
+	// Versioned metric - Name should be auto-populated from key
+	versioned := md.Metrics["system.cpu.time@v2"]
+	require.True(t, versioned.Versioned)
+}
+
 func strPtr(s string) *string {
 	return &s
 }

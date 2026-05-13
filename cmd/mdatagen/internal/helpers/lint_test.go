@@ -28,9 +28,11 @@ func TestFormatIdentifier(t *testing.T) {
 		{input: "max.ip6", want: "maxIP6"},
 		{input: "max.ip6.idle", want: "maxIP6Idle"},
 		{input: "node_netstat_IpExt_OutOctets", want: "nodeNetstatIPExtOutOctets"},
+		{input: "versioned.metric@v1", want: "versionedMetricV1"},
 
 		// Exported.
 		{input: "cpu.state", want: "CPUState", exported: true},
+		{input: "cpu.state@v1", want: "CPUStateV1", exported: true},
 
 		// Errors
 		{input: "", want: "", wantErr: "string cannot be empty"},
