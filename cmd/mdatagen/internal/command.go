@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"go/format"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -194,7 +195,6 @@ func run(ymlPath string) error {
 		toGenerate[filepath.Join(tmplDir, "testdata", "config.yaml.tmpl")] = filepath.Join(testdataDir, "config.yaml")
 		toGenerate[filepath.Join(tmplDir, "config.go.tmpl")] = filepath.Join(codeDir, "generated_config.go")
 		toGenerate[filepath.Join(tmplDir, "config_test.go.tmpl")] = filepath.Join(codeDir, "generated_config_test.go")
-		toGenerate[filepath.Join(tmplDir, "config.schema.yaml.tmpl")] = filepath.Join(codeDir, "config.schema.yaml")
 	}
 
 	if len(md.ResourceAttributes) > 0 { // only generate resource files if resource attributes are configured
@@ -542,8 +542,42 @@ func validateYAMLKeyOrder(raw []byte) error {
 	return nil
 }
 
+func injectInternalMetadataDefs(md Metadata, mdDir string, src *cfggen.ConfigMetadata) error {
+	if len(md.Metrics) == 0 && len(md.Events) == 0 && len(md.ResourceAttributes) == 0 {
+		return nil
+	}
+	importRootPath, err := helpers.RootPackage(mdDir)
+	if err != nil {
+		return fmt.Errorf("unable to determine import root path: %w", err)
+	}
+	tmplFile := filepath.Join("templates", "config.schema.yaml.tmpl")
+	raw, err := executeTemplate(tmplFile, md, "metadata", importRootPath, getTemplateFuncMap(md, importRootPath))
+	if err != nil {
+		return fmt.Errorf("failed to render internal metadata defs: %w", err)
+	}
+	return mergeInternalMetadataDefs(raw, src)
+}
+
+func mergeInternalMetadataDefs(raw []byte, src *cfggen.ConfigMetadata) error {
+	var config cfggen.ConfigMetadata
+	if err := yaml.Unmarshal(raw, &config); err != nil {
+		return fmt.Errorf("failed to parse internal metadata defs: %w", err)
+	}
+	if len(config.Defs) == 0 {
+		return nil
+	}
+	if src.Defs == nil {
+		src.Defs = make(map[string]*cfggen.ConfigMetadata)
+	}
+	maps.Copy(src.Defs, config.Defs)
+	return nil
+}
+
 func generateConfigFiles(md Metadata, mdDir, _ string) error {
 	if md.Config != nil {
+		if err := injectInternalMetadataDefs(md, mdDir, md.Config); err != nil {
+			return err
+		}
 		resolver := cfggen.NewResolver(md.PackageName, md.Status.Class, md.Type, mdDir)
 		resolvedSchema, err := resolver.ResolveSchema(md.Config)
 		if err != nil {

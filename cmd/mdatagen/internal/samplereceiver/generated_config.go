@@ -18,6 +18,8 @@ type Config struct {
 	Endpoint string `mapstructure:"endpoint"`
 	// Timeout for scraping metrics.
 	Timeout time.Duration `mapstructure:"timeout"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Validate validates the Config fields.
@@ -33,8 +35,7 @@ func (c *Config) Validate() error {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
-		Endpoint:             "localhost:12345",
-		Timeout:              10 * time.Second,
+		Endpoint: "localhost:12345",
+		Timeout:  10 * time.Second,
 	}
 }

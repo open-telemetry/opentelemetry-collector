@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package cfggen
+package schemagen
 
 import (
 	"testing"
@@ -292,55 +292,55 @@ func TestRef_URL(t *testing.T) {
 			name:     "collector reference",
 			refPath:  "go.opentelemetry.io/collector/scraper/scraperhelper.controller_config",
 			version:  "v1.0.0",
-			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/v1.0.0/scraper/scraperhelper/config.schema.yaml",
+			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/v1.0.0/scraper/scraperhelper/metadata.yaml",
 		},
 		{
 			name:     "contrib reference",
 			refPath:  "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver.config",
 			version:  "v0.95.0",
-			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.95.0/receiver/mysqlreceiver/config.schema.yaml",
+			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.95.0/receiver/mysqlreceiver/metadata.yaml",
 		},
 		{
 			name:     "main version",
 			refPath:  "go.opentelemetry.io/collector/processor/batchprocessor.config",
 			version:  "main",
-			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/main/processor/batchprocessor/config.schema.yaml",
+			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/main/processor/batchprocessor/metadata.yaml",
 		},
 		{
 			name:     "collector pseudo-version uses commit hash",
 			refPath:  "go.opentelemetry.io/collector/scraper/scraperhelper.controller_config",
 			version:  "v0.147.1-0.20260317033252-665ab5d0143d",
-			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/665ab5d0143d/scraper/scraperhelper/config.schema.yaml",
+			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/665ab5d0143d/scraper/scraperhelper/metadata.yaml",
 		},
 		{
 			name:     "pseudo-version with incompatible suffix uses commit hash",
 			refPath:  "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver.config",
 			version:  "v0.95.1-0.20260317033252-665ab5d0143d+incompatible",
-			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/665ab5d0143d/receiver/mysqlreceiver/config.schema.yaml",
+			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/665ab5d0143d/receiver/mysqlreceiver/metadata.yaml",
 		},
 		{
 			name:     "dirty version uses trimmed version string",
 			refPath:  "go.opentelemetry.io/collector/scraper/scraperhelper.controller_config",
 			version:  "v1.0.0+dirty",
-			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/v1.0.0/scraper/scraperhelper/config.schema.yaml",
+			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/v1.0.0/scraper/scraperhelper/metadata.yaml",
 		},
 		{
 			name:     "unrecognized suffix uses raw version string",
 			refPath:  "go.opentelemetry.io/collector/scraper/scraperhelper.controller_config",
 			version:  "v1.0.0-xxx-yyy+dirty",
-			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/v1.0.0-xxx-yyy/scraper/scraperhelper/config.schema.yaml",
+			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/v1.0.0-xxx-yyy/scraper/scraperhelper/metadata.yaml",
 		},
 		{
 			name:     "pre-release version passes through unchanged",
 			refPath:  "go.opentelemetry.io/collector/scraper/scraperhelper.controller_config",
 			version:  "v1.0.0-rc.1",
-			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/v1.0.0-rc.1/scraper/scraperhelper/config.schema.yaml",
+			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/v1.0.0-rc.1/scraper/scraperhelper/metadata.yaml",
 		},
 		{
 			name:     "pre-release tag that looks like a pseudo-version passes through unchanged",
 			refPath:  "go.opentelemetry.io/collector/scraper/scraperhelper.controller_config",
 			version:  "v1.0.0-beta-abc123abcdef",
-			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/v1.0.0-beta-abc123abcdef/scraper/scraperhelper/config.schema.yaml",
+			expected: "https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector/v1.0.0-beta-abc123abcdef/scraper/scraperhelper/metadata.yaml",
 		},
 	}
 
