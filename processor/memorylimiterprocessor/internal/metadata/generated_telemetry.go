@@ -65,37 +65,37 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	var err, errs error
 	builder.ProcessorMemoryLimiterAcceptedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_processor_memory_limiter_accepted_log_records",
-		metric.WithDescription("Number of log records successfully pushed into the next component in the pipeline. [Deprecated]"),
+		metric.WithDescription("Number of log records successfully pushed into the next component in the pipeline. [Alpha]"),
 		metric.WithUnit("{record}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorMemoryLimiterAcceptedMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_processor_memory_limiter_accepted_metric_points",
-		metric.WithDescription("Number of metric points successfully pushed into the next component in the pipeline. [Deprecated]"),
+		metric.WithDescription("Number of metric points successfully pushed into the next component in the pipeline. [Alpha]"),
 		metric.WithUnit("{datapoint}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorMemoryLimiterAcceptedSpans, err = builder.meter.Int64Counter(
 		"otelcol_processor_memory_limiter_accepted_spans",
-		metric.WithDescription("Number of spans successfully pushed into the next component in the pipeline. [Deprecated]"),
+		metric.WithDescription("Number of spans successfully pushed into the next component in the pipeline. [Alpha]"),
 		metric.WithUnit("{span}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorMemoryLimiterRefusedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_processor_memory_limiter_refused_log_records",
-		metric.WithDescription("Number of log records that were rejected by the next component in the pipeline. [Deprecated]"),
+		metric.WithDescription("Number of log records that were rejected by the next component in the pipeline. [Alpha]"),
 		metric.WithUnit("{record}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorMemoryLimiterRefusedMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_processor_memory_limiter_refused_metric_points",
-		metric.WithDescription("Number of metric points that were rejected by the next component in the pipeline. [Deprecated]"),
+		metric.WithDescription("Number of metric points that were rejected by the next component in the pipeline. [Alpha]"),
 		metric.WithUnit("{datapoint}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorMemoryLimiterRefusedSpans, err = builder.meter.Int64Counter(
 		"otelcol_processor_memory_limiter_refused_spans",
-		metric.WithDescription("Number of spans that were rejected by the next component in the pipeline. [Deprecated]"),
+		metric.WithDescription("Number of spans that were rejected by the next component in the pipeline. [Alpha]"),
 		metric.WithUnit("{span}"),
 	)
 	errs = errors.Join(errs, err)
