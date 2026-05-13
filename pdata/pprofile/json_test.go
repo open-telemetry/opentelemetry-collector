@@ -42,4 +42,13 @@ func TestJSONUnmarshalerDisallowUnknownFields(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 1, pd.ResourceProfiles().Len())
 	})
+
+	t.Run("strict mode reports only the first unknown field", func(t *testing.T) {
+		multi := []byte(`{"unexpected1":"a","unexpected2":"b"}`)
+		u := &JSONUnmarshaler{DisallowUnknownFields: true}
+		_, err := u.UnmarshalProfiles(multi)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), `unknown field "unexpected1"`)
+		assert.NotContains(t, err.Error(), `unknown field "unexpected2"`)
+	})
 }

@@ -44,6 +44,15 @@ func TestUnmarshalValueDisallowUnknownFields(t *testing.T) {
 	assert.Contains(t, err.Error(), `unknown field "unknown"`)
 }
 
+func TestUnmarshalValueDisallowUnknownFieldsReportsOnlyFirst(t *testing.T) {
+	m := &JSONUnmarshaler{DisallowUnknownFields: true}
+
+	_, err := m.UnmarshalValue([]byte(`{"unexpected1":"a","unexpected2":"b"}`))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `unknown field "unexpected1"`)
+	assert.NotContains(t, err.Error(), `unknown field "unexpected2"`)
+}
+
 func genTestEncodingValues() map[string]pcommon.Value {
 	return map[string]pcommon.Value{
 		"empty":               pcommon.NewValueEmpty(),
