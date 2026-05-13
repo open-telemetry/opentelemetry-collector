@@ -12,44 +12,44 @@ A survey of components in the collector-contrib repository reveals the full scop
 
 Components with costly initialization that involves large state synchronization, service discovery, or log replay. Restarting these components introduces significant delays before they are fully operational.
 
-- `k8sclusterreceiver` - performs a full list/watch sync of the Kubernetes cluster state on startup, with a default timeout of 10 minutes. No metrics are emitted until the sync completes. Seems it can take 2-5 minutes, so 10 minutes was picked to be long enough (https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/842#discussion_r488211782).
-- `prometheusreceiver` - re-runs all service discovery backends (Kubernetes SD, Consul SD, DNS SD, etc.) and rebuilds per-target scrape loops from scratch.
-- `prometheusremotewriteexporter` - replays unacknowledged write-ahead log (WAL) entries on startup before accepting new data, adding latency proportional to the WAL backlog.
-- `k8sattributesprocessor` - when configured with `wait_for_metadata: true`, blocks startup until its Kubernetes metadata cache is fully synced via informers, delaying the pipeline from accepting data. It can take 4-5 minutes on a cluster (https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29305).
+- `k8s_cluster` - performs a full list/watch sync of the Kubernetes cluster state on startup, with a default timeout of 10 minutes. No metrics are emitted until the sync completes. Seems it can take 2-5 minutes, so 10 minutes was picked to be long enough (https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/842#discussion_r488211782).
+- `prometheus` - re-runs all service discovery backends (Kubernetes SD, Consul SD, DNS SD, etc.) and rebuilds per-target scrape loops from scratch.
+- `prometheus_remote_write` - replays unacknowledged write-ahead log (WAL) entries on startup before accepting new data, adding latency proportional to the WAL backlog.
+- `k8s_attributes` - when configured with `wait_for_metadata: true`, blocks startup until its Kubernetes metadata cache is fully synced via informers, delaying the pipeline from accepting data. It can take 4-5 minutes on a cluster (https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29305).
 
 ### Accumulated State Loss
 
 Many components maintain in-memory state (buffers, counters, accumulators, caches) that is permanently lost on restart. This causes metric gaps, trace loss, incorrect calculations, and false alerts visible to end users. Adding a persistence layer doesn't directly solve this either because of the requirement of pulling from the
 persistence layer or re-filling a cache.
 
-- `tailsamplingprocessor` - buffers incomplete traces in memory while awaiting sampling decisions. On restart, all buffered traces and their accumulated span context are discarded, resulting in lost or incorrectly sampled traces.
-- `groupbytraceprocessor` - groups spans into complete traces in memory, holding them until a configured wait duration expires. On restart, incomplete traces waiting for additional spans are discarded and never forwarded.
-- `deltatocumulativeprocessor` - accumulates cumulative values from delta metric streams, indexed by stream identity. On restart, cumulative conversions lose continuity and restart from zero.
-- `cumulativetodeltaprocessor` - stores previous cumulative metric values needed to calculate deltas. On restart, the first cumulative value is treated as a reset, producing incorrect delta values until the next datapoint arrives.
-- `intervalprocessor` - aggregates metrics over a configured interval window. On restart, any metrics collected but not yet exported for the current interval are lost.
-- `logdedupprocessor` - tracks log deduplication counts, first-seen and last-seen timestamps per unique log entry. On restart, duplicate counts reset and previously seen logs are counted again.
-- `metricstarttimeprocessor` - caches first-seen metric datapoint values per resource to adjust start times. On restart, the processor cannot reconstruct original start times, causing inaccurate start time adjustments.
-- `statsdreceiver` - accumulates gauge, counter, histogram, and timing values from incoming StatsD packets between flush intervals. On restart, any partial aggregations not yet flushed are discarded.
-- `prometheusexporter` - maintains a metric registry storing the last known value for all time series exposed on the scrape endpoint. On restart, the endpoint returns empty metrics until new data arrives, potentially breaking alerting and dashboard rules.
-- `signalfxexporter` - buffers pending dimension metadata updates and correlation state for deduplication. On restart, pending dimension updates are lost and metadata associations must be re-established.
-- `k8sattributesprocessor` - maintains an in-memory metadata cache of Kubernetes resources (pods, namespaces, nodes, deployments) populated via informers. By default, the cache is refilled asynchronously so startup is not blocked, but data flowing through the processor during this period will have its Kubernetes metadata missing. With `wait_for_metadata: true`, the processor delays startup until the cache is fully synced, trading availability for correctness.
+- `tail_sampling` - buffers incomplete traces in memory while awaiting sampling decisions. On restart, all buffered traces and their accumulated span context are discarded, resulting in lost or incorrectly sampled traces.
+- `groupbytrace` - groups spans into complete traces in memory, holding them until a configured wait duration expires. On restart, incomplete traces waiting for additional spans are discarded and never forwarded.
+- `deltatocumulative` - accumulates cumulative values from delta metric streams, indexed by stream identity. On restart, cumulative conversions lose continuity and restart from zero.
+- `cumulativetodelta` - stores previous cumulative metric values needed to calculate deltas. On restart, the first cumulative value is treated as a reset, producing incorrect delta values until the next datapoint arrives.
+- `interval` - aggregates metrics over a configured interval window. On restart, any metrics collected but not yet exported for the current interval are lost.
+- `log_dedup` - tracks log deduplication counts, first-seen and last-seen timestamps per unique log entry. On restart, duplicate counts reset and previously seen logs are counted again.
+- `metric_start_time` - caches first-seen metric datapoint values per resource to adjust start times. On restart, the processor cannot reconstruct original start times, causing inaccurate start time adjustments.
+- `statsd` - accumulates gauge, counter, histogram, and timing values from incoming StatsD packets between flush intervals. On restart, any partial aggregations not yet flushed are discarded.
+- `prometheus` - maintains a metric registry storing the last known value for all time series exposed on the scrape endpoint. On restart, the endpoint returns empty metrics until new data arrives, potentially breaking alerting and dashboard rules.
+- `signalfx` - buffers pending dimension metadata updates and correlation state for deduplication. On restart, pending dimension updates are lost and metadata associations must be re-established.
+- `k8s_attributes` - maintains an in-memory metadata cache of Kubernetes resources (pods, namespaces, nodes, deployments) populated via informers. By default, the cache is refilled asynchronously so startup is not blocked, but data flowing through the processor during this period will have its Kubernetes metadata missing. With `wait_for_metadata: true`, the processor delays startup until the cache is fully synced, trading availability for correctness.
 
 ### Cursor and Checkpoint Disruption
 
 Components that track consumption progress via file offsets, poll cursors, or partition checkpoints. When configured with a storage extension, these components persist their position and can recover on restart. Without a storage extension, positions are held in memory and lost on restart, causing duplicate ingestion or missed data.
 
-With the storage extension there is still a cost, especially with the `filelogreceiver`. It must re-scan all files, read the first 1000 bytes of each file, create a fingerprint and then compare that fingerprint to the loaded data from the storage extension, then seek to the last position and start reading. Removing the need to do that when that receiver is not changed, is a savings on CPU and disk IO.
+With the storage extension there is still a cost, especially with the `file_log`. It must re-scan all files, read the first 1000 bytes of each file, create a fingerprint and then compare that fingerprint to the loaded data from the storage extension, then seek to the last position and start reading. Removing the need to do that when that receiver is not changed, is a savings on CPU and disk IO.
 
-- `filelogreceiver` - tracks file read offsets and fingerprints for each monitored file. On restart without storage, all offsets are lost and files are re-read from the beginning, causing duplicate log ingestion.
-- `azureeventhubreceiver` - maintains partition-level sequence number checkpoints. On restart without storage, checkpoints are lost and the receiver reverts to the latest available message, causing missed events between shutdown and restart.
-- `awscloudwatchreceiver` - stores timestamp checkpoints per log group. On restart without storage, checkpoints reset to the configured `start_from` time, causing duplicate ingestion of logs already consumed.
-- `mongodbatlasreceiver` - stores the last recorded alert timestamp for polling. On restart without storage, the timestamp is lost and the receiver re-fetches alerts from the full polling window, causing alert duplication.
+- `file_log` - tracks file read offsets and fingerprints for each monitored file. On restart without storage, all offsets are lost and files are re-read from the beginning, causing duplicate log ingestion.
+- `azure_event_hub` - maintains partition-level sequence number checkpoints. On restart without storage, checkpoints are lost and the receiver reverts to the latest available message, causing missed events between shutdown and restart.
+- `awscloudwatch` - stores timestamp checkpoints per log group. On restart without storage, checkpoints reset to the configured `start_from` time, causing duplicate ingestion of logs already consumed.
+- `mongodb_atlas` - stores the last recorded alert timestamp for polling. On restart without storage, the timestamp is lost and the receiver re-fetches alerts from the full polling window, causing alert duplication.
 
 ### External System Disruption
 
 Components whose restart causes disruption to external systems or other instances beyond the collector itself.
 
-- `kafkareceiver` - shutting down the receiver sends a LeaveGroup request to the Kafka broker, triggering a consumer group rebalance that affects all members of the group.
+- `kafka` - shutting down the receiver sends a LeaveGroup request to the Kafka broker, triggering a consumer group rebalance that affects all members of the group.
 
 ---
 
