@@ -436,6 +436,7 @@
       "sampleentityreceiver",
       "samplefactoryreceiver",
       "samplereceiver",
+      "samplepkg",
       "samplingdecision",
       "samplingprocessor",
       "sarama",
