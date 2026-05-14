@@ -554,6 +554,81 @@ func TestGenerateConfigFiles(t *testing.T) {
 	}
 }
 
+func TestGenerateConfigFiles_ExportedConfigsWithoutConfig(t *testing.T) {
+	root := t.TempDir()
+	tmpdir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(tmpdir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	md := Metadata{
+		Type:        "test",
+		PackageName: "testmodule/shortname",
+		Status:      &Status{Class: "pkg"},
+		ExportedConfigs: map[string]*cfggen.ConfigMetadata{
+			"sample_config": {
+				Type: "object",
+				Properties: map[string]*cfggen.ConfigMetadata{
+					"endpoint": {Type: "string"},
+				},
+			},
+		},
+	}
+
+	err := generateConfigFiles(md, tmpdir, "testmodule")
+	require.NoError(t, err)
+
+	schema, err := os.ReadFile(filepath.Join(tmpdir, "config.schema.json")) // #nosec G304
+	require.NoError(t, err)
+	require.Contains(t, string(schema), `"$defs": {`)
+	require.Contains(t, string(schema), `"sample_config": {`)
+
+	generatedConfig, err := os.ReadFile(filepath.Join(tmpdir, "generated_config.go")) // #nosec G304
+	require.NoError(t, err)
+	require.Contains(t, string(generatedConfig), "type SampleConfig struct")
+	require.NotContains(t, string(generatedConfig), "type Config struct")
+}
+
+func TestGenerateConfigFiles_ExportedConfigsWithConfig(t *testing.T) {
+	root := t.TempDir()
+	tmpdir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(tmpdir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	md := Metadata{
+		Type:        "test",
+		PackageName: "testmodule/shortname",
+		Status:      &Status{Class: "receiver"},
+		Config: &cfggen.ConfigMetadata{
+			Type: "object",
+			Properties: map[string]*cfggen.ConfigMetadata{
+				"endpoint": {Type: "string"},
+			},
+		},
+		ExportedConfigs: map[string]*cfggen.ConfigMetadata{
+			"sample_config": {
+				Type: "object",
+				Properties: map[string]*cfggen.ConfigMetadata{
+					"host_name": {Type: "string"},
+				},
+			},
+		},
+	}
+
+	err := generateConfigFiles(md, tmpdir, "testmodule")
+	require.NoError(t, err)
+
+	schema, err := os.ReadFile(filepath.Join(tmpdir, "config.schema.json")) // #nosec G304
+	require.NoError(t, err)
+	require.Contains(t, string(schema), `"endpoint": {`)
+	require.Contains(t, string(schema), `"$defs": {`)
+	require.Contains(t, string(schema), `"sample_config": {`)
+
+	generatedConfig, err := os.ReadFile(filepath.Join(tmpdir, "generated_config.go")) // #nosec G304
+	require.NoError(t, err)
+	require.Contains(t, string(generatedConfig), "type Config struct")
+	require.Contains(t, string(generatedConfig), "type SampleConfig struct")
+}
+
 func TestInjectInternalMetadataDefs(t *testing.T) {
 	t.Run("skips when metadata has no internal definitions", func(t *testing.T) {
 		src := &cfggen.ConfigMetadata{}
