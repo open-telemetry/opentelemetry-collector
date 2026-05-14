@@ -54,6 +54,8 @@ config:
       type: string
       format: duration
       default: 10s
+    sample_pkg:
+      $ref: ../samplepkg.sample_config
   required: [endpoint]
 
 resource_attributes:

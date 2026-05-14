@@ -7,10 +7,18 @@ import (
 	"regexp"
 	"time"
 
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplepkg"
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
 )
+
+type SamplePkg = samplepkg.SampleConfig
+
+// NewDefaultSamplePkg returns a new SamplePkg with default values consistent with the annotations in the schema.
+func NewDefaultSamplePkg() SamplePkg {
+	return samplepkg.NewDefaultSampleConfig()
+}
 
 type TargetsItem struct {
 	Interval configoptional.Optional[time.Duration] `mapstructure:"interval"`

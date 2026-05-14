@@ -582,6 +582,7 @@ func TestInjectInternalMetadataDefs(t *testing.T) {
 		require.Contains(t, src.Defs, "resource_attributes_config")
 		resourceAttributes := src.Defs["resource_attributes_config"]
 		require.Equal(t, "object", resourceAttributes.Type)
+		require.True(t, resourceAttributes.InternalOnly)
 		require.Contains(t, resourceAttributes.Properties, "service.name")
 
 		resourceAttribute := resourceAttributes.Properties["service.name"]
@@ -616,8 +617,11 @@ func TestInjectInternalMetadataDefs(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, existingDef, src.Defs["user_config"])
+		require.False(t, src.Defs["user_config"].InternalOnly)
 		require.Contains(t, src.Defs, "events_config")
 		require.Contains(t, src.Defs, "logs_builder_config")
+		require.True(t, src.Defs["events_config"].InternalOnly)
+		require.True(t, src.Defs["logs_builder_config"].InternalOnly)
 
 		events := src.Defs["events_config"]
 		require.Contains(t, events.Properties, "sample.event")
@@ -675,7 +679,7 @@ func TestInjectInternalMetadataDefs(t *testing.T) {
 	t.Run("skips when generated YAML has no internal defs", func(t *testing.T) {
 		src := &cfggen.ConfigMetadata{}
 
-		err := mergeInternalMetadataDefs([]byte("config:\n  $defs: {}\n"), src)
+		err := mergeInternalMetadataDefs(nil, src)
 		require.NoError(t, err)
 		require.Nil(t, src.Defs)
 	})

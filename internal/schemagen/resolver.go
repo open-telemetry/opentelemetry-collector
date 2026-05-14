@@ -67,6 +67,7 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 		customDescription := current.Description
 		customDefault := current.Default
 		customEnum := current.Enum
+		customInternalOnly := current.InternalOnly
 
 		finalRef := current.Ref
 		resolved, err := r.resolveRef(root, current, origin)
@@ -95,6 +96,7 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 		newCurrent.ResolvedFrom = finalRef
 		newCurrent.GoStruct = current.GoStruct
 		newCurrent.Embed = current.Embed
+		newCurrent.InternalOnly = customInternalOnly
 
 		// Restore custom extensions if they were explicitly set on the reference
 		if customGoType != "" {
@@ -185,10 +187,7 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 	}
 	handleEmbeddedStructs(target)
 	enhanceTimeTypes(target)
-
-	if len(target.Properties) > 0 {
-		cleanupDefs(target)
-	}
+	cleanupInternalDefs(target)
 
 	return nil
 }
@@ -290,17 +289,13 @@ func enhanceTimeTypes(md *ConfigMetadata) {
 	}
 }
 
-func cleanupDefs(md *ConfigMetadata) {
-	if md.Defs == nil {
-		// nothing to do here
-		return
-	}
-	defs := make(map[string]*ConfigMetadata)
+func cleanupInternalDefs(md *ConfigMetadata) {
 	for name, def := range md.Defs {
-		// if is an alias
-		if def.ResolvedFrom != "" {
-			defs[name] = def
+		if def != nil && def.InternalOnly {
+			delete(md.Defs, name)
 		}
 	}
-	md.Defs = defs
+	if len(md.Defs) == 0 {
+		md.Defs = nil
+	}
 }

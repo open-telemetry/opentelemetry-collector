@@ -91,6 +91,79 @@ func TestResolver_ResolveSchema_DefsOnlyPreservesDefs(t *testing.T) {
 	require.Contains(t, result.Defs["sample_config"].Properties, "endpoint")
 }
 
+func TestResolver_ResolveSchema_PreservesInlineDefsWithProperties(t *testing.T) {
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: NewLoader(""),
+	}
+
+	src := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"endpoint": {Type: "string"},
+		},
+		Defs: map[string]*ConfigMetadata{
+			"sample_config": {
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"host_name": {Type: "string"},
+				},
+			},
+		},
+	}
+
+	result, err := resolver.ResolveSchema(src)
+	require.NoError(t, err)
+	require.Contains(t, result.Properties, "endpoint")
+	require.Contains(t, result.Defs, "sample_config")
+	require.Equal(t, "object", result.Defs["sample_config"].Type)
+	require.Contains(t, result.Defs["sample_config"].Properties, "host_name")
+}
+
+func TestResolver_ResolveSchema_DropsInternalOnlyDefs(t *testing.T) {
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: NewLoader(""),
+	}
+
+	src := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"endpoint": {Type: "string"},
+		},
+		Defs: map[string]*ConfigMetadata{
+			"metrics_builder_config": {
+				Type:         "object",
+				InternalOnly: true,
+				Properties: map[string]*ConfigMetadata{
+					"metrics": {Type: "object"},
+				},
+			},
+			"sample_config": {
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"host_name": {Type: "string"},
+				},
+			},
+			"exported_metrics_config": {
+				Ref: "metrics_builder_config",
+			},
+		},
+	}
+
+	result, err := resolver.ResolveSchema(src)
+	require.NoError(t, err)
+	require.Contains(t, result.Properties, "endpoint")
+	require.NotContains(t, result.Defs, "metrics_builder_config")
+	require.Contains(t, result.Defs, "sample_config")
+	require.Contains(t, result.Defs, "exported_metrics_config")
+	require.Contains(t, result.Defs["exported_metrics_config"].Properties, "metrics")
+}
+
 func TestResolver_ResolveSchema_UnknownInternalReference(t *testing.T) {
 	resolver := &Resolver{
 		pkgID:  "go.opentelemetry.io/collector/test/component",
