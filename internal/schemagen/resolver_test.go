@@ -63,6 +63,34 @@ func TestResolver_ResolveSchema_InternalReference(t *testing.T) {
 	require.Equal(t, "Target type description", result.Properties["config"].Description)
 }
 
+func TestResolver_ResolveSchema_DefsOnlyPreservesDefs(t *testing.T) {
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/pkg",
+		class:  "pkg",
+		name:   "testpkg",
+		loader: NewLoader(""),
+	}
+
+	src := &ConfigMetadata{
+		Defs: map[string]*ConfigMetadata{
+			"sample_config": {
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"endpoint": {Type: "string"},
+				},
+			},
+		},
+	}
+
+	result, err := resolver.ResolveSchema(src)
+	require.NoError(t, err)
+	require.Empty(t, result.Type)
+	require.Empty(t, result.Properties)
+	require.Contains(t, result.Defs, "sample_config")
+	require.Equal(t, "object", result.Defs["sample_config"].Type)
+	require.Contains(t, result.Defs["sample_config"].Properties, "endpoint")
+}
+
 func TestResolver_ResolveSchema_UnknownInternalReference(t *testing.T) {
 	resolver := &Resolver{
 		pkgID:  "go.opentelemetry.io/collector/test/component",
@@ -1124,6 +1152,44 @@ func TestResolver_ResolveSchema_LocalRef(t *testing.T) {
 	require.NotNil(t, result.Properties["local"])
 	require.Equal(t, "object", result.Properties["local"].Type)
 	require.Equal(t, "Local target", result.Properties["local"].Description)
+}
+
+func TestResolver_ResolveSchema_LocalRefUsesRootDef(t *testing.T) {
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: &mockLoader{schemas: map[string]*ConfigMetadata{}},
+	}
+
+	src := &ConfigMetadata{
+		Type: "object",
+		Defs: map[string]*ConfigMetadata{
+			"resource_attributes_config": {
+				Type:        "object",
+				Description: "Injected resource attributes config",
+				Properties: map[string]*ConfigMetadata{
+					"service.name": {
+						Type: "string",
+					},
+				},
+			},
+		},
+		Properties: map[string]*ConfigMetadata{
+			"resource_attributes": {
+				Ref: "/config/metadata.resource_attributes_config",
+			},
+		},
+	}
+
+	result, err := resolver.ResolveSchema(src)
+	require.NoError(t, err)
+
+	resourceAttributes := result.Properties["resource_attributes"]
+	require.Equal(t, "object", resourceAttributes.Type)
+	require.Equal(t, "Injected resource attributes config", resourceAttributes.Description)
+	require.Contains(t, resourceAttributes.Properties, "service.name")
+	require.Equal(t, "string", resourceAttributes.Properties["service.name"].Type)
 }
 
 func TestResolver_ResolveSchema_MapValueError(t *testing.T) {

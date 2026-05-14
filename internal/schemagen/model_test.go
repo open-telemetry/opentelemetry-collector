@@ -183,6 +183,19 @@ func TestConfigMetadata_Validate_Valid(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "valid with defs only",
+			md: &ConfigMetadata{
+				Defs: map[string]*ConfigMetadata{
+					"controller_config": {
+						Type: "object",
+						Properties: map[string]*ConfigMetadata{
+							"timeout": {Type: "string"},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
