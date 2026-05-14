@@ -33,7 +33,7 @@ type Metadata struct {
 	Parent string `mapstructure:"parent"`
 	// Status information for the component.
 	Status *Status `mapstructure:"status"`
-	// Spatial Re-aggregation featuregate.
+	// ReaggregationEnabled enables spatial re-aggregation configuration generation. Defaults to true.
 	ReaggregationEnabled bool `mapstructure:"reaggregation_enabled"`
 	// Override value featuregate for resource attributes.
 	OverrideValueEnabled bool `mapstructure:"override_value_enabled"`

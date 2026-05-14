@@ -20,6 +20,8 @@ scope_name: string
 generated_package_name: string
 
 # Optional: Enables per-metric reaggregation config generation for metrics with attributes.
+# Enabled by default. Set to false to generate metric config with only the `enabled`
+# field.
 # When enabled, generated metrics config includes `aggregation_strategy` and `attributes`
 # fields that let users reduce metric cardinality by choosing which dimensions are kept.
 reaggregation_enabled: bool

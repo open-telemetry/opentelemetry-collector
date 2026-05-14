@@ -38,9 +38,10 @@ func TestTwoPackagesInDirectory(t *testing.T) {
 
 func TestLoadMetadata(t *testing.T) {
 	tests := []struct {
-		name    string
-		want    Metadata
-		wantErr string
+		name                     string
+		want                     Metadata
+		wantErr                  string
+		wantReaggregationEnabled *bool
 	}{
 		{
 			name: "samplereceiver/metadata.yaml",
@@ -638,6 +639,24 @@ func TestLoadMetadata(t *testing.T) {
 			},
 		},
 		{
+			name: "testdata/reaggregation_disabled.yaml",
+			want: Metadata{
+				Type:                 "test",
+				GeneratedPackageName: "metadata",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				ShortFolderName:      "testdata",
+				Tests:                Tests{Host: "newMdatagenNopHost()"},
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelBeta: {"logs"},
+					},
+				},
+			},
+			wantReaggregationEnabled: boolPtr(false),
+		},
+		{
 			name:    "testdata/invalid_type_rattr.yaml",
 			want:    Metadata{},
 			wantErr: "decoding failed due to the following error(s):\n\n'resource_attributes[string.resource.attr].type' invalid type: \"invalidtype\"",
@@ -815,7 +834,13 @@ func TestLoadMetadata(t *testing.T) {
 				require.ErrorContains(t, err, tt.wantErr)
 			} else {
 				require.NoError(t, err)
-				require.Equal(t, tt.want, got)
+				want := tt.want
+				wantReaggregationEnabled := boolPtr(true)
+				if tt.wantReaggregationEnabled != nil {
+					wantReaggregationEnabled = tt.wantReaggregationEnabled
+				}
+				want.ReaggregationEnabled = *wantReaggregationEnabled
+				require.Equal(t, want, got)
 			}
 		})
 	}
