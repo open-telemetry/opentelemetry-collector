@@ -15,6 +15,8 @@
 # - "opentelemetry_collector_ready_to_merge_count"
 # - "opentelemetry_collector_final_comment_period_url"
 # - "opentelemetry_collector_final_comment_period_count"
+# - "opentelemetry_collector_approvals_needed_url"
+# - "opentelemetry_collector_approvals_needed_count"
 
 
 set -euo pipefail
@@ -31,6 +33,7 @@ fi
 declare -A LABELS=(
     ["ready-to-merge"]="ready_to_merge"
     ["rfc:final-comment-period"]="final_comment_period"
+    ["rfc:approvals-needed"]="approvals_needed"
 )
 
 repo_prefix="${REPO##*/}"

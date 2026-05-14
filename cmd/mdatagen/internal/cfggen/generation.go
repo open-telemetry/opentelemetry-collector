@@ -89,7 +89,28 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			tr, err := ResolveGoTypeRef(ref, rootPackage, componentPackage)
 			return err == nil && tr.ImportPath != ""
 		},
+		"externalDefaultCall": func(ref string) string {
+			call, err := ExternalDefaultCall(ref, rootPackage, componentPackage)
+			if err != nil {
+				panic(err)
+			}
+			return call
+		},
 	}
+}
+
+// ExternalDefaultCall returns the Go expression that delegates to the upstream package's
+// NewDefault constructor for an external type reference (e.g. "controller.NewDefaultControllerConfig()").
+func ExternalDefaultCall(ref, rootPackage, componentPackage string) (string, error) {
+	tr, err := ResolveGoTypeRef(ref, rootPackage, componentPackage)
+	if err != nil {
+		return "", err
+	}
+	fnCall := fmt.Sprintf("NewDefault%s()", tr.TypeName)
+	if tr.Qualifier() != "" {
+		fnCall = tr.Qualifier() + "." + fnCall
+	}
+	return fnCall, nil
 }
 
 // WithCfgFns merges config generation template functions into the given function map.
@@ -97,6 +118,7 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 func WithCfgFns(fns map[string]any, rootPackage, componentPackage string) map[string]any {
 	cfgFns := NewCfgFns(rootPackage, componentPackage)
 	maps.Copy(fns, cfgFns)
+	maps.Copy(fns, NewCfgDocFns())
 	return fns
 }
 
@@ -242,6 +264,10 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 		}
 	}
 
+	if hasValidators(md) {
+		imports["errors"] = true
+	}
+
 	if md.Pattern != "" && !strings.HasPrefix(md.GoType, "time.") {
 		imports["regexp"] = true
 	}
@@ -317,6 +343,12 @@ func collectCustomDefaultImports(md *ConfigMetadata, defaultValue any, imports m
 	}
 
 	return nil
+}
+
+func hasValidators(md *ConfigMetadata) bool {
+	return md.GoStruct.CustomValidator != nil || // custom validation
+		len(md.Required) > 0 || // required validation
+		md.MinLength != nil || md.MaxLength != nil || md.Pattern != "" // string validation
 }
 
 // FormatTypeName resolves a reference string to a Go type expression using GoTypeRef.
