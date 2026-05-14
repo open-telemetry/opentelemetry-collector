@@ -27,12 +27,14 @@ TEAMS=(
 )
 
 IS_AUTHORIZED="false"
-for TEAM in "${TEAMS[@]}"; do
-    if GH_TOKEN="${ORG_TOKEN}" gh api "orgs/open-telemetry/teams/${TEAM}/memberships/${SENDER}" --silent 2>/dev/null; then
-        IS_AUTHORIZED="true"
-        break
-    fi
-done
+if [[ "${SENDER}" != "${PR_AUTHOR}" ]]; then
+    for TEAM in "${TEAMS[@]}"; do
+        if GH_TOKEN="${ORG_TOKEN}" gh api "orgs/open-telemetry/teams/${TEAM}/memberships/${SENDER}" --silent 2>/dev/null; then
+            IS_AUTHORIZED="true"
+            break
+        fi
+    done
+fi
 
 if [[ "${SENDER}" != "${PR_AUTHOR}" && "${IS_AUTHORIZED}" != "true" ]]; then
     echo "Only the PR author or a member of an authorized team can rerun workflows"
