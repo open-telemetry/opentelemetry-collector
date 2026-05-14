@@ -38,10 +38,9 @@ func TestTwoPackagesInDirectory(t *testing.T) {
 
 func TestLoadMetadata(t *testing.T) {
 	tests := []struct {
-		name                     string
-		want                     Metadata
-		wantErr                  string
-		wantReaggregationEnabled *bool
+		name    string
+		want    Metadata
+		wantErr string
 	}{
 		{
 			name: "samplereceiver/metadata.yaml",
@@ -599,6 +598,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 			},
 		},
@@ -610,6 +610,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -629,6 +630,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -646,6 +648,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: false,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -654,7 +657,6 @@ func TestLoadMetadata(t *testing.T) {
 					},
 				},
 			},
-			wantReaggregationEnabled: boolPtr(false),
 		},
 		{
 			name:    "testdata/invalid_type_rattr.yaml",
@@ -739,6 +741,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -757,6 +760,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -776,6 +780,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -794,6 +799,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -834,13 +840,7 @@ func TestLoadMetadata(t *testing.T) {
 				require.ErrorContains(t, err, tt.wantErr)
 			} else {
 				require.NoError(t, err)
-				want := tt.want
-				wantReaggregationEnabled := boolPtr(true)
-				if tt.wantReaggregationEnabled != nil {
-					wantReaggregationEnabled = tt.wantReaggregationEnabled
-				}
-				want.ReaggregationEnabled = *wantReaggregationEnabled
-				require.Equal(t, want, got)
+				require.Equal(t, tt.want, got)
 			}
 		})
 	}
