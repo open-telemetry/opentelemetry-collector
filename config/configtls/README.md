@@ -85,7 +85,7 @@ See below for examples.
 
 ## Insecure Cipher Suites
 
-**WARNING**: Insecure cipher suites can be enabled for legacy system compatibility but this should be used with extreme caution as it may expose your system to security vulnerabilities.
+__WARNING__: Insecure cipher suites can be enabled for legacy system compatibility but this should be used with extreme caution as it may expose your system to security vulnerabilities.
 
 - `include_insecure_cipher_suites`: (default = false): Whether to include insecure cipher suites returned by `tls.InsecureCipherSuites()` in addition to the secure ones
 
