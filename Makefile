@@ -429,3 +429,11 @@ SCHEMA_DIRS := $(shell find $(CURDIR) -path "*testdata*" -prune -o -path "*inter
 .PHONY: generate-schemas
 generate-schemas:
 	@$(foreach dir,$(SCHEMA_DIRS), cd $(SRC_ROOT)/cmd/schemagen && go run . $(abspath $(dir)) -o $(abspath $(dir));)
+
+# check-schemas asserts every committed config.schema.yaml is in sync with the
+# Go config struct by regenerating into a temp dir and diffing the property-name
+# sets. Tolerates hand-edits to descriptions/enums while catching real drift
+# (missing or extra fields).
+.PHONY: check-schemas
+check-schemas:
+	@$(SRC_ROOT)/internal/buildscripts/check-schemas.sh
