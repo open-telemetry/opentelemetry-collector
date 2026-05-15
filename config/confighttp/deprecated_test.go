@@ -17,6 +17,18 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
+func TestUnmarshalClientDeprecatedError(t *testing.T) {
+	conf := confmap.NewFromStringMap(map[string]any{"timeout": "not-a-duration"})
+	cfg := NewDefaultClientConfig()
+	require.Error(t, unmarshalClientDeprecated(&cfg, conf))
+}
+
+func TestUnmarshalServerDeprecatedError(t *testing.T) {
+	conf := confmap.NewFromStringMap(map[string]any{"read_timeout": "not-a-duration"})
+	cfg := NewDefaultServerConfig()
+	require.Error(t, unmarshalServerDeprecated(&cfg, conf))
+}
+
 func TestRenamedFieldLog(t *testing.T) {
 	core, observed := observer.New(zapcore.WarnLevel)
 	f := renamedField{old: "old_name", new: "new::name"}

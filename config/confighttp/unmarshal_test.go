@@ -4,13 +4,18 @@
 package confighttp
 
 import (
+	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -94,6 +99,27 @@ func TestClientConfigUnmarshal(t *testing.T) {
 	}
 }
 
+func TestClientConfigLegacyWarningsLogged(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config", "client/legacy_all_fields.yaml"))
+	require.NoError(t, err)
+
+	cfg := NewDefaultClientConfig()
+	require.NoError(t, cm.Unmarshal(&cfg))
+	require.NotEmpty(t, cfg.unmarshalWarnings)
+
+	core, observed := observer.New(zapcore.WarnLevel)
+	settings := component.TelemetrySettings{Logger: zap.New(core)}
+	_, err = cfg.ToClient(t.Context(), nil, settings)
+	require.NoError(t, err)
+
+	entries := observed.All()
+	assert.Equal(t, len(cfg.unmarshalWarnings), len(entries))
+	for _, entry := range entries {
+		assert.Equal(t, zapcore.WarnLevel, entry.Level)
+		assert.Contains(t, entry.Message, "deprecated")
+	}
+}
+
 func TestServerConfigUnmarshal(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -165,5 +191,27 @@ func TestServerConfigUnmarshal(t *testing.T) {
 
 			assert.Equal(t, tt.want, cfg.Keepalive)
 		})
+	}
+}
+
+func TestServerConfigLegacyWarningsLogged(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config", "server/legacy_with_idle_timeout.yaml"))
+	require.NoError(t, err)
+
+	cfg := NewDefaultServerConfig()
+	require.NoError(t, cm.Unmarshal(&cfg))
+	require.NotEmpty(t, cfg.renamedFields)
+
+	core, observed := observer.New(zapcore.WarnLevel)
+	settings := component.TelemetrySettings{Logger: zap.New(core)}
+	srv, err := cfg.ToServer(t.Context(), nil, settings, http.NewServeMux())
+	require.NoError(t, err)
+	require.NotNil(t, srv)
+
+	entries := observed.All()
+	assert.Equal(t, len(cfg.renamedFields), len(entries))
+	for _, entry := range entries {
+		assert.Equal(t, zapcore.WarnLevel, entry.Level)
+		assert.Contains(t, entry.Message, "deprecated")
 	}
 }
