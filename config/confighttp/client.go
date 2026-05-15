@@ -15,7 +15,6 @@ import (
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
-	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/publicsuffix"
 
@@ -99,88 +98,13 @@ type ClientConfig struct {
 	// Keepalive configuration.
 	Keepalive configoptional.Optional[KeepaliveClientConfig] `mapstructure:"keepalive,omitempty"`
 
-	warnings []renamedField
-}
-
-type renamedField struct {
-	old string
-	new string
-}
-
-func (f *renamedField) Log(logger *zap.Logger) {
-	logger.Warn("Use of deprecated configuration option",
-		zap.String("old name", f.old),
-		zap.String("new name", f.new),
-	)
+	// unmarshalWarnings holds deprecation notices collected during Unmarshal and
+	// emitted as log warnings on the first call to ToClient.
+	unmarshalWarnings []renamedField `mapstructure:"-"`
 }
 
 func (cc *ClientConfig) Unmarshal(conf *confmap.Conf) error {
-	type oldFields struct {
-		IdleConnTimeout     time.Duration `mapstructure:"idle_conn_timeout"`
-		MaxIdleConns        int           `mapstructure:"max_idle_conns"`
-		MaxIdleConnsPerHost int           `mapstructure:"max_idle_conns_per_host,omitempty"`
-		DisableKeepAlives   bool          `mapstructure:"disable_keep_alives,omitempty"`
-	}
-
-	type clientConfigFields ClientConfig
-
-	type legacyConfig struct {
-		clientConfigFields `mapstructure:",squash"`
-		oldFields          `mapstructure:",squash"`
-	}
-
-	var cfg legacyConfig
-	cfg.clientConfigFields = clientConfigFields(*cc)
-	defaultTransport := http.DefaultTransport.(*http.Transport)
-	cfg.oldFields = oldFields{
-		MaxIdleConns:      defaultTransport.MaxIdleConns,
-		IdleConnTimeout:   defaultTransport.IdleConnTimeout,
-		DisableKeepAlives: false,
-	}
-	if err := conf.Unmarshal(&cfg, confmap.WithIgnoreUnused()); err != nil {
-		return err
-	}
-
-	deprecatedFields := []renamedField{
-		{"idle_conn_timeout", "keepalive::idle_conn_timeout"},
-		{"max_idle_conns", "keepalive::max_idle_conns"},
-		{"disable_keep_alives", "keepalive::enabled"},
-		{"max_idle_conns_per_host", "keepalive::max_idle_conns_per_host"},
-	}
-
-	var warnings []renamedField
-	for _, field := range deprecatedFields {
-		if conf.IsSet(field.old) {
-			warnings = append(warnings, field)
-		}
-	}
-
-	if len(warnings) > 0 && conf.IsSet("keepalive") {
-		return errors.New("confighttp.ClientConfig: cannot use legacy fields and new 'keepalive' section")
-	}
-
-	if cfg.DisableKeepAlives {
-		cfg.Keepalive = configoptional.None[KeepaliveClientConfig]()
-	} else {
-		// should never happen with default values
-		if !cfg.Keepalive.HasValue() {
-			cfg.Keepalive = configoptional.Some(KeepaliveClientConfig{})
-		}
-
-		if conf.IsSet("idle_conn_timeout") {
-			cfg.Keepalive.Get().IdleConnTimeout = cfg.IdleConnTimeout
-		}
-		if conf.IsSet("max_idle_conns") {
-			cfg.Keepalive.Get().MaxIdleConns = cfg.MaxIdleConns
-		}
-		if conf.IsSet("max_idle_conns_per_host") {
-			cfg.Keepalive.Get().MaxIdleConnsPerHost = cfg.MaxIdleConnsPerHost
-		}
-	}
-
-	*cc = ClientConfig(cfg.clientConfigFields)
-	cc.warnings = warnings
-	return nil
+	return unmarshalClientDeprecated(cc, conf)
 }
 
 // CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.
@@ -244,7 +168,7 @@ type ToClientOption interface {
 // the `extensions` argument should be the output of `host.GetExtensions()`.
 // It may also be `nil` in tests where no such extension is expected to be used.
 func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.ID]component.Component, settings component.TelemetrySettings, _ ...ToClientOption) (*http.Client, error) {
-	for _, field := range cc.warnings {
+	for _, field := range cc.unmarshalWarnings {
 		field.Log(settings.Logger)
 	}
 
