@@ -151,6 +151,75 @@ func TestAddrConfig_Listen_UnixSocketPermissions(t *testing.T) {
 	assert.Equal(t, socketFileMode|os.ModeSocket, fi.Mode())
 }
 
+func TestAddrConfig_Listen_UnixInvalidEndpoint(t *testing.T) {
+	t.Parallel()
+	na := &AddrConfig{
+		Endpoint:  "/nonexistent/dir/deep/socket.sock",
+		Transport: TransportTypeUnix,
+	}
+	_, err := na.Listen(context.Background())
+	assert.Error(t, err)
+}
+
+func TestAddrConfig_Listen_UnixChmodFailure(t *testing.T) {
+	t.Parallel()
+	//nolint:usetesting // short path needed for Unix socket limit
+	dir, err := os.MkdirTemp("", "confignet-test")
+	require.NoError(t, err)
+	t.Cleanup(func() { os.RemoveAll(dir) })
+	path := filepath.Join(dir, "chmod.sock")
+
+	na := &AddrConfig{
+		Endpoint:  path,
+		Transport: TransportTypeUnix,
+	}
+	ln, err := na.Listen(context.Background())
+	require.NoError(t, err)
+
+	// Remove the socket file behind the listener's back so that the
+	// Chmod in a second Listen call fails (socket won't exist to chmod).
+	require.NoError(t, ln.Close())
+
+	// Now make the directory read-only so Listen succeeds at binding
+	// but Chmod fails due to permission denied.
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "sub"), 0o700))
+	subPath := filepath.Join(dir, "sub", "chmod.sock")
+	na2 := &AddrConfig{
+		Endpoint:  subPath,
+		Transport: TransportTypeUnix,
+	}
+	ln2, err := na2.Listen(context.Background())
+	require.NoError(t, err)
+	// Verify listener works, then close
+	require.NoError(t, ln2.Close())
+
+	// Make dir read-only to cause Chmod failure
+	require.NoError(t, os.Chmod(filepath.Join(dir, "sub"), 0o444))       //nolint:gosec // intentional for test
+	t.Cleanup(func() { _ = os.Chmod(filepath.Join(dir, "sub"), 0o700) }) //nolint:gosec // restore perms for cleanup
+
+	_, err = na2.Listen(context.Background())
+	// On some systems this fails at Listen (can't bind), on others at Chmod.
+	// Either way it should error.
+	assert.Error(t, err)
+}
+
+func Test_removeStaleSocket_StatError(t *testing.T) {
+	t.Parallel()
+	//nolint:usetesting // short path needed for Unix socket limit
+	dir, err := os.MkdirTemp("", "confignet-test")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = os.Chmod(dir, 0o700); os.RemoveAll(dir) }) //nolint:gosec // restore perms for cleanup
+	path := filepath.Join(dir, "socket.sock")
+
+	// Create a file so the path exists.
+	require.NoError(t, os.WriteFile(path, []byte("x"), 0o600))
+	// Remove permission on the directory so Stat fails with permission denied.
+	require.NoError(t, os.Chmod(dir, 0o000))
+
+	err = removeStaleSocket(path)
+	assert.Error(t, err)
+}
+
 func TestAddrConfig_Listen_UnixSocketCloseRemovesFile(t *testing.T) {
 	t.Parallel()
 	//nolint:usetesting // short path needed for Unix socket limit
