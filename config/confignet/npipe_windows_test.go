@@ -68,7 +68,7 @@ func TestNpipeListenSecurityDescriptor(t *testing.T) {
 			nas := &AddrConfig{
 				Endpoint:  `\\.\pipe\otel-test-confignet-sd`,
 				Transport: TransportTypeNpipe,
-				DialerConfig: DialerConfig{
+				NpipeConfig: NpipeConfig{
 					SecurityDescriptor: tt.securityDescriptor,
 				},
 			}
