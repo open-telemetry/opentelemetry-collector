@@ -7,6 +7,32 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.58.0/v0.152.0
+
+### 🚩 Deprecations 🚩
+
+- `pkg/xconfmap`: Deprecate `xconfmap.Validator` and `confmap.Validate` in favor of `confmap.Validator` and `confmap.Validate`. (#15142)
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Add `go_struct.ignore_default` flag to suppress default value generation for individual config fields. (#15156)
+  Setting `go_struct.ignore_default: true` on a config field causes mdatagen to omit that field's default 
+  from the generated `createDefaultConfig` function, emitting `nil` for pointer fields 
+  and `configoptional.None` for optional fields.
+  
+- `pkg/confmap`: Add the `confmap.Validator` interface and `confmap.Validate` function for configuration validation. (#15142)
+  Config structs should generally implement the interface to provide validation
+  of their fields. The `confmap.Validate` function can be used to validate
+  config structs in testing, but is only meant to be called at runtime by the
+  Collector itself.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/pdata`: `pcommon.Value.AsString` no longer HTML-escapes `<`, `>`, and `&` inside `ValueTypeMap` and `ValueTypeSlice` values, matching the behavior already used for `ValueTypeStr`. (#14662)
+
+<!-- previous-version -->
+
 ## v1.57.0/v0.151.0
 
 ### 🛑 Breaking changes 🛑
