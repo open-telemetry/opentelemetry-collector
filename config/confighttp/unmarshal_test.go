@@ -113,7 +113,7 @@ func TestClientConfigLegacyWarningsLogged(t *testing.T) {
 	require.NoError(t, err)
 
 	entries := observed.All()
-	assert.Equal(t, len(cfg.unmarshalWarnings), len(entries))
+	assert.Len(t, cfg.unmarshalWarnings, len(entries))
 	for _, entry := range entries {
 		assert.Equal(t, zapcore.WarnLevel, entry.Level)
 		assert.Contains(t, entry.Message, "deprecated")
@@ -209,7 +209,7 @@ func TestServerConfigLegacyWarningsLogged(t *testing.T) {
 	require.NotNil(t, srv)
 
 	entries := observed.All()
-	assert.Equal(t, len(cfg.renamedFields), len(entries))
+	assert.Len(t, cfg.renamedFields, len(entries))
 	for _, entry := range entries {
 		assert.Equal(t, zapcore.WarnLevel, entry.Level)
 		assert.Contains(t, entry.Message, "deprecated")
