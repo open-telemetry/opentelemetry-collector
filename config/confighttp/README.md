@@ -51,12 +51,15 @@ README](../configtls/README.md).
       No compression levels supported yet
     - `x-snappy-framed` (When feature gate `confighttp.framedSnappy` is enabled)
       No compression levels supported yet
-- [`max_idle_conns`](https://golang.org/pkg/net/http/#Transport)
-- [`max_idle_conns_per_host`](https://golang.org/pkg/net/http/#Transport)
 - [`max_conns_per_host`](https://golang.org/pkg/net/http/#Transport)
-- [`idle_conn_timeout`](https://golang.org/pkg/net/http/#Transport)
+- `keepalive`: Keepalive settings for the HTTP client.
+  - `enabled`: Set to `false` to disable keep-alives. Default: `true`
+  - [`idle_conn_timeout`](https://golang.org/pkg/net/http/#Transport): Default: `90s`
+  - [`max_idle_conns`](https://golang.org/pkg/net/http/#Transport): Default: `100`
+  - [`max_idle_conns_per_host`](https://golang.org/pkg/net/http/#Transport)
 - [`auth`](../configauth/README.md)
-- [`disable_keep_alives`](https://golang.org/pkg/net/http/#Transport)
+- **Deprecated** — `idle_conn_timeout`, `max_idle_conns`, `max_idle_conns_per_host`: use the `keepalive` section instead.
+- **Deprecated** — `disable_keep_alives`: use `keepalive:\n  enabled: false` instead.
 - [`force_attempt_http2`](https://golang.org/pkg/net/http/#Transport)
 - [`http2_read_idle_timeout`](https://pkg.go.dev/golang.org/x/net/http2#Transport)
 - [`http2_ping_timeout`](https://pkg.go.dev/golang.org/x/net/http2#Transport)
@@ -119,8 +122,11 @@ will not be enabled.
 - `read_timeout`: maximum duration for reading the entire request, including the body. A zero or negative value means there will be no timeout. Default: `0` (no timeout)
 - `read_header_timeout`: amount of time allowed to read request headers. If zero, the value of `read_timeout` is used. If both are zero, there is no timeout. Default: `1m`
 - `write_timeout`: maximum duration before timing out writes of the response. A zero or negative value means there will be no timeout. Default: `30s`
-- `idle_timeout`: maximum amount of time to wait for the next request when keep-alives are enabled. If zero, the value of `read_timeout` is used. If both are zero, there is no timeout. Default: `1m`
-- `keep_alives_enabled`: controls whether HTTP keep-alives are enabled. Default: `true`
+- `keepalive`: Keepalive settings for the HTTP server.
+  - `enabled`: Set to `false` to disable keep-alives. Default: `true`
+  - `idle_timeout`: maximum amount of time to wait for the next request when keep-alives are enabled. If zero, the value of `read_timeout` is used. If both are zero, there is no timeout. Default: `1m`
+- **Deprecated** — `idle_timeout`: use `keepalive::idle_timeout` instead.
+- **Deprecated** — `keep_alives_enabled: false`: use `keepalive:\n  enabled: false` instead.
 - [`tls`](../configtls/README.md)
 - [`auth`](../configauth/README.md)
   - `request_params`: a list of query parameter names to add to the auth context, along with the HTTP headers
