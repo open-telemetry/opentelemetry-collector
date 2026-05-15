@@ -103,61 +103,7 @@ type ServerConfig struct {
 }
 
 func (sc *ServerConfig) Unmarshal(conf *confmap.Conf) error {
-	type oldFields struct {
-		IdleTimeout       time.Duration `mapstructure:"idle_timeout"`
-		KeepAlivesEnabled bool          `mapstructure:"keep_alives_enabled,omitempty"`
-	}
-
-	type serverConfigFields ServerConfig
-
-	type legacyConfig struct {
-		serverConfigFields `mapstructure:",squash"`
-		oldFields          `mapstructure:",squash"`
-	}
-
-	var cfg legacyConfig
-	cfg.serverConfigFields = serverConfigFields(*sc)
-	cfg.oldFields = oldFields{
-		IdleTimeout:       1 * time.Minute,
-		KeepAlivesEnabled: true,
-	}
-	if err := conf.Unmarshal(&cfg, confmap.WithIgnoreUnused()); err != nil {
-		return err
-	}
-
-	deprecatedFields := []struct {
-		old, new string
-	}{
-		{"idle_timeout", "keepalive::idle_timeout"},
-		{"keep_alives_enabled", "keepalive::enabled"},
-	}
-
-	var warnings []renamedField
-	for _, field := range deprecatedFields {
-		if conf.IsSet(field.old) {
-			warnings = append(warnings, field)
-		}
-	}
-
-	if len(warnings) > 0 && conf.IsSet("keepalive") {
-		return errors.New("confighttp.ServerConfig: cannot use legacy fields and new 'keepalive' section")
-	}
-
-	if !cfg.KeepAlivesEnabled {
-		// should never happen with default values
-		cfg.Keepalive = configoptional.None[KeepaliveServerConfig]()
-	} else {
-		if !cfg.Keepalive.HasValue() {
-			cfg.Keepalive = configoptional.Some(KeepaliveServerConfig{})
-		}
-		if conf.IsSet("idle_timeout") {
-			cfg.Keepalive.Get().IdleTimeout = cfg.IdleTimeout
-		}
-	}
-
-	*sc = ServerConfig(cfg.serverConfigFields)
-	sc.renamedFields = warnings
-	return nil
+	return unmarshalServerDeprecated(sc, conf)
 }
 
 type KeepaliveServerConfig struct {
