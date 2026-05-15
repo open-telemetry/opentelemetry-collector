@@ -395,7 +395,8 @@ telemetry:
 
 # Optional: list of feature gate definitions.
 feature_gates:
-  - # Required: unique identifier for the feature gate.
+  - # Required: unique identifier for the feature gate. Must be prefixed with
+    # "<status.class>.<type>." so gates are namespaced to their component.
     id: <gate.id>
     # Required: description of the feature gate.
     description: string
@@ -405,5 +406,6 @@ feature_gates:
     from_version: string
     # Required for stable/deprecated gates: version when the feature gate reached stable stage.
     to_version: string
-    # Required: URL with contextual information about the feature gate.
+    # Required: GitHub issue URL with contextual information about the feature gate.
+    # Must match: https://github.com/<owner>/<repo>/issues/<number>
     reference_url: string

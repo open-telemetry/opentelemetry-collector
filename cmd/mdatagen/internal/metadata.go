@@ -20,6 +20,11 @@ import (
 
 const semConvURL = "https://github.com/open-telemetry/semantic-conventions/blob"
 
+var (
+	featureGateIDRegexp       = regexp.MustCompile(`^[0-9a-zA-Z.]*$`)
+	featureGateIssueURLRegexp = regexp.MustCompile(`^https://github\.com/[^/]+/[^/]+/issues/\d+$`)
+)
+
 type Metadata struct {
 	// Type of the component.
 	Type string `mapstructure:"type"`
@@ -376,7 +381,11 @@ func validateEvents(events map[EventName]Event, attributes map[AttributeName]Att
 func (md *Metadata) validateFeatureGates() error {
 	var errs error
 	seen := make(map[FeatureGateID]bool)
-	idRegexp := regexp.MustCompile(`^[0-9a-zA-Z.]*$`)
+
+	var requiredPrefix string
+	if md.Status != nil && md.Status.Class != "" && md.Type != "" {
+		requiredPrefix = md.Status.Class + "." + md.Type + "."
+	}
 
 	// Validate that feature gates are sorted by ID
 	if !slices.IsSortedFunc(md.FeatureGates, func(a, b FeatureGate) int {
@@ -393,8 +402,13 @@ func (md *Metadata) validateFeatureGates() error {
 		}
 
 		// Validate ID follows the allowed character pattern
-		if !idRegexp.MatchString(string(gate.ID)) {
+		if !featureGateIDRegexp.MatchString(string(gate.ID)) {
 			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": ID contains invalid characters, must match ^[0-9a-zA-Z.]*$`, gate.ID))
+		}
+
+		// Validate ID is prefixed with "<class>.<type>." so gates are namespaced to their component.
+		if requiredPrefix != "" && !strings.HasPrefix(string(gate.ID), requiredPrefix) {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": ID must be prefixed with %q`, gate.ID, requiredPrefix))
 		}
 
 		// Check for duplicate IDs
@@ -412,6 +426,8 @@ func (md *Metadata) validateFeatureGates() error {
 		// Validate that each feature gate has a reference link
 		if gate.ReferenceURL == "" {
 			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": reference_url is required`, gate.ID))
+		} else if !featureGateIssueURLRegexp.MatchString(gate.ReferenceURL) {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": reference_url %q must be a GitHub issue URL (https://github.com/<owner>/<repo>/issues/<number>)`, gate.ID, gate.ReferenceURL))
 		}
 
 		// Validate stage is one of the allowed values
