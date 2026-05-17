@@ -10,6 +10,7 @@ import (
 	"go/format"
 	"io/fs"
 	"maps"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -376,6 +377,16 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 		},
 		"isCommand": func() bool {
 			return md.Status.Class == "cmd"
+		},
+		"componentPath": func() string {
+			prefix := importRootPath + "/"
+			if md.PackageName != "" && strings.HasPrefix(md.PackageName, prefix) {
+				return strings.TrimPrefix(md.PackageName, prefix)
+			}
+			return md.Status.Class + "/" + md.ShortFolderName
+		},
+		"urlquery": func(s string) string {
+			return url.QueryEscape(s)
 		},
 		"supportsLogs":               func() bool { return md.supportsSignal("logs") },
 		"supportsMetrics":            func() bool { return md.supportsSignal("metrics") },
