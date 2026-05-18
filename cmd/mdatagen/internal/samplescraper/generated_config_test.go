@@ -34,6 +34,26 @@ func TestConfigValidate_RequiredTargets(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "targets is required")
 }
 
+func TestSamplePkgValidate_DefaultValid(t *testing.T) {
+	cfg := NewDefaultSamplePkg()
+
+	require.NoError(t, cfg.Validate())
+}
+
+func TestConfigValidate_RequiredHostName(t *testing.T) {
+	cfg := NewDefaultSamplePkg()
+	cfg.HostName = ""
+
+	require.ErrorContains(t, cfg.Validate(), "host_name is required")
+}
+
+func TestConfigValidate_RequiredPort(t *testing.T) {
+	cfg := NewDefaultSamplePkg()
+	cfg.Port = ""
+
+	require.ErrorContains(t, cfg.Validate(), "port is required")
+}
+
 func TestTargetsItemValidate_DefaultValid(t *testing.T) {
 	cfg := NewDefaultTargetsItem()
 

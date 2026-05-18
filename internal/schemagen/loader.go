@@ -94,6 +94,13 @@ func (sl *schemaLoader) loadFromFile(filePath string) (*ConfigMetadata, error) {
 		return nil, fmt.Errorf("failed to parse schema from %s: %w", filePath, err)
 	}
 
+	if metadata.ExportedConfigs != nil {
+		if metadata.Config == nil {
+			metadata.Config = &ConfigMetadata{}
+		}
+		metadata.Config.Defs = metadata.ExportedConfigs
+	}
+
 	return metadata.Config, nil
 }
 
@@ -148,6 +155,13 @@ func (sl *schemaLoader) tryLoad(ref Ref, version string) (*ConfigMetadata, error
 	var metadata Metadata
 	if err := yaml.Unmarshal(body, &metadata); err != nil {
 		return nil, fmt.Errorf("failed to parse schema from %s: %w", url, err)
+	}
+
+	if metadata.ExportedConfigs != nil {
+		if metadata.Config == nil {
+			metadata.Config = &ConfigMetadata{}
+		}
+		metadata.Config.Defs = metadata.ExportedConfigs
 	}
 
 	return metadata.Config, nil
