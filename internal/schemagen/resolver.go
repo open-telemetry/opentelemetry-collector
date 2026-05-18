@@ -203,21 +203,11 @@ func (r *Resolver) resolveRef(root, current *ConfigMetadata, origin *Ref) (*Conf
 		return nil, fmt.Errorf("invalid reference format %q: %w", current.Ref, err)
 	}
 
-	if ref.IsInternal() {
-		if root.Defs != nil {
-			if val, ok := root.Defs[ref.DefName()]; ok {
-				return val, nil
-			}
-		}
+	if def, ok := lookupRootDef(root, current, ref); ok {
+		return def, nil
 	}
 
 	if ref.IsLocal() {
-		// Local refs whose def is already in root.$defs (injected by the caller) can be resolved without loading a file.
-		if root.Defs != nil {
-			if val, ok := root.Defs[ref.DefName()]; ok {
-				return val, nil
-			}
-		}
 		return r.loadExternalRef(ref)
 	}
 
@@ -230,6 +220,17 @@ func (r *Resolver) resolveRef(root, current *ConfigMetadata, origin *Ref) (*Conf
 	current.GoType = current.Ref
 	current.Comment = "Uses `any` type."
 	return current, nil
+}
+
+func lookupRootDef(root, current *ConfigMetadata, ref *Ref) (*ConfigMetadata, bool) {
+	if root.Defs == nil || (!ref.IsInternal() && !ref.IsLocal()) {
+		return nil, false
+	}
+	def, ok := root.Defs[ref.DefName()]
+	if !ok || def == current {
+		return nil, false
+	}
+	return def, ok
 }
 
 // loadExternalRef uses SchemaLoader to load external references
