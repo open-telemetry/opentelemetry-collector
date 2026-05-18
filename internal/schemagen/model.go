@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package cfggen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
+package schemagen // import "go.opentelemetry.io/collector/internal/schemagen"
 
 import (
 	"encoding/json"
@@ -47,7 +47,7 @@ type ConfigMetadata struct {
 	ExclusiveMaximum     *float64                   `mapstructure:"exclusiveMaximum,omitempty" json:"exclusiveMaximum,omitempty" yaml:"exclusiveMaximum,omitempty"`
 	Minimum              *float64                   `mapstructure:"minimum,omitempty" json:"minimum,omitempty" yaml:"minimum,omitempty"`
 	ExclusiveMinimum     *float64                   `mapstructure:"exclusiveMinimum,omitempty" json:"exclusiveMinimum,omitempty" yaml:"exclusiveMinimum,omitempty"`
-	Defs                 map[string]*ConfigMetadata `mapstructure:"$defs,omitempty" json:"-" yaml:"$defs,omitempty"`
+	Defs                 map[string]*ConfigMetadata `mapstructure:"-" json:"$defs,omitempty" yaml:"-"`
 	// Additional custom fields
 	GoStruct   GoStructConfig `mapstructure:"go_struct,omitempty" json:"-" yaml:"go_struct,omitempty"`
 	GoType     string         `mapstructure:"x-customType,omitempty" json:"-" yaml:"x-customType,omitempty"`
@@ -57,11 +57,18 @@ type ConfigMetadata struct {
 	// internal
 	ResolvedFrom string `mapstructure:"-" json:"-" yaml:"-"`
 	EmbeddedName string `mapstructure:"-" json:"-" yaml:"-"`
+	InternalOnly bool   `mapstructure:"-" json:"-" yaml:"-"`
+}
+
+type Metadata struct {
+	Config          *ConfigMetadata            `mapstructure:"config" json:"config" yaml:"config"`
+	ExportedConfigs map[string]*ConfigMetadata `mapstructure:"exported_configs" json:"exported_configs" yaml:"exported_configs"`
 }
 
 type GoStructConfig struct {
 	CustomValidator *CustomValidatorConfig `mapstructure:"custom_validator" json:"-" yaml:"custom_validator,omitempty"`
 	Anonymous       bool                   `mapstructure:"anonymous" json:"-" yaml:"anonymous,omitempty"`
+	IgnoreDefault   bool                   `mapstructure:"ignore_default" json:"-" yaml:"ignore_default,omitempty"`
 }
 
 type CustomValidatorConfig struct {
@@ -90,10 +97,13 @@ func (md *ConfigMetadata) ToJSON() ([]byte, error) {
 
 func (md *ConfigMetadata) Validate() error {
 	var errs error
-	if md.Type != "object" {
+
+	hasDefs := len(md.Defs) > 0
+	hasConfigFields := len(md.Properties) > 0 || len(md.AllOf) > 0
+	if md.Type != "object" && (md.Type != "" || !hasDefs || hasConfigFields) {
 		errs = errors.Join(errs, fmt.Errorf("config type must be \"object\", got %q", md.Type))
 	}
-	if len(md.Properties) == 0 && len(md.AllOf) == 0 {
+	if !hasDefs && !hasConfigFields {
 		errs = errors.Join(errs, errors.New("config must not be empty"))
 	}
 	return errs

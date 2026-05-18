@@ -22,6 +22,10 @@ status:
   warnings:
     - Any additional information that should be brought to the consumer's attention
 
+exported_configs:
+  sample_pkg:
+    $ref: ../samplepkg.sample_config
+
 config:
   type: object
   description: Configuration for the Sample Scraper.
@@ -31,11 +35,6 @@ config:
       embed: true
       go_struct:
         anonymous: true
-    controller_config:
-      $ref: /scraper/scraperhelper.controller_config
-      embed: true
-      default:
-        timeout: 30s
     job_name:
       description: Name of the scrape job, used to identify the source in telemetry.
       type: string
@@ -43,6 +42,8 @@ config:
       maxLength: 255
       pattern: "^[a-zA-Z0-9_.-]+$"
       default: "test_job"
+      go_struct:
+        custom_validator:
     targets:
       description: List of targets to scrape metrics from.
       x-pointer: true
@@ -50,11 +51,6 @@ config:
       items:
         type: object
         properties:
-          http_client:
-            description: HTTP client configuration for the target endpoint.
-            $ref: /config/confighttp.client_config
-            go_struct:
-              custom_validator:
           interval:
             type: string
             format: duration

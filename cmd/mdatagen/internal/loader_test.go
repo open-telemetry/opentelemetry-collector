@@ -78,16 +78,22 @@ func TestLoadMetadata(t *testing.T) {
 				},
 				Config: &cfggen.ConfigMetadata{
 					Type: "object",
-					AllOf: []*cfggen.ConfigMetadata{
-						{
-							Ref: "./internal/metadata.metrics_builder_config",
-						},
-					},
 					Properties: map[string]*cfggen.ConfigMetadata{
+						"metrics_builder_config": {
+							Ref:   "./internal/metadata.metrics_builder_config",
+							Embed: true,
+							GoStruct: cfggen.GoStructConfig{
+								Anonymous:     true,
+								IgnoreDefault: true,
+							},
+						},
 						"endpoint": {
 							Description: "The endpoint to scrape metrics from.",
 							Type:        "string",
 							Default:     "localhost:12345",
+						},
+						"sample_pkg": {
+							Ref: "../samplepkg.sample_config",
 						},
 						"timeout": {
 							Description: "Timeout for scraping metrics.",
