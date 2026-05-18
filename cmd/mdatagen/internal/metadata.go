@@ -382,9 +382,9 @@ func (md *Metadata) validateFeatureGates() error {
 	var errs error
 	seen := make(map[FeatureGateID]bool)
 
-	var requiredPrefix string
+	var componentPrefix string
 	if md.Status != nil && md.Status.Class != "" && md.Type != "" {
-		requiredPrefix = md.Status.Class + "." + md.Type + "."
+		componentPrefix = md.Status.Class + "." + md.Type + "."
 	}
 
 	// Validate that feature gates are sorted by ID
@@ -407,8 +407,8 @@ func (md *Metadata) validateFeatureGates() error {
 		}
 
 		// Validate ID is prefixed with "<class>.<type>." so gates are namespaced to their component.
-		if requiredPrefix != "" && !strings.HasPrefix(string(gate.ID), requiredPrefix) {
-			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": ID must be prefixed with %q`, gate.ID, requiredPrefix))
+		if !gate.SkipStrictValidation && componentPrefix != "" && !strings.HasPrefix(string(gate.ID), componentPrefix) {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": ID must be prefixed with %q`, gate.ID, componentPrefix))
 		}
 
 		// Check for duplicate IDs
@@ -426,7 +426,7 @@ func (md *Metadata) validateFeatureGates() error {
 		// Validate that each feature gate has a reference link
 		if gate.ReferenceURL == "" {
 			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": reference_url is required`, gate.ID))
-		} else if !featureGateIssueURLRegexp.MatchString(gate.ReferenceURL) {
+		} else if !gate.SkipStrictValidation && !featureGateIssueURLRegexp.MatchString(gate.ReferenceURL) {
 			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": reference_url %q must be a GitHub issue URL (https://github.com/<owner>/<repo>/issues/<number>)`, gate.ID, gate.ReferenceURL))
 		}
 
@@ -794,7 +794,8 @@ const (
 
 // FeatureGate represents a feature gate definition in metadata.
 type FeatureGate struct {
-	// ID is the unique identifier for the feature gate.
+	// ID is the unique identifier for the feature gate. Must be prefixed with
+	// "<status.class>.<type>." unless SkipStrictValidation is set.
 	ID FeatureGateID `mapstructure:"id"`
 	// Description of the feature gate.
 	Description string `mapstructure:"description"`
@@ -804,8 +805,12 @@ type FeatureGate struct {
 	FromVersion string `mapstructure:"from_version"`
 	// ToVersion is the version when the feature gate reached stable stage.
 	ToVersion string `mapstructure:"to_version"`
-	// ReferenceURL is the URL with contextual information about the feature gate.
+	// ReferenceURL is contextual information about the feature gate. Must be a
+	// GitHub issue URL (https://github.com/<owner>/<repo>/issues/<number>)
+	// unless SkipStrictValidation is set.
 	ReferenceURL string `mapstructure:"reference_url"`
+	// SkipStrictValidation opts this gate out of strict validation. New gates should leave this unset.
+	SkipStrictValidation bool `mapstructure:"skip_strict_validation"`
 }
 
 func (md *Metadata) expandSemConvRefs() error {

@@ -504,6 +504,17 @@ func TestValidateFeatureGates(t *testing.T) {
 			wantErr: `reference_url is required`,
 		},
 		{
+			name: "non-issue reference_url ignored when strict validation is skipped",
+			featureGate: FeatureGate{
+				ID:                   "component.feature",
+				Description:          "Test feature",
+				Stage:                FeatureGateStageAlpha,
+				FromVersion:          "v0.100.0",
+				ReferenceURL:         "https://example.com",
+				SkipStrictValidation: true,
+			},
+		},
+		{
 			name: "reference_url is not a GitHub issue",
 			featureGate: FeatureGate{
 				ID:           "component.feature",
@@ -590,9 +601,10 @@ func TestValidateFeatureGatesDuplicateID(t *testing.T) {
 
 func TestValidateFeatureGatesIDPrefix(t *testing.T) {
 	tests := []struct {
-		name    string
-		gateID  FeatureGateID
-		wantErr string
+		name       string
+		gateID     FeatureGateID
+		skipStrict bool
+		wantErr    string
 	}{
 		{
 			name:   "valid prefix",
@@ -613,6 +625,11 @@ func TestValidateFeatureGatesIDPrefix(t *testing.T) {
 			gateID:  "receiver.otlp",
 			wantErr: `ID must be prefixed with "receiver.otlp."`,
 		},
+		{
+			name:       "prefix not enforced when gate skips strict validation",
+			gateID:     "example",
+			skipStrict: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -621,11 +638,12 @@ func TestValidateFeatureGatesIDPrefix(t *testing.T) {
 				Status: &Status{Class: "receiver"},
 				FeatureGates: []FeatureGate{
 					{
-						ID:           tt.gateID,
-						Description:  "Test feature",
-						Stage:        FeatureGateStageAlpha,
-						FromVersion:  "v0.100.0",
-						ReferenceURL: "https://github.com/open-telemetry/opentelemetry-collector/issues/12345",
+						ID:                   tt.gateID,
+						Description:          "Test feature",
+						Stage:                FeatureGateStageAlpha,
+						FromVersion:          "v0.100.0",
+						ReferenceURL:         "https://github.com/open-telemetry/opentelemetry-collector/issues/12345",
+						SkipStrictValidation: tt.skipStrict,
 					},
 				},
 			}

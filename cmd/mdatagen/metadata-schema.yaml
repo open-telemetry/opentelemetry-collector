@@ -395,7 +395,8 @@ telemetry:
 
 # Optional: list of feature gate definitions.
 feature_gates:
-  - # Required: unique identifier for the feature gate. Must be prefixed with
+  - # Required: unique identifier for the feature gate. Unless
+    # skip_strict_validation is true on this gate, must be prefixed with
     # "<status.class>.<type>." so gates are namespaced to their component.
     id: <gate.id>
     # Required: description of the feature gate.
@@ -406,6 +407,12 @@ feature_gates:
     from_version: string
     # Required for stable/deprecated gates: version when the feature gate reached stable stage.
     to_version: string
-    # Required: GitHub issue URL with contextual information about the feature gate.
-    # Must match: https://github.com/<owner>/<repo>/issues/<number>
+    # Required: URL with contextual information about the feature gate. Unless
+    # skip_strict_validation is true on this gate, must be a GitHub issue URL
+    # of the form https://github.com/<owner>/<repo>/issues/<number>.
     reference_url: string
+    # Optional: when true, opts this gate out of strict validation (the
+    # GitHub-issue reference_url requirement and the "<status.class>.<type>."
+    # ID prefix requirement). Intended to grandfather in gates that predate
+    # these rules; new gates should leave this unset.
+    skip_strict_validation: false

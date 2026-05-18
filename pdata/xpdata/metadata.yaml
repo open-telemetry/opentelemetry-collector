@@ -13,3 +13,4 @@ feature_gates:
     stage: beta
     from_version: 'v0.133.0'
     reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/issues/13631'
+    skip_strict_validation: true
