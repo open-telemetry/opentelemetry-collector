@@ -246,6 +246,7 @@ The event will be renamed soon.
 
 | Name | Description | Values | Enabled | Semantic Convention |
 | ---- | ----------- | ------ | ------- | ------------------- |
+| host.arch | The CPU architecture the host system is running on. | Any Str | false | [host.arch](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-arch) |
 | map.resource.attr | Resource attribute with a map value. | Any Map | true | - |
 | optional.resource.attr | Explicitly disabled ResourceAttribute. | Any Str | false | - |
 | slice.resource.attr | Resource attribute with a slice value. | Any Slice | true | - |

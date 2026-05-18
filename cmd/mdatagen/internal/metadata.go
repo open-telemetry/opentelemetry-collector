@@ -825,5 +825,21 @@ func (md *Metadata) expandSemConvRefs() error {
 		md.Metrics[k] = v
 	}
 
+	for k, v := range md.ResourceAttributes {
+		if v.SemanticConvention != nil {
+			if strings.HasPrefix(v.SemanticConvention.SemanticConventionRef, "http") {
+				return fmt.Errorf("resource attribute %q, use relative path for URL, not the full URL", k)
+			}
+			url := fmt.Sprintf(
+				"%s/v%s/docs/registry/attributes/%s",
+				semConvURL,
+				md.SemConvVersion,
+				v.SemanticConvention.SemanticConventionRef,
+			)
+			v.SemanticConvention.SemanticConventionRef = url
+		}
+		md.ResourceAttributes[k] = v
+	}
+
 	return nil
 }
