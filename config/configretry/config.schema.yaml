@@ -12,7 +12,7 @@ $defs:
         x-customType: time.Duration
         format: duration
       max_elapsed_time:
-        description: MaxElapsedTime is the maximum amount of time (including retries) spent trying to send a request/batch. Once this value is reached, the data is discarded. If set to 0, the retries are never stopped.
+        description: MaxElapsedTime is the maximum amount of time (including retries) spent trying to send a request/batch. Once this value is reached, the data is discarded. If set to 0, retries are not limited by elapsed time.
         type: string
         x-customType: time.Duration
         format: duration
@@ -21,6 +21,9 @@ $defs:
         type: string
         x-customType: time.Duration
         format: duration
+      max_retries:
+        description: MaxRetryCount is the maximum number of retries before giving up. If set to 0, retries are not limited by retry count.
+        type: integer
       multiplier:
         description: Multiplier is the value multiplied by the backoff interval bounds
         type: number

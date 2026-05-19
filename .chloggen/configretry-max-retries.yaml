@@ -1,0 +1,6 @@
+change_type: enhancement
+component: pkg/config/configretry
+note: "Add `max_retries` to retry-on-failure backoff configuration."
+issues: [15274]
+subtext:
+change_logs: [user, api]

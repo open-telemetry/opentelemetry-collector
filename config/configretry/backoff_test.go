@@ -22,6 +22,7 @@ func TestNewDefaultBackOffSettings(t *testing.T) {
 			Multiplier:          1.5,
 			MaxInterval:         30 * time.Second,
 			MaxElapsedTime:      5 * time.Minute,
+			MaxRetryCount:       0,
 		}, cfg)
 }
 
@@ -81,6 +82,13 @@ func TestInvalidMaxElapsedTime(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 }
 
+func TestInvalidMaxRetries(t *testing.T) {
+	cfg := NewDefaultBackOffConfig()
+	require.NoError(t, cfg.Validate())
+	cfg.MaxRetryCount = -1
+	assert.Error(t, cfg.Validate())
+}
+
 func TestDisabledWithInvalidValues(t *testing.T) {
 	cfg := BackOffConfig{
 		Enabled:             false,
@@ -89,6 +97,7 @@ func TestDisabledWithInvalidValues(t *testing.T) {
 		Multiplier:          0,
 		MaxInterval:         -1,
 		MaxElapsedTime:      -1,
+		MaxRetryCount:       -1,
 	}
 	assert.NoError(t, cfg.Validate())
 }

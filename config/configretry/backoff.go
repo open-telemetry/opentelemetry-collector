@@ -19,6 +19,7 @@ func NewDefaultBackOffConfig() BackOffConfig {
 		Multiplier:          backoff.DefaultMultiplier,
 		MaxInterval:         30 * time.Second,
 		MaxElapsedTime:      5 * time.Minute,
+		MaxRetryCount:       0,
 	}
 }
 
@@ -38,8 +39,10 @@ type BackOffConfig struct {
 	// consecutive retries will always be `MaxInterval`.
 	MaxInterval time.Duration `mapstructure:"max_interval"`
 	// MaxElapsedTime is the maximum amount of time (including retries) spent trying to send a request/batch.
-	// Once this value is reached, the data is discarded. If set to 0, the retries are never stopped.
+	// Once this value is reached, the data is discarded. If set to 0, retries are not limited by elapsed time.
 	MaxElapsedTime time.Duration `mapstructure:"max_elapsed_time"`
+	// MaxRetryCount is the maximum number of retries before giving up. If set to 0, retries are not limited by retry count.
+	MaxRetryCount int64 `mapstructure:"max_retries"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -62,6 +65,9 @@ func (bs *BackOffConfig) Validate() error {
 	}
 	if bs.MaxElapsedTime < 0 {
 		return errors.New("'max_elapsed_time' must be non-negative")
+	}
+	if bs.MaxRetryCount < 0 {
+		return errors.New("'max_retries' must be non-negative")
 	}
 	if bs.MaxElapsedTime > 0 {
 		if bs.MaxElapsedTime < bs.InitialInterval {

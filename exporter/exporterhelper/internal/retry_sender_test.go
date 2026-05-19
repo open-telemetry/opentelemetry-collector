@@ -76,6 +76,22 @@ func TestRetrySenderMaxElapsedTime(t *testing.T) {
 	require.NoError(t, rs.Shutdown(context.Background()))
 }
 
+func TestRetrySenderMaxRetries(t *testing.T) {
+	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg.InitialInterval = 0
+	rCfg.MaxRetryCount = 2
+	expErr := errors.New("transient error")
+	attempts := 0
+	rs := newRetrySender(rCfg, exportertest.NewNopSettings(exportertest.NopType), sender.NewSender(func(context.Context, request.Request) error {
+		attempts++
+		return expErr
+	}))
+	require.NoError(t, rs.Start(context.Background(), componenttest.NewNopHost()))
+	require.ErrorIs(t, rs.Send(context.Background(), &requesttest.FakeRequest{Items: 2}), expErr)
+	assert.Equal(t, 3, attempts)
+	require.NoError(t, rs.Shutdown(context.Background()))
+}
+
 func TestRetrySenderThrottleError(t *testing.T) {
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = 10 * time.Millisecond

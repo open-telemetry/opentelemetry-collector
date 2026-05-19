@@ -65,6 +65,10 @@ fields:
     doc: |
       MaxElapsedTime is the maximum amount of time (including retries) spent trying to send a request/batch.
       Once this value is reached, the data is discarded.
+  - name: max_retries
+    kind: int64
+    doc: |
+      MaxRetryCount is the maximum number of retries before giving up. If set to 0, retries are not limited by retry count.
 - name: endpoint
   kind: string
   doc: |

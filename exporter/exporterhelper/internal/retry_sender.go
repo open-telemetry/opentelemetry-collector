@@ -102,6 +102,10 @@ func (rs *retrySender) Send(ctx context.Context, req request.Request) error {
 			req = errReq.OnError(err)
 		}
 
+		if rs.cfg.MaxRetryCount > 0 && retryNum >= rs.cfg.MaxRetryCount {
+			return fmt.Errorf("no more retries left: %w", err)
+		}
+
 		backoffDelay := expBackoff.NextBackOff()
 		if backoffDelay == backoff.Stop {
 			return fmt.Errorf("no more retries left: %w", err)

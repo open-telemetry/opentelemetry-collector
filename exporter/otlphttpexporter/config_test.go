@@ -51,6 +51,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				Multiplier:          1.3,
 				MaxInterval:         1 * time.Minute,
 				MaxElapsedTime:      10 * time.Minute,
+				MaxRetryCount:       7,
 			},
 			QueueConfig: configoptional.Some(exporterhelper.QueueBatchConfig{
 				Sizer:        exporterhelper.RequestSizerTypeRequests,
