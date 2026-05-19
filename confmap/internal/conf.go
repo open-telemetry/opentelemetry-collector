@@ -12,7 +12,6 @@ import (
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/v2"
 
-	encoder "go.opentelemetry.io/collector/confmap/internal/mapstructure"
 	"go.opentelemetry.io/collector/confmap/internal/metadata"
 )
 
@@ -68,8 +67,7 @@ func (l *Conf) Marshal(rawVal any, opts ...MarshalOption) error {
 	for _, opt := range opts {
 		opt.apply(&set)
 	}
-	enc := encoder.New(EncoderConfig(rawVal, set))
-	data, err := enc.Encode(rawVal)
+	data, err := Encode(rawVal, set)
 	if err != nil {
 		return err
 	}

@@ -92,6 +92,9 @@ func TestLoadMetadata(t *testing.T) {
 							Type:        "string",
 							Default:     "localhost:12345",
 						},
+						"sample_pkg": {
+							Ref: "../samplepkg.sample_config",
+						},
 						"timeout": {
 							Description: "Timeout for scraping metrics.",
 							Type:        "string",

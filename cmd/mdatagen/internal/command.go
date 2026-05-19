@@ -564,21 +564,34 @@ func injectInternalMetadataDefs(md Metadata, mdDir string, src *cfggen.ConfigMet
 }
 
 func mergeInternalMetadataDefs(raw []byte, src *cfggen.ConfigMetadata) error {
-	var config cfggen.ConfigMetadata
-	if err := yaml.Unmarshal(raw, &config); err != nil {
+	var configs map[string]*cfggen.ConfigMetadata
+	if err := yaml.Unmarshal(raw, &configs); err != nil {
 		return fmt.Errorf("failed to parse internal metadata defs: %w", err)
 	}
-	if len(config.Defs) == 0 {
+
+	if len(configs) == 0 {
 		return nil
+	}
+	for _, cfg := range configs {
+		if cfg != nil {
+			cfg.InternalOnly = true
+		}
 	}
 	if src.Defs == nil {
 		src.Defs = make(map[string]*cfggen.ConfigMetadata)
 	}
-	maps.Copy(src.Defs, config.Defs)
+	maps.Copy(src.Defs, configs)
 	return nil
 }
 
 func generateConfigFiles(md Metadata, mdDir, importRootPath string) error {
+	if md.ExportedConfigs != nil {
+		if md.Config == nil {
+			md.Config = &cfggen.ConfigMetadata{}
+		}
+		md.Config.Defs = md.ExportedConfigs
+	}
+
 	if md.Config != nil {
 		if err := injectInternalMetadataDefs(md, mdDir, md.Config); err != nil {
 			return err
