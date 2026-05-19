@@ -4,6 +4,7 @@
 package cfggen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 
 import (
+	"encoding/json"
 	"fmt"
 	"maps"
 	"slices"
@@ -87,11 +88,38 @@ func DocType(md *ConfigMetadata) string {
 
 // DocDefault returns a human-readable representation of a property's default
 // value, or an empty string when no default is set.
+//
+// Complex values (maps, slices, structs, and nested structures) are rendered
+// as compact JSON instead of Go's fmt %v syntax (e.g. map[key:value]), which
+// is what end users see in the generated README tables.
 func DocDefault(md *ConfigMetadata) string {
 	if md == nil || md.Default == nil {
 		return ""
 	}
-	return fmt.Sprintf("%v", md.Default)
+
+	v := md.Default
+
+	// Keep simple scalars clean (no extra quotes around strings etc.)
+	switch v.(type) {
+	case string, bool,
+		int, int8, int16, int32, int64,
+		uint, uint8, uint16, uint32, uint64,
+		float32, float64:
+		return fmt.Sprintf("%v", v)
+	}
+
+	// Everything else (map, slice, struct, nested config, etc.) → compact JSON.
+	// This addresses the review feedback to avoid ugly Go syntax in docs.
+	if b, err := json.Marshal(v); err == nil {
+		s := string(b)
+		const maxLen = 120
+		if len(s) > maxLen {
+			return s[:maxLen-3] + "..."
+		}
+		return s
+	}
+
+	return fmt.Sprintf("%v", v)
 }
 
 func enumStrings(enum []any) []string {
