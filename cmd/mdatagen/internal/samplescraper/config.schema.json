@@ -608,5 +608,27 @@
   "required": [
     "job_name",
     "targets"
-  ]
+  ],
+  "$defs": {
+    "sample_pkg": {
+      "type": "object",
+      "properties": {
+        "host_name": {
+          "description": "The host name to connect to.",
+          "type": "string",
+          "default": "localhost",
+          "minLength": 1
+        },
+        "port": {
+          "description": "The port to connect to.",
+          "type": "string",
+          "default": "8080"
+        }
+      },
+      "required": [
+        "host_name",
+        "port"
+      ]
+    }
+  }
 }
