@@ -4,103 +4,122 @@
 package cfggen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 
 import (
-	"encoding/json"
 	"fmt"
 	"maps"
 	"slices"
+	"strconv"
 	"strings"
+
+	"go.yaml.in/yaml/v3"
 )
 
-// PropDoc holds documentation information for a single config property.
+// PropDoc holds documentation for a single config property row.
 type PropDoc struct {
 	Name        string
-	Type        string
-	Default     string
+	Schema      *ConfigMetadata
 	Required    bool
 	Description string
 	Deprecated  bool
 }
 
-// ExtractPropDocs returns a sorted slice of PropDoc entries for the given
-// configuration schema. It flattens properties declared both at the top level
-// and inside allOf (and embed) subschemas so that documentation includes
-// fields contributed by composed / referenced config fragments.
-//
-// Note: When the same property name appears in multiple allOf fragments,
-// the first occurrence wins. Required flags are currently only taken from the
-// root schema's "required" array (sub-schema required fields are not yet
-// unioned).
-func ExtractPropDocs(cfg *ConfigMetadata) []PropDoc {
+// DocSection is the data passed to the configSection template block.
+type DocSection struct {
+	Schema *ConfigMetadata
+	Anchor string
+	Title  string
+}
+
+// CfgRootSection wraps a schema for the top-level configSection call.
+func CfgRootSection(cfg *ConfigMetadata) DocSection {
+	return DocSection{Schema: cfg}
+}
+
+// CfgSubSection wraps a schema for a recursive configSection call.
+func CfgSubSection(cfg *ConfigMetadata, anchor, title string) DocSection {
+	return DocSection{Schema: cfg, Anchor: anchor, Title: title}
+}
+
+// CfgPropDocs returns a sorted slice of PropDoc for all YAML-visible properties
+// of cfg: direct Properties plus properties flattened from AllOf embeds.
+func CfgPropDocs(cfg *ConfigMetadata) []PropDoc {
 	if cfg == nil {
 		return nil
 	}
-
-	props := make(map[string]*ConfigMetadata)
-	collectProperties(cfg, props, make(map[*ConfigMetadata]bool))
-
-	docs := make([]PropDoc, 0, len(props))
-	for _, name := range slices.Sorted(maps.Keys(props)) {
-		p := props[name]
-		docs = append(docs, PropDoc{
-			Name:        name,
-			Type:        DocType(p),
-			Default:     DocDefault(p),
-			Required:    slices.Contains(cfg.Required, name),
-			Description: p.Description,
-			Deprecated:  p.Deprecated,
-		})
-	}
+	var docs []PropDoc
+	collectPropDocs(cfg, &docs)
+	slices.SortFunc(docs, func(a, b PropDoc) int {
+		return strings.Compare(a.Name, b.Name)
+	})
 	return docs
 }
 
-// collectProperties recursively walks the schema (including allOf members)
-// and gathers all properties. It prevents infinite loops with the visited set.
-func collectProperties(cfg *ConfigMetadata, out map[string]*ConfigMetadata, visited map[*ConfigMetadata]bool) {
-	if cfg == nil || visited[cfg] {
-		return
+func collectPropDocs(cfg *ConfigMetadata, docs *[]PropDoc) {
+	for _, name := range slices.Sorted(maps.Keys(cfg.Properties)) {
+		prop := cfg.Properties[name]
+		*docs = append(*docs, PropDoc{
+			Name:        name,
+			Schema:      prop,
+			Required:    slices.Contains(cfg.Required, name),
+			Description: prop.Description,
+			Deprecated:  prop.Deprecated,
+		})
 	}
-	visited[cfg] = true
-
-	for k, v := range cfg.Properties {
-		if _, exists := out[k]; !exists {
-			out[k] = v
+	for _, embed := range cfg.AllOf {
+		if embed != nil {
+			collectPropDocs(embed, docs)
 		}
-	}
-	for _, embedded := range cfg.AllOf {
-		collectProperties(embedded, out, visited)
 	}
 }
 
-// DocType returns a human-readable type label for a ConfigMetadata property,
-// suitable for display in generated documentation tables.
+// CfgIsObject returns true if the schema has its own Properties — meaning the
+// template should render it as an inline sub-section rather than a scalar type.
+func CfgIsObject(cfg *ConfigMetadata) bool {
+	return cfg != nil && len(cfg.Properties) > 0
+}
+
+// CfgAnchor builds a dotted anchor string for a property within a parent section.
+// When parent is empty the anchor is just the name.
+func CfgAnchor(parent, name string) string {
+	if parent == "" {
+		return name
+	}
+	return parent + "." + name
+}
+
+// CfgDocType returns a human-readable type label for a ConfigMetadata property.
 //
-// When the property comes from a $ref, DocType attempts to return a Markdown
-// link to the README of the referenced configuration package (e.g. configgrpc,
-// confighttp) so that readers can easily navigate to the full documentation
-// of the shared type.
-func DocType(md *ConfigMetadata) string {
-	if md == nil {
+// When the property originates from a $ref or ResolvedFrom, it generates a
+// Markdown link to the referenced component's README when possible.
+// This addresses the review feedback requesting links to referenced configs.
+func CfgDocType(cfg *ConfigMetadata) string {
+	if cfg == nil {
 		return "any"
 	}
 
-	// Handle references first – this is the improved path for the review feedback.
-	if ref := effectiveRef(md); ref != "" {
+	// New: handle $ref / ResolvedFrom by generating README links
+	if ref := effectiveRef(cfg); ref != "" {
 		return docLinkForRef(ref)
 	}
 
-	switch md.Type {
+	if len(cfg.Properties) > 0 {
+		return "object"
+	}
+	switch cfg.Type {
 	case "string":
-		switch md.Format {
-		case "duration":
+		if cfg.GoType == "time.Duration" || cfg.Format == "duration" {
 			return "duration"
-		case "date-time":
-			return "datetime"
-		default:
-			if len(md.Enum) > 0 {
-				return "string (one of: " + strings.Join(enumStrings(md.Enum), ", ") + ")"
-			}
-			return "string"
 		}
+		if cfg.GoType == "time.Time" || cfg.Format == "date-time" {
+			return "datetime"
+		}
+		if len(cfg.Enum) > 0 {
+			vals := make([]string, 0, len(cfg.Enum))
+			for _, v := range cfg.Enum {
+				vals = append(vals, fmt.Sprintf("%v", v))
+			}
+			return "string (one of: " + strings.Join(vals, ", ") + ")"
+		}
+		return "string"
 	case "integer":
 		return "int"
 	case "number":
@@ -108,13 +127,13 @@ func DocType(md *ConfigMetadata) string {
 	case "boolean":
 		return "bool"
 	case "array":
-		if md.Items != nil {
-			return "[]" + DocType(md.Items)
+		if cfg.Items != nil {
+			return "[]" + CfgDocType(cfg.Items)
 		}
 		return "[]any"
 	case "object":
-		if md.AdditionalProperties != nil {
-			return "map[string]" + DocType(md.AdditionalProperties)
+		if cfg.AdditionalProperties != nil {
+			return "map[string]" + CfgDocType(cfg.AdditionalProperties)
 		}
 		return "object"
 	default:
@@ -122,25 +141,23 @@ func DocType(md *ConfigMetadata) string {
 	}
 }
 
-// effectiveRef returns the most useful reference string we have.
-func effectiveRef(md *ConfigMetadata) string {
-	if md.Ref != "" {
-		return md.Ref
+// effectiveRef returns the most useful reference string (supports both old and new fields).
+func effectiveRef(cfg *ConfigMetadata) string {
+	if cfg.Ref != "" {
+		return cfg.Ref
 	}
-	return md.ResolvedFrom
+	return cfg.ResolvedFrom
 }
 
-// docLinkForRef tries to produce a Markdown link to the README of the
-// referenced config type. This directly addresses the review request to
-// "generate link to README file to referenced library/config".
+// docLinkForRef produces a Markdown link to the README of common
+// referenced configuration packages. This directly fulfills the review
+// request to generate links to the referenced library/config.
 func docLinkForRef(ref string) string {
 	name := refTypeName(ref)
 	if name == "" {
 		return "object"
 	}
 
-	// Common OpenTelemetry collector shared config packages.
-	// We link to the main branch of the collector repo.
 	switch {
 	case strings.Contains(ref, "configgrpc"):
 		return fmt.Sprintf("[%s](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configgrpc/README.md)", name)
@@ -158,12 +175,10 @@ func docLinkForRef(ref string) string {
 		return fmt.Sprintf("[%s](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configopaque/README.md)", name)
 	}
 
-	// Internal definition or unknown external ref → just return the nice name.
-	// This is still a big improvement over always saying "object".
 	return name
 }
 
-// refTypeName extracts a human-friendly type name from a $ref string.
+// refTypeName extracts a clean type name from a $ref string.
 func refTypeName(ref string) string {
 	if ref == "" {
 		return ""
@@ -179,45 +194,63 @@ func refTypeName(ref string) string {
 	return ref
 }
 
-// DocDefault returns a human-readable representation of a property's default
-// value, or an empty string when no default is set.
-//
-// Complex values (maps, slices, structs, and nested structures) are rendered
-// as compact JSON instead of Go's fmt %v syntax (e.g. map[key:value]), which
-// is what end users see in the generated README tables.
-func DocDefault(md *ConfigMetadata) string {
-	if md == nil || md.Default == nil {
+// CfgDocDefault returns a human-readable default value for display in the docs table.
+// Primitives are returned as-is; slices and maps are marshaled to a compact single-line
+// YAML flow representation to avoid breaking Markdown table cells.
+func CfgDocDefault(cfg *ConfigMetadata) string {
+	if cfg == nil || cfg.Default == nil {
 		return ""
 	}
-
-	v := md.Default
-
-	// Keep simple scalars clean (no extra quotes around strings etc.)
-	switch v.(type) {
-	case string, bool,
-		int, int8, int16, int32, int64,
+	switch v := cfg.Default.(type) {
+	case string:
+		return v
+	case bool:
+		return strconv.FormatBool(v)
+	case int, int8, int16, int32, int64,
 		uint, uint8, uint16, uint32, uint64,
 		float32, float64:
 		return fmt.Sprintf("%v", v)
+	default:
+		return marshalFlowYAML(v)
 	}
-
-	// Everything else (map, slice, struct, nested config, etc.) → compact JSON.
-	if b, err := json.Marshal(v); err == nil {
-		s := string(b)
-		const maxLen = 120
-		if len(s) > maxLen {
-			return s[:maxLen-3] + "..."
-		}
-		return s
-	}
-
-	return fmt.Sprintf("%v", v)
 }
 
-func enumStrings(enum []any) []string {
-	s := make([]string, 0, len(enum))
-	for _, v := range enum {
-		s = append(s, fmt.Sprintf("%v", v))
+func marshalFlowYAML(v any) string {
+	node := &yaml.Node{}
+	if err := node.Encode(v); err != nil {
+		return fmt.Sprintf("%v", v)
 	}
-	return s
+	setFlowStyle(node)
+	out, err := yaml.Marshal(node)
+	if err != nil {
+		return fmt.Sprintf("%v", v)
+	}
+	return strings.TrimRight(string(out), "\n")
+}
+
+func setFlowStyle(n *yaml.Node) {
+	if n == nil {
+		return
+	}
+	switch n.Kind {
+	case yaml.SequenceNode, yaml.MappingNode:
+		n.Style = yaml.FlowStyle
+	}
+	for _, child := range n.Content {
+		setFlowStyle(child)
+	}
+}
+
+// NewCfgDocFns returns template functions for config documentation generation.
+// These are added to the func map by WithCfgFns.
+func NewCfgDocFns() map[string]any {
+	return map[string]any{
+		"cfgPropDocs":    CfgPropDocs,
+		"cfgIsObject":    CfgIsObject,
+		"cfgAnchor":      CfgAnchor,
+		"cfgDocType":     CfgDocType,
+		"cfgDocDefault":  CfgDocDefault,
+		"cfgRootSection": CfgRootSection,
+		"cfgSubSection":  CfgSubSection,
+	}
 }
