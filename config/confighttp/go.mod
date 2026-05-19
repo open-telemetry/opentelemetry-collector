@@ -20,11 +20,11 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.58.0
 	go.opentelemetry.io/collector/extension v1.58.0
 	go.opentelemetry.io/collector/extension/extensionauth v1.58.0
-	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.152.0
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.152.0
-	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.152.0
+	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.152.1
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.152.1
+	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.152.1
 	go.opentelemetry.io/collector/featuregate v1.58.0
-	go.opentelemetry.io/collector/internal/testutil v0.152.0
+	go.opentelemetry.io/collector/internal/testutil v0.152.1
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0
 	go.opentelemetry.io/otel v1.43.0
 	go.uber.org/goleak v1.3.0

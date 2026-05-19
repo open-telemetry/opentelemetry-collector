@@ -11,31 +11,31 @@ require (
 	go.opentelemetry.io/collector/config/configoptional v1.58.0
 	go.opentelemetry.io/collector/confmap v1.58.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.58.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.152.0
-	go.opentelemetry.io/collector/connector v0.152.0
-	go.opentelemetry.io/collector/connector/connectortest v0.152.0
-	go.opentelemetry.io/collector/connector/xconnector v0.152.0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.152.1
+	go.opentelemetry.io/collector/connector v0.152.1
+	go.opentelemetry.io/collector/connector/connectortest v0.152.1
+	go.opentelemetry.io/collector/connector/xconnector v0.152.1
 	go.opentelemetry.io/collector/consumer v1.58.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.152.0
-	go.opentelemetry.io/collector/consumer/xconsumer v0.152.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.152.1
+	go.opentelemetry.io/collector/consumer/xconsumer v0.152.1
 	go.opentelemetry.io/collector/featuregate v1.58.0
-	go.opentelemetry.io/collector/filter v0.152.0
-	go.opentelemetry.io/collector/internal/schemagen v0.152.0
+	go.opentelemetry.io/collector/filter v0.152.1
+	go.opentelemetry.io/collector/internal/schemagen v0.152.1
 	go.opentelemetry.io/collector/pdata v1.58.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.152.0
-	go.opentelemetry.io/collector/pdata/xpdata v0.152.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.152.1
+	go.opentelemetry.io/collector/pdata/xpdata v0.152.1
 	go.opentelemetry.io/collector/pipeline v1.58.0
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.152.0
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.152.1
 	go.opentelemetry.io/collector/processor v1.58.0
-	go.opentelemetry.io/collector/processor/processortest v0.152.0
-	go.opentelemetry.io/collector/processor/xprocessor v0.152.0
+	go.opentelemetry.io/collector/processor/processortest v0.152.1
+	go.opentelemetry.io/collector/processor/xprocessor v0.152.1
 	go.opentelemetry.io/collector/receiver v1.58.0
-	go.opentelemetry.io/collector/receiver/receivertest v0.152.0
-	go.opentelemetry.io/collector/receiver/xreceiver v0.152.0
-	go.opentelemetry.io/collector/scraper v0.152.0
-	go.opentelemetry.io/collector/scraper/scrapertest v0.152.0
-	go.opentelemetry.io/collector/scraper/xscraper v0.152.0
-	go.opentelemetry.io/collector/service/hostcapabilities v0.152.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.152.1
+	go.opentelemetry.io/collector/receiver/xreceiver v0.152.1
+	go.opentelemetry.io/collector/scraper v0.152.1
+	go.opentelemetry.io/collector/scraper/scrapertest v0.152.1
+	go.opentelemetry.io/collector/scraper/xscraper v0.152.1
+	go.opentelemetry.io/collector/service/hostcapabilities v0.152.1
 	go.opentelemetry.io/otel v1.43.0
 	go.opentelemetry.io/otel/metric v1.43.0
 	go.opentelemetry.io/otel/sdk/metric v1.43.0

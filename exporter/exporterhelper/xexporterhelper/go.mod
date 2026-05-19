@@ -8,19 +8,19 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.152.0
 	go.opentelemetry.io/collector/config/configoptional v1.58.0
 	go.opentelemetry.io/collector/consumer v1.58.0
-	go.opentelemetry.io/collector/consumer/consumererror v0.152.0
-	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.152.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.152.0
-	go.opentelemetry.io/collector/consumer/xconsumer v0.152.0
+	go.opentelemetry.io/collector/consumer/consumererror v0.152.1
+	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.152.1
+	go.opentelemetry.io/collector/consumer/consumertest v0.152.1
+	go.opentelemetry.io/collector/consumer/xconsumer v0.152.1
 	go.opentelemetry.io/collector/exporter v1.58.0
-	go.opentelemetry.io/collector/exporter/exporterhelper v0.152.0
-	go.opentelemetry.io/collector/exporter/exportertest v0.152.0
-	go.opentelemetry.io/collector/exporter/xexporter v0.152.0
+	go.opentelemetry.io/collector/exporter/exporterhelper v0.152.1
+	go.opentelemetry.io/collector/exporter/exportertest v0.152.1
+	go.opentelemetry.io/collector/exporter/xexporter v0.152.1
 	go.opentelemetry.io/collector/pdata v1.58.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.152.0
-	go.opentelemetry.io/collector/pdata/testdata v0.152.0
-	go.opentelemetry.io/collector/pdata/xpdata v0.152.0
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.152.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.152.1
+	go.opentelemetry.io/collector/pdata/testdata v0.152.1
+	go.opentelemetry.io/collector/pdata/xpdata v0.152.1
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.152.1
 	go.opentelemetry.io/otel v1.43.0
 	go.opentelemetry.io/otel/sdk v1.43.0
 	go.opentelemetry.io/otel/trace v1.43.0
@@ -51,9 +51,9 @@ require (
 	go.opentelemetry.io/collector/client v1.58.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.58.0 // indirect
 	go.opentelemetry.io/collector/confmap v1.58.0 // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.152.0 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.152.1 // indirect
 	go.opentelemetry.io/collector/extension v1.58.0 // indirect
-	go.opentelemetry.io/collector/extension/xextension v0.152.0 // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.152.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.58.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.152.0 // indirect
 	go.opentelemetry.io/collector/pipeline v1.58.0 // indirect
