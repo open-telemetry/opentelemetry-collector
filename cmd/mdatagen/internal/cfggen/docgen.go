@@ -21,26 +21,54 @@ type PropDoc struct {
 	Deprecated  bool
 }
 
-// ExtractPropDocs returns a sorted slice of PropDoc entries for all direct
-// properties of cfg. allOf embedded schemas are not expanded; callers that
-// want their descriptions should inspect cfg.AllOf separately.
+// ExtractPropDocs returns a sorted slice of PropDoc entries for the given
+// configuration schema. It flattens properties declared both at the top level
+// and inside allOf (and embed) subschemas so that documentation includes
+// fields contributed by composed / referenced config fragments.
+//
+// Note: When the same property name appears in multiple allOf fragments,
+// the first occurrence wins. Required flags are currently only taken from the
+// root schema's "required" array (sub-schema required fields are not yet
+// unioned).
 func ExtractPropDocs(cfg *ConfigMetadata) []PropDoc {
 	if cfg == nil {
 		return nil
 	}
-	docs := make([]PropDoc, 0, len(cfg.Properties))
-	for _, propName := range slices.Sorted(maps.Keys(cfg.Properties)) {
-		prop := cfg.Properties[propName]
+
+	props := make(map[string]*ConfigMetadata)
+	collectProperties(cfg, props, make(map[*ConfigMetadata]bool))
+
+	docs := make([]PropDoc, 0, len(props))
+	for _, name := range slices.Sorted(maps.Keys(props)) {
+		p := props[name]
 		docs = append(docs, PropDoc{
-			Name:        propName,
-			Type:        DocType(prop),
-			Default:     DocDefault(prop),
-			Required:    slices.Contains(cfg.Required, propName),
-			Description: prop.Description,
-			Deprecated:  prop.Deprecated,
+			Name:        name,
+			Type:        DocType(p),
+			Default:     DocDefault(p),
+			Required:    slices.Contains(cfg.Required, name),
+			Description: p.Description,
+			Deprecated:  p.Deprecated,
 		})
 	}
 	return docs
+}
+
+// collectProperties recursively walks the schema (including allOf members)
+// and gathers all properties. It prevents infinite loops with the visited set.
+func collectProperties(cfg *ConfigMetadata, out map[string]*ConfigMetadata, visited map[*ConfigMetadata]bool) {
+	if cfg == nil || visited[cfg] {
+		return
+	}
+	visited[cfg] = true
+
+	for k, v := range cfg.Properties {
+		if _, exists := out[k]; !exists {
+			out[k] = v
+		}
+	}
+	for _, embedded := range cfg.AllOf {
+		collectProperties(embedded, out, visited)
+	}
 }
 
 // DocType returns a human-readable type label for a ConfigMetadata property,
