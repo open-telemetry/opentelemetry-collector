@@ -45,10 +45,21 @@ func ExtractPropDocs(cfg *ConfigMetadata) []PropDoc {
 
 // DocType returns a human-readable type label for a ConfigMetadata property,
 // suitable for display in generated documentation tables.
+//
+// When the property comes from a $ref, DocType attempts to return a Markdown
+// link to the README of the referenced configuration package (e.g. configgrpc,
+// confighttp) so that readers can easily navigate to the full documentation
+// of the shared type.
 func DocType(md *ConfigMetadata) string {
 	if md == nil {
 		return "any"
 	}
+
+	// Handle references first – this is the improved path for the review feedback.
+	if ref := effectiveRef(md); ref != "" {
+		return docLinkForRef(ref)
+	}
+
 	switch md.Type {
 	case "string":
 		switch md.Format {
@@ -79,11 +90,65 @@ func DocType(md *ConfigMetadata) string {
 		}
 		return "object"
 	default:
-		if md.Ref != "" {
-			return "object"
-		}
 		return "any"
 	}
+}
+
+// effectiveRef returns the most useful reference string we have.
+func effectiveRef(md *ConfigMetadata) string {
+	if md.Ref != "" {
+		return md.Ref
+	}
+	return md.ResolvedFrom
+}
+
+// docLinkForRef tries to produce a Markdown link to the README of the
+// referenced config type. This directly addresses the review request to
+// "generate link to README file to referenced library/config".
+func docLinkForRef(ref string) string {
+	name := refTypeName(ref)
+	if name == "" {
+		return "object"
+	}
+
+	// Common OpenTelemetry collector shared config packages.
+	// We link to the main branch of the collector repo.
+	switch {
+	case strings.Contains(ref, "configgrpc"):
+		return fmt.Sprintf("[%s](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configgrpc/README.md)", name)
+	case strings.Contains(ref, "confighttp"):
+		return fmt.Sprintf("[%s](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md)", name)
+	case strings.Contains(ref, "configauth"):
+		return fmt.Sprintf("[%s](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configauth/README.md)", name)
+	case strings.Contains(ref, "configtls"):
+		return fmt.Sprintf("[%s](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)", name)
+	case strings.Contains(ref, "confignet"):
+		return fmt.Sprintf("[%s](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confignet/README.md)", name)
+	case strings.Contains(ref, "configretry"):
+		return fmt.Sprintf("[%s](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configretry/README.md)", name)
+	case strings.Contains(ref, "configopaque"):
+		return fmt.Sprintf("[%s](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configopaque/README.md)", name)
+	}
+
+	// Internal definition or unknown external ref → just return the nice name.
+	// This is still a big improvement over always saying "object".
+	return name
+}
+
+// refTypeName extracts a human-friendly type name from a $ref string.
+func refTypeName(ref string) string {
+	if ref == "" {
+		return ""
+	}
+	sep := strings.LastIndexAny(ref, "#/")
+	if sep != -1 {
+		ref = ref[sep+1:]
+	}
+	ref = strings.Trim(ref, "/")
+	if ref == "" {
+		return ""
+	}
+	return ref
 }
 
 // DocDefault returns a human-readable representation of a property's default
@@ -109,7 +174,6 @@ func DocDefault(md *ConfigMetadata) string {
 	}
 
 	// Everything else (map, slice, struct, nested config, etc.) → compact JSON.
-	// This addresses the review feedback to avoid ugly Go syntax in docs.
 	if b, err := json.Marshal(v); err == nil {
 		s := string(b)
 		const maxLen = 120
