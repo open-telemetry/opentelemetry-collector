@@ -22,6 +22,10 @@ status:
   warnings:
     - Any additional information that should be brought to the consumer's attention
 
+exported_configs:
+  sample_pkg:
+    $ref: ../samplepkg.sample_config
+
 config:
   type: object
   description: Configuration for the Sample Scraper.
