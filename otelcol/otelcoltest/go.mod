@@ -62,7 +62,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.152.1 // indirect
 	go.opentelemetry.io/collector/component/componenttest v0.152.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.152.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.152.1 // indirect
 	go.opentelemetry.io/collector/confmap/xconfmap v0.152.1 // indirect
 	go.opentelemetry.io/collector/connector v0.152.1 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.152.1 // indirect
@@ -73,11 +73,11 @@ require (
 	go.opentelemetry.io/collector/exporter v1.58.0 // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.152.1 // indirect
 	go.opentelemetry.io/collector/extension v1.58.0 // indirect
-	go.opentelemetry.io/collector/extension/extensioncapabilities v0.152.0 // indirect
+	go.opentelemetry.io/collector/extension/extensioncapabilities v0.152.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.58.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.152.1 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.152.1 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.152.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.152.1 // indirect
 	go.opentelemetry.io/collector/pdata v1.58.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.152.1 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.152.1 // indirect
@@ -87,7 +87,7 @@ require (
 	go.opentelemetry.io/collector/processor/xprocessor v0.152.1 // indirect
 	go.opentelemetry.io/collector/receiver v1.58.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.152.1 // indirect
-	go.opentelemetry.io/collector/service/hostcapabilities v0.152.0 // indirect
+	go.opentelemetry.io/collector/service/hostcapabilities v0.152.1 // indirect
 	go.opentelemetry.io/contrib/otelconf v0.23.0 // indirect
 	go.opentelemetry.io/otel v1.43.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.19.0 // indirect
