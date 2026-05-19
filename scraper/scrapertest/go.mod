@@ -5,8 +5,8 @@ go 1.25.0
 require (
 	github.com/google/uuid v1.6.0
 	go.opentelemetry.io/collector/component v1.58.0
-	go.opentelemetry.io/collector/component/componenttest v0.152.0
-	go.opentelemetry.io/collector/scraper v0.152.0
+	go.opentelemetry.io/collector/component/componenttest v0.152.1
+	go.opentelemetry.io/collector/scraper v0.152.1
 )
 
 require (
