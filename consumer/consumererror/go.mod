@@ -8,7 +8,7 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.152.0
 	go.opentelemetry.io/collector/pdata/testdata v0.152.0
 	go.uber.org/goleak v1.3.0
-	google.golang.org/grpc v1.81.0
+	google.golang.org/grpc v1.81.1
 )
 
 require (
