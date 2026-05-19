@@ -555,7 +555,7 @@ func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, co
 	case []any:
 		// is an array of objects
 		if schema.Items == nil || schema.Items.Type != "object" {
-			panic("unsupported default value type for custom mapping")
+			return nil
 		}
 		for i, item := range typedValue {
 			nestedExps := MapCustomDefaults(schema.Items, item, rootPackage, componentPackage)
