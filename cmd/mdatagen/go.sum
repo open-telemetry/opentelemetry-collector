@@ -64,10 +64,6 @@ github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=
 go.opentelemetry.io/auto/sdk v1.2.1/go.mod h1:KRTj+aOaElaLi+wW1kO/DZRXwkF4C5xPbEe3ZiIhN7Y=
-go.opentelemetry.io/collector/receiver/receiverhelper v0.152.0 h1:26c3zF5gigaZT8jjwyd4AdXmHPbgixy+A34cpyzD4WI=
-go.opentelemetry.io/collector/receiver/receiverhelper v0.152.0/go.mod h1:3uBDKP5LAqzGIASltu5lzbvYrqVrAcYVMVPjTyW7Hos=
-go.opentelemetry.io/collector/scraper/scraperhelper v0.152.0 h1:B+qgOHK2L7mr1fuzgb2vnK1xfrI6jT8aD7vZrpczBUc=
-go.opentelemetry.io/collector/scraper/scraperhelper v0.152.0/go.mod h1:cbcycm1A8GHm98/fSxRDszzGw053lLFxr1k/1g41FzQ=
 go.opentelemetry.io/otel v1.43.0 h1:mYIM03dnh5zfN7HautFE4ieIig9amkNANT+xcVxAj9I=
 go.opentelemetry.io/otel v1.43.0/go.mod h1:JuG+u74mvjvcm8vj8pI5XiHy1zDeoCS2LB1spIq7Ay0=
 go.opentelemetry.io/otel/metric v1.43.0 h1:d7638QeInOnuwOONPp4JAOGfbCEpYb+K6DVWvdxGzgM=
