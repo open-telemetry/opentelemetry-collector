@@ -59,10 +59,12 @@ type ConfigMetadata struct {
 	ResolvedFrom                string `mapstructure:"-" json:"-" yaml:"-"`
 	EmbeddedName                string `mapstructure:"-" json:"-" yaml:"-"`
 	AdditionalPropertiesAllowed *bool  `mapstructure:"-" json:"-" yaml:"-"`
+	InternalOnly                bool   `mapstructure:"-" json:"-" yaml:"-"`
 }
 
 type Metadata struct {
-	Config *ConfigMetadata `mapstructure:"config,omitempty" json:"config,omitempty" yaml:"config,omitempty"`
+	Config          *ConfigMetadata            `mapstructure:"config,omitempty" json:"config,omitempty" yaml:"config,omitempty"`
+	ExportedConfigs map[string]*ConfigMetadata `mapstructure:"exported_configs,omitempty" json:"exported_configs,omitempty" yaml:"exported_configs,omitempty"`
 }
 
 type GoStructConfig struct {
