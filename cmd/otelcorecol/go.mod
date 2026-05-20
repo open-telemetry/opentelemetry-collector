@@ -13,22 +13,22 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.58.0
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.58.0
 	go.opentelemetry.io/collector/connector v0.152.1
-	go.opentelemetry.io/collector/connector/forwardconnector v0.152.1
+	go.opentelemetry.io/collector/connector/forwardconnector v0.152.0
 	go.opentelemetry.io/collector/exporter v1.58.0
-	go.opentelemetry.io/collector/exporter/debugexporter v0.152.1
-	go.opentelemetry.io/collector/exporter/nopexporter v0.152.1
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.152.1
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.152.1
+	go.opentelemetry.io/collector/exporter/debugexporter v0.152.0
+	go.opentelemetry.io/collector/exporter/nopexporter v0.152.0
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.152.0
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.152.0
 	go.opentelemetry.io/collector/extension v1.58.0
-	go.opentelemetry.io/collector/extension/memorylimiterextension v0.152.1
+	go.opentelemetry.io/collector/extension/memorylimiterextension v0.152.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.152.1
 	go.opentelemetry.io/collector/otelcol v0.152.1
 	go.opentelemetry.io/collector/processor v1.58.0
-	go.opentelemetry.io/collector/processor/batchprocessor v0.152.1
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.152.1
+	go.opentelemetry.io/collector/processor/batchprocessor v0.152.0
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.152.0
 	go.opentelemetry.io/collector/receiver v1.58.0
-	go.opentelemetry.io/collector/receiver/nopreceiver v0.152.1
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.152.1
+	go.opentelemetry.io/collector/receiver/nopreceiver v0.152.0
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.152.0
 	go.opentelemetry.io/collector/service v0.152.1
 	golang.org/x/sys v0.44.0
 )
