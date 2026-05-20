@@ -72,6 +72,8 @@ type Metadata struct {
 	FeatureGates []FeatureGate `mapstructure:"feature_gates"`
 	// Config is the configuration schema for the component.
 	Config *cfggen.ConfigMetadata `mapstructure:"config"`
+	// ExportedConfigs is the list of additionally exported configs from the component/package
+	ExportedConfigs map[string]*cfggen.ConfigMetadata `mapstructure:"exported_configs"`
 }
 
 type Deprecated struct {

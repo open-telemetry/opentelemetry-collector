@@ -54,7 +54,7 @@ import (
     {{- end }}
 
 {{ $defValidators := extractValidators $def }}
-{{- if $defValidators }}
+{{- if and $defValidators (not (isExternalRef $def.ResolvedFrom)) }}
     // Validate validates the {{$typeName}} fields according to schema annotations.
     func (c *{{ $typeName }}) Validate() error {
         var err error
