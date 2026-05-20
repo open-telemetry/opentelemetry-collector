@@ -2,7 +2,6 @@
 # Sample Receiver
 
 This receiver is used for testing purposes to check the output of mdatagen.
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [deprecated]: profiles   |
