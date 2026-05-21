@@ -7,16 +7,16 @@ require (
 	go.opentelemetry.io/collector/component v1.58.0
 	go.opentelemetry.io/collector/component/componenttest v0.152.0
 	go.opentelemetry.io/collector/confmap v1.58.0
-	go.opentelemetry.io/collector/connector v0.152.0
-	go.opentelemetry.io/collector/connector/connectortest v0.152.0
-	go.opentelemetry.io/collector/connector/xconnector v0.152.0
+	go.opentelemetry.io/collector/connector v0.152.1
+	go.opentelemetry.io/collector/connector/connectortest v0.152.1
+	go.opentelemetry.io/collector/connector/xconnector v0.152.1
 	go.opentelemetry.io/collector/consumer v1.58.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.152.0
-	go.opentelemetry.io/collector/consumer/xconsumer v0.152.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.152.1
+	go.opentelemetry.io/collector/consumer/xconsumer v0.152.1
 	go.opentelemetry.io/collector/pdata v1.58.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.152.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.152.1
 	go.opentelemetry.io/collector/pipeline v1.58.0
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.152.0
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.152.1
 	go.uber.org/goleak v1.3.0
 )
 
@@ -40,8 +40,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.58.0 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.152.0 // indirect
-	go.opentelemetry.io/collector/internal/fanoutconsumer v0.152.0 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.152.1 // indirect
+	go.opentelemetry.io/collector/internal/fanoutconsumer v0.152.1 // indirect
 	go.opentelemetry.io/otel v1.43.0 // indirect
 	go.opentelemetry.io/otel/metric v1.43.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.43.0 // indirect
