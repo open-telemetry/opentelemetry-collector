@@ -48,20 +48,6 @@ func deref(t reflect.Type) reflect.Type {
 	return t
 }
 
-// assertStructKind checks if T can be dereferenced into a type with struct kind.
-//
-// We assert this because our unmarshaling logic currently only supports structs.
-// This can be removed if we ever support scalar values.
-func assertStructKind[T any]() error {
-	var instance T
-	t := deref(reflect.TypeOf(instance))
-	if t.Kind() != reflect.Struct {
-		return fmt.Errorf("configoptional: %q does not have a struct kind", t)
-	}
-
-	return nil
-}
-
 // assertNoEnabledField checks that a struct type
 // does not have a field with a mapstructure tag "enabled".
 //
@@ -101,12 +87,9 @@ func Some[T any](value T) Optional[T] {
 
 // Default creates an Optional with a default value for unmarshaling.
 //
-// It panics if
-// - T is not a struct OR
-// - T has a field with the mapstructure tag "enabled".
+// It panics if T has a field with the mapstructure tag "enabled".
 func Default[T any](value T) Optional[T] {
-	err := errors.Join(assertStructKind[T](), assertNoEnabledField[T]())
-	if err != nil {
+	if err := assertNoEnabledField[T](); err != nil {
 		panic(err)
 	}
 	return Optional[T]{value: value, flavor: defaultFlavor}
@@ -149,8 +132,7 @@ func (o *Optional[T]) Get() *T {
 // - T is not a struct OR
 // - T has a field with the mapstructure tag "enabled".
 func (o *Optional[T]) GetOrInsertDefault() *T {
-	err := errors.Join(assertStructKind[T](), assertNoEnabledField[T]())
-	if err != nil {
+	if err := assertNoEnabledField[T](); err != nil {
 		panic(err)
 	}
 
@@ -167,7 +149,10 @@ func (o *Optional[T]) GetOrInsertDefault() *T {
 	return o.Get()
 }
 
-var _ confmap.Unmarshaler = (*Optional[any])(nil)
+var (
+	_ confmap.Unmarshaler       = (*Optional[any])(nil)
+	_ confmap.ScalarUnmarshaler = (*Optional[any])(nil)
+)
 
 // Unmarshal the configuration into the Optional value.
 //
@@ -183,7 +168,9 @@ var _ confmap.Unmarshaler = (*Optional[any])(nil)
 //   - if enabled is false: the Optional becomes None regardless of other configuration values.
 //
 // T must be derefenceable to a type with struct kind and not have an 'enabled' field.
-// Scalar values are not supported.
+// Scalar values are not supported, and will be handled by [UnmarshalScalar] instead.
+// We do not need to check this since the hook for [ScalarUnmarshaler] will be called
+// before the hook for [Unmarshaler].
 func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 	if err := assertNoEnabledField[T](); err != nil {
 		return err
@@ -221,19 +208,47 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 	return nil
 }
 
-var _ confmap.Marshaler = (*Optional[any])(nil)
+// UnmarshalScalar unmarshals a scalar value into the Optional.
+//
+// A `nil` value will set the Optional to None, disabling it as setting
+// `enabled: false` for a struct-type Optional or `null` for a pointer field
+// would.
+func (o *Optional[T]) UnmarshalScalar(scalarValue confmap.ScalarValue) error {
+	if scalarValue.GetRaw() == nil {
+		if deref(reflect.TypeOf(o.value)).Kind() == reflect.Struct {
+			// Defer to Unmarshal behavior
+			return confmap.ErrValueNotApplicable
+		}
+		// For scalar types, a nil map represents `null` and clears to None.
+		var zero T
+		o.value = zero
+		o.flavor = noneFlavor
+
+		return nil
+	}
+
+	if err := scalarValue.Unmarshal(&o.value); err != nil {
+		return err
+	}
+	o.flavor = someFlavor
+
+	return nil
+}
+
+var (
+	_ confmap.Marshaler       = (*Optional[any])(nil)
+	_ confmap.ScalarMarshaler = (*Optional[any])(nil)
+)
 
 // Marshal the Optional value into the configuration.
 // If the Optional is None or Default, it does not marshal anything.
 // If the Optional is Some, it marshals the value into the configuration.
 //
 // T must be derefenceable to a type with struct kind.
-// Scalar values are not supported.
+// Scalar values are not supported, and will be handled by [MarshalScalar] instead.
+// We do not need to check this since the hook for [ScalarMarshaler] will be called
+// before the hook for [Marshaler].
 func (o Optional[T]) Marshal(conf *confmap.Conf) error {
-	if err := assertStructKind[T](); err != nil {
-		return err
-	}
-
 	if o.flavor == noneFlavor || o.flavor == defaultFlavor {
 		// Optional is None or Default, do not marshal anything.
 		return conf.Marshal(map[string]any(nil))
@@ -244,6 +259,20 @@ func (o Optional[T]) Marshal(conf *confmap.Conf) error {
 	}
 
 	return nil
+}
+
+func (o Optional[T]) MarshalScalar(scalarValue confmap.ScalarValue) error {
+	if deref(reflect.TypeOf(o.value)).Kind() == reflect.Struct {
+		// Defer to Marshal behavior
+		return confmap.ErrValueNotApplicable
+	}
+
+	if o.flavor == noneFlavor || o.flavor == defaultFlavor {
+		// An Optional of type None or Default should marshal as nil.
+		return scalarValue.Marshal(nil)
+	}
+
+	return scalarValue.Marshal(o.value)
 }
 
 var _ confmap.Validator = (*Optional[any])(nil)

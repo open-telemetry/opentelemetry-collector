@@ -66,6 +66,10 @@ func Decode(input, result any, settings UnmarshalOptions, skipTopLevelUnmarshale
 			mapKeyStringToMapKeyTextUnmarshalerHookFunc(),
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.TextUnmarshallerHookFunc(),
+			// This must come before unmarshalerHookFunc; the two may both want to trigger
+			// their corresponding interface for structs implementing both, and the scalar
+			// interfaces are the ones that will sometimes defer to the non-scalar interfaces.
+			scalarUnmarshalerHookFunc(),
 			unmarshalerHookFunc(result, skipTopLevelUnmarshaler && !settings.ForceUnmarshaler),
 			// after the main unmarshaler hook is called,
 			// we unmarshal the embedded structs if present to merge with the result:
