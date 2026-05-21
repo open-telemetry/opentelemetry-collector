@@ -6,7 +6,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-var ExporterPersistRequestContextFeatureGate = featuregate.GlobalRegistry().MustRegister(
+var _ = featuregate.GlobalRegistry().MustRegister(
 	"exporter.PersistRequestContext",
 	featuregate.StageStable,
 	featuregate.WithRegisterDescription("controls whether context should be stored alongside requests in the persistent queue"),
