@@ -18,7 +18,7 @@ require (
 	go.opentelemetry.io/collector/exporter v1.58.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.152.1
 	go.opentelemetry.io/collector/extension/extensiontest v0.152.1
-	go.opentelemetry.io/collector/extension/xextension v0.152.1
+	go.opentelemetry.io/collector/extension/xextension v0.152.2-0.20260521172921-c38d7bfc1ff4
 	go.opentelemetry.io/collector/featuregate v1.58.0
 	go.opentelemetry.io/collector/internal/testutil v0.152.1
 	go.opentelemetry.io/collector/pdata v1.58.0
