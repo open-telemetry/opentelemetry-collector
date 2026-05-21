@@ -105,6 +105,7 @@ receiver/receivertest/                                 @open-telemetry/collector
 receiver/xreceiver/                                    @open-telemetry/collector-approvers @mx-psi @dmathieu
 scraper/                                               @open-telemetry/collector-approvers
 scraper/scraperhelper/                                 @open-telemetry/collector-approvers
+scraper/scraperhelper/internal/controller/             @open-telemetry/collector-approvers
 scraper/scraperhelper/xscraperhelper/                  @open-telemetry/collector-approvers @florianl
 scraper/scrapertest/                                   @open-telemetry/collector-approvers
 scraper/xscraper/                                      @open-telemetry/collector-approvers @dmathieu @florianl
