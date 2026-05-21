@@ -30,6 +30,11 @@ config:
   type: object
   description: Configuration for the Sample Scraper.
   properties:
+    controller_config:
+      $ref: /scraper/scraperhelper.controller_config
+      embed: true
+      go_struct:
+        anonymous: true
     metrics_builder_config:
       $ref: ./internal/metadata.metrics_builder_config
       embed: true
