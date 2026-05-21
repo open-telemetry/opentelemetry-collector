@@ -7,7 +7,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.58.0
-	go.opentelemetry.io/collector/component/componenttest v0.152.0
+	go.opentelemetry.io/collector/component/componenttest v0.152.1
 	go.opentelemetry.io/collector/config/configoptional v1.58.0
 	go.opentelemetry.io/collector/confmap v1.58.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.58.0
@@ -33,6 +33,7 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.152.1
 	go.opentelemetry.io/collector/receiver/xreceiver v0.152.1
 	go.opentelemetry.io/collector/scraper v0.152.1
+	go.opentelemetry.io/collector/scraper/scraperhelper v0.152.1
 	go.opentelemetry.io/collector/scraper/scrapertest v0.152.1
 	go.opentelemetry.io/collector/scraper/xscraper v0.152.1
 	go.opentelemetry.io/collector/service/hostcapabilities v0.152.1
@@ -73,6 +74,7 @@ require (
 	go.opentelemetry.io/collector/internal/componentalias v0.152.1 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.152.1 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.152.1 // indirect
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.152.1 // indirect
 	go.opentelemetry.io/collector/service v0.152.1 // indirect
 	go.opentelemetry.io/otel/sdk v1.43.0 // indirect
 	golang.org/x/mod v0.36.0 // indirect
@@ -216,3 +218,7 @@ replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/
 replace go.opentelemetry.io/collector/config/confignet => ../../config/confignet
 
 replace go.opentelemetry.io/collector/scraper/xscraper => ../../scraper/xscraper
+
+replace go.opentelemetry.io/collector/receiver/receiverhelper => ../../receiver/receiverhelper
+
+replace go.opentelemetry.io/collector/scraper/scraperhelper => ../../scraper/scraperhelper
