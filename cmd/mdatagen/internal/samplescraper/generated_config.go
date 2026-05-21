@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
 type SamplePkg = samplepkg.SampleConfig
@@ -49,6 +50,8 @@ func NewDefaultTargetsItem() TargetsItem {
 
 // Configuration for the Sample Scraper.
 type Config struct {
+	// ControllerConfig defines common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed.
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	// MetricsBuilderConfig is a configuration for sample metrics builder.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	// Name of the scrape job, used to identify the source in telemetry.
@@ -89,6 +92,7 @@ func (c *Config) Validate() error {
 
 func createDefaultConfig() component.Config {
 	return &Config{
+		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		JobName:              "test_job",
 		Targets:              &[]TargetsItem{NewDefaultTargetsItem()},
