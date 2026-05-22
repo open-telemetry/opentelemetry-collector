@@ -2,6 +2,7 @@
 # Sample Scraper
 
 This scraper is used for testing purposes to check the output of mdatagen.
+
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: logs, profiles   |
