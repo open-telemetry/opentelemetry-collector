@@ -40,6 +40,11 @@ func NewResolver(pkgID, class, name, dir string) *Resolver {
 // (pointing to other schemas, either locally or remotely). The resolver uses registered loaders to fetch external schemas as needed.
 //
 // Returns a new ConfigMetadata with all references resolved, or an error if resolution fails.
+//
+// Deprecated: prefer Resolve, which takes the full source Metadata (so exported_configs
+// are not coerced into ConfigMetadata.Defs by the caller) and returns the writer-side
+// JSONSchemaDoc. This wrapper is kept for callers that still operate on a bare
+// ConfigMetadata with internal Defs set up.
 func (r *Resolver) ResolveSchema(src *ConfigMetadata) (*ConfigMetadata, error) {
 	target := &ConfigMetadata{}
 	err := r.resolveSchema(src, src, target, nil)
@@ -56,6 +61,57 @@ func (r *Resolver) ResolveSchema(src *ConfigMetadata) (*ConfigMetadata, error) {
 	}
 
 	return target, nil
+}
+
+// Resolve takes the source Metadata parsed from metadata.yaml and produces a
+// JSONSchemaDoc with all $ref references resolved. exported_configs from the source
+// become the top-level $defs of the output document; the source ConfigMetadata is not
+// mutated.
+func (r *Resolver) Resolve(src *Metadata) (*JSONSchemaDoc, error) {
+	if src == nil {
+		return nil, fmt.Errorf("nil metadata")
+	}
+	config := src.Config
+	if config == nil {
+		config = &ConfigMetadata{}
+	}
+
+	// For ref-lookup purposes the resolver expects the top-level definitions
+	// (both nested $defs and exported_configs) to be reachable from the root node.
+	// Build a transient root that carries them, without touching the caller's data.
+	root := *config
+	if len(src.ExportedConfigs) > 0 {
+		merged := make(map[string]*ConfigMetadata, len(src.ExportedConfigs)+len(root.Defs))
+		for k, v := range root.Defs {
+			merged[k] = v
+		}
+		for k, v := range src.ExportedConfigs {
+			merged[k] = v
+		}
+		root.Defs = merged
+	}
+
+	target := &ConfigMetadata{}
+	if err := r.resolveSchema(&root, &root, target, nil); err != nil {
+		return nil, err
+	}
+
+	target.Schema = schemaVersion
+	target.ID = r.pkgID
+	target.Title = fmt.Sprintf("%s/%s", r.class, r.name)
+	if len(config.Properties) > 0 {
+		target.Type = "object"
+	}
+
+	doc := &JSONSchemaDoc{ConfigMetadata: target}
+	// Defs on the resolved target are the merged exported_configs and any internal
+	// $defs that survived the resolver's cleanup pass. Promote them to the document's
+	// $defs and clear them off the inner node so they are not serialized twice.
+	if len(target.Defs) > 0 {
+		doc.Defs = target.Defs
+		target.Defs = nil
+	}
+	return doc, nil
 }
 
 func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *Ref) error {
@@ -277,22 +333,39 @@ func lookupRootDef(root, current *ConfigMetadata, ref *Ref) (*ConfigMetadata, bo
 
 // loadExternalRef uses SchemaLoader to load external references
 func (r *Resolver) loadExternalRef(ref *Ref) (*ConfigMetadata, error) {
-	md, err := r.loader.Load(*ref)
+	m, err := r.loader.Load(*ref)
 	if err != nil {
 		return nil, err
 	}
-	if md == nil {
+	if m == nil {
 		return nil, fmt.Errorf("no loader could resolve external reference: %s", ref)
 	}
 
-	if md.Defs != nil {
-		if def, ok := md.Defs[ref.DefName()]; ok {
-			resolved := &ConfigMetadata{}
-			if err := r.resolveSchema(md, def, resolved, ref); err != nil {
-				return nil, fmt.Errorf("failed to resolve internal references in external schema %s: %w", ref, err)
-			}
-			return resolved, nil
+	// Build a synthetic root from the loaded Metadata so the recursive resolveSchema
+	// can still walk nested refs by name. The loaded schema's exported_configs are the
+	// source of named definitions on the external side.
+	root := &ConfigMetadata{}
+	if m.Config != nil {
+		copy := *m.Config
+		root = &copy
+	}
+	if len(m.ExportedConfigs) > 0 {
+		merged := make(map[string]*ConfigMetadata, len(m.ExportedConfigs)+len(root.Defs))
+		for k, v := range root.Defs {
+			merged[k] = v
 		}
+		for k, v := range m.ExportedConfigs {
+			merged[k] = v
+		}
+		root.Defs = merged
+	}
+
+	if def, ok := root.Defs[ref.DefName()]; ok {
+		resolved := &ConfigMetadata{}
+		if err := r.resolveSchema(root, def, resolved, ref); err != nil {
+			return nil, fmt.Errorf("failed to resolve internal references in external schema %s: %w", ref, err)
+		}
+		return resolved, nil
 	}
 
 	return nil, fmt.Errorf("type %q not found in loaded schema for reference %s", ref.DefName(), ref)

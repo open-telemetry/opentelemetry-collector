@@ -898,10 +898,10 @@ func findSchema(t *testing.T, schemas []*ConfigMetadata, match func(*ConfigMetad
 	return nil
 }
 
-func (m *mockLoader) Load(ref Ref) (*ConfigMetadata, error) {
+func (m *mockLoader) Load(ref Ref) (*Metadata, error) {
 	cacheKey := ref.CacheKey()
 	if md, ok := m.schemas[cacheKey]; ok {
-		return md, nil
+		return &Metadata{Config: md}, nil
 	}
 	return nil, fmt.Errorf("schema not found for ref: %s", cacheKey)
 }
@@ -1333,7 +1333,7 @@ func TestResolver_LoadExternalRef_NilResult(t *testing.T) {
 // nilResultLoader returns (nil, nil) for any ref.
 type nilResultLoader struct{}
 
-func (n *nilResultLoader) Load(_ Ref) (*ConfigMetadata, error) { return nil, nil }
+func (n *nilResultLoader) Load(_ Ref) (*Metadata, error) { return nil, nil }
 
 func TestResolver_LoadExternalRef_InternalResolutionError(t *testing.T) {
 	brokenSchema := &ConfigMetadata{

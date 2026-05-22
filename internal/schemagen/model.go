@@ -4,14 +4,25 @@
 package schemagen // import "go.opentelemetry.io/collector/internal/schemagen"
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// ConfigMetadata represents a JSON schema object, draft 2020-12 (limited), with additional custom fields.
+// ConfigMetadata is a single schema node parsed from metadata.yaml's `config` (and from
+// any externally-loaded schema). It mirrors a subset of JSON Schema 2020-12, plus the
+// project-specific x-* and go_struct extensions.
+//
+// It is NOT the type emitted to disk as a JSON Schema document; that is JSONSchemaDoc.
+// The Defs field is kept here only to back the resolver's internal ref-lookup logic for
+// schemas that carry their own nested $defs. Top-level $defs (built from a component's
+// exported_configs) live on JSONSchemaDoc and are produced at write time. The json tag
+// on Defs is "-" so that the embedded *ConfigMetadata inside JSONSchemaDoc cannot
+// shadow the outer Defs field during JSON marshaling.
 type ConfigMetadata struct {
 	Schema               string                     `mapstructure:"$schema,omitempty" json:"$schema,omitempty" yaml:"$schema,omitempty"`
 	ID                   string                     `mapstructure:"$id,omitempty" json:"$id,omitempty" yaml:"$id,omitempty"`
@@ -48,7 +59,7 @@ type ConfigMetadata struct {
 	ExclusiveMaximum     *float64                   `mapstructure:"exclusiveMaximum,omitempty" json:"exclusiveMaximum,omitempty" yaml:"exclusiveMaximum,omitempty"`
 	Minimum              *float64                   `mapstructure:"minimum,omitempty" json:"minimum,omitempty" yaml:"minimum,omitempty"`
 	ExclusiveMinimum     *float64                   `mapstructure:"exclusiveMinimum,omitempty" json:"exclusiveMinimum,omitempty" yaml:"exclusiveMinimum,omitempty"`
-	Defs                 map[string]*ConfigMetadata `mapstructure:"$defs,omitempty" json:"$defs,omitempty" yaml:"$defs,omitempty"`
+	Defs                 map[string]*ConfigMetadata `mapstructure:"$defs,omitempty" json:"-" yaml:"$defs,omitempty"`
 	// Additional custom fields
 	GoStruct   GoStructConfig `mapstructure:"go_struct,omitempty" json:"-" yaml:"go_struct,omitempty"`
 	GoType     string         `mapstructure:"x-customType,omitempty" json:"-" yaml:"x-customType,omitempty"`
@@ -94,8 +105,70 @@ func (g *GoStructConfig) Unmarshal(parser *confmap.Conf) error {
 	return sub.Unmarshal(g.CustomValidator)
 }
 
-func (md *ConfigMetadata) ToJSON() ([]byte, error) {
-	return json.MarshalIndent(md, "", "  ")
+// JSONSchemaDoc is the writer-side JSON Schema 2020-12 document produced by schemagen.
+// It wraps a resolved ConfigMetadata schema node and owns the top-level $defs map that
+// is built from a component's exported_configs (plus any internal definitions injected
+// by mdatagen). Keeping $defs here avoids mutating the source ConfigMetadata to carry
+// an output-only concern.
+type JSONSchemaDoc struct {
+	*ConfigMetadata
+	Defs map[string]*ConfigMetadata `json:"$defs,omitempty"`
+}
+
+// ToJSON serializes the JSON Schema document with indentation.
+func (d *JSONSchemaDoc) ToJSON() ([]byte, error) {
+	return json.MarshalIndent(d, "", "  ")
+}
+
+// MarshalJSON serializes the document by delegating to the inner ConfigMetadata's
+// MarshalJSON (so PatternProperties / AdditionalPropertiesAllowed handling is
+// preserved) and splicing the top-level $defs into the produced object. Without this
+// override the embedded ConfigMetadata.MarshalJSON would be promoted to JSONSchemaDoc
+// and the outer Defs field would be silently dropped.
+func (d *JSONSchemaDoc) MarshalJSON() ([]byte, error) {
+	if d.ConfigMetadata == nil {
+		if len(d.Defs) == 0 {
+			return []byte("{}"), nil
+		}
+		return json.Marshal(struct {
+			Defs map[string]*ConfigMetadata `json:"$defs"`
+		}{Defs: d.Defs})
+	}
+	base, err := json.Marshal(d.ConfigMetadata)
+	if err != nil {
+		return nil, err
+	}
+	if len(d.Defs) == 0 {
+		return base, nil
+	}
+	defsRaw, err := json.Marshal(d.Defs)
+	if err != nil {
+		return nil, err
+	}
+	inner := bytes.TrimSpace(base)
+	if len(inner) < 2 || inner[0] != '{' || inner[len(inner)-1] != '}' {
+		return nil, fmt.Errorf("unexpected ConfigMetadata JSON encoding: %s", base)
+	}
+	out := make([]byte, 0, len(inner)+len(defsRaw)+10)
+	out = append(out, inner[:len(inner)-1]...)
+	if len(inner) > 2 {
+		out = append(out, ',')
+	}
+	out = append(out, `"$defs":`...)
+	out = append(out, defsRaw...)
+	out = append(out, '}')
+	return out, nil
+}
+
+// AsJSONSchema builds the writer-side JSON Schema document from this source-side
+// Metadata. The resulting doc shares the underlying ConfigMetadata and exported-configs
+// maps; callers that need to mutate the resolved schema should do so before this call.
+func (md *Metadata) AsJSONSchema() *JSONSchemaDoc {
+	doc := &JSONSchemaDoc{ConfigMetadata: md.Config}
+	if len(md.ExportedConfigs) > 0 {
+		doc.Defs = md.ExportedConfigs
+	}
+	return doc
 }
 
 func (md *ConfigMetadata) MarshalJSON() ([]byte, error) {
@@ -139,4 +212,75 @@ func (md *ConfigMetadata) Validate() error {
 		}
 	}
 	return errs
+}
+
+// Clone returns a deep copy of the Metadata. The returned Metadata shares no pointers
+// with the receiver, so callers downstream of Clone() can freely mutate the result
+// without affecting the source.
+func (md *Metadata) Clone() *Metadata {
+	if md == nil {
+		return nil
+	}
+	out := &Metadata{Config: md.Config.Clone()}
+	if md.ExportedConfigs != nil {
+		out.ExportedConfigs = make(map[string]*ConfigMetadata, len(md.ExportedConfigs))
+		for k, v := range md.ExportedConfigs {
+			out.ExportedConfigs[k] = v.Clone()
+		}
+	}
+	return out
+}
+
+// Clone returns a deep copy of the ConfigMetadata node and every pointer-bearing field
+// reachable from it (Properties, Items, AllOf, AdditionalProperties, ContentSchema,
+// PatternProperties, Defs). Primitive slices are copied; numeric pointer fields
+// (MinLength, MultipleOf, etc.) are shallow-shared since the resolver only reads them.
+func (c *ConfigMetadata) Clone() *ConfigMetadata {
+	if c == nil {
+		return nil
+	}
+	out := *c
+	if c.AllOf != nil {
+		out.AllOf = make([]*ConfigMetadata, len(c.AllOf))
+		for i, v := range c.AllOf {
+			out.AllOf[i] = v.Clone()
+		}
+	}
+	if c.Properties != nil {
+		out.Properties = make(map[string]*ConfigMetadata, len(c.Properties))
+		for k, v := range c.Properties {
+			out.Properties[k] = v.Clone()
+		}
+	}
+	if c.AdditionalProperties != nil {
+		out.AdditionalProperties = c.AdditionalProperties.Clone()
+	}
+	if c.PatternProperties != nil {
+		out.PatternProperties = make(map[string]*ConfigMetadata, len(c.PatternProperties))
+		for k, v := range c.PatternProperties {
+			out.PatternProperties[k] = v.Clone()
+		}
+	}
+	if c.Items != nil {
+		out.Items = c.Items.Clone()
+	}
+	if c.ContentSchema != nil {
+		out.ContentSchema = c.ContentSchema.Clone()
+	}
+	if c.Defs != nil {
+		out.Defs = make(map[string]*ConfigMetadata, len(c.Defs))
+		for k, v := range c.Defs {
+			out.Defs[k] = v.Clone()
+		}
+	}
+	if c.Examples != nil {
+		out.Examples = slices.Clone(c.Examples)
+	}
+	if c.Enum != nil {
+		out.Enum = slices.Clone(c.Enum)
+	}
+	if c.Required != nil {
+		out.Required = slices.Clone(c.Required)
+	}
+	return &out
 }

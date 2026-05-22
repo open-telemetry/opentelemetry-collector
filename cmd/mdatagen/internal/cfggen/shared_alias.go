@@ -7,6 +7,8 @@ import "go.opentelemetry.io/collector/internal/schemagen"
 
 type (
 	ConfigMetadata        = schemagen.ConfigMetadata
+	JSONSchemaDoc         = schemagen.JSONSchemaDoc
+	Metadata              = schemagen.Metadata
 	GoStructConfig        = schemagen.GoStructConfig
 	CustomValidatorConfig = schemagen.CustomValidatorConfig
 	Loader                = schemagen.Loader

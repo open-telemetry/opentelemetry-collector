@@ -13,15 +13,15 @@ import (
 
 func TestWriteJSONSchema(t *testing.T) {
 	dir := t.TempDir()
-	md := &ConfigMetadata{
+	doc := &JSONSchemaDoc{ConfigMetadata: &ConfigMetadata{
 		Schema: schemaVersion,
 		Type:   "object",
 		Properties: map[string]*ConfigMetadata{
 			"endpoint": {Type: "string"},
 		},
-	}
+	}}
 
-	err := WriteJSONSchema(dir, md)
+	err := WriteJSONSchema(dir, doc)
 	require.NoError(t, err)
 
 	content, err := os.ReadFile(filepath.Join(dir, fileName)) // #nosec G304
@@ -32,7 +32,7 @@ func TestWriteJSONSchema(t *testing.T) {
 
 func TestWriteJSONSchema_OmitsInternalResolvedFrom(t *testing.T) {
 	dir := t.TempDir()
-	md := &ConfigMetadata{
+	doc := &JSONSchemaDoc{ConfigMetadata: &ConfigMetadata{
 		Schema:       schemaVersion,
 		Type:         "object",
 		ResolvedFrom: "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
@@ -42,9 +42,9 @@ func TestWriteJSONSchema_OmitsInternalResolvedFrom(t *testing.T) {
 				ResolvedFrom: "string",
 			},
 		},
-	}
+	}}
 
-	err := WriteJSONSchema(dir, md)
+	err := WriteJSONSchema(dir, doc)
 	require.NoError(t, err)
 
 	content, err := os.ReadFile(filepath.Join(dir, fileName)) // #nosec G304
@@ -53,7 +53,29 @@ func TestWriteJSONSchema_OmitsInternalResolvedFrom(t *testing.T) {
 }
 
 func TestWriteJSONSchema_InvalidDir(t *testing.T) {
-	md := &ConfigMetadata{Type: "object"}
-	err := WriteJSONSchema("/nonexistent/path/that/does/not/exist", md)
+	doc := &JSONSchemaDoc{ConfigMetadata: &ConfigMetadata{Type: "object"}}
+	err := WriteJSONSchema("/nonexistent/path/that/does/not/exist", doc)
 	require.Error(t, err)
+}
+
+func TestJSONSchemaDoc_EmitsDefs(t *testing.T) {
+	dir := t.TempDir()
+	doc := (&Metadata{
+		Config: &ConfigMetadata{Type: "object", Properties: map[string]*ConfigMetadata{
+			"endpoint": {Type: "string"},
+		}},
+		ExportedConfigs: map[string]*ConfigMetadata{
+			"sub_config": {Type: "object", Properties: map[string]*ConfigMetadata{
+				"port": {Type: "integer"},
+			}},
+		},
+	}).AsJSONSchema()
+
+	err := WriteJSONSchema(dir, doc)
+	require.NoError(t, err)
+	content, err := os.ReadFile(filepath.Join(dir, fileName)) // #nosec G304
+	require.NoError(t, err)
+	require.Contains(t, string(content), `"$defs"`)
+	require.Contains(t, string(content), `"sub_config"`)
+	require.Contains(t, string(content), `"port"`)
 }

@@ -673,31 +673,37 @@ func mergeInternalMetadataDefs(raw []byte, src *cfggen.ConfigMetadata) error {
 }
 
 func generateConfigFiles(md Metadata, mdDir, importRootPath string) error {
-	if md.ExportedConfigs != nil {
+	if md.Config != nil || len(md.ExportedConfigs) > 0 {
 		if md.Config == nil {
 			md.Config = &cfggen.ConfigMetadata{}
 		}
-		md.Config.Defs = md.ExportedConfigs
-	}
-
-	if md.Config != nil {
 		if err := injectInternalMetadataDefs(md, mdDir, md.Config); err != nil {
 			return err
 		}
 		resolver := cfggen.NewResolver(md.PackageName, md.Status.Class, md.Type, mdDir)
-		resolvedSchema, err := resolver.ResolveSchema(md.Config)
+		schemaInput := &cfggen.Metadata{
+			Config:          md.Config,
+			ExportedConfigs: md.ExportedConfigs,
+		}
+		resolvedDoc, err := resolver.Resolve(schemaInput)
 		if err != nil {
 			return fmt.Errorf("failed to resolve config schema: %w", err)
 		}
 
-		err = cfggen.WriteJSONSchema(mdDir, resolvedSchema)
+		err = cfggen.WriteJSONSchema(mdDir, resolvedDoc)
 		if err != nil {
 			return fmt.Errorf("failed to write config schema: %w", err)
 		}
 
 		// do a shallow copy of Metadata and replace Config with resolved schema
 		mdWithConfig := md
-		mdWithConfig.Config = resolvedSchema
+		mdWithConfig.Config = resolvedDoc.ConfigMetadata
+		// The Go-struct templates iterate over Config.Defs to emit a struct per
+		// exported config. The resolver promotes those into JSONSchemaDoc.Defs for
+		// JSON output, so reattach them here for the templating path.
+		if mdWithConfig.Config != nil && len(resolvedDoc.Defs) > 0 {
+			mdWithConfig.Config.Defs = resolvedDoc.Defs
+		}
 
 		if err = generateConfigGoStruct(mdWithConfig, mdDir); err != nil {
 			return fmt.Errorf("failed to generate config Go struct: %w", err)

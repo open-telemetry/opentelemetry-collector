@@ -35,9 +35,9 @@ func TestLoader_LoadFromFile_Success(t *testing.T) {
 	// For local refs, the loadFromFile method takes a file path
 	result, err := loader.loadFromFile(schemaFile)
 	require.NoError(t, err)
-	require.Equal(t, "Test Schema", result.Title)
-	require.Equal(t, "A test schema", result.Description)
-	require.Equal(t, "object", result.Type)
+	require.Equal(t, "Test Schema", result.Config.Title)
+	require.Equal(t, "A test schema", result.Config.Description)
+	require.Equal(t, "object", result.Config.Type)
 }
 
 func TestLoader_LoadFromFile_ExportedConfigsOnly(t *testing.T) {
@@ -57,9 +57,9 @@ func TestLoader_LoadFromFile_ExportedConfigsOnly(t *testing.T) {
 	result, err := loader.loadFromFile(schemaFile)
 	require.NoError(t, err)
 	require.NotNil(t, result)
-	require.Contains(t, result.Defs, "sample_config")
-	require.Equal(t, "object", result.Defs["sample_config"].Type)
-	require.Contains(t, result.Defs["sample_config"].Properties, "endpoint")
+	require.Contains(t, result.ExportedConfigs, "sample_config")
+	require.Equal(t, "object", result.ExportedConfigs["sample_config"].Type)
+	require.Contains(t, result.ExportedConfigs["sample_config"].Properties, "endpoint")
 }
 
 func TestLoader_LoadFromFile_NotFound(t *testing.T) {
@@ -112,8 +112,8 @@ func TestLoader_LoadFromHTTP_Success(t *testing.T) {
 
 	result, err := loader.loadFromHTTP(ref, filepath.Join(tempDir, ".schemas"))
 	require.NoError(t, err)
-	require.Equal(t, "HTTP Schema", result.Title)
-	require.Equal(t, "string", result.Type)
+	require.Equal(t, "HTTP Schema", result.Config.Title)
+	require.Equal(t, "string", result.Config.Type)
 }
 
 func TestLoader_LoadFromHTTP_NotFound(t *testing.T) {
@@ -178,7 +178,7 @@ func TestLoader_TryLoad_WithVersion(t *testing.T) {
 	// Try to load with version
 	result, err := loader.tryLoad(ref, "v1.0.0")
 	require.NoError(t, err)
-	require.Equal(t, "Versioned Schema", result.Title)
+	require.Equal(t, "Versioned Schema", result.Config.Title)
 }
 
 func TestLoader_TryLoad_ExportedConfigsOnly(t *testing.T) {
@@ -204,18 +204,20 @@ func TestLoader_TryLoad_ExportedConfigsOnly(t *testing.T) {
 	result, err := loader.tryLoad(ref, "v1.0.0")
 	require.NoError(t, err)
 	require.NotNil(t, result)
-	require.Contains(t, result.Defs, "sample_config")
-	require.Equal(t, "object", result.Defs["sample_config"].Type)
-	require.Contains(t, result.Defs["sample_config"].Properties, "endpoint")
+	require.Contains(t, result.ExportedConfigs, "sample_config")
+	require.Equal(t, "object", result.ExportedConfigs["sample_config"].Type)
+	require.Contains(t, result.ExportedConfigs["sample_config"].Properties, "endpoint")
 }
 
 func TestLoader_PersistToFile_Success(t *testing.T) {
 	tempDir := t.TempDir()
 	loader := NewLoader(tempDir).(*schemaLoader)
 
-	metadata := &ConfigMetadata{
-		Title:       "Persisted Schema",
-		Description: "Test persistence",
+	metadata := &Metadata{
+		Config: &ConfigMetadata{
+			Title:       "Persisted Schema",
+			Description: "Test persistence",
+		},
 	}
 
 	filePath := filepath.Join(tempDir, "test", "persisted.yaml")
@@ -227,8 +229,8 @@ func TestLoader_PersistToFile_Success(t *testing.T) {
 
 	roundTripped, err := loader.loadFromFile(filePath)
 	require.NoError(t, err)
-	require.Equal(t, "Persisted Schema", roundTripped.Title)
-	require.Equal(t, "Test persistence", roundTripped.Description)
+	require.Equal(t, "Persisted Schema", roundTripped.Config.Title)
+	require.Equal(t, "Test persistence", roundTripped.Config.Description)
 }
 
 func TestLoader_Load_CacheInteraction(t *testing.T) {
@@ -237,7 +239,7 @@ func TestLoader_Load_CacheInteraction(t *testing.T) {
 	loader := NewLoader(tempDir).(*schemaLoader)
 	ref := *NewRef("go.opentelemetry.io/collector/test/path.config")
 
-	expected := &ConfigMetadata{Title: "Pre-cached Schema"}
+	expected := &Metadata{Config: &ConfigMetadata{Title: "Pre-cached Schema"}}
 	loader.cache[ref.CacheKey()] = expected
 
 	result, err := loader.Load(ref)
@@ -250,23 +252,23 @@ func TestLoader_Integration_MemoryCachePeristence(t *testing.T) {
 	tempDir := t.TempDir()
 
 	loader := &schemaLoader{
-		cache:      make(map[string]*ConfigMetadata),
+		cache:      make(map[string]*Metadata),
 		cd:         tempDir,
 		httpClient: &http.Client{Timeout: 30 * time.Second},
 	}
 
 	ref := *NewRef("go.opentelemetry.io/collector/test/path.config")
-	expected := &ConfigMetadata{Title: "Integration Test"}
+	expected := &Metadata{Config: &ConfigMetadata{Title: "Integration Test"}}
 
 	loader.cache[ref.CacheKey()] = expected
 
 	result1, err := loader.Load(ref)
 	require.NoError(t, err)
-	require.Equal(t, "Integration Test", result1.Title)
+	require.Equal(t, "Integration Test", result1.Config.Title)
 
 	result2, err := loader.Load(ref)
 	require.NoError(t, err)
-	require.Equal(t, "Integration Test", result2.Title)
+	require.Equal(t, "Integration Test", result2.Config.Title)
 
 	require.Same(t, result1, result2)
 }
@@ -286,7 +288,7 @@ func TestLoader_Load_CachesOnFirstLoad(t *testing.T) {
 
 	result1, err := loader.Load(ref)
 	require.NoError(t, err)
-	require.Equal(t, "Cached", result1.Title)
+	require.Equal(t, "Cached", result1.Config.Title)
 
 	result2, err := loader.Load(ref)
 	require.NoError(t, err)
@@ -318,7 +320,7 @@ func TestLoader_Load_LocalAbsolutePath(t *testing.T) {
 	ref := Ref{schemaID: "/somepackage", kind: Local}
 	result, err := loader.load(ref)
 	require.NoError(t, err)
-	require.Equal(t, "AbsoluteLocal", result.Title)
+	require.Equal(t, "AbsoluteLocal", result.Config.Title)
 }
 
 func TestLoader_Load_LocalRelativePath(t *testing.T) {
@@ -334,7 +336,7 @@ func TestLoader_Load_LocalRelativePath(t *testing.T) {
 	ref := Ref{schemaID: "subdir", kind: Local}
 	result, err := loader.load(ref)
 	require.NoError(t, err)
-	require.Equal(t, "RelativeLocal", result.Title)
+	require.Equal(t, "RelativeLocal", result.Config.Title)
 }
 
 func TestLoader_LoadFromFile_ReadError(t *testing.T) {
@@ -372,14 +374,14 @@ func TestLoader_LoadFromHTTP_FileCacheHit(t *testing.T) {
 
 	// Use an httpClient that always panics to confirm no HTTP call is made.
 	loader := &schemaLoader{
-		cache:      make(map[string]*ConfigMetadata),
+		cache:      make(map[string]*Metadata),
 		cd:         sgDir,
 		httpClient: &http.Client{},
 	}
 
 	result, err := loader.loadFromHTTP(ref, fileCacheDir)
 	require.NoError(t, err)
-	require.Equal(t, "FileCached", result.Title)
+	require.Equal(t, "FileCached", result.Config.Title)
 }
 
 func TestLoader_LoadFromHTTP_PersistWarning(t *testing.T) {
@@ -411,7 +413,7 @@ func TestLoader_LoadFromHTTP_PersistWarning(t *testing.T) {
 	// Should still return the result even though persist fails (warning only)
 	result, err := loader.loadFromHTTP(ref, cacheDir)
 	require.NoError(t, err)
-	require.Equal(t, "PersistFail", result.Title)
+	require.Equal(t, "PersistFail", result.Config.Title)
 }
 
 func TestLoader_LoadFromHTTP_NonNotFoundFileError(t *testing.T) {
@@ -444,14 +446,14 @@ func TestLoader_LoadFromHTTP_NonNotFoundFileError(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filePath, 0o750))
 
 	loader := &schemaLoader{
-		cache:      make(map[string]*ConfigMetadata),
+		cache:      make(map[string]*Metadata),
 		cd:         sgDir,
 		httpClient: &http.Client{},
 	}
 
 	result, err := loader.loadFromHTTP(ref, cacheDir)
 	require.NoError(t, err)
-	require.Equal(t, "AfterWarning", result.Title)
+	require.Equal(t, "AfterWarning", result.Config.Title)
 }
 
 func TestLoader_TryLoad_URLError(t *testing.T) {
@@ -556,7 +558,7 @@ func TestLoader_PersistToFile_MkdirAllError(t *testing.T) {
 	require.NoError(t, os.Chmod(tempDir, 0o500)) // #nosec G302
 
 	loader := NewLoader(tempDir).(*schemaLoader)
-	err := loader.persistToFile(filepath.Join(tempDir, "newdir", "schema.yaml"), &ConfigMetadata{Title: "X"})
+	err := loader.persistToFile(filepath.Join(tempDir, "newdir", "schema.yaml"), &Metadata{Config: &ConfigMetadata{Title: "X"}})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to create directory")
 }
@@ -568,7 +570,7 @@ func TestLoader_PersistToFile_WriteFileError(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filePath, 0o750))
 
 	loader := NewLoader(tempDir).(*schemaLoader)
-	err := loader.persistToFile(filePath, &ConfigMetadata{Title: "X"})
+	err := loader.persistToFile(filePath, &Metadata{Config: &ConfigMetadata{Title: "X"}})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to write file")
 }
