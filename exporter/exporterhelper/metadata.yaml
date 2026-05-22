@@ -209,6 +209,8 @@ telemetry:
 feature_gates:
   - id: exporter.PersistRequestContext
     description: 'controls whether context should be stored alongside requests in the persistent queue'
-    stage: beta
+    stage: stable
     from_version: 'v0.128.0'
+    to_version: 'v0.154.0'
     reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/pull/13188'
+    skip_strict_validation: true

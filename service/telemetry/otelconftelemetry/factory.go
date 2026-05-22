@@ -12,7 +12,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/service/internal/metadata"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -29,13 +28,6 @@ func NewFactory() telemetry.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	metricsHost := "localhost"
-	if !metadata.TelemetryUseLocalHostAsDefaultMetricsAddressFeatureGate.IsEnabled() {
-		metricsHost = ""
-	}
-
-	schemaURL := semconv.SchemaURL
-
 	return &Config{
 		Logs: LogsConfig{
 			Level:       zapcore.InfoLevel,
@@ -63,7 +55,7 @@ func createDefaultConfig() component.Config {
 							WithoutScopeInfo:  ptr(true),
 							WithoutUnits:      ptr(true),
 							WithoutTypeSuffix: ptr(true),
-							Host:              &metricsHost,
+							Host:              ptr("localhost"),
 							Port:              ptr(8888),
 						}}},
 					},
@@ -72,7 +64,7 @@ func createDefaultConfig() component.Config {
 		},
 		Resource: ResourceConfig{
 			Resource: config.Resource{
-				SchemaUrl: &schemaURL,
+				SchemaUrl: ptr(semconv.SchemaURL),
 			},
 		},
 	}
