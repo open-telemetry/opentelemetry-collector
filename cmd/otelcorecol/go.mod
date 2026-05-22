@@ -114,7 +114,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.152.1 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.152.1 // indirect
 	go.opentelemetry.io/collector/extension/extensiontest v0.152.1 // indirect
-	go.opentelemetry.io/collector/extension/xextension v0.152.1 // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.152.1-0.20260521201627-aec84993524b // indirect
 	go.opentelemetry.io/collector/featuregate v1.58.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.152.1 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.152.1 // indirect
