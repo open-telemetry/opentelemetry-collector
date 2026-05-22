@@ -20,7 +20,7 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.152.1
 	go.opentelemetry.io/collector/featuregate v1.58.0
 	go.opentelemetry.io/collector/filter v0.152.1
-	go.opentelemetry.io/collector/internal/schemagen v0.152.1
+	go.opentelemetry.io/collector/internal/schemagen v0.152.1-0.20260521144538-6a86f8609a5c
 	go.opentelemetry.io/collector/pdata v1.58.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.152.1
 	go.opentelemetry.io/collector/pdata/xpdata v0.152.1
@@ -79,7 +79,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.43.0 // indirect
 	golang.org/x/mod v0.36.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.44.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/tools v0.45.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260406210006-6f92a3bedf2d // indirect
 	google.golang.org/grpc v1.81.1 // indirect

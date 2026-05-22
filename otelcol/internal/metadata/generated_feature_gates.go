@@ -8,8 +8,9 @@ import (
 
 var OtelcolPrintInitialConfigFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"otelcol.printInitialConfig",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("if set to true, enable the print-config command"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/pull/11775"),
 	featuregate.WithRegisterFromVersion("v0.120.0"),
+	featuregate.WithRegisterToVersion("v0.154.0"),
 )
