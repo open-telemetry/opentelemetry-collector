@@ -12,7 +12,8 @@ status:
 feature_gates:
   - id: otelcol.printInitialConfig
     description: 'if set to true, enable the print-config command'
-    stage: beta
+    stage: stable
     from_version: 'v0.120.0'
+    to_version: 'v0.154.0'
     reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/pull/11775'
     skip_strict_validation: true

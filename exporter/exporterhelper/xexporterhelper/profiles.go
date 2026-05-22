@@ -63,28 +63,16 @@ type profilesEncoding struct{}
 var _ exporterhelper.QueueBatchEncoding[request.Request] = profilesEncoding{}
 
 func (profilesEncoding) Unmarshal(bytes []byte) (context.Context, request.Request, error) {
-	if queue.PersistRequestContextOnRead() {
-		ctx, profiles, err := pdatareq.UnmarshalProfiles(bytes)
-		if errors.Is(err, pdatareq.ErrInvalidFormat) {
-			// fall back to unmarshaling without context
-			profiles, err = profilesUnmarshaler.UnmarshalProfiles(bytes)
-		}
-		return ctx, newProfilesRequest(profiles), err
+	ctx, profiles, err := pdatareq.UnmarshalProfiles(bytes)
+	if errors.Is(err, pdatareq.ErrInvalidFormat) {
+		// fall back to unmarshaling without context
+		profiles, err = profilesUnmarshaler.UnmarshalProfiles(bytes)
 	}
-	profiles, err := profilesUnmarshaler.UnmarshalProfiles(bytes)
-	if err != nil {
-		var req request.Request
-		return context.Background(), req, err
-	}
-	return context.Background(), newProfilesRequest(profiles), nil
+	return ctx, newProfilesRequest(profiles), err
 }
 
 func (profilesEncoding) Marshal(ctx context.Context, req request.Request) ([]byte, error) {
-	profiles := req.(*profilesRequest).pd
-	if queue.PersistRequestContextOnWrite() {
-		return pdatareq.MarshalProfiles(ctx, profiles)
-	}
-	return profilesMarshaler.MarshalProfiles(profiles)
+	return pdatareq.MarshalProfiles(ctx, req.(*profilesRequest).pd)
 }
 
 var _ queue.ReferenceCounter[request.Request] = profilesReferenceCounter{}
