@@ -4,6 +4,7 @@
 package schemagen // import "go.opentelemetry.io/collector/internal/schemagen"
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"maps"
@@ -65,34 +66,35 @@ func (r *Resolver) ResolveSchema(src *ConfigMetadata) (*ConfigMetadata, error) {
 
 // Resolve takes the source Metadata parsed from metadata.yaml and produces a
 // JSONSchemaDoc with all $ref references resolved. exported_configs from the source
-// become the top-level $defs of the output document; the source ConfigMetadata is not
-// mutated.
+// become the top-level $defs of the output document.
+//
+// The source Metadata is treated as read-only: the inputs are deep-cloned before the
+// recursive resolver walks them, so internal mutations (the "any" fallback in
+// resolveRef, per-node type writes) cannot leak back into the caller's tree through
+// shared *ConfigMetadata pointers.
 func (r *Resolver) Resolve(src *Metadata) (*JSONSchemaDoc, error) {
 	if src == nil {
-		return nil, fmt.Errorf("nil metadata")
+		return nil, errors.New("nil metadata")
 	}
-	config := src.Config
+	work := src.Clone()
+	config := work.Config
 	if config == nil {
 		config = &ConfigMetadata{}
 	}
 
-	// For ref-lookup purposes the resolver expects the top-level definitions
-	// (both nested $defs and exported_configs) to be reachable from the root node.
-	// Build a transient root that carries them, without touching the caller's data.
-	root := *config
-	if len(src.ExportedConfigs) > 0 {
-		merged := make(map[string]*ConfigMetadata, len(src.ExportedConfigs)+len(root.Defs))
-		for k, v := range root.Defs {
-			merged[k] = v
-		}
-		for k, v := range src.ExportedConfigs {
-			merged[k] = v
-		}
-		root.Defs = merged
+	// For ref-lookup purposes the recursive resolver expects the top-level
+	// definitions (both nested $defs and exported_configs) to be reachable from
+	// the root node. Merge them onto the owned root. On collision the exported
+	// configs win, matching the legacy behavior.
+	if len(work.ExportedConfigs) > 0 {
+		merged := make(map[string]*ConfigMetadata, len(work.ExportedConfigs)+len(config.Defs))
+		maps.Copy(merged, config.Defs)
+		maps.Copy(merged, work.ExportedConfigs)
+		config.Defs = merged
 	}
 
 	target := &ConfigMetadata{}
-	if err := r.resolveSchema(&root, &root, target, nil); err != nil {
+	if err := r.resolveSchema(config, config, target, nil); err != nil {
 		return nil, err
 	}
 
@@ -341,22 +343,19 @@ func (r *Resolver) loadExternalRef(ref *Ref) (*ConfigMetadata, error) {
 		return nil, fmt.Errorf("no loader could resolve external reference: %s", ref)
 	}
 
-	// Build a synthetic root from the loaded Metadata so the recursive resolveSchema
-	// can still walk nested refs by name. The loaded schema's exported_configs are the
-	// source of named definitions on the external side.
-	root := &ConfigMetadata{}
-	if m.Config != nil {
-		copy := *m.Config
-		root = &copy
+	// Loaders may cache and reuse the same *Metadata across calls, so deep-clone
+	// here. Otherwise mutations performed by the recursive resolveSchema (the "any"
+	// fallback in resolveRef, per-node type writes) would persist into the cache
+	// and contaminate subsequent loads.
+	m = m.Clone()
+	root := m.Config
+	if root == nil {
+		root = &ConfigMetadata{}
 	}
 	if len(m.ExportedConfigs) > 0 {
 		merged := make(map[string]*ConfigMetadata, len(m.ExportedConfigs)+len(root.Defs))
-		for k, v := range root.Defs {
-			merged[k] = v
-		}
-		for k, v := range m.ExportedConfigs {
-			merged[k] = v
-		}
+		maps.Copy(merged, root.Defs)
+		maps.Copy(merged, m.ExportedConfigs)
 		root.Defs = merged
 	}
 

@@ -674,9 +674,23 @@ func mergeInternalMetadataDefs(raw []byte, src *cfggen.ConfigMetadata) error {
 
 func generateConfigFiles(md Metadata, mdDir, importRootPath string) error {
 	if md.Config != nil || len(md.ExportedConfigs) > 0 {
-		if md.Config == nil {
+		// Deep-clone the schema inputs so injectInternalMetadataDefs and the
+		// resolver below cannot leak mutations back into the caller's Metadata
+		// through shared *ConfigMetadata pointers. `md Metadata` is passed by
+		// value, but Config and ExportedConfigs hold caller-owned pointers.
+		if md.Config != nil {
+			md.Config = md.Config.Clone()
+		} else {
 			md.Config = &cfggen.ConfigMetadata{}
 		}
+		if len(md.ExportedConfigs) > 0 {
+			cloned := make(map[string]*cfggen.ConfigMetadata, len(md.ExportedConfigs))
+			for k, v := range md.ExportedConfigs {
+				cloned[k] = v.Clone()
+			}
+			md.ExportedConfigs = cloned
+		}
+
 		if err := injectInternalMetadataDefs(md, mdDir, md.Config); err != nil {
 			return err
 		}

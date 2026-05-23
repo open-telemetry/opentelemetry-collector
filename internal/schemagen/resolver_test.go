@@ -1796,3 +1796,273 @@ func TestResolver_ResolveSchema_PreservesIntAndFloatPointers(t *testing.T) {
 	require.NotNil(t, score.MultipleOf)
 	require.InEpsilon(t, multipleOf, *score.MultipleOf, 1e-9)
 }
+
+func TestResolver_Resolve_DoesNotMutateSourceMetadata(t *testing.T) {
+	// Regression for the writer-side type split: Resolve must treat its *Metadata
+	// argument as read-only. The pre-fix shallow-copy root left every nested
+	// *ConfigMetadata pointer in Properties / Items / Defs / ExportedConfigs
+	// aliased with the caller's tree, so the "any"-fallback in resolveRef leaked
+	// GoType and Comment writes back into the source.
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: &mockLoader{schemas: map[string]*ConfigMetadata{}},
+	}
+
+	// Node that the "any" fallback in resolveRef would mutate.
+	anyFallbackNode := &ConfigMetadata{Ref: "github.com/example/unknown.type"}
+
+	src := &Metadata{
+		Config: &ConfigMetadata{
+			Type: "object",
+			Properties: map[string]*ConfigMetadata{
+				"outer": {
+					Type: "object",
+					Properties: map[string]*ConfigMetadata{
+						"field": anyFallbackNode,
+					},
+				},
+				"items_field": {
+					Type: "array",
+					Items: &ConfigMetadata{
+						Type: "object",
+						Properties: map[string]*ConfigMetadata{
+							"name": {Type: "string"},
+						},
+					},
+				},
+			},
+			Defs: map[string]*ConfigMetadata{
+				"local_alias": {
+					Type:        "string",
+					Description: "shared local def",
+				},
+			},
+		},
+		ExportedConfigs: map[string]*ConfigMetadata{
+			"exp_config": {
+				Type:        "object",
+				Description: "shared exported config",
+				Properties: map[string]*ConfigMetadata{
+					"knob": {Type: "string"},
+				},
+			},
+		},
+	}
+
+	snapshot := src.Clone()
+	_, err := resolver.Resolve(src)
+	require.NoError(t, err)
+
+	// Direct check on the node the "any" fallback would have mutated.
+	require.Empty(t, anyFallbackNode.GoType, "Resolve must not mutate caller's nested ref node (GoType)")
+	require.Empty(t, anyFallbackNode.Comment, "Resolve must not mutate caller's nested ref node (Comment)")
+	// Full deep-equality check across the whole source tree.
+	require.Equal(t, snapshot, src, "Resolve must not mutate caller's source Metadata")
+}
+
+func TestResolver_LoadExternalRef_DoesNotMutateLoaderResult(t *testing.T) {
+	// Loaders cache and reuse *Metadata across calls, so loadExternalRef must own
+	// the tree it walks. Otherwise mutations performed by the recursive
+	// resolveSchema (the "any"-fallback in resolveRef, future per-node writes)
+	// would persist into the cached schema and contaminate subsequent loads.
+	external := &ConfigMetadata{
+		Type: "object",
+		Defs: map[string]*ConfigMetadata{
+			"config": {
+				Type:        "object",
+				Description: "external cached config",
+				Properties: map[string]*ConfigMetadata{
+					"endpoint": {Type: "string"},
+					"nested": {
+						Type: "object",
+						Properties: map[string]*ConfigMetadata{
+							"x": {Type: "integer"},
+						},
+					},
+					"timing": {
+						Type:   "string",
+						Format: "duration",
+					},
+					"items_field": {
+						Type:  "array",
+						Items: &ConfigMetadata{Type: "string"},
+					},
+				},
+			},
+		},
+	}
+	ml := &mockLoader{
+		schemas: map[string]*ConfigMetadata{
+			"go.opentelemetry.io/collector/foo/bar.config": external,
+		},
+	}
+	snapshot := external.Clone()
+
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: ml,
+	}
+	ref := NewRef("go.opentelemetry.io/collector/foo/bar.config")
+
+	// Call twice: a second hit on the cached schema would surface any first-call
+	// mutation that escaped the deep clone.
+	_, err := resolver.loadExternalRef(ref)
+	require.NoError(t, err)
+	_, err = resolver.loadExternalRef(ref)
+	require.NoError(t, err)
+
+	require.Equal(t, snapshot, external, "loadExternalRef must not mutate the loader's returned schema")
+}
+
+func TestConfigMetadata_Clone_DeepCopiesNestedPointers(t *testing.T) {
+	// Verifies the property Resolve relies on: a cloned tree shares no pointers
+	// with the source for the fields the resolver walks (Properties, Items,
+	// AllOf, AdditionalProperties, ContentSchema, PatternProperties, Defs).
+	src := &ConfigMetadata{
+		Type:        "object",
+		Description: "root",
+		Properties: map[string]*ConfigMetadata{
+			"a": {Type: "string"},
+		},
+		Items:                &ConfigMetadata{Type: "integer"},
+		AllOf:                []*ConfigMetadata{{Ref: "x"}},
+		AdditionalProperties: &ConfigMetadata{Type: "string"},
+		ContentSchema:        &ConfigMetadata{Type: "object"},
+		PatternProperties: map[string]*ConfigMetadata{
+			"^p": {Type: "string"},
+		},
+		Defs: map[string]*ConfigMetadata{
+			"d": {Type: "object"},
+		},
+		Required: []string{"a"},
+		Enum:     []any{"x", "y"},
+	}
+
+	cloned := src.Clone()
+	require.Equal(t, src, cloned)
+
+	require.NotSame(t, src, cloned)
+	require.NotSame(t, src.Properties["a"], cloned.Properties["a"])
+	require.NotSame(t, src.Items, cloned.Items)
+	require.NotSame(t, src.AllOf[0], cloned.AllOf[0])
+	require.NotSame(t, src.AdditionalProperties, cloned.AdditionalProperties)
+	require.NotSame(t, src.ContentSchema, cloned.ContentSchema)
+	require.NotSame(t, src.PatternProperties["^p"], cloned.PatternProperties["^p"])
+	require.NotSame(t, src.Defs["d"], cloned.Defs["d"])
+
+	// Mutating the clone must not affect the source.
+	cloned.Properties["a"].Type = "mutated"
+	require.Equal(t, "string", src.Properties["a"].Type)
+}
+
+func TestMetadata_Clone_HandlesNil(t *testing.T) {
+	var nilMd *Metadata
+	require.Nil(t, nilMd.Clone())
+
+	var nilCM *ConfigMetadata
+	require.Nil(t, nilCM.Clone())
+
+	empty := &Metadata{}
+	cloned := empty.Clone()
+	require.NotNil(t, cloned)
+	require.Nil(t, cloned.Config)
+	require.Nil(t, cloned.ExportedConfigs)
+}
+
+func TestJSONSchemaDoc_MarshalJSON_EmitsDefsWithMarshalJSONInner(t *testing.T) {
+	// JSONSchemaDoc embeds *ConfigMetadata, which now defines its own MarshalJSON
+	// (for PatternProperties / AdditionalPropertiesAllowed). Without an explicit
+	// JSONSchemaDoc.MarshalJSON, the promoted inner method would marshal only the
+	// inner node and silently drop the outer $defs.
+	doc := &JSONSchemaDoc{
+		ConfigMetadata: &ConfigMetadata{
+			Schema: schemaVersion,
+			Type:   "object",
+			Properties: map[string]*ConfigMetadata{
+				"endpoint": {Type: "string"},
+			},
+			// Trigger the inner MarshalJSON's "special fields" branch.
+			AdditionalPropertiesAllowed: boolPtr(false),
+		},
+		Defs: map[string]*ConfigMetadata{
+			"sample_config": {
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"endpoint": {Type: "string"},
+				},
+			},
+		},
+	}
+
+	data, err := doc.ToJSON()
+	require.NoError(t, err)
+	require.Contains(t, string(data), `"$defs"`)
+	require.Contains(t, string(data), `"sample_config"`)
+	require.Contains(t, string(data), `"additionalProperties": false`)
+	require.Contains(t, string(data), `"endpoint"`)
+}
+
+func TestJSONSchemaDoc_MarshalJSON_DefsOnlyWithoutInner(t *testing.T) {
+	doc := &JSONSchemaDoc{
+		Defs: map[string]*ConfigMetadata{
+			"sample": {Type: "string"},
+		},
+	}
+	data, err := doc.ToJSON()
+	require.NoError(t, err)
+	require.Contains(t, string(data), `"$defs"`)
+	require.Contains(t, string(data), `"sample"`)
+}
+
+func TestJSONSchemaDoc_MarshalJSON_EmptyDoc(t *testing.T) {
+	doc := &JSONSchemaDoc{}
+	data, err := doc.ToJSON()
+	require.NoError(t, err)
+	require.Equal(t, "{}", string(data))
+}
+
+func TestResolver_Resolve_NilSource(t *testing.T) {
+	r := &Resolver{loader: NewLoader("")}
+	_, err := r.Resolve(nil)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "nil metadata")
+}
+
+func TestResolver_Resolve_MergesExportedConfigsIntoDefs(t *testing.T) {
+	r := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: &mockLoader{schemas: map[string]*ConfigMetadata{}},
+	}
+	src := &Metadata{
+		Config: &ConfigMetadata{
+			Type: "object",
+			Properties: map[string]*ConfigMetadata{
+				"shared": {Ref: "shared_config"},
+			},
+		},
+		ExportedConfigs: map[string]*ConfigMetadata{
+			"shared_config": {
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"endpoint": {Type: "string"},
+				},
+			},
+		},
+	}
+
+	doc, err := r.Resolve(src)
+	require.NoError(t, err)
+	require.NotNil(t, doc.ConfigMetadata)
+	require.Equal(t, "object", doc.Type)
+	require.Contains(t, doc.Defs, "shared_config")
+	require.Equal(t, "object", doc.Properties["shared"].Type)
+	require.Contains(t, doc.Properties["shared"].Properties, "endpoint")
+	// $defs must live on the outer doc, not on the inner ConfigMetadata.
+	require.Nil(t, doc.ConfigMetadata.Defs)
+}

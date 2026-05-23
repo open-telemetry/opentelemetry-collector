@@ -120,6 +120,14 @@ func (d *JSONSchemaDoc) ToJSON() ([]byte, error) {
 	return json.MarshalIndent(d, "", "  ")
 }
 
+// ToJSON serializes the schema node with indentation. This is the entry point used
+// by callers that operate on a bare ConfigMetadata, such as the combiner output
+// path. The writer-side document path uses JSONSchemaDoc.ToJSON, which additionally
+// emits the top-level $defs.
+func (md *ConfigMetadata) ToJSON() ([]byte, error) {
+	return json.MarshalIndent(md, "", "  ")
+}
+
 // MarshalJSON serializes the document by delegating to the inner ConfigMetadata's
 // MarshalJSON (so PatternProperties / AdditionalPropertiesAllowed handling is
 // preserved) and splicing the top-level $defs into the produced object. Without this
@@ -235,52 +243,52 @@ func (md *Metadata) Clone() *Metadata {
 // reachable from it (Properties, Items, AllOf, AdditionalProperties, ContentSchema,
 // PatternProperties, Defs). Primitive slices are copied; numeric pointer fields
 // (MinLength, MultipleOf, etc.) are shallow-shared since the resolver only reads them.
-func (c *ConfigMetadata) Clone() *ConfigMetadata {
-	if c == nil {
+func (md *ConfigMetadata) Clone() *ConfigMetadata {
+	if md == nil {
 		return nil
 	}
-	out := *c
-	if c.AllOf != nil {
-		out.AllOf = make([]*ConfigMetadata, len(c.AllOf))
-		for i, v := range c.AllOf {
+	out := *md
+	if md.AllOf != nil {
+		out.AllOf = make([]*ConfigMetadata, len(md.AllOf))
+		for i, v := range md.AllOf {
 			out.AllOf[i] = v.Clone()
 		}
 	}
-	if c.Properties != nil {
-		out.Properties = make(map[string]*ConfigMetadata, len(c.Properties))
-		for k, v := range c.Properties {
+	if md.Properties != nil {
+		out.Properties = make(map[string]*ConfigMetadata, len(md.Properties))
+		for k, v := range md.Properties {
 			out.Properties[k] = v.Clone()
 		}
 	}
-	if c.AdditionalProperties != nil {
-		out.AdditionalProperties = c.AdditionalProperties.Clone()
+	if md.AdditionalProperties != nil {
+		out.AdditionalProperties = md.AdditionalProperties.Clone()
 	}
-	if c.PatternProperties != nil {
-		out.PatternProperties = make(map[string]*ConfigMetadata, len(c.PatternProperties))
-		for k, v := range c.PatternProperties {
+	if md.PatternProperties != nil {
+		out.PatternProperties = make(map[string]*ConfigMetadata, len(md.PatternProperties))
+		for k, v := range md.PatternProperties {
 			out.PatternProperties[k] = v.Clone()
 		}
 	}
-	if c.Items != nil {
-		out.Items = c.Items.Clone()
+	if md.Items != nil {
+		out.Items = md.Items.Clone()
 	}
-	if c.ContentSchema != nil {
-		out.ContentSchema = c.ContentSchema.Clone()
+	if md.ContentSchema != nil {
+		out.ContentSchema = md.ContentSchema.Clone()
 	}
-	if c.Defs != nil {
-		out.Defs = make(map[string]*ConfigMetadata, len(c.Defs))
-		for k, v := range c.Defs {
+	if md.Defs != nil {
+		out.Defs = make(map[string]*ConfigMetadata, len(md.Defs))
+		for k, v := range md.Defs {
 			out.Defs[k] = v.Clone()
 		}
 	}
-	if c.Examples != nil {
-		out.Examples = slices.Clone(c.Examples)
+	if md.Examples != nil {
+		out.Examples = slices.Clone(md.Examples)
 	}
-	if c.Enum != nil {
-		out.Enum = slices.Clone(c.Enum)
+	if md.Enum != nil {
+		out.Enum = slices.Clone(md.Enum)
 	}
-	if c.Required != nil {
-		out.Required = slices.Clone(c.Required)
+	if md.Required != nil {
+		out.Required = slices.Clone(md.Required)
 	}
 	return &out
 }
