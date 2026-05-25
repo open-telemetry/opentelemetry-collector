@@ -796,7 +796,7 @@ func TestLoadMetadata(t *testing.T) {
 		{
 			name: "testdata/with_pipe_description.yaml",
 			want: Metadata{
-				Type:                 "testpipedesc",
+				Type:                 "testdesc",
 				DisplayName:          "Test Component",
 				Description:          "This is a test component with a multiline description.\nIt has a second line.\n",
 				GeneratedPackageName: "metadata",
