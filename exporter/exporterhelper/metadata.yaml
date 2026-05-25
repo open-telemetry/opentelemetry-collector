@@ -170,6 +170,15 @@ telemetry:
         value_type: int
         monotonic: true
 
+    exporter_sent_bytes:
+      enabled: true
+      stability: alpha
+      description: Number of bytes successfully sent to destination.
+      unit: By
+      sum:
+        value_type: int
+        monotonic: true
+
     exporter_sent_log_records:
       enabled: true
       stability: alpha

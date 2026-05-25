@@ -39,6 +39,7 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ExporterSendFailedMetricPoints.Add(context.Background(), 1)
 	tb.ExporterSendFailedProfileSamples.Add(context.Background(), 1)
 	tb.ExporterSendFailedSpans.Add(context.Background(), 1)
+	tb.ExporterSentBytes.Add(context.Background(), 1)
 	tb.ExporterSentLogRecords.Add(context.Background(), 1)
 	tb.ExporterSentMetricPoints.Add(context.Background(), 1)
 	tb.ExporterSentProfileSamples.Add(context.Background(), 1)
@@ -80,6 +81,9 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterSendFailedSpans(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterSentBytes(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterSentLogRecords(t, testTel,

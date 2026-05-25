@@ -219,23 +219,25 @@ func TestExportTraceDataOp(t *testing.T) {
 	require.NoError(t, err)
 
 	params := []testParams{
-		{items: 22, err: nil},
-		{items: 14, err: errFake},
+		{items: 22, bytes: 220, err: nil},
+		{items: 14, bytes: 140, err: errFake},
 	}
 	for i := range params {
 		exporterErr = params[i].err
-		require.ErrorIs(t, obsrep.Send(parentCtx, &requesttest.FakeRequest{Items: params[i].items}), params[i].err)
+		require.ErrorIs(t, obsrep.Send(parentCtx, &requesttest.FakeRequest{Items: params[i].items, Bytes: params[i].bytes}), params[i].err)
 	}
 
 	spans := tt.SpanRecorder.Ended()
 	require.Len(t, spans, len(params))
 
 	var sentSpans, failedToSendSpans int
+	var sentBytes int
 	for i, span := range spans {
 		assert.Equal(t, "exporter/"+exporterID.String()+"/traces", span.Name())
 		switch {
 		case params[i].err == nil:
 			sentSpans += params[i].items
+			sentBytes += params[i].bytes
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: ItemsSent, Value: attribute.Int64Value(int64(params[i].items))})
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: ItemsFailed, Value: attribute.Int64Value(0)})
 			assert.Equal(t, codes.Unset, span.Status().Code)
@@ -256,6 +258,16 @@ func TestExportTraceDataOp(t *testing.T) {
 				Attributes: attribute.NewSet(
 					attribute.String("exporter", exporterID.String())),
 				Value: int64(sentSpans),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	metadatatest.AssertEqualExporterSentBytes(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", exporterID.String()),
+					attribute.String(DataTypeKey, "traces")),
+				Value: int64(sentBytes),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
@@ -294,23 +306,25 @@ func TestExportMetricsOp(t *testing.T) {
 	require.NoError(t, err)
 
 	params := []testParams{
-		{items: 17, err: nil},
-		{items: 23, err: errFake},
+		{items: 17, bytes: 170, err: nil},
+		{items: 23, bytes: 230, err: errFake},
 	}
 	for i := range params {
 		exporterErr = params[i].err
-		require.ErrorIs(t, obsrep.Send(parentCtx, &requesttest.FakeRequest{Items: params[i].items}), params[i].err)
+		require.ErrorIs(t, obsrep.Send(parentCtx, &requesttest.FakeRequest{Items: params[i].items, Bytes: params[i].bytes}), params[i].err)
 	}
 
 	spans := tt.SpanRecorder.Ended()
 	require.Len(t, spans, len(params))
 
 	var sentMetricPoints, failedToSendMetricPoints int
+	var sentBytes int
 	for i, span := range spans {
 		assert.Equal(t, "exporter/"+exporterID.String()+"/metrics", span.Name())
 		switch {
 		case params[i].err == nil:
 			sentMetricPoints += params[i].items
+			sentBytes += params[i].bytes
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: ItemsSent, Value: attribute.Int64Value(int64(params[i].items))})
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: ItemsFailed, Value: attribute.Int64Value(0)})
 			assert.Equal(t, codes.Unset, span.Status().Code)
@@ -331,6 +345,16 @@ func TestExportMetricsOp(t *testing.T) {
 				Attributes: attribute.NewSet(
 					attribute.String("exporter", exporterID.String())),
 				Value: int64(sentMetricPoints),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	metadatatest.AssertEqualExporterSentBytes(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", exporterID.String()),
+					attribute.String(DataTypeKey, "metrics")),
+				Value: int64(sentBytes),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
@@ -369,23 +393,25 @@ func TestExportLogsOp(t *testing.T) {
 	require.NoError(t, err)
 
 	params := []testParams{
-		{items: 17, err: nil},
-		{items: 23, err: errFake},
+		{items: 17, bytes: 170, err: nil},
+		{items: 23, bytes: 230, err: errFake},
 	}
 	for i := range params {
 		exporterErr = params[i].err
-		require.ErrorIs(t, obsrep.Send(parentCtx, &requesttest.FakeRequest{Items: params[i].items}), params[i].err)
+		require.ErrorIs(t, obsrep.Send(parentCtx, &requesttest.FakeRequest{Items: params[i].items, Bytes: params[i].bytes}), params[i].err)
 	}
 
 	spans := tt.SpanRecorder.Ended()
 	require.Len(t, spans, len(params))
 
 	var sentLogRecords, failedToSendLogRecords int
+	var sentBytes int
 	for i, span := range spans {
 		assert.Equal(t, "exporter/"+exporterID.String()+"/logs", span.Name())
 		switch {
 		case params[i].err == nil:
 			sentLogRecords += params[i].items
+			sentBytes += params[i].bytes
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: ItemsSent, Value: attribute.Int64Value(int64(params[i].items))})
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: ItemsFailed, Value: attribute.Int64Value(0)})
 			assert.Equal(t, codes.Unset, span.Status().Code)
@@ -406,6 +432,16 @@ func TestExportLogsOp(t *testing.T) {
 				Attributes: attribute.NewSet(
 					attribute.String("exporter", exporterID.String())),
 				Value: int64(sentLogRecords),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	metadatatest.AssertEqualExporterSentBytes(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", exporterID.String()),
+					attribute.String(DataTypeKey, "logs")),
+				Value: int64(sentBytes),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
@@ -566,23 +602,25 @@ func TestExportProfilesOp(t *testing.T) {
 	require.NoError(t, err)
 
 	params := []testParams{
-		{items: 17, err: nil},
-		{items: 23, err: errFake},
+		{items: 17, bytes: 170, err: nil},
+		{items: 23, bytes: 230, err: errFake},
 	}
 	for i := range params {
 		exporterErr = params[i].err
-		require.ErrorIs(t, obsrep.Send(parentCtx, &requesttest.FakeRequest{Items: params[i].items}), params[i].err)
+		require.ErrorIs(t, obsrep.Send(parentCtx, &requesttest.FakeRequest{Items: params[i].items, Bytes: params[i].bytes}), params[i].err)
 	}
 
 	spans := tt.SpanRecorder.Ended()
 	require.Len(t, spans, len(params))
 
 	var sentProfileRecords, failedToSendProfileRecords int
+	var sentBytes int
 	for i, span := range spans {
 		assert.Equal(t, "exporter/"+exporterID.String()+"/profiles", span.Name())
 		switch {
 		case params[i].err == nil:
 			sentProfileRecords += params[i].items
+			sentBytes += params[i].bytes
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: ItemsSent, Value: attribute.Int64Value(int64(params[i].items))})
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: ItemsFailed, Value: attribute.Int64Value(0)})
 			assert.Equal(t, codes.Unset, span.Status().Code)
@@ -606,6 +644,16 @@ func TestExportProfilesOp(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
+	metadatatest.AssertEqualExporterSentBytes(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", exporterID.String()),
+					attribute.String(DataTypeKey, "profiles")),
+				Value: int64(sentBytes),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
 	var expectedDataPoints []metricdata.DataPoint[int64]
 	if failedToSendProfileRecords > 0 {
 		wantAttrs := attribute.NewSet(
@@ -626,5 +674,6 @@ func TestExportProfilesOp(t *testing.T) {
 
 type testParams struct {
 	items int
+	bytes int
 	err   error
 }

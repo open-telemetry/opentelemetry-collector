@@ -57,6 +57,7 @@ type obsReportSender[K request.Request] struct {
 	inFlightMetricAttr metric.MeasurementOption
 	itemsSentInst      metric.Int64Counter
 	itemsFailedInst    metric.Int64Counter
+	bytesSentInst      metric.Int64Counter
 	inFlightInst       metric.Int64UpDownCounter
 	next               sender.Sender[K]
 }
@@ -80,6 +81,7 @@ func newObsReportSender[K request.Request](set exporter.Settings, signal pipelin
 	}
 
 	or.inFlightInst = telemetryBuilder.ExporterInFlightRequests
+	or.bytesSentInst = telemetryBuilder.ExporterSentBytes
 
 	switch signal {
 	case pipeline.SignalTraces:
@@ -103,13 +105,14 @@ func newObsReportSender[K request.Request](set exporter.Settings, signal pipelin
 }
 
 func (ors *obsReportSender[K]) Send(ctx context.Context, req K) error {
-	// Have to read the number of items before sending the request since the request can
-	// be modified by the downstream components like the batcher.
+	// Have to read items and bytes before sending since the request can be
+	// modified by downstream components like the batcher.
 	c := ors.startOp(ctx)
 	items := req.ItemsCount()
+	bytes := req.BytesSize()
 	// Forward the data to the next consumer (this pusher is the next).
 	err := ors.next.Send(c, req)
-	ors.endOp(c, items, err)
+	ors.endOp(c, items, bytes, err)
 	return err
 }
 
@@ -127,8 +130,8 @@ func (ors *obsReportSender[K]) startOp(ctx context.Context) context.Context {
 	return ctx
 }
 
-// EndOp completes the export operation that was started with StartOp.
-func (ors *obsReportSender[K]) endOp(ctx context.Context, numRecords int, err error) {
+// endOp completes the export operation that was started with startOp.
+func (ors *obsReportSender[K]) endOp(ctx context.Context, numRecords int, numBytes int, err error) {
 	if ors.inFlightInst != nil {
 		ors.inFlightInst.Add(ctx, -1, ors.inFlightMetricAttr)
 	}
@@ -137,6 +140,10 @@ func (ors *obsReportSender[K]) endOp(ctx context.Context, numRecords int, err er
 
 	if ors.itemsSentInst != nil {
 		ors.itemsSentInst.Add(ctx, numSent, ors.metricAttr)
+	}
+
+	if err == nil && ors.bytesSentInst != nil {
+		ors.bytesSentInst.Add(ctx, int64(numBytes), ors.inFlightMetricAttr)
 	}
 
 	if ors.itemsFailedInst != nil && numFailedToSend > 0 {

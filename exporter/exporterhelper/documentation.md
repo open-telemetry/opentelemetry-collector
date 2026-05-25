@@ -110,6 +110,14 @@ Number of spans in failed attempts to send to destination. At detailed telemetry
 | ---- | ----------- | ---------- | --------- | --------- |
 | {span} | Sum | Int | true | Alpha |
 
+### otelcol_exporter_sent_bytes
+
+Number of bytes successfully sent to destination.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| By | Sum | Int | true | Alpha |
+
 ### otelcol_exporter_sent_log_records
 
 Number of log record successfully sent to destination.

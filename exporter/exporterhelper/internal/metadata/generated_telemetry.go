@@ -41,6 +41,7 @@ type TelemetryBuilder struct {
 	ExporterSendFailedMetricPoints      metric.Int64Counter
 	ExporterSendFailedProfileSamples    metric.Int64Counter
 	ExporterSendFailedSpans             metric.Int64Counter
+	ExporterSentBytes                   metric.Int64Counter
 	ExporterSentLogRecords              metric.Int64Counter
 	ExporterSentMetricPoints            metric.Int64Counter
 	ExporterSentProfileSamples          metric.Int64Counter
@@ -194,6 +195,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_exporter_send_failed_spans",
 		metric.WithDescription("Number of spans in failed attempts to send to destination. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent. [Alpha]"),
 		metric.WithUnit("{span}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterSentBytes, err = builder.meter.Int64Counter(
+		"otelcol_exporter_sent_bytes",
+		metric.WithDescription("Number of bytes successfully sent to destination. [Alpha]"),
+		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSentLogRecords, err = builder.meter.Int64Counter(
