@@ -17,6 +17,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -233,5 +234,173 @@ func TestServerConfigLegacyWarningsLogged(t *testing.T) {
 	for _, entry := range entries {
 		assert.Equal(t, zapcore.WarnLevel, entry.Level)
 		assert.Contains(t, entry.Message, "deprecated")
+	}
+}
+
+// TestNamedFieldServerConfigUnmarshal verifies that ServerConfig's custom Unmarshal
+// method is invoked when ServerConfig is a named field (e.g. `mapstructure:"http"`)
+// in a component config, which is the other common usage pattern.
+func TestNamedFieldServerConfigUnmarshal(t *testing.T) {
+	type componentConfig struct {
+		HTTP        ServerConfig `mapstructure:"http"`
+		ComponentID string       `mapstructure:"component_id,omitempty"`
+	}
+
+	newDefault := func() componentConfig {
+		return componentConfig{HTTP: NewDefaultServerConfig()}
+	}
+
+	tests := []struct {
+		name        string
+		input       map[string]any
+		expectError bool
+		wantKA      configoptional.Optional[KeepaliveServerConfig]
+		wantID      string
+	}{
+		{
+			name: "new keepalive section is applied",
+			input: map[string]any{
+				"component_id": "my-receiver",
+				"http":         map[string]any{"keepalive": map[string]any{"idle_timeout": "2m"}},
+			},
+			wantKA: configoptional.Some(KeepaliveServerConfig{IdleTimeout: 2 * time.Minute}),
+			wantID: "my-receiver",
+		},
+		{
+			name: "keepalive disabled via enabled:false",
+			input: map[string]any{
+				"component_id": "my-receiver",
+				"http":         map[string]any{"keepalive": map[string]any{"enabled": false}},
+			},
+			wantKA: configoptional.None[KeepaliveServerConfig](),
+			wantID: "my-receiver",
+		},
+		{
+			name: "legacy idle_timeout is translated",
+			input: map[string]any{
+				"component_id": "my-receiver",
+				"http":         map[string]any{"idle_timeout": "3m"},
+			},
+			wantKA: configoptional.Some(KeepaliveServerConfig{IdleTimeout: 3 * time.Minute}),
+			wantID: "my-receiver",
+		},
+		{
+			name: "legacy field alongside new keepalive section is an error",
+			input: map[string]any{
+				"component_id": "my-receiver",
+				"http": map[string]any{
+					"idle_timeout": "3m",
+					"keepalive":    map[string]any{"idle_timeout": "2m"},
+				},
+			},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Mirror the production path: conf.Sub(id) → sub.Unmarshal(&cfg).
+			// The outer map represents the full collector config; "my_component" is
+			// the component ID whose sub-conf is handed to the component's config struct.
+			fullConf := confmap.NewFromStringMap(map[string]any{"my_component": tt.input})
+			sub, err := fullConf.Sub("my_component")
+			require.NoError(t, err)
+
+			cfg := newDefault()
+			err = sub.Unmarshal(&cfg)
+			if tt.expectError {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantKA, cfg.HTTP.Keepalive)
+			assert.Equal(t, tt.wantID, cfg.ComponentID)
+		})
+	}
+}
+
+// TestEmbeddedServerConfigUnmarshal verifies that ServerConfig's custom Unmarshal
+// method is still invoked when ServerConfig is squash-embedded in a component config,
+// which is the typical usage pattern for receivers.
+func TestEmbeddedServerConfigUnmarshal(t *testing.T) {
+	type componentConfig struct {
+		ServerConfig `mapstructure:",squash"`
+		ComponentID  string `mapstructure:"component_id,omitempty"`
+	}
+
+	newDefault := func() componentConfig {
+		return componentConfig{ServerConfig: NewDefaultServerConfig()}
+	}
+
+	tests := []struct {
+		name        string
+		input       map[string]any
+		expectError bool
+		wantKA      configoptional.Optional[KeepaliveServerConfig]
+		wantID      string
+	}{
+		{
+			name: "new keepalive section is applied",
+			input: map[string]any{
+				"component_id": "my-receiver",
+				"keepalive":    map[string]any{"idle_timeout": "2m"},
+			},
+			wantKA: configoptional.Some(KeepaliveServerConfig{IdleTimeout: 2 * time.Minute}),
+			wantID: "my-receiver",
+		},
+		{
+			name: "keepalive disabled via enabled:false",
+			input: map[string]any{
+				"component_id": "my-receiver",
+				"keepalive":    map[string]any{"enabled": false},
+			},
+			wantKA: configoptional.None[KeepaliveServerConfig](),
+			wantID: "my-receiver",
+		},
+		{
+			name: "legacy idle_timeout is translated",
+			input: map[string]any{
+				"component_id": "my-receiver",
+				"idle_timeout": "3m",
+			},
+			wantKA: configoptional.Some(KeepaliveServerConfig{IdleTimeout: 3 * time.Minute}),
+			wantID: "my-receiver",
+		},
+		{
+			name: "legacy keep_alives_enabled:false disables keepalive",
+			input: map[string]any{
+				"component_id":        "my-receiver",
+				"keep_alives_enabled": false,
+			},
+			wantKA: configoptional.None[KeepaliveServerConfig](),
+			wantID: "my-receiver",
+		},
+		{
+			name: "legacy field alongside new keepalive section is an error",
+			input: map[string]any{
+				"component_id": "my-receiver",
+				"idle_timeout": "3m",
+				"keepalive":    map[string]any{"idle_timeout": "2m"},
+			},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fullConf := confmap.NewFromStringMap(map[string]any{"my_component": tt.input})
+			sub, err := fullConf.Sub("my_component")
+			require.NoError(t, err)
+
+			cfg := newDefault()
+			err = sub.Unmarshal(&cfg)
+			if tt.expectError {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantKA, cfg.Keepalive)
+			assert.Equal(t, tt.wantID, cfg.ComponentID)
+		})
 	}
 }
