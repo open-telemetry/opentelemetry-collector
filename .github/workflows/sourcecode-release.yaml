@@ -48,6 +48,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          REF_NAME: ${{ github.ref_name }}
         with:
           script: |
             const milestones = await github.rest.issues.listMilestones({
@@ -61,7 +63,7 @@ jobs:
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   milestone_number: milestone.number,
-                  title: "${{ github.ref_name }}"
+                  title: process.env.REF_NAME
                 });
                 await github.rest.issues.createMilestone({
                   owner: context.repo.owner,
