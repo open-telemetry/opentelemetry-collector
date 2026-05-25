@@ -61,7 +61,7 @@ jobs:
           NEEDS_ARM_UNITTEST_MATRIX_RESULT: ${{ needs.arm-unittest-matrix.result }}
       - name: Interpret result
         run: |
-          if [[ success == ${NEEDS_ARM_UNITTEST_MATRIX_RESULT} ]]
+          if [[ success == "${NEEDS_ARM_UNITTEST_MATRIX_RESULT}" ]]
           then
             echo "All matrix jobs passed!"
           else

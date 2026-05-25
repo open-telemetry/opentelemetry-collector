@@ -215,7 +215,7 @@ jobs:
           NEEDS_UNITTEST_MATRIX_RESULT: ${{ needs.unittest-matrix.result }}
       - name: Interpret result
         run: |
-          if [[ success == ${NEEDS_UNITTEST_MATRIX_RESULT} ]]
+          if [[ success == "${NEEDS_UNITTEST_MATRIX_RESULT}" ]]
           then
             echo "All matrix jobs passed!"
           else
