@@ -2480,14 +2480,6 @@ func TestMapCustomDefaults_Panics(t *testing.T) {
 			},
 			defaultValue: defaultValue(map[string]any{"entry": map[string]any{}}),
 		},
-		{
-			name: "array without object items",
-			metadata: &ConfigMetadata{
-				Type:  "array",
-				Items: &ConfigMetadata{Type: "string"},
-			},
-			defaultValue: defaultValue([]any{"value"}),
-		},
 	}
 
 	for _, tt := range tests {
@@ -2501,6 +2493,15 @@ func TestMapCustomDefaults_Panics(t *testing.T) {
 
 func TestMapCustomDefaults_EmptyInput(t *testing.T) {
 	require.Empty(t, MapCustomDefaults(&ConfigMetadata{Type: "string"}, nil, "", ""))
+}
+
+func TestMapCustomDefaults_ScalarArray(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:  "array",
+		Items: &ConfigMetadata{Type: "string"},
+	}
+
+	require.Empty(t, MapCustomDefaults(md, defaultValue([]any{"value"}), "", ""))
 }
 
 func TestMapCustomDefaults_IgnoreDefault(t *testing.T) {
