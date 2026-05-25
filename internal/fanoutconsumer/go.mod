@@ -5,11 +5,11 @@ go 1.25.0
 require (
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/consumer v1.59.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.152.1
-	go.opentelemetry.io/collector/consumer/xconsumer v0.152.1
+	go.opentelemetry.io/collector/consumer/consumertest v0.153.0
+	go.opentelemetry.io/collector/consumer/xconsumer v0.153.0
 	go.opentelemetry.io/collector/pdata v1.59.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.152.1
-	go.opentelemetry.io/collector/pdata/testdata v0.152.1
+	go.opentelemetry.io/collector/pdata/pprofile v0.153.0
+	go.opentelemetry.io/collector/pdata/testdata v0.153.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 )

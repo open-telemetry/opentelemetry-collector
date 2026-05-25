@@ -9,7 +9,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/config/configopaque v1.59.0
 	go.opentelemetry.io/collector/confmap v1.59.0
-	go.opentelemetry.io/collector/internal/testutil v0.152.1
+	go.opentelemetry.io/collector/internal/testutil v0.153.0
 )
 
 require (
