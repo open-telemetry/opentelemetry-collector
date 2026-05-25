@@ -194,12 +194,6 @@ func sanitize(a any) any {
 	return sanitizeExpanded(a, false)
 }
 
-// sanitizeToStringMap recursively removes expandedValue references from the given data.
-// It uses the expandedValue.Original field to replace the expandedValue references.
-func sanitizeToStr(a any) any {
-	return sanitizeExpanded(a, true)
-}
-
 func sanitizeExpanded(a any, useOriginal bool) any {
 	switch m := a.(type) {
 	case map[string]any:
