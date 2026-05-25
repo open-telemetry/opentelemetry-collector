@@ -21,6 +21,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -39,6 +40,11 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsSet: testDataSetAll,
 		},
 		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
+		},
+		{
 			name:        "none_set",
 			metricsSet:  testDataSetNone,
 			resAttrsSet: testDataSetNone,
@@ -54,24 +60,29 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			if tt.name == "all_set" {
 				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"receiver.hostmetrics.EmitV1SystemConventions", true))
+					"scraper.sample.EmitV1SystemConventions", true))
 				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("receiver.hostmetrics.EmitV1SystemConventions", false)
+					featuregate.GlobalRegistry().Set("scraper.sample.EmitV1SystemConventions", false)
 				})
 				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"receiver.hostmetrics.EmitV1SystemConventions", true))
+					"scraper.sample.EmitV1SystemConventions", true))
 				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("receiver.hostmetrics.EmitV1SystemConventions", false)
+					featuregate.GlobalRegistry().Set("scraper.sample.EmitV1SystemConventions", false)
 				})
 			}
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["system.cpu.utilization"] = mb.metricSystemCPUUtilization.config.AggregationStrategy
+			aggMap["system.cpu.utilization@v1"] = mb.metricSystemCPUUtilizationV1.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.name == "all_set" {
 				expectedWarnings++ // type differs
 				expectedWarnings++ // attributes differ
 			}
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -94,6 +105,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricSystemCPUUtilization.aggDataPoints)
+				assert.Empty(t, mb.metricSystemCPUUtilizationV1.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -187,12 +202,12 @@ func TestVersionedMetrics(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"receiver.hostmetrics.DontEmitV0SystemConventions", tt.disableOld))
+					"scraper.sample.DontEmitV0SystemConventions", tt.disableOld))
 				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"receiver.hostmetrics.EmitV1SystemConventions", tt.enableNew))
+					"scraper.sample.EmitV1SystemConventions", tt.enableNew))
 				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("receiver.hostmetrics.DontEmitV0SystemConventions", false)
-					featuregate.GlobalRegistry().Set("receiver.hostmetrics.EmitV1SystemConventions", false)
+					featuregate.GlobalRegistry().Set("scraper.sample.DontEmitV0SystemConventions", false)
+					featuregate.GlobalRegistry().Set("scraper.sample.EmitV1SystemConventions", false)
 				})
 
 				start := pcommon.Timestamp(1_000_000_000)
@@ -262,12 +277,12 @@ func TestVersionedMetrics(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"receiver.hostmetrics.DontEmitV0SystemConventions", tt.disableOld))
+					"scraper.sample.DontEmitV0SystemConventions", tt.disableOld))
 				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"receiver.hostmetrics.EmitV1SystemConventions", tt.enableNew))
+					"scraper.sample.EmitV1SystemConventions", tt.enableNew))
 				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("receiver.hostmetrics.DontEmitV0SystemConventions", false)
-					featuregate.GlobalRegistry().Set("receiver.hostmetrics.EmitV1SystemConventions", false)
+					featuregate.GlobalRegistry().Set("scraper.sample.DontEmitV0SystemConventions", false)
+					featuregate.GlobalRegistry().Set("scraper.sample.EmitV1SystemConventions", false)
 				})
 
 				start := pcommon.Timestamp(1_000_000_000)

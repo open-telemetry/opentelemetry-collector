@@ -6,16 +6,16 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-var ReceiverHostmetricsDontEmitV0SystemConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"receiver.hostmetrics.DontEmitV0SystemConventions",
+var ScraperSampleDontEmitV0SystemConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"scraper.sample.DontEmitV0SystemConventions",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, semconv legacy attributes are disabled."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45592"),
 	featuregate.WithRegisterFromVersion("v0.145.0"),
 )
 
-var ReceiverHostmetricsEmitV1SystemConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"receiver.hostmetrics.EmitV1SystemConventions",
+var ScraperSampleEmitV1SystemConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"scraper.sample.EmitV1SystemConventions",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, semconv stable attributes are enabled."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45592"),

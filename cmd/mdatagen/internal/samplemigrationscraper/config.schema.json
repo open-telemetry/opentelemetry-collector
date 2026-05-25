@@ -37,6 +37,30 @@
               "description": "SystemCPUUtilizationMetricConfig provides config for the system.cpu.utilization metric.",
               "type": "object",
               "properties": {
+                "aggregation_strategy": {
+                  "type": "string",
+                  "default": "avg",
+                  "enum": [
+                    "sum",
+                    "avg",
+                    "min",
+                    "max"
+                  ]
+                },
+                "attributes": {
+                  "type": "array",
+                  "default": [
+                    "cpu",
+                    "state"
+                  ],
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "cpu",
+                      "state"
+                    ]
+                  }
+                },
                 "enabled": {
                   "type": "boolean",
                   "default": true
@@ -47,6 +71,30 @@
               "description": "SystemCPUUtilizationV1MetricConfig provides config for the system.cpu.utilization@v1 metric.",
               "type": "object",
               "properties": {
+                "aggregation_strategy": {
+                  "type": "string",
+                  "default": "sum",
+                  "enum": [
+                    "sum",
+                    "avg",
+                    "min",
+                    "max"
+                  ]
+                },
+                "attributes": {
+                  "type": "array",
+                  "default": [
+                    "cpu.logical_number",
+                    "state"
+                  ],
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "cpu.logical_number",
+                      "state"
+                    ]
+                  }
+                },
                 "enabled": {
                   "type": "boolean",
                   "default": false

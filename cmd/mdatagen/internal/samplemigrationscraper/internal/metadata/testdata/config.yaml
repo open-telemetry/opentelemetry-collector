@@ -7,8 +7,24 @@ all_set:
       enabled: true
     system.cpu.utilization:
       enabled: true
+      attributes: ["cpu","state"]
     system.cpu.utilization@v1:
       enabled: true
+      attributes: ["cpu.logical_number","state"]
+    system.memory.linux.available:
+      enabled: true
+reaggregate_set:
+  metrics:
+    linux.memory.available:
+      enabled: true
+    system.cpu.foo:
+      enabled: true
+    system.cpu.utilization:
+      enabled: true
+      attributes: []
+    system.cpu.utilization@v1:
+      enabled: true
+      attributes: []
     system.memory.linux.available:
       enabled: true
 none_set:
@@ -19,7 +35,9 @@ none_set:
       enabled: false
     system.cpu.utilization:
       enabled: false
+      attributes: ["cpu","state"]
     system.cpu.utilization@v1:
       enabled: false
+      attributes: ["cpu.logical_number","state"]
     system.memory.linux.available:
       enabled: false

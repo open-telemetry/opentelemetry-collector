@@ -3,12 +3,20 @@
 package metadata
 
 import (
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
+)
+
+const (
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+	AggregationStrategyMin = "min"
+	AggregationStrategyMax = "max"
 )
 
 // AttributeState specifies the value state attribute.
@@ -92,9 +100,9 @@ type metricInfo struct {
 }
 
 type metricLinuxMemoryAvailable struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   LinuxMemoryAvailableMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills linux.memory.available metric with initial data.
@@ -133,7 +141,7 @@ func (m *metricLinuxMemoryAvailable) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricLinuxMemoryAvailable(cfg MetricConfig) metricLinuxMemoryAvailable {
+func newMetricLinuxMemoryAvailable(cfg LinuxMemoryAvailableMetricConfig) metricLinuxMemoryAvailable {
 	m := metricLinuxMemoryAvailable{config: cfg}
 
 	if cfg.Enabled {
@@ -144,9 +152,9 @@ func newMetricLinuxMemoryAvailable(cfg MetricConfig) metricLinuxMemoryAvailable 
 }
 
 type metricSystemCPUFoo struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric           // data buffer for generated metric.
+	config   SystemCPUFooMetricConfig // metric config provided by user.
+	capacity int                      // max observed number of data points added to the metric.
 }
 
 // init fills system.cpu.foo metric with initial data.
@@ -183,7 +191,7 @@ func (m *metricSystemCPUFoo) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemCPUFoo(cfg MetricConfig) metricSystemCPUFoo {
+func newMetricSystemCPUFoo(cfg SystemCPUFooMetricConfig) metricSystemCPUFoo {
 	m := metricSystemCPUFoo{config: cfg}
 
 	if cfg.Enabled {
@@ -194,9 +202,10 @@ func newMetricSystemCPUFoo(cfg MetricConfig) metricSystemCPUFoo {
 }
 
 type metricSystemCPUUtilization struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        SystemCPUUtilizationMetricConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []float64                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.cpu.utilization metric with initial data.
@@ -206,18 +215,51 @@ func (m *metricSystemCPUUtilization) init() {
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSystemCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SystemCPUUtilizationMetricAttributeKeyCpu) {
+		dp.Attributes().PutStr("cpu", cpuAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemCPUUtilizationMetricAttributeKeyState) {
+		dp.Attributes().PutStr("state", stateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("cpu", cpuAttributeValue)
-	dp.Attributes().PutStr("state", stateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -230,13 +272,18 @@ func (m *metricSystemCPUUtilization) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemCPUUtilization) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemCPUUtilization(cfg MetricConfig) metricSystemCPUUtilization {
+func newMetricSystemCPUUtilization(cfg SystemCPUUtilizationMetricConfig) metricSystemCPUUtilization {
 	m := metricSystemCPUUtilization{config: cfg}
 
 	if cfg.Enabled {
@@ -247,9 +294,10 @@ func newMetricSystemCPUUtilization(cfg MetricConfig) metricSystemCPUUtilization 
 }
 
 type metricSystemCPUUtilizationV1 struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                     // data buffer for generated metric.
+	config        SystemCPUUtilizationV1MetricConfig // metric config provided by user.
+	capacity      int                                // max observed number of data points added to the metric.
+	aggDataPoints []float64                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.cpu.utilization@v1 metric with initial data.
@@ -261,22 +309,55 @@ func (m *metricSystemCPUUtilizationV1) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSystemCPUUtilizationV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuLogicalNumberAttributeValue string, stateAttributeValue string, emitLegacyAttrs bool) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("cpu.logical_number", cpuLogicalNumberAttributeValue)
-	dp.Attributes().PutStr("state", stateAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber) {
+		dp.Attributes().PutStr("cpu.logical_number", cpuLogicalNumberAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemCPUUtilizationV1MetricAttributeKeyState) {
+		dp.Attributes().PutStr("state", stateAttributeValue)
+	}
 	if emitLegacyAttrs {
 		dp.Attributes().PutStr("cpu", cpuLogicalNumberAttributeValue)
 		dp.Attributes().PutStr("state", stateAttributeValue)
 	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -289,13 +370,18 @@ func (m *metricSystemCPUUtilizationV1) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemCPUUtilizationV1) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemCPUUtilizationV1(cfg MetricConfig) metricSystemCPUUtilizationV1 {
+func newMetricSystemCPUUtilizationV1(cfg SystemCPUUtilizationV1MetricConfig) metricSystemCPUUtilizationV1 {
 	m := metricSystemCPUUtilizationV1{config: cfg}
 
 	if cfg.Enabled {
@@ -306,9 +392,9 @@ func newMetricSystemCPUUtilizationV1(cfg MetricConfig) metricSystemCPUUtilizatio
 }
 
 type metricSystemMemoryLinuxAvailable struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   SystemMemoryLinuxAvailableMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
 }
 
 // init fills system.memory.linux.available metric with initial data.
@@ -347,7 +433,7 @@ func (m *metricSystemMemoryLinuxAvailable) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemMemoryLinuxAvailable(cfg MetricConfig) metricSystemMemoryLinuxAvailable {
+func newMetricSystemMemoryLinuxAvailable(cfg SystemMemoryLinuxAvailableMetricConfig) metricSystemMemoryLinuxAvailable {
 	m := metricSystemMemoryLinuxAvailable{config: cfg}
 
 	if cfg.Enabled {
@@ -401,7 +487,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 		metricSystemCPUUtilizationV1:     newMetricSystemCPUUtilizationV1(mbc.Metrics.SystemCPUUtilizationV1),
 		metricSystemMemoryLinuxAvailable: newMetricSystemMemoryLinuxAvailable(mbc.Metrics.SystemMemoryLinuxAvailable),
 	}
-	if ReceiverHostmetricsEmitV1SystemConventionsFeatureGate.IsEnabled() {
+	if ScraperSampleEmitV1SystemConventionsFeatureGate.IsEnabled() {
 		if mb.metricLinuxMemoryAvailable.config.Enabled && mb.metricSystemMemoryLinuxAvailable.config.Enabled {
 			var disable bool
 			if mb.metricLinuxMemoryAvailable.data.Type() != mb.metricSystemMemoryLinuxAvailable.data.Type() {
@@ -414,12 +500,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 			}
 		}
 	} else {
-		if !ReceiverHostmetricsEmitV1SystemConventionsFeatureGate.IsEnabled() && mb.metricSystemMemoryLinuxAvailable.config.Enabled {
+		if !ScraperSampleEmitV1SystemConventionsFeatureGate.IsEnabled() && mb.metricSystemMemoryLinuxAvailable.config.Enabled {
 			mb.metricSystemMemoryLinuxAvailable.config.Enabled = false
-			settings.Logger.Warn("[WARNING] metric `system.memory.linux.available` requires feature gate `receiver.hostmetrics.EmitV1SystemConventions` to be enabled, metric has been disabled")
+			settings.Logger.Warn("[WARNING] metric `system.memory.linux.available` requires feature gate `scraper.sample.EmitV1SystemConventions` to be enabled, metric has been disabled")
 		}
 	}
-	if ReceiverHostmetricsEmitV1SystemConventionsFeatureGate.IsEnabled() {
+	if ScraperSampleEmitV1SystemConventionsFeatureGate.IsEnabled() {
 		if mb.metricSystemCPUUtilization.config.Enabled && mb.metricSystemCPUUtilizationV1.config.Enabled {
 			var disable bool
 			if mb.metricSystemCPUUtilization.data.Type() != mb.metricSystemCPUUtilizationV1.data.Type() {
@@ -436,9 +522,9 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 			}
 		}
 	} else {
-		if !ReceiverHostmetricsEmitV1SystemConventionsFeatureGate.IsEnabled() && mb.metricSystemCPUUtilizationV1.config.Enabled {
+		if !ScraperSampleEmitV1SystemConventionsFeatureGate.IsEnabled() && mb.metricSystemCPUUtilizationV1.config.Enabled {
 			mb.metricSystemCPUUtilizationV1.config.Enabled = false
-			settings.Logger.Warn("[WARNING] metric `system.cpu.utilization@v1` requires feature gate `receiver.hostmetrics.EmitV1SystemConventions` to be enabled, metric has been disabled")
+			settings.Logger.Warn("[WARNING] metric `system.cpu.utilization@v1` requires feature gate `scraper.sample.EmitV1SystemConventions` to be enabled, metric has been disabled")
 		}
 	}
 
@@ -534,10 +620,10 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 // RecordLinuxMemoryAvailableDataPoint adds a data point to linux.memory.available metric.
 func (mb *MetricsBuilder) RecordLinuxMemoryAvailableDataPoint(ts pcommon.Timestamp, val int64) {
 	// Dual-schema emission controlled by feature gates
-	if !ReceiverHostmetricsDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
+	if !ScraperSampleDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
 		mb.metricLinuxMemoryAvailable.recordDataPoint(mb.startTime, ts, val)
 	}
-	if ReceiverHostmetricsEmitV1SystemConventionsFeatureGate.IsEnabled() {
+	if ScraperSampleEmitV1SystemConventionsFeatureGate.IsEnabled() {
 		mb.metricSystemMemoryLinuxAvailable.recordDataPoint(mb.startTime, ts, val)
 	}
 }
@@ -550,11 +636,11 @@ func (mb *MetricsBuilder) RecordSystemCPUFooDataPoint(ts pcommon.Timestamp, val 
 // RecordSystemCPUUtilizationDataPoint adds a data point to system.cpu.utilization metric.
 func (mb *MetricsBuilder) RecordSystemCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue AttributeState) {
 	// Dual-schema emission controlled by feature gates
-	if !ReceiverHostmetricsDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
+	if !ScraperSampleDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
 		mb.metricSystemCPUUtilization.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue.String())
 	}
-	if ReceiverHostmetricsEmitV1SystemConventionsFeatureGate.IsEnabled() {
-		mb.metricSystemCPUUtilizationV1.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue.String(), !ReceiverHostmetricsDontEmitV0SystemConventionsFeatureGate.IsEnabled())
+	if ScraperSampleEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		mb.metricSystemCPUUtilizationV1.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue.String(), !ScraperSampleDontEmitV0SystemConventionsFeatureGate.IsEnabled())
 	}
 }
 

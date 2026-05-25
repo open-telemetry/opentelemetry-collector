@@ -3,16 +3,156 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// LinuxMemoryAvailableMetricConfig provides config for the linux.memory.available metric.
+type LinuxMemoryAvailableMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *LinuxMemoryAvailableMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SystemCPUFooMetricConfig provides config for the system.cpu.foo metric.
+type SystemCPUFooMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SystemCPUFooMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SystemCPUUtilizationMetricAttributeKey specifies the key of an attribute for the system.cpu.utilization metric.
+type SystemCPUUtilizationMetricAttributeKey string
+
+const (
+	SystemCPUUtilizationMetricAttributeKeyCpu   SystemCPUUtilizationMetricAttributeKey = "cpu"
+	SystemCPUUtilizationMetricAttributeKeyState SystemCPUUtilizationMetricAttributeKey = "state"
+)
+
+// SystemCPUUtilizationMetricConfig provides config for the system.cpu.utilization metric.
+type SystemCPUUtilizationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemCPUUtilizationMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemCPUUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemCPUUtilizationMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemCPUUtilizationMetricAttributeKeyCpu, SystemCPUUtilizationMetricAttributeKeyState:
+		default:
+			return fmt.Errorf("metric system.cpu.utilization doesn't have an attribute %v, valid attributes: [cpu, state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SystemCPUUtilizationV1MetricAttributeKey specifies the key of an attribute for the system.cpu.utilization@v1 metric.
+type SystemCPUUtilizationV1MetricAttributeKey string
+
+const (
+	SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber SystemCPUUtilizationV1MetricAttributeKey = "cpu.logical_number"
+	SystemCPUUtilizationV1MetricAttributeKeyState            SystemCPUUtilizationV1MetricAttributeKey = "state"
+)
+
+// SystemCPUUtilizationV1MetricConfig provides config for the system.cpu.utilization@v1 metric.
+type SystemCPUUtilizationV1MetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemCPUUtilizationV1MetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemCPUUtilizationV1MetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemCPUUtilizationV1MetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber, SystemCPUUtilizationV1MetricAttributeKeyState:
+		default:
+			return fmt.Errorf("metric system.cpu.utilization@v1 doesn't have an attribute %v, valid attributes: [cpu.logical_number, state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SystemMemoryLinuxAvailableMetricConfig provides config for the system.memory.linux.available metric.
+type SystemMemoryLinuxAvailableMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SystemMemoryLinuxAvailableMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -28,28 +168,32 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for sample metrics.
 type MetricsConfig struct {
-	LinuxMemoryAvailable       MetricConfig `mapstructure:"linux.memory.available"`
-	SystemCPUFoo               MetricConfig `mapstructure:"system.cpu.foo"`
-	SystemCPUUtilization       MetricConfig `mapstructure:"system.cpu.utilization"`
-	SystemCPUUtilizationV1     MetricConfig `mapstructure:"system.cpu.utilization@v1"`
-	SystemMemoryLinuxAvailable MetricConfig `mapstructure:"system.memory.linux.available"`
+	LinuxMemoryAvailable       LinuxMemoryAvailableMetricConfig       `mapstructure:"linux.memory.available"`
+	SystemCPUFoo               SystemCPUFooMetricConfig               `mapstructure:"system.cpu.foo"`
+	SystemCPUUtilization       SystemCPUUtilizationMetricConfig       `mapstructure:"system.cpu.utilization"`
+	SystemCPUUtilizationV1     SystemCPUUtilizationV1MetricConfig     `mapstructure:"system.cpu.utilization@v1"`
+	SystemMemoryLinuxAvailable SystemMemoryLinuxAvailableMetricConfig `mapstructure:"system.memory.linux.available"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		LinuxMemoryAvailable: MetricConfig{
+		LinuxMemoryAvailable: LinuxMemoryAvailableMetricConfig{
 			Enabled: false,
 		},
-		SystemCPUFoo: MetricConfig{
+		SystemCPUFoo: SystemCPUFooMetricConfig{
 			Enabled: false,
 		},
-		SystemCPUUtilization: MetricConfig{
-			Enabled: true,
+		SystemCPUUtilization: SystemCPUUtilizationMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SystemCPUUtilizationMetricAttributeKey{SystemCPUUtilizationMetricAttributeKeyCpu, SystemCPUUtilizationMetricAttributeKeyState},
 		},
-		SystemCPUUtilizationV1: MetricConfig{
-			Enabled: false,
+		SystemCPUUtilizationV1: SystemCPUUtilizationV1MetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SystemCPUUtilizationV1MetricAttributeKey{SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber, SystemCPUUtilizationV1MetricAttributeKeyState},
 		},
-		SystemMemoryLinuxAvailable: MetricConfig{
+		SystemMemoryLinuxAvailable: SystemMemoryLinuxAvailableMetricConfig{
 			Enabled: false,
 		},
 	}

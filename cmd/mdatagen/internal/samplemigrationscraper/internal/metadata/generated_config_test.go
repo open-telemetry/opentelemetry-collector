@@ -26,19 +26,23 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					LinuxMemoryAvailable: MetricConfig{
+					LinuxMemoryAvailable: LinuxMemoryAvailableMetricConfig{
 						Enabled: true,
 					},
-					SystemCPUFoo: MetricConfig{
+					SystemCPUFoo: SystemCPUFooMetricConfig{
 						Enabled: true,
 					},
-					SystemCPUUtilization: MetricConfig{
-						Enabled: true,
+					SystemCPUUtilization: SystemCPUUtilizationMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SystemCPUUtilizationMetricAttributeKey{SystemCPUUtilizationMetricAttributeKeyCpu, SystemCPUUtilizationMetricAttributeKeyState},
 					},
-					SystemCPUUtilizationV1: MetricConfig{
-						Enabled: true,
+					SystemCPUUtilizationV1: SystemCPUUtilizationV1MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemCPUUtilizationV1MetricAttributeKey{SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber, SystemCPUUtilizationV1MetricAttributeKeyState},
 					},
-					SystemMemoryLinuxAvailable: MetricConfig{
+					SystemMemoryLinuxAvailable: SystemMemoryLinuxAvailableMetricConfig{
 						Enabled: true,
 					},
 				},
@@ -48,19 +52,23 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					LinuxMemoryAvailable: MetricConfig{
+					LinuxMemoryAvailable: LinuxMemoryAvailableMetricConfig{
 						Enabled: false,
 					},
-					SystemCPUFoo: MetricConfig{
+					SystemCPUFoo: SystemCPUFooMetricConfig{
 						Enabled: false,
 					},
-					SystemCPUUtilization: MetricConfig{
-						Enabled: false,
+					SystemCPUUtilization: SystemCPUUtilizationMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SystemCPUUtilizationMetricAttributeKey{SystemCPUUtilizationMetricAttributeKeyCpu, SystemCPUUtilizationMetricAttributeKeyState},
 					},
-					SystemCPUUtilizationV1: MetricConfig{
-						Enabled: false,
+					SystemCPUUtilizationV1: SystemCPUUtilizationV1MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemCPUUtilizationV1MetricAttributeKey{SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber, SystemCPUUtilizationV1MetricAttributeKeyState},
 					},
-					SystemMemoryLinuxAvailable: MetricConfig{
+					SystemMemoryLinuxAvailable: SystemMemoryLinuxAvailableMetricConfig{
 						Enabled: false,
 					},
 				},
@@ -70,7 +78,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(LinuxMemoryAvailableMetricConfig{}, SystemCPUFooMetricConfig{}, SystemCPUUtilizationMetricConfig{}, SystemCPUUtilizationV1MetricConfig{}, SystemMemoryLinuxAvailableMetricConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
