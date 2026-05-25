@@ -32,7 +32,7 @@ jobs:
   check-codeowners:
     timeout-minutes: 30
     runs-on: ubuntu-24.04
-    if: ${{ github.actor != 'dependabot[bot]' && github.repository == 'open-telemetry/opentelemetry-collector' }}
+    if: ${{ github.event.pull_request.user.login != 'dependabot[bot]' && github.repository == 'open-telemetry/opentelemetry-collector' }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
