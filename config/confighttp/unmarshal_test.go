@@ -67,6 +67,16 @@ func TestClientConfigUnmarshal(t *testing.T) {
 			expectError: true,
 		},
 		{
+			name:       "keepalive_disabled",
+			configFile: "client/keepalive_disabled.yaml",
+			want:       configoptional.None[KeepaliveClientConfig](),
+		},
+		{
+			name:        "legacy_with_keepalive_disabled",
+			configFile:  "client/legacy_with_keepalive_disabled.yaml",
+			expectError: true,
+		},
+		{
 			name:       "no_keepalive_fields",
 			configFile: "client/no_keepalive_fields.yaml",
 			want: configoptional.Some(KeepaliveClientConfig{
@@ -159,6 +169,16 @@ func TestServerConfigUnmarshal(t *testing.T) {
 		{
 			name:        "mixed_fields_error",
 			configFile:  "server/mixed_fields_error.yaml",
+			expectError: true,
+		},
+		{
+			name:       "keepalive_disabled",
+			configFile: "server/keepalive_disabled.yaml",
+			want:       configoptional.None[KeepaliveServerConfig](),
+		},
+		{
+			name:        "legacy_with_keepalive_disabled",
+			configFile:  "server/legacy_with_keepalive_disabled.yaml",
 			expectError: true,
 		},
 		{
