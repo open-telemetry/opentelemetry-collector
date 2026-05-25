@@ -781,7 +781,7 @@ func TestValidateFeatureGates(t *testing.T) {
 				Description:  "Test feature gate",
 				Stage:        FeatureGateStageAlpha,
 				FromVersion:  "v0.100.0",
-				ReferenceURL: "https://example.com",
+				ReferenceURL: "https://github.com/open-telemetry/opentelemetry-collector/issues/12345",
 			},
 		},
 		{
@@ -792,7 +792,7 @@ func TestValidateFeatureGates(t *testing.T) {
 				Stage:        FeatureGateStageStable,
 				FromVersion:  "v0.90.0",
 				ToVersion:    "v0.95.0",
-				ReferenceURL: "https://example.com",
+				ReferenceURL: "https://github.com/open-telemetry/opentelemetry-collector/issues/12345",
 			},
 		},
 		{
@@ -886,13 +886,46 @@ func TestValidateFeatureGates(t *testing.T) {
 			wantErr: `reference_url is required`,
 		},
 		{
+			name: "non-issue reference_url ignored when strict validation is skipped",
+			featureGate: FeatureGate{
+				ID:                   "component.feature",
+				Description:          "Test feature",
+				Stage:                FeatureGateStageAlpha,
+				FromVersion:          "v0.100.0",
+				ReferenceURL:         "https://example.com",
+				SkipStrictValidation: true,
+			},
+		},
+		{
+			name: "reference_url is not a GitHub issue",
+			featureGate: FeatureGate{
+				ID:           "component.feature",
+				Description:  "Test feature",
+				Stage:        FeatureGateStageAlpha,
+				FromVersion:  "v0.100.0",
+				ReferenceURL: "https://example.com",
+			},
+			wantErr: `must be a GitHub issue URL`,
+		},
+		{
+			name: "reference_url is a GitHub pull request",
+			featureGate: FeatureGate{
+				ID:           "component.feature",
+				Description:  "Test feature",
+				Stage:        FeatureGateStageAlpha,
+				FromVersion:  "v0.100.0",
+				ReferenceURL: "https://github.com/open-telemetry/opentelemetry-collector/pull/12345",
+			},
+			wantErr: `must be a GitHub issue URL`,
+		},
+		{
 			name: "invalid characters in ID",
 			featureGate: FeatureGate{
 				ID:           "component.feature@invalid",
 				Description:  "Test feature",
 				Stage:        FeatureGateStageAlpha,
 				FromVersion:  "v0.100.0",
-				ReferenceURL: "https://example.com",
+				ReferenceURL: "https://github.com/open-telemetry/opentelemetry-collector/issues/12345",
 			},
 			wantErr: `ID contains invalid characters`,
 		},
@@ -948,6 +981,65 @@ func TestValidateFeatureGatesDuplicateID(t *testing.T) {
 	assert.ErrorContains(t, err, "duplicate ID")
 }
 
+func TestValidateFeatureGatesIDPrefix(t *testing.T) {
+	tests := []struct {
+		name       string
+		gateID     FeatureGateID
+		skipStrict bool
+		wantErr    string
+	}{
+		{
+			name:   "valid prefix",
+			gateID: "receiver.otlp.example",
+		},
+		{
+			name:    "missing prefix",
+			gateID:  "example",
+			wantErr: `ID must be prefixed with "receiver.otlp."`,
+		},
+		{
+			name:    "wrong class",
+			gateID:  "exporter.otlp.example",
+			wantErr: `ID must be prefixed with "receiver.otlp."`,
+		},
+		{
+			name:    "prefix without trailing segment",
+			gateID:  "receiver.otlp",
+			wantErr: `ID must be prefixed with "receiver.otlp."`,
+		},
+		{
+			name:       "prefix not enforced when gate skips strict validation",
+			gateID:     "example",
+			skipStrict: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			md := &Metadata{
+				Type:   "otlp",
+				Status: &Status{Class: "receiver"},
+				FeatureGates: []FeatureGate{
+					{
+						ID:                   tt.gateID,
+						Description:          "Test feature",
+						Stage:                FeatureGateStageAlpha,
+						FromVersion:          "v0.100.0",
+						ReferenceURL:         "https://github.com/open-telemetry/opentelemetry-collector/issues/12345",
+						SkipStrictValidation: tt.skipStrict,
+					},
+				},
+			}
+			err := md.validateFeatureGates()
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestValidateFeatureGatesNotSorted(t *testing.T) {
 	md := &Metadata{
 		FeatureGates: []FeatureGate{
@@ -955,13 +1047,13 @@ func TestValidateFeatureGatesNotSorted(t *testing.T) {
 				ID:           "component.zebra",
 				Description:  "Test feature",
 				Stage:        FeatureGateStageAlpha,
-				ReferenceURL: "https://example.com",
+				ReferenceURL: "https://github.com/open-telemetry/opentelemetry-collector/issues/12345",
 			},
 			{
 				ID:           "component.alpha",
 				Description:  "Another feature",
 				Stage:        FeatureGateStageAlpha,
-				ReferenceURL: "https://example.com",
+				ReferenceURL: "https://github.com/open-telemetry/opentelemetry-collector/issues/12345",
 			},
 		},
 	}

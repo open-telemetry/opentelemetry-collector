@@ -40,6 +40,28 @@ func TestLoader_LoadFromFile_Success(t *testing.T) {
 	require.Equal(t, "object", result.Type)
 }
 
+func TestLoader_LoadFromFile_ExportedConfigsOnly(t *testing.T) {
+	tempDir := t.TempDir()
+	schemaFile := filepath.Join(tempDir, schemaFileName)
+	schemaContent := `exported_configs:
+  sample_config:
+    type: object
+    properties:
+      endpoint:
+        type: string
+`
+	require.NoError(t, os.WriteFile(schemaFile, []byte(schemaContent), 0o600))
+
+	loader := NewLoader(tempDir).(*schemaLoader)
+
+	result, err := loader.loadFromFile(schemaFile)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Contains(t, result.Defs, "sample_config")
+	require.Equal(t, "object", result.Defs["sample_config"].Type)
+	require.Contains(t, result.Defs["sample_config"].Properties, "endpoint")
+}
+
 func TestLoader_LoadFromFile_NotFound(t *testing.T) {
 	tempDir := t.TempDir()
 	loader := NewLoader(tempDir).(*schemaLoader)
@@ -157,6 +179,34 @@ func TestLoader_TryLoad_WithVersion(t *testing.T) {
 	result, err := loader.tryLoad(ref, "v1.0.0")
 	require.NoError(t, err)
 	require.Equal(t, "Versioned Schema", result.Title)
+}
+
+func TestLoader_TryLoad_ExportedConfigsOnly(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`exported_configs:
+  sample_config:
+    type: object
+    properties:
+      endpoint:
+        type: string
+`))
+	}))
+	defer server.Close()
+
+	originalURL := namespaceToURL["go.opentelemetry.io/collector"]
+	namespaceToURL["go.opentelemetry.io/collector"] = server.URL
+	defer func() { namespaceToURL["go.opentelemetry.io/collector"] = originalURL }()
+
+	loader := NewLoader(t.TempDir()).(*schemaLoader)
+	ref := *NewRef("go.opentelemetry.io/collector/test/path.sample_config")
+
+	result, err := loader.tryLoad(ref, "v1.0.0")
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Contains(t, result.Defs, "sample_config")
+	require.Equal(t, "object", result.Defs["sample_config"].Type)
+	require.Contains(t, result.Defs["sample_config"].Properties, "endpoint")
 }
 
 func TestLoader_PersistToFile_Success(t *testing.T) {
@@ -551,5 +601,5 @@ func mdatagenDir(t *testing.T) string {
 	t.Helper()
 	_, file, _, ok := runtime.Caller(0)
 	require.True(t, ok, "could not determine caller file")
-	return filepath.Join(filepath.Dir(file), "../..")
+	return filepath.Join(filepath.Dir(file), "../../cmd/mdatagen")
 }
