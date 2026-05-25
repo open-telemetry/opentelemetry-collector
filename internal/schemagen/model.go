@@ -28,6 +28,7 @@ type ConfigMetadata struct {
 	AllOf                []*ConfigMetadata          `mapstructure:"allOf,omitempty" json:"allOf,omitempty" yaml:"allOf,omitempty"`
 	Properties           map[string]*ConfigMetadata `mapstructure:"properties,omitempty" json:"properties,omitempty" yaml:"properties,omitempty"`
 	AdditionalProperties *ConfigMetadata            `mapstructure:"additionalProperties,omitempty" json:"additionalProperties,omitempty" yaml:"additionalProperties,omitempty"`
+	PatternProperties    map[string]*ConfigMetadata `mapstructure:"patternProperties,omitempty" json:"-" yaml:"patternProperties,omitempty"`
 	Required             []string                   `mapstructure:"required,omitempty" json:"required,omitempty" yaml:"required,omitempty"`
 	MinProperties        *int                       `mapstructure:"minProperties,omitempty" json:"minProperties,omitempty" yaml:"minProperties,omitempty"`
 	MaxProperties        *int                       `mapstructure:"maxProperties,omitempty" json:"maxProperties,omitempty" yaml:"maxProperties,omitempty"`
@@ -47,7 +48,7 @@ type ConfigMetadata struct {
 	ExclusiveMaximum     *float64                   `mapstructure:"exclusiveMaximum,omitempty" json:"exclusiveMaximum,omitempty" yaml:"exclusiveMaximum,omitempty"`
 	Minimum              *float64                   `mapstructure:"minimum,omitempty" json:"minimum,omitempty" yaml:"minimum,omitempty"`
 	ExclusiveMinimum     *float64                   `mapstructure:"exclusiveMinimum,omitempty" json:"exclusiveMinimum,omitempty" yaml:"exclusiveMinimum,omitempty"`
-	Defs                 map[string]*ConfigMetadata `mapstructure:"-" json:"$defs,omitempty" yaml:"-"`
+	Defs                 map[string]*ConfigMetadata `mapstructure:"$defs,omitempty" json:"$defs,omitempty" yaml:"$defs,omitempty"`
 	// Additional custom fields
 	GoStruct   GoStructConfig `mapstructure:"go_struct,omitempty" json:"-" yaml:"go_struct,omitempty"`
 	GoType     string         `mapstructure:"x-customType,omitempty" json:"-" yaml:"x-customType,omitempty"`
@@ -55,14 +56,15 @@ type ConfigMetadata struct {
 	IsOptional bool           `mapstructure:"x-optional,omitempty" json:"-" yaml:"x-optional,omitempty"`
 	Embed      bool           `mapstructure:"embed,omitempty" json:"-" yaml:"embed,omitempty"`
 	// internal
-	ResolvedFrom string `mapstructure:"-" json:"-" yaml:"-"`
-	EmbeddedName string `mapstructure:"-" json:"-" yaml:"-"`
-	InternalOnly bool   `mapstructure:"-" json:"-" yaml:"-"`
+	ResolvedFrom                string `mapstructure:"-" json:"-" yaml:"-"`
+	EmbeddedName                string `mapstructure:"-" json:"-" yaml:"-"`
+	AdditionalPropertiesAllowed *bool  `mapstructure:"-" json:"-" yaml:"-"`
+	InternalOnly                bool   `mapstructure:"-" json:"-" yaml:"-"`
 }
 
 type Metadata struct {
-	Config          *ConfigMetadata            `mapstructure:"config" json:"config" yaml:"config"`
-	ExportedConfigs map[string]*ConfigMetadata `mapstructure:"exported_configs" json:"exported_configs" yaml:"exported_configs"`
+	Config          *ConfigMetadata            `mapstructure:"config,omitempty" json:"config,omitempty" yaml:"config,omitempty"`
+	ExportedConfigs map[string]*ConfigMetadata `mapstructure:"exported_configs,omitempty" json:"exported_configs,omitempty" yaml:"exported_configs,omitempty"`
 }
 
 type GoStructConfig struct {
@@ -93,6 +95,30 @@ func (g *GoStructConfig) Unmarshal(parser *confmap.Conf) error {
 
 func (md *ConfigMetadata) ToJSON() ([]byte, error) {
 	return json.MarshalIndent(md, "", "  ")
+}
+
+func (md *ConfigMetadata) MarshalJSON() ([]byte, error) {
+	type alias ConfigMetadata
+
+	if len(md.PatternProperties) == 0 && md.AdditionalPropertiesAllowed == nil {
+		return json.Marshal((*alias)(md))
+	}
+
+	type withSpecialFields struct {
+		*alias
+		AdditionalProperties any                        `json:"additionalProperties,omitempty"`
+		PatternProperties    map[string]*ConfigMetadata `json:"patternProperties,omitempty"`
+	}
+
+	out := withSpecialFields{
+		alias:             (*alias)(md),
+		PatternProperties: md.PatternProperties,
+	}
+	if md.AdditionalPropertiesAllowed != nil {
+		out.AdditionalProperties = *md.AdditionalPropertiesAllowed
+	}
+
+	return json.Marshal(out)
 }
 
 func (md *ConfigMetadata) Validate() error {
