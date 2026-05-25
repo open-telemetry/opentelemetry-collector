@@ -4,6 +4,7 @@
 package schemagen
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,6 +32,46 @@ func TestConfigMetadata_ToJSON(t *testing.T) {
 	assert.Contains(t, string(data), `"$schema"`)
 	assert.Contains(t, string(data), `"endpoint"`)
 	assert.Contains(t, string(data), `"The endpoint"`)
+}
+
+func TestConfigMetadata_MarshalJSON_NoSpecialFieldsUsesStructLayout(t *testing.T) {
+	t.Parallel()
+
+	metadata := &ConfigMetadata{
+		ID:          "sample",
+		Schema:      schemaVersion,
+		Title:       "Example",
+		Description: "Example schema",
+		Type:        "object",
+		Properties: map[string]*ConfigMetadata{
+			"value": {Type: "string"},
+		},
+		Required: []string{"value"},
+	}
+
+	type alias ConfigMetadata
+
+	expected, err := json.Marshal((*alias)(metadata))
+	require.NoError(t, err)
+
+	actual, err := json.Marshal(metadata)
+	require.NoError(t, err)
+
+	require.JSONEq(t, string(expected), string(actual))
+	require.Equal(t, string(expected), string(actual))
+}
+
+func TestConfigMetadata_MarshalJSON_SpecialFieldsMarshalError(t *testing.T) {
+	t.Parallel()
+
+	metadata := &ConfigMetadata{
+		Type:                        "object",
+		AdditionalPropertiesAllowed: boolPtr(false),
+		Default:                     func() {},
+	}
+
+	_, err := json.Marshal(metadata)
+	require.Error(t, err)
 }
 
 func TestConfigMetadata_UnmarshalYAMLDefaultValue(t *testing.T) {

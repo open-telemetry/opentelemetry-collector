@@ -601,5 +601,5 @@ func mdatagenDir(t *testing.T) string {
 	t.Helper()
 	_, file, _, ok := runtime.Caller(0)
 	require.True(t, ok, "could not determine caller file")
-	return filepath.Join(filepath.Dir(file), "../..")
+	return filepath.Join(filepath.Dir(file), "../../cmd/mdatagen")
 }
