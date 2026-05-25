@@ -93,6 +93,13 @@ func applyLegacyClientKeepalive(conf *confmap.Conf, keepalive *configoptional.Op
 		*keepalive = configoptional.None[KeepaliveClientConfig]()
 		return
 	}
+	// If no legacy fields are present, defer entirely to whatever the new `keepalive`
+	// section (or its absence) already resolved to. Using both legacy fields and the
+	// new section simultaneously is rejected by collectLegacyKeepaliveWarnings before
+	// this function is called, so that case cannot arise here.
+	if !conf.IsSet("idle_conn_timeout") && !conf.IsSet("max_idle_conns") && !conf.IsSet("max_idle_conns_per_host") {
+		return
+	}
 	if !keepalive.HasValue() {
 		*keepalive = configoptional.Some(KeepaliveClientConfig{})
 	}
@@ -155,10 +162,15 @@ func applyLegacyServerKeepalive(conf *confmap.Conf, keepalive *configoptional.Op
 		*keepalive = configoptional.None[KeepaliveServerConfig]()
 		return
 	}
+	// If no legacy fields are present, defer entirely to whatever the new `keepalive`
+	// section (or its absence) already resolved to. Using both legacy fields and the
+	// new section simultaneously is rejected by collectLegacyKeepaliveWarnings before
+	// this function is called, so that case cannot arise here.
+	if !conf.IsSet("idle_timeout") {
+		return
+	}
 	if !keepalive.HasValue() {
 		*keepalive = configoptional.Some(KeepaliveServerConfig{})
 	}
-	if conf.IsSet("idle_timeout") {
-		keepalive.Get().IdleTimeout = legacy.IdleTimeout
-	}
+	keepalive.Get().IdleTimeout = legacy.IdleTimeout
 }

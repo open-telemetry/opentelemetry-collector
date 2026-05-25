@@ -1,0 +1,4 @@
+endpoint: "http://localhost:4318"
+disable_keep_alives: true
+keepalive:
+  enabled: false

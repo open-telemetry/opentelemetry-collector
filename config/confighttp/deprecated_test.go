@@ -163,10 +163,10 @@ func TestApplyLegacyClientKeepalive(t *testing.T) {
 			}),
 		},
 		{
-			name:    "initializes empty keepalive when none and not disabled",
+			name:    "no legacy fields leaves None keepalive unchanged",
 			input:   map[string]any{},
 			initial: configoptional.None[KeepaliveClientConfig](),
-			want:    configoptional.Some(KeepaliveClientConfig{}),
+			want:    configoptional.None[KeepaliveClientConfig](),
 		},
 	}
 
@@ -214,11 +214,11 @@ func TestApplyLegacyServerKeepalive(t *testing.T) {
 			want:    configoptional.Some(KeepaliveServerConfig{IdleTimeout: 120 * time.Second}),
 		},
 		{
-			name:    "initializes empty keepalive when none and enabled",
+			name:    "no legacy fields leaves None keepalive unchanged",
 			input:   map[string]any{},
 			legacy:  legacyServerKeepaliveFields{KeepAlivesEnabled: true},
 			initial: configoptional.None[KeepaliveServerConfig](),
-			want:    configoptional.Some(KeepaliveServerConfig{}),
+			want:    configoptional.None[KeepaliveServerConfig](),
 		},
 	}
 
