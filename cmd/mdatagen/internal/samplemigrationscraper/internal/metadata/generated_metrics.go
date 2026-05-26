@@ -640,13 +640,8 @@ func (mb *MetricsBuilder) RecordSystemCPUUtilizationDataPoint(ts pcommon.Timesta
 		mb.metricSystemCPUUtilization.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue.String())
 	}
 	if ScraperSampleEmitV1SystemConventionsFeatureGate.IsEnabled() {
-		mb.metricSystemCPUUtilizationV1.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue.String(), !ScraperSampleDontEmitV0SystemConventionsFeatureGate.IsEnabled())
+		mb.metricSystemCPUUtilizationV1.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue.String(), true)
 	}
-}
-
-// RecordSystemCPUUtilizationV1DataPoint adds a data point to system.cpu.utilization@v1 metric.
-func (mb *MetricsBuilder) RecordSystemCPUUtilizationV1DataPoint(ts pcommon.Timestamp, val float64, cpuLogicalNumberAttributeValue string, stateAttributeValue AttributeState) {
-	mb.metricSystemCPUUtilizationV1.recordDataPoint(mb.startTime, ts, val, cpuLogicalNumberAttributeValue, stateAttributeValue.String(), false)
 }
 
 // RecordSystemMemoryLinuxAvailableDataPoint adds a data point to system.memory.linux.available metric.

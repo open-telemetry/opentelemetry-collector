@@ -39,6 +39,18 @@ const (
 )
 {{- end }}
 
+{{- if needsStrToIntConversion }}
+func mustParseInt64(s string) int64 {
+  re := regexp.MustCompile(`-?\d+`)
+  match := re.FindString(s)
+  if match == "" {
+      return 0
+  }
+	v, _ := strconv.ParseInt(match, 10, 64)
+	return v
+}
+{{- end }}
+
 {{ range $name, $info := .Attributes }}
 {{- if $info.Enum }}
 // Attribute{{ $name.Render }} specifies the value {{ $name }} attribute.
@@ -144,7 +156,14 @@ func (m *metric{{ $name.Render }}) init() {
 {{- if $metricReag }}
 {{- $legacyAttrsReag := getLegacyAttributes $name }}
 func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val {{ $metric.Data.MetricValueType.BasicType }}
-{{- range $metric.Attributes -}}{{- if not (attributeInfo .).IsConditional -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}{{ end }}{{- if $metric.HasConditionalAttributes $.Attributes -}}, options ...MetricAttributeOption{{- end -}}{{- if $legacyAttrsReag -}}, emitLegacyAttrs bool{{- end -}}) {
+{{- range $metric.Attributes -}}{{- if not (attributeInfo .).IsConditional -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}{{ end -}}
+{{- range $i, $legacyAttr := $legacyAttrsReag -}}
+{{- $v1Attr := index $metric.Attributes $i -}}
+{{- if ne (attributeInfo $v1Attr).Type.String (attributeInfo $legacyAttr).Type.String -}}
+, {{ $legacyAttr.RenderUnexported }}AttributeValue {{ (attributeInfo $legacyAttr).Type.Primitive }}
+{{- end -}}
+{{- end -}}
+{{- if $metric.HasConditionalAttributes $.Attributes -}}, options ...MetricAttributeOption{{- end -}}{{- if $legacyAttrsReag -}}, emitLegacyAttrs bool{{- end -}}) {
 	if !m.config.Enabled {
 		return
 	}
@@ -159,11 +178,15 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	}
 	{{- end }}
 	{{- end }}
-  {{- if $legacyAttrsReag }}
+	{{- if $legacyAttrsReag }}
 	if emitLegacyAttrs {
 		{{- range $i, $legacyAttr := $legacyAttrsReag }}
 		{{- $v1Attr := index $metric.Attributes $i }}
+		{{- if ne (attributeInfo $v1Attr).Type.String (attributeInfo $legacyAttr).Type.String }}
+		dp.Attributes().Put{{ (attributeInfo $legacyAttr).Type }}("{{ (attributeInfo $legacyAttr).Name }}", {{ $legacyAttr.RenderUnexported }}AttributeValue)
+		{{- else }}
 		dp.Attributes().Put{{ (attributeInfo $legacyAttr).Type }}("{{ (attributeInfo $legacyAttr).Name }}", {{ $v1Attr.RenderUnexported }}AttributeValue)
+		{{- end }}
 		{{- end }}
 	}
 	{{- end }}
@@ -205,7 +228,14 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 {{- else }}
 {{- $legacyAttrs := getLegacyAttributes $name }}
 func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val {{ $metric.Data.MetricValueType.BasicType }}
-{{- range $metric.Attributes -}}{{- if not (attributeInfo .).IsConditional -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}{{ end }}{{- if $metric.HasConditionalAttributes $.Attributes -}}, options ...MetricAttributeOption{{- end -}}{{- if $legacyAttrs -}}, emitLegacyAttrs bool{{- end -}}) {
+{{- range $metric.Attributes -}}{{- if not (attributeInfo .).IsConditional -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}{{ end -}}
+{{- range $i, $legacyAttr := $legacyAttrs -}}
+{{- $v1Attr := index $metric.Attributes $i -}}
+{{- if ne (attributeInfo $v1Attr).Type.String (attributeInfo $legacyAttr).Type.String -}}
+, {{ $legacyAttr.RenderUnexported }}AttributeValue {{ (attributeInfo $legacyAttr).Type.Primitive }}
+{{- end -}}
+{{- end -}}
+{{- if $metric.HasConditionalAttributes $.Attributes -}}, options ...MetricAttributeOption{{- end -}}{{- if $legacyAttrs -}}, emitLegacyAttrs bool{{- end -}}) {
 	if !m.config.Enabled {
 		return
 	}
@@ -218,11 +248,15 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	{{- template "putAttribute" . -}}
 	{{- end }}
 	{{- end }}
-  {{- if $legacyAttrs }}
+	{{- if $legacyAttrs }}
 	if emitLegacyAttrs {
 		{{- range $i, $legacyAttr := $legacyAttrs }}
 		{{- $v1Attr := index $metric.Attributes $i }}
+		{{- if ne (attributeInfo $v1Attr).Type.String (attributeInfo $legacyAttr).Type.String }}
+		dp.Attributes().Put{{ (attributeInfo $legacyAttr).Type }}("{{ (attributeInfo $legacyAttr).Name }}", {{ $legacyAttr.RenderUnexported }}AttributeValue)
+		{{- else }}
 		dp.Attributes().Put{{ (attributeInfo $legacyAttr).Type }}("{{ (attributeInfo $legacyAttr).Name }}", {{ $v1Attr.RenderUnexported }}AttributeValue)
+		{{- end }}
 		{{- end }}
 	}
 	{{- end }}
@@ -529,6 +563,7 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 {{ range $name, $metric := .Metrics -}}
+{{ if not $metric.Versioned }}
 // Record{{ $name.Render }}DataPoint adds a data point to {{ $name }} metric.
 {{- if $metric.Entity }}
 //
@@ -573,20 +608,37 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
         {{- end -}}
         )
 	}
+	{{- $targetMetric := index $.Metrics $metric.Migration.To }}
 	if {{ printf "%s" $metric.Migration.ThroughGates.EnableNew | publicVar }}FeatureGate.IsEnabled() {
 		mb.metric{{ $metric.Migration.To.Render }}.recordDataPoint(mb.startTime, ts, val
-		{{- range $metric.Attributes -}}
-		{{- if not (attributeInfo .).IsConditional -}}
-		, {{ .RenderUnexported }}AttributeValue{{ if (attributeInfo .).Enum }}.String(){{ end }}
+		{{- range $i, $attr := $metric.Attributes -}}
+		{{- if not (attributeInfo $attr).IsConditional -}}
+		{{- $v1Attr := index $targetMetric.Attributes $i -}}
+		, {{ convertValue (attributeInfo $attr).Type (attributeInfo $v1Attr).Type (printf "%sAttributeValue" $attr.RenderUnexported) }}{{ if (attributeInfo $v1Attr).Enum }}.String(){{ end }}
+		{{- end -}}
+		{{- end -}}
+		{{- /* Pass legacy attribute values where types differ */ -}}
+		{{- if $targetLegacyAttrs -}}
+		{{- range $i, $legacyAttr := $targetLegacyAttrs -}}
+		{{- if not (attributeInfo $legacyAttr).IsConditional -}}
+		{{- $v1Attr := index $targetMetric.Attributes $i -}}
+		{{- if ne (attributeInfo $v1Attr).Type.String (attributeInfo $legacyAttr).Type.String -}}
+		, {{ $legacyAttr.RenderUnexported }}AttributeValue{{ if (attributeInfo $legacyAttr).Enum }}.String(){{ end }}
+		{{- end -}}
+		{{- end -}}
 		{{- end -}}
 		{{- end -}}
 		{{- if $metric.HasConditionalAttributes $.Attributes -}}
-        , options...
-        {{- end -}}
-		{{- if $targetLegacyAttrs -}}
-		, !{{ printf "%s" $metric.Migration.ThroughGates.DisableOld | publicVar }}FeatureGate.IsEnabled()
+		, options...
 		{{- end -}}
-        )
+		{{- if $targetLegacyAttrs -}}
+		{{- if hasDifferentAttributes $name -}}
+		, true
+		{{- else -}}
+		, false
+		{{- end -}}
+		{{- end -}}
+		)
 	}
 	{{- else }}
 	{{- $selfLegacyAttrs := getLegacyAttributes $name }}
@@ -608,6 +660,7 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 	return nil
 	{{- end }}
 }
+{{ end }}
 {{ end }}
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

@@ -27,6 +27,7 @@ import (
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 const (
@@ -251,6 +252,40 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 		},
 		"attributeInfo": func(an AttributeName) Attribute {
 			return md.Attributes[an]
+		},
+		"convertValue": func(fromType, toType ValueType, valueName string) string {
+			if fromType.ValueType == toType.ValueType {
+				return valueName
+			}
+			if fromType.ValueType == pcommon.ValueTypeInt && toType.ValueType == pcommon.ValueTypeStr {
+				return fmt.Sprintf("strconv.FormatInt(%s, 10)", valueName)
+			}
+			if fromType.ValueType == pcommon.ValueTypeStr && toType.ValueType == pcommon.ValueTypeInt {
+				return fmt.Sprintf("mustParseInt64(%s)", valueName)
+			}
+			return valueName
+		},
+		"needsStrToIntConversion": func() bool {
+			for _, metric := range md.Metrics {
+				if metric.Migration == nil {
+					continue
+				}
+				targetMetric, exists := md.Metrics[metric.Migration.To]
+				if !exists {
+					continue
+				}
+				for i, attr := range metric.Attributes {
+					if i >= len(targetMetric.Attributes) {
+						break
+					}
+					fromType := md.Attributes[attr].Type
+					toType := md.Attributes[targetMetric.Attributes[i]].Type
+					if fromType.ValueType == pcommon.ValueTypeStr && toType.ValueType == pcommon.ValueTypeInt {
+						return true
+					}
+				}
+			}
+			return false
 		},
 		"defaultAttributes": func(ans []AttributeName) []string {
 			var atts []string
