@@ -24,12 +24,14 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           path: .core
+          persist-credentials: false
 
       - name: Pull the latest releases repo
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           path: opentelemetry-collector-releases
           repository: open-telemetry/opentelemetry-collector-releases
+          persist-credentials: false
 
       - name: Copy release files
         run: cp -R ./opentelemetry-collector-releases/cmd/builder/. ./.core/cmd/builder/
@@ -58,6 +60,7 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
+          lookup-only: true
 
       - name: Check GoReleaser
         uses: goreleaser/goreleaser-action@5daf1e915a5f0af01ddbcd89a43b8061ff4f1a89 # v7.2.2
