@@ -32,21 +32,25 @@ jobs:
   check-codeowners:
     timeout-minutes: 30
     runs-on: ubuntu-24.04
-    if: ${{ github.actor != 'dependabot[bot]' && github.repository == 'open-telemetry/opentelemetry-collector' }}
+    if: ${{ github.event.pull_request.user.login != 'dependabot[bot]' && github.repository == 'open-telemetry/opentelemetry-collector' }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         id: go-setup
         with:
           go-version: oldstable
           cache-dependency-path: "**/*.sum"
+          cache: false
 
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           ref: ${{github.event.pull_request.head.ref}}
           repository: ${{github.event.pull_request.head.repo.full_name}}
           path: pr
+          persist-credentials: false
 
       - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         id: otelbot-token
@@ -59,5 +63,7 @@ jobs:
       # pull_request_target event and has elevated permissions.
       - name: Gen CODEOWNERS
         run: |
-          GITHUB_TOKEN=${{ steps.otelbot-token.outputs.token }} GITHUBGEN_ARGS="-folder=pr" make generate-codeowners
+          GITHUB_TOKEN=${STEPS_OTELBOT_TOKEN_OUTPUTS_TOKEN} GITHUBGEN_ARGS="-folder=pr" make generate-codeowners
           git -C pr diff -s --exit-code || (echo 'Generated code is out of date, please run "make generate-codeowners" or apply this diff and commit the changes in this PR.' && git -C pr diff && exit 1)
+        env:
+          STEPS_OTELBOT_TOKEN_OUTPUTS_TOKEN: ${{ steps.otelbot-token.outputs.token }}

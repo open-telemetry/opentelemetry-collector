@@ -11,7 +11,6 @@ import (
 	"reflect"
 	"strings"
 
-	"go.opentelemetry.io/collector/config/configoptional/internal/metadata"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
@@ -183,7 +182,7 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	isEnabled := true
-	if metadata.ConfigoptionalAddEnabledFieldFeatureGate.IsEnabled() && conf.IsSet("enabled") {
+	if conf.IsSet("enabled") {
 		enabled := conf.Get("enabled")
 		conf.Delete("enabled")
 		var ok bool

@@ -1,6 +1,0 @@
-change_type: enhancement
-component: pkg/scraperhelper
-note: Switch `scraperhelper.ControllerConfig` to schema-based generated configuration and publish its reusable `controller_config` schema.
-issues: [15258]
-subtext:
-change_logs: [api]
