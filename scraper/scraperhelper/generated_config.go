@@ -6,7 +6,7 @@ import (
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/controller"
 )
 
-// ControllerConfig defines common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed.
+// ControllerConfig Common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed.
 type ControllerConfig = controller.ControllerConfig
 
 // NewDefaultControllerConfig returns a new ControllerConfig with default values consistent with the annotations in the schema.

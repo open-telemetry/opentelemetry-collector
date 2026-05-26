@@ -42,7 +42,7 @@ import (
 {{- $defs := extractDefs .Metadata.Config }}
 {{ range $defName, $def := $defs }}
     {{- if $def.Description }}
-        // {{ $def.Description }}
+        // {{ $defName | publicVar }} {{ $def.Description }}
     {{- end }}
     {{- $typeName := $defName | publicVar }}
     {{- if isExternalRef $def.ResolvedFrom }}
