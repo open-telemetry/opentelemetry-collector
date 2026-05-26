@@ -79,6 +79,8 @@ type exampleAuthData struct {
 	username string
 }
 
+var _ client.AuthData = (*exampleAuthData)(nil)
+
 func (e *exampleAuthData) GetAttribute(key string) any {
 	if key == "username" {
 		return e.username
