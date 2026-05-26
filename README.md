@@ -166,6 +166,7 @@ Here is a list of community roles with current and previous members:
 - [Alex Boten](https://github.com/codeboten), Honeycomb
 - [Bogdan Drutu](https://github.com/bogdandrutu), Snowflake
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
+- [Evan Bradley](https://github.com/evan-bradley), Dynatrace
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
 
 For more information about the maintainer role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#maintainer).
@@ -175,7 +176,6 @@ For more information about the maintainer role, see the [community repository](h
 - [Andrew Wilkins](https://github.com/axw), Elastic
 - [Antoine Toulme](https://github.com/atoulme), Splunk
 - [Damien Mathieu](https://github.com/dmathieu), Elastic
-- [Evan Bradley](https://github.com/evan-bradley), Dynatrace
 - [Jade Guiton](https://github.com/jade-guiton-dd), Datadog
 - [Joshua MacDonald](https://github.com/jmacd), Microsoft
 - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
@@ -190,7 +190,6 @@ the role of the [release manager](./docs/release.md#release-manager).
 
 - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
 - [Arthur Silva Sens](https://github.com/ArthurSens), Grafana Labs
-- [Chao Weng](https://github.com/sincejune), AppDynamics
 - [Vihas Makwana](https://github.com/VihasMakwana), Elastic
 - Actively seeking contributors to triage issues
 
@@ -201,6 +200,7 @@ For more information about the triager role, see the [community repository](http
 - [Alolita Sharma](https://github.com/alolita), Triager
 - [Andrew Hsu](https://github.com/andrewhsu), Triager
 - [Anthony Mirabella](https://github.com/Aneurysm9), Approver
+- [Chao Weng](https://github.com/sincejune), Triager
 - [Daniel Jaglowski](https://github.com/djaglowski), Approver
 - [James Bebbington](https://github.com/james-bebbington), Approver
 - [Jay Camp](https://github.com/jrcamp), Approver

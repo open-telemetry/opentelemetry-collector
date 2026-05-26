@@ -2,18 +2,19 @@
 
 package {{ .Package }}
 
+{{- $hasConfig := eq .Metadata.Config.Type "object" }}
 {{- $validators := extractValidators .Metadata.Config }}
 {{ $imports := extractImports .Metadata.Config }}
-
+{{- if or $hasConfig $imports }}
 import (
-{{- if $validators }}
-    "errors"
-{{- end }}
 {{- range $imports }}
 	"{{ . }}"
 {{- end }}
+{{- if $hasConfig }}
     "go.opentelemetry.io/collector/component"
+{{- end }}
 )
+{{- end }}
 
 {{ define "struct" }}
     {{- if .AllOf }}
@@ -34,6 +35,8 @@ import (
         {{- end }}
     	{{ $propName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}"`
     {{- end }}
+    // prevent unkeyed literal initialization
+    _ struct{}
 {{ end }}
 
 {{- $defs := extractDefs .Metadata.Config }}
@@ -42,43 +45,53 @@ import (
         // {{ $defName | publicVar }} {{ $def.Description }}
     {{- end }}
     {{- $typeName := $defName | publicVar }}
-    type {{ $typeName }} struct {
+    {{- if isExternalRef $def.ResolvedFrom }}
+        type {{ $typeName }} = {{ $def.ResolvedFrom | publicType }}
+    {{- else }}
+        type {{ $typeName }} struct {
         {{- template "struct" $def }}
-    }
-
-    {{ $defValidators := extractValidators $def }}
-    {{- if $defValidators }}
-        // Validate validates the {{$typeName}} fields according to schema annotations.
-        func (c *{{ $typeName }}) Validate() error {
-            var err error
-            {{ range $validator := $defValidators -}}
-                {{- template "validation" $validator }}
-            {{- end }}
-
-            return err
         }
     {{- end }}
 
-    // NewDefault{{ $typeName }} returns a new {{ $typeName }} with default values consistent with the annotations in the schema.
+{{ $defValidators := extractValidators $def }}
+{{- if and $defValidators (not (isExternalRef $def.ResolvedFrom)) }}
+    // Validate validates the {{$typeName}} fields according to schema annotations.
+    func (c *{{ $typeName }}) Validate() error {
+        var err error
+        {{ range $validator := $defValidators -}}
+            {{- template "validation" $validator }}
+        {{- end }}
+
+        return err
+    }
+{{- end }}
+
     {{- if hasDefaultValue $def }}
+    // NewDefault{{ $typeName }} returns a new {{ $typeName }} with default values consistent with the annotations in the schema.
     func NewDefault{{ $typeName }}() {{ $typeName }} {
+        {{- if isExternalRef $def.ResolvedFrom }}
+        return {{ externalDefaultCall $def.ResolvedFrom }}
+        {{- else }}
         {{- template "structLiteralVars" $def }}
         return {{ $typeName }}{
             {{- template "structLiteralFields" $def }}
         }
+        {{- end }}
     }
     {{- end }}
 
 {{ end }}
 
-{{- if .Metadata.Config.Description }}
-    // {{ .Metadata.Config.Description }}
-{{- else }}
-    // Config defines the configuration for {{ .Metadata.DisplayName }} component.
-{{- end }}
-type Config struct {
-    {{- template "struct" .Metadata.Config }}
-}
+{{- if $hasConfig }}
+    {{- if .Metadata.Config.Description }}
+        // {{ .Metadata.Config.Description }}
+    {{- else }}
+        // Config defines the configuration for {{ .Metadata.DisplayName }} component.
+    {{- end }}
+    type Config struct {
+        {{- template "struct" .Metadata.Config }}
+    }
+{{- end}}
 
 {{ define "customValidator" -}}
     {{ $name := .FieldName | publicVar -}}
@@ -238,9 +251,11 @@ type Config struct {
     {{- end }}
 {{- end }}
 
+{{ if $hasConfig }}
 func createDefaultConfig() component.Config {
     {{- template "structLiteralVars" .Metadata.Config }}
     return &Config{
         {{- template "structLiteralFields" .Metadata.Config }}
     }
 }
+{{- end }}

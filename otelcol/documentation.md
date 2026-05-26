@@ -8,6 +8,6 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `otelcol.printInitialConfig` | beta | if set to true, enable the print-config command | v0.120.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/pull/11775) |
+| `otelcol.printInitialConfig` | stable | if set to true, enable the print-config command | v0.120.0 | v0.154.0 | [Link](https://github.com/open-telemetry/opentelemetry-collector/pull/11775) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
