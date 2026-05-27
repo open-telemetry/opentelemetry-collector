@@ -2066,3 +2066,133 @@ func TestResolver_Resolve_MergesExportedConfigsIntoDefs(t *testing.T) {
 	// $defs must live on the outer doc, not on the inner ConfigMetadata.
 	require.Nil(t, doc.ConfigMetadata.Defs)
 }
+
+// stubLoader is a Loader test double that returns pre-built *Metadata values verbatim.
+// Unlike mockLoader (which wraps schemas as Metadata{Config: md}), this lets tests
+// exercise loadExternalRef branches that depend on Metadata.ExportedConfigs or on a
+// nil Metadata.Config.
+type stubLoader struct {
+	results map[string]*Metadata
+}
+
+func (s *stubLoader) Load(ref Ref) (*Metadata, error) {
+	if md, ok := s.results[ref.CacheKey()]; ok {
+		return md, nil
+	}
+	return nil, fmt.Errorf("stubLoader: no result for %s", ref.CacheKey())
+}
+
+func TestResolver_Resolve_HandlesNilConfig(t *testing.T) {
+	// A source Metadata with no Config should still produce a well-formed JSON
+	// Schema document (Schema/$id/title populated, no properties) rather than
+	// crashing on the nil-deref path.
+	r := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: &mockLoader{schemas: map[string]*ConfigMetadata{}},
+	}
+	doc, err := r.Resolve(&Metadata{})
+	require.NoError(t, err)
+	require.NotNil(t, doc)
+	require.Equal(t, schemaVersion, doc.Schema)
+	require.Empty(t, doc.Properties)
+}
+
+func TestResolver_Resolve_PropagatesResolveSchemaError(t *testing.T) {
+	// An invalid $ref must surface as an error from Resolve, not be swallowed.
+	r := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: &mockLoader{schemas: map[string]*ConfigMetadata{}},
+	}
+	_, err := r.Resolve(&Metadata{Config: &ConfigMetadata{Ref: "/"}})
+	require.Error(t, err)
+}
+
+func TestResolver_Resolve_EnhancesDateTimeFormat(t *testing.T) {
+	// enhanceTimeTypes maps {string, date-time} to time.Time on the resolved node.
+	r := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: &mockLoader{schemas: map[string]*ConfigMetadata{}},
+	}
+	src := &Metadata{
+		Config: &ConfigMetadata{
+			Type: "object",
+			Properties: map[string]*ConfigMetadata{
+				"ts": {Type: "string", Format: "date-time"},
+			},
+		},
+	}
+	doc, err := r.Resolve(src)
+	require.NoError(t, err)
+	require.Equal(t, "time.Time", doc.Properties["ts"].GoType)
+}
+
+func TestResolver_LoadExternalRef_HandlesNilConfig(t *testing.T) {
+	// A loader returning Metadata{Config: nil, ExportedConfigs: ...} must still
+	// resolve refs that point to entries in ExportedConfigs.
+	external := &Metadata{
+		ExportedConfigs: map[string]*ConfigMetadata{
+			"config": {
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"endpoint": {Type: "string"},
+				},
+			},
+		},
+	}
+	r := &Resolver{
+		pkgID: "go.opentelemetry.io/collector/test/component",
+		class: "receiver",
+		name:  "test",
+		loader: &stubLoader{
+			results: map[string]*Metadata{
+				"go.opentelemetry.io/collector/foo/bar.config": external,
+			},
+		},
+	}
+	resolved, err := r.loadExternalRef(NewRef("go.opentelemetry.io/collector/foo/bar.config"))
+	require.NoError(t, err)
+	require.Equal(t, "object", resolved.Type)
+	require.Contains(t, resolved.Properties, "endpoint")
+}
+
+func TestResolver_LoadExternalRef_MergesLoaderExportedConfigs(t *testing.T) {
+	// When the loader returns ExportedConfigs alongside Config.Defs, both should
+	// be reachable for ref lookup, with ExportedConfigs winning on key collisions.
+	external := &Metadata{
+		Config: &ConfigMetadata{
+			Type: "object",
+			Defs: map[string]*ConfigMetadata{
+				"config": {Type: "object", Description: "from Config.Defs"},
+			},
+		},
+		ExportedConfigs: map[string]*ConfigMetadata{
+			"config": {Type: "object", Description: "from ExportedConfigs"},
+			"extra":  {Type: "string"},
+		},
+	}
+	r := &Resolver{
+		pkgID: "go.opentelemetry.io/collector/test/component",
+		class: "receiver",
+		name:  "test",
+		loader: &stubLoader{
+			results: map[string]*Metadata{
+				"go.opentelemetry.io/collector/foo/bar.config": external,
+				"go.opentelemetry.io/collector/foo/bar.extra":  external,
+			},
+		},
+	}
+
+	winner, err := r.loadExternalRef(NewRef("go.opentelemetry.io/collector/foo/bar.config"))
+	require.NoError(t, err)
+	require.Equal(t, "from ExportedConfigs", winner.Description)
+
+	extra, err := r.loadExternalRef(NewRef("go.opentelemetry.io/collector/foo/bar.extra"))
+	require.NoError(t, err)
+	require.Equal(t, "string", extra.Type)
+}

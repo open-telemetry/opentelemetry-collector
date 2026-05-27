@@ -598,3 +598,14 @@ func TestConfigMetadata_Validate_EnumOnComplexType(t *testing.T) {
 		})
 	}
 }
+
+func TestConfigMetadata_Clone_PreservesExamples(t *testing.T) {
+	src := &ConfigMetadata{
+		Type:     "string",
+		Examples: []any{"a", "b"},
+	}
+	cloned := src.Clone()
+	require.Equal(t, src.Examples, cloned.Examples)
+	cloned.Examples[0] = "mutated"
+	require.Equal(t, "a", src.Examples[0])
+}
