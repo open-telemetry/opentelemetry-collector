@@ -621,6 +621,20 @@
             "additionalProperties": {
               "type": "string"
             }
+          },
+          "retry_count": {
+            "description": "Number of retry attempts for failed scrapes.",
+            "type": "integer",
+            "default": 3,
+            "maximum": 10,
+            "minimum": 0
+          },
+          "timeout_seconds": {
+            "description": "Timeout in seconds for each scrape request.",
+            "type": "number",
+            "default": 5,
+            "exclusiveMaximum": 30,
+            "exclusiveMinimum": 0
           }
         },
         "required": [
