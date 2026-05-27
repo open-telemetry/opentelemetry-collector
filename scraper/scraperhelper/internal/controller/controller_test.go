@@ -49,15 +49,15 @@ type mockControllerExtension struct {
 	deregisterErr error
 }
 
-func (m *mockControllerExtension) RegisterScraper(_ context.Context, scrapeFunc func(context.Context) error) (extensionscrapercontroller.RegistrationHandle, error) {
+func (m *mockControllerExtension) RegisterScraper(_ context.Context, scrapeFunc extensionscrapercontroller.ScrapeFunc) (extensionscrapercontroller.DeregisterFunc, error) {
 	if m.registerErr != nil {
 		return nil, m.registerErr
 	}
 	m.scrapeFunc = scrapeFunc
-	return extensionscrapercontroller.DeregisterFunc(func(context.Context) error {
+	return func(context.Context) error {
 		m.deregistered = true
 		return m.deregisterErr
-	}), nil
+	}, nil
 }
 
 func newTestController(
@@ -276,7 +276,7 @@ func TestStartPartialFailureCleansUp(t *testing.T) {
 
 	assert.True(t, okExt.deregistered, "first extension should have been deregistered")
 	assert.True(t, scraperShutdown.Load(), "already-started scraper should have been shut down")
-	assert.Empty(t, ctrl.handles, "handles slice should be cleared after partial-start cleanup")
+	assert.Empty(t, ctrl.deregFuncs, "deregFuncs slice should be cleared after partial-start cleanup")
 }
 
 func TestShutdownWaitsForInFlightExtensionScrape(t *testing.T) {

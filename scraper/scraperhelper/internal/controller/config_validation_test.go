@@ -27,7 +27,7 @@ func TestControllerConfigValidate(t *testing.T) {
 		{
 			name:    "zero value configuration",
 			cfg:     ControllerConfig{},
-			wantErr: `"collection_interval": requires positive value`,
+			wantErr: `"collection_interval": must be positive, or zero when controllers is non-empty`,
 		},
 		{
 			name: "invalid timeout",
@@ -35,7 +35,7 @@ func TestControllerConfigValidate(t *testing.T) {
 				CollectionInterval: time.Minute,
 				Timeout:            -time.Minute,
 			},
-			wantErr: `"timeout": requires positive value`,
+			wantErr: `"timeout": must be positive`,
 		},
 		{
 			name: "zero interval with controllers",
@@ -49,7 +49,7 @@ func TestControllerConfigValidate(t *testing.T) {
 				CollectionInterval: -1,
 				Controllers:        []component.ID{component.MustNewID("myext")},
 			},
-			wantErr: `"collection_interval": requires positive value`,
+			wantErr: `"collection_interval": must be positive, or zero when controllers is non-empty`,
 		},
 		{
 			name: "positive interval with controllers",

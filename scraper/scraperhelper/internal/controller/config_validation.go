@@ -12,14 +12,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-var errNonPositiveInterval = errors.New("requires positive value")
-
 func validateControllerConfig(set *ControllerConfig) (errs error) {
 	if set.CollectionInterval < 0 || (set.CollectionInterval == 0 && len(set.Controllers) == 0) {
-		errs = multierr.Append(errs, fmt.Errorf(`"collection_interval": %w`, errNonPositiveInterval))
+		errs = multierr.Append(errs, errors.New(`"collection_interval": must be positive, or zero when controllers is non-empty`))
 	}
 	if set.Timeout < 0 {
-		errs = multierr.Append(errs, fmt.Errorf(`"timeout": %w`, errNonPositiveInterval))
+		errs = multierr.Append(errs, errors.New(`"timeout": must be positive`))
 	}
 	seen := make(map[component.ID]int, len(set.Controllers))
 	for _, id := range set.Controllers {

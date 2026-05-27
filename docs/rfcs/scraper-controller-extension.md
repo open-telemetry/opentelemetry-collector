@@ -32,46 +32,29 @@ The timer-based scraping will remain the default behavior but can be disabled vi
 Create a new extension interface (e.g. in `extension/extensionscrapercontroller`):
 
 ```golang
-// ControllerExtension is an extension that provides a means of registering scrapers,
-// and giving the extension control over when registered scrapers are invoked.
+// ControllerExtension is an extension that controls when scraper-based
+// receivers invoke their scrapers.
 type ControllerExtension interface {
     extension.Extension
 
-    // RegisterScraper registers a scraper with this controller extension.
-    // The extension will invoke the provided scrape function according to its implementation.
-    // Returns a registration handle that can be used to deregister the scraper.
+    // RegisterScraper registers a scraper with the extension. The extension
+    // will call the provided ScrapeFunc when it determines a scrape should
+    // occur. The returned DeregisterFunc must be called during shutdown to
+    // deregister the scraper from the controller.
     //
-    // Implementations may call scrapeFunc concurrently. After Deregister on the
-    // returned handle returns, implementations must not start new invocations of
-    // scrapeFunc; already in-flight invocations may continue to run.
-    RegisterScraper(ctx context.Context, scrapeFunc func(context.Context) error) (RegistrationHandle, error)
+    // Implementations may call the ScrapeFunc concurrently. After the
+    // DeregisterFunc is called, the controller must not call the ScrapeFunc
+    // again, but need not wait for in-flight calls to complete.
+    RegisterScraper(context.Context, ScrapeFunc) (DeregisterFunc, error)
 }
 
-// RegistrationHandle provides a way to deregister a scraper from a controller extension
-type RegistrationHandle interface {
-    // Deregister removes the scraper from the controller extension.
-    // After Deregister returns, the extension must not start any new
-    // invocations of the associated scrapeFunc. Deregister need not wait
-    // for in-flight invocations to complete.
-    Deregister(ctx context.Context) error
-}
-```
+// ScrapeFunc is a function that is registered with
+// ControllerExtension.RegisterScraper in order to perform a scrape.
+type ScrapeFunc func(context.Context) error
 
-We will define a `DeregisterFunc` function type implementing `RegistrationHandle` for convenience:
-
-```golang
-// DeregisterFunc implements RegistrationHandle using a simple function.
-//
-// If the function value is nil, the method call will be a no-op.
+// DeregisterFunc is a function returned by ControllerExtension.RegisterScraper
+// and is used to deregister the scraper during shutdown.
 type DeregisterFunc func(ctx context.Context) error
-
-// Deregister calls the underlying function to deregister the scraper.
-func (f DeregisterFunc) Deregister(ctx context.Context) error {
-    if f == nil {
-        return nil
-    }
-    return f(ctx)
-}
 ```
 
 ### 2. Configuration Changes

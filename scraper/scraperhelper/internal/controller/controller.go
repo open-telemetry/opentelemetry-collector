@@ -34,7 +34,7 @@ type Controller[T component.Component] struct {
 	wg   sync.WaitGroup
 
 	controllers []component.ID
-	handles     []extensionscrapercontroller.RegistrationHandle
+	deregFuncs  []extensionscrapercontroller.DeregisterFunc
 
 	Obsrecv *receiverhelper.ObsReport
 }
@@ -86,10 +86,10 @@ func (sc *Controller[T]) Start(ctx context.Context, host component.Host) error {
 		if success {
 			return
 		}
-		for _, handle := range sc.handles {
-			_ = handle.Deregister(ctx)
+		for _, deregFn := range sc.deregFuncs {
+			_ = deregFn(ctx)
 		}
-		sc.handles = nil
+		sc.deregFuncs = nil
 		for i := range startedScrapers {
 			_ = sc.Scrapers[i].Shutdown(ctx)
 		}
@@ -111,15 +111,15 @@ func (sc *Controller[T]) Start(ctx context.Context, host component.Host) error {
 		if !ok {
 			return fmt.Errorf("extension %q is not a scraper controller extension", controllerID)
 		}
-		handle, err := ce.RegisterScraper(ctx, func(callCtx context.Context) error {
+		deregFn, err := ce.RegisterScraper(ctx, extensionscrapercontroller.ScrapeFunc(func(callCtx context.Context) error {
 			sc.wg.Add(1)
 			defer sc.wg.Done()
 			return sc.scrapeFunc(callCtx, sc)
-		})
+		}))
 		if err != nil {
 			return fmt.Errorf("failed to register scraper with extension %q: %w", controllerID, err)
 		}
-		sc.handles = append(sc.handles, handle)
+		sc.deregFuncs = append(sc.deregFuncs, deregFn)
 	}
 
 	if sc.collectionInterval > 0 {
@@ -134,12 +134,12 @@ func (sc *Controller[T]) Shutdown(ctx context.Context) error {
 	// Signal the ticker goroutine to stop.
 	close(sc.done)
 	var errs error
-	for _, handle := range sc.handles {
-		errs = multierr.Append(errs, handle.Deregister(ctx))
+	for _, deregFn := range sc.deregFuncs {
+		errs = multierr.Append(errs, deregFn(ctx))
 	}
 	// Wait for the ticker goroutine and any in-flight extension-triggered
-	// scrapes to finish. After Deregister, no new extension-triggered
-	// scrapes will start.
+	// scrapes to finish. After calling the deregister functions, no new
+	// extension-triggered scrapes will start.
 	sc.wg.Wait()
 	for _, scrp := range sc.Scrapers {
 		errs = multierr.Append(errs, scrp.Shutdown(ctx))

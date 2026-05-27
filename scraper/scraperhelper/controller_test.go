@@ -851,12 +851,12 @@ type mockControllerExtension struct {
 	deregistered bool
 }
 
-func (m *mockControllerExtension) RegisterScraper(_ context.Context, scrapeFunc func(context.Context) error) (extensionscrapercontroller.RegistrationHandle, error) {
+func (m *mockControllerExtension) RegisterScraper(_ context.Context, scrapeFunc extensionscrapercontroller.ScrapeFunc) (extensionscrapercontroller.DeregisterFunc, error) {
 	m.scrapeFunc = scrapeFunc
-	return extensionscrapercontroller.DeregisterFunc(func(context.Context) error {
+	return func(context.Context) error {
 		m.deregistered = true
 		return nil
-	}), nil
+	}, nil
 }
 
 func TestExtensionTriggersMetricsScrape(t *testing.T) {
