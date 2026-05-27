@@ -23,27 +23,43 @@
 //
 // Component replacement uses a two-phase Pause/Resume protocol:
 //
-//	old := gate.Pause()     // (1) block new callers, (2) drain in-flight
-//	old.Shutdown(ctx)       // safe: no one is using the old consumer
+//	old, err := gate.Pause(timeout)
+//	if err != nil {
+//	    // Drain did not complete within timeout — the gate has been rolled back
+//	    // to a working state on the original consumer. Do NOT call Resume.
+//	    return err
+//	}
+//	old.Shutdown(ctx)       // safe: no callers in-flight on the old consumer
 //	new := factory.Create() // safe: old released resources (ports, files, etc.)
-//	gate.Resume(new)        // unblock callers, data flows through new consumer
+//	gate.Resume(new)        // unblock waiting callers; data flows through new consumer
 //
 // Pause works by:
 //
 //  1. Creating a "blocker" generation with blocked=true and an open ready channel.
-//  2. Atomically swapping it in: gate.gen.Swap(blocker)
+//  2. Atomically swapping it in: g.gen.Swap(blocker).
 //  3. Applying a "drain bias" to the old generation's inflight counter:
-//     oldGen.inflight.Add(-drainBias)
-//     This makes the counter deeply negative so we can distinguish
-//     "zero real in-flight calls" from "some calls still active".
+//     oldGen.inflight.Add(-drainBias). This makes the counter deeply negative so
+//     we can distinguish "zero real in-flight calls" from "some calls still active".
 //     Real in-flight count = counter + drainBias.
-//  4. If real count > 0, waiting on <-oldGen.done for the last caller to signal.
+//  4. If real count > 0, waiting on oldGen.done (closed by the last in-flight caller)
+//     or on the timeout. If the timeout fires first, rollback restores the gate to
+//     a working state on the original consumer.
 //
 // Resume works by:
 //
 //  1. Setting the blocker's consumer to the new consumer.
 //  2. Setting blocked=false (future Enter() calls skip the channel wait).
 //  3. Closing the ready channel (unblocking all callers waiting in Enter()).
+//
+// # Rollback
+//
+// If the drain does not complete within the Pause timeout, the gate installs
+// a fresh generation pointing at the same consumer and unblocks any waiters.
+// New traffic resumes on the original consumer. The stuck in-flight calls
+// remain isolated on the abandoned old generation; when they eventually return,
+// they decrement that generation's counter and close its done channel
+// harmlessly (no listener). The caller of Pause receives ErrPauseDrainTimeout
+// and MUST NOT call Resume — the gate has already been restored.
 //
 // # Drain Bias Mechanism
 //
@@ -112,7 +128,9 @@ package gate // import "go.opentelemetry.io/collector/service/internal/gate"
 
 import (
 	"context"
+	"errors"
 	"sync/atomic"
+	"time"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
@@ -126,6 +144,11 @@ import (
 // is draining. The value must be larger than any realistic number of concurrent
 // in-flight calls.
 const drainBias int64 = 1 << 30
+
+// ErrPauseDrainTimeout is returned by Pause when in-flight calls do not drain
+// within the timeout. The gate is rolled back to a working state on the original
+// consumer; the caller MUST NOT call Resume.
+var ErrPauseDrainTimeout = errors.New("gate: pause drain timed out, rolled back")
 
 // Consumer is the constraint for types that can be used with a Gate.
 // All OpenTelemetry consumer interfaces (Traces, Metrics, Logs, Profiles)
@@ -144,6 +167,25 @@ type generation[C Consumer] struct {
 	ready    chan struct{} // closed by Resume to unblock waiting callers
 }
 
+func newGeneration[C Consumer](initial C) *generation[C] {
+	gen := &generation[C]{
+		consumer: initial,
+		done:     make(chan struct{}),
+		ready:    make(chan struct{}),
+	}
+	close(gen.ready) // immediately ready
+	return gen
+}
+
+func newBlocker[C Consumer]() *generation[C] {
+	blocker := &generation[C]{
+		done:  make(chan struct{}),
+		ready: make(chan struct{}),
+	}
+	blocker.blocked.Store(true)
+	return blocker
+}
+
 // Gate is a concurrency-safe wrapper around a consumer that allows atomic
 // replacement with pause/drain/resume semantics. The zero value is not
 // usable; create one with New.
@@ -154,13 +196,7 @@ type Gate[C Consumer] struct {
 // New creates a Gate with an initial consumer.
 func New[C Consumer](initial C) *Gate[C] {
 	g := &Gate[C]{}
-	gen := &generation[C]{
-		consumer: initial,
-		done:     make(chan struct{}),
-		ready:    make(chan struct{}),
-	}
-	close(gen.ready) // immediately ready
-	g.gen.Store(gen)
+	g.gen.Store(newGeneration(initial))
 	return g
 }
 
@@ -200,32 +236,52 @@ func (g *Gate[C]) Leave(gen *generation[C]) {
 	}
 }
 
-// Pause blocks all new callers, drains in-flight calls, and returns
-// the old consumer. After Pause returns:
-//   - No calls are in-flight on the old consumer.
-//   - All new callers are blocked until Resume is called.
-//   - The returned consumer is safe to Shutdown.
+// Pause blocks all new callers and waits up to timeout for in-flight calls
+// to drain. On success, returns the old consumer; the caller must then call
+// Resume exactly once with the replacement consumer.
 //
-// Must be followed by exactly one Resume call.
-func (g *Gate[C]) Pause() C {
-	blocker := &generation[C]{
-		done:  make(chan struct{}),
-		ready: make(chan struct{}),
-	}
-	blocker.blocked.Store(true)
+// If the drain does not complete within timeout, the gate is rolled back to
+// a working state on the original consumer and ErrPauseDrainTimeout is
+// returned. Stuck in-flight calls continue running on the abandoned old
+// generation and complete on their own; they cannot affect subsequent
+// operations on the gate. The caller MUST NOT call Resume after an error.
+func (g *Gate[C]) Pause(timeout time.Duration) (C, error) {
+	var zero C
 
+	blocker := newBlocker[C]()
 	oldGen := g.gen.Swap(blocker)
 
 	remaining := oldGen.inflight.Add(-drainBias) + drainBias
-	if remaining > 0 {
-		<-oldGen.done
+	if remaining == 0 {
+		return oldGen.consumer, nil
 	}
 
-	return oldGen.consumer
+	t := time.NewTimer(timeout)
+	defer t.Stop()
+	select {
+	case <-oldGen.done:
+		return oldGen.consumer, nil
+	case <-t.C:
+		g.rollback(blocker, oldGen)
+		return zero, ErrPauseDrainTimeout
+	}
+}
+
+// rollback restores the gate to a working state after a Pause timeout. The
+// blocker is replaced with a fresh generation pointing at the same consumer,
+// and the blocker's ready channel is closed so any waiters loop and find the
+// new generation. The stuck calls on the old generation are not disturbed —
+// they complete on their own time and close their generation's done channel
+// harmlessly.
+func (g *Gate[C]) rollback(blocker, oldGen *generation[C]) {
+	newGen := newGeneration(oldGen.consumer)
+	g.gen.Store(newGen)
+	close(blocker.ready)
 }
 
 // Resume installs a new consumer and unblocks all waiting callers.
-// Must be called after Pause.
+// Must be called exactly once after a successful Pause. Do NOT call Resume
+// if Pause returned an error — the gate has already been restored.
 func (g *Gate[C]) Resume(newConsumer C) {
 	gen := g.gen.Load()
 	gen.consumer = newConsumer

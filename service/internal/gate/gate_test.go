@@ -41,7 +41,8 @@ func TestGatePauseBlocksCallers(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 	g := NewTraces(sink)
 
-	old := g.Pause()
+	old, err := g.Pause(time.Second)
+	require.NoError(t, err)
 	assert.Equal(t, sink, old)
 
 	blocked := make(chan struct{})
@@ -91,7 +92,7 @@ func TestGatePauseDrainsInflight(t *testing.T) {
 
 	pauseDone := make(chan struct{})
 	go func() {
-		g.Pause()
+		_, _ = g.Pause(2 * time.Second)
 		close(pauseDone)
 	}()
 
@@ -110,6 +111,48 @@ func TestGatePauseDrainsInflight(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("pause should complete after in-flight calls drain")
 	}
+}
+
+// TestGatePauseTimeoutRollback — a stuck in-flight call causes Pause to time
+// out and roll back. The pipeline must remain operational on the original
+// consumer afterward, and a subsequent Pause (with no new in-flight callers
+// against the new generation) must succeed.
+func TestGatePauseTimeoutRollback(t *testing.T) {
+	c := &blockingTracesConsumer{
+		release: make(chan struct{}),
+		entered: make(chan struct{}),
+	}
+	g := NewTraces(c)
+
+	stuckDone := make(chan struct{})
+	go func() {
+		_ = g.ConsumeTraces(context.Background(), ptrace.NewTraces())
+		close(stuckDone)
+	}()
+	<-c.entered
+
+	_, err := g.Pause(50 * time.Millisecond)
+	require.ErrorIs(t, err, ErrPauseDrainTimeout)
+
+	// After rollback the gate is usable again — capabilities reflect the
+	// original consumer and the gate is not paused.
+	assert.Equal(t, c.Capabilities(), g.Capabilities())
+
+	// A second Pause sees no callers on the new generation (the stuck call is
+	// isolated on the abandoned generation) and succeeds immediately.
+	old, err := g.Pause(time.Second)
+	require.NoError(t, err)
+	assert.Equal(t, c, old)
+
+	newSink := &consumertest.TracesSink{}
+	g.Resume(newSink)
+
+	err = g.ConsumeTraces(context.Background(), ptrace.NewTraces())
+	require.NoError(t, err)
+	assert.Len(t, newSink.AllTraces(), 1)
+
+	close(c.release)
+	<-stuckDone
 }
 
 func TestGateConcurrentPauseResume(t *testing.T) {
@@ -138,7 +181,8 @@ func TestGateConcurrentPauseResume(t *testing.T) {
 
 	for i := 0; i < 5; i++ {
 		time.Sleep(10 * time.Millisecond)
-		old := g.Pause()
+		old, err := g.Pause(time.Second)
+		require.NoError(t, err)
 		_ = old
 		newSink := new(consumertest.TracesSink)
 		g.Resume(newSink)
@@ -196,7 +240,10 @@ func BenchmarkGatePauseResume(b *testing.B) {
 
 	b.ResetTimer()
 	for b.Loop() {
-		old := g.Pause()
+		old, err := g.Pause(time.Second)
+		if err != nil {
+			b.Fatal(err)
+		}
 		g.Resume(old)
 	}
 }
@@ -231,10 +278,11 @@ func (n *noopTracesConsumer) Capabilities() consumer.Capabilities {
 type blockingTracesConsumer struct {
 	release chan struct{}
 	entered chan struct{}
+	once    sync.Once
 }
 
 func (b *blockingTracesConsumer) ConsumeTraces(_ context.Context, _ ptrace.Traces) error {
-	close(b.entered)
+	b.once.Do(func() { close(b.entered) })
 	<-b.release
 	return nil
 }
