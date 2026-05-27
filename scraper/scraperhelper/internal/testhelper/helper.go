@@ -7,6 +7,8 @@ package testhelper // import "go.opentelemetry.io/collector/scraper/scraperhelpe
 
 import (
 	"context"
+	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,6 +16,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension/xextension/extensionscrapercontroller"
 )
 
 type TestInitialize struct {
@@ -82,4 +85,49 @@ func AssertScraperSpan(t *testing.T, expectedErr error, spans []sdktrace.ReadOnl
 		}
 	}
 	assert.True(t, scraperSpan)
+}
+
+// MockHost implements component.Host with a configurable extensions map.
+type MockHost struct {
+	Extensions map[component.ID]component.Component
+}
+
+func (h *MockHost) GetExtensions() map[component.ID]component.Component {
+	return h.Extensions
+}
+
+// MockControllerExtension implements extensionscrapercontroller.ControllerExtension.
+// Its DeregisterFunc blocks until all in-flight Scrape calls have returned, as
+// required by the ControllerExtension contract.
+type MockControllerExtension struct {
+	component.StartFunc
+	component.ShutdownFunc
+	RegisteredFunc extensionscrapercontroller.ScrapeFunc
+	Deregistered   atomic.Bool
+	RegisterErr    error
+	DeregisterErr  error
+	scrapeWG       sync.WaitGroup
+}
+
+func (m *MockControllerExtension) RegisterScraper(_ context.Context, scrapeFunc extensionscrapercontroller.ScrapeFunc) (extensionscrapercontroller.DeregisterFunc, error) {
+	if m.RegisterErr != nil {
+		return nil, m.RegisterErr
+	}
+	m.RegisteredFunc = scrapeFunc
+	return func(context.Context) error {
+		m.Deregistered.Store(true)
+		m.scrapeWG.Wait()
+		return m.DeregisterErr
+	}, nil
+}
+
+// Scrape invokes the registered ScrapeFunc, tracking it via an internal
+// WaitGroup so the DeregisterFunc blocks until it completes.
+func (m *MockControllerExtension) Scrape(ctx context.Context) error {
+	if m.RegisteredFunc == nil {
+		return nil
+	}
+	m.scrapeWG.Add(1)
+	defer m.scrapeWG.Done()
+	return m.RegisteredFunc(ctx)
 }

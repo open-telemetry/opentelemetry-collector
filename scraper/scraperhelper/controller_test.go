@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/extension/xextension/extensionscrapercontroller"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -834,30 +833,6 @@ func TestNewMetricsController_ScraperIDInErrorLogs(t *testing.T) {
 	assert.NotContains(t, receiverLog.ContextMap(), "scraper")
 }
 
-// mockHost implements component.Host with configurable extensions.
-type mockHost struct {
-	ext map[component.ID]component.Component
-}
-
-func (h *mockHost) GetExtensions() map[component.ID]component.Component {
-	return h.ext
-}
-
-// mockControllerExtension implements extensionscrapercontroller.ControllerExtension.
-type mockControllerExtension struct {
-	component.StartFunc
-	component.ShutdownFunc
-	scrapeFunc   func(context.Context) error
-	deregistered bool
-}
-
-func (m *mockControllerExtension) RegisterScraper(_ context.Context, scrapeFunc extensionscrapercontroller.ScrapeFunc) (extensionscrapercontroller.DeregisterFunc, error) {
-	m.scrapeFunc = scrapeFunc
-	return func(context.Context) error {
-		m.deregistered = true
-		return nil
-	}, nil
-}
 
 func TestExtensionTriggersMetricsScrape(t *testing.T) {
 	t.Parallel()
@@ -869,7 +844,7 @@ func TestExtensionTriggersMetricsScrape(t *testing.T) {
 	require.NoError(t, err)
 
 	extID := component.MustNewID("myext")
-	mockExt := &mockControllerExtension{}
+	mockExt := &testhelper.MockControllerExtension{}
 
 	cfg := &ControllerConfig{
 		CollectionInterval: 0,
@@ -885,12 +860,12 @@ func TestExtensionTriggersMetricsScrape(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	host := &mockHost{ext: map[component.ID]component.Component{extID: mockExt}}
+	host := &testhelper.MockHost{Extensions: map[component.ID]component.Component{extID: mockExt}}
 	require.NoError(t, recv.Start(context.Background(), host))
 
 	// Extension triggers a scrape
-	require.NotNil(t, mockExt.scrapeFunc, "scrapeFunc should have been registered")
-	require.NoError(t, mockExt.scrapeFunc(context.Background()))
+	require.NotNil(t, mockExt.RegisteredFunc, "scrapeFunc should have been registered")
+	require.NoError(t, mockExt.Scrape(context.Background()))
 
 	// Verify scrape was called
 	select {
@@ -900,7 +875,7 @@ func TestExtensionTriggersMetricsScrape(t *testing.T) {
 	}
 
 	require.NoError(t, recv.Shutdown(context.Background()))
-	assert.True(t, mockExt.deregistered, "expected deregister to be called on shutdown")
+	assert.True(t, mockExt.Deregistered.Load(), "expected deregister to be called on shutdown")
 }
 
 func TestExtensionAndTimerBothTriggerScrapes(t *testing.T) {
@@ -913,7 +888,7 @@ func TestExtensionAndTimerBothTriggerScrapes(t *testing.T) {
 	require.NoError(t, err)
 
 	extID := component.MustNewID("myext")
-	mockExt := &mockControllerExtension{}
+	mockExt := &testhelper.MockControllerExtension{}
 
 	tickerCh := make(chan time.Time)
 
@@ -932,14 +907,14 @@ func TestExtensionAndTimerBothTriggerScrapes(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	host := &mockHost{ext: map[component.ID]component.Component{extID: mockExt}}
+	host := &testhelper.MockHost{Extensions: map[component.ID]component.Component{extID: mockExt}}
 	require.NoError(t, recv.Start(context.Background(), host))
 
 	// Initial scrape on start (from ticker goroutine)
 	<-scrapeCh
 
 	// Extension triggers a scrape
-	require.NoError(t, mockExt.scrapeFunc(context.Background()))
+	require.NoError(t, mockExt.Scrape(context.Background()))
 	<-scrapeCh
 
 	// Ticker triggers a scrape
@@ -947,7 +922,7 @@ func TestExtensionAndTimerBothTriggerScrapes(t *testing.T) {
 	<-scrapeCh
 
 	require.NoError(t, recv.Shutdown(context.Background()))
-	assert.True(t, mockExt.deregistered)
+	assert.True(t, mockExt.Deregistered.Load())
 }
 
 func TestExtensionNotFound(t *testing.T) {
@@ -972,7 +947,7 @@ func TestExtensionNotFound(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	host := &mockHost{ext: map[component.ID]component.Component{}}
+	host := &testhelper.MockHost{Extensions: map[component.ID]component.Component{}}
 	err = recv.Start(context.Background(), host)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `extension "missing" not found`)
@@ -1003,7 +978,7 @@ func TestExtensionWrongType(t *testing.T) {
 	require.NoError(t, err)
 
 	// Use a plain component that does not implement ControllerExtension
-	host := &mockHost{ext: map[component.ID]component.Component{extID: &struct {
+	host := &testhelper.MockHost{Extensions: map[component.ID]component.Component{extID: &struct {
 		component.StartFunc
 		component.ShutdownFunc
 	}{}}}
@@ -1021,7 +996,7 @@ func TestDeregisterOnShutdown(t *testing.T) {
 	require.NoError(t, err)
 
 	extID := component.MustNewID("myext")
-	mockExt := &mockControllerExtension{}
+	mockExt := &testhelper.MockControllerExtension{}
 
 	cfg := &ControllerConfig{
 		CollectionInterval: 0,
@@ -1037,10 +1012,10 @@ func TestDeregisterOnShutdown(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	host := &mockHost{ext: map[component.ID]component.Component{extID: mockExt}}
+	host := &testhelper.MockHost{Extensions: map[component.ID]component.Component{extID: mockExt}}
 	require.NoError(t, recv.Start(context.Background(), host))
-	assert.False(t, mockExt.deregistered)
+	assert.False(t, mockExt.Deregistered.Load())
 
 	require.NoError(t, recv.Shutdown(context.Background()))
-	assert.True(t, mockExt.deregistered)
+	assert.True(t, mockExt.Deregistered.Load())
 }
