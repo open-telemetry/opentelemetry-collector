@@ -1,4 +1,5 @@
 type: component/componentstatus
+parent: component
 github_project: open-telemetry/opentelemetry-collector
 
 status:

@@ -45,20 +45,25 @@ jobs:
             fi
           }
 
-          if [[ ! -z "${{ inputs.candidate-beta }}" ]]; then
-            validate_beta_version "${{ inputs.candidate-beta }}" "candidate-beta"
+          if [[ ! -z "${INPUTS_CANDIDATE_BETA}" ]]; then
+            validate_beta_version "${INPUTS_CANDIDATE_BETA}" "candidate-beta"
           fi
-          validate_beta_version "${{ inputs.current-beta }}" "current-beta"
+          validate_beta_version "${INPUTS_CURRENT_BETA}" "current-beta"
 
-          if [[ ! -z "${{ inputs.candidate-stable }}" ]]; then
-            validate_stable_version "${{ inputs.candidate-stable }}" "candidate-stable"
+          if [[ ! -z "${INPUTS_CANDIDATE_STABLE}" ]]; then
+            validate_stable_version "${INPUTS_CANDIDATE_STABLE}" "candidate-stable"
           fi
-          validate_stable_version "${{ inputs.current-stable }}" "current-stable"
+          validate_stable_version "${INPUTS_CURRENT_STABLE}" "current-stable"
 
-          if [[ -z "${{ inputs.candidate-beta }}" && -z "${{ inputs.candidate-stable }}" ]]; then
+          if [[ -z "${INPUTS_CANDIDATE_BETA}" && -z "${INPUTS_CANDIDATE_STABLE}" ]]; then
             echo "Candidate version is not set for beta or stable. Please set a version to proceed."
             exit 1
           fi
+        env:
+          INPUTS_CANDIDATE_BETA: ${{ inputs.candidate-beta }}
+          INPUTS_CURRENT_BETA: ${{ inputs.current-beta }}
+          INPUTS_CANDIDATE_STABLE: ${{ inputs.candidate-stable }}
+          INPUTS_CURRENT_STABLE: ${{ inputs.current-stable }}
 
   check-blockers:
     needs:
@@ -68,6 +73,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
+          persist-credentials: false
       # Make sure that there are no open issues with release:blocker label in Core. The release has to be delayed until they are resolved.
       - name: Check blockers in core
         env:
@@ -103,6 +109,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
+          persist-credentials: false
       # To keep track of the progress, it might be helpful to create a tracking issue similar to #6067. You are responsible
       # for all of the steps under the "Performed by collector release manager" heading. Once the issue is created, you can
       # create the individual ones by hovering them and clicking the "Convert to issue" button on the right hand side.
@@ -127,6 +134,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Setup Go
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
@@ -135,14 +143,14 @@ jobs:
 
       - name: Cache Go
         id: go-cache
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
 
-      - uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         id: otelbot-token
         with:
           app-id: ${{ vars.OTELBOT_APP_ID }}

@@ -50,9 +50,10 @@ func TestLoadMetadata(t *testing.T) {
 				Type:                 "sample",
 				DisplayName:          "Sample Receiver",
 				Description:          "This receiver is used for testing purposes to check the output of mdatagen.",
-				SemConvVersion:       "1.38.0",
+				SemConvVersion:       "1.40.0",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver",
 				ReaggregationEnabled: true,
+				OverrideValueEnabled: true,
 				Status: &Status{
 					DisableCodeCov: true,
 					Class:          "receiver",
@@ -77,16 +78,22 @@ func TestLoadMetadata(t *testing.T) {
 				},
 				Config: &cfggen.ConfigMetadata{
 					Type: "object",
-					AllOf: []*cfggen.ConfigMetadata{
-						{
-							Ref: "./internal/metadata.metrics_builder_config",
-						},
-					},
 					Properties: map[string]*cfggen.ConfigMetadata{
+						"metrics_builder_config": {
+							Ref:   "./internal/metadata.metrics_builder_config",
+							Embed: true,
+							GoStruct: cfggen.GoStructConfig{
+								Anonymous:     true,
+								IgnoreDefault: true,
+							},
+						},
 						"endpoint": {
 							Description: "The endpoint to scrape metrics from.",
 							Type:        "string",
 							Default:     "localhost:12345",
+						},
+						"sample_pkg": {
+							Ref: "../samplepkg.sample_config",
 						},
 						"timeout": {
 							Description: "Timeout for scraping metrics.",
@@ -304,7 +311,7 @@ func TestLoadMetadata(t *testing.T) {
 						FullName:         "state",
 						RequirementLevel: AttributeRequirementLevelRecommended,
 						SemanticConvention: &SemanticConvention{
-							SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/registry/attributes/system.md#system-memory-state",
+							SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/system.md#system-memory-state",
 						},
 					},
 				},
@@ -359,7 +366,7 @@ func TestLoadMetadata(t *testing.T) {
 						Signal: Signal{
 							Enabled:               true,
 							Stability:             component.StabilityLevelBeta,
-							SemanticConvention:    &SemanticConvention{SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime"},
+							SemanticConvention:    &SemanticConvention{SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/system/system-metrics.md#metric-systemcputime"},
 							Description:           "Monotonic cumulative sum int metric enabled by default.",
 							ExtendedDocumentation: "The metric will be become optional soon.",
 							Attributes:            []AttributeName{"cpu"},
@@ -594,6 +601,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 			},
 		},
@@ -605,6 +613,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -624,6 +633,25 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
+				Tests:                Tests{Host: "newMdatagenNopHost()"},
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelBeta: {"logs"},
+					},
+				},
+			},
+		},
+		{
+			name: "testdata/reaggregation_disabled.yaml",
+			want: Metadata{
+				Type:                 "test",
+				GeneratedPackageName: "metadata",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				ShortFolderName:      "testdata",
+				ReaggregationEnabled: false,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -716,6 +744,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -734,6 +763,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -753,6 +783,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -767,10 +798,11 @@ func TestLoadMetadata(t *testing.T) {
 			want: Metadata{
 				Type:                 "metricreceiver",
 				GeneratedPackageName: "metadata",
-				SemConvVersion:       "1.38.0",
+				SemConvVersion:       "1.40.0",
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -789,7 +821,7 @@ func TestLoadMetadata(t *testing.T) {
 							Description: "Time disk spent activated..",
 							Stability:   component.StabilityLevelDevelopment,
 							SemanticConvention: &SemanticConvention{
-								SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemdiskio_time",
+								SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/system/system-metrics.md#metric-systemdiskio_time",
 							},
 						},
 						Unit: strPtr("s"),

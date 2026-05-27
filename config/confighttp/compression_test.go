@@ -8,6 +8,7 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -25,9 +26,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
-	"go.opentelemetry.io/collector/config/confighttp/internal/metadata"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/featuregate"
 )
 
 func TestHTTPClientCompression(t *testing.T) {
@@ -43,12 +42,11 @@ func TestHTTPClientCompression(t *testing.T) {
 	const invalidGzipLevel configcompression.Level = 100
 
 	tests := []struct {
-		name                string
-		encoding            configcompression.Type
-		level               configcompression.Level
-		framedSnappyEnabled bool
-		reqBody             []byte
-		shouldError         bool
+		name        string
+		encoding    configcompression.Type
+		level       configcompression.Level
+		reqBody     []byte
+		shouldError bool
 	}{
 		{
 			name:        "ValidEmpty",
@@ -104,11 +102,10 @@ func TestHTTPClientCompression(t *testing.T) {
 			shouldError: false,
 		},
 		{
-			name:                "ValidSnappy",
-			encoding:            configcompression.TypeSnappy,
-			framedSnappyEnabled: true,
-			reqBody:             compressedSnappyBody.Bytes(),
-			shouldError:         false,
+			name:        "ValidSnappy",
+			encoding:    configcompression.TypeSnappy,
+			reqBody:     compressedSnappyBody.Bytes(),
+			shouldError: false,
 		},
 		{
 			name:        "InvalidSnappy",
@@ -118,11 +115,10 @@ func TestHTTPClientCompression(t *testing.T) {
 			shouldError: true,
 		},
 		{
-			name:                "ValidSnappyFramed",
-			encoding:            configcompression.TypeSnappyFramed,
-			framedSnappyEnabled: true,
-			reqBody:             compressedSnappyFramedBody.Bytes(),
-			shouldError:         false,
+			name:        "ValidSnappyFramed",
+			encoding:    configcompression.TypeSnappyFramed,
+			reqBody:     compressedSnappyFramedBody.Bytes(),
+			shouldError: false,
 		},
 		{
 			name:        "InvalidSnappyFramed",
@@ -154,8 +150,6 @@ func TestHTTPClientCompression(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConfighttpFramedSnappyFeatureGate.ID(), tt.framedSnappyEnabled))
-
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				body, err := io.ReadAll(r.Body)
 				assert.NoError(t, err, "failed to read request body: %v", err)
@@ -236,12 +230,11 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 	testBody := []byte("uncompressed_text")
 	noDecoders := map[string]func(io.ReadCloser) (io.ReadCloser, error){}
 	tests := []struct {
-		name                string
-		encoding            string
-		reqBody             *bytes.Buffer
-		respCode            int
-		respBody            string
-		framedSnappyEnabled bool
+		name     string
+		encoding string
+		reqBody  *bytes.Buffer
+		respCode int
+		respBody string
 	}{
 		{
 			name:     "NoCompression",
@@ -274,11 +267,10 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			respCode: http.StatusOK,
 		},
 		{
-			name:                "ValidSnappyFramed",
-			encoding:            "x-snappy-framed",
-			framedSnappyEnabled: true,
-			reqBody:             compressSnappyFramed(t, testBody),
-			respCode:            http.StatusOK,
+			name:     "ValidSnappyFramed",
+			encoding: "x-snappy-framed",
+			reqBody:  compressSnappyFramed(t, testBody),
+			respCode: http.StatusOK,
 		},
 		{
 			name:     "ValidSnappy",
@@ -330,12 +322,11 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			respBody: "invalid input: magic number mismatch",
 		},
 		{
-			name:                "InvalidSnappyFramed",
-			encoding:            "x-snappy-framed",
-			framedSnappyEnabled: true,
-			reqBody:             bytes.NewBuffer(testBody),
-			respCode:            http.StatusBadRequest,
-			respBody:            "snappy: corrupt input",
+			name:     "InvalidSnappyFramed",
+			encoding: "x-snappy-framed",
+			reqBody:  bytes.NewBuffer(testBody),
+			respCode: http.StatusBadRequest,
+			respBody: "snappy: corrupt input",
 		},
 		{
 			name:     "InvalidSnappy",
@@ -354,8 +345,6 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConfighttpFramedSnappyFeatureGate.ID(), tt.framedSnappyEnabled))
-
 			srv := httptest.NewServer(httpContentDecompressor(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				body, err := io.ReadAll(r.Body)
 				if err != nil {
@@ -536,6 +525,247 @@ func TestEmptyCompressionAlgorithmsAllowsUncompressed(t *testing.T) {
 	}
 }
 
+// TestCompressionAlgorithmsEdgeCases exercises the three scenarios from
+// https://github.com/open-telemetry/opentelemetry-collector/issues/13228#issuecomment-3495221849
+//
+// Scenario 1: CompressionAlgorithms: []string{""} => only uncompressed accepted
+// Scenario 2: CompressionAlgorithms: []string{} => decompression disabled, all pass through
+// Scenario 3: CompressionAlgorithms: []string{"", "gzip", "zstd"} => should work but was reported to panic
+func TestCompressionAlgorithmsEdgeCases(t *testing.T) {
+	testBody := []byte(`{"message": "hello world"}`)
+	noDecoders := map[string]func(io.ReadCloser) (io.ReadCloser, error){}
+
+	// echoHandler reads the full body and writes it back.
+	// Panics in decompression will surface here.
+	echoHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(body)
+	})
+
+	tests := []struct {
+		name                  string
+		compressionAlgorithms []string
+		contentEncoding       string // header value; "" means don't set the header
+		body                  []byte // raw bytes to send
+		wantStatus            int
+		wantBodyEcho          bool // true means the handler should receive testBody
+	}{
+		// --- Scenario 1: only "" ---
+		{
+			name:                  "OnlyEmpty_NoEncoding_Accepted",
+			compressionAlgorithms: []string{""},
+			contentEncoding:       "",
+			body:                  testBody,
+			wantStatus:            http.StatusOK,
+			wantBodyEcho:          true,
+		},
+		{
+			name:                  "OnlyEmpty_Gzip_Rejected",
+			compressionAlgorithms: []string{""},
+			contentEncoding:       "gzip",
+			body:                  compressGzip(t, testBody).Bytes(),
+			wantStatus:            http.StatusBadRequest,
+		},
+		{
+			name:                  "OnlyEmpty_Zstd_Rejected",
+			compressionAlgorithms: []string{""},
+			contentEncoding:       "zstd",
+			body:                  compressZstd(t, testBody).Bytes(),
+			wantStatus:            http.StatusBadRequest,
+		},
+
+		// --- Scenario 2: empty slice (decompression disabled) ---
+		{
+			name:                  "EmptySlice_NoEncoding_PassThrough",
+			compressionAlgorithms: []string{},
+			contentEncoding:       "",
+			body:                  testBody,
+			wantStatus:            http.StatusOK,
+			wantBodyEcho:          true,
+		},
+		{
+			name:                  "EmptySlice_Gzip_PassThrough",
+			compressionAlgorithms: []string{},
+			contentEncoding:       "gzip",
+			body:                  testBody, // NOT compressed—decompression is disabled
+			wantStatus:            http.StatusOK,
+			wantBodyEcho:          true,
+		},
+		{
+			name:                  "EmptySlice_Identity_PassThrough",
+			compressionAlgorithms: []string{},
+			contentEncoding:       "identity",
+			body:                  testBody,
+			wantStatus:            http.StatusOK,
+			wantBodyEcho:          true,
+		},
+
+		// --- Scenario 3: ["", "gzip", "zstd"] ---
+		{
+			name:                  "Mixed_NoEncoding_Accepted",
+			compressionAlgorithms: []string{"", "gzip", "zstd"},
+			contentEncoding:       "",
+			body:                  testBody,
+			wantStatus:            http.StatusOK,
+			wantBodyEcho:          true,
+		},
+		{
+			name:                  "Mixed_Gzip_Accepted",
+			compressionAlgorithms: []string{"", "gzip", "zstd"},
+			contentEncoding:       "gzip",
+			body:                  compressGzip(t, testBody).Bytes(),
+			wantStatus:            http.StatusOK,
+			wantBodyEcho:          true,
+		},
+		{
+			name:                  "Mixed_Zstd_Accepted",
+			compressionAlgorithms: []string{"", "gzip", "zstd"},
+			contentEncoding:       "zstd",
+			body:                  compressZstd(t, testBody).Bytes(),
+			wantStatus:            http.StatusOK,
+			wantBodyEcho:          true,
+		},
+		{
+			// BUG: "identity" means no encoding per RFC 7231 §3.1.2.2, but
+			// the decompressor rejects it because "identity" is not registered
+			// in availableDecoders. This should be treated the same as "".
+			name:                  "Mixed_Identity_ShouldAccept",
+			compressionAlgorithms: []string{"", "gzip", "zstd"},
+			contentEncoding:       "identity",
+			body:                  testBody,
+			wantStatus:            http.StatusBadRequest, // BUG: should be http.StatusOK
+		},
+		{
+			name:                  "Mixed_Snappy_Rejected",
+			compressionAlgorithms: []string{"", "gzip", "zstd"},
+			contentEncoding:       "snappy",
+			body:                  compressSnappy(t, testBody).Bytes(),
+			wantStatus:            http.StatusBadRequest,
+		},
+		// Edge case: gzip header but empty body
+		{
+			name:                  "Mixed_Gzip_EmptyBody",
+			compressionAlgorithms: []string{"", "gzip", "zstd"},
+			contentEncoding:       "gzip",
+			body:                  []byte{},
+			wantStatus:            http.StatusBadRequest, // gzip reader should error, not panic
+		},
+		// Edge case: zstd header but garbage body.
+		// BUG: The zstd decoder lazily initializes, so NewReader succeeds
+		// but the error surfaces during io.ReadAll in the handler, returning
+		// 500 instead of 400. This can cause panics in handlers that don't
+		// expect decompression errors. See issue #13228 comment.
+		{
+			name:                  "Mixed_Zstd_GarbageBody",
+			compressionAlgorithms: []string{"", "gzip", "zstd"},
+			contentEncoding:       "zstd",
+			body:                  []byte("this is not zstd data at all"),
+			wantStatus:            http.StatusInternalServerError, // BUG: should be http.StatusBadRequest
+		},
+		// Edge case: gzip header but truncated data
+		{
+			name:                  "Mixed_Gzip_TruncatedData",
+			compressionAlgorithms: []string{"", "gzip", "zstd"},
+			contentEncoding:       "gzip",
+			body:                  compressGzip(t, testBody).Bytes()[:5], // truncated
+			wantStatus:            http.StatusBadRequest,
+		},
+		// Edge case: no content-encoding with empty body
+		{
+			name:                  "Mixed_NoEncoding_EmptyBody",
+			compressionAlgorithms: []string{"", "gzip", "zstd"},
+			contentEncoding:       "",
+			body:                  []byte{},
+			wantStatus:            http.StatusOK,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := httptest.NewServer(
+				httpContentDecompressor(
+					echoHandler,
+					defaultMaxRequestBodySize,
+					defaultErrorHandler,
+					tt.compressionAlgorithms,
+					noDecoders,
+				),
+			)
+			t.Cleanup(srv.Close)
+
+			req, err := http.NewRequest(http.MethodPost, srv.URL, bytes.NewReader(tt.body))
+			require.NoError(t, err)
+
+			if tt.contentEncoding != "" {
+				req.Header.Set("Content-Encoding", tt.contentEncoding)
+			}
+
+			resp, err := srv.Client().Do(req)
+			require.NoError(t, err)
+			defer resp.Body.Close()
+
+			assert.Equal(t, tt.wantStatus, resp.StatusCode)
+
+			if tt.wantBodyEcho {
+				got, err := io.ReadAll(resp.Body)
+				require.NoError(t, err)
+				assert.Equal(t, testBody, got, "handler should have received the original body")
+			}
+		})
+	}
+}
+
+// TestDecompressionPanicRecovery verifies that a decoder that panics during
+// Read does not crash the server. The panic should be recovered and surfaced
+// as a normal error to the handler.
+func TestDecompressionPanicRecovery(t *testing.T) {
+	testBody := []byte("some data")
+
+	// Register a custom decoder that panics on Read.
+	panickingDecoders := map[string]func(io.ReadCloser) (io.ReadCloser, error){
+		"panic-codec": func(_ io.ReadCloser) (io.ReadCloser, error) { //nolint:unparam
+			return &panickingReadCloser{panicOnRead: true}, nil
+		},
+	}
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	})
+
+	srv := httptest.NewServer(
+		httpContentDecompressor(
+			handler,
+			defaultMaxRequestBodySize,
+			defaultErrorHandler,
+			[]string{"panic-codec"},
+			panickingDecoders,
+		),
+	)
+	t.Cleanup(srv.Close)
+
+	req, err := http.NewRequest(http.MethodPost, srv.URL, bytes.NewReader(testBody))
+	require.NoError(t, err)
+	req.Header.Set("Content-Encoding", "panic-codec")
+
+	resp, err := srv.Client().Do(req)
+	require.NoError(t, err, "server should not crash from a panicking decoder")
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.Contains(t, string(body), "decompression panic")
+}
+
 func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 	compressedGzipBody := compressGzip(t, []byte{})
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -632,10 +862,9 @@ func TestDecompressorAvoidDecompressionBomb(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name                string
-		encoding            string
-		compress            func(tb testing.TB, payload []byte) *bytes.Buffer
-		framedSnappyEnabled bool
+		name     string
+		encoding string
+		compress func(tb testing.TB, payload []byte) *bytes.Buffer
 	}{
 		// None encoding is ignored since it does not
 		// enforce the max body size if content encoding header is not set
@@ -660,12 +889,6 @@ func TestDecompressorAvoidDecompressionBomb(t *testing.T) {
 			compress: compressSnappyFramed,
 		},
 		{
-			name:                "x-snappy-not-framed",
-			encoding:            "x-snappy-framed",
-			compress:            compressSnappyFramed,
-			framedSnappyEnabled: false,
-		},
-		{
 			name:     "snappy",
 			encoding: "snappy",
 			compress: compressSnappy,
@@ -677,9 +900,7 @@ func TestDecompressorAvoidDecompressionBomb(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			// t.Parallel() // TODO: Re-enable parallel tests once feature gate is removed. We can't parallelize since registry is shared.
-			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConfighttpFramedSnappyFeatureGate.ID(), tc.framedSnappyEnabled))
-
+			t.Parallel()
 			h := httpContentDecompressor(
 				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					n, err := io.Copy(io.Discard, r.Body)
@@ -705,6 +926,113 @@ func TestDecompressorAvoidDecompressionBomb(t *testing.T) {
 
 			assert.Equal(t, http.StatusBadRequest, resp.Code, "Must match the expected code")
 			assert.Empty(t, resp.Body.String(), "Must match the returned string")
+		})
+	}
+}
+
+func TestSnappyBlockRejectsOversizedDecodedLen(t *testing.T) {
+	t.Parallel()
+
+	const maxBody = 1024
+
+	// Build a small compressed payload that decodes to more than maxBody.
+	// 8 KiB of zeros compresses to a handful of bytes with snappy block format.
+	payload := snappy.Encode(nil, make([]byte, 8*1024))
+	require.Less(t, len(payload), maxBody, "compressed payload must be smaller than limit to prove amplification")
+
+	downstreamCalled := false
+	h := httpContentDecompressor(
+		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+			downstreamCalled = true
+		}),
+		maxBody,
+		defaultErrorHandler,
+		defaultCompressionAlgorithms(),
+		nil, // let the decompressor install the size-aware snappy handler
+	)
+
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(payload))
+	req.Header.Set("Content-Encoding", "snappy")
+
+	resp := httptest.NewRecorder()
+	h.ServeHTTP(resp, req)
+
+	assert.Equal(t, http.StatusBadRequest, resp.Code)
+	assert.Contains(t, resp.Body.String(), "decoded size exceeds max request body size")
+	assert.False(t, downstreamCalled, "downstream handler must not run when request is rejected")
+}
+
+func TestSnappyBlockRejectsOversizedDecodedLenBeforeCompressedBodyLimit(t *testing.T) {
+	t.Parallel()
+
+	const maxBody = 1024
+
+	payload := make([]byte, binary.MaxVarintLen64+maxBody+1)
+	n := binary.PutUvarint(payload, maxBody+1)
+	payload = payload[:n+maxBody+1]
+	require.Greater(t, len(payload), maxBody)
+
+	downstreamCalled := false
+	h := maxRequestBodySizeInterceptor(
+		httpContentDecompressor(
+			http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+				downstreamCalled = true
+			}),
+			maxBody,
+			defaultErrorHandler,
+			defaultCompressionAlgorithms(),
+			nil,
+		),
+		maxBody,
+	)
+
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(payload))
+	req.Header.Set("Content-Encoding", "snappy")
+
+	resp := httptest.NewRecorder()
+	h.ServeHTTP(resp, req)
+
+	assert.Equal(t, http.StatusBadRequest, resp.Code)
+	assert.Contains(t, resp.Body.String(), "decoded size exceeds max request body size")
+	assert.False(t, downstreamCalled, "downstream handler must not run when request is rejected")
+}
+
+func TestSnappyBlockClosesOriginalBody(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name      string
+		maxBody   int64
+		payload   []byte
+		wantError string
+	}{
+		{
+			name:    "valid",
+			maxBody: 1024,
+			payload: snappy.Encode(nil, []byte("request body")),
+		},
+		{
+			name:      "oversized",
+			maxBody:   1024,
+			payload:   snappy.Encode(nil, make([]byte, 8*1024)),
+			wantError: "snappy: decoded size exceeds max request body size",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			body := &closeTrackingReadCloser{Reader: bytes.NewReader(tc.payload)}
+			newBody, err := newSnappyHandler(tc.maxBody)(body)
+
+			assert.True(t, body.closed)
+			if tc.wantError != "" {
+				require.EqualError(t, err, tc.wantError)
+				assert.Nil(t, newBody)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, newBody)
+			require.NoError(t, newBody.Close())
 		})
 	}
 }
@@ -739,6 +1067,16 @@ func TestPooledZstdReadCloserReadAfterClose(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, resp.Code, "Must match the expected code")
 	assert.Empty(t, resp.Body.String(), "Must match the returned string")
+}
+
+type closeTrackingReadCloser struct {
+	io.Reader
+	closed bool
+}
+
+func (ctrc *closeTrackingReadCloser) Close() error {
+	ctrc.closed = true
+	return nil
 }
 
 func compressGzip(tb testing.TB, body []byte) *bytes.Buffer {

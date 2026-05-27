@@ -16,9 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yaml.in/yaml/v3"
-
-	"go.opentelemetry.io/collector/confmap/internal/metadata"
-	"go.opentelemetry.io/collector/featuregate"
 )
 
 func TestToStringMapFlatten(t *testing.T) {
@@ -1016,10 +1013,7 @@ func TestRecursiveUnmarshaling(t *testing.T) {
 	require.Equal(t, "something", r.Foo)
 }
 
-func testExpandedValue(t *testing.T, newSanitizer bool) {
-	err := featuregate.GlobalRegistry().Set(metadata.ConfmapNewExpandedValueSanitizerFeatureGate.ID(), newSanitizer)
-	require.NoError(t, err)
-
+func TestExpandedValue(t *testing.T) {
 	cm := NewFromStringMap(map[string]any{
 		"key": ExpandedValue{
 			Value:    0xdeadbeef,
@@ -1042,23 +1036,15 @@ func testExpandedValue(t *testing.T, newSanitizer bool) {
 	}
 
 	cfgStrPtr := ConfigStrPtr{}
-	if newSanitizer {
-		require.NoError(t, cm.Unmarshal(&cfgStrPtr))
-		if assert.NotNil(t, cfgStrPtr.Key) {
-			assert.Equal(t, "original", *cfgStrPtr.Key)
-		}
-	} else {
-		require.Error(t, cm.Unmarshal(&cfgStrPtr))
+	require.NoError(t, cm.Unmarshal(&cfgStrPtr))
+	if assert.NotNil(t, cfgStrPtr.Key) {
+		assert.Equal(t, "original", *cfgStrPtr.Key)
 	}
 
 	cfgMapStrPtr := map[string]*string{}
-	if newSanitizer {
-		require.NoError(t, cm.Unmarshal(&cfgMapStrPtr))
-		if assert.NotNil(t, cfgMapStrPtr["key"]) {
-			assert.Equal(t, "original", *cfgMapStrPtr["key"])
-		}
-	} else {
-		require.Error(t, cm.Unmarshal(&cfgMapStrPtr))
+	require.NoError(t, cm.Unmarshal(&cfgMapStrPtr))
+	if assert.NotNil(t, cfgMapStrPtr["key"]) {
+		assert.Equal(t, "original", *cfgMapStrPtr["key"])
 	}
 
 	type ConfigInt struct {
@@ -1073,18 +1059,6 @@ func testExpandedValue(t *testing.T, newSanitizer bool) {
 	}
 	cfgBool := ConfigBool{}
 	assert.Error(t, cm.Unmarshal(&cfgBool))
-}
-
-func TestExpandedValue(t *testing.T) {
-	before := metadata.ConfmapNewExpandedValueSanitizerFeatureGate.IsEnabled()
-	t.Run("old sanitizer", func(t *testing.T) {
-		testExpandedValue(t, false)
-	})
-	t.Run("new sanitizer", func(t *testing.T) {
-		testExpandedValue(t, true)
-	})
-	err := featuregate.GlobalRegistry().Set(metadata.ConfmapNewExpandedValueSanitizerFeatureGate.ID(), before)
-	require.NoError(t, err)
 }
 
 func TestExpandedValueNil(t *testing.T) {

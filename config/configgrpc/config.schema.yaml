@@ -6,7 +6,7 @@ $defs:
       auth:
         description: Auth configuration for outgoing RPCs.
         x-optional: true
-        $ref: go.opentelemetry.io/collector/config/configauth.config
+        $ref: /config/configauth.config
       authority:
         description: WithAuthority parameter configures client to rewrite ":authority" header (godoc.org/google.golang.org/grpc#WithAuthority)
         type: string
@@ -15,13 +15,13 @@ $defs:
         type: string
       compression:
         description: The compression key for supported compression types within collector.
-        $ref: go.opentelemetry.io/collector/config/configcompression.type
+        $ref: /config/configcompression.type
       endpoint:
         description: The target to which the exporter is going to send traces or metrics, using the gRPC protocol. The valid syntax is described at https://github.com/grpc/grpc/blob/master/doc/naming.md.
         type: string
       headers:
         description: The headers associated with gRPC requests.
-        $ref: go.opentelemetry.io/collector/config/configopaque.map_list
+        $ref: /config/configopaque.map_list
       keepalive:
         description: The keepalive parameters for gRPC client. See grpc.WithKeepaliveParams. (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
         x-optional: true
@@ -30,13 +30,13 @@ $defs:
         description: Middlewares for the gRPC client.
         type: array
         items:
-          $ref: go.opentelemetry.io/collector/config/configmiddleware.config
+          $ref: /config/configmiddleware.config
       read_buffer_size:
         description: ReadBufferSize for gRPC client. See grpc.WithReadBufferSize. (https://godoc.org/google.golang.org/grpc#WithReadBufferSize).
         type: integer
       tls:
         description: TLS struct exposes TLS client configuration.
-        $ref: go.opentelemetry.io/collector/config/configtls.client_config
+        $ref: /config/configtls.client_config
       wait_for_ready:
         description: WaitForReady parameter configures client to wait for ready state before sending data. (https://github.com/grpc/grpc/blob/master/doc/wait-for-ready.md)
         type: boolean
@@ -108,7 +108,7 @@ $defs:
       auth:
         description: Auth for this receiver
         x-optional: true
-        $ref: go.opentelemetry.io/collector/config/configauth.config
+        $ref: /config/configauth.config
       include_metadata:
         description: Include propagates the incoming connection's metadata to downstream consumers.
         type: boolean
@@ -127,16 +127,16 @@ $defs:
         description: Middlewares for the gRPC server.
         type: array
         items:
-          $ref: go.opentelemetry.io/collector/config/configmiddleware.config
+          $ref: /config/configmiddleware.config
       read_buffer_size:
         description: ReadBufferSize for gRPC server. See grpc.ReadBufferSize. (https://godoc.org/google.golang.org/grpc#ReadBufferSize).
         type: integer
       tls:
         description: Configures the protocol to use TLS. The default value is nil, which will cause the protocol to not use TLS.
         x-optional: true
-        $ref: go.opentelemetry.io/collector/config/configtls.server_config
+        $ref: /config/configtls.server_config
       write_buffer_size:
         description: WriteBufferSize for gRPC server. See grpc.WriteBufferSize. (https://godoc.org/google.golang.org/grpc#WriteBufferSize).
         type: integer
     allOf:
-      - $ref: go.opentelemetry.io/collector/config/confignet.addr_config
+      - $ref: /config/confignet.addr_config

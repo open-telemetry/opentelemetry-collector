@@ -1,4 +1,5 @@
 type: extensionauth/extensionauthtest
+parent: extensionauth
 github_project: open-telemetry/opentelemetry-collector
 
 status:

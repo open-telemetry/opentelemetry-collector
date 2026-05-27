@@ -361,7 +361,7 @@ checklinks:
 	command -v $(DOCKERCMD) >/dev/null 2>&1 || { echo >&2 "$(DOCKERCMD) not installed. Install before continuing"; exit 1; }
 	$(DOCKERCMD) run -w /home/repo --rm \
 		--mount 'type=bind,source='$(PWD)',target=/home/repo' \
-		lycheeverse/lychee \
+		lycheeverse/lychee:0.23 \
 		--config .github/lychee.toml \
 		--root-dir /home/repo \
 		-v \
