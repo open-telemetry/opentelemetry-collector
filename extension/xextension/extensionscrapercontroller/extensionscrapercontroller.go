@@ -19,6 +19,8 @@ type ControllerExtension interface {
 	// occur. The returned DeregisterFunc must be called during shutdown to
 	// deregister the scraper from the controller.
 	//
+	// When err is nil, the returned DeregisterFunc must not be nil.
+	//
 	// Implementations may call the ScrapeFunc concurrently. DeregisterFunc
 	// must not return until all in-flight calls to ScrapeFunc have completed,
 	// and must guarantee that ScrapeFunc will not be called again after it

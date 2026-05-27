@@ -86,13 +86,7 @@ func (sc *Controller[T]) Start(ctx context.Context, host component.Host) (err er
 		if success {
 			return
 		}
-		for _, deregFn := range sc.deregFuncs {
-			err = multierr.Append(err, deregFn(ctx))
-		}
-		sc.deregFuncs = nil
-		for i := range startedScrapers {
-			err = multierr.Append(err, sc.Scrapers[i].Shutdown(ctx))
-		}
+		err = multierr.Append(err, sc.teardown(ctx, sc.Scrapers[:startedScrapers]))
 	}()
 
 	for _, scrp := range sc.Scrapers {
@@ -133,28 +127,46 @@ func (sc *Controller[T]) Shutdown(ctx context.Context) error {
 	// Signal the ticker goroutine to stop and wait for it to exit.
 	close(sc.done)
 	sc.wg.Wait()
-	// Deregister scrapers from all controller extensions concurrently.
-	// Each DeregisterFunc blocks until its in-flight scrapes complete, so
-	// running them in parallel bounds total wait time to the slowest single
-	// extension rather than the sum of all extensions.
+	return sc.teardown(ctx, sc.Scrapers)
+}
+
+// teardown invokes all deregister functions concurrently, and then shuts
+// down all given scrapers.
+func (sc *Controller[T]) teardown(ctx context.Context, scrapers []T) error {
+	deregFuncs := sc.deregFuncs
+	sc.deregFuncs = nil
+
 	var (
 		wg   sync.WaitGroup
 		mu   sync.Mutex
 		errs error
 	)
-	for _, deregFn := range sc.deregFuncs {
+	record := func(e error) {
+		mu.Lock()
+		errs = multierr.Append(errs, e)
+		mu.Unlock()
+	}
+	for _, deregFn := range deregFuncs {
+		if deregFn == nil {
+			// Defensive: prevent nil function calls in case a
+			// controller extension returns a nil DeregisterFunc.
+			continue
+		}
 		wg.Go(func() {
 			if err := deregFn(ctx); err != nil {
-				mu.Lock()
-				errs = multierr.Append(errs, err)
-				mu.Unlock()
+				record(err)
 			}
 		})
 	}
 	wg.Wait()
-	for _, scrp := range sc.Scrapers {
-		errs = multierr.Append(errs, scrp.Shutdown(ctx))
+	for _, scrp := range scrapers {
+		wg.Go(func() {
+			if err := scrp.Shutdown(ctx); err != nil {
+				record(err)
+			}
+		})
 	}
+	wg.Wait()
 	return errs
 }
 

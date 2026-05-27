@@ -6,6 +6,7 @@ package controller // import "go.opentelemetry.io/collector/scraper/scraperhelpe
 import (
 	"context"
 	"errors"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"testing/synctest"
@@ -367,15 +368,22 @@ func TestStartExtensionCallbackInvokesScrapeFunc(t *testing.T) {
 func TestShutdownScrapers(t *testing.T) {
 	t.Parallel()
 
-	var shutdownOrder []int
+	var (
+		mu            sync.Mutex
+		shutdownOrder []int
+	)
 	cfg := &ControllerConfig{CollectionInterval: time.Minute}
 	ctrl := newTestController(t, cfg, nopScrapeFunc,
 		&mockScraper{ShutdownFunc: component.ShutdownFunc(func(context.Context) error {
+			mu.Lock()
 			shutdownOrder = append(shutdownOrder, 1)
+			mu.Unlock()
 			return nil
 		})},
 		&mockScraper{ShutdownFunc: component.ShutdownFunc(func(context.Context) error {
+			mu.Lock()
 			shutdownOrder = append(shutdownOrder, 2)
+			mu.Unlock()
 			return nil
 		})},
 	)
@@ -383,7 +391,7 @@ func TestShutdownScrapers(t *testing.T) {
 	require.NoError(t, ctrl.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, ctrl.Shutdown(context.Background()))
 
-	assert.Equal(t, []int{1, 2}, shutdownOrder)
+	assert.ElementsMatch(t, []int{1, 2}, shutdownOrder)
 }
 
 func TestShutdownScraperErrors(t *testing.T) {

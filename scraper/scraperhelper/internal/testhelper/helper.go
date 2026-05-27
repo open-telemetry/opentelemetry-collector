@@ -106,6 +106,7 @@ type MockControllerExtension struct {
 	Deregistered   atomic.Bool
 	RegisterErr    error
 	DeregisterErr  error
+	mu             sync.Mutex
 	scrapeWG       sync.WaitGroup
 }
 
@@ -115,7 +116,10 @@ func (m *MockControllerExtension) RegisterScraper(_ context.Context, scrapeFunc 
 	}
 	m.RegisteredFunc = scrapeFunc
 	return func(context.Context) error {
+		// Mark deregistered under the lock so Scrape sees it before doing Add.
+		m.mu.Lock()
 		m.Deregistered.Store(true)
+		m.mu.Unlock()
 		m.scrapeWG.Wait()
 		return m.DeregisterErr
 	}, nil
@@ -124,10 +128,15 @@ func (m *MockControllerExtension) RegisterScraper(_ context.Context, scrapeFunc 
 // Scrape invokes the registered ScrapeFunc, tracking it via an internal
 // WaitGroup so the DeregisterFunc blocks until it completes.
 func (m *MockControllerExtension) Scrape(ctx context.Context) error {
-	if m.RegisteredFunc == nil {
+	// Hold the lock across the nil/deregistered check and Add so that
+	// DeregisterFunc cannot observe a zero WaitGroup count between the two.
+	m.mu.Lock()
+	if m.Deregistered.Load() || m.RegisteredFunc == nil {
+		m.mu.Unlock()
 		return nil
 	}
 	m.scrapeWG.Add(1)
+	m.mu.Unlock()
 	defer m.scrapeWG.Done()
 	return m.RegisteredFunc(ctx)
 }
