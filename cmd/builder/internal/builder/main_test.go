@@ -170,15 +170,10 @@ func TestGenerateEmbeddedSchemaStubWriteError(t *testing.T) {
 	cfg := newInitializedConfig(t)
 	cfg.Distribution.OutputPath = t.TempDir()
 
-	original := writeEmbeddedSchemaSourceFileFunc
-	writeEmbeddedSchemaSourceFileFunc = func(string, []byte) error {
-		return assert.AnError
-	}
-	defer func() {
-		writeEmbeddedSchemaSourceFileFunc = original
-	}()
+	deps := defaultBuilderDeps()
+	deps.writeEmbeddedSchemaSourceFile = func(string, []byte) error { return assert.AnError }
 
-	err := Generate(cfg)
+	err := generateWithDeps(cfg, deps)
 	require.ErrorContains(t, err, `failed to generate source file "schema.go"`)
 }
 
@@ -423,15 +418,10 @@ func TestGetModulesErrorPaths(t *testing.T) {
 		cfg := newInitializedConfig(t)
 		cfg.Distribution.OutputPath = t.TempDir()
 
-		originalRun := runGoCommandFunc
-		runGoCommandFunc = func(*Config, ...string) ([]byte, error) {
-			return nil, assert.AnError
-		}
-		defer func() {
-			runGoCommandFunc = originalRun
-		}()
+		deps := defaultBuilderDeps()
+		deps.runGoCommand = func(*Config, ...string) ([]byte, error) { return nil, assert.AnError }
 
-		err := GetModules(cfg)
+		err := getModulesWithDeps(cfg, deps)
 		require.ErrorContains(t, err, "failed to update go.mod")
 	})
 
@@ -440,20 +430,11 @@ func TestGetModulesErrorPaths(t *testing.T) {
 		cfg.SkipStrictVersioning = true
 		cfg.Distribution.OutputPath = t.TempDir()
 
-		originalRun := runGoCommandFunc
-		originalDownload := downloadModulesFunc
-		runGoCommandFunc = func(*Config, ...string) ([]byte, error) {
-			return nil, nil
-		}
-		downloadModulesFunc = func(*Config) error {
-			return assert.AnError
-		}
-		defer func() {
-			runGoCommandFunc = originalRun
-			downloadModulesFunc = originalDownload
-		}()
+		deps := defaultBuilderDeps()
+		deps.runGoCommand = func(*Config, ...string) ([]byte, error) { return nil, nil }
+		deps.downloadModules = func(*Config) error { return assert.AnError }
 
-		err := GetModules(cfg)
+		err := getModulesWithDeps(cfg, deps)
 		require.ErrorIs(t, err, assert.AnError)
 	})
 
@@ -461,20 +442,13 @@ func TestGetModulesErrorPaths(t *testing.T) {
 		cfg := newInitializedConfig(t)
 		cfg.Distribution.OutputPath = t.TempDir()
 
-		originalRun := runGoCommandFunc
-		originalRead := readGoModFileFunc
-		runGoCommandFunc = func(*Config, ...string) ([]byte, error) {
-			return nil, nil
-		}
-		readGoModFileFunc = func(*Config) (string, map[string]string, error) {
+		deps := defaultBuilderDeps()
+		deps.runGoCommand = func(*Config, ...string) ([]byte, error) { return nil, nil }
+		deps.readGoModFile = func(*Config) (string, map[string]string, error) {
 			return "", nil, assert.AnError
 		}
-		defer func() {
-			runGoCommandFunc = originalRun
-			readGoModFileFunc = originalRead
-		}()
 
-		err := GetModules(cfg)
+		err := getModulesWithDeps(cfg, deps)
 		require.ErrorIs(t, err, assert.AnError)
 	})
 
@@ -489,25 +463,14 @@ func TestGetModulesErrorPaths(t *testing.T) {
 			dependencyVersions[module] = version
 		}
 
-		originalRun := runGoCommandFunc
-		originalRead := readGoModFileFunc
-		originalDownload := downloadModulesFunc
-		runGoCommandFunc = func(*Config, ...string) ([]byte, error) {
-			return nil, nil
-		}
-		readGoModFileFunc = func(*Config) (string, map[string]string, error) {
+		deps := defaultBuilderDeps()
+		deps.runGoCommand = func(*Config, ...string) ([]byte, error) { return nil, nil }
+		deps.readGoModFile = func(*Config) (string, map[string]string, error) {
 			return "example.com/dist", dependencyVersions, nil
 		}
-		downloadModulesFunc = func(*Config) error {
-			return assert.AnError
-		}
-		defer func() {
-			runGoCommandFunc = originalRun
-			readGoModFileFunc = originalRead
-			downloadModulesFunc = originalDownload
-		}()
+		deps.downloadModules = func(*Config) error { return assert.AnError }
 
-		err := GetModules(cfg)
+		err := getModulesWithDeps(cfg, deps)
 		require.ErrorIs(t, err, assert.AnError)
 	})
 }
@@ -781,7 +744,7 @@ func TestGenerateEmbeddedSchema(t *testing.T) {
 	cfg.Distribution.Go = "go"
 	cfg.Receivers = []Module{{GoMod: "example.com/receiver v0.0.1"}}
 
-	require.NoError(t, generateEmbeddedSchema(cfg))
+	require.NoError(t, generateEmbeddedSchemaWithDeps(cfg, defaultBuilderDeps()))
 
 	schemaSource, err := os.ReadFile(filepath.Join(outputDir, embeddedSchemaFileName))
 	require.NoError(t, err)
@@ -797,7 +760,7 @@ func TestGenerateEmbeddedSchemaGoListError(t *testing.T) {
 	cfg.Distribution.Go = "go"
 	cfg.Receivers = []Module{{GoMod: "example.com/missing v0.0.1"}}
 
-	err := generateEmbeddedSchema(cfg)
+	err := generateEmbeddedSchemaWithDeps(cfg, defaultBuilderDeps())
 	require.Error(t, err)
 }
 
@@ -821,7 +784,10 @@ func TestGenerateEmbeddedSchemaWriteError(t *testing.T) {
 	cfg.Distribution.Go = "go"
 	cfg.Receivers = []Module{{GoMod: "example.com/receiver v0.0.1"}}
 
-	err := generateEmbeddedSchema(cfg)
+	deps := defaultBuilderDeps()
+	deps.writeEmbeddedSchemaSourceFile = func(string, []byte) error { return assert.AnError }
+
+	err := generateEmbeddedSchemaWithDeps(cfg, deps)
 	require.ErrorContains(t, err, "failed to write embedded schema source")
 }
 

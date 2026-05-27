@@ -52,8 +52,12 @@ var embeddedConfigSchema = %s
 }
 
 func generateEmbeddedSchema(cfg *Config) error {
+	return generateEmbeddedSchemaWithDeps(cfg, defaultBuilderDeps())
+}
+
+func generateEmbeddedSchemaWithDeps(cfg *Config, deps builderDeps) error {
 	schema, err := buildEmbeddedSchema(cfg, func(modulePath string) (string, error) {
-		stdout, runErr := runGoCommand(cfg, "list", "-m", "-f", "{{.Dir}}", modulePath)
+		stdout, runErr := deps.runGoCommand(cfg, "list", "-m", "-f", "{{.Dir}}", modulePath)
 		if runErr != nil {
 			return "", runErr
 		}
@@ -64,7 +68,7 @@ func generateEmbeddedSchema(cfg *Config) error {
 		return err
 	}
 
-	if err := writeEmbeddedSchemaSourceFileFunc(cfg.Distribution.OutputPath, schema); err != nil {
+	if err := deps.writeEmbeddedSchemaSourceFile(cfg.Distribution.OutputPath, schema); err != nil {
 		return fmt.Errorf("failed to write embedded schema source: %w", err)
 	}
 

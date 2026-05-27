@@ -32,13 +32,21 @@ var (
 
 const otelcolPath = "go.opentelemetry.io/collector/otelcol"
 
-var (
-	runGoCommandFunc                  = runGoCommand
-	writeEmbeddedSchemaSourceFileFunc = writeEmbeddedSchemaSourceFile
-	downloadModulesFunc               = downloadModules
-	generateEmbeddedSchemaFunc        = generateEmbeddedSchema
-	readGoModFileFunc                 = readGoModFile
-)
+type builderDeps struct {
+	runGoCommand                  func(*Config, ...string) ([]byte, error)
+	writeEmbeddedSchemaSourceFile func(string, []byte) error
+	downloadModules               func(*Config) error
+	readGoModFile                 func(*Config) (string, map[string]string, error)
+}
+
+func defaultBuilderDeps() builderDeps {
+	return builderDeps{
+		runGoCommand:                  runGoCommand,
+		writeEmbeddedSchemaSourceFile: writeEmbeddedSchemaSourceFile,
+		downloadModules:               downloadModules,
+		readGoModFile:                 readGoModFile,
+	}
+}
 
 func runGoCommand(cfg *Config, args ...string) ([]byte, error) {
 	if cfg.Verbose {
@@ -72,20 +80,28 @@ func runGoCommand(cfg *Config, args ...string) ([]byte, error) {
 
 // GenerateAndCompile will generate the source files based on the given configuration, update go mod, and will compile into a binary
 func GenerateAndCompile(cfg *Config) error {
+	return generateAndCompileWithDeps(cfg, defaultBuilderDeps())
+}
+
+func generateAndCompileWithDeps(cfg *Config, deps builderDeps) error {
 	if err := Generate(cfg); err != nil {
 		return err
 	}
 
 	// run go get to update go.mod and go.sum files
-	if err := GetModules(cfg); err != nil {
+	if err := getModulesWithDeps(cfg, deps); err != nil {
 		return err
 	}
 
-	return Compile(cfg)
+	return compileWithDeps(cfg, deps)
 }
 
 // Generate assembles a new distribution based on the given configuration
 func Generate(cfg *Config) error {
+	return generateWithDeps(cfg, defaultBuilderDeps())
+}
+
+func generateWithDeps(cfg *Config, deps builderDeps) error {
 	if cfg.SkipGenerate {
 		cfg.Logger.Info("Skipping generating source codes.")
 		return nil
@@ -112,7 +128,7 @@ func Generate(cfg *Config) error {
 		}
 	}
 
-	if err := writeEmbeddedSchemaSourceFileFunc(cfg.Distribution.OutputPath, nil); err != nil {
+	if err := deps.writeEmbeddedSchemaSourceFile(cfg.Distribution.OutputPath, nil); err != nil {
 		return fmt.Errorf("failed to generate source file %q: %w", embeddedSchemaFileName, err)
 	}
 
@@ -122,6 +138,10 @@ func Generate(cfg *Config) error {
 
 // Compile generates a binary from the sources based on the configuration
 func Compile(cfg *Config) error {
+	return compileWithDeps(cfg, defaultBuilderDeps())
+}
+
+func compileWithDeps(cfg *Config, deps builderDeps) error {
 	if cfg.SkipCompilation {
 		cfg.Logger.Info("Generating source codes only, the distribution will not be compiled.")
 		return nil
@@ -156,7 +176,7 @@ func Compile(cfg *Config) error {
 	if cfg.Distribution.BuildTags != "" {
 		args = append(args, "-tags", cfg.Distribution.BuildTags)
 	}
-	if _, err := runGoCommandFunc(cfg, args...); err != nil {
+	if _, err := deps.runGoCommand(cfg, args...); err != nil {
 		return fmt.Errorf("%w: %s", errCompileFailed, err.Error())
 	}
 	cfg.Logger.Info("Compiled", zap.String("binary", fmt.Sprintf("%s/%s", cfg.Distribution.OutputPath, binaryName)))
@@ -181,25 +201,29 @@ func outputBinaryName(name string) string {
 
 // GetModules retrieves the go modules, updating go.mod and go.sum in the process
 func GetModules(cfg *Config) error {
+	return getModulesWithDeps(cfg, defaultBuilderDeps())
+}
+
+func getModulesWithDeps(cfg *Config, deps builderDeps) error {
 	if cfg.SkipGetModules {
 		cfg.Logger.Info("Generating source codes only, will not update go.mod and retrieve Go modules.")
 		return nil
 	}
 
-	if _, err := runGoCommandFunc(cfg, "mod", "tidy", "-compat=1.25"); err != nil {
+	if _, err := deps.runGoCommand(cfg, "mod", "tidy", "-compat=1.25"); err != nil {
 		return fmt.Errorf("failed to update go.mod: %w", err)
 	}
 
 	if cfg.SkipStrictVersioning {
-		if err := downloadModulesFunc(cfg); err != nil {
+		if err := deps.downloadModules(cfg); err != nil {
 			return err
 		}
-		return generateEmbeddedSchemaFunc(cfg)
+		return generateEmbeddedSchemaWithDeps(cfg, deps)
 	}
 
 	// Perform strict version checking.  For each component listed and the
 	// otelcol core dependency, check that the enclosing go module matches.
-	modulePath, dependencyVersions, err := readGoModFileFunc(cfg)
+	modulePath, dependencyVersions, err := deps.readGoModFile(cfg)
 	if err != nil {
 		return err
 	}
@@ -234,11 +258,11 @@ func GetModules(cfg *Config) error {
 		}
 	}
 
-	if err := downloadModulesFunc(cfg); err != nil {
+	if err := deps.downloadModules(cfg); err != nil {
 		return err
 	}
 
-	return generateEmbeddedSchemaFunc(cfg)
+	return generateEmbeddedSchemaWithDeps(cfg, deps)
 }
 
 func downloadModules(cfg *Config) error {
