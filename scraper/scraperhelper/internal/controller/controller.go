@@ -113,8 +113,6 @@ func (sc *Controller[T]) Start(ctx context.Context, host component.Host) (err er
 			return fmt.Errorf("extension %q is not a scraper controller extension", controllerID)
 		}
 		deregFn, err := ce.RegisterScraper(ctx, extensionscrapercontroller.ScrapeFunc(func(callCtx context.Context) error {
-			sc.wg.Add(1)
-			defer sc.wg.Done()
 			return sc.scrapeFunc(callCtx, sc)
 		}))
 		if err != nil {
@@ -132,16 +130,16 @@ func (sc *Controller[T]) Start(ctx context.Context, host component.Host) (err er
 
 // Shutdown the receiver, invoked during service shutdown.
 func (sc *Controller[T]) Shutdown(ctx context.Context) error {
-	// Signal the ticker goroutine to stop.
+	// Signal the ticker goroutine to stop and wait for it to exit.
 	close(sc.done)
+	sc.wg.Wait()
+	// Deregister scrapers from controller extensions; the deregister
+	// functions block until any in-flight extension-triggered scrapes have
+	// completed.
 	var errs error
 	for _, deregFn := range sc.deregFuncs {
 		errs = multierr.Append(errs, deregFn(ctx))
 	}
-	// Wait for the ticker goroutine and any in-flight extension-triggered
-	// scrapes to finish. After calling the deregister functions, no new
-	// extension-triggered scrapes will start.
-	sc.wg.Wait()
 	for _, scrp := range sc.Scrapers {
 		errs = multierr.Append(errs, scrp.Shutdown(ctx))
 	}

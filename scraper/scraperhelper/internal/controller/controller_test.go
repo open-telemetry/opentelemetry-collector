@@ -6,6 +6,7 @@ package controller // import "go.opentelemetry.io/collector/scraper/scraperhelpe
 import (
 	"context"
 	"errors"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"testing/synctest"
@@ -40,24 +41,39 @@ func (h *mockHost) GetExtensions() map[component.ID]component.Component {
 }
 
 // mockControllerExtension implements extensionscrapercontroller.ControllerExtension.
+// Its DeregisterFunc waits for in-flight scrapes to complete, as required by
+// the ControllerExtension contract.
 type mockControllerExtension struct {
 	component.StartFunc
 	component.ShutdownFunc
-	scrapeFunc    func(context.Context) error
-	deregistered  bool
-	registerErr   error
-	deregisterErr error
+	registeredFunc extensionscrapercontroller.ScrapeFunc
+	scrapeWG       sync.WaitGroup
+	deregistered   atomic.Bool
+	registerErr    error
+	deregisterErr  error
 }
 
 func (m *mockControllerExtension) RegisterScraper(_ context.Context, scrapeFunc extensionscrapercontroller.ScrapeFunc) (extensionscrapercontroller.DeregisterFunc, error) {
 	if m.registerErr != nil {
 		return nil, m.registerErr
 	}
-	m.scrapeFunc = scrapeFunc
+	m.registeredFunc = scrapeFunc
 	return func(context.Context) error {
-		m.deregistered = true
+		m.deregistered.Store(true)
+		m.scrapeWG.Wait()
 		return m.deregisterErr
 	}, nil
+}
+
+// scrapeFunc invokes the registered ScrapeFunc, tracking it via scrapeWG so
+// the DeregisterFunc can block on it. Returns nil if no scraper is registered.
+func (m *mockControllerExtension) scrapeFunc(ctx context.Context) error {
+	if m.registeredFunc == nil {
+		return nil
+	}
+	m.scrapeWG.Add(1)
+	defer m.scrapeWG.Done()
+	return m.registeredFunc(ctx)
 }
 
 func newTestController(
@@ -274,7 +290,7 @@ func TestStartPartialFailureCleansUp(t *testing.T) {
 	require.Error(t, err)
 	require.ErrorIs(t, err, errRegister)
 
-	assert.True(t, okExt.deregistered, "first extension should have been deregistered")
+	assert.True(t, okExt.deregistered.Load(), "first extension should have been deregistered")
 	assert.True(t, scraperShutdown.Load(), "already-started scraper should have been shut down")
 	assert.Empty(t, ctrl.deregFuncs, "deregFuncs slice should be cleared after partial-start cleanup")
 }
@@ -358,11 +374,11 @@ func TestStartExtensionRegistersAndDeregisters(t *testing.T) {
 
 	host := &mockHost{ext: map[component.ID]component.Component{extID: mockExt}}
 	require.NoError(t, ctrl.Start(context.Background(), host))
-	require.NotNil(t, mockExt.scrapeFunc)
-	assert.False(t, mockExt.deregistered)
+	require.NotNil(t, mockExt.registeredFunc)
+	assert.False(t, mockExt.deregistered.Load())
 
 	require.NoError(t, ctrl.Shutdown(context.Background()))
-	assert.True(t, mockExt.deregistered)
+	assert.True(t, mockExt.deregistered.Load())
 }
 
 func TestStartExtensionCallbackInvokesScrapeFunc(t *testing.T) {
@@ -386,7 +402,7 @@ func TestStartExtensionCallbackInvokesScrapeFunc(t *testing.T) {
 	require.NoError(t, ctrl.Start(context.Background(), host))
 
 	// Invoke the callback registered with the extension.
-	require.NotNil(t, mockExt.scrapeFunc)
+	require.NotNil(t, mockExt.registeredFunc)
 	require.NoError(t, mockExt.scrapeFunc(context.Background()))
 	assert.True(t, scraped.Load())
 
@@ -649,7 +665,7 @@ func TestShutdownDeregisterError(t *testing.T) {
 	// Both the deregister error and the scraper shutdown error should be reported.
 	require.ErrorIs(t, err, errDeregister)
 	require.ErrorIs(t, err, errShutdown)
-	assert.True(t, mockExt.deregistered)
+	assert.True(t, mockExt.deregistered.Load())
 }
 
 func TestStartMultipleExtensions(t *testing.T) {
@@ -670,12 +686,12 @@ func TestStartMultipleExtensions(t *testing.T) {
 		ext2ID: mockExt2,
 	}}
 	require.NoError(t, ctrl.Start(context.Background(), host))
-	require.NotNil(t, mockExt1.scrapeFunc)
-	require.NotNil(t, mockExt2.scrapeFunc)
+	require.NotNil(t, mockExt1.registeredFunc)
+	require.NotNil(t, mockExt2.registeredFunc)
 
 	require.NoError(t, ctrl.Shutdown(context.Background()))
-	assert.True(t, mockExt1.deregistered)
-	assert.True(t, mockExt2.deregistered)
+	assert.True(t, mockExt1.deregistered.Load())
+	assert.True(t, mockExt2.deregistered.Load())
 }
 
 func TestExtensionScrapeUsesPassedContext(t *testing.T) {
@@ -706,7 +722,7 @@ func TestExtensionScrapeUsesPassedContext(t *testing.T) {
 
 	// Extension later fires a scrape with its own live context carrying a value.
 	extCtx := context.WithValue(context.Background(), ctxKey{}, "from-extension")
-	require.NotNil(t, mockExt.scrapeFunc)
+	require.NotNil(t, mockExt.registeredFunc)
 	require.NoError(t, mockExt.scrapeFunc(extCtx))
 
 	assert.NoError(t, capturedCtxErr, "scrape context must not be canceled")

@@ -42,9 +42,10 @@ type ControllerExtension interface {
     // occur. The returned DeregisterFunc must be called during shutdown to
     // deregister the scraper from the controller.
     //
-    // Implementations may call the ScrapeFunc concurrently. After the
-    // DeregisterFunc is called, the controller must not call the ScrapeFunc
-    // again, but need not wait for in-flight calls to complete.
+    // Implementations may call the ScrapeFunc concurrently. DeregisterFunc
+    // must not return until all in-flight calls to ScrapeFunc have completed,
+    // and must guarantee that ScrapeFunc will not be called again after it
+    // returns.
     RegisterScraper(context.Context, ScrapeFunc) (DeregisterFunc, error)
 }
 
