@@ -100,22 +100,26 @@ func (md *ConfigMetadata) ToJSON() ([]byte, error) {
 func (md *ConfigMetadata) MarshalJSON() ([]byte, error) {
 	type alias ConfigMetadata
 
-	if len(md.PatternProperties) == 0 && md.AdditionalPropertiesAllowed == nil {
+	if md.Ref == "" && len(md.PatternProperties) == 0 && md.AdditionalPropertiesAllowed == nil {
 		return json.Marshal((*alias)(md))
 	}
 
 	type withSpecialFields struct {
 		*alias
+		Ref                  string                     `json:"$ref,omitempty"`
 		AdditionalProperties any                        `json:"additionalProperties,omitempty"`
 		PatternProperties    map[string]*ConfigMetadata `json:"patternProperties,omitempty"`
 	}
 
 	out := withSpecialFields{
 		alias:             (*alias)(md),
+		Ref:               md.Ref,
 		PatternProperties: md.PatternProperties,
 	}
 	if md.AdditionalPropertiesAllowed != nil {
 		out.AdditionalProperties = *md.AdditionalPropertiesAllowed
+	} else if md.AdditionalProperties != nil {
+		out.AdditionalProperties = md.AdditionalProperties
 	}
 
 	return json.Marshal(out)

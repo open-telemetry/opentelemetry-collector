@@ -27,6 +27,7 @@ func main() {
 	set := otelcol.CollectorSettings{
 		BuildInfo: info,
 		Factories: components,
+		ConfigSchema: embeddedConfigSchema,
 		ConfigProviderSettings: otelcol.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
 				ProviderFactories: []confmap.ProviderFactory{

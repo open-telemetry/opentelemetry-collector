@@ -32,6 +32,14 @@ var (
 
 const otelcolPath = "go.opentelemetry.io/collector/otelcol"
 
+var (
+	runGoCommandFunc                  = runGoCommand
+	writeEmbeddedSchemaSourceFileFunc = writeEmbeddedSchemaSourceFile
+	downloadModulesFunc               = downloadModules
+	generateEmbeddedSchemaFunc        = generateEmbeddedSchema
+	readGoModFileFunc                 = readGoModFile
+)
+
 func runGoCommand(cfg *Config, args ...string) ([]byte, error) {
 	if cfg.Verbose {
 		cfg.Logger.Info("Running go subcommand.", zap.Any("arguments", args))
@@ -104,6 +112,10 @@ func Generate(cfg *Config) error {
 		}
 	}
 
+	if err := writeEmbeddedSchemaSourceFileFunc(cfg.Distribution.OutputPath, nil); err != nil {
+		return fmt.Errorf("failed to generate source file %q: %w", embeddedSchemaFileName, err)
+	}
+
 	cfg.Logger.Info("Sources created", zap.String("path", cfg.Distribution.OutputPath))
 	return nil
 }
@@ -144,7 +156,7 @@ func Compile(cfg *Config) error {
 	if cfg.Distribution.BuildTags != "" {
 		args = append(args, "-tags", cfg.Distribution.BuildTags)
 	}
-	if _, err := runGoCommand(cfg, args...); err != nil {
+	if _, err := runGoCommandFunc(cfg, args...); err != nil {
 		return fmt.Errorf("%w: %s", errCompileFailed, err.Error())
 	}
 	cfg.Logger.Info("Compiled", zap.String("binary", fmt.Sprintf("%s/%s", cfg.Distribution.OutputPath, binaryName)))
@@ -174,17 +186,20 @@ func GetModules(cfg *Config) error {
 		return nil
 	}
 
-	if _, err := runGoCommand(cfg, "mod", "tidy", "-compat=1.25"); err != nil {
+	if _, err := runGoCommandFunc(cfg, "mod", "tidy", "-compat=1.25"); err != nil {
 		return fmt.Errorf("failed to update go.mod: %w", err)
 	}
 
 	if cfg.SkipStrictVersioning {
-		return downloadModules(cfg)
+		if err := downloadModulesFunc(cfg); err != nil {
+			return err
+		}
+		return generateEmbeddedSchemaFunc(cfg)
 	}
 
 	// Perform strict version checking.  For each component listed and the
 	// otelcol core dependency, check that the enclosing go module matches.
-	modulePath, dependencyVersions, err := readGoModFile(cfg)
+	modulePath, dependencyVersions, err := readGoModFileFunc(cfg)
 	if err != nil {
 		return err
 	}
@@ -219,7 +234,11 @@ func GetModules(cfg *Config) error {
 		}
 	}
 
-	return downloadModules(cfg)
+	if err := downloadModulesFunc(cfg); err != nil {
+		return err
+	}
+
+	return generateEmbeddedSchemaFunc(cfg)
 }
 
 func downloadModules(cfg *Config) error {

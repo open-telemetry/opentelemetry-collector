@@ -224,6 +224,15 @@ func TestConfigMetadata_MarshalJSON(t *testing.T) {
 			},
 		},
 		{
+			name: "with ref",
+			metadata: &ConfigMetadata{
+				Ref: "go.opentelemetry.io/collector/config/confighttp.client_config",
+			},
+			expected: map[string]any{
+				"$ref": "go.opentelemetry.io/collector/config/confighttp.client_config",
+			},
+		},
+		{
 			name: "with additional properties allowed false",
 			metadata: &ConfigMetadata{
 				Type:                        "object",

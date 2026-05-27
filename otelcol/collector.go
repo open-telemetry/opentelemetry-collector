@@ -71,6 +71,9 @@ type CollectorSettings struct {
 	// confmap.Providers watch for configuration changes.
 	ConfigProviderSettings ConfigProviderSettings
 
+	// ConfigSchema holds the build-time embedded combined configuration schema, when available.
+	ConfigSchema []byte
+
 	// ProviderModules maps provider schemes to their respective go modules.
 	ProviderModules map[string]string
 
