@@ -8,8 +8,9 @@ import (
 
 var ConfigoptionalAddEnabledFieldFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"configoptional.AddEnabledField",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("Allows optional fields to be toggled via an 'enabled' field."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/14021"),
 	featuregate.WithRegisterFromVersion("v0.138.0"),
+	featuregate.WithRegisterToVersion("v0.154.0"),
 )

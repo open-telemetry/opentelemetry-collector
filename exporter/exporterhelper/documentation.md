@@ -38,6 +38,14 @@ Number of spans failed to be added to the sending queue.
 | ---- | ----------- | ---------- | --------- | --------- |
 | {span} | Sum | Int | true | Alpha |
 
+### otelcol_exporter_in_flight_requests
+
+Number of export requests currently in-flight (including retry backoff).
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {request} | Sum | Int | false | Development |
+
 ### otelcol_exporter_queue_batch_send_size
 
 Number of units in the batch
@@ -140,6 +148,6 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `exporter.PersistRequestContext` | beta | controls whether context should be stored alongside requests in the persistent queue | v0.128.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/pull/13188) |
+| `exporter.PersistRequestContext` | stable | controls whether context should be stored alongside requests in the persistent queue | v0.128.0 | v0.154.0 | [Link](https://github.com/open-telemetry/opentelemetry-collector/pull/13188) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

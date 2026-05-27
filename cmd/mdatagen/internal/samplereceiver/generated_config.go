@@ -6,6 +6,7 @@ import (
 	"errors"
 	"time"
 
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplepkg"
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 )
@@ -15,9 +16,12 @@ type Config struct {
 	// MetricsBuilderConfig is a configuration for sample metrics builder.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	// The endpoint to scrape metrics from.
-	Endpoint string `mapstructure:"endpoint"`
+	Endpoint  string                 `mapstructure:"endpoint"`
+	SamplePkg samplepkg.SampleConfig `mapstructure:"sample_pkg"`
 	// Timeout for scraping metrics.
 	Timeout time.Duration `mapstructure:"timeout"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Validate validates the Config fields.
@@ -33,8 +37,8 @@ func (c *Config) Validate() error {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
-		Endpoint:             "localhost:12345",
-		Timeout:              10 * time.Second,
+		Endpoint:  "localhost:12345",
+		SamplePkg: samplepkg.NewDefaultSampleConfig(),
+		Timeout:   10 * time.Second,
 	}
 }
