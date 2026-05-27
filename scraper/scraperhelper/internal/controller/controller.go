@@ -79,7 +79,7 @@ func NewController[T component.Component](
 }
 
 // Start the receiver, invoked during service start.
-func (sc *Controller[T]) Start(ctx context.Context, host component.Host) error {
+func (sc *Controller[T]) Start(ctx context.Context, host component.Host) (err error) {
 	var startedScrapers int
 	success := false
 	defer func() {
@@ -87,7 +87,7 @@ func (sc *Controller[T]) Start(ctx context.Context, host component.Host) error {
 			return
 		}
 		for _, deregFn := range sc.deregFuncs {
-			_ = deregFn(ctx)
+			err = multierr.Append(err, deregFn(ctx))
 		}
 		sc.deregFuncs = nil
 		for i := range startedScrapers {
@@ -102,8 +102,9 @@ func (sc *Controller[T]) Start(ctx context.Context, host component.Host) error {
 		startedScrapers++
 	}
 
+	exts := host.GetExtensions()
 	for _, controllerID := range sc.controllers {
-		ext, found := host.GetExtensions()[controllerID]
+		ext, found := exts[controllerID]
 		if !found {
 			return fmt.Errorf("extension %q not found", controllerID)
 		}
