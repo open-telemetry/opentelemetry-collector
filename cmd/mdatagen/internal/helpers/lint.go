@@ -16,10 +16,16 @@ func FormatIdentifier(s string, exported bool) (string, error) {
 	if s == "" {
 		return "", errors.New("string cannot be empty")
 	}
-	// Convert various characters to . for strings.Title to operate on.
+	// Convert various characters to . to use as word separator for capitalization.
 	replace := strings.NewReplacer("_", ".", "-", ".", "<", ".", ">", ".", "/", ".", ":", ".")
 	str := replace.Replace(s)
-	str = strings.Title(str) //nolint:staticcheck // SA1019
+	parts := strings.Split(str, ".")
+	for i, part := range parts {
+		if len(part) > 0 {
+			parts[i] = strings.ToUpper(part[:1]) + part[1:]
+		}
+	}
+	str = strings.Join(parts, ".")
 	str = strings.ReplaceAll(str, ".", "")
 
 	var word string

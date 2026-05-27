@@ -542,7 +542,8 @@ func (mvt *ValueType) UnmarshalText(text []byte) error {
 
 // String returns capitalized name of the ValueType.
 func (mvt ValueType) String() string {
-	return strings.Title(strings.ToLower(mvt.ValueType.String())) //nolint:staticcheck // SA1019
+	s := strings.ToLower(mvt.ValueType.String())
+	return strings.ToUpper(s[:1]) + s[1:]
 }
 
 // Primitive returns name of primitive type for the ValueType.
