@@ -14,10 +14,10 @@ import (
 
 func validateControllerConfig(set *ControllerConfig) (errs error) {
 	if set.CollectionInterval < 0 || (set.CollectionInterval == 0 && len(set.Controllers) == 0) {
-		errs = multierr.Append(errs, errors.New(`"collection_interval": must be positive, or zero when controllers is non-empty`))
+		errs = multierr.Append(errs, errors.New(`"collection_interval": requires positive value, or zero when controllers is non-empty`))
 	}
 	if set.Timeout < 0 {
-		errs = multierr.Append(errs, errors.New(`"timeout": must be positive`))
+		errs = multierr.Append(errs, errors.New(`"timeout": requires positive value`))
 	}
 	seen := make(map[component.ID]int, len(set.Controllers))
 	for _, id := range set.Controllers {
