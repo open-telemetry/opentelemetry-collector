@@ -36,34 +36,6 @@ func NewResolver(pkgID, class, name, dir string) *Resolver {
 	}
 }
 
-// ResolveSchema takes a source configuration metadata schema and resolves all references ($ref)
-// to produce a fully resolved schema. It handles both internal references (within the same schema) and external references
-// (pointing to other schemas, either locally or remotely). The resolver uses registered loaders to fetch external schemas as needed.
-//
-// Returns a new ConfigMetadata with all references resolved, or an error if resolution fails.
-//
-// Deprecated: prefer Resolve, which takes the full source Metadata (so exported_configs
-// are not coerced into ConfigMetadata.Defs by the caller) and returns the writer-side
-// JSONSchemaDoc. This wrapper is kept for callers that still operate on a bare
-// ConfigMetadata with internal Defs set up.
-func (r *Resolver) ResolveSchema(src *ConfigMetadata) (*ConfigMetadata, error) {
-	target := &ConfigMetadata{}
-	err := r.resolveSchema(src, src, target, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	target.Schema = schemaVersion
-	target.ID = r.pkgID
-	target.Title = fmt.Sprintf("%s/%s", r.class, r.name)
-
-	if len(src.Properties) > 0 {
-		target.Type = "object"
-	}
-
-	return target, nil
-}
-
 // Resolve takes the source Metadata parsed from metadata.yaml and produces a
 // JSONSchemaDoc with all $ref references resolved. exported_configs from the source
 // become the top-level $defs of the output document.

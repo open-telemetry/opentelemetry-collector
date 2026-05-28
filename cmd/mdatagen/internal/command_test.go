@@ -549,7 +549,7 @@ func TestGenerateConfigFiles(t *testing.T) {
 				Status: &Status{
 					Class: "receiver",
 				},
-				// A local ref without a definition name fails Validate() inside ResolveSchema
+				// A local ref without a definition name fails Validate() inside Resolve
 				Config: &cfggen.ConfigMetadata{
 					Ref: "/config/configauth",
 				},
