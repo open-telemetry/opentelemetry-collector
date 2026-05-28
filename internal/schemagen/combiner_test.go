@@ -255,6 +255,19 @@ func TestConfigMetadata_MarshalJSON(t *testing.T) {
 			},
 		},
 		{
+			name: "with additional properties schema",
+			metadata: &ConfigMetadata{
+				Type:                 "object",
+				AdditionalProperties: &ConfigMetadata{Type: "string"},
+			},
+			expected: map[string]any{
+				"type": "object",
+				"additionalProperties": map[string]any{
+					"type": "string",
+				},
+			},
+		},
+		{
 			name: "with both pattern properties and additional properties",
 			metadata: &ConfigMetadata{
 				Type: "object",

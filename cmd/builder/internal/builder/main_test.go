@@ -159,6 +159,20 @@ func TestGenerateWritesEmbeddedSchemaStub(t *testing.T) {
 	require.Contains(t, string(mainSource), "ConfigSchema: embeddedConfigSchema,")
 }
 
+func TestCompileWrapper(t *testing.T) {
+	cfg := newInitializedConfig(t)
+	cfg.SkipCompilation = true
+
+	require.NoError(t, Compile(cfg))
+}
+
+func TestGetModulesWrapper(t *testing.T) {
+	cfg := newInitializedConfig(t)
+	cfg.SkipGetModules = true
+
+	require.NoError(t, GetModules(cfg))
+}
+
 func TestGenerateInvalidOutputPath(t *testing.T) {
 	cfg := newInitializedConfig(t)
 	cfg.Distribution.OutputPath = ":/invalid"
@@ -575,6 +589,7 @@ func TestWriteEmbeddedSchemaSourceFile(t *testing.T) {
 	dir := t.TempDir()
 	require.NoError(t, writeEmbeddedSchemaSourceFile(dir, []byte(`{"type":"object"}`)))
 
+	// #nosec G304 -- dir is a test temporary directory
 	schemaSource, err := os.ReadFile(filepath.Join(dir, embeddedSchemaFileName))
 	require.NoError(t, err)
 	require.Contains(t, string(schemaSource), `var embeddedConfigSchema = []byte("{\"type\":\"object\"}")`)
@@ -746,6 +761,7 @@ func TestGenerateEmbeddedSchema(t *testing.T) {
 
 	require.NoError(t, generateEmbeddedSchemaWithDeps(cfg, defaultBuilderDeps()))
 
+	// #nosec G304 -- outputDir is a test temporary directory
 	schemaSource, err := os.ReadFile(filepath.Join(outputDir, embeddedSchemaFileName))
 	require.NoError(t, err)
 	require.Contains(t, string(schemaSource), "endpoint")
@@ -774,8 +790,10 @@ func TestGenerateEmbeddedSchemaWriteError(t *testing.T) {
 		"require example.com/receiver v0.0.1",
 		"replace example.com/receiver => " + componentDir,
 	})
+	// #nosec G302 -- intentionally set restrictive permissions to test write error
 	require.NoError(t, os.Chmod(outputDir, 0o500))
 	defer func() {
+		// #nosec G302 -- restoring permissions after test
 		_ = os.Chmod(outputDir, 0o700)
 	}()
 

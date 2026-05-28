@@ -51,10 +51,6 @@ var embeddedConfigSchema = %s
 	return os.WriteFile(filepath.Join(outputPath, embeddedSchemaFileName), source, 0o600)
 }
 
-func generateEmbeddedSchema(cfg *Config) error {
-	return generateEmbeddedSchemaWithDeps(cfg, defaultBuilderDeps())
-}
-
 func generateEmbeddedSchemaWithDeps(cfg *Config, deps builderDeps) error {
 	schema, err := buildEmbeddedSchema(cfg, func(modulePath string) (string, error) {
 		stdout, runErr := deps.runGoCommand(cfg, "list", "-m", "-f", "{{.Dir}}", modulePath)
@@ -146,14 +142,15 @@ func selectedComponentSchemaRefsImpl(cfg *Config) []componentSchemaRef {
 
 func loadCollectorComponentSchema(moduleDir string) (schemagen.CollectorComponentSchema, bool, error) {
 	metadataPath := filepath.Join(moduleDir, "metadata.yaml")
+	// #nosec G304 -- moduleDir is resolved from go mod list command output
 	metadataBytes, err := os.ReadFile(metadataPath)
 	if err != nil {
 		return schemagen.CollectorComponentSchema{}, false, fmt.Errorf("failed to read metadata.yaml: %w", err)
 	}
 
 	var metadata componentSchemaMetadata
-	if err := yaml.Unmarshal(metadataBytes, &metadata); err != nil {
-		return schemagen.CollectorComponentSchema{}, false, fmt.Errorf("failed to parse metadata.yaml: %w", err)
+	if unmarshalErr := yaml.Unmarshal(metadataBytes, &metadata); unmarshalErr != nil {
+		return schemagen.CollectorComponentSchema{}, false, fmt.Errorf("failed to parse metadata.yaml: %w", unmarshalErr)
 	}
 	if metadata.Type == "" {
 		return schemagen.CollectorComponentSchema{}, false, errors.New("metadata.yaml missing component type")
@@ -182,6 +179,7 @@ func loadCollectorComponentSchema(moduleDir string) (schemagen.CollectorComponen
 func readComponentSchemaFile(moduleDir string) ([]byte, string, bool, error) {
 	for _, schemaFileName := range componentSchemaFileNames {
 		schemaPath := filepath.Join(moduleDir, schemaFileName)
+		// #nosec G304 -- moduleDir is resolved from go mod list command output
 		schemaBytes, err := os.ReadFile(schemaPath)
 		if err == nil {
 			return schemaBytes, schemaFileName, true, nil
