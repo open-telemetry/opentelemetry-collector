@@ -17,7 +17,7 @@ func validateControllerConfig(set *ControllerConfig) (errs error) {
 		errs = multierr.Append(errs, errors.New(`"collection_interval": must be positive, or zero when controllers is non-empty`))
 	}
 	if set.Timeout < 0 {
-		errs = multierr.Append(errs, errors.New(`"timeout": must be non-negative`))
+		errs = multierr.Append(errs, errors.New(`"timeout": must be positive`))
 	}
 	seen := make(map[component.ID]int, len(set.Controllers))
 	for _, id := range set.Controllers {

@@ -35,7 +35,7 @@ func TestControllerConfigValidate(t *testing.T) {
 				CollectionInterval: time.Minute,
 				Timeout:            -time.Minute,
 			},
-			wantErr: `"timeout": must be non-negative`,
+			wantErr: `"timeout": must be positive`,
 		},
 		{
 			name: "zero interval with controllers",
