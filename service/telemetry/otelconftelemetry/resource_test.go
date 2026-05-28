@@ -4,11 +4,14 @@
 package otelconftelemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -108,24 +111,312 @@ func TestCreateResource(t *testing.T) {
 		assert.Contains(t, raw, "service.instance.id")
 		assert.Contains(t, raw, "service.version")
 	})
-	t.Run("with detectors for forward compatibility", func(t *testing.T) {
+	t.Run("with host detector", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
-		cfg.Resource.Detectors = &config.Detectors{
-			Attributes: &config.DetectorsAttributes{
-				Included: []string{"host", "os"},
+		cfg.Resource.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{
+			Attributes: &xotelconf.IncludeExclude{
+				Included: []string{"host.*", "os.*"},
 			},
-		}
-		cfg.Resource.Attributes = []config.AttributeNameValue{
-			{Name: "service.name", Value: "test-service"},
+			Detectors: []xotelconf.ExperimentalResourceDetector{
+				{Host: xotelconf.ExperimentalHostResourceDetector{}},
+			},
 		}
 		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
 		res, err := createResource(t.Context(), set, cfg)
 		require.NoError(t, err)
 
 		raw := res.Attributes().AsRaw()
-		assert.Contains(t, raw, "service.name")
-		assert.Equal(t, "test-service", raw["service.name"])
+		assert.Contains(t, raw, "host.name")
+		assert.Contains(t, raw, "os.type")
+		assert.Contains(t, raw, "os.description")
 	})
+	t.Run("with service detector explicit attributes still win", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Resource.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{
+			Attributes: &xotelconf.IncludeExclude{
+				Included: []string{"service.*"},
+			},
+			Detectors: []xotelconf.ExperimentalResourceDetector{
+				{Service: xotelconf.ExperimentalServiceResourceDetector{}},
+			},
+		}
+		cfg.Resource.Attributes = []config.AttributeNameValue{
+			{Name: "service.name", Value: "configured-service"},
+		}
+		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+		res, err := createResource(t.Context(), set, cfg)
+		require.NoError(t, err)
+
+		raw := res.Attributes().AsRaw()
+		assert.Equal(t, "configured-service", raw["service.name"])
+		assert.Contains(t, raw, "service.instance.id")
+	})
+	t.Run("service detector preserves collector defaults", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Resource.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{
+			Attributes: &xotelconf.IncludeExclude{
+				Included: []string{"service.*"},
+			},
+			Detectors: []xotelconf.ExperimentalResourceDetector{
+				{Service: xotelconf.ExperimentalServiceResourceDetector{}},
+			},
+		}
+
+		orig := defaultAttributeValues
+		t.Cleanup(func() { defaultAttributeValues = orig })
+		defaultAttributeValues = func(component.BuildInfo) (map[string]string, error) {
+			return map[string]string{
+				"service.name":        "collector-service",
+				"service.version":     "1.2.3",
+				"service.instance.id": "collector-instance",
+			}, nil
+		}
+
+		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+		res, err := createResource(t.Context(), set, cfg)
+		require.NoError(t, err)
+
+		raw := res.Attributes().AsRaw()
+		assert.Equal(t, "collector-service", raw["service.name"])
+		assert.Equal(t, "collector-instance", raw["service.instance.id"])
+		assert.Equal(t, "1.2.3", raw["service.version"])
+	})
+	t.Run("legacy nil suppresses detected attributes", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Resource.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{
+			Attributes: &xotelconf.IncludeExclude{
+				Included: []string{"host.*", "os.*"},
+			},
+			Detectors: []xotelconf.ExperimentalResourceDetector{
+				{Host: xotelconf.ExperimentalHostResourceDetector{}},
+			},
+		}
+		cfg.Resource.LegacyAttributes = map[string]any{}
+		cfg.Resource.LegacyAttributes["host.name"] = nil
+		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+		res, err := createResource(t.Context(), set, cfg)
+		require.NoError(t, err)
+
+		raw := res.Attributes().AsRaw()
+		assert.NotContains(t, raw, "host.name")
+		assert.Contains(t, raw, "os.type")
+	})
+	t.Run("attribute filters do not require detector names", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Resource.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{
+			Attributes: &xotelconf.IncludeExclude{
+				Included: []string{"process.*"},
+				Excluded: []string{"process.command_args"},
+			},
+			Detectors: []xotelconf.ExperimentalResourceDetector{
+				{Process: xotelconf.ExperimentalProcessResourceDetector{}},
+			},
+		}
+		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+		res, err := createResource(t.Context(), set, cfg)
+		require.NoError(t, err)
+
+		raw := res.Attributes().AsRaw()
+		assert.Contains(t, raw, "process.pid")
+		assert.NotContains(t, raw, "process.command_args")
+	})
+	t.Run("stable resource detectors remain ignored", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Resource.Detectors = &config.Detectors{
+			Attributes: &config.DetectorsAttributes{
+				Included: []string{"host.*", "os.*"},
+			},
+		}
+		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+		res, err := createResource(t.Context(), set, cfg)
+		require.NoError(t, err)
+
+		raw := res.Attributes().AsRaw()
+		assert.NotContains(t, raw, "host.name")
+		assert.NotContains(t, raw, "os.type")
+	})
+
+	t.Run("env resource defaults still apply with empty resource config", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		t.Setenv("OTEL_SERVICE_NAME", "env-service")
+		t.Setenv("OTEL_RESOURCE_ATTRIBUTES", "foo=bar,service.version=9.9.9")
+		t.Setenv(otelConfigFileEnv, "")
+		t.Setenv(otelExperimentalConfigFileEnv, "")
+
+		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+		res, err := createResource(t.Context(), set, cfg)
+		require.NoError(t, err)
+
+		raw := res.Attributes().AsRaw()
+		assert.Equal(t, "env-service", raw["service.name"])
+		assert.Equal(t, "9.9.9", raw["service.version"])
+		assert.Equal(t, "bar", raw["foo"])
+		assert.Contains(t, raw, "service.instance.id")
+	})
+
+	t.Run("OTEL_CONFIG_FILE overrides resource attributes and keeps detection", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Resource.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{
+			Attributes: &xotelconf.IncludeExclude{
+				Included: []string{"host.*"},
+			},
+			Detectors: []xotelconf.ExperimentalResourceDetector{
+				{Host: xotelconf.ExperimentalHostResourceDetector{}},
+			},
+		}
+
+		configFile := t.TempDir() + "/otel.yaml"
+		require.NoError(t, os.WriteFile(configFile, []byte(`
+file_format: "0.4"
+resource:
+  attributes:
+    - name: service.name
+      value: config-file-service
+`), 0o600))
+
+		t.Setenv(otelConfigFileEnv, configFile)
+		t.Setenv(otelExperimentalConfigFileEnv, "")
+
+		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+		res, err := createResource(t.Context(), set, cfg)
+		require.NoError(t, err)
+
+		raw := res.Attributes().AsRaw()
+		assert.Equal(t, "config-file-service", raw["service.name"])
+		assert.Contains(t, raw, "host.name")
+	})
+
+	t.Run("OTEL_CONFIG_FILE resource attributes keep precedence over configured attributes", func(t *testing.T) {
+		configFile := t.TempDir() + "/otel.yaml"
+		require.NoError(t, os.WriteFile(configFile, []byte(`
+file_format: "0.4"
+resource:
+  attributes:
+    - name: service.name
+      value: config-file-service
+    - name: service.version
+      value: config-file-version
+`), 0o600))
+		t.Setenv(otelConfigFileEnv, configFile)
+		t.Setenv(otelExperimentalConfigFileEnv, "")
+
+		t.Run("new format attributes do not overwrite env config", func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Resource.Attributes = []config.AttributeNameValue{
+				{Name: "service.name", Value: "collector-service"},
+				{Name: "service.version", Value: "collector-version"},
+			}
+
+			set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+			res, err := createResource(t.Context(), set, cfg)
+			require.NoError(t, err)
+
+			raw := res.Attributes().AsRaw()
+			assert.Equal(t, "config-file-service", raw["service.name"])
+			assert.Equal(t, "config-file-version", raw["service.version"])
+		})
+
+		t.Run("legacy inline attributes do not overwrite or suppress env config", func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Resource.LegacyAttributes = map[string]any{
+				"service.name":    "collector-service",
+				"service.version": nil,
+			}
+
+			set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+			res, err := createResource(t.Context(), set, cfg)
+			require.NoError(t, err)
+
+			raw := res.Attributes().AsRaw()
+			assert.Equal(t, "config-file-service", raw["service.name"])
+			assert.Equal(t, "config-file-version", raw["service.version"])
+		})
+	})
+
+	t.Run("OTEL_CONFIG_FILE attributes_list keeps precedence over collector defaults", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Resource.Attributes = []config.AttributeNameValue{
+			{Name: "service.name", Value: "collector-service"},
+		}
+
+		configFile := t.TempDir() + "/otel.yaml"
+		require.NoError(t, os.WriteFile(configFile, []byte(`
+file_format: "0.4"
+resource:
+  attributes_list: service.name=config-file-service,foo=bar
+`), 0o600))
+		t.Setenv(otelConfigFileEnv, configFile)
+		t.Setenv(otelExperimentalConfigFileEnv, "")
+
+		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+		res, err := createResource(t.Context(), set, cfg)
+		require.NoError(t, err)
+
+		raw := res.Attributes().AsRaw()
+		assert.Equal(t, "config-file-service", raw["service.name"])
+		assert.Equal(t, "bar", raw["foo"])
+	})
+
+	t.Run("OTEL_CONFIG_FILE attributes_list keeps precedence over detected attributes", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Resource.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{
+			Attributes: &xotelconf.IncludeExclude{
+				Included: []string{"service.*"},
+			},
+			Detectors: []xotelconf.ExperimentalResourceDetector{
+				{Service: xotelconf.ExperimentalServiceResourceDetector{}},
+			},
+		}
+
+		configFile := t.TempDir() + "/otel.yaml"
+		require.NoError(t, os.WriteFile(configFile, []byte(`
+file_format: "0.4"
+resource:
+  attributes_list: service.name=config-file-service,service.instance.id=config-file-instance
+`), 0o600))
+		t.Setenv(otelConfigFileEnv, configFile)
+		t.Setenv(otelExperimentalConfigFileEnv, "")
+
+		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+		res, err := createResource(t.Context(), set, cfg)
+		require.NoError(t, err)
+
+		raw := res.Attributes().AsRaw()
+		assert.Equal(t, "config-file-service", raw["service.name"])
+		assert.Equal(t, "config-file-instance", raw["service.instance.id"])
+	})
+
+	t.Run("OTEL_EXPERIMENTAL_CONFIG_FILE keeps env precedence and collector detection", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Resource.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{
+			Attributes: &xotelconf.IncludeExclude{
+				Included: []string{"host.*"},
+			},
+			Detectors: []xotelconf.ExperimentalResourceDetector{
+				{Host: xotelconf.ExperimentalHostResourceDetector{}},
+			},
+		}
+
+		configFile := t.TempDir() + "/otel-experimental.yaml"
+		require.NoError(t, os.WriteFile(configFile, []byte(`
+file_format: "0.4"
+resource:
+  attributes:
+    - name: service.name
+      value: experimental-config-service
+`), 0o600))
+		t.Setenv(otelExperimentalConfigFileEnv, configFile)
+		t.Setenv(otelConfigFileEnv, "")
+
+		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+		res, err := createResource(t.Context(), set, cfg)
+		require.NoError(t, err)
+
+		raw := res.Attributes().AsRaw()
+		assert.Equal(t, "experimental-config-service", raw["service.name"])
+		assert.Contains(t, raw, "host.name")
+	})
+
 	t.Run("with typed attributes", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		cfg.Resource.Attributes = []config.AttributeNameValue{
@@ -194,6 +485,101 @@ func TestCreateResource_DefaultAttributeValuesError(t *testing.T) {
 	assert.Equal(t, pcommon.Resource{}, res)
 }
 
+func TestCreateResource_ExperimentalSDKError(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+
+	orig := newExperimentalSDK
+	t.Cleanup(func() { newExperimentalSDK = orig })
+	newExperimentalSDK = func(...xotelconf.ConfigurationOption) (xotelconf.SDK, error) {
+		return xotelconf.SDK{}, assert.AnError
+	}
+
+	res, err := createResource(t.Context(), set, cfg)
+	require.ErrorIs(t, err, assert.AnError)
+	assert.Equal(t, pcommon.Resource{}, res)
+}
+
+func TestCreateResource_PutAttributeValueError(t *testing.T) {
+	t.Run("default attributes", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+
+		orig := putAttributeValue
+		t.Cleanup(func() { putAttributeValue = orig })
+		putAttributeValue = func(_ pcommon.Map, key string, _ any) error {
+			if key == string(semconv.ServiceNameKey) {
+				return assert.AnError
+			}
+			return nil
+		}
+
+		_, err := createResource(t.Context(), set, cfg)
+		require.ErrorIs(t, err, assert.AnError)
+	})
+
+	t.Run("detected attributes", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Resource.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{
+			Attributes: &xotelconf.IncludeExclude{
+				Included: []string{"host.*", "os.*"},
+			},
+			Detectors: []xotelconf.ExperimentalResourceDetector{
+				{Host: xotelconf.ExperimentalHostResourceDetector{}},
+			},
+		}
+		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+
+		orig := putAttributeValue
+		t.Cleanup(func() { putAttributeValue = orig })
+		putAttributeValue = func(_ pcommon.Map, key string, _ any) error {
+			if key == string(semconv.HostNameKey) {
+				return assert.AnError
+			}
+			return nil
+		}
+
+		_, err := createResource(t.Context(), set, cfg)
+		require.ErrorIs(t, err, assert.AnError)
+	})
+
+	t.Run("legacy attributes", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Resource.LegacyAttributes = map[string]any{"legacy.attr": "value"}
+		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+
+		orig := putAttributeValue
+		t.Cleanup(func() { putAttributeValue = orig })
+		putAttributeValue = func(_ pcommon.Map, key string, _ any) error {
+			if key == "legacy.attr" {
+				return assert.AnError
+			}
+			return nil
+		}
+
+		_, err := createResource(t.Context(), set, cfg)
+		require.ErrorIs(t, err, assert.AnError)
+	})
+
+	t.Run("configured attributes", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Resource.Attributes = []config.AttributeNameValue{{Name: "configured.attr", Value: "value"}}
+		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+
+		orig := putAttributeValue
+		t.Cleanup(func() { putAttributeValue = orig })
+		putAttributeValue = func(_ pcommon.Map, key string, _ any) error {
+			if key == "configured.attr" {
+				return assert.AnError
+			}
+			return nil
+		}
+
+		_, err := createResource(t.Context(), set, cfg)
+		require.ErrorIs(t, err, assert.AnError)
+	})
+}
+
 func TestDefaultAttributeValues(t *testing.T) {
 	buildInfo := component.BuildInfo{
 		Command: "otelcol",
@@ -224,39 +610,115 @@ func TestDefaultAttributeValues(t *testing.T) {
 func TestCreateInitialResourceConfig(t *testing.T) {
 	t.Run("empty config defaults", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config).Resource
-		resourceConfig, err := createInitialResourceConfig(component.BuildInfo{Command: "cmd", Version: "1.0.0"}, &cfg)
+		resourceConfig, err := createInitialResourceConfig(t.Context(), component.BuildInfo{Command: "cmd", Version: "1.0.0"}, &cfg)
 		require.NoError(t, err)
-		assert.NotNil(t, resourceConfig.SchemaUrl)
-		assert.NotEmpty(t, resourceConfig.Attributes)
+		assert.Nil(t, resourceConfig.SchemaUrl)
+		assert.Empty(t, resourceConfig.Attributes)
+		assert.Nil(t, resourceConfig.DetectionDevelopment)
 	})
 
-	t.Run("legacy removed default", func(t *testing.T) {
+	t.Run("with supported detectors", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config).Resource
-		legacy := confmap.NewFromStringMap(map[string]any{
-			"service.name":        nil,
-			"service.version":     nil,
-			"service.instance.id": nil,
-		})
-		require.NoError(t, legacy.Unmarshal(&cfg))
-		resourceConfig, err := createInitialResourceConfig(component.BuildInfo{Command: "cmd", Version: "1.0.0"}, &cfg)
-		require.NoError(t, err)
-		for _, attr := range resourceConfig.Attributes {
-			assert.NotContains(t, []string{"service.name", "service.version", "service.instance.id"}, attr.Name)
-		}
-	})
-
-	t.Run("default values error", func(t *testing.T) {
-		cfg := createDefaultConfig().(*Config).Resource
-
-		orig := defaultAttributeValues
-		t.Cleanup(func() { defaultAttributeValues = orig })
-		defaultAttributeValues = func(component.BuildInfo) (map[string]string, error) {
-			return nil, assert.AnError
+		cfg.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{
+			Attributes: &xotelconf.IncludeExclude{
+				Included: []string{"container.*", "host.*", "os.*", "process.*", "service.*"},
+			},
+			Detectors: []xotelconf.ExperimentalResourceDetector{
+				{Container: xotelconf.ExperimentalContainerResourceDetector{}},
+				{Host: xotelconf.ExperimentalHostResourceDetector{}},
+				{Process: xotelconf.ExperimentalProcessResourceDetector{}},
+				{Service: xotelconf.ExperimentalServiceResourceDetector{}},
+			},
 		}
 
-		_, err := createInitialResourceConfig(component.BuildInfo{Command: "cmd", Version: "1.0.0"}, &cfg)
-		require.ErrorContains(t, err, assert.AnError.Error())
+		resourceConfig, err := createInitialResourceConfig(t.Context(), component.BuildInfo{Command: "cmd", Version: "1.0.0"}, &cfg)
+		require.NoError(t, err)
+		require.NotNil(t, resourceConfig.DetectionDevelopment)
+		assert.Len(t, resourceConfig.DetectionDevelopment.Detectors, 4)
 	})
+
+	t.Run("experimental detection config is preserved", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config).Resource
+		cfg.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{
+			Attributes: &xotelconf.IncludeExclude{
+				Included: []string{"host.*", "process.*"},
+				Excluded: []string{"host.*"},
+			},
+			Detectors: []xotelconf.ExperimentalResourceDetector{
+				{Host: xotelconf.ExperimentalHostResourceDetector{}},
+				{Process: xotelconf.ExperimentalProcessResourceDetector{}},
+			},
+		}
+
+		resourceConfig, err := createInitialResourceConfig(t.Context(), component.BuildInfo{Command: "cmd", Version: "1.0.0"}, &cfg)
+		require.NoError(t, err)
+		require.NotNil(t, resourceConfig.DetectionDevelopment)
+		assert.Len(t, resourceConfig.DetectionDevelopment.Detectors, 2)
+		assert.Equal(t, cfg.DetectionDevelopment.Attributes, resourceConfig.DetectionDevelopment.Attributes)
+	})
+
+	t.Run("unknown attribute patterns are ignored", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config).Resource
+		cfg.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{
+			Attributes: &xotelconf.IncludeExclude{
+				Included: []string{"custom.attr"},
+			},
+			Detectors: []xotelconf.ExperimentalResourceDetector{
+				{Host: xotelconf.ExperimentalHostResourceDetector{}},
+			},
+		}
+
+		resourceConfig, err := createInitialResourceConfig(t.Context(), component.BuildInfo{Command: "cmd", Version: "1.0.0"}, &cfg)
+		require.NoError(t, err)
+		require.NotNil(t, resourceConfig.DetectionDevelopment)
+		assert.Len(t, resourceConfig.DetectionDevelopment.Detectors, 1)
+	})
+}
+
+func TestSuppressedLegacyAttributes(t *testing.T) {
+	assert.Equal(t, map[string]struct{}{
+		"service.name": {},
+		"host.name":    {},
+	}, suppressedLegacyAttributes(map[string]any{
+		"service.name": nil,
+		"host.name":    "custom-host",
+	}))
+}
+
+func TestNormalizeAttributeValue(t *testing.T) {
+	assert.Equal(t, true, normalizeAttributeValue(true))
+	assert.Equal(t, int64(7), normalizeAttributeValue(int64(7)))
+	assert.Equal(t, "7", normalizeAttributeValue(uint64(7)))
+	assert.Equal(t, int64(7), normalizeAttributeValue(int8(7)))
+	assert.Equal(t, int64(7), normalizeAttributeValue(uint8(7)))
+	assert.Equal(t, int64(7), normalizeAttributeValue(int16(7)))
+	assert.Equal(t, int64(7), normalizeAttributeValue(uint16(7)))
+	assert.Equal(t, int64(7), normalizeAttributeValue(int32(7)))
+	assert.Equal(t, int64(7), normalizeAttributeValue(uint32(7)))
+	assert.InDelta(t, 7.5, normalizeAttributeValue(float32(7.5)), 0.001)
+	assert.Equal(t, int64(7), normalizeAttributeValue(int(7)))
+	assert.Equal(t, "7", normalizeAttributeValue(uint(7)))
+	assert.Equal(t, "<nil>", normalizeAttributeValue(nil))
+	assert.Equal(t, "(1+2i)", normalizeAttributeValue(complex(1, 2)))
+}
+
+func TestResourceAttributeListKeys(t *testing.T) {
+	keys, err := resourceAttributeListKeys(nil)
+	require.NoError(t, err)
+	assert.Nil(t, keys)
+
+	attributesList := " service.name = svc ,foo=bar,=skip"
+	keys, err = resourceAttributeListKeys(&attributesList)
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []string{"service.name", "foo"}, keys)
+
+	values, err := resourceAttributeListValuesFromString(&attributesList)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{"service.name": "svc", "foo": "bar"}, values)
+
+	invalidAttributesList := "service.name"
+	_, err = resourceAttributeListKeys(&invalidAttributesList)
+	require.ErrorContains(t, err, `invalid resource.attributes_list entry "service.name": missing '='`)
 }
 
 func TestResourceConfigValidateAttributesListUnsupported(t *testing.T) {
@@ -267,6 +729,19 @@ func TestResourceConfigValidateAttributesListUnsupported(t *testing.T) {
 	require.NoError(t, conf.Unmarshal(&cfg))
 	err := xconfmap.Validate(&cfg)
 	require.ErrorContains(t, err, "resource::attributes_list is not currently supported")
+}
+
+func TestCreateInitialResourceConfigRejectsInvalidResourceDetectionGlob(t *testing.T) {
+	cfg := migration.ResourceConfigV030{
+		DetectionDevelopment: &xotelconf.ExperimentalResourceDetection{
+			Attributes: &xotelconf.IncludeExclude{
+				Included: []string{"["},
+			},
+		},
+	}
+
+	_, err := createInitialResourceConfig(t.Context(), component.BuildInfo{}, &cfg)
+	require.ErrorContains(t, err, `resource::detection/development::attributes::included contains invalid glob "["`)
 }
 
 func TestCreateFixedResourceConfig(t *testing.T) {
@@ -292,6 +767,76 @@ func TestCreateFixedResourceConfig(t *testing.T) {
 	t.Run("missing resource errors", func(t *testing.T) {
 		_, err := createFixedResourceConfig(&cfg.Resource, nil)
 		require.ErrorIs(t, err, errMissingCollectorResource)
+	})
+
+	t.Run("effective schema url from OTEL_CONFIG_FILE is preserved", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		configFile := t.TempDir() + "/otel.yaml"
+		require.NoError(t, os.WriteFile(configFile, []byte(`
+file_format: "0.4"
+resource:
+  schema_url: https://opentelemetry.io/schemas/1.38.0
+  attributes:
+    - name: service.name
+      value: config-file-service
+`), 0o600))
+		t.Setenv(otelConfigFileEnv, configFile)
+		t.Setenv(otelExperimentalConfigFileEnv, "")
+
+		res, err := createResource(t.Context(), set, cfg)
+		require.NoError(t, err)
+
+		resourceConfig, err := createFixedResourceConfig(&cfg.Resource, &res)
+		require.NoError(t, err)
+		require.NotNil(t, resourceConfig.SchemaUrl)
+		assert.Equal(t, "https://opentelemetry.io/schemas/1.38.0", *resourceConfig.SchemaUrl)
+		for _, attr := range resourceConfig.Attributes {
+			assert.NotEqual(t, internalSchemaURLAttributeKey, attr.Name)
+		}
+	})
+
+	t.Run("schema url from OTEL_CONFIG_FILE does not leak to later calls", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		configFile := t.TempDir() + "/otel.yaml"
+		require.NoError(t, os.WriteFile(configFile, []byte(`
+file_format: "0.4"
+resource:
+  schema_url: https://opentelemetry.io/schemas/1.38.0
+`), 0o600))
+		t.Setenv(otelConfigFileEnv, configFile)
+		t.Setenv(otelExperimentalConfigFileEnv, "")
+
+		res, err := createResource(t.Context(), set, cfg)
+		require.NoError(t, err)
+
+		resourceConfig, err := createFixedResourceConfig(&cfg.Resource, &res)
+		require.NoError(t, err)
+		require.NotNil(t, resourceConfig.SchemaUrl)
+		assert.Equal(t, "https://opentelemetry.io/schemas/1.38.0", *resourceConfig.SchemaUrl)
+
+		t.Setenv(otelConfigFileEnv, "")
+		res, err = createResource(t.Context(), set, cfg)
+		require.NoError(t, err)
+
+		resourceConfig, err = createFixedResourceConfig(&cfg.Resource, &res)
+		require.NoError(t, err)
+		require.NotNil(t, resourceConfig.SchemaUrl)
+		assert.Equal(t, *cfg.Resource.SchemaUrl, *resourceConfig.SchemaUrl)
+	})
+
+	t.Run("invalid OTEL_CONFIG_FILE attributes_list errors", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		configFile := t.TempDir() + "/otel.yaml"
+		require.NoError(t, os.WriteFile(configFile, []byte(`
+file_format: "0.4"
+resource:
+  attributes_list: service.name
+`), 0o600))
+		t.Setenv(otelConfigFileEnv, configFile)
+		t.Setenv(otelExperimentalConfigFileEnv, "")
+
+		_, err := createResource(t.Context(), set, cfg)
+		require.ErrorContains(t, err, `invalid resource.attributes_list entry "service.name": missing '='`)
 	})
 }
 

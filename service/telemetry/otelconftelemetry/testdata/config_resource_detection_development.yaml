@@ -1,0 +1,13 @@
+resource:
+  attributes:
+    - name: foo
+      value: bar
+  detection/development:
+    attributes:
+      included:
+        - host.*
+        - os.*
+      excluded:
+        - os.description
+    detectors:
+      - host:

@@ -7,6 +7,8 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry/internal/migration"
 )
 
@@ -48,6 +50,43 @@ type TracesConfig = migration.TracesConfigV030
 // Experimental: *NOTE* this structure is subject to change or removal in the future.
 type ResourceConfig = migration.ResourceConfigV030
 
+func (c *Config) Unmarshal(conf *confmap.Conf) error {
+	type rawConfig struct {
+		Logs     LogsConfig     `mapstructure:"logs"`
+		Metrics  MetricsConfig  `mapstructure:"metrics"`
+		Traces   TracesConfig   `mapstructure:"traces,omitempty"`
+		Resource map[string]any `mapstructure:"resource,omitempty"`
+	}
+
+	raw := rawConfig{
+		Logs:    c.Logs,
+		Metrics: c.Metrics,
+		Traces:  c.Traces,
+	}
+	if err := conf.Unmarshal(&raw); err != nil {
+		return err
+	}
+
+	c.Logs = raw.Logs
+	c.Metrics = raw.Metrics
+	c.Traces = raw.Traces
+
+	resourceConf, err := conf.Sub("resource")
+	if err != nil {
+		return err
+	}
+	if resourceConf == nil || resourceConf.ToStringMap() == nil {
+		return nil
+	}
+
+	resourceCfg := c.Resource
+	if err := resourceCfg.Unmarshal(resourceConf); err != nil {
+		return err
+	}
+	c.Resource = resourceCfg
+	return nil
+}
+
 // Validate checks whether the current configuration is valid
 func (c *Config) Validate() error {
 	// Check when service telemetry metric level is not none, the metrics readers should not be empty
@@ -57,6 +96,10 @@ func (c *Config) Validate() error {
 
 	if c.Metrics.Views != nil && c.Metrics.Level != configtelemetry.LevelDetailed {
 		return errors.New("service::telemetry::metrics::views can only be set when service::telemetry::metrics::level is detailed")
+	}
+
+	if err := xconfmap.Validate(&c.Resource); err != nil {
+		return err
 	}
 
 	return nil
