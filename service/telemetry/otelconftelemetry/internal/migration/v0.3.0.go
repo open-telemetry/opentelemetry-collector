@@ -266,8 +266,10 @@ type ResourceConfigV030 struct {
 	LegacyAttributes     map[string]any                           `mapstructure:",remain"`
 }
 
-var _ xconfmap.Validator = (*ResourceConfigV030)(nil)
-var _ confmap.Marshaler = ResourceConfigV030{}
+var (
+	_ xconfmap.Validator = (*ResourceConfigV030)(nil)
+	_ confmap.Marshaler  = ResourceConfigV030{}
+)
 
 func (cfg *ResourceConfigV030) Unmarshal(conf *confmap.Conf) error {
 	type rawResourceConfigV030 struct {

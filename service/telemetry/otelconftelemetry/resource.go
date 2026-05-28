@@ -46,8 +46,10 @@ var defaultAttributeValues = func(buildInfo component.BuildInfo) (map[string]str
 	}, nil
 }
 
-var newExperimentalSDK = xotelconf.NewSDK
-var experimentalSDKEnvMu sync.Mutex
+var (
+	newExperimentalSDK   = xotelconf.NewSDK
+	experimentalSDKEnvMu sync.Mutex
+)
 
 var putAttributeValue = func(attrs pcommon.Map, key string, value any) error {
 	return attrs.PutEmpty(key).FromRaw(value)
