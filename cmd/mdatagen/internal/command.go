@@ -343,7 +343,10 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 			}
 			return result
 		},
-		"casesTitle":  cases.Title(language.English).String,
+		"casesTitle": cases.Title(language.English).String,
+		"uncapitalize": func(s string) string {
+			return strings.ToLower(s[:1]) + s[1:]
+		},
 		"toLowerCase": strings.ToLower,
 		"toCamelCase": func(s string) string {
 			return joinCamelCase(strings.Split(s, "_"), true)

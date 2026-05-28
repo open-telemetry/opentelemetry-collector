@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// ControllerConfig Common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed.
+// ControllerConfig defines common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed.
 type ControllerConfig struct {
 	// Sets how frequently the scraper should be called and used as the context timeout to ensure that scrapers don't exceed the interval.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
