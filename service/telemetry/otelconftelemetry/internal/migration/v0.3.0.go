@@ -341,11 +341,7 @@ func (cfg ResourceConfigV030) Marshal(conf *confmap.Conf) error {
 		LegacyAttributes     map[string]any                           `mapstructure:",remain"`
 	}
 
-	if err := conf.Marshal(rawResourceConfigV030{
-		Resource:             cfg.Resource,
-		DetectionDevelopment: cfg.DetectionDevelopment,
-		LegacyAttributes:     cfg.LegacyAttributes,
-	}); err != nil {
+	if err := conf.Marshal(rawResourceConfigV030(cfg)); err != nil {
 		return fmt.Errorf("otelconftelemetry: failed to marshal resource configuration: %w", err)
 	}
 

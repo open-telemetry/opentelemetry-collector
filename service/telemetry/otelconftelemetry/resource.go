@@ -307,6 +307,7 @@ func callExperimentalSDK(opts ...xotelconf.ConfigurationOption) (xotelconf.SDK, 
 }
 
 func parseOpenTelemetryConfigFile(filename string) (*xotelconf.OpenTelemetryConfiguration, error) {
+	// #nosec G304 -- filename is a user-provided configuration file path
 	b, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
