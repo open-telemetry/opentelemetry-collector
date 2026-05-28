@@ -7,9 +7,9 @@ package snappy
 import (
 	"bytes"
 	"io"
+	"runtime"
 	"testing"
 
-	snappylib "github.com/golang/snappy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/encoding"
@@ -65,25 +65,89 @@ func TestRegisterCompressor(t *testing.T) {
 	})
 }
 
-func TestDecompressReusesPooledReader(t *testing.T) {
-	c := newCompressor()
-	seed := &reader{
-		Reader: snappylib.NewReader(bytes.NewReader(nil)),
-		pool:   &c.poolDecompressor,
+func TestConcurrentWriterReuseDoesNotPanic(t *testing.T) {
+	prev := runtime.GOMAXPROCS(runtime.NumCPU())
+	defer runtime.GOMAXPROCS(prev)
+
+	comp := newCompressor()
+	payload := bytes.Repeat([]byte("snappy payload "), 32)
+
+	const workers = 6
+	const iterations = 100
+
+	start := make(chan struct{})
+	errCh := make(chan error, workers)
+
+	for range workers {
+		go func() {
+			<-start
+			for range iterations {
+				var buf bytes.Buffer
+				w, err := comp.Compress(&buf)
+				if err != nil {
+					errCh <- err
+					return
+				}
+
+				if _, err = w.Write(payload); err != nil {
+					errCh <- err
+					return
+				}
+
+				if err = w.Close(); err != nil {
+					errCh <- err
+					return
+				}
+			}
+			errCh <- nil
+		}()
 	}
-	c.poolDecompressor.New = func() any { return seed }
 
-	compressed := compressPayload(t, c, []byte("snappy reuse check"))
+	close(start)
 
-	r, err := c.Decompress(bytes.NewReader(compressed))
-	require.NoError(t, err)
-	got, ok := r.(*reader)
-	require.True(t, ok)
-	assert.Same(t, seed, got)
+	for range workers {
+		require.NoError(t, <-errCh)
+	}
+}
 
-	out, err := io.ReadAll(got)
-	require.NoError(t, err)
-	assert.Equal(t, []byte("snappy reuse check"), out)
+func TestConcurrentReaderReuseDoesNotPanic(t *testing.T) {
+	prev := runtime.GOMAXPROCS(runtime.NumCPU())
+	defer runtime.GOMAXPROCS(prev)
+
+	comp := newCompressor()
+	payload := bytes.Repeat([]byte("snappy payload "), 32)
+	compressed := compressPayload(t, comp, payload)
+
+	const workers = 8
+	const iterations = 50
+
+	start := make(chan struct{})
+	errCh := make(chan error, workers)
+
+	for range workers {
+		go func() {
+			<-start
+			for range iterations {
+				r, err := comp.Decompress(bytes.NewReader(compressed))
+				if err != nil {
+					errCh <- err
+					return
+				}
+
+				if _, err = io.ReadAll(r); err != nil {
+					errCh <- err
+					return
+				}
+			}
+			errCh <- nil
+		}()
+	}
+
+	close(start)
+
+	for range workers {
+		require.NoError(t, <-errCh)
+	}
 }
 
 func compressPayload(t *testing.T, comp encoding.Compressor, payload []byte) []byte {

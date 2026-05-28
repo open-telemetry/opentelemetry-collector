@@ -3,7 +3,6 @@
 type: sample
 display_name: Sample Scraper
 description: This scraper is used for testing purposes to check the output of mdatagen.
-reaggregation_enabled: true
 override_value_enabled: true
 github_project: open-telemetry/opentelemetry-collector
 
@@ -22,10 +21,19 @@ status:
   warnings:
     - Any additional information that should be brought to the consumer's attention
 
+exported_configs:
+  sample_pkg:
+    $ref: ../samplepkg.sample_config
+
 config:
   type: object
   description: Configuration for the Sample Scraper.
   properties:
+    controller_config:
+      $ref: /scraper/scraperhelper.controller_config
+      embed: true
+      go_struct:
+        anonymous: true
     metrics_builder_config:
       $ref: ./internal/metadata.metrics_builder_config
       embed: true
@@ -60,6 +68,18 @@ config:
             default:
               option1: value1
               option2: value2
+          retry_count:
+            description: Number of retry attempts for failed scrapes.
+            type: integer
+            default: 3
+            minimum: 0
+            maximum: 10
+          timeout_seconds:
+            description: Timeout in seconds for each scrape request.
+            type: number
+            default: 5.0
+            exclusiveMinimum: 0
+            exclusiveMaximum: 30
         required: [labels]
       default:
         - {} # one item with default values

@@ -142,12 +142,11 @@ This lets users:
 
 ### Metric Reaggregation Configuration
 
-Set `reaggregation_enabled: true` to let users reduce metric cardinality by dropping selected metric
-attributes and aggregating the resulting datapoints.
+By default, `mdatagen` lets users reduce metric cardinality by dropping selected metric
+attributes and aggregating the resulting datapoints. Set `reaggregation_enabled: false`
+to generate metric config with only the `enabled` field.
 
 ```yaml
-reaggregation_enabled: true
-
 attributes:
   transport:
     description: Transport used by the request.
@@ -198,13 +197,13 @@ status:
     beta: [metrics, traces]
 
 feature_gates:
-  - id: mycomponent.newFeature
+  - id: receiver.mycomponent.newFeature
     description: 'Enables new feature functionality that improves performance'
     stage: alpha
     from_version: 'v0.100.0'
     reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/issues/12345'
 
-  - id: mycomponent.stableFeature
+  - id: receiver.mycomponent.stableFeature
     description: 'A feature that has reached stability'
     stage: stable
     from_version: 'v0.90.0'
@@ -222,6 +221,13 @@ This will generate a "Feature Gates" section in the component's `documentation.m
 - **Reference**: Link to additional contextual information
 
 The feature gate definitions should correspond to actual gates registered in your component code using the [Feature Gates API](../../featuregate/README.md).
+
+By default, mdatagen applies strict validation to feature gate entries:
+
+- Every gate `id` must be prefixed with `<status.class>.<type>.` (e.g. `receiver.mycomponent.newFeature`), so gates are namespaced to the component that owns them.
+- Every `reference_url` must be a GitHub issue URL of the form `https://github.com/<owner>/<repo>/issues/<number>`. Pull requests, blog posts, and other URLs are rejected.
+
+Individual gates that predate these rules can be grandfathered in by setting `skip_strict_validation: true` on the gate entry itself. New gates should not set this flag.
 
 ### Generate multiple metadata packages
 

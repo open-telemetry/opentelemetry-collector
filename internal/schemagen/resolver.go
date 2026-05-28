@@ -67,6 +67,7 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 		customDescription := current.Description
 		customDefault := current.Default
 		customEnum := current.Enum
+		customInternalOnly := current.InternalOnly
 
 		finalRef := current.Ref
 		resolved, err := r.resolveRef(root, current, origin)
@@ -95,6 +96,7 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 		newCurrent.ResolvedFrom = finalRef
 		newCurrent.GoStruct = current.GoStruct
 		newCurrent.Embed = current.Embed
+		newCurrent.InternalOnly = customInternalOnly
 
 		// Restore custom extensions if they were explicitly set on the reference
 		if customGoType != "" {
@@ -185,10 +187,7 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 	}
 	handleEmbeddedStructs(target)
 	enhanceTimeTypes(target)
-
-	if len(target.Properties) > 0 {
-		cleanupDefs(target)
-	}
+	cleanupInternalDefs(target)
 
 	return nil
 }
@@ -203,21 +202,11 @@ func (r *Resolver) resolveRef(root, current *ConfigMetadata, origin *Ref) (*Conf
 		return nil, fmt.Errorf("invalid reference format %q: %w", current.Ref, err)
 	}
 
-	if ref.IsInternal() {
-		if root.Defs != nil {
-			if val, ok := root.Defs[ref.DefName()]; ok {
-				return val, nil
-			}
-		}
+	if def, ok := lookupRootDef(root, current, ref); ok {
+		return def, nil
 	}
 
 	if ref.IsLocal() {
-		// Local refs whose def is already in root.$defs (injected by the caller) can be resolved without loading a file.
-		if root.Defs != nil {
-			if val, ok := root.Defs[ref.DefName()]; ok {
-				return val, nil
-			}
-		}
 		return r.loadExternalRef(ref)
 	}
 
@@ -230,6 +219,17 @@ func (r *Resolver) resolveRef(root, current *ConfigMetadata, origin *Ref) (*Conf
 	current.GoType = current.Ref
 	current.Comment = "Uses `any` type."
 	return current, nil
+}
+
+func lookupRootDef(root, current *ConfigMetadata, ref *Ref) (*ConfigMetadata, bool) {
+	if root.Defs == nil || (!ref.IsInternal() && !ref.IsLocal()) {
+		return nil, false
+	}
+	def, ok := root.Defs[ref.DefName()]
+	if !ok || def == current {
+		return nil, false
+	}
+	return def, ok
 }
 
 // loadExternalRef uses SchemaLoader to load external references
@@ -290,17 +290,13 @@ func enhanceTimeTypes(md *ConfigMetadata) {
 	}
 }
 
-func cleanupDefs(md *ConfigMetadata) {
-	if md.Defs == nil {
-		// nothing to do here
-		return
-	}
-	defs := make(map[string]*ConfigMetadata)
+func cleanupInternalDefs(md *ConfigMetadata) {
 	for name, def := range md.Defs {
-		// if is an alias
-		if def.ResolvedFrom != "" {
-			defs[name] = def
+		if def != nil && def.InternalOnly {
+			delete(md.Defs, name)
 		}
 	}
-	md.Defs = defs
+	if len(md.Defs) == 0 {
+		md.Defs = nil
+	}
 }

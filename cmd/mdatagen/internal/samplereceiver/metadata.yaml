@@ -3,7 +3,6 @@
 type: sample
 display_name: Sample Receiver
 description: This receiver is used for testing purposes to check the output of mdatagen.
-reaggregation_enabled: true
 override_value_enabled: true
 scope_name: go.opentelemetry.io/collector/internal/receiver/samplereceiver
 github_project: open-telemetry/opentelemetry-collector
@@ -54,6 +53,8 @@ config:
       type: string
       format: duration
       default: 10s
+    sample_pkg:
+      $ref: ../samplepkg.sample_config
   required: [endpoint]
 
 resource_attributes:
