@@ -166,7 +166,7 @@ func (ms *SystemMemoryLinuxAvailableMetricConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-// MetricsConfig provides config for sample metrics.
+// MetricsConfig provides config for samplemigration metrics.
 type MetricsConfig struct {
 	LinuxMemoryAvailable       LinuxMemoryAvailableMetricConfig       `mapstructure:"linux.memory.available"`
 	SystemCPUFoo               SystemCPUFooMetricConfig               `mapstructure:"system.cpu.foo"`
@@ -199,7 +199,7 @@ func DefaultMetricsConfig() MetricsConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for sample metrics builder.
+// MetricsBuilderConfig is a configuration for samplemigration metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
 }

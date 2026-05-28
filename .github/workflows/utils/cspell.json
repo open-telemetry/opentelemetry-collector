@@ -439,6 +439,7 @@
       "sampleentity",
       "sampleentityreceiver",
       "samplefactoryreceiver",
+      "samplemigration",
       "samplereceiver",
       "samplepkg",
       "samplingdecision",

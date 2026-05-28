@@ -61,14 +61,14 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			if tt.name == "all_set" {
 				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.sample.EmitV1SystemConventions", true))
+					"scraper.samplemigration.EmitV1SystemConventions", true))
 				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("scraper.sample.EmitV1SystemConventions", false)
+					featuregate.GlobalRegistry().Set("scraper.samplemigration.EmitV1SystemConventions", false)
 				})
 				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.sample.EmitV1SystemConventions", true))
+					"scraper.samplemigration.EmitV1SystemConventions", true))
 				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("scraper.sample.EmitV1SystemConventions", false)
+					featuregate.GlobalRegistry().Set("scraper.samplemigration.EmitV1SystemConventions", false)
 				})
 			}
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
@@ -203,12 +203,12 @@ func TestVersionedMetrics(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.sample.DontEmitV0SystemConventions", tt.disableOld))
+					"scraper.samplemigration.DontEmitV0SystemConventions", tt.disableOld))
 				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.sample.EmitV1SystemConventions", tt.enableNew))
+					"scraper.samplemigration.EmitV1SystemConventions", tt.enableNew))
 				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("scraper.sample.DontEmitV0SystemConventions", false)
-					featuregate.GlobalRegistry().Set("scraper.sample.EmitV1SystemConventions", false)
+					featuregate.GlobalRegistry().Set("scraper.samplemigration.DontEmitV0SystemConventions", false)
+					featuregate.GlobalRegistry().Set("scraper.samplemigration.EmitV1SystemConventions", false)
 				})
 
 				start := pcommon.Timestamp(1_000_000_000)
@@ -278,12 +278,12 @@ func TestVersionedMetrics(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.sample.DontEmitV0SystemConventions", tt.disableOld))
+					"scraper.samplemigration.DontEmitV0SystemConventions", tt.disableOld))
 				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.sample.EmitV1SystemConventions", tt.enableNew))
+					"scraper.samplemigration.EmitV1SystemConventions", tt.enableNew))
 				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("scraper.sample.DontEmitV0SystemConventions", false)
-					featuregate.GlobalRegistry().Set("scraper.sample.EmitV1SystemConventions", false)
+					featuregate.GlobalRegistry().Set("scraper.samplemigration.DontEmitV0SystemConventions", false)
+					featuregate.GlobalRegistry().Set("scraper.samplemigration.EmitV1SystemConventions", false)
 				})
 
 				start := pcommon.Timestamp(1_000_000_000)

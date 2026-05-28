@@ -103,3 +103,4 @@ components:
     - receiver/sample
     - receiver/sampleentity
     - scraper/sample
+    - scraper/samplemigration

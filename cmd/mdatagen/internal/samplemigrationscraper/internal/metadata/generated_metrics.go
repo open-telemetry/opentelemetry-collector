@@ -487,7 +487,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 		metricSystemCPUUtilizationV1:     newMetricSystemCPUUtilizationV1(mbc.Metrics.SystemCPUUtilizationV1),
 		metricSystemMemoryLinuxAvailable: newMetricSystemMemoryLinuxAvailable(mbc.Metrics.SystemMemoryLinuxAvailable),
 	}
-	if ScraperSampleEmitV1SystemConventionsFeatureGate.IsEnabled() {
+	if ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() {
 		if mb.metricLinuxMemoryAvailable.config.Enabled && mb.metricSystemMemoryLinuxAvailable.config.Enabled {
 			var disable bool
 			if mb.metricLinuxMemoryAvailable.data.Type() != mb.metricSystemMemoryLinuxAvailable.data.Type() {
@@ -500,12 +500,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 			}
 		}
 	} else {
-		if !ScraperSampleEmitV1SystemConventionsFeatureGate.IsEnabled() && mb.metricSystemMemoryLinuxAvailable.config.Enabled {
+		if !ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() && mb.metricSystemMemoryLinuxAvailable.config.Enabled {
 			mb.metricSystemMemoryLinuxAvailable.config.Enabled = false
-			settings.Logger.Warn("[WARNING] metric `system.memory.linux.available` requires feature gate `scraper.sample.EmitV1SystemConventions` to be enabled, metric has been disabled")
+			settings.Logger.Warn("[WARNING] metric `system.memory.linux.available` requires feature gate `scraper.samplemigration.EmitV1SystemConventions` to be enabled, metric has been disabled")
 		}
 	}
-	if ScraperSampleEmitV1SystemConventionsFeatureGate.IsEnabled() {
+	if ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() {
 		if mb.metricSystemCPUUtilization.config.Enabled && mb.metricSystemCPUUtilizationV1.config.Enabled {
 			var disable bool
 			if mb.metricSystemCPUUtilization.data.Type() != mb.metricSystemCPUUtilizationV1.data.Type() {
@@ -522,9 +522,9 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 			}
 		}
 	} else {
-		if !ScraperSampleEmitV1SystemConventionsFeatureGate.IsEnabled() && mb.metricSystemCPUUtilizationV1.config.Enabled {
+		if !ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() && mb.metricSystemCPUUtilizationV1.config.Enabled {
 			mb.metricSystemCPUUtilizationV1.config.Enabled = false
-			settings.Logger.Warn("[WARNING] metric `system.cpu.utilization@v1` requires feature gate `scraper.sample.EmitV1SystemConventions` to be enabled, metric has been disabled")
+			settings.Logger.Warn("[WARNING] metric `system.cpu.utilization@v1` requires feature gate `scraper.samplemigration.EmitV1SystemConventions` to be enabled, metric has been disabled")
 		}
 	}
 
@@ -620,10 +620,10 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 // RecordLinuxMemoryAvailableDataPoint adds a data point to linux.memory.available metric.
 func (mb *MetricsBuilder) RecordLinuxMemoryAvailableDataPoint(ts pcommon.Timestamp, val int64) {
 	// Dual-schema emission controlled by feature gates
-	if !ScraperSampleDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
+	if !ScraperSamplemigrationDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
 		mb.metricLinuxMemoryAvailable.recordDataPoint(mb.startTime, ts, val)
 	}
-	if ScraperSampleEmitV1SystemConventionsFeatureGate.IsEnabled() {
+	if ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() {
 		mb.metricSystemMemoryLinuxAvailable.recordDataPoint(mb.startTime, ts, val)
 	}
 }
@@ -636,10 +636,10 @@ func (mb *MetricsBuilder) RecordSystemCPUFooDataPoint(ts pcommon.Timestamp, val 
 // RecordSystemCPUUtilizationDataPoint adds a data point to system.cpu.utilization metric.
 func (mb *MetricsBuilder) RecordSystemCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue AttributeState) {
 	// Dual-schema emission controlled by feature gates
-	if !ScraperSampleDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
+	if !ScraperSamplemigrationDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
 		mb.metricSystemCPUUtilization.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue.String())
 	}
-	if ScraperSampleEmitV1SystemConventionsFeatureGate.IsEnabled() {
+	if ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() {
 		mb.metricSystemCPUUtilizationV1.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue.String(), true)
 	}
 }

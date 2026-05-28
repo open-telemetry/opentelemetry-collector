@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/scraper/scrapertest"
 )
 
-var typ = component.MustNewType("sample")
+var typ = component.MustNewType("samplemigration")
 
 func TestComponentFactoryType(t *testing.T) {
 	require.Equal(t, typ, NewFactory().Type())

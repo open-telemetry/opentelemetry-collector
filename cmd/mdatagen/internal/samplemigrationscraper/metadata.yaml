@@ -1,4 +1,4 @@
-type: sample
+type: samplemigration
 display_name: Sample Migration Scraper
 description: Demonstrates dual-schema metric migration with feature gates and name aliasing.
 github_project: open-telemetry/opentelemetry-collector
@@ -22,12 +22,12 @@ config:
       default: false
 
 feature_gates:
-  - id: scraper.sample.DontEmitV0SystemConventions
+  - id: scraper.samplemigration.DontEmitV0SystemConventions
     description: When enabled, semconv legacy attributes are disabled.
     stage: alpha
     from_version: v0.145.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45592
-  - id: scraper.sample.EmitV1SystemConventions
+  - id: scraper.samplemigration.EmitV1SystemConventions
     description: When enabled, semconv stable attributes are enabled.
     stage: alpha
     from_version: v0.145.0
@@ -63,8 +63,8 @@ metrics:
     migration:
       to: system.memory.linux.available
       through_gates:
-        disable_old: scraper.sample.DontEmitV0SystemConventions
-        enable_new: scraper.sample.EmitV1SystemConventions
+        disable_old: scraper.samplemigration.DontEmitV0SystemConventions
+        enable_new: scraper.samplemigration.EmitV1SystemConventions
 
   # Completely new metric introduced normally
   system.cpu.foo:
@@ -86,8 +86,8 @@ metrics:
     migration:
       to: system.cpu.utilization@v1
       through_gates:
-        disable_old: scraper.sample.DontEmitV0SystemConventions
-        enable_new: scraper.sample.EmitV1SystemConventions
+        disable_old: scraper.samplemigration.DontEmitV0SystemConventions
+        enable_new: scraper.samplemigration.EmitV1SystemConventions
     attributes: [cpu, state]
 
   system.cpu.utilization@v1:

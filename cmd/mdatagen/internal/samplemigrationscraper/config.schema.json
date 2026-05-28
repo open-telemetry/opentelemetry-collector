@@ -1,16 +1,16 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplemigrationscraper",
-  "title": "scraper/sample",
+  "title": "scraper/samplemigration",
   "description": "Configuration for the Sample Migration Scraper.",
   "type": "object",
   "allOf": [
     {
-      "description": "MetricsBuilderConfig is a configuration for sample metrics builder.",
+      "description": "MetricsBuilderConfig is a configuration for samplemigration metrics builder.",
       "type": "object",
       "properties": {
         "metrics": {
-          "description": "MetricsConfig provides config for sample metrics.",
+          "description": "MetricsConfig provides config for samplemigration metrics.",
           "type": "object",
           "properties": {
             "linux.memory.available": {

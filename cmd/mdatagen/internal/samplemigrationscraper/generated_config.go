@@ -9,7 +9,7 @@ import (
 
 // Configuration for the Sample Migration Scraper.
 type Config struct {
-	// MetricsBuilderConfig is a configuration for sample metrics builder.
+	// MetricsBuilderConfig is a configuration for samplemigration metrics builder.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	// Whether to emit legacy metric names alongside new ones.
 	EmitLegacyMetrics bool `mapstructure:"emit_legacy_metrics"`
