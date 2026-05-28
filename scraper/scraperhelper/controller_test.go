@@ -833,7 +833,6 @@ func TestNewMetricsController_ScraperIDInErrorLogs(t *testing.T) {
 	assert.NotContains(t, receiverLog.ContextMap(), "scraper")
 }
 
-
 func TestExtensionTriggersMetricsScrape(t *testing.T) {
 	t.Parallel()
 

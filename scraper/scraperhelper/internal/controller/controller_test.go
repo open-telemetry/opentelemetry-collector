@@ -31,7 +31,6 @@ func nopScrapeFunc(context.Context, *Controller[component.Component]) error {
 	return nil
 }
 
-
 func newTestController(
 	t *testing.T,
 	cfg *ControllerConfig,
