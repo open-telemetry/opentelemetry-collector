@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config/configopaque"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestNewDefaultConfig(t *testing.T) {
@@ -1050,7 +1050,7 @@ func TestServerConfigValidate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := xconfmap.Validate(test.serverConfig)
+			err := confmap.Validate(test.serverConfig)
 
 			if test.errorTxt == "" {
 				assert.NoError(t, err)
@@ -1135,12 +1135,65 @@ func TestClientConfigValidate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := xconfmap.Validate(test.clientConfig)
+			err := confmap.Validate(test.clientConfig)
 
 			if test.errorTxt == "" {
 				assert.NoError(t, err)
 			} else {
 				assert.ErrorContains(t, err, test.errorTxt)
+			}
+		})
+	}
+}
+
+func TestInsecureCipherSuites(t *testing.T) {
+	tests := []struct {
+		name       string
+		tlsSetting Config
+		wantErr    string
+		result     []uint16
+	}{
+		{
+			name: "insecure cipher suites disabled by default",
+			tlsSetting: Config{
+				CipherSuites: []string{"TLS_RSA_WITH_RC4_128_SHA"},
+			},
+			wantErr: `invalid TLS cipher suite: "TLS_RSA_WITH_RC4_128_SHA"`,
+		},
+		{
+			name: "insecure cipher suites enabled",
+			tlsSetting: Config{
+				CipherSuites:                []string{"TLS_RSA_WITH_RC4_128_SHA"},
+				IncludeInsecureCipherSuites: true,
+			},
+			result: []uint16{tls.TLS_RSA_WITH_RC4_128_SHA},
+		},
+		{
+			name: "mix of secure and insecure cipher suites",
+			tlsSetting: Config{
+				CipherSuites:                []string{"TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_3DES_EDE_CBC_SHA"},
+				IncludeInsecureCipherSuites: true,
+			},
+			result: []uint16{tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA, tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA},
+		},
+		{
+			name: "insecure cipher suites enabled but invalid suite specified",
+			tlsSetting: Config{
+				CipherSuites:                []string{"TLS_RSA_WITH_RC4_128_SHA", "INVALID_SUITE"},
+				IncludeInsecureCipherSuites: true,
+			},
+			wantErr: `invalid TLS cipher suite: "INVALID_SUITE"`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			config, err := test.tlsSetting.loadTLSConfig()
+			if test.wantErr != "" {
+				assert.EqualError(t, err, test.wantErr)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, test.result, config.CipherSuites)
 			}
 		})
 	}
