@@ -185,6 +185,22 @@ func TestValidate(t *testing.T) {
 			name:    "testdata/no_stability_noncomponent.yaml",
 			wantErr: "",
 		},
+		{
+			name:    "testdata/versioned_metric.yaml",
+			wantErr: "",
+		},
+		{
+			name:    "testdata/validate_migrations_error.yaml",
+			wantErr: "metric \"system.cpu.time\": migration.to refers to undefined metric \"system.cpu.time@v1\"\nfeature gate \"versioned.metrics.DontEmitV0SystemConventions\": ID must be prefixed with \"receiver.test_versioned.\"\nfeature gate \"versioned.metrics.EmitV1SystemConventions\": ID must be prefixed with \"receiver.test_versioned.\"",
+		},
+		{
+			name:    "testdata/feature_gates.yaml",
+			wantErr: "",
+		},
+		{
+			name:    "testdata/feature_gates_not_sorted.yaml",
+			wantErr: "feature gates must be sorted by ID",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -1,4 +1,4 @@
-type: testversioned
+type: test_versioned
 sem_conv_version: 1.9.0
 status:
   class: receiver
@@ -7,12 +7,12 @@ status:
   distributions: []
 
 feature_gates:
-  - id: receiver.testversioned.DontEmitV0SystemConventions
+  - id: versioned.metrics.DontEmitV0SystemConventions
     description: When enabled, semconv legacy attributes are disabled.
     stage: alpha
     from_version: v0.145.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45592
-  - id: receiver.testversioned.EmitV1SystemConventions
+  - id: versioned.metrics.EmitV1SystemConventions
     description: When enabled, semconv stable attributes are enabled.
     stage: alpha
     from_version: v0.145.0
@@ -38,19 +38,7 @@ metrics:
     migration:
       to: system.cpu.time@v1
       through_gates:
-        disable_old: receiver.testversioned.DontEmitV0SystemConventions
-        enable_new: receiver.testversioned.EmitV1SystemConventions
+        disable_old: versioned.metrics.DontEmitV0SystemConventions
+        enable_new: versioned.metrics.EmitV1SystemConventions
     warnings:
       if_enabled: This metric is deprecated, use system.cpu.time/v2 instead.
-
-  # New semconv metric - different config key, same emitted name
-  system.cpu.time@v1:
-    enabled: true
-    description: CPU time metric per new semantic conventions
-    stability: beta
-    unit: s
-    sum:
-      value_type: double
-      monotonic: true
-      aggregation_temporality: cumulative
-    attributes: [state]

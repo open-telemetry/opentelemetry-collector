@@ -19,10 +19,25 @@ feature_gates:
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45592
 
 attributes:
+  cpu:
+    description: Logical CPU number starting at 0.
+    type: string
+    requirement_level: recommended
+
+  cpu.logical_number:
+    description: The logical CPU number [0, n-1].
+    type: int
+
   state:
     description: CPU state
     type: string
     enum: [idle, user, system]
+
+  state.cpu:
+    description: CPU state
+    type: string
+    enum: [idle, user, system]
+
 metrics:
   # Legacy metric - uses map key as emitted name
   system.cpu.time:
@@ -34,7 +49,7 @@ metrics:
       value_type: double
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [state]
+    attributes: [cpu, state]
     migration:
       to: system.cpu.time@v1
       through_gates:
@@ -53,4 +68,5 @@ metrics:
       value_type: double
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [state]
+    attributes: [cpu.logical_number, state.cpu]
+

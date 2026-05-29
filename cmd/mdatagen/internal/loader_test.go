@@ -900,7 +900,7 @@ func TestVersionedMetricName(t *testing.T) {
 	require.False(t, legacy.Versioned)
 
 	// Versioned metric - Name should be auto-populated from key
-	versioned := md.Metrics["system.cpu.time@v2"]
+	versioned := md.Metrics["system.cpu.time@v1"]
 	require.True(t, versioned.Versioned)
 }
 

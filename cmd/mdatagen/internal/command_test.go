@@ -270,6 +270,24 @@ func TestRunContents(t *testing.T) {
 			yml:        "with_invalid_config_ref.yaml",
 			wantRunErr: true,
 		},
+		{
+			yml:                        "versioned_metric.yaml",
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
+			wantFeatureGatesGenerated:  true,
+			wantMetricsGenerated:       true,
+			wantConfigGenerated:        true,
+		},
+		{
+			yml:                        "versioned_metric_different_attributes.yaml",
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
+			wantFeatureGatesGenerated:  true,
+			wantMetricsGenerated:       true,
+			wantConfigGenerated:        true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.yml, func(t *testing.T) {
