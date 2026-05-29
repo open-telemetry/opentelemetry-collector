@@ -10,6 +10,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
+
+	"go.uber.org/zap"
 )
 
 const (
@@ -77,10 +79,12 @@ var MetricsInfo = metricsInfo{
 		Name: "system.cpu.foo",
 	},
 	SystemCPUUtilization: metricInfo{
-		Name: "system.cpu.utilization",
+		Name:       "system.cpu.utilization",
+		Attributes: []string{"cpu", "state"},
 	},
 	SystemCPUUtilizationV1: metricInfo{
-		Name: "system.cpu.utilization",
+		Name:       "system.cpu.utilization",
+		Attributes: []string{"cpu.logical_number", "state"},
 	},
 	SystemMemoryLinuxAvailable: metricInfo{
 		Name: "system.memory.linux.available",
@@ -96,7 +100,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricLinuxMemoryAvailable struct {
@@ -495,6 +500,14 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 				disable = true
 				settings.Logger.Warn("[WARNING] Legacy metric `linux.memory.available` disabled: same emitted name as `system.memory.linux.available` with different type; only latest will be emitted")
 			}
+			if !slices.Equal(MetricsInfo.LinuxMemoryAvailable.Attributes, MetricsInfo.SystemMemoryLinuxAvailable.Attributes) {
+				// Disable legacy metric if legacy and latest have same name but different attributes
+				// The latest metric will emit both attribute sets during migration
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `linux.memory.available` disabled: same emitted name as `system.memory.linux.available` with different attributes; only latest will be emitted with combined attributes",
+					zap.Strings("legacy_attributes", MetricsInfo.LinuxMemoryAvailable.Attributes),
+					zap.Strings("latest_attributes", MetricsInfo.SystemMemoryLinuxAvailable.Attributes))
+			}
 			if disable {
 				mb.metricLinuxMemoryAvailable.config.Enabled = false
 			}
@@ -513,10 +526,14 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 				disable = true
 				settings.Logger.Warn("[WARNING] Legacy metric `system.cpu.utilization` disabled: same emitted name as `system.cpu.utilization@v1` with different type; only latest will be emitted")
 			}
-			// Disable legacy metric if legacy and latest have same name but different attributes
-			// The latest metric will emit both attribute sets during migration
-			disable = true
-			settings.Logger.Warn("[WARNING] Legacy metric `system.cpu.utilization` disabled: same emitted name as `system.cpu.utilization@v1` with different attributes; only latest will be emitted with combined attributes")
+			if !slices.Equal(MetricsInfo.SystemCPUUtilization.Attributes, MetricsInfo.SystemCPUUtilizationV1.Attributes) {
+				// Disable legacy metric if legacy and latest have same name but different attributes
+				// The latest metric will emit both attribute sets during migration
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `system.cpu.utilization` disabled: same emitted name as `system.cpu.utilization@v1` with different attributes; only latest will be emitted with combined attributes",
+					zap.Strings("legacy_attributes", MetricsInfo.SystemCPUUtilization.Attributes),
+					zap.Strings("latest_attributes", MetricsInfo.SystemCPUUtilizationV1.Attributes))
+			}
 			if disable {
 				mb.metricSystemCPUUtilization.config.Enabled = false
 			}

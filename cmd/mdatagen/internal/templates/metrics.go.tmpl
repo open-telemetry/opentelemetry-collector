@@ -5,6 +5,8 @@ package {{ .Package }}
 {{ $reag := .ReaggregationEnabled }}
 {{- $hasReagMetrics := false }}
 {{- range $name, $metric := .Metrics }}{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}{{- $hasReagMetrics = true }}{{- end }}{{- end }}
+{{- $hasMigrations := false }}
+{{- range $name, $metric := .Metrics }}{{- if $metric.Migration }}{{- $hasMigrations = true }}{{- end }}{{- end }}
 
 import (
 	{{- if .Metrics | parseImportsRequired }}
@@ -12,7 +14,7 @@ import (
 	"fmt"
 	{{- end }}
 	"time"
-	{{- if $hasReagMetrics }}
+	{{- if or $hasReagMetrics $hasMigrations }}
 	"slices"
 	{{- end }}
 
@@ -27,6 +29,9 @@ import (
 	{{- end }}
 	{{ if .ResourceAttributes -}}
 	"go.opentelemetry.io/collector/filter"
+	{{- end }}
+	{{- if $hasMigrations }}
+	"go.uber.org/zap"
 	{{- end }}
 )
 
@@ -87,6 +92,9 @@ var MetricsInfo = metricsInfo{
 	{{- range $name, $metric := .Metrics }}
 	{{ $name.Render }}: metricInfo{
 		Name: "{{ $name.EmittedName }}",
+		{{- if $metric.Attributes }}
+		Attributes: []string{ {{- range $i, $attr := $metric.Attributes }}{{if $i}}, {{end}}"{{ $attr }}"{{- end }} },
+		{{- end }}
 	},
 	{{- end }}
 }
@@ -98,7 +106,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 {{ if getMetricConditionalAttributes .Attributes }}
@@ -409,12 +418,14 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings {{ .Status.Class }}.Se
         disable = true
         settings.Logger.Warn("[WARNING] Legacy metric `{{ $name }}` disabled: same emitted name as `{{ $metric.Migration.To }}` with different type; only latest will be emitted")
       }
-      {{- if hasDifferentAttributes $name }}
-      // Disable legacy metric if legacy and latest have same name but different attributes
-      // The latest metric will emit both attribute sets during migration
-      disable = true
-      settings.Logger.Warn("[WARNING] Legacy metric `{{ $name }}` disabled: same emitted name as `{{ $metric.Migration.To }}` with different attributes; only latest will be emitted with combined attributes")
-      {{- end }}
+      if !slices.Equal(MetricsInfo.{{ $name.Render }}.Attributes, MetricsInfo.{{ $metric.Migration.To.Render }}.Attributes) {
+        // Disable legacy metric if legacy and latest have same name but different attributes
+        // The latest metric will emit both attribute sets during migration
+        disable = true
+        settings.Logger.Warn("[WARNING] Legacy metric `{{ $name }}` disabled: same emitted name as `{{ $metric.Migration.To }}` with different attributes; only latest will be emitted with combined attributes",
+          zap.Strings("legacy_attributes", MetricsInfo.{{ $name.Render }}.Attributes),
+          zap.Strings("latest_attributes", MetricsInfo.{{ $metric.Migration.To.Render }}.Attributes))
+      }
       if disable {
         mb.metric{{ $name.Render }}.config.Enabled = false
       }
