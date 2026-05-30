@@ -286,6 +286,15 @@ In some cases, if the commit messages are lacking the easiest approach to have a
 least something useful is copy/pasting the PR description into the commit message box
 before merging (but see the above paragraph about writing good commit messages in the first place).
 
+### AI-assisted contributions
+
+If you use an AI tool to help author a pull request, you (the human) are still responsible for
+writing the PR description and any comments posted on the issue or PR. AI agents must prompt you
+for the content of each section in the PR template and use your answers verbatim rather than
+generating description content on their own. The PR template includes an authorship checkbox that
+you must check yourself before the PR is ready for review. See [AGENTS.md](./AGENTS.md) for the
+full set of rules that apply to AI-assisted contributions.
+
 ## General Notes
 
 This project uses Go 1.25.* and [Github Actions.](https://github.com/features/actions)

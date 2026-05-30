@@ -66,3 +66,31 @@ func TestConfigValidate_RequiredLabels(t *testing.T) {
 
 	require.ErrorContains(t, cfg.Validate(), "labels is required")
 }
+
+func TestTargetsItemValidate_MinimumRetryCount(t *testing.T) {
+	cfg := NewDefaultTargetsItem()
+	cfg.RetryCount = 0 - 1
+
+	require.ErrorContains(t, cfg.Validate(), "retry_count value must be greater than or equal to 0")
+}
+
+func TestTargetsItemValidate_MaximumRetryCount(t *testing.T) {
+	cfg := NewDefaultTargetsItem()
+	cfg.RetryCount = 10 + 1
+
+	require.ErrorContains(t, cfg.Validate(), "retry_count value must be less than or equal to 10")
+}
+
+func TestTargetsItemValidate_ExclusiveMinimumTimeoutSeconds(t *testing.T) {
+	cfg := NewDefaultTargetsItem()
+	cfg.TimeoutSeconds = 0
+
+	require.ErrorContains(t, cfg.Validate(), "timeout_seconds value must be greater than 0")
+}
+
+func TestTargetsItemValidate_ExclusiveMaximumTimeoutSeconds(t *testing.T) {
+	cfg := NewDefaultTargetsItem()
+	cfg.TimeoutSeconds = 30
+
+	require.ErrorContains(t, cfg.Validate(), "timeout_seconds value must be less than 30")
+}
