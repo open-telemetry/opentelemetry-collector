@@ -1799,6 +1799,150 @@ func TestExtractValidators_StringValidators(t *testing.T) {
 	}
 }
 
+func TestExtractValidators_NumericValidators(t *testing.T) {
+	minVal := 0.0
+	maxVal := 100.0
+	exclMinVal := 5.0
+	exclMaxVal := 10.0
+
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected []Validator
+	}{
+		{
+			name: "minimum only",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"count": {Type: "number", Minimum: &minVal},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "count",
+					FieldType: "number",
+					Rules:     ValidationRules{Minimum: &minVal},
+				},
+			},
+		},
+		{
+			name: "maximum only",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"count": {Type: "number", Maximum: &maxVal},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "count",
+					FieldType: "number",
+					Rules:     ValidationRules{Maximum: &maxVal},
+				},
+			},
+		},
+		{
+			name: "exclusiveMinimum only",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"score": {Type: "number", ExclusiveMinimum: &exclMinVal},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "score",
+					FieldType: "number",
+					Rules:     ValidationRules{ExclusiveMinimum: &exclMinVal},
+				},
+			},
+		},
+		{
+			name: "exclusiveMaximum only",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"score": {Type: "number", ExclusiveMaximum: &exclMaxVal},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "score",
+					FieldType: "number",
+					Rules:     ValidationRules{ExclusiveMaximum: &exclMaxVal},
+				},
+			},
+		},
+		{
+			name: "all numeric validators",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"value": {Type: "number", Minimum: &minVal, Maximum: &maxVal, ExclusiveMinimum: &exclMinVal, ExclusiveMaximum: &exclMaxVal},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "value",
+					FieldType: "number",
+					Rules:     ValidationRules{Minimum: &minVal, Maximum: &maxVal, ExclusiveMinimum: &exclMinVal, ExclusiveMaximum: &exclMaxVal},
+				},
+			},
+		},
+		{
+			name: "integer type with numeric validators",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"retry_count": {Type: "integer", Minimum: &minVal, Maximum: &maxVal},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "retry_count",
+					FieldType: "integer",
+					Rules:     ValidationRules{Minimum: &minVal, Maximum: &maxVal},
+				},
+			},
+		},
+		{
+			name: "nil numeric validators produces no validator",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"value": {Type: "number"},
+				},
+			},
+			expected: []Validator{},
+		},
+		{
+			name: "required combined with numeric validators",
+			metadata: &ConfigMetadata{
+				Type:     "object",
+				Required: []string{"threshold"},
+				Properties: map[string]*ConfigMetadata{
+					"threshold": {Type: "number", Minimum: &minVal, Maximum: &maxVal},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "threshold",
+					FieldType: "number",
+					Rules:     ValidationRules{Required: true, Minimum: &minVal, Maximum: &maxVal},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ExtractValidators(tt.metadata)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 func TestExtractValidators_InternalRefFromDefs_NoValidators(t *testing.T) {
 	md := &ConfigMetadata{
 		Ref: "plain_config",
@@ -1971,6 +2115,36 @@ func TestValidationRules_HasValueRule(t *testing.T) {
 		},
 		{
 			name:     "nil validators map",
+			rules:    ValidationRules{},
+			expected: false,
+		},
+		{
+			name:     "minimum",
+			rules:    ValidationRules{Minimum: Ptr(0.0)},
+			expected: true,
+		},
+		{
+			name:     "maximum",
+			rules:    ValidationRules{Maximum: Ptr(100.0)},
+			expected: true,
+		},
+		{
+			name:     "exclusiveMinimum",
+			rules:    ValidationRules{ExclusiveMinimum: Ptr(5.0)},
+			expected: true,
+		},
+		{
+			name:     "exclusiveMaximum",
+			rules:    ValidationRules{ExclusiveMaximum: Ptr(10.0)},
+			expected: true,
+		},
+		{
+			name:     "all numeric validators",
+			rules:    ValidationRules{Minimum: Ptr(0.0), Maximum: Ptr(100.0), ExclusiveMinimum: Ptr(5.0), ExclusiveMaximum: Ptr(10.0)},
+			expected: true,
+		},
+		{
+			name:     "empty numeric validators",
 			rules:    ValidationRules{},
 			expected: false,
 		},

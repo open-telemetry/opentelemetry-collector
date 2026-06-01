@@ -68,6 +68,18 @@ config:
             default:
               option1: value1
               option2: value2
+          retry_count:
+            description: Number of retry attempts for failed scrapes.
+            type: integer
+            default: 3
+            minimum: 0
+            maximum: 10
+          timeout_seconds:
+            description: Timeout in seconds for each scrape request.
+            type: number
+            default: 5.0
+            exclusiveMinimum: 0
+            exclusiveMaximum: 30
         required: [labels]
       default:
         - {} # one item with default values
