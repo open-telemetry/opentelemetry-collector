@@ -10,10 +10,17 @@ The Collector now offers two batching mechanisms:
 2. The `exporterhelper` combined queue/batch sender, a replacement for
    the batch processor, is ready to replace it.
 
-We find there are a small number of users and known use-cases which
-require a batch processor. At the same time, the batch processor has
-several known defects, and fixing the defects will be a breaking
-change.
+We find there are a small number of users and known use-cases that
+require a batch processor, for example:
+
+- When multiple exporters are in use, the processor form uses less memory
+  because the exporters share batched requests.
+- Aggregation processors (e.g., `groupbyattrs`) benefit from larger
+  batches and recommend applying the batch processor first.
+
+At the same time, the existing batch processor has several known
+defects (e.g., concurrency limit, error propagation, trace context),
+and fixing the defects require breaking changes.
 
 Our goal is to migrate most users away from the batch processor and
 enable batching by default for all exporterhelper users. This will
@@ -39,16 +46,20 @@ The processor is widely used. It has well-documented defects:
 - Suppresses errors (always returns `nil`)
 - Returns to the caller before the export has completed
 - Single thread concurrency
-- Sizes batches by item count
-- It interrupts trace context and (without `metadata_keys`) drops
-  client metadata.
+- Sizes batches only by item count
+- Interrupts trace context.
 
 The single thread concurrency problem is particularly a problem for
-error propagation. With only one thread exporting batches, performance
-suffers unless the downstream component acts the same. This explains
-why the exporterhelper's `wait_for_result` queue sender setting must
-remain off by default. Batch processor stands in the way of error
-propagation with concurrency, so most users do not propagate errors.
+error propagation. Performance can suffer when the downstream
+components block waiting for export. If the exporter is synchronous,
+as by exporterhelper's `wait_for_result: true`, the batch processor
+creates a single-export bottleneck.
+
+Even while suppressing errors, batchprocessor creates
+backpressure. This operational detail must be preserved as we
+deprecate this component. Below, we propose to make exporterhelper
+`block_on_overflow: true` the default behavior to address this
+concern.
 
 ### Exporterhelper replacement
 
@@ -56,41 +67,83 @@ The `exporterhelper` queue/batch sender resolves the known
 batchprocessor defects and integrates new features:
 
 - Choice of sizing logic by items, bytes, and requests
-- Optional synchronous or asynchronous behavior
+- Optional synchronous (`wait_for_result`) or asynchronous behavior
 - Optional persistent storage extension
-- Optional blocking
+- Optional blocking (`block_on_overflow`).
 
-At this time, the `exporterhelper` queue/batch sender has feature
-parity with `batchprocessor`. However, its default settings are still
-aligned with the batch processor:
+The `exporterhelper` queue/batch sender has feature parity with
+`batchprocessor`. However, exporterhelper default settings remain
+aligned and compatible with `batchprocessor`:
 
-- `wait_for_result: false` we do not propagate errors
-- `batch::enabled: false` we disable exporter batching
+- `wait_for_result: false` asynchronous export
+- `block_on_overflow: false` drop when full
+- `batch::enabled: false` batching disabled.
 
-The exporterhelper supports opt-in persistent storage, but the default
-in-memory queue combined with `wait_for_result: false` establishes
-a potential to drop data while suppressing error propagation.
+The exporterhelper supports opt-in persistent storage, and when no
+storage extension is configured it uses an in-memory queue with
+`wait_for_result: false`, meaning the default behavior is to accept
+data and immediately return success. This is what `batchprocessor`
+expects, and this is also how `batchprocessor` behaves, returning
+success, not waiting for potential errors.
 
 The exporterhelper's built-in batching support is critical for
 vendors, because it gives exporters a way to control request size in
-terms of bytes, considering their own protocol. The ideal final state
-is that we enable exporterhelper batching by default. Many exporters
-already do this, but not all, the choice is made per-component.
+terms of bytes, even considering custom export protocols. The ideal
+final state is that we enable exporterhelper batching by default. Many
+exporters already do this, but not all, the choice is made
+per-component.
 
-#### Recommendation: error propagation if no persistent store
+### What success looks like
 
-We aim to set `wait_for_result: true` when there is no storage
-extension configured. This flag is already only applicable when the
-in-memory queue is used, storage extensions already ignore this mode.
+The `batchprocessor` is removed from the core repository.
+
+A re-implemented `queuebatchprocessor` will be created (in the core)
+using exporterhelper as the implementation. This will use the combined
+QueueBatchConfig struct and support all batching modes; it will use
+the same defaults as exporterhelper recommends for exporters.
+
+OpenTelemetry documentation will not refer to `batchprocessor`.
+
+The OpenTelemetry Helm charts will not refer to `batchprocessor`.
+
+#### Recommendation: no error propagation by default
+
+The `wait_for_result` feature will remain off by default. The
+Collector's default position is to accept data in-memory and return
+success.
+
+#### Recommendation: block on overflow by default
+
+The `block_on_overflow` feature will become enabled by default.
+
+This is a user visible change. Receivers that set a timeout will cause
+all exporters by default to block when the queue is full.  Collector's
+default position is to wait for memory to become available.
 
 A feature flag for this change will be defined,
-`exporterhelper.memoryQueueWaitForResult`.
+`exporterhelper.exporterQueueBlockOnOverflow`.
 
 #### Recommendation: exporterhelper batching enabled by default
 
 Currently, components have a mixture of `configoptional.Some`,
 `configoptional.Default`, and `configoptional.None`, usually passing
-`exporterhelper.DefaultQueueBatchConfig()` which is defined:
+`exporterhelper.DefaultQueueBatchConfig()`. However, many of these
+configurations are historical, set to `Default` or `None` because the
+exporterhelper was evolving. Now that it is stabilizing, they should
+be audited. 
+
+Not all exporters want queue/batching enabled by default. However, we
+believe that many of these will choose batching by default now that
+`batchprocessor` is deprecated. This RFC calls for an audit of the
+components, evaluating for every exporter whether a `Default` or
+`None` should become `Some` regarding the default queue config.
+
+A feature flag for this change will be defined,
+`exporterhelper.exporterQueueBatchEnabled`.
+
+#### Recommended final default queue configuration
+
+The final state for the `NewDefaultQueueConfig` function:
 
 ```go
 func NewDefaultQueueConfig() queuebatch.Config {
@@ -98,9 +151,11 @@ func NewDefaultQueueConfig() queuebatch.Config {
 		Sizer:           request.SizerTypeRequests,
 		NumConsumers:    10,
 		QueueSize:       1_000,
-		BlockOnOverflow: false,
+		BlockOnOverflow: true,  // CHANGED: Was false.
         WaitForResult:   false,
-		Batch: configoptional.Default(queuebatch.BatchConfig{
+        
+        // CHANGED: Was Default, now Some.
+		Batch: configoptional.Some(queuebatch.BatchConfig{
 			FlushTimeout: 200 * time.Millisecond,
 			Sizer:        request.SizerTypeItems,
 			MinSize:      8192,
@@ -108,31 +163,6 @@ func NewDefaultQueueConfig() queuebatch.Config {
 	}
 }
 ```
-
-The `configoptional.Default` is responsible for disabling batching for
-most users. To complete the migration, in the final state, we will have
-a single standard constructor where `wait_for_result` is true and batch
-is enabled by default:
-
-```go
-func StandardQueueConfig() configoptional.Optional[queuebatch.Config] {
-	return queuebatch.Config{
-        // ...
-        WaitForResult:   true,
-		Batch: configoptional.Some(queuebatch.BatchConfig{
-            // ...
-		}),
-	}
-}
-```
-
-The implementation will be determined by the feature flags discussed
-in this document. There are two levels of `configoptional` here, one
-for the queue and one for the batcher: both will become enabled by
-default at the end of this migration.
-
-A feature flag for this change will be defined,
-`exporterhelper.exporterQueueBatchEnabled`.
 
 ### Double-batching problem
 
@@ -143,79 +173,17 @@ batch processor has settings that are out of line with the new
 exporterhelper defaults, users will pay the cost of batching and then
 re-batching.
 
-#### Recommendation: coordinated batch processor phase-out
+### Phase-out sequence
 
-Using a single feature flag, we will enable exporterhelper
-queue/batching by default, at the same time we disable the batch
-processor by rendering it a no-op. First, we will deprecate the batch
-processor: users will be guided in two directions:
+We treat the batchprocessor deprecation as separate from the change of
+exporterhelper default with an interleaved timeline. That is:
 
-1. In simple pipelines, the user will remove the batch processor from
-   their configuration and configure the queue_sender::batch instead.
-2. In complex pipelines, a new core processor will be introduced as a
-   from-scratch replacement, called the `queuebatchprocessor`. The new
-   core processor will be implemented by exporterhelper internally, as
-   demonstrated in
-   [#13583](https://github.com/open-telemetry/opentelemetry-collector/pull/13583). This
-   component will support configuration identical with `queue_sender`
-   but for use as a processor.
-
-At the same time, an audit is required to clean up the many various
-initial conditions across exporters. We will define an Go package
-`batchmigration` with an enum to capture all the common initial
-settings,
-
-```go
-// This will be deprecated and removed after the migration.
-type Existing int
-
-const (
-    // Default means the caller used configoptional.Default(NewDefaultQueueConfig())
-    Default Case = iota
-
-    // Default means the caller used configoptional.Some(NewDefaultQueueConfig())
-    Some Case
-
-    // Default means the caller used configoptional.None[...]()
-    None Case
-
-    // The callsite enables queue, not batch.
-    SomeQueueNoneBatch,
-
-    // ...
-)
-```
-
-Exporters will be able opt-out of the standard migration path by
-rejecting the proposed changes during an audit step, where most callers
-will be migrated using a new function,
-
-```go
-func MigrateQueueConfig(migrate batchmigration.Existing) configoptional.Optional[queuebatch.Config] {
-    // Each case will reproduce exactly the behavior of a callsite
-    // somewhere in core or collector-contrib.
-}
-```
-
-A number of exporters today have custom settings because the default
-settings today cause data loss. After the migration is complete, these
-components should prefer to switch to standard queue config. For these
-callers (e.g., `otelarrowexporter`),
-
-```go
-func MigrateSpecifyQueueConfig(original queuebatch.Config) configoptional.Optional[queuebatch.Config] {
-    // This will return the original configuration until the final
-    // feature flag enabling wait_for_result for in-memory queues
-    // with batching enabled by default. After this point, the original
-    // configuration will be ignored.
-}
-```
-
-Two feature flags have been introduced so far. They are logically
-independent, but defined to advance in step with each other so that
-users have independent control over `wait_for_result` and default
-batching behavior. The feature flag state of these two will remain
-equal.
+1. Batch processor will become deprecated with printed instructions
+   and documentation for users to explicitly set exporterhelper
+   queue/batch configuration instead, explaining that the defaults are
+   undergoing migration.
+2. Exporterhelper will introduce two feature flags and proceed to enable
+   `wait_for_result: true` and batching `enabled: true`.
 
 ## Full timeline
 
@@ -225,59 +193,51 @@ The sequence of events is ordered in phases.
 
 These are loosely dependent,
 
-1. Define `StandardQueueConfig()` function.
-2. Ensure all exporters in OpenTelemetry repos define `queue_sender` having
-   type `configoptional.Optional[exporterhelper.QueueBatchConfig]`
-3. Define the two feature flags.
-4. Support a configurable metrics prefix to distinguish processor
+1. Ensure all exporters in OpenTelemetry repos define `queue_sender` having
+   type `configoptional.Optional[exporterhelper.QueueBatchConfig]`.
+   Exporters that do not define `queue_sender` will may opt-in to
+   `Some` or `Default` behavior.
+2. Define the two feature flags.
+3. Support a configurable metrics prefix to distinguish processor
    batching from exporter batching
    ([#14038](https://github.com/open-telemetry/opentelemetry-collector/issues/14038)).
-5. Implement `queuebatchprocessor`
+4. Implement `queuebatchprocessor`
    ([#13583](https://github.com/open-telemetry/opentelemetry-collector/pull/13583)).
-6. Implement `batchmigration` and two migration functions for
-   non-standard callers.
+5. Update documentation explaining `batchprocessor` deprecation with
+   instructions to adopt explicit exporterhelper `queue_sender` settings
+   or the new `queuebatchprocessor`.
 
 ### Phase 2
 
-7. Deprecate `batchprocessor`.
-8. Full audit of exporters and default settings. Exporters can opt-out
-   of the migration here, replace callsites use of `configoptional`
-   with one of `StandardQueueConfig`, `MigrateQueueConfig`, and
-   `MigrateSpecifyQueueConfig`.
-9. Implement coordinated feature behavior. The default changes
-   recommended above will be applied through the three functions named
-   above. The batch processor will be programmed to act as a
-   pass-through when the `exporterhelper.exporterQueueBatchEnabled` is
-   enabled.
+6. Deprecate `batchprocessor`. The first release where this lands is
+   **`B1`**.
+7. Full audit of exporters and default settings. Exporters can opt-in
+   to the migration here by electing `Some` instead of `Default` or
+   `None`.
+8. Update various documentation pointing to `queuebatchprocessor`,
+    which will advise users to configure exporter batching in most
+    cases. ([#13766](https://github.com/open-telemetry/opentelemetry-collector/issues/13766))
 
-After the batch processor is deprecated, we will wait 6 months for
-users to choose a migration path through configuration.
+After the batch processor is deprecated, we will wait +6 releases (~3
+months) with `batchprocessor` printing warnings and referring to the
+documentation, which will guide them to fill explicit exporterhelper
+settings.
 
 ### Phase 3
 
-10. Update various documentation pointing to `queuebatchprocessor`,
-    which will advise users to configure exporter batching in most
-    cases. ([#13766](https://github.com/open-telemetry/opentelemetry-collector/issues/13766))
-11. After waiting the specified period, we will change both feature
-    flags to Stable. At this time, the behavior of
-    `StandardQueueConfig`, `MigrateQueueConfig`,
-    `MigrateSpecifyQueueConfig`, and `NewDefaultQueueConfig()` will
-    change while `batchprocessor` is simultaneously disabled. All
-    exporters have `wait_for_result: true` by default, which is
-    overridden by defining a storage extension.
-12. Update standard Helm charts. Simply remove the batch processor,
-    because exporters batch by default excepting those that opt out.
-13. Deprecate `MigrateQueueConfig`, `MigrateSpecifyQueueConfig`, and
-    the `batchmigration` package. Users of the migration helpers
-    will switch to `StandardQueueConfig` in most cases.
+In a single release cycle:
+
+9. Remove `batchprocessor`.
+10. Change both feature flags to Stable. Exporterhelper now blocks on
+    overflow, batching enabled by default.
+11. Update standard Helm charts removing the batch processor.
+    Exporterhelper defaults change in the same release.
 
 ### Phase 4
 
-We will wait another 6 months before completing these steps.
+We will wait another +6 releases (~3 months).
 
-14. Remove the `batchprocessor` from the core distribution.
-15. Remove the two feature flags.
-16. Remove the deprecated migration package and functions.
+12. Remove the two feature flags.
 
 ## Conclusion
 
