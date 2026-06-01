@@ -5,6 +5,8 @@ package sampleprocessor // import "go.opentelemetry.io/collector/cmd/mdatagen/in
 
 import (
 	"context"
+	"sync"
+	"time"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/sampleprocessor/internal/metadata"
 	"go.opentelemetry.io/collector/component"
@@ -31,7 +33,30 @@ func NewFactory() processor.Factory {
 }
 
 func createTracesProcessor(context.Context, processor.Settings, component.Config, consumer.Traces) (processor.Traces, error) {
-	return nopInstance, nil
+	bgCtx, bgCancel := context.WithCancel(context.Background())
+	var bgWg sync.WaitGroup
+	bgWg.Go(func() {
+		select {
+		case <-time.After(10 * time.Second): // Fake long running task
+		case <-bgCtx.Done(): // that gets cancelled by bgCtx
+		}
+	})
+	return &nopProcessor{
+		ShutdownFunc: func(ctx context.Context) error {
+			bgCancel()
+			done := make(chan struct{})
+			go func() {
+				bgWg.Wait()
+				close(done)
+			}()
+			select {
+			case <-done:
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+			return nil
+		},
+	}, nil
 }
 
 func createMetricsProcessor(context.Context, processor.Settings, component.Config, consumer.Metrics) (processor.Metrics, error) {

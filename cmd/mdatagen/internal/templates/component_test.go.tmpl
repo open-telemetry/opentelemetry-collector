@@ -139,11 +139,13 @@ func TestComponentLifecycle(t *testing.T) {
 
 		{{- if not .Tests.SkipLifecycle }}
 		t.Run(tt.name + "-lifecycle", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), exportertest.NewNopSettings(typ), cfg)
+			ctx, cancel := context.WithCancel(context.Background())
+			c, err := tt.createFn(ctx, exportertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			host := {{ .Tests.Host }}
-			err = c.Start(context.Background(), host)
+			err = c.Start(ctx, host)
 			require.NoError(t, err)
+			checkNoopCancel(t, cancel)
 			require.NotPanics(t, func() {
 				switch tt.name {
 				case "logs":
@@ -244,11 +246,13 @@ func TestComponentLifecycle(t *testing.T) {
 
 		{{- if not .Tests.SkipLifecycle }}
 		t.Run(tt.name + "-lifecycle", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(typ), cfg)
+			ctx, cancel := context.WithCancel(context.Background())
+			c, err := tt.createFn(ctx, processortest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			host := {{ .Tests.Host }}
-			err = c.Start(context.Background(), host)
+			err = c.Start(ctx, host)
 			require.NoError(t, err)
+			checkNoopCancel(t, cancel)
 			require.NotPanics(t, func() {
 				switch tt.name {
 				case "logs":
@@ -347,11 +351,12 @@ func TestComponentLifecycle(t *testing.T) {
 
 		{{- if not .Tests.SkipLifecycle }}
 		t.Run(tt.name + "-lifecycle", func(t *testing.T) {
-			firstRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettings(typ), cfg)
+			ctx, cancel := context.WithCancel(context.Background())
+			firstRcvr, err := tt.createFn(ctx, receivertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			host := {{ .Tests.Host }}
-			require.NoError(t, err)
-			require.NoError(t, firstRcvr.Start(context.Background(), host))
+			require.NoError(t, firstRcvr.Start(ctx, host))
+			checkNoopCancel(t, cancel)
 			require.NoError(t, firstRcvr.Shutdown(context.Background()))
 			secondRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
@@ -424,11 +429,13 @@ func TestComponentLifecycle(t *testing.T) {
 
 		{{- if not .Tests.SkipLifecycle }}
 		t.Run(tt.name + "-lifecycle", func(t *testing.T) {
-			firstRcvr, err := tt.createFn(context.Background(), scrapertest.NewNopSettings(typ), cfg)
+			ctx, cancel := context.WithCancel(context.Background())
+			firstRcvr, err := tt.createFn(ctx, scrapertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			host := {{ .Tests.Host }}
 			require.NoError(t, err)
-			require.NoError(t, firstRcvr.Start(context.Background(), host))
+			require.NoError(t, firstRcvr.Start(ctx, host))
+			checkNoopCancel(t, cancel)
 			require.NoError(t, firstRcvr.Shutdown(context.Background()))
 			secondRcvr, err := tt.createFn(context.Background(), scrapertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
@@ -462,9 +469,11 @@ func TestComponentLifecycle(t *testing.T) {
 
 	{{- if not .Tests.SkipLifecycle }}
 	t.Run("lifecycle", func(t *testing.T) {
-		firstExt, err := factory.Create(context.Background(), extensiontest.NewNopSettings(typ), cfg)
+		ctx, cancel := context.WithCancel(context.Background())
+		firstExt, err := factory.Create(ctx, extensiontest.NewNopSettings(typ), cfg)
 		require.NoError(t, err)
-		require.NoError(t, firstExt.Start(context.Background(), {{ .Tests.Host }}))
+		require.NoError(t, firstExt.Start(ctx, {{ .Tests.Host }}))
+		checkNoopCancel(t, cancel)
 		require.NoError(t, firstExt.Shutdown(context.Background()))
 
 		secondExt, err := factory.Create(context.Background(), extensiontest.NewNopSettings(typ), cfg)
@@ -649,11 +658,13 @@ func TestComponentLifecycle(t *testing.T) {
 
 		{{- if not .Tests.SkipLifecycle }}
 		t.Run(tt.name + "-lifecycle", func(t *testing.T) {
-			firstConnector, err := tt.createFn(context.Background(), connectortest.NewNopSettings(typ), cfg)
+			ctx, cancel := context.WithCancel(context.Background())
+			firstConnector, err := tt.createFn(ctx, connectortest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			host := {{ .Tests.Host }}
 			require.NoError(t, err)
-			require.NoError(t, firstConnector.Start(context.Background(), host))
+			require.NoError(t, firstConnector.Start(ctx, host))
+			checkNoopCancel(t, cancel)
 			require.NoError(t, firstConnector.Shutdown(context.Background()))
 			secondConnector, err := tt.createFn(context.Background(), connectortest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
@@ -719,4 +730,14 @@ func (mnh *mdatagenNopHost) GetExtensions() map[component.ID]component.Component
 func (mnh *mdatagenNopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
 	return nil
 }
+
+func checkNoopCancel(t *testing.T, cancel func()) {
+	time.Sleep(1 * time.Second) // Wait for short background tasks to settle
+	before := runtime.NumGoroutine()
+	cancel()
+	time.Sleep(250 * time.Millisecond) // Wait for background tasks waiting on ctx to be cancelled
+	after := runtime.NumGoroutine()
+	require.Equal(t, before, after, "invalid use of Create/Start context: some background goroutines may be cancelled by startup timeout")
+}
+
 {{- end }}

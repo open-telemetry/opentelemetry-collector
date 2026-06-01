@@ -4,7 +4,9 @@ package sampleentityreceiver
 
 import (
 	"context"
+	"runtime"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -57,11 +59,12 @@ func TestComponentLifecycle(t *testing.T) {
 			require.NoError(t, err)
 		})
 		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
-			firstRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettings(typ), cfg)
+			ctx, cancel := context.WithCancel(context.Background())
+			firstRcvr, err := tt.createFn(ctx, receivertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			host := newMdatagenNopHost()
-			require.NoError(t, err)
-			require.NoError(t, firstRcvr.Start(context.Background(), host))
+			require.NoError(t, firstRcvr.Start(ctx, host))
+			checkNoopCancel(t, cancel)
 			require.NoError(t, firstRcvr.Shutdown(context.Background()))
 			secondRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
@@ -85,4 +88,13 @@ func (mnh *mdatagenNopHost) GetExtensions() map[component.ID]component.Component
 
 func (mnh *mdatagenNopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
 	return nil
+}
+
+func checkNoopCancel(t *testing.T, cancel func()) {
+	time.Sleep(1 * time.Second) // Wait for short background tasks to settle
+	before := runtime.NumGoroutine()
+	cancel()
+	time.Sleep(250 * time.Millisecond) // Wait for background tasks waiting on ctx to be cancelled
+	after := runtime.NumGoroutine()
+	require.Equal(t, before, after, "invalid use of Create/Start context: some background goroutines may be cancelled by startup timeout")
 }

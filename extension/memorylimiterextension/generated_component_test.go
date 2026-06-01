@@ -4,7 +4,9 @@ package memorylimiterextension
 
 import (
 	"context"
+	"runtime"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -40,9 +42,11 @@ func TestComponentLifecycle(t *testing.T) {
 		require.NoError(t, err)
 	})
 	t.Run("lifecycle", func(t *testing.T) {
-		firstExt, err := factory.Create(context.Background(), extensiontest.NewNopSettings(typ), cfg)
+		ctx, cancel := context.WithCancel(context.Background())
+		firstExt, err := factory.Create(ctx, extensiontest.NewNopSettings(typ), cfg)
 		require.NoError(t, err)
-		require.NoError(t, firstExt.Start(context.Background(), newMdatagenNopHost()))
+		require.NoError(t, firstExt.Start(ctx, newMdatagenNopHost()))
+		checkNoopCancel(t, cancel)
 		require.NoError(t, firstExt.Shutdown(context.Background()))
 
 		secondExt, err := factory.Create(context.Background(), extensiontest.NewNopSettings(typ), cfg)
@@ -66,4 +70,13 @@ func (mnh *mdatagenNopHost) GetExtensions() map[component.ID]component.Component
 
 func (mnh *mdatagenNopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
 	return nil
+}
+
+func checkNoopCancel(t *testing.T, cancel func()) {
+	time.Sleep(1 * time.Second) // Wait for short background tasks to settle
+	before := runtime.NumGoroutine()
+	cancel()
+	time.Sleep(250 * time.Millisecond) // Wait for background tasks waiting on ctx to be cancelled
+	after := runtime.NumGoroutine()
+	require.Equal(t, before, after, "invalid use of Create/Start context: some background goroutines may be cancelled by startup timeout")
 }

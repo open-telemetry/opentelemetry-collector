@@ -5,6 +5,7 @@ package sampleprocessor
 
 import (
 	"context"
+	"runtime"
 	"testing"
 	"time"
 
@@ -85,11 +86,13 @@ func TestComponentLifecycle(t *testing.T) {
 			require.NoError(t, err)
 		})
 		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(typ), cfg)
+			ctx, cancel := context.WithCancel(context.Background())
+			c, err := tt.createFn(ctx, processortest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			host := newMdatagenNopHost()
-			err = c.Start(context.Background(), host)
+			err = c.Start(ctx, host)
 			require.NoError(t, err)
+			checkNoopCancel(t, cancel)
 			require.NotPanics(t, func() {
 				switch tt.name {
 				case "logs":
@@ -174,4 +177,13 @@ func (mnh *mdatagenNopHost) GetExtensions() map[component.ID]component.Component
 
 func (mnh *mdatagenNopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
 	return nil
+}
+
+func checkNoopCancel(t *testing.T, cancel func()) {
+	time.Sleep(1 * time.Second) // Wait for short background tasks to settle
+	before := runtime.NumGoroutine()
+	cancel()
+	time.Sleep(250 * time.Millisecond) // Wait for background tasks waiting on ctx to be cancelled
+	after := runtime.NumGoroutine()
+	require.Equal(t, before, after, "invalid use of Create/Start context: some background goroutines may be cancelled by startup timeout")
 }
