@@ -641,6 +641,8 @@ type Attribute struct {
 	RequirementLevel AttributeRequirementLevel `mapstructure:"requirement_level"`
 	// The semantic convention reference of the attribute.
 	SemanticConvention *SemanticConvention `mapstructure:"semantic_convention"`
+	// Stability is the stability level of the resource attribute.
+	Stability component.StabilityLevel `mapstructure:"stability"`
 }
 
 // IsConditional returns true if the attribute is conditionally required.

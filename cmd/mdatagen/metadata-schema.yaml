@@ -168,6 +168,8 @@ resource_attributes:
     enum: [string]
     # Required: attribute value type.
     type: <string|int|double|bool|bytes|slice|map>
+    # Optional: the stability level of the resource attribute.
+    stability: <development|alpha|beta|release_candidate|stable>
     # Optional: warnings that will be shown to user under specified conditions.
     warnings:
       # A warning that will be displayed if the resource_attribute is enabled in user config.
