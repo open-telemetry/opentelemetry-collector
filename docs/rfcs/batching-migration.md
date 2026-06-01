@@ -204,13 +204,16 @@ These are loosely dependent,
 4. Implement `queuebatchprocessor`
    ([#13583](https://github.com/open-telemetry/opentelemetry-collector/pull/13583)).
 5. Update documentation explaining `batchprocessor` deprecation with
-   instructions to adopt explicit exporterhelper `queue_sender` settings
-   or the new `queuebatchprocessor`.
+   instructions to adopt explicit exporterhelper `queue_sender`
+   settings or the new `queuebatchprocessor`. Issue release notes and
+   advisories to distros to remove `batchprocessor` from
+   documentation. Create a blog post about what's happening to
+   `batchprocessor`, get it approved.
 
 ### Phase 2
 
-6. Deprecate `batchprocessor`. The first release where this lands is
-   **`B1`**.
+6. Deprecate `batchprocessor`. Release the blog post. The first
+   release where this lands is **`B1`**.
 7. Full audit of exporters and default settings. Exporters can opt-in
    to the migration here by electing `Some` instead of `Default` or
    `None`.
