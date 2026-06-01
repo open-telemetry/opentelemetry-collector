@@ -8,6 +8,6 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `configoptional.AddEnabledField` | beta | Allows optional fields to be toggled via an 'enabled' field. | v0.138.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/14021) |
+| `configoptional.AddEnabledField` | stable | Allows optional fields to be toggled via an 'enabled' field. | v0.138.0 | v0.154.0 | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/14021) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

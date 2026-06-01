@@ -7,6 +7,24 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.59.0/v0.153.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/configoptional`: Stabilize feature gate configoptional.AddEnabledField (#15333)
+- `pkg/confmap`: Stabilize confmap.newExpandedValueSanitizer feature gate (#15339)
+- `pkg/exporterhelper`: mark exporter.PersistRequestContext as stable (#15330)
+- `pkg/otelcol`: Stabilize otelcol.printInitialConfig gate (#15340)
+- `pkg/pdata`: Remove pdata.useCustomProtoEncoding feature gate (#15332)
+- `pkg/service`: Stabilize telemetry.UseLocalHostAsDefaultMetricsAddress gate (#15342)
+- `pkg/xpdata`: Stabilize pdata.enableRefCounting feature gate (#15331)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/config/configgrpc`: Fix memory corruption and fatal error in Snappy (#15237, #15320)
+
+<!-- previous-version -->
+
 ## v1.58.0/v0.152.0
 
 ### 💡 Enhancements 💡

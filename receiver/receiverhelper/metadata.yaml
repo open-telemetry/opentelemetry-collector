@@ -128,3 +128,4 @@ feature_gates:
     stage: alpha
     from_version: 'v0.138.0'
     reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/pull/12802'
+    skip_strict_validation: true
