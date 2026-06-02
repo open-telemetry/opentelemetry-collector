@@ -112,6 +112,11 @@ The `wait_for_result` feature will remain off by default. The
 Collector's default position is to accept data in-memory and return
 success.
 
+Note that configuring `wait_for_result: true` together with a
+persistent storage extension is not supported, and should become
+checked as an invalid configuration (tracked under "Additional work
+items" below).
+
 #### Recommendation: block on overflow by default
 
 The `block_on_overflow` feature will become enabled by default.
@@ -121,7 +126,9 @@ all exporters by default to block when the queue is full.  Collector's
 default position is to wait for memory to become available.
 
 A feature flag for this change will be defined,
-`exporterhelper.exporterQueueBlockOnOverflow`.
+`exporterhelper.exporterQueueBlockOnOverflow`. The default
+queue configuration will use `BlockOnOverflow` set to the value
+of the feature, becoming true by default in "beta".
 
 #### Recommendation: exporterhelper batching enabled by default
 
@@ -129,21 +136,22 @@ Currently, components have a mixture of `configoptional.Some`,
 `configoptional.Default`, and `configoptional.None`, usually passing
 `exporterhelper.DefaultQueueBatchConfig()`. However, many of these
 configurations are historical, set to `Default` or `None` because the
-exporterhelper was evolving. Now that it is stabilizing, they should
-be audited. 
+exporterhelper was evolving.
 
-Not all exporters want queue/batching enabled by default. However, we
-believe that many of these will choose batching by default now that
-`batchprocessor` is deprecated. This RFC calls for an audit of the
-components, evaluating for every exporter whether a `Default` or
-`None` should become `Some` regarding the default queue config.
+Not all exporters want queue/batching enabled by default (e.g., to
+avoid out-of-order delivery), however we believe that many exporters
+will choose to enable batching by default now that the feature is
+stable. This RFC calls for an audit of the components, evaluating for
+every exporter whether a `Default` or `None` should become `Some`
+in each exporter's default queue config.
 
 A feature flag for this change will be defined,
 `exporterhelper.exporterQueueBatchEnabled`.
 
 #### Recommended final default queue configuration
 
-The final state for the `NewDefaultQueueConfig` function:
+The `NewDefaultQueueConfig` function will begin being influenced by
+two feature flags.
 
 ```go
 func NewDefaultQueueConfig() queuebatch.Config {
@@ -151,16 +159,30 @@ func NewDefaultQueueConfig() queuebatch.Config {
 		Sizer:           request.SizerTypeRequests,
 		NumConsumers:    10,
 		QueueSize:       1_000,
-		BlockOnOverflow: true,  // CHANGED: Was false.
+        // CHANGED: Blocking is becoming enabled by default.
+		BlockOnOverflow: exporterQueueBlockOnOverflow.IsEnabled(),
         WaitForResult:   false,
-        
-        // CHANGED: Was Default, now Some.
-		Batch: configoptional.Some(queuebatch.BatchConfig{
-			FlushTimeout: 200 * time.Millisecond,
-			Sizer:        request.SizerTypeItems,
-			MinSize:      8192,
-		}),
+		Batch: configoptional.DefaultOrSome(
+            // CHANGED: Batching is becoming enabled by default.
+            exporterQueueBatchEnabled.IsEnabled(),
+            queuebatch.BatchConfig{
+			    FlushTimeout: 200 * time.Millisecond,
+			    Sizer:        request.SizerTypeItems,
+			    MinSize:      8192,
+            }),
 	}
+}
+```
+
+The above makes use of an hypothetical `configoptional` helper:
+
+```
+// DefaultOrSome ties a feature flag to a default-to-some transition.
+func DefaultOrSome[T any](feature bool, value T) Optional[T] {
+	if feature {
+		return Some(value)
+	}
+	return Default(value)		
 }
 ```
 
@@ -173,7 +195,12 @@ batch processor has settings that are out of line with the new
 exporterhelper defaults, users will pay the cost of batching and then
 re-batching.
 
-### Phase-out sequence
+Users have 6 releases to (~3 months) during which the batch processor
+will print a warning that users should upgrade. Double batching is
+avoided by removing the batch processor before changing the
+exporterhelper default.
+
+## Full timeline
 
 We treat the batchprocessor deprecation as separate from the change of
 exporterhelper default with an interleaved timeline. That is:
@@ -185,9 +212,20 @@ exporterhelper default with an interleaved timeline. That is:
 2. Exporterhelper will introduce two feature flags and proceed to enable
    `wait_for_result: true` and batching `enabled: true`.
 
-## Full timeline
-
 The sequence of events is ordered in phases.
+
+### User-visible behavior across phases
+
+The following table summarizes what an operator running a typical
+pipeline observes at each phase:
+
+| Phase | `batchprocessor` in config                                   | exporterhelper defaults                                                    | Net behavior                                                                                                                                   | Release version |
+|-------|--------------------------------------------------------------|----------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|
+| <1    | OK                                                           | `batch::enabled: false`, `block_on_overflow: false`                        | Documented behavior                                                                                                                            | <B1             |
+| 1     | OK                                                           | Unchanged; feature gates are Alpha (default off)                           | No change for users; new `queuebatchprocessor` and docs available for opt-in migration.                                                        | <B1             |
+| 2     | Works, prints deprecation warning pointing to migration docs | Unchanged; gates still Alpha/off                                           | Users see warnings and have six releases to migrate.                                                                                           | B1              |
+| 3     | Removed, Collector fails to start if referenced              | Gates Beta (default on): `batch::enabled: true`, `block_on_overflow: true` | Pipelines that didn't migrate fail fast; exporters batch and apply backpressure by default; users can still opt out via gate for six releases. | B1+6            |
+| 4     | n/a                                                          | Gates Stable and removed; new defaults permanent                           | Users choose `exporterhelper` or `queuebatchprocessor` for batching                                                                            | B1+12           |
 
 ### Phase 1
 
@@ -195,9 +233,12 @@ These are loosely dependent,
 
 1. Ensure all exporters in OpenTelemetry repos define `queue_sender` having
    type `configoptional.Optional[exporterhelper.QueueBatchConfig]`.
-   Exporters that do not define `queue_sender` will may opt-in to
-   `Some` or `Default` behavior.
-2. Define the two feature flags.
+   Add an mdatagen-generated check that fails when an exporter's default
+   config omits `queue_sender` or sets it to a non-standard value, with
+   a `metadata.yaml` opt-out field for the exporters that legitimately
+   need different defaults (e.g., pull-based exporters). Exporters that
+   do not define `queue_sender` may opt in to `Some` or `Default` behavior.
+2. Introduce the two feature gates at **Alpha** stability (default off).
 3. Support a configurable metrics prefix to distinguish processor
    batching from exporter batching
    ([#14038](https://github.com/open-telemetry/opentelemetry-collector/issues/14038)).
@@ -231,8 +272,9 @@ settings.
 In a single release cycle:
 
 9. Remove `batchprocessor`.
-10. Change both feature flags to Stable. Exporterhelper now blocks on
-    overflow, batching enabled by default.
+10. Promote both feature gates to **Beta** (default on). Exporterhelper
+    now blocks on overflow and enables batching by default; users can
+    still opt out via the gate for one cycle.
 11. Update standard Helm charts removing the batch processor.
     Exporterhelper defaults change in the same release.
 
@@ -240,7 +282,18 @@ In a single release cycle:
 
 We will wait another +6 releases (~3 months).
 
-12. Remove the two feature flags.
+12. Promote both feature gates to **Stable** and remove them. The new
+    exporterhelper defaults become permanent and can no longer be
+    toggled via the gate.
+
+## Additional work items
+
+Items adjacent to this migration that should be tracked separately but
+ideally land before or during Phase 3:
+
+- Reject `wait_for_result: true` combined with a configured storage
+  extension at configuration validation time (see "Recommendation: no
+  error propagation by default" above).
 
 ## Conclusion
 
