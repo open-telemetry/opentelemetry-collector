@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: cmd/mdatagen
+note: Fix GitHub issues badge label for nested components to use full repo-relative path instead of immediate parent folder name.
+issues: [14501]
+change_logs: [user]
