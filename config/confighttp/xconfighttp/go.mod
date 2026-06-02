@@ -7,7 +7,7 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.153.0
 	go.opentelemetry.io/collector/config/confighttp v0.153.0
 	go.opentelemetry.io/collector/config/confignet v1.59.0
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0
 	go.opentelemetry.io/otel/sdk v1.44.0
 	go.opentelemetry.io/otel/trace v1.44.0
 )
