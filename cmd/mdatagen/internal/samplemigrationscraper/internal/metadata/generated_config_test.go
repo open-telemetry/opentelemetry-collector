@@ -85,6 +85,30 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+func TestSystemCPUUtilizationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemCPUUtilization
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemCPUUtilizationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.cpu.utilization doesn't have an attribute invalid, valid attributes: [cpu, state]")
+
+	cfg = DefaultMetricsConfig().SystemCPUUtilization
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemCPUUtilizationV1MetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemCPUUtilizationV1
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemCPUUtilizationV1MetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.cpu.utilization@v1 doesn't have an attribute invalid, valid attributes: [cpu.logical_number, state]")
+
+	cfg = DefaultMetricsConfig().SystemCPUUtilizationV1
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
