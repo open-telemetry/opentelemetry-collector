@@ -306,6 +306,7 @@ push-tags:
 	set -e; tags=`$(GO_TOOL) multimod tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using"`; \
 	if [ -n "$$tags" ]; then \
 		echo "$$tags" | xargs git push ${REMOTE}; \
+		echo "All tags have been successfully pushed."; \
 	fi;
 
 .PHONY: check-changes
