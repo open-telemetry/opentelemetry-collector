@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -31,12 +32,12 @@ const (
 	HTTPSScheme SchemeType = "https"
 )
 
-// pollingIntervalQueryParam is the name of the URI query parameter that opts
-// the provider into polling the configured URL for changes. It is parsed by
-// time.ParseDuration; a zero or absent value preserves the historical
-// one-shot behavior. The parameter is stripped from the URL before any
-// HTTP request is issued so it is never visible to the upstream server.
-const pollingIntervalQueryParam = "polling_interval"
+// pollingIntervalQueryParam is the name of the URI query parameter
+// that opts the provider into polling the configured URL for
+// changes. The name is namespaced with an "otel_config_" prefix to
+// make collisions with a query parameter the upstream server already
+// uses very unlikely.
+const pollingIntervalQueryParam = "otel_config_polling_interval"
 
 type provider struct {
 	scheme             SchemeType
@@ -44,8 +45,18 @@ type provider struct {
 	insecureSkipVerify bool   // Used for tests
 	logger             *zap.Logger
 
-	mu      sync.Mutex
-	cancels []context.CancelFunc
+	mu sync.Mutex
+
+	// nextID hands out a unique key for each in-flight polling Retrieve so its
+	// Retrieved.Close can remove exactly its own cancel from the map below.
+	nextID uint64
+
+	// cancels holds the cancel func for every currently-active polling
+	// goroutine, keyed by nextID. Entries are added in Retrieve and removed in
+	// the matching Retrieved.Close, so the map stays bounded to the number of
+	// live config sources even across the many Retrieve/Close cycles a
+	// long-running Collector performs on every config reload.
+	cancels map[uint64]context.CancelFunc
 	wg      sync.WaitGroup
 }
 
@@ -56,12 +67,13 @@ type provider struct {
 // One example for http-uri: http://localhost:3333/getConfig
 // One example for https-uri: https://localhost:3333/getConfig
 //
-// When the URI carries a non-zero "polling_interval" query parameter (e.g.
-// http://localhost:3333/getConfig?polling_interval=30s), the provider will
-// fetch the configuration on that cadence after the initial retrieval and
-// invoke the WatcherFunc supplied to Retrieve when the response body changes.
-// Without the parameter, the provider issues a single GET and never polls,
-// matching the historical behavior.
+// When the URI carries a non-zero "otel_config_polling_interval" query
+// parameter (e.g. http://localhost:3333/getConfig?otel_config_polling_interval=30s),
+// the provider will fetch the configuration on that cadence after the initial
+// retrieval and invoke the WatcherFunc supplied to Retrieve when the response
+// body changes. The parameter is forwarded to the server unchanged. Without
+// the parameter, the provider issues a single GET and never polls, matching
+// the historical behavior.
 //
 // This is used by the http and https external implementations.
 func New(scheme SchemeType, set confmap.ProviderSettings) confmap.Provider {
@@ -69,7 +81,11 @@ func New(scheme SchemeType, set confmap.ProviderSettings) confmap.Provider {
 	if logger == nil {
 		logger = zap.NewNop()
 	}
-	return &provider{scheme: scheme, logger: logger}
+	return &provider{
+		scheme:  scheme,
+		logger:  logger,
+		cancels: make(map[uint64]context.CancelFunc),
+	}
 }
 
 // Create the client based on the type of scheme that was selected.
@@ -112,38 +128,50 @@ func (fmp *provider) Retrieve(ctx context.Context, uri string, watcher confmap.W
 		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, string(fmp.scheme))
 	}
 
-	fetchURI, interval, err := splitPollingInterval(uri)
-	if err != nil {
-		return nil, err
-	}
-
-	if _, err = url.ParseRequestURI(fetchURI); err != nil {
+	if _, err := url.ParseRequestURI(uri); err != nil {
 		return nil, fmt.Errorf("invalid uri %q: %w", uri, err)
 	}
 
-	body, etag, _, err := fmp.fetch(ctx, fetchURI, "")
+	// The polling interval is read from, but never removed from, the URI: the
+	// parameter is forwarded to the server unchanged (see pollingIntervalQueryParam).
+	interval := fmp.pollingIntervalFromURI(uri)
+
+	// Build the HTTP client once and reuse it for the initial fetch and every
+	// subsequent poll so connections are kept alive and any TLS material is
+	// read from disk a single time instead of on every request.
+	client, err := fmp.createClient()
+	if err != nil {
+		return nil, fmt.Errorf("unable to configure http transport layer: %w", err)
+	}
+
+	body, etag, _, err := fmp.fetch(ctx, client, uri, "")
 	if err != nil {
 		return nil, err
 	}
 
 	// Polling is opt-in: only spawn a watcher goroutine when a non-zero
-	// polling_interval was supplied AND the caller actually wants to be
-	// notified of changes. Either condition missing means we behave exactly
-	// like the historical one-shot path.
+	// interval was supplied AND the caller actually wants to be notified of
+	// changes. Either condition missing means we behave exactly like the
+	// historical one-shot path.
 	if interval == 0 || watcher == nil {
 		return confmap.NewRetrievedFromYAML(body)
 	}
 
 	pollCtx, cancel := context.WithCancel(context.WithoutCancel(ctx))
 	fmp.mu.Lock()
-	fmp.cancels = append(fmp.cancels, cancel)
+	id := fmp.nextID
+	fmp.nextID++
+	fmp.cancels[id] = cancel
 	fmp.mu.Unlock()
 
 	fmp.wg.Go(func() {
-		fmp.poll(pollCtx, fetchURI, etag, sha256.Sum256(body), interval, watcher)
+		fmp.poll(pollCtx, client, uri, etag, sha256.Sum256(body), interval, watcher)
 	})
 
 	return confmap.NewRetrievedFromYAML(body, confmap.WithRetrievedClose(func(context.Context) error {
+		fmp.mu.Lock()
+		delete(fmp.cancels, id)
+		fmp.mu.Unlock()
 		cancel()
 		return nil
 	}))
@@ -158,7 +186,9 @@ func (fmp *provider) Shutdown(ctx context.Context) error {
 	for _, c := range fmp.cancels {
 		c()
 	}
-	fmp.cancels = nil
+	// Keep the map non-nil (just emptied) so a Retrieve that races in after
+	// Shutdown cannot panic assigning into a nil map.
+	clear(fmp.cancels)
 	fmp.mu.Unlock()
 
 	done := make(chan struct{})
@@ -181,12 +211,7 @@ func (fmp *provider) Shutdown(ctx context.Context) error {
 // returned etag is the value of the response "ETag" header (empty when the
 // server does not advertise one), or the supplied ifNoneMatch when the server
 // answered with 304.
-func (fmp *provider) fetch(ctx context.Context, fetchURI, ifNoneMatch string) ([]byte, string, int, error) {
-	client, err := fmp.createClient()
-	if err != nil {
-		return nil, "", 0, fmt.Errorf("unable to configure http transport layer: %w", err)
-	}
-
+func (fmp *provider) fetch(ctx context.Context, client *http.Client, fetchURI, ifNoneMatch string) ([]byte, string, int, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fetchURI, http.NoBody)
 	if err != nil {
 		return nil, "", 0, fmt.Errorf("unable to construct request for uri %q: %w", fetchURI, err)
@@ -228,7 +253,15 @@ func (fmp *provider) fetch(ctx context.Context, fetchURI, ifNoneMatch string) ([
 // Change detection prefers the server-supplied ETag when available and falls
 // back to a SHA-256 of the response body, so the feature also works against
 // servers that do not advertise ETags.
-func (fmp *provider) poll(ctx context.Context, fetchURI, etag string, bodyHash [sha256.Size]byte, interval time.Duration, watcher confmap.WatcherFunc) {
+func (fmp *provider) poll(
+	ctx context.Context,
+	client *http.Client,
+	fetchURI,
+	etag string,
+	bodyHash [sha256.Size]byte,
+	interval time.Duration,
+	watcher confmap.WatcherFunc,
+) {
 	t := time.NewTicker(interval)
 	defer t.Stop()
 
@@ -239,7 +272,7 @@ func (fmp *provider) poll(ctx context.Context, fetchURI, etag string, bodyHash [
 		case <-t.C:
 		}
 
-		body, newEtag, status, err := fmp.fetch(ctx, fetchURI, etag)
+		body, newEtag, status, err := fmp.fetch(ctx, client, fetchURI, etag)
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				return
@@ -273,38 +306,61 @@ func (fmp *provider) poll(ctx context.Context, fetchURI, etag string, bodyHash [
 	}
 }
 
-// splitPollingInterval parses the polling_interval query parameter out of uri
-// and returns the URI to use for HTTP requests (with the parameter removed)
-// alongside the parsed interval. A zero interval indicates polling is
-// disabled, which is the default when the parameter is absent.
-func splitPollingInterval(uri string) (string, time.Duration, error) {
+// pollingIntervalFromURI reads the polling cadence requested by the
+// pollingIntervalQueryParam query parameter. A return of 0 means "do not poll",
+// which is the behavior for an absent, empty, or explicitly zero value.
+//
+// The parameter is intentionally left in uri (it is not stripped): callers fetch
+// the original URI so the parameter is forwarded to the server unchanged. A
+// non-empty value that cannot be interpreted as a non-negative duration is
+// logged at WARN and disables polling rather than failing - the value is then
+// treated as if it belonged to the upstream server. This keeps the Collector
+// from refusing to start when a server happens to use the same parameter name.
+func (fmp *provider) pollingIntervalFromURI(uri string) time.Duration {
 	if !strings.Contains(uri, pollingIntervalQueryParam) {
-		// Hot path: no polling_interval anywhere in the URI - return it
-		// untouched so we don't perturb the wire format for users who
-		// haven't opted in.
-		return uri, 0, nil
+		// Hot path: nothing to parse for users who have not opted in.
+		return 0
 	}
 
 	parsed, err := url.Parse(uri)
 	if err != nil {
-		return "", 0, fmt.Errorf("invalid uri %q: %w", uri, err)
+		// Malformed URI; Retrieve's url.ParseRequestURI surfaces the error.
+		return 0
 	}
 
-	q := parsed.Query()
-	raw := q.Get(pollingIntervalQueryParam)
+	raw := parsed.Query().Get(pollingIntervalQueryParam)
 	if raw == "" {
-		return uri, 0, nil
+		return 0
 	}
 
-	interval, err := time.ParseDuration(raw)
-	if err != nil {
-		return "", 0, fmt.Errorf("invalid polling_interval %q in uri %q: %w", raw, uri, err)
+	interval, ok := parseInterval(raw)
+	if !ok {
+		fmp.logger.Warn(
+			"ignoring "+pollingIntervalQueryParam+" query parameter: not a valid non-negative duration; "+
+				"treating it as an upstream query parameter and not polling",
+			zap.String("value", raw),
+		)
+		return 0
 	}
-	if interval < 0 {
-		return "", 0, fmt.Errorf("invalid polling_interval %q in uri %q: must be non-negative", raw, uri)
-	}
+	return interval
+}
 
-	q.Del(pollingIntervalQueryParam)
-	parsed.RawQuery = q.Encode()
-	return parsed.String(), interval, nil
+// parseInterval interprets a polling-interval value. It accepts any string
+// understood by time.ParseDuration (e.g. "30s", "5m") and, as a convenience,
+// a bare number with no unit which is taken to mean seconds (e.g. "2" == "2s").
+// It returns ok=false for values that are unparseable or negative.
+func parseInterval(raw string) (time.Duration, bool) {
+	if d, err := time.ParseDuration(raw); err == nil {
+		if d < 0 {
+			return 0, false
+		}
+		return d, true
+	}
+	if n, err := strconv.ParseFloat(raw, 64); err == nil {
+		if n < 0 {
+			return 0, false
+		}
+		return time.Duration(n * float64(time.Second)), true
+	}
+	return 0, false
 }

@@ -13,6 +13,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"math/big"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -24,6 +25,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -338,8 +342,7 @@ const (
 
 // pollingTestServer hosts a configurable response body and ETag that the test
 // can mutate at any time, recording every observed request URL so callers can
-// assert that the polling_interval query parameter is stripped before the
-// request leaves the provider.
+// assert which query parameters the provider forwards to the server.
 type pollingTestServer struct {
 	t            *testing.T
 	mu           atomic.Pointer[pollingResponse]
@@ -469,7 +472,7 @@ func TestPolling_DisabledByDefault(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, ret.Close(context.Background())) })
 
-	// Without polling_interval, the provider must not poll. Mutate the
+	// Without otel_config_polling_interval, the provider must not poll. Mutate the
 	// server response and assert the watcher stays silent.
 	pts.setResponse("changed", `"etag-2"`)
 	expectQuiet(t, fired)
@@ -483,7 +486,7 @@ func TestPolling_ZeroIntervalDisabled(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, fp.Shutdown(context.Background())) })
 
 	watcher, count, fired := makeWatcher()
-	ret, err := fp.Retrieve(context.Background(), pts.retrieveURI("polling_interval=0s"), watcher)
+	ret, err := fp.Retrieve(context.Background(), pts.retrieveURI("otel_config_polling_interval=0s"), watcher)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, ret.Close(context.Background())) })
 
@@ -497,7 +500,7 @@ func TestPolling_NilWatcherDisablesPolling(t *testing.T) {
 	fp := newConfigurableHTTPProvider(HTTPScheme, confmaptest.NewNopProviderSettings())
 	t.Cleanup(func() { require.NoError(t, fp.Shutdown(context.Background())) })
 
-	ret, err := fp.Retrieve(context.Background(), pts.retrieveURI("polling_interval=25ms"), nil)
+	ret, err := fp.Retrieve(context.Background(), pts.retrieveURI("otel_config_polling_interval=25ms"), nil)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, ret.Close(context.Background())) })
 
@@ -514,7 +517,7 @@ func TestPolling_DetectsChangeViaETag(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, fp.Shutdown(context.Background())) })
 
 	watcher, count, fired := makeWatcher()
-	uri := pts.retrieveURI("polling_interval=" + testPollInterval.String())
+	uri := pts.retrieveURI("otel_config_polling_interval=" + testPollInterval.String())
 	ret, err := fp.Retrieve(context.Background(), uri, watcher)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, ret.Close(context.Background())) })
@@ -536,7 +539,7 @@ func TestPolling_DetectsChangeViaBodyHashWhenNoETag(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, fp.Shutdown(context.Background())) })
 
 	watcher, count, fired := makeWatcher()
-	uri := pts.retrieveURI("polling_interval=" + testPollInterval.String())
+	uri := pts.retrieveURI("otel_config_polling_interval=" + testPollInterval.String())
 	ret, err := fp.Retrieve(context.Background(), uri, watcher)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, ret.Close(context.Background())) })
@@ -556,7 +559,7 @@ func TestPolling_NoChangeStays304(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, fp.Shutdown(context.Background())) })
 
 	watcher, count, fired := makeWatcher()
-	uri := pts.retrieveURI("polling_interval=" + testPollInterval.String())
+	uri := pts.retrieveURI("otel_config_polling_interval=" + testPollInterval.String())
 	ret, err := fp.Retrieve(context.Background(), uri, watcher)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, ret.Close(context.Background())) })
@@ -574,7 +577,7 @@ func TestPolling_TransportErrorsDoNotTearDown(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, fp.Shutdown(context.Background())) })
 
 	watcher, count, fired := makeWatcher()
-	uri := pts.retrieveURI("polling_interval=" + testPollInterval.String())
+	uri := pts.retrieveURI("otel_config_polling_interval=" + testPollInterval.String())
 	ret, err := fp.Retrieve(context.Background(), uri, watcher)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, ret.Close(context.Background())) })
@@ -590,12 +593,12 @@ func TestPolling_TransportErrorsDoNotTearDown(t *testing.T) {
 	assert.Equal(t, int32(1), count.Load())
 }
 
-func TestPolling_StripsParamFromRequestURL(t *testing.T) {
+func TestPolling_ForwardsParamToServer(t *testing.T) {
 	pts := newPollingTestServer(t)
 	fp := newConfigurableHTTPProvider(HTTPScheme, confmaptest.NewNopProviderSettings())
 	t.Cleanup(func() { require.NoError(t, fp.Shutdown(context.Background())) })
 
-	uri := pts.retrieveURI("foo=bar&polling_interval=" + testPollInterval.String() + "&baz=qux")
+	uri := pts.retrieveURI("foo=bar&otel_config_polling_interval=" + testPollInterval.String() + "&baz=qux")
 	ret, err := fp.Retrieve(context.Background(), uri, nil)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, ret.Close(context.Background())) })
@@ -604,39 +607,141 @@ func TestPolling_StripsParamFromRequestURL(t *testing.T) {
 	require.NotEmpty(t, requests)
 	for _, r := range requests {
 		q := r.URL.Query()
-		assert.Empty(t, q.Get("polling_interval"), "polling_interval must be stripped from outbound requests")
+		// The parameter is namespaced and forwarded unchanged so a server that
+		// happens to use the same key keeps working - it must NOT be stripped.
+		assert.Equal(t, testPollInterval.String(), q.Get("otel_config_polling_interval"),
+			"otel_config_polling_interval must be forwarded to the server, not stripped")
 		assert.Equal(t, "bar", q.Get("foo"), "unrelated query parameters must be preserved")
 		assert.Equal(t, "qux", q.Get("baz"))
 	}
 }
 
-func TestPolling_InvalidIntervalReturnsError(t *testing.T) {
+func TestPolling_MalformedURIReturnsError(t *testing.T) {
+	fp := newConfigurableHTTPProvider(HTTPScheme, confmaptest.NewNopProviderSettings())
+	t.Cleanup(func() { require.NoError(t, fp.Shutdown(context.Background())) })
+
+	// %zz is an invalid percent-encoding sequence, so url.ParseRequestURI in
+	// Retrieve rejects the URI before any fetch is attempted - independent of
+	// the polling parameter.
+	_, err := fp.Retrieve(context.Background(), "http://example.com/%zz?otel_config_polling_interval=1s", nil)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "invalid uri")
+}
+
+func TestParseInterval(t *testing.T) {
+	tests := []struct {
+		raw  string
+		want time.Duration
+		ok   bool
+	}{
+		{"30s", 30 * time.Second, true},
+		{"5m", 5 * time.Minute, true},
+		{"100ms", 100 * time.Millisecond, true},
+		// A bare number with no unit is interpreted as seconds.
+		{"30", 30 * time.Second, true},
+		{"2", 2 * time.Second, true},
+		{"1.5", 1500 * time.Millisecond, true},
+		// Zero is valid and means "do not poll".
+		{"0", 0, true},
+		{"0s", 0, true},
+		// Unparseable or negative values are rejected.
+		{"not-a-duration", 0, false},
+		{"-1s", 0, false},
+		{"-2", 0, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.raw, func(t *testing.T) {
+			got, ok := parseInterval(tt.raw)
+			assert.Equal(t, tt.ok, ok)
+			if tt.ok {
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
+func TestPolling_BareNumberEnablesPolling(t *testing.T) {
+	// A bare number with no unit is interpreted as seconds, so "1" enables
+	// polling on a one-second cadence.
 	pts := newPollingTestServer(t)
 	fp := newConfigurableHTTPProvider(HTTPScheme, confmaptest.NewNopProviderSettings())
 	t.Cleanup(func() { require.NoError(t, fp.Shutdown(context.Background())) })
 
-	tests := []struct {
-		name      string
-		uri       string
-		errSubstr string
-	}{
-		{"unparseable", pts.retrieveURI("polling_interval=not-a-duration"), "polling_interval"},
-		{"negative", pts.retrieveURI("polling_interval=-1s"), "polling_interval"},
-		{"bare integer (no unit)", pts.retrieveURI("polling_interval=30"), "polling_interval"},
-		// %zz is an invalid percent-encoding sequence. url.Parse rejects
-		// it, so splitPollingInterval surfaces an "invalid uri" error from
-		// inside the polling-aware code path. This exercises the
-		// url.Parse error branch of splitPollingInterval that the
-		// other rows above bypass via time.ParseDuration.
-		{"malformed url with polling_interval", "http://example.com/%zz?polling_interval=1s", "invalid uri"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := fp.Retrieve(context.Background(), tt.uri, nil)
-			require.Error(t, err)
-			assert.ErrorContains(t, err, tt.errSubstr)
+	watcher, count, fired := makeWatcher()
+	ret, err := fp.Retrieve(context.Background(), pts.retrieveURI("otel_config_polling_interval=1"), watcher)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, ret.Close(context.Background())) })
+
+	pts.setResponse("changed", `"etag-2"`)
+	waitForWatcher(t, fired)
+	assert.Equal(t, int32(1), count.Load())
+}
+
+func TestPolling_InvalidValueWarnsAndDisablesPolling(t *testing.T) {
+	// A non-empty value that is not a valid non-negative duration must not fail
+	// Retrieve: it is treated as if it belonged to the upstream server (polling
+	// stays off) and the operator gets a WARN so a fat-fingered real interval
+	// is still noticeable.
+	for _, val := range []string{"not-a-duration", "-1s", "-2"} {
+		t.Run(val, func(t *testing.T) {
+			pts := newPollingTestServer(t)
+			core, logs := observer.New(zapcore.WarnLevel)
+			fp := newConfigurableHTTPProvider(HTTPScheme, confmap.ProviderSettings{Logger: zap.New(core)})
+			t.Cleanup(func() { require.NoError(t, fp.Shutdown(context.Background())) })
+
+			watcher, count, fired := makeWatcher()
+			ret, err := fp.Retrieve(context.Background(), pts.retrieveURI("otel_config_polling_interval="+val), watcher)
+			require.NoError(t, err, "an invalid interval must not fail Retrieve")
+			t.Cleanup(func() { require.NoError(t, ret.Close(context.Background())) })
+
+			pts.setResponse("changed", `"etag-2"`)
+			expectQuiet(t, fired)
+			assert.Equal(t, int32(0), count.Load())
+			assert.EqualValues(t, 1, pts.requestCount.Load(),
+				"invalid interval must disable polling (only the initial fetch)")
+			assert.NotEmpty(t, logs.FilterMessageSnippet("otel_config_polling_interval").All(),
+				"expected a WARN about the ignored interval")
 		})
 	}
+}
+
+func TestPolling_ReusesHTTPClientConnection(t *testing.T) {
+	// Reusing one *http.Client across the initial fetch and every poll keeps
+	// the TCP connection alive, so the server should observe exactly one new
+	// connection no matter how many polls happen.
+	var (
+		newConns atomic.Int64
+		reqCount atomic.Int64
+	)
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		reqCount.Add(1)
+		// Stable body and ETag so polling continues forever without firing the
+		// watcher; we only care about connection reuse here.
+		w.Header().Set("ETag", `"etag-stable"`)
+		w.WriteHeader(http.StatusOK)
+		_, _ = fmt.Fprint(w, "same-body")
+	}))
+	srv.Config.ConnState = func(_ net.Conn, state http.ConnState) {
+		if state == http.StateNew {
+			newConns.Add(1)
+		}
+	}
+	srv.Start()
+	t.Cleanup(srv.Close)
+
+	fp := newConfigurableHTTPProvider(HTTPScheme, confmaptest.NewNopProviderSettings())
+	t.Cleanup(func() { require.NoError(t, fp.Shutdown(context.Background())) })
+
+	watcher, _, _ := makeWatcher()
+	ret, err := fp.Retrieve(context.Background(), srv.URL+"?otel_config_polling_interval="+testPollInterval.String(), watcher)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, ret.Close(context.Background())) })
+
+	require.Eventually(t, func() bool { return reqCount.Load() >= 4 },
+		testWatcherTimeout, testPollInterval, "expected several polls to occur")
+
+	assert.EqualValues(t, 1, newConns.Load(),
+		"the provider must reuse a single connection across the initial fetch and all polls")
 }
 
 func TestPolling_RetrievedCloseCancelsGoroutine(t *testing.T) {
@@ -645,7 +750,7 @@ func TestPolling_RetrievedCloseCancelsGoroutine(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, fp.Shutdown(context.Background())) })
 
 	watcher, count, _ := makeWatcher()
-	uri := pts.retrieveURI("polling_interval=" + testPollInterval.String())
+	uri := pts.retrieveURI("otel_config_polling_interval=" + testPollInterval.String())
 	ret, err := fp.Retrieve(context.Background(), uri, watcher)
 	require.NoError(t, err)
 
@@ -669,7 +774,7 @@ func TestPolling_ShutdownCancelsActiveGoroutine(t *testing.T) {
 	fp := newConfigurableHTTPProvider(HTTPScheme, confmaptest.NewNopProviderSettings())
 
 	watcher, count, _ := makeWatcher()
-	uri := pts.retrieveURI("polling_interval=" + testPollInterval.String())
+	uri := pts.retrieveURI("otel_config_polling_interval=" + testPollInterval.String())
 	ret, err := fp.Retrieve(context.Background(), uri, watcher)
 	require.NoError(t, err)
 
@@ -702,13 +807,25 @@ func TestPolling_MultipleRetrieveLifecyclesShareProviderCleanly(t *testing.T) {
 	fp := newConfigurableHTTPProvider(HTTPScheme, confmaptest.NewNopProviderSettings())
 	t.Cleanup(func() { require.NoError(t, fp.Shutdown(context.Background())) })
 
-	uri := pts.retrieveURI("polling_interval=" + testPollInterval.String())
+	uri := pts.retrieveURI("otel_config_polling_interval=" + testPollInterval.String())
+
+	cancelsLen := func() int {
+		fp.mu.Lock()
+		defer fp.mu.Unlock()
+		return len(fp.cancels)
+	}
 
 	for range 3 {
 		watcher, _, _ := makeWatcher()
 		ret, err := fp.Retrieve(context.Background(), uri, watcher)
 		require.NoError(t, err)
+		assert.Equal(t, 1, cancelsLen(), "an active polling Retrieve must track exactly one cancel")
+
 		require.NoError(t, ret.Close(context.Background()))
+		// The cancel must be removed on Close, not just at Shutdown, so the map
+		// stays bounded across the many reload cycles a long-running Collector
+		// performs.
+		assert.Equal(t, 0, cancelsLen(), "Retrieved.Close must remove its own cancel from the map")
 	}
 }
 
@@ -837,7 +954,7 @@ func TestPolling_SameETagOn200StaysQuiet(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, fp.Shutdown(context.Background())) })
 
 	watcher, count, fired := makeWatcher()
-	uri := srv.URL + "?polling_interval=" + testPollInterval.String()
+	uri := srv.URL + "?otel_config_polling_interval=" + testPollInterval.String()
 	ret, err := fp.Retrieve(context.Background(), uri, watcher)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, ret.Close(context.Background())) })
@@ -854,15 +971,15 @@ func TestPolling_SameETagOn200StaysQuiet(t *testing.T) {
 }
 
 func TestPolling_EmptyIntervalParamDisablesPolling(t *testing.T) {
-	// `?polling_interval=` (key present, value empty) must behave exactly
+	// `?otel_config_polling_interval=` (key present, value empty) must behave exactly
 	// like the missing-parameter case: no polling, no error. This covers
-	// the `if raw == ""` early-return branch in splitPollingInterval.
+	// the `if raw == ""` early-return branch in pollingIntervalFromURI.
 	pts := newPollingTestServer(t)
 	fp := newConfigurableHTTPProvider(HTTPScheme, confmaptest.NewNopProviderSettings())
 	t.Cleanup(func() { require.NoError(t, fp.Shutdown(context.Background())) })
 
 	watcher, count, fired := makeWatcher()
-	ret, err := fp.Retrieve(context.Background(), pts.retrieveURI("polling_interval="), watcher)
+	ret, err := fp.Retrieve(context.Background(), pts.retrieveURI("otel_config_polling_interval="), watcher)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, ret.Close(context.Background())) })
 
@@ -870,5 +987,5 @@ func TestPolling_EmptyIntervalParamDisablesPolling(t *testing.T) {
 	expectQuiet(t, fired)
 	assert.Equal(t, int32(0), count.Load())
 	assert.EqualValues(t, 1, pts.requestCount.Load(),
-		"empty polling_interval value must disable polling, like an absent parameter")
+		"empty otel_config_polling_interval value must disable polling, like an absent parameter")
 }

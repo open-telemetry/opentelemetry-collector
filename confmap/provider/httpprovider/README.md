@@ -30,22 +30,29 @@ The scheme for this provider is `http`. Usage looks like the following passed to
 ### Polling
 
 The provider supports opt-in polling so the Collector can pick up
-configuration changes without a restart. Append a `polling_interval` query
-parameter to the URI:
+configuration changes without a restart. Append an `otel_config_polling_interval`
+query parameter to the URI:
 
 ```text
---config=http://example.com/config.yaml?polling_interval=30s
+--config=http://example.com/config.yaml?otel_config_polling_interval=30s
 ```
 
-`polling_interval` accepts any value parseable by Go's
-[`time.ParseDuration`](https://pkg.go.dev/time#ParseDuration). Omitting the
+`otel_config_polling_interval` accepts any value parseable by Go's
+[`time.ParseDuration`](https://pkg.go.dev/time#ParseDuration); a bare number
+with no unit is interpreted as seconds (`...=2` means `2s`). Omitting the
 parameter or setting it to `0s` preserves the historical behavior — a single
-GET at startup and no further fetches.
+GET at startup and no further fetches. A non-empty value that cannot be
+interpreted as a non-negative duration is logged at WARN and disables polling
+rather than failing the Collector.
+
+The parameter name is namespaced (`otel_config_`) to avoid colliding with a
+query parameter the configured server may already use, and — unlike most magic
+parameters — it is **not** stripped from the request: it is forwarded to the
+server unchanged. A server that happens to use the same parameter name keeps
+working, and opting in never alters the bytes a server already received.
 
 When polling is enabled the provider:
 
-- strips `polling_interval` from the request URL so it is never forwarded to
-  the configured server;
 - issues each refresh with `If-None-Match: "<previous ETag>"`, treating `304
   Not Modified` as no change;
 - treats a `200 OK` whose `ETag` (or, when no `ETag` is advertised, whose

@@ -7,7 +7,9 @@ change_type: enhancement
 component: provider/https
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add opt-in polling to the `https` config provider via a `polling_interval` URI query parameter, so the Collector can pick up remote config changes without a restart.
+note: Add opt-in polling to the `https` config provider via an
+`otel_config_polling_interval` URI query parameter, so the Collector
+can pick up remote config changes without a restart.
 
 # One or more tracking issues or pull requests related to the change
 issues: [10264]
@@ -16,12 +18,14 @@ issues: [10264]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Append `?polling_interval=<duration>` (any value parseable by `time.ParseDuration`)
-  to an `https://` `--config` URI to enable. The provider strips the parameter before
-  issuing requests, sends each refresh with `If-None-Match` using the previous `ETag`,
-  and falls back to a SHA-256 of the response body when no `ETag` is advertised. A
-  change triggers an in-process reload via the same path used by `SIGHUP`. Omitting
-  the parameter (or setting it to `0s`) preserves the historical one-shot behavior.
+  Append `?otel_config_polling_interval=<duration>` (any value parseable by
+  `time.ParseDuration`; a bare number means seconds) to an `https://` `--config` URI to
+  enable. The parameter is namespaced and forwarded to the server unchanged (never
+  stripped), so a server that already uses a parameter of the same name keeps working.
+  Each refresh is sent with `If-None-Match` using the previous `ETag`, falling back to a
+  SHA-256 of the response body when no `ETag` is advertised. A change triggers an
+  in-process reload via the same path used by `SIGHUP`. Omitting the parameter (or
+  setting it to `0s`) preserves the historical one-shot behavior.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
