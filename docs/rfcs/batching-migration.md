@@ -95,7 +95,8 @@ per-component.
 
 ### What success looks like
 
-The `batchprocessor` is removed from the core repository.
+The `batchprocessor` is removed from the standard distribution and,
+eventually, from the core repository.
 
 A re-implemented `queuebatchprocessor` will be created (in the core)
 using exporterhelper as the implementation. This will use the combined
@@ -206,11 +207,13 @@ exporterhelper defaults, users will pay the cost of batching and then
 re-batching.
 
 Users have 6 releases (~3 months) during which the batch processor
-will print a warning that users should upgrade. During this window
-the new exporterhelper defaults are still off, so unmodified pipelines
-do not double-batch. Adopters who manually enable the Beta-on values
-to provide feedback (see Phase 2 exit criteria) are protected by the
-startup warning introduced in Phase 1, step 5.
+will print a deprecation warning. During this window the new
+exporterhelper defaults are still off, so unmodified pipelines do not
+double-batch. Adopters who manually enable the Beta-on values to
+provide feedback, and custom builds that continue to ship
+`batchprocessor` after it is dropped from the default distribution in
+Phase 3, are protected by the startup warning introduced in Phase 1,
+step 5.
 
 ## Risks
 
@@ -257,7 +260,7 @@ each phase:
 | <1    | OK                                                           | `batch::enabled: false`, `block_on_overflow: false`                        | Documented behavior                                                                                                                                                        |               |
 | 1     | OK                                                           | Unchanged; feature gates are Alpha (default off)                           | No change for users; new `queuebatchprocessor` and docs available for opt-in migration.                                                                                    |               |
 | 2     | Works, prints deprecation warning pointing to migration docs | Unchanged; gates still Alpha/off                                           | Users see warnings and have at least six releases to migrate; Helm chart switches to the new path while `batchprocessor` still works. Exit gated on early-adopter success. | v0.158.0    |
-| 3     | Removed, Collector fails to start if referenced              | Gates Beta (default on): `batch::enabled: true`, `block_on_overflow: true` | Pipelines that didn't migrate fail fast; exporters batch and apply backpressure by default; users can still opt out via gate for six releases.                             | v0.164.0  |
+| 3     | Removed from default distribution; still available to custom builds. Pipelines using the removed component in the default binary fail to start. | Gates Beta (default on): `batch::enabled: true`, `block_on_overflow: true` | Pipelines that didn't migrate fail fast; exporters batch and apply backpressure by default; users can still opt out via gate for six releases.                             | v0.164.0  |
 | 4     | n/a                                                          | Gates Stable and removed; new defaults permanent                           | Users choose `exporterhelper` or `queuebatchprocessor` for batching                                                                                                        | v0.170.0 |
 
 ### Phase 1
@@ -279,9 +282,9 @@ These are loosely dependent,
 5. Detect pipelines that combine `batchprocessor` with an
    exporterhelper that has batching enabled, and emit a startup warning
    identifying the affected pipeline and exporter. This protects users
-   from silently paying for double batching during Phase 2, when
-   adopters may enable the new defaults manually while `batchprocessor`
-   is still present.
+   from silently paying for double batching during Phase 2 and
+   continues to protect custom-build users who keep `batchprocessor`
+   through Phase 3 and beyond.
 6. Update documentation explaining `batchprocessor` deprecation with
    instructions to adopt explicit exporterhelper `queue_sender`
    settings or the new `queuebatchprocessor`. Issue release notes and
@@ -340,7 +343,12 @@ Once the exit criteria are satisfied:
 
 In a single release cycle:
 
-11. Remove `batchprocessor`.
+11. Remove `batchprocessor` from the standard OpenTelemetry Collector
+    distribution manifest. The component's Go module remains in the
+    core repository so that custom builds (e.g., via `ocb`) can
+    continue to include it as an explicit dependency. The startup
+    warning from Phase 1, step 5 keeps flagging misconfigurations in
+    such custom builds.
 12. Promote both feature gates to **Beta** (default on). Exporterhelper
     now blocks on overflow and enables batching by default; users can
     still opt out via the gate for one cycle.
@@ -352,6 +360,9 @@ We will wait another +6 releases (~3 months).
 13. Promote both feature gates to **Stable** and remove them. The new
     exporterhelper defaults become permanent and can no longer be
     toggled via the gate.
+14. Remove the `batchprocessor` Go module from the core repository.
+    Custom builds that still reference it must move to
+    `queuebatchprocessor` or vendor the component themselves.
 
 ## Additional work items
 
