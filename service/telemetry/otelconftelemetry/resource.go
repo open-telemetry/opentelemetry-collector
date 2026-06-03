@@ -390,7 +390,7 @@ func mergeResourceOverride(base, overlay *xotelconf.Resource) *xotelconf.Resourc
 	if base == nil {
 		return overlay
 	}
-	if base.DetectionDevelopment == nil {
+	if overlay.DetectionDevelopment != nil {
 		base.DetectionDevelopment = overlay.DetectionDevelopment
 	}
 	return base

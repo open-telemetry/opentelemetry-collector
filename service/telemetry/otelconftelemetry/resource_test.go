@@ -840,6 +840,93 @@ resource:
 	})
 }
 
+func TestNewResourceSDK(t *testing.T) {
+	t.Run("OTEL_CONFIG_FILE parse error", func(t *testing.T) {
+		t.Setenv(otelConfigFileEnv, t.TempDir()+"/missing.yaml")
+		t.Setenv(otelExperimentalConfigFileEnv, "")
+
+		_, _, err := newResourceSDK(t.Context(), &xotelconf.Resource{})
+		require.Error(t, err)
+	})
+
+	t.Run("OTEL_EXPERIMENTAL_CONFIG_FILE parse error", func(t *testing.T) {
+		t.Setenv(otelExperimentalConfigFileEnv, t.TempDir()+"/missing.yaml")
+		t.Setenv(otelConfigFileEnv, "")
+
+		_, _, err := newResourceSDK(t.Context(), &xotelconf.Resource{})
+		require.Error(t, err)
+	})
+}
+
+func TestCallExperimentalSDK(t *testing.T) {
+	t.Run("passes through when env unset", func(t *testing.T) {
+		t.Setenv(otelExperimentalConfigFileEnv, "")
+		require.NoError(t, os.Unsetenv(otelExperimentalConfigFileEnv))
+
+		orig := newExperimentalSDK
+		t.Cleanup(func() { newExperimentalSDK = orig })
+		newExperimentalSDK = func(...xotelconf.ConfigurationOption) (xotelconf.SDK, error) {
+			_, ok := os.LookupEnv(otelExperimentalConfigFileEnv)
+			assert.False(t, ok)
+			return xotelconf.SDK{}, nil
+		}
+
+		_, err := callExperimentalSDK()
+		require.NoError(t, err)
+	})
+
+	t.Run("temporarily clears experimental env", func(t *testing.T) {
+		t.Setenv(otelExperimentalConfigFileEnv, "/tmp/otel.yaml")
+
+		orig := newExperimentalSDK
+		t.Cleanup(func() { newExperimentalSDK = orig })
+		newExperimentalSDK = func(...xotelconf.ConfigurationOption) (xotelconf.SDK, error) {
+			_, ok := os.LookupEnv(otelExperimentalConfigFileEnv)
+			assert.False(t, ok)
+			return xotelconf.SDK{}, nil
+		}
+
+		_, err := callExperimentalSDK()
+		require.NoError(t, err)
+
+		value, ok := os.LookupEnv(otelExperimentalConfigFileEnv)
+		require.True(t, ok)
+		assert.Equal(t, "/tmp/otel.yaml", value)
+	})
+}
+
+func TestMergeResourceOverride(t *testing.T) {
+	overlay := &xotelconf.Resource{
+		DetectionDevelopment: &xotelconf.ExperimentalResourceDetection{
+			Detectors: []xotelconf.ExperimentalResourceDetector{
+				{Host: xotelconf.ExperimentalHostResourceDetector{}},
+			},
+		},
+	}
+
+	assert.Nil(t, mergeResourceOverride(nil, nil))
+	assert.Same(t, overlay, mergeResourceOverride(nil, overlay))
+	assert.Nil(t, mergeResourceOverride(&xotelconf.Resource{}, nil).DetectionDevelopment)
+
+	base := &xotelconf.Resource{}
+	merged := mergeResourceOverride(base, overlay)
+	require.Same(t, base, merged)
+	require.NotNil(t, merged.DetectionDevelopment)
+	assert.NotNil(t, merged.DetectionDevelopment.Detectors[0].Host)
+
+	existing := &xotelconf.Resource{
+		DetectionDevelopment: &xotelconf.ExperimentalResourceDetection{
+			Detectors: []xotelconf.ExperimentalResourceDetector{
+				{Service: xotelconf.ExperimentalServiceResourceDetector{}},
+			},
+		},
+	}
+	merged = mergeResourceOverride(existing, overlay)
+	require.Same(t, existing, merged)
+	require.Len(t, merged.DetectionDevelopment.Detectors, 1)
+	assert.NotNil(t, merged.DetectionDevelopment.Detectors[0].Host)
+}
+
 func TestFactoryDoesNotCacheResourceAcrossConfigs(t *testing.T) {
 	factory := NewFactory()
 
