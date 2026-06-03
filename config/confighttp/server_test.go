@@ -1154,7 +1154,7 @@ func TestServerUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test server configuration
-	var serverConfig ServerConfig
+	serverConfig := NewDefaultServerConfig()
 	serverSub, err := cm.Sub("server")
 	require.NoError(t, err)
 	require.NoError(t, serverSub.Unmarshal(&serverConfig))
