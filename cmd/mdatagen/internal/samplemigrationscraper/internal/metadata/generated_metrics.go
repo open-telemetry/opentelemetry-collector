@@ -3,7 +3,9 @@
 package metadata
 
 import (
+	"regexp"
 	"slices"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -20,6 +22,16 @@ const (
 	AggregationStrategyMin = "min"
 	AggregationStrategyMax = "max"
 )
+
+func mustParseInt64(s string) int64 {
+	re := regexp.MustCompile(`-?\d+`)
+	match := re.FindString(s)
+	if match == "" {
+		return 0
+	}
+	v, _ := strconv.ParseInt(match, 10, 64)
+	return v
+}
 
 // AttributeState specifies the value state attribute.
 type AttributeState int
@@ -317,7 +329,7 @@ func (m *metricSystemCPUUtilizationV1) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSystemCPUUtilizationV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuLogicalNumberAttributeValue string, stateAttributeValue string, emitLegacyAttrs bool) {
+func (m *metricSystemCPUUtilizationV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuLogicalNumberAttributeValue int64, stateAttributeValue string, cpuAttributeValue string, emitLegacyAttrs bool) {
 	if !m.config.Enabled {
 		return
 	}
@@ -326,13 +338,13 @@ func (m *metricSystemCPUUtilizationV1) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	if slices.Contains(m.config.EnabledAttributes, SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber) {
-		dp.Attributes().PutStr("cpu.logical_number", cpuLogicalNumberAttributeValue)
+		dp.Attributes().PutInt("cpu.logical_number", cpuLogicalNumberAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SystemCPUUtilizationV1MetricAttributeKeyState) {
 		dp.Attributes().PutStr("state", stateAttributeValue)
 	}
 	if emitLegacyAttrs {
-		dp.Attributes().PutStr("cpu", cpuLogicalNumberAttributeValue)
+		dp.Attributes().PutStr("cpu", cpuAttributeValue)
 		dp.Attributes().PutStr("state", stateAttributeValue)
 	}
 
@@ -657,7 +669,7 @@ func (mb *MetricsBuilder) RecordSystemCPUUtilizationDataPoint(ts pcommon.Timesta
 		mb.metricSystemCPUUtilization.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue.String())
 	}
 	if ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() {
-		mb.metricSystemCPUUtilizationV1.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue.String(), true)
+		mb.metricSystemCPUUtilizationV1.recordDataPoint(mb.startTime, ts, val, mustParseInt64(cpuAttributeValue), stateAttributeValue.String(), cpuAttributeValue, true)
 	}
 }
 

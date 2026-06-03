@@ -83,7 +83,7 @@ Emitted Name: `system.cpu.utilization`
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| cpu.logical_number | The logical CPU number [0, n-1]. | Any Str | Recommended | - |
+| cpu.logical_number | The logical CPU number [0, n-1]. | Any Int | Recommended | - |
 | state | Breakdown of CPU usage by type. | Str: ``idle``, ``interrupt``, ``nice``, ``softirq``, ``steal``, ``system``, ``user``, ``wait`` | Recommended | - |
 
 ### system.memory.linux.available
