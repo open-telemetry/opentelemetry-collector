@@ -640,6 +640,24 @@ func TestLoadMetadata(t *testing.T) {
 			},
 		},
 		{
+			name: "testdata/reaggregation_disabled.yaml",
+			want: Metadata{
+				Type:                       "test",
+				GeneratedPackageName:       "metadata",
+				ScopeName:                  "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:                "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				ShortFolderName:            "testdata",
+				LegacyReaggregationEnabled: boolPtr(false),
+				Tests:                      Tests{Host: "newMdatagenNopHost()"},
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelBeta: {"logs"},
+					},
+				},
+			},
+		},
+		{
 			name:    "testdata/invalid_type_rattr.yaml",
 			want:    Metadata{},
 			wantErr: "decoding failed due to the following error(s):\n\n'resource_attributes[string.resource.attr].type' invalid type: \"invalidtype\"",
