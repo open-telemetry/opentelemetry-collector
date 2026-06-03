@@ -238,9 +238,18 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 }
 
 func TestDefaultHTTPClientSettings(t *testing.T) {
-	httpClientSettings := NewDefaultClientConfig()
-	assert.Equal(t, 100, httpClientSettings.Keepalive.Get().MaxIdleConns)
-	assert.Equal(t, 90*time.Second, httpClientSettings.Keepalive.Get().IdleConnTimeout)
+	settings := componenttest.NewNopTelemetrySettings()
+	settings.MeterProvider = nil
+	settings.TracerProvider = nil
+
+	cfg := NewDefaultClientConfig()
+	client, err := cfg.ToClient(context.Background(), nil, settings)
+	require.NoError(t, err)
+	transport := client.Transport.(*http.Transport)
+	// Defaults come from http.DefaultTransport.
+	assert.Equal(t, 100, transport.MaxIdleConns)
+	assert.Equal(t, 90*time.Second, transport.IdleConnTimeout)
+	assert.False(t, transport.DisableKeepAlives)
 }
 
 func TestProxyURL(t *testing.T) {

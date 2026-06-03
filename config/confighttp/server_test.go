@@ -996,8 +996,7 @@ func TestDefaultHTTPServerSettings(t *testing.T) {
 	assert.Equal(t, 30*time.Second, httpServerSettings.WriteTimeout)
 	assert.Equal(t, time.Duration(0), httpServerSettings.ReadTimeout)
 	assert.Equal(t, 1*time.Minute, httpServerSettings.ReadHeaderTimeout)
-	require.True(t, httpServerSettings.Keepalive.HasValue()) // Default should be true (keep-alives enabled by default)
-	assert.Equal(t, 1*time.Minute, httpServerSettings.Keepalive.Get().IdleTimeout)
+	assert.Equal(t, 1*time.Minute, httpServerSettings.Keepalive.GetOrInsertDefault().IdleTimeout)
 }
 
 func TestHTTPServerKeepAlives(t *testing.T) {

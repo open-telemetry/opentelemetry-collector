@@ -82,7 +82,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				WriteBufferSize: 345,
 				Timeout:         time.Second * 10,
 				Compression:     "gzip",
-				Keepalive: configoptional.Some(confighttp.KeepaliveClientConfig{
+				Keepalive: configoptional.Default(confighttp.KeepaliveClientConfig{
 					MaxIdleConns:        defaultMaxIdleConns,
 					MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
 					IdleConnTimeout:     defaultIdleConnTimeout,
