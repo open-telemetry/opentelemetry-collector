@@ -16,6 +16,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -277,4 +278,41 @@ func TestServerConfigKeepaliveDisabled(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	assert.True(t, cfg.Keepalive.IsNone())
+}
+
+func TestClientConfigDeprecatedDisableKeepAlives(t *testing.T) {
+	settings := componenttest.NewNopTelemetrySettings()
+	settings.MeterProvider = nil
+	settings.TracerProvider = nil
+
+	core, observed := observer.New(zapcore.WarnLevel)
+	settings.Logger = zap.New(core)
+
+	cfg := NewDefaultClientConfig()
+	cfg.DisableKeepAlives = true
+	client, err := cfg.ToClient(t.Context(), nil, settings)
+	require.NoError(t, err)
+	transport := client.Transport.(*http.Transport)
+	assert.True(t, transport.DisableKeepAlives)
+
+	entries := observed.All()
+	require.NotEmpty(t, entries)
+	assert.Contains(t, entries[0].Message, "deprecated")
+}
+
+func TestServerConfigDeprecatedKeepAlivesDisabled(t *testing.T) {
+	core, observed := observer.New(zapcore.WarnLevel)
+	settings := component.TelemetrySettings{Logger: zap.New(core)}
+
+	cfg := NewDefaultServerConfig()
+	disabled := false
+	cfg.KeepAlivesEnabled = &disabled
+
+	srv, err := cfg.ToServer(t.Context(), nil, settings, http.NewServeMux())
+	require.NoError(t, err)
+	require.NotNil(t, srv)
+
+	entries := observed.All()
+	require.NotEmpty(t, entries)
+	assert.Contains(t, entries[0].Message, "deprecated")
 }
