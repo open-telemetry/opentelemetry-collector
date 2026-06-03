@@ -187,8 +187,7 @@ func TestServerConfigValidate(t *testing.T) {
 			name: "deprecated keep_alives_enabled false only — no conflict",
 			cfg: func() ServerConfig {
 				c := NewDefaultServerConfig()
-				disabled := false
-				c.KeepAlivesEnabled = &disabled
+				c.KeepAlivesEnabled = false
 				return c
 			}(),
 		},
@@ -207,8 +206,7 @@ func TestServerConfigValidate(t *testing.T) {
 			cfg: func() ServerConfig {
 				c := NewDefaultServerConfig()
 				c.Keepalive = configoptional.Some(KeepaliveServerConfig{})
-				disabled := false
-				c.KeepAlivesEnabled = &disabled
+				c.KeepAlivesEnabled = false
 				return c
 			}(),
 			expectError: true,
@@ -305,8 +303,7 @@ func TestServerConfigDeprecatedKeepAlivesDisabled(t *testing.T) {
 	settings := component.TelemetrySettings{Logger: zap.New(core)}
 
 	cfg := NewDefaultServerConfig()
-	disabled := false
-	cfg.KeepAlivesEnabled = &disabled
+	cfg.KeepAlivesEnabled = false
 
 	srv, err := cfg.ToServer(t.Context(), nil, settings, http.NewServeMux())
 	require.NoError(t, err)

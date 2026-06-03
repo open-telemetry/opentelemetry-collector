@@ -101,7 +101,8 @@ type ServerConfig struct {
 	// Deprecated: use Keepalive.IdleTimeout instead.
 	IdleTimeout time.Duration `mapstructure:"idle_timeout,omitempty"`
 	// Deprecated: set Keepalive to None to disable keep-alives.
-	KeepAlivesEnabled *bool `mapstructure:"keep_alives_enabled,omitempty"`
+	// Note: only the false value is meaningful; true is indistinguishable from the default.
+	KeepAlivesEnabled bool `mapstructure:"keep_alives_enabled,omitempty"`
 }
 
 type KeepaliveServerConfig struct {
@@ -128,11 +129,12 @@ func NewDefaultServerConfig() ServerConfig {
 		Keepalive: configoptional.Default(KeepaliveServerConfig{
 			IdleTimeout: 1 * time.Minute,
 		}),
+		KeepAlivesEnabled: true,
 	}
 }
 
 func (sc *ServerConfig) Validate() error {
-	if sc.Keepalive.HasValue() && (sc.IdleTimeout != 0 || sc.KeepAlivesEnabled != nil) {
+	if sc.Keepalive.HasValue() && (sc.IdleTimeout != 0 || !sc.KeepAlivesEnabled) {
 		return errors.New("confighttp.ServerConfig: cannot use deprecated keepalive fields (idle_timeout, keep_alives_enabled) alongside the 'keepalive' section; migrate to the 'keepalive' section")
 	}
 	return nil
@@ -205,7 +207,7 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 	if sc.IdleTimeout != 0 {
 		settings.Logger.Warn("'idle_timeout' is deprecated; use 'keepalive.idle_timeout' instead")
 	}
-	if sc.KeepAlivesEnabled != nil {
+	if !sc.KeepAlivesEnabled {
 		settings.Logger.Warn("'keep_alives_enabled' is deprecated; set keepalive to null (keepalive: null) to disable keep-alives")
 	}
 
@@ -326,7 +328,7 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 
 	// Convert deprecated fields into the canonical Keepalive optional so the
 	// application logic below only has to deal with one struct.
-	if sc.KeepAlivesEnabled != nil && !*sc.KeepAlivesEnabled {
+	if !sc.Keepalive.HasValue() && !sc.KeepAlivesEnabled {
 		sc.Keepalive = configoptional.None[KeepaliveServerConfig]()
 	} else if sc.IdleTimeout != 0 {
 		sc.Keepalive = configoptional.Some(KeepaliveServerConfig{
