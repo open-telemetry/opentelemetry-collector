@@ -74,14 +74,6 @@ func assertNoEnabledField[T any]() error {
 	return nil
 }
 
-// DefaultOrSome ties a feature flag to a default-to-some transition.
-func DefaultOrSome[T any](feature bool, value T) Optional[T] {
-	if feature {
-		return Some(value)
-	}
-	return Default(value)		
-}
-
 // Some creates an Optional with a value and no factory.
 //
 // It panics if T has a field with the mapstructure tag "enabled".
