@@ -32,11 +32,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: MetricsBuilderConfig{
-					Metrics: MetricsConfig{
-						{{- range $name, $metric := .Metrics }}
-						{{- $metricReag := hasAggregatableAttributes $metric.Attributes }}
-						{{ $name.Render }}: {{ $name.Render }}MetricConfig{
-							Enabled: true,
+				Metrics: MetricsConfig{
+					{{- range $name, $metric := .Metrics }}
+					{{- $metricReag := hasAggregatableAttributes $metric.Attributes }}
+					{{ $name.Render }}: {{ $name.Render }}MetricConfig{
+						Enabled: true,
 						{{- if $metricReag }}
 						AggregationStrategy: AggregationStrategy{{ if eq $metric.Data.Type "Sum" }}Sum{{ else }}Avg{{ end }},
 						EnabledAttributes:   []{{ $name.Render }}MetricAttributeKey{ {{- range $index, $element := $metric.Attributes -}}{{ if $index }}, {{ end }}{{ $name.Render }}MetricAttributeKey{{ $element.Render }}{{ end -}} },
@@ -56,11 +56,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 		{
 			name: "none_set",
 			want: MetricsBuilderConfig{
-					Metrics: MetricsConfig{
-						{{- range $name, $metric := .Metrics }}
-						{{- $metricReag := hasAggregatableAttributes $metric.Attributes }}
-						{{ $name.Render }}: {{ $name.Render }}MetricConfig{
-							Enabled: false,
+				Metrics: MetricsConfig{
+					{{- range $name, $metric := .Metrics }}
+					{{- $metricReag := hasAggregatableAttributes $metric.Attributes }}
+					{{ $name.Render }}: {{ $name.Render }}MetricConfig{
+						Enabled: false,
 						{{- if $metricReag }}
 						AggregationStrategy: AggregationStrategy{{ if eq $metric.Data.Type "Sum" }}Sum{{ else }}Avg{{ end }},
 						EnabledAttributes:   []{{ $name.Render }}MetricAttributeKey{ {{- range $index, $element := $metric.Attributes -}}{{ if $index }}, {{ end }}{{ $name.Render }}MetricAttributeKey{{ $element.Render }}{{ end -}} },
