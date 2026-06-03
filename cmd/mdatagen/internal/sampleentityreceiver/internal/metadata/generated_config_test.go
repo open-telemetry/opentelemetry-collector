@@ -28,13 +28,15 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					K8sPodCPUTime: MetricConfig{
+					K8sPodCPUTime: K8sPodCPUTimeMetricConfig{
 						Enabled: true,
 					},
-					K8sPodPhase: MetricConfig{
-						Enabled: true,
+					K8sPodPhase: K8sPodPhaseMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []K8sPodPhaseMetricAttributeKey{K8sPodPhaseMetricAttributeKeyPhase},
 					},
-					K8sReplicasetDesired: MetricConfig{
+					K8sReplicasetDesired: K8sReplicasetDesiredMetricConfig{
 						Enabled: true,
 					},
 				},
@@ -51,13 +53,15 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					K8sPodCPUTime: MetricConfig{
+					K8sPodCPUTime: K8sPodCPUTimeMetricConfig{
 						Enabled: false,
 					},
-					K8sPodPhase: MetricConfig{
-						Enabled: false,
+					K8sPodPhase: K8sPodPhaseMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []K8sPodPhaseMetricAttributeKey{K8sPodPhaseMetricAttributeKeyPhase},
 					},
-					K8sReplicasetDesired: MetricConfig{
+					K8sReplicasetDesired: K8sReplicasetDesiredMetricConfig{
 						Enabled: false,
 					},
 				},
@@ -74,7 +78,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, K8sNamespaceNameResourceAttributeConfig{}, K8sPodNameResourceAttributeConfig{}, K8sPodUIDResourceAttributeConfig{}, K8sReplicasetNameResourceAttributeConfig{}, K8sReplicasetUIDResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(K8sPodCPUTimeMetricConfig{}, K8sPodPhaseMetricConfig{}, K8sReplicasetDesiredMetricConfig{}, K8sNamespaceNameResourceAttributeConfig{}, K8sPodNameResourceAttributeConfig{}, K8sPodUIDResourceAttributeConfig{}, K8sReplicasetNameResourceAttributeConfig{}, K8sReplicasetUIDResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

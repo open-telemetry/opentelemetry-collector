@@ -1,7 +1,0 @@
-type: test
-reaggregation_enabled: false
-
-status:
-  class: receiver
-  stability:
-    beta: [logs]
