@@ -25,6 +25,10 @@ type TargetsItem struct {
 	Interval configoptional.Optional[time.Duration] `mapstructure:"interval"`
 	// Static key-value labels attached to all metrics from this target.
 	Labels map[string]string `mapstructure:"labels"`
+	// Number of retry attempts for failed scrapes.
+	RetryCount int `mapstructure:"retry_count"`
+	// Timeout in seconds for each scrape request.
+	TimeoutSeconds float64 `mapstructure:"timeout_seconds"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -37,14 +41,30 @@ func (c *TargetsItem) Validate() error {
 		err = errors.Join(err, errors.New("labels is required"))
 	}
 
+	if c.RetryCount < 0 {
+		err = errors.Join(err, errors.New("retry_count value must be greater than or equal to 0"))
+	}
+	if c.RetryCount > 10 {
+		err = errors.Join(err, errors.New("retry_count value must be less than or equal to 10"))
+	}
+
+	if c.TimeoutSeconds <= 0 {
+		err = errors.Join(err, errors.New("timeout_seconds value must be greater than 0"))
+	}
+	if c.TimeoutSeconds >= 30 {
+		err = errors.Join(err, errors.New("timeout_seconds value must be less than 30"))
+	}
+
 	return err
 }
 
 // NewDefaultTargetsItem returns a new TargetsItem with default values consistent with the annotations in the schema.
 func NewDefaultTargetsItem() TargetsItem {
 	return TargetsItem{
-		Interval: configoptional.Some(10 * time.Second),
-		Labels:   map[string]string{"option1": "value1", "option2": "value2"},
+		Interval:       configoptional.Some(10 * time.Second),
+		Labels:         map[string]string{"option1": "value1", "option2": "value2"},
+		RetryCount:     3,
+		TimeoutSeconds: 5,
 	}
 }
 
