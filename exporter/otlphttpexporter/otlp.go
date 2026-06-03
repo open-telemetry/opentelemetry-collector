@@ -332,10 +332,14 @@ func readResponseStatus(resp *http.Response) *status.Status {
 func handlePartialSuccessResponse(resp *http.Response, partialSuccessHandler partialSuccessHandler) error {
 	bodyBytes, err := readResponseBody(resp)
 	if err != nil {
-		return err
+		return consumererror.NewPermanent(err)
 	}
 
-	return partialSuccessHandler(bodyBytes, resp.Header.Get("Content-Type"))
+	err = partialSuccessHandler(bodyBytes, resp.Header.Get("Content-Type"))
+	if err != nil {
+		return consumererror.NewPermanent(err)
+	}
+	return nil
 }
 
 type partialSuccessHandler func(bytes []byte, contentType string) error
