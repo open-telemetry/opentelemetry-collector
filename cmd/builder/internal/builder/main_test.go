@@ -271,6 +271,21 @@ func TestSkipGenerate(t *testing.T) {
 	require.ErrorIs(t, err, io.EOF, "skip generate should leave output directory empty")
 }
 
+func TestSkipGetModules(t *testing.T) {
+	cfg := newInitializedConfig(t)
+	cfg.Distribution.OutputPath = t.TempDir()
+	cfg.SkipGetModules = true
+	err := Generate(cfg)
+	require.NoError(t, err)
+
+	_, err = os.Stat(filepath.Join(cfg.Distribution.OutputPath, "go.mod"))
+	require.ErrorIs(t, err, os.ErrNotExist, "go.mod should not be generated when skip-get-modules is enabled")
+
+	_, err = os.Stat(filepath.Join(cfg.Distribution.OutputPath, "main.go"))
+	require.NoError(t, err, "main.go should be generated even when skip-get-modules is enabled")
+}
+
+
 func TestGenerateAndCompile(t *testing.T) {
 	replaces := generateReplaces()
 	testCases := []struct {
