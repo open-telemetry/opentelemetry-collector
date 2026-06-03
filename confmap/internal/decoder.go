@@ -290,45 +290,6 @@ func unmarshalerEmbeddedStructsHookFunc(settings UnmarshalOptions) mapstructure.
 	})
 }
 
-// countSquashAnonymousUnmarshalerFields counts the number of exported anonymous (embedded)
-// fields in t that have a mapstructure squash tag and whose pointer type implements Unmarshaler.
-//
-// When exactly one such field exists, the outer struct acquires the Unmarshal method via
-// Go's method promotion (unless it is directly overridden, in which case the count
-// coincidentally still yields the same observable behavior via unmarshalerEmbeddedStructsHookFunc).
-// When there are two or more such fields, Go's method promotion rules make the method
-// ambiguous and therefore not promoted; in that case the outer struct must have defined
-// Unmarshal directly to implement the interface.
-//
-// Unexported anonymous embedded fields are deliberately excluded: they are not handled by
-// unmarshalerEmbeddedStructsHookFunc, so the promoted-method path in unmarshalerHookFunc
-// remains the only mechanism to invoke their Unmarshal.
-func countSquashAnonymousUnmarshalerFields(t reflect.Type) int {
-	if t.Kind() != reflect.Struct {
-		return 0
-	}
-	unmarshalerType := reflect.TypeOf((*Unmarshaler)(nil)).Elem()
-	n := 0
-	for i := 0; i < t.NumField(); i++ {
-		f := t.Field(i)
-		if !f.Anonymous || !f.IsExported() {
-			continue
-		}
-		tagParts := strings.Split(f.Tag.Get(MapstructureTag), ",")
-		if !slices.Contains(tagParts[1:], "squash") {
-			continue
-		}
-		ft := f.Type
-		if ft.Kind() != reflect.Ptr {
-			ft = reflect.PointerTo(ft)
-		}
-		if ft.Implements(unmarshalerType) {
-			n++
-		}
-	}
-	return n
-}
-
 // Provides a mechanism for individual structs to define their own unmarshal logic,
 // by implementing the Unmarshaler interface, unless skipTopLevelUnmarshaler is
 // true and the struct matches the top level object being unmarshaled.
@@ -351,19 +312,6 @@ func unmarshalerHookFunc(result any, skipTopLevelUnmarshaler bool) mapstructure.
 		}
 
 		if _, ok = from.Interface().(map[string]any); !ok {
-			return from.Interface(), nil
-		}
-
-		// If this struct's Unmarshal method is promoted from exactly one exported anonymous
-		// squash-embedded field, skip it here. unmarshalerEmbeddedStructsHookFunc will call
-		// that field's Unmarshal directly and also decode any sibling fields of the outer
-		// struct. Calling the promoted Unmarshal here would only decode the embedded
-		// sub-struct and leave the outer struct's own fields unset.
-		//
-		// When there are two or more such embedded fields the method is ambiguous (not
-		// promoted), so the outer struct must have defined Unmarshal directly — in that case
-		// we do NOT skip so the directly-defined Unmarshal is honoured.
-		if countSquashAnonymousUnmarshalerFields(to.Type()) == 1 {
 			return from.Interface(), nil
 		}
 

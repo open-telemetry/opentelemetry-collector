@@ -111,6 +111,17 @@ func (o Optional[T]) HasValue() bool {
 	return o.flavor == someFlavor
 }
 
+// IsNone returns true if the Optional has no value.
+// This is the case both for the zero value and for Optional values created with None().
+// An Optional created with Default() or Some() is not None.
+//
+// Most callers only need [HasValue]. IsNone is useful when "not explicitly configured"
+// (Default) and "explicitly disabled" (None) must be treated differently — for example,
+// when a feature is enabled by default but can be explicitly turned off.
+func (o Optional[T]) IsNone() bool {
+	return o.flavor == noneFlavor
+}
+
 // Get returns the value of the Optional.
 // If the value is not present, it returns nil.
 func (o *Optional[T]) Get() *T {
