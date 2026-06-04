@@ -33,6 +33,10 @@ type JSONUnmarshaler struct {
 	// DisallowUnknownFields causes UnmarshalMetrics to return an error when the
 	// input contains JSON object fields that are not defined by the OTLP
 	// schema. When false (the default), unknown fields are silently ignored.
+	//
+	// Warning: enabling this option breaks forwards compatibility with future
+	// evolutions of the OTLP format, as fields added to the format in newer
+	// versions will be rejected as unknown.
 	DisallowUnknownFields bool
 }
 

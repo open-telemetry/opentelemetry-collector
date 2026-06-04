@@ -15,7 +15,9 @@ issues: [15279]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: When `DisallowUnknownFields` is false (the default), unknown fields are silently ignored, matching the previous behavior.
+subtext: |
+  When `DisallowUnknownFields` is false (the default), unknown fields are silently ignored, matching the previous behavior.
+  Warning: enabling this option breaks forwards compatibility with future evolutions of the OTLP format, as fields added to the format in newer versions will be rejected as unknown.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
