@@ -4,7 +4,7 @@
 {{- end }}
 {{- if .Description }}
 
-{{ .Description }}
+{{ trimRight .Description "\n" }}
 {{ end -}}
 {{- if len .Status.Stability }}
 | Status        |           |
