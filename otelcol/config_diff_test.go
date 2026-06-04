@@ -7,12 +7,20 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
+
+// opaqueConfig is a minimal component config holding a secret, used to verify
+// that the diff distinguishes configs that differ only in an opaque field.
+type opaqueConfig struct {
+	Token configopaque.String
+}
 
 func TestReceiversOnlyChange(t *testing.T) {
 	connectorID := component.MustNewID("forward")
@@ -343,6 +351,57 @@ func TestReceiversOnlyChange(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+// TestReceiversOnlyChangeOpaqueSecrets verifies that the diff observes changes
+// to configopaque.String fields. This is the reason receiversOnlyChange uses
+// reflect.DeepEqual rather than a serialization-based comparison: opaque
+// strings marshal to "[REDACTED]", so a marshal-based diff would treat configs
+// with different secrets as identical and silently skip a necessary reload.
+func TestReceiversOnlyChangeOpaqueSecrets(t *testing.T) {
+	// Sanity check: the two secrets are indistinguishable once marshaled, so a
+	// serialization-based diff would wrongly consider them equal.
+	old, err := configopaque.String("secret1").MarshalText()
+	require.NoError(t, err)
+	updated, err := configopaque.String("secret2").MarshalText()
+	require.NoError(t, err)
+	require.Equal(t, string(old), string(updated), "opaque secrets should marshal identically")
+
+	baseConfig := func() *Config {
+		return &Config{
+			Receivers: map[component.ID]component.Config{
+				component.MustNewID("otlp"): &opaqueConfig{Token: "secret1"},
+			},
+			Processors: map[component.ID]component.Config{},
+			Exporters: map[component.ID]component.Config{
+				component.MustNewID("otlp"): &opaqueConfig{Token: "secret1"},
+			},
+			Extensions: map[component.ID]component.Config{},
+			Connectors: map[component.ID]component.Config{},
+			Service: service.Config{
+				Pipelines: pipelines.Config{
+					pipeline.NewID(pipeline.SignalTraces): {
+						Receivers: []component.ID{component.MustNewID("otlp")},
+						Exporters: []component.ID{component.MustNewID("otlp")},
+					},
+				},
+			},
+		}
+	}
+
+	t.Run("receiver_secret_changed_is_receiver_only", func(t *testing.T) {
+		newCfg := baseConfig()
+		newCfg.Receivers[component.MustNewID("otlp")] = &opaqueConfig{Token: "secret2"}
+		assert.True(t, receiversOnlyChange(baseConfig(), newCfg, func(component.ID) bool { return false }))
+	})
+
+	t.Run("exporter_secret_changed_is_not_receiver_only", func(t *testing.T) {
+		newCfg := baseConfig()
+		newCfg.Exporters[component.MustNewID("otlp")] = &opaqueConfig{Token: "secret2"}
+		// Despite both secrets redacting to the same text, the diff must detect
+		// the exporter change and fall back to a full reload.
+		assert.False(t, receiversOnlyChange(baseConfig(), newCfg, func(component.ID) bool { return false }))
+	})
 }
 
 func TestIsConnectorID(t *testing.T) {
