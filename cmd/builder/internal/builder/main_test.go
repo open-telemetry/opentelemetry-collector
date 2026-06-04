@@ -285,7 +285,6 @@ func TestSkipGetModules(t *testing.T) {
 	require.NoError(t, err, "main.go should be generated even when skip-get-modules is enabled")
 }
 
-
 func TestGenerateAndCompile(t *testing.T) {
 	replaces := generateReplaces()
 	testCases := []struct {
