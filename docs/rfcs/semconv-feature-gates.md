@@ -19,7 +19,7 @@ This RFC provides general guidelines for semantic convention-mandated migrations
 The migration mechanism should have the following characteristics:
 
 1. **Collector native**: the mechanism should work in a similar way to other Collector migrations
-   and should feel natural and intuitive to users. 
+   and should feel natural and intuitive to users.
 2. **Simple**: a user should have to make a small number of changes to their Collector deployment to
    migrate to a new set of conventions.
 3. **Easy to understand**: It should be easy to understand how to migrate a particular set of
@@ -29,7 +29,7 @@ The migration mechanism should have the following characteristics:
 6. **Flexible (other conventions)**: The mechanism should still allow for evolution of other
    semantic conventions that are not being migrated.
 
-## Background 
+## Background
 
 ### Setup
 
@@ -38,7 +38,7 @@ We want to write guidance for when we have a component that emits telemetry from
 document we refer to the **v0** conventions and the **v1** conventions, which are the conventions
 in this area before and after the migration.
 
-When the semantic conventions are specific to a component we use 
+When the semantic conventions are specific to a component we use
 - `kind` to refer to the component kind (receiver, exporter...)
 - `id` for the component id (e.g. `hostmetrics`)
 
@@ -125,7 +125,7 @@ From [semconv v1.38.0][3]:
 
 > When existing K8s instrumentations published by OpenTelemetry are
 > updated to the stable K8s semantic conventions, they:
-> 
+>
 > - SHOULD introduce an environment variable `OTEL_SEMCONV_STABILITY_OPT_IN` in
 >   their existing major version, which accepts:
 >   - `k8s` - emit the stable k8s conventions, and stop emitting
@@ -188,6 +188,16 @@ is as follows:
 This mechanism does not cover any sort of transition for experimental semantic conventions. These
 presumably would be covered by separate feature gates or some other mechanism.
 
+## Handling conflicts during double-publishing
+
+During the double-publishing phase (when both `<kind>.<id>.EmitV1<Area>Conventions` is enabled and `<kind>.<id>.DontEmitV0<Area>Conventions` is disabled), components typically emit both v0 and v1 telemetry. For metrics, this usually means emitting two separate metrics with different names (e.g., `http.server.duration` for v0 and `http.server.request.duration` for v1).
+
+However, in some cases v0 and v1 conventions may use the same metric name but with different characteristics (e.g., different attributes or metric types). Two metrics with identical names must not be emitted, as this would produce an invalid OpenTelemetry dataset and cause issues on backends. Below are examples illustrating how such conflicts can be resolved:
+
+**Different attributes:** If a metric name stays the same but an attribute is renamed, emit a single metric with both the v0 and v1 attributes present. For instance, if `process.cpu.time` uses `process.owner` in v0 and `process.owner.name` in v1, emit one metric with both attributes.
+
+**Different metric type:** If a metric name stays the same but the type changes (e.g., Gauge to UpDownCounter), emit a single metric with the v1 type, effectively prioritizing the new convention. For instance, if `system.memory.usage` changes from Gauge to UpDownCounter, emit it as an UpDownCounter.
+
 ## Alternative mechanisms
 
 There are some other possibilities:
@@ -204,7 +214,7 @@ environment variable mechanism explicitly does not support.
 
 The granularity of the feature gates described could be changed: we could have a pair per convention
 or even a pair for the whole Collector. I argue 'per component' strikes the right balance between
-simplicity and flexibility: 
+simplicity and flexibility:
 - per convention would lead to dozens of feature gates on some of the areas we want to stabilize. It
   would also be unclear how these interact on edge cases (semantic conventions may only make sense
   holistically)

@@ -1,0 +1,42 @@
+type: sample
+status:
+  class: receiver
+  stability:
+    stable: [metrics]
+
+resource_attributes:
+  k8s.replicaset.uid:
+    description: The unique identifier of the Kubernetes ReplicaSet
+    type: string
+    enabled: true
+  k8s.replicaset.name:
+    description: The name of the Kubernetes ReplicaSet
+    type: string
+    enabled: true
+  k8s.pod.uid:
+    description: The unique identifier of the Kubernetes pod
+    type: string
+    enabled: true
+  k8s.pod.name:
+    description: The name of the Kubernetes pod
+    type: string
+    enabled: true
+
+entities:
+  - type: k8s.replicaset
+    brief: A Kubernetes ReplicaSet
+    stability: stable
+    identity:
+      - ref: k8s.replicaset.uid
+    description:
+      - ref: k8s.replicaset.name
+  - type: k8s.pod
+    brief: A Kubernetes pod
+    stability: stable
+    identity:
+      - ref: k8s.pod.uid
+    description:
+      - ref: k8s.pod.name
+    relationships:
+      - type: controlled_by
+        target: k8s.replicaset

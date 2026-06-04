@@ -1,4 +1,0 @@
-change_type: bug_fix
-component: pkg/service
-note: "Don't error on startup when process metrics are enabled on unsupported OSes (e.g. AIX)"
-issues: [14307]

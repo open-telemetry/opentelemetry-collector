@@ -10,6 +10,8 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/rs/cors"
@@ -200,13 +202,13 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 	if len(sc.Middlewares) > 0 && extensions == nil {
 		return nil, errors.New("middlewares were configured but this component or its host does not support extensions")
 	}
-	for i := len(sc.Middlewares) - 1; i >= 0; i-- {
-		wrapper, err := sc.Middlewares[i].GetHTTPServerHandler(ctx, extensions)
+	for _, m := range slices.Backward(sc.Middlewares) {
+		wrapper, err := m.GetHTTPServerHandler(ctx, extensions)
 		// If we failed to get the middleware
 		if err != nil {
 			return nil, err
 		}
-		handler, err = wrapper(handler)
+		handler, err = wrapper(ctx, handler)
 		// If we failed to construct a wrapper
 		if err != nil {
 			return nil, err
@@ -245,6 +247,7 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 			AllowedOrigins:   corsConfig.AllowedOrigins,
 			AllowCredentials: true,
 			AllowedHeaders:   corsConfig.AllowedHeaders,
+			ExposedHeaders:   corsConfig.ExposedHeaders,
 			MaxAge:           corsConfig.MaxAge,
 		}
 		handler = cors.New(co).Handler(handler)
@@ -266,13 +269,18 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 				//
 				//   "HTTP span names SHOULD be {method} {target} if there is a (low-cardinality) target available.
 				//   If there is no (low-cardinality) {target} available, HTTP span names SHOULD be {method}.
-				//   ...
+				//
+				//   The {method} MUST be {http.request.method} if the method represents the original method known
+				//   to the instrumentation. In other cases (when {http.request.method} is set to _OTHER),
+				//   {method} MUST be HTTP.
+				//
 				//   Instrumentation MUST NOT default to using URI path as a {target}."
 				//
+				method := standardizeHTTPMethod(r.Method, "HTTP")
 				if r.Pattern != "" {
-					return r.Method + " " + r.Pattern
+					return method + " " + r.Pattern
 				}
-				return r.Method
+				return method
 			}),
 			otelhttp.WithMeterProvider(settings.MeterProvider),
 		},
@@ -335,6 +343,10 @@ type CORSConfig struct {
 	// allow any request header.
 	AllowedHeaders []string `mapstructure:"allowed_headers,omitempty"`
 
+	// ExposedHeaders sets the value of the Access-Control-Expose-Headers response
+	// header, indicating which headers are safe to expose to the API of a CORS response.
+	ExposedHeaders []string `mapstructure:"exposed_headers,omitempty"`
+
 	// MaxAge sets the value of the Access-Control-Max-Age response header.
 	// Set it to the number of seconds that browsers should cache a CORS
 	// preflight response for.
@@ -377,4 +389,15 @@ func maxRequestBodySizeInterceptor(next http.Handler, maxRecvSize int64) http.Ha
 		r.Body = http.MaxBytesReader(w, r.Body, maxRecvSize)
 		next.ServeHTTP(w, r)
 	})
+}
+
+// standardizeHTTPMethod returns an upper case HTTP method if well-known, otherwise unknown.
+// Based on https://github.com/open-telemetry/opentelemetry-go-contrib/blob/1530d71edc6d40d0659187d069081b639ef1b394/instrumentation/github.com/emicklei/go-restful/otelrestful/internal/semconv/util.go#L119
+func standardizeHTTPMethod(method, unknown string) string {
+	method = strings.ToUpper(method)
+	switch method {
+	case http.MethodConnect, http.MethodDelete, http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodPatch, http.MethodPost, http.MethodPut, http.MethodTrace:
+		return method
+	}
+	return unknown
 }

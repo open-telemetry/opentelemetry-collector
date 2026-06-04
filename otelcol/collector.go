@@ -14,7 +14,6 @@ import (
 	"os/signal"
 	"sync"
 	"sync/atomic"
-	"syscall"
 
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -22,7 +21,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/otelcol/internal/grpclog"
 	"go.opentelemetry.io/collector/service"
 )
@@ -104,13 +102,15 @@ type Collector struct {
 
 	configProvider *ConfigProvider
 
-	serviceConfig *service.Config
-	service       *service.Service
-	state         *atomic.Int64
+	service *service.Service
+	state   *atomic.Int64
 
 	// shutdownChan is used to terminate the collector.
 	shutdownChan chan struct{}
 	shutdownOnce sync.Once
+
+	// wg is used by Shutdown to wait for Run to complete all cleanup.
+	wg sync.WaitGroup
 
 	// signalsChannel is used to receive termination signals from the OS.
 	signalsChannel chan os.Signal
@@ -161,10 +161,12 @@ func (col *Collector) GetState() State {
 }
 
 // Shutdown shuts down the collector server.
+// If Run has been called, Shutdown blocks until Run completes all cleanup.
 func (col *Collector) Shutdown() {
 	col.shutdownOnce.Do(func() {
 		close(col.shutdownChan)
 	})
+	col.wg.Wait()
 }
 
 func buildModuleInfo(m map[component.Type]string) map[component.Type]service.ModuleInfo {
@@ -190,11 +192,9 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
 
-	if err = xconfmap.Validate(cfg); err != nil {
+	if err = confmap.Validate(cfg); err != nil {
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
-
-	col.serviceConfig = &cfg.Service
 
 	conf := confmap.New()
 
@@ -350,7 +350,7 @@ func (col *Collector) DryRun(ctx context.Context) error {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
 
-	if err := xconfmap.Validate(cfg); err != nil {
+	if err := confmap.Validate(cfg); err != nil {
 		return err
 	}
 
@@ -386,7 +386,22 @@ func newFallbackLogger(options []zap.Option) (*zap.Logger, error) {
 // Run starts the collector according to the given configuration, and waits for it to complete.
 // Consecutive calls to Run are not allowed, Run shouldn't be called once a collector is shut down.
 // Sets up the control logic for config reloading and shutdown.
+// If Shutdown was called before Run, Run returns nil after cleaning up resources.
 func (col *Collector) Run(ctx context.Context) error {
+	col.wg.Add(1)
+	defer col.wg.Done()
+
+	// If Shutdown was already called, return immediately without starting the service.
+	select {
+	case <-col.shutdownChan:
+		col.setCollectorState(StateClosed)
+		if err := col.configProvider.Shutdown(ctx); err != nil {
+			return fmt.Errorf("failed to shutdown config provider: %w", err)
+		}
+		return nil
+	default:
+	}
+
 	// setupConfigurationComponents is the "main" function responsible for startup
 	if err := col.setupConfigurationComponents(ctx); err != nil {
 		col.setCollectorState(StateClosed)
@@ -409,12 +424,12 @@ func (col *Collector) Run(ctx context.Context) error {
 	}
 
 	// Always notify with SIGHUP for configuration reloading.
-	signal.Notify(col.signalsChannel, syscall.SIGHUP)
+	signal.Notify(col.signalsChannel, SIGHUP)
 	defer signal.Stop(col.signalsChannel)
 
 	// Only notify with SIGTERM and SIGINT if graceful shutdown is enabled.
 	if !col.set.DisableGracefulShutdown {
-		signal.Notify(col.signalsChannel, os.Interrupt, syscall.SIGTERM)
+		signal.Notify(col.signalsChannel, os.Interrupt, SIGTERM)
 	}
 
 	// Control loop: selects between channels for various interrupts - when this loop is broken, the collector exits.
@@ -435,7 +450,7 @@ LOOP:
 			break LOOP
 		case s := <-col.signalsChannel:
 			col.service.Logger().Info("Received signal from OS", zap.String("signal", s.String()))
-			if s != syscall.SIGHUP {
+			if s != SIGHUP {
 				break LOOP
 			}
 			if err := col.reloadConfiguration(ctx); err != nil {

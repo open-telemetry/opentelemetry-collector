@@ -90,6 +90,14 @@ func TestCreateTracerProvider_Invalid(t *testing.T) {
 	require.EqualError(t, err, "no valid span exporter")
 }
 
+func TestCreateTracerProvider_MissingResource(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+
+	provider, err := createTracerProvider(t.Context(), telemetry.TracerSettings{}, cfg)
+	require.ErrorIs(t, err, errMissingCollectorResource)
+	assert.Nil(t, provider)
+}
+
 func TestCreateTracerProvider_Propagators(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/traces", func(http.ResponseWriter, *http.Request) {})
@@ -130,8 +138,14 @@ func TestCreateTracerProvider_Propagators(t *testing.T) {
 }
 
 func TestCreateTracerProvider_InvalidPropagator(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/traces", func(http.ResponseWriter, *http.Request) {})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
 	cfg := createDefaultConfig().(*Config)
 	cfg.Traces.Propagators = []string{"invalid"}
+	cfg.Traces.Processors = []config.SpanProcessor{newOTLPSimpleSpanProcessor(srv)}
 
 	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
@@ -140,6 +154,104 @@ func TestCreateTracerProvider_InvalidPropagator(t *testing.T) {
 		Settings: telemetry.Settings{Resource: &resource},
 	}, cfg)
 	assert.EqualError(t, err, "error creating propagator: unsupported trace propagator")
+}
+
+func TestCreateTracerProvider_020MigrationWarning(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/traces", func(http.ResponseWriter, *http.Request) {})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	core, observedLogs := observer.New(zapcore.DebugLevel)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Traces.MigratedFromV02 = true
+	cfg.Traces.Processors = []config.SpanProcessor{newOTLPSimpleSpanProcessor(srv)}
+
+	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	require.NoError(t, err)
+
+	provider, err := createTracerProvider(t.Context(), telemetry.TracerSettings{
+		Settings: telemetry.Settings{Resource: &resource},
+		Logger:   zap.New(core),
+	}, cfg)
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, provider.Shutdown(t.Context()))
+	}()
+
+	require.Equal(t, 1, observedLogs.Len())
+	entry := observedLogs.All()[0]
+	assert.Equal(t, zapcore.WarnLevel, entry.Level)
+	assert.Equal(t, "Telemetry traces configuration is using the deprecated v0.2.0 Declarative Configuration format, please migrate to the v0.3.0 format", entry.Message)
+	assert.Equal(t, "https://opentelemetry.io/docs/specs/otel/configuration/#declarative-configuration", entry.ContextMap()["url"])
+}
+
+func TestCreateTracerProvider_NoMigrationWarning(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/traces", func(http.ResponseWriter, *http.Request) {})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	core, observedLogs := observer.New(zapcore.DebugLevel)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Traces.Processors = []config.SpanProcessor{newOTLPSimpleSpanProcessor(srv)}
+
+	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	require.NoError(t, err)
+
+	provider, err := createTracerProvider(t.Context(), telemetry.TracerSettings{
+		Settings: telemetry.Settings{Resource: &resource},
+		Logger:   zap.New(core),
+	}, cfg)
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, provider.Shutdown(t.Context()))
+	}()
+
+	assert.Zero(t, observedLogs.Len())
+}
+
+func TestCreateTracerProvider_NoProcessors(t *testing.T) {
+	var received int
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/traces", func(http.ResponseWriter, *http.Request) {
+		received++
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	core, observedLogs := observer.New(zapcore.DebugLevel)
+
+	cfg := createDefaultConfig().(*Config)
+	assert.Equal(t, configtelemetry.LevelBasic, cfg.Traces.Level)
+	assert.Empty(t, cfg.Traces.Processors)
+
+	resource, err := createResource(t.Context(), telemetry.Settings{
+		BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"},
+	}, cfg)
+	require.NoError(t, err)
+
+	provider, err := createTracerProvider(t.Context(), telemetry.TracerSettings{
+		Settings: telemetry.Settings{
+			BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"},
+			Resource:  &resource,
+		},
+		Logger: zap.New(core),
+	}, cfg)
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, provider.Shutdown(t.Context()))
+	}()
+
+	require.Equal(t, 1, observedLogs.Len())
+	assert.Equal(t, "Internal trace telemetry disabled", observedLogs.All()[0].Message)
+
+	tracer := provider.Tracer("test_tracer")
+	_, span := tracer.Start(context.Background(), "test_span")
+	span.End()
+	assert.Equal(t, 0, received)
 }
 
 func TestCreateTracerProvider_Disabled(t *testing.T) {

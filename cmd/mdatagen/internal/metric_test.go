@@ -7,9 +7,83 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
+
+func TestValidateSemConvMetricURL(t *testing.T) {
+	validURL := "https://github.com/open-telemetry/semantic-conventions/blob/v1.37.2/docs/system/system-metrics.md#metric-systemcputime"
+	tests := []struct {
+		name           string
+		url            string
+		semConvVersion string
+		metricName     string
+		wantErr        string
+	}{
+		{
+			name:           "valid URL",
+			url:            validURL,
+			semConvVersion: "1.37.2",
+			metricName:     "system.cpu.time",
+		},
+		{
+			name:    "empty URL",
+			wantErr: "url is empty",
+		},
+		{
+			name:    "empty semConvVersion",
+			url:     validURL,
+			wantErr: "semConvVersion is empty",
+		},
+		{
+			name:           "empty metricName",
+			url:            validURL,
+			semConvVersion: "1.37.2",
+			wantErr:        "metricName is empty",
+		},
+		{
+			name:           "wrong anchor",
+			url:            validURL,
+			semConvVersion: "1.37.2",
+			metricName:     "default.metric",
+			wantErr:        "invalid semantic-conventions URL",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateSemConvMetricURL(tt.url, tt.semConvVersion, tt.metricName)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestMetricInputTypeValidate(t *testing.T) {
+	tests := []struct {
+		input   string
+		wantErr bool
+	}{
+		{"", false},
+		{"string", false},
+		{"int", true},
+		{"double", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			err := MetricInputType{InputType: tt.input}.Validate()
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
 
 func TestMetricData(t *testing.T) {
 	for _, arg := range []struct {

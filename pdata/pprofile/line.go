@@ -31,16 +31,11 @@ func (l Line) Equal(val Line) bool {
 // dictionary to another.
 func (l Line) switchDictionary(src, dst ProfilesDictionary) error {
 	if l.FunctionIndex() > 0 {
-		if src.FunctionTable().Len() < int(l.FunctionIndex()) {
+		if src.FunctionTable().Len() <= int(l.FunctionIndex()) {
 			return fmt.Errorf("invalid function index %d", l.FunctionIndex())
 		}
 
 		fn := src.FunctionTable().At(int(l.FunctionIndex()))
-		err := fn.switchDictionary(src, dst)
-		if err != nil {
-			return fmt.Errorf("couldn't switch function dictionary: %w", err)
-		}
-
 		idx, err := SetFunction(dst.FunctionTable(), fn)
 		if err != nil {
 			return fmt.Errorf("couldn't set function: %w", err)

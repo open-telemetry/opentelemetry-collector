@@ -49,34 +49,33 @@ basic implementation for an Optional type in Go could look something like:
 
 ```golang
 type Optional[T any] struct {
-	hasValue bool
-	value    T
-
-	defaultVal T
+  hasValue bool
+  value    T
+  defaultVal T
 }
 
 func Some[T any](value T) Optional[T] {
-	return Optional[T]{value: value, hasValue: true}
+  return Optional[T]{value: value, hasValue: true}
 }
 
 func None[T any]() Optional[T] {
-	return Optional[T]{}
+  return Optional[T]{}
 }
 
 func WithDefault[T any](defaultVal T) Optional[T] {
-	return Optional[T]{defaultVal: defaultVal}
+  return Optional[T]{defaultVal: defaultVal}
 }
 
 func (o Optional[T]) HasValue() bool {
-	return o.hasValue
+  return o.hasValue
 }
 
 func (o Optional[T]) Value() T {
-    return o.value
+  return o.value
 }
 
 func (o Optional[T]) Default() T {
-    return o.defaultVal
+  return o.defaultVal
 }
 ```
 
@@ -93,28 +92,28 @@ this may look, both in definition and in usage:
 
 ```golang
 type Protocols struct {
-	GRPC Optional[configgrpc.ServerConfig] `mapstructure:"grpc"`
-	HTTP Optional[HTTPConfig]              `mapstructure:"http"`
+  GRPC Optional[configgrpc.ServerConfig] `mapstructure:"grpc"`
+  HTTP Optional[HTTPConfig]              `mapstructure:"http"`
 }
 
 func (cfg *Config) Validate() error {
-	if !cfg.GRPC.HasValue() && !cfg.HTTP.HasValue() {
-		return errors.New("must specify at least one protocol when using the OTLP receiver")
-	}
-	return nil
+  if !cfg.GRPC.HasValue() && !cfg.HTTP.HasValue() {
+    return errors.New("must specify at least one protocol when using the OTLP receiver")
+  }
+  return nil
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{
-		Protocols: Protocols{
-			GRPC: WithDefault(configgrpc.ServerConfig{
-                // ...
-            }),
-			HTTP: WithDefault(HTTPConfig{
-                // ...
-            }),
-		},
-	}
+  return &Config{
+    Protocols: Protocols{
+      GRPC: WithDefault(configgrpc.ServerConfig{
+       // ...
+      }),
+      HTTP: WithDefault(HTTPConfig{
+       // ...
+      }),
+    },
+  }
 }
 ```
 
@@ -123,85 +122,85 @@ optional fields would look like this:
 
 ```golang
 type ServerConfig struct {
-	TLSSetting Optional[configtls.ServerConfig] `mapstructure:"tls"`
+  TLSSetting Optional[configtls.ServerConfig] `mapstructure:"tls"`
 
-	CORS Optional[CORSConfig] `mapstructure:"cors"`
+  CORS Optional[CORSConfig] `mapstructure:"cors"`
 
-	Auth Optional[AuthConfig] `mapstructure:"auth,omitempty"`
+  Auth Optional[AuthConfig] `mapstructure:"auth,omitempty"`
 
-	ResponseHeaders Optional[map[string]configopaque.String] `mapstructure:"response_headers"`
+  ResponseHeaders Optional[map[string]configopaque.String] `mapstructure:"response_headers"`
 }
 
 func NewDefaultServerConfig() ServerConfig {
-	return ServerConfig{
-		TLSSetting:        WithDefault(configtls.NewDefaultServerConfig()),
-		CORS:              WithDefault(NewDefaultCORSConfig()),
-		WriteTimeout:      30 * time.Second,
-		ReadHeaderTimeout: 1 * time.Minute,
-		IdleTimeout:       1 * time.Minute,
-	}
+  return ServerConfig{
+    TLSSetting:        WithDefault(configtls.NewDefaultServerConfig()),
+    CORS:              WithDefault(NewDefaultCORSConfig()),
+    WriteTimeout:      30 * time.Second,
+    ReadHeaderTimeout: 1 * time.Minute,
+    IdleTimeout:       1 * time.Minute,
+  }
 }
 
 func (sc *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
-	listener, err := net.Listen("tcp", sc.Endpoint)
-	if err != nil {
-		return nil, err
-	}
+  listener, err := net.Listen("tcp", sc.Endpoint)
+  if err != nil {
+    return nil, err
+  }
 
-	if sc.TLSSetting.HasValue() {
-		var tlsCfg *tls.Config
-		tlsCfg, err = sc.TLSSetting.Value().LoadTLSConfig(ctx)
-		if err != nil {
-			return nil, err
-		}
-		tlsCfg.NextProtos = []string{http2.NextProtoTLS, "http/1.1"}
-		listener = tls.NewListener(listener, tlsCfg)
-	}
+  if sc.TLSSetting.HasValue() {
+    var tlsCfg *tls.Config
+    tlsCfg, err = sc.TLSSetting.Value().LoadTLSConfig(ctx)
+    if err != nil {
+     return nil, err
+    }
+    tlsCfg.NextProtos = []string{http2.NextProtoTLS, "http/1.1"}
+    listener = tls.NewListener(listener, tlsCfg)
+  }
 
-	return listener, nil
+  return listener, nil
 }
 
 func (sc *ServerConfig) ToServer(_ context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
-	// ...
+  // ...
 
-	handler = httpContentDecompressor(
-		handler,
-		sc.MaxRequestBodySize,
-		serverOpts.ErrHandler,
-		sc.CompressionAlgorithms,
-		serverOpts.Decoders,
-	)
+  handler = httpContentDecompressor(
+    handler,
+    sc.MaxRequestBodySize,
+    serverOpts.ErrHandler,
+    sc.CompressionAlgorithms,
+    serverOpts.Decoders,
+  )
 
-	// ...
+  // ...
 
-	if sc.Auth.HasValue() {
-		server, err := sc.Auth.Value().GetServerAuthenticator(context.Background(), host.GetExtensions())
-		if err != nil {
-			return nil, err
-		}
+  if sc.Auth.HasValue() {
+    server, err := sc.Auth.Value().GetServerAuthenticator(context.Background(), host.GetExtensions())
+    if err != nil {
+     return nil, err
+    }
 
-		handler = authInterceptor(handler, server, sc.Auth.Value().RequestParameters)
-	}
+    handler = authInterceptor(handler, server, sc.Auth.Value().RequestParameters)
+  }
 
-	corsValue := sc.CORS.Value()
-	if sc.CORS.HasValue() && len(sc.CORS.AllowedOrigins) > 0 {
-		co := cors.Options{
-			AllowedOrigins:   corsValue.AllowedOrigins,
-			AllowCredentials: true,
-			AllowedHeaders:   corsValue.AllowedHeaders,
-			MaxAge:           corsValue.MaxAge,
-		}
-		handler = cors.New(co).Handler(handler)
-	}
-	if sc.CORS.HasValue() && len(sc.CORS.AllowedOrigins) == 0 && len(sc.CORS.AllowedHeaders) > 0 {
-		settings.Logger.Warn("The CORS configuration specifies allowed headers but no allowed origins, and is therefore ignored.")
-	}
+  corsValue := sc.CORS.Value()
+  if sc.CORS.HasValue() && len(sc.CORS.AllowedOrigins) > 0 {
+    co := cors.Options{
+     AllowedOrigins:   corsValue.AllowedOrigins,
+     AllowCredentials: true,
+     AllowedHeaders:   corsValue.AllowedHeaders,
+     MaxAge:           corsValue.MaxAge,
+    }
+    handler = cors.New(co).Handler(handler)
+  }
+  if sc.CORS.HasValue() && len(sc.CORS.AllowedOrigins) == 0 && len(sc.CORS.AllowedHeaders) > 0 {
+    settings.Logger.Warn("The CORS configuration specifies allowed headers but no allowed origins, and is therefore ignored.")
+  }
 
-	if sc.ResponseHeaders.HasValue() {
-		handler = responseHeadersHandler(handler, sc.ResponseHeaders.Value())
-	}
+  if sc.ResponseHeaders.HasValue() {
+    handler = responseHeadersHandler(handler, sc.ResponseHeaders.Value())
+  }
 
-	// ...
+  // ...
 }
 ```
 
@@ -213,45 +212,45 @@ set:
 
 ```golang
 type Protocols struct {
-	GRPC *configgrpc.ServerConfig `mapstructure:"grpc"`
-	HTTP *HTTPConfig              `mapstructure:"http"`
+  GRPC *configgrpc.ServerConfig `mapstructure:"grpc"`
+  HTTP *HTTPConfig              `mapstructure:"http"`
 }
 
 // Config defines configuration for OTLP receiver.
 type Config struct {
-	// Protocols is the configuration for the supported protocols, currently gRPC and HTTP (Proto and JSON).
-	Protocols `mapstructure:"protocols"`
+  // Protocols is the configuration for the supported protocols, currently gRPC and HTTP (Proto and JSON).
+  Protocols `mapstructure:"protocols"`
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{
-		Protocols: Protocols{
-			GRPC: configgrpc.NewDefaultServerConfig(),
-			HTTP: &HTTPConfig{
-                // ...
-			},
-		},
-	}
+  return &Config{
+    Protocols: Protocols{
+      GRPC: configgrpc.NewDefaultServerConfig(),
+      HTTP: &HTTPConfig{
+      // ...
+      },
+    },
+  }
 }
 
 func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
-	// first load the config normally
-	err := conf.Unmarshal(cfg)
-	if err != nil {
-		return err
-	}
+  // first load the config normally
+  err := conf.Unmarshal(cfg)
+  if err != nil {
+    return err
+  }
 
-    // gRPC will be enabled if this line is not run
-	if !conf.IsSet(protoGRPC) {
-        cfg.GRPC = nil
-	}
+  // gRPC will be enabled if this line is not run
+  if !conf.IsSet(protoGRPC) {
+    cfg.GRPC = nil
+  }
 
-     // HTTP will be enabled if this line is not run
-	if !conf.IsSet(protoHTTP) {
-		cfg.HTTP = nil
-	}
+  // HTTP will be enabled if this line is not run
+  if !conf.IsSet(protoHTTP) {
+    cfg.HTTP = nil
+  }
 
-	return nil
+  return nil
 }
 ```
 

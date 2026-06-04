@@ -33,7 +33,6 @@ Statuses can be categorized into two groups: lifecycle and runtime.
 
 There is a finite state machine underlying the status reporting API that governs the allowable state transitions. See the state diagram below:
 
-
 ![State Diagram](img/component-status-state-diagram.png)
 
 The finite state machine ensures that components progress through the lifecycle properly and it manages transitions through runtime states so that components do not need to track their state internally. Only changes in status result in new events being generated; repeat reports of the same status are ignored. PermanentError is a permanent runtime state. A component in a PermanentError state cannot transition to OK or RecoverableError, but it can transition to Stopping. FatalError is a final state. A component in a FatalError state cannot make any further state transitions.

@@ -18,7 +18,7 @@ func (ms Mapping) Equal(val Mapping) bool {
 // dictionary to another.
 func (ms Mapping) switchDictionary(src, dst ProfilesDictionary) error {
 	if ms.FilenameStrindex() > 0 {
-		if src.StringTable().Len() < int(ms.FilenameStrindex()) {
+		if src.StringTable().Len() <= int(ms.FilenameStrindex()) {
 			return fmt.Errorf("invalid filename index %d", ms.FilenameStrindex())
 		}
 
@@ -30,15 +30,11 @@ func (ms Mapping) switchDictionary(src, dst ProfilesDictionary) error {
 	}
 
 	for i, v := range ms.AttributeIndices().All() {
-		if src.AttributeTable().Len() < int(v) {
+		if src.AttributeTable().Len() <= int(v) {
 			return fmt.Errorf("invalid attribute index %d", v)
 		}
 
 		attr := src.AttributeTable().At(int(v))
-		err := attr.switchDictionary(src, dst)
-		if err != nil {
-			return fmt.Errorf("couldn't switch dictionary for attribute %d: %w", i, err)
-		}
 		idx, err := SetAttribute(dst.AttributeTable(), attr)
 		if err != nil {
 			return fmt.Errorf("couldn't set attribute %d: %w", i, err)

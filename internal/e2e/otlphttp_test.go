@@ -67,7 +67,7 @@ func TestTraceNoBackend(t *testing.T) {
 	assert.Error(t, exp.ConsumeTraces(context.Background(), td))
 }
 
-func TestTraceInvalidUrl(t *testing.T) {
+func TestTraceInvalidURL(t *testing.T) {
 	exp := startTraces(t, "http:/\\//this_is_an/*/invalid_url", "")
 	td := testdata.GenerateTraces(1)
 	require.Error(t, exp.ConsumeTraces(context.Background(), td))
@@ -422,7 +422,7 @@ func startLogsReceiver(t *testing.T, addr string, next consumer.Logs) {
 
 func createReceiverConfig(addr string, defaultCfg component.Config) *otlpreceiver.Config {
 	cfg := defaultCfg.(*otlpreceiver.Config)
-	cfg.HTTP.GetOrInsertDefault().ServerConfig.NetAddr.Endpoint = addr
+	cfg.Protocols.HTTP.GetOrInsertDefault().ServerConfig.NetAddr.Endpoint = addr
 	return cfg
 }
 

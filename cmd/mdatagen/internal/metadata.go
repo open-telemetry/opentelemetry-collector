@@ -11,14 +11,25 @@ import (
 	"strconv"
 	"strings"
 
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
+const semConvURL = "https://github.com/open-telemetry/semantic-conventions/blob"
+
+var (
+	featureGateIDRegexp       = regexp.MustCompile(`^[0-9a-zA-Z.]*$`)
+	featureGateIssueURLRegexp = regexp.MustCompile(`^https://github\.com/[^/]+/[^/]+/issues/\d+$`)
+)
+
 type Metadata struct {
 	// Type of the component.
 	Type string `mapstructure:"type"`
+	// DeprecatedType of the component.
+	DeprecatedType string `mapstructure:"deprecated_type"`
 	// DisplayName is a human-readable display name for the component.
 	DisplayName string `mapstructure:"display_name"`
 	// Description is a brief description of the component.
@@ -27,8 +38,10 @@ type Metadata struct {
 	Parent string `mapstructure:"parent"`
 	// Status information for the component.
 	Status *Status `mapstructure:"status"`
-	// Spatial Re-aggregation featuregate.
+	// ReaggregationEnabled enables spatial re-aggregation configuration generation. Defaults to true.
 	ReaggregationEnabled bool `mapstructure:"reaggregation_enabled"`
+	// Override value featuregate for resource attributes.
+	OverrideValueEnabled bool `mapstructure:"override_value_enabled"`
 	// The name of the package that will be generated.
 	GeneratedPackageName string `mapstructure:"generated_package_name"`
 	// Telemetry information for the component.
@@ -57,6 +70,28 @@ type Metadata struct {
 	PackageName string `mapstructure:"package_name"`
 	// FeatureGates that are managed by the component.
 	FeatureGates []FeatureGate `mapstructure:"feature_gates"`
+	// Config is the configuration schema for the component.
+	Config *cfggen.ConfigMetadata `mapstructure:"config"`
+	// ExportedConfigs is the list of additionally exported configs from the component/package
+	ExportedConfigs map[string]*cfggen.ConfigMetadata `mapstructure:"exported_configs"`
+}
+
+type Deprecated struct {
+	Since string `mapstructure:"since"`
+	Note  string `mapstructure:"note"`
+}
+
+func (d *Deprecated) validate() error {
+	if strings.TrimSpace(d.Since) == "" {
+		return errors.New("deprecated.since must be set")
+	}
+
+	// NOTE: note is optional, but if present, it must not be empty
+	if d.Note != "" && strings.TrimSpace(d.Note) == "" {
+		return errors.New("deprecated.note must not be empty")
+	}
+
+	return nil
 }
 
 func (md Metadata) GetCodeCovComponentID() string {
@@ -64,7 +99,7 @@ func (md Metadata) GetCodeCovComponentID() string {
 		return md.Status.CodeCovComponentID
 	}
 
-	return strings.ReplaceAll(md.Status.Class+"_"+md.Type, "/", "_")
+	return strings.ReplaceAll(md.Status.Class+"_"+strings.ReplaceAll(md.Type, "_", ""), "/", "_")
 }
 
 func (md Metadata) HasEntities() bool {
@@ -77,12 +112,8 @@ func (md *Metadata) Validate() error {
 		errs = errors.Join(errs, err)
 	}
 
-	if md.Parent != "" {
-		if md.Status != nil {
-			// status is not required for subcomponents.
-			errs = errors.Join(errs, errors.New("status must be empty for subcomponents"))
-		}
-	} else {
+	// status is optional for subcomponents but required for components.
+	if md.Parent == "" || md.Status != nil {
 		errs = errors.Join(errs, md.Status.Validate())
 	}
 
@@ -99,6 +130,10 @@ func (md *Metadata) Validate() error {
 	}
 
 	if err := md.validateFeatureGates(); err != nil {
+		errs = errors.Join(errs, err)
+	}
+
+	if err := md.validateConfig(); err != nil {
 		errs = errors.Join(errs, err)
 	}
 
@@ -150,6 +185,7 @@ func (md *Metadata) validateEntities() error {
 	usedAttrs := make(map[AttributeName]string)
 	seenTypes := make(map[string]bool)
 
+	// First pass: collect entity types and validate basic entity properties
 	for _, entity := range md.Entities {
 		if entity.Type == "" {
 			errs = errors.Join(errs, errors.New("entity type cannot be empty"))
@@ -186,6 +222,36 @@ func (md *Metadata) validateEntities() error {
 				usedAttrs[ref.Ref] = entity.Type
 			}
 		}
+		for _, ref := range entity.ExtraAttributes {
+			if _, ok := md.ResourceAttributes[ref.Ref]; !ok {
+				errs = errors.Join(errs, fmt.Errorf(`entity "%v": extra_attributes refers to undefined resource attribute: %v`, entity.Type, ref.Ref))
+			}
+		}
+	}
+
+	// Second pass: validate relationships
+	seenRelationships := make(map[string]string)
+	for _, entity := range md.Entities {
+		for _, rel := range entity.Relationships {
+			if rel.Type == "" {
+				errs = errors.Join(errs, fmt.Errorf(`entity "%v": relationship type cannot be empty`, entity.Type))
+				continue
+			}
+			if rel.Target == "" {
+				errs = errors.Join(errs, fmt.Errorf(`entity "%v": relationship target cannot be empty`, entity.Type))
+				continue
+			}
+			if !seenTypes[rel.Target] {
+				errs = errors.Join(errs, fmt.Errorf(`entity "%v": relationship target "%v" does not exist`, entity.Type, rel.Target))
+				continue
+			}
+			if seenRelationships[rel.Target] == entity.Type || seenRelationships[entity.Type] == rel.Target {
+				errs = errors.Join(errs, fmt.Errorf(`entity "%v": duplicate relationship to target "%v" (only one relationship allowed between two entities)`, entity.Type, rel.Target))
+				continue
+			}
+			seenRelationships[rel.Target] = entity.Type
+			seenRelationships[entity.Type] = rel.Target
+		}
 	}
 	return errs
 }
@@ -197,7 +263,8 @@ func (md *Metadata) validateMetricsAndEvents() error {
 		validateMetrics(md.Metrics, md.Attributes, usedAttrs, md.SemConvVersion),
 		validateMetrics(md.Telemetry.Metrics, md.Attributes, usedAttrs, md.SemConvVersion),
 		validateEvents(md.Events, md.Attributes, usedAttrs),
-		md.validateAttributes(usedAttrs))
+		md.validateAttributes(usedAttrs),
+		md.validateEntityAssociations())
 	return errs
 }
 
@@ -222,6 +289,36 @@ func (md *Metadata) validateAttributes(usedAttrs map[AttributeName]bool) error {
 	if len(unusedAttrs) > 0 {
 		errs = errors.Join(errs, fmt.Errorf("unused attributes: %v", unusedAttrs))
 	}
+	return errs
+}
+
+// validateEntityAssociations checks that if entities are defined, then each metric and event must be associated with an entity.
+func (md *Metadata) validateEntityAssociations() error {
+	var errs error
+	requireEntityAssociation := len(md.Entities) > 0
+	entityTypes := make(map[string]bool)
+	for _, entity := range md.Entities {
+		entityTypes[entity.Type] = true
+	}
+
+	for metricName, metric := range md.Metrics {
+		if requireEntityAssociation && metric.Entity == "" {
+			errs = errors.Join(errs, fmt.Errorf(`metric "%v": entity is required when entities are defined`, metricName))
+		}
+		if metric.Entity != "" && !entityTypes[metric.Entity] {
+			errs = errors.Join(errs, fmt.Errorf(`metric "%v": entity refers to undefined entity type: %v`, metricName, metric.Entity))
+		}
+	}
+
+	for eventName, event := range md.Events {
+		if requireEntityAssociation && event.Entity == "" {
+			errs = errors.Join(errs, fmt.Errorf(`event "%v": entity is required when entities are defined`, eventName))
+		}
+		if event.Entity != "" && !entityTypes[event.Entity] {
+			errs = errors.Join(errs, fmt.Errorf(`event "%v": entity refers to undefined entity type: %v`, eventName, event.Entity))
+		}
+	}
+
 	return errs
 }
 
@@ -286,7 +383,11 @@ func validateEvents(events map[EventName]Event, attributes map[AttributeName]Att
 func (md *Metadata) validateFeatureGates() error {
 	var errs error
 	seen := make(map[FeatureGateID]bool)
-	idRegexp := regexp.MustCompile(`^[0-9a-zA-Z.]*$`)
+
+	var componentPrefix string
+	if md.Status != nil && md.Status.Class != "" && md.Type != "" {
+		componentPrefix = md.Status.Class + "." + md.Type + "."
+	}
 
 	// Validate that feature gates are sorted by ID
 	if !slices.IsSortedFunc(md.FeatureGates, func(a, b FeatureGate) int {
@@ -303,8 +404,13 @@ func (md *Metadata) validateFeatureGates() error {
 		}
 
 		// Validate ID follows the allowed character pattern
-		if !idRegexp.MatchString(string(gate.ID)) {
+		if !featureGateIDRegexp.MatchString(string(gate.ID)) {
 			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": ID contains invalid characters, must match ^[0-9a-zA-Z.]*$`, gate.ID))
+		}
+
+		// Validate ID is prefixed with "<class>.<type>." so gates are namespaced to their component.
+		if !gate.SkipStrictValidation && componentPrefix != "" && !strings.HasPrefix(string(gate.ID), componentPrefix) {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": ID must be prefixed with %q`, gate.ID, componentPrefix))
 		}
 
 		// Check for duplicate IDs
@@ -322,6 +428,8 @@ func (md *Metadata) validateFeatureGates() error {
 		// Validate that each feature gate has a reference link
 		if gate.ReferenceURL == "" {
 			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": reference_url is required`, gate.ID))
+		} else if !gate.SkipStrictValidation && !featureGateIssueURLRegexp.MatchString(gate.ReferenceURL) {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": reference_url %q must be a GitHub issue URL (https://github.com/<owner>/<repo>/issues/<number>)`, gate.ID, gate.ReferenceURL))
 		}
 
 		// Validate stage is one of the allowed values
@@ -349,8 +457,19 @@ func (md *Metadata) validateFeatureGates() error {
 		if (gate.Stage == FeatureGateStageStable || gate.Stage == FeatureGateStageDeprecated) && gate.ToVersion == "" {
 			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": to_version is required for %v stage gates`, gate.ID, gate.Stage))
 		}
+		// Any gate other than stable/deprecated shouldn't have to_version
+		if gate.Stage != FeatureGateStageStable && gate.Stage != FeatureGateStageDeprecated && gate.ToVersion != "" {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": to_version is not supported for the %v stage`, gate.ID, gate.Stage))
+		}
 	}
 	return errs
+}
+
+func (md *Metadata) validateConfig() error {
+	if md.Config != nil {
+		return md.Config.Validate()
+	}
+	return nil
 }
 
 type AttributeName string
@@ -385,11 +504,11 @@ func (rl AttributeRequirementLevel) String() string {
 }
 
 func (mn AttributeName) Render() (string, error) {
-	return FormatIdentifier(string(mn), true)
+	return helpers.FormatIdentifier(string(mn), true)
 }
 
 func (mn AttributeName) RenderUnexported() (string, error) {
-	return FormatIdentifier(string(mn), false)
+	return helpers.FormatIdentifier(string(mn), false)
 }
 
 // ValueType defines an attribute value type.
@@ -484,6 +603,8 @@ type Attribute struct {
 	Warnings Warnings `mapstructure:"warnings"`
 	// RequirementLevel defines the requirement level of the attribute.
 	RequirementLevel AttributeRequirementLevel `mapstructure:"requirement_level"`
+	// The semantic convention reference of the attribute.
+	SemanticConvention *SemanticConvention `mapstructure:"semantic_convention"`
 }
 
 // IsConditional returns true if the attribute is conditionally required.
@@ -605,13 +726,17 @@ type Signal struct {
 	SemanticConvention *SemanticConvention `mapstructure:"semantic_convention"`
 
 	// The stability level of the signal.
-	Stability Stability `mapstructure:"stability"`
+	Stability component.StabilityLevel `mapstructure:"stability"`
 
 	// Extended documentation of the signal. If specified, this will be appended to the description used in generated documentation.
 	ExtendedDocumentation string `mapstructure:"extended_documentation"`
 
 	// Attributes is the list of attributes that the signal emits.
 	Attributes []AttributeName `mapstructure:"attributes"`
+
+	// Entity is the type of entity this signal is associated with.
+	// Required when entities are defined.
+	Entity string `mapstructure:"entity"`
 }
 
 func (s Signal) HasConditionalAttributes(attrs map[AttributeName]Attribute) bool {
@@ -634,11 +759,26 @@ type Entity struct {
 	Identity []EntityAttributeRef `mapstructure:"identity"`
 	// Description contains references to resource attributes that describe the entity.
 	Description []EntityAttributeRef `mapstructure:"description"`
+	// ExtraAttributes contains references to resource attributes that are contextually
+	// relevant to the entity but are not part of its identity or description
+	// (e.g. k8s.namespace.name on a pod entity).
+	ExtraAttributes []EntityAttributeRef `mapstructure:"extra_attributes"`
+	// Relationships defines how this entity relates to other entities (optional).
+	// Relationships should be defined only on one end. It is recommended to define
+	// relationships on entities with lower lifespan (higher churn).
+	Relationships []EntityRelationship `mapstructure:"relationships"`
 }
 
 type EntityAttributeRef struct {
 	// Ref is the reference to a resource attribute.
 	Ref AttributeName `mapstructure:"ref"`
+}
+
+type EntityRelationship struct {
+	// Type is the relationship type (e.g., "parent", "child", "peer").
+	Type string `mapstructure:"type"`
+	// Target is the entity type this entity relates to.
+	Target string `mapstructure:"target"`
 }
 
 // FeatureGateID represents the identifier for a feature gate.
@@ -656,7 +796,8 @@ const (
 
 // FeatureGate represents a feature gate definition in metadata.
 type FeatureGate struct {
-	// ID is the unique identifier for the feature gate.
+	// ID is the unique identifier for the feature gate. Must be prefixed with
+	// "<status.class>.<type>." unless SkipStrictValidation is set.
 	ID FeatureGateID `mapstructure:"id"`
 	// Description of the feature gate.
 	Description string `mapstructure:"description"`
@@ -666,6 +807,46 @@ type FeatureGate struct {
 	FromVersion string `mapstructure:"from_version"`
 	// ToVersion is the version when the feature gate reached stable stage.
 	ToVersion string `mapstructure:"to_version"`
-	// ReferenceURL is the URL with contextual information about the feature gate.
+	// ReferenceURL is contextual information about the feature gate. Must be a
+	// GitHub issue URL (https://github.com/<owner>/<repo>/issues/<number>)
+	// unless SkipStrictValidation is set.
 	ReferenceURL string `mapstructure:"reference_url"`
+	// SkipStrictValidation opts this gate out of strict validation. New gates should leave this unset.
+	SkipStrictValidation bool `mapstructure:"skip_strict_validation"`
+}
+
+func (md *Metadata) expandSemConvRefs() error {
+	for k, v := range md.Attributes {
+		if v.SemanticConvention != nil {
+			if strings.HasPrefix(v.SemanticConvention.SemanticConventionRef, "http") {
+				return fmt.Errorf("attribute %q, use relative path for URL, not the full URL", k)
+			}
+			url := fmt.Sprintf(
+				"%s/v%s/docs/registry/attributes/%s",
+				semConvURL,
+				md.SemConvVersion,
+				v.SemanticConvention.SemanticConventionRef,
+			)
+			v.SemanticConvention.SemanticConventionRef = url
+		}
+		md.Attributes[k] = v
+	}
+
+	for k, v := range md.Metrics {
+		if v.SemanticConvention != nil {
+			if strings.HasPrefix(v.SemanticConvention.SemanticConventionRef, "http") {
+				return fmt.Errorf("metric %q, use relative path for URL, not the full URL", k)
+			}
+			url := fmt.Sprintf(
+				"%s/v%s/docs/%s",
+				semConvURL,
+				md.SemConvVersion,
+				v.SemanticConvention.SemanticConventionRef,
+			)
+			v.SemanticConvention.SemanticConventionRef = url
+		}
+		md.Metrics[k] = v
+	}
+
+	return nil
 }

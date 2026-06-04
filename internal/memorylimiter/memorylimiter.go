@@ -94,10 +94,7 @@ func (ml *MemoryLimiter) Start(_ context.Context, _ component.Host) error {
 	ml.refCounter++
 	if ml.refCounter == 1 {
 		ml.closed = make(chan struct{})
-		ml.waitGroup.Add(1)
-		go func() {
-			defer ml.waitGroup.Done()
-
+		ml.waitGroup.Go(func() {
 			for {
 				select {
 				case <-ml.ticker.C:
@@ -106,7 +103,7 @@ func (ml *MemoryLimiter) Start(_ context.Context, _ component.Host) error {
 				}
 				ml.CheckMemLimits()
 			}
-		}()
+		})
 	}
 	return nil
 }

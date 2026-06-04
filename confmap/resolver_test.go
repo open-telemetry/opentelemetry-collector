@@ -19,7 +19,7 @@ import (
 	"go.uber.org/zap"
 	"go.yaml.in/yaml/v3"
 
-	"go.opentelemetry.io/collector/confmap/internal"
+	"go.opentelemetry.io/collector/confmap/internal/metadata"
 	"go.opentelemetry.io/collector/featuregate"
 )
 
@@ -398,14 +398,12 @@ func TestResolverShutdownClosesWatch(t *testing.T) {
 	require.NoError(t, errN)
 
 	var watcherWG sync.WaitGroup
-	watcherWG.Add(1)
-	go func() {
+	watcherWG.Go(func() {
 		errW, ok := <-resolver.Watch()
 		// Channel is closed, no exception
-		assert.NoError(t, errW)
+		require.NoError(t, errW)
 		assert.False(t, ok)
-		watcherWG.Done()
-	}()
+	})
 
 	require.NoError(t, resolver.Shutdown(context.Background()))
 	watcherWG.Wait()
@@ -467,10 +465,10 @@ func TestMergeFunctionality(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.flagEnabled {
-				require.NoError(t, featuregate.GlobalRegistry().Set(internal.EnableMergeAppendOption.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConfmapEnableMergeAppendOptionFeatureGate.ID(), true))
 				defer func() {
 					// Restore previous value.
-					require.NoError(t, featuregate.GlobalRegistry().Set(internal.EnableMergeAppendOption.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConfmapEnableMergeAppendOptionFeatureGate.ID(), false))
 				}()
 			}
 			runScenario(t, tt.scenarioFile)
@@ -536,12 +534,10 @@ func newRaceDetectorProvider() ProviderFactory {
 }
 
 func (p *provider) Retrieve(_ context.Context, _ string, watcher WatcherFunc) (*Retrieved, error) {
-	p.wg.Add(1)
-	go func() {
+	p.wg.Go(func() {
 		// mock a config change event and wait for goroutine to return.
-		defer p.wg.Done()
 		watcher(&ChangeEvent{})
-	}()
+	})
 	return NewRetrieved(map[string]any{})
 }
 

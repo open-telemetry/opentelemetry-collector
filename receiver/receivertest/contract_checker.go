@@ -133,7 +133,7 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 	// Begin generating data to the receiver.
 
 	generatedIDs := make(idSet)
-	var generatedIndex int64
+	var generatedIndex atomic.Int64
 	var mux sync.Mutex
 	var wg sync.WaitGroup
 
@@ -146,10 +146,8 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 	// The total number of generator calls will be equal to params.GenerateCount.
 
 	for range concurrency {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for atomic.AddInt64(&generatedIndex, 1) <= int64(params.GenerateCount) {
+		wg.Go(func() {
+			for generatedIndex.Add(1) <= int64(params.GenerateCount) {
 				ids := params.Generator.Generate()
 				require.NotEmpty(params.T, ids)
 
@@ -161,7 +159,7 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 				// generated data set.
 				require.Empty(params.T, duplicates)
 			}
-		}()
+		})
 	}
 
 	// Wait until all generator goroutines are done.

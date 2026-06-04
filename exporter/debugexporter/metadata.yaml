@@ -9,7 +9,6 @@ status:
       - andrzej-stencel
   class: exporter
   stability:
-    alpha: [traces, metrics, logs]
-    development: [profiles]
+    alpha: [traces, metrics, logs, profiles]
   distributions: [core, contrib, k8s]
   warnings: [Unstable Output Format]

@@ -216,4 +216,11 @@ func TestNewFeatureGateCommand(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "feature \"non.existent.feature\" not found")
 	})
+
+	t.Run("rejects multiple arguments", func(t *testing.T) {
+		cmd := newFeatureGateCommand()
+		cmd.SetArgs([]string{"gate1", "gate2"})
+		err := cmd.Execute()
+		require.Error(t, err)
+	})
 }

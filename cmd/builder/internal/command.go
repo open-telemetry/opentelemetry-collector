@@ -34,9 +34,8 @@ const (
 // Command is the main entrypoint for this application
 func Command() (*cobra.Command, error) {
 	cmd := &cobra.Command{
-		SilenceUsage:  true, // Don't print usage on Run error.
-		SilenceErrors: true, // Don't print errors; main does it.
-		Use:           "ocb",
+		SilenceUsage: true, // Don't print usage on Run error.
+		Use:          "ocb",
 		Long: fmt.Sprintf("OpenTelemetry Collector Builder (%s)", version) + `
 
 ocb generates a custom OpenTelemetry Collector binary using the
@@ -69,7 +68,7 @@ configuration is provided, ocb will generate a default Collector.
 		return nil, err
 	}
 
-	// version of this binary
+	cmd.AddCommand(initCommand())
 	cmd.AddCommand(versionCommand())
 
 	return cmd, nil

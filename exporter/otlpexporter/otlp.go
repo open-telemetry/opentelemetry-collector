@@ -5,6 +5,7 @@ package otlpexporter // import "go.opentelemetry.io/collector/exporter/otlpexpor
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"runtime"
 
@@ -90,6 +91,10 @@ func (e *baseExporter) shutdown(context.Context) error {
 }
 
 func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
+	if e.traceExporter == nil {
+		return errors.New("otlp exporter not started")
+	}
+
 	req := ptraceotlp.NewExportRequestFromTraces(td)
 	resp, respErr := e.traceExporter.Export(ctx, req, e.callOptions...)
 	if err := processError(respErr); err != nil {
@@ -106,6 +111,10 @@ func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 }
 
 func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
+	if e.metricExporter == nil {
+		return errors.New("otlp exporter not started")
+	}
+
 	req := pmetricotlp.NewExportRequestFromMetrics(md)
 	resp, respErr := e.metricExporter.Export(ctx, req, e.callOptions...)
 	if err := processError(respErr); err != nil {
@@ -122,6 +131,10 @@ func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) erro
 }
 
 func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
+	if e.logExporter == nil {
+		return errors.New("otlp exporter not started")
+	}
+
 	req := plogotlp.NewExportRequestFromLogs(ld)
 	resp, respErr := e.logExporter.Export(ctx, req, e.callOptions...)
 	if err := processError(respErr); err != nil {
@@ -138,6 +151,10 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 }
 
 func (e *baseExporter) pushProfiles(ctx context.Context, td pprofile.Profiles) error {
+	if e.profileExporter == nil {
+		return errors.New("otlp exporter not started")
+	}
+
 	req := pprofileotlp.NewExportRequestFromProfiles(td)
 	resp, respErr := e.profileExporter.Export(ctx, req, e.callOptions...)
 	if err := processError(respErr); err != nil {

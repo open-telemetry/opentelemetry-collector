@@ -8,6 +8,7 @@ import (
 	"net"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -397,7 +398,7 @@ func TestSendTraces(t *testing.T) {
 	assert.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
 }
 
-func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
+func TestSendTracesWhenEndpointHasHTTPScheme(t *testing.T) {
 	tests := []struct {
 		name               string
 		useTLS             bool
@@ -970,7 +971,47 @@ func TestSendProfiles(t *testing.T) {
 	assert.Contains(t, observed.FilterLevelExact(zap.WarnLevel).All()[0].Message, "Partial success")
 }
 
-func TestSendProfilesWhenEndpointHasHttpScheme(t *testing.T) {
+func TestPushTracesBeforeStart(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	set := exportertest.NewNopSettings(factory.Type())
+	exp := newExporter(cfg, set)
+	err := exp.pushTraces(context.Background(), ptrace.NewTraces())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not started")
+}
+
+func TestPushMetricsBeforeStart(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	set := exportertest.NewNopSettings(factory.Type())
+	exp := newExporter(cfg, set)
+	err := exp.pushMetrics(context.Background(), pmetric.NewMetrics())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not started")
+}
+
+func TestPushLogsBeforeStart(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	set := exportertest.NewNopSettings(factory.Type())
+	exp := newExporter(cfg, set)
+	err := exp.pushLogs(context.Background(), plog.NewLogs())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not started")
+}
+
+func TestPushProfilesBeforeStart(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	set := exportertest.NewNopSettings(factory.Type())
+	exp := newExporter(cfg, set)
+	err := exp.pushProfiles(context.Background(), pprofile.NewProfiles())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not started")
+}
+
+func TestSendProfilesWhenEndpointHasHTTPScheme(t *testing.T) {
 	tests := []struct {
 		name               string
 		useTLS             bool
@@ -1041,4 +1082,49 @@ func TestSendProfilesWhenEndpointHasHttpScheme(t *testing.T) {
 			assert.EqualValues(t, 0, rcv.totalItems.Load())
 		})
 	}
+}
+
+func TestUserAgentHeader_OverriddenByConfig(t *testing.T) {
+	// Start an OTLP-compatible receiver.
+	ln, err := net.Listen("tcp", "localhost:")
+	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
+	rcv := otlpMetricsReceiverOnGRPCServer(ln)
+	defer rcv.srv.GracefulStop()
+
+	// Start an OTLP exporter with a custom User-Agent header.
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
+	cfg.ClientConfig = configgrpc.ClientConfig{
+		Endpoint: ln.Addr().String(),
+		TLS: configtls.ClientConfig{
+			Insecure: true,
+		},
+		UserAgent: "My Distribution For The Collector",
+	}
+	set := exportertest.NewNopSettings(factory.Type())
+	set.BuildInfo.Description = "Collector"
+	set.BuildInfo.Version = "1.2.3test"
+
+	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, exp)
+	defer func() {
+		assert.NoError(t, exp.Shutdown(context.Background()))
+	}()
+
+	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
+
+	// Send a metric to trigger an RPC.
+	require.NoError(t, exp.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
+
+	assert.Eventually(t, func() bool {
+		return rcv.requestCount.Load() > 0
+	}, 10*time.Second, 5*time.Millisecond)
+
+	md := rcv.getMetadata()
+	require.Len(t, md.Get("User-Agent"), 1)
+	// User-configured value must win over the builtin BuildInfo agent.
+	require.True(t, strings.HasPrefix(md.Get("User-Agent")[0], "My Distribution For The Collector"))
+	require.NotContains(t, md.Get("User-Agent")[0], "Collector/1.2.3test")
 }

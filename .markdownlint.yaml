@@ -1,0 +1,35 @@
+# markdownlint configuration for OpenTelemetry Collector
+# https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+#
+# Start permissive to establish a baseline; tighten rules over time.
+default: true
+
+# Disabled rules (existing codebase has many violations)
+MD001: false  # heading increment
+MD004: false  # unordered list style
+MD007: false  # unordered list indentation
+MD013: false  # line length
+MD014: false  # dollar signs in commands
+MD022: false  # blanks around headings
+MD024: false  # duplicate headings
+MD025: false  # multiple top-level headings
+MD026: false  # trailing punctuation in heading
+MD029: false  # ordered list prefix
+MD030: false  # spaces after list markers
+MD031: false  # blanks around fences
+MD032: false  # blanks around lists
+MD033: false  # inline HTML
+MD034: false  # bare URLs
+MD036: false  # emphasis as heading
+MD038: false  # spaces in code spans
+MD040: false  # fenced code language
+MD041: false  # first line heading
+MD047: false  # single trailing newline
+MD049: false  # emphasis style
+MD051: false  # link fragments
+MD053: false  # unused link definitions
+MD058: false  # blanks around tables
+MD059: false  # descriptive link text
+MD060: false  # table column style
+MD028: false  # blank line inside blockquote
+MD037: false  # spaces inside emphasis

@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.opentelemetry.io/otel/trace"
 	nooptrace "go.opentelemetry.io/otel/trace/noop"
 
@@ -30,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/oteltest"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sendertest"
@@ -98,8 +98,6 @@ func TestLogs_Default_ReturnError(t *testing.T) {
 }
 
 func TestLogs_WithPersistentQueue(t *testing.T) {
-	fgOrigReadState := queue.PersistRequestContextOnRead
-	fgOrigWriteState := queue.PersistRequestContextOnWrite
 	qCfg := configoptional.Some(NewDefaultQueueConfig())
 	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.Get().StorageID = &storageID
@@ -141,13 +139,6 @@ func TestLogs_WithPersistentQueue(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			queue.PersistRequestContextOnRead = func() bool { return tt.fgEnabledOnRead }
-			queue.PersistRequestContextOnWrite = func() bool { return tt.fgEnabledOnWrite }
-			t.Cleanup(func() {
-				queue.PersistRequestContextOnRead = fgOrigReadState
-				queue.PersistRequestContextOnWrite = fgOrigWriteState
-			})
-
 			ls := consumertest.LogsSink{}
 			te, err := NewLogs(context.Background(), set, &fakeLogsConfig, ls.ConsumeLogs, WithQueue(qCfg))
 			require.NoError(t, err)
@@ -345,7 +336,9 @@ func checkRecordedMetricsForLogs(t *testing.T, tt *componenttest.Telemetry, id c
 			[]metricdata.DataPoint[int64]{
 				{
 					Attributes: attribute.NewSet(
-						attribute.String("exporter", id.String())),
+						attribute.String("exporter", id.String()),
+						attribute.String(string(semconv.ErrorTypeKey), "_OTHER"),
+						attribute.Bool(internal.ErrorPermanentKey, false)),
 					Value: int64(numBatches * ld.LogRecordCount()),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())

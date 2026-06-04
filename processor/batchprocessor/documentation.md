@@ -8,15 +8,15 @@ The following telemetry is emitted by this component.
 
 ### otelcol_processor_batch_batch_send_size
 
-Number of units in the batch [Development]
+Number of units in the batch
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {units} | Histogram | Int | Development |
+| {unit} | Histogram | Int | Development |
 
 ### otelcol_processor_batch_batch_send_size_bytes
 
-Number of bytes in batch that was sent. Only available on detailed level. [Development]
+Number of bytes in batch that was sent. Only available on detailed level.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -24,24 +24,24 @@ Number of bytes in batch that was sent. Only available on detailed level. [Devel
 
 ### otelcol_processor_batch_batch_size_trigger_send
 
-Number of times the batch was sent due to a size trigger [Development]
+Number of times the batch was sent due to a size trigger
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {times} | Sum | Int | true | Development |
+| {time} | Sum | Int | true | Development |
 
 ### otelcol_processor_batch_metadata_cardinality
 
-Number of distinct metadata value combinations being processed [Development]
+Number of distinct metadata value combinations being processed
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {combinations} | Sum | Int | false | Development |
+| {combination} | Sum | Int | false | Development |
 
 ### otelcol_processor_batch_timeout_trigger_send
 
-Number of times the batch was sent due to a timeout trigger [Development]
+Number of times the batch was sent due to a timeout trigger
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {times} | Sum | Int | true | Development |
+| {time} | Sum | Int | true | Development |

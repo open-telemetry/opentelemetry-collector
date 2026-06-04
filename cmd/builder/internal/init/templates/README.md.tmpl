@@ -1,0 +1,44 @@
+# {{.Name}} Collector
+
+Welcome to your new custom OpenTelemetry Collector!
+This Collector allows you to configure the components you wish to use, and only those.
+
+Components can come from the ones provided by the OpenTelemetry organization in
+the
+[opentelemetry-collector-contrib](https://github.com/open-telemetry/opentelemetry-collector-contrib)
+repository, or from any other source, including your [custom, possibly private
+code](https://opentelemetry.io/docs/collector/extend/custom-component/). The
+only requirement is that they match the Go interface for that component, so the
+Collector can run them.
+
+## Important files
+
+Edit these two files to customize your Collector:
+
+* `manifest.yaml` - The manifest file configures the OpenTelemetry Collector Builder and tells it what modules it needs to enable within your custom collector.
+  See [Configure the OpenTelemetry Collector Builder](https://opentelemetry.io/docs/collector/extend/ocb/#configure-the-opentelemetry-collector-builder) for more information.
+* `config.yaml` - The Collector configuration allows you to configure your components and their pipelines. This is where you tell your Collector where it needs to export data.
+  See [Collector Configuration](https://opentelemetry.io/docs/collector/configuration/) for more information.
+
+## Running your custom Collector
+
+You can already run your custom Collector, though it only includes the OTLP
+receiver and exporter.
+
+Use the following make command:
+
+```
+make run
+```
+
+This will build your collector inside the `build/collector` folder, and then
+run the compiled binary.
+
+With the `make generate` command, you can also build the collector but not run it.
+
+## Next
+
+To learn more, read the [Extend the
+Collector](https://opentelemetry.io/docs/collector/extend/) documentation,
+which will give you pointers to configure your new custom Collector, and to
+build custom components.

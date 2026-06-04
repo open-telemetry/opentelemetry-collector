@@ -5,7 +5,7 @@
     "dependencies"
   ],
   "constraints": {
-    "go": "1.24"
+    "go": "1.25"
   },
   "extends": [
     "config:recommended",

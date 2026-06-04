@@ -70,6 +70,51 @@ When naming configuration structs, use the following guidelines:
 - Use the `Settings` suffix for configuration structs that are set by developers in the code. For example, `component.TelemetrySettings` ends in `Settings` since it is set by developers in the code.
 - Avoid redundant prefixes that are already implied by the package name. For example, use`configgrpc.ClientConfig` instead of `configgrpc.GRPCClientConfig`.
 
+#### Avoid Embedded Structs
+
+When defining configuration structs, avoid using embedded (anonymous) struct fields. Instead, use explicitly named fields.
+
+**Rationale:**
+
+1. **Unmarshal Compatibility**: Embedded structs can break custom `Unmarshal` implementations. If an embedded struct requires special unmarshaling logic, it may not function correctly when embedded.
+
+2. **Naming Conflicts**: Embedded structs can cause field name collisions. Even if the YAML configuration nests them properly (e.g., under `sending_queue`), having identical field names in embedded structs creates ambiguity in the Go code.
+
+3. **Clarity**: Named fields make the configuration structure more explicit and easier to understand.
+
+**Example:**
+
+```go
+// ❌ BAD: Using embedded structs
+type ExporterConfig struct {
+    exporterhelper.TimeoutConfig     // embedded
+    exporterhelper.QueueConfig       // embedded
+    exporterhelper.RetryConfig       // embedded
+}
+
+// ✅ GOOD: Using named fields
+type ExporterConfig struct {
+    Timeout exporterhelper.TimeoutConfig `mapstructure:"timeout"`
+    Queue   exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
+    Retry   exporterhelper.RetryConfig   `mapstructure:"retry_on_failure"`
+}
+```
+
+This practice ensures better maintainability and prevents subtle bugs related to struct composition and configuration unmarshaling.
+
+**Preserving Flat YAML Structure with the `squash` Tag:**
+
+In some cases, you may need to maintain backward compatibility with an existing flat YAML configuration structure while still using named fields in Go. The `mapstructure:",squash"` tag achieves this by flattening the nested struct's fields into the parent configuration:
+
+```go
+// Using named fields with squash tag for flat YAML structure
+type Config struct {
+    ClientConfig confighttp.ClientConfig `mapstructure:",squash"`
+}
+```
+
+This allows the YAML configuration to remain flat (fields at the top level) while the Go code uses a named field. However, prefer explicitly nested configurations (without `squash`) for new components, as the nested structure is clearer and avoids the issues mentioned above.
+
 ## Module organization
 
 As usual in Go projects, organize your code into packages grouping related functionality. To ensure
@@ -126,16 +171,14 @@ To keep naming patterns consistent across the project, enumeration patterns are 
   - `pcommon.ValueTypeStr` for `pcommon.ValueType`
   - `pmetric.MetricTypeGauge` for `pmetric.MetricType`
 
-
 ## Recommended Libraries / Defaults
 
 In order to simplify development within the project, we have made certain library recommendations that should be followed.
 
-| Scenario 	 | Recommended                   	                | Rationale                                                                                                                  |
+| Scenario   | Recommended                                    | Rationale                                                                                                                  |
 |------------|------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
-| Hashing  	 | ["hashing/fnv"](https://pkg.go.dev/hash/fnv) 	 | The project adopted this as the default hashing method due to the efficiency and is reasonable for non-cryptographic use 	 |
-| Testing  	 | Use `t.Parallel()` where possible            	 | Enabling more tests to be run in parallel will speed up the feedback process when working on the project.                 	 |
-
+| Hashing    | ["hashing/fnv"](https://pkg.go.dev/hash/fnv)   | The project adopted this as the default hashing method due to the efficiency and is reasonable for non-cryptographic use   |
+| Testing    | Use `t.Parallel()` where possible              | Enabling more tests to be run in parallel will speed up the feedback process when working on the project.                   |
 
 Within the project, there are some packages that have yet to follow the recommendations and are being addressed. However, any new code should adhere to the recommendations.
 
@@ -366,7 +409,7 @@ It's also important to check for any open issues that may already propose these 
 If no such Semantic Conventions are defined in the Semantic Conventions project, the component’s code owners
 should consider initiating that process first
 (refer to Semantic Conventions'
-[contribution guidelines](https://github.com/open-telemetry/semantic-conventions/blob/main/CONTRIBUTING.md) 
+[contribution guidelines](https://github.com/open-telemetry/semantic-conventions/blob/main/CONTRIBUTING.md)
 for specific details).
 The implementation of the component can still be submitted as a draft PR to demonstrate how the proposed
 Semantic Conventions would be used while working in parallel to contribute the relevant updates to
@@ -469,6 +512,10 @@ package test
 func DoFoo() {}
 ```
 
+If applicable, add the [`//go:fix inline`
+directive](https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/inline#hdr-Analyzer_inline) on
+the deprecated function to help with the migration.
+
 #### Example #1 - Renaming a function
 
 1. Current version `v0.N` has `func GetFoo() Bar`
@@ -516,6 +563,12 @@ approach. This is a well-known approach in other projects such as Kubernetes. A 
 three stages: alpha, beta and stable. The intent of these stages is to decouple other software
 changes from the breaking change; some users may adopt the change early, while other users may delay
 its adoption.
+
+#### Defining feature gates
+
+Feature gates should be defined declaratively in the component's `metadata.yaml`
+file whenever possible. See the [feature gate documentation](../featuregate/README.md)
+for details on the declarative approach and the supported fields.
 
 #### Feature gate IDs
 

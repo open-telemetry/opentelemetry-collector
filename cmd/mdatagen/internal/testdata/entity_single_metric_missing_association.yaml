@@ -1,0 +1,35 @@
+type: sample
+status:
+  class: receiver
+  stability:
+    stable: [metrics]
+
+resource_attributes:
+  host.id:
+    description: The unique host identifier
+    type: string
+    enabled: true
+
+entities:
+  - type: host
+    brief: A host instance.
+    stability: stable
+    identity:
+      - ref: host.id
+
+attributes:
+  test.attr:
+    description: Test attribute
+    type: string
+
+metrics:
+  host.cpu.time:
+    enabled: true
+    description: Host CPU time
+    unit: s
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    stability: stable
+    attributes: [test.attr]

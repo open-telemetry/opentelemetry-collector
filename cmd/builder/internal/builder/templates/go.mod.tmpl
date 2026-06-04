@@ -2,7 +2,7 @@
 
 module {{.Distribution.Module}}
 
-go 1.24
+go 1.25
 
 require (
 	{{- range .ConfmapConverters}}
@@ -26,6 +26,7 @@ require (
 	{{- range .Processors}}
 	{{if .GoMod}}{{.GoMod}}{{end}}
 	{{- end}}
+	{{if .Telemetry.GoMod}}{{.Telemetry.GoMod}}{{end}}
 	go.opentelemetry.io/collector/otelcol {{.OtelColVersion}}
 )
 
@@ -55,6 +56,7 @@ require (
 {{- range .Processors}}
 {{if ne .Path ""}}replace {{.GoMod}} => {{.Path}}{{end}}
 {{- end}}
+{{if ne .Telemetry.Path ""}}replace {{.Telemetry.GoMod}} => {{.Telemetry.Path}}{{end}}
 {{- range .Replaces}}
 replace {{.}}
 {{- end}}

@@ -128,6 +128,18 @@ func createTestCases() []testCase {
 				return cfg
 			}(),
 		},
+		{
+			name: "custom output paths",
+			config: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				queueCfg := exporterhelper.NewDefaultQueueConfig()
+				queueCfg.QueueSize = 10
+				cfg.QueueConfig = configoptional.Some(queueCfg)
+				cfg.UseInternalLogger = false
+				cfg.OutputPaths = []string{"stderr"}
+				return cfg
+			}(),
+		},
 	}
 }
 

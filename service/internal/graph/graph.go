@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"maps"
 	"reflect"
+	"slices"
 	"strings"
 
 	"go.uber.org/multierr"
@@ -299,9 +300,7 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 		return cycleErr(err, topo.DirectedCyclesIn(g.componentGraph))
 	}
 
-	for i := len(nodes) - 1; i >= 0; i-- {
-		node := nodes[i]
-
+	for _, node := range slices.Backward(nodes) {
 		switch n := node.(type) {
 		case *receiverNode:
 			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(n.ID()))
@@ -417,8 +416,7 @@ func (g *Graph) StartAll(ctx context.Context, host *Host) error {
 	// Start in reverse topological order so that downstream components
 	// are started before upstream components. This ensures that each
 	// component's consumer is ready to consume.
-	for i := len(nodes) - 1; i >= 0; i-- {
-		node := nodes[i]
+	for _, node := range slices.Backward(nodes) {
 		comp, ok := node.(component.Component)
 
 		if !ok {
@@ -720,21 +718,21 @@ func (g *Graph) shutdownReceiverNode(ctx context.Context, nodeID int64, rn *rece
 }
 
 func (g *Graph) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
-	exportersMap := make(map[pipeline.Signal]map[component.ID]component.Component)
-	exportersMap[pipeline.SignalTraces] = make(map[component.ID]component.Component)
-	exportersMap[pipeline.SignalMetrics] = make(map[component.ID]component.Component)
-	exportersMap[pipeline.SignalLogs] = make(map[component.ID]component.Component)
-	exportersMap[xpipeline.SignalProfiles] = make(map[component.ID]component.Component)
+	exporters := make(map[pipeline.Signal]map[component.ID]component.Component)
+	exporters[pipeline.SignalTraces] = make(map[component.ID]component.Component)
+	exporters[pipeline.SignalMetrics] = make(map[component.ID]component.Component)
+	exporters[pipeline.SignalLogs] = make(map[component.ID]component.Component)
+	exporters[xpipeline.SignalProfiles] = make(map[component.ID]component.Component)
 
 	for _, pg := range g.pipelines {
 		for _, expNode := range pg.exporters {
 			// Skip connectors, otherwise individual components can introduce cycles
 			if expNode, ok := g.componentGraph.Node(expNode.ID()).(*exporterNode); ok {
-				exportersMap[expNode.pipelineType][expNode.componentID] = expNode.Component
+				exporters[expNode.pipelineType][expNode.componentID] = expNode.Component
 			}
 		}
 	}
-	return exportersMap
+	return exporters
 }
 
 func cycleErr(err error, cycles [][]graph.Node) error {

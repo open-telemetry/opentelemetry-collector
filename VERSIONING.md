@@ -10,9 +10,9 @@ These policies reflect the current consensus of the OpenTelemetry Collector SIG.
 
 ## Software artifacts for end users
 
-Software artifacts intended for [end users](CONTRIBUTING.md#end-users) of the OpenTelemetry Collector include 
+Software artifacts intended for [end users](CONTRIBUTING.md#end-users) of the OpenTelemetry Collector include
 - Binary distributions of the OpenTelemetry Collector.
-- Go modules that expose Collector components, such as receivers, processors, connectors, extensions and exporters. 
+- Go modules that expose Collector components, such as receivers, processors, connectors, extensions and exporters.
 
 These artifacts are versioned according to the [semantic versioning v2.0.0](https://semver.org/) specification.
 
@@ -44,11 +44,11 @@ As a general rule, stability guarantees of modules versioned as `v1` or higher a
 OpenTelemetry authors reserve the right to introduce API changes breaking compatibility between minor versions in the following scenarios:
 * **Struct literals.** It may be necessary to add new fields to exported structs in the API. Code that uses unkeyed
   struct literals (such as pkg.T{3, "x"}) to create values of these types would fail to compile after such a change.
-  However, code that uses keyed literals (pkg.T{A: 3, B: "x"}) will continue to compile. We therefore recommend 
+  However, code that uses keyed literals (pkg.T{A: 3, B: "x"}) will continue to compile. We therefore recommend
   using OpenTelemetry collector structs with the keyed literals only.
 * **Methods.** As with struct fields, it may be necessary to add methods to types. Under some circumstances,
-  such as when the type is embedded in a struct along with another type, the addition of the new method may 
-  break the struct by creating a conflict with an existing method of the other embedded type. We cannot protect 
+  such as when the type is embedded in a struct along with another type, the addition of the new method may
+  break the struct by creating a conflict with an existing method of the other embedded type. We cannot protect
   against this rare case and do not guarantee compatibility in such scenarios.
 * **Dot imports.** If a program imports a package using `import .`, additional names defined in the imported package
   in future releases may conflict with other names defined in the program. We do not recommend the use of
@@ -72,15 +72,15 @@ Configuration structures are part of the public API and backwards
 compatibility should be maintained through any changes made to configuration structures.
 
 Unless otherwise specified in the documentation, the following may change in any way between minor versions:
-* **Adding new fields to configuration structures**. Because configuration structures are typically instantiated through 
-unmarshalling a serialized representation of the structure, and not through structure literals, additive changes to 
+* **Adding new fields to configuration structures**. Because configuration structures are typically instantiated through
+unmarshalling a serialized representation of the structure, and not through structure literals, additive changes to
 the set of exported fields in a configuration structure are not considered to break backward compatibility.
 * **Relaxing validation rules**. An invalid configuration struct as defined by its `Validate` method return value
 may become valid after a change to the validation rules.
 
 The following are explicitly considered to be breaking changes:
-* **Modifying struct tags related to serialization**. Struct tags used to configure serialization mechanisms (`yaml:`, 
-`mapstructure:`, etc) are part of the structure definition and must maintain compatibility to the same extent as the 
+* **Modifying struct tags related to serialization**. Struct tags used to configure serialization mechanisms (`yaml:`,
+`mapstructure:`, etc) are part of the structure definition and must maintain compatibility to the same extent as the
 structure. However, changes are allowed when tag modifications produce a
 functionally-equivalent result when serializing or deserializing the structure.
 For example, adding a tag to a field so it will not be emitted during serialization

@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/pdata/pprofile"
+	"go.opentelemetry.io/collector/service/internal/metadata"
 )
 
 var (
@@ -21,7 +22,7 @@ var (
 )
 
 func NewProfiles(cons xconsumer.Profiles, set Settings, opts ...Option) xconsumer.Profiles {
-	if !telemetry.NewPipelineTelemetryGate.IsEnabled() {
+	if !metadata.TelemetryNewPipelineTelemetryFeatureGate.IsEnabled() {
 		return cons
 	}
 

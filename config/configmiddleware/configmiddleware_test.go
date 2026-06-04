@@ -149,7 +149,7 @@ func TestConfig_GetGRPCServerOptions(t *testing.T) {
 					extensionmiddleware.GetGRPCServerOptionsFunc
 				}{
 					Extension: extensionmiddlewaretest.NewNop(),
-					GetGRPCServerOptionsFunc: func() ([]grpc.ServerOption, error) {
+					GetGRPCServerOptionsFunc: func(context.Context) ([]grpc.ServerOption, error) {
 						return []grpc.ServerOption{
 							grpc.EmptyServerOption{},
 						}, nil
@@ -212,7 +212,7 @@ func TestConfig_GetGRPCClientOptions(t *testing.T) {
 					extensionmiddleware.GetGRPCClientOptionsFunc
 				}{
 					Extension: extensionmiddlewaretest.NewNop(),
-					GetGRPCClientOptionsFunc: func() ([]grpc.DialOption, error) {
+					GetGRPCClientOptionsFunc: func(_ context.Context) ([]grpc.DialOption, error) {
 						return []grpc.DialOption{
 							grpc.EmptyDialOption{},
 						}, nil

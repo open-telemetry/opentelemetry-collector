@@ -12,7 +12,7 @@ import (
 
 var unexpectedBytes = "expected the same bytes from unmarshaling and marshaling."
 
-func FuzzUnmarshalJsonLogs(f *testing.F) {
+func FuzzUnmarshalJSONLogs(f *testing.F) {
 	f.Fuzz(func(t *testing.T, data []byte) {
 		u1 := &JSONUnmarshaler{}
 		ld1, err := u1.UnmarshalLogs(data)

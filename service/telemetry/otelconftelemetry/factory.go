@@ -7,19 +7,12 @@ import (
 	"time"
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/service/telemetry"
-)
-
-var useLocalHostAsDefaultMetricsAddressFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"telemetry.UseLocalHostAsDefaultMetricsAddress",
-	featuregate.StageBeta,
-	featuregate.WithRegisterFromVersion("v0.111.0"),
-	featuregate.WithRegisterDescription("controls whether default Prometheus metrics server use localhost as the default host for their endpoints"),
 )
 
 // NewFactory creates a new telemetry.Factory that uses otelconf
@@ -35,11 +28,6 @@ func NewFactory() telemetry.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	metricsHost := "localhost"
-	if !useLocalHostAsDefaultMetricsAddressFeatureGate.IsEnabled() {
-		metricsHost = ""
-	}
-
 	return &Config{
 		Logs: LogsConfig{
 			Level:       zapcore.InfoLevel,
@@ -67,14 +55,16 @@ func createDefaultConfig() component.Config {
 							WithoutScopeInfo:  ptr(true),
 							WithoutUnits:      ptr(true),
 							WithoutTypeSuffix: ptr(true),
-							Host:              &metricsHost,
+							Host:              ptr("localhost"),
 							Port:              ptr(8888),
-							WithResourceConstantLabels: &config.IncludeExclude{
-								Included: []string{},
-							},
 						}}},
 					},
 				},
+			},
+		},
+		Resource: ResourceConfig{
+			Resource: config.Resource{
+				SchemaUrl: ptr(semconv.SchemaURL),
 			},
 		},
 	}

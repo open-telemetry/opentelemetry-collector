@@ -1,0 +1,35 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: localhost:${env:OTEL_PORT}
+
+exporters:
+  otlp_http/test:
+    endpoint: ${env:EXPORTER_ENDPOINT}
+    timeout: 100ms
+    retry_on_failure:
+      enabled: true
+      initial_interval: 10ms
+      max_interval: 50ms
+      max_elapsed_time: 200ms
+    sending_queue:
+      enabled: false
+
+service:
+  telemetry:
+    logs:
+      level: info
+    metrics:
+      level: detailed
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: localhost
+                port: ${env:METRICS_PORT}
+
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      exporters: [otlp_http/test]

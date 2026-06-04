@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
@@ -27,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/debugexporter"
+	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -39,25 +41,8 @@ import (
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
-func assertMetrics(t *testing.T, metricsAddr string, expectedMetrics map[string]bool) bool {
-	client := &http.Client{}
-	resp, err := client.Get(fmt.Sprintf("http://%s/metrics", metricsAddr))
-	if err != nil {
-		return false
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return false
-	}
-
-	defer resp.Body.Close()
-
-	reader := bufio.NewReader(resp.Body)
-	parser := expfmt.NewTextParser(model.UTF8Validation)
-	parsed, err := parser.TextToMetricFamilies(reader)
-	if err != nil {
-		return false
-	}
+func assertMetrics(t *testing.T, metricsPort string, expectedMetrics map[string]bool) bool {
+	parsed := readMetrics(t, metricsPort)
 
 	for metricName, metricFamily := range parsed {
 		if _, ok := expectedMetrics[metricName]; ok {
@@ -136,47 +121,47 @@ func TestMetricStability(t *testing.T) {
 			configFile: "metric_stability_test_readers.yaml",
 			expectedMetrics: map[string]bool{
 				// Process metrics
-				"otelcol_process_uptime_seconds_total":            false,
-				"otelcol_process_cpu_seconds_total":               false,
-				"otelcol_process_memory_rss_bytes":                false,
-				"otelcol_process_runtime_heap_alloc_bytes":        false,
-				"otelcol_process_runtime_total_alloc_bytes_total": false,
-				"otelcol_process_runtime_total_sys_memory_bytes":  false,
+				"otelcol_process_uptime":                         false,
+				"otelcol_process_cpu_seconds":                    false,
+				"otelcol_process_memory_rss":                     false,
+				"otelcol_process_runtime_heap_alloc_bytes":       false,
+				"otelcol_process_runtime_total_alloc_bytes":      false,
+				"otelcol_process_runtime_total_sys_memory_bytes": false,
 
 				// Batch processor metrics
-				"otelcol_processor_batch_batch_send_size":            false,
-				"otelcol_processor_batch_batch_send_size_bytes":      false,
-				"otelcol_processor_batch_metadata_cardinality":       false,
-				"otelcol_processor_batch_timeout_trigger_send_total": false,
+				"otelcol_processor_batch_batch_send_size":       false,
+				"otelcol_processor_batch_batch_send_size_bytes": false,
+				"otelcol_processor_batch_metadata_cardinality":  false,
+				"otelcol_processor_batch_timeout_trigger_send":  false,
 
 				// HTTP server metrics
-				"http_server_request_body_size_bytes":  false,
-				"http_server_request_duration_seconds": false,
-				"http_server_response_body_size_bytes": false,
+				"http_server_request_body_size":  false,
+				"http_server_request_duration":   false,
+				"http_server_response_body_size": false,
 
 				// Exporter metrics - Metrics
-				"otelcol_exporter_sent_metric_points_total":        false,
-				"otelcol_exporter_send_failed_metric_points_total": false,
+				"otelcol_exporter_sent_metric_points":        false,
+				"otelcol_exporter_send_failed_metric_points": false,
 
 				// Exporter metrics - Traces
-				"otelcol_exporter_sent_spans_total":        false,
-				"otelcol_exporter_send_failed_spans_total": false,
+				"otelcol_exporter_sent_spans":        false,
+				"otelcol_exporter_send_failed_spans": false,
 
 				// Exporter metrics - Logs
-				"otelcol_exporter_sent_log_records_total":        false,
-				"otelcol_exporter_send_failed_log_records_total": false,
+				"otelcol_exporter_sent_log_records":        false,
+				"otelcol_exporter_send_failed_log_records": false,
 
 				// Receiver metrics
-				"otelcol_receiver_accepted_metric_points_total": false,
-				"otelcol_receiver_refused_metric_points_total":  false,
+				"otelcol_receiver_accepted_metric_points": false,
+				"otelcol_receiver_refused_metric_points":  false,
 
 				// Receiver metrics - Traces
-				"otelcol_receiver_accepted_spans_total": false,
-				"otelcol_receiver_refused_spans_total":  false,
+				"otelcol_receiver_accepted_spans": false,
+				"otelcol_receiver_refused_spans":  false,
 
 				// Receiver metrics - Logs
-				"otelcol_receiver_accepted_log_records_total": false,
-				"otelcol_receiver_refused_log_records_total":  false,
+				"otelcol_receiver_accepted_log_records": false,
+				"otelcol_receiver_refused_log_records":  false,
 
 				// Other metrics
 				"promhttp_metric_handler_errors_total": false,
@@ -204,8 +189,12 @@ func testMetricStability(t *testing.T, configFile string, expectedMetrics map[st
 			return otelcol.Factories{
 				Receivers:  map[component.Type]receiver.Factory{otlpreceiver.NewFactory().Type(): otlpreceiver.NewFactory()},
 				Processors: map[component.Type]processor.Factory{batchprocessor.NewFactory().Type(): batchprocessor.NewFactory()},
-				Exporters:  map[component.Type]exporter.Factory{debugexporter.NewFactory().Type(): debugexporter.NewFactory()},
-				Telemetry:  otelconftelemetry.NewFactory(),
+				Exporters: map[component.Type]exporter.Factory{
+					debugexporter.NewFactory().Type(): debugexporter.NewFactory(),
+					// otlphttpexporter is needed because the test config files use otlphttp/fail exporter
+					otlphttpexporter.NewFactory().Type(): otlphttpexporter.NewFactory(),
+				},
+				Telemetry: otelconftelemetry.NewFactory(),
 			}, nil
 		},
 		ConfigProviderSettings: otelcol.ConfigProviderSettings{
@@ -230,22 +219,14 @@ func testMetricStability(t *testing.T, configFile string, expectedMetrics map[st
 			t.Logf("Collector stopped with error: %v", err)
 		}
 	}()
-
-	require.Eventually(t, func() bool {
-		resp, err := http.Get(fmt.Sprintf("http://localhost:%s/metrics", metricsPort))
-		if err != nil {
-			return false
-		}
-		resp.Body.Close()
-		return resp.StatusCode == http.StatusOK
-	}, 5*time.Second, 100*time.Millisecond, "collector failed to start")
+	waitMetricsReady(t, metricsPort)
 
 	for range 5 {
 		sendTestData(t, otelPort)
 	}
 
 	require.Eventually(t, func() bool {
-		return assertMetrics(t, "localhost:"+metricsPort, expectedMetrics)
+		return assertMetrics(t, metricsPort, expectedMetrics)
 	}, 10*time.Second, 200*time.Millisecond, "failed to verify metrics")
 }
 
@@ -366,4 +347,23 @@ func getFreePort(t *testing.T) string {
 	}
 	defer l.Close()
 	return strconv.Itoa(l.Addr().(*net.TCPAddr).Port)
+}
+
+func waitMetricsReady(t *testing.T, metricsPort string) {
+	require.EventuallyWithT(t, func(t *assert.CollectT) {
+		_ = readMetrics(t, metricsPort)
+	}, 10*time.Second, 100*time.Millisecond, "collector failed to start")
+}
+
+func readMetrics(t require.TestingT, metricsPort string) map[string]*dto.MetricFamily {
+	resp, err := http.Get(fmt.Sprintf("http://localhost:%s/metrics", metricsPort))
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	reader := bufio.NewReader(resp.Body)
+	parser := expfmt.NewTextParser(model.UTF8Validation)
+	parsed, err := parser.TextToMetricFamilies(reader)
+	require.NoError(t, err)
+	return parsed
 }

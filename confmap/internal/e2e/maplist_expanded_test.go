@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/internal"
-	"go.opentelemetry.io/collector/featuregate"
 )
 
 type testHeadersConfig struct {
@@ -60,13 +59,6 @@ func TestMapListWithExpandedValueIntValue(t *testing.T) {
 		},
 	}
 
-	originalState := internal.NewExpandedValueSanitizer.IsEnabled()
-	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(internal.NewExpandedValueSanitizer.ID(), originalState))
-	}()
-
-	require.NoError(t, featuregate.GlobalRegistry().Set(internal.NewExpandedValueSanitizer.ID(), true))
-
 	conf := confmap.NewFromStringMap(data)
 	var tc testHeadersConfig
 	err := conf.Unmarshal(&tc)
@@ -75,13 +67,6 @@ func TestMapListWithExpandedValueIntValue(t *testing.T) {
 	val, ok := tc.Headers.Get("X-Port")
 	require.True(t, ok)
 	require.Equal(t, configopaque.String("8080"), val)
-
-	require.NoError(t, featuregate.GlobalRegistry().Set(internal.NewExpandedValueSanitizer.ID(), false))
-
-	// This will fail because when reverting to old behavior, ExpandedValues get decoded at collection time and doesn't
-	// take struct collections into account.
-	err = conf.Unmarshal(&tc)
-	require.Error(t, err)
 }
 
 // TestDirectConfigopaqueStringWithExpandedValueIntValue tests that direct unmarshaling works
@@ -104,34 +89,4 @@ func TestDirectConfigopaqueStringWithExpandedValueIntValue(t *testing.T) {
 	// This should work because useExpandValue detects the target is a string
 	require.NoError(t, err)
 	require.Equal(t, configopaque.String("8080"), tc.Value)
-}
-
-// TestStringyStructureWithExpandedValue tests the isStringyStructure path in useExpandValue
-func TestStringyStructureWithExpandedValue(t *testing.T) {
-	type testConfig struct {
-		Tags []string `mapstructure:"tags"`
-	}
-
-	data := map[string]any{
-		"tags": []any{
-			internal.ExpandedValue{
-				Value:    8080,
-				Original: "8080",
-			},
-		},
-	}
-
-	originalState := internal.NewExpandedValueSanitizer.IsEnabled()
-	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(internal.NewExpandedValueSanitizer.ID(), originalState))
-	}()
-
-	// With feature gate disabled, useExpandValue should detect []string as stringy
-	require.NoError(t, featuregate.GlobalRegistry().Set(internal.NewExpandedValueSanitizer.ID(), false))
-
-	conf := confmap.NewFromStringMap(data)
-	var tc testConfig
-	err := conf.Unmarshal(&tc)
-	require.NoError(t, err)
-	require.Equal(t, []string{"8080"}, tc.Tags)
 }

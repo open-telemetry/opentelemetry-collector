@@ -8,20 +8,33 @@ import (
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// DefaultMetricMetricAttributeKey specifies the key of an attribute for the default.metric metric.
+type DefaultMetricMetricAttributeKey string
+
+const (
+	DefaultMetricMetricAttributeKeyStringAttr            DefaultMetricMetricAttributeKey = "string_attr"
+	DefaultMetricMetricAttributeKeyOverriddenIntAttr     DefaultMetricMetricAttributeKey = "state"
+	DefaultMetricMetricAttributeKeyEnumAttr              DefaultMetricMetricAttributeKey = "enum_attr"
+	DefaultMetricMetricAttributeKeySliceAttr             DefaultMetricMetricAttributeKey = "slice_attr"
+	DefaultMetricMetricAttributeKeyMapAttr               DefaultMetricMetricAttributeKey = "map_attr"
+	DefaultMetricMetricAttributeKeyConditionalIntAttr    DefaultMetricMetricAttributeKey = "conditional_int_attr"
+	DefaultMetricMetricAttributeKeyConditionalStringAttr DefaultMetricMetricAttributeKey = "conditional_string_attr"
+	DefaultMetricMetricAttributeKeyOptInBoolAttr         DefaultMetricMetricAttributeKey = "opt_in_bool_attr"
+)
+
+// DefaultMetricMetricConfig provides config for the default.metric metric.
+type DefaultMetricMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string   `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []string `mapstructure:"attributes"`
-	definedAttributes   []string
-	requiredAttributes  []string
+	AggregationStrategy string                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []DefaultMetricMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *DefaultMetricMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -30,111 +43,456 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *DefaultMetricMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
-		if !slices.Contains(ms.definedAttributes, val) {
-			return fmt.Errorf("%v is not defined in metadata.yaml", val)
+		switch val {
+		case DefaultMetricMetricAttributeKeyStringAttr, DefaultMetricMetricAttributeKeyOverriddenIntAttr, DefaultMetricMetricAttributeKeyEnumAttr, DefaultMetricMetricAttributeKeySliceAttr, DefaultMetricMetricAttributeKeyMapAttr, DefaultMetricMetricAttributeKeyConditionalIntAttr, DefaultMetricMetricAttributeKeyConditionalStringAttr, DefaultMetricMetricAttributeKeyOptInBoolAttr:
+		default:
+			return fmt.Errorf("metric default.metric doesn't have an attribute %v, valid attributes: [string_attr, state, enum_attr, slice_attr, map_attr, conditional_int_attr, conditional_string_attr, opt_in_bool_attr]", val)
 		}
 	}
 
-	for _, val := range ms.requiredAttributes {
-		if !slices.Contains(ms.EnabledAttributes, val) {
-			return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
-		}
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
 	}
 
-	if ms.AggregationStrategy != AggregationStrategySum &&
-		ms.AggregationStrategy != AggregationStrategyAvg &&
-		ms.AggregationStrategy != AggregationStrategyMin &&
-		ms.AggregationStrategy != AggregationStrategyMax {
-		return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+	return nil
+}
+
+// DefaultMetricToBeRemovedMetricConfig provides config for the default.metric.to_be_removed metric.
+type DefaultMetricToBeRemovedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *DefaultMetricToBeRemovedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
-// AttributeConfig holds configuration information for a particular metric.
-type AttributeConfig struct {
-	Enabled bool `mapstructure:"enabled"`
+// MetricInputTypeMetricAttributeKey specifies the key of an attribute for the metric.input_type metric.
+type MetricInputTypeMetricAttributeKey string
+
+const (
+	MetricInputTypeMetricAttributeKeyStringAttr        MetricInputTypeMetricAttributeKey = "string_attr"
+	MetricInputTypeMetricAttributeKeyOverriddenIntAttr MetricInputTypeMetricAttributeKey = "state"
+	MetricInputTypeMetricAttributeKeyEnumAttr          MetricInputTypeMetricAttributeKey = "enum_attr"
+	MetricInputTypeMetricAttributeKeySliceAttr         MetricInputTypeMetricAttributeKey = "slice_attr"
+	MetricInputTypeMetricAttributeKeyMapAttr           MetricInputTypeMetricAttributeKey = "map_attr"
+)
+
+// MetricInputTypeMetricConfig provides config for the metric.input_type metric.
+type MetricInputTypeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MetricInputTypeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MetricInputTypeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MetricInputTypeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MetricInputTypeMetricAttributeKeyStringAttr, MetricInputTypeMetricAttributeKeyOverriddenIntAttr, MetricInputTypeMetricAttributeKeyEnumAttr, MetricInputTypeMetricAttributeKeySliceAttr, MetricInputTypeMetricAttributeKeyMapAttr:
+		default:
+			return fmt.Errorf("metric metric.input_type doesn't have an attribute %v, valid attributes: [string_attr, state, enum_attr, slice_attr, map_attr]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// OptionalMetricMetricAttributeKey specifies the key of an attribute for the optional.metric metric.
+type OptionalMetricMetricAttributeKey string
+
+const (
+	OptionalMetricMetricAttributeKeyStringAttr            OptionalMetricMetricAttributeKey = "string_attr"
+	OptionalMetricMetricAttributeKeyBooleanAttr           OptionalMetricMetricAttributeKey = "boolean_attr"
+	OptionalMetricMetricAttributeKeyBooleanAttr2          OptionalMetricMetricAttributeKey = "boolean_attr2"
+	OptionalMetricMetricAttributeKeyConditionalStringAttr OptionalMetricMetricAttributeKey = "conditional_string_attr"
+)
+
+// OptionalMetricMetricConfig provides config for the optional.metric metric.
+type OptionalMetricMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OptionalMetricMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OptionalMetricMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OptionalMetricMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OptionalMetricMetricAttributeKeyStringAttr, OptionalMetricMetricAttributeKeyBooleanAttr, OptionalMetricMetricAttributeKeyBooleanAttr2, OptionalMetricMetricAttributeKeyConditionalStringAttr:
+		default:
+			return fmt.Errorf("metric optional.metric doesn't have an attribute %v, valid attributes: [string_attr, boolean_attr, boolean_attr2, conditional_string_attr]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// OptionalMetricEmptyUnitMetricAttributeKey specifies the key of an attribute for the optional.metric.empty_unit metric.
+type OptionalMetricEmptyUnitMetricAttributeKey string
+
+const (
+	OptionalMetricEmptyUnitMetricAttributeKeyStringAttr  OptionalMetricEmptyUnitMetricAttributeKey = "string_attr"
+	OptionalMetricEmptyUnitMetricAttributeKeyBooleanAttr OptionalMetricEmptyUnitMetricAttributeKey = "boolean_attr"
+)
+
+// OptionalMetricEmptyUnitMetricConfig provides config for the optional.metric.empty_unit metric.
+type OptionalMetricEmptyUnitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OptionalMetricEmptyUnitMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OptionalMetricEmptyUnitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OptionalMetricEmptyUnitMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OptionalMetricEmptyUnitMetricAttributeKeyStringAttr, OptionalMetricEmptyUnitMetricAttributeKeyBooleanAttr:
+		default:
+			return fmt.Errorf("metric optional.metric.empty_unit doesn't have an attribute %v, valid attributes: [string_attr, boolean_attr]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ReaggregateMetricMetricAttributeKey specifies the key of an attribute for the reaggregate.metric metric.
+type ReaggregateMetricMetricAttributeKey string
+
+const (
+	ReaggregateMetricMetricAttributeKeyStringAttr  ReaggregateMetricMetricAttributeKey = "string_attr"
+	ReaggregateMetricMetricAttributeKeyBooleanAttr ReaggregateMetricMetricAttributeKey = "boolean_attr"
+)
+
+// ReaggregateMetricMetricConfig provides config for the reaggregate.metric metric.
+type ReaggregateMetricMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ReaggregateMetricMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ReaggregateMetricMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ReaggregateMetricMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ReaggregateMetricMetricAttributeKeyStringAttr, ReaggregateMetricMetricAttributeKeyBooleanAttr:
+		default:
+			return fmt.Errorf("metric reaggregate.metric doesn't have an attribute %v, valid attributes: [string_attr, boolean_attr]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// ReaggregateMetricWithRequiredMetricAttributeKey specifies the key of an attribute for the reaggregate.metric.with_required metric.
+type ReaggregateMetricWithRequiredMetricAttributeKey string
+
+const (
+	ReaggregateMetricWithRequiredMetricAttributeKeyRequiredStringAttr ReaggregateMetricWithRequiredMetricAttributeKey = "required_string_attr"
+	ReaggregateMetricWithRequiredMetricAttributeKeyStringAttr         ReaggregateMetricWithRequiredMetricAttributeKey = "string_attr"
+	ReaggregateMetricWithRequiredMetricAttributeKeyBooleanAttr        ReaggregateMetricWithRequiredMetricAttributeKey = "boolean_attr"
+)
+
+// ReaggregateMetricWithRequiredMetricConfig provides config for the reaggregate.metric.with_required metric.
+type ReaggregateMetricWithRequiredMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ReaggregateMetricWithRequiredMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *ReaggregateMetricWithRequiredMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *ReaggregateMetricWithRequiredMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case ReaggregateMetricWithRequiredMetricAttributeKeyRequiredStringAttr, ReaggregateMetricWithRequiredMetricAttributeKeyStringAttr, ReaggregateMetricWithRequiredMetricAttributeKeyBooleanAttr:
+		default:
+			return fmt.Errorf("metric reaggregate.metric.with_required doesn't have an attribute %v, valid attributes: [required_string_attr, string_attr, boolean_attr]", val)
+		}
+	}
+	if !slices.Contains(ms.EnabledAttributes, ReaggregateMetricWithRequiredMetricAttributeKeyRequiredStringAttr) {
+		return fmt.Errorf("required_string_attr is a required attribute for reaggregate.metric.with_required metric and must be included")
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SystemCPUTimeMetricAttributeKey specifies the key of an attribute for the system.cpu.time metric.
+type SystemCPUTimeMetricAttributeKey string
+
+const (
+	SystemCPUTimeMetricAttributeKeyCpu SystemCPUTimeMetricAttributeKey = "cpu"
+)
+
+// SystemCPUTimeMetricConfig provides config for the system.cpu.time metric.
+type SystemCPUTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemCPUTimeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemCPUTimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemCPUTimeMetricAttributeKeyCpu:
+		default:
+			return fmt.Errorf("metric system.cpu.time doesn't have an attribute %v, valid attributes: [cpu]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SystemMemoryUsageMetricAttributeKey specifies the key of an attribute for the system.memory.usage metric.
+type SystemMemoryUsageMetricAttributeKey string
+
+const (
+	SystemMemoryUsageMetricAttributeKeyState SystemMemoryUsageMetricAttributeKey = "state"
+)
+
+// SystemMemoryUsageMetricConfig provides config for the system.memory.usage metric.
+type SystemMemoryUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemMemoryUsageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemMemoryUsageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemMemoryUsageMetricAttributeKeyState:
+		default:
+			return fmt.Errorf("metric system.memory.usage doesn't have an attribute %v, valid attributes: [state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
 }
 
 // MetricsConfig provides config for sample metrics.
 type MetricsConfig struct {
-	DefaultMetric                 MetricConfig `mapstructure:"default.metric"`
-	DefaultMetricToBeRemoved      MetricConfig `mapstructure:"default.metric.to_be_removed"`
-	MetricInputType               MetricConfig `mapstructure:"metric.input_type"`
-	OptionalMetric                MetricConfig `mapstructure:"optional.metric"`
-	OptionalMetricEmptyUnit       MetricConfig `mapstructure:"optional.metric.empty_unit"`
-	ReaggregateMetric             MetricConfig `mapstructure:"reaggregate.metric"`
-	ReaggregateMetricWithRequired MetricConfig `mapstructure:"reaggregate.metric.with_required"`
-	SystemCPUTime                 MetricConfig `mapstructure:"system.cpu.time"`
+	DefaultMetric                 DefaultMetricMetricConfig                 `mapstructure:"default.metric"`
+	DefaultMetricToBeRemoved      DefaultMetricToBeRemovedMetricConfig      `mapstructure:"default.metric.to_be_removed"`
+	MetricInputType               MetricInputTypeMetricConfig               `mapstructure:"metric.input_type"`
+	OptionalMetric                OptionalMetricMetricConfig                `mapstructure:"optional.metric"`
+	OptionalMetricEmptyUnit       OptionalMetricEmptyUnitMetricConfig       `mapstructure:"optional.metric.empty_unit"`
+	ReaggregateMetric             ReaggregateMetricMetricConfig             `mapstructure:"reaggregate.metric"`
+	ReaggregateMetricWithRequired ReaggregateMetricWithRequiredMetricConfig `mapstructure:"reaggregate.metric.with_required"`
+	SystemCPUTime                 SystemCPUTimeMetricConfig                 `mapstructure:"system.cpu.time"`
+	SystemMemoryUsage             SystemMemoryUsageMetricConfig             `mapstructure:"system.memory.usage"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		DefaultMetric: MetricConfig{
-			Enabled: true,
-
+		DefaultMetric: DefaultMetricMetricConfig{
+			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr", "conditional_int_attr", "conditional_string_attr", "opt_in_bool_attr"},
-			EnabledAttributes:   []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr", "conditional_int_attr", "conditional_string_attr"},
+			EnabledAttributes:   []DefaultMetricMetricAttributeKey{DefaultMetricMetricAttributeKeyStringAttr, DefaultMetricMetricAttributeKeyOverriddenIntAttr, DefaultMetricMetricAttributeKeyEnumAttr, DefaultMetricMetricAttributeKeySliceAttr, DefaultMetricMetricAttributeKeyMapAttr, DefaultMetricMetricAttributeKeyConditionalIntAttr, DefaultMetricMetricAttributeKeyConditionalStringAttr},
 		},
-		DefaultMetricToBeRemoved: MetricConfig{
+		DefaultMetricToBeRemoved: DefaultMetricToBeRemovedMetricConfig{
 			Enabled: true,
-
+		},
+		MetricInputType: MetricInputTypeMetricConfig{
+			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{},
-			EnabledAttributes:   []string{},
+			EnabledAttributes:   []MetricInputTypeMetricAttributeKey{MetricInputTypeMetricAttributeKeyStringAttr, MetricInputTypeMetricAttributeKeyOverriddenIntAttr, MetricInputTypeMetricAttributeKeyEnumAttr, MetricInputTypeMetricAttributeKeySliceAttr, MetricInputTypeMetricAttributeKeyMapAttr},
 		},
-		MetricInputType: MetricConfig{
-			Enabled: true,
-
+		OptionalMetric: OptionalMetricMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []OptionalMetricMetricAttributeKey{OptionalMetricMetricAttributeKeyStringAttr, OptionalMetricMetricAttributeKeyBooleanAttr, OptionalMetricMetricAttributeKeyBooleanAttr2, OptionalMetricMetricAttributeKeyConditionalStringAttr},
+		},
+		OptionalMetricEmptyUnit: OptionalMetricEmptyUnitMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []OptionalMetricEmptyUnitMetricAttributeKey{OptionalMetricEmptyUnitMetricAttributeKeyStringAttr, OptionalMetricEmptyUnitMetricAttributeKeyBooleanAttr},
+		},
+		ReaggregateMetric: ReaggregateMetricMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []ReaggregateMetricMetricAttributeKey{ReaggregateMetricMetricAttributeKeyStringAttr, ReaggregateMetricMetricAttributeKeyBooleanAttr},
+		},
+		ReaggregateMetricWithRequired: ReaggregateMetricWithRequiredMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []ReaggregateMetricWithRequiredMetricAttributeKey{ReaggregateMetricWithRequiredMetricAttributeKeyRequiredStringAttr, ReaggregateMetricWithRequiredMetricAttributeKeyStringAttr, ReaggregateMetricWithRequiredMetricAttributeKeyBooleanAttr},
+		},
+		SystemCPUTime: SystemCPUTimeMetricConfig{
+			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr"},
-			EnabledAttributes:   []string{"string_attr", "state", "enum_attr", "slice_attr", "map_attr"},
+			EnabledAttributes:   []SystemCPUTimeMetricAttributeKey{SystemCPUTimeMetricAttributeKeyCpu},
 		},
-		OptionalMetric: MetricConfig{
-			Enabled: false,
-
-			AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{"string_attr", "boolean_attr", "boolean_attr2", "conditional_string_attr"},
-			EnabledAttributes:   []string{"string_attr", "boolean_attr", "boolean_attr2", "conditional_string_attr"},
-		},
-		OptionalMetricEmptyUnit: MetricConfig{
-			Enabled: false,
-
-			AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{"string_attr", "boolean_attr"},
-			EnabledAttributes:   []string{"string_attr", "boolean_attr"},
-		},
-		ReaggregateMetric: MetricConfig{
-			Enabled: true,
-
-			AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{"string_attr", "boolean_attr"},
-			EnabledAttributes:   []string{"string_attr", "boolean_attr"},
-		},
-		ReaggregateMetricWithRequired: MetricConfig{
-			Enabled: true,
-
-			AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes:  []string{"required_string_attr"},
-			definedAttributes:   []string{"required_string_attr", "string_attr", "boolean_attr"},
-			EnabledAttributes:   []string{"required_string_attr", "string_attr", "boolean_attr"},
-		},
-		SystemCPUTime: MetricConfig{
-			Enabled: true,
-
+		SystemMemoryUsage: SystemMemoryUsageMetricConfig{
+			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			requiredAttributes:  []string{},
-			definedAttributes:   []string{},
-			EnabledAttributes:   []string{},
+			EnabledAttributes:   []SystemMemoryUsageMetricAttributeKey{SystemMemoryUsageMetricAttributeKeyState},
 		},
 	}
 }
@@ -179,9 +537,11 @@ func DefaultEventsConfig() EventsConfig {
 	}
 }
 
-// ResourceAttributeConfig provides common config for a particular resource attribute.
-type ResourceAttributeConfig struct {
+// MapResourceAttrResourceAttributeConfig provides config for the map.resource.attr resource attribute.
+type MapResourceAttrResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue map[string]any `mapstructure:"override_value"`
 	// Experimental: MetricsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
 	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
@@ -200,7 +560,299 @@ type ResourceAttributeConfig struct {
 	enabledSetByUser bool
 }
 
-func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+func (rac *MapResourceAttrResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OptionalResourceAttrResourceAttributeConfig provides config for the optional.resource.attr resource attribute.
+type OptionalResourceAttrResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *OptionalResourceAttrResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SliceResourceAttrResourceAttributeConfig provides config for the slice.resource.attr resource attribute.
+type SliceResourceAttrResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue []any `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *SliceResourceAttrResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// StringEnumResourceAttrResourceAttributeConfig provides config for the string.enum.resource.attr resource attribute.
+type StringEnumResourceAttrResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	// Must be one of: one, two.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *StringEnumResourceAttrResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (rac *StringEnumResourceAttrResourceAttributeConfig) Validate() error {
+	if rac.OverrideValue != nil {
+		switch *rac.OverrideValue {
+		case "one", "two":
+		default:
+			return fmt.Errorf("override_value for string.enum.resource.attr must be one of [one, two], got %q", *rac.OverrideValue)
+		}
+	}
+	return nil
+}
+
+// StringResourceAttrResourceAttributeConfig provides config for the string.resource.attr resource attribute.
+type StringResourceAttrResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *StringResourceAttrResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// StringResourceAttrDisableWarningResourceAttributeConfig provides config for the string.resource.attr_disable_warning resource attribute.
+type StringResourceAttrDisableWarningResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *StringResourceAttrDisableWarningResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// StringResourceAttrRemoveWarningResourceAttributeConfig provides config for the string.resource.attr_remove_warning resource attribute.
+type StringResourceAttrRemoveWarningResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *StringResourceAttrRemoveWarningResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// StringResourceAttrToBeRemovedResourceAttributeConfig provides config for the string.resource.attr_to_be_removed resource attribute.
+type StringResourceAttrToBeRemovedResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *StringResourceAttrToBeRemovedResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// StringResourceDisabledAttrToBeRemovedResourceAttributeConfig provides config for the string.resource.disabled_attr_to_be_removed resource attribute.
+type StringResourceDisabledAttrToBeRemovedResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *StringResourceDisabledAttrToBeRemovedResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -214,42 +866,79 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for sample resource attributes.
 type ResourceAttributesConfig struct {
-	MapResourceAttr                  ResourceAttributeConfig `mapstructure:"map.resource.attr"`
-	OptionalResourceAttr             ResourceAttributeConfig `mapstructure:"optional.resource.attr"`
-	SliceResourceAttr                ResourceAttributeConfig `mapstructure:"slice.resource.attr"`
-	StringEnumResourceAttr           ResourceAttributeConfig `mapstructure:"string.enum.resource.attr"`
-	StringResourceAttr               ResourceAttributeConfig `mapstructure:"string.resource.attr"`
-	StringResourceAttrDisableWarning ResourceAttributeConfig `mapstructure:"string.resource.attr_disable_warning"`
-	StringResourceAttrRemoveWarning  ResourceAttributeConfig `mapstructure:"string.resource.attr_remove_warning"`
-	StringResourceAttrToBeRemoved    ResourceAttributeConfig `mapstructure:"string.resource.attr_to_be_removed"`
+	MapResourceAttr                       MapResourceAttrResourceAttributeConfig                       `mapstructure:"map.resource.attr"`
+	OptionalResourceAttr                  OptionalResourceAttrResourceAttributeConfig                  `mapstructure:"optional.resource.attr"`
+	SliceResourceAttr                     SliceResourceAttrResourceAttributeConfig                     `mapstructure:"slice.resource.attr"`
+	StringEnumResourceAttr                StringEnumResourceAttrResourceAttributeConfig                `mapstructure:"string.enum.resource.attr"`
+	StringResourceAttr                    StringResourceAttrResourceAttributeConfig                    `mapstructure:"string.resource.attr"`
+	StringResourceAttrDisableWarning      StringResourceAttrDisableWarningResourceAttributeConfig      `mapstructure:"string.resource.attr_disable_warning"`
+	StringResourceAttrRemoveWarning       StringResourceAttrRemoveWarningResourceAttributeConfig       `mapstructure:"string.resource.attr_remove_warning"`
+	StringResourceAttrToBeRemoved         StringResourceAttrToBeRemovedResourceAttributeConfig         `mapstructure:"string.resource.attr_to_be_removed"`
+	StringResourceDisabledAttrToBeRemoved StringResourceDisabledAttrToBeRemovedResourceAttributeConfig `mapstructure:"string.resource.disabled_attr_to_be_removed"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
-		MapResourceAttr: ResourceAttributeConfig{
+		MapResourceAttr: MapResourceAttrResourceAttributeConfig{
 			Enabled: true,
 		},
-		OptionalResourceAttr: ResourceAttributeConfig{
+		OptionalResourceAttr: OptionalResourceAttrResourceAttributeConfig{
 			Enabled: false,
 		},
-		SliceResourceAttr: ResourceAttributeConfig{
+		SliceResourceAttr: SliceResourceAttrResourceAttributeConfig{
 			Enabled: true,
 		},
-		StringEnumResourceAttr: ResourceAttributeConfig{
+		StringEnumResourceAttr: StringEnumResourceAttrResourceAttributeConfig{
 			Enabled: true,
 		},
-		StringResourceAttr: ResourceAttributeConfig{
+		StringResourceAttr: StringResourceAttrResourceAttributeConfig{
 			Enabled: true,
 		},
-		StringResourceAttrDisableWarning: ResourceAttributeConfig{
+		StringResourceAttrDisableWarning: StringResourceAttrDisableWarningResourceAttributeConfig{
 			Enabled: true,
 		},
-		StringResourceAttrRemoveWarning: ResourceAttributeConfig{
+		StringResourceAttrRemoveWarning: StringResourceAttrRemoveWarningResourceAttributeConfig{
 			Enabled: false,
 		},
-		StringResourceAttrToBeRemoved: ResourceAttributeConfig{
+		StringResourceAttrToBeRemoved: StringResourceAttrToBeRemovedResourceAttributeConfig{
 			Enabled: true,
 		},
+		StringResourceDisabledAttrToBeRemoved: StringResourceDisabledAttrToBeRemovedResourceAttributeConfig{
+			Enabled: false,
+		},
+	}
+}
+
+// applyOverrideValues applies override values to the given resource.
+// For each enabled resource attribute with a non-nil OverrideValue,
+// the override replaces any existing value in the resource.
+func (rac *ResourceAttributesConfig) applyOverrideValues(res pcommon.Resource) {
+	if rac.MapResourceAttr.Enabled && rac.MapResourceAttr.OverrideValue != nil {
+		res.Attributes().PutEmptyMap("map.resource.attr").FromRaw(rac.MapResourceAttr.OverrideValue)
+	}
+	if rac.OptionalResourceAttr.Enabled && rac.OptionalResourceAttr.OverrideValue != nil {
+		res.Attributes().PutStr("optional.resource.attr", *rac.OptionalResourceAttr.OverrideValue)
+	}
+	if rac.SliceResourceAttr.Enabled && rac.SliceResourceAttr.OverrideValue != nil {
+		res.Attributes().PutEmptySlice("slice.resource.attr").FromRaw(rac.SliceResourceAttr.OverrideValue)
+	}
+	if rac.StringEnumResourceAttr.Enabled && rac.StringEnumResourceAttr.OverrideValue != nil {
+		res.Attributes().PutStr("string.enum.resource.attr", *rac.StringEnumResourceAttr.OverrideValue)
+	}
+	if rac.StringResourceAttr.Enabled && rac.StringResourceAttr.OverrideValue != nil {
+		res.Attributes().PutStr("string.resource.attr", *rac.StringResourceAttr.OverrideValue)
+	}
+	if rac.StringResourceAttrDisableWarning.Enabled && rac.StringResourceAttrDisableWarning.OverrideValue != nil {
+		res.Attributes().PutStr("string.resource.attr_disable_warning", *rac.StringResourceAttrDisableWarning.OverrideValue)
+	}
+	if rac.StringResourceAttrRemoveWarning.Enabled && rac.StringResourceAttrRemoveWarning.OverrideValue != nil {
+		res.Attributes().PutStr("string.resource.attr_remove_warning", *rac.StringResourceAttrRemoveWarning.OverrideValue)
+	}
+	if rac.StringResourceAttrToBeRemoved.Enabled && rac.StringResourceAttrToBeRemoved.OverrideValue != nil {
+		res.Attributes().PutStr("string.resource.attr_to_be_removed", *rac.StringResourceAttrToBeRemoved.OverrideValue)
+	}
+	if rac.StringResourceDisabledAttrToBeRemoved.Enabled && rac.StringResourceDisabledAttrToBeRemoved.OverrideValue != nil {
+		res.Attributes().PutStr("string.resource.disabled_attr_to_be_removed", *rac.StringResourceDisabledAttrToBeRemoved.OverrideValue)
 	}
 }
 
@@ -259,11 +948,16 @@ type MetricsBuilderConfig struct {
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics:            DefaultMetricsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
+}
+
+// Deprecated: Use NewDefaultMetricsBuilderConfig.
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return NewDefaultMetricsBuilderConfig()
 }
 
 // LogsBuilderConfig is a configuration for sample logs builder.

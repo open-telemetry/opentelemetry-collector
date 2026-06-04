@@ -12,18 +12,22 @@ import (
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplefactoryreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.opentelemetry.io/collector/service/hostcapabilities"
 )
 
 // NewFactory returns a receiver.Factory for sample receiver.
-func NewFactory() receiver.Factory {
-	return receiver.NewFactory(
+func NewFactory() xreceiver.Factory {
+	return xreceiver.NewFactory(
 		metadata.Type,
 		func() component.Config { return &struct{}{} },
-		receiver.WithTraces(createTraces, metadata.TracesStability),
-		receiver.WithMetrics(createMetrics, metadata.MetricsStability),
-		receiver.WithLogs(createLogs, metadata.LogsStability))
+		xreceiver.WithTraces(createTraces, metadata.TracesStability),
+		xreceiver.WithMetrics(createMetrics, metadata.MetricsStability),
+		xreceiver.WithLogs(createLogs, metadata.LogsStability),
+		xreceiver.WithProfiles(createProfiles, metadata.ProfilesStability),
+	)
 }
 
 func createTraces(context.Context, receiver.Settings, component.Config, consumer.Traces) (receiver.Traces, error) {
@@ -48,6 +52,10 @@ func createMetrics(ctx context.Context, set receiver.Settings, _ component.Confi
 }
 
 func createLogs(context.Context, receiver.Settings, component.Config, consumer.Logs) (receiver.Logs, error) {
+	return nopInstance, nil
+}
+
+func createProfiles(context.Context, receiver.Settings, component.Config, xconsumer.Profiles) (xreceiver.Profiles, error) {
 	return nopInstance, nil
 }
 

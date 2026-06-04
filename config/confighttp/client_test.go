@@ -27,8 +27,8 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
@@ -485,7 +485,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 	}
 }
 
-func TestHttpClientHeaders(t *testing.T) {
+func TestHTTPClientHeaders(t *testing.T) {
 	tests := []struct {
 		name    string
 		headers configopaque.MapList
@@ -524,7 +524,7 @@ func TestHttpClientHeaders(t *testing.T) {
 	}
 }
 
-func TestHttpClientHostHeader(t *testing.T) {
+func TestHTTPClientHostHeader(t *testing.T) {
 	hostHeader := "th"
 	tt := struct {
 		name    string
@@ -559,7 +559,7 @@ func TestHttpClientHostHeader(t *testing.T) {
 	})
 }
 
-func TestHttpTransportOptions(t *testing.T) {
+func TestHTTPTransportOptions(t *testing.T) {
 	settings := componenttest.NewNopTelemetrySettings()
 	// Disable OTel instrumentation so the *http.Transport object is directly accessible
 	settings.MeterProvider = nil
@@ -668,7 +668,7 @@ func TestClientUnmarshalYAMLWithMiddlewares(t *testing.T) {
 	require.NoError(t, clientSub.Unmarshal(&clientConfig))
 
 	// Validate the client configuration using reflection-based validation
-	require.NoError(t, xconfmap.Validate(&clientConfig), "Client configuration should be valid")
+	require.NoError(t, confmap.Validate(&clientConfig), "Client configuration should be valid")
 
 	assert.Equal(t, "http://localhost:4318/v1/traces", clientConfig.Endpoint)
 	require.Len(t, clientConfig.Middlewares, 2)
@@ -689,7 +689,7 @@ func TestClientUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 	require.NoError(t, clientSub.Unmarshal(&clientConfig))
 
 	// Validate the client configuration using reflection-based validation
-	require.NoError(t, xconfmap.Validate(&clientConfig), "Client configuration should be valid")
+	require.NoError(t, confmap.Validate(&clientConfig), "Client configuration should be valid")
 
 	// Verify basic fields
 	assert.Equal(t, "http://example.com:4318/v1/traces", clientConfig.Endpoint)

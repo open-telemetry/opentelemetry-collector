@@ -1,0 +1,67 @@
+$defs:
+  batch_config:
+    description: BatchConfig defines a configuration for batching requests based on a timeout and a minimum number of items.
+    type: object
+    properties:
+      flush_timeout:
+        description: FlushTimeout sets the time after which a batch will be sent regardless of its size.
+        type: string
+        x-customType: time.Duration
+        format: duration
+      max_size:
+        description: MaxSize defines the configuration for the maximum size of a batch.
+        type: integer
+        x-customType: int64
+      min_size:
+        description: MinSize defines the configuration for the minimum size of a batch.
+        type: integer
+        x-customType: int64
+      partition:
+        description: Partition defines the partitioning of the batches configuration.
+        $ref: partition_config
+      sizer:
+        description: Sizer determines the type of size measurement used by the batch. If not configured, use the same configuration as the queue. It accepts "requests", "items", or "bytes".
+        type: string
+        x-customType: go.opentelemetry.io/collector/exporter/exporterhelper/internal/request.SizerType
+  partition_config:
+    description: PartitionConfig defines a configuration for partitioning requests based on metadata keys.
+    type: object
+    properties:
+      metadata_keys:
+        description: MetadataKeys is a list of client.Metadata keys that will be used to partition the data into batches. If this setting is empty, a single batcher instance will be used. When this setting is not empty, one batcher will be used per distinct combination of values for the listed metadata keys. Empty value and unset metadata are treated as distinct cases. Entries are case-insensitive. Duplicated entries will trigger a validation error.
+        type: array
+        items:
+          type: string
+  config:
+    description: Config defines configuration for queueing and batching incoming requests.
+    type: object
+    properties:
+      batch:
+        description: BatchConfig it configures how the requests are consumed from the queue and batch together during consumption.
+        x-optional: true
+        $ref: batch_config
+      block_on_overflow:
+        description: BlockOnOverflow determines the behavior when the component's TotalSize limit is reached. If true, the component will wait for space; otherwise, operations will immediately return a retryable error.
+        type: boolean
+      enabled:
+        description: Enabled indicates whether to not enqueue and batch before exporting.
+        type: boolean
+      num_consumers:
+        description: NumConsumers is the maximum number of concurrent consumers from the queue. This applies across all different optional configurations from above (e.g. wait_for_result, block_on_overflow, storage, etc.).
+        type: integer
+      queue_size:
+        description: QueueSize represents the maximum data size allowed for concurrent storage and processing.
+        type: integer
+        x-customType: int64
+      sizer:
+        description: Sizer determines the type of size measurement used by this component. It accepts "requests", "items", or "bytes".
+        type: string
+        x-customType: go.opentelemetry.io/collector/exporter/exporterhelper/internal/request.SizerType
+      storage:
+        description: 'StorageID if not empty, enables the persistent storage and uses the component specified as a storage extension for the persistent queue. TODO: This will be changed to Optional when available. See https://github.com/open-telemetry/opentelemetry-collector/issues/13822'
+        x-pointer: true
+        type: string
+        x-customType: go.opentelemetry.io/collector/component.ID
+      wait_for_result:
+        description: WaitForResult determines if incoming requests are blocked until the request is processed or not. Currently, this option is not available when persistent queue is configured using the storage configuration.
+        type: boolean

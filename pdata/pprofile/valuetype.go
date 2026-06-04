@@ -9,7 +9,7 @@ import "fmt"
 // dictionary to another.
 func (ms ValueType) switchDictionary(src, dst ProfilesDictionary) error {
 	if ms.TypeStrindex() > 0 {
-		if src.StringTable().Len() < int(ms.TypeStrindex()) {
+		if src.StringTable().Len() <= int(ms.TypeStrindex()) {
 			return fmt.Errorf("invalid type index %d", ms.TypeStrindex())
 		}
 
@@ -21,7 +21,7 @@ func (ms ValueType) switchDictionary(src, dst ProfilesDictionary) error {
 	}
 
 	if ms.UnitStrindex() > 0 {
-		if src.StringTable().Len() < int(ms.UnitStrindex()) {
+		if src.StringTable().Len() <= int(ms.UnitStrindex()) {
 			return fmt.Errorf("invalid unit index %d", ms.UnitStrindex())
 		}
 

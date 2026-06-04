@@ -12,6 +12,13 @@ processors:
 exporters:
   debug:
     verbosity: detailed
+  otlp_http/fail:
+    endpoint: http://127.0.0.1:65535
+    timeout: 100ms
+    retry_on_failure:
+      enabled: false
+    sending_queue:
+      enabled: false
 
 service:
   telemetry:
@@ -31,11 +38,20 @@ service:
       receivers: [otlp]
       processors: [batch]
       exporters: [debug]
+    traces/fail:
+      receivers: [otlp]
+      exporters: [otlp_http/fail]
     metrics:
       receivers: [otlp]
       processors: [batch]
       exporters: [debug]
+    metrics/fail:
+      receivers: [otlp]
+      exporters: [otlp_http/fail]
     logs:
       receivers: [otlp]
       processors: [batch]
-      exporters: [debug] 
+      exporters: [debug]
+    logs/fail:
+      receivers: [otlp]
+      exporters: [otlp_http/fail]

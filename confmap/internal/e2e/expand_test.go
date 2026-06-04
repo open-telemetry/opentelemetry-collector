@@ -12,8 +12,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/internal"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 func Test_EscapedEnvVars_NoDefaultScheme(t *testing.T) {
@@ -47,6 +49,8 @@ func Test_EscapedEnvVars_NoDefaultScheme(t *testing.T) {
 			"key18": "here is 1 $",
 			"key19": "here are 2 $$",
 			"key20": "some expanded value came from nested expansion",
+			"key21": "default_value",
+			"key22": "${env:UNDEFINED_KEY:-${env:UNDEFINED_KEY}}",
 		},
 	}
 
@@ -95,6 +99,8 @@ func Test_EscapedEnvVars_DefaultScheme(t *testing.T) {
 			"key18": "here is 1 $",
 			"key19": "here are 2 $$",
 			"key20": "some expanded value came from nested expansion",
+			"key21": "default_value",
+			"key22": "${env:UNDEFINED_KEY:-${env:UNDEFINED_KEY}}",
 		},
 	}
 
@@ -110,4 +116,18 @@ func Test_EscapedEnvVars_DefaultScheme(t *testing.T) {
 	require.NoError(t, err)
 	m := cfgMap.ToStringMap()
 	assert.Equal(t, expectedMap, m)
+}
+
+func Test_RawConfMap(t *testing.T) {
+	data := map[string]any{
+		"value": internal.ExpandedValue{
+			Value:    8080,
+			Original: "8080",
+		},
+	}
+	conf := confmap.NewFromStringMap(data)
+
+	rawData := xconfmap.ToStringMapRaw(conf)
+	_, isPresentAndExpandedValue := rawData["value"].(internal.ExpandedValue)
+	require.True(t, isPresentAndExpandedValue)
 }

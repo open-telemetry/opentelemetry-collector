@@ -11,6 +11,7 @@ import (
 	"go.yaml.in/yaml/v3"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
@@ -117,18 +118,12 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 			}
 			components.BuildInfo = set.BuildInfo
 
-			for providerScheme, providerModuleModule := range set.ProviderModules {
-				components.Providers = append(components.Providers, componentWithoutStability{
-					Scheme: providerScheme,
-					Module: providerModuleModule,
-				})
-			}
-
-			for _, converterModule := range set.ConverterModules {
-				components.Converters = append(components.Converters, componentWithoutStability{
-					Module: converterModule,
-				})
-			}
+			components.Providers = append(components.Providers, sortProvidersByScheme(
+				set.ProviderModules,
+				set.ConfigProviderSettings.ResolverSettings.ProviderFactories,
+				set.ConfigProviderSettings.ResolverSettings.ProviderSettings,
+			)...)
+			components.Converters = append(components.Converters, sortConverterModules(set.ConverterModules)...)
 
 			yamlData, err := yaml.Marshal(components)
 			if err != nil {
@@ -140,23 +135,60 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 	}
 }
 
-func sortFactoriesByType[T component.Factory](factories map[component.Type]T) []T {
+func canonicalFactoryKeys[T component.Factory](factories map[component.Type]T) []component.Type {
 	// Gather component types (factories map keys)
 	componentTypes := make([]component.Type, 0, len(factories))
-	for componentType := range factories {
-		componentTypes = append(componentTypes, componentType)
+	for componentType, f := range factories {
+		if componentType == f.Type() { // keep canonical keys only
+			componentTypes = append(componentTypes, componentType)
+		}
 	}
+	return componentTypes
+}
 
-	// Sort component types as strings
+func sortFactoriesByType[T component.Factory](factories map[component.Type]T) []T {
+	componentTypes := canonicalFactoryKeys(factories)
 	sort.Slice(componentTypes, func(i, j int) bool {
 		return componentTypes[i].String() < componentTypes[j].String()
 	})
 
-	// Build and return list of factories, sorted by component types
-	sortedFactories := make([]T, 0, len(factories))
+	sortedFactories := make([]T, 0, len(componentTypes))
 	for _, componentType := range componentTypes {
 		sortedFactories = append(sortedFactories, factories[componentType])
 	}
-
 	return sortedFactories
+}
+
+func sortProvidersByScheme(providerModules map[string]string, provFactories []confmap.ProviderFactory, set confmap.ProviderSettings) []componentWithoutStability {
+	schemes := make([]string, 0, len(provFactories))
+	for _, f := range provFactories {
+		provF := f.Create(set)
+		scheme := provF.Scheme()
+		schemes = append(schemes, scheme)
+	}
+
+	sort.Strings(schemes)
+
+	providerComponents := make([]componentWithoutStability, 0, len(providerModules))
+	for _, scheme := range schemes {
+		providerComponents = append(providerComponents, componentWithoutStability{
+			Scheme: scheme,
+			Module: providerModules[scheme],
+		})
+	}
+	return providerComponents
+}
+
+func sortConverterModules(modules []string) []componentWithoutStability {
+	sortedModulesCopy := make([]string, len(modules))
+	copy(sortedModulesCopy, modules)
+	sort.Strings(sortedModulesCopy)
+
+	sortedModules := make([]componentWithoutStability, 0, len(modules))
+	for _, mod := range sortedModulesCopy {
+		sortedModules = append(sortedModules, componentWithoutStability{
+			Module: mod,
+		})
+	}
+	return sortedModules
 }

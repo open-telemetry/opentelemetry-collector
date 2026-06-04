@@ -98,7 +98,7 @@ calls and don't want them to feel excluded.
 
 ## Supported OTLP version
 
-This code base is currently built against using OTLP protocol v1.5.0,
+This code base is currently built against using OTLP protocol v1.10.0,
 considered Stable. [See the OpenTelemetry Protocol Stability
 definition
 here.](https://github.com/open-telemetry/opentelemetry-proto?tab=readme-ov-file#stability-definition)
@@ -166,6 +166,7 @@ Here is a list of community roles with current and previous members:
 - [Alex Boten](https://github.com/codeboten), Honeycomb
 - [Bogdan Drutu](https://github.com/bogdandrutu), Snowflake
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
+- [Evan Bradley](https://github.com/evan-bradley), Dynatrace
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
 
 For more information about the maintainer role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#maintainer).
@@ -175,53 +176,43 @@ For more information about the maintainer role, see the [community repository](h
 - [Andrew Wilkins](https://github.com/axw), Elastic
 - [Antoine Toulme](https://github.com/atoulme), Splunk
 - [Damien Mathieu](https://github.com/dmathieu), Elastic
-- [Evan Bradley](https://github.com/evan-bradley), Dynatrace
 - [Jade Guiton](https://github.com/jade-guiton-dd), Datadog
 - [Joshua MacDonald](https://github.com/jmacd), Microsoft
-- [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
+- [Tyler Helmuth](https://github.com/TylerHelmuth), Grafana Labs
 - [Yang Song](https://github.com/songy23), Datadog
 
 For more information about the approver role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#approver).
 
 In addition to what is described at the organization-level, the SIG Collector requires all core approvers to take part in rotating
-the role of the [release manager](./docs/release.md#release-manager).
+the role of the [release manager](./docs/release.md#release-managers).
 
 ### Triagers
 
 - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
-- [Chao Weng](https://github.com/sincejune), AppDynamics
+- [Arthur Silva Sens](https://github.com/ArthurSens), Grafana Labs
 - [Vihas Makwana](https://github.com/VihasMakwana), Elastic
 - Actively seeking contributors to triage issues
 
 For more information about the triager role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#triager).
 
-### Emeritus Maintainers
+### Emeritus
 
-- [Paulo Janotti](https://github.com/pjanotti)
-- [Tigran Najaryan](https://github.com/tigrannajaryan)
-
-For more information about the emeritus role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager).
-
-### Emeritus Approvers
-
-- [Anthony Mirabella](https://github.com/Aneurysm9)
-- [Daniel Jaglowski](https://github.com/djaglowski)
-- [James Bebbington](https://github.com/james-bebbington)
-- [Jay Camp](https://github.com/jrcamp)
-- [Juraci Paixão Kröhling](https://github.com/jpkrohling)
-- [Nail Islamov](https://github.com/nilebox)
-- [Owais Lone](https://github.com/owais)
-- [Rahul Patel](https://github.com/rghetia)
-- [Steven Karis](https://github.com/sjkaris)
-
-For more information about the emeritus role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager).
-
-### Emeritus Triagers
-
-- [Alolita Sharma](https://github.com/alolita)
-- [Andrew Hsu](https://github.com/andrewhsu)
-- [Punya Biswal](https://github.com/punya)
-- [Steve Flanders](https://github.com/flands)
+- [Alolita Sharma](https://github.com/alolita), Triager
+- [Andrew Hsu](https://github.com/andrewhsu), Triager
+- [Anthony Mirabella](https://github.com/Aneurysm9), Approver
+- [Chao Weng](https://github.com/sincejune), Triager
+- [Daniel Jaglowski](https://github.com/djaglowski), Approver
+- [James Bebbington](https://github.com/james-bebbington), Approver
+- [Jay Camp](https://github.com/jrcamp), Approver
+- [Juraci Paixão Kröhling](https://github.com/jpkrohling), Approver
+- [Nail Islamov](https://github.com/nilebox), Approver
+- [Owais Lone](https://github.com/owais), Approver
+- [Paulo Janotti](https://github.com/pjanotti), Maintainer
+- [Punya Biswal](https://github.com/punya), Triager
+- [Rahul Patel](https://github.com/rghetia), Approver
+- [Steve Flanders](https://github.com/flands), Triager
+- [Steven Karis](https://github.com/sjkaris), Approver
+- [Tigran Najaryan](https://github.com/tigrannajaryan), Maintainer
 
 For more information about the emeritus role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager).
 

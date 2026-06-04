@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplepkg",
+  "title": "pkg/samplepkg",
+  "$defs": {
+    "sample_config": {
+      "type": "object",
+      "properties": {
+        "host_name": {
+          "description": "The host name to connect to.",
+          "type": "string",
+          "default": "localhost",
+          "minLength": 1
+        },
+        "port": {
+          "description": "The port to connect to.",
+          "type": "string",
+          "default": "8080"
+        }
+      },
+      "required": [
+        "host_name",
+        "port"
+      ]
+    }
+  }
+}

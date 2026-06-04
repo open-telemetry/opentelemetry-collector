@@ -1031,6 +1031,22 @@ func TestExpandedValue(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfgStr))
 	assert.Equal(t, "original", cfgStr.Key)
 
+	type ConfigStrPtr struct {
+		Key *string `mapstructure:"key"`
+	}
+
+	cfgStrPtr := ConfigStrPtr{}
+	require.NoError(t, cm.Unmarshal(&cfgStrPtr))
+	if assert.NotNil(t, cfgStrPtr.Key) {
+		assert.Equal(t, "original", *cfgStrPtr.Key)
+	}
+
+	cfgMapStrPtr := map[string]*string{}
+	require.NoError(t, cm.Unmarshal(&cfgMapStrPtr))
+	if assert.NotNil(t, cfgMapStrPtr["key"]) {
+		assert.Equal(t, "original", *cfgMapStrPtr["key"])
+	}
+
 	type ConfigInt struct {
 		Key int `mapstructure:"key"`
 	}
@@ -1043,6 +1059,27 @@ func TestExpandedValue(t *testing.T) {
 	}
 	cfgBool := ConfigBool{}
 	assert.Error(t, cm.Unmarshal(&cfgBool))
+}
+
+func TestExpandedValueNil(t *testing.T) {
+	cm := NewFromStringMap(map[string]any{
+		"key": ExpandedValue{
+			Value:    nil,
+			Original: "NULL",
+		},
+	})
+
+	type ConfigStrPtr struct {
+		Key *string `mapstructure:"key"`
+	}
+
+	cfgStrPtr := ConfigStrPtr{}
+	require.NoError(t, cm.Unmarshal(&cfgStrPtr))
+	assert.Nil(t, cfgStrPtr.Key)
+
+	cfgMapStrPtr := map[string]*string{}
+	require.NoError(t, cm.Unmarshal(&cfgMapStrPtr))
+	assert.Nil(t, cfgMapStrPtr["key"])
 }
 
 func TestSubExpandedValue(t *testing.T) {
