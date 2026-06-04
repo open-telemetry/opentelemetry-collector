@@ -332,6 +332,7 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 		},
 		"stringsJoin":  strings.Join,
 		"stringsSplit": strings.Split,
+		"trimRight":    strings.TrimRight,
 		"userLinks": func(elems []string) []string {
 			result := make([]string, len(elems))
 			for i, elem := range elems {
