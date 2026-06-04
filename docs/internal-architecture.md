@@ -52,7 +52,7 @@ flowchart TD
 
 #### Partial Receiver Reload (Alpha)
 
-When the `service.receiverPartialReload` feature gate is enabled (`--feature-gates=service.receiverPartialReload`), the Collector first checks whether the config change is limited to receivers. If only receiver configurations and/or pure-receiver entries in pipeline receiver lists have changed — and all other sections (processors, exporters, connectors, extensions, telemetry, pipeline structure) are identical — a partial reload is performed instead.
+When the `service.partialReload` (Alpha) and `service.partialReloadReceivers` (Beta, on by default) feature gates are both enabled (`--feature-gates=service.partialReload`), the Collector first checks whether the config change is limited to receivers. If only receiver configurations and/or pure-receiver entries in pipeline receiver lists have changed — and all other sections (processors, exporters, connectors, extensions, telemetry, pipeline structure) are identical — a partial reload is performed instead.
 
 The partial reload path (`Collector.tryPartialReceiverReload`) delegates to `Graph.UpdateReceivers`, which runs a 9-phase algorithm:
 

@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/graph"
+	"go.opentelemetry.io/collector/service/internal/metadata"
 	"go.opentelemetry.io/collector/service/internal/metricviews"
 	"go.opentelemetry.io/collector/service/internal/moduleinfo"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
@@ -265,6 +266,15 @@ func (srv *Service) Start(ctx context.Context) error {
 
 	srv.telemetrySettings.Logger.Info("Everything is ready. Begin running and processing data.")
 	return nil
+}
+
+// ReceiverPartialReloadEnabled reports whether receiver partial reload is
+// active. It requires both the master partial reload gate
+// (service.partialReload, Alpha) and the receiver phase gate
+// (service.partialReloadReceivers, Beta) to be enabled.
+func ReceiverPartialReloadEnabled() bool {
+	return metadata.ServicePartialReloadFeatureGate.IsEnabled() &&
+		metadata.ServicePartialReloadReceiversFeatureGate.IsEnabled()
 }
 
 // UpdateReceivers performs a partial reload of receiver components.

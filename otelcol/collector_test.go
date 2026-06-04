@@ -156,10 +156,11 @@ func TestCollectorStateAfterConfigChange(t *testing.T) {
 }
 
 func TestCollectorPartialReceiverReload(t *testing.T) {
-	// Enable the partial receiver reload feature gate for this test.
-	require.NoError(t, featuregate.GlobalRegistry().Set(receiverPartialReloadGate.ID(), true))
+	// Enable partial receiver reload for this test. The receiver phase gate is
+	// Beta (enabled by default), so only the master gate needs to be toggled.
+	require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(receiverPartialReloadGate.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", false))
 	}()
 
 	// Set up an observer logger to detect log messages.
@@ -970,10 +971,10 @@ func BenchmarkReloadModifyReceiver(b *testing.B) {
 }
 
 func benchmarkReloadWithFactories(b *testing.B, partialReloadEnabled bool, baseConfig, altConfig string, factoriesFunc func() (Factories, error)) {
-	// Set the feature gate.
-	require.NoError(b, featuregate.GlobalRegistry().Set(receiverPartialReloadGate.ID(), partialReloadEnabled))
+	// Set the master feature gate; the receiver phase gate is Beta (on by default).
+	require.NoError(b, featuregate.GlobalRegistry().Set("service.partialReload", partialReloadEnabled))
 	b.Cleanup(func() {
-		require.NoError(b, featuregate.GlobalRegistry().Set(receiverPartialReloadGate.ID(), false))
+		require.NoError(b, featuregate.GlobalRegistry().Set("service.partialReload", false))
 	})
 
 	// Use an observer logger to detect when reload completes.

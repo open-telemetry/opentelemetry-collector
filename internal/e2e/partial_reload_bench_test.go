@@ -273,10 +273,10 @@ func benchmarkReloadThroughput(b *testing.B, partialReloadEnabled bool) {
 		reloadInterval = 5 * time.Second
 	)
 
-	// Set the feature gate.
-	require.NoError(b, featuregate.GlobalRegistry().Set("service.receiverPartialReload", partialReloadEnabled))
+	// Set the master feature gate; the receiver phase gate is Beta (on by default).
+	require.NoError(b, featuregate.GlobalRegistry().Set("service.partialReload", partialReloadEnabled))
 	b.Cleanup(func() {
-		require.NoError(b, featuregate.GlobalRegistry().Set("service.receiverPartialReload", false))
+		require.NoError(b, featuregate.GlobalRegistry().Set("service.partialReload", false))
 	})
 
 	// --- Generate TLS certs for the link between exporter and sink ---

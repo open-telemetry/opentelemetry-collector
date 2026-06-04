@@ -120,7 +120,7 @@ type Collector struct {
 	updateConfigProviderLogger func(core zapcore.Core)
 
 	// currentCfg holds the last successfully applied configuration.
-	// Only populated when the service.receiverPartialReload feature gate is enabled.
+	// Only populated when receiver partial reload is enabled.
 	currentCfg *Config
 }
 
@@ -262,7 +262,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	if err = col.service.Start(ctx); err != nil {
 		return multierr.Combine(err, col.service.Shutdown(ctx))
 	}
-	if receiverPartialReloadGate.IsEnabled() {
+	if service.ReceiverPartialReloadEnabled() {
 		col.currentCfg = cfg
 	}
 	col.setCollectorState(StateRunning)
@@ -271,7 +271,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 }
 
 func (col *Collector) reloadConfiguration(ctx context.Context) error {
-	if receiverPartialReloadGate.IsEnabled() && col.currentCfg != nil {
+	if service.ReceiverPartialReloadEnabled() && col.currentCfg != nil {
 		reloaded, err := col.tryPartialReceiverReload(ctx)
 		if reloaded {
 			// Partial reload was attempted (the change was receiver-only).
@@ -317,7 +317,7 @@ func (col *Collector) tryPartialReceiverReload(ctx context.Context) (bool, error
 		return false, err
 	}
 
-	if validateErr := xconfmap.Validate(newCfg); validateErr != nil {
+	if validateErr := confmap.Validate(newCfg); validateErr != nil {
 		return false, validateErr
 	}
 
