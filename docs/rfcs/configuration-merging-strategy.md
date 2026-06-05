@@ -309,16 +309,16 @@ otelcol \
 
 ---
 
-### Approach 4: `merge:` block inside a config file
+### Approach 4: `merge_strategy:` block inside a config file
 
-Instead of annotating individual yaml nodes (Approach 1) or touching the command line (Approaches 2 & 3), a config file can carry a dedicated top-level `merge:` section that declares which paths in *that file* should be merged into the running configuration. The `merge:` section will be removed before the config is applied.
+Instead of annotating individual yaml nodes (Approach 1) or touching the command line (Approaches 2 & 3), a config file can carry a dedicated top-level `merge_strategy:` section that declares which paths in *that file* should be merged into the running configuration. The `merge_strategy:` section will be removed before the config is applied.
 
 This keeps URIs opaque, keeps the command line short, and keeps merge intent with the data it governs.
 
 #### Schema
 
 ```yaml
-merge:
+merge_strategy:
   mode: append          # append | prepend  (default: append)
   fields:
     - "service::extensions"
