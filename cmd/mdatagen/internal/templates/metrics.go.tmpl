@@ -18,6 +18,9 @@ import (
 	"slices"
 	{{- end }}
 
+	{{- if $hasMigrations }}
+	"go.uber.org/zap"
+	{{- end }}
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -29,9 +32,6 @@ import (
 	{{- end }}
 	{{ if .ResourceAttributes -}}
 	"go.opentelemetry.io/collector/filter"
-	{{- end }}
-	{{- if $hasMigrations }}
-	"go.uber.org/zap"
 	{{- end }}
 )
 

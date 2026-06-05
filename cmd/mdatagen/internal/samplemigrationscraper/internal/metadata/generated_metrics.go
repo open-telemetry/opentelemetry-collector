@@ -8,12 +8,12 @@ import (
 	"strconv"
 	"time"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
-
-	"go.uber.org/zap"
 )
 
 const (
