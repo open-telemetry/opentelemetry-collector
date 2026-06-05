@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/oteltest"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sendertest"
@@ -99,8 +98,6 @@ func TestMetrics_Default_ReturnError(t *testing.T) {
 }
 
 func TestMetrics_WithPersistentQueue(t *testing.T) {
-	fgOrigReadState := queue.PersistRequestContextOnRead
-	fgOrigWriteState := queue.PersistRequestContextOnWrite
 	qCfg := NewDefaultQueueConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID
@@ -142,13 +139,6 @@ func TestMetrics_WithPersistentQueue(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			queue.PersistRequestContextOnRead = func() bool { return tt.fgEnabledOnRead }
-			queue.PersistRequestContextOnWrite = func() bool { return tt.fgEnabledOnWrite }
-			t.Cleanup(func() {
-				queue.PersistRequestContextOnRead = fgOrigReadState
-				queue.PersistRequestContextOnWrite = fgOrigWriteState
-			})
-
 			ms := consumertest.MetricsSink{}
 			te, err := NewMetrics(context.Background(), set, &fakeMetricsConfig, ms.ConsumeMetrics, WithQueue(configoptional.Some(qCfg)))
 			require.NoError(t, err)
@@ -181,6 +171,21 @@ func TestMetrics_WithRecordMetrics(t *testing.T) {
 	require.NotNil(t, me)
 
 	checkRecordedMetricsForMetrics(t, tt, fakeMetricsName, me, nil)
+}
+
+func TestMetrics_WithAttrs(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	attrs := []attribute.KeyValue{
+		attribute.Bool("test", true),
+		attribute.String("example", "value"),
+	}
+	me, err := NewMetrics(context.Background(), exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeMetricsConfig, newPushMetricsData(nil), WithAttrs(attrs...))
+	require.NoError(t, err)
+	require.NotNil(t, me)
+
+	checkRecordedMetricsForMetrics(t, tt, fakeMetricsName, me, nil, attrs...)
 }
 
 func TestMetrics_pMetricModifiedDownStream_WithRecordMetrics(t *testing.T) {
@@ -336,7 +341,7 @@ func newPushMetricsDataModifiedDownstream(retError error) consumer.ConsumeMetric
 	}
 }
 
-func checkRecordedMetricsForMetrics(t *testing.T, tt *componenttest.Telemetry, id component.ID, me exporter.Metrics, wantError error) {
+func checkRecordedMetricsForMetrics(t *testing.T, tt *componenttest.Telemetry, id component.ID, me exporter.Metrics, wantError error, extraAttributes ...attribute.KeyValue) {
 	md := testdata.GenerateMetrics(2)
 	const numBatches = 7
 	for range numBatches {
@@ -349,10 +354,10 @@ func checkRecordedMetricsForMetrics(t *testing.T, tt *componenttest.Telemetry, i
 		metadatatest.AssertEqualExporterSendFailedMetricPoints(t, tt,
 			[]metricdata.DataPoint[int64]{
 				{
-					Attributes: attribute.NewSet(
+					Attributes: attribute.NewSet(append(extraAttributes,
 						attribute.String(internal.ExporterKey, id.String()),
 						attribute.String(string(semconv.ErrorTypeKey), "_OTHER"),
-						attribute.Bool(internal.ErrorPermanentKey, false)),
+						attribute.Bool(internal.ErrorPermanentKey, false))...),
 					Value: numPoints,
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -360,8 +365,8 @@ func checkRecordedMetricsForMetrics(t *testing.T, tt *componenttest.Telemetry, i
 		metadatatest.AssertEqualExporterSentMetricPoints(t, tt,
 			[]metricdata.DataPoint[int64]{
 				{
-					Attributes: attribute.NewSet(
-						attribute.String(internal.ExporterKey, id.String())),
+					Attributes: attribute.NewSet(append(extraAttributes,
+						attribute.String(internal.ExporterKey, id.String()))...),
 					Value: numPoints,
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())

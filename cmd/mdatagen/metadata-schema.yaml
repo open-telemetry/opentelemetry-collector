@@ -20,9 +20,17 @@ scope_name: string
 generated_package_name: string
 
 # Optional: Enables per-metric reaggregation config generation for metrics with attributes.
+# Enabled by default. Set to false to generate metric config with only the `enabled`
+# field.
 # When enabled, generated metrics config includes `aggregation_strategy` and `attributes`
 # fields that let users reduce metric cardinality by choosing which dimensions are kept.
 reaggregation_enabled: bool
+
+# Optional: Enables per-resource-attribute override_value config generation.
+# When enabled, generated resource attribute config includes typed `override_value`
+# fields that let users override resource attribute values in the collector config.
+# Components can opt in gradually; defaults to false (shared ResourceAttributeConfig).
+override_value_enabled: bool
 
 # Required for components (Optional for subcomponents): A high-level view of the development status and use of this component
 status:
@@ -389,7 +397,9 @@ telemetry:
 
 # Optional: list of feature gate definitions.
 feature_gates:
-  - # Required: unique identifier for the feature gate.
+  - # Required: unique identifier for the feature gate. Unless
+    # skip_strict_validation is true on this gate, must be prefixed with
+    # "<status.class>.<type>." so gates are namespaced to their component.
     id: <gate.id>
     # Required: description of the feature gate.
     description: string
@@ -399,5 +409,12 @@ feature_gates:
     from_version: string
     # Required for stable/deprecated gates: version when the feature gate reached stable stage.
     to_version: string
-    # Required: URL with contextual information about the feature gate.
+    # Required: URL with contextual information about the feature gate. Unless
+    # skip_strict_validation is true on this gate, must be a GitHub issue URL
+    # of the form https://github.com/<owner>/<repo>/issues/<number>.
     reference_url: string
+    # Optional: when true, opts this gate out of strict validation (the
+    # GitHub-issue reference_url requirement and the "<status.class>.<type>."
+    # ID prefix requirement). Intended to grandfather in gates that predate
+    # these rules; new gates should leave this unset.
+    skip_strict_validation: false

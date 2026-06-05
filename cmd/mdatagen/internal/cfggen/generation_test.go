@@ -4,10 +4,16 @@
 package cfggen
 
 import (
+	"maps"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
+
+func defaultValue(value any) any {
+	return value
+}
 
 func TestMapGoType_BasicTypes(t *testing.T) {
 	tests := []struct {
@@ -500,7 +506,7 @@ func TestExtractImports_Optional(t *testing.T) {
 	require.Contains(t, result, "go.opentelemetry.io/collector/config/configoptional")
 }
 
-func TestExtractImports_ResolvedReferenceUsesResolvedTypeOnly(t *testing.T) {
+func TestExtractImports_ResolvedReferenceIncludesDefaultOverrideImports(t *testing.T) {
 	md := &ConfigMetadata{
 		Type:         "object",
 		ResolvedFrom: "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
@@ -510,12 +516,94 @@ func TestExtractImports_ResolvedReferenceUsesResolvedTypeOnly(t *testing.T) {
 				GoType: "time.Duration",
 			},
 		},
-		Default: map[string]any{"timeout": "30s"},
+		Default: defaultValue(map[string]any{"timeout": "30s"}),
 	}
 
 	result, err := ExtractImports(md, "", "")
 	require.NoError(t, err)
-	require.Equal(t, []string{"go.opentelemetry.io/collector/scraper/scraperhelper"}, result)
+	require.ElementsMatch(t, []string{"go.opentelemetry.io/collector/scraper/scraperhelper", "time"}, result)
+}
+
+func TestCollectCustomDefaultImports(t *testing.T) {
+	tests := []struct {
+		name         string
+		metadata     *ConfigMetadata
+		defaultValue any
+		expected     []string
+	}{
+		{
+			name:         "nil metadata",
+			defaultValue: map[string]any{"timeout": "30s"},
+		},
+		{
+			name: "ignored default",
+			metadata: &ConfigMetadata{
+				Type:     "object",
+				GoStruct: GoStructConfig{IgnoreDefault: true},
+				Properties: map[string]*ConfigMetadata{
+					"timeout": {Type: "string", GoType: "time.Duration"},
+				},
+			},
+			defaultValue: map[string]any{"timeout": "30s"},
+		},
+		{
+			name: "map schema with additional properties does not inspect entries",
+			metadata: &ConfigMetadata{
+				Type:                 "object",
+				AdditionalProperties: &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+			},
+			defaultValue: map[string]any{"timeout": "30s"},
+		},
+		{
+			name: "missing property is ignored",
+			metadata: &ConfigMetadata{
+				Type:       "object",
+				Properties: map[string]*ConfigMetadata{},
+			},
+			defaultValue: map[string]any{"timeout": "30s"},
+		},
+		{
+			name: "map default imports overridden property types",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"timeout": {Type: "string", GoType: "time.Duration"},
+				},
+			},
+			defaultValue: map[string]any{"timeout": "30s"},
+			expected:     []string{"time"},
+		},
+		{
+			name: "array default imports object item property types",
+			metadata: &ConfigMetadata{
+				Type: "array",
+				Items: &ConfigMetadata{
+					Type: "object",
+					Properties: map[string]*ConfigMetadata{
+						"timestamp": {Type: "string", GoType: "time.Time"},
+					},
+				},
+			},
+			defaultValue: []any{map[string]any{"timestamp": "2026-04-30T00:00:00Z"}},
+			expected:     []string{"time"},
+		},
+		{
+			name: "array default with non-object item does not inspect entries",
+			metadata: &ConfigMetadata{
+				Type:  "array",
+				Items: &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+			},
+			defaultValue: []any{"30s"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			imports := map[string]bool{}
+			require.NoError(t, collectCustomDefaultImports(tt.metadata, tt.defaultValue, imports, "", ""))
+			require.ElementsMatch(t, tt.expected, slices.Collect(maps.Keys(imports)))
+		})
+	}
 }
 
 func TestExtractImports_InternalResolvedReferenceIncludesNestedImports(t *testing.T) {
@@ -808,6 +896,35 @@ func TestExtractDefs_EmbeddedObjects(t *testing.T) {
 	require.Equal(t, "object", result["config"].Type)
 }
 
+func TestExtractDefs_MapValueObject(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"labels": {
+				Type: "object",
+				AdditionalProperties: &ConfigMetadata{
+					Type: "object",
+					Properties: map[string]*ConfigMetadata{
+						"name": {Type: "string"},
+					},
+				},
+			},
+			"custom": {
+				Type:   "object",
+				GoType: "github.com/example/pkg.Custom",
+				Properties: map[string]*ConfigMetadata{
+					"ignored": {Type: "string"},
+				},
+			},
+		},
+	}
+
+	result := ExtractDefs(md)
+	require.Len(t, result, 1)
+	require.Contains(t, result, "labels")
+	require.Same(t, md.Properties["labels"].AdditionalProperties, result["labels"])
+}
+
 func TestExtractDefs_ArrayItems(t *testing.T) {
 	md := &ConfigMetadata{
 		Type: "object",
@@ -898,6 +1015,103 @@ func TestExtractDefs_EmptyInput(t *testing.T) {
 	require.Empty(t, result)
 }
 
+func TestExtractDefs_AllOfInternalRef(t *testing.T) {
+	// Mirrors the schema:
+	//   type: object
+	//   $defs:
+	//     embedded_type:
+	//       type: object
+	//       properties:
+	//         field: {type: string}
+	//   allOf:
+	//     - $ref: embedded_type
+	//
+	// After resolver runs, the allOf entry carries ResolvedFrom: "embedded_type".
+	// ExtractDefs must emit "embedded_type" so that EmbeddedType struct is generated.
+	embeddedType := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"field": {Type: "string"},
+		},
+		ResolvedFrom: "embedded_type",
+	}
+	md := &ConfigMetadata{
+		Type:  "object",
+		AllOf: []*ConfigMetadata{embeddedType},
+	}
+
+	result := ExtractDefs(md)
+	require.Len(t, result, 1)
+	require.Contains(t, result, "embedded_type")
+	require.Same(t, embeddedType, result["embedded_type"])
+}
+
+func TestExtractDefs_AllOfMultipleInternalRefs(t *testing.T) {
+	// Two allOf entries, each resolving from a distinct internal definition.
+	typeA := &ConfigMetadata{
+		Type:         "object",
+		ResolvedFrom: "type_a",
+		Properties:   map[string]*ConfigMetadata{"x": {Type: "string"}},
+	}
+	typeB := &ConfigMetadata{
+		Type:         "object",
+		ResolvedFrom: "type_b",
+		Properties:   map[string]*ConfigMetadata{"y": {Type: "integer"}},
+	}
+	md := &ConfigMetadata{
+		Type:  "object",
+		AllOf: []*ConfigMetadata{typeA, typeB},
+	}
+
+	result := ExtractDefs(md)
+	require.Len(t, result, 2)
+	require.Same(t, typeA, result["type_a"])
+	require.Same(t, typeB, result["type_b"])
+}
+
+func TestExtractDefs_AllOfExternalRefSkipped(t *testing.T) {
+	// An allOf entry that resolved from an external reference must NOT be emitted
+	// (there is nothing to generate for it locally).
+	md := &ConfigMetadata{
+		Type: "object",
+		AllOf: []*ConfigMetadata{
+			{
+				Type:         "object",
+				ResolvedFrom: "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
+				Properties:   map[string]*ConfigMetadata{"timeout": {Type: "string"}},
+			},
+		},
+	}
+
+	result := ExtractDefs(md)
+	require.Empty(t, result)
+}
+
+func TestExtractDefs_AllOfInternalRefWithNestedProperties(t *testing.T) {
+	// An allOf-referenced type that itself contains an inline nested object must
+	// also emit the nested type definition.
+	embedded := &ConfigMetadata{
+		Type:         "object",
+		ResolvedFrom: "embedded_type",
+		Properties: map[string]*ConfigMetadata{
+			"nested": {
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"value": {Type: "string"},
+				},
+			},
+		},
+	}
+	md := &ConfigMetadata{
+		Type:  "object",
+		AllOf: []*ConfigMetadata{embedded},
+	}
+
+	result := ExtractDefs(md)
+	require.Contains(t, result, "embedded_type")
+	require.Contains(t, result, "nested")
+}
+
 func TestNewCfgFns_ExtractImports(t *testing.T) {
 	fns := NewCfgFns("go.opentelemetry.io/collector", "go.opentelemetry.io/collector/comp")
 
@@ -911,10 +1125,9 @@ func TestNewCfgFns_ExtractImports(t *testing.T) {
 	result := extractImports(md)
 	require.Contains(t, result, "time")
 
-	// input with unresolvable GoType: collectImports swallows the error, returns empty slice
+	// unresolvable GoType: extractImports panics
 	errMd := &ConfigMetadata{GoType: "github.com/pkg."}
-	result = extractImports(errMd)
-	require.Empty(t, result)
+	require.Panics(t, func() { extractImports(errMd) })
 }
 
 func TestNewCfgFns_ExtractDefs(t *testing.T) {
@@ -944,6 +1157,9 @@ func TestNewCfgFns_MapGoType(t *testing.T) {
 
 	// valid input
 	require.Equal(t, "string", mapGoType(&ConfigMetadata{Type: "string"}, "field"))
+	require.Panics(t, func() {
+		mapGoType(&ConfigMetadata{GoType: "github.com/pkg."}, "field")
+	})
 }
 
 func TestNewCfgFns_PublicType(t *testing.T) {
@@ -953,6 +1169,33 @@ func TestNewCfgFns_PublicType(t *testing.T) {
 
 	require.Equal(t, "MyType", publicType("my_type"))
 	require.Equal(t, "component.Config", publicType("go.opentelemetry.io/collector/component.Config"))
+	require.Panics(t, func() {
+		publicType("github.com/pkg.")
+	})
+}
+
+func TestNewCfgFns_EmbeddedName(t *testing.T) {
+	fns := NewCfgFns("", "")
+	embeddedName := fns["embeddedName"].(func(*ConfigMetadata) string)
+
+	require.Equal(t, "MyType", embeddedName(&ConfigMetadata{EmbeddedName: "my_type"}))
+	require.Equal(t, "MyType", embeddedName(&ConfigMetadata{ResolvedFrom: "my_type"}))
+	require.Panics(t, func() { embeddedName(&ConfigMetadata{}) })
+}
+
+func TestCamelVar(t *testing.T) {
+	require.Equal(t, "controllerConfig",
+		CamelVar("go.opentelemetry.io/collector/scraper/scraperhelper.controller_config"))
+	require.Equal(t, "plainConfig", CamelVar("plain_config"))
+	require.Panics(t, func() { CamelVar("") })
+}
+
+func TestNewCfgFns_CamelVar(t *testing.T) {
+	fns := NewCfgFns("", "")
+	camelVar := fns["camelVar"].(func(string) string)
+	require.Equal(t, "controllerConfig",
+		camelVar("go.opentelemetry.io/collector/scraper/scraperhelper.controller_config"))
+	require.Panics(t, func() { camelVar("") })
 }
 
 func TestWithCfgFns(t *testing.T) {
@@ -967,6 +1210,7 @@ func TestWithCfgFns(t *testing.T) {
 	require.Contains(t, result, "mapCustomDefaults")
 	require.Contains(t, result, "hasDefaultValue")
 	require.Contains(t, result, "publicType")
+	require.Contains(t, result, "camelVar")
 }
 
 func TestResolveGoType_CustomTypeFormatError(t *testing.T) {
@@ -1021,17 +1265,136 @@ func TestResolveGoType_EmbeddedObjectNameError(t *testing.T) {
 }
 
 func TestExtractImports_PropError(t *testing.T) {
-	// A property with an invalid GoType propagates the error through collectImports
 	md := &ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"bad": {GoType: "github.com/pkg.", Type: "object"},
 		},
 	}
-	// collectImports swallows ResolveGoTypeRef errors (err == nil check), so no error expected;
-	// this exercises the properties loop path
 	_, err := ExtractImports(md, "", "")
-	require.NoError(t, err)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to resolve import for custom type")
+}
+
+func TestExtractImports_GoTypeError(t *testing.T) {
+	md := &ConfigMetadata{GoType: "github.com/pkg."}
+	_, err := ExtractImports(md, "", "")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to resolve import for custom type")
+}
+
+func TestExtractImports_ResolvedFromError(t *testing.T) {
+	md := &ConfigMetadata{ResolvedFrom: "github.com/pkg."}
+	_, err := ExtractImports(md, "", "")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to resolve import for reference")
+}
+
+func TestExtractImports_ItemsError(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:  "array",
+		Items: &ConfigMetadata{GoType: "github.com/pkg."},
+	}
+	_, err := ExtractImports(md, "", "")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to resolve import for custom type")
+}
+
+func TestExtractImports_AllOfError(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:  "object",
+		AllOf: []*ConfigMetadata{{GoType: "github.com/pkg."}},
+	}
+	_, err := ExtractImports(md, "", "")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to resolve import for custom type")
+}
+
+func TestExtractImports_DefsError(t *testing.T) {
+	md := &ConfigMetadata{
+		Defs: map[string]*ConfigMetadata{
+			"bad": {GoType: "github.com/pkg."},
+		},
+	}
+	_, err := ExtractImports(md, "", "")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to resolve import for custom type")
+}
+
+func TestExtractImports_AdditionalPropertiesError(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:                 "object",
+		AdditionalProperties: &ConfigMetadata{GoType: "github.com/pkg."},
+	}
+	_, err := ExtractImports(md, "", "")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to resolve import for custom type")
+}
+
+func TestExtractImports_ContentSchemaError(t *testing.T) {
+	md := &ConfigMetadata{
+		ContentSchema: &ConfigMetadata{GoType: "github.com/pkg."},
+	}
+	_, err := ExtractImports(md, "", "")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to resolve import for custom type")
+}
+
+func TestExtractImports_ExternalResolvedFromDefaultsError(t *testing.T) {
+	// collectImports on the prop itself fails (line 294-295 in collectCustomDefaultImports)
+	md := &ConfigMetadata{
+		ResolvedFrom: "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
+		Properties: map[string]*ConfigMetadata{
+			"timeout": {GoType: "github.com/pkg."},
+		},
+		Default: defaultValue(map[string]any{"timeout": "30s"}),
+	}
+	_, err := ExtractImports(md, "", "")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to resolve import for custom type")
+}
+
+func TestExtractImports_ExternalResolvedFromNestedDefaultsError(t *testing.T) {
+	// "nested" has an external ResolvedFrom with no Default, so collectImports(nested) succeeds:
+	// it short-circuits after processing nested.Default=nil without descending into nested.Properties.
+	// collectCustomDefaultImports(nested, {"bad": "x"}) then walks the override value and calls
+	// collectImports on nested.Properties["bad"] which has an invalid GoType — this error propagates
+	// back to the caller at line 297-298 in the outer collectCustomDefaultImports.
+	md := &ConfigMetadata{
+		ResolvedFrom: "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
+		Properties: map[string]*ConfigMetadata{
+			"nested": {
+				ResolvedFrom: "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
+				Properties: map[string]*ConfigMetadata{
+					"bad": {GoType: "github.com/pkg."},
+				},
+			},
+		},
+		Default: defaultValue(map[string]any{
+			"nested": map[string]any{"bad": "value"},
+		}),
+	}
+	_, err := ExtractImports(md, "", "")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to resolve import for custom type")
+}
+
+func TestExtractImports_ExternalResolvedFromArrayDefaultsError(t *testing.T) {
+	// collectCustomDefaultImports over array items fails (line 306-307)
+	md := &ConfigMetadata{
+		ResolvedFrom: "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
+		Type:         "array",
+		Items: &ConfigMetadata{
+			Type: "object",
+			Properties: map[string]*ConfigMetadata{
+				"bad": {GoType: "github.com/pkg."},
+			},
+		},
+		Default: defaultValue([]any{map[string]any{"bad": "value"}}),
+	}
+	_, err := ExtractImports(md, "", "")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to resolve import for custom type")
 }
 
 func TestExtractImports_ItemsPath(t *testing.T) {
@@ -1073,6 +1436,160 @@ func TestExtractImports_ContentSchema(t *testing.T) {
 	require.Contains(t, result, "time")
 }
 
+func TestExtractImports_Pattern(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+	}{
+		{
+			name:     "direct pattern field",
+			metadata: &ConfigMetadata{Type: "string", Pattern: `^[a-z]+$`},
+		},
+		{
+			name: "pattern in nested property",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string", Pattern: `^[a-z]+$`},
+				},
+			},
+		},
+		{
+			name: "pattern in array items",
+			metadata: &ConfigMetadata{
+				Type:  "array",
+				Items: &ConfigMetadata{Type: "string", Pattern: `^[a-z]+$`},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := ExtractImports(tt.metadata, "", "")
+			require.NoError(t, err)
+			require.Contains(t, result, "regexp")
+		})
+	}
+}
+
+func TestExtractImports_NoPatternNoRegexpImport(t *testing.T) {
+	md := &ConfigMetadata{Type: "string"}
+	result, err := ExtractImports(md, "", "")
+	require.NoError(t, err)
+	require.NotContains(t, result, "regexp")
+}
+
+func TestExtractImports_ErrorsImportForValidators(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+	}{
+		{
+			name: "required field triggers errors import",
+			metadata: &ConfigMetadata{
+				Type:     "object",
+				Required: []string{"name"},
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string"},
+				},
+			},
+		},
+		{
+			name: "minLength triggers errors import",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string", MinLength: Ptr(1)},
+				},
+			},
+		},
+		{
+			name: "maxLength triggers errors import",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string", MaxLength: Ptr(64)},
+				},
+			},
+		},
+		{
+			name: "custom validator triggers errors import",
+			metadata: &ConfigMetadata{
+				Type:     "object",
+				GoStruct: GoStructConfig{CustomValidator: &CustomValidatorConfig{}},
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string"},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := ExtractImports(tt.metadata, "", "")
+			require.NoError(t, err)
+			require.Contains(t, result, "errors")
+		})
+	}
+}
+
+func TestExtractImports_NoErrorsImportWithoutValidators(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"name": {Type: "string"},
+		},
+	}
+	result, err := ExtractImports(md, "", "")
+	require.NoError(t, err)
+	require.NotContains(t, result, "errors")
+}
+
+func TestValidationRules_Enabled(t *testing.T) {
+	tests := []struct {
+		name     string
+		rules    ValidationRules
+		expected bool
+	}{
+		{
+			name:     "empty rules",
+			rules:    ValidationRules{},
+			expected: false,
+		},
+		{
+			name:     "required only",
+			rules:    ValidationRules{Required: true},
+			expected: true,
+		},
+		{
+			name:     "maxLength only",
+			rules:    ValidationRules{MaxLength: Ptr(64)},
+			expected: true,
+		},
+		{
+			name:     "minLength only",
+			rules:    ValidationRules{MinLength: Ptr(1)},
+			expected: true,
+		},
+		{
+			name:     "pattern only",
+			rules:    ValidationRules{Pattern: Ptr(`^[a-z]+$`)},
+			expected: true,
+		},
+		{
+			name:     "required with value rule",
+			rules:    ValidationRules{Required: true, MaxLength: Ptr(64)},
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, tt.rules.Enabled())
+		})
+	}
+}
+
 func TestExtractValidators(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -1104,9 +1621,9 @@ func TestExtractValidators(t *testing.T) {
 				{
 					FieldName:  "name",
 					FieldType:  "string",
-					IsRequired: true,
 					IsOptional: false,
 					IsPointer:  false,
+					Rules:      ValidationRules{Required: true},
 				},
 			},
 		},
@@ -1123,9 +1640,9 @@ func TestExtractValidators(t *testing.T) {
 				{
 					FieldName:  "name",
 					FieldType:  "string",
-					IsRequired: true,
 					IsOptional: true,
 					IsPointer:  false,
+					Rules:      ValidationRules{Required: true},
 				},
 			},
 		},
@@ -1142,9 +1659,9 @@ func TestExtractValidators(t *testing.T) {
 				{
 					FieldName:  "name",
 					FieldType:  "string",
-					IsRequired: true,
 					IsOptional: false,
 					IsPointer:  true,
+					Rules:      ValidationRules{Required: true},
 				},
 			},
 		},
@@ -1168,6 +1685,260 @@ func TestExtractValidators(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			result := ExtractValidators(test.metadata)
 			require.Equal(t, test.expected, result)
+		})
+	}
+}
+
+func TestExtractValidators_StringValidators(t *testing.T) {
+	maxLen := 64
+	minLen := 3
+
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected []Validator
+	}{
+		{
+			name: "maxLength only",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string", MaxLength: &maxLen},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "name",
+					FieldType: "string",
+					Rules:     ValidationRules{MaxLength: &maxLen},
+				},
+			},
+		},
+		{
+			name: "minLength only",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string", MinLength: &minLen},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "name",
+					FieldType: "string",
+					Rules:     ValidationRules{MinLength: &minLen},
+				},
+			},
+		},
+		{
+			name: "pattern only",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string", Pattern: `^[a-z]+$`},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "name",
+					FieldType: "string",
+					Rules:     ValidationRules{Pattern: Ptr(`^[a-z]+$`)},
+				},
+			},
+		},
+		{
+			name: "all string validators without required",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string", MinLength: &minLen, MaxLength: &maxLen, Pattern: `^[a-z]+$`},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "name",
+					FieldType: "string",
+					Rules:     ValidationRules{MinLength: &minLen, MaxLength: &maxLen, Pattern: Ptr(`^[a-z]+$`)},
+				},
+			},
+		},
+		{
+			name: "required combined with string validators",
+			metadata: &ConfigMetadata{
+				Type:     "object",
+				Required: []string{"name"},
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string", MinLength: &minLen, MaxLength: &maxLen, Pattern: `^[a-z]+$`},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "name",
+					FieldType: "string",
+					Rules:     ValidationRules{Required: true, MinLength: &minLen, MaxLength: &maxLen, Pattern: Ptr(`^[a-z]+$`)},
+				},
+			},
+		},
+		{
+			name: "nil minLength and maxLength produces no validator",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string"},
+				},
+			},
+			expected: []Validator{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ExtractValidators(tt.metadata)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestExtractValidators_NumericValidators(t *testing.T) {
+	minVal := 0.0
+	maxVal := 100.0
+	exclMinVal := 5.0
+	exclMaxVal := 10.0
+
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected []Validator
+	}{
+		{
+			name: "minimum only",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"count": {Type: "number", Minimum: &minVal},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "count",
+					FieldType: "number",
+					Rules:     ValidationRules{Minimum: &minVal},
+				},
+			},
+		},
+		{
+			name: "maximum only",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"count": {Type: "number", Maximum: &maxVal},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "count",
+					FieldType: "number",
+					Rules:     ValidationRules{Maximum: &maxVal},
+				},
+			},
+		},
+		{
+			name: "exclusiveMinimum only",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"score": {Type: "number", ExclusiveMinimum: &exclMinVal},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "score",
+					FieldType: "number",
+					Rules:     ValidationRules{ExclusiveMinimum: &exclMinVal},
+				},
+			},
+		},
+		{
+			name: "exclusiveMaximum only",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"score": {Type: "number", ExclusiveMaximum: &exclMaxVal},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "score",
+					FieldType: "number",
+					Rules:     ValidationRules{ExclusiveMaximum: &exclMaxVal},
+				},
+			},
+		},
+		{
+			name: "all numeric validators",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"value": {Type: "number", Minimum: &minVal, Maximum: &maxVal, ExclusiveMinimum: &exclMinVal, ExclusiveMaximum: &exclMaxVal},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "value",
+					FieldType: "number",
+					Rules:     ValidationRules{Minimum: &minVal, Maximum: &maxVal, ExclusiveMinimum: &exclMinVal, ExclusiveMaximum: &exclMaxVal},
+				},
+			},
+		},
+		{
+			name: "integer type with numeric validators",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"retry_count": {Type: "integer", Minimum: &minVal, Maximum: &maxVal},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "retry_count",
+					FieldType: "integer",
+					Rules:     ValidationRules{Minimum: &minVal, Maximum: &maxVal},
+				},
+			},
+		},
+		{
+			name: "nil numeric validators produces no validator",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"value": {Type: "number"},
+				},
+			},
+			expected: []Validator{},
+		},
+		{
+			name: "required combined with numeric validators",
+			metadata: &ConfigMetadata{
+				Type:     "object",
+				Required: []string{"threshold"},
+				Properties: map[string]*ConfigMetadata{
+					"threshold": {Type: "number", Minimum: &minVal, Maximum: &maxVal},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "threshold",
+					FieldType: "number",
+					Rules:     ValidationRules{Required: true, Minimum: &minVal, Maximum: &maxVal},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ExtractValidators(tt.metadata)
+			require.Equal(t, tt.expected, result)
 		})
 	}
 }
@@ -1236,7 +2007,7 @@ func TestExtractValidators_CustomValidator(t *testing.T) {
 	require.Len(t, result, 1)
 	require.Equal(t, "http_client", result[0].FieldName)
 	require.Equal(t, "validateHTTPClient", result[0].CustomValidator)
-	require.False(t, result[0].IsRequired)
+	require.Empty(t, result[0].Rules)
 	require.True(t, result[0].IsPointer)
 }
 
@@ -1259,12 +2030,13 @@ func TestExtractValidators_RequiredAndCustomValidator(t *testing.T) {
 
 	// First validator is the required check
 	require.Equal(t, "http_client", result[0].FieldName)
-	require.True(t, result[0].IsRequired)
+	require.NotNil(t, result[0].Rules.Required)
+	require.True(t, result[0].Rules.Required)
 	require.Empty(t, result[0].CustomValidator)
 
 	// Second validator is the custom validator
 	require.Equal(t, "http_client", result[1].FieldName)
-	require.False(t, result[1].IsRequired)
+	require.Empty(t, result[1].Rules)
 	require.Equal(t, "validateHTTPClient", result[1].CustomValidator)
 }
 
@@ -1283,10 +2055,11 @@ func TestExtractValidators_RootCustomValidatorLast(t *testing.T) {
 
 	result := ExtractValidators(md)
 	require.Len(t, result, 2)
+	require.NotNil(t, result[1].Rules.Required)
+	require.True(t, result[1].Rules.Required)
+	require.Empty(t, result[1].CustomValidator)
 	require.Equal(t, ".", result[0].FieldName)
 	require.Equal(t, "validateConfig", result[0].CustomValidator)
-	require.True(t, result[1].IsRequired)
-	require.Empty(t, result[1].CustomValidator)
 }
 
 func TestExtractValidators_NoCustomValidator(t *testing.T) {
@@ -1302,6 +2075,129 @@ func TestExtractValidators_NoCustomValidator(t *testing.T) {
 
 	result := ExtractValidators(md)
 	require.Empty(t, result)
+}
+
+func TestValidationRules_HasValueRule(t *testing.T) {
+	tests := []struct {
+		name     string
+		rules    ValidationRules
+		expected bool
+	}{
+		{
+			name:     "empty validators map",
+			rules:    ValidationRules{},
+			expected: false,
+		},
+		{
+			name:     "only required",
+			rules:    ValidationRules{Required: true},
+			expected: false,
+		},
+		{
+			name:     "maxLength",
+			rules:    ValidationRules{MaxLength: Ptr(64)},
+			expected: true,
+		},
+		{
+			name:     "minLength",
+			rules:    ValidationRules{MinLength: Ptr(1)},
+			expected: true,
+		},
+		{
+			name:     "pattern",
+			rules:    ValidationRules{Pattern: Ptr(`^[a-z]+$`)},
+			expected: true,
+		},
+		{
+			name:     "required and pattern",
+			rules:    ValidationRules{Required: true, Pattern: Ptr(`^[a-z]+$`)},
+			expected: true,
+		},
+		{
+			name:     "nil validators map",
+			rules:    ValidationRules{},
+			expected: false,
+		},
+		{
+			name:     "minimum",
+			rules:    ValidationRules{Minimum: Ptr(0.0)},
+			expected: true,
+		},
+		{
+			name:     "maximum",
+			rules:    ValidationRules{Maximum: Ptr(100.0)},
+			expected: true,
+		},
+		{
+			name:     "exclusiveMinimum",
+			rules:    ValidationRules{ExclusiveMinimum: Ptr(5.0)},
+			expected: true,
+		},
+		{
+			name:     "exclusiveMaximum",
+			rules:    ValidationRules{ExclusiveMaximum: Ptr(10.0)},
+			expected: true,
+		},
+		{
+			name:     "all numeric validators",
+			rules:    ValidationRules{Minimum: Ptr(0.0), Maximum: Ptr(100.0), ExclusiveMinimum: Ptr(5.0), ExclusiveMaximum: Ptr(10.0)},
+			expected: true,
+		},
+		{
+			name:     "empty numeric validators",
+			rules:    ValidationRules{},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, tt.rules.HasValueRule())
+		})
+	}
+}
+
+func TestResolveType(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected string
+	}{
+		{
+			name:     "reference",
+			metadata: &ConfigMetadata{ResolvedFrom: "go.opentelemetry.io/collector/config/confighttp.ClientConfig"},
+			expected: "ref",
+		},
+		{
+			name:     "date time",
+			metadata: &ConfigMetadata{Type: "string", GoType: "time.Time"},
+			expected: "datetime",
+		},
+		{
+			name:     "duration",
+			metadata: &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+			expected: "duration",
+		},
+		{
+			name: "map",
+			metadata: &ConfigMetadata{
+				Type:                 "object",
+				AdditionalProperties: &ConfigMetadata{Type: "string"},
+			},
+			expected: "map",
+		},
+		{
+			name:     "plain type",
+			metadata: &ConfigMetadata{Type: "boolean"},
+			expected: "boolean",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, resolveType(tt.metadata))
+		})
+	}
 }
 
 func TestNewCfgFns_ExtractValidators(t *testing.T) {
@@ -1320,7 +2216,57 @@ func TestNewCfgFns_ExtractValidators(t *testing.T) {
 	result := extractValidators(md)
 	require.Len(t, result, 1)
 	require.Equal(t, "name", result[0].FieldName)
-	require.True(t, result[0].IsRequired)
+	require.NotNil(t, result[0].Rules.Required)
+	require.True(t, result[0].Rules.Required)
+}
+
+func Ptr[T any](v T) *T {
+	return &v
+}
+
+func TestExternalDefaultCall(t *testing.T) {
+	rootPkg := "go.opentelemetry.io/collector"
+	compPkg := "go.opentelemetry.io/collector/scraper/scraperhelper"
+
+	tests := []struct {
+		name     string
+		ref      string
+		expected string
+	}{
+		{
+			name:     "fully qualified external ref",
+			ref:      "go.opentelemetry.io/collector/scraper/scraperhelper/internal/controller.controller_config",
+			expected: "controller.NewDefaultControllerConfig()",
+		},
+		{
+			name:     "relative local ref",
+			ref:      "./internal/controller.controller_config",
+			expected: "controller.NewDefaultControllerConfig()",
+		},
+		{
+			name:     "absolute local ref",
+			ref:      "/config/confighttp.client_config",
+			expected: "confighttp.NewDefaultClientConfig()",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := ExternalDefaultCall(tt.ref, rootPkg, compPkg)
+			require.NoError(t, err)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestNewCfgFns_ExternalDefaultCall(t *testing.T) {
+	rootPkg := "go.opentelemetry.io/collector"
+	compPkg := "go.opentelemetry.io/collector/scraper/scraperhelper"
+	fns := NewCfgFns(rootPkg, compPkg)
+	externalDefaultCall := fns["externalDefaultCall"].(func(string) string)
+
+	require.Equal(t, "controller.NewDefaultControllerConfig()", externalDefaultCall("./internal/controller.controller_config"))
+	require.Panics(t, func() { externalDefaultCall("github.com/pkg.") })
 }
 
 func TestFormatDefaultValue_ScalarDefaults(t *testing.T) {
@@ -1335,21 +2281,35 @@ func TestFormatDefaultValue_ScalarDefaults(t *testing.T) {
 			name:         "string",
 			schema:       &ConfigMetadata{Type: "string"},
 			propName:     "endpoint",
-			defaultValue: "http://localhost:8080",
+			defaultValue: defaultValue("http://localhost:8080"),
 			expected:     `"http://localhost:8080"`,
 		},
 		{
 			name:         "duration",
 			schema:       &ConfigMetadata{Type: "string", GoType: "time.Duration"},
 			propName:     "timeout",
-			defaultValue: "30s",
+			defaultValue: defaultValue("30s"),
 			expected:     "30*time.Second",
+		},
+		{
+			name:         "duration zero int",
+			schema:       &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+			propName:     "timeout",
+			defaultValue: defaultValue(0),
+			expected:     "0",
+		},
+		{
+			name:         "duration zero float",
+			schema:       &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+			propName:     "timeout",
+			defaultValue: defaultValue(float64(0)),
+			expected:     "0",
 		},
 		{
 			name:         "optional duration",
 			schema:       &ConfigMetadata{Type: "string", GoType: "time.Duration", IsOptional: true},
 			propName:     "interval",
-			defaultValue: "10s",
+			defaultValue: defaultValue("10s"),
 			expected:     "configoptional.Some(10*time.Second)",
 		},
 	}
@@ -1361,13 +2321,49 @@ func TestFormatDefaultValue_ScalarDefaults(t *testing.T) {
 	}
 }
 
+func TestRenderDurationExpr_InvalidInputs(t *testing.T) {
+	tests := []struct {
+		name  string
+		value any
+	}{
+		{
+			name:  "invalid duration string",
+			value: "not-a-duration",
+		},
+		{
+			name:  "unsupported type",
+			value: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expr, ok := renderDurationExpr(tt.value)
+			require.False(t, ok)
+			require.Empty(t, expr)
+		})
+	}
+}
+
 func TestFormatDefaultValue_MapDefault(t *testing.T) {
 	md := &ConfigMetadata{
 		Type:                 "object",
 		AdditionalProperties: &ConfigMetadata{Type: "string"},
 	}
 
-	require.Equal(t, `map[string]string{"env": "prod"}`, FormatDefaultValue(md, "labels", map[string]any{"env": "prod"}, "", ""))
+	require.Equal(t, `map[string]string{"env": "prod"}`, FormatDefaultValue(md, "labels", defaultValue(map[string]any{"env": "prod"}), "", ""))
+}
+
+func TestFormatDefaultValue_OptionalObjectDefault(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:       "object",
+		IsOptional: true,
+		Properties: map[string]*ConfigMetadata{
+			"endpoint": {Type: "string", Default: defaultValue("localhost")},
+		},
+	}
+
+	require.Equal(t, "configoptional.Default(NewDefaultClient())", FormatDefaultValue(md, "client", defaultValue(map[string]any{"endpoint": "localhost"}), "", ""))
 }
 
 func TestFormatDefaultValue_PointerArrayOfObjects(t *testing.T) {
@@ -1377,12 +2373,171 @@ func TestFormatDefaultValue_PointerArrayOfObjects(t *testing.T) {
 		Items: &ConfigMetadata{
 			Type: "object",
 			Properties: map[string]*ConfigMetadata{
-				"url": {Type: "string", Default: "http://example.com"},
+				"url": {Type: "string", Default: defaultValue("http://example.com")},
 			},
 		},
 	}
 
-	require.Equal(t, "&[]TargetsItem{NewDefaultTargetsItem()}", FormatDefaultValue(md, "targets", []any{map[string]any{}}, "", ""))
+	require.Equal(t, "&[]TargetsItem{NewDefaultTargetsItem()}", FormatDefaultValue(md, "targets", defaultValue([]any{map[string]any{}}), "", ""))
+}
+
+func TestFormatDefaultValue_NilDefault(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected string
+	}{
+		{
+			name:     "plain",
+			metadata: &ConfigMetadata{Type: "string"},
+			expected: "",
+		},
+		{
+			name:     "pointer",
+			metadata: &ConfigMetadata{Type: "string", IsPointer: true},
+			expected: "nil",
+		},
+		{
+			name:     "optional",
+			metadata: &ConfigMetadata{Type: "string", IsOptional: true},
+			expected: "configoptional.None[string]()",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, FormatDefaultValue(tt.metadata, "endpoint", defaultValue(nil), "", ""))
+		})
+	}
+}
+
+func TestFormatBaseValue(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:       "string",
+		IsPointer:  true,
+		IsOptional: true,
+	}
+
+	require.Equal(t, `"localhost"`, FormatBaseValue(md, "endpoint", defaultValue("localhost"), "", ""))
+	require.Empty(t, FormatBaseValue(
+		&ConfigMetadata{Type: "string", GoStruct: GoStructConfig{IgnoreDefault: true}},
+		"endpoint",
+		defaultValue("localhost"),
+		"",
+		"",
+	))
+}
+
+func TestFormatDefaultValue_UnsetDefault(t *testing.T) {
+	require.Empty(t, FormatDefaultValue(&ConfigMetadata{Type: "integer"}, "port", nil, "", ""))
+}
+
+func TestFormatDefaultValue_Panics(t *testing.T) {
+	tests := []struct {
+		name         string
+		metadata     *ConfigMetadata
+		defaultValue any
+	}{
+		{
+			name: "invalid reference",
+			metadata: &ConfigMetadata{
+				ResolvedFrom: "github.com/pkg.",
+				Default:      defaultValue(map[string]any{}),
+			},
+			defaultValue: defaultValue(map[string]any{}),
+		},
+		{
+			name: "invalid array default value",
+			metadata: &ConfigMetadata{
+				Type:  "array",
+				Items: &ConfigMetadata{Type: "string"},
+			},
+			defaultValue: defaultValue("localhost"),
+		},
+		{
+			name: "invalid array item type",
+			metadata: &ConfigMetadata{
+				Type:  "array",
+				Items: &ConfigMetadata{Type: "unknown"},
+			},
+			defaultValue: defaultValue([]any{"localhost"}),
+		},
+		{
+			name: "invalid map default value",
+			metadata: &ConfigMetadata{
+				Type:                 "object",
+				AdditionalProperties: &ConfigMetadata{Type: "string"},
+			},
+			defaultValue: defaultValue("localhost"),
+		},
+		{
+			name: "invalid map value type",
+			metadata: &ConfigMetadata{
+				Type:                 "object",
+				AdditionalProperties: &ConfigMetadata{Type: "unknown"},
+			},
+			defaultValue: defaultValue(map[string]any{"endpoint": "localhost"}),
+		},
+		{
+			name:         "invalid duration default value",
+			metadata:     &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+			defaultValue: defaultValue("invalid-duration"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Panics(t, func() {
+				FormatDefaultValue(tt.metadata, "endpoint", tt.defaultValue, "", "")
+			})
+		})
+	}
+}
+
+func TestWrapDefaultValue(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected string
+	}{
+		{
+			name:     "plain value",
+			metadata: &ConfigMetadata{},
+			expected: "defaultValue",
+		},
+		{
+			name:     "pointer",
+			metadata: &ConfigMetadata{IsPointer: true},
+			expected: "&defaultValue",
+		},
+		{
+			name:     "optional",
+			metadata: &ConfigMetadata{IsOptional: true},
+			expected: "configoptional.Some(defaultValue)",
+		},
+		{
+			name:     "pointer optional",
+			metadata: &ConfigMetadata{IsPointer: true, IsOptional: true},
+			expected: "&defaultValue",
+		},
+		{
+			name: "optional object",
+			metadata: &ConfigMetadata{
+				Type:       "object",
+				IsOptional: true,
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string"},
+				},
+			},
+			expected: "configoptional.Default(defaultValue)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, WrapDefaultValue(tt.metadata, "defaultValue"))
+		})
+	}
 }
 
 func TestFormatDefaultValue_ResolvedReferenceWithDefaults(t *testing.T) {
@@ -1390,30 +2545,52 @@ func TestFormatDefaultValue_ResolvedReferenceWithDefaults(t *testing.T) {
 		Type:         "object",
 		ResolvedFrom: "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
 		Properties: map[string]*ConfigMetadata{
-			"timeout": {Type: "string", GoType: "time.Duration", Default: "30s"},
+			"timeout": {Type: "string", GoType: "time.Duration", Default: defaultValue("30s")},
 		},
 	}
 
 	require.Equal(t,
 		"confighttp.NewDefaultClientConfig()",
-		FormatDefaultValue(md, "client", map[string]any{"timeout": "30s"}, "go.opentelemetry.io/collector", "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"),
+		FormatDefaultValue(md, "client", defaultValue(map[string]any{"timeout": "30s"}), "go.opentelemetry.io/collector", "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"),
+	)
+}
+
+func TestFormatDefaultValue_ResolvedReferenceWithoutDefaults(t *testing.T) {
+	// An external ref with no property defaults must not generate a NewDefault... call.
+	md := &ConfigMetadata{
+		Type:         "object",
+		ResolvedFrom: "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
+	}
+
+	require.Empty(t,
+		FormatDefaultValue(md, "client", defaultValue(map[string]any{}), "go.opentelemetry.io/collector", "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"),
 	)
 }
 
 func TestHasDefaultValue(t *testing.T) {
 	require.False(t, hasDefaultValue(&ConfigMetadata{Type: "object"}))
-	require.True(t, hasDefaultValue(&ConfigMetadata{Type: "string", Default: "value"}))
+	require.True(t, hasDefaultValue(&ConfigMetadata{Type: "string", Default: defaultValue("value")}))
 	require.True(t, hasDefaultValue(&ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
-			"timeout": {Type: "string", GoType: "time.Duration", Default: "30s"},
+			"timeout": {Type: "string", GoType: "time.Duration", Default: defaultValue("30s")},
 		},
 	}))
 	require.True(t, hasDefaultValue(&ConfigMetadata{
 		Type: "object",
 		AllOf: []*ConfigMetadata{
-			{Type: "object", Default: map[string]any{"enabled": true}},
+			{Type: "object", Default: defaultValue(map[string]any{"enabled": true})},
 		},
+	}))
+	require.False(t, hasDefaultValue(&ConfigMetadata{
+		Type:     "string",
+		Default:  defaultValue("value"),
+		GoStruct: GoStructConfig{IgnoreDefault: true},
+	}))
+	// External ref without any property defaults must not be treated as having defaults.
+	require.False(t, hasDefaultValue(&ConfigMetadata{
+		Type:         "object",
+		ResolvedFrom: "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
 	}))
 }
 
@@ -1426,10 +2603,10 @@ func TestMapCustomDefaults_NestedObjectOverrides(t *testing.T) {
 		},
 	}
 
-	exprs := MapCustomDefaults(md, map[string]any{
+	exprs := MapCustomDefaults(md, defaultValue(map[string]any{
 		"host": "localhost",
 		"port": float64(9090),
-	}, "", "")
+	}), "", "")
 
 	require.ElementsMatch(t, []string{
 		`.Host = "localhost"`,
@@ -1448,25 +2625,145 @@ func TestMapCustomDefaults_ArrayOfObjectsOverrides(t *testing.T) {
 		},
 	}
 
-	exprs := MapCustomDefaults(md, []any{
+	exprs := MapCustomDefaults(md, defaultValue([]any{
 		map[string]any{"url": "http://example.com"},
-	}, "", "")
+	}), "", "")
 
 	require.Equal(t, []string{`[0].Url = "http://example.com"`}, exprs)
+}
+
+func TestMapCustomDefaults_Panics(t *testing.T) {
+	tests := []struct {
+		name         string
+		metadata     *ConfigMetadata
+		defaultValue any
+	}{
+		{
+			name: "missing property",
+			metadata: &ConfigMetadata{
+				Type:       "object",
+				Properties: map[string]*ConfigMetadata{},
+			},
+			defaultValue: defaultValue(map[string]any{"missing": "value"}),
+		},
+		{
+			name: "map of structs",
+			metadata: &ConfigMetadata{
+				Type:                 "object",
+				AdditionalProperties: &ConfigMetadata{Type: "object"},
+			},
+			defaultValue: defaultValue(map[string]any{"entry": map[string]any{}}),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Panics(t, func() {
+				MapCustomDefaults(tt.metadata, tt.defaultValue, "", "")
+			})
+		})
+	}
 }
 
 func TestMapCustomDefaults_EmptyInput(t *testing.T) {
 	require.Empty(t, MapCustomDefaults(&ConfigMetadata{Type: "string"}, nil, "", ""))
 }
 
+func TestMapCustomDefaults_ScalarArray(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:  "array",
+		Items: &ConfigMetadata{Type: "string"},
+	}
+
+	require.Empty(t, MapCustomDefaults(md, defaultValue([]any{"value"}), "", ""))
+}
+
+func TestMapCustomDefaults_IgnoreDefault(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:     "object",
+		GoStruct: GoStructConfig{IgnoreDefault: true},
+		Properties: map[string]*ConfigMetadata{
+			"host": {Type: "string"},
+		},
+	}
+
+	require.Empty(t, MapCustomDefaults(md, defaultValue(map[string]any{"host": "localhost"}), "", ""))
+}
+
+func TestIsExternalRef(t *testing.T) {
+	fns := NewCfgFns("go.opentelemetry.io/collector", "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper")
+	isExternalRef := fns["isExternalRef"].(func(string) bool)
+
+	tests := []struct {
+		name     string
+		ref      string
+		expected bool
+	}{
+		{
+			name:     "empty ref",
+			ref:      "",
+			expected: false,
+		},
+		{
+			name:     "internal def name",
+			ref:      "plain_config",
+			expected: false,
+		},
+		{
+			name:     "external ref with namespace",
+			ref:      "go.opentelemetry.io/collector/scraper/scraperhelper.controller_config",
+			expected: true,
+		},
+		{
+			name:     "local absolute ref",
+			ref:      "/scraper/scraperhelper.controller_config",
+			expected: true,
+		},
+		{
+			name:     "local relative ref",
+			ref:      "./internal/metadata.metrics_builder_config",
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, isExternalRef(tt.ref))
+		})
+	}
+}
+
+func TestMapCustomDefaults_ExternalRefWithProperties(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:         "object",
+		ResolvedFrom: "go.opentelemetry.io/collector/scraper/scraperhelper.controller_config",
+		Properties: map[string]*ConfigMetadata{
+			"timeout": {
+				Type:   "string",
+				GoType: "time.Duration",
+			},
+		},
+	}
+
+	exprs := MapCustomDefaults(md, map[string]any{"timeout": "30s"}, "", "")
+	require.Len(t, exprs, 1)
+	require.Equal(t, ".Timeout = 30*time.Second", exprs[0])
+}
+
 func TestNewCfgFns_DefaultHelpers(t *testing.T) {
 	fns := NewCfgFns("", "")
 
 	formatDefaultValue := fns["formatDefaultValue"].(func(*ConfigMetadata, string, any) string)
+	formatBaseValue := fns["formatBaseValue"].(func(*ConfigMetadata, string, any) string)
 	mapCustomDefaults := fns["mapCustomDefaults"].(func(*ConfigMetadata, any) []string)
 	hasDefaultValue := fns["hasDefaultValue"].(func(*ConfigMetadata) bool)
 
-	require.Equal(t, `"localhost"`, formatDefaultValue(&ConfigMetadata{Type: "string"}, "endpoint", "localhost"))
+	require.Equal(t, `"localhost"`, formatDefaultValue(&ConfigMetadata{Type: "string"}, "endpoint", defaultValue("localhost")))
+	require.Equal(t, `"localhost"`, formatBaseValue(
+		&ConfigMetadata{Type: "string", IsPointer: true, IsOptional: true},
+		"endpoint",
+		defaultValue("localhost"),
+	))
 	require.Equal(t, []string{`[0].Url = "http://example.com"`}, mapCustomDefaults(
 		&ConfigMetadata{
 			Type: "array",
@@ -1477,8 +2774,8 @@ func TestNewCfgFns_DefaultHelpers(t *testing.T) {
 				},
 			},
 		},
-		[]any{map[string]any{"url": "http://example.com"}},
+		defaultValue([]any{map[string]any{"url": "http://example.com"}}),
 	))
-	require.True(t, hasDefaultValue(&ConfigMetadata{Type: "string", Default: "localhost"}))
+	require.True(t, hasDefaultValue(&ConfigMetadata{Type: "string", Default: defaultValue("localhost")}))
 	require.False(t, hasDefaultValue(&ConfigMetadata{Type: "string"}))
 }

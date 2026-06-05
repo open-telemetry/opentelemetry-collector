@@ -50,16 +50,18 @@ type obsReportSender[K request.Request] struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	spanName        string
-	tracer          trace.Tracer
-	spanAttrs       trace.SpanStartEventOption
-	metricAttr      metric.MeasurementOption
-	itemsSentInst   metric.Int64Counter
-	itemsFailedInst metric.Int64Counter
-	next            sender.Sender[K]
+	spanName           string
+	tracer             trace.Tracer
+	spanAttrs          trace.SpanStartEventOption
+	metricAttr         metric.MeasurementOption
+	inFlightMetricAttr metric.MeasurementOption
+	itemsSentInst      metric.Int64Counter
+	itemsFailedInst    metric.Int64Counter
+	inFlightInst       metric.Int64UpDownCounter
+	next               sender.Sender[K]
 }
 
-func newObsReportSender[K request.Request](set exporter.Settings, signal pipeline.Signal, next sender.Sender[K]) (sender.Sender[K], error) {
+func newObsReportSender[K request.Request](set exporter.Settings, signal pipeline.Signal, extraAttrs []attribute.KeyValue, next sender.Sender[K]) (sender.Sender[K], error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
@@ -69,12 +71,15 @@ func newObsReportSender[K request.Request](set exporter.Settings, signal pipelin
 	expAttr := attribute.String(ExporterKey, idStr)
 
 	or := &obsReportSender[K]{
-		spanName:   ExporterKey + spanNameSep + idStr + spanNameSep + signal.String(),
-		tracer:     metadata.Tracer(set.TelemetrySettings),
-		spanAttrs:  trace.WithAttributes(expAttr, attribute.String(DataTypeKey, signal.String())),
-		metricAttr: metric.WithAttributeSet(attribute.NewSet(expAttr)),
-		next:       next,
+		spanName:           ExporterKey + spanNameSep + idStr + spanNameSep + signal.String(),
+		tracer:             metadata.Tracer(set.TelemetrySettings),
+		spanAttrs:          trace.WithAttributes(expAttr, attribute.String(DataTypeKey, signal.String())),
+		metricAttr:         metric.WithAttributeSet(attribute.NewSet(append(extraAttrs, expAttr)...)),
+		inFlightMetricAttr: metric.WithAttributeSet(attribute.NewSet(expAttr, attribute.String(DataTypeKey, signal.String()))),
+		next:               next,
 	}
+
+	or.inFlightInst = telemetryBuilder.ExporterInFlightRequests
 
 	switch signal {
 	case pipeline.SignalTraces:
@@ -88,6 +93,7 @@ func newObsReportSender[K request.Request](set exporter.Settings, signal pipelin
 	case pipeline.SignalLogs:
 		or.itemsSentInst = telemetryBuilder.ExporterSentLogRecords
 		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedLogRecords
+
 	case xpipeline.SignalProfiles:
 		or.itemsSentInst = telemetryBuilder.ExporterSentProfileSamples
 		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedProfileSamples
@@ -107,9 +113,13 @@ func (ors *obsReportSender[K]) Send(ctx context.Context, req K) error {
 	return err
 }
 
-// StartOp creates the span used to trace the operation. Returning
-// the updated context and the created span.
+// startOp increments the in-flight request counter and creates the span
+// used to trace the operation. Returns the updated context.
 func (ors *obsReportSender[K]) startOp(ctx context.Context) context.Context {
+	if ors.inFlightInst != nil {
+		ors.inFlightInst.Add(ctx, 1, ors.inFlightMetricAttr)
+	}
+
 	ctx, _ = ors.tracer.Start(ctx,
 		ors.spanName,
 		ors.spanAttrs,
@@ -119,6 +129,10 @@ func (ors *obsReportSender[K]) startOp(ctx context.Context) context.Context {
 
 // EndOp completes the export operation that was started with StartOp.
 func (ors *obsReportSender[K]) endOp(ctx context.Context, numRecords int, err error) {
+	if ors.inFlightInst != nil {
+		ors.inFlightInst.Add(ctx, -1, ors.inFlightMetricAttr)
+	}
+
 	numSent, numFailedToSend := toNumItems(numRecords, err)
 
 	if ors.itemsSentInst != nil {

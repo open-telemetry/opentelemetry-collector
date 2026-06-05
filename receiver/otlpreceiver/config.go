@@ -61,7 +61,7 @@ type Protocols struct {
 // Config defines configuration for OTLP receiver.
 type Config struct {
 	// Protocols is the configuration for the supported protocols, currently gRPC and HTTP (Proto and JSON).
-	Protocols `mapstructure:"protocols"`
+	Protocols Protocols `mapstructure:"protocols"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -70,7 +70,7 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
-	if !cfg.GRPC.HasValue() && !cfg.HTTP.HasValue() {
+	if !cfg.Protocols.GRPC.HasValue() && !cfg.Protocols.HTTP.HasValue() {
 		return errors.New("must specify at least one protocol when using the OTLP receiver")
 	}
 	return nil
