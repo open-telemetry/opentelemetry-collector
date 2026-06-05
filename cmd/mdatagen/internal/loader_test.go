@@ -794,6 +794,26 @@ func TestLoadMetadata(t *testing.T) {
 			},
 		},
 		{
+			name: "testdata/with_pipe_description.yaml",
+			want: Metadata{
+				Type:                 "testdesc",
+				DisplayName:          "Test Component",
+				Description:          "This is a test component with a multiline description.\nIt has a second line.\n",
+				GeneratedPackageName: "metadata",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				ShortFolderName:      "testdata",
+				Tests:                Tests{Host: "newMdatagenNopHost()"},
+				ReaggregationEnabled: true,
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelBeta: {"logs"},
+					},
+				},
+			},
+		},
+		{
 			name: "testdata/with_underscore_in_semconv_ref_anchor_tag.yaml",
 			want: Metadata{
 				Type:                 "metricreceiver",
