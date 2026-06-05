@@ -67,9 +67,11 @@ components:
     - pkg/receiver
     - pkg/receiver/receivertest
     - pkg/receiverhelper
+    - pkg/samplepkg
     - pkg/scraper
     - pkg/scraper/scrapertest
     - pkg/scraperhelper
+    - pkg/scraperhelper/controller
     - pkg/service
     - pkg/service/hostcapabilities
     - pkg/service/telemetry/telemetrytest

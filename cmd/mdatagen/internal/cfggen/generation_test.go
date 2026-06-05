@@ -11,6 +11,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func defaultValue(value any) any {
+	return value
+}
+
 func TestMapGoType_BasicTypes(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -1475,6 +1479,117 @@ func TestExtractImports_NoPatternNoRegexpImport(t *testing.T) {
 	require.NotContains(t, result, "regexp")
 }
 
+func TestExtractImports_ErrorsImportForValidators(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+	}{
+		{
+			name: "required field triggers errors import",
+			metadata: &ConfigMetadata{
+				Type:     "object",
+				Required: []string{"name"},
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string"},
+				},
+			},
+		},
+		{
+			name: "minLength triggers errors import",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string", MinLength: Ptr(1)},
+				},
+			},
+		},
+		{
+			name: "maxLength triggers errors import",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string", MaxLength: Ptr(64)},
+				},
+			},
+		},
+		{
+			name: "custom validator triggers errors import",
+			metadata: &ConfigMetadata{
+				Type:     "object",
+				GoStruct: GoStructConfig{CustomValidator: &CustomValidatorConfig{}},
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string"},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := ExtractImports(tt.metadata, "", "")
+			require.NoError(t, err)
+			require.Contains(t, result, "errors")
+		})
+	}
+}
+
+func TestExtractImports_NoErrorsImportWithoutValidators(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"name": {Type: "string"},
+		},
+	}
+	result, err := ExtractImports(md, "", "")
+	require.NoError(t, err)
+	require.NotContains(t, result, "errors")
+}
+
+func TestValidationRules_Enabled(t *testing.T) {
+	tests := []struct {
+		name     string
+		rules    ValidationRules
+		expected bool
+	}{
+		{
+			name:     "empty rules",
+			rules:    ValidationRules{},
+			expected: false,
+		},
+		{
+			name:     "required only",
+			rules:    ValidationRules{Required: true},
+			expected: true,
+		},
+		{
+			name:     "maxLength only",
+			rules:    ValidationRules{MaxLength: Ptr(64)},
+			expected: true,
+		},
+		{
+			name:     "minLength only",
+			rules:    ValidationRules{MinLength: Ptr(1)},
+			expected: true,
+		},
+		{
+			name:     "pattern only",
+			rules:    ValidationRules{Pattern: Ptr(`^[a-z]+$`)},
+			expected: true,
+		},
+		{
+			name:     "required with value rule",
+			rules:    ValidationRules{Required: true, MaxLength: Ptr(64)},
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, tt.rules.Enabled())
+		})
+	}
+}
+
 func TestExtractValidators(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -1684,6 +1799,150 @@ func TestExtractValidators_StringValidators(t *testing.T) {
 	}
 }
 
+func TestExtractValidators_NumericValidators(t *testing.T) {
+	minVal := 0.0
+	maxVal := 100.0
+	exclMinVal := 5.0
+	exclMaxVal := 10.0
+
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected []Validator
+	}{
+		{
+			name: "minimum only",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"count": {Type: "number", Minimum: &minVal},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "count",
+					FieldType: "number",
+					Rules:     ValidationRules{Minimum: &minVal},
+				},
+			},
+		},
+		{
+			name: "maximum only",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"count": {Type: "number", Maximum: &maxVal},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "count",
+					FieldType: "number",
+					Rules:     ValidationRules{Maximum: &maxVal},
+				},
+			},
+		},
+		{
+			name: "exclusiveMinimum only",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"score": {Type: "number", ExclusiveMinimum: &exclMinVal},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "score",
+					FieldType: "number",
+					Rules:     ValidationRules{ExclusiveMinimum: &exclMinVal},
+				},
+			},
+		},
+		{
+			name: "exclusiveMaximum only",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"score": {Type: "number", ExclusiveMaximum: &exclMaxVal},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "score",
+					FieldType: "number",
+					Rules:     ValidationRules{ExclusiveMaximum: &exclMaxVal},
+				},
+			},
+		},
+		{
+			name: "all numeric validators",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"value": {Type: "number", Minimum: &minVal, Maximum: &maxVal, ExclusiveMinimum: &exclMinVal, ExclusiveMaximum: &exclMaxVal},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "value",
+					FieldType: "number",
+					Rules:     ValidationRules{Minimum: &minVal, Maximum: &maxVal, ExclusiveMinimum: &exclMinVal, ExclusiveMaximum: &exclMaxVal},
+				},
+			},
+		},
+		{
+			name: "integer type with numeric validators",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"retry_count": {Type: "integer", Minimum: &minVal, Maximum: &maxVal},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "retry_count",
+					FieldType: "integer",
+					Rules:     ValidationRules{Minimum: &minVal, Maximum: &maxVal},
+				},
+			},
+		},
+		{
+			name: "nil numeric validators produces no validator",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"value": {Type: "number"},
+				},
+			},
+			expected: []Validator{},
+		},
+		{
+			name: "required combined with numeric validators",
+			metadata: &ConfigMetadata{
+				Type:     "object",
+				Required: []string{"threshold"},
+				Properties: map[string]*ConfigMetadata{
+					"threshold": {Type: "number", Minimum: &minVal, Maximum: &maxVal},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "threshold",
+					FieldType: "number",
+					Rules:     ValidationRules{Required: true, Minimum: &minVal, Maximum: &maxVal},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ExtractValidators(tt.metadata)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 func TestExtractValidators_InternalRefFromDefs_NoValidators(t *testing.T) {
 	md := &ConfigMetadata{
 		Ref: "plain_config",
@@ -1859,6 +2118,36 @@ func TestValidationRules_HasValueRule(t *testing.T) {
 			rules:    ValidationRules{},
 			expected: false,
 		},
+		{
+			name:     "minimum",
+			rules:    ValidationRules{Minimum: Ptr(0.0)},
+			expected: true,
+		},
+		{
+			name:     "maximum",
+			rules:    ValidationRules{Maximum: Ptr(100.0)},
+			expected: true,
+		},
+		{
+			name:     "exclusiveMinimum",
+			rules:    ValidationRules{ExclusiveMinimum: Ptr(5.0)},
+			expected: true,
+		},
+		{
+			name:     "exclusiveMaximum",
+			rules:    ValidationRules{ExclusiveMaximum: Ptr(10.0)},
+			expected: true,
+		},
+		{
+			name:     "all numeric validators",
+			rules:    ValidationRules{Minimum: Ptr(0.0), Maximum: Ptr(100.0), ExclusiveMinimum: Ptr(5.0), ExclusiveMaximum: Ptr(10.0)},
+			expected: true,
+		},
+		{
+			name:     "empty numeric validators",
+			rules:    ValidationRules{},
+			expected: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -1933,6 +2222,51 @@ func TestNewCfgFns_ExtractValidators(t *testing.T) {
 
 func Ptr[T any](v T) *T {
 	return &v
+}
+
+func TestExternalDefaultCall(t *testing.T) {
+	rootPkg := "go.opentelemetry.io/collector"
+	compPkg := "go.opentelemetry.io/collector/scraper/scraperhelper"
+
+	tests := []struct {
+		name     string
+		ref      string
+		expected string
+	}{
+		{
+			name:     "fully qualified external ref",
+			ref:      "go.opentelemetry.io/collector/scraper/scraperhelper/internal/controller.controller_config",
+			expected: "controller.NewDefaultControllerConfig()",
+		},
+		{
+			name:     "relative local ref",
+			ref:      "./internal/controller.controller_config",
+			expected: "controller.NewDefaultControllerConfig()",
+		},
+		{
+			name:     "absolute local ref",
+			ref:      "/config/confighttp.client_config",
+			expected: "confighttp.NewDefaultClientConfig()",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := ExternalDefaultCall(tt.ref, rootPkg, compPkg)
+			require.NoError(t, err)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestNewCfgFns_ExternalDefaultCall(t *testing.T) {
+	rootPkg := "go.opentelemetry.io/collector"
+	compPkg := "go.opentelemetry.io/collector/scraper/scraperhelper"
+	fns := NewCfgFns(rootPkg, compPkg)
+	externalDefaultCall := fns["externalDefaultCall"].(func(string) string)
+
+	require.Equal(t, "controller.NewDefaultControllerConfig()", externalDefaultCall("./internal/controller.controller_config"))
+	require.Panics(t, func() { externalDefaultCall("github.com/pkg.") })
 }
 
 func TestFormatDefaultValue_ScalarDefaults(t *testing.T) {
@@ -2320,14 +2654,6 @@ func TestMapCustomDefaults_Panics(t *testing.T) {
 			},
 			defaultValue: defaultValue(map[string]any{"entry": map[string]any{}}),
 		},
-		{
-			name: "array without object items",
-			metadata: &ConfigMetadata{
-				Type:  "array",
-				Items: &ConfigMetadata{Type: "string"},
-			},
-			defaultValue: defaultValue([]any{"value"}),
-		},
 	}
 
 	for _, tt := range tests {
@@ -2343,6 +2669,15 @@ func TestMapCustomDefaults_EmptyInput(t *testing.T) {
 	require.Empty(t, MapCustomDefaults(&ConfigMetadata{Type: "string"}, nil, "", ""))
 }
 
+func TestMapCustomDefaults_ScalarArray(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:  "array",
+		Items: &ConfigMetadata{Type: "string"},
+	}
+
+	require.Empty(t, MapCustomDefaults(md, defaultValue([]any{"value"}), "", ""))
+}
+
 func TestMapCustomDefaults_IgnoreDefault(t *testing.T) {
 	md := &ConfigMetadata{
 		Type:     "object",
@@ -2353,6 +2688,66 @@ func TestMapCustomDefaults_IgnoreDefault(t *testing.T) {
 	}
 
 	require.Empty(t, MapCustomDefaults(md, defaultValue(map[string]any{"host": "localhost"}), "", ""))
+}
+
+func TestIsExternalRef(t *testing.T) {
+	fns := NewCfgFns("go.opentelemetry.io/collector", "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper")
+	isExternalRef := fns["isExternalRef"].(func(string) bool)
+
+	tests := []struct {
+		name     string
+		ref      string
+		expected bool
+	}{
+		{
+			name:     "empty ref",
+			ref:      "",
+			expected: false,
+		},
+		{
+			name:     "internal def name",
+			ref:      "plain_config",
+			expected: false,
+		},
+		{
+			name:     "external ref with namespace",
+			ref:      "go.opentelemetry.io/collector/scraper/scraperhelper.controller_config",
+			expected: true,
+		},
+		{
+			name:     "local absolute ref",
+			ref:      "/scraper/scraperhelper.controller_config",
+			expected: true,
+		},
+		{
+			name:     "local relative ref",
+			ref:      "./internal/metadata.metrics_builder_config",
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, isExternalRef(tt.ref))
+		})
+	}
+}
+
+func TestMapCustomDefaults_ExternalRefWithProperties(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:         "object",
+		ResolvedFrom: "go.opentelemetry.io/collector/scraper/scraperhelper.controller_config",
+		Properties: map[string]*ConfigMetadata{
+			"timeout": {
+				Type:   "string",
+				GoType: "time.Duration",
+			},
+		},
+	}
+
+	exprs := MapCustomDefaults(md, map[string]any{"timeout": "30s"}, "", "")
+	require.Len(t, exprs, 1)
+	require.Equal(t, ".Timeout = 30*time.Second", exprs[0])
 }
 
 func TestNewCfgFns_DefaultHelpers(t *testing.T) {

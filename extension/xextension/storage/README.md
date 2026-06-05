@@ -36,3 +36,23 @@ Get operation results are stored in-place into the given Operation and can be re
 Note: All methods should return error only if a problem occurred. (For example, if a file is no longer accessible, or if a remote service is unavailable.)
 
 Note: It is the responsibility of each component to `Close` a storage client that it has requested.
+
+## Walking storage entries
+
+A `storage.Client` may optionally implement the `storage.Walker` interface to support iterating over all key/value entries:
+```
+Walk(context.Context, WalkFunc) error
+```
+
+The `WalkFunc` callback is called for every key/value pair. Key order is not guaranteed.
+
+The callback returns a slice of `Operation` and an error:
+```
+WalkFunc = func(key string, value []byte) ([]*Operation, error)
+```
+
+Operations returned by `WalkFunc` are collected during the walk and applied in order when the walk completes successfully or when `SkipAll` is returned. Returning a `nil` slice is valid and contributes no operations.
+
+All operation types (`Get`, `Set`, `Delete`) are valid in the returned slice. `Get` operations work as usual — the result is stored in the `Operation` instance.
+
+If `WalkFunc` returns the `SkipAll` error, the walk stops early and all collected operations are still applied. If `WalkFunc` returns any other non-nil error, or if the walk encounters an internal error, the walk stops and no collected operations are applied.
