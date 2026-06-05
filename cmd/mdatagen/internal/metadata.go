@@ -38,8 +38,6 @@ type Metadata struct {
 	Parent string `mapstructure:"parent"`
 	// Status information for the component.
 	Status *Status `mapstructure:"status"`
-	// Deprecated: reaggregation_enabled is accepted for compatibility and ignored.
-	LegacyReaggregationEnabled *bool `mapstructure:"reaggregation_enabled"`
 	// Override value featuregate for resource attributes.
 	OverrideValueEnabled bool `mapstructure:"override_value_enabled"`
 	// The name of the package that will be generated.

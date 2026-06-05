@@ -88,7 +88,6 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				ebK8sPod.RecordK8sPodPhaseDataPoint(ts, 3, AttributePhaseRunning)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sReplicaset.RecordK8sReplicasetDesiredDataPoint(ts, 1)

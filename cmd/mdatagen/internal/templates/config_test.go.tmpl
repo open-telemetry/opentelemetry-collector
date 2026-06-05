@@ -95,7 +95,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 }
 
 {{- range $name, $metric := .Metrics }}
-{{ if and $reag (hasAggregatableAttributes $metric.Attributes) -}}
+{{ if hasAggregatableAttributes $metric.Attributes -}}
 func Test{{ $name.Render }}MetricsConfig_Validate(t *testing.T) {
   cfg := DefaultMetricsConfig().{{ $name.Render }}
   require.NoError(t, cfg.Validate())

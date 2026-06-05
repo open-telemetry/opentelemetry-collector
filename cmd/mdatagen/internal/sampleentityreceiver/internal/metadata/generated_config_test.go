@@ -84,6 +84,18 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+func TestK8sPodPhaseMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().K8sPodPhase
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []K8sPodPhaseMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric k8s.pod.phase doesn't have an attribute invalid, valid attributes: [phase]")
+
+	cfg = DefaultMetricsConfig().K8sPodPhase
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)

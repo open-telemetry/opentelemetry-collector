@@ -642,13 +642,12 @@ func TestLoadMetadata(t *testing.T) {
 		{
 			name: "testdata/reaggregation_disabled.yaml",
 			want: Metadata{
-				Type:                       "test",
-				GeneratedPackageName:       "metadata",
-				ScopeName:                  "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
-				PackageName:                "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
-				ShortFolderName:            "testdata",
-				LegacyReaggregationEnabled: boolPtr(false),
-				Tests:                      Tests{Host: "newMdatagenNopHost()"},
+				Type:                 "test",
+				GeneratedPackageName: "metadata",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				ShortFolderName:      "testdata",
+				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
 					Stability: map[component.StabilityLevel][]string{
@@ -797,7 +796,6 @@ func TestLoadMetadata(t *testing.T) {
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
-				ReaggregationEnabled: true,
 				Status: &Status{
 					Class: "receiver",
 					Stability: map[component.StabilityLevel][]string{

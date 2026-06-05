@@ -53,6 +53,7 @@ func LoadMetadata(filePath string) (Metadata, error) {
 	if err != nil {
 		return Metadata{}, err
 	}
+	conf.Delete("reaggregation_enabled")
 
 	md := Metadata{
 		ShortFolderName: shortFolderName(filePath),
