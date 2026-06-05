@@ -1,6 +1,6 @@
 change_type: bug_fix
 
-component: exporterhelper
+component: pkg/exporterhelper
 
 note: Fix nil-pointer panic in `sending_queue::batch` Unmarshal when `sending_queue::sizer` is set and `sending_queue::batch::enabled` is false.
 
