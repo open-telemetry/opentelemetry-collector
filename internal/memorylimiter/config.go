@@ -37,6 +37,16 @@ type Config struct {
 	// GCs is a CPU-heavy operation and executing it too frequently may affect the recovery capabilities of the collector.
 	MinGCIntervalWhenHardLimited time.Duration `mapstructure:"min_gc_interval_when_hard_limited"`
 
+	// BackoffOnIneffectiveGC, when true, enables exponential backoff between
+	// forced GC calls when GC fails to reclaim memory (e.g., when memory is
+	// held by live references in exporter queues during a downstream outage).
+	// This prevents the CPU-burning GC loop described in issue #4981. When
+	// active, the GC interval doubles per ineffective GC and is capped at
+	// 30 seconds; the user-configured min_gc_interval_when_*_limited values
+	// (and 95% of check_interval) act as a floor so this never reduces
+	// configured GC pacing. Defaults to true.
+	BackoffOnIneffectiveGC bool `mapstructure:"backoff_on_ineffective_gc"`
+
 	// MemoryLimitMiB is the maximum amount of memory, in MiB, targeted to be
 	// allocated by the process.
 	MemoryLimitMiB uint32 `mapstructure:"limit_mib"`
@@ -59,6 +69,7 @@ var _ component.Config = (*Config)(nil)
 func NewDefaultConfig() *Config {
 	return &Config{
 		MinGCIntervalWhenSoftLimited: 10 * time.Second,
+		BackoffOnIneffectiveGC:       true,
 	}
 }
 

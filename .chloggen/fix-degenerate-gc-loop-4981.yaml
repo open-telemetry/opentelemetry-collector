@@ -13,11 +13,19 @@ subtext: |
   exporter queues and retry goroutines). This consumed 70%+ CPU and prevented
   recovery even after the downstream service was repaired.
 
-  The fix adds GC effectiveness tracking with exponential backoff: when consecutive
-  forced GCs fail to reclaim at least 5% of memory, the GC interval is doubled on
-  each attempt (up to a 30-second cap). This preserves CPU for the exporter consumer
-  goroutines to drain their queues, enabling recovery. The backoff resets when
-  memory drops below the soft limit, or when memory usage drops significantly
-  compared to the last forced GC (detecting that garbage has become reclaimable).
+  The fix introduces a dynamic `currentGCInterval` that grows when forced GCs
+  fail to reclaim memory. After an ineffective GC (less than 5% reclaimed and
+  still above the soft limit), the interval is seeded to a floor of
+  `max(min_gc_interval_when_*_limited, check_interval * 0.95)` and then doubled
+  on each subsequent ineffective GC, capped at `max(30s, min_gc_interval_when_*_limited)`.
+  Whenever a GC is effective — either because it dropped memory below the soft
+  limit or because total memory dropped by at least 5% — the interval resets to
+  zero so the next pressure event starts fresh.
+
+  The new behavior is enabled by default via the `backoff_on_ineffective_gc`
+  config field (defaults to `true`). Users who relied on every-tick forced GC
+  under hard limit can opt out by setting `backoff_on_ineffective_gc: false`.
+  The defaults for `min_gc_interval_when_soft_limited` and
+  `min_gc_interval_when_hard_limited` are unchanged.
 
 change_logs: [user]
