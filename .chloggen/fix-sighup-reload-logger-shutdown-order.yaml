@@ -1,0 +1,10 @@
+change_type: bug_fix
+component: pkg/service
+note: "Fix SIGHUP reload exiting with status 1 when service.telemetry.logs.processors uses an in-process OTLP pipeline. The logger is now flushed before receiver pipelines are torn down, preventing connection-refused errors during reload."
+issues: [15400]
+subtext: |
+  Without this fix, collectors configured with an in-process OTLP self-loop
+  (logger -> otlp/selftelemetry receiver, a common observability pattern)
+  exited with status 1 on every SIGHUP because the logger's OTLP batch
+  exporter tried to flush to a receiver that had already been shut down.
+change_logs: [user]

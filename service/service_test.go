@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -27,12 +28,14 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
@@ -359,10 +362,87 @@ func TestServiceTelemetryShutdownError(t *testing.T) {
 	// Shutdown the service
 	err = srv.Shutdown(context.Background())
 	assert.EqualError(t, err, ""+
+		"failed to shutdown logger: an exception occurred; "+
 		"failed to shutdown tracer provider: an exception occurred; "+
-		"failed to shutdown meter provider: an exception occurred; "+
-		"failed to shutdown logger: an exception occurred",
+		"failed to shutdown meter provider: an exception occurred",
 	)
+}
+
+// TestShutdownFlushesLoggerBeforeReceiverShutdown verifies that the logger's
+// flush/shutdown function is called before any pipeline receiver is shut down.
+//
+// Motivation: when service.telemetry.logs.processors routes internal logs
+// through an in-process OTLP self-loop (logger → otlp receiver), the logger's
+// OTLP batch exporter must flush BEFORE the receiver is stopped.  If the order
+// is reversed the flush dials a dead receiver, gets "connection refused", and
+// the error propagates to reloadConfiguration causing the process to exit 1 on
+// every SIGHUP reload (https://github.com/open-telemetry/opentelemetry-collector/issues/15400).
+func TestShutdownFlushesLoggerBeforeReceiverShutdown(t *testing.T) {
+	var callOrder atomic.Int64 // increments on each Shutdown call; lower == earlier
+
+	var loggerShutdownOrder int64
+	var receiverShutdownOrder int64
+
+	// The custom logger shutdown func records its position in the call order.
+	set := newNopSettings()
+	set.TelemetryFactory = telemetry.NewFactory(
+		func() component.Config { return nil },
+		telemetry.WithCreateLogger(
+			func(_ context.Context, _ telemetry.LoggerSettings, _ component.Config) (*zap.Logger, component.ShutdownFunc, error) {
+				return zap.NewNop(), func(context.Context) error {
+					loggerShutdownOrder = callOrder.Add(1)
+					return nil
+				}, nil
+			},
+		),
+	)
+
+	// Build a custom receiver whose Shutdown records its position in call order.
+	recvType := component.MustNewType("ordertracker")
+	recvCfg := &struct{}{}
+	recvInstance := &struct {
+		component.StartFunc
+		component.ShutdownFunc
+	}{
+		ShutdownFunc: func(context.Context) error {
+			receiverShutdownOrder = callOrder.Add(1)
+			return nil
+		},
+	}
+	fact := receiver.NewFactory(
+		recvType,
+		func() component.Config { return recvCfg },
+		receiver.WithLogs(
+			func(_ context.Context, _ receiver.Settings, _ component.Config, _ consumer.Logs) (receiver.Logs, error) {
+				return recvInstance, nil
+			},
+			component.StabilityLevelDevelopment,
+		),
+	)
+	set.ReceiversConfigs = map[component.ID]component.Config{
+		component.NewID(recvType): recvCfg,
+	}
+	set.ReceiversFactories = map[component.Type]receiver.Factory{
+		recvType: fact,
+	}
+
+	cfg := newNopConfigPipelineConfigs(pipelines.Config{
+		pipeline.NewID(pipeline.SignalLogs): {
+			Receivers: []component.ID{component.NewID(recvType)},
+			Exporters: []component.ID{component.NewID(nopType)},
+		},
+	})
+
+	srv, err := New(context.Background(), set, cfg)
+	require.NoError(t, err)
+	require.NoError(t, srv.Start(context.Background()))
+
+	require.NoError(t, srv.Shutdown(context.Background()))
+
+	// Logger must be flushed before the receiver is torn down.
+	assert.Less(t, loggerShutdownOrder, receiverShutdownOrder,
+		"logger shutdown (order %d) must happen before receiver shutdown (order %d)",
+		loggerShutdownOrder, receiverShutdownOrder)
 }
 
 func TestExtensionNotificationFailure(t *testing.T) {
