@@ -44,11 +44,25 @@ func (e *EncodingType) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// RetryConfig extends the standard BackOffConfig with the OTLP-HTTP-specific
+// retryable-status-code list.
+type RetryConfig struct {
+	configretry.BackOffConfig `mapstructure:",squash"`
+
+	// RetryableStatuses lists the HTTP response status codes that should trigger
+	// a retry. Defaults to [429, 502, 503, 504] per the OTLP specification:
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md#failures-1
+	// Override this only when the backend returns non-spec-compliant retryable
+	// status codes — for example, when fronting the Collector with Cloudflare,
+	// which returns HTTP 530 on upstream connectivity errors.
+	RetryableStatuses []int `mapstructure:"retryable_statuses"`
+}
+
 // Config defines configuration for OTLP/HTTP exporter.
 type Config struct {
 	ClientConfig confighttp.ClientConfig                                  `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	QueueConfig  configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
-	RetryConfig  configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+	RetryConfig  RetryConfig                                              `mapstructure:"retry_on_failure"`
 
 	// The URL to send traces to. If omitted the Endpoint + "/v1/traces" will be used.
 	TracesEndpoint string `mapstructure:"traces_endpoint"`
@@ -72,6 +86,11 @@ var _ component.Config = (*Config)(nil)
 func (cfg *Config) Validate() error {
 	if cfg.ClientConfig.Endpoint == "" && cfg.TracesEndpoint == "" && cfg.MetricsEndpoint == "" && cfg.LogsEndpoint == "" && cfg.ProfilesEndpoint == "" {
 		return errors.New("at least one endpoint must be specified")
+	}
+	for _, code := range cfg.RetryConfig.RetryableStatuses {
+		if code < 100 || code > 599 {
+			return fmt.Errorf("retryable_statuses: invalid HTTP status code %d (must be in 100-599)", code)
+		}
 	}
 	return nil
 }
