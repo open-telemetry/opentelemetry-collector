@@ -259,7 +259,7 @@ func (e *baseExporter) export(ctx context.Context, requestURL string, request []
 // Determine if the status code is retryable based on the exporter's configured
 // retryable_statuses. The default list ([429, 502, 503, 504]) matches the OTLP
 // specification:
-// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md#failures-1
+// https://opentelemetry.io/docs/specs/otlp/#failures-1
 func (e *baseExporter) isRetryableStatusCode(code int) bool {
 	return slices.Contains(e.config.RetryConfig.RetryableStatuses, code)
 }
