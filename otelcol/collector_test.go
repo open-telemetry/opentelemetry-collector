@@ -174,6 +174,106 @@ func TestCollectorReportError(t *testing.T) {
 	assert.Equal(t, StateClosed, col.GetState())
 }
 
+func TestCollectorShutdownDrainsAsyncErrorChannel(t *testing.T) {
+	// A component reporting a fatal error while the collector is shutting down must
+	// not block: the Run control loop, the only reader of the async error channel,
+	// has already stopped reading by then. See issue #9824.
+	var col *Collector
+
+	// Telemetry is shut down as part of the service shutdown, after the Run loop has
+	// exited, so reporting an async error from here exercises the shutdown path.
+	shutdown := func(context.Context) error {
+		col.asyncErrorChannel <- errors.New("fatal error while shutting down")
+		return nil
+	}
+	factories, err := nopFactories()
+	require.NoError(t, err)
+	factories.Telemetry = telemetry.NewFactory(
+		func() component.Config { return fakeTelemetryConfig{} },
+		telemetrytest.WithLogger(zap.NewNop(), shutdown),
+	)
+
+	col, err = NewCollector(CollectorSettings{
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
+	})
+	require.NoError(t, err)
+
+	wg := startCollector(context.Background(), t, col)
+
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	// Shutdown blocks until Run returns. If the async error reported during
+	// shutdown is not drained, the reporting goroutine blocks and Shutdown never
+	// returns, so guard it with a timeout to fail fast instead of hanging.
+	done := make(chan struct{})
+	go func() {
+		col.Shutdown()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for shutdown; async error reported during shutdown blocked")
+	}
+
+	wg.Wait()
+	assert.Equal(t, StateClosed, col.GetState())
+}
+
+func TestCollectorReloadDrainsAsyncErrorChannel(t *testing.T) {
+	// During a config reload the control loop is blocked in reloadConfiguration and
+	// not reading asyncErrorChannel. A component reporting a fatal error while the
+	// retiring service stops must not block. See issue #9824.
+	var col *Collector
+	var reportOnce sync.Once
+	reloadStarted := make(chan struct{})
+	shutdown := func(context.Context) error {
+		// On the retiring service's shutdown during the reload triggered below,
+		// signal the test and then report a fatal error on the async error channel.
+		reportOnce.Do(func() {
+			close(reloadStarted)
+			col.asyncErrorChannel <- errors.New("fatal error during reload")
+		})
+		return nil
+	}
+	factories, err := nopFactories()
+	require.NoError(t, err)
+	factories.Telemetry = telemetry.NewFactory(
+		func() component.Config { return fakeTelemetryConfig{} },
+		telemetrytest.WithLogger(zap.NewNop(), shutdown),
+	)
+
+	col, err = NewCollector(CollectorSettings{
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
+	})
+	require.NoError(t, err)
+
+	wg := startCollector(context.Background(), t, col)
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	// Trigger a reload. Once the retiring service begins shutting down (reloadStarted),
+	// the fatal error is being reported on the async error channel. With the fix it is
+	// drained and the reload completes (back to Running); without it the send blocks
+	// and the collector stays in StateClosing.
+	col.signalsChannel <- SIGHUP
+	<-reloadStarted
+	require.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 5*time.Second, 50*time.Millisecond, "reload did not complete; async error reported during reload blocked")
+
+	col.Shutdown()
+	wg.Wait()
+	assert.Equal(t, StateClosed, col.GetState())
+}
+
 // NewStatusWatcherExtensionFactory returns a component.ExtensionFactory to construct a status watcher extension.
 func NewStatusWatcherExtensionFactory(
 	onStatusChanged func(source *componentstatus.InstanceID, event *componentstatus.Event),

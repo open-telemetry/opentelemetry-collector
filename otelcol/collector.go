@@ -267,6 +267,12 @@ func (col *Collector) reloadConfiguration(ctx context.Context) error {
 	col.service.Logger().Warn("Config updated, restart service")
 	col.setCollectorState(StateClosing)
 
+	// The control loop is blocked here and not reading asyncErrorChannel while the
+	// retiring service stops and the new one starts, so keep draining it. Otherwise
+	// a component reporting a fatal error during the restart would block on the send.
+	stop := col.drainAsyncErrors()
+	defer stop()
+
 	if err := col.service.Shutdown(ctx); err != nil {
 		return fmt.Errorf("failed to shutdown the retiring config: %w", err)
 	}
@@ -407,8 +413,39 @@ LOOP:
 	return col.shutdown(ctx)
 }
 
+// drainAsyncErrors starts consuming asyncErrorChannel and returns a stop function
+// that blocks until draining has finished. It is used during the configuration
+// reload and shutdown phases, when the Run control loop is not selecting on the
+// channel, so that a component reporting a fatal error while it stops does not
+// block on the send and deadlock.
+func (col *Collector) drainAsyncErrors() (stop func()) {
+	done := make(chan struct{})
+	stopped := make(chan struct{})
+	go func() {
+		defer close(stopped)
+		for {
+			select {
+			case err := <-col.asyncErrorChannel:
+				col.service.Logger().Error("Asynchronous error received while reconfiguring or shutting down", zap.Error(err))
+			case <-done:
+				return
+			}
+		}
+	}()
+	return func() {
+		close(done)
+		<-stopped
+	}
+}
+
 func (col *Collector) shutdown(ctx context.Context) error {
 	col.setCollectorState(StateClosing)
+
+	// The Run control loop no longer reads asyncErrorChannel once shutdown starts,
+	// so keep draining it while components stop. Otherwise a component reporting a
+	// fatal error during shutdown would block on the send.
+	stop := col.drainAsyncErrors()
+	defer stop()
 
 	// Accumulate errors and proceed with shutting down remaining components.
 	var errs error
