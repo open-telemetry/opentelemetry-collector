@@ -26,10 +26,6 @@ const (
 	zapErrorCount    = "errorCount"
 	zapNumberOfItems = "numberOfItems"
 
-	legacyReadIndexKey                = "ri"
-	legacyWriteIndexKey               = "wi"
-	legacyCurrentlyDispatchedItemsKey = "di"
-
 	// metadataKey is the new single key for all queue metadata.
 	metadataKey = "qmv0"
 )
@@ -163,8 +159,8 @@ func (pq *persistentQueue[T]) initClient(ctx context.Context, client storage.Cli
 		pq.logger.Error("Failed getting metadata, starting with new ones", zap.Error(err))
 		pq.metadata = PersistentMetadata{}
 	default:
-		pq.logger.Info("New queue metadata key not found, attempting to load legacy format.")
-		pq.loadLegacyMetadata(ctx)
+		pq.logger.Info("Initializing new persistent queue")
+		pq.metadata = PersistentMetadata{}
 	}
 }
 
@@ -193,54 +189,6 @@ func (pq *persistentQueue[T]) loadQueueMetadata(ctx context.Context) error {
 	return nil
 }
 
-// TODO: Remove legacy format support after 6 months (target: December 2025)
-func (pq *persistentQueue[T]) loadLegacyMetadata(ctx context.Context) {
-	// Fallback to legacy individual keys for backward compatibility
-	riOp := storage.GetOperation(legacyReadIndexKey)
-	wiOp := storage.GetOperation(legacyWriteIndexKey)
-
-	err := pq.client.Batch(ctx, riOp, wiOp)
-	if err == nil {
-		pq.metadata.ReadIndex, err = bytesToItemIndex(riOp.Value)
-	}
-
-	if err == nil {
-		pq.metadata.WriteIndex, err = bytesToItemIndex(wiOp.Value)
-	}
-
-	if err != nil {
-		if errors.Is(err, errValueNotSet) {
-			pq.logger.Info("Initializing new persistent queue")
-		} else {
-			pq.logger.Error("Failed getting read/write index, starting with new ones", zap.Error(err))
-		}
-		pq.metadata.ReadIndex = 0
-		pq.metadata.WriteIndex = 0
-	}
-
-	pq.retrieveAndEnqueueNotDispatchedReqs(ctx)
-
-	// Save to a new format and clean up legacy keys
-	metadataBytes, err := proto.Marshal(&pq.metadata)
-	if err != nil {
-		pq.logger.Error("Failed to marshal metadata", zap.Error(err))
-		return
-	}
-
-	if err = pq.client.Set(ctx, metadataKey, metadataBytes); err != nil {
-		pq.logger.Error("Failed to persist current metadata to storage", zap.Error(err))
-		return
-	}
-
-	if err = pq.client.Batch(ctx,
-		storage.DeleteOperation(legacyReadIndexKey),
-		storage.DeleteOperation(legacyWriteIndexKey),
-		storage.DeleteOperation(legacyCurrentlyDispatchedItemsKey)); err != nil {
-		pq.logger.Warn("Failed to cleanup legacy metadata keys", zap.Error(err))
-	} else {
-		pq.logger.Info("Successfully migrated to consolidated metadata format")
-	}
-}
 
 func (pq *persistentQueue[T]) Shutdown(ctx context.Context) error {
 	// If the queue is not initialized, there is nothing to shut down.
@@ -428,21 +376,10 @@ func (pq *persistentQueue[T]) onDone(index uint64, itemsSize, bytesSize int64, c
 // retrieveAndEnqueueNotDispatchedReqs gets the items for which sending was not finished, cleans the storage
 // and moves the items at the back of the queue.
 func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Context) {
-	var dispatchedItems []uint64
-
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
 	pq.logger.Debug("Checking if there are items left for dispatch by consumers")
-	itemKeysBuf, err := pq.client.Get(ctx, legacyCurrentlyDispatchedItemsKey)
-	if err == nil {
-		dispatchedItems, err = bytesToItemIndexArray(itemKeysBuf)
-	}
-	if err != nil {
-		pq.logger.Error("Could not fetch items left for dispatch by consumers", zap.Error(err))
-		return
-	}
-
-	pq.enqueueNotDispatchedReqs(ctx, dispatchedItems)
+	pq.enqueueNotDispatchedReqs(ctx, pq.metadata.CurrentlyDispatchedItems)
 }
 
 func (pq *persistentQueue[T]) enqueueNotDispatchedReqs(ctx context.Context, dispatchedItems []uint64) {
