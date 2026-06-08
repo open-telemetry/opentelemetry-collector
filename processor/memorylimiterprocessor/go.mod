@@ -4,20 +4,20 @@ go 1.25.0
 
 require (
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.59.0
+	go.opentelemetry.io/collector/component v1.60.0
 	go.opentelemetry.io/collector/component/componenttest v0.153.0
-	go.opentelemetry.io/collector/confmap v1.59.0
-	go.opentelemetry.io/collector/consumer v1.59.0
+	go.opentelemetry.io/collector/confmap v1.60.0
+	go.opentelemetry.io/collector/consumer v1.60.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.153.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.153.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.153.0
 	go.opentelemetry.io/collector/internal/memorylimiter v0.153.0
 	go.opentelemetry.io/collector/internal/telemetry v0.153.0
-	go.opentelemetry.io/collector/pdata v1.59.0
+	go.opentelemetry.io/collector/pdata v1.60.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.153.0
-	go.opentelemetry.io/collector/pipeline v1.59.0
+	go.opentelemetry.io/collector/pipeline v1.60.0
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.153.0
-	go.opentelemetry.io/collector/processor v1.59.0
+	go.opentelemetry.io/collector/processor v1.60.0
 	go.opentelemetry.io/collector/processor/processorhelper v0.153.0
 	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.153.0
 	go.opentelemetry.io/collector/processor/processortest v0.153.0
@@ -57,7 +57,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.153.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.59.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.60.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.153.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.153.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.44.0 // indirect
