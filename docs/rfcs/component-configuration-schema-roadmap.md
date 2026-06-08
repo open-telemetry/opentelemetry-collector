@@ -134,8 +134,8 @@ One proposal is to have `go` annotation that could contain the following sub-att
      pointer: true
      optional: true
      custom: ['validate']
-  ``` 
-  
+  ```
+
 ### Generated Go code example
 
 See below for an example of the generated Go code from the above schema:
@@ -204,7 +204,7 @@ func createDefaultConfig() component.Config {
 
 #### Customization
 
-Because schema defined field with custom type, validation and default value called `custom_field`, generated code will refer to placeholders that must be implemented in component's Go package. 
+Because schema defined field with custom type, validation and default value called `custom_field`, generated code will refer to placeholders that must be implemented in component's Go package.
 This creates an implementation hook for component developers to add the custom logic.
 
 In the above example:
@@ -337,7 +337,6 @@ Example:
 - Each referenced schema will be embedded inline.
 - The `$id` field will be set to the component's import path for easy identification.
 - The custom types will be represented as `any` type in JSON Schema.
-
 
 ### Roadmap
 
