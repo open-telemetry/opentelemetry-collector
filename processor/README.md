@@ -107,7 +107,7 @@ data cloning described in Exclusive Ownership section.
 The order processors are specified in a pipeline is important as this is the
 order in which each processor is applied.
 
-In general, processors that drop, transform, or enrich telemetry should run before batching. This avoids batching telemetry that may later be discarded and ensures batching happens after the data has reached its final shape for export. Processors that rely on request context, such as `k8sattributes`, should also run before batching so they can access the context they need.
+Processors that drop, transform, or enrich telemetry should run before batching. This avoids batching telemetry that may later be discarded. Processors that rely on request context, such as `k8sattributes`, should also run before batching so they can access the context they need.
 
 ## Creating Custom Processors
 
