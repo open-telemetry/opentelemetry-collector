@@ -1,0 +1,15 @@
+change_type: bug_fix
+
+component: pkg/exporterhelper
+
+note: Fix nil-pointer panic in `sending_queue::batch` Unmarshal when `sending_queue::sizer` is set and `sending_queue::batch::enabled` is false.
+
+issues: [14687]
+
+subtext: |
+  When `sending_queue::sizer` was set and `sending_queue::batch::enabled: false`
+  cleared the batch Optional to None, the sizer-inheritance branch in
+  `queuebatch.Config.Unmarshal` dereferenced a nil Optional and crashed the
+  collector at startup. The branch now also requires `Batch.HasValue()`.
+
+change_logs: [user]
