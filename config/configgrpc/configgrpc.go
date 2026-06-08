@@ -67,13 +67,6 @@ func NewDefaultKeepaliveClientConfig() KeepaliveClientConfig {
 	}
 }
 
-// BalancerName returns a string with default load balancer value
-//
-// Deprecated[v0.151.0]: Use the DefaultBalancerName constant instead.
-func BalancerName() string {
-	return DefaultBalancerName
-}
-
 var _ xconfmap.Validator = (*ClientConfig)(nil)
 
 // ClientConfig defines common settings for a gRPC client configuration.
