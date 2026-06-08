@@ -196,20 +196,15 @@ func (ml *MemoryLimiter) doGCandReadMemStats() *runtime.MemStats {
 	return ms
 }
 
-// checkLimitAndBackoff classifies a memory observation against the soft limit
-// and, when backoff is enabled, updates currentGCInterval. A GC is considered
-// effective if it either drops memory below the soft limit or reclaims at
-// least gcEffectivenessThreshold% of the previously observed Alloc. An
-// ineffective forced GC seeds currentGCInterval to a floor of
-// max(configMin, memCheckWait*0.95) and then doubles it (capped at
-// max(maxGCBackoffInterval, configMin)). The floor only applies after a
-// confirmed ineffective forced GC, leaving happy-path GC pacing identical
-// to the pre-backoff behavior.
+// checkLimitAndBackoff returns whether memory is above the soft limit and,
+// when backoff is enabled, updates currentGCInterval. A GC is effective if it
+// drops memory below the soft limit or reclaims at least
+// gcEffectivenessThreshold%. After an ineffective forced GC, the interval is
+// max(configMin, memCheckWait*0.95), doubled on each subsequent ineffective
+// GC, and capped at max(maxGCBackoffInterval, configMin).
 //
-// configMin is the branch-specific min interval and is only consulted when
-// didGC is true. Callers passing didGC=false (top-of-tick) may pass 0.
-//
-// See https://github.com/open-telemetry/opentelemetry-collector/issues/4981.
+// configMin is only consulted when didGC is true; top-of-tick callers may
+// pass 0. See https://github.com/open-telemetry/opentelemetry-collector/issues/4981.
 func (ml *MemoryLimiter) checkLimitAndBackoff(ms *runtime.MemStats, didGC bool, configMin time.Duration) (aboveSoftLimit bool) {
 	aboveSoftLimit = ml.usageChecker.aboveSoftLimit(ms)
 	if !ml.backoffOnIneffectiveGC {
@@ -226,28 +221,13 @@ func (ml *MemoryLimiter) checkLimitAndBackoff(ms *runtime.MemStats, didGC bool, 
 	if !didGC {
 		return aboveSoftLimit
 	}
-	floor := backoffFloor(configMin, ml.memCheckWait)
-	if ml.currentGCInterval < floor {
-		ml.currentGCInterval = floor
-	}
-	intervalCap := max(maxGCBackoffInterval, configMin)
-	doubled := ml.currentGCInterval * 2
-	if doubled > intervalCap || doubled < ml.currentGCInterval {
-		doubled = intervalCap
-	}
-	ml.currentGCInterval = doubled
+	minInterval := max(configMin, time.Duration(float64(ml.memCheckWait)*0.95))
+	maxInterval := max(maxGCBackoffInterval, configMin)
+	ml.currentGCInterval = min(max(ml.currentGCInterval, minInterval)*2, maxInterval)
 	ml.logger.Warn("Forced GC did not reclaim enough memory. Will back off GC frequency to preserve CPU for recovery.",
 		zap.Duration("next_gc_interval", ml.currentGCInterval),
 		memstatToZapField(ms))
 	return aboveSoftLimit
-}
-
-// backoffFloor returns the minimum value currentGCInterval should take after
-// the first ineffective GC of a streak. The user-configured min interval is
-// a floor; 95% of the check tick is the de facto minimum since CheckMemLimits
-// cannot be invoked more often than that. Whichever is larger wins.
-func backoffFloor(configMin, checkInterval time.Duration) time.Duration {
-	return max(configMin, time.Duration(float64(checkInterval)*0.95))
 }
 
 // CheckMemLimits inspects current memory usage against threshold and toggles mustRefuse when threshold is exceeded

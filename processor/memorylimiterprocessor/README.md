@@ -62,6 +62,11 @@ Normal operation is resumed when memory usage drops below the soft limit, meanin
 will no longer be refused and the processor won't force garbage collection to
 be performed.
 
+Forced GC may waste CPU without freeing memory if the data is held by live
+references elsewhere in the collector (for example, exporter queues during a
+downstream outage). The processor backs off forced GC exponentially when it is
+ineffective, and resets as soon as memory drops.
+
 ## Best Practices
 
 Note that while the processor can help mitigate out of memory situations,
@@ -135,6 +140,10 @@ measurements of memory usage. The value must be less than `limit_percentage`.
 This option is used to calculate `spike_limit_mib` from the total available memory.
 For instance setting of 25% with the total memory of 1GiB will result in the spike limit of 250MiB.
 This option is intended to be used only with `limit_percentage`.
+- `backoff_on_ineffective_gc` (default = `true`): When `true`, forced GC backs
+off exponentially if it fails to free memory above the soft limit, and resets
+when GC becomes effective or memory drops. Set to `false` to force GC on every
+check interval.
 
 Examples:
 

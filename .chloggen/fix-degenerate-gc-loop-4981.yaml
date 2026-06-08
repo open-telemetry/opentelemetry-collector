@@ -7,25 +7,9 @@ note: Fix degenerate collector performance when exporter has problems causing pe
 issues: [4981]
 
 subtext: |
-  When a downstream exporter target crashes, the memory limiter processor could
-  enter a permanent degenerate state where forced GC runs on every check interval
-  tick without reclaiming memory (because data is held by live references in
-  exporter queues and retry goroutines). This consumed 70%+ CPU and prevented
-  recovery even after the downstream service was repaired.
-
-  The fix introduces a dynamic `currentGCInterval` that grows when forced GCs
-  fail to reclaim memory. After an ineffective GC (less than 5% reclaimed and
-  still above the soft limit), the interval is seeded to a floor of
-  `max(min_gc_interval_when_*_limited, check_interval * 0.95)` and then doubled
-  on each subsequent ineffective GC, capped at `max(30s, min_gc_interval_when_*_limited)`.
-  Whenever a GC is effective — either because it dropped memory below the soft
-  limit or because total memory dropped by at least 5% — the interval resets to
-  zero so the next pressure event starts fresh.
-
-  The new behavior is enabled by default via the `backoff_on_ineffective_gc`
-  config field (defaults to `true`). Users who relied on every-tick forced GC
-  under hard limit can opt out by setting `backoff_on_ineffective_gc: false`.
-  The defaults for `min_gc_interval_when_soft_limited` and
-  `min_gc_interval_when_hard_limited` are unchanged.
+  Forced GC runs now use exponential backoff when deemed ineffective
+  (still above soft limit and less than 5% reclaimed) to avoid preventing
+  recovery by overloading CPU with excessive GC runs. This new backoff
+  behavior can be disabled with `backoff_on_ineffective_gc: false`.
 
 change_logs: [user]
