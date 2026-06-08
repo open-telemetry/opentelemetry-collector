@@ -231,6 +231,7 @@ Working with the project sources requires the following tools:
 2. [Go](https://go.dev/) (the version declared in the relevant `go.mod` file, or newer)
 3. [GNU Make](https://www.gnu.org/software/make/)
 4. [Docker](https://www.docker.com/)
+5. [OpenSSL Library](https://openssl-library.org/) (for the  `config/configtls` component)
 
 ## Repository Setup
 
@@ -284,6 +285,15 @@ button. Maintainers must make sure to edit this concatenated message to make it 
 In some cases, if the commit messages are lacking the easiest approach to have at
 least something useful is copy/pasting the PR description into the commit message box
 before merging (but see the above paragraph about writing good commit messages in the first place).
+
+### AI-assisted contributions
+
+If you use an AI tool to help author a pull request, you (the human) are still responsible for
+writing the PR description and any comments posted on the issue or PR. AI agents must prompt you
+for the content of each section in the PR template and use your answers verbatim rather than
+generating description content on their own. The PR template includes an authorship checkbox that
+you must check yourself before the PR is ready for review. See [AGENTS.md](./AGENTS.md) for the
+full set of rules that apply to AI-assisted contributions.
 
 ## General Notes
 

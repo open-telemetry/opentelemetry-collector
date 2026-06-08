@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry/internal/migration"
 )
 
@@ -97,6 +96,24 @@ func TestConfig(t *testing.T) {
 		"config_invalid_metrics_views_level.yaml": {
 			validateErr: `service::telemetry::metrics::views can only be set when service::telemetry::metrics::level is detailed`,
 		},
+		"config_prometheus_host_only.yaml": {
+			config: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				host := "[::0]"
+				cfg.Metrics.Readers = []config.MetricReader{
+					{
+						Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
+							WithoutScopeInfo:  ptr(true),
+							WithoutUnits:      ptr(true),
+							WithoutTypeSuffix: ptr(true),
+							Host:              &host,
+							Port:              ptr(8888),
+						}}},
+					},
+				}
+				return cfg
+			}(),
+		},
 	}
 
 	for filename, test := range tests {
@@ -116,7 +133,7 @@ func TestConfig(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			err = xconfmap.Validate(cfg)
+			err = confmap.Validate(cfg)
 			if test.validateErr != "" {
 				assert.ErrorContains(t, err, test.validateErr)
 				return
