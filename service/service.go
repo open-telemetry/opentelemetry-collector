@@ -267,9 +267,12 @@ func (srv *Service) Start(ctx context.Context) error {
 
 // Shutdown the service. Shutdown will do the following steps in order:
 // 1. Notify extensions that the pipeline is shutting down.
-// 2. Shutdown all pipelines.
-// 3. Shutdown all extensions.
-// 4. Shutdown telemetry.
+// 2. Shutdown all extensions.
+// 3. Flush and shutdown the logger before pipelines, so that any
+//    OTLP exporter wired to an in-process receiver can still deliver
+//    its final batch before the receiver is torn down.
+// 4. Shutdown all pipelines.
+// 5. Shutdown telemetry providers (tracer, meter).
 func (srv *Service) Shutdown(ctx context.Context) error {
 	// Accumulate errors and proceed with shutting down remaining components.
 	var errs error
@@ -281,12 +284,24 @@ func (srv *Service) Shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, fmt.Errorf("failed to notify that pipeline is not ready: %w", err))
 	}
 
-	if err := srv.host.Pipelines.ShutdownAll(ctx, srv.host.Reporter); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown pipelines: %w", err))
-	}
-
 	if err := srv.host.ServiceExtensions.Shutdown(ctx); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown extensions: %w", err))
+	}
+
+	// Shut down the logger before pipelines. The logger may have an OTLP
+	// batch exporter that sends to an in-process receiver (e.g. self-telemetry
+	// loop). If pipelines are shut down first, the receiver is gone and the
+	// exporter flush fails with a connection refused error, causing the
+	// collector to exit with status 1 on SIGHUP reload.
+	// Tracer and meter providers are shut down after pipelines because they
+	// do not depend on pipeline receivers.
+	srv.telemetrySettings.Logger.Info("Shutting down logger...")
+	if err := srv.loggerShutdownFunc.Shutdown(ctx); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown logger: %w", err))
+	}
+
+	if err := srv.host.Pipelines.ShutdownAll(ctx, srv.host.Reporter); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown pipelines: %w", err))
 	}
 
 	srv.telemetrySettings.Logger.Info("Shutdown complete.")
@@ -298,9 +313,6 @@ func (srv *Service) Shutdown(ctx context.Context) error {
 	}
 	if err := srv.meterProvider.Shutdown(ctx); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown meter provider: %w", err))
-	}
-	if err := srv.loggerShutdownFunc.Shutdown(ctx); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown logger: %w", err))
 	}
 
 	return errs
