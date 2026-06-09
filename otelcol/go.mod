@@ -36,7 +36,7 @@ require (
 	go.uber.org/zap v1.28.0
 	go.yaml.in/yaml/v3 v3.0.4
 	golang.org/x/exp v0.0.0-20260527015227-08cc5374adb3
-	golang.org/x/sys v0.45.0
+	golang.org/x/sys v0.46.0
 	google.golang.org/grpc v1.81.1
 )
 
@@ -69,7 +69,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/prometheus/client_golang v1.23.2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.68.0 // indirect
+	github.com/prometheus/common v0.68.1 // indirect
 	github.com/prometheus/otlptranslator v1.0.0 // indirect
 	github.com/prometheus/procfs v0.20.1 // indirect
 	github.com/shirou/gopsutil/v4 v4.26.5 // indirect
