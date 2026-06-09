@@ -188,7 +188,8 @@ func run(ymlPath string) error {
 		toGenerate[filepath.Join(tmplDir, "documentation.md.tmpl")] = filepath.Join(ymlDir, "documentation.md")
 	} else {
 		if _, err = os.Stat(filepath.Join(ymlDir, "documentation.md")); err == nil {
-			if err := os.Remove(filepath.Join(ymlDir, "documentation.md")); err != nil {
+			err = os.Remove(filepath.Join(ymlDir, "documentation.md"))
+			if err != nil {
 				return err
 			}
 		}
@@ -225,7 +226,8 @@ func run(ymlPath string) error {
 		toGenerate[filepath.Join(tmplDir, "feature_gates.go.tmpl")] = filepath.Join(codeDir, "generated_feature_gates.go")
 	} else {
 		if _, err = os.Stat(filepath.Join(codeDir, "generated_feature_gates.go")); err == nil {
-			if err := os.Remove(filepath.Join(codeDir, "generated_feature_gates.go")); err != nil {
+			err = os.Remove(filepath.Join(codeDir, "generated_feature_gates.go"))
+			if err != nil {
 				return err
 			}
 		}
