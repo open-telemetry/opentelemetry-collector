@@ -2067,6 +2067,43 @@ func TestResolver_Resolve_MergesExportedConfigsIntoDefs(t *testing.T) {
 	require.Nil(t, doc.ConfigMetadata.Defs)
 }
 
+func TestResolver_Resolve_InternalDefsWinNameCollision(t *testing.T) {
+	// An internal generated def (Config.Defs) and an exported config can share a
+	// generated name such as metrics_builder_config. mdatagen injects the internal
+	// def before Resolve, so the ref must resolve to that internal def, not to the
+	// exported config that happens to reuse the name.
+	r := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: &mockLoader{schemas: map[string]*ConfigMetadata{}},
+	}
+	src := &Metadata{
+		Config: &ConfigMetadata{
+			Type: "object",
+			Properties: map[string]*ConfigMetadata{
+				"shared": {Ref: "metrics_builder_config"},
+			},
+			Defs: map[string]*ConfigMetadata{
+				"metrics_builder_config": {
+					Type:        "object",
+					Description: "internal generated def",
+				},
+			},
+		},
+		ExportedConfigs: map[string]*ConfigMetadata{
+			"metrics_builder_config": {
+				Type:        "object",
+				Description: "exported config",
+			},
+		},
+	}
+
+	doc, err := r.Resolve(src)
+	require.NoError(t, err)
+	require.Equal(t, "internal generated def", doc.Properties["shared"].Description)
+}
+
 // stubLoader is a Loader test double that returns pre-built *Metadata values verbatim.
 // Unlike mockLoader (which wraps schemas as Metadata{Config: md}), this lets tests
 // exercise loadExternalRef branches that depend on Metadata.ExportedConfigs or on a
@@ -2163,7 +2200,7 @@ func TestResolver_LoadExternalRef_HandlesNilConfig(t *testing.T) {
 
 func TestResolver_LoadExternalRef_MergesLoaderExportedConfigs(t *testing.T) {
 	// When the loader returns ExportedConfigs alongside Config.Defs, both should
-	// be reachable for ref lookup, with ExportedConfigs winning on key collisions.
+	// be reachable for ref lookup, with the nested $defs winning on key collisions.
 	external := &Metadata{
 		Config: &ConfigMetadata{
 			Type: "object",
@@ -2190,7 +2227,7 @@ func TestResolver_LoadExternalRef_MergesLoaderExportedConfigs(t *testing.T) {
 
 	winner, err := r.loadExternalRef(NewRef("go.opentelemetry.io/collector/foo/bar.config"))
 	require.NoError(t, err)
-	require.Equal(t, "from ExportedConfigs", winner.Description)
+	require.Equal(t, "from Config.Defs", winner.Description)
 
 	extra, err := r.loadExternalRef(NewRef("go.opentelemetry.io/collector/foo/bar.extra"))
 	require.NoError(t, err)

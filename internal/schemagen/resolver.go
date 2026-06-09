@@ -56,12 +56,14 @@ func (r *Resolver) Resolve(src *Metadata) (*JSONSchemaDoc, error) {
 
 	// For ref-lookup purposes the recursive resolver expects the top-level
 	// definitions (both nested $defs and exported_configs) to be reachable from
-	// the root node. Merge them onto the owned root. On collision the exported
-	// configs win, matching the legacy behavior.
+	// the root node. Merge them onto the owned root. On collision the nested
+	// $defs win: the legacy mdatagen path injected internal generated defs over
+	// exported_configs, so a generated name like metrics_builder_config must
+	// resolve to the internal def, not an exported config sharing the name.
 	if len(work.ExportedConfigs) > 0 {
 		merged := make(map[string]*ConfigMetadata, len(work.ExportedConfigs)+len(config.Defs))
-		maps.Copy(merged, config.Defs)
 		maps.Copy(merged, work.ExportedConfigs)
+		maps.Copy(merged, config.Defs)
 		config.Defs = merged
 	}
 
@@ -326,8 +328,8 @@ func (r *Resolver) loadExternalRef(ref *Ref) (*ConfigMetadata, error) {
 	}
 	if len(m.ExportedConfigs) > 0 {
 		merged := make(map[string]*ConfigMetadata, len(m.ExportedConfigs)+len(root.Defs))
-		maps.Copy(merged, root.Defs)
 		maps.Copy(merged, m.ExportedConfigs)
+		maps.Copy(merged, root.Defs)
 		root.Defs = merged
 	}
 
