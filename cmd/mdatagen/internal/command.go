@@ -186,6 +186,12 @@ func run(ymlPath string) error {
 
 	if len(md.Metrics) != 0 || len(md.Telemetry.Metrics) != 0 || len(md.ResourceAttributes) != 0 || len(md.Events) != 0 || len(md.FeatureGates) != 0 { // if there's metrics or internal metrics or events or feature gates, generate documentation for them
 		toGenerate[filepath.Join(tmplDir, "documentation.md.tmpl")] = filepath.Join(ymlDir, "documentation.md")
+	} else {
+		if _, err = os.Stat(filepath.Join(ymlDir, "documentation.md")); err == nil {
+			if err = os.Remove(filepath.Join(ymlDir, "documentation.md")); err != nil {
+				return err
+			}
+		}
 	}
 
 	if len(md.Metrics) > 0 || len(md.Events) > 0 || len(md.ResourceAttributes) > 0 {
@@ -217,6 +223,12 @@ func run(ymlPath string) error {
 
 	if len(md.FeatureGates) > 0 { // only generate feature gates if feature gates are present
 		toGenerate[filepath.Join(tmplDir, "feature_gates.go.tmpl")] = filepath.Join(codeDir, "generated_feature_gates.go")
+	} else {
+		if _, err = os.Stat(filepath.Join(codeDir, "generated_feature_gates.go")); err == nil {
+			if err = os.Remove(filepath.Join(codeDir, "generated_feature_gates.go")); err != nil {
+				return err
+			}
+		}
 	}
 
 	if len(md.Entities) > 0 && len(md.Metrics) > 0 { // only generate entity metrics if entities are defined
