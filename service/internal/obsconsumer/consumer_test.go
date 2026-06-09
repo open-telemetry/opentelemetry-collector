@@ -170,7 +170,7 @@ func TestConsumeRefused(t *testing.T) {
 			require.Equal(t, 1, attrs.Len())
 			val, ok := attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 			require.True(t, ok)
-			require.Equal(t, "failure", val.Emit())
+			require.Equal(t, "failure", val.String())
 
 			data = receivedSizeMetric.Data.(metricdata.Sum[int64])
 			require.Len(t, data.DataPoints, 1)
@@ -179,7 +179,7 @@ func TestConsumeRefused(t *testing.T) {
 			require.Equal(t, 1, attrs.Len())
 			val, ok = attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 			require.True(t, ok)
-			require.Equal(t, "failure", val.Emit())
+			require.Equal(t, "failure", val.String())
 
 			data = producedItemMetric.Data.(metricdata.Sum[int64])
 			require.Len(t, data.DataPoints, 1)
@@ -188,7 +188,7 @@ func TestConsumeRefused(t *testing.T) {
 			require.Equal(t, 1, attrs.Len())
 			val, ok = attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 			require.True(t, ok)
-			require.Equal(t, "refused", val.Emit())
+			require.Equal(t, "refused", val.String())
 
 			data = producedSizeMetric.Data.(metricdata.Sum[int64])
 			require.Len(t, data.DataPoints, 1)
@@ -197,7 +197,7 @@ func TestConsumeRefused(t *testing.T) {
 			require.Equal(t, 1, attrs.Len())
 			val, ok = attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 			require.True(t, ok)
-			require.Equal(t, "refused", val.Emit())
+			require.Equal(t, "refused", val.String())
 		})
 	}
 }

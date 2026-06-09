@@ -78,16 +78,22 @@ func TestLoadMetadata(t *testing.T) {
 				},
 				Config: &cfggen.ConfigMetadata{
 					Type: "object",
-					AllOf: []*cfggen.ConfigMetadata{
-						{
-							Ref: "./internal/metadata.metrics_builder_config",
-						},
-					},
 					Properties: map[string]*cfggen.ConfigMetadata{
+						"metrics_builder_config": {
+							Ref:   "./internal/metadata.metrics_builder_config",
+							Embed: true,
+							GoStruct: cfggen.GoStructConfig{
+								Anonymous:     true,
+								IgnoreDefault: true,
+							},
+						},
 						"endpoint": {
 							Description: "The endpoint to scrape metrics from.",
 							Type:        "string",
 							Default:     "localhost:12345",
+						},
+						"sample_pkg": {
+							Ref: "../samplepkg.sample_config",
 						},
 						"timeout": {
 							Description: "Timeout for scraping metrics.",
@@ -595,6 +601,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 			},
 		},
@@ -606,6 +613,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -625,6 +633,25 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
+				Tests:                Tests{Host: "newMdatagenNopHost()"},
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelBeta: {"logs"},
+					},
+				},
+			},
+		},
+		{
+			name: "testdata/reaggregation_disabled.yaml",
+			want: Metadata{
+				Type:                 "test",
+				GeneratedPackageName: "metadata",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				ShortFolderName:      "testdata",
+				ReaggregationEnabled: false,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -717,6 +744,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -735,6 +763,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -754,7 +783,28 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelBeta: {"logs"},
+					},
+				},
+			},
+		},
+		{
+			name: "testdata/with_pipe_description.yaml",
+			want: Metadata{
+				Type:                 "testdesc",
+				DisplayName:          "Test Component",
+				Description:          "This is a test component with a multiline description.\nIt has a second line.\n",
+				GeneratedPackageName: "metadata",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				ShortFolderName:      "testdata",
+				Tests:                Tests{Host: "newMdatagenNopHost()"},
+				ReaggregationEnabled: true,
 				Status: &Status{
 					Class: "receiver",
 					Stability: map[component.StabilityLevel][]string{
@@ -772,6 +822,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",

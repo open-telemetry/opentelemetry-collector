@@ -1,4 +1,5 @@
 // Copyright The OpenTelemetry Authors
+// Copyright 2017 gRPC authors.
 // SPDX-License-Identifier: Apache-2.0
 
 // Package snappy registers a gRPC snappy compressor compatible with the
@@ -29,41 +30,35 @@ func registerCompressor(get func(string) encoding.Compressor, register func(enco
 	return true
 }
 
-type compressor struct {
-	poolCompressor   sync.Pool
-	poolDecompressor sync.Pool
-}
+var (
+	writerPool = sync.Pool{
+		New: func() any {
+			return snappylib.NewBufferedWriter(io.Discard)
+		},
+	}
+	readerPool = sync.Pool{
+		New: func() any {
+			return snappylib.NewReader(nil)
+		},
+	}
+)
+
+type compressor struct{}
 
 func newCompressor() *compressor {
-	c := &compressor{}
-	c.poolCompressor.New = func() any {
-		return &writer{
-			Writer: snappylib.NewBufferedWriter(io.Discard),
-			pool:   &c.poolCompressor,
-		}
-	}
-	return c
+	return &compressor{}
 }
 
-func (c *compressor) Compress(w io.Writer) (io.WriteCloser, error) {
-	z := c.poolCompressor.Get().(*writer)
-	z.once = sync.Once{}
+func (*compressor) Compress(w io.Writer) (io.WriteCloser, error) {
+	z := writerPool.Get().(*snappylib.Writer)
 	z.Reset(w)
-	return z, nil
+	return &writer{Writer: z}, nil
 }
 
 func (c *compressor) Decompress(r io.Reader) (io.Reader, error) {
-	z, ok := c.poolDecompressor.Get().(*reader)
-	if !ok {
-		return &reader{
-			Reader: snappylib.NewReader(r),
-			pool:   &c.poolDecompressor,
-		}, nil
-	}
-
-	z.once = sync.Once{}
+	z := readerPool.Get().(*snappylib.Reader)
 	z.Reset(r)
-	return z, nil
+	return &reader{Reader: z}, nil
 }
 
 func (c *compressor) Name() string {
@@ -72,30 +67,24 @@ func (c *compressor) Name() string {
 
 type writer struct {
 	*snappylib.Writer
-	pool *sync.Pool
-	once sync.Once
 }
 
 func (z *writer) Close() error {
 	err := z.Writer.Close()
-	z.once.Do(func() {
-		z.pool.Put(z)
-	})
+	writerPool.Put(z.Writer)
+	z.Writer = nil
 	return err
 }
 
 type reader struct {
 	*snappylib.Reader
-	pool *sync.Pool
-	once sync.Once
 }
 
 func (z *reader) Read(p []byte) (int, error) {
 	n, err := z.Reader.Read(p)
 	if err != nil {
-		z.once.Do(func() {
-			z.pool.Put(z)
-		})
+		readerPool.Put(z.Reader)
+		z.Reader = nil
 	}
 	return n, err
 }

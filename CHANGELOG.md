@@ -7,6 +7,83 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.60.0/v0.154.0
+
+### 🛑 Breaking changes 🛑
+
+- `cmd/builder`: The `--skip-get-modules` flag will no longer regenerate your `go.mod` file. (#15390)
+  This is mostly a bug fix, as it led to adverse behaviour that was unintended in the described flow in the README.
+  Now when you run `--skip-get-modules`, your `go.mod` file will truly be untouched by `ocb` as the info log claims.
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/config/configtls`: Add `include_insecure_cipher_suites` to configtls to enable insecure cipher suites. Insecure cipher suites are disabled by default for security. (#13829)
+- `pkg/confighttp`: Add `ExposedHeaders` field to `CORSConfig` to allow setting the `Access-Control-Expose-Headers` response header. (#15119)
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Removes the extra line in the README.md between status and description (#15306)
+- `pkg/exporterhelper`: Fix nil-pointer panic in `sending_queue::batch` Unmarshal when `sending_queue::sizer` is set and `sending_queue::batch::enabled` is false. (#14687)
+  When `sending_queue::sizer` was set and `sending_queue::batch::enabled: false`
+  cleared the batch Optional to None, the sizer-inheritance branch in
+  `queuebatch.Config.Unmarshal` dereferenced a nil Optional and crashed the
+  collector at startup. The branch now also requires `Batch.HasValue()`.
+  
+
+<!-- previous-version -->
+
+## v1.59.0/v0.153.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/configoptional`: Stabilize feature gate configoptional.AddEnabledField (#15333)
+- `pkg/confmap`: Stabilize confmap.newExpandedValueSanitizer feature gate (#15339)
+- `pkg/exporterhelper`: mark exporter.PersistRequestContext as stable (#15330)
+- `pkg/otelcol`: Stabilize otelcol.printInitialConfig gate (#15340)
+- `pkg/pdata`: Remove pdata.useCustomProtoEncoding feature gate (#15332)
+- `pkg/service`: Stabilize telemetry.UseLocalHostAsDefaultMetricsAddress gate (#15342)
+- `pkg/xpdata`: Stabilize pdata.enableRefCounting feature gate (#15331)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/config/configgrpc`: Fix memory corruption and fatal error in Snappy (#15237, #15320)
+
+<!-- previous-version -->
+
+## v1.58.0/v0.152.0
+
+### 💡 Enhancements 💡
+
+- `pkg/exporterhelper`: Add `otelcol_exporter_in_flight_requests` metric to track the number of export requests currently in-flight per exporter. (#15009)
+  This UpDownCounter increments in startOp and decrements in endOp, allowing operators to monitor
+  concurrent export activity and detect when an exporter is saturating its worker pool.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/confighttp`: Close the original request body after reading block-format `Content-Encoding: snappy` requests. (#15262)
+- `pkg/confighttp`: Recover from panics in decompression libraries, return HTTP 400 instead of 500. (#13228)
+- `pkg/confighttp`: Enforce `max_request_body_size` on `Content-Encoding: snappy` requests before the decoded buffer is allocated. (#15252)
+- `pkg/otelcol`: Stop emitting verbose gRPC transport messages at WARN during normal client disconnect. (#5169)
+  grpc-go gates chatty per-RPC notices (e.g. "HandleStreams failed to read frame:
+  connection reset by peer") behind `LoggerV2.V(2)`. zapgrpc.Logger.V conflates
+  grpclog verbosity with zap severity, so V(2) returns true whenever WARN is
+  enabled and these messages emit at WARN. Wrap the installed grpclog.LoggerV2
+  with a corrected V() that compares against a fixed verbosity threshold,
+  matching grpclog's intended semantics. See uber-go/zap#1544.
+  
+- `pkg/pdata`: `pcommon.Value.AsString` no longer HTML-escapes `<`, `>`, and `&` inside `ValueTypeMap` and `ValueTypeSlice` values, matching the behavior already used for `ValueTypeStr`. (#14662)
+- `pkg/service`: Fix Prometheus config defaults mismatch when host is explicitly set in telemetry configuration. (#13867)
+  When users explicitly configured the telemetry metrics section (e.g. to change the host),
+  the Prometheus exporter boolean fields (WithoutScopeInfo, WithoutUnits, WithoutTypeSuffix)
+  defaulted to nil/false instead of true, causing metric name format changes compared to the
+  implicit default configuration. This fix applies the correct defaults during config unmarshaling.
+  
+- `pkg/service`: Return noop tracer provider when no trace processors are defined (#15135)
+
+<!-- previous-version -->
+
 ## v1.57.0/v0.151.0
 
 ### 🛑 Breaking changes 🛑

@@ -7,6 +7,10 @@ status:
   stability:
     beta: [metrics, logs]
 
+exported_configs:
+  controller_config:
+    $ref: ./internal/controller.controller_config
+
 telemetry:
   metrics:
     scraper_errored_log_records:
