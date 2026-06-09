@@ -77,9 +77,9 @@ require (
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.154.0 // indirect
 	go.opentelemetry.io/collector/service v0.154.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.44.0 // indirect
-	golang.org/x/mod v0.36.0 // indirect
+	golang.org/x/mod v0.37.0 // indirect
 	golang.org/x/sync v0.21.0 // indirect
-	golang.org/x/sys v0.45.0 // indirect
+	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/tools v0.45.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 	google.golang.org/grpc v1.81.1 // indirect
