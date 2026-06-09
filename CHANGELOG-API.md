@@ -7,6 +7,17 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.60.0/v0.154.0
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Handle numeric validators in generated config structs (#14806)
+  Supported validators include `minimum`, `maximum`, `exclusiveMinimum` and `exclusiveMaximum`.
+- `pkg/config/configtls`: Add `include_insecure_cipher_suites` to configtls to enable insecure cipher suites. Insecure cipher suites are disabled by default for security. (#13829)
+- `pkg/confighttp`: Add `ExposedHeaders` field to `CORSConfig` to allow setting the `Access-Control-Expose-Headers` response header. (#15119)
+
+<!-- previous-version -->
+
 ## v1.59.0/v0.153.0
 
 ### 🛑 Breaking changes 🛑
