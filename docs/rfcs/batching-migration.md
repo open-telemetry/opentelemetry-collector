@@ -188,21 +188,21 @@ remain `false`.
 
 ```go
 func NewDefaultQueueConfig() queuebatch.Config {
-	return queuebatch.Config{
-		Sizer:           request.SizerTypeRequests,
-		NumConsumers:    10,
-		QueueSize:       1_000,
-		BlockOnOverflow: false,
-		WaitForResult:   false,
-		Batch: configoptional.DefaultOrSome(
+    return queuebatch.Config{
+        Sizer:           request.SizerTypeRequests,
+        NumConsumers:    10,
+        QueueSize:       1_000,
+        BlockOnOverflow: false,
+        WaitForResult:   false,
+        Batch: configoptional.DefaultOrSome(
             // CHANGED: Batching is becoming enabled by default.
             exporterQueueBatchEnabled.IsEnabled(),
             queuebatch.BatchConfig{
-			    FlushTimeout: 200 * time.Millisecond,
-			    Sizer:        request.SizerTypeItems,
-			    MinSize:      8192,
+                FlushTimeout: 200 * time.Millisecond,
+                Sizer:        request.SizerTypeItems,
+                MinSize:      8192,
             }),
-	}
+    }
 }
 ```
 
@@ -211,10 +211,10 @@ The above makes use of an hypothetical `configoptional` helper:
 ```
 // DefaultOrSome ties a feature flag to a default-to-some transition.
 func DefaultOrSome[T any](feature bool, value T) Optional[T] {
-	if feature {
-		return Some(value)
-	}
-	return Default(value)		
+    if feature {
+        return Some(value)
+    }
+    return Default(value)
 }
 ```
 
