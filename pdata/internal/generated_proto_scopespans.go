@@ -221,6 +221,14 @@ func (orig *ScopeSpans) MarshalProto(buf []byte) int {
 }
 
 func (orig *ScopeSpans) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, 0)
+}
+
+func (orig *ScopeSpans) unmarshalProto(buf []byte, depth int) error {
+	if depth >= proto.RecursionLimit {
+		return proto.ErrRecursionDepth
+	}
+	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -246,7 +254,7 @@ func (orig *ScopeSpans) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Scope.UnmarshalProto(buf[startPos:pos])
+			err = orig.Scope.unmarshalProto(buf[startPos:pos], depth)
 			if err != nil {
 				return err
 			}
@@ -262,7 +270,7 @@ func (orig *ScopeSpans) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 			orig.Spans = append(orig.Spans, NewSpan())
-			err = orig.Spans[len(orig.Spans)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.Spans[len(orig.Spans)-1].unmarshalProto(buf[startPos:pos], depth)
 			if err != nil {
 				return err
 			}

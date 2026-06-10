@@ -201,6 +201,14 @@ func (orig *ExponentialHistogram) MarshalProto(buf []byte) int {
 }
 
 func (orig *ExponentialHistogram) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, 0)
+}
+
+func (orig *ExponentialHistogram) unmarshalProto(buf []byte, depth int) error {
+	if depth >= proto.RecursionLimit {
+		return proto.ErrRecursionDepth
+	}
+	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -226,7 +234,7 @@ func (orig *ExponentialHistogram) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 			orig.DataPoints = append(orig.DataPoints, NewExponentialHistogramDataPoint())
-			err = orig.DataPoints[len(orig.DataPoints)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.DataPoints[len(orig.DataPoints)-1].unmarshalProto(buf[startPos:pos], depth)
 			if err != nil {
 				return err
 			}
