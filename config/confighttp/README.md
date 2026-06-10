@@ -103,6 +103,9 @@ will not be enabled.
   [default safelist][cors-headers]. By default, safelist headers and
   `X-Requested-With` will be allowed. To allow any request header, set to
   `["*"]`.
+  - `exposed_headers`: Sets the value of the
+  [`Access-Control-Expose-Headers`][cors-expose] response header, indicating
+  which headers are safe to expose to the API of a CORS response.
   - `max_age`: Sets the value of the [`Access-Control-Max-Age`][cors-cache]
   header, allowing clients to cache the response to CORS preflight requests. If
   not set, browsers use a default of 5 seconds.
@@ -143,6 +146,8 @@ receivers:
             - https://*.test.com
           allowed_headers:
             - Example-Header
+          exposed_headers:
+            - Example-Expose-Header
           max_age: 7200
         endpoint: 0.0.0.0:55690
         compression_algorithms: ["", "gzip"]
@@ -157,5 +162,6 @@ processors:
 [cors]: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
 [cors-headers]: https://developer.mozilla.org/en-US/docs/Glossary/CORS-safelisted_request_header
 [cors-cache]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Max-Age
+[cors-expose]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Expose-Headers
 [origin]: https://developer.mozilla.org/en-US/docs/Glossary/Origin
 [attribute-processor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/attributesprocessor/README.md
