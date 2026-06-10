@@ -62,6 +62,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.154.0 // indirect
 	go.opentelemetry.io/collector/component/componenttest v0.154.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.60.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.154.0 // indirect
 	go.opentelemetry.io/collector/confmap/xconfmap v0.154.0 // indirect
 	go.opentelemetry.io/collector/connector v0.154.0 // indirect
