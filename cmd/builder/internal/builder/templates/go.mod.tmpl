@@ -6,25 +6,28 @@ go 1.25
 
 require (
 	{{- range .ConfmapConverters}}
-	{{if .GoMod}}{{.GoMod}}{{end}}
+	{{if and .GoMod (not .IsFromSourceArchive)}}{{.GoMod}}{{end}}
 	{{- end}}
 	{{- range .ConfmapProviders}}
-	{{if .GoMod}}{{.GoMod}}{{end}}
+	{{if and .GoMod (not .IsFromSourceArchive)}}{{.GoMod}}{{end}}
 	{{- end}}
 	{{- range .Connectors}}
-	{{if .GoMod}}{{.GoMod}}{{end}}
+	{{if and .GoMod (not .IsFromSourceArchive)}}{{.GoMod}}{{end}}
 	{{- end}}
 	{{- range .Extensions}}
-	{{if .GoMod}}{{.GoMod}}{{end}}
+	{{if and .GoMod (not .IsFromSourceArchive)}}{{.GoMod}}{{end}}
 	{{- end}}
 	{{- range .Receivers}}
-	{{if .GoMod}}{{.GoMod}}{{end}}
+	{{if and .GoMod (not .IsFromSourceArchive)}}{{.GoMod}}{{end}}
 	{{- end}}
 	{{- range .Exporters}}
-	{{if .GoMod}}{{.GoMod}}{{end}}
+	{{if and .GoMod (not .IsFromSourceArchive)}}{{.GoMod}}{{end}}
 	{{- end}}
 	{{- range .Processors}}
-	{{if .GoMod}}{{.GoMod}}{{end}}
+	{{if and .GoMod (not .IsFromSourceArchive)}}{{.GoMod}}{{end}}
+	{{- end}}
+	{{- range .SourceArchiveModules}}
+	{{.GoMod}}
 	{{- end}}
 	{{if .Telemetry.GoMod}}{{.Telemetry.GoMod}}{{end}}
 	go.opentelemetry.io/collector/otelcol {{.OtelColVersion}}
@@ -36,25 +39,28 @@ require (
 )
 
 {{- range .ConfmapConverters}}
-{{if ne .Path ""}}replace {{.GoMod}} => {{.Path}}{{end}}
+{{if and (ne .Path "") (not .IsFromSourceArchive)}}replace {{.GoMod}} => {{.Path}}{{end}}
 {{- end}}
 {{- range .ConfmapProviders}}
-{{if ne .Path ""}}replace {{.GoMod}} => {{.Path}}{{end}}
+{{if and (ne .Path "") (not .IsFromSourceArchive)}}replace {{.GoMod}} => {{.Path}}{{end}}
 {{- end}}
 {{- range .Connectors}}
-{{if ne .Path ""}}replace {{.GoMod}} => {{.Path}}{{end}}
+{{if and (ne .Path "") (not .IsFromSourceArchive)}}replace {{.GoMod}} => {{.Path}}{{end}}
 {{- end}}
 {{- range .Extensions}}
-{{if ne .Path ""}}replace {{.GoMod}} => {{.Path}}{{end}}
+{{if and (ne .Path "") (not .IsFromSourceArchive)}}replace {{.GoMod}} => {{.Path}}{{end}}
 {{- end}}
 {{- range .Receivers}}
-{{if ne .Path ""}}replace {{.GoMod}} => {{.Path}}{{end}}
+{{if and (ne .Path "") (not .IsFromSourceArchive)}}replace {{.GoMod}} => {{.Path}}{{end}}
 {{- end}}
 {{- range .Exporters}}
-{{if ne .Path ""}}replace {{.GoMod}} => {{.Path}}{{end}}
+{{if and (ne .Path "") (not .IsFromSourceArchive)}}replace {{.GoMod}} => {{.Path}}{{end}}
 {{- end}}
 {{- range .Processors}}
-{{if ne .Path ""}}replace {{.GoMod}} => {{.Path}}{{end}}
+{{if and (ne .Path "") (not .IsFromSourceArchive)}}replace {{.GoMod}} => {{.Path}}{{end}}
+{{- end}}
+{{- range .SourceArchiveModules}}
+replace {{.GoMod}} => {{.Path}}
 {{- end}}
 {{if ne .Telemetry.Path ""}}replace {{.Telemetry.GoMod}} => {{.Telemetry.Path}}{{end}}
 {{- range .Replaces}}

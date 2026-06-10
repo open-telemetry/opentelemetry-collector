@@ -201,6 +201,13 @@ func GetModules(cfg *Config) error {
 	}
 
 	for _, mod := range cfg.allComponents() {
+		if mod.fromSourceArchive {
+			// Source-archive modules carry a synthetic v0.0.0-sourcearchive version
+			// (the artifact is the version, pinned by sha256) and are wired in via a
+			// directory replace, so their require version is never resolved against a
+			// proxy. There is no upstream version to reconcile, so skip them.
+			continue
+		}
 		module, version, _ := strings.Cut(mod.GoMod, " ")
 		if module == modulePath {
 			// No need to check the version of components that are part of the
