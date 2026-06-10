@@ -10,8 +10,7 @@ component: cmd/builder
 note: Add `source_archive` as a standalone module source for components whose source must be downloaded from a release archive because generated code is not committed to version control.
 
 # One or more tracking issues or pull requests related to the change
-# TODO: replace placeholder issue number with the real tracking issue once it exists.
-issues: [99999]
+issues: [15430]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
