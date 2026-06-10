@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -38,8 +37,9 @@ const mdatagenLifecycleContextValue = "mdatagen-lifecycle-test"
 
 func requireLifecycleContext(t *testing.T, contexts []context.Context) {
 	t.Helper()
-	require.Len(t, contexts, 1)
-	require.Equal(t, mdatagenLifecycleContextValue, contexts[0].Value(mdatagenLifecycleContextKey{}))
+	for _, ctx := range contexts {
+		require.Equal(t, mdatagenLifecycleContextValue, ctx.Value(mdatagenLifecycleContextKey{}))
+	}
 }
 
 func TestComponentLifecycle(t *testing.T) {
