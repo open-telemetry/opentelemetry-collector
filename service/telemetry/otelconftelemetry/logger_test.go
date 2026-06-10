@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	internalTelemetry "go.opentelemetry.io/collector/internal/telemetry"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/service/internal/componentattribute"
 	"go.opentelemetry.io/collector/service/telemetry"
@@ -200,7 +199,6 @@ func TestCreateLoggerWithResource(t *testing.T) {
 		name           string
 		buildInfo      component.BuildInfo
 		resourceConfig migration.ResourceConfigV030
-		resource       *pcommon.Resource
 		wantFields     map[string]string
 		setConfig      func(cfg *Config)
 	}{
@@ -296,18 +294,6 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				cfg.Logs.DisableZapResource = true
 			},
 		},
-		{
-			name: "internal schema marker omitted from zap fields",
-			resource: func() *pcommon.Resource {
-				res := pcommon.NewResource()
-				res.Attributes().PutStr("service.name", "mycommand")
-				res.Attributes().PutStr(internalSchemaURLAttributeKey, "https://opentelemetry.io/schemas/1.38.0")
-				return &res
-			}(),
-			wantFields: map[string]string{
-				"service.name": "mycommand",
-			},
-		},
 	}
 
 	for _, tt := range tests {
@@ -325,15 +311,11 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				tt.setConfig(cfg)
 			}
 
-			resource := tt.resource
-			if resource == nil {
-				created, err := createResource(t.Context(), telemetry.Settings{BuildInfo: tt.buildInfo}, cfg)
-				require.NoError(t, err)
-				resource = &created
-			}
+			resource, err := createResource(t.Context(), telemetry.Settings{BuildInfo: tt.buildInfo}, cfg)
+			require.NoError(t, err)
 
 			set := telemetry.LoggerSettings{
-				Settings: telemetry.Settings{BuildInfo: tt.buildInfo, Resource: resource},
+				Settings: telemetry.Settings{BuildInfo: tt.buildInfo, Resource: &resource},
 				BuildZapLogger: func(zap.Config, ...zap.Option) (*zap.Logger, error) {
 					// Redirect logs to the observer core
 					return zap.New(core), nil

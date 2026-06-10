@@ -220,19 +220,3 @@ func TestConfigValidateRejectsInvalidResourceDetectionGlob(t *testing.T) {
 	err := confmap.Validate(cfg)
 	require.ErrorContains(t, err, `resource::detection/development::attributes::included contains invalid glob "["`)
 }
-
-func TestConfigUnmarshalRejectsInvalidResourceDetection(t *testing.T) {
-	cm := confmap.NewFromStringMap(map[string]any{
-		"resource": map[string]any{
-			"detection/development": map[string]any{
-				"detectors": []any{
-					map[string]any{"env": map[string]any{}},
-				},
-			},
-		},
-	})
-
-	cfg := createDefaultConfig().(*Config)
-	err := cm.Unmarshal(cfg)
-	require.ErrorContains(t, err, `resource::detection/development::detectors[0] contains unsupported detector "env"`)
-}

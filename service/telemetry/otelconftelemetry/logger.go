@@ -75,9 +75,6 @@ func createLogger(
 		logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
 			var fields []zap.Field
 			for key, val := range res.Attributes().All() {
-				if key == internalSchemaURLAttributeKey {
-					continue
-				}
 				fields = append(fields, zap.String(key, val.AsString()))
 			}
 

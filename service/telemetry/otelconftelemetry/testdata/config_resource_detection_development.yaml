@@ -10,4 +10,4 @@ resource:
       excluded:
         - os.description
     detectors:
-      - host:
+      - host: {}

@@ -264,7 +264,7 @@ type LogsSamplingConfig struct {
 type ResourceConfigV030 struct {
 	config.Resource `mapstructure:",squash"`
 
-	DetectionDevelopment *xotelconf.ExperimentalResourceDetection `mapstructure:"-"`
+	DetectionDevelopment *xotelconf.ExperimentalResourceDetection `mapstructure:"detection/development,omitempty"`
 	LegacyAttributes     map[string]any                           `mapstructure:",remain"`
 }
 
@@ -273,115 +273,12 @@ var (
 	_ confmap.Marshaler  = ResourceConfigV030{}
 )
 
-func (cfg *ResourceConfigV030) Unmarshal(conf *confmap.Conf) error {
-	type rawResourceConfigV030 struct {
-		config.Resource  `mapstructure:",squash"`
-		LegacyAttributes map[string]any `mapstructure:",remain"`
-	}
-
-	var raw rawResourceConfigV030
-	if err := conf.Unmarshal(&raw); err != nil {
-		return err
-	}
-
-	cfg.Resource = raw.Resource
-	cfg.LegacyAttributes = raw.LegacyAttributes
-	cfg.DetectionDevelopment = nil
-
-	detectionConf, err := conf.Sub("detection/development")
-	if err != nil {
-		return err
-	}
-	if detectionConf != nil && detectionConf.ToStringMap() != nil {
-		delete(cfg.LegacyAttributes, "detection/development")
-		if err := validateExperimentalResourceDetectors(detectionConf.ToStringMap()); err != nil {
-			return err
-		}
-		cfg.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{}
-		if err := detectionConf.Unmarshal(cfg.DetectionDevelopment); err != nil {
-			return err
-		}
-		normalizeExperimentalResourceDetectors(cfg.DetectionDevelopment, detectionConf.ToStringMap())
-	}
-
-	return nil
-}
-
-func validateExperimentalResourceDetectors(raw map[string]any) error {
-	rawDetectors, ok := raw["detectors"]
-	if !ok {
-		return nil
-	}
-
-	detectors, ok := rawDetectors.([]any)
-	if !ok {
-		return nil
-	}
-
-	for i, rawDetector := range detectors {
-		detectorMap, ok := rawDetector.(map[string]any)
-		if !ok {
-			continue
-		}
-		for name := range detectorMap {
-			switch name {
-			case "container", "host", "process", "service":
-			default:
-				return fmt.Errorf("resource::detection/development::detectors[%d] contains unsupported detector %q", i, name)
-			}
-		}
-	}
-
-	return nil
-}
-
 func (cfg ResourceConfigV030) Marshal(conf *confmap.Conf) error {
-	type rawResourceConfigV030 struct {
-		config.Resource `mapstructure:",squash"`
-
-		DetectionDevelopment *xotelconf.ExperimentalResourceDetection `mapstructure:"detection/development"`
-		LegacyAttributes     map[string]any                           `mapstructure:",remain"`
-	}
-
-	if err := conf.Marshal(rawResourceConfigV030(cfg)); err != nil {
+	if err := conf.Marshal(cfg); err != nil {
 		return fmt.Errorf("otelconftelemetry: failed to marshal resource configuration: %w", err)
 	}
 
 	return nil
-}
-
-func normalizeExperimentalResourceDetectors(cfg *xotelconf.ExperimentalResourceDetection, raw map[string]any) {
-	if cfg == nil || raw == nil {
-		return
-	}
-
-	rawDetectors, ok := raw["detectors"].([]any)
-	if !ok {
-		return
-	}
-
-	for i, rawDetector := range rawDetectors {
-		if i >= len(cfg.Detectors) {
-			return
-		}
-		detectorMap, ok := rawDetector.(map[string]any)
-		if !ok {
-			continue
-		}
-
-		if _, ok := detectorMap["container"]; ok && cfg.Detectors[i].Container == nil {
-			cfg.Detectors[i].Container = xotelconf.ExperimentalContainerResourceDetector{}
-		}
-		if _, ok := detectorMap["host"]; ok && cfg.Detectors[i].Host == nil {
-			cfg.Detectors[i].Host = xotelconf.ExperimentalHostResourceDetector{}
-		}
-		if _, ok := detectorMap["process"]; ok && cfg.Detectors[i].Process == nil {
-			cfg.Detectors[i].Process = xotelconf.ExperimentalProcessResourceDetector{}
-		}
-		if _, ok := detectorMap["service"]; ok && cfg.Detectors[i].Service == nil {
-			cfg.Detectors[i].Service = xotelconf.ExperimentalServiceResourceDetector{}
-		}
-	}
 }
 
 func (cfg *ResourceConfigV030) Validate() error {

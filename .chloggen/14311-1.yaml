@@ -35,7 +35,7 @@ subtext: |
               - host.*
               - os.*
           detectors:
-            - host:
+            - host: {}
   ```
 
 # Optional: The change log or logs in which this entry should be included.

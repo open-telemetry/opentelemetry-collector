@@ -291,34 +291,6 @@ func TestResourceConfigV030UnmarshalDeclarativeFormat(t *testing.T) {
 		assert.Equal(t, "bar", raw["foo"])
 	})
 
-	t.Run("experimental detection development normalizes nil detector config", func(t *testing.T) {
-		conf := confmap.NewFromStringMap(map[string]any{
-			"detection/development": map[string]any{
-				"detectors": []any{
-					map[string]any{"host": nil},
-				},
-			},
-		})
-		var cfg ResourceConfigV030
-		require.NoError(t, conf.Unmarshal(&cfg))
-		require.NotNil(t, cfg.DetectionDevelopment)
-		require.Len(t, cfg.DetectionDevelopment.Detectors, 1)
-		assert.NotNil(t, cfg.DetectionDevelopment.Detectors[0].Host)
-	})
-
-	t.Run("experimental detection development rejects unsupported detector", func(t *testing.T) {
-		conf := confmap.NewFromStringMap(map[string]any{
-			"detection/development": map[string]any{
-				"detectors": []any{
-					map[string]any{"env": map[string]any{}},
-				},
-			},
-		})
-		var cfg ResourceConfigV030
-		err := conf.Unmarshal(&cfg)
-		require.ErrorContains(t, err, `resource::detection/development::detectors[0] contains unsupported detector "env"`)
-	})
-
 	t.Run("nil raw map", func(t *testing.T) {
 		conf := confmap.NewFromStringMap(map[string]any(nil))
 		var cfg ResourceConfigV030
