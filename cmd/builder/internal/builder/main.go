@@ -37,6 +37,7 @@ type builderDeps struct {
 	writeEmbeddedSchemaSourceFile func(string, []byte) error
 	downloadModules               func(*Config) error
 	readGoModFile                 func(*Config) (string, map[string]string, error)
+	selectedComponentSchemaRefs   func(*Config) []componentSchemaRef
 }
 
 func defaultBuilderDeps() builderDeps {
@@ -45,6 +46,7 @@ func defaultBuilderDeps() builderDeps {
 		writeEmbeddedSchemaSourceFile: writeEmbeddedSchemaSourceFile,
 		downloadModules:               downloadModules,
 		readGoModFile:                 readGoModFile,
+		selectedComponentSchemaRefs:   selectedComponentSchemaRefs,
 	}
 }
 

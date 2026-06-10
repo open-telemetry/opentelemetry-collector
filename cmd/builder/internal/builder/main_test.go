@@ -442,6 +442,19 @@ func TestGenerateAndCompile(t *testing.T) {
 }
 
 func TestGetModulesErrorPaths(t *testing.T) {
+	t.Run("skip get modules skips schema generation", func(t *testing.T) {
+		cfg := newInitializedConfig(t)
+		cfg.SkipGetModules = true
+		cfg.Distribution.OutputPath = t.TempDir()
+
+		deps := defaultBuilderDeps()
+		deps.writeEmbeddedSchemaSourceFile = func(string, []byte) error {
+			return assert.AnError
+		}
+
+		require.NoError(t, getModulesWithDeps(cfg, deps))
+	})
+
 	t.Run("mod tidy error", func(t *testing.T) {
 		cfg := newInitializedConfig(t)
 		cfg.Distribution.OutputPath = t.TempDir()
@@ -717,18 +730,15 @@ func TestBuildEmbeddedSchemaUnsupportedSection(t *testing.T) {
 	cfg := newTestConfig(t)
 	cfg.Telemetry = Module{GoMod: "example.com/telemetry v0.0.1"}
 
-	originalRefs := selectedComponentSchemaRefs
-	selectedComponentSchemaRefs = func(*Config) []componentSchemaRef {
+	deps := defaultBuilderDeps()
+	deps.selectedComponentSchemaRefs = func(*Config) []componentSchemaRef {
 		return []componentSchemaRef{{
 			section: schemagen.CollectorSectionService,
 			module:  cfg.Telemetry,
 		}}
 	}
-	defer func() {
-		selectedComponentSchemaRefs = originalRefs
-	}()
 
-	_, err := buildEmbeddedSchema(cfg, func(string) (string, error) {
+	_, err := buildEmbeddedSchemaWithDeps(cfg, deps, func(string) (string, error) {
 		return componentDir, nil
 	})
 	require.ErrorContains(t, err, `unsupported collector section "service"`)

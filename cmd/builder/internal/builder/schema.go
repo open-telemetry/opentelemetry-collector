@@ -33,8 +33,6 @@ type componentSchemaMetadata struct {
 	DeprecatedType string `yaml:"deprecated_type"`
 }
 
-var selectedComponentSchemaRefs = selectedComponentSchemaRefsImpl
-
 func writeEmbeddedSchemaSourceFile(outputPath string, schema []byte) error {
 	schemaLiteral := "[]byte(nil)"
 	if len(schema) > 0 {
@@ -52,7 +50,7 @@ var embeddedConfigSchema = %s
 }
 
 func generateEmbeddedSchemaWithDeps(cfg *Config, deps builderDeps) error {
-	schema, err := buildEmbeddedSchema(cfg, func(modulePath string) (string, error) {
+	schema, err := buildEmbeddedSchemaWithDeps(cfg, deps, func(modulePath string) (string, error) {
 		stdout, runErr := deps.runGoCommand(cfg, "list", "-m", "-f", "{{.Dir}}", modulePath)
 		if runErr != nil {
 			return "", runErr
@@ -72,10 +70,14 @@ func generateEmbeddedSchemaWithDeps(cfg *Config, deps builderDeps) error {
 }
 
 func buildEmbeddedSchema(cfg *Config, resolveModuleDir func(string) (string, error)) ([]byte, error) {
+	return buildEmbeddedSchemaWithDeps(cfg, defaultBuilderDeps(), resolveModuleDir)
+}
+
+func buildEmbeddedSchemaWithDeps(cfg *Config, deps builderDeps, resolveModuleDir func(string) (string, error)) ([]byte, error) {
 	parts := schemagen.CollectorSchemaParts{}
 	schemaCount := 0
 
-	for _, ref := range selectedComponentSchemaRefs(cfg) {
+	for _, ref := range deps.selectedComponentSchemaRefs(cfg) {
 		modulePath, _, _ := strings.Cut(ref.module.GoMod, " ")
 		moduleDir, err := resolveModuleDir(modulePath)
 		if err != nil {
@@ -119,7 +121,7 @@ func buildEmbeddedSchema(cfg *Config, resolveModuleDir func(string) (string, err
 	return combined.ToJSON()
 }
 
-func selectedComponentSchemaRefsImpl(cfg *Config) []componentSchemaRef {
+func selectedComponentSchemaRefs(cfg *Config) []componentSchemaRef {
 	refs := make([]componentSchemaRef, 0, len(cfg.Receivers)+len(cfg.Processors)+len(cfg.Exporters)+len(cfg.Connectors)+len(cfg.Extensions))
 
 	appendRefs := func(section schemagen.CollectorSection, modules []Module) {
