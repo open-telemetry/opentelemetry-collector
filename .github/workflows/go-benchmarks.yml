@@ -4,7 +4,25 @@ on:
   push:
     branches:
       - "main"
+    paths:
+      - "**.go"
+      - "go.mod"
+      - "go.sum"
+      - "**/go.mod"
+      - "**/go.sum"
+      - "Makefile"
+      - "Makefile.Common"
+      - ".github/workflows/go-benchmarks.yml"
   pull_request:
+    paths:
+      - "**.go"
+      - "go.mod"
+      - "go.sum"
+      - "**/go.mod"
+      - "**/go.sum"
+      - "Makefile"
+      - "Makefile.Common"
+      - ".github/workflows/go-benchmarks.yml"
   workflow_dispatch:
 
 permissions: read-all
