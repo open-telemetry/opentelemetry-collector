@@ -18,7 +18,7 @@ exported_configs:
         format: duration
         default: 1m
       initial_delay:
-        description: The initial start delay for the scraper, any non positive value is assumed to be immediately.
+        description: Sets the initial start delay for the scraper, any non positive value is assumed to be immediately.
         type: string
         x-customType: time.Duration
         format: duration
