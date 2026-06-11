@@ -4,14 +4,17 @@
 package builder // import "go.opentelemetry.io/collector/cmd/builder/internal/builder"
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"text/template"
 	"time"
 
@@ -33,10 +36,6 @@ var (
 const otelcolPath = "go.opentelemetry.io/collector/otelcol"
 
 func runGoCommand(cfg *Config, args ...string) ([]byte, error) {
-	if cfg.Verbose {
-		cfg.Logger.Info("Running go subcommand.", zap.Any("arguments", args))
-	}
-
 	//nolint:gosec // #nosec G204 -- cfg.Distribution.Go is trusted to be a safe path and the caller is assumed to have carried out necessary input validation
 	cmd := exec.Command(cfg.Distribution.Go, args...)
 	cmd.Dir = cfg.Distribution.OutputPath
@@ -48,18 +47,66 @@ func runGoCommand(cfg *Config, args ...string) ([]byte, error) {
 		cmd.Env = append(cmd.Env, "CGO_ENABLED=0")
 	}
 
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+	stdoutReader, stdoutWriter := io.Pipe()
+	stderrReader, stderrWriter := io.Pipe()
+	cmd.Stdout = stdoutWriter
+	cmd.Stderr = stderrWriter
 
-	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("go subcommand failed with args '%v': %w, error message: %s", args, err, stderr.String())
+	if err := cmd.Start(); err != nil {
+		stdoutReader.Close()
+		stderrReader.Close()
+		stdoutWriter.Close()
+		stderrWriter.Close()
+		return nil, fmt.Errorf("failed to start go subcommand with args '%v': %w", args, err)
 	}
-	if cfg.Verbose && stderr.Len() != 0 {
-		cfg.Logger.Info("go subcommand error", zap.String("message", stderr.String()))
+	if cfg.Verbose {
+		cfg.Logger.Info("Started go subcommand.", zap.Any("arguments", args), zap.Int("pid", cmd.Process.Pid))
 	}
 
-	return stdout.Bytes(), nil
+	logger := func(reader *io.PipeReader, outputType string, output *bytes.Buffer) {
+		defer reader.Close()
+		scanner := bufio.NewScanner(reader)
+		for scanner.Scan() {
+			line := scanner.Text()
+			output.WriteString(line)
+			output.WriteByte('\n')
+			if cfg.Verbose {
+				cfg.Logger.Info(
+					"Go subcommand output",
+					zap.Int("pid", cmd.Process.Pid),
+					zap.String("type", outputType),
+					zap.String("line", line),
+				)
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			cfg.Logger.Error(
+				"Failed to read go subcommand output",
+				zap.Int("pid", cmd.Process.Pid),
+				zap.String("type", outputType),
+				zap.Error(err),
+			)
+		}
+	}
+
+	var wg sync.WaitGroup
+	var stderrOutput bytes.Buffer
+	var stdoutOutput bytes.Buffer
+	wg.Go(func() {
+		logger(stderrReader, "stderr", &stderrOutput)
+	})
+	wg.Go(func() {
+		logger(stdoutReader, "stdout", &stdoutOutput)
+	})
+
+	err := cmd.Wait()
+	stderrWriter.Close()
+	stdoutWriter.Close()
+	wg.Wait()
+	if err != nil {
+		return nil, fmt.Errorf("go subcommand failed with args '%v': %w, error message: %s", args, err, stderrOutput.String())
+	}
+	return stdoutOutput.Bytes(), nil
 }
 
 // GenerateAndCompile will generate the source files based on the given configuration, update go mod, and will compile into a binary
