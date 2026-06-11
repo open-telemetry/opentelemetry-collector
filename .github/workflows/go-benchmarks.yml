@@ -24,7 +24,7 @@ jobs:
     steps:
       # Hosted runners mix CPU models with results that differ by up to
       # 50% on identical code. Only benchmark on the models with stable
-      # results. See <TODO: PR link> for the data.
+      # results. See https://github.com/open-telemetry/opentelemetry-collector/pull/15436 for the data.
       - name: Check runner CPU model
         run: |
           MODEL=$(grep -m1 "model name" /proc/cpuinfo | cut -d: -f2- | xargs)
