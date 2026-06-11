@@ -436,3 +436,32 @@ func TestReadBytes(t *testing.T) {
 	}
 	require.NoError(t, iter.Error())
 }
+
+func TestHandleUnknownField(t *testing.T) {
+	t.Run("default skips unknown fields", func(t *testing.T) {
+		iter := BorrowIterator([]byte(`{"known":"v","unknown":"value"}`))
+		defer ReturnIterator(iter)
+		var seen []string
+		for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
+			seen = append(seen, f)
+			if f == "known" {
+				iter.ReadString()
+				continue
+			}
+			iter.HandleUnknownField(f)
+		}
+		require.NoError(t, iter.Error())
+		assert.Equal(t, []string{"known", "unknown"}, seen)
+	})
+
+	t.Run("strict mode reports error", func(t *testing.T) {
+		iter := BorrowIterator([]byte(`{"unknown":"value"}`))
+		defer ReturnIterator(iter)
+		iter.SetDisallowUnknownFields(true)
+		for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
+			iter.HandleUnknownField(f)
+		}
+		require.Error(t, iter.Error())
+		assert.Contains(t, iter.Error().Error(), `unknown field "unknown"`)
+	})
+}
