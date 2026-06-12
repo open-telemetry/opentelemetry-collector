@@ -7,7 +7,7 @@ change_type: bug_fix
 component: cmd/mdatagen
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fix `FormatIdentifier` so that a string value that is exactly a known acronym generates the correct all-caps Go identifier
+note: Fix known acronyms at the end of generated Go identifiers to be all-caps, same as in any other position
 
 # One or more tracking issues or pull requests related to the change
 issues: [15438]
