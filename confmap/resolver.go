@@ -213,6 +213,9 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 // by the most recent Resolve call, before provider and env-var references were
 // expanded (i.e. with ${env:FOO} syntax intact). Returns nil if Resolve has not
 // been called.
+//
+// Experimental: This method is experimental, and may change without backward
+// compatibility until this notice is removed.
 func (mr *Resolver) UnexpandedConf() *Conf {
 	if mr.unexpandedConfMap == nil {
 		return nil
