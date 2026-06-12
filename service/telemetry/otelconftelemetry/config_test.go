@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
-	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -206,17 +205,5 @@ func TestConfigResourceDetectionDevelopmentE2E(t *testing.T) {
 	assert.Equal(t, "bar", raw["foo"])
 	assert.Contains(t, raw, "host.name")
 	assert.Contains(t, raw, "os.type")
-	assert.NotContains(t, raw, "os.description")
-}
-
-func TestConfigValidateRejectsInvalidResourceDetectionGlob(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Resource.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{
-		Attributes: &xotelconf.IncludeExclude{
-			Included: []string{"["},
-		},
-	}
-
-	err := confmap.Validate(cfg)
-	require.ErrorContains(t, err, `resource::detection/development::attributes::included contains invalid glob "["`)
+	assert.Contains(t, raw, "os.description")
 }

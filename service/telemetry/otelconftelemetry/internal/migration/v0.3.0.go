@@ -6,7 +6,6 @@ package migration // import "go.opentelemetry.io/collector/service/telemetry/ote
 import (
 	"errors"
 	"fmt"
-	"path"
 	"time"
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
@@ -268,18 +267,7 @@ type ResourceConfigV030 struct {
 	LegacyAttributes     map[string]any                           `mapstructure:",remain"`
 }
 
-var (
-	_ xconfmap.Validator = (*ResourceConfigV030)(nil)
-	_ confmap.Marshaler  = ResourceConfigV030{}
-)
-
-func (cfg ResourceConfigV030) Marshal(conf *confmap.Conf) error {
-	if err := conf.Marshal(cfg); err != nil {
-		return fmt.Errorf("otelconftelemetry: failed to marshal resource configuration: %w", err)
-	}
-
-	return nil
-}
+var _ xconfmap.Validator = (*ResourceConfigV030)(nil)
 
 func (cfg *ResourceConfigV030) Validate() error {
 	// resource::attributes_list isn't currently supported by otelconf, so we have to put the default values under resource::attributes.
@@ -301,29 +289,6 @@ func (cfg *ResourceConfigV030) Validate() error {
 
 	if len(cfg.Attributes) > 0 && len(cfg.LegacyAttributes) > 0 {
 		return errors.New("resource::attributes cannot be used together with legacy inline resource attributes")
-	}
-
-	if err := validateExperimentalAttributePatterns(cfg.DetectionDevelopment); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func validateExperimentalAttributePatterns(cfg *xotelconf.ExperimentalResourceDetection) error {
-	if cfg == nil || cfg.Attributes == nil {
-		return nil
-	}
-
-	for _, pattern := range cfg.Attributes.Included {
-		if _, err := path.Match(pattern, ""); err != nil {
-			return fmt.Errorf("resource::detection/development::attributes::included contains invalid glob %q: %w", pattern, err)
-		}
-	}
-	for _, pattern := range cfg.Attributes.Excluded {
-		if _, err := path.Match(pattern, ""); err != nil {
-			return fmt.Errorf("resource::detection/development::attributes::excluded contains invalid glob %q: %w", pattern, err)
-		}
 	}
 
 	return nil

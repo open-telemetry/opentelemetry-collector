@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path"
 	"strconv"
 
 	"github.com/google/uuid"
@@ -50,29 +49,6 @@ func createInitialResourceConfig(_ context.Context, _ component.BuildInfo, cfg *
 	return &xotelconf.Resource{
 		DetectionDevelopment: cfg.DetectionDevelopment,
 	}, nil
-}
-
-func includeDetectedAttribute(key string, filters *xotelconf.IncludeExclude) bool {
-	if filters == nil {
-		return true
-	}
-	if len(filters.Included) > 0 && !matchesAnyPattern(key, filters.Included) {
-		return false
-	}
-	if len(filters.Excluded) > 0 && matchesAnyPattern(key, filters.Excluded) {
-		return false
-	}
-	return true
-}
-
-func matchesAnyPattern(key string, patterns []string) bool {
-	for _, pattern := range patterns {
-		matched, err := path.Match(pattern, key)
-		if err == nil && matched {
-			return true
-		}
-	}
-	return false
 }
 
 func createFixedResourceConfig(cfg *ResourceConfig, res *pcommon.Resource) (*otelconf.Resource, error) {
@@ -153,11 +129,6 @@ func createResource(
 	for sdkIterator.Next() {
 		kv := sdkIterator.Attribute()
 		key := string(kv.Key)
-		if sdkCfg != nil &&
-			sdkCfg.DetectionDevelopment != nil &&
-			!includeDetectedAttribute(key, sdkCfg.DetectionDevelopment.Attributes) {
-			continue
-		}
 		if _, ok := suppressed[key]; ok {
 			continue
 		}

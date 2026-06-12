@@ -17,9 +17,7 @@ issues: [14311]
 # Use pipe (|) for multiline entries.
 subtext: |
   This follows the OpenTelemetry configuration schema by treating
-  `service::telemetry::resource::detection/development::detectors` as detector selection
-  and `service::telemetry::resource::detection/development::attributes` as filtering for
-  attributes emitted by those detectors.
+  `service::telemetry::resource::detection/development::detectors` as detector selection.
 
   Example:
   ```yaml
@@ -30,10 +28,6 @@ subtext: |
           - name: foo
             value: bar
         detection/development:
-          attributes:
-            included:
-              - host.*
-              - os.*
           detectors:
             - host: {}
   ```

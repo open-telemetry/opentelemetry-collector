@@ -246,9 +246,6 @@ func TestResourceConfigV030UnmarshalDeclarativeFormat(t *testing.T) {
 	t.Run("experimental detection development", func(t *testing.T) {
 		conf := confmap.NewFromStringMap(map[string]any{
 			"detection/development": map[string]any{
-				"attributes": map[string]any{
-					"included": []any{"host.*"},
-				},
 				"detectors": []any{
 					map[string]any{"host": map[string]any{}},
 				},
@@ -257,18 +254,14 @@ func TestResourceConfigV030UnmarshalDeclarativeFormat(t *testing.T) {
 		var cfg ResourceConfigV030
 		require.NoError(t, conf.Unmarshal(&cfg))
 		require.NotNil(t, cfg.DetectionDevelopment)
-		assert.Equal(t, &xotelconf.IncludeExclude{Included: []string{"host.*"}}, cfg.DetectionDevelopment.Attributes)
 		require.Len(t, cfg.DetectionDevelopment.Detectors, 1)
 		assert.NotNil(t, cfg.DetectionDevelopment.Detectors[0].Host)
+		require.NoError(t, xconfmap.Validate(&cfg))
 	})
 
 	t.Run("experimental detection development marshals", func(t *testing.T) {
 		cfg := ResourceConfigV030{
 			DetectionDevelopment: &xotelconf.ExperimentalResourceDetection{
-				Attributes: &xotelconf.IncludeExclude{
-					Included: []string{"host.*"},
-					Excluded: []string{"os.description"},
-				},
 				Detectors: []xotelconf.ExperimentalResourceDetector{
 					{Host: xotelconf.ExperimentalHostResourceDetector{}},
 				},
@@ -284,10 +277,7 @@ func TestResourceConfigV030UnmarshalDeclarativeFormat(t *testing.T) {
 		raw := cm.ToStringMap()
 		detectionRaw, ok := raw["detection/development"].(map[string]any)
 		require.True(t, ok)
-		assert.Equal(t, map[string]any{
-			"included": []any{"host.*"},
-			"excluded": []any{"os.description"},
-		}, detectionRaw["attributes"])
+		assert.NotContains(t, detectionRaw, "attributes")
 		assert.Equal(t, "bar", raw["foo"])
 	})
 
@@ -317,29 +307,4 @@ func TestResourceConfigV030UnmarshalDeclarativeFormat(t *testing.T) {
 		require.NoError(t, xconfmap.Validate(&cfg))
 	})
 
-	t.Run("experimental detection development invalid included glob", func(t *testing.T) {
-		conf := confmap.NewFromStringMap(map[string]any{
-			"detection/development": map[string]any{
-				"attributes": map[string]any{
-					"included": []any{"["},
-				},
-			},
-		})
-		var cfg ResourceConfigV030
-		require.NoError(t, conf.Unmarshal(&cfg))
-		require.ErrorContains(t, xconfmap.Validate(&cfg), `resource::detection/development::attributes::included contains invalid glob "["`)
-	})
-
-	t.Run("experimental detection development invalid excluded glob", func(t *testing.T) {
-		conf := confmap.NewFromStringMap(map[string]any{
-			"detection/development": map[string]any{
-				"attributes": map[string]any{
-					"excluded": []any{"["},
-				},
-			},
-		})
-		var cfg ResourceConfigV030
-		require.NoError(t, conf.Unmarshal(&cfg))
-		require.ErrorContains(t, xconfmap.Validate(&cfg), `resource::detection/development::attributes::excluded contains invalid glob "["`)
-	})
 }

@@ -113,9 +113,6 @@ func TestCreateResource(t *testing.T) {
 	t.Run("with host detector", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		cfg.Resource.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{
-			Attributes: &xotelconf.IncludeExclude{
-				Included: []string{"host.*", "os.*"},
-			},
 			Detectors: []xotelconf.ExperimentalResourceDetector{
 				{Host: xotelconf.ExperimentalHostResourceDetector{}},
 			},
@@ -132,9 +129,6 @@ func TestCreateResource(t *testing.T) {
 	t.Run("with service detector explicit attributes still win", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		cfg.Resource.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{
-			Attributes: &xotelconf.IncludeExclude{
-				Included: []string{"service.*"},
-			},
 			Detectors: []xotelconf.ExperimentalResourceDetector{
 				{Service: xotelconf.ExperimentalServiceResourceDetector{}},
 			},
@@ -153,9 +147,6 @@ func TestCreateResource(t *testing.T) {
 	t.Run("service detector preserves collector defaults", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		cfg.Resource.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{
-			Attributes: &xotelconf.IncludeExclude{
-				Included: []string{"service.*"},
-			},
 			Detectors: []xotelconf.ExperimentalResourceDetector{
 				{Service: xotelconf.ExperimentalServiceResourceDetector{}},
 			},
@@ -183,9 +174,6 @@ func TestCreateResource(t *testing.T) {
 	t.Run("legacy nil suppresses detected attributes", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		cfg.Resource.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{
-			Attributes: &xotelconf.IncludeExclude{
-				Included: []string{"host.*", "os.*"},
-			},
 			Detectors: []xotelconf.ExperimentalResourceDetector{
 				{Host: xotelconf.ExperimentalHostResourceDetector{}},
 			},
@@ -199,25 +187,6 @@ func TestCreateResource(t *testing.T) {
 		raw := res.Attributes().AsRaw()
 		assert.NotContains(t, raw, "host.name")
 		assert.Contains(t, raw, "os.type")
-	})
-	t.Run("attribute filters do not require detector names", func(t *testing.T) {
-		cfg := createDefaultConfig().(*Config)
-		cfg.Resource.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{
-			Attributes: &xotelconf.IncludeExclude{
-				Included: []string{"process.*"},
-				Excluded: []string{"process.command_args"},
-			},
-			Detectors: []xotelconf.ExperimentalResourceDetector{
-				{Process: xotelconf.ExperimentalProcessResourceDetector{}},
-			},
-		}
-		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-		res, err := createResource(t.Context(), set, cfg)
-		require.NoError(t, err)
-
-		raw := res.Attributes().AsRaw()
-		assert.Contains(t, raw, "process.pid")
-		assert.NotContains(t, raw, "process.command_args")
 	})
 	t.Run("stable resource detectors remain ignored", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
@@ -355,9 +324,6 @@ func TestCreateResource_PutAttributeValueError(t *testing.T) {
 	t.Run("detected attributes", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		cfg.Resource.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{
-			Attributes: &xotelconf.IncludeExclude{
-				Included: []string{"host.*", "os.*"},
-			},
 			Detectors: []xotelconf.ExperimentalResourceDetector{
 				{Host: xotelconf.ExperimentalHostResourceDetector{}},
 			},
@@ -454,9 +420,6 @@ func TestCreateInitialResourceConfig(t *testing.T) {
 	t.Run("with supported detectors", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config).Resource
 		cfg.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{
-			Attributes: &xotelconf.IncludeExclude{
-				Included: []string{"container.*", "host.*", "os.*", "process.*", "service.*"},
-			},
 			Detectors: []xotelconf.ExperimentalResourceDetector{
 				{Container: xotelconf.ExperimentalContainerResourceDetector{}},
 				{Host: xotelconf.ExperimentalHostResourceDetector{}},
@@ -471,42 +434,6 @@ func TestCreateInitialResourceConfig(t *testing.T) {
 		assert.Len(t, resourceConfig.DetectionDevelopment.Detectors, 4)
 	})
 
-	t.Run("experimental detection config is preserved", func(t *testing.T) {
-		cfg := createDefaultConfig().(*Config).Resource
-		cfg.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{
-			Attributes: &xotelconf.IncludeExclude{
-				Included: []string{"host.*", "process.*"},
-				Excluded: []string{"host.*"},
-			},
-			Detectors: []xotelconf.ExperimentalResourceDetector{
-				{Host: xotelconf.ExperimentalHostResourceDetector{}},
-				{Process: xotelconf.ExperimentalProcessResourceDetector{}},
-			},
-		}
-
-		resourceConfig, err := createInitialResourceConfig(t.Context(), component.BuildInfo{Command: "cmd", Version: "1.0.0"}, &cfg)
-		require.NoError(t, err)
-		require.NotNil(t, resourceConfig.DetectionDevelopment)
-		assert.Len(t, resourceConfig.DetectionDevelopment.Detectors, 2)
-		assert.Equal(t, cfg.DetectionDevelopment.Attributes, resourceConfig.DetectionDevelopment.Attributes)
-	})
-
-	t.Run("unknown attribute patterns are ignored", func(t *testing.T) {
-		cfg := createDefaultConfig().(*Config).Resource
-		cfg.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{
-			Attributes: &xotelconf.IncludeExclude{
-				Included: []string{"custom.attr"},
-			},
-			Detectors: []xotelconf.ExperimentalResourceDetector{
-				{Host: xotelconf.ExperimentalHostResourceDetector{}},
-			},
-		}
-
-		resourceConfig, err := createInitialResourceConfig(t.Context(), component.BuildInfo{Command: "cmd", Version: "1.0.0"}, &cfg)
-		require.NoError(t, err)
-		require.NotNil(t, resourceConfig.DetectionDevelopment)
-		assert.Len(t, resourceConfig.DetectionDevelopment.Detectors, 1)
-	})
 }
 
 func TestSuppressedLegacyAttributes(t *testing.T) {
@@ -544,19 +471,6 @@ func TestResourceConfigValidateAttributesListUnsupported(t *testing.T) {
 	require.NoError(t, conf.Unmarshal(&cfg))
 	err := xconfmap.Validate(&cfg)
 	require.ErrorContains(t, err, "resource::attributes_list is not currently supported")
-}
-
-func TestCreateInitialResourceConfigRejectsInvalidResourceDetectionGlob(t *testing.T) {
-	cfg := migration.ResourceConfigV030{
-		DetectionDevelopment: &xotelconf.ExperimentalResourceDetection{
-			Attributes: &xotelconf.IncludeExclude{
-				Included: []string{"["},
-			},
-		},
-	}
-
-	_, err := createInitialResourceConfig(t.Context(), component.BuildInfo{}, &cfg)
-	require.ErrorContains(t, err, `resource::detection/development::attributes::included contains invalid glob "["`)
 }
 
 func TestCreateFixedResourceConfig(t *testing.T) {
