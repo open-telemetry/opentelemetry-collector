@@ -11,7 +11,7 @@ import (
 type ControllerConfig struct {
 	// Sets how frequently the scraper should be called and used as the context timeout to ensure that scrapers don't exceed the interval.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
-	// The initial start delay for the scraper, any non positive value is assumed to be immediately.
+	// Sets the initial start delay for the scraper, any non positive value is assumed to be immediately.
 	InitialDelay time.Duration `mapstructure:"initial_delay"`
 	// An optional value used to set scraper's context deadline.
 	Timeout time.Duration `mapstructure:"timeout"`
