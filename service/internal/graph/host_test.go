@@ -26,7 +26,7 @@ func TestHost_NotifyComponentStatusChange_NonBlockingOnFullChannel(t *testing.T)
 		close(done)
 	}()
 
-	// The send should not block even though the channel is unbuffered
+	// The goroutine send should not block even though the channel is unbuffered
 	// and nothing is reading from it.
 	<-done
 }
