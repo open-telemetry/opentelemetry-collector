@@ -140,10 +140,15 @@ measurements of memory usage. The value must be less than `limit_percentage`.
 This option is used to calculate `spike_limit_mib` from the total available memory.
 For instance setting of 25% with the total memory of 1GiB will result in the spike limit of 250MiB.
 This option is intended to be used only with `limit_percentage`.
-- `backoff_on_ineffective_gc` (default = `true`): When `true`, forced GC backs
-off exponentially if it fails to free memory above the soft limit, and resets
-when GC becomes effective or memory drops. Set to `false` to force GC on every
-check interval.
+- `max_gc_interval_when_soft_limited` (default = `30s`): Caps the exponential
+backoff between forced GC calls while in soft-limited mode. When a forced GC
+fails to free memory, the interval doubles starting from
+`min_gc_interval_when_soft_limited` (or 95% of `check_interval`, whichever is
+larger) up to this cap. Resets to zero on effective GC or memory drop. Set to
+`0` to disable the backoff on this path; the interval will not grow beyond the
+configured min.
+- `max_gc_interval_when_hard_limited` (default = `30s`): Same as above but for
+hard-limited mode. Set to `0` to disable.
 
 Examples:
 

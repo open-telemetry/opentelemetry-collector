@@ -9,7 +9,9 @@ issues: [4981]
 subtext: |
   Forced GC runs now use exponential backoff when deemed ineffective
   (still above soft limit and less than 5% reclaimed) to avoid preventing
-  recovery by overloading CPU with excessive GC runs. This new backoff
-  behavior can be disabled with `backoff_on_ineffective_gc: false`.
+  recovery by overloading CPU with excessive GC runs. The cap on the
+  backoff interval is exposed via `max_gc_interval_when_soft_limited` and
+  `max_gc_interval_when_hard_limited` (both default `30s`); set either to
+  `0` to disable backoff on that path.
 
 change_logs: [user]
