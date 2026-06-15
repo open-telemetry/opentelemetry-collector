@@ -361,25 +361,25 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 		"inc":       func(i int) int { return i + 1 },
 		"distroURL": distroURL,
 		"isExporter": func() bool {
-			return md.Status.Class == "exporter"
+			return md.Status != nil && md.Status.Class == "exporter"
 		},
 		"isProcessor": func() bool {
-			return md.Status.Class == "processor"
+			return md.Status != nil && md.Status.Class == "processor"
 		},
 		"isReceiver": func() bool {
-			return md.Status.Class == "receiver"
+			return md.Status != nil && md.Status.Class == "receiver"
 		},
 		"isExtension": func() bool {
-			return md.Status.Class == "extension"
+			return md.Status != nil && md.Status.Class == "extension"
 		},
 		"isConnector": func() bool {
-			return md.Status.Class == "connector"
+			return md.Status != nil && md.Status.Class == "connector"
 		},
 		"isScraper": func() bool {
-			return md.Status.Class == "scraper"
+			return md.Status != nil && md.Status.Class == "scraper"
 		},
 		"isCommand": func() bool {
-			return md.Status.Class == "cmd"
+			return md.Status != nil && md.Status.Class == "cmd"
 		},
 		"supportsLogs":               func() bool { return md.supportsSignal("logs") },
 		"supportsMetrics":            func() bool { return md.supportsSignal("metrics") },

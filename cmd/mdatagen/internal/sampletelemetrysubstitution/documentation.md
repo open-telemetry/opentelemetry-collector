@@ -2,6 +2,8 @@
 
 # sampletelemetrysubstitution
 
+**Parent Component:** mdatagen
+
 ## Internal Telemetry
 
 The following telemetry is emitted by this component.
