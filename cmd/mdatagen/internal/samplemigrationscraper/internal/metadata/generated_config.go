@@ -52,7 +52,7 @@ func (ms *SystemCPUFooMetricConfig) Unmarshal(parser *confmap.Conf) error {
 type SystemCPUUtilizationMetricAttributeKey string
 
 const (
-	SystemCPUUtilizationMetricAttributeKeyCpu   SystemCPUUtilizationMetricAttributeKey = "cpu"
+	SystemCPUUtilizationMetricAttributeKeyCPU   SystemCPUUtilizationMetricAttributeKey = "cpu"
 	SystemCPUUtilizationMetricAttributeKeyState SystemCPUUtilizationMetricAttributeKey = "state"
 )
 
@@ -82,7 +82,7 @@ func (ms *SystemCPUUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) erro
 func (ms *SystemCPUUtilizationMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SystemCPUUtilizationMetricAttributeKeyCpu, SystemCPUUtilizationMetricAttributeKeyState:
+		case SystemCPUUtilizationMetricAttributeKeyCPU, SystemCPUUtilizationMetricAttributeKeyState:
 		default:
 			return fmt.Errorf("metric system.cpu.utilization doesn't have an attribute %v, valid attributes: [cpu, state]", val)
 		}
@@ -186,7 +186,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		SystemCPUUtilization: SystemCPUUtilizationMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SystemCPUUtilizationMetricAttributeKey{SystemCPUUtilizationMetricAttributeKeyCpu, SystemCPUUtilizationMetricAttributeKeyState},
+			EnabledAttributes:   []SystemCPUUtilizationMetricAttributeKey{SystemCPUUtilizationMetricAttributeKeyCPU, SystemCPUUtilizationMetricAttributeKeyState},
 		},
 		SystemCPUUtilizationV1: SystemCPUUtilizationV1MetricConfig{
 			Enabled:             false,

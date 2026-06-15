@@ -310,8 +310,8 @@ func TestVersionedMetrics(t *testing.T) {
 								newFound = true
 								if tt.expectLegacyAttrs {
 									dp := m.Sum().DataPoints().At(0)
-									_, hasCpu := dp.Attributes().Get("cpu")
-									assert.True(t, hasCpu, "expected legacy attr cpu")
+									_, hasCPU := dp.Attributes().Get("cpu")
+									assert.True(t, hasCPU, "expected legacy attr cpu")
 									_, hasState := dp.Attributes().Get("state")
 									assert.True(t, hasState, "expected legacy attr state")
 								}

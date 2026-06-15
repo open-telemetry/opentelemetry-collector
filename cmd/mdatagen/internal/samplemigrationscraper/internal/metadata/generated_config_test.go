@@ -36,7 +36,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SystemCPUUtilization: SystemCPUUtilizationMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SystemCPUUtilizationMetricAttributeKey{SystemCPUUtilizationMetricAttributeKeyCpu, SystemCPUUtilizationMetricAttributeKeyState},
+						EnabledAttributes:   []SystemCPUUtilizationMetricAttributeKey{SystemCPUUtilizationMetricAttributeKeyCPU, SystemCPUUtilizationMetricAttributeKeyState},
 					},
 					SystemCPUUtilizationV1: SystemCPUUtilizationV1MetricConfig{
 						Enabled:             true,
@@ -62,7 +62,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SystemCPUUtilization: SystemCPUUtilizationMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SystemCPUUtilizationMetricAttributeKey{SystemCPUUtilizationMetricAttributeKeyCpu, SystemCPUUtilizationMetricAttributeKeyState},
+						EnabledAttributes:   []SystemCPUUtilizationMetricAttributeKey{SystemCPUUtilizationMetricAttributeKeyCPU, SystemCPUUtilizationMetricAttributeKeyState},
 					},
 					SystemCPUUtilizationV1: SystemCPUUtilizationV1MetricConfig{
 						Enabled:             false,
