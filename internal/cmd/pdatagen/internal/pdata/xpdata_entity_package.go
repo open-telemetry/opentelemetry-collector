@@ -77,5 +77,10 @@ var entityRef = &messageStruct{
 			protoType:   proto.TypeString,
 			returnSlice: stringSlice,
 		},
+		&PrimitiveField{
+			fieldName: "IdContextType",
+			protoID:   5,
+			protoType: proto.TypeString,
+		},
 	},
 }

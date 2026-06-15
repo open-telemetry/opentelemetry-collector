@@ -76,6 +76,16 @@ func TestEntityRef_DescriptionKeys(t *testing.T) {
 	assert.Equal(t, pcommon.StringSlice(internal.GenTestStringSliceWrapper()), ms.DescriptionKeys())
 }
 
+func TestEntityRef_IdContextType(t *testing.T) {
+	ms := NewEntityRef()
+	assert.Empty(t, ms.IdContextType())
+	ms.SetIdContextType("test_idcontexttype")
+	assert.Equal(t, "test_idcontexttype", ms.IdContextType())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { newEntityRef(internal.NewEntityRef(), sharedState).SetIdContextType("test_idcontexttype") })
+}
+
 func generateTestEntityRef() EntityRef {
 	return newEntityRef(internal.GenTestEntityRef(), internal.NewState())
 }

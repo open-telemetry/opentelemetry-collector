@@ -18,6 +18,7 @@ import (
 type EntityRef struct {
 	SchemaUrl       string
 	Type            string
+	IdContextType   string
 	IdKeys          []string
 	DescriptionKeys []string
 }
@@ -71,6 +72,8 @@ func CopyEntityRef(dest, src *EntityRef) *EntityRef {
 	dest.IdKeys = append(dest.IdKeys[:0], src.IdKeys...)
 
 	dest.DescriptionKeys = append(dest.DescriptionKeys[:0], src.DescriptionKeys...)
+
+	dest.IdContextType = src.IdContextType
 
 	return dest
 }
@@ -160,6 +163,10 @@ func (orig *EntityRef) MarshalJSON(dest *json.Stream) {
 		dest.WriteArrayEnd()
 	}
 
+	if orig.IdContextType != "" {
+		dest.WriteObjectField("idContextType")
+		dest.WriteString(orig.IdContextType)
+	}
 	dest.WriteObjectEnd()
 }
 
@@ -181,6 +188,8 @@ func (orig *EntityRef) UnmarshalJSON(iter *json.Iterator) {
 				orig.DescriptionKeys = append(orig.DescriptionKeys, iter.ReadString())
 			}
 
+		case "idContextType", "id_context_type":
+			orig.IdContextType = iter.ReadString()
 		default:
 			iter.HandleUnknownField(f)
 		}
@@ -207,6 +216,11 @@ func (orig *EntityRef) SizeProto() int {
 	}
 	for _, s := range orig.DescriptionKeys {
 		l = len(s)
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+
+	l = len(orig.IdContextType)
+	if l > 0 {
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	return n
@@ -247,6 +261,14 @@ func (orig *EntityRef) MarshalProto(buf []byte) int {
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
 		buf[pos] = 0x22
+	}
+	l = len(orig.IdContextType)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.IdContextType)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x2a
 	}
 	return len(buf) - pos
 }
@@ -313,6 +335,18 @@ func (orig *EntityRef) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 			orig.DescriptionKeys = append(orig.DescriptionKeys, string(buf[startPos:pos]))
+
+		case 5:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field IdContextType", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.IdContextType = string(buf[startPos:pos])
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
 			if err != nil {
@@ -329,6 +363,7 @@ func GenTestEntityRef() *EntityRef {
 	orig.Type = "test_type"
 	orig.IdKeys = []string{"", "test_idkeys"}
 	orig.DescriptionKeys = []string{"", "test_descriptionkeys"}
+	orig.IdContextType = "test_idcontexttype"
 	return orig
 }
 
