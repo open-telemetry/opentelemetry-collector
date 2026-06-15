@@ -7,6 +7,50 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.60.0/v0.154.0
+
+### 🛑 Breaking changes 🛑
+
+- `cmd/builder`: The `--skip-get-modules` flag will no longer regenerate your `go.mod` file. (#15390)
+  This is mostly a bug fix, as it led to adverse behaviour that was unintended in the described flow in the README.
+  Now when you run `--skip-get-modules`, your `go.mod` file will truly be untouched by `ocb` as the info log claims.
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/config/configtls`: Add `include_insecure_cipher_suites` to configtls to enable insecure cipher suites. Insecure cipher suites are disabled by default for security. (#13829)
+- `pkg/confighttp`: Add `ExposedHeaders` field to `CORSConfig` to allow setting the `Access-Control-Expose-Headers` response header. (#15119)
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Removes the extra line in the README.md between status and description (#15306)
+- `pkg/exporterhelper`: Fix nil-pointer panic in `sending_queue::batch` Unmarshal when `sending_queue::sizer` is set and `sending_queue::batch::enabled` is false. (#14687)
+  When `sending_queue::sizer` was set and `sending_queue::batch::enabled: false`
+  cleared the batch Optional to None, the sizer-inheritance branch in
+  `queuebatch.Config.Unmarshal` dereferenced a nil Optional and crashed the
+  collector at startup. The branch now also requires `Batch.HasValue()`.
+  
+
+<!-- previous-version -->
+
+## v1.59.0/v0.153.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/configoptional`: Stabilize feature gate configoptional.AddEnabledField (#15333)
+- `pkg/confmap`: Stabilize confmap.newExpandedValueSanitizer feature gate (#15339)
+- `pkg/exporterhelper`: mark exporter.PersistRequestContext as stable (#15330)
+- `pkg/otelcol`: Stabilize otelcol.printInitialConfig gate (#15340)
+- `pkg/pdata`: Remove pdata.useCustomProtoEncoding feature gate (#15332)
+- `pkg/service`: Stabilize telemetry.UseLocalHostAsDefaultMetricsAddress gate (#15342)
+- `pkg/xpdata`: Stabilize pdata.enableRefCounting feature gate (#15331)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/config/configgrpc`: Fix memory corruption and fatal error in Snappy (#15237, #15320)
+
+<!-- previous-version -->
+
 ## v1.58.0/v0.152.0
 
 ### 💡 Enhancements 💡
