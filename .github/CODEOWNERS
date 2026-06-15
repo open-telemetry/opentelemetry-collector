@@ -19,7 +19,7 @@
 # Start components list
 
 client/                                                @open-telemetry/collector-approvers
-cmd/builder/                                           @open-telemetry/collector-approvers @dmathieu
+cmd/builder/                                           @open-telemetry/collector-approvers @dmathieu @braydonk @jmacd
 cmd/mdatagen/                                          @open-telemetry/collector-approvers @dmitryax
 cmd/mdatagen/internal/sampleconnector/                 @open-telemetry/collector-approvers
 cmd/mdatagen/internal/sampleentityreceiver/            @open-telemetry/collector-approvers @dmitryax

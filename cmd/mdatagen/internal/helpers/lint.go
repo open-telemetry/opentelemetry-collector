@@ -50,7 +50,7 @@ func FormatIdentifier(s string, exported bool) (string, error) {
 		}
 	}
 
-	if golint.Acronyms[strings.ToUpper(word)] && output != "" {
+	if golint.Acronyms[strings.ToUpper(word)] && (exported || output != "") {
 		output += strings.ToUpper(word)
 	} else {
 		output += word

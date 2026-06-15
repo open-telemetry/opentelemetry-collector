@@ -21,13 +21,13 @@ This scraper is used for testing purposes to check the output of mdatagen.
 ## Configuration
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
-| `collection_interval` | duration | 1m | no | CollectionInterval sets how frequently the scraper should be called and used as the context timeout to ensure that scrapers don't exceed the interval. |
-| `initial_delay` | duration | 1s | no | InitialDelay sets the initial start delay for the scraper, any non positive value is assumed to be immediately. |
+| `collection_interval` | duration | 1m | no | Sets how frequently the scraper should be called and used as the context timeout to ensure that scrapers don't exceed the interval. |
+| `initial_delay` | duration | 1s | no | Sets the initial start delay for the scraper, any non positive value is assumed to be immediately. |
 | `job_name` | string | test_job | **yes** | Name of the scrape job, used to identify the source in telemetry. |
 | `metrics` | object (see [metrics](#metrics)) |  | no | MetricsConfig provides config for sample metrics. |
 | `resource_attributes` | object (see [resource_attributes](#resource_attributes)) |  | no | ResourceAttributesConfig provides config for sample resource attributes. |
 | `targets` | []object | [{}] | **yes** | List of targets to scrape metrics from. |
-| `timeout` | duration | 0 | no | Timeout is an optional value used to set scraper's context deadline. |
+| `timeout` | duration | 0 | no | An optional value used to set scraper's context deadline. |
 
 ### <a id="metrics"></a>metrics
 | Setting | Type | Default | Required | Description |
