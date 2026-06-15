@@ -306,5 +306,4 @@ func TestResourceConfigV030UnmarshalDeclarativeFormat(t *testing.T) {
 		require.NoError(t, conf.Unmarshal(&cfg))
 		require.NoError(t, xconfmap.Validate(&cfg))
 	})
-
 }

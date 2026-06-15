@@ -433,7 +433,6 @@ func TestCreateInitialResourceConfig(t *testing.T) {
 		require.NotNil(t, resourceConfig.DetectionDevelopment)
 		assert.Len(t, resourceConfig.DetectionDevelopment.Detectors, 4)
 	})
-
 }
 
 func TestSuppressedLegacyAttributes(t *testing.T) {
