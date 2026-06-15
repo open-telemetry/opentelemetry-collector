@@ -6,9 +6,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 // AssertOptions controls the metric-name resolution used by the AssertEqual*
@@ -84,6 +85,7 @@ func AssertEqualExporterEnqueueFailedLogRecords(t *testing.T, tt *componenttest.
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, mdOpts...)
 }
+
 func AssertEqualExporterQueueBatchSendSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...any) {
 	var assertOpts []AssertOption
 	var mdOpts []metricdatatest.Option
@@ -111,6 +113,7 @@ func AssertEqualExporterQueueBatchSendSize(t *testing.T, tt *componenttest.Telem
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, mdOpts...)
 }
+
 func AssertEqualExporterQueueSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...any) {
 	var assertOpts []AssertOption
 	var mdOpts []metricdatatest.Option

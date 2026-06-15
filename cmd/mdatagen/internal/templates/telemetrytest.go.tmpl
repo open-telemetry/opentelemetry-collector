@@ -75,9 +75,8 @@ func startsWith(s, prefix string) bool {
 }
 {{- end }}
 
-{{ range $name, $metric := .Telemetry.Metrics }}
+{{ range $name, $metric := .Telemetry.Metrics }}{{/* Note this code structure preserves an original code path to not generate churn. */}}
 
-{{- /* Note this code structure preserves an original code path to not generate churn. */}}
 func AssertEqual{{ $name.Render }}(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.{{- if eq $metric.Data.Type "Histogram" }} {{$metric.Data.Type}} {{- end }}DataPoint[{{ $metric.Data.BasicType }}], opts ...{{ if $.Telemetry.AllowNameSubstitution }}any{{ else }}metricdatatest.Option{{ end }}) {
 	{{- if $.Telemetry.AllowNameSubstitution }}
 	var assertOpts []AssertOption

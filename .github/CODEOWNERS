@@ -28,6 +28,7 @@ cmd/mdatagen/internal/samplepkg/                       @open-telemetry/collector
 cmd/mdatagen/internal/sampleprocessor/                 @open-telemetry/collector-approvers
 cmd/mdatagen/internal/samplereceiver/                  @open-telemetry/collector-approvers @dmitryax
 cmd/mdatagen/internal/samplescraper/                   @open-telemetry/collector-approvers @dmitryax
+cmd/mdatagen/internal/sampletelemetrysubstitution/     @open-telemetry/collector-approvers
 cmd/schemagen/                                         @open-telemetry/collector-approvers
 component/                                             @open-telemetry/collector-approvers
 component/componentstatus/                             @open-telemetry/collector-approvers

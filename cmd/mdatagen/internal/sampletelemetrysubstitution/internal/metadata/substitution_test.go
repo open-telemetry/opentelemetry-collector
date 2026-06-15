@@ -106,4 +106,3 @@ func TestNameSubstitution_Errors(t *testing.T) {
 		})
 	}
 }
-
