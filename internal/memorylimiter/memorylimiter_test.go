@@ -402,9 +402,10 @@ func TestGCBackoffEarlyResetWhenMemoryBecomesReclaimable(t *testing.T) {
 	// The soft-limit branch (48 < hard limit 50) then ran a forced GC with
 	// gateInterval = max(MinGCIntervalWhenSoftLimited=0, currentSoftGCInterval=0) = 0.
 	assert.Equal(t, 2, numGCs, "GC should fire after early backoff reset")
-	// New forced GC sees 48 before and 48 after — ineffective — so the soft
-	// path's backoff re-arms with a fresh seed; the hard path stays at 0.
+	// The second forced GC sees 48 before and 48 after — ineffective — so both
+	// per-path backoffs re-arm in lockstep with a fresh seed.
 	assert.NotZero(t, ml.currentSoftGCInterval)
+	assert.NotZero(t, ml.currentHardGCInterval)
 }
 
 func TestGCBackoffEarlyResetAboveHardLimit(t *testing.T) {
@@ -452,13 +453,12 @@ func TestGCBackoffEarlyResetAboveHardLimit(t *testing.T) {
 	assert.NotZero(t, ml.currentHardGCInterval)
 }
 
-func TestCheckLimitAndBackoff(t *testing.T) {
-	// Direct exercise of the helper, covering: (a) effective-by-soft,
-	// (b) effective-by-reclaim, (c) ineffective doubling growth, (d) cap at
-	// max(configMax, configMin), (e) floor at max(configMin, checkInterval*0.95),
-	// (f) configMax=0 disables backoff on the path,
-	// (g) nil currentInterval (top-of-tick) does not grow.
-	newML := func(checkInterval time.Duration) *MemoryLimiter {
+func TestNextBackoffInterval(t *testing.T) {
+	// Pure-logic exercise of the doubling helper, covering: (a) ineffective
+	// growth from floor, (b) doubling, (c) cap at max(configMax, configMin),
+	// (d) floor at max(configMin, checkInterval*0.95), (e) configMin >
+	// configMax case, (f) configMax=0 pins to configMin (disabled-path).
+	mlWith := func(checkInterval time.Duration) *MemoryLimiter {
 		cfg := &Config{
 			CheckInterval:                checkInterval,
 			MinGCIntervalWhenHardLimited: 0,
@@ -472,119 +472,132 @@ func TestCheckLimitAndBackoff(t *testing.T) {
 		return ml
 	}
 
-	t.Run("effective_by_soft_resets_both_intervals", func(t *testing.T) {
-		ml := newML(1 * time.Second)
-		ml.currentSoftGCInterval = 10 * time.Second
-		ml.currentHardGCInterval = 15 * time.Second
-		ml.lastStats = &runtime.MemStats{Alloc: 100 * mibBytes}
-		ms := &runtime.MemStats{Alloc: 50 * mibBytes}
-		above := ml.checkLimitAndBackoff(ms, &ml.currentHardGCInterval, 0, 30*time.Second)
-		assert.False(t, above)
-		assert.Zero(t, ml.currentSoftGCInterval, "effective observation resets both intervals")
-		assert.Zero(t, ml.currentHardGCInterval, "effective observation resets both intervals")
+	t.Run("grows_from_floor_then_doubles", func(t *testing.T) {
+		ml := mlWith(1 * time.Second)
+		// First ineffective GC seeds from the floor max(0, 950ms) = 950ms,
+		// doubled → 1.9s.
+		got := ml.nextBackoffInterval(0, 0, 30*time.Second)
+		assert.Equal(t, 1900*time.Millisecond, got)
+		// Second doubles to 3.8s.
+		got = ml.nextBackoffInterval(got, 0, 30*time.Second)
+		assert.Equal(t, 3800*time.Millisecond, got)
 	})
 
-	t.Run("effective_by_reclaim_resets_both_intervals", func(t *testing.T) {
-		ml := newML(1 * time.Second)
-		ml.currentSoftGCInterval = 10 * time.Second
-		ml.currentHardGCInterval = 15 * time.Second
-		ml.lastStats = &runtime.MemStats{Alloc: 110 * mibBytes}
-		// 110 → 99 is exactly 10% drop, above the 5% threshold, but still
-		// above soft limit (95 MiB) so it counts as effective-by-reclaim.
-		ms := &runtime.MemStats{Alloc: 99 * mibBytes}
-		above := ml.checkLimitAndBackoff(ms, &ml.currentHardGCInterval, 0, 30*time.Second)
-		assert.True(t, above, "still above soft limit (95 MiB)")
-		assert.Zero(t, ml.currentSoftGCInterval, "effective reclaim should reset both")
-		assert.Zero(t, ml.currentHardGCInterval, "effective reclaim should reset both")
-	})
-
-	t.Run("ineffective_grows_from_floor_then_doubles", func(t *testing.T) {
-		ml := newML(1 * time.Second)
-		ml.lastStats = &runtime.MemStats{Alloc: 100 * mibBytes}
-		// First ineffective GC: 100 → 99 (1% drop), still above soft limit.
-		ms := &runtime.MemStats{Alloc: 99 * mibBytes}
-		ml.checkLimitAndBackoff(ms, &ml.currentHardGCInterval, 0, 30*time.Second)
-		// Floor was max(0, 950ms) = 950ms; doubled → 1.9s.
-		assert.Equal(t, 1900*time.Millisecond, ml.currentHardGCInterval)
-
-		ml.lastStats = &runtime.MemStats{Alloc: 99 * mibBytes}
-		ms = &runtime.MemStats{Alloc: 98 * mibBytes}
-		ml.checkLimitAndBackoff(ms, &ml.currentHardGCInterval, 0, 30*time.Second)
-		assert.Equal(t, 3800*time.Millisecond, ml.currentHardGCInterval)
-	})
-
-	t.Run("doubling_caps_at_max", func(t *testing.T) {
-		ml := newML(1 * time.Second)
-		ml.lastStats = &runtime.MemStats{Alloc: 100 * mibBytes}
-		ml.currentHardGCInterval = 25 * time.Second
-		ms := &runtime.MemStats{Alloc: 99 * mibBytes}
-		ml.checkLimitAndBackoff(ms, &ml.currentHardGCInterval, 0, 30*time.Second)
-		assert.Equal(t, 30*time.Second, ml.currentHardGCInterval)
+	t.Run("doubling_caps_at_configMax", func(t *testing.T) {
+		ml := mlWith(1 * time.Second)
+		got := ml.nextBackoffInterval(25*time.Second, 0, 30*time.Second)
+		assert.Equal(t, 30*time.Second, got)
 	})
 
 	t.Run("configMin_acts_as_floor_above_check_interval", func(t *testing.T) {
 		// CheckInterval 1s → check floor 950ms. configMin 60s wins.
-		ml := newML(1 * time.Second)
-		ml.lastStats = &runtime.MemStats{Alloc: 100 * mibBytes}
-		ms := &runtime.MemStats{Alloc: 99 * mibBytes}
-		ml.checkLimitAndBackoff(ms, &ml.currentHardGCInterval, 60*time.Second, 30*time.Second)
+		ml := mlWith(1 * time.Second)
+		got := ml.nextBackoffInterval(0, 60*time.Second, 30*time.Second)
 		// Floor 60s, doubled → 120s, capped at max(30s, 60s) = 60s.
-		assert.Equal(t, 60*time.Second, ml.currentHardGCInterval)
+		assert.Equal(t, 60*time.Second, got)
 	})
 
-	t.Run("configMin_caps_doubling_above_max", func(t *testing.T) {
+	t.Run("configMin_caps_doubling_above_configMax", func(t *testing.T) {
 		// configMin 60s > configMax 30s — cap respects configMin.
-		ml := newML(1 * time.Second)
-		ml.lastStats = &runtime.MemStats{Alloc: 100 * mibBytes}
-		ml.currentHardGCInterval = 40 * time.Second
-		ms := &runtime.MemStats{Alloc: 99 * mibBytes}
-		ml.checkLimitAndBackoff(ms, &ml.currentHardGCInterval, 60*time.Second, 30*time.Second)
-		assert.Equal(t, 60*time.Second, ml.currentHardGCInterval, "cap is max(configMax, configMin)")
+		ml := mlWith(1 * time.Second)
+		got := ml.nextBackoffInterval(40*time.Second, 60*time.Second, 30*time.Second)
+		assert.Equal(t, 60*time.Second, got, "cap is max(configMax, configMin)")
 	})
 
-	t.Run("nil_currentInterval_does_not_grow", func(t *testing.T) {
-		// Top-of-tick call with currentInterval=nil on ineffective state must
-		// not grow either path's interval (only forced GCs cause growth).
-		ml := newML(1 * time.Second)
+	t.Run("configMax_zero_pins_to_configMin", func(t *testing.T) {
+		// configMax=0 disables backoff: return configMin regardless of current.
+		ml := mlWith(1 * time.Second)
+		assert.Equal(t, time.Duration(0), ml.nextBackoffInterval(10*time.Second, 0, 0))
+		assert.Equal(t, 5*time.Second, ml.nextBackoffInterval(20*time.Second, 5*time.Second, 0))
+	})
+}
+
+func TestCheckLimitAndBackoff(t *testing.T) {
+	// Exercises checkLimitAndBackoff's lockstep advancement of both per-path
+	// intervals on ineffective forced GC, and the both-paths reset on
+	// effective observation.
+	newML := func() *MemoryLimiter {
+		cfg := &Config{
+			CheckInterval:                1 * time.Second,
+			MinGCIntervalWhenHardLimited: 0,
+			MaxGCIntervalWhenSoftLimited: 30 * time.Second,
+			MaxGCIntervalWhenHardLimited: 30 * time.Second,
+			MemoryLimitMiB:               100,
+			MemorySpikeLimitMiB:          5,
+		}
+		ml, err := NewMemoryLimiter(cfg, zap.NewNop())
+		require.NoError(t, err)
+		return ml
+	}
+
+	t.Run("effective_by_soft_resets_both_intervals", func(t *testing.T) {
+		ml := newML()
+		ml.currentSoftGCInterval = 10 * time.Second
+		ml.currentHardGCInterval = 15 * time.Second
+		ml.lastStats = &runtime.MemStats{Alloc: 100 * mibBytes}
+		ms := &runtime.MemStats{Alloc: 50 * mibBytes}
+		above := ml.checkLimitAndBackoff(ms, true)
+		assert.False(t, above)
+		assert.Zero(t, ml.currentSoftGCInterval)
+		assert.Zero(t, ml.currentHardGCInterval)
+	})
+
+	t.Run("effective_by_reclaim_resets_both_intervals", func(t *testing.T) {
+		ml := newML()
+		ml.currentSoftGCInterval = 10 * time.Second
+		ml.currentHardGCInterval = 15 * time.Second
+		ml.lastStats = &runtime.MemStats{Alloc: 110 * mibBytes}
+		// 110 → 99 is a 10% drop, above the 5% threshold, but still above
+		// soft limit (95 MiB) so it counts as effective-by-reclaim.
+		ms := &runtime.MemStats{Alloc: 99 * mibBytes}
+		above := ml.checkLimitAndBackoff(ms, true)
+		assert.True(t, above, "still above soft limit (95 MiB)")
+		assert.Zero(t, ml.currentSoftGCInterval)
+		assert.Zero(t, ml.currentHardGCInterval)
+	})
+
+	t.Run("ineffective_grows_both_intervals_in_lockstep", func(t *testing.T) {
+		ml := newML()
+		ml.lastStats = &runtime.MemStats{Alloc: 100 * mibBytes}
+		ms := &runtime.MemStats{Alloc: 99 * mibBytes}
+		ml.checkLimitAndBackoff(ms, true)
+		// Both advance from 0 to 1.9s (floor 950ms doubled), capped at 30s.
+		assert.Equal(t, 1900*time.Millisecond, ml.currentSoftGCInterval)
+		assert.Equal(t, 1900*time.Millisecond, ml.currentHardGCInterval)
+	})
+
+	t.Run("not_didGC_does_not_grow", func(t *testing.T) {
+		// Top-of-tick call (didGC=false) on ineffective state must not grow
+		// either interval (only forced GCs cause growth).
+		ml := newML()
 		ml.lastStats = &runtime.MemStats{Alloc: 100 * mibBytes}
 		ml.currentSoftGCInterval = 5 * time.Second
 		ml.currentHardGCInterval = 7 * time.Second
 		ms := &runtime.MemStats{Alloc: 99 * mibBytes}
-		ml.checkLimitAndBackoff(ms, nil, 0, 0)
+		ml.checkLimitAndBackoff(ms, false)
 		assert.Equal(t, 5*time.Second, ml.currentSoftGCInterval)
 		assert.Equal(t, 7*time.Second, ml.currentHardGCInterval)
 	})
 
-	t.Run("configMax_zero_disables_growth_for_path", func(t *testing.T) {
-		// configMax=0 means backoff is disabled on this path: an ineffective
-		// forced GC must not grow currentHardGCInterval. Effective GC must still
-		// reset to zero (state machine stays warm).
-		ml := newML(1 * time.Second)
+	t.Run("ineffective_with_one_path_disabled_only_grows_enabled_path", func(t *testing.T) {
+		// max_hard=0 pins the hard path's interval to min_hard; the soft
+		// path's interval grows normally.
+		cfg := &Config{
+			CheckInterval:                1 * time.Second,
+			MinGCIntervalWhenSoftLimited: 10 * time.Second,
+			MinGCIntervalWhenHardLimited: 0,
+			MaxGCIntervalWhenSoftLimited: 30 * time.Second,
+			MaxGCIntervalWhenHardLimited: 0,
+			MemoryLimitMiB:               100,
+			MemorySpikeLimitMiB:          5,
+		}
+		ml, err := NewMemoryLimiter(cfg, zap.NewNop())
+		require.NoError(t, err)
 		ml.lastStats = &runtime.MemStats{Alloc: 100 * mibBytes}
 		ms := &runtime.MemStats{Alloc: 99 * mibBytes}
-		ml.checkLimitAndBackoff(ms, &ml.currentHardGCInterval, 0, 0)
-		assert.Zero(t, ml.currentHardGCInterval, "configMax=0 must not grow the interval")
-
-		// Effective GC still resets to zero — verifies state machine is warm.
-		ml.currentHardGCInterval = 10 * time.Second
-		ml.lastStats = &runtime.MemStats{Alloc: 100 * mibBytes}
-		ms = &runtime.MemStats{Alloc: 50 * mibBytes}
-		ml.checkLimitAndBackoff(ms, &ml.currentHardGCInterval, 0, 0)
-		assert.Zero(t, ml.currentHardGCInterval)
-	})
-
-	t.Run("ineffective_hard_does_not_grow_soft_state", func(t *testing.T) {
-		// Per-path independence: growing the hard interval must not touch the
-		// soft interval (and vice-versa). This was the cross-path-leak bug
-		// caught in pre-merge review.
-		ml := newML(1 * time.Second)
-		ml.lastStats = &runtime.MemStats{Alloc: 100 * mibBytes}
-		ml.currentSoftGCInterval = 0
-		ml.currentHardGCInterval = 0
-		ms := &runtime.MemStats{Alloc: 99 * mibBytes}
-		ml.checkLimitAndBackoff(ms, &ml.currentHardGCInterval, 0, 30*time.Second)
-		assert.NotZero(t, ml.currentHardGCInterval, "hard backoff should grow")
-		assert.Zero(t, ml.currentSoftGCInterval, "soft backoff must remain untouched")
+		ml.checkLimitAndBackoff(ms, true)
+		assert.Equal(t, 20*time.Second, ml.currentSoftGCInterval, "soft grows: floor 10s doubled to 20s")
+		assert.Zero(t, ml.currentHardGCInterval, "hard pinned to min_hard=0 (backoff disabled)")
 	})
 }
 
@@ -621,12 +634,11 @@ func TestBackoffDisabledOptOut(t *testing.T) {
 }
 
 func TestPerPathBackoffIsIndependent(t *testing.T) {
-	// Regression for the cross-path leak bug: disabling backoff on one path
-	// (max=0) must not be affected by the other path's accumulated backoff
-	// state. Specifically, with max_when_hard=0 + max_when_soft=30s, once the
-	// soft path arms its currentSoftGCInterval, the hard path must still fire
-	// GC every tick (the user's hard opt-out promised in the field comment
-	// must be honored regardless of soft-path state).
+	// Regression for the per-path disable promise: setting max_when_hard=0
+	// must keep the hard path's currentHardGCInterval pinned to
+	// min_when_hard, regardless of any backoff accumulated on the soft path.
+	// With max_when_hard=0 + min_when_hard=0, the hard path GCs every tick
+	// even while the soft path has its backoff armed up to 30s.
 	cfg := &Config{
 		CheckInterval:                1 * time.Second,
 		MinGCIntervalWhenSoftLimited: 10 * time.Second,
@@ -648,34 +660,86 @@ func TestPerPathBackoffIsIndependent(t *testing.T) {
 		numGCs++
 	}
 
-	// Phase 1: soft pressure (above soft 40, below hard 50). Arm the soft
-	// path's backoff by running an ineffective forced GC on it.
+	// Phase 1: soft pressure (above soft 40, below hard 50). Run an
+	// ineffective forced GC; soft backoff arms, hard stays pinned at 0.
 	currentMemAllocMiB = 45
 	ml.lastGCDone = ml.lastGCDone.Add(-time.Minute)
 	ml.CheckMemLimits()
 	assert.Equal(t, 1, numGCs, "soft branch should fire forced GC")
 	assert.NotZero(t, ml.currentSoftGCInterval, "soft backoff should be armed")
-	assert.Zero(t, ml.currentHardGCInterval, "hard backoff state must remain zero")
+	assert.Zero(t, ml.currentHardGCInterval, "hard backoff is disabled, must stay pinned to min_hard=0")
 
-	// Phase 2: hard pressure (above hard 50). Hard backoff is disabled
-	// (max=0). Only 1ms between ticks: with per-path state the hard gate is
-	// max(0,0)=0 → every tick fires; with a shared currentGCInterval the soft
-	// path's value (~20s) would inflate the hard gate and no tick within 1ms
-	// would pass. Probe-tested: this assertion fails on the shared-state
-	// implementation and passes on the per-path implementation.
+	// Phase 2: hard pressure (above hard 50). max_hard=0 keeps the hard
+	// gate at max(min_hard=0, currentHardGCInterval=0) = 0, so the hard
+	// path fires every tick even with only 1ms between ticks.
 	currentMemAllocMiB = 55
 	for range 5 {
 		ml.lastGCDone = ml.lastGCDone.Add(-1 * time.Millisecond)
 		ml.CheckMemLimits()
 	}
-	assert.Equal(t, 6, numGCs, "hard path must fire on every tick when its backoff is disabled, regardless of soft-path state")
-	assert.Zero(t, ml.currentHardGCInterval, "hard backoff must stay zero (disabled)")
+	assert.Equal(t, 6, numGCs, "hard path must fire every tick when its backoff is disabled")
+	assert.Zero(t, ml.currentHardGCInterval, "hard backoff must stay pinned (disabled)")
 }
 
 func TestNewDefaultConfigEnablesBackoffCap(t *testing.T) {
 	cfg := NewDefaultConfig()
 	assert.Equal(t, 30*time.Second, cfg.MaxGCIntervalWhenSoftLimited, "soft backoff cap should default to 30s")
 	assert.Equal(t, 30*time.Second, cfg.MaxGCIntervalWhenHardLimited, "hard backoff cap should default to 30s")
+}
+
+func TestBackoffGrowsBothPathsInLockstep(t *testing.T) {
+	// Regression for jade-guiton-dd's review concern: backing off only the
+	// active path lets the inactive path snap to full-speed GC the moment
+	// pressure shifts (e.g., back off soft a few times, then suddenly GC at
+	// full speed once hard is breached). Both per-path intervals must grow
+	// together on each ineffective forced GC.
+	//
+	// Phase 1 saturates currentSoftGCInterval at max_soft=30s via ineffective
+	// soft GCs. Phase 2 bumps to hard pressure with only 1ms between ticks.
+	// Under lockstep, currentHardGCInterval is already 30s → gate=max(0,30s)=30s
+	// → 1ms < 30s → NO hard GC fires. Under the old only-grow-active design,
+	// currentHardGCInterval stays 0 → gate=0 → 1ms > 0 → hard GC fires
+	// immediately. Discriminator: numGCs unchanged in Phase 2 (lockstep)
+	// vs +1 (only-grow-active).
+	cfg := &Config{
+		CheckInterval:                1 * time.Second,
+		MinGCIntervalWhenSoftLimited: 0,
+		MinGCIntervalWhenHardLimited: 0,
+		MaxGCIntervalWhenSoftLimited: 30 * time.Second,
+		MaxGCIntervalWhenHardLimited: 30 * time.Second,
+		MemoryLimitMiB:               50,
+		MemorySpikeLimitMiB:          10,
+	}
+	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
+	require.NoError(t, err)
+
+	var currentMemAllocMiB uint64
+	ml.readMemStatsFn = func(ms *runtime.MemStats) {
+		ms.Alloc = currentMemAllocMiB * mibBytes
+	}
+	numGCs := 0
+	ml.runGCFn = func() {
+		numGCs++
+	}
+
+	// Phase 1: saturate soft backoff at max_soft=30s. Each ineffective
+	// soft GC doubles both intervals; floor 0.95s, cap 30s → 5 rounds suffice.
+	currentMemAllocMiB = 45
+	for range 6 {
+		ml.lastGCDone = ml.lastGCDone.Add(-time.Minute)
+		ml.CheckMemLimits()
+	}
+	assert.Equal(t, 30*time.Second, ml.currentSoftGCInterval, "soft saturates at max_soft")
+	assert.Equal(t, 30*time.Second, ml.currentHardGCInterval, "hard grew in lockstep")
+	phase1GCs := numGCs
+
+	// Phase 2: bump to hard pressure with only 1ms between ticks.
+	currentMemAllocMiB = 55
+	for range 5 {
+		ml.lastGCDone = ml.lastGCDone.Add(-1 * time.Millisecond)
+		ml.CheckMemLimits()
+	}
+	assert.Equal(t, phase1GCs, numGCs, "hard gate inherited 30s backoff from lockstep — no GC fires within 1ms")
 }
 
 func TestGCEffectivenessWhenPressureResolved(t *testing.T) {

@@ -195,46 +195,48 @@ func (ml *MemoryLimiter) doGCandReadMemStats() *runtime.MemStats {
 	return ms
 }
 
-// checkLimitAndBackoff returns whether memory is above the soft limit and
-// updates the per-path currentInterval state. A GC is effective if it drops
-// memory below the soft limit or reclaims at least gcEffectivenessThreshold%;
-// an effective observation resets BOTH currentSoftGCInterval and
-// currentHardGCInterval to zero because memory really did come down (a global
-// signal, not a per-path one). After an ineffective forced GC on a path, that
-// path's currentInterval is grown to max(configMin, memCheckWait*0.95),
-// doubled on each subsequent ineffective GC on the same path, and capped at
-// max(configMax, configMin). When configMax is 0, backoff is disabled on this
-// path and the interval will not grow beyond the floor.
-//
-// currentInterval is a pointer to the per-path field to grow; pass nil for
-// the top-of-tick call (didGC=false), which only updates lastStats and may
-// reset both intervals on effective observations.
-//
-// configMin and configMax are only consulted when didGC is true and
-// currentInterval is non-nil. See
-// https://github.com/open-telemetry/opentelemetry-collector/issues/4981.
-func (ml *MemoryLimiter) checkLimitAndBackoff(ms *runtime.MemStats, currentInterval *time.Duration, configMin, configMax time.Duration) (aboveSoftLimit bool) {
+// checkLimitAndBackoff returns whether memory is above the soft limit. When
+// didGC is true (called immediately after a forced GC), it also advances both
+// per-path backoff intervals in lockstep so the inactive path is not caught
+// flat-footed when memory pressure shifts between soft and hard. A GC is
+// effective if it drops memory below the soft limit or reclaims at least
+// gcEffectivenessThreshold%; an effective observation resets both intervals
+// to zero because memory really did come down (a global signal).
+func (ml *MemoryLimiter) checkLimitAndBackoff(ms *runtime.MemStats, didGC bool) (aboveSoftLimit bool) {
 	aboveSoftLimit = ml.usageChecker.aboveSoftLimit(ms)
 	gcWasEffective := !aboveSoftLimit ||
 		ms.Alloc <= ml.lastStats.Alloc*(100-gcEffectivenessThreshold)/100
 	ml.lastStats = ms
 	if gcWasEffective {
-		// Effective observation: memory actually came down. Reset both path
-		// intervals so neither path keeps a stale gate from a prior incident.
 		ml.currentSoftGCInterval = 0
 		ml.currentHardGCInterval = 0
 		return aboveSoftLimit
 	}
-	if currentInterval == nil || configMax == 0 {
+	if !didGC {
 		return aboveSoftLimit
+	}
+	ml.currentSoftGCInterval = ml.nextBackoffInterval(ml.currentSoftGCInterval, ml.minGCIntervalWhenSoftLimited, ml.maxGCIntervalWhenSoftLimited)
+	ml.currentHardGCInterval = ml.nextBackoffInterval(ml.currentHardGCInterval, ml.minGCIntervalWhenHardLimited, ml.maxGCIntervalWhenHardLimited)
+	ml.logger.Warn("Forced GC did not reclaim enough memory. Will back off GC frequency to preserve CPU for recovery.",
+		zap.Duration("next_soft_gc_interval", ml.currentSoftGCInterval),
+		zap.Duration("next_hard_gc_interval", ml.currentHardGCInterval),
+		memstatToZapField(ms))
+	return aboveSoftLimit
+}
+
+// nextBackoffInterval returns the new backoff interval for one path after an
+// ineffective forced GC. When configMax is 0 the path's backoff is disabled
+// and the interval is pinned to configMin (so the path keeps GCing every
+// configMin, or every check interval if configMin is also 0). Otherwise the
+// interval starts at max(configMin, 0.95*memCheckWait), doubles on each
+// ineffective GC, and is capped at max(configMax, configMin).
+func (ml *MemoryLimiter) nextBackoffInterval(current, configMin, configMax time.Duration) time.Duration {
+	if configMax == 0 {
+		return configMin
 	}
 	minInterval := max(configMin, time.Duration(float64(ml.memCheckWait)*0.95))
 	maxInterval := max(configMax, configMin)
-	*currentInterval = min(max(*currentInterval, minInterval)*2, maxInterval)
-	ml.logger.Warn("Forced GC did not reclaim enough memory. Will back off GC frequency to preserve CPU for recovery.",
-		zap.Duration("next_gc_interval", *currentInterval),
-		memstatToZapField(ms))
-	return aboveSoftLimit
+	return min(max(current, minInterval)*2, maxInterval)
 }
 
 // CheckMemLimits inspects current memory usage against threshold and toggles mustRefuse when threshold is exceeded
@@ -243,11 +245,11 @@ func (ml *MemoryLimiter) CheckMemLimits() {
 
 	ml.logger.Debug("Currently used memory.", memstatToZapField(ms))
 
-	// Top-of-tick classification. currentInterval=nil because no forced GC has
-	// run yet this tick. If memory dropped on its own (Go runtime GC, queue
+	// Top-of-tick classification. didGC=false because no forced GC has run
+	// yet this tick. If memory dropped on its own (Go runtime GC, queue
 	// drained), this resets both per-path currentGCIntervals so we won't
 	// suppress the next forced GC unnecessarily.
-	aboveSoftLimit := ml.checkLimitAndBackoff(ms, nil, 0, 0)
+	aboveSoftLimit := ml.checkLimitAndBackoff(ms, false)
 	if !aboveSoftLimit {
 		if ml.mustRefuse.Load() {
 			// Was previously refusing but enough memory is available now, no need to limit.
@@ -265,7 +267,7 @@ func (ml *MemoryLimiter) CheckMemLimits() {
 			ml.logger.Warn("Memory usage is above hard limit. Forcing a GC.", memstatToZapField(ms))
 			ms = ml.doGCandReadMemStats()
 			// Check the limit again to see if GC helped.
-			aboveSoftLimit = ml.checkLimitAndBackoff(ms, &ml.currentHardGCInterval, ml.minGCIntervalWhenHardLimited, ml.maxGCIntervalWhenHardLimited)
+			aboveSoftLimit = ml.checkLimitAndBackoff(ms, true)
 		}
 	} else {
 		gateInterval := max(ml.minGCIntervalWhenSoftLimited, ml.currentSoftGCInterval)
@@ -275,7 +277,7 @@ func (ml *MemoryLimiter) CheckMemLimits() {
 			ml.logger.Info("Memory usage is above soft limit. Forcing a GC.", memstatToZapField(ms))
 			ms = ml.doGCandReadMemStats()
 			// Check the limit again to see if GC helped.
-			aboveSoftLimit = ml.checkLimitAndBackoff(ms, &ml.currentSoftGCInterval, ml.minGCIntervalWhenSoftLimited, ml.maxGCIntervalWhenSoftLimited)
+			aboveSoftLimit = ml.checkLimitAndBackoff(ms, true)
 		}
 	}
 

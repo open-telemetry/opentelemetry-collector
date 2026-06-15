@@ -145,8 +145,9 @@ backoff between forced GC calls while in soft-limited mode. When a forced GC
 fails to free memory, the interval doubles starting from
 `min_gc_interval_when_soft_limited` (or 95% of `check_interval`, whichever is
 larger) up to this cap. Resets to zero on effective GC or memory drop. Set to
-`0` to disable the backoff on this path; the interval will not grow beyond the
-configured min.
+`0` to disable the backoff on this path; the path will then GC at intervals
+of `min_gc_interval_when_soft_limited` (which is every check interval if min
+is also `0`).
 - `max_gc_interval_when_hard_limited` (default = `30s`): Same as above but for
 hard-limited mode. Set to `0` to disable.
 

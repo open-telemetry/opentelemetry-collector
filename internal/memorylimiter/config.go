@@ -49,13 +49,13 @@ type Config struct {
 	// (or 95% of check_interval, whichever is larger) up to this cap. It resets
 	// to zero whenever a GC is effective or memory drops on its own.
 	// Set to 0 to disable the exponential backoff on this path; the interval
-	// will not grow beyond the configured min. See #4981.
+	// will not grow beyond the configured min.
 	MaxGCIntervalWhenSoftLimited time.Duration `mapstructure:"max_gc_interval_when_soft_limited"`
 
 	// MaxGCIntervalWhenHardLimited caps the exponential backoff between forced
 	// GC calls in hard-limited mode. Same semantics as
 	// MaxGCIntervalWhenSoftLimited but applies to the hard-limit path.
-	// Set to 0 to disable the exponential backoff on this path. See #4981.
+	// Set to 0 to disable the exponential backoff on this path.
 	MaxGCIntervalWhenHardLimited time.Duration `mapstructure:"max_gc_interval_when_hard_limited"`
 
 	// MemoryLimitMiB is the maximum amount of memory, in MiB, targeted to be
