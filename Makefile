@@ -423,3 +423,9 @@ gendistributions:
 .PHONY: generate-chloggen-components
 generate-chloggen-components:
 	$(GITHUBGEN) chloggen-components
+
+SCHEMA_DIRS := $(shell find $(CURDIR) -path "*testdata*" -prune -o -path "*internal/metadata/*" -prune -o -name "config.schema.yaml" -exec dirname {} \; | sort -u)
+
+.PHONY: generate-schemas
+generate-schemas:
+	@$(foreach dir,$(SCHEMA_DIRS), cd $(SRC_ROOT)/cmd/schemagen && go run . $(abspath $(dir)) -o $(abspath $(dir));)
