@@ -332,6 +332,7 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 		},
 		"stringsJoin":  strings.Join,
 		"stringsSplit": strings.Split,
+		"trimRight":    strings.TrimRight,
 		"userLinks": func(elems []string) []string {
 			result := make([]string, len(elems))
 			for i, elem := range elems {
@@ -343,7 +344,10 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 			}
 			return result
 		},
-		"casesTitle":  cases.Title(language.English).String,
+		"casesTitle": cases.Title(language.English).String,
+		"uncapitalize": func(s string) string {
+			return strings.ToLower(s[:1]) + s[1:]
+		},
 		"toLowerCase": strings.ToLower,
 		"toCamelCase": func(s string) string {
 			return joinCamelCase(strings.Split(s, "_"), true)
