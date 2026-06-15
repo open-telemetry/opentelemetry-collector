@@ -2629,7 +2629,7 @@ func TestMapCustomDefaults_ArrayOfObjectsOverrides(t *testing.T) {
 		map[string]any{"url": "http://example.com"},
 	}), "", "")
 
-	require.Equal(t, []string{`[0].Url = "http://example.com"`}, exprs)
+	require.Equal(t, []string{`[0].URL = "http://example.com"`}, exprs)
 }
 
 func TestMapCustomDefaults_Panics(t *testing.T) {
@@ -2764,7 +2764,7 @@ func TestNewCfgFns_DefaultHelpers(t *testing.T) {
 		"endpoint",
 		defaultValue("localhost"),
 	))
-	require.Equal(t, []string{`[0].Url = "http://example.com"`}, mapCustomDefaults(
+	require.Equal(t, []string{`[0].URL = "http://example.com"`}, mapCustomDefaults(
 		&ConfigMetadata{
 			Type: "array",
 			Items: &ConfigMetadata{
