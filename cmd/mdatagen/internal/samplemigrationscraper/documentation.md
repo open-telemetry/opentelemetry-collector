@@ -26,7 +26,7 @@ CPU utilization as a ratio.
 - Disable Old Gate: `scraper.samplemigration.DontEmitV0SystemConventions`
 - Enable New Gate: `scraper.samplemigration.EmitV1SystemConventions`
 
-When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, dual emission occurs.
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
 
 #### Attributes
 
@@ -59,7 +59,7 @@ Legacy Linux available memory estimate.
 - Disable Old Gate: `scraper.samplemigration.DontEmitV0SystemConventions`
 - Enable New Gate: `scraper.samplemigration.EmitV1SystemConventions`
 
-When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, dual emission occurs.
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
 
 ### system.cpu.foo
 

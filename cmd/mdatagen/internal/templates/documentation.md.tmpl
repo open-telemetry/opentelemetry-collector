@@ -38,7 +38,7 @@ Emitted Name: `{{ $metricName.EmittedName }}`
 - Disable Old Gate: `{{ $metric.Migration.ThroughGates.DisableOld }}`
 - Enable New Gate: `{{ $metric.Migration.ThroughGates.EnableNew }}`
 
-When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, dual emission occurs.
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
 
 {{- end }}
 
