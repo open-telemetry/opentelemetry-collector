@@ -18,7 +18,7 @@ func TestDefaultMetrics(t *testing.T) {
 	cp, err := NewMetrics(func(context.Context, pmetric.Metrics) error { return nil })
 	assert.NoError(t, err)
 	assert.NoError(t, cp.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
-	assert.Equal(t, Capabilities{MutatesData: false}, cp.Capabilities())
+	assert.Equal(t, Capabilities{MutatesData: false, HasReceivedData: false}, cp.Capabilities())
 }
 
 func TestNilFuncMetrics(t *testing.T) {
@@ -33,6 +33,15 @@ func TestWithCapabilitiesMetrics(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, cp.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
 	assert.Equal(t, Capabilities{MutatesData: true}, cp.Capabilities())
+}
+
+func TestWithCapabilitiesHasReceivedDataMetrics(t *testing.T) {
+	cp, err := NewMetrics(
+		func(context.Context, pmetric.Metrics) error { return nil },
+		WithCapabilities(Capabilities{HasReceivedData: true}))
+	assert.NoError(t, err)
+	assert.NoError(t, cp.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
+	assert.Equal(t, Capabilities{HasReceivedData: true}, cp.Capabilities())
 }
 
 func TestConsumeMetrics(t *testing.T) {

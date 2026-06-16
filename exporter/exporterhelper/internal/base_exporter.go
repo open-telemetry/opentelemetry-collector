@@ -91,6 +91,12 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 		be.ConsumerOptions = append(be.ConsumerOptions, consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 	}
 
+	if be.queueCfg.HasValue() && !be.queueCfg.Get().WaitForResult {
+		// When the queue does not wait for result (async mode), the component has received
+		// the data and taken over the responsibility to move it forward without blocking upstream.
+		be.ConsumerOptions = append(be.ConsumerOptions, consumer.WithCapabilities(consumer.Capabilities{HasReceivedData: true}))
+	}
+
 	if be.queueCfg.HasValue() {
 		qSet := queuebatch.AllSettings[request.Request]{
 			Settings:  be.queueBatchSettings,
