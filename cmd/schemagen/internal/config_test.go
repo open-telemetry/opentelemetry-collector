@@ -242,30 +242,30 @@ status:
 }
 
 func TestReadConfig_PatternResolvesMetadata(t *testing.T) {
-	// Use an import path from within this repository that has a metadata.yaml
-	// declaring a receiver component. schemagen's own go.mod must be able to
-	// resolve it; we run from cmd/schemagen so the local replace directives apply.
-	//
-	// The pattern-based metadata resolution works when the package is reachable
-	// from the current module (local replace or module cache). We pick a package
-	// in testdata to keep the test self-contained and fast.
-	dir := t.TempDir()
-	t.Chdir(dir)
+	moduleDir := setupResolvePackageDirModule(t)
+	inputDir := filepath.Join(moduleDir, "cmd", "tool")
+	t.Chdir(inputDir)
 
-	// Verify the local dirPath has no metadata.yaml (so mode would be Package
-	// by default without pattern-based resolution). We can only test this properly
-	// for local packages because packages.Load needs a real module graph; we just
-	// verify that when pattern == "." the metadata comes from dirPath.
-	createConfigFile(t, dir, "config.go")
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "metadata.yaml"), []byte(`type: testpkg
+	require.NoError(t, os.WriteFile(filepath.Join(inputDir, "metadata.yaml"), []byte(`type: localpkg
 status:
   class: pkg
 `), 0o600))
 
-	// With pattern "." the local metadata.yaml is used — should detect Package.
-	cfg, err := readConfigForTest(t, dir)
+	resolvedPackageDir := filepath.Join(moduleDir, "receiver", "foo")
+	require.NoError(t, os.WriteFile(filepath.Join(resolvedPackageDir, "metadata.yaml"), []byte(`type: remotereceiver
+status:
+  class: receiver
+`), 0o600))
+
+	cfg, err := readConfigForTest(t, inputDir)
 	require.NoError(t, err)
 	require.Equal(t, Package, cfg.Mode)
+	require.Equal(t, "pkg", cfg.Class)
+
+	cfg, err = readConfigForTest(t, "-p", "../../receiver/foo", inputDir)
+	require.NoError(t, err)
+	require.Equal(t, Component, cfg.Mode)
+	require.Equal(t, "receiver", cfg.Class)
 }
 
 func createConfigFile(t *testing.T, dir, name string) string {
