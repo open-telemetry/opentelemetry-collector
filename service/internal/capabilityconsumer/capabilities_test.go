@@ -30,6 +30,18 @@ func TestLogs(t *testing.T) {
 	assert.Equal(t, testdata.GenerateLogs(1), sink.AllLogs()[0])
 }
 
+func TestLogsHasReceivedData(t *testing.T) {
+	sink := &consumertest.LogsSink{}
+	require.Equal(t, consumer.Capabilities{MutatesData: false}, sink.Capabilities())
+
+	// Wrapping with HasReceivedData=true should return a new consumer with updated capabilities
+	wrap := NewLogs(sink, consumer.Capabilities{HasReceivedData: true})
+	assert.Equal(t, consumer.Capabilities{HasReceivedData: true}, wrap.Capabilities())
+
+	require.NoError(t, wrap.ConsumeLogs(context.Background(), testdata.GenerateLogs(1)))
+	assert.Len(t, sink.AllLogs(), 1)
+}
+
 func TestMetrics(t *testing.T) {
 	sink := &consumertest.MetricsSink{}
 	require.Equal(t, consumer.Capabilities{MutatesData: false}, sink.Capabilities())
@@ -43,6 +55,18 @@ func TestMetrics(t *testing.T) {
 	require.NoError(t, wrap.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(1)))
 	assert.Len(t, sink.AllMetrics(), 1)
 	assert.Equal(t, testdata.GenerateMetrics(1), sink.AllMetrics()[0])
+}
+
+func TestMetricsHasReceivedData(t *testing.T) {
+	sink := &consumertest.MetricsSink{}
+	require.Equal(t, consumer.Capabilities{MutatesData: false}, sink.Capabilities())
+
+	// Wrapping with HasReceivedData=true should return a new consumer with updated capabilities
+	wrap := NewMetrics(sink, consumer.Capabilities{HasReceivedData: true})
+	assert.Equal(t, consumer.Capabilities{HasReceivedData: true}, wrap.Capabilities())
+
+	require.NoError(t, wrap.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(1)))
+	assert.Len(t, sink.AllMetrics(), 1)
 }
 
 func TestTraces(t *testing.T) {
@@ -60,6 +84,18 @@ func TestTraces(t *testing.T) {
 	assert.Equal(t, testdata.GenerateTraces(1), sink.AllTraces()[0])
 }
 
+func TestTracesHasReceivedData(t *testing.T) {
+	sink := &consumertest.TracesSink{}
+	require.Equal(t, consumer.Capabilities{MutatesData: false}, sink.Capabilities())
+
+	// Wrapping with HasReceivedData=true should return a new consumer with updated capabilities
+	wrap := NewTraces(sink, consumer.Capabilities{HasReceivedData: true})
+	assert.Equal(t, consumer.Capabilities{HasReceivedData: true}, wrap.Capabilities())
+
+	require.NoError(t, wrap.ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
+	assert.Len(t, sink.AllTraces(), 1)
+}
+
 func TestProfiles(t *testing.T) {
 	sink := &consumertest.ProfilesSink{}
 	require.Equal(t, consumer.Capabilities{MutatesData: false}, sink.Capabilities())
@@ -73,4 +109,16 @@ func TestProfiles(t *testing.T) {
 	require.NoError(t, wrap.ConsumeProfiles(context.Background(), testdata.GenerateProfiles(1)))
 	assert.Len(t, sink.AllProfiles(), 1)
 	assert.Equal(t, testdata.GenerateProfiles(1), sink.AllProfiles()[0])
+}
+
+func TestProfilesHasReceivedData(t *testing.T) {
+	sink := &consumertest.ProfilesSink{}
+	require.Equal(t, consumer.Capabilities{MutatesData: false}, sink.Capabilities())
+
+	// Wrapping with HasReceivedData=true should return a new consumer with updated capabilities
+	wrap := NewProfiles(sink, consumer.Capabilities{HasReceivedData: true})
+	assert.Equal(t, consumer.Capabilities{HasReceivedData: true}, wrap.Capabilities())
+
+	require.NoError(t, wrap.ConsumeProfiles(context.Background(), testdata.GenerateProfiles(1)))
+	assert.Len(t, sink.AllProfiles(), 1)
 }

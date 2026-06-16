@@ -20,11 +20,13 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -33,6 +35,62 @@ func TestBaseExporter(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, be.Shutdown(context.Background()))
+}
+
+// TestBaseExporterQueueHasReceivedData verifies that an exporter with an async queue
+// (WaitForResult=false) sets HasReceivedData=true in its ConsumerOptions, indicating
+// that the component has received the data and taken over responsibility for processing.
+func TestBaseExporterQueueHasReceivedData(t *testing.T) {
+	// An exporter without a queue should NOT set HasReceivedData
+	beNoQueue, err := NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport)
+	require.NoError(t, err)
+	// ConsumerOptions should not contain HasReceivedData=true for non-queued exporter
+	caps := consumer.Capabilities{}
+	for _, opt := range beNoQueue.ConsumerOptions {
+		c := consumer.Capabilities{}
+		testConsumer, _ := consumer.NewLogs(func(context.Context, plog.Logs) error { return nil }, opt)
+		c = testConsumer.Capabilities()
+		caps.HasReceivedData = caps.HasReceivedData || c.HasReceivedData
+	}
+	assert.False(t, caps.HasReceivedData, "non-queued exporter should not set HasReceivedData")
+
+	// An exporter with queue (WaitForResult=false, async mode) SHOULD set HasReceivedData
+	qCfg := NewDefaultQueueConfig()
+	qCfg.WaitForResult = false
+	beWithQueue, err := NewBaseExporter(
+		exportertest.NewNopSettings(exportertest.NopType),
+		pipeline.SignalMetrics,
+		noopExport,
+		WithQueueBatchSettings(newFakeQueueBatch()),
+		WithQueue(configoptional.Some(qCfg)),
+	)
+	require.NoError(t, err)
+	caps = consumer.Capabilities{}
+	for _, opt := range beWithQueue.ConsumerOptions {
+		testConsumer, _ := consumer.NewLogs(func(context.Context, plog.Logs) error { return nil }, opt)
+		c := testConsumer.Capabilities()
+		caps.HasReceivedData = caps.HasReceivedData || c.HasReceivedData
+	}
+	assert.True(t, caps.HasReceivedData, "async-queued exporter (WaitForResult=false) should set HasReceivedData=true")
+
+	// An exporter with queue and WaitForResult=true (sync mode) should NOT set HasReceivedData
+	qCfgSync := NewDefaultQueueConfig()
+	qCfgSync.WaitForResult = true
+	beWithSyncQueue, err := NewBaseExporter(
+		exportertest.NewNopSettings(exportertest.NopType),
+		pipeline.SignalMetrics,
+		noopExport,
+		WithQueueBatchSettings(newFakeQueueBatch()),
+		WithQueue(configoptional.Some(qCfgSync)),
+	)
+	require.NoError(t, err)
+	caps = consumer.Capabilities{}
+	for _, opt := range beWithSyncQueue.ConsumerOptions {
+		testConsumer, _ := consumer.NewLogs(func(context.Context, plog.Logs) error { return nil }, opt)
+		c := testConsumer.Capabilities()
+		caps.HasReceivedData = caps.HasReceivedData || c.HasReceivedData
+	}
+	assert.False(t, caps.HasReceivedData, "sync-queued exporter (WaitForResult=true) should NOT set HasReceivedData")
 }
 
 func TestBaseExporterWithOptions(t *testing.T) {
