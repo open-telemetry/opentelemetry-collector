@@ -24,14 +24,16 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/keepalive"
-	"google.golang.org/grpc/metadata"
+	grpcmetadata "google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
+	grpcotel "google.golang.org/grpc/stats/opentelemetry"
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configgrpc/internal/metadata"
 	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -370,13 +372,13 @@ func (cc *ClientConfig) ToClientConn(
 
 func (cc *ClientConfig) addHeadersIfAbsent(ctx context.Context) context.Context {
 	kv := make([]string, 0, 2*len(cc.Headers))
-	existingMd, _ := metadata.FromOutgoingContext(ctx)
+	existingMd, _ := grpcmetadata.FromOutgoingContext(ctx)
 	for k, v := range cc.Headers.Iter {
 		if len(existingMd.Get(k)) == 0 {
 			kv = append(kv, k, string(v))
 		}
 	}
-	return metadata.AppendToOutgoingContext(ctx, kv...)
+	return grpcmetadata.AppendToOutgoingContext(ctx, kv...)
 }
 
 func (cc *ClientConfig) getGrpcDialOptions(
@@ -457,6 +459,19 @@ func (cc *ClientConfig) getGrpcDialOptions(
 
 	// Enable OpenTelemetry observability plugin.
 	opts = append(opts, grpc.WithStatsHandler(otelgrpc.NewClientHandler(otelOpts...)))
+
+	// Optionally enable the native gRPC OpenTelemetry stats handler alongside otelgrpc.
+	// When enabled, this exposes additional metrics not available from otelgrpc, such as
+	// per-attempt latency (grpc.client.attempt.duration) and compressed message sizes,
+	// which are useful for observing retry behavior.
+	// See: https://github.com/open-telemetry/opentelemetry-collector/issues/15169
+	if metadata.ConfiggrpcNativeGRPCMetricsFeatureGate.IsEnabled() {
+		opts = append(opts, grpcotel.DialOption(grpcotel.Options{
+			MetricsOptions: grpcotel.MetricsOptions{
+				MeterProvider: settings.MeterProvider,
+			},
+		}))
+	}
 
 	if len(cc.Headers) > 0 {
 		opts = append(opts,
@@ -630,6 +645,18 @@ func (sc *ServerConfig) getGrpcServerOptions(
 	// Enable OpenTelemetry observability plugin.
 	opts = append(opts, grpc.StatsHandler(otelgrpc.NewServerHandler(otelOpts...)), grpc.ChainUnaryInterceptor(uInterceptors...), grpc.ChainStreamInterceptor(sInterceptors...))
 
+	// Optionally enable the native gRPC OpenTelemetry stats handler alongside otelgrpc.
+	// When enabled, this exposes additional metrics not available from otelgrpc, such as
+	// grpc.server.call.started and compressed message sizes.
+	// See: https://github.com/open-telemetry/opentelemetry-collector/issues/15169
+	if metadata.ConfiggrpcNativeGRPCMetricsFeatureGate.IsEnabled() {
+		opts = append(opts, grpcotel.ServerOption(grpcotel.Options{
+			MetricsOptions: grpcotel.MetricsOptions{
+				MeterProvider: settings.MeterProvider,
+			},
+		}))
+	}
+
 	// Apply middleware options. Note: OpenTelemetry could be registered as an extension.
 	for _, middleware := range sc.Middlewares {
 		middlewareOptions, err := middleware.GetGRPCServerOptions(ctx, extensions)
@@ -684,7 +711,7 @@ func contextWithClient(ctx context.Context, includeMetadata bool) context.Contex
 		cl.Addr = p.Addr
 	}
 	if includeMetadata {
-		if md, ok := metadata.FromIncomingContext(ctx); ok {
+		if md, ok := grpcmetadata.FromIncomingContext(ctx); ok {
 			copiedMD := md.Copy()
 			if len(md[client.MetadataHostName]) == 0 && len(md[":authority"]) > 0 {
 				copiedMD[client.MetadataHostName] = md[":authority"]
@@ -697,7 +724,7 @@ func contextWithClient(ctx context.Context, includeMetadata bool) context.Contex
 
 func authUnaryServerInterceptor(server extensionauth.Server) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-		headers, ok := metadata.FromIncomingContext(ctx)
+		headers, ok := grpcmetadata.FromIncomingContext(ctx)
 		if !ok {
 			return nil, errMetadataNotFound
 		}
@@ -718,7 +745,7 @@ func authUnaryServerInterceptor(server extensionauth.Server) grpc.UnaryServerInt
 func authStreamServerInterceptor(server extensionauth.Server) grpc.StreamServerInterceptor {
 	return func(srv any, stream grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		ctx := stream.Context()
-		headers, ok := metadata.FromIncomingContext(ctx)
+		headers, ok := grpcmetadata.FromIncomingContext(ctx)
 		if !ok {
 			return errMetadataNotFound
 		}

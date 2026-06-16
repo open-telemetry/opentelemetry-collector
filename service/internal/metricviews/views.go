@@ -22,6 +22,12 @@ func DefaultViews(level configtelemetry.Level) []config.View {
 			dropViewOption(&config.ViewSelector{
 				MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"),
 			}),
+			// Drop native gRPC OpenTelemetry plugin metrics (google.golang.org/grpc/stats/opentelemetry)
+			// if the level is not detailed. These are emitted when the configgrpc.nativeGRPCMetrics
+			// feature gate is enabled and use the "grpc-go" instrumentation scope.
+			dropViewOption(&config.ViewSelector{
+				MeterName: ptr("grpc-go"),
+			}),
 			// Drop duration metric if the level is not detailed
 			dropViewOption(&config.ViewSelector{
 				MeterName:      ptr("go.opentelemetry.io/collector/processor/processorhelper"),
