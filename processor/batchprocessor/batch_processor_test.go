@@ -83,6 +83,34 @@ func TestProcessorLifecycle(t *testing.T) {
 	}
 }
 
+// TestBatchProcessorHasReceivedData verifies that the batch processor correctly declares
+// HasReceivedData=true in its capabilities, indicating it is an asynchronous component
+// that buffers data and returns immediately without blocking the upstream.
+func TestBatchProcessorHasReceivedData(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	ctx := context.Background()
+	processorCreationSet := processortest.NewNopSettings(metadata.Type)
+
+	tProc, err := factory.CreateTraces(ctx, processorCreationSet, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.True(t, tProc.Capabilities().HasReceivedData,
+		"batch processor should declare HasReceivedData=true as it processes data asynchronously")
+	assert.True(t, tProc.Capabilities().MutatesData,
+		"batch processor should declare MutatesData=true")
+
+	mProc, err := factory.CreateMetrics(ctx, processorCreationSet, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.True(t, mProc.Capabilities().HasReceivedData,
+		"batch processor should declare HasReceivedData=true as it processes data asynchronously")
+
+	lProc, err := factory.CreateLogs(ctx, processorCreationSet, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.True(t, lProc.Capabilities().HasReceivedData,
+		"batch processor should declare HasReceivedData=true as it processes data asynchronously")
+}
+
 func TestBatchProcessorSpansDelivered(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)

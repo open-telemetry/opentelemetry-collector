@@ -164,7 +164,7 @@ func (bp *batchProcessor[T]) newShard(md map[string][]string) *shard[T] {
 }
 
 func (bp *batchProcessor[T]) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: true}
+	return consumer.Capabilities{MutatesData: true, HasReceivedData: true}
 }
 
 // Start is invoked during service startup.
