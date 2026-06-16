@@ -275,7 +275,20 @@ func TestResolveLoaderError(t *testing.T) {
 
 	_, err := resolverWithStub(cfg, map[string]*Schema{}).Resolve(root)
 	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to load ref schema")
 	assert.Contains(t, err.Error(), "example.com/mod/missing")
+}
+
+func TestResolveLocalRefNotFoundDropsProperty(t *testing.T) {
+	cfg := &Config{Mode: Component, Namespace: "example.com/mod", AllowedRefs: []string{"example.com/mod"}}
+
+	root := CreateSchema()
+	// "unknown_type" is not registered in Defs
+	root.AddProperty("bad", CreateRefField("unknown_type", ""))
+
+	got, err := resolverWithStub(cfg, nil).Resolve(root)
+	require.NoError(t, err)
+	assert.NotContains(t, got.Properties, "bad")
 }
 
 func TestResolveArrayRef(t *testing.T) {
