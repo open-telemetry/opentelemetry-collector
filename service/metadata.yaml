@@ -213,13 +213,6 @@ feature_gates:
     from_version: 'v0.112.0'
     reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/pull/11477'
     skip_strict_validation: true
-  - id: telemetry.UseLocalHostAsDefaultMetricsAddress
-    description: 'Controls whether default Prometheus metrics server use localhost as the default host for their endpoints'
-    stage: stable
-    from_version: 'v0.111.0'
-    to_version: 'v0.154.0'
-    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/pull/11251'
-    skip_strict_validation: true
   - id: telemetry.newPipelineTelemetry
     description: 'Injects component-identifying scope attributes in internal Collector metrics'
     stage: alpha
