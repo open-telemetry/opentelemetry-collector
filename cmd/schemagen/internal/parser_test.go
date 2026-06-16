@@ -162,6 +162,24 @@ func TestPackageParser(t *testing.T) {
 	require.YAMLEq(t, expectedSchema, givenYaml)
 }
 
+func TestParsePatternNoExportedTypes(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example.com/noexport\n\ngo 1.20\n"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "config.go"), []byte(`package noexport
+
+type config struct{}
+`), 0o600))
+
+	parser := NewParser(&Config{
+		Mode:    Package,
+		DirPath: dir,
+	})
+
+	schema, err := parser.ParsePattern(".")
+	require.Nil(t, schema)
+	require.EqualError(t, err, "no exported types found in the package")
+}
+
 func testMappings() Mappings {
 	return Mappings{
 		"time": PackagesMapping{
