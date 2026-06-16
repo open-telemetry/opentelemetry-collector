@@ -344,7 +344,7 @@ func (ms *ReaggregateMetricWithRequiredMetricConfig) Validate() error {
 type SystemCPUTimeMetricAttributeKey string
 
 const (
-	SystemCPUTimeMetricAttributeKeyCpu SystemCPUTimeMetricAttributeKey = "cpu"
+	SystemCPUTimeMetricAttributeKeyCPU SystemCPUTimeMetricAttributeKey = "cpu"
 )
 
 // SystemCPUTimeMetricConfig provides config for the system.cpu.time metric.
@@ -373,7 +373,7 @@ func (ms *SystemCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 func (ms *SystemCPUTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SystemCPUTimeMetricAttributeKeyCpu:
+		case SystemCPUTimeMetricAttributeKeyCPU:
 		default:
 			return fmt.Errorf("metric system.cpu.time doesn't have an attribute %v, valid attributes: [cpu]", val)
 		}
@@ -487,7 +487,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		SystemCPUTime: SystemCPUTimeMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SystemCPUTimeMetricAttributeKey{SystemCPUTimeMetricAttributeKeyCpu},
+			EnabledAttributes:   []SystemCPUTimeMetricAttributeKey{SystemCPUTimeMetricAttributeKeyCPU},
 		},
 		SystemMemoryUsage: SystemMemoryUsageMetricConfig{
 			Enabled:             true,

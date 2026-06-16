@@ -836,7 +836,7 @@ func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SystemCPUTimeMetricAttributeKeyCpu) {
+	if slices.Contains(m.config.EnabledAttributes, SystemCPUTimeMetricAttributeKeyCPU) {
 		dp.Attributes().PutStr("cpu", cpuAttributeValue)
 	}
 
