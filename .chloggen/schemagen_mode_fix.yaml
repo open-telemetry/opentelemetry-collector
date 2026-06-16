@@ -10,7 +10,7 @@ component: cmd/schemagen
 note: Fix mode detection when using `-p` to target a package outside the current directory.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: []
+issues: [15453]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
