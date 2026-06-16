@@ -23,9 +23,18 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/connector/connectortest"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/service"
+	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
 	"go.opentelemetry.io/collector/service/telemetry/telemetrytest"
 )
@@ -229,6 +238,116 @@ func TestCollectorPartialReceiverReload(t *testing.T) {
 	col.Shutdown()
 	wg.Wait()
 	assert.Equal(t, StateClosed, col.GetState())
+}
+
+// copyTestConfig has a mutable field plus an opaque secret so the copy can be
+// checked for both independence from the original and preservation of secrets.
+type copyTestConfig struct {
+	Endpoint string              `mapstructure:"endpoint"`
+	Token    configopaque.String `mapstructure:"token"`
+}
+
+var copyTestType = component.MustNewType("copytest")
+
+func newCopyTestReceiverFactory() receiver.Factory {
+	return receiver.NewFactory(
+		copyTestType,
+		func() component.Config { return &copyTestConfig{} },
+		receiver.WithTraces(func(_ context.Context, _ receiver.Settings, _ component.Config, _ consumer.Traces) (receiver.Traces, error) {
+			return &nopComponent{}, nil
+		}, component.StabilityLevelStable),
+	)
+}
+
+func newCopyTestExporterFactory() exporter.Factory {
+	return exporter.NewFactory(
+		copyTestType,
+		func() component.Config { return &copyTestConfig{} },
+		exporter.WithTraces(func(_ context.Context, _ exporter.Settings, _ component.Config) (exporter.Traces, error) {
+			return &nopComponent{}, nil
+		}, component.StabilityLevelStable),
+	)
+}
+
+func copyTestFactories(t *testing.T) Factories {
+	var factories Factories
+	var err error
+
+	factories.Receivers, err = MakeFactoryMap(newCopyTestReceiverFactory())
+	require.NoError(t, err)
+	factories.Exporters, err = MakeFactoryMap(newCopyTestExporterFactory())
+	require.NoError(t, err)
+	factories.Processors, err = MakeFactoryMap(processortest.NewNopFactory())
+	require.NoError(t, err)
+	factories.Connectors, err = MakeFactoryMap(connectortest.NewNopFactory())
+	require.NoError(t, err)
+	factories.Extensions, err = MakeFactoryMap(extensiontest.NewNopFactory())
+	require.NoError(t, err)
+	factories.Telemetry = telemetry.NewFactory(func() component.Config { return fakeTelemetryConfig{} })
+
+	return factories
+}
+
+// TestCopyConfig verifies that copyConfig returns a deep copy: mutating the
+// original component configs after the copy must not affect the copy (otherwise
+// a later receiversOnlyChange comparison would always observe a difference and
+// never take the partial-reload path), and opaque secrets must survive the copy
+// unredacted.
+func TestCopyConfig(t *testing.T) {
+	factories := copyTestFactories(t)
+
+	recID := component.MustNewIDWithName("copytest", "r1")
+	expID := component.MustNewIDWithName("copytest", "e1")
+	pipeID := pipeline.NewID(pipeline.SignalTraces)
+
+	cfg := &Config{
+		Receivers: map[component.ID]component.Config{
+			recID: &copyTestConfig{Endpoint: "receiver", Token: "receiver-secret"},
+		},
+		Exporters: map[component.ID]component.Config{
+			expID: &copyTestConfig{Endpoint: "exporter", Token: "exporter-secret"},
+		},
+		Processors: map[component.ID]component.Config{},
+		Connectors: map[component.ID]component.Config{},
+		Extensions: map[component.ID]component.Config{},
+		Service: service.Config{
+			Telemetry: fakeTelemetryConfig{},
+			Pipelines: pipelines.Config{
+				pipeID: &pipelines.PipelineConfig{
+					Receivers: []component.ID{recID},
+					Exporters: []component.ID{expID},
+				},
+			},
+		},
+	}
+
+	copied, err := copyConfig(cfg, factories)
+	require.NoError(t, err)
+
+	// The copy is value-equal to the original, so a comparison sees no change.
+	assert.True(t, receiversOnlyChange(cfg, copied, isConnectorID(cfg.Connectors)),
+		"a fresh copy must compare as receivers-only (no change)")
+
+	// Opaque secrets survive the copy with their real values.
+	assert.Equal(t, configopaque.String("receiver-secret"), copied.Receivers[recID].(*copyTestConfig).Token)
+	assert.Equal(t, configopaque.String("exporter-secret"), copied.Exporters[expID].(*copyTestConfig).Token)
+
+	// Mutating the original after the copy must not touch the copy. This is the
+	// crux: if copyConfig shared component.Config instances, this exporter
+	// mutation would also appear in the copy and the next comparison would
+	// always force a full reload.
+	cfg.Exporters[expID].(*copyTestConfig).Endpoint = "mutated"
+	cfg.Receivers[recID].(*copyTestConfig).Token = "rotated"
+
+	assert.Equal(t, "exporter", copied.Exporters[expID].(*copyTestConfig).Endpoint,
+		"mutating the original exporter config must not affect the copy")
+	assert.Equal(t, configopaque.String("receiver-secret"), copied.Receivers[recID].(*copyTestConfig).Token,
+		"mutating the original receiver secret must not affect the copy")
+
+	// And the copy still reports a real difference against the mutated original
+	// (the exporter changed), confirming it is an independent snapshot.
+	assert.False(t, receiversOnlyChange(copied, cfg, isConnectorID(cfg.Connectors)),
+		"after mutating the original exporter, the copy must observe the difference")
 }
 
 func TestCollectorReportError(t *testing.T) {

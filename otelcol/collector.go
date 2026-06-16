@@ -21,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/otelcol/internal/grpclog"
 	"go.opentelemetry.io/collector/service"
 )
@@ -119,7 +120,9 @@ type Collector struct {
 	bc                         *bufferedCore
 	updateConfigProviderLogger func(core zapcore.Core)
 
-	// currentCfg holds the last successfully applied configuration.
+	// currentCfg holds a deep copy of the last successfully applied
+	// configuration. It must be an independent copy (see copyConfig) because
+	// the running components may mutate the configs they were built from.
 	// Only populated when receiver partial reload is enabled.
 	currentCfg *Config
 }
@@ -263,7 +266,13 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return multierr.Combine(err, col.service.Shutdown(ctx))
 	}
 	if service.ReceiverPartialReloadEnabled() {
-		col.currentCfg = cfg
+		// copy configuration to ensure that components that mutate the configuration
+		// don't affect the ability to compare the changes.
+		storedCfg, copyErr := copyConfig(cfg, factories)
+		if copyErr != nil {
+			return copyErr
+		}
+		col.currentCfg = storedCfg
 	}
 	col.setCollectorState(StateRunning)
 
@@ -302,6 +311,28 @@ func (col *Collector) reloadConfiguration(ctx context.Context) error {
 	return nil
 }
 
+// copyConfig returns a deep copy of cfg with independent component.Config values.
+func copyConfig(cfg *Config, factories Factories) (*Config, error) {
+	conf := confmap.New()
+	if err := conf.Marshal(cfg, xconfmap.WithUnredacted()); err != nil {
+		return nil, fmt.Errorf("could not marshal configuration for copy: %w", err)
+	}
+
+	settings, err := unmarshal(conf, factories)
+	if err != nil {
+		return nil, fmt.Errorf("could not unmarshal configuration copy: %w", err)
+	}
+
+	return &Config{
+		Receivers:  settings.Receivers.Configs(),
+		Processors: settings.Processors.Configs(),
+		Exporters:  settings.Exporters.Configs(),
+		Connectors: settings.Connectors.Configs(),
+		Extensions: settings.Extensions.Configs(),
+		Service:    settings.Service,
+	}, nil
+}
+
 // tryPartialReceiverReload attempts to reload only the receiver components if
 // the configuration change is limited to receivers. The bool return indicates
 // whether a partial reload was attempted (true) or the change requires a full
@@ -335,7 +366,11 @@ func (col *Collector) tryPartialReceiverReload(ctx context.Context) (bool, error
 		return true, fmt.Errorf("partial receiver reload failed: %w", err)
 	}
 
-	col.currentCfg = newCfg
+	storedCfg, err := copyConfig(newCfg, factories)
+	if err != nil {
+		return true, err
+	}
+	col.currentCfg = storedCfg
 	return true, nil
 }
 
