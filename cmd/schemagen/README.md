@@ -12,7 +12,15 @@ and the generation process would be reversed – Go config files from schemas.
 ## Modes
 
 Script can generate schemas for components and packages. There are two distinct modes of operation:
-`component` and `package`. Schemagen automatically detects the mode based on metadata.yaml file content.
+`component` and `package`. Schemagen automatically detects the mode based on `metadata.yaml` file content.
+
+When the `-p` flag targets a package outside the current directory, schemagen resolves the target
+package's source directory and reads its own `metadata.yaml` for mode detection. This works for any
+package reachable from the `go.mod` of the directory you run schemagen from — including packages
+from other repositories that are present in the module cache as dependencies. If the package is not
+in the local module graph, auto-detection falls back to the default mode; use the `-m` flag to
+override it explicitly in that case. The generated schema is always written to the local output
+folder, not to the resolved package directory.
 
 ### Component mode
 
@@ -57,7 +65,8 @@ You can also go to specific component folder and run `make schemagen` directly.
 | `-o` | Given directory (or `outputFolder` from `.schemagen.yaml` if provided) | Folder that will receive the generated `*.schema.<ext>` file. |
 | `-t` | `yaml`                                                                 | Output format. Accepts `yaml`, `yml`, or `json`.              |
 | `-r` | `false`                                                                | Resolve `$ref` entries inline (see [Ref resolution](#ref-resolution)). |
-| `-p` | `.`                                                                    | Go package pattern passed to `packages.Load`. Use a fully-qualified import path (e.g. `go.opentelemetry.io/collector/receiver/otlpreceiver`) to target a specific package instead of the current directory. |
+| `-p` | `.`                                                                    | Go package pattern passed to `packages.Load`. Use a fully-qualified import path (e.g. `go.opentelemetry.io/collector/receiver/otlpreceiver`) to target a specific package instead of the current directory. When non-default, schemagen resolves the target package's source directory and reads its `metadata.yaml` for mode detection. Requires the package to be reachable from the local `go.mod`. |
+| `-m` | *(auto-detected)*                                                      | Override the run mode: `component` or `package`. Required when using `-p` with a package that is not in the local module graph, since `metadata.yaml` cannot be located automatically in that case. |
 
 The schema `$id` is derived from the Go package import path and the `$title` is the package name with the current
 run mode (`component`/`package`) appended.
