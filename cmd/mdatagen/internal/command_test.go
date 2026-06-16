@@ -322,6 +322,8 @@ foo
 			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, generatedPackageDir, "generated_status.go"), []byte("status"), 0o600))
 			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry_test.go"), []byte("test"), 0o600))
 			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, generatedPackageDir, "generated_component_test.go"), []byte("test"), 0o600))
+			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, generatedPackageDir, "generated_feature_gates.go"), []byte("// stale"), 0o600))
+			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, "documentation.md"), []byte("stale documentation"), 0o600))
 
 			err = run(metadataFile)
 			if tt.wantOrderErr {
@@ -392,6 +394,12 @@ foo
 				}
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry.go"))
+			}
+
+			if tt.wantFeatureGatesGenerated {
+				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_feature_gates.go"))
+			} else {
+				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_feature_gates.go"))
 			}
 
 			if wantDocumentationGenerated {
