@@ -63,7 +63,7 @@ func (p *Parser) ParsePattern(pattern string) (*Schema, error) {
 	p.processPackages(set, pkgs)
 
 	// select types to process
-	if err := p.feedProcessQueue(); err != nil {
+	if err := p.feedProcessQueue(pattern); err != nil {
 		return nil, err
 	}
 
@@ -119,7 +119,7 @@ func (p *Parser) collectTypesAndImports(file *ast.File, pkgPath string, cmap ast
 	}
 }
 
-func (p *Parser) feedProcessQueue() error {
+func (p *Parser) feedProcessQueue(pattern string) error {
 	configTypeName := p.config.ConfigType
 	// in component mode process only the config type initially
 	if p.config.Mode == Component {
@@ -132,7 +132,11 @@ func (p *Parser) feedProcessQueue() error {
 		}
 	}
 	if len(p.types) == 0 {
-		return errors.New("no exported types found in the package")
+		errMsg := "no exported types found in the package"
+		if pattern != "." {
+			errMsg += fmt.Sprintf(" for pattern %q", pattern)
+		}
+		return errors.New(errMsg)
 	}
 	return nil
 }

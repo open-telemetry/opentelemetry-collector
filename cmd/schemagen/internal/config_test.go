@@ -21,6 +21,7 @@ func TestReadConfig(t *testing.T) {
 	cfg, err := readConfigForTest(t, dir)
 	require.NoError(t, err)
 
+	// No metadata.yaml present: falls back to the default mode (Package).
 	require.Equal(t, Package, cfg.Mode)
 	require.Equal(t, dir, cfg.DirPath)
 	require.Equal(t, dir, cfg.OutputFolder)
@@ -201,6 +202,72 @@ status:
 	}
 }
 
+func TestReadConfig_ModeOverride(t *testing.T) {
+	t.Run("valid override to package", func(t *testing.T) {
+		dir := t.TempDir()
+		t.Chdir(dir)
+		// Write a metadata.yaml that would yield component mode.
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "metadata.yaml"), []byte(`type: testreceiver
+status:
+  class: receiver
+`), 0o600))
+
+		cfg, err := readConfigForTestWithMode(t, "package", dir)
+		require.NoError(t, err)
+		require.Equal(t, Package, cfg.Mode)
+	})
+
+	t.Run("valid override to component", func(t *testing.T) {
+		dir := t.TempDir()
+		t.Chdir(dir)
+		// Write a metadata.yaml that would yield package mode (unknown class).
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "metadata.yaml"), []byte(`type: testpkg
+status:
+  class: pkg
+`), 0o600))
+
+		cfg, err := readConfigForTestWithMode(t, "component", dir)
+		require.NoError(t, err)
+		require.Equal(t, Component, cfg.Mode)
+	})
+
+	t.Run("invalid override value", func(t *testing.T) {
+		dir := t.TempDir()
+		t.Chdir(dir)
+
+		_, err := readConfigForTestWithMode(t, "bogus", dir)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "unknown mode")
+	})
+}
+
+func TestReadConfig_PatternResolvesMetadata(t *testing.T) {
+	moduleDir := setupResolvePackageDirModule(t)
+	inputDir := filepath.Join(moduleDir, "cmd", "tool")
+	t.Chdir(inputDir)
+
+	require.NoError(t, os.WriteFile(filepath.Join(inputDir, "metadata.yaml"), []byte(`type: localpkg
+status:
+  class: pkg
+`), 0o600))
+
+	resolvedPackageDir := filepath.Join(moduleDir, "receiver", "foo")
+	require.NoError(t, os.WriteFile(filepath.Join(resolvedPackageDir, "metadata.yaml"), []byte(`type: remotereceiver
+status:
+  class: receiver
+`), 0o600))
+
+	cfg, err := readConfigForTest(t, inputDir)
+	require.NoError(t, err)
+	require.Equal(t, Package, cfg.Mode)
+	require.Equal(t, "pkg", cfg.Class)
+
+	cfg, err = readConfigForTest(t, "-p", "../../receiver/foo", inputDir)
+	require.NoError(t, err)
+	require.Equal(t, Component, cfg.Mode)
+	require.Equal(t, "receiver", cfg.Class)
+}
+
 func createConfigFile(t *testing.T, dir, name string) string {
 	t.Helper()
 	target := filepath.Join(dir, name)
@@ -210,6 +277,17 @@ func createConfigFile(t *testing.T, dir, name string) string {
 
 func readConfigForTest(t *testing.T, args ...string) (*Config, error) {
 	t.Helper()
+	return readConfigWithFlags(t, "", args...)
+}
+
+// readConfigForTestWithMode is like readConfigForTest but prepends -m <mode> to the args.
+func readConfigForTestWithMode(t *testing.T, mode string, args ...string) (*Config, error) {
+	t.Helper()
+	return readConfigWithFlags(t, mode, args...)
+}
+
+func readConfigWithFlags(t *testing.T, mode string, args ...string) (*Config, error) {
+	t.Helper()
 
 	origArgs := os.Args
 	origCommandLine := flag.CommandLine
@@ -217,6 +295,7 @@ func readConfigForTest(t *testing.T, args ...string) (*Config, error) {
 	origOutputFolder := outputFolder
 	origFileType := fileType
 	origPattern := pattern
+	origModeOverride := modeOverride
 
 	flag.CommandLine = flag.NewFlagSet(origArgs[0], flag.ContinueOnError)
 	flag.CommandLine.SetOutput(io.Discard)
@@ -225,8 +304,15 @@ func readConfigForTest(t *testing.T, args ...string) (*Config, error) {
 	outputFolder = flag.String("o", "", "Output schema folder")
 	fileType = flag.String("t", "yaml", "Output file type (yaml or json)")
 	pattern = flag.String("p", ".", "Optional pattern to match config struct package")
+	modeOverride = flag.String("m", "", "Override detected run mode: component or package")
 
-	os.Args = append([]string{origArgs[0]}, args...)
+	cliArgs := []string{origArgs[0]}
+	if mode != "" {
+		cliArgs = append(cliArgs, "-m", mode)
+	}
+	cliArgs = append(cliArgs, args...)
+	os.Args = cliArgs
+
 	t.Cleanup(func() {
 		os.Args = origArgs
 		flag.CommandLine = origCommandLine
@@ -234,6 +320,7 @@ func readConfigForTest(t *testing.T, args ...string) (*Config, error) {
 		outputFolder = origOutputFolder
 		fileType = origFileType
 		pattern = origPattern
+		modeOverride = origModeOverride
 	})
 
 	return ReadConfig()
