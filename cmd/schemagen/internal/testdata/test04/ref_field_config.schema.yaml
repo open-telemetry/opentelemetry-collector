@@ -1,0 +1,27 @@
+type: object
+$defs:
+  database_config:
+    properties:
+      host:
+        type: string
+      password:
+        type: string
+      port:
+        type: integer
+      username:
+        type: string
+    type: object
+  network_config:
+    properties:
+      host:
+        type: string
+      port:
+        type: integer
+    type: object
+properties:
+  database:
+    $ref: database_config
+  network:
+    $ref: network_config
+  auth:
+    $ref: ./internal.authentication
