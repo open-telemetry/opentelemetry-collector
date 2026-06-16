@@ -1,6 +1,0 @@
-change_type: enhancement
-component: all
-note: Clarify recommended processor ordering in processor/README.md with inline reasoning for each position.
-issues: [15075]
-subtext:
-change_logs: [user]
