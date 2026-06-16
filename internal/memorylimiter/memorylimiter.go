@@ -65,9 +65,11 @@ type MemoryLimiter struct {
 	// (held by live references in exporter queues during downstream outages).
 	// Each resets to zero whenever a GC on its path is effective or memory
 	// drops on its own, and doubles after each ineffective GC on its path up
-	// to the corresponding maxGCIntervalWhen*Limited cap. A floor of
-	// max(minGCIntervalWhen*Limited, memCheckWait*0.95) is applied before
-	// doubling so user-configured pacing is never reduced. The state is kept
+	// to the corresponding maxGCIntervalWhen(Hard|Soft)Limited cap. The floor
+	// for doubling is max(minGCIntervalWhen(Hard|Soft)Limited, memCheckWait*0.95):
+	// the configured minimum if the operator set one, otherwise just under
+	// memCheckWait since the ticker cannot fire faster than that anyway (95%
+	// leaves slack for platforms with coarse time resolution). State is kept
 	// per-path so that disabling backoff on one path (max=0) does not
 	// influence gating on the other path.
 	currentSoftGCInterval time.Duration
