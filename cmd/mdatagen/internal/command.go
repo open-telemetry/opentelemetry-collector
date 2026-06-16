@@ -27,6 +27,7 @@ import (
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 const (
@@ -252,6 +253,40 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 		"attributeInfo": func(an AttributeName) Attribute {
 			return md.Attributes[an]
 		},
+		"convertValue": func(fromType, toType ValueType, valueName string) string {
+			if fromType.ValueType == toType.ValueType {
+				return valueName
+			}
+			if fromType.ValueType == pcommon.ValueTypeInt && toType.ValueType == pcommon.ValueTypeStr {
+				return fmt.Sprintf("strconv.FormatInt(%s, 10)", valueName)
+			}
+			if fromType.ValueType == pcommon.ValueTypeStr && toType.ValueType == pcommon.ValueTypeInt {
+				return fmt.Sprintf("mustParseInt64(%s)", valueName)
+			}
+			return valueName
+		},
+		"needsStrToIntConversion": func() bool {
+			for _, metric := range md.Metrics {
+				if metric.Migration == nil {
+					continue
+				}
+				targetMetric, exists := md.Metrics[metric.Migration.To]
+				if !exists {
+					continue
+				}
+				for i, attr := range metric.Attributes {
+					if i >= len(targetMetric.Attributes) {
+						break
+					}
+					fromType := md.Attributes[attr].Type
+					toType := md.Attributes[targetMetric.Attributes[i]].Type
+					if fromType.ValueType == pcommon.ValueTypeStr && toType.ValueType == pcommon.ValueTypeInt {
+						return true
+					}
+				}
+			}
+			return false
+		},
 		"defaultAttributes": func(ans []AttributeName) []string {
 			var atts []string
 			for _, an := range ans {
@@ -312,6 +347,41 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 			sort.Slice(used, func(i, j int) bool { return string(used[i]) < string(used[j]) })
 
 			return used
+		},
+		"getLegacyAttributes": func(targetMetricName MetricName) []AttributeName {
+			if legacyMetrics, ok := md.Metrics[MetricName(targetMetricName.EmittedName())]; ok {
+				if legacyMetrics.Migration == nil || legacyMetrics.Migration.To != targetMetricName {
+					return nil
+				}
+				return legacyMetrics.Attributes
+			}
+			return nil
+		},
+		"hasDifferentAttributes": func(legacyMetricName MetricName) bool {
+			legacyMetric := md.Metrics[legacyMetricName]
+			if legacyMetric.Migration == nil {
+				return false
+			}
+			targetMetric, exists := md.Metrics[legacyMetric.Migration.To]
+			if !exists {
+				return false
+			}
+			if legacyMetricName.EmittedName() != legacyMetric.Migration.To.EmittedName() {
+				return false
+			}
+			if len(legacyMetric.Attributes) != len(targetMetric.Attributes) {
+				return true
+			}
+			targetAttrSet := make(map[AttributeName]bool)
+			for _, attr := range targetMetric.Attributes {
+				targetAttrSet[attr] = true
+			}
+			for _, attr := range legacyMetric.Attributes {
+				if !targetAttrSet[attr] {
+					return true
+				}
+			}
+			return false
 		},
 		"metricInfo": func(mn MetricName) Metric {
 			return md.Metrics[mn]

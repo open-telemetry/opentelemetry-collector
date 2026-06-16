@@ -98,6 +98,22 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+{{- range $name, $metric := .Metrics }}
+{{ if and $reag (hasAggregatableAttributes $metric.Attributes) -}}
+func Test{{ $name.Render }}MetricsConfig_Validate(t *testing.T) {
+  cfg := DefaultMetricsConfig().{{ $name.Render }}
+  require.NoError(t, cfg.Validate())
+
+  cfg.EnabledAttributes = []{{ $name.Render }}MetricAttributeKey{"invalid"}
+  require.ErrorContains(t, cfg.Validate(), "metric {{ $name }} doesn't have an attribute invalid, valid attributes: [{{ range $index, $element := $metric.Attributes -}}{{ if $index }}, {{ end }}{{ (attributeInfo $element).Name }}{{ end }}]")
+
+  cfg = DefaultMetricsConfig().{{ $name.Render }}
+  cfg.AggregationStrategy = "invalid"
+  require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+{{ end }}
+{{ end }}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
