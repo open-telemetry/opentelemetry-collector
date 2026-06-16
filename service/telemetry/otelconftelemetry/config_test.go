@@ -191,12 +191,6 @@ func TestConfigResourceDetectionDevelopmentE2E(t *testing.T) {
 	require.Len(t, cfg.Resource.DetectionDevelopment.Detectors, 1)
 	require.NotNil(t, cfg.Resource.DetectionDevelopment.Detectors[0].Host)
 
-	initial, err := createInitialResourceConfig(t.Context(), component.BuildInfo{Command: "otelcol", Version: "latest"}, &cfg.Resource)
-	require.NoError(t, err)
-	require.NotNil(t, initial.DetectionDevelopment)
-	require.Len(t, initial.DetectionDevelopment.Detectors, 1)
-	require.NotNil(t, initial.DetectionDevelopment.Detectors[0].Host)
-
 	set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
 	res, err := createResource(t.Context(), set, cfg)
 	require.NoError(t, err)

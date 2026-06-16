@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
-	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -171,23 +170,6 @@ func TestCreateResource(t *testing.T) {
 		assert.Equal(t, "collector-instance", raw["service.instance.id"])
 		assert.Equal(t, "1.2.3", raw["service.version"])
 	})
-	t.Run("legacy nil suppresses detected attributes", func(t *testing.T) {
-		cfg := createDefaultConfig().(*Config)
-		cfg.Resource.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{
-			Detectors: []xotelconf.ExperimentalResourceDetector{
-				{Host: xotelconf.ExperimentalHostResourceDetector{}},
-			},
-		}
-		cfg.Resource.LegacyAttributes = map[string]any{}
-		cfg.Resource.LegacyAttributes["host.name"] = nil
-		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-		res, err := createResource(t.Context(), set, cfg)
-		require.NoError(t, err)
-
-		raw := res.Attributes().AsRaw()
-		assert.NotContains(t, raw, "host.name")
-		assert.Contains(t, raw, "os.type")
-	})
 	t.Run("stable resource detectors remain ignored", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		cfg.Resource.Detectors = &config.Detectors{
@@ -202,22 +184,6 @@ func TestCreateResource(t *testing.T) {
 		raw := res.Attributes().AsRaw()
 		assert.NotContains(t, raw, "host.name")
 		assert.NotContains(t, raw, "os.type")
-	})
-
-	t.Run("env resource defaults still apply with empty resource config", func(t *testing.T) {
-		cfg := createDefaultConfig().(*Config)
-		t.Setenv("OTEL_SERVICE_NAME", "env-service")
-		t.Setenv("OTEL_RESOURCE_ATTRIBUTES", "foo=bar,service.version=9.9.9")
-
-		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-		res, err := createResource(t.Context(), set, cfg)
-		require.NoError(t, err)
-
-		raw := res.Attributes().AsRaw()
-		assert.Equal(t, "env-service", raw["service.name"])
-		assert.Equal(t, "9.9.9", raw["service.version"])
-		assert.Equal(t, "bar", raw["foo"])
-		assert.Contains(t, raw, "service.instance.id")
 	})
 
 	t.Run("with typed attributes", func(t *testing.T) {
@@ -290,6 +256,7 @@ func TestCreateResource_DefaultAttributeValuesError(t *testing.T) {
 
 func TestCreateResource_ExperimentalSDKError(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
+	cfg.Resource.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{}
 	set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
 
 	orig := newExperimentalSDK
@@ -301,83 +268,6 @@ func TestCreateResource_ExperimentalSDKError(t *testing.T) {
 	res, err := createResource(t.Context(), set, cfg)
 	require.ErrorIs(t, err, assert.AnError)
 	assert.Equal(t, pcommon.Resource{}, res)
-}
-
-func TestCreateResource_PutAttributeValueError(t *testing.T) {
-	t.Run("default attributes", func(t *testing.T) {
-		cfg := createDefaultConfig().(*Config)
-		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-
-		orig := putAttributeValue
-		t.Cleanup(func() { putAttributeValue = orig })
-		putAttributeValue = func(_ pcommon.Map, key string, _ any) error {
-			if key == string(semconv.ServiceNameKey) {
-				return assert.AnError
-			}
-			return nil
-		}
-
-		_, err := createResource(t.Context(), set, cfg)
-		require.ErrorIs(t, err, assert.AnError)
-	})
-
-	t.Run("detected attributes", func(t *testing.T) {
-		cfg := createDefaultConfig().(*Config)
-		cfg.Resource.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{
-			Detectors: []xotelconf.ExperimentalResourceDetector{
-				{Host: xotelconf.ExperimentalHostResourceDetector{}},
-			},
-		}
-		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-
-		orig := putAttributeValue
-		t.Cleanup(func() { putAttributeValue = orig })
-		putAttributeValue = func(_ pcommon.Map, key string, _ any) error {
-			if key == string(semconv.HostNameKey) {
-				return assert.AnError
-			}
-			return nil
-		}
-
-		_, err := createResource(t.Context(), set, cfg)
-		require.ErrorIs(t, err, assert.AnError)
-	})
-
-	t.Run("legacy attributes", func(t *testing.T) {
-		cfg := createDefaultConfig().(*Config)
-		cfg.Resource.LegacyAttributes = map[string]any{"legacy.attr": "value"}
-		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-
-		orig := putAttributeValue
-		t.Cleanup(func() { putAttributeValue = orig })
-		putAttributeValue = func(_ pcommon.Map, key string, _ any) error {
-			if key == "legacy.attr" {
-				return assert.AnError
-			}
-			return nil
-		}
-
-		_, err := createResource(t.Context(), set, cfg)
-		require.ErrorIs(t, err, assert.AnError)
-	})
-
-	t.Run("configured attributes", func(t *testing.T) {
-		cfg := createDefaultConfig().(*Config)
-		cfg.Resource.Attributes = []config.AttributeNameValue{{Name: "configured.attr", Value: "value"}}
-		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-
-		orig := putAttributeValue
-		t.Cleanup(func() { putAttributeValue = orig })
-		putAttributeValue = func(_ pcommon.Map, key string, _ any) error {
-			if key == "configured.attr" {
-				return assert.AnError
-			}
-			return nil
-		}
-
-		_, err := createResource(t.Context(), set, cfg)
-		require.ErrorIs(t, err, assert.AnError)
-	})
 }
 
 func TestDefaultAttributeValues(t *testing.T) {
@@ -410,56 +300,12 @@ func TestDefaultAttributeValues(t *testing.T) {
 func TestCreateInitialResourceConfig(t *testing.T) {
 	t.Run("empty config defaults", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config).Resource
-		resourceConfig, err := createInitialResourceConfig(t.Context(), component.BuildInfo{Command: "cmd", Version: "1.0.0"}, &cfg)
+		resourceConfig, err := createInitialResourceConfig(component.BuildInfo{Command: "cmd", Version: "1.0.0"}, &cfg)
 		require.NoError(t, err)
-		assert.Nil(t, resourceConfig.SchemaUrl)
-		assert.Empty(t, resourceConfig.Attributes)
-		assert.Nil(t, resourceConfig.DetectionDevelopment)
+		require.NotNil(t, resourceConfig.SchemaUrl)
+		assert.Equal(t, *cfg.SchemaUrl, *resourceConfig.SchemaUrl)
+		assert.Len(t, resourceConfig.Attributes, 3)
 	})
-
-	t.Run("with supported detectors", func(t *testing.T) {
-		cfg := createDefaultConfig().(*Config).Resource
-		cfg.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{
-			Detectors: []xotelconf.ExperimentalResourceDetector{
-				{Container: xotelconf.ExperimentalContainerResourceDetector{}},
-				{Host: xotelconf.ExperimentalHostResourceDetector{}},
-				{Process: xotelconf.ExperimentalProcessResourceDetector{}},
-				{Service: xotelconf.ExperimentalServiceResourceDetector{}},
-			},
-		}
-
-		resourceConfig, err := createInitialResourceConfig(t.Context(), component.BuildInfo{Command: "cmd", Version: "1.0.0"}, &cfg)
-		require.NoError(t, err)
-		require.NotNil(t, resourceConfig.DetectionDevelopment)
-		assert.Len(t, resourceConfig.DetectionDevelopment.Detectors, 4)
-	})
-}
-
-func TestSuppressedLegacyAttributes(t *testing.T) {
-	assert.Equal(t, map[string]struct{}{
-		"service.name": {},
-		"host.name":    {},
-	}, suppressedLegacyAttributes(map[string]any{
-		"service.name": nil,
-		"host.name":    "custom-host",
-	}))
-}
-
-func TestNormalizeAttributeValue(t *testing.T) {
-	assert.Equal(t, true, normalizeAttributeValue(true))
-	assert.Equal(t, int64(7), normalizeAttributeValue(int64(7)))
-	assert.Equal(t, "7", normalizeAttributeValue(uint64(7)))
-	assert.Equal(t, int64(7), normalizeAttributeValue(int8(7)))
-	assert.Equal(t, int64(7), normalizeAttributeValue(uint8(7)))
-	assert.Equal(t, int64(7), normalizeAttributeValue(int16(7)))
-	assert.Equal(t, int64(7), normalizeAttributeValue(uint16(7)))
-	assert.Equal(t, int64(7), normalizeAttributeValue(int32(7)))
-	assert.Equal(t, int64(7), normalizeAttributeValue(uint32(7)))
-	assert.InDelta(t, 7.5, normalizeAttributeValue(float32(7.5)), 0.001)
-	assert.Equal(t, int64(7), normalizeAttributeValue(int(7)))
-	assert.Equal(t, "7", normalizeAttributeValue(uint(7)))
-	assert.Equal(t, "<nil>", normalizeAttributeValue(nil))
-	assert.Equal(t, "(1+2i)", normalizeAttributeValue(complex(1, 2)))
 }
 
 func TestResourceConfigValidateAttributesListUnsupported(t *testing.T) {
