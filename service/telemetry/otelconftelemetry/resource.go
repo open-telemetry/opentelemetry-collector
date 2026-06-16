@@ -36,10 +36,6 @@ var defaultAttributeValues = func(buildInfo component.BuildInfo) (map[string]str
 var newExperimentalSDK = xotelconf.NewSDK
 
 func createInitialResourceConfig(buildInfo component.BuildInfo, cfg *ResourceConfig) (*otelconf.Resource, error) {
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
-
 	defaults, err := defaultAttributeValues(buildInfo)
 	if err != nil {
 		return nil, err
