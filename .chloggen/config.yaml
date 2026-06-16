@@ -69,6 +69,7 @@ components:
     - pkg/receiver/receivertest
     - pkg/receiverhelper
     - pkg/samplepkg
+    - pkg/sampletelemetrysubstitution
     - pkg/scraper
     - pkg/scraper/scrapertest
     - pkg/scraperhelper

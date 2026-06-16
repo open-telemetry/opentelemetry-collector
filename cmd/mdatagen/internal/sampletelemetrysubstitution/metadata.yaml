@@ -1,6 +1,11 @@
 type: sampletelemetrysubstitution
-parent: mdatagen
 github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  class: pkg
+  stability:
+    beta: [traces, metrics, logs]
 
 telemetry:
   # Opt into the WithMetricNamePrefixReplacement option on the generated
