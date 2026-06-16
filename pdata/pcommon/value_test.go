@@ -84,6 +84,7 @@ func TestValueType(t *testing.T) {
 	assert.Equal(t, "Map", ValueTypeMap.String())
 	assert.Equal(t, "Slice", ValueTypeSlice.String())
 	assert.Equal(t, "Bytes", ValueTypeBytes.String())
+	assert.Equal(t, "Strindex", ValueTypeStrindex.String())
 	assert.Empty(t, ValueType(100).String())
 }
 
@@ -228,6 +229,11 @@ func TestNilOrigSetValue(t *testing.T) {
 	av = NewValueEmpty()
 	require.NoError(t, av.SetEmptySlice().FromRaw([]any{int64(1), "val"}))
 	assert.Equal(t, []any{int64(1), "val"}, av.Slice().AsRaw())
+
+	av = NewValueEmpty()
+	index := int32(123456789)
+	av.SetStrindex(index)
+	assert.Equal(t, index, av.Strindex())
 }
 
 func TestValue_MoveTo(t *testing.T) {
@@ -372,6 +378,11 @@ func TestValueAsString(t *testing.T) {
 			}(),
 			expected: `["<",">","&"]`,
 		},
+		{
+			name:     "strindex",
+			input:    NewValueStrindex(int32(123456789)),
+			expected: `<strindex>123456789`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -429,6 +440,11 @@ func TestValueAsRaw(t *testing.T) {
 				"floatKey": 18.6,
 				"intKey":   int64(7),
 			},
+		},
+		{
+			name:     "strindex",
+			input:    NewValueStrindex(int32(123456789)),
+			expected: Strindex(123456789),
 		},
 	}
 	for _, tt := range tests {
@@ -566,6 +582,11 @@ func TestNewValueFromRaw(t *testing.T) {
 				assert.NoError(t, s.Slice().FromRaw([]any{}))
 				return s
 			})(),
+		},
+		{
+			name:     "strindex",
+			input:    Strindex(123456789),
+			expected: NewValueStrindex(int32(123456789)),
 		},
 	}
 	for _, tt := range tests {
@@ -758,6 +779,18 @@ func TestValueEqual(t *testing.T) {
 			}(),
 			expected: false,
 		},
+		{
+			name:       "same strindexes",
+			value:      NewValueStrindex(int32(123456789)),
+			comparison: NewValueStrindex(int32(123456789)),
+			expected:   true,
+		},
+		{
+			name:       "different strindexes",
+			value:      NewValueStrindex(int32(123456789)),
+			comparison: NewValueStrindex(int32(12346789)),
+			expected:   false,
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.expected, tt.value.Equal(tt.comparison))
@@ -836,6 +869,11 @@ func BenchmarkValueEqual(b *testing.B) {
 				m.Map().PutStr("hello", "world")
 				return m
 			}(),
+		},
+		{
+			name:       "strindexes",
+			value:      NewValueStrindex(int32(123456789)),
+			comparison: NewValueStrindex(int32(123456789)),
 		},
 	} {
 		b.Run(bb.name, func(b *testing.B) {
