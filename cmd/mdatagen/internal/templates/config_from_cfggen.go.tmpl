@@ -42,7 +42,7 @@ import (
 {{- $defs := extractDefs .Metadata.Config }}
 {{ range $defName, $def := $defs }}
     {{- if $def.Description }}
-        // {{ $defName | publicVar }} {{ $def.Description }}
+        // {{ $defName | publicVar }} {{ $def.Description | uncapitalize }}
     {{- end }}
     {{- $typeName := $defName | publicVar }}
     {{- if isExternalRef $def.ResolvedFrom }}
@@ -160,10 +160,42 @@ import (
     }
 {{- end }}
 
+{{ define "minimumValidator" -}}
+    {{ $minimum := .Rules.Minimum -}}
+    if {{ template "fieldValue" . }} < {{ $minimum }} {
+        err = errors.Join(err, errors.New("{{ .FieldName }} value must be greater than or equal to {{ $minimum }}"))
+    }
+{{- end }}
+
+{{ define "maximumValidator" -}}
+    {{ $maximum := .Rules.Maximum -}}
+    if {{ template "fieldValue" . }} > {{ $maximum }} {
+        err = errors.Join(err, errors.New("{{ .FieldName }} value must be less than or equal to {{ $maximum }}"))
+    }
+{{- end }}
+
+{{ define "exclusiveMinimumValidator" -}}
+    {{ $exclMin := .Rules.ExclusiveMinimum -}}
+    if {{ template "fieldValue" . }} <= {{ $exclMin }} {
+        err = errors.Join(err, errors.New("{{ .FieldName }} value must be greater than {{ $exclMin }}"))
+    }
+{{- end }}
+
+{{ define "exclusiveMaximumValidator" -}}
+    {{ $exclMax := .Rules.ExclusiveMaximum -}}
+    if {{ template "fieldValue" . }} >= {{ $exclMax }} {
+        err = errors.Join(err, errors.New("{{ .FieldName }} value must be less than {{ $exclMax }}"))
+    }
+{{- end }}
+
 {{ define "valueValidators" }}
     {{ if .Rules.MaxLength }}{{ template "maxLengthValidator" . }}{{ end }}
     {{ if .Rules.MinLength }}{{ template "minLengthValidator" . }}{{ end }}
     {{ if .Rules.Pattern }}{{ template "patternValidator" . }}{{ end }}
+    {{ if .Rules.Minimum }}{{ template "minimumValidator" . }}{{ end }}
+    {{ if .Rules.Maximum }}{{ template "maximumValidator" . }}{{ end }}
+    {{ if .Rules.ExclusiveMinimum }}{{ template "exclusiveMinimumValidator" . }}{{ end }}
+    {{ if .Rules.ExclusiveMaximum }}{{ template "exclusiveMaximumValidator" . }}{{ end }}
 {{ end -}}
 
 {{ define "validation" }}

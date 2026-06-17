@@ -1,5 +1,0 @@
-change_type: breaking
-component: cmd/mdatagen
-note: "Enable reaggregation config generation by default; set `reaggregation_enabled: false` to keep generating metric config with only the `enabled` field."
-issues: [14689]
-change_logs: [api]

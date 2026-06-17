@@ -1,0 +1,16 @@
+$defs:
+  other_config:
+    type: object
+    properties:
+      baz:
+        type: integer
+        x-customType: int64
+      test:
+        $ref: "test_config"
+  test_config:
+    type: object
+    properties:
+      foo:
+        type: string
+      bar:
+        type: integer
