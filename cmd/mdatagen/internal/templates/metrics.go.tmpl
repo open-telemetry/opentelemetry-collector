@@ -5,6 +5,8 @@ package {{ .Package }}
 {{ $reag := .ReaggregationEnabled }}
 {{- $hasReagMetrics := false }}
 {{- range $name, $metric := .Metrics }}{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}{{- $hasReagMetrics = true }}{{- end }}{{- end }}
+{{- $hasMigrations := false }}
+{{- range $name, $metric := .Metrics }}{{- if $metric.Migration }}{{- $hasMigrations = true }}{{- end }}{{- end }}
 
 import (
 	{{- if .Metrics | parseImportsRequired }}
@@ -12,10 +14,13 @@ import (
 	"fmt"
 	{{- end }}
 	"time"
-	{{- if $hasReagMetrics }}
+	{{- if or $hasReagMetrics $hasMigrations }}
 	"slices"
 	{{- end }}
 
+	{{- if $hasMigrations }}
+	"go.uber.org/zap"
+	{{- end }}
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -37,6 +42,18 @@ const (
 	AggregationStrategyMin = "min"
 	AggregationStrategyMax = "max"
 )
+{{- end }}
+
+{{- if needsStrToIntConversion }}
+func mustParseInt64(s string) int64 {
+  re := regexp.MustCompile(`-?\d+`)
+  match := re.FindString(s)
+  if match == "" {
+      return 0
+  }
+	v, _ := strconv.ParseInt(match, 10, 64)
+	return v
+}
 {{- end }}
 
 {{ range $name, $info := .Attributes }}
@@ -74,7 +91,10 @@ var MapAttribute{{ $name.Render }} = map[string]Attribute{{ $name.Render }}{
 var MetricsInfo = metricsInfo{
 	{{- range $name, $metric := .Metrics }}
 	{{ $name.Render }}: metricInfo{
-		Name: "{{ $name }}",
+		Name: "{{ $name.EmittedName }}",
+		{{- if $metric.Attributes }}
+		Attributes: []string{ {{- range $i, $attr := $metric.Attributes }}{{if $i}}, {{end}}"{{ $attr }}"{{- end }} },
+		{{- end }}
 	},
 	{{- end }}
 }
@@ -86,7 +106,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 {{ if getMetricConditionalAttributes .Attributes }}
@@ -122,7 +143,7 @@ type metric{{ $name.Render }} struct {
 
 // init fills {{ $name }} metric with initial data.
 func (m *metric{{ $name.Render }}) init() {
-	m.data.SetName("{{ $name }}")
+	m.data.SetName("{{ $name.EmittedName }}")
 	m.data.SetDescription("{{ $metric.Description }}")
 	m.data.SetUnit("{{ $metric.Unit }}")
 	m.data.SetEmpty{{ $metric.Data.Type }}()
@@ -142,8 +163,16 @@ func (m *metric{{ $name.Render }}) init() {
 
 {{/* This function changed in a major way, so instead of gating individual lines of code the original is being included */}}
 {{- if $metricReag }}
+{{- $legacyAttrsReag := getLegacyAttributes $name }}
 func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val {{ $metric.Data.MetricValueType.BasicType }}
-{{- range $metric.Attributes -}}{{- if not (attributeInfo .).IsConditional -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}{{ end }}{{- if $metric.HasConditionalAttributes $.Attributes -}}, options ...MetricAttributeOption{{- end -}}) {
+{{- range $metric.Attributes -}}{{- if not (attributeInfo .).IsConditional -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}{{ end -}}
+{{- range $i, $legacyAttr := $legacyAttrsReag -}}
+{{- $v1Attr := index $metric.Attributes $i -}}
+{{- if ne (attributeInfo $v1Attr).Type.String (attributeInfo $legacyAttr).Type.String -}}
+, {{ $legacyAttr.RenderUnexported }}AttributeValue {{ (attributeInfo $legacyAttr).Type.Primitive }}
+{{- end -}}
+{{- end -}}
+{{- if $metric.HasConditionalAttributes $.Attributes -}}, options ...MetricAttributeOption{{- end -}}{{- if $legacyAttrsReag -}}, emitLegacyAttrs bool{{- end -}}) {
 	if !m.config.Enabled {
 		return
 	}
@@ -157,6 +186,18 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 		{{- template "putAttribute" . }}
 	}
 	{{- end }}
+	{{- end }}
+	{{- if $legacyAttrsReag }}
+	if emitLegacyAttrs {
+		{{- range $i, $legacyAttr := $legacyAttrsReag }}
+		{{- $v1Attr := index $metric.Attributes $i }}
+		{{- if ne (attributeInfo $v1Attr).Type.String (attributeInfo $legacyAttr).Type.String }}
+		dp.Attributes().Put{{ (attributeInfo $legacyAttr).Type }}("{{ (attributeInfo $legacyAttr).Name }}", {{ $legacyAttr.RenderUnexported }}AttributeValue)
+		{{- else }}
+		dp.Attributes().Put{{ (attributeInfo $legacyAttr).Type }}("{{ (attributeInfo $legacyAttr).Name }}", {{ $v1Attr.RenderUnexported }}AttributeValue)
+		{{- end }}
+		{{- end }}
+	}
 	{{- end }}
 
 	{{- if $metric.HasConditionalAttributes $.Attributes }}
@@ -194,8 +235,16 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.MoveTo(dps.AppendEmpty())
 }
 {{- else }}
+{{- $legacyAttrs := getLegacyAttributes $name }}
 func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val {{ $metric.Data.MetricValueType.BasicType }}
-{{- range $metric.Attributes -}}{{- if not (attributeInfo .).IsConditional -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}{{ end }}{{- if $metric.HasConditionalAttributes $.Attributes -}}, options ...MetricAttributeOption{{- end -}}) {
+{{- range $metric.Attributes -}}{{- if not (attributeInfo .).IsConditional -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}{{ end -}}
+{{- range $i, $legacyAttr := $legacyAttrs -}}
+{{- $v1Attr := index $metric.Attributes $i -}}
+{{- if ne (attributeInfo $v1Attr).Type.String (attributeInfo $legacyAttr).Type.String -}}
+, {{ $legacyAttr.RenderUnexported }}AttributeValue {{ (attributeInfo $legacyAttr).Type.Primitive }}
+{{- end -}}
+{{- end -}}
+{{- if $metric.HasConditionalAttributes $.Attributes -}}, options ...MetricAttributeOption{{- end -}}{{- if $legacyAttrs -}}, emitLegacyAttrs bool{{- end -}}) {
 	if !m.config.Enabled {
 		return
 	}
@@ -207,6 +256,18 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	{{- if not (attributeInfo .).IsConditional -}}
 	{{- template "putAttribute" . -}}
 	{{- end }}
+	{{- end }}
+	{{- if $legacyAttrs }}
+	if emitLegacyAttrs {
+		{{- range $i, $legacyAttr := $legacyAttrs }}
+		{{- $v1Attr := index $metric.Attributes $i }}
+		{{- if ne (attributeInfo $v1Attr).Type.String (attributeInfo $legacyAttr).Type.String }}
+		dp.Attributes().Put{{ (attributeInfo $legacyAttr).Type }}("{{ (attributeInfo $legacyAttr).Name }}", {{ $legacyAttr.RenderUnexported }}AttributeValue)
+		{{- else }}
+		dp.Attributes().Put{{ (attributeInfo $legacyAttr).Type }}("{{ (attributeInfo $legacyAttr).Name }}", {{ $v1Attr.RenderUnexported }}AttributeValue)
+		{{- end }}
+		{{- end }}
+	}
 	{{- end }}
 
 	{{- if $metric.HasConditionalAttributes $.Attributes }}
@@ -347,6 +408,37 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings {{ .Status.Class }}.Se
 	}
 	{{- end }}
 
+  {{- range $name, $metric := .Metrics }}
+  {{- if $metric.Migration }}
+  if {{ printf "%s" $metric.Migration.ThroughGates.EnableNew | publicVar }}FeatureGate.IsEnabled() {
+    if mb.metric{{ $name.Render }}.config.Enabled && mb.metric{{ $metric.Migration.To.Render }}.config.Enabled {
+      var disable bool
+      if mb.metric{{ $name.Render }}.data.Type() != mb.metric{{ $metric.Migration.To.Render }}.data.Type() {
+        // Disable legacy metric if legacy and latest have same name but different types
+        disable = true
+        settings.Logger.Warn("[WARNING] Legacy metric `{{ $name }}` disabled: same emitted name as `{{ $metric.Migration.To }}` with different type; only latest will be emitted")
+      }
+      if !slices.Equal(MetricsInfo.{{ $name.Render }}.Attributes, MetricsInfo.{{ $metric.Migration.To.Render }}.Attributes) {
+        // Disable legacy metric if legacy and latest have same name but different attributes
+        // The latest metric will emit both attribute sets during migration
+        disable = true
+        settings.Logger.Warn("[WARNING] Legacy metric `{{ $name }}` disabled: same emitted name as `{{ $metric.Migration.To }}` with different attributes; only latest will be emitted with combined attributes",
+          zap.Strings("legacy_attributes", MetricsInfo.{{ $name.Render }}.Attributes),
+          zap.Strings("latest_attributes", MetricsInfo.{{ $metric.Migration.To.Render }}.Attributes))
+      }
+      if disable {
+        mb.metric{{ $name.Render }}.config.Enabled = false
+      }
+    }
+  } else {
+    if !{{ printf "%s" $metric.Migration.ThroughGates.EnableNew | publicVar}}FeatureGate.IsEnabled() && mb.metric{{ $metric.Migration.To.Render }}.config.Enabled {
+      mb.metric{{ $metric.Migration.To.Render }}.config.Enabled = false
+      settings.Logger.Warn("[WARNING] metric `{{ $metric.Migration.To }}` requires feature gate `{{ $metric.Migration.ThroughGates.EnableNew }}` to be enabled, metric has been disabled")
+    }
+  }
+  {{- end }}
+  {{- end }}
+
 	for _, op := range options {
 		op.apply(mb)
 	}
@@ -482,6 +574,7 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 {{ range $name, $metric := .Metrics -}}
+{{ if not $metric.Versioned }}
 // Record{{ $name.Render }}DataPoint adds a data point to {{ $name }} metric.
 {{- if $metric.Entity }}
 //
@@ -511,6 +604,55 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 		return fmt.Errorf("failed to parse {{ $metric.Data.MetricValueType.BasicType }} for {{ $name.Render }}, value was %s: %w", inputVal, err)
 	}
 	{{- end }}
+    {{- if $metric.Migration }}
+	// Dual-schema emission controlled by feature gates
+	{{- $targetLegacyAttrs := getLegacyAttributes $metric.Migration.To }}
+	if !{{ printf "%s" $metric.Migration.ThroughGates.DisableOld | publicVar }}FeatureGate.IsEnabled() {
+		mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts, val
+		{{- range $metric.Attributes -}}
+		{{- if not (attributeInfo .).IsConditional -}}
+		, {{ .RenderUnexported }}AttributeValue{{ if (attributeInfo .).Enum }}.String(){{ end }}
+		{{- end -}}
+		{{- end -}}
+		{{- if $metric.HasConditionalAttributes $.Attributes -}}
+        , options...
+        {{- end -}}
+        )
+	}
+	{{- $targetMetric := index $.Metrics $metric.Migration.To }}
+	if {{ printf "%s" $metric.Migration.ThroughGates.EnableNew | publicVar }}FeatureGate.IsEnabled() {
+		mb.metric{{ $metric.Migration.To.Render }}.recordDataPoint(mb.startTime, ts, val
+		{{- range $i, $attr := $metric.Attributes -}}
+		{{- if not (attributeInfo $attr).IsConditional -}}
+		{{- $v1Attr := index $targetMetric.Attributes $i -}}
+		, {{ convertValue (attributeInfo $attr).Type (attributeInfo $v1Attr).Type (printf "%sAttributeValue" $attr.RenderUnexported) }}{{ if (attributeInfo $v1Attr).Enum }}.String(){{ end }}
+		{{- end -}}
+		{{- end -}}
+		{{- /* Pass legacy attribute values where types differ */ -}}
+		{{- if $targetLegacyAttrs -}}
+		{{- range $i, $legacyAttr := $targetLegacyAttrs -}}
+		{{- if not (attributeInfo $legacyAttr).IsConditional -}}
+		{{- $v1Attr := index $targetMetric.Attributes $i -}}
+		{{- if ne (attributeInfo $v1Attr).Type.String (attributeInfo $legacyAttr).Type.String -}}
+		, {{ $legacyAttr.RenderUnexported }}AttributeValue{{ if (attributeInfo $legacyAttr).Enum }}.String(){{ end }}
+		{{- end -}}
+		{{- end -}}
+		{{- end -}}
+		{{- end -}}
+		{{- if $metric.HasConditionalAttributes $.Attributes -}}
+		, options...
+		{{- end -}}
+		{{- if $targetLegacyAttrs -}}
+		{{- if hasDifferentAttributes $name -}}
+		, true
+		{{- else -}}
+		, false
+		{{- end -}}
+		{{- end -}}
+		)
+	}
+	{{- else }}
+	{{- $selfLegacyAttrs := getLegacyAttributes $name }}
 	mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts, val
 		{{- range $metric.Attributes -}}
 		{{- if not (attributeInfo .).IsConditional -}}
@@ -520,11 +662,16 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 		{{- if $metric.HasConditionalAttributes $.Attributes -}}
 		, options...
 		{{- end -}}
+    {{- if $selfLegacyAttrs -}}
+		, false
+		{{- end -}}
 		)
+  {{- end }}
 	{{- if $metric.Data.HasMetricInputType }}
 	return nil
 	{{- end }}
 }
+{{ end }}
 {{ end }}
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

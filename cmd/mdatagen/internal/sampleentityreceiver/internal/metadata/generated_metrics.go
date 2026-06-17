@@ -57,7 +57,8 @@ var MetricsInfo = metricsInfo{
 		Name: "k8s.pod.cpu_time",
 	},
 	K8sPodPhase: metricInfo{
-		Name: "k8s.pod.phase",
+		Name:       "k8s.pod.phase",
+		Attributes: []string{"phase"},
 	},
 	K8sReplicasetDesired: metricInfo{
 		Name: "k8s.replicaset.desired",
@@ -71,7 +72,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricK8sPodCPUTime struct {
