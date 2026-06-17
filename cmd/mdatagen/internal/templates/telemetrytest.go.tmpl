@@ -28,7 +28,8 @@ return set
 }
 {{- end }}
 
-{{ range $name, $metric := .Telemetry.Metrics }}{{/* Note this code structure preserves an original code path to not generate churn. */}}
+{{ range $name, $metric := .Telemetry.Metrics }}
+{{/* Note this code structure preserves an original code path to not generate churn. */}}
 
 func AssertEqual{{ $name.Render }}(t *testing.T, tt *componenttest.Telemetry, {{ if $.Telemetry.AllowNameVariation }}metricVariation string, {{ end }}dps []metricdata.{{- if eq $metric.Data.Type "Histogram" }} {{$metric.Data.Type}} {{- end }}DataPoint[{{ $metric.Data.BasicType }}], opts ...metricdatatest.Option) {
 	{{- if $.Telemetry.AllowNameVariation }}
