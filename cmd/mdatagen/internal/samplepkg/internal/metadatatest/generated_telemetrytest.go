@@ -12,8 +12,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 )
 
-func AssertEqualEnqueueFailedLogRecords(t *testing.T, tt *componenttest.Telemetry, variation string, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
-	name := "otelcol_" + variation + "_enqueue_failed_log_records"
+func AssertEqualEnqueueFailedLogRecords(t *testing.T, tt *componenttest.Telemetry, metricVariation string, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_" + metricVariation + "_enqueue_failed_log_records"
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of log records failed to be added to the sending queue. [Alpha]",
@@ -29,8 +29,8 @@ func AssertEqualEnqueueFailedLogRecords(t *testing.T, tt *componenttest.Telemetr
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualQueueBatchSendSize(t *testing.T, tt *componenttest.Telemetry, variation string, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
-	name := "otelcol_" + variation + "_queue_batch_send_size"
+func AssertEqualQueueBatchSendSize(t *testing.T, tt *componenttest.Telemetry, metricVariation string, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_" + metricVariation + "_queue_batch_send_size"
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of units in the batch [Development]",
@@ -45,8 +45,8 @@ func AssertEqualQueueBatchSendSize(t *testing.T, tt *componenttest.Telemetry, va
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualQueueSize(t *testing.T, tt *componenttest.Telemetry, variation string, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
-	name := "otelcol_" + variation + "_queue_size"
+func AssertEqualQueueSize(t *testing.T, tt *componenttest.Telemetry, metricVariation string, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_" + metricVariation + "_queue_size"
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Current size of the retry queue (in batches). [Alpha]",

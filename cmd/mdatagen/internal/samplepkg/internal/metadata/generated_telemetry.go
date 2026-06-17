@@ -28,7 +28,7 @@ type TelemetryBuilder struct {
 	meter                   metric.Meter
 	mu                      sync.Mutex
 	registrations           []metric.Registration
-	variation               string
+	metricVariation         string
 	EnqueueFailedLogRecords metric.Int64Counter
 	QueueBatchSendSize      metric.Int64Histogram
 	QueueSize               metric.Int64ObservableGauge
@@ -81,33 +81,33 @@ func (builder *TelemetryBuilder) Shutdown() {
 
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
-func NewTelemetryBuilder(settings component.TelemetrySettings, variation string, options ...TelemetryBuilderOption) (*TelemetryBuilder, error) {
+func NewTelemetryBuilder(settings component.TelemetrySettings, metricVariation string, options ...TelemetryBuilderOption) (*TelemetryBuilder, error) {
 	builder := TelemetryBuilder{
-		variation: variation,
+		metricVariation: metricVariation,
 	}
 	for _, op := range options {
 		op.apply(&builder)
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	if variation == "" {
-		errs = errors.Join(errs, errors.New("variation is required: pass a non-empty variation name when telemetry.allow_name_variation is enabled"))
+	if metricVariation == "" {
+		errs = errors.Join(errs, errors.New("metricVariation is required: pass a non-empty variation name when telemetry.allow_name_variation is enabled"))
 	}
 	builder.EnqueueFailedLogRecords, err = builder.meter.Int64Counter(
-		"otelcol_"+builder.variation+"_enqueue_failed_log_records",
+		"otelcol_"+builder.metricVariation+"_enqueue_failed_log_records",
 		metric.WithDescription("Number of log records failed to be added to the sending queue. [Alpha]"),
 		metric.WithUnit("{record}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.QueueBatchSendSize, err = builder.meter.Int64Histogram(
-		"otelcol_"+builder.variation+"_queue_batch_send_size",
+		"otelcol_"+builder.metricVariation+"_queue_batch_send_size",
 		metric.WithDescription("Number of units in the batch [Development]"),
 		metric.WithUnit("{unit}"),
 		metric.WithExplicitBucketBoundaries([]float64{10, 100, 1000}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.QueueSize, err = builder.meter.Int64ObservableGauge(
-		"otelcol_"+builder.variation+"_queue_size",
+		"otelcol_"+builder.metricVariation+"_queue_size",
 		metric.WithDescription("Current size of the retry queue (in batches). [Alpha]"),
 		metric.WithUnit("{batch}"),
 	)
