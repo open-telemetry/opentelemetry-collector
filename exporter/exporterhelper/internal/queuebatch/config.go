@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
@@ -86,6 +87,21 @@ func (cfg *Config) Validate() error {
 		// Avoid situations where the queue is not able to hold any data.
 		if cfg.Batch.Get().MinSize > cfg.QueueSize {
 			return errors.New("`min_size` must be less than or equal to `queue_size`")
+		}
+	}
+
+	// Validate request_middlewares configuration.
+	if len(cfg.RequestMiddlewares) > 0 {
+		if !metadata.PkgExporterhelperRequestMiddlewareFeatureGate.IsEnabled() {
+			return errors.New("request_middlewares is configured but the feature gate pkg.exporterhelper.RequestMiddleware is not enabled. Enable it with --feature-gates=pkg.exporterhelper.RequestMiddleware=true")
+		}
+		// Check for duplicate IDs
+		seen := make(map[component.ID]bool)
+		for _, id := range cfg.RequestMiddlewares {
+			if seen[id] {
+				return fmt.Errorf("duplicate request middleware ID: %q", id.String())
+			}
+			seen[id] = true
 		}
 	}
 

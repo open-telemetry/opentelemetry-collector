@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -60,6 +61,46 @@ func TestQueueConfig_Validate(t *testing.T) {
 	// Confirm Validate doesn't return error with invalid config when feature is disabled
 	noCfg := configoptional.None[queuebatch.Config]()
 	assert.NoError(t, noCfg.Validate())
+}
+
+func TestQueueConfig_Validate_RequestMiddlewares(t *testing.T) {
+	// Test with feature gate disabled
+	t.Run("feature_gate_disabled", func(t *testing.T) {
+		qCfg := NewDefaultQueueConfig()
+		qCfg.RequestMiddlewares = []component.ID{component.MustNewID("test")}
+		err := qCfg.Validate()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "request_middlewares is configured but the feature gate pkg.exporterhelper.RequestMiddleware is not enabled")
+	})
+
+	// Test with feature gate enabled
+	t.Run("feature_gate_enabled", func(t *testing.T) {
+		// Enable the feature gate for this test
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.exporterhelper.RequestMiddleware", true))
+		defer func() {
+			// Reset to disabled (alpha default)
+			_ = featuregate.GlobalRegistry().Set("pkg.exporterhelper.RequestMiddleware", false)
+		}()
+
+		qCfg := NewDefaultQueueConfig()
+		qCfg.RequestMiddlewares = []component.ID{component.MustNewID("test")}
+		require.NoError(t, qCfg.Validate())
+	})
+
+	// Test duplicate IDs
+	t.Run("duplicate_ids", func(t *testing.T) {
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.exporterhelper.RequestMiddleware", true))
+		defer func() {
+			_ = featuregate.GlobalRegistry().Set("pkg.exporterhelper.RequestMiddleware", false)
+		}()
+
+		qCfg := NewDefaultQueueConfig()
+		id := component.MustNewID("test")
+		qCfg.RequestMiddlewares = []component.ID{id, id}
+		err := qCfg.Validate()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "duplicate request middleware ID")
+	})
 }
 
 // nopComponent satisfies component.Component but does not implement RequestMiddleware.
@@ -123,6 +164,9 @@ func (m *mockHost) GetExtensions() map[component.ID]component.Component {
 }
 
 func TestQueueSenderWithRequestMiddleware(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.exporterhelper.RequestMiddleware", true))
+	t.Cleanup(func() { _ = featuregate.GlobalRegistry().Set("pkg.exporterhelper.RequestMiddleware", false) })
+
 	mwID := component.MustNewID("request_middleware")
 	mockMw := &mockRequestMiddleware{}
 
@@ -162,6 +206,9 @@ func TestQueueSenderWithRequestMiddleware(t *testing.T) {
 }
 
 func TestQueueSender_MultipleMiddlewares_Ordering(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.exporterhelper.RequestMiddleware", true))
+	t.Cleanup(func() { _ = featuregate.GlobalRegistry().Set("pkg.exporterhelper.RequestMiddleware", false) })
+
 	// Verify that middlewares are chained correctly: m1 wraps m2 wraps base.
 	var callOrder []string
 
@@ -243,7 +290,7 @@ func TestQueueSender_Start_Errors_And_Cleanup(t *testing.T) {
 					mw1ID: &nopComponent{},
 				}}
 			},
-			expectError: `extension "request_middleware/1" does not implement RequestMiddleware`,
+			expectError: `extension "request_middleware/1" does not implement xexporterhelper.RequestMiddleware`,
 		},
 		{
 			name: "wrap_sender_fails_cleanup_previous",
@@ -271,6 +318,14 @@ func TestQueueSender_Start_Errors_And_Cleanup(t *testing.T) {
 			},
 		},
 	}
+
+	// Enable the feature gate for the duration of this test; the sub-tests
+	// exercise Start()-level errors (extension not found, wrong type, wrap failure)
+	// that only surface after the gate check passes.
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.exporterhelper.RequestMiddleware", true))
+	t.Cleanup(func() {
+		_ = featuregate.GlobalRegistry().Set("pkg.exporterhelper.RequestMiddleware", false)
+	})
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

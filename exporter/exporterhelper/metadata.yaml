@@ -205,3 +205,10 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+
+feature_gates:
+  - id: pkg.exporterhelper.RequestMiddleware
+    description: 'enables the request middleware extension point in exporterhelper for intercepting and modifying exporter requests (e.g., adaptive concurrency control, circuit breaking, rate limiting)'
+    stage: alpha
+    from_version: 'v0.155.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/issues/14080'
