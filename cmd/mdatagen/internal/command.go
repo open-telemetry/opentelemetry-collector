@@ -699,25 +699,21 @@ func generateConfigFiles(md Metadata, mdDir, importRootPath string) error {
 			Config:          md.Config,
 			ExportedConfigs: md.ExportedConfigs,
 		}
-		resolvedDoc, err := resolver.Resolve(schemaInput)
+		resolvedConfig, err := resolver.Resolve(schemaInput)
 		if err != nil {
 			return fmt.Errorf("failed to resolve config schema: %w", err)
 		}
 
-		err = cfggen.WriteJSONSchema(mdDir, resolvedDoc)
+		err = cfggen.WriteJSONSchema(mdDir, cfggen.NewJSONSchemaDoc(resolvedConfig))
 		if err != nil {
 			return fmt.Errorf("failed to write config schema: %w", err)
 		}
 
-		// do a shallow copy of Metadata and replace Config with resolved schema
+		// do a shallow copy of Metadata and replace Config with the resolved schema.
+		// The Go-struct templates walk Config (Properties, AllOf, $defs); the resolver
+		// leaves the merged $defs on the node, so no reattach is needed here.
 		mdWithConfig := md
-		mdWithConfig.Config = resolvedDoc.ConfigMetadata
-		// The Go-struct templates iterate over Config.Defs to emit a struct per
-		// exported config. The resolver promotes those into JSONSchemaDoc.Defs for
-		// JSON output, so reattach them here for the templating path.
-		if mdWithConfig.Config != nil && len(resolvedDoc.Defs) > 0 {
-			mdWithConfig.Config.Defs = resolvedDoc.Defs
-		}
+		mdWithConfig.Config = resolvedConfig
 
 		if err = generateConfigGoStruct(mdWithConfig, mdDir); err != nil {
 			return fmt.Errorf("failed to generate config Go struct: %w", err)

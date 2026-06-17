@@ -1973,21 +1973,17 @@ func TestMetadata_Clone_HandlesNil(t *testing.T) {
 	require.Nil(t, cloned.ExportedConfigs)
 }
 
-func TestJSONSchemaDoc_MarshalJSON_EmitsDefsWithMarshalJSONInner(t *testing.T) {
-	// JSONSchemaDoc embeds *ConfigMetadata, which now defines its own MarshalJSON
-	// (for PatternProperties / AdditionalPropertiesAllowed). Without an explicit
-	// JSONSchemaDoc.MarshalJSON, the promoted inner method would marshal only the
-	// inner node and silently drop the outer $defs.
-	doc := &JSONSchemaDoc{
-		ConfigMetadata: &ConfigMetadata{
-			Schema: schemaVersion,
-			Type:   "object",
-			Properties: map[string]*ConfigMetadata{
-				"endpoint": {Type: "string"},
-			},
-			// Trigger the inner MarshalJSON's "special fields" branch.
-			AdditionalPropertiesAllowed: boolPtr(false),
+func TestNewJSONSchemaDoc_EmitsDefsAndBody(t *testing.T) {
+	// The standalone document emits both the schema body and the top-level $defs
+	// through plain struct tags, with no custom MarshalJSON. AdditionalPropertiesAllowed
+	// on the resolved node is projected to a real additionalProperties boolean.
+	doc := NewJSONSchemaDoc(&ConfigMetadata{
+		Schema: schemaVersion,
+		Type:   "object",
+		Properties: map[string]*ConfigMetadata{
+			"endpoint": {Type: "string"},
 		},
+		AdditionalPropertiesAllowed: boolPtr(false),
 		Defs: map[string]*ConfigMetadata{
 			"sample_config": {
 				Type: "object",
@@ -1996,7 +1992,7 @@ func TestJSONSchemaDoc_MarshalJSON_EmitsDefsWithMarshalJSONInner(t *testing.T) {
 				},
 			},
 		},
-	}
+	})
 
 	data, err := doc.ToJSON()
 	require.NoError(t, err)
@@ -2006,20 +2002,20 @@ func TestJSONSchemaDoc_MarshalJSON_EmitsDefsWithMarshalJSONInner(t *testing.T) {
 	require.Contains(t, string(data), `"endpoint"`)
 }
 
-func TestJSONSchemaDoc_MarshalJSON_DefsOnlyWithoutInner(t *testing.T) {
-	doc := &JSONSchemaDoc{
+func TestNewJSONSchemaDoc_DefsOnly(t *testing.T) {
+	doc := NewJSONSchemaDoc(&ConfigMetadata{
 		Defs: map[string]*ConfigMetadata{
 			"sample": {Type: "string"},
 		},
-	}
+	})
 	data, err := doc.ToJSON()
 	require.NoError(t, err)
 	require.Contains(t, string(data), `"$defs"`)
 	require.Contains(t, string(data), `"sample"`)
 }
 
-func TestJSONSchemaDoc_MarshalJSON_EmptyDoc(t *testing.T) {
-	doc := &JSONSchemaDoc{}
+func TestNewJSONSchemaDoc_NilRoot(t *testing.T) {
+	doc := NewJSONSchemaDoc(nil)
 	data, err := doc.ToJSON()
 	require.NoError(t, err)
 	require.Equal(t, "{}", string(data))
@@ -2056,15 +2052,19 @@ func TestResolver_Resolve_MergesExportedConfigsIntoDefs(t *testing.T) {
 		},
 	}
 
-	doc, err := r.Resolve(src)
+	resolved, err := r.Resolve(src)
 	require.NoError(t, err)
-	require.NotNil(t, doc.ConfigMetadata)
-	require.Equal(t, "object", doc.Type)
+	require.NotNil(t, resolved)
+	require.Equal(t, "object", resolved.Type)
+	require.Contains(t, resolved.Defs, "shared_config")
+	require.Equal(t, "object", resolved.Properties["shared"].Type)
+	require.Contains(t, resolved.Properties["shared"].Properties, "endpoint")
+	// The merged exported_configs are promoted onto the document's $defs at write time.
+	doc := NewJSONSchemaDoc(resolved)
 	require.Contains(t, doc.Defs, "shared_config")
-	require.Equal(t, "object", doc.Properties["shared"].Type)
-	require.Contains(t, doc.Properties["shared"].Properties, "endpoint")
-	// $defs must live on the outer doc, not on the inner ConfigMetadata.
-	require.Nil(t, doc.ConfigMetadata.Defs)
+	data, err := doc.ToJSON()
+	require.NoError(t, err)
+	require.Contains(t, string(data), `"$defs"`)
 }
 
 func TestResolver_Resolve_InternalDefsWinNameCollision(t *testing.T) {

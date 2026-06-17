@@ -13,13 +13,13 @@ import (
 
 func TestWriteJSONSchema(t *testing.T) {
 	dir := t.TempDir()
-	doc := &JSONSchemaDoc{ConfigMetadata: &ConfigMetadata{
+	doc := NewJSONSchemaDoc(&ConfigMetadata{
 		Schema: schemaVersion,
 		Type:   "object",
 		Properties: map[string]*ConfigMetadata{
 			"endpoint": {Type: "string"},
 		},
-	}}
+	})
 
 	err := WriteJSONSchema(dir, doc)
 	require.NoError(t, err)
@@ -32,7 +32,7 @@ func TestWriteJSONSchema(t *testing.T) {
 
 func TestWriteJSONSchema_OmitsInternalResolvedFrom(t *testing.T) {
 	dir := t.TempDir()
-	doc := &JSONSchemaDoc{ConfigMetadata: &ConfigMetadata{
+	doc := NewJSONSchemaDoc(&ConfigMetadata{
 		Schema:       schemaVersion,
 		Type:         "object",
 		ResolvedFrom: "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
@@ -42,7 +42,7 @@ func TestWriteJSONSchema_OmitsInternalResolvedFrom(t *testing.T) {
 				ResolvedFrom: "string",
 			},
 		},
-	}}
+	})
 
 	err := WriteJSONSchema(dir, doc)
 	require.NoError(t, err)
@@ -53,7 +53,7 @@ func TestWriteJSONSchema_OmitsInternalResolvedFrom(t *testing.T) {
 }
 
 func TestWriteJSONSchema_InvalidDir(t *testing.T) {
-	doc := &JSONSchemaDoc{ConfigMetadata: &ConfigMetadata{Type: "object"}}
+	doc := NewJSONSchemaDoc(&ConfigMetadata{Type: "object"})
 	err := WriteJSONSchema("/nonexistent/path/that/does/not/exist", doc)
 	require.Error(t, err)
 }

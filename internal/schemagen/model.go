@@ -4,7 +4,6 @@
 package schemagen // import "go.opentelemetry.io/collector/internal/schemagen"
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -20,9 +19,9 @@ import (
 // It is NOT the type emitted to disk as a JSON Schema document; that is JSONSchemaDoc.
 // The Defs field is kept here only to back the resolver's internal ref-lookup logic for
 // schemas that carry their own nested $defs. Top-level $defs (built from a component's
-// exported_configs) live on JSONSchemaDoc and are produced at write time. The json tag
-// on Defs is "-" so that the embedded *ConfigMetadata inside JSONSchemaDoc cannot
-// shadow the outer Defs field during JSON marshaling.
+// exported_configs) are owned by JSONSchemaDoc and emitted at write time. The json tag
+// on Defs is "-" so a resolved node's internal defs are never serialized directly; the
+// document's $defs go through JSONSchemaDoc instead.
 type ConfigMetadata struct {
 	Schema               string                     `mapstructure:"$schema,omitempty" json:"$schema,omitempty" yaml:"$schema,omitempty"`
 	ID                   string                     `mapstructure:"$id,omitempty" json:"$id,omitempty" yaml:"$id,omitempty"`
@@ -106,13 +105,66 @@ func (g *GoStructConfig) Unmarshal(parser *confmap.Conf) error {
 }
 
 // JSONSchemaDoc is the writer-side JSON Schema 2020-12 document produced by schemagen.
-// It wraps a resolved ConfigMetadata schema node and owns the top-level $defs map that
-// is built from a component's exported_configs (plus any internal definitions injected
-// by mdatagen). Keeping $defs here avoids mutating the source ConfigMetadata to carry
-// an output-only concern.
+// It is a standalone type, not a wrapper around ConfigMetadata: a component's config
+// root is always an object schema, so the document carries the object-level and
+// identity fields it can actually emit plus the top-level $defs built from the
+// component's exported_configs (and any internal definitions injected by mdatagen).
+//
+// Keeping it separate lets the on-disk JSON Schema evolve independently of the
+// metadata.yaml config representation, which is free to drift away from JSON Schema
+// shape. Standard encoding/json handles serialization; no custom MarshalJSON is needed.
+//
+// Field order mirrors the equivalent fields on ConfigMetadata so the serialized
+// document is byte-identical to the prior embedded-node output: allOf precedes
+// properties, and $defs is emitted last.
 type JSONSchemaDoc struct {
-	*ConfigMetadata
+	Schema      string `json:"$schema,omitempty"`
+	ID          string `json:"$id,omitempty"`
+	Title       string `json:"title,omitempty"`
+	Description string `json:"description,omitempty"`
+	Comment     string `json:"$comment,omitempty"`
+	Type        string `json:"type,omitempty"`
+
+	AllOf                []*ConfigMetadata          `json:"allOf,omitempty"`
+	Properties           map[string]*ConfigMetadata `json:"properties,omitempty"`
+	AdditionalProperties any                        `json:"additionalProperties,omitempty"`
+	PatternProperties    map[string]*ConfigMetadata `json:"patternProperties,omitempty"`
+	Required             []string                   `json:"required,omitempty"`
+	MinProperties        *int                       `json:"minProperties,omitempty"`
+	MaxProperties        *int                       `json:"maxProperties,omitempty"`
+
 	Defs map[string]*ConfigMetadata `json:"$defs,omitempty"`
+}
+
+// NewJSONSchemaDoc projects a resolved schema node onto a writer-side JSON Schema
+// document. It copies the document-level fields a config root can carry and the
+// resolved $defs. The node's internal AdditionalPropertiesAllowed flag becomes a real
+// additionalProperties boolean on the document. The source node is not retained.
+func NewJSONSchemaDoc(root *ConfigMetadata) *JSONSchemaDoc {
+	if root == nil {
+		return &JSONSchemaDoc{}
+	}
+	doc := &JSONSchemaDoc{
+		Schema:            root.Schema,
+		ID:                root.ID,
+		Title:             root.Title,
+		Description:       root.Description,
+		Comment:           root.Comment,
+		Type:              root.Type,
+		Properties:        root.Properties,
+		PatternProperties: root.PatternProperties,
+		Required:          root.Required,
+		MinProperties:     root.MinProperties,
+		MaxProperties:     root.MaxProperties,
+		AllOf:             root.AllOf,
+		Defs:              root.Defs,
+	}
+	if root.AdditionalPropertiesAllowed != nil {
+		doc.AdditionalProperties = *root.AdditionalPropertiesAllowed
+	} else if root.AdditionalProperties != nil {
+		doc.AdditionalProperties = root.AdditionalProperties
+	}
+	return doc
 }
 
 // ToJSON serializes the JSON Schema document with indentation.
@@ -122,60 +174,21 @@ func (d *JSONSchemaDoc) ToJSON() ([]byte, error) {
 
 // ToJSON serializes the schema node with indentation. This is the entry point used
 // by callers that operate on a bare ConfigMetadata, such as the combiner output
-// path. The writer-side document path uses JSONSchemaDoc.ToJSON, which additionally
+// path. The writer-side document path goes through JSONSchemaDoc, which additionally
 // emits the top-level $defs.
 func (md *ConfigMetadata) ToJSON() ([]byte, error) {
 	return json.MarshalIndent(md, "", "  ")
 }
 
-// MarshalJSON serializes the document by delegating to the inner ConfigMetadata's
-// MarshalJSON (so PatternProperties / AdditionalPropertiesAllowed handling is
-// preserved) and splicing the top-level $defs into the produced object. Without this
-// override the embedded ConfigMetadata.MarshalJSON would be promoted to JSONSchemaDoc
-// and the outer Defs field would be silently dropped.
-func (d *JSONSchemaDoc) MarshalJSON() ([]byte, error) {
-	if d.ConfigMetadata == nil {
-		if len(d.Defs) == 0 {
-			return []byte("{}"), nil
-		}
-		return json.Marshal(struct {
-			Defs map[string]*ConfigMetadata `json:"$defs"`
-		}{Defs: d.Defs})
-	}
-	base, err := json.Marshal(d.ConfigMetadata)
-	if err != nil {
-		return nil, err
-	}
-	if len(d.Defs) == 0 {
-		return base, nil
-	}
-	defsRaw, err := json.Marshal(d.Defs)
-	if err != nil {
-		return nil, err
-	}
-	inner := bytes.TrimSpace(base)
-	if len(inner) < 2 || inner[0] != '{' || inner[len(inner)-1] != '}' {
-		return nil, fmt.Errorf("unexpected ConfigMetadata JSON encoding: %s", base)
-	}
-	out := make([]byte, 0, len(inner)+len(defsRaw)+10)
-	out = append(out, inner[:len(inner)-1]...)
-	if len(inner) > 2 {
-		out = append(out, ',')
-	}
-	out = append(out, `"$defs":`...)
-	out = append(out, defsRaw...)
-	out = append(out, '}')
-	return out, nil
-}
-
-// AsJSONSchema builds the writer-side JSON Schema document from this source-side
-// Metadata. The resulting doc shares the underlying ConfigMetadata and exported-configs
-// maps; callers that need to mutate the resolved schema should do so before this call.
+// AsJSONSchema builds a writer-side document directly from this source Metadata without
+// running the resolver. The document's $defs are the source exported_configs. Used where
+// a document is needed without ref resolution.
 func (md *Metadata) AsJSONSchema() *JSONSchemaDoc {
-	doc := &JSONSchemaDoc{ConfigMetadata: md.Config}
-	if len(md.ExportedConfigs) > 0 {
-		doc.Defs = md.ExportedConfigs
+	if md == nil {
+		return &JSONSchemaDoc{}
 	}
+	doc := NewJSONSchemaDoc(md.Config)
+	doc.Defs = md.ExportedConfigs
 	return doc
 }
 

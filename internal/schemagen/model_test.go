@@ -19,13 +19,13 @@ func defaultValue(value any) any {
 }
 
 func TestJSONSchemaDoc_ToJSON(t *testing.T) {
-	doc := &JSONSchemaDoc{ConfigMetadata: &ConfigMetadata{
+	doc := NewJSONSchemaDoc(&ConfigMetadata{
 		Schema: schemaVersion,
 		Type:   "object",
 		Properties: map[string]*ConfigMetadata{
 			"endpoint": {Type: "string", Description: "The endpoint"},
 		},
-	}}
+	})
 
 	data, err := doc.ToJSON()
 	require.NoError(t, err)
@@ -131,13 +131,19 @@ default:
 }
 
 func TestJSONSchemaDoc_ToJSONDefaultValue(t *testing.T) {
-	absent := &JSONSchemaDoc{ConfigMetadata: &ConfigMetadata{Type: "string"}}
+	absent := NewJSONSchemaDoc(&ConfigMetadata{
+		Type:       "object",
+		Properties: map[string]*ConfigMetadata{"endpoint": {Type: "string"}},
+	})
 
 	jsonData, err := absent.ToJSON()
 	require.NoError(t, err)
 	require.NotContains(t, string(jsonData), `"default"`)
 
-	withDefault := &JSONSchemaDoc{ConfigMetadata: &ConfigMetadata{Type: "string", Default: defaultValue("localhost")}}
+	withDefault := NewJSONSchemaDoc(&ConfigMetadata{
+		Type:       "object",
+		Properties: map[string]*ConfigMetadata{"endpoint": {Type: "string", Default: defaultValue("localhost")}},
+	})
 
 	jsonData, err = withDefault.ToJSON()
 	require.NoError(t, err)

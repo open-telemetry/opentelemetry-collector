@@ -36,15 +36,16 @@ func NewResolver(pkgID, class, name, dir string) *Resolver {
 	}
 }
 
-// Resolve takes the source Metadata parsed from metadata.yaml and produces a
-// JSONSchemaDoc with all $ref references resolved. exported_configs from the source
-// become the top-level $defs of the output document.
+// Resolve takes the source Metadata parsed from metadata.yaml and produces a resolved
+// schema node with all $ref references resolved. exported_configs from the source are
+// merged into the node's $defs. Pass the result to NewJSONSchemaDoc to build the
+// writer-side document.
 //
 // The source Metadata is treated as read-only: the inputs are deep-cloned before the
 // recursive resolver walks them, so internal mutations (the "any" fallback in
 // resolveRef, per-node type writes) cannot leak back into the caller's tree through
 // shared *ConfigMetadata pointers.
-func (r *Resolver) Resolve(src *Metadata) (*JSONSchemaDoc, error) {
+func (r *Resolver) Resolve(src *Metadata) (*ConfigMetadata, error) {
 	if src == nil {
 		return nil, errors.New("nil metadata")
 	}
@@ -79,15 +80,11 @@ func (r *Resolver) Resolve(src *Metadata) (*JSONSchemaDoc, error) {
 		target.Type = "object"
 	}
 
-	doc := &JSONSchemaDoc{ConfigMetadata: target}
-	// Defs on the resolved target are the merged exported_configs and any internal
-	// $defs that survived the resolver's cleanup pass. Promote them to the document's
-	// $defs and clear them off the inner node so they are not serialized twice.
-	if len(target.Defs) > 0 {
-		doc.Defs = target.Defs
-		target.Defs = nil
-	}
-	return doc, nil
+	// target.Defs holds the merged exported_configs and any internal $defs that
+	// survived the resolver's cleanup pass. They stay on the node: NewJSONSchemaDoc
+	// promotes them to the document's $defs at write time, and mdatagen's Go-struct
+	// templates read them off the node directly.
+	return target, nil
 }
 
 func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *Ref) error {
