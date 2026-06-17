@@ -52,7 +52,7 @@ func NewRefResolver(cfg *Config) *RefResolver {
 }
 
 func (r *RefResolver) Resolve(schema *Schema) (*Schema, error) {
-	return r.resolveSchema(schema, r.rootCfg, "")
+	return r.resolveSchema(schema, r.rootCfg, r.rootCfg.Pattern)
 }
 
 func (r *RefResolver) resolveSchema(schema *Schema, cfg *Config, pkgName string) (*Schema, error) {
@@ -149,14 +149,18 @@ func (r *RefResolver) resolveRef(schema *Schema, refObj *RefSchemaElement, confi
 
 	var typeSchema SchemaElement
 	def, isLocal := schema.Defs[refObj.Ref]
-	if isLocal && ref.packageName == "" {
+
+	if ref.packageName == "" {
+		if !isLocal {
+			return nil, &NotFoundError{TypeName: ref.typeName, PackageName: ref.packageName}
+		}
 		typeSchema = def
 	} else {
 		innerSchema, cached := r.packageCache[ref.packageName]
 		if !cached {
 			parsed, err := r.loader.Load(cfg, ref.packageName)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("failed to load ref schema %q: %w", refObj.Ref, err)
 			}
 			// Register before recursing so cyclic refs short-circuit here.
 			r.packageCache[ref.packageName] = parsed
