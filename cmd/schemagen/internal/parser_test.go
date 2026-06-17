@@ -5,6 +5,7 @@
 package internal
 
 import (
+	"container/list"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -12,6 +13,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -160,6 +162,24 @@ func TestPackageParser(t *testing.T) {
 	require.YAMLEq(t, expectedSchema, givenYaml)
 }
 
+func TestParsePatternNoExportedTypes(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example.com/noexport\n\ngo 1.20\n"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "config.go"), []byte(`package noexport
+
+type config struct{}
+`), 0o600))
+
+	parser := NewParser(&Config{
+		Mode:    Package,
+		DirPath: dir,
+	})
+
+	schema, err := parser.ParsePattern(".")
+	require.Nil(t, schema)
+	require.EqualError(t, err, "no exported types found in the package")
+}
+
 func testMappings() Mappings {
 	return Mappings{
 		"time": PackagesMapping{
@@ -172,6 +192,44 @@ func testMappings() Mappings {
 				Format:     "duration",
 			},
 		},
+	}
+}
+
+func TestFeedProcessQueueErrorMessage(t *testing.T) {
+	tests := []struct {
+		name             string
+		pattern          string
+		wantPatternInMsg bool
+	}{
+		{
+			name:             "dot pattern omits pattern from error",
+			pattern:          ".",
+			wantPatternInMsg: false,
+		},
+		{
+			name:             "explicit pattern included in error",
+			pattern:          "example.com/mod/foo",
+			wantPatternInMsg: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &Parser{
+				config: &Config{
+					Mode:     Component,
+					Mappings: testMappings(),
+				},
+				types:        map[string]*TypeInfo{},
+				processQueue: list.New(),
+			}
+			err := p.feedProcessQueue(tt.pattern)
+			require.Error(t, err)
+			if tt.wantPatternInMsg {
+				assert.Contains(t, err.Error(), tt.pattern)
+			} else {
+				assert.NotContains(t, err.Error(), tt.pattern)
+			}
+		})
 	}
 }
 
