@@ -22,14 +22,6 @@ var ServiceProfilesSupportFeatureGate = featuregate.GlobalRegistry().MustRegiste
 	featuregate.WithRegisterFromVersion("v0.112.0"),
 )
 
-var TelemetryUseLocalHostAsDefaultMetricsAddressFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"telemetry.UseLocalHostAsDefaultMetricsAddress",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("Controls whether default Prometheus metrics server use localhost as the default host for their endpoints"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/pull/11251"),
-	featuregate.WithRegisterFromVersion("v0.111.0"),
-)
-
 var TelemetryNewPipelineTelemetryFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"telemetry.newPipelineTelemetry",
 	featuregate.StageAlpha,

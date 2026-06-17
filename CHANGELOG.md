@@ -7,6 +7,153 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.60.0/v0.154.0
+
+### 🛑 Breaking changes 🛑
+
+- `cmd/builder`: The `--skip-get-modules` flag will no longer regenerate your `go.mod` file. (#15390)
+  This is mostly a bug fix, as it led to adverse behaviour that was unintended in the described flow in the README.
+  Now when you run `--skip-get-modules`, your `go.mod` file will truly be untouched by `ocb` as the info log claims.
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/config/configtls`: Add `include_insecure_cipher_suites` to configtls to enable insecure cipher suites. Insecure cipher suites are disabled by default for security. (#13829)
+- `pkg/confighttp`: Add `ExposedHeaders` field to `CORSConfig` to allow setting the `Access-Control-Expose-Headers` response header. (#15119)
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Removes the extra line in the README.md between status and description (#15306)
+- `pkg/exporterhelper`: Fix nil-pointer panic in `sending_queue::batch` Unmarshal when `sending_queue::sizer` is set and `sending_queue::batch::enabled` is false. (#14687)
+  When `sending_queue::sizer` was set and `sending_queue::batch::enabled: false`
+  cleared the batch Optional to None, the sizer-inheritance branch in
+  `queuebatch.Config.Unmarshal` dereferenced a nil Optional and crashed the
+  collector at startup. The branch now also requires `Batch.HasValue()`.
+  
+
+<!-- previous-version -->
+
+## v1.59.0/v0.153.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/configoptional`: Stabilize feature gate configoptional.AddEnabledField (#15333)
+- `pkg/confmap`: Stabilize confmap.newExpandedValueSanitizer feature gate (#15339)
+- `pkg/exporterhelper`: mark exporter.PersistRequestContext as stable (#15330)
+- `pkg/otelcol`: Stabilize otelcol.printInitialConfig gate (#15340)
+- `pkg/pdata`: Remove pdata.useCustomProtoEncoding feature gate (#15332)
+- `pkg/service`: Stabilize telemetry.UseLocalHostAsDefaultMetricsAddress gate (#15342)
+- `pkg/xpdata`: Stabilize pdata.enableRefCounting feature gate (#15331)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/config/configgrpc`: Fix memory corruption and fatal error in Snappy (#15237, #15320)
+
+<!-- previous-version -->
+
+## v1.58.0/v0.152.0
+
+### 💡 Enhancements 💡
+
+- `pkg/exporterhelper`: Add `otelcol_exporter_in_flight_requests` metric to track the number of export requests currently in-flight per exporter. (#15009)
+  This UpDownCounter increments in startOp and decrements in endOp, allowing operators to monitor
+  concurrent export activity and detect when an exporter is saturating its worker pool.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/confighttp`: Close the original request body after reading block-format `Content-Encoding: snappy` requests. (#15262)
+- `pkg/confighttp`: Recover from panics in decompression libraries, return HTTP 400 instead of 500. (#13228)
+- `pkg/confighttp`: Enforce `max_request_body_size` on `Content-Encoding: snappy` requests before the decoded buffer is allocated. (#15252)
+- `pkg/otelcol`: Stop emitting verbose gRPC transport messages at WARN during normal client disconnect. (#5169)
+  grpc-go gates chatty per-RPC notices (e.g. "HandleStreams failed to read frame:
+  connection reset by peer") behind `LoggerV2.V(2)`. zapgrpc.Logger.V conflates
+  grpclog verbosity with zap severity, so V(2) returns true whenever WARN is
+  enabled and these messages emit at WARN. Wrap the installed grpclog.LoggerV2
+  with a corrected V() that compares against a fixed verbosity threshold,
+  matching grpclog's intended semantics. See uber-go/zap#1544.
+  
+- `pkg/pdata`: `pcommon.Value.AsString` no longer HTML-escapes `<`, `>`, and `&` inside `ValueTypeMap` and `ValueTypeSlice` values, matching the behavior already used for `ValueTypeStr`. (#14662)
+- `pkg/service`: Fix Prometheus config defaults mismatch when host is explicitly set in telemetry configuration. (#13867)
+  When users explicitly configured the telemetry metrics section (e.g. to change the host),
+  the Prometheus exporter boolean fields (WithoutScopeInfo, WithoutUnits, WithoutTypeSuffix)
+  defaulted to nil/false instead of true, causing metric name format changes compared to the
+  implicit default configuration. This fix applies the correct defaults during config unmarshaling.
+  
+- `pkg/service`: Return noop tracer provider when no trace processors are defined (#15135)
+
+<!-- previous-version -->
+
+## v1.57.0/v0.151.0
+
+### 🛑 Breaking changes 🛑
+
+- `cmd/builder`: In the generated Collector source, the `replace` statements in the Go module will now use relative paths by default. (#15097)
+  We expect that this will not break existing use-cases where the generated collector is only used in an interim manner for builds. It enables the possibility of tracking the generated Collector code as a longer living artifact, allowing it to be run on any machine (whereas absolute paths will be different depending on the machine the Collector source is generated on.) We have added `dist::use_absolute_replace_paths` to go back to the absolute path behaviour in the case where there is an unforeseen use-case that requires absolute paths.
+  
+- `pkg/confighttp`: Stabilize framedSnappy feature gate. (#15096)
+
+### 💡 Enhancements 💡
+
+- `all`: Add declarative schema support for service telemetry resource configuration. (#14411)
+  The `service::telemetry::resource` configuration now accepts the declarative schema with explicit name/value pairs:
+  ```yaml
+  service:
+    telemetry:
+      resource:
+        schema_url: https://opentelemetry.io/schemas/1.38.0
+        attributes:
+          - name: service.name
+            value: my-collector
+          - name: host.name
+            value: collector-host
+  ```
+  
+  The legacy inline attribute map format is still supported for backward compatibility:
+  ```yaml
+  service:
+    telemetry:
+      resource:
+        service.name: my-collector
+        host.name: collector-host
+  ```
+  
+  Note: `resource.detectors` is accepted for forward compatibility but is not yet applied by the collector.
+  
+- `exporter/otlp_grpc`: Added the `server.address` and `url.path` attributes to metrics generated by the otlp exporter. (#14998)
+- `exporter/otlp_http`: Added the `server.address` and `url.path` attributes to metrics generated by the otlp_http exporter. (#14998)
+- `pkg/config/configgrpc`: Add `UserAgent` field to `ClientConfig` to allow overriding the default gRPC user-agent string. (#14686)
+  The otlp gRPC exporter was unconditionally setting the User-Agent via
+  grpc.WithUserAgent() at dial time, which takes precedence over per-call
+  metadata, causing any user-configured User-Agent to be silently discarded.
+  A dedicated `UserAgent` field has been added to `ClientConfig` which, when
+  set, is used in the dial option directly instead of the default BuildInfo-derived string.
+  
+- `pkg/config/configgrpc`: Accept gRPC resolver scheme URIs in client endpoint (e.g. passthrough:///host:port) to allow control over name resolution (#14990)
+  After the migration to grpc.NewClient, some gRPC client components such as the OTLP
+  exporter experienced connection issues in dual-stack DNS environments. This can now be
+  fixed by using the passthrough:/// gRPC resolver scheme in the endpoint field.
+  
+- `pkg/config/confignet`: Add support for Windows Named Pipe (npipe) transport (#15085)
+- `pkg/service`: Emit a warning when using the old v0.2.0 declarative config format (#15088)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/otelcol`: Print components exactly once in the `otelcol components` command (#14682)
+  This resolves an issue where aliased components were skipped.
+- `pkg/otelcol`: Synchronize Collector Run and Shutdown lifecycles so that Shutdown blocks until Run completes all cleanup. (#4947)
+  Shutdown now blocks until Run finishes cleanup, matching http.Server semantics.
+  If Shutdown is called before Run, the next Run call returns nil after cleaning up
+  the config provider.
+  
+- `pkg/pdata`: Use spec-compliant string representation for NaN, Infinity, and -Infinity in Value.AsString(). (#14487)
+- `pkg/pprofile`: Fix data corruption of resource and scope attributes after marshal-unmarshal-merge round-trip. (#15084)
+- `pkg/service`: Non-string resource attributes in telemetry configuration now return an error instead of panicking (#15171)
+- `pkg/xscraperhelper`: fix the merge of profiles in the profiling scraper helpers (#14790)
+- `receiver/otlp`: Fix profiles receiver reporting its samples as spans (#15089)
+
+<!-- previous-version -->
+
 ## v1.56.0/v0.150.0
 
 ### 💡 Enhancements 💡

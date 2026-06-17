@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -45,6 +46,8 @@ type BaseExporter struct {
 
 	middleware      requestmiddleware.RequestMiddleware
 	ConsumerOptions []consumer.Option
+
+	ExtraAttrs []attribute.KeyValue
 
 	timeoutCfg TimeoutConfig
 	retryCfg   configretry.BackOffConfig
@@ -94,7 +97,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 	}
 
 	var err error
-	be.firstSender, err = newObsReportSender(set, signal, be.firstSender)
+	be.firstSender, err = newObsReportSender(set, signal, be.ExtraAttrs, be.firstSender)
 	if err != nil {
 		return nil, err
 	}
@@ -255,6 +258,13 @@ func WithQueueBatch(cfg configoptional.Optional[queuebatch.Config], set queuebat
 func WithCapabilities(capabilities consumer.Capabilities) Option {
 	return func(o *BaseExporter) error {
 		o.ConsumerOptions = append(o.ConsumerOptions, consumer.WithCapabilities(capabilities))
+		return nil
+	}
+}
+
+func WithAttributes(attrs ...attribute.KeyValue) Option {
+	return func(o *BaseExporter) error {
+		o.ExtraAttrs = attrs
 		return nil
 	}
 }

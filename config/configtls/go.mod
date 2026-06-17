@@ -4,12 +4,12 @@ go 1.25.0
 
 require (
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20250903184740-5d135037bd4d
-	github.com/fsnotify/fsnotify v1.9.0
+	github.com/fsnotify/fsnotify v1.10.1
 	github.com/google/go-tpm v0.9.8
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/config/configopaque v1.56.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.150.0
-	go.opentelemetry.io/collector/internal/testutil v0.150.0
+	go.opentelemetry.io/collector/config/configopaque v1.60.0
+	go.opentelemetry.io/collector/confmap v1.60.0
+	go.opentelemetry.io/collector/internal/testutil v0.154.0
 )
 
 require (
@@ -20,17 +20,16 @@ require (
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
-	github.com/knadh/koanf/v2 v2.3.4 // indirect
+	github.com/knadh/koanf/v2 v2.3.5 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/confmap v1.56.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.56.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.60.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.27.1 // indirect
+	go.uber.org/zap v1.28.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.48.0 // indirect
-	golang.org/x/sys v0.41.0 // indirect
+	golang.org/x/crypto v0.52.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
@@ -39,7 +38,5 @@ replace go.opentelemetry.io/collector/config/configopaque => ../configopaque
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/confmap => ../../confmap
-
-replace go.opentelemetry.io/collector/confmap/xconfmap => ../../confmap/xconfmap
 
 replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil

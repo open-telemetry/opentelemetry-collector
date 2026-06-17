@@ -68,14 +68,14 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["DefaultMetric"] = mb.metricDefaultMetric.config.AggregationStrategy
-			aggMap["MetricInputType"] = mb.metricMetricInputType.config.AggregationStrategy
-			aggMap["OptionalMetric"] = mb.metricOptionalMetric.config.AggregationStrategy
-			aggMap["OptionalMetricEmptyUnit"] = mb.metricOptionalMetricEmptyUnit.config.AggregationStrategy
-			aggMap["ReaggregateMetric"] = mb.metricReaggregateMetric.config.AggregationStrategy
-			aggMap["ReaggregateMetricWithRequired"] = mb.metricReaggregateMetricWithRequired.config.AggregationStrategy
-			aggMap["SystemCPUTime"] = mb.metricSystemCPUTime.config.AggregationStrategy
-			aggMap["SystemMemoryUsage"] = mb.metricSystemMemoryUsage.config.AggregationStrategy
+			aggMap["default.metric"] = mb.metricDefaultMetric.config.AggregationStrategy
+			aggMap["metric.input_type"] = mb.metricMetricInputType.config.AggregationStrategy
+			aggMap["optional.metric"] = mb.metricOptionalMetric.config.AggregationStrategy
+			aggMap["optional.metric.empty_unit"] = mb.metricOptionalMetricEmptyUnit.config.AggregationStrategy
+			aggMap["reaggregate.metric"] = mb.metricReaggregateMetric.config.AggregationStrategy
+			aggMap["reaggregate.metric.with_required"] = mb.metricReaggregateMetricWithRequired.config.AggregationStrategy
+			aggMap["system.cpu.time"] = mb.metricSystemCPUTime.config.AggregationStrategy
+			aggMap["system.memory.usage"] = mb.metricSystemMemoryUsage.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet == testDataSetDefault {
@@ -116,18 +116,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, true, WithConditionalIntAttrMetricAttribute(20), WithConditionalStringAttrMetricAttribute("conditional_string_attr-val"))
 			if tt.name == "reaggregate_set" {
 				mb.RecordDefaultMetricDataPoint(ts, 3, "string_attr-val-2", 20, AttributeEnumAttrGreen, []any{"slice_attr-item3", "slice_attr-item4"}, map[string]any{"key3": "map_attr-val3", "key4": "map_attr-val4"}, false, WithConditionalIntAttrMetricAttribute(20), WithConditionalStringAttrMetricAttribute("conditional_string_attr-val"))
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDefaultMetricToBeRemovedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMetricInputTypeDataPoint(ts, "1", "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
@@ -146,28 +143,24 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordOptionalMetricEmptyUnitDataPoint(ts, 3, "string_attr-val-2", false)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordReaggregateMetricDataPoint(ts, 1, "string_attr-val", true)
 			if tt.name == "reaggregate_set" {
 				mb.RecordReaggregateMetricDataPoint(ts, 3, "string_attr-val-2", false)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordReaggregateMetricWithRequiredDataPoint(ts, 1, "required_string_attr-val", "string_attr-val", true)
 			if tt.name == "reaggregate_set" {
 				mb.RecordReaggregateMetricWithRequiredDataPoint(ts, 3, "required_string_attr-val", "string_attr-val-2", false)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemCPUTimeDataPoint(ts, 1, "cpu-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemCPUTimeDataPoint(ts, 3, "cpu-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemMemoryUsageDataPoint(ts, 1, AttributeStateBuffered)

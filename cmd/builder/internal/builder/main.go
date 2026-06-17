@@ -99,6 +99,9 @@ func Generate(cfg *Config) error {
 		componentsTemplate,
 		goModTemplate,
 	} {
+		if tmpl == goModTemplate && cfg.SkipGetModules {
+			continue
+		}
 		if err := processAndWrite(cfg, tmpl, tmpl.Name(), cfg); err != nil {
 			return fmt.Errorf("failed to generate source file %q: %w", tmpl.Name(), err)
 		}

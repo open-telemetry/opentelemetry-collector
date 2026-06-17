@@ -19,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -29,7 +28,7 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	require.NoError(t, confmap.New().Unmarshal(&cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 	// Default/Empty config is invalid.
-	assert.Error(t, xconfmap.Validate(cfg))
+	assert.Error(t, confmap.Validate(cfg))
 }
 
 func TestUnmarshalConfig(t *testing.T) {
