@@ -22,6 +22,13 @@ var reNonAlnum = regexp.MustCompile(`[^a-z0-9_]+`)
 
 type MetricName string
 
+func (mn MetricName) EmittedName() string {
+	if emittedName, _, ok := strings.Cut(string(mn), "@"); ok {
+		return emittedName
+	}
+	return string(mn)
+}
+
 func (mn MetricName) Render() (string, error) {
 	return helpers.FormatIdentifier(string(mn), true)
 }
@@ -52,6 +59,12 @@ type Metric struct {
 
 	// Deprecation metadata for deprecated metrics
 	Deprecated *Deprecated `mapstructure:"deprecated,omitempty"`
+
+	// Migration describes dual-emission behavior controlled by feature gates.
+	Migration *MetricMigration `mapstructure:"migration"`
+	// This indicates if the metric is versioned are not. This helps with generated code.
+	// The reason for this is if the metric is versioned a metric name can be duplicated.
+	Versioned bool `mapstructure:"-"`
 }
 
 func (m *Metric) validate(metricName MetricName, semConvVersion string) error {
@@ -403,4 +416,19 @@ func (d *Histogram) Unmarshal(parser *confmap.Conf) error {
 
 func (d *Histogram) IsAsync() bool {
 	return d.Async
+}
+
+// MetricMigration defines dual-emission mapping and feature gates.
+type MetricMigration struct {
+	// To is the target metric key in the same metadata file.
+	To MetricName `mapstructure:"to"`
+	// ThroughGates lists the gates controlling emission of old/new.
+	ThroughGates MigrationGates `mapstructure:"through_gates"`
+}
+
+type MigrationGates struct {
+	// DisableOld gate, when enabled, disables old emission.
+	DisableOld FeatureGateID `mapstructure:"disable_old"`
+	// EnableNew gate, when enabled, enables new emission.
+	EnableNew FeatureGateID `mapstructure:"enable_new"`
 }
