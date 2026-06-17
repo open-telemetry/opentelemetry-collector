@@ -141,3 +141,13 @@ Number of spans successfully sent to destination.
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | {span} | Sum | Int | true | Alpha |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `exporter.RequestMiddleware` | alpha | enables the request middleware extension point in exporterhelper for intercepting and modifying exporter requests (e.g., adaptive concurrency control, circuit breaking, rate limiting) | v0.150.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/14080) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

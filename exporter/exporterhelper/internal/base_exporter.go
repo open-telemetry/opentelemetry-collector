@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requestmiddleware"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -44,7 +43,6 @@ type BaseExporter struct {
 
 	firstSender sender.Sender[request.Request]
 
-	middleware      requestmiddleware.RequestMiddleware
 	ConsumerOptions []consumer.Option
 
 	ExtraAttrs []attribute.KeyValue
@@ -70,20 +68,6 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 
 	// Consumer Sender is always initialized.
 	be.firstSender = sender.NewSender(pusher)
-
-	// If a middleware is provided, use its WrapSender method to inject the
-	// interceptor logic (like Adaptive Concurrency) into the sender chain.
-	if be.middleware != nil {
-		var err error
-		be.firstSender, err = be.middleware.WrapSender(requestmiddleware.RequestMiddlewareSettings{
-			Signal:    signal,
-			ID:        set.ID,
-			Telemetry: set.TelemetrySettings,
-		}, be.firstSender)
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	// Next setup the timeout Sender since we want the timeout to control only the export functionality.
 	// Only initialize if not explicitly disabled.

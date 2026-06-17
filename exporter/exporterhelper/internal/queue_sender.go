@@ -41,7 +41,20 @@ func NewDefaultQueueConfig() queuebatch.Config {
 	}
 }
 
-// queueSender wraps QueueBatch to add RequestMiddleware logic.
+// senderWrapper is the capability interface used to discover request middleware extensions
+// via type assertion. Extensions implement the public xexporterhelper.RequestMiddleware
+// interface; because xexporterhelper uses type aliases for RequestMiddlewareSettings and
+// Sender[Request], any such extension also structurally satisfies this interface.
+//
+// Keeping this interface unexported and local avoids the confusion of having two exported
+// symbols both named "RequestMiddleware" (the public one in xexporterhelper and this one).
+type senderWrapper interface {
+	WrapSender(requestmiddleware.RequestMiddlewareSettings, sender.Sender[request.Request]) (sender.Sender[request.Request], error)
+}
+
+// queueSender wraps QueueBatch to add request middleware logic.
+// Middleware wraps outbound send execution only; num_consumers controls queue-worker
+// headroom while middleware can gate actual in-flight concurrency independently.
 type queueSender struct {
 	*queuebatch.QueueBatch
 	mwIDs []component.ID
@@ -99,17 +112,19 @@ func NewQueueSender(
 
 // Start overrides the default Start to resolve the extensions and wrap the sender.
 func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
-	mws := make([]requestmiddleware.RequestMiddleware, 0, len(qs.mwIDs))
+	mws := make([]senderWrapper, 0, len(qs.mwIDs))
 
-	// 1. Resolve all extensions first to ensure they exist and implement the interface
+	// 1. Resolve all extensions first to ensure they exist and implement the capability.
+	// Extensions should implement xexporterhelper.RequestMiddleware; Go's structural typing
+	// guarantees they also satisfy the local senderWrapper interface.
 	for _, id := range qs.mwIDs {
 		ext, ok := host.GetExtensions()[id]
 		if !ok {
 			return fmt.Errorf("request middleware extension %q not found", id.String())
 		}
-		mw, ok := ext.(requestmiddleware.RequestMiddleware)
+		mw, ok := ext.(senderWrapper)
 		if !ok {
-			return fmt.Errorf("extension %q does not implement RequestMiddleware", id.String())
+			return fmt.Errorf("extension %q does not implement xexporterhelper.RequestMiddleware", id.String())
 		}
 		mws = append(mws, mw)
 	}
