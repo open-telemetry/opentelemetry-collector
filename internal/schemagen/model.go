@@ -105,18 +105,21 @@ func (g *GoStructConfig) Unmarshal(parser *confmap.Conf) error {
 }
 
 // JSONSchemaDoc is the writer-side JSON Schema 2020-12 document produced by schemagen.
-// It is a standalone type, not a wrapper around ConfigMetadata: a component's config
-// root is always an object schema, so the document carries the object-level and
-// identity fields it can actually emit plus the top-level $defs built from the
-// component's exported_configs (and any internal definitions injected by mdatagen).
+// It is a standalone type, not a wrapper around ConfigMetadata, but it mirrors the full
+// set of JSON Schema fields ConfigMetadata can emit (every json-tagged keyword, minus the
+// metadata-only and internal x-*/go_struct fields) plus the top-level $defs built from the
+// component's exported_configs (and any internal definitions injected by mdatagen). A config
+// root is normally an object, but carrying the complete keyword set means a root that uses
+// scalar/array validation, enum/const, or annotation keywords (default, examples, deprecated)
+// is emitted rather than silently dropped.
 //
 // Keeping it separate lets the on-disk JSON Schema evolve independently of the
 // metadata.yaml config representation, which is free to drift away from JSON Schema
 // shape. Standard encoding/json handles serialization; no custom MarshalJSON is needed.
 //
-// Field order mirrors the equivalent fields on ConfigMetadata so the serialized
-// document is byte-identical to the prior embedded-node output: allOf precedes
-// properties, and $defs is emitted last.
+// Field order mirrors the declaration order on ConfigMetadata so the serialized document
+// is byte-identical to the prior embedded-node output: allOf precedes properties, and
+// $defs is emitted last.
 type JSONSchemaDoc struct {
 	Schema      string `json:"$schema,omitempty"`
 	ID          string `json:"$id,omitempty"`
@@ -124,6 +127,12 @@ type JSONSchemaDoc struct {
 	Description string `json:"description,omitempty"`
 	Comment     string `json:"$comment,omitempty"`
 	Type        string `json:"type,omitempty"`
+
+	Default    any   `json:"default,omitempty"`
+	Examples   []any `json:"examples,omitempty"`
+	Deprecated bool  `json:"deprecated,omitempty"`
+	Enum       []any `json:"enum,omitempty"`
+	Const      any   `json:"const,omitempty"`
 
 	AllOf                []*ConfigMetadata          `json:"allOf,omitempty"`
 	Properties           map[string]*ConfigMetadata `json:"properties,omitempty"`
@@ -133,11 +142,31 @@ type JSONSchemaDoc struct {
 	MinProperties        *int                       `json:"minProperties,omitempty"`
 	MaxProperties        *int                       `json:"maxProperties,omitempty"`
 
+	Items       *ConfigMetadata `json:"items,omitempty"`
+	MinItems    *int            `json:"minItems,omitempty"`
+	MaxItems    *int            `json:"maxItems,omitempty"`
+	UniqueItems bool            `json:"uniqueItems,omitempty"`
+
+	MaxLength *int   `json:"maxLength,omitempty"`
+	MinLength *int   `json:"minLength,omitempty"`
+	Pattern   string `json:"pattern,omitempty"`
+	Format    string `json:"format,omitempty"`
+
+	ContentMediaType string          `json:"contentMediaType,omitempty"`
+	ContentEncoding  string          `json:"contentEncoding,omitempty"`
+	ContentSchema    *ConfigMetadata `json:"contentSchema,omitempty"`
+
+	MultipleOf       *float64 `json:"multipleOf,omitempty"`
+	Maximum          *float64 `json:"maximum,omitempty"`
+	ExclusiveMaximum *float64 `json:"exclusiveMaximum,omitempty"`
+	Minimum          *float64 `json:"minimum,omitempty"`
+	ExclusiveMinimum *float64 `json:"exclusiveMinimum,omitempty"`
+
 	Defs map[string]*ConfigMetadata `json:"$defs,omitempty"`
 }
 
 // NewJSONSchemaDoc projects a resolved schema node onto a writer-side JSON Schema
-// document. It copies the document-level fields a config root can carry and the
+// document. It copies every JSON Schema keyword the root node can carry and the
 // resolved $defs. The node's internal AdditionalPropertiesAllowed flag becomes a real
 // additionalProperties boolean on the document. The source node is not retained.
 func NewJSONSchemaDoc(root *ConfigMetadata) *JSONSchemaDoc {
@@ -151,12 +180,33 @@ func NewJSONSchemaDoc(root *ConfigMetadata) *JSONSchemaDoc {
 		Description:       root.Description,
 		Comment:           root.Comment,
 		Type:              root.Type,
+		Default:           root.Default,
+		Examples:          root.Examples,
+		Deprecated:        root.Deprecated,
+		Enum:              root.Enum,
+		Const:             root.Const,
+		AllOf:             root.AllOf,
 		Properties:        root.Properties,
 		PatternProperties: root.PatternProperties,
 		Required:          root.Required,
 		MinProperties:     root.MinProperties,
 		MaxProperties:     root.MaxProperties,
-		AllOf:             root.AllOf,
+		Items:             root.Items,
+		MinItems:          root.MinItems,
+		MaxItems:          root.MaxItems,
+		UniqueItems:       root.UniqueItems,
+		MaxLength:         root.MaxLength,
+		MinLength:         root.MinLength,
+		Pattern:           root.Pattern,
+		Format:            root.Format,
+		ContentMediaType:  root.ContentMediaType,
+		ContentEncoding:   root.ContentEncoding,
+		ContentSchema:     root.ContentSchema,
+		MultipleOf:        root.MultipleOf,
+		Maximum:           root.Maximum,
+		ExclusiveMaximum:  root.ExclusiveMaximum,
+		Minimum:           root.Minimum,
+		ExclusiveMinimum:  root.ExclusiveMinimum,
 		Defs:              root.Defs,
 	}
 	if root.AdditionalPropertiesAllowed != nil {

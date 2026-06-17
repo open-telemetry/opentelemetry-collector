@@ -34,6 +34,45 @@ func TestJSONSchemaDoc_ToJSON(t *testing.T) {
 	assert.Contains(t, string(data), `"The endpoint"`)
 }
 
+func TestNewJSONSchemaDoc_PreservesRootKeywords(t *testing.T) {
+	t.Parallel()
+
+	minItems := 1
+	maximum := 65535.0
+	root := &ConfigMetadata{
+		Type:       "object",
+		Default:    map[string]any{"port": 4317},
+		Examples:   []any{"a", "b"},
+		Deprecated: true,
+		Enum:       []any{"tcp", "udp"},
+		Const:      "fixed",
+		Pattern:    "^a.*$",
+		Format:     "uri",
+		MinItems:   &minItems,
+		Maximum:    &maximum,
+	}
+
+	doc := NewJSONSchemaDoc(root)
+
+	// Keywords carried on the root node must reach the document instead of being
+	// dropped during projection.
+	assert.Equal(t, root.Default, doc.Default)
+	assert.Equal(t, root.Examples, doc.Examples)
+	assert.True(t, doc.Deprecated)
+	assert.Equal(t, root.Enum, doc.Enum)
+	assert.Equal(t, root.Const, doc.Const)
+	assert.Equal(t, root.Pattern, doc.Pattern)
+	assert.Equal(t, root.Format, doc.Format)
+	assert.Equal(t, root.MinItems, doc.MinItems)
+	assert.Equal(t, root.Maximum, doc.Maximum)
+
+	data, err := doc.ToJSON()
+	require.NoError(t, err)
+	for _, want := range []string{`"deprecated"`, `"enum"`, `"const"`, `"pattern"`, `"format"`, `"minItems"`, `"maximum"`} {
+		assert.Contains(t, string(data), want)
+	}
+}
+
 func TestConfigMetadata_MarshalJSON_NoSpecialFieldsUsesStructLayout(t *testing.T) {
 	t.Parallel()
 
