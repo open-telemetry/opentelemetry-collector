@@ -9,15 +9,15 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// ControllerConfig ControllerConfig defines common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed.
+// ControllerConfig defines common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed.
 type ControllerConfig struct {
-	// CollectionInterval sets how frequently the scraper should be called and used as the context timeout to ensure that scrapers don't exceed the interval. Must be positive, or zero to disable timer-based scraping (requires Controllers to be non-empty).
+	// Sets how frequently the scraper should be called and used as the context timeout to ensure that scrapers don't exceed the interval. Must be positive, or zero to disable timer-based scraping (requires controllers to be non-empty).
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
-	// Controllers is a list of extension IDs that control when scrapes occur. When specified, extensions can trigger scrapes based on external events. If Controllers is non-empty, CollectionInterval may be zero to disable timer-based scraping entirely.
+	// An optional list of extension IDs that control when scrapes occur. When specified, extensions can trigger scrapes based on external events. If controllers is non-empty, collection_interval may be zero to disable timer-based scraping entirely.
 	Controllers []component.ID `mapstructure:"controllers"`
-	// InitialDelay sets the initial start delay for the scraper, any non positive value is assumed to be immediately.
+	// Sets the initial start delay for the scraper, any non positive value is assumed to be immediately.
 	InitialDelay time.Duration `mapstructure:"initial_delay"`
-	// Timeout is an optional value used to set scraper's context deadline.
+	// An optional value used to set scraper's context deadline.
 	Timeout time.Duration `mapstructure:"timeout"`
 	// prevent unkeyed literal initialization
 	_ struct{}
