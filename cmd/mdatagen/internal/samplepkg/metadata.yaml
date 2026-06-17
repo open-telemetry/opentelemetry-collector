@@ -7,12 +7,15 @@ status:
   class: pkg
 
 telemetry:
-  # Opt into the WithMetricNamePrefixReplacement option on the generated
-  # TelemetryBuilder. Exercises mdatagen's runtime metric-name prefix
-  # substitution feature.
+  # Opt into the WithMetricNamePrefix option on the generated TelemetryBuilder.
+  # When this flag is set, the implicit "otelcol_" prefix is removed from each
+  # generated metric name, and every caller must supply the full prefix via
+  # WithMetricNamePrefix. This is the mechanism used by code reused across
+  # component kinds (e.g. exporterhelper invoked from a processor): each call
+  # site supplies its own prefix appropriate to its kind.
   allow_name_substitution: true
   metrics:
-    exporter_enqueue_failed_log_records:
+    enqueue_failed_log_records:
       enabled: true
       stability: alpha
       description: Number of log records failed to be added to the sending queue.
@@ -20,7 +23,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-    exporter_queue_batch_send_size:
+    queue_batch_send_size:
       enabled: true
       stability: development
       description: Number of units in the batch
@@ -28,7 +31,7 @@ telemetry:
       histogram:
         value_type: int
         bucket_boundaries: [10, 100, 1000]
-    exporter_queue_size:
+    queue_size:
       enabled: true
       stability: alpha
       description: Current size of the retry queue (in batches).

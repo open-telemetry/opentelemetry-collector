@@ -29,12 +29,11 @@ return set
 {{- end }}
 {{- if .Telemetry.AllowNameSubstitution }}
 
-// AssertOptions controls the metric-name resolution used by the AssertEqual*
-// helpers. Pass options matching the WithMetricNamePrefixReplacement option
-// used to construct the TelemetryBuilder under test.
+// AssertOptions controls the metric-name prefix used by the AssertEqual*
+// helpers. Pass WithMetricNamePrefix matching the option used to construct
+// the TelemetryBuilder under test.
 type AssertOptions struct {
-	oldPrefix string
-	newPrefix string
+	prefix string
 }
 
 // AssertOption applies changes to AssertOptions.
@@ -46,13 +45,12 @@ type assertOptionFunc func(*AssertOptions)
 
 func (f assertOptionFunc) apply(o *AssertOptions) { f(o) }
 
-// WithMetricNamePrefixReplacement informs the AssertEqual* helpers that the
+// WithMetricNamePrefix informs the AssertEqual* helpers that the
 // TelemetryBuilder under test was constructed with the matching
-// WithMetricNamePrefixReplacement option.
-func WithMetricNamePrefixReplacement(oldPrefix, newPrefix string) AssertOption {
+// WithMetricNamePrefix option.
+func WithMetricNamePrefix(prefix string) AssertOption {
 	return assertOptionFunc(func(o *AssertOptions) {
-		o.oldPrefix = oldPrefix
-		o.newPrefix = newPrefix
+		o.prefix = prefix
 	})
 }
 
@@ -61,17 +59,7 @@ func resolveMetricName(name string, opts []AssertOption) string {
 	for _, opt := range opts {
 		opt.apply(&a)
 	}
-	if a.oldPrefix == "" {
-		return name
-	}
-	if !startsWith(name, a.oldPrefix) {
-		return name
-	}
-	return a.newPrefix + name[len(a.oldPrefix):]
-}
-
-func startsWith(s, prefix string) bool {
-	return len(s) >= len(prefix) && s[:len(prefix)] == prefix
+	return a.prefix + name
 }
 {{- end }}
 
@@ -91,11 +79,7 @@ func AssertEqual{{ $name.Render }}(t *testing.T, tt *componenttest.Telemetry, dp
 			require.Failf(t, "unexpected option type", "%T", o)
 		}
 	}
-	{{ if $metric.Prefix -}}
-	name := resolveMetricName("{{ $metric.Prefix }}{{ $name }}", assertOpts)
-	{{ else -}}
-	name := resolveMetricName("otelcol_{{ $name }}", assertOpts)
-	{{ end -}}
+	name := resolveMetricName("{{ $name }}", assertOpts)
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "{{ $metric.Description }} [{{ $metric.Stability }}]",

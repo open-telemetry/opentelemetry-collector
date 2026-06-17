@@ -11,10 +11,6 @@ import (
 	{{- end }}
 	{{- end }}
 	"errors"
-	{{- if .Telemetry.AllowNameSubstitution }}
-	"fmt"
-	"strings"
-	{{- end }}
 	"sync"
 	{{- end }}
 
@@ -48,7 +44,7 @@ type TelemetryBuilder struct {
 	mu sync.Mutex
 	registrations []metric.Registration
 	{{- if .Telemetry.AllowNameSubstitution }}
-	namePrefixReplacement *metricNamePrefixReplacement
+	namePrefix string
 	{{- end }}
 	{{- range $name, $metric := .Telemetry.Metrics }}
 	{{ $name.Render }} metric.{{ $metric.Data.Instrument }}
@@ -69,57 +65,22 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 }
 {{- if .Telemetry.AllowNameSubstitution }}
 
-type metricNamePrefixReplacement struct {
-	oldPrefix string
-	newPrefix string
-}
-
-// WithMetricNamePrefixReplacement requests that every metric name produced by
-// this builder be transformed by replacing oldPrefix with newPrefix. The
-// substitution is anchored: every metric name produced by the builder must
-// start with oldPrefix, otherwise NewTelemetryBuilder returns an error
-// describing the mismatch. NewTelemetryBuilder also reports an error when two
-// metric names collide after substitution. oldPrefix must not be empty.
+// WithMetricNamePrefix sets the prefix that this builder prepends to every
+// metric name declared in metadata.yaml. The option is required: every metric
+// name produced by a substitution-enabled builder is "<prefix><name>" where
+// <name> is the metric key from metadata.yaml, so NewTelemetryBuilder returns
+// an error when the prefix is empty.
 //
-// This option is intended for code that is reused across component kinds,
-// such as exporterhelper reused as a processor, so the same TelemetryBuilder
-// can emit either "otelcol_exporter_*" or "otelcol_processor_*" names.
-func WithMetricNamePrefixReplacement(oldPrefix, newPrefix string) TelemetryBuilderOption {
+// Metadata files opt into this mode by setting telemetry.allow_name_substitution:
+// true, which strips the implicit "otelcol_" prefix from every generated
+// metric name. The intent is to let the same TelemetryBuilder be used by code
+// reused across component kinds — for example, exporterhelper invoked from a
+// processor — by requiring each call site to provide the prefix appropriate
+// to its kind ("otelcol_exporter_", "otelcol_processor_", etc.).
+func WithMetricNamePrefix(prefix string) TelemetryBuilderOption {
 	return telemetryBuilderOptionFunc(func(b *TelemetryBuilder) {
-		b.namePrefixReplacement = &metricNamePrefixReplacement{oldPrefix: oldPrefix, newPrefix: newPrefix}
+		b.namePrefix = prefix
 	})
-}
-
-// metricNameResolver applies the builder's prefix replacement when one is
-// configured and detects post-substitution collisions. resolve returns the
-// resolved name along with any prefix-mismatch or collision error so the
-// caller can append it to the builder's error chain.
-type metricNameResolver struct {
-	repl *metricNamePrefixReplacement
-	seen map[string]string
-}
-
-func newMetricNameResolver(repl *metricNamePrefixReplacement) (*metricNameResolver, error) {
-	r := &metricNameResolver{repl: repl, seen: map[string]string{}}
-	if repl != nil && repl.oldPrefix == "" {
-		return r, errors.New("WithMetricNamePrefixReplacement: oldPrefix must not be empty")
-	}
-	return r, nil
-}
-
-func (r *metricNameResolver) resolve(name string) (string, error) {
-	if r.repl == nil {
-		return name, nil
-	}
-	if !strings.HasPrefix(name, r.repl.oldPrefix) {
-		return name, fmt.Errorf("metric name %q does not start with prefix %q", name, r.repl.oldPrefix)
-	}
-	newName := r.repl.newPrefix + strings.TrimPrefix(name, r.repl.oldPrefix)
-	if prev, ok := r.seen[newName]; ok {
-		return newName, fmt.Errorf("metric name collision after substitution: %q and %q both map to %q", prev, name, newName)
-	}
-	r.seen[newName] = name
-	return newName, nil
 }
 {{- end }}
 
@@ -196,22 +157,16 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.meter = Meter(settings)
 	var err, errs error
 	{{- if .Telemetry.AllowNameSubstitution }}
-	nameResolver, resolverErr := newMetricNameResolver(builder.namePrefixReplacement)
-	errs = errors.Join(errs, resolverErr)
-	var metricName string
+	if builder.namePrefix == "" {
+		errs = errors.Join(errs, errors.New("WithMetricNamePrefix is required: a non-empty metric name prefix must be supplied when telemetry.allow_name_substitution is enabled"))
+	}
 	{{- end }}
 
 	{{- range $name, $metric := .Telemetry.Metrics }}
 	{{- /* Note this code structure preserves an original code path to not generate churn. */}}
 	{{- if $.Telemetry.AllowNameSubstitution }}
-	{{ if $metric.Prefix -}}
-	metricName, err = nameResolver.resolve("{{ $metric.Prefix }}{{ $name }}")
-	{{- else -}}
-	metricName, err = nameResolver.resolve("otelcol_{{ $name }}")
-	{{- end }}
-	errs = errors.Join(errs, err)
 	builder.{{ $name.Render }}, err = builder.meter.{{ $metric.Data.Instrument }}(
-		metricName,
+		builder.namePrefix + "{{ $name }}",
 	{{- else }}
 	builder.{{ $name.Render }}, err = builder.meter.{{ $metric.Data.Instrument }}(
 		{{ if $metric.Prefix -}}

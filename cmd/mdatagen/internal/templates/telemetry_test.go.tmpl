@@ -67,9 +67,15 @@ func TestProviders(t *testing.T) {
 func TestNewTelemetryBuilder(t *testing.T) {
 	set := componenttest.NewNopTelemetrySettings()
 	applied := false
+	{{- if .Telemetry.AllowNameSubstitution }}
+	_, err := NewTelemetryBuilder(set, WithMetricNamePrefix("test_"), telemetryBuilderOptionFunc(func(b *TelemetryBuilder) {
+		applied = true
+	}))
+	{{- else }}
 	_, err := NewTelemetryBuilder(set, telemetryBuilderOptionFunc(func(b *TelemetryBuilder) {
 		applied = true
 	}))
+	{{- end }}
 	require.NoError(t, err)
 	require.True(t, applied)
 }

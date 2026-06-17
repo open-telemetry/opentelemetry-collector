@@ -24,7 +24,11 @@ import (
 
 func TestSetupTelemetry(t *testing.T) {
 	testTel := componenttest.NewTelemetry()
+	{{- if .Telemetry.AllowNameSubstitution }}
+	tb, err := {{ .Package }}.NewTelemetryBuilder(testTel.NewTelemetrySettings(), {{ .Package }}.WithMetricNamePrefix("test_"))
+	{{- else }}
 	tb, err := {{ .Package }}.NewTelemetryBuilder(testTel.NewTelemetrySettings())
+	{{- end }}
 	require.NoError(t, err)
 	defer tb.Shutdown()
 
@@ -55,6 +59,9 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.DataPoint[{{ $metric.Sum.MetricValueType.BasicType }}]{{"{{Value: 1}}"}},
 		{{- else if eq $metric.Data.Type "Histogram" -}}
 		[]metricdata.HistogramDataPoint[{{ $metric.Histogram.MetricValueType.BasicType }}]{{"{{}}"}}, metricdatatest.IgnoreValue(),
+		{{- end }}
+		{{- if $.Telemetry.AllowNameSubstitution }}
+		WithMetricNamePrefix("test_"),
 		{{- end }}
 		metricdatatest.IgnoreTimestamp())
 	{{- end }}

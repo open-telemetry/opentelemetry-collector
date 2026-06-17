@@ -12,12 +12,11 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 )
 
-// AssertOptions controls the metric-name resolution used by the AssertEqual*
-// helpers. Pass options matching the WithMetricNamePrefixReplacement option
-// used to construct the TelemetryBuilder under test.
+// AssertOptions controls the metric-name prefix used by the AssertEqual*
+// helpers. Pass WithMetricNamePrefix matching the option used to construct
+// the TelemetryBuilder under test.
 type AssertOptions struct {
-	oldPrefix string
-	newPrefix string
+	prefix string
 }
 
 // AssertOption applies changes to AssertOptions.
@@ -29,13 +28,12 @@ type assertOptionFunc func(*AssertOptions)
 
 func (f assertOptionFunc) apply(o *AssertOptions) { f(o) }
 
-// WithMetricNamePrefixReplacement informs the AssertEqual* helpers that the
+// WithMetricNamePrefix informs the AssertEqual* helpers that the
 // TelemetryBuilder under test was constructed with the matching
-// WithMetricNamePrefixReplacement option.
-func WithMetricNamePrefixReplacement(oldPrefix, newPrefix string) AssertOption {
+// WithMetricNamePrefix option.
+func WithMetricNamePrefix(prefix string) AssertOption {
 	return assertOptionFunc(func(o *AssertOptions) {
-		o.oldPrefix = oldPrefix
-		o.newPrefix = newPrefix
+		o.prefix = prefix
 	})
 }
 
@@ -44,20 +42,10 @@ func resolveMetricName(name string, opts []AssertOption) string {
 	for _, opt := range opts {
 		opt.apply(&a)
 	}
-	if a.oldPrefix == "" {
-		return name
-	}
-	if !startsWith(name, a.oldPrefix) {
-		return name
-	}
-	return a.newPrefix + name[len(a.oldPrefix):]
+	return a.prefix + name
 }
 
-func startsWith(s, prefix string) bool {
-	return len(s) >= len(prefix) && s[:len(prefix)] == prefix
-}
-
-func AssertEqualExporterEnqueueFailedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...any) {
+func AssertEqualEnqueueFailedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...any) {
 	var assertOpts []AssertOption
 	var mdOpts []metricdatatest.Option
 	for _, o := range opts {
@@ -70,7 +58,7 @@ func AssertEqualExporterEnqueueFailedLogRecords(t *testing.T, tt *componenttest.
 			require.Failf(t, "unexpected option type", "%T", o)
 		}
 	}
-	name := resolveMetricName("otelcol_exporter_enqueue_failed_log_records", assertOpts)
+	name := resolveMetricName("enqueue_failed_log_records", assertOpts)
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of log records failed to be added to the sending queue. [Alpha]",
@@ -86,7 +74,7 @@ func AssertEqualExporterEnqueueFailedLogRecords(t *testing.T, tt *componenttest.
 	metricdatatest.AssertEqual(t, want, got, mdOpts...)
 }
 
-func AssertEqualExporterQueueBatchSendSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...any) {
+func AssertEqualQueueBatchSendSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...any) {
 	var assertOpts []AssertOption
 	var mdOpts []metricdatatest.Option
 	for _, o := range opts {
@@ -99,7 +87,7 @@ func AssertEqualExporterQueueBatchSendSize(t *testing.T, tt *componenttest.Telem
 			require.Failf(t, "unexpected option type", "%T", o)
 		}
 	}
-	name := resolveMetricName("otelcol_exporter_queue_batch_send_size", assertOpts)
+	name := resolveMetricName("queue_batch_send_size", assertOpts)
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of units in the batch [Development]",
@@ -114,7 +102,7 @@ func AssertEqualExporterQueueBatchSendSize(t *testing.T, tt *componenttest.Telem
 	metricdatatest.AssertEqual(t, want, got, mdOpts...)
 }
 
-func AssertEqualExporterQueueSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...any) {
+func AssertEqualQueueSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...any) {
 	var assertOpts []AssertOption
 	var mdOpts []metricdatatest.Option
 	for _, o := range opts {
@@ -127,7 +115,7 @@ func AssertEqualExporterQueueSize(t *testing.T, tt *componenttest.Telemetry, dps
 			require.Failf(t, "unexpected option type", "%T", o)
 		}
 	}
-	name := resolveMetricName("otelcol_exporter_queue_size", assertOpts)
+	name := resolveMetricName("queue_size", assertOpts)
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Current size of the retry queue (in batches). [Alpha]",

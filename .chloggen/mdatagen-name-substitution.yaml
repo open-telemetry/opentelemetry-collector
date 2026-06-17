@@ -2,17 +2,19 @@ change_type: enhancement
 
 component: cmd/mdatagen
 
-note: support runtime metric-name prefix substitution in generated TelemetryBuilder
+note: support runtime metric-name prefix on generated TelemetryBuilder
 
 issues: [14038]
 
 subtext: |
-  metadata.yaml gains an opt-in telemetry.allow_name_substitution flag. When set,
-  the generated TelemetryBuilder exposes a WithMetricNamePrefixReplacement(old,
-  new) option, and the generated AssertEqual* helpers in metadatatest accept a
-  matching option. This unblocks reusing exporterhelper telemetry from a
-  processor context by allowing "otelcol_exporter_*" metric names to be
-  rewritten to "otelcol_processor_*" at builder-construction time, with
-  anchored prefix validation that fails fast on misconfiguration.
+  metadata.yaml gains an opt-in telemetry.allow_name_substitution flag. When
+  set, the generated TelemetryBuilder strips the implicit "otelcol_" prefix
+  from every metric name and exposes a required WithMetricNamePrefix(prefix)
+  option; NewTelemetryBuilder returns an error if the option is missing or
+  empty. The generated AssertEqual* helpers in metadatatest accept a matching
+  WithMetricNamePrefix option for test-side metric lookup. This unblocks
+  sharing telemetry across component kinds (e.g. exporterhelper invoked from
+  a processor) by requiring each call site to supply the prefix appropriate
+  to its kind, such as "otelcol_exporter_" or "otelcol_processor_".
 
 change_logs: [api]

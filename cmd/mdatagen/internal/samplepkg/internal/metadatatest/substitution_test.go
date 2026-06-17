@@ -15,25 +15,25 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 )
 
-// TestAssertHelpers_WithSubstitution verifies that the AssertEqual* helpers
-// accept WithMetricNamePrefixReplacement and look up metrics under their
-// substituted names.
-func TestAssertHelpers_WithSubstitution(t *testing.T) {
+// TestAssertHelpers_WithMetricNamePrefix verifies that the AssertEqual* helpers
+// accept WithMetricNamePrefix and look up metrics under their fully prefixed
+// names.
+func TestAssertHelpers_WithMetricNamePrefix(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	tb, err := metadata.NewTelemetryBuilder(
 		tt.NewTelemetrySettings(),
-		metadata.WithMetricNamePrefixReplacement("otelcol_exporter_", "otelcol_processor_"),
+		metadata.WithMetricNamePrefix("otelcol_processor_"),
 	)
 	require.NoError(t, err)
 	t.Cleanup(tb.Shutdown)
 
-	tb.ExporterEnqueueFailedLogRecords.Add(context.Background(), 1)
+	tb.EnqueueFailedLogRecords.Add(context.Background(), 1)
 
-	AssertEqualExporterEnqueueFailedLogRecords(t, tt,
+	AssertEqualEnqueueFailedLogRecords(t, tt,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
-		WithMetricNamePrefixReplacement("otelcol_exporter_", "otelcol_processor_"),
+		WithMetricNamePrefix("otelcol_processor_"),
 		metricdatatest.IgnoreTimestamp(),
 	)
 }

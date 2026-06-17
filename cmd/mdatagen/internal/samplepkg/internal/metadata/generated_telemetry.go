@@ -5,8 +5,6 @@ package metadata
 import (
 	"context"
 	"errors"
-	"fmt"
-	"strings"
 	"sync"
 
 	"go.opentelemetry.io/otel/metric"
@@ -27,13 +25,13 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                           metric.Meter
-	mu                              sync.Mutex
-	registrations                   []metric.Registration
-	namePrefixReplacement           *metricNamePrefixReplacement
-	ExporterEnqueueFailedLogRecords metric.Int64Counter
-	ExporterQueueBatchSendSize      metric.Int64Histogram
-	ExporterQueueSize               metric.Int64ObservableGauge
+	meter                   metric.Meter
+	mu                      sync.Mutex
+	registrations           []metric.Registration
+	namePrefix              string
+	EnqueueFailedLogRecords metric.Int64Counter
+	QueueBatchSendSize      metric.Int64Histogram
+	QueueSize               metric.Int64ObservableGauge
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -47,65 +45,30 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
 }
 
-type metricNamePrefixReplacement struct {
-	oldPrefix string
-	newPrefix string
-}
-
-// WithMetricNamePrefixReplacement requests that every metric name produced by
-// this builder be transformed by replacing oldPrefix with newPrefix. The
-// substitution is anchored: every metric name produced by the builder must
-// start with oldPrefix, otherwise NewTelemetryBuilder returns an error
-// describing the mismatch. NewTelemetryBuilder also reports an error when two
-// metric names collide after substitution. oldPrefix must not be empty.
+// WithMetricNamePrefix sets the prefix that this builder prepends to every
+// metric name declared in metadata.yaml. The option is required: every metric
+// name produced by a substitution-enabled builder is "<prefix><name>" where
+// <name> is the metric key from metadata.yaml, so NewTelemetryBuilder returns
+// an error when the prefix is empty.
 //
-// This option is intended for code that is reused across component kinds,
-// such as exporterhelper reused as a processor, so the same TelemetryBuilder
-// can emit either "otelcol_exporter_*" or "otelcol_processor_*" names.
-func WithMetricNamePrefixReplacement(oldPrefix, newPrefix string) TelemetryBuilderOption {
+// Metadata files opt into this mode by setting telemetry.allow_name_substitution:
+// true, which strips the implicit "otelcol_" prefix from every generated
+// metric name. The intent is to let the same TelemetryBuilder be used by code
+// reused across component kinds — for example, exporterhelper invoked from a
+// processor — by requiring each call site to provide the prefix appropriate
+// to its kind ("otelcol_exporter_", "otelcol_processor_", etc.).
+func WithMetricNamePrefix(prefix string) TelemetryBuilderOption {
 	return telemetryBuilderOptionFunc(func(b *TelemetryBuilder) {
-		b.namePrefixReplacement = &metricNamePrefixReplacement{oldPrefix: oldPrefix, newPrefix: newPrefix}
+		b.namePrefix = prefix
 	})
 }
 
-// metricNameResolver applies the builder's prefix replacement when one is
-// configured and detects post-substitution collisions. resolve returns the
-// resolved name along with any prefix-mismatch or collision error so the
-// caller can append it to the builder's error chain.
-type metricNameResolver struct {
-	repl *metricNamePrefixReplacement
-	seen map[string]string
-}
-
-func newMetricNameResolver(repl *metricNamePrefixReplacement) (*metricNameResolver, error) {
-	r := &metricNameResolver{repl: repl, seen: map[string]string{}}
-	if repl != nil && repl.oldPrefix == "" {
-		return r, errors.New("WithMetricNamePrefixReplacement: oldPrefix must not be empty")
-	}
-	return r, nil
-}
-
-func (r *metricNameResolver) resolve(name string) (string, error) {
-	if r.repl == nil {
-		return name, nil
-	}
-	if !strings.HasPrefix(name, r.repl.oldPrefix) {
-		return name, fmt.Errorf("metric name %q does not start with prefix %q", name, r.repl.oldPrefix)
-	}
-	newName := r.repl.newPrefix + strings.TrimPrefix(name, r.repl.oldPrefix)
-	if prev, ok := r.seen[newName]; ok {
-		return newName, fmt.Errorf("metric name collision after substitution: %q and %q both map to %q", prev, name, newName)
-	}
-	r.seen[newName] = name
-	return newName, nil
-}
-
-// RegisterExporterQueueSizeCallback sets callback for observable ExporterQueueSize metric.
-func (builder *TelemetryBuilder) RegisterExporterQueueSizeCallback(cb metric.Int64Callback) error {
+// RegisterQueueSizeCallback sets callback for observable QueueSize metric.
+func (builder *TelemetryBuilder) RegisterQueueSizeCallback(cb metric.Int64Callback) error {
 	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
-		cb(ctx, &observerInt64{inst: builder.ExporterQueueSize, obs: o})
+		cb(ctx, &observerInt64{inst: builder.QueueSize, obs: o})
 		return nil
-	}, builder.ExporterQueueSize)
+	}, builder.QueueSize)
 	if err != nil {
 		return err
 	}
@@ -143,30 +106,24 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	nameResolver, resolverErr := newMetricNameResolver(builder.namePrefixReplacement)
-	errs = errors.Join(errs, resolverErr)
-	var metricName string
-	metricName, err = nameResolver.resolve("otelcol_exporter_enqueue_failed_log_records")
-	errs = errors.Join(errs, err)
-	builder.ExporterEnqueueFailedLogRecords, err = builder.meter.Int64Counter(
-		metricName,
+	if builder.namePrefix == "" {
+		errs = errors.Join(errs, errors.New("WithMetricNamePrefix is required: a non-empty metric name prefix must be supplied when telemetry.allow_name_substitution is enabled"))
+	}
+	builder.EnqueueFailedLogRecords, err = builder.meter.Int64Counter(
+		builder.namePrefix+"enqueue_failed_log_records",
 		metric.WithDescription("Number of log records failed to be added to the sending queue. [Alpha]"),
 		metric.WithUnit("{record}"),
 	)
 	errs = errors.Join(errs, err)
-	metricName, err = nameResolver.resolve("otelcol_exporter_queue_batch_send_size")
-	errs = errors.Join(errs, err)
-	builder.ExporterQueueBatchSendSize, err = builder.meter.Int64Histogram(
-		metricName,
+	builder.QueueBatchSendSize, err = builder.meter.Int64Histogram(
+		builder.namePrefix+"queue_batch_send_size",
 		metric.WithDescription("Number of units in the batch [Development]"),
 		metric.WithUnit("{unit}"),
 		metric.WithExplicitBucketBoundaries([]float64{10, 100, 1000}...),
 	)
 	errs = errors.Join(errs, err)
-	metricName, err = nameResolver.resolve("otelcol_exporter_queue_size")
-	errs = errors.Join(errs, err)
-	builder.ExporterQueueSize, err = builder.meter.Int64ObservableGauge(
-		metricName,
+	builder.QueueSize, err = builder.meter.Int64ObservableGauge(
+		builder.namePrefix+"queue_size",
 		metric.WithDescription("Current size of the retry queue (in batches). [Alpha]"),
 		metric.WithUnit("{batch}"),
 	)

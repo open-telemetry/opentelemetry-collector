@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### otelcol_exporter_enqueue_failed_log_records
+### otelcol_enqueue_failed_log_records
 
 Number of log records failed to be added to the sending queue.
 
@@ -14,7 +14,7 @@ Number of log records failed to be added to the sending queue.
 | ---- | ----------- | ---------- | --------- | --------- |
 | {record} | Sum | Int | true | Alpha |
 
-### otelcol_exporter_queue_batch_send_size
+### otelcol_queue_batch_send_size
 
 Number of units in the batch
 
@@ -22,7 +22,7 @@ Number of units in the batch
 | ---- | ----------- | ---------- | --------- |
 | {unit} | Histogram | Int | Development |
 
-### otelcol_exporter_queue_size
+### otelcol_queue_size
 
 Current size of the retry queue (in batches).
 

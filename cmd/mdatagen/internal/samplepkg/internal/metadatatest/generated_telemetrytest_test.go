@@ -17,23 +17,26 @@ import (
 
 func TestSetupTelemetry(t *testing.T) {
 	testTel := componenttest.NewTelemetry()
-	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
+	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings(), metadata.WithMetricNamePrefix("test_"))
 	require.NoError(t, err)
 	defer tb.Shutdown()
-	require.NoError(t, tb.RegisterExporterQueueSizeCallback(func(_ context.Context, observer metric.Int64Observer) error {
+	require.NoError(t, tb.RegisterQueueSizeCallback(func(_ context.Context, observer metric.Int64Observer) error {
 		observer.Observe(1)
 		return nil
 	}))
-	tb.ExporterEnqueueFailedLogRecords.Add(context.Background(), 1)
-	tb.ExporterQueueBatchSendSize.Record(context.Background(), 1)
-	AssertEqualExporterEnqueueFailedLogRecords(t, testTel,
+	tb.EnqueueFailedLogRecords.Add(context.Background(), 1)
+	tb.QueueBatchSendSize.Record(context.Background(), 1)
+	AssertEqualEnqueueFailedLogRecords(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
+		WithMetricNamePrefix("test_"),
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualExporterQueueBatchSendSize(t, testTel,
+	AssertEqualQueueBatchSendSize(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
+		WithMetricNamePrefix("test_"),
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualExporterQueueSize(t, testTel,
+	AssertEqualQueueSize(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
+		WithMetricNamePrefix("test_"),
 		metricdatatest.IgnoreTimestamp())
 
 	require.NoError(t, testTel.Shutdown(context.Background()))
