@@ -206,7 +206,8 @@ events:
   default.event.to_be_renamed:
     enabled: false
     description: "[DEPRECATED] Example event disabled by default."
-    extended_documentation: The event will be renamed soon.
+    extended_documentation: |
+            The event will be renamed soon.
     attributes: [string_attr, boolean_attr, boolean_attr2, conditional_string_attr]
     warnings:
       if_configured: This event is deprecated and will be renamed soon.
@@ -242,7 +243,8 @@ metrics:
   default.metric.to_be_removed:
     enabled: true
     description: "[DEPRECATED] Non-monotonic delta sum double metric enabled by default."
-    extended_documentation: The metric will be removed soon.
+    extended_documentation: |
+            The metric will be removed soon.
     stability: deprecated
     deprecated:
       since: "1.0.0"
