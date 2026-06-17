@@ -19,15 +19,17 @@
 # Start components list
 
 client/                                                @open-telemetry/collector-approvers
-cmd/builder/                                           @open-telemetry/collector-approvers @dmathieu
+cmd/builder/                                           @open-telemetry/collector-approvers @dmathieu @braydonk @jmacd
 cmd/mdatagen/                                          @open-telemetry/collector-approvers @dmitryax
 cmd/mdatagen/internal/sampleconnector/                 @open-telemetry/collector-approvers
 cmd/mdatagen/internal/sampleentityreceiver/            @open-telemetry/collector-approvers @dmitryax
 cmd/mdatagen/internal/samplefactoryreceiver/           @open-telemetry/collector-approvers @dmitryax
+cmd/mdatagen/internal/samplemigrationscraper/          @open-telemetry/collector-approvers
 cmd/mdatagen/internal/samplepkg/                       @open-telemetry/collector-approvers
 cmd/mdatagen/internal/sampleprocessor/                 @open-telemetry/collector-approvers
 cmd/mdatagen/internal/samplereceiver/                  @open-telemetry/collector-approvers @dmitryax
 cmd/mdatagen/internal/samplescraper/                   @open-telemetry/collector-approvers @dmitryax
+cmd/schemagen/                                         @open-telemetry/collector-approvers
 component/                                             @open-telemetry/collector-approvers
 component/componentstatus/                             @open-telemetry/collector-approvers
 component/componenttest/                               @open-telemetry/collector-approvers
