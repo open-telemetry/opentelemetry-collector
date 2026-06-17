@@ -24,8 +24,8 @@ import (
 
 func TestSetupTelemetry(t *testing.T) {
 	testTel := componenttest.NewTelemetry()
-	{{- if .Telemetry.AllowNameSubstitution }}
-	tb, err := {{ .Package }}.NewTelemetryBuilder(testTel.NewTelemetrySettings(), {{ .Package }}.WithMetricNamePrefix("test_"))
+	{{- if .Telemetry.AllowNameVariation }}
+	tb, err := {{ .Package }}.NewTelemetryBuilder(testTel.NewTelemetrySettings(), "test")
 	{{- else }}
 	tb, err := {{ .Package }}.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	{{- end }}
@@ -53,15 +53,13 @@ func TestSetupTelemetry(t *testing.T) {
 
 	{{- range $name, $metric := .Telemetry.Metrics }}
 	AssertEqual{{ $name.Render }}(t, testTel,
+		{{- if $.Telemetry.AllowNameVariation }} "test",{{ end }}
 		{{ if eq $metric.Data.Type "Gauge" -}}
 		[]metricdata.DataPoint[{{ $metric.Gauge.MetricValueType.BasicType }}]{{"{{Value: 1}}"}},
 		{{- else if eq $metric.Data.Type "Sum" -}}
 		[]metricdata.DataPoint[{{ $metric.Sum.MetricValueType.BasicType }}]{{"{{Value: 1}}"}},
 		{{- else if eq $metric.Data.Type "Histogram" -}}
 		[]metricdata.HistogramDataPoint[{{ $metric.Histogram.MetricValueType.BasicType }}]{{"{{}}"}}, metricdatatest.IgnoreValue(),
-		{{- end }}
-		{{- if $.Telemetry.AllowNameSubstitution }}
-		WithMetricNamePrefix("test_"),
 		{{- end }}
 		metricdatatest.IgnoreTimestamp())
 	{{- end }}

@@ -7,13 +7,12 @@ status:
   class: pkg
 
 telemetry:
-  # Opt into the WithMetricNamePrefix option on the generated TelemetryBuilder.
-  # When this flag is set, the implicit "otelcol_" prefix is removed from each
-  # generated metric name, and every caller must supply the full prefix via
-  # WithMetricNamePrefix. This is the mechanism used by code reused across
-  # component kinds (e.g. exporterhelper invoked from a processor): each call
-  # site supplies its own prefix appropriate to its kind.
-  allow_name_substitution: true
+  # Opt into the variation-aware naming scheme. When set, NewTelemetryBuilder
+  # takes a required positional "variation" argument and every metric is
+  # emitted as "otelcol_<variation>_<key>". This is the mechanism used by
+  # code reused across component kinds: the exporter call site passes
+  # "exporter", the processor call site passes "processor".
+  allow_name_variation: true
   metrics:
     enqueue_failed_log_records:
       enabled: true

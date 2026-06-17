@@ -28,7 +28,7 @@ type TelemetryBuilder struct {
 	meter                   metric.Meter
 	mu                      sync.Mutex
 	registrations           []metric.Registration
-	namePrefix              string
+	variation               string
 	EnqueueFailedLogRecords metric.Int64Counter
 	QueueBatchSendSize      metric.Int64Histogram
 	QueueSize               metric.Int64ObservableGauge
@@ -43,24 +43,6 @@ type telemetryBuilderOptionFunc func(mb *TelemetryBuilder)
 
 func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
-}
-
-// WithMetricNamePrefix sets the prefix that this builder prepends to every
-// metric name declared in metadata.yaml. The option is required: every metric
-// name produced by a substitution-enabled builder is "<prefix><name>" where
-// <name> is the metric key from metadata.yaml, so NewTelemetryBuilder returns
-// an error when the prefix is empty.
-//
-// Metadata files opt into this mode by setting telemetry.allow_name_substitution:
-// true, which strips the implicit "otelcol_" prefix from every generated
-// metric name. The intent is to let the same TelemetryBuilder be used by code
-// reused across component kinds — for example, exporterhelper invoked from a
-// processor — by requiring each call site to provide the prefix appropriate
-// to its kind ("otelcol_exporter_", "otelcol_processor_", etc.).
-func WithMetricNamePrefix(prefix string) TelemetryBuilderOption {
-	return telemetryBuilderOptionFunc(func(b *TelemetryBuilder) {
-		b.namePrefix = prefix
-	})
 }
 
 // RegisterQueueSizeCallback sets callback for observable QueueSize metric.
@@ -99,31 +81,33 @@ func (builder *TelemetryBuilder) Shutdown() {
 
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
-func NewTelemetryBuilder(settings component.TelemetrySettings, options ...TelemetryBuilderOption) (*TelemetryBuilder, error) {
-	builder := TelemetryBuilder{}
+func NewTelemetryBuilder(settings component.TelemetrySettings, variation string, options ...TelemetryBuilderOption) (*TelemetryBuilder, error) {
+	builder := TelemetryBuilder{
+		variation: variation,
+	}
 	for _, op := range options {
 		op.apply(&builder)
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	if builder.namePrefix == "" {
-		errs = errors.Join(errs, errors.New("WithMetricNamePrefix is required: a non-empty metric name prefix must be supplied when telemetry.allow_name_substitution is enabled"))
+	if variation == "" {
+		errs = errors.Join(errs, errors.New("variation is required: pass a non-empty variation name when telemetry.allow_name_variation is enabled"))
 	}
 	builder.EnqueueFailedLogRecords, err = builder.meter.Int64Counter(
-		builder.namePrefix+"enqueue_failed_log_records",
+		"otelcol_"+builder.variation+"_enqueue_failed_log_records",
 		metric.WithDescription("Number of log records failed to be added to the sending queue. [Alpha]"),
 		metric.WithUnit("{record}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.QueueBatchSendSize, err = builder.meter.Int64Histogram(
-		builder.namePrefix+"queue_batch_send_size",
+		"otelcol_"+builder.variation+"_queue_batch_send_size",
 		metric.WithDescription("Number of units in the batch [Development]"),
 		metric.WithUnit("{unit}"),
 		metric.WithExplicitBucketBoundaries([]float64{10, 100, 1000}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.QueueSize, err = builder.meter.Int64ObservableGauge(
-		builder.namePrefix+"queue_size",
+		"otelcol_"+builder.variation+"_queue_size",
 		metric.WithDescription("Current size of the retry queue (in batches). [Alpha]"),
 		metric.WithUnit("{batch}"),
 	)

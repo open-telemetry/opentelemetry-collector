@@ -27,59 +27,12 @@ set.TelemetrySettings = tt.NewTelemetrySettings()
 return set
 }
 {{- end }}
-{{- if .Telemetry.AllowNameSubstitution }}
-
-// AssertOptions controls the metric-name prefix used by the AssertEqual*
-// helpers. Pass WithMetricNamePrefix matching the option used to construct
-// the TelemetryBuilder under test.
-type AssertOptions struct {
-	prefix string
-}
-
-// AssertOption applies changes to AssertOptions.
-type AssertOption interface {
-	apply(*AssertOptions)
-}
-
-type assertOptionFunc func(*AssertOptions)
-
-func (f assertOptionFunc) apply(o *AssertOptions) { f(o) }
-
-// WithMetricNamePrefix informs the AssertEqual* helpers that the
-// TelemetryBuilder under test was constructed with the matching
-// WithMetricNamePrefix option.
-func WithMetricNamePrefix(prefix string) AssertOption {
-	return assertOptionFunc(func(o *AssertOptions) {
-		o.prefix = prefix
-	})
-}
-
-func resolveMetricName(name string, opts []AssertOption) string {
-	a := AssertOptions{}
-	for _, opt := range opts {
-		opt.apply(&a)
-	}
-	return a.prefix + name
-}
-{{- end }}
 
 {{ range $name, $metric := .Telemetry.Metrics }}{{/* Note this code structure preserves an original code path to not generate churn. */}}
 
-func AssertEqual{{ $name.Render }}(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.{{- if eq $metric.Data.Type "Histogram" }} {{$metric.Data.Type}} {{- end }}DataPoint[{{ $metric.Data.BasicType }}], opts ...{{ if $.Telemetry.AllowNameSubstitution }}any{{ else }}metricdatatest.Option{{ end }}) {
-	{{- if $.Telemetry.AllowNameSubstitution }}
-	var assertOpts []AssertOption
-	var mdOpts []metricdatatest.Option
-	for _, o := range opts {
-		switch v := o.(type) {
-		case AssertOption:
-			assertOpts = append(assertOpts, v)
-		case metricdatatest.Option:
-			mdOpts = append(mdOpts, v)
-		default:
-			require.Failf(t, "unexpected option type", "%T", o)
-		}
-	}
-	name := resolveMetricName("{{ $name }}", assertOpts)
+func AssertEqual{{ $name.Render }}(t *testing.T, tt *componenttest.Telemetry, {{ if $.Telemetry.AllowNameVariation }}variation string, {{ end }}dps []metricdata.{{- if eq $metric.Data.Type "Histogram" }} {{$metric.Data.Type}} {{- end }}DataPoint[{{ $metric.Data.BasicType }}], opts ...metricdatatest.Option) {
+	{{- if $.Telemetry.AllowNameVariation }}
+	name := "otelcol_" + variation + "_{{ $name }}"
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "{{ $metric.Description }} [{{ $metric.Stability }}]",
@@ -96,7 +49,7 @@ func AssertEqual{{ $name.Render }}(t *testing.T, tt *componenttest.Telemetry, dp
 	}
 	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
-	metricdatatest.AssertEqual(t, want, got, mdOpts...)
+	metricdatatest.AssertEqual(t, want, got, opts...)
 	{{- else }}
 	want := metricdata.Metrics{
 		{{ if $metric.Prefix -}}

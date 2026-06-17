@@ -12,53 +12,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 )
 
-// AssertOptions controls the metric-name prefix used by the AssertEqual*
-// helpers. Pass WithMetricNamePrefix matching the option used to construct
-// the TelemetryBuilder under test.
-type AssertOptions struct {
-	prefix string
-}
-
-// AssertOption applies changes to AssertOptions.
-type AssertOption interface {
-	apply(*AssertOptions)
-}
-
-type assertOptionFunc func(*AssertOptions)
-
-func (f assertOptionFunc) apply(o *AssertOptions) { f(o) }
-
-// WithMetricNamePrefix informs the AssertEqual* helpers that the
-// TelemetryBuilder under test was constructed with the matching
-// WithMetricNamePrefix option.
-func WithMetricNamePrefix(prefix string) AssertOption {
-	return assertOptionFunc(func(o *AssertOptions) {
-		o.prefix = prefix
-	})
-}
-
-func resolveMetricName(name string, opts []AssertOption) string {
-	a := AssertOptions{}
-	for _, opt := range opts {
-		opt.apply(&a)
-	}
-	return a.prefix + name
-}
-
-func AssertEqualEnqueueFailedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...any) {
-	var assertOpts []AssertOption
-	var mdOpts []metricdatatest.Option
-	for _, o := range opts {
-		switch v := o.(type) {
-		case AssertOption:
-			assertOpts = append(assertOpts, v)
-		case metricdatatest.Option:
-			mdOpts = append(mdOpts, v)
-		default:
-			require.Failf(t, "unexpected option type", "%T", o)
-		}
-	}
-	name := resolveMetricName("enqueue_failed_log_records", assertOpts)
+func AssertEqualEnqueueFailedLogRecords(t *testing.T, tt *componenttest.Telemetry, variation string, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_" + variation + "_enqueue_failed_log_records"
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of log records failed to be added to the sending queue. [Alpha]",
@@ -71,23 +26,11 @@ func AssertEqualEnqueueFailedLogRecords(t *testing.T, tt *componenttest.Telemetr
 	}
 	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
-	metricdatatest.AssertEqual(t, want, got, mdOpts...)
+	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualQueueBatchSendSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...any) {
-	var assertOpts []AssertOption
-	var mdOpts []metricdatatest.Option
-	for _, o := range opts {
-		switch v := o.(type) {
-		case AssertOption:
-			assertOpts = append(assertOpts, v)
-		case metricdatatest.Option:
-			mdOpts = append(mdOpts, v)
-		default:
-			require.Failf(t, "unexpected option type", "%T", o)
-		}
-	}
-	name := resolveMetricName("queue_batch_send_size", assertOpts)
+func AssertEqualQueueBatchSendSize(t *testing.T, tt *componenttest.Telemetry, variation string, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_" + variation + "_queue_batch_send_size"
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of units in the batch [Development]",
@@ -99,23 +42,11 @@ func AssertEqualQueueBatchSendSize(t *testing.T, tt *componenttest.Telemetry, dp
 	}
 	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
-	metricdatatest.AssertEqual(t, want, got, mdOpts...)
+	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualQueueSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...any) {
-	var assertOpts []AssertOption
-	var mdOpts []metricdatatest.Option
-	for _, o := range opts {
-		switch v := o.(type) {
-		case AssertOption:
-			assertOpts = append(assertOpts, v)
-		case metricdatatest.Option:
-			mdOpts = append(mdOpts, v)
-		default:
-			require.Failf(t, "unexpected option type", "%T", o)
-		}
-	}
-	name := resolveMetricName("queue_size", assertOpts)
+func AssertEqualQueueSize(t *testing.T, tt *componenttest.Telemetry, variation string, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_" + variation + "_queue_size"
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Current size of the retry queue (in batches). [Alpha]",
@@ -126,5 +57,5 @@ func AssertEqualQueueSize(t *testing.T, tt *componenttest.Telemetry, dps []metri
 	}
 	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
-	metricdatatest.AssertEqual(t, want, got, mdOpts...)
+	metricdatatest.AssertEqual(t, want, got, opts...)
 }

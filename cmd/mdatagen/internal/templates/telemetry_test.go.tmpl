@@ -67,8 +67,8 @@ func TestProviders(t *testing.T) {
 func TestNewTelemetryBuilder(t *testing.T) {
 	set := componenttest.NewNopTelemetrySettings()
 	applied := false
-	{{- if .Telemetry.AllowNameSubstitution }}
-	_, err := NewTelemetryBuilder(set, WithMetricNamePrefix("test_"), telemetryBuilderOptionFunc(func(b *TelemetryBuilder) {
+	{{- if .Telemetry.AllowNameVariation }}
+	_, err := NewTelemetryBuilder(set, "test", telemetryBuilderOptionFunc(func(b *TelemetryBuilder) {
 		applied = true
 	}))
 	{{- else }}
