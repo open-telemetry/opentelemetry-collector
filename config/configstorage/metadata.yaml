@@ -1,0 +1,8 @@
+type: configstorage
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  class: pkg
+  stability:
+    development: [metrics, traces, logs, profiles]
