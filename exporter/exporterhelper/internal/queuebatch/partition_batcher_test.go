@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"runtime"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -349,6 +350,35 @@ func TestPartitionBatcher_Shutdown(t *testing.T) {
 	// Check that done callback is called for the right number of times.
 	assert.EqualValues(t, 0, done.errors.Load())
 	assert.EqualValues(t, 2, done.success.Load())
+}
+
+// TestPartitionBatcher_ConcurrentConsumeAndShutdown is a regression test for
+// https://github.com/open-telemetry/opentelemetry-collector/issues/15422.
+// A Consume call that reads active==true and then calls flush() (which does
+// stopWG.Add(1)) can race with shutdownInternal()'s stopWG.Wait(), panicking
+// with "sync: WaitGroup is reused before previous Wait has returned".
+func TestPartitionBatcher_ConcurrentConsumeAndShutdown(t *testing.T) {
+	for range 100 {
+		cfg := BatchConfig{
+			FlushTimeout: time.Millisecond,
+			Sizer:        request.SizerTypeItems,
+			MinSize:      1,
+		}
+
+		sink := requesttest.NewSink()
+		ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(4), sink.Export, zap.NewNop(), nil)
+		require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+
+		var wg sync.WaitGroup
+		for range 8 {
+			wg.Go(func() {
+				ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 1, Bytes: 1}, newFakeDone())
+			})
+		}
+
+		require.NoError(t, ba.Shutdown(context.Background()))
+		wg.Wait()
+	}
 }
 
 func TestPartitionBatcher_MergeError(t *testing.T) {

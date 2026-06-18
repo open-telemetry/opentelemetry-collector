@@ -245,7 +245,12 @@ func (qb *partitionBatcher) shutdownInternal() {
 	close(qb.shutdownCh)
 	// Make sure execute one last flush if necessary.
 	qb.flushCurrentBatchOrRemovePartition()
+	// Hold currentBatchMu while waiting so that a concurrent flush() cannot call
+	// stopWG.Add() while stopWG.Wait() is returning from a zero counter, which
+	// would panic with "sync: WaitGroup is reused before previous Wait has returned".
+	qb.currentBatchMu.Lock()
 	qb.stopWG.Wait()
+	qb.currentBatchMu.Unlock()
 }
 
 // Shutdown ensures that queue and all Batcher are stopped.
@@ -288,7 +293,11 @@ func (qb *partitionBatcher) flushCurrentBatchOrRemovePartition() {
 
 // flush starts a goroutine that calls consumeFunc. It blocks until a worker is available if necessary.
 func (qb *partitionBatcher) flush(ctx context.Context, req request.Request, done queue.Done) {
+	// stopWG.Add() must be serialized with shutdownInternal()'s stopWG.Wait() via
+	// currentBatchMu. flush() is never called while currentBatchMu is held.
+	qb.currentBatchMu.Lock()
 	qb.stopWG.Add(1)
+	qb.currentBatchMu.Unlock()
 	qb.wp.execute(func() {
 		defer qb.stopWG.Done()
 		done.OnDone(qb.consumeFunc(ctx, req))
