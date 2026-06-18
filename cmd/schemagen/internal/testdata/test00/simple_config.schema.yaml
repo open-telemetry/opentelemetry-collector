@@ -1,0 +1,21 @@
+type: object
+properties:
+  enabled:
+    description: Enabled indicates if the server is enabled
+    type: boolean
+  env_vars:
+    additionalProperties: {
+      x-customType: any
+    }
+    description: EnvVars is a map of environment variables
+    type: object
+  host:
+    description: Host is the server host
+    type: string
+  port:
+    description: Port is the server port
+    type: integer
+  timeout:
+    description: Timeout in seconds
+    type: number
+    x-customType: float64
