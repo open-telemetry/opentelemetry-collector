@@ -65,13 +65,20 @@ type MemoryLimiter struct {
 	// (held by live references in exporter queues during downstream outages).
 	// Each resets to zero whenever a GC on its path is effective or memory
 	// drops on its own, and doubles after each ineffective GC on its path up
-	// to the corresponding maxGCIntervalWhen(Hard|Soft)Limited cap. The floor
-	// for doubling is max(minGCIntervalWhen(Hard|Soft)Limited, memCheckWait*0.95):
-	// the configured minimum if the operator set one, otherwise just under
-	// memCheckWait since the ticker cannot fire faster than that anyway (95%
-	// leaves slack for platforms with coarse time resolution). State is kept
-	// per-path so that disabling backoff on one path (max=0) does not
-	// influence gating on the other path.
+	// to the corresponding maxGCIntervalWhen(Hard|Soft)Limited cap.
+	//
+	// The floor for doubling is max(minGCIntervalWhen(Hard|Soft)Limited,
+	// memCheckWait*0.95). When the configured min is below memCheckWait the
+	// floor lands just under memCheckWait — small enough that the next-tick
+	// gate (time.Since(lastGCDone) > floor) reliably clears, since lastGCDone
+	// is stamped after the forced GC completes and the next ticker fire may
+	// land slightly under a full memCheckWait afterward (the GC's wall-clock
+	// cost and timer slop can eat into the interval). Using exactly
+	// memCheckWait would let the gate fail on those ticks and reduce forced
+	// GC to every other tick.
+	//
+	// State is kept per-path so that disabling backoff on one path (max=0)
+	// does not influence gating on the other path.
 	currentSoftGCInterval time.Duration
 	currentHardGCInterval time.Duration
 
@@ -230,8 +237,9 @@ func (ml *MemoryLimiter) checkLimitAndBackoff(ms *runtime.MemStats, didGC bool) 
 // ineffective forced GC. When configMax is 0 the path's backoff is disabled
 // and the interval is pinned to configMin (so the path keeps GCing every
 // configMin, or every check interval if configMin is also 0). Otherwise the
-// interval starts at max(configMin, 0.95*memCheckWait), doubles on each
-// ineffective GC, and is capped at max(configMax, configMin).
+// interval starts at max(configMin, 0.95*memCheckWait) — see the comment on
+// currentSoftGCInterval for why 0.95 — doubles on each ineffective GC, and
+// is capped at max(configMax, configMin).
 func (ml *MemoryLimiter) nextBackoffInterval(current, configMin, configMax time.Duration) time.Duration {
 	if configMax == 0 {
 		return configMin
