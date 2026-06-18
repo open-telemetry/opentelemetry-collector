@@ -62,6 +62,7 @@ module-sets:
       - go.opentelemetry.io/collector/exporter/debugexporter
       - go.opentelemetry.io/collector/exporter/exporterhelper
       - go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper
+      - go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper/xexporterhelpertest
       - go.opentelemetry.io/collector/exporter/exportertest
       - go.opentelemetry.io/collector/exporter/nopexporter
       - go.opentelemetry.io/collector/exporter/otlpexporter

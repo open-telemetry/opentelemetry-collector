@@ -3,36 +3,12 @@
 
 package internal
 
-// BenchmarkQueueSender_Comparison is the evidence table promised in
-// https://github.com/open-telemetry/opentelemetry-collector/issues/14080.
+// BenchmarkQueueSender_Comparison is the evidence table for issue #14080.
+// It compares StaticLow (2 workers), StaticHigh (50 workers), and ARC (50 workers + AIMD)
+// across six backend scenarios: Healthy, BackendOverload, LatencySpike, GradualLatency,
+// ErrorSpike, and Recovery.
 //
-// Three concurrency strategies are compared:
-//
-//   StaticLow  – num_consumers=2 (conservative; safe under degradation, underutilises healthy capacity)
-//   StaticHigh – num_consumers=50 (maximises throughput when healthy; amplifies overload under degradation)
-//   ARC        – num_consumers=50 + AIMD token-pool middleware
-//                (starts at limit=20, adapts between 5 and 50 based on RTT and error signals)
-//
-// Six backend scenarios:
-//
-//   Healthy         – 0 ms, 0 % errors (healthy baseline; ARC should ≈ StaticHigh)
-//   BackendOverload – backend rejects requests above 10 concurrent in-flight (KEY scenario;
-//                     ARC adapts to the limit; StaticHigh hammers past it and drops heavily)
-//   LatencySpike    – 0 ms first half, 100 ms second half (soft signal; ARC reduces in-flight)
-//   GradualLatency  – linear 0 → 100 ms ramp (ARC detects before errors appear)
-//   ErrorSpike      – 25 % random retryable errors (ARC backs off gently; fewer total drops)
-//   Recovery        – 100 ms first half then 0 ms (ARC recovers quickly; StaticLow does not)
-//
-// Expected outcomes:
-//
-//   ARC wins decisively:  BackendOverload (error_rate, dropped_count), Recovery (throughput)
-//   ARC wins marginally:  Healthy (≈ StaticHigh), ErrorSpike (fewer drops after adaptation)
-//   ARC is comparable:    LatencySpike, GradualLatency (similar throughput; lower max_in_flight)
-//
-// Run:
-//
-//   go test -bench=BenchmarkQueueSender_Comparison \
-//           -benchmem -benchtime=5x -count=1 ./internal/
+//	go test -bench=BenchmarkQueueSender_Comparison -benchmem -benchtime=5x -count=1 ./internal/
 
 import (
 	"context"
@@ -55,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 )
 
-// ─── RTT histogram ────────────────────────────────────────────────────────────
 
 type rttTracker struct {
 	mu      sync.Mutex
@@ -80,7 +55,6 @@ func (r *rttTracker) pct(p float64) int64 {
 	return cp[int(float64(len(cp)-1)*p)]
 }
 
-// ─── AIMD ARC middleware ──────────────────────────────────────────────────────
 //
 // Uses sync.Cond counting semaphore so the limit can be changed dynamically
 // without channel-capacity edge cases.
@@ -194,7 +168,6 @@ func (a *aimdMiddleware) adjustLocked(err error, rtt time.Duration) {
 	}
 }
 
-// ─── Benchmark infrastructure ─────────────────────────────────────────────────
 
 // concurrentSenders is the number of goroutines simultaneously calling Send.
 const concurrentSenders = 50
@@ -351,7 +324,6 @@ func runComparison(
 	}
 }
 
-// ─── Backend scenarios ────────────────────────────────────────────────────────
 
 // scenarioHealthy: instant backend, no errors.
 // ARC expected: final_limit ramps to maxLimit; throughput ≈ StaticHigh.
@@ -432,7 +404,6 @@ func scenarioRecovery(opsPerRun int64) backendFn {
 	}
 }
 
-// ─── Main comparison benchmark ────────────────────────────────────────────────
 
 // BenchmarkQueueSender_Comparison runs the full 6 × 3 comparison matrix.
 //
@@ -537,7 +508,6 @@ func BenchmarkQueueSender_Comparison(b *testing.B) {
 	}
 }
 
-// ─── Interface assertions ──────────────────────────────────────────────────────
 
 var (
 	_ senderWrapper = (*aimdMiddleware)(nil)

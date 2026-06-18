@@ -25,9 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 )
 
-// arcLikeMiddleware is a minimal ARC-compatible middleware that demonstrates
-// how an adaptive concurrency controller would implement the RequestMiddleware interface.
-// This is a test stub, not a full ARC implementation.
+// arcLikeMiddleware is a simple token-pool middleware used only in tests.
 type arcLikeMiddleware struct {
 	component.StartFunc
 	component.ShutdownFunc
@@ -42,7 +40,6 @@ type arcLikeMiddleware struct {
 	errorCount   atomic.Int64
 }
 
-// newARCLikeMiddleware creates a middleware with the given max concurrency limit.
 func newARCLikeMiddleware(maxConcurrency int32) *arcLikeMiddleware {
 	return &arcLikeMiddleware{
 		maxConcurrency: maxConcurrency,
@@ -52,8 +49,6 @@ func newARCLikeMiddleware(maxConcurrency int32) *arcLikeMiddleware {
 	}
 }
 
-// WrapSender implements the RequestMiddleware interface.
-// It wraps the next sender with concurrency control logic.
 func (a *arcLikeMiddleware) WrapSender(_ requestmiddleware.RequestMiddlewareSettings, next sender.Sender[request.Request]) (sender.Sender[request.Request], error) {
 	return &arcWrapper{
 		middleware: a,
@@ -61,7 +56,7 @@ func (a *arcLikeMiddleware) WrapSender(_ requestmiddleware.RequestMiddlewareSett
 	}, nil
 }
 
-// arcWrapper wraps the sender with ARC-like concurrency control.
+// arcWrapper is the sender returned by arcLikeMiddleware.WrapSender.
 type arcWrapper struct {
 	component.StartFunc
 	component.ShutdownFunc

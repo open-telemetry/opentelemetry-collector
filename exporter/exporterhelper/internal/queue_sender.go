@@ -87,8 +87,7 @@ func NewQueueSender(
 		next:      next,
 	}
 
-	// exportFunc is called by the queue consumers.
-	// It delegates to qs.next, which allows us to swap qs.next in Start() without recreating the queue.
+	// Indirection through qs.next lets Start() swap in middleware wrappers without rebuilding the queue.
 	exportFunc := func(ctx context.Context, req request.Request) error {
 		// Have to read the number of items before sending the request since the request can
 		// be modified by the downstream components like the batcher.
@@ -111,7 +110,7 @@ func NewQueueSender(
 	return qs, nil
 }
 
-// Start overrides the default Start to resolve the extensions and wrap the sender.
+// Start resolves request middleware extensions and wraps the downstream sender.
 func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
 	// Guard here as well as in Config.Validate() so that programmatic callers
 	// that bypass Validate() cannot run middlewares with the feature gate off.
@@ -174,7 +173,7 @@ func (qs *queueSender) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-// Shutdown ensures the middlewares are also shut down.
+// Shutdown drains the queue then tears down the middleware chain in reverse order.
 func (qs *queueSender) Shutdown(ctx context.Context) error {
 	var errs error
 	if qs.QueueBatch != nil {
