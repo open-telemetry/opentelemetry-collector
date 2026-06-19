@@ -82,9 +82,10 @@ func (host *Host) GetExporters() map[pipeline.Signal]map[component.ID]component.
 func (host *Host) NotifyComponentStatusChange(source *componentstatus.InstanceID, event *componentstatus.Event) {
 	host.ServiceExtensions.NotifyComponentStatusChange(source, event)
 	if event.Status() == componentstatus.StatusFatalError {
-		go func() {
-			host.AsyncErrorChannel <- event.Err()
-		}()
+		select {
+		case host.AsyncErrorChannel <- event.Err():
+		default:
+		}
 	}
 }
 
