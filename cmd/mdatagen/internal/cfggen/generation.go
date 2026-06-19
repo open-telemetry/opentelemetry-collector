@@ -441,14 +441,19 @@ func ExtractValidators(md *ConfigMetadata) []Validator {
 }
 
 type ValidationRules struct {
-	MaxLength *int
-	MinLength *int
-	Pattern   *string
-	Required  bool
+	MaxLength        *int
+	MinLength        *int
+	Pattern          *string
+	Required         bool
+	Minimum          *float64
+	Maximum          *float64
+	ExclusiveMinimum *float64
+	ExclusiveMaximum *float64
 }
 
 func (vr *ValidationRules) HasValueRule() bool {
-	return vr.MaxLength != nil || vr.MinLength != nil || vr.Pattern != nil
+	return vr.MaxLength != nil || vr.MinLength != nil || vr.Pattern != nil ||
+		vr.Minimum != nil || vr.Maximum != nil || vr.ExclusiveMinimum != nil || vr.ExclusiveMaximum != nil
 }
 
 func (vr *ValidationRules) Enabled() bool {
@@ -468,8 +473,12 @@ func collectValidators(md *ConfigMetadata, validators *[]Validator) {
 	for _, propName := range slices.Sorted(maps.Keys(md.Properties)) {
 		prop := md.Properties[propName]
 		rules := ValidationRules{
-			MaxLength: prop.MaxLength,
-			MinLength: prop.MinLength,
+			MaxLength:        prop.MaxLength,
+			MinLength:        prop.MinLength,
+			Minimum:          prop.Minimum,
+			Maximum:          prop.Maximum,
+			ExclusiveMinimum: prop.ExclusiveMinimum,
+			ExclusiveMaximum: prop.ExclusiveMaximum,
 		}
 
 		rules.Required = slices.Contains(md.Required, propName)
@@ -555,7 +564,7 @@ func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, co
 	case []any:
 		// is an array of objects
 		if schema.Items == nil || schema.Items.Type != "object" {
-			panic("unsupported default value type for custom mapping")
+			return nil
 		}
 		for i, item := range typedValue {
 			nestedExps := MapCustomDefaults(schema.Items, item, rootPackage, componentPackage)

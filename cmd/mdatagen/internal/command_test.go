@@ -270,6 +270,24 @@ func TestRunContents(t *testing.T) {
 			yml:        "with_invalid_config_ref.yaml",
 			wantRunErr: true,
 		},
+		{
+			yml:                        "versioned_metric.yaml",
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
+			wantFeatureGatesGenerated:  true,
+			wantMetricsGenerated:       true,
+			wantConfigGenerated:        true,
+		},
+		{
+			yml:                        "versioned_metric_different_attributes.yaml",
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
+			wantFeatureGatesGenerated:  true,
+			wantMetricsGenerated:       true,
+			wantConfigGenerated:        true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.yml, func(t *testing.T) {
@@ -304,6 +322,8 @@ foo
 			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, generatedPackageDir, "generated_status.go"), []byte("status"), 0o600))
 			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry_test.go"), []byte("test"), 0o600))
 			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, generatedPackageDir, "generated_component_test.go"), []byte("test"), 0o600))
+			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, generatedPackageDir, "generated_feature_gates.go"), []byte("// stale"), 0o600))
+			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, "documentation.md"), []byte("stale documentation"), 0o600))
 
 			err = run(metadataFile)
 			if tt.wantOrderErr {
@@ -374,6 +394,12 @@ foo
 				}
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry.go"))
+			}
+
+			if tt.wantFeatureGatesGenerated {
+				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_feature_gates.go"))
+			} else {
+				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_feature_gates.go"))
 			}
 
 			if wantDocumentationGenerated {
@@ -554,6 +580,81 @@ func TestGenerateConfigFiles(t *testing.T) {
 	}
 }
 
+func TestGenerateConfigFiles_ExportedConfigsWithoutConfig(t *testing.T) {
+	root := t.TempDir()
+	tmpdir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(tmpdir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	md := Metadata{
+		Type:        "test",
+		PackageName: "testmodule/shortname",
+		Status:      &Status{Class: "pkg"},
+		ExportedConfigs: map[string]*cfggen.ConfigMetadata{
+			"sample_config": {
+				Type: "object",
+				Properties: map[string]*cfggen.ConfigMetadata{
+					"endpoint": {Type: "string"},
+				},
+			},
+		},
+	}
+
+	err := generateConfigFiles(md, tmpdir, "testmodule")
+	require.NoError(t, err)
+
+	schema, err := os.ReadFile(filepath.Join(tmpdir, "config.schema.json")) // #nosec G304
+	require.NoError(t, err)
+	require.Contains(t, string(schema), `"$defs": {`)
+	require.Contains(t, string(schema), `"sample_config": {`)
+
+	generatedConfig, err := os.ReadFile(filepath.Join(tmpdir, "generated_config.go")) // #nosec G304
+	require.NoError(t, err)
+	require.Contains(t, string(generatedConfig), "type SampleConfig struct")
+	require.NotContains(t, string(generatedConfig), "type Config struct")
+}
+
+func TestGenerateConfigFiles_ExportedConfigsWithConfig(t *testing.T) {
+	root := t.TempDir()
+	tmpdir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(tmpdir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	md := Metadata{
+		Type:        "test",
+		PackageName: "testmodule/shortname",
+		Status:      &Status{Class: "receiver"},
+		Config: &cfggen.ConfigMetadata{
+			Type: "object",
+			Properties: map[string]*cfggen.ConfigMetadata{
+				"endpoint": {Type: "string"},
+			},
+		},
+		ExportedConfigs: map[string]*cfggen.ConfigMetadata{
+			"sample_config": {
+				Type: "object",
+				Properties: map[string]*cfggen.ConfigMetadata{
+					"host_name": {Type: "string"},
+				},
+			},
+		},
+	}
+
+	err := generateConfigFiles(md, tmpdir, "testmodule")
+	require.NoError(t, err)
+
+	schema, err := os.ReadFile(filepath.Join(tmpdir, "config.schema.json")) // #nosec G304
+	require.NoError(t, err)
+	require.Contains(t, string(schema), `"endpoint": {`)
+	require.Contains(t, string(schema), `"$defs": {`)
+	require.Contains(t, string(schema), `"sample_config": {`)
+
+	generatedConfig, err := os.ReadFile(filepath.Join(tmpdir, "generated_config.go")) // #nosec G304
+	require.NoError(t, err)
+	require.Contains(t, string(generatedConfig), "type Config struct")
+	require.Contains(t, string(generatedConfig), "type SampleConfig struct")
+}
+
 func TestInjectInternalMetadataDefs(t *testing.T) {
 	t.Run("skips when metadata has no internal definitions", func(t *testing.T) {
 		src := &cfggen.ConfigMetadata{}
@@ -582,6 +683,7 @@ func TestInjectInternalMetadataDefs(t *testing.T) {
 		require.Contains(t, src.Defs, "resource_attributes_config")
 		resourceAttributes := src.Defs["resource_attributes_config"]
 		require.Equal(t, "object", resourceAttributes.Type)
+		require.True(t, resourceAttributes.InternalOnly)
 		require.Contains(t, resourceAttributes.Properties, "service.name")
 
 		resourceAttribute := resourceAttributes.Properties["service.name"]
@@ -616,8 +718,11 @@ func TestInjectInternalMetadataDefs(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, existingDef, src.Defs["user_config"])
+		require.False(t, src.Defs["user_config"].InternalOnly)
 		require.Contains(t, src.Defs, "events_config")
 		require.Contains(t, src.Defs, "logs_builder_config")
+		require.True(t, src.Defs["events_config"].InternalOnly)
+		require.True(t, src.Defs["logs_builder_config"].InternalOnly)
 
 		events := src.Defs["events_config"]
 		require.Contains(t, events.Properties, "sample.event")
@@ -675,7 +780,7 @@ func TestInjectInternalMetadataDefs(t *testing.T) {
 	t.Run("skips when generated YAML has no internal defs", func(t *testing.T) {
 		src := &cfggen.ConfigMetadata{}
 
-		err := mergeInternalMetadataDefs([]byte("config:\n  $defs: {}\n"), src)
+		err := mergeInternalMetadataDefs(nil, src)
 		require.NoError(t, err)
 		require.Nil(t, src.Defs)
 	})

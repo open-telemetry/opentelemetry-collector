@@ -67,7 +67,8 @@ Objectives:
 
 The OpenTelemetry Collector SIG is present at the [#otel-collector](https://cloud-native.slack.com/archives/C01N6P7KR6W)
 channel on the CNCF Slack and [meets once a week](https://github.com/open-telemetry/community#implementation-sigs) via
-video calls. Everyone is invited to join those calls, which typically serves the following purposes:
+video calls. If you are new to the CNCF Slack community, you can
+[create an account](https://slack.cncf.io/). Everyone is invited to join those calls, which typically serves the following purposes:
 
 - meet the humans behind the project
 - get an opinion about specific proposals
@@ -178,13 +179,13 @@ For more information about the maintainer role, see the [community repository](h
 - [Damien Mathieu](https://github.com/dmathieu), Elastic
 - [Jade Guiton](https://github.com/jade-guiton-dd), Datadog
 - [Joshua MacDonald](https://github.com/jmacd), Microsoft
-- [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
+- [Tyler Helmuth](https://github.com/TylerHelmuth), Grafana Labs
 - [Yang Song](https://github.com/songy23), Datadog
 
 For more information about the approver role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#approver).
 
 In addition to what is described at the organization-level, the SIG Collector requires all core approvers to take part in rotating
-the role of the [release manager](./docs/release.md#release-manager).
+the role of the [release manager](./docs/release.md#release-managers).
 
 ### Triagers
 

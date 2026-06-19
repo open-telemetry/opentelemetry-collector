@@ -20,6 +20,11 @@ import (
 
 const semConvURL = "https://github.com/open-telemetry/semantic-conventions/blob"
 
+var (
+	featureGateIDRegexp       = regexp.MustCompile(`^[0-9a-zA-Z.]*$`)
+	featureGateIssueURLRegexp = regexp.MustCompile(`^https://github\.com/[^/]+/[^/]+/issues/\d+$`)
+)
+
 type Metadata struct {
 	// Type of the component.
 	Type string `mapstructure:"type"`
@@ -33,7 +38,7 @@ type Metadata struct {
 	Parent string `mapstructure:"parent"`
 	// Status information for the component.
 	Status *Status `mapstructure:"status"`
-	// Spatial Re-aggregation featuregate.
+	// ReaggregationEnabled enables spatial re-aggregation configuration generation. Defaults to true.
 	ReaggregationEnabled bool `mapstructure:"reaggregation_enabled"`
 	// Override value featuregate for resource attributes.
 	OverrideValueEnabled bool `mapstructure:"override_value_enabled"`
@@ -67,6 +72,8 @@ type Metadata struct {
 	FeatureGates []FeatureGate `mapstructure:"feature_gates"`
 	// Config is the configuration schema for the component.
 	Config *cfggen.ConfigMetadata `mapstructure:"config"`
+	// ExportedConfigs is the list of additionally exported configs from the component/package
+	ExportedConfigs map[string]*cfggen.ConfigMetadata `mapstructure:"exported_configs"`
 }
 
 type Deprecated struct {
@@ -122,6 +129,10 @@ func (md *Metadata) Validate() error {
 		errs = errors.Join(errs, err)
 	}
 
+	if err := md.validateMigrations(); err != nil {
+		errs = errors.Join(errs, err)
+	}
+
 	if err := md.validateFeatureGates(); err != nil {
 		errs = errors.Join(errs, err)
 	}
@@ -168,6 +179,38 @@ func (md *Metadata) validateResourceAttributes() error {
 		}
 		if attr.EnabledPtr == nil {
 			errs = errors.Join(errs, fmt.Errorf("enabled field is required for resource attribute: %v", name))
+		}
+	}
+	return errs
+}
+
+// validateMigrations verifies that any metric-level migration references valid
+// target metrics and existing feature gates.
+func (md *Metadata) validateMigrations() error {
+	var errs error
+	if len(md.Metrics) == 0 {
+		return nil
+	}
+	gates := make(map[FeatureGateID]struct{}, len(md.FeatureGates))
+	for _, g := range md.FeatureGates {
+		gates[g.ID] = struct{}{}
+	}
+	for mn, m := range md.Metrics {
+		if m.Migration == nil {
+			continue
+		}
+		if _, ok := md.Metrics[m.Migration.To]; !ok {
+			errs = errors.Join(errs, fmt.Errorf(`metric "%v": migration.to refers to undefined metric "%v"`, mn, m.Migration.To))
+		}
+		if mn == m.Migration.To {
+			errs = errors.Join(errs, fmt.Errorf(`metric "%v": migration.to must not reference itself "%v"`, mn, m.Migration.To))
+		}
+		// Gates must exist.
+		if _, ok := gates[m.Migration.ThroughGates.DisableOld]; !ok || m.Migration.ThroughGates.DisableOld == "" {
+			errs = errors.Join(errs, fmt.Errorf(`metric "%v": migration.through_gates.disable_old must reference an existing feature gate`, mn))
+		}
+		if _, ok := gates[m.Migration.ThroughGates.EnableNew]; !ok || m.Migration.ThroughGates.EnableNew == "" {
+			errs = errors.Join(errs, fmt.Errorf(`metric "%v": migration.through_gates.enable_new must reference an existing feature gate`, mn))
 		}
 	}
 	return errs
@@ -376,7 +419,11 @@ func validateEvents(events map[EventName]Event, attributes map[AttributeName]Att
 func (md *Metadata) validateFeatureGates() error {
 	var errs error
 	seen := make(map[FeatureGateID]bool)
-	idRegexp := regexp.MustCompile(`^[0-9a-zA-Z.]*$`)
+
+	var componentPrefix string
+	if md.Status != nil && md.Status.Class != "" && md.Type != "" {
+		componentPrefix = md.Status.Class + "." + md.Type + "."
+	}
 
 	// Validate that feature gates are sorted by ID
 	if !slices.IsSortedFunc(md.FeatureGates, func(a, b FeatureGate) int {
@@ -393,8 +440,13 @@ func (md *Metadata) validateFeatureGates() error {
 		}
 
 		// Validate ID follows the allowed character pattern
-		if !idRegexp.MatchString(string(gate.ID)) {
+		if !featureGateIDRegexp.MatchString(string(gate.ID)) {
 			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": ID contains invalid characters, must match ^[0-9a-zA-Z.]*$`, gate.ID))
+		}
+
+		// Validate ID is prefixed with "<class>.<type>." so gates are namespaced to their component.
+		if !gate.SkipStrictValidation && componentPrefix != "" && !strings.HasPrefix(string(gate.ID), componentPrefix) {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": ID must be prefixed with %q`, gate.ID, componentPrefix))
 		}
 
 		// Check for duplicate IDs
@@ -412,6 +464,8 @@ func (md *Metadata) validateFeatureGates() error {
 		// Validate that each feature gate has a reference link
 		if gate.ReferenceURL == "" {
 			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": reference_url is required`, gate.ID))
+		} else if !gate.SkipStrictValidation && !featureGateIssueURLRegexp.MatchString(gate.ReferenceURL) {
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": reference_url %q must be a GitHub issue URL (https://github.com/<owner>/<repo>/issues/<number>)`, gate.ID, gate.ReferenceURL))
 		}
 
 		// Validate stage is one of the allowed values
@@ -778,7 +832,8 @@ const (
 
 // FeatureGate represents a feature gate definition in metadata.
 type FeatureGate struct {
-	// ID is the unique identifier for the feature gate.
+	// ID is the unique identifier for the feature gate. Must be prefixed with
+	// "<status.class>.<type>." unless SkipStrictValidation is set.
 	ID FeatureGateID `mapstructure:"id"`
 	// Description of the feature gate.
 	Description string `mapstructure:"description"`
@@ -788,8 +843,12 @@ type FeatureGate struct {
 	FromVersion string `mapstructure:"from_version"`
 	// ToVersion is the version when the feature gate reached stable stage.
 	ToVersion string `mapstructure:"to_version"`
-	// ReferenceURL is the URL with contextual information about the feature gate.
+	// ReferenceURL is contextual information about the feature gate. Must be a
+	// GitHub issue URL (https://github.com/<owner>/<repo>/issues/<number>)
+	// unless SkipStrictValidation is set.
 	ReferenceURL string `mapstructure:"reference_url"`
+	// SkipStrictValidation opts this gate out of strict validation. New gates should leave this unset.
+	SkipStrictValidation bool `mapstructure:"skip_strict_validation"`
 }
 
 func (md *Metadata) expandSemConvRefs() error {

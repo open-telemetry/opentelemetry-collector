@@ -27,6 +27,7 @@ import (
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 const (
@@ -186,6 +187,13 @@ func run(ymlPath string) error {
 
 	if len(md.Metrics) != 0 || len(md.Telemetry.Metrics) != 0 || len(md.ResourceAttributes) != 0 || len(md.Events) != 0 || len(md.FeatureGates) != 0 { // if there's metrics or internal metrics or events or feature gates, generate documentation for them
 		toGenerate[filepath.Join(tmplDir, "documentation.md.tmpl")] = filepath.Join(ymlDir, "documentation.md")
+	} else {
+		if _, err = os.Stat(filepath.Join(ymlDir, "documentation.md")); err == nil {
+			err = os.Remove(filepath.Join(ymlDir, "documentation.md"))
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	if len(md.Metrics) > 0 || len(md.Events) > 0 || len(md.ResourceAttributes) > 0 {
@@ -217,6 +225,13 @@ func run(ymlPath string) error {
 
 	if len(md.FeatureGates) > 0 { // only generate feature gates if feature gates are present
 		toGenerate[filepath.Join(tmplDir, "feature_gates.go.tmpl")] = filepath.Join(codeDir, "generated_feature_gates.go")
+	} else {
+		if _, err = os.Stat(filepath.Join(codeDir, "generated_feature_gates.go")); err == nil {
+			err = os.Remove(filepath.Join(codeDir, "generated_feature_gates.go"))
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	if len(md.Entities) > 0 && len(md.Metrics) > 0 { // only generate entity metrics if entities are defined
@@ -251,6 +266,40 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 		},
 		"attributeInfo": func(an AttributeName) Attribute {
 			return md.Attributes[an]
+		},
+		"convertValue": func(fromType, toType ValueType, valueName string) string {
+			if fromType.ValueType == toType.ValueType {
+				return valueName
+			}
+			if fromType.ValueType == pcommon.ValueTypeInt && toType.ValueType == pcommon.ValueTypeStr {
+				return fmt.Sprintf("strconv.FormatInt(%s, 10)", valueName)
+			}
+			if fromType.ValueType == pcommon.ValueTypeStr && toType.ValueType == pcommon.ValueTypeInt {
+				return fmt.Sprintf("mustParseInt64(%s)", valueName)
+			}
+			return valueName
+		},
+		"needsStrToIntConversion": func() bool {
+			for _, metric := range md.Metrics {
+				if metric.Migration == nil {
+					continue
+				}
+				targetMetric, exists := md.Metrics[metric.Migration.To]
+				if !exists {
+					continue
+				}
+				for i, attr := range metric.Attributes {
+					if i >= len(targetMetric.Attributes) {
+						break
+					}
+					fromType := md.Attributes[attr].Type
+					toType := md.Attributes[targetMetric.Attributes[i]].Type
+					if fromType.ValueType == pcommon.ValueTypeStr && toType.ValueType == pcommon.ValueTypeInt {
+						return true
+					}
+				}
+			}
+			return false
 		},
 		"defaultAttributes": func(ans []AttributeName) []string {
 			var atts []string
@@ -313,6 +362,41 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 
 			return used
 		},
+		"getLegacyAttributes": func(targetMetricName MetricName) []AttributeName {
+			if legacyMetrics, ok := md.Metrics[MetricName(targetMetricName.EmittedName())]; ok {
+				if legacyMetrics.Migration == nil || legacyMetrics.Migration.To != targetMetricName {
+					return nil
+				}
+				return legacyMetrics.Attributes
+			}
+			return nil
+		},
+		"hasDifferentAttributes": func(legacyMetricName MetricName) bool {
+			legacyMetric := md.Metrics[legacyMetricName]
+			if legacyMetric.Migration == nil {
+				return false
+			}
+			targetMetric, exists := md.Metrics[legacyMetric.Migration.To]
+			if !exists {
+				return false
+			}
+			if legacyMetricName.EmittedName() != legacyMetric.Migration.To.EmittedName() {
+				return false
+			}
+			if len(legacyMetric.Attributes) != len(targetMetric.Attributes) {
+				return true
+			}
+			targetAttrSet := make(map[AttributeName]bool)
+			for _, attr := range targetMetric.Attributes {
+				targetAttrSet[attr] = true
+			}
+			for _, attr := range legacyMetric.Attributes {
+				if !targetAttrSet[attr] {
+					return true
+				}
+			}
+			return false
+		},
 		"metricInfo": func(mn MetricName) Metric {
 			return md.Metrics[mn]
 		},
@@ -332,6 +416,7 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 		},
 		"stringsJoin":  strings.Join,
 		"stringsSplit": strings.Split,
+		"trimRight":    strings.TrimRight,
 		"userLinks": func(elems []string) []string {
 			result := make([]string, len(elems))
 			for i, elem := range elems {
@@ -343,7 +428,10 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 			}
 			return result
 		},
-		"casesTitle":  cases.Title(language.English).String,
+		"casesTitle": cases.Title(language.English).String,
+		"uncapitalize": func(s string) string {
+			return strings.ToLower(s[:1]) + s[1:]
+		},
 		"toLowerCase": strings.ToLower,
 		"toCamelCase": func(s string) string {
 			return joinCamelCase(strings.Split(s, "_"), true)
@@ -564,21 +652,34 @@ func injectInternalMetadataDefs(md Metadata, mdDir string, src *cfggen.ConfigMet
 }
 
 func mergeInternalMetadataDefs(raw []byte, src *cfggen.ConfigMetadata) error {
-	var config cfggen.ConfigMetadata
-	if err := yaml.Unmarshal(raw, &config); err != nil {
+	var configs map[string]*cfggen.ConfigMetadata
+	if err := yaml.Unmarshal(raw, &configs); err != nil {
 		return fmt.Errorf("failed to parse internal metadata defs: %w", err)
 	}
-	if len(config.Defs) == 0 {
+
+	if len(configs) == 0 {
 		return nil
+	}
+	for _, cfg := range configs {
+		if cfg != nil {
+			cfg.InternalOnly = true
+		}
 	}
 	if src.Defs == nil {
 		src.Defs = make(map[string]*cfggen.ConfigMetadata)
 	}
-	maps.Copy(src.Defs, config.Defs)
+	maps.Copy(src.Defs, configs)
 	return nil
 }
 
 func generateConfigFiles(md Metadata, mdDir, importRootPath string) error {
+	if md.ExportedConfigs != nil {
+		if md.Config == nil {
+			md.Config = &cfggen.ConfigMetadata{}
+		}
+		md.Config.Defs = md.ExportedConfigs
+	}
+
 	if md.Config != nil {
 		if err := injectInternalMetadataDefs(md, mdDir, md.Config); err != nil {
 			return err
