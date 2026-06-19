@@ -2,24 +2,23 @@
 # Copyright The OpenTelemetry Authors
 # SPDX-License-Identifier: Apache-2.0
 #
-# check-schemas.sh — assert every Go `mapstructure` config field has a
-# corresponding entry in the neighbouring config.schema.yaml.
+# check-schemas.sh — assert every committed component config.schema.yaml is
+# in sync with its Go config struct by regenerating into a temp tree and
+# diffing the property-name set against the committed schema.
 #
-# This is intentionally a field-PRESENCE check, not a regenerate-and-diff
-# check: schemas in this repo are bootstrapped by the contrib schemagen
-# tool but may carry hand-edits (richer descriptions, enums, validation
-# notes) that a fresh regeneration would overwrite. We catch the realistic
-# drift case (a new Go field landed without a schema update) without
-# fighting acceptable manual edits.
+# Why a property-set diff instead of regenerate-and-byte-diff: schemas in
+# this repo carry hand-edits (richer descriptions, validation notes, enum
+# constraints) that a fresh regeneration would overwrite. We want to catch
+# the realistic drift case — a new Go field landed without a schema update,
+# or vice versa — without fighting acceptable manual edits. The property
+# names produced by schemagen are derived directly from `mapstructure`
+# tags on the Go struct, so comparing the regenerated set against the
+# committed set catches additions, removals, and renames.
 #
-# A schema "contains" a tag if the tag name appears as a key under any
-# `properties` block anywhere in the document. That covers top-level
-# properties as well as nested $defs.
-#
-# Tags with the special value `,squash` are skipped — squashed embeds
-# don't introduce a property; their fields flatten into the parent and
-# are validated via the schema's `allOf` $ref to the embedded type's
-# schema (verified transitively when that schema itself is checked).
+# Scope: only schemas under the dirs listed in CHECKED_DIRS. Shared-library
+# schemas (config/*, scraper/scraperhelper, exporter/exporterhelper, etc.)
+# have a separate maintenance lifecycle and are out of scope for this check.
+# To grow the scope, add the new dir to CHECKED_DIRS below.
 
 set -euo pipefail
 
@@ -31,48 +30,68 @@ fi
 root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$root"
 
+tmp=$(mktemp -d -t check-schemas.XXXXXX)
+trap 'rm -rf "$tmp"' EXIT
+
+CHECKED_DIRS=(
+    "exporter/debugexporter"
+    "exporter/otlpexporter"
+    "exporter/otlphttpexporter"
+    "receiver/otlpreceiver"
+    "processor/batchprocessor"
+    "processor/memorylimiterprocessor"
+    "extension/memorylimiterextension"
+    "extension/zpagesextension"
+    "internal/memorylimiter"
+)
+
+# Yield the keys of every map node under any `properties` block, at any
+# depth. This is the property name set that schemagen derives from the
+# Go struct's `mapstructure` tags. Descriptions/enums/$refs are ignored.
+property_keys() {
+    yq '[.. | select(has("properties")) | .properties | keys[]] | unique | .[]' "$1" 2>/dev/null | sort -u
+}
+
 failed=0
 
-while IFS= read -r schema; do
-    dir=$(dirname "$schema")
+for dir in "${CHECKED_DIRS[@]}"; do
+    schema="$root/$dir/config.schema.yaml"
+    if [[ ! -f "$schema" ]]; then
+        echo "DRIFT: $dir/config.schema.yaml missing — expected to exist (listed in CHECKED_DIRS)"
+        failed=1
+        continue
+    fi
 
-    # Collect every key that lives under a `properties` block, at any depth.
-    # `select(has("properties"))` finds every map node that has a properties
-    # child; we then take that child's keys.
-    props=$(yq '[.. | select(has("properties")) | .properties | keys[]] | unique | .[]' "$schema" 2>/dev/null | sort -u)
+    out="$tmp/$(echo "$dir" | tr / _)"
+    mkdir -p "$out"
 
-    # Extract `mapstructure:"NAME..."` tag names from every non-test .go
-    # file in the same directory. Strip the `,squash` / `,omitempty`
-    # suffixes and drop any tag whose name is empty (what `,squash` looks
-    # like). Test files are excluded — they may declare throwaway structs
-    # whose fields are not part of the component's public config surface.
-    tags=$(find "$dir" -maxdepth 1 -name '*.go' -not -name '*_test.go' -print0 \
-        | xargs -0 grep -hE 'mapstructure:"[^"]+' 2>/dev/null \
-        | sed -nE 's/.*mapstructure:"([^,"]*).*/\1/p' \
-        | awk 'NF' \
-        | sort -u || true)
+    # Regenerate the schema for $dir into $out using the in-tree schemagen.
+    if ! (cd "$root/cmd/schemagen" && go run . -o "$out" "$root/$dir" >/dev/null 2>&1); then
+        echo "DRIFT: $dir — schemagen failed to regenerate"
+        failed=1
+        continue
+    fi
 
-    [[ -z "$tags" ]] && continue
+    regenerated="$out/config.schema.yaml"
+    if [[ ! -f "$regenerated" ]]; then
+        echo "DRIFT: $dir — schemagen did not produce config.schema.yaml"
+        failed=1
+        continue
+    fi
 
-    while IFS= read -r tag; do
-        if ! grep -qFx -- "$tag" <<<"$props"; then
-            echo "DRIFT: $schema is missing property '$tag' (mapstructure tag found in $dir)"
-            failed=1
-        fi
-    done <<<"$tags"
-done < <(find . \
-    -path "*/testdata/*" -prune -o \
-    -path "*/internal/metadata/*" -prune -o \
-    -path "*/cmd/schemagen/*" -prune -o \
-    -path "*/cmd/mdatagen/*" -prune -o \
-    -name "config.schema.yaml" -print)
+    if ! diff_output=$(diff <(property_keys "$schema") <(property_keys "$regenerated")); then
+        echo "DRIFT: $dir/config.schema.yaml property set differs from regenerated schema:"
+        echo "    ${diff_output//$'\n'/$'\n    '}"
+        echo "    (< committed, > regenerated)"
+        failed=1
+    fi
+done
 
 if [[ $failed -ne 0 ]]; then
     echo
-    echo "One or more config.schema.yaml files are missing properties that"
-    echo "exist as mapstructure-tagged fields in the corresponding Go struct."
-    echo "Either regenerate via 'make generate-schemas' and re-apply any"
-    echo "needed hand-edits, or add the missing properties by hand."
+    echo "One or more config.schema.yaml files have drifted from the Go config struct."
+    echo "Run 'make generate-schemas' to refresh, re-apply any needed hand-edits to"
+    echo "descriptions/enums/validation notes, and commit the result."
     exit 1
 fi
 
