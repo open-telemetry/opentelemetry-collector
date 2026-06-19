@@ -19,16 +19,16 @@ func TestHost_NotifyComponentStatusChange_NonBlockingOnFullChannel(t *testing.T)
 		ServiceExtensions: &extensions.Extensions{},
 	}
 
-	done := make(chan struct{})
-	go func() {
-		ev := componentstatus.NewFatalErrorEvent(assert.AnError)
-		host.NotifyComponentStatusChange(nil, ev)
-		close(done)
-	}()
+	ev := componentstatus.NewFatalErrorEvent(assert.AnError)
+	host.NotifyComponentStatusChange(nil, ev)
 
-	// The goroutine send should not block even though the channel is unbuffered
-	// and nothing is reading from it.
-	<-done
+	// Non-blocking send should return immediately without blocking.
+	// No goroutine should be leaked.
+	select {
+	case <-ch:
+		t.Fatal("expected channel to be empty since no reader is running")
+	default:
+	}
 }
 
 func TestHost_NotifyComponentStatusChange_SendsWhenChannelReady(t *testing.T) {
@@ -43,7 +43,7 @@ func TestHost_NotifyComponentStatusChange_SendsWhenChannelReady(t *testing.T) {
 
 	select {
 	case err := <-ch:
-		assert.ErrorIs(t, err, assert.AnError)
+		require.ErrorIs(t, err, assert.AnError)
 	default:
 		t.Fatal("expected error to be sent to channel")
 	}
