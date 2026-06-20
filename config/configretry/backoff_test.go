@@ -90,5 +90,52 @@ func TestDisabledWithInvalidValues(t *testing.T) {
 		MaxInterval:         -1,
 		MaxElapsedTime:      -1,
 	}
-	assert.NoError(t, cfg.Validate())
+	assert.Error(t, cfg.Validate())
+}
+
+func TestValidate_FieldInvariantsCheckedRegardlessOfEnabled(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     BackOffConfig
+		wantErr string
+	}{
+		{
+			name: "disabled with negative initial_interval",
+			cfg: BackOffConfig{
+				Enabled:         false,
+				InitialInterval: -5 * time.Second,
+			},
+			wantErr: "'initial_interval' must be non-negative",
+		},
+		{
+			name: "disabled with out-of-range randomization_factor",
+			cfg: BackOffConfig{
+				Enabled:             false,
+				RandomizationFactor: 5,
+			},
+			wantErr: "'randomization_factor' must be within [0, 1]",
+		},
+		{
+			name: "disabled with all otherwise-valid fields still passes",
+			cfg: BackOffConfig{
+				Enabled:             false,
+				InitialInterval:     time.Second,
+				RandomizationFactor: 0.5,
+				Multiplier:          1.5,
+				MaxInterval:         time.Minute,
+				MaxElapsedTime:      0,
+			},
+			wantErr: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.cfg.Validate()
+			if tt.wantErr == "" {
+				assert.NoError(t, err)
+				return
+			}
+			assert.EqualError(t, err, tt.wantErr)
+		})
+	}
 }
