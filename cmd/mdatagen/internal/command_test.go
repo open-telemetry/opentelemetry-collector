@@ -972,6 +972,39 @@ func TestGenerateConfigGoStruct_InternalResolvedRefGeneratesLocalType(t *testing
 	require.Contains(t, generated, "Config: config,")
 }
 
+func TestGenerateConfigGoStruct_ComponentIDFieldUsesGoName(t *testing.T) {
+	root := t.TempDir()
+	outputDir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(outputDir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	md := Metadata{
+		Type:        "test",
+		PackageName: "testmodule/shortname",
+		Status:      &Status{Class: "receiver"},
+		Config: &cfggen.ConfigMetadata{
+			Type: "object",
+			Properties: map[string]*cfggen.ConfigMetadata{
+				"storage": {
+					Type:   "string",
+					GoType: "go.opentelemetry.io/collector/component.ID",
+					GoName: "storage_id",
+				},
+			},
+		},
+	}
+
+	err := generateConfigGoStruct(md, outputDir)
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(filepath.Join(outputDir, "generated_config.go")) // #nosec G304
+	require.NoError(t, err)
+
+	generated := string(content)
+	require.Contains(t, generated, `StorageID component.ID`)
+	require.Contains(t, generated, "`mapstructure:\"storage\"`")
+}
+
 func TestGenerateConfigFiles_GoStructError(t *testing.T) {
 	// generateConfigGoStruct fails because tmpdir has no go.mod in any ancestor
 	md := Metadata{

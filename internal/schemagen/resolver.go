@@ -15,6 +15,7 @@ const (
 	schemaVersion = "https://json-schema.org/draft/2020-12/schema"
 	// goDurationPattern matches Go duration strings (e.g., "30s", "1h30m", "500ms")
 	goDurationPattern = `^([0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$`
+	componentIDType   = "go.opentelemetry.io/collector/component.ID"
 )
 
 type Resolver struct {
@@ -188,6 +189,7 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 	handleEmbeddedStructs(target)
 	enhanceTimeTypes(target)
 	cleanupInternalDefs(target)
+	decoratePropNames(target)
 
 	return nil
 }
@@ -253,6 +255,15 @@ func (r *Resolver) loadExternalRef(ref *Ref) (*ConfigMetadata, error) {
 	}
 
 	return nil, fmt.Errorf("type %q not found in loaded schema for reference %s", ref.DefName(), ref)
+}
+
+func decoratePropNames(md *ConfigMetadata) {
+	for name, prop := range md.Properties {
+		prop.GoName = name
+		if prop.GoType == componentIDType {
+			prop.GoName = name + "_id"
+		}
+	}
 }
 
 func handleEmbeddedStructs(md *ConfigMetadata) {

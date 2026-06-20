@@ -60,6 +60,7 @@ type ConfigMetadata struct {
 	EmbeddedName                string `mapstructure:"-" json:"-" yaml:"-"`
 	AdditionalPropertiesAllowed *bool  `mapstructure:"-" json:"-" yaml:"-"`
 	InternalOnly                bool   `mapstructure:"-" json:"-" yaml:"-"`
+	GoName                      string `mapstructure:"-" json:"-" yaml:"-"`
 }
 
 type Metadata struct {

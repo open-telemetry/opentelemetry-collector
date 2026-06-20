@@ -39,6 +39,10 @@ config:
       embed: true
       go_struct:
         anonymous: true
+    component:
+      type: string
+      description: Identifies the scraper, used for telemetry and logging.
+      x-customType: go.opentelemetry.io/collector/component.ID
     job_name:
       description: Name of the scrape job, used to identify the source in telemetry.
       type: string
