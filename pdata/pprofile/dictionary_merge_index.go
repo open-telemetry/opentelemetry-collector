@@ -20,14 +20,6 @@ func mixU64(h, v uint64) uint64 {
 	return h
 }
 
-func hashString(s string) uint64 {
-	h := fnvOffset64
-	for i := 0; i < len(s); i++ {
-		h = mixU64(h, uint64(s[i]))
-	}
-	return h
-}
-
 func hashFunction(fn Function) uint64 {
 	h := fnvOffset64
 	h = mixU64(h, uint64(uint32(fn.NameStrindex())))
@@ -100,7 +92,7 @@ func hashLink(li Link) uint64 {
 
 // mergeIndex accelerates dictionary dedup during a single MergeTo via per-table hash buckets; the table's Equal stays the dedup arbiter.
 type mergeIndex struct {
-	strings    map[uint64][]int32
+	strings    map[string]int32
 	functions  map[uint64][]int32
 	mappings   map[uint64][]int32
 	locations  map[uint64][]int32
@@ -111,19 +103,21 @@ type mergeIndex struct {
 
 func newMergeIndex(dst ProfilesDictionary) *mergeIndex {
 	mi := &mergeIndex{
-		strings:    make(map[uint64][]int32),
-		functions:  make(map[uint64][]int32),
-		mappings:   make(map[uint64][]int32),
-		locations:  make(map[uint64][]int32),
-		stacks:     make(map[uint64][]int32),
-		attributes: make(map[uint64][]int32),
-		links:      make(map[uint64][]int32),
+		strings:    make(map[string]int32, dst.StringTable().Len()),
+		functions:  make(map[uint64][]int32, dst.FunctionTable().Len()),
+		mappings:   make(map[uint64][]int32, dst.MappingTable().Len()),
+		locations:  make(map[uint64][]int32, dst.LocationTable().Len()),
+		stacks:     make(map[uint64][]int32, dst.StackTable().Len()),
+		attributes: make(map[uint64][]int32, dst.AttributeTable().Len()),
+		links:      make(map[uint64][]int32, dst.LinkTable().Len()),
 	}
 
 	st := dst.StringTable()
 	for i := 0; i < st.Len(); i++ {
-		h := hashString(st.At(i))
-		mi.strings[h] = append(mi.strings[h], int32(i))
+		s := st.At(i)
+		if _, ok := mi.strings[s]; !ok {
+			mi.strings[s] = int32(i)
+		}
 	}
 	ft := dst.FunctionTable()
 	for i := 0; i < ft.Len(); i++ {
@@ -160,11 +154,8 @@ func newMergeIndex(dst ProfilesDictionary) *mergeIndex {
 }
 
 func (mi *mergeIndex) setString(table pcommon.StringSlice, val string) (int32, error) {
-	h := hashString(val)
-	for _, idx := range mi.strings[h] {
-		if table.At(int(idx)) == val {
-			return idx, nil
-		}
+	if idx, ok := mi.strings[val]; ok {
+		return idx, nil
 	}
 	if table.Len() >= math.MaxInt32 {
 		// SetString returns this (mismatched) sentinel on append; preserve parity.
@@ -172,7 +163,7 @@ func (mi *mergeIndex) setString(table pcommon.StringSlice, val string) (int32, e
 	}
 	table.Append(val)
 	idx := int32(table.Len() - 1)
-	mi.strings[h] = append(mi.strings[h], idx)
+	mi.strings[val] = idx
 	return idx, nil
 }
 
