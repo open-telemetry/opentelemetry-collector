@@ -183,7 +183,7 @@ func TestValueTypeSwitchDictionary(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			vt := tt.valueType
 			dst := tt.dst
-			err := vt.switchDictionary(tt.src, dst)
+			err := vt.switchDictionary(tt.src, dst, newMergeIndex(dst))
 
 			if tt.wantErr == nil {
 				require.NoError(t, err)
@@ -215,6 +215,6 @@ func BenchmarkValueTypeSwitchDictionary(b *testing.B) {
 		dst.StringTable().Append("", "foo")
 		b.StartTimer()
 
-		_ = vt.switchDictionary(src, dst)
+		_ = vt.switchDictionary(src, dst, newMergeIndex(dst))
 	}
 }

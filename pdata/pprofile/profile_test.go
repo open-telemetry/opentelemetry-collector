@@ -340,7 +340,7 @@ func TestProfileSwitchDictionary(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			profile := tt.profile
 			dst := tt.dst
-			err := profile.switchDictionary(tt.src, dst)
+			err := profile.switchDictionary(tt.src, dst, newMergeIndex(dst))
 
 			if tt.wantErr == nil {
 				require.NoError(t, err)
@@ -376,6 +376,6 @@ func BenchmarkProfileSwitchDictionary(b *testing.B) {
 		dst.AttributeTable().AppendEmpty().SetKeyStrindex(1)
 		b.StartTimer()
 
-		_ = p.switchDictionary(src, dst)
+		_ = p.switchDictionary(src, dst, newMergeIndex(dst))
 	}
 }

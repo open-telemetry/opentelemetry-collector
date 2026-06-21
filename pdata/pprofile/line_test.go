@@ -234,7 +234,7 @@ func TestLineSwitchDictionary(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			line := tt.line
 			dst := tt.dst
-			err := line.switchDictionary(tt.src, dst)
+			err := line.switchDictionary(tt.src, dst, newMergeIndex(dst))
 
 			if tt.wantErr == nil {
 				require.NoError(t, err)
@@ -267,7 +267,7 @@ func BenchmarkLineSwitchDictionary(b *testing.B) {
 		dst := NewProfilesDictionary()
 		b.StartTimer()
 
-		_ = l.switchDictionary(src, dst)
+		_ = l.switchDictionary(src, dst, newMergeIndex(dst))
 	}
 }
 

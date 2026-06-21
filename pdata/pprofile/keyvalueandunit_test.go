@@ -232,7 +232,7 @@ func TestKeyValueAndUnitSwitchDictionary(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			kvu := tt.keyValueAndUnit
 			dst := tt.dst
-			err := kvu.switchDictionary(tt.src, dst)
+			err := kvu.switchDictionary(tt.src, dst, newMergeIndex(dst))
 
 			if tt.wantErr == nil {
 				require.NoError(t, err)
@@ -262,7 +262,7 @@ func BenchmarkKeyValueAndUnitSwitchDictionary(b *testing.B) {
 		dst := NewProfilesDictionary()
 		b.StartTimer()
 
-		_ = kvu.switchDictionary(src, dst)
+		_ = kvu.switchDictionary(src, dst, newMergeIndex(dst))
 	}
 }
 

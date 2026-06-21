@@ -77,7 +77,7 @@ func TestScopeProfilesSwitchDictionary(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sp := tt.scopeProfiles
 			dst := tt.dst
-			err := sp.switchDictionary(tt.src, dst)
+			err := sp.switchDictionary(tt.src, dst, newMergeIndex(dst))
 
 			if tt.wantErr == nil {
 				require.NoError(t, err)
@@ -107,6 +107,6 @@ func BenchmarkScopeProfilesSwitchDictionary(b *testing.B) {
 	b.ReportAllocs()
 
 	for b.Loop() {
-		_ = s.switchDictionary(src, dst)
+		_ = s.switchDictionary(src, dst, newMergeIndex(dst))
 	}
 }
