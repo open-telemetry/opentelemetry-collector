@@ -9,7 +9,6 @@
 {{- if $metric.ExtendedDocumentation }}
 
 {{ $metric.ExtendedDocumentation }}
-
 {{- end }}
 
 | Unit | Metric Type | Value Type |{{ if $metric.Data.HasAggregated }} Aggregation Temporality |{{ end }}{{ if $metric.Data.HasMonotonic }} Monotonic |{{ end }}{{ if $metric.Stability }} Stability |{{ end }}{{ if $metric.SemanticConvention }} Semantic Convention |{{ end }}
@@ -69,7 +68,6 @@ When the disable-old gate is enabled, emission of this metric is suppressed. Whe
 {{- if $event.ExtendedDocumentation }}
 
 {{ $event.ExtendedDocumentation }}
-
 {{- end }}
 
 {{- if $event.Attributes }}
@@ -106,7 +104,6 @@ When the disable-old gate is enabled, emission of this metric is suppressed. Whe
 {{- if $metric.ExtendedDocumentation }}
 
 {{ $metric.ExtendedDocumentation }}
-
 {{- end }}
 
 | Unit | Metric Type | Value Type |{{ if $metric.Data.HasMonotonic }} Monotonic |{{ end }}{{ if $metric.Stability }} Stability |{{ end }}{{ if $metric.SemanticConvention }} Semantic Convention |{{ end }}
