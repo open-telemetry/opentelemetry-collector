@@ -160,6 +160,54 @@ func TestMergeIndex_SetLink_MatchesLinearScan(t *testing.T) {
 	assert.Equal(t, ref, got)
 }
 
+func TestMergeIndex_SetFunction_CollisionArbitratedByEqual(t *testing.T) {
+	table := NewFunctionSlice()
+	mi := newMergeIndex(NewProfilesDictionary())
+
+	fnA := NewFunction()
+	fnA.SetNameStrindex(1)
+	fnA.SetStartLine(10)
+
+	fnB := NewFunction()
+	fnB.SetNameStrindex(2)
+	fnB.SetStartLine(20)
+
+	idxA, err := mi.setFunction(table, fnA)
+	require.NoError(t, err)
+	assert.Equal(t, int32(0), idxA)
+
+	hB := hashFunction(fnB)
+	mi.functions[hB] = append(mi.functions[hB], int32(0))
+
+	idxB, err := mi.setFunction(table, fnB)
+	require.NoError(t, err)
+	assert.Equal(t, int32(1), idxB, "Equal must reject the colliding entry and append B")
+	assert.Equal(t, 2, table.Len(), "table must have 2 entries after arbitration")
+}
+
+func TestMergeIndex_SetStack_CollisionArbitratedByEqual(t *testing.T) {
+	table := NewStackSlice()
+	mi := newMergeIndex(NewProfilesDictionary())
+
+	stA := NewStack()
+	stA.LocationIndices().Append(1, 2, 3)
+
+	stB := NewStack()
+	stB.LocationIndices().Append(4, 5, 6)
+
+	idxA, err := mi.setStack(table, stA)
+	require.NoError(t, err)
+	assert.Equal(t, int32(0), idxA)
+
+	hB := hashStack(stB)
+	mi.stacks[hB] = append(mi.stacks[hB], int32(0))
+
+	idxB, err := mi.setStack(table, stB)
+	require.NoError(t, err)
+	assert.Equal(t, int32(1), idxB, "Equal must reject the colliding entry and append B")
+	assert.Equal(t, 2, table.Len(), "table must have 2 entries after arbitration")
+}
+
 func randMapping(r *rand.Rand) Mapping {
 	ma := NewMapping()
 	ma.SetMemoryStart(uint64(r.Intn(5)))

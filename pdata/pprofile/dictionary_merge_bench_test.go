@@ -68,6 +68,7 @@ func BenchmarkDictionaryMergeBatch(b *testing.B) {
 		batch        = 20
 		perProfile   = 100
 	)
+	b.ReportAllocs()
 	for b.Loop() {
 		b.StopTimer()
 		dst := NewProfiles()
