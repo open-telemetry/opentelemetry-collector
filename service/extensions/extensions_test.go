@@ -660,7 +660,7 @@ func TestNotifyConfigSnapshotWithNilEffectiveConfig(t *testing.T) {
 	assert.False(t, called)
 }
 
-func TestNotifyConfigSnapshotPrefersProviderWatcher(t *testing.T) {
+func TestNotifyConfigSnapshotPrefersSnapshotWatcher(t *testing.T) {
 	var configSnapshotNotifications, configNotifications int
 	extensionFactory := newConfigSnapshotAndConfigWatcherExtensionFactory(
 		component.MustNewType("bothwatchers"),
