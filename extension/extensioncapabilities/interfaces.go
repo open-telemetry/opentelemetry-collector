@@ -41,7 +41,7 @@ type PipelineWatcher interface {
 // ConfigWatcher is an interface that should be implemented by an extension that
 // wishes to be notified of the Collector's effective configuration.
 //
-// Deprecated [v0.154.0]: use ConfigSnapshotWatcher instead.
+// Deprecated [v0.155.0]: use ConfigSnapshotWatcher instead.
 type ConfigWatcher interface {
 	// NotifyConfig notifies the extension of the Collector's current effective configuration.
 	// The extension owns the `confmap.Conf`. Callers must ensure that it's safe for
