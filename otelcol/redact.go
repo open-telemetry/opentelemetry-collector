@@ -27,7 +27,7 @@ func redactByMirroring(raw, redacted *confmap.Conf) *confmap.Conf {
 	return confmap.NewFromStringMap(redactedRaw.(map[string]any))
 }
 
-// applyMask recursively applies redaction to raw mirrored from redacted structure.
+// applyMask recursively applies redaction to `raw` by mirroring it with the redacted structure.
 // It mutates raw and returns it.
 func applyMask(raw, redacted any) any {
 	switch redVal := redacted.(type) {
