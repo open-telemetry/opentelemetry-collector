@@ -16,16 +16,35 @@ import (
 	"go.opentelemetry.io/collector/otelcol"
 )
 
+var (
+	runCollector = run
+	exitProcess  = os.Exit
+)
+
 func main() {
+	runMain(runCollector, exitProcess)
+}
+
+func runMain(runFn func(otelcol.CollectorSettings) error, exitFn func(int)) {
+	set := newCollectorSettings()
+	if err := runFn(set); err != nil {
+		// The error message is logged by cobra, so we intentionally
+		// avoid logging it again here to prevent duplicate output.
+		exitFn(1)
+	}
+}
+
+func newCollectorSettings() otelcol.CollectorSettings {
 	info := component.BuildInfo{
 		Command:     "otelcorecol",
 		Description: "Local OpenTelemetry Collector binary, testing only.",
 		Version:     "0.154.0-dev",
 	}
 
-	set := otelcol.CollectorSettings{
-		BuildInfo: info,
-		Factories: components,
+	return otelcol.CollectorSettings{
+		BuildInfo:    info,
+		Factories:    components,
+		ConfigSchema: embeddedConfigSchema,
 		ConfigProviderSettings: otelcol.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
 				ProviderFactories: []confmap.ProviderFactory{
@@ -45,12 +64,6 @@ func main() {
 			yamlprovider.NewFactory().Create(confmap.ProviderSettings{}).Scheme():  "go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.60.0",
 		},
 		ConverterModules: []string{},
-	}
-
-	if err := run(set); err != nil {
-		// The error message is logged by cobra, so we intentionally
-		// avoid logging it again here to prevent duplicate output.
-		os.Exit(1)
 	}
 }
 
