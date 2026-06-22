@@ -118,7 +118,7 @@ func (bes *Extensions) NotifyPipelineNotReady() error {
 // NotifyConfig notifies extensions of the Collector's current effective
 // configuration.
 //
-// Deprecated [v0.154.0]: use NotifyConfigSnapshot instead.
+// Deprecated [v0.155.0]: use NotifyConfigSnapshot instead.
 func (bes *Extensions) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {
 	if conf == nil {
 		return nil
