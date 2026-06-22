@@ -80,12 +80,12 @@ func hashAttribute(a KeyValueAndUnit) uint64 {
 func hashLink(li Link) uint64 {
 	h := fnvOffset64
 	tid := li.TraceID()
-	for i := 0; i < len(tid); i++ {
-		h = mixU64(h, uint64(tid[i]))
+	for _, b := range tid {
+		h = mixU64(h, uint64(b))
 	}
 	sid := li.SpanID()
-	for i := 0; i < len(sid); i++ {
-		h = mixU64(h, uint64(sid[i]))
+	for _, b := range sid {
+		h = mixU64(h, uint64(b))
 	}
 	return h
 }

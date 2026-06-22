@@ -5,7 +5,7 @@ package pprofile
 
 import (
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -722,7 +722,7 @@ func attrMapToStrings(m pcommon.Map) map[string]string {
 }
 
 func TestMergeTo_FullDedupAndRoundTrip(t *testing.T) {
-	r := rand.New(rand.NewSource(7))
+	r := rand.New(rand.NewPCG(7, 0))
 	marshaler := &ProtoMarshaler{}
 	unmarshaler := &ProtoUnmarshaler{}
 
@@ -811,10 +811,10 @@ func newRandomProfiles(r *rand.Rand, prefix string, nStrings int) Profiles {
 	attrValStr := "dict-attr-" + prefix
 
 	fn := d.FunctionTable().AppendEmpty()
-	fn.SetNameStrindex(int32(r.Intn(nStrings)))
+	fn.SetNameStrindex(int32(r.IntN(nStrings)))
 
 	mp := d.MappingTable().AppendEmpty()
-	mp.SetFilenameStrindex(int32(r.Intn(nStrings)))
+	mp.SetFilenameStrindex(int32(r.IntN(nStrings)))
 
 	loc := d.LocationTable().AppendEmpty()
 	ln := loc.Lines().AppendEmpty()

@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
-component: pdata/pprofile
+component: pkg/pprofile
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Speed up profiles dictionary merging during exporter-queue batching by replacing the linear-scan dedup in switchDictionary with an indexed lookup, reducing per-merge cost from O(N*L^2) to O(N+L).
