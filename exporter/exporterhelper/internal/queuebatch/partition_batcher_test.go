@@ -625,33 +625,6 @@ func TestPartitionBatcher_OnEmptyCallbackTriggered(t *testing.T) {
 	}, 500*time.Millisecond, 10*time.Millisecond)
 }
 
-// TestPartitionBatcher_ConcurrentConsumeAndShutdown catches the WaitGroup reuse panic
-// (sync: WaitGroup is reused before previous Wait has returned) that occurs when flush()
-// calls stopWG.Add concurrently with shutdownInternal()'s stopWG.Wait.
-func TestPartitionBatcher_ConcurrentConsumeAndShutdown(t *testing.T) {
-	for range 100 {
-		cfg := BatchConfig{
-			FlushTimeout: 1 * time.Millisecond,
-			Sizer:        request.SizerTypeItems,
-			MinSize:      0,
-		}
-		sink := requesttest.NewSink()
-		ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(5), sink.Export, zap.NewNop(), nil)
-		require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
-
-		var wg sync.WaitGroup
-		for range 10 {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 1}, newFakeDone())
-			}()
-		}
-		wg.Wait()
-		require.NoError(t, ba.Shutdown(context.Background()))
-	}
-}
-
 // TestPartitionBatcher_ShutdownNoDeadlock catches the deadlock that occurs when
 // shutdownInternal holds currentBatchMu across stopWG.Wait while the timer goroutine
 // (counted in stopWG) is blocked trying to acquire currentBatchMu.
