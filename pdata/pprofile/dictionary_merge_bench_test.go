@@ -27,9 +27,7 @@ type profileSizes struct {
 func realisticSizes(scale float64) profileSizes {
 	s := func(n int) int {
 		v := int(float64(n) * scale)
-		if v < 1 {
-			v = 1
-		}
+		v = max(v, 1)
 		return v
 	}
 	return profileSizes{
@@ -151,7 +149,7 @@ func fillRealisticProfile(dict ProfilesDictionary, sz profileSizes, overlap floa
 		loc := lt.AppendEmpty()
 		loc.SetMappingIndex(sMap(i))
 		loc.SetAddress(uint64(i))
-		for j := 0; j < linesPerLoc; j++ {
+		for j := range linesPerLoc {
 			ln := loc.Lines().AppendEmpty()
 			ln.SetFunctionIndex(sFn(i + j))
 			ln.SetLine(int64(i*100 + j))
@@ -175,7 +173,7 @@ func fillRealisticProfile(dict ProfilesDictionary, sz profileSizes, overlap floa
 	stkt.AppendEmpty()
 	for i := 1; i <= stkShared; i++ {
 		stk := stkt.AppendEmpty()
-		for j := 0; j < locsPerStack; j++ {
+		for j := range locsPerStack {
 			stk.LocationIndices().Append(sLoc(i + j))
 		}
 	}
