@@ -55,7 +55,7 @@ type Settings struct {
 	// It is passed to extensions implementing extensioncapabilities.ConfigWatcher
 	// via NotifyConfig.
 	//
-	// Deprecated [v0.154.0]: use ConfigSnapshot instead.
+	// Deprecated [v0.155.0]: use ConfigSnapshot instead.
 	CollectorConf *confmap.Conf
 
 	// Receivers configuration to its builder.
