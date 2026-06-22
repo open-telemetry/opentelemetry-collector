@@ -19,13 +19,6 @@ scope_name: string
 # Optional: The name of the package that mdatagen generates. If not set, the name "metadata" will be used.
 generated_package_name: string
 
-# Optional: Enables per-metric reaggregation config generation for metrics with attributes.
-# Enabled by default. Set to false to generate metric config with only the `enabled`
-# field.
-# When enabled, generated metrics config includes `aggregation_strategy` and `attributes`
-# fields that let users reduce metric cardinality by choosing which dimensions are kept.
-reaggregation_enabled: bool
-
 # Optional: Enables per-resource-attribute override_value config generation.
 # When enabled, generated resource attribute config includes typed `override_value`
 # fields that let users override resource attribute values in the collector config.
