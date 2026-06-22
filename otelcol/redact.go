@@ -16,7 +16,7 @@ var redactedMask = func() string {
 	return string(b)
 }()
 
-// redactByMirroring return a copy of raw conf where every leaf set to redactedMask
+// redactByMirroring returns a copy of raw conf where every leaf set to redactedMask
 // in the redacted view is copied over, unless the corresponding pre-expansion leaf
 // is exactly a ${...} provider reference, in which case it is left untouched.
 func redactByMirroring(raw, redacted *confmap.Conf) *confmap.Conf {
