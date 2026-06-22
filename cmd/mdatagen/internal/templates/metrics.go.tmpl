@@ -2,9 +2,8 @@
 
 package {{ .Package }}
 
-{{ $reag := .ReaggregationEnabled }}
 {{- $hasReagMetrics := false }}
-{{- range $name, $metric := .Metrics }}{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}{{- $hasReagMetrics = true }}{{- end }}{{- end }}
+{{- range $name, $metric := .Metrics }}{{- if hasAggregatableAttributes $metric.Attributes }}{{- $hasReagMetrics = true }}{{- end }}{{- end }}
 {{- $hasMigrations := false }}
 {{- range $name, $metric := .Metrics }}{{- if $metric.Migration }}{{- $hasMigrations = true }}{{- end }}{{- end }}
 
@@ -35,14 +34,12 @@ import (
 	{{- end }}
 )
 
-{{- if $reag }}
 const (
 	AggregationStrategySum = "sum"
 	AggregationStrategyAvg = "avg"
 	AggregationStrategyMin = "min"
 	AggregationStrategyMax = "max"
 )
-{{- end }}
 
 {{- if needsStrToIntConversion }}
 func mustParseInt64(s string) int64 {
@@ -131,10 +128,10 @@ func With{{ .Render }}MetricAttribute({{ .RenderUnexported }}AttributeValue {{ (
 {{ end }}
 
 {{ range $name, $metric := .Metrics }}
-{{- $metricReag := and $reag (hasAggregatableAttributes $metric.Attributes) -}}
+{{- $metricReag := hasAggregatableAttributes $metric.Attributes -}}
 type metric{{ $name.Render }} struct {
 	data                     pmetric.Metric // data buffer for generated metric.
-	config                   {{ if $reag }}{{ $name.Render }}{{ end }}MetricConfig // metric config provided by user.
+	config                   {{ $name.Render }}MetricConfig // metric config provided by user.
 	capacity                 int // max observed number of data points added to the metric.
 	{{- if $metricReag }}
 	aggDataPoints            []{{ $metric.Data.MetricValueType.BasicType }} // slice containing number of aggregated datapoints at each index
@@ -303,7 +300,7 @@ func (m *metric{{ $name.Render }}) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetric{{ $name.Render }}(cfg {{ if $reag }}{{ $name.Render }}{{ end }}MetricConfig) metric{{ $name.Render }} {
+func newMetric{{ $name.Render }}(cfg {{ $name.Render }}MetricConfig) metric{{ $name.Render }} {
 	m := metric{{ $name.Render }}{config: cfg}
 
 	if cfg.Enabled {
