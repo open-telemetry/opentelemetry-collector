@@ -19,6 +19,7 @@ require (
 	go.opentelemetry.io/collector/exporter/exportertest v0.154.0
 	go.opentelemetry.io/collector/exporter/xexporter v0.154.0
 	go.opentelemetry.io/collector/extension v1.60.0
+	go.opentelemetry.io/collector/extension/extensioncapabilities v0.154.0
 	go.opentelemetry.io/collector/extension/extensiontest v0.154.0
 	go.opentelemetry.io/collector/featuregate v1.60.0
 	go.opentelemetry.io/collector/internal/componentalias v0.154.0
@@ -83,7 +84,6 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror v0.154.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.154.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.154.0 // indirect
-	go.opentelemetry.io/collector/extension/extensioncapabilities v0.154.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.154.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.154.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.60.0 // indirect
@@ -112,8 +112,8 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.10.0 // indirect
-	golang.org/x/net v0.55.0 // indirect
-	golang.org/x/text v0.37.0 // indirect
+	golang.org/x/net v0.56.0 // indirect
+	golang.org/x/text v0.38.0 // indirect
 	gonum.org/v1/gonum v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
