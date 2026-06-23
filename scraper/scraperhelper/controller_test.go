@@ -771,6 +771,62 @@ func addLogsScraper(t component.Type, sc scraper.Logs) ControllerOption {
 	return AddFactoryWithConfig(f, nil)
 }
 
+func TestAddScraper(t *testing.T) {
+	t.Parallel()
+
+	// AddScraper is deprecated but must continue to work identically to AddMetricsScraper.
+	scp, err := scraper.NewMetrics(func(context.Context) (pmetric.Metrics, error) {
+		return pmetric.NewMetrics(), nil
+	})
+	require.NoError(t, err)
+
+	recv, err := NewMetricsController(
+		newTestNoDelaySettings(),
+		receivertest.NewNopSettings(receivertest.NopType),
+		new(consumertest.MetricsSink),
+		AddScraper(component.MustNewType("scraper"), scp), //nolint:staticcheck
+	)
+	require.NoError(t, err)
+	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, recv.Shutdown(context.Background()))
+}
+
+func TestNewLogsControllerCreateLogsError(t *testing.T) {
+	t.Parallel()
+
+	createErr := errors.New("create logs failed")
+	f := scraper.NewFactory(component.MustNewType("scraper"), nil,
+		scraper.WithLogs(func(context.Context, scraper.Settings, component.Config) (scraper.Logs, error) {
+			return nil, createErr
+		}, component.StabilityLevelAlpha))
+
+	_, err := NewLogsController(
+		newTestNoDelaySettings(),
+		receivertest.NewNopSettings(receivertest.NopType),
+		new(consumertest.LogsSink),
+		AddFactoryWithConfig(f, nil),
+	)
+	require.ErrorIs(t, err, createErr)
+}
+
+func TestNewMetricsControllerCreateMetricsError(t *testing.T) {
+	t.Parallel()
+
+	createErr := errors.New("create metrics failed")
+	f := scraper.NewFactory(component.MustNewType("scraper"), nil,
+		scraper.WithMetrics(func(context.Context, scraper.Settings, component.Config) (scraper.Metrics, error) {
+			return nil, createErr
+		}, component.StabilityLevelAlpha))
+
+	_, err := NewMetricsController(
+		newTestNoDelaySettings(),
+		receivertest.NewNopSettings(receivertest.NopType),
+		new(consumertest.MetricsSink),
+		AddFactoryWithConfig(f, nil),
+	)
+	require.ErrorIs(t, err, createErr)
+}
+
 func TestNewDefaultControllerConfig(t *testing.T) {
 	controllerConfig := NewDefaultControllerConfig()
 	intControllerConfig := controller.NewDefaultControllerConfig()

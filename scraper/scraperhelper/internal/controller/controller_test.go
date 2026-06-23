@@ -17,6 +17,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/extension/xextension/extensionscrapercontroller"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/testhelper"
 )
@@ -25,6 +26,17 @@ import (
 type mockScraper struct {
 	component.StartFunc
 	component.ShutdownFunc
+}
+
+// nilDeregControllerExtension returns a nil DeregisterFunc, violating the
+// ControllerExtension contract. Used to exercise the defensive nil guard in teardown.
+type nilDeregControllerExtension struct {
+	component.StartFunc
+	component.ShutdownFunc
+}
+
+func (e *nilDeregControllerExtension) RegisterScraper(_ context.Context, _ extensionscrapercontroller.ScrapeFunc) (extensionscrapercontroller.DeregisterFunc, error) {
+	return nil, nil
 }
 
 func nopScrapeFunc(context.Context, *Controller[component.Component]) error {
@@ -334,6 +346,10 @@ func TestStartExtensionRegistersAndDeregisters(t *testing.T) {
 
 	require.NoError(t, ctrl.Shutdown(context.Background()))
 	assert.True(t, mockExt.Deregistered.Load())
+
+	// Calling Scrape after deregistration must return nil without invoking
+	// the scrape function (exercises the Deregistered early-exit path).
+	require.NoError(t, mockExt.Scrape(context.Background()))
 }
 
 func TestStartExtensionCallbackInvokesScrapeFunc(t *testing.T) {
@@ -657,6 +673,25 @@ func TestShutdownDeregisterError(t *testing.T) {
 	require.ErrorIs(t, err, errDeregister)
 	require.ErrorIs(t, err, errShutdown)
 	assert.True(t, mockExt.Deregistered.Load())
+}
+
+func TestTeardownNilDeregFunc(t *testing.T) {
+	t.Parallel()
+
+	// An extension that returns (nil, nil) from RegisterScraper, violating
+	// the contract. The controller must not panic when encountering a nil
+	// DeregisterFunc in the deregFuncs slice.
+	extID := component.MustNewID("nilext")
+	cfg := &ControllerConfig{
+		Controllers: []component.ID{extID},
+	}
+	ctrl := newTestController(t, cfg, nil)
+
+	host := &testhelper.MockHost{Extensions: map[component.ID]component.Component{
+		extID: &nilDeregControllerExtension{},
+	}}
+	require.NoError(t, ctrl.Start(context.Background(), host))
+	require.NoError(t, ctrl.Shutdown(context.Background()))
 }
 
 func TestStartMultipleExtensions(t *testing.T) {
