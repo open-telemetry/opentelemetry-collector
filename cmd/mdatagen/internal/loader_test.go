@@ -52,7 +52,6 @@ func TestLoadMetadata(t *testing.T) {
 				Description:          "This receiver is used for testing purposes to check the output of mdatagen.",
 				SemConvVersion:       "1.40.0",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver",
-				ReaggregationEnabled: true,
 				OverrideValueEnabled: true,
 				Status: &Status{
 					DisableCodeCov: true,
@@ -601,7 +600,6 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
-				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 			},
 		},
@@ -613,7 +611,6 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
-				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -633,7 +630,6 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
-				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -651,7 +647,6 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
-				ReaggregationEnabled: false,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -744,7 +739,6 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
-				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -763,7 +757,6 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
-				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -783,7 +776,6 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
-				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -804,7 +796,6 @@ func TestLoadMetadata(t *testing.T) {
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
-				ReaggregationEnabled: true,
 				Status: &Status{
 					Class: "receiver",
 					Stability: map[component.StabilityLevel][]string{
@@ -822,7 +813,6 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
-				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
