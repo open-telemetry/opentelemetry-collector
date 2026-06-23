@@ -2,10 +2,9 @@
 
 package {{ .Package }}
 
-{{ $reag := .ReaggregationEnabled }}
 {{- $hasReagMetrics := false }}
 {{- $hasVersionedMetrics := false }}
-{{- range $name, $metric := .Metrics }}{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}{{- $hasReagMetrics = true }}{{- end }}
+{{- range $name, $metric := .Metrics }}{{- if hasAggregatableAttributes $metric.Attributes }}{{- $hasReagMetrics = true }}{{- end }}
 {{- if $metric.Migration }}{{ $hasVersionedMetrics = true }}{{- end }}
 {{- end }}
 
@@ -32,7 +31,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
-	{{- if $reag }}
+	{{- if $hasReagMetrics }}
 	testDataSetReag
 	{{- end }}
 )
@@ -52,7 +51,7 @@ func TestMetricsBuilder(t *testing.T) {
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
 		},
-		{{- if $reag }}
+		{{- if $hasReagMetrics }}
 		{
 			name: "reaggregate_set",
 			metricsSet: testDataSetReag,
@@ -170,7 +169,7 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 			{{- end }}
 
-			{{- if $reag }}
+			{{- if $hasReagMetrics }}
 			if tt.metricsSet != testDataSetReag {
 				assert.Equal(t, expectedWarnings, observedLogs.Len())
 			}
@@ -225,7 +224,7 @@ func TestMetricsBuilder(t *testing.T) {
 			{{- end -}}
 			{{- end -}}
 			)
-			{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}
+			{{- if hasAggregatableAttributes $metric.Attributes }}
 			if tt.name == "reaggregate_set" {
 				{{ if $metric.Entity }}eb{{ publicVar $metric.Entity }}{{ else }}mb{{ end }}.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"3"{{ else }}3{{ end }}
 				{{- range $metric.Attributes -}}
@@ -267,7 +266,7 @@ func TestMetricsBuilder(t *testing.T) {
 			res := pcommon.NewResource()
 			{{- end }}
 			metrics := mb.Emit(WithResource(res))
-			{{- if $reag }}
+			{{- if $hasReagMetrics }}
 			if tt.name == "reaggregate_set" {
 				{{- range $name, $metric := .Metrics }}
 				{{- if hasAggregatableAttributes $metric.Attributes }}
@@ -305,7 +304,7 @@ func TestMetricsBuilder(t *testing.T) {
 				{{- range $name, $metric := .Metrics }}
         {{- if and (not $metric.Versioned) (not $metric.Migration) }}
         case "{{ $name.EmittedName }}":
-					{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}
+					{{- if hasAggregatableAttributes $metric.Attributes }}
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["{{ $name }}"], "Found a duplicate in the metrics slice: {{ $name }}")
 						validatedMetrics["{{ $name }}"] = true
@@ -601,4 +600,3 @@ func TestVersionedMetrics(t *testing.T) {
     {{- end }}
 }
 {{- end }}
-
