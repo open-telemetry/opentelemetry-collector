@@ -4,13 +4,14 @@ package samplescraper
 
 import (
 	"errors"
+	"regexp"
+	"time"
+
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplepkg"
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
-	"regexp"
-	"time"
 )
 
 type SamplePkg = samplepkg.SampleConfig
