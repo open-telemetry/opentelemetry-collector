@@ -361,7 +361,7 @@ checklinks:
 	command -v $(DOCKERCMD) >/dev/null 2>&1 || { echo >&2 "$(DOCKERCMD) not installed. Install before continuing"; exit 1; }
 	$(DOCKERCMD) run -w /home/repo --rm \
 		--mount 'type=bind,source='$(PWD)',target=/home/repo' \
-		lycheeverse/lychee \
+		lycheeverse/lychee:0.23 \
 		--config .github/lychee.toml \
 		--root-dir /home/repo \
 		-v \
@@ -423,3 +423,9 @@ gendistributions:
 .PHONY: generate-chloggen-components
 generate-chloggen-components:
 	$(GITHUBGEN) chloggen-components
+
+SCHEMA_DIRS := $(shell find $(CURDIR) -path "*testdata*" -prune -o -path "*internal/metadata/*" -prune -o -name "config.schema.yaml" -exec dirname {} \; | sort -u)
+
+.PHONY: generate-schemas
+generate-schemas:
+	@$(foreach dir,$(SCHEMA_DIRS), cd $(SRC_ROOT)/cmd/schemagen && go run . $(abspath $(dir)) -o $(abspath $(dir));)

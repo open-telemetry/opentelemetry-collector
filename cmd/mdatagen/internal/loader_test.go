@@ -92,6 +92,9 @@ func TestLoadMetadata(t *testing.T) {
 							Type:        "string",
 							Default:     "localhost:12345",
 						},
+						"sample_pkg": {
+							Ref: "../samplepkg.sample_config",
+						},
 						"timeout": {
 							Description: "Timeout for scraping metrics.",
 							Type:        "string",
@@ -598,6 +601,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 			},
 		},
@@ -609,6 +613,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -628,6 +633,25 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
+				Tests:                Tests{Host: "newMdatagenNopHost()"},
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelBeta: {"logs"},
+					},
+				},
+			},
+		},
+		{
+			name: "testdata/reaggregation_disabled.yaml",
+			want: Metadata{
+				Type:                 "test",
+				GeneratedPackageName: "metadata",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				ShortFolderName:      "testdata",
+				ReaggregationEnabled: false,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -720,6 +744,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -738,6 +763,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -757,7 +783,28 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelBeta: {"logs"},
+					},
+				},
+			},
+		},
+		{
+			name: "testdata/with_pipe_description.yaml",
+			want: Metadata{
+				Type:                 "testdesc",
+				DisplayName:          "Test Component",
+				Description:          "This is a test component with a multiline description.\nIt has a second line.\n",
+				GeneratedPackageName: "metadata",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				ShortFolderName:      "testdata",
+				Tests:                Tests{Host: "newMdatagenNopHost()"},
+				ReaggregationEnabled: true,
 				Status: &Status{
 					Class: "receiver",
 					Stability: map[component.StabilityLevel][]string{
@@ -775,6 +822,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -819,6 +867,61 @@ func TestLoadMetadata(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSetMetricDefaultFields(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    map[MetricName]Metric
+		expected map[MetricName]Metric
+	}{
+		{
+			name: "no name set, no slash in key",
+			input: map[MetricName]Metric{
+				"system.cpu.time": {Signal: Signal{Description: "test"}},
+			},
+			expected: map[MetricName]Metric{
+				"system.cpu.time": {Signal: Signal{Description: "test"}},
+			},
+		},
+		{
+			name: "no name set, At ('@') in key",
+			input: map[MetricName]Metric{
+				"system.cpu.time@v2": {Signal: Signal{Description: "test"}},
+			},
+			expected: map[MetricName]Metric{
+				"system.cpu.time@v2": {Signal: Signal{Description: "test"}, Versioned: true},
+			},
+		},
+		{
+			name: "name already set",
+			input: map[MetricName]Metric{
+				"some.key": {Signal: Signal{Description: "test"}},
+			},
+			expected: map[MetricName]Metric{
+				"some.key": {Signal: Signal{Description: "test"}},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setMetricVersioned(tt.input)
+			require.Equal(t, tt.expected, tt.input)
+		})
+	}
+}
+
+func TestVersionedMetricName(t *testing.T) {
+	md, err := LoadMetadata("testdata/versioned_metric.yaml")
+	require.NoError(t, err)
+
+	// Legacy metric - Name should be empty (uses map key)
+	legacy := md.Metrics["system.cpu.time"]
+	require.False(t, legacy.Versioned)
+
+	// Versioned metric - Name should be auto-populated from key
+	versioned := md.Metrics["system.cpu.time@v1"]
+	require.True(t, versioned.Versioned)
 }
 
 func strPtr(s string) *string {

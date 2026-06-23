@@ -51,28 +51,16 @@ type metricsEncoding struct{}
 var _ encoding[request.Request] = metricsEncoding{}
 
 func (metricsEncoding) Unmarshal(bytes []byte) (context.Context, request.Request, error) {
-	if queue.PersistRequestContextOnRead() {
-		ctx, metrics, err := pdatareq.UnmarshalMetrics(bytes)
-		if errors.Is(err, pdatareq.ErrInvalidFormat) {
-			// fall back to unmarshaling without context
-			metrics, err = metricsUnmarshaler.UnmarshalMetrics(bytes)
-		}
-		return ctx, newMetricsRequest(metrics), err
+	ctx, metrics, err := pdatareq.UnmarshalMetrics(bytes)
+	if errors.Is(err, pdatareq.ErrInvalidFormat) {
+		// fall back to unmarshaling without context
+		metrics, err = metricsUnmarshaler.UnmarshalMetrics(bytes)
 	}
-	metrics, err := metricsUnmarshaler.UnmarshalMetrics(bytes)
-	if err != nil {
-		var req request.Request
-		return context.Background(), req, err
-	}
-	return context.Background(), newMetricsRequest(metrics), nil
+	return ctx, newMetricsRequest(metrics), err
 }
 
 func (metricsEncoding) Marshal(ctx context.Context, req request.Request) ([]byte, error) {
-	metrics := req.(*metricsRequest).md
-	if queue.PersistRequestContextOnWrite() {
-		return pdatareq.MarshalMetrics(ctx, metrics)
-	}
-	return metricsMarshaler.MarshalMetrics(metrics)
+	return pdatareq.MarshalMetrics(ctx, req.(*metricsRequest).md)
 }
 
 var _ queue.ReferenceCounter[request.Request] = metricsReferenceCounter{}
