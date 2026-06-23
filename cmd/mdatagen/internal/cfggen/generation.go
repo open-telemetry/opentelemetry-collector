@@ -377,7 +377,9 @@ func collectDefs(md *ConfigMetadata, defs map[string]*ConfigMetadata) {
 		if !refDesc.IsInternal() {
 			return
 		}
-		defs[md.ResolvedFrom] = md
+		if _, exists := defs[md.ResolvedFrom]; !exists {
+			defs[md.ResolvedFrom] = md
+		}
 	}
 
 	for _, name := range slices.Sorted(maps.Keys(md.Defs)) {
@@ -402,7 +404,10 @@ func collectDefsForSchema(propName string, md *ConfigMetadata, defs map[string]*
 	if md.ResolvedFrom != "" {
 		refDesc := NewRef(md.ResolvedFrom)
 		if refDesc.IsInternal() {
-			defs[md.ResolvedFrom] = md
+			// Only register the ref-site node if no authoritative definition was already collected from md.Defs.
+			if _, exists := defs[md.ResolvedFrom]; !exists {
+				defs[md.ResolvedFrom] = md
+			}
 			collectDefs(md, defs)
 		}
 		return
