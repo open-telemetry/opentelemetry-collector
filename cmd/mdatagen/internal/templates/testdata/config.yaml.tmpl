@@ -1,12 +1,12 @@
-{{- $reag := .ReaggregationEnabled -}}
+{{- $hasReagMetrics := false }}
+{{- range $name, $metric := .Metrics }}{{- if hasAggregatableAttributes $metric.Attributes }}{{- $hasReagMetrics = true }}{{- end }}{{- end -}}
 
 default:
 all_set:
-{{- if $reag }}
   {{- if .Metrics }}
   metrics:
     {{- range $name, $metric := .Metrics }}
-    {{- $metricReag := and $reag (hasAggregatableAttributes $metric.Attributes) }}
+    {{- $metricReag := hasAggregatableAttributes $metric.Attributes }}
     {{ $name }}:
       enabled: true
       {{- if $metricReag }}
@@ -28,12 +28,12 @@ all_set:
       enabled: true
     {{- end }}
   {{- end }}
+{{- if $hasReagMetrics }}
 reaggregate_set:
-{{- end }}
   {{- if .Metrics }}
   metrics:
     {{- range $name, $metric := .Metrics }}
-    {{- $metricReag := and $reag (hasAggregatableAttributes $metric.Attributes) }}
+    {{- $metricReag := hasAggregatableAttributes $metric.Attributes }}
     {{ $name }}:
       enabled: true
       {{- if $metricReag }}
@@ -55,11 +55,12 @@ reaggregate_set:
       enabled: true
     {{- end }}
   {{- end }}
+{{- end }}
 none_set:
   {{- if .Metrics }}
   metrics:
     {{- range $name, $metric := .Metrics }}
-    {{- $metricReag := and $reag (hasAggregatableAttributes $metric.Attributes) }}
+    {{- $metricReag := hasAggregatableAttributes $metric.Attributes }}
     {{ $name }}:
       enabled: false
       {{- if $metricReag }}
