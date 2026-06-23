@@ -5,6 +5,7 @@ package graph
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -3375,4 +3376,194 @@ func testUpdateReceiversConnectorUntouched(t *testing.T) {
 
 		require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 	})
+}
+
+// errReceiverConfig drives the failure behavior of errReceiver. The id field
+// lets two otherwise-identical configs compare as different so a receiver can be
+// forced to rebuild.
+type errReceiverConfig struct {
+	id           string
+	failBuild    bool
+	failStart    bool
+	failShutdown bool
+}
+
+type errReceiver struct {
+	consumer.ConsumeTracesFunc
+	failStart    bool
+	failShutdown bool
+}
+
+func (e *errReceiver) Start(context.Context, component.Host) error {
+	if e.failStart {
+		return errors.New("forced start error")
+	}
+	return nil
+}
+
+func (e *errReceiver) Shutdown(context.Context) error {
+	if e.failShutdown {
+		return errors.New("forced shutdown error")
+	}
+	return nil
+}
+
+var errReceiverType = component.MustNewType("errreceiver")
+
+func newPartialErrReceiverFactory() receiver.Factory {
+	return receiver.NewFactory(
+		errReceiverType,
+		func() component.Config { return &errReceiverConfig{} },
+		receiver.WithTraces(func(_ context.Context, _ receiver.Settings, cfg component.Config, next consumer.Traces) (receiver.Traces, error) {
+			c := cfg.(*errReceiverConfig)
+			if c.failBuild {
+				return nil, errors.New("forced build error")
+			}
+			return &errReceiver{ConsumeTracesFunc: next.ConsumeTraces, failStart: c.failStart, failShutdown: c.failShutdown}, nil
+		}, component.StabilityLevelDevelopment),
+	)
+}
+
+var testErrReceiverFactories = map[component.Type]receiver.Factory{
+	testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory,
+	errReceiverType: newPartialErrReceiverFactory(),
+}
+
+// errReceiverTestGraph builds and starts a traces graph whose receiver factory
+// map includes both examplereceiver and errreceiver, for exercising the
+// partial-reload failure paths in UpdateReceivers.
+func errReceiverTestGraph(t *testing.T,
+	rcvrCfgs map[component.ID]component.Config,
+	pipelineConfigs pipelines.Config,
+) (*Graph, *Host, Settings) {
+	t.Helper()
+	procCfgs := map[component.ID]component.Config{
+		component.MustNewID("exampleprocessor"): testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
+	}
+	expCfgs := map[component.ID]component.Config{
+		component.MustNewID("exampleexporter"): testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
+	}
+	set := Settings{
+		Telemetry:       componenttest.NewNopTelemetrySettings(),
+		BuildInfo:       component.NewDefaultBuildInfo(),
+		ReceiverBuilder: builders.NewReceiver(rcvrCfgs, testErrReceiverFactories),
+		ProcessorBuilder: builders.NewProcessor(
+			procCfgs,
+			map[component.Type]processor.Factory{testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory},
+		),
+		ExporterBuilder: builders.NewExporter(
+			expCfgs,
+			map[component.Type]exporter.Factory{testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory},
+		),
+		ConnectorBuilder: builders.NewConnector(map[component.ID]component.Config{}, map[component.Type]connector.Factory{}),
+		PipelineConfigs:  pipelineConfigs,
+	}
+
+	pg, err := Build(context.Background(), set)
+	require.NoError(t, err)
+	host := &Host{
+		Reporter: status.NewReporter(
+			func(*componentstatus.InstanceID, *componentstatus.Event) {},
+			func(error) {},
+		),
+	}
+	require.NoError(t, pg.StartAll(context.Background(), host))
+	return pg, host, set
+}
+
+func makeErrUpdatedSettings(base Settings, newRcvrCfgs map[component.ID]component.Config, newPipelineCfgs pipelines.Config) Settings {
+	updated := base
+	updated.ReceiverBuilder = builders.NewReceiver(newRcvrCfgs, testErrReceiverFactories)
+	updated.PipelineConfigs = newPipelineCfgs
+	return updated
+}
+
+func errTracesPipeline(receiverIDs ...component.ID) pipelines.Config {
+	return pipelines.Config{
+		pipeline.NewID(pipeline.SignalTraces): {
+			Receivers:  receiverIDs,
+			Processors: []component.ID{component.MustNewID("exampleprocessor")},
+			Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+		},
+	}
+}
+
+// The following tests cover the UpdateReceivers failure paths in the order the
+// phases execute: shutting down removed/rebuilt receivers, then building, then
+// starting the new ones.
+
+func TestUpdateReceiversShutdownErrorOnRemove(t *testing.T) {
+	exampleID := component.MustNewID("examplereceiver")
+	errID := component.MustNewID("errreceiver")
+
+	rcvrCfgs := map[component.ID]component.Config{
+		exampleID: testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+		errID:     &errReceiverConfig{failShutdown: true},
+	}
+	pg, host, set := errReceiverTestGraph(t, rcvrCfgs, errTracesPipeline(exampleID, errID))
+
+	// Remove the receiver whose Shutdown fails.
+	newRcvrCfgs := map[component.ID]component.Config{exampleID: testcomponents.ExampleReceiverFactory.CreateDefaultConfig()}
+	updatedSet := makeErrUpdatedSettings(set, newRcvrCfgs, errTracesPipeline(exampleID))
+
+	err := pg.UpdateReceivers(context.Background(), updatedSet, rcvrCfgs, newRcvrCfgs, testErrReceiverFactories, host)
+	require.ErrorContains(t, err, "failed to shutdown receiver")
+}
+
+func TestUpdateReceiversShutdownErrorOnRebuild(t *testing.T) {
+	exampleID := component.MustNewID("examplereceiver")
+	errID := component.MustNewID("errreceiver")
+
+	rcvrCfgs := map[component.ID]component.Config{
+		exampleID: testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+		errID:     &errReceiverConfig{id: "v1", failShutdown: true},
+	}
+	pg, host, set := errReceiverTestGraph(t, rcvrCfgs, errTracesPipeline(exampleID, errID))
+
+	// Change the receiver's config so it must be rebuilt; the old instance's
+	// Shutdown fails.
+	newRcvrCfgs := map[component.ID]component.Config{
+		exampleID: testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+		errID:     &errReceiverConfig{id: "v2", failShutdown: true},
+	}
+	updatedSet := makeErrUpdatedSettings(set, newRcvrCfgs, errTracesPipeline(exampleID, errID))
+
+	err := pg.UpdateReceivers(context.Background(), updatedSet, rcvrCfgs, newRcvrCfgs, testErrReceiverFactories, host)
+	require.ErrorContains(t, err, "failed to shutdown receiver")
+}
+
+func TestUpdateReceiversBuildError(t *testing.T) {
+	exampleID := component.MustNewID("examplereceiver")
+	errID := component.MustNewID("errreceiver")
+
+	rcvrCfgs := map[component.ID]component.Config{exampleID: testcomponents.ExampleReceiverFactory.CreateDefaultConfig()}
+	pg, host, set := errReceiverTestGraph(t, rcvrCfgs, errTracesPipeline(exampleID))
+
+	// Add a receiver that fails to build.
+	newRcvrCfgs := map[component.ID]component.Config{
+		exampleID: testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+		errID:     &errReceiverConfig{failBuild: true},
+	}
+	updatedSet := makeErrUpdatedSettings(set, newRcvrCfgs, errTracesPipeline(exampleID, errID))
+
+	err := pg.UpdateReceivers(context.Background(), updatedSet, rcvrCfgs, newRcvrCfgs, testErrReceiverFactories, host)
+	require.ErrorContains(t, err, "failed to build receiver")
+}
+
+func TestUpdateReceiversStartError(t *testing.T) {
+	exampleID := component.MustNewID("examplereceiver")
+	errID := component.MustNewID("errreceiver")
+
+	rcvrCfgs := map[component.ID]component.Config{exampleID: testcomponents.ExampleReceiverFactory.CreateDefaultConfig()}
+	pg, host, set := errReceiverTestGraph(t, rcvrCfgs, errTracesPipeline(exampleID))
+
+	// Add a receiver that builds but fails to start.
+	newRcvrCfgs := map[component.ID]component.Config{
+		exampleID: testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+		errID:     &errReceiverConfig{failStart: true},
+	}
+	updatedSet := makeErrUpdatedSettings(set, newRcvrCfgs, errTracesPipeline(exampleID, errID))
+
+	err := pg.UpdateReceivers(context.Background(), updatedSet, rcvrCfgs, newRcvrCfgs, testErrReceiverFactories, host)
+	require.ErrorContains(t, err, "failed to start receiver")
 }
