@@ -142,9 +142,8 @@ This lets users:
 
 ### Metric Reaggregation Configuration
 
-By default, `mdatagen` lets users reduce metric cardinality by dropping selected metric
-attributes and aggregating the resulting datapoints. Set `reaggregation_enabled: false`
-to generate metric config with only the `enabled` field.
+`mdatagen` lets users reduce metric cardinality by dropping selected metric attributes
+and aggregating the resulting datapoints.
 
 ```yaml
 attributes:

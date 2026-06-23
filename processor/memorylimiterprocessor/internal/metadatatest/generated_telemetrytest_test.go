@@ -19,28 +19,28 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
-	tb.ProcessorAcceptedLogRecords.Add(context.Background(), 1)
-	tb.ProcessorAcceptedMetricPoints.Add(context.Background(), 1)
-	tb.ProcessorAcceptedSpans.Add(context.Background(), 1)
-	tb.ProcessorRefusedLogRecords.Add(context.Background(), 1)
-	tb.ProcessorRefusedMetricPoints.Add(context.Background(), 1)
-	tb.ProcessorRefusedSpans.Add(context.Background(), 1)
-	AssertEqualProcessorAcceptedLogRecords(t, testTel,
+	tb.ProcessorMemoryLimiterAcceptedLogRecords.Add(context.Background(), 1)
+	tb.ProcessorMemoryLimiterAcceptedMetricPoints.Add(context.Background(), 1)
+	tb.ProcessorMemoryLimiterAcceptedSpans.Add(context.Background(), 1)
+	tb.ProcessorMemoryLimiterRefusedLogRecords.Add(context.Background(), 1)
+	tb.ProcessorMemoryLimiterRefusedMetricPoints.Add(context.Background(), 1)
+	tb.ProcessorMemoryLimiterRefusedSpans.Add(context.Background(), 1)
+	AssertEqualProcessorMemoryLimiterAcceptedLogRecords(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorAcceptedMetricPoints(t, testTel,
+	AssertEqualProcessorMemoryLimiterAcceptedMetricPoints(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorAcceptedSpans(t, testTel,
+	AssertEqualProcessorMemoryLimiterAcceptedSpans(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorRefusedLogRecords(t, testTel,
+	AssertEqualProcessorMemoryLimiterRefusedLogRecords(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorRefusedMetricPoints(t, testTel,
+	AssertEqualProcessorMemoryLimiterRefusedMetricPoints(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorRefusedSpans(t, testTel,
+	AssertEqualProcessorMemoryLimiterRefusedSpans(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 
