@@ -68,6 +68,31 @@ func TestShardedBatcherOneShardFlushesOnMinSize(t *testing.T) {
 	}, time.Second, 10*time.Millisecond)
 }
 
+func TestShardedBatcherMultipleShardsFlushOnMinSize(t *testing.T) {
+	sink := requesttest.NewSink()
+	sb, err := newShardedBatcher(BatchConfig{
+		FlushTimeout: 0,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      10,
+	}, request.NewItemsSizer(), nil, newWorkerPool(2), sink.Export, zap.NewNop(), 2)
+	require.NoError(t, err)
+	require.NoError(t, sb.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, sb.Shutdown(context.Background()))
+	})
+
+	done := newFakeDone()
+	sb.Consume(context.Background(), &requesttest.FakeRequest{Items: 4}, done)
+	sb.Consume(context.Background(), &requesttest.FakeRequest{Items: 4}, done)
+	sb.Consume(context.Background(), &requesttest.FakeRequest{Items: 6}, done)
+	sb.Consume(context.Background(), &requesttest.FakeRequest{Items: 6}, done)
+
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() == 2 && sink.ItemsCount() == 20 &&
+			done.success.Load() == 4 && done.errors.Load() == 0
+	}, time.Second, 10*time.Millisecond)
+}
+
 func TestShardedBatcherOneShardFlushesOnTimeout(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/11869")
@@ -110,6 +135,27 @@ func TestShardedBatcherOneShardDrainsOnShutdown(t *testing.T) {
 
 	require.NoError(t, sb.Shutdown(context.Background()))
 	assert.Equal(t, 1, sink.RequestsCount())
+	assert.Equal(t, 7, sink.ItemsCount())
+	assert.EqualValues(t, 2, done.success.Load())
+	assert.EqualValues(t, 0, done.errors.Load())
+}
+
+func TestShardedBatcherMultipleShardsDrainOnShutdown(t *testing.T) {
+	sink := requesttest.NewSink()
+	sb, err := newShardedBatcher(BatchConfig{
+		FlushTimeout: 0,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      10,
+	}, request.NewItemsSizer(), nil, newWorkerPool(2), sink.Export, zap.NewNop(), 2)
+	require.NoError(t, err)
+	require.NoError(t, sb.Start(context.Background(), componenttest.NewNopHost()))
+
+	done := newFakeDone()
+	sb.Consume(context.Background(), &requesttest.FakeRequest{Items: 4}, done)
+	sb.Consume(context.Background(), &requesttest.FakeRequest{Items: 3}, done)
+
+	require.NoError(t, sb.Shutdown(context.Background()))
+	assert.Equal(t, 2, sink.RequestsCount())
 	assert.Equal(t, 7, sink.ItemsCount())
 	assert.EqualValues(t, 2, done.success.Load())
 	assert.EqualValues(t, 0, done.errors.Load())
