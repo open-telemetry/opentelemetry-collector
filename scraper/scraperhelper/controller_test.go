@@ -784,7 +784,7 @@ func TestAddScraper(t *testing.T) {
 		newTestNoDelaySettings(),
 		receivertest.NewNopSettings(receivertest.NopType),
 		new(consumertest.MetricsSink),
-		AddScraper(component.MustNewType("scraper"), scp), //nolint:staticcheck
+		AddScraper(component.MustNewType("scraper"), scp),
 	)
 	require.NoError(t, err)
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
