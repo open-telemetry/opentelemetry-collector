@@ -1686,7 +1686,7 @@ func TestExtractValidators(t *testing.T) {
 				Type:     "object",
 				Required: []string{"storage"},
 				Properties: map[string]*ConfigMetadata{
-					"storage": {Type: "string", GoName: "storage_id"},
+					"storage": {Type: "string", GoStruct: GoStructConfig{GoName: "storage_id"}},
 				},
 			},
 			expected: []Validator{

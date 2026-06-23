@@ -1665,8 +1665,8 @@ func TestResolver_ResolveSchema_DecoratesPropNames(t *testing.T) {
 	result, err := resolver.ResolveSchema(src)
 	require.NoError(t, err)
 
-	require.Equal(t, "endpoint", result.Properties["endpoint"].GoName)
-	require.Equal(t, "storage_id", result.Properties["storage"].GoName)
+	require.Equal(t, "endpoint", result.Properties["endpoint"].GoStruct.GoName)
+	require.Equal(t, "storage", result.Properties["storage"].GoStruct.GoName)
 }
 
 func TestResolver_ResolveSchema_PreservesIntAndFloatPointers(t *testing.T) {

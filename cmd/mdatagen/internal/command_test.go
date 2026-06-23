@@ -986,9 +986,9 @@ func TestGenerateConfigGoStruct_ComponentIDFieldUsesGoName(t *testing.T) {
 			Type: "object",
 			Properties: map[string]*cfggen.ConfigMetadata{
 				"storage": {
-					Type:   "string",
-					GoType: "go.opentelemetry.io/collector/component.ID",
-					GoName: "storage_id",
+					Type:     "string",
+					GoType:   "go.opentelemetry.io/collector/component.ID",
+					GoStruct: cfggen.GoStructConfig{GoName: "storage_id"},
 				},
 			},
 		},

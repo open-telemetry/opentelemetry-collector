@@ -60,7 +60,6 @@ type ConfigMetadata struct {
 	EmbeddedName                string `mapstructure:"-" json:"-" yaml:"-"`
 	AdditionalPropertiesAllowed *bool  `mapstructure:"-" json:"-" yaml:"-"`
 	InternalOnly                bool   `mapstructure:"-" json:"-" yaml:"-"`
-	GoName                      string `mapstructure:"-" json:"-" yaml:"-"`
 }
 
 type Metadata struct {
@@ -72,6 +71,7 @@ type GoStructConfig struct {
 	CustomValidator *CustomValidatorConfig `mapstructure:"custom_validator" json:"-" yaml:"custom_validator,omitempty"`
 	Anonymous       bool                   `mapstructure:"anonymous" json:"-" yaml:"anonymous,omitempty"`
 	IgnoreDefault   bool                   `mapstructure:"ignore_default" json:"-" yaml:"ignore_default,omitempty"`
+	GoName          string                 `mapstructure:"go_name" json:"-" yaml:"go_name,omitempty"`
 }
 
 type CustomValidatorConfig struct {

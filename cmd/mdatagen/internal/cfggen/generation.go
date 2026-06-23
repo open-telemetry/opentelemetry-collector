@@ -486,7 +486,7 @@ func collectValidators(md *ConfigMetadata, validators *[]Validator) {
 			rules.Pattern = &prop.Pattern
 		}
 
-		fieldName := prop.GoName
+		fieldName := prop.GoStruct.GoName
 		if fieldName == "" {
 			fieldName = propName
 		}
