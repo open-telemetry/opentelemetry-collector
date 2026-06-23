@@ -439,6 +439,30 @@ func TestStartScraping(t *testing.T) {
 	})
 }
 
+func TestStartScrapingPropagatesContextValues(t *testing.T) {
+	t.Parallel()
+	synctest.Test(t, func(t *testing.T) {
+		type contextKey struct{}
+		const contextValue = "scrape-context-value"
+
+		var gotValue atomic.Value
+		scrapeFunc := func(ctx context.Context, _ *Controller[component.Component]) error {
+			gotValue.Store(ctx.Value(contextKey{}))
+			return nil
+		}
+
+		cfg := &ControllerConfig{CollectionInterval: time.Minute}
+		ctrl := newTestController(t, cfg, scrapeFunc)
+
+		ctx := context.WithValue(context.Background(), contextKey{}, contextValue)
+		require.NoError(t, ctrl.Start(ctx, componenttest.NewNopHost()))
+		synctest.Wait()
+
+		assert.Equal(t, contextValue, gotValue.Load())
+		require.NoError(t, ctrl.Shutdown(context.Background()))
+	})
+}
+
 func TestStartScrapingWithInitialDelay(t *testing.T) {
 	t.Parallel()
 	synctest.Test(t, func(t *testing.T) {
