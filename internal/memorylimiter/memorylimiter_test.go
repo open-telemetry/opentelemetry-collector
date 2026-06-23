@@ -688,7 +688,7 @@ func TestNewDefaultConfigEnablesBackoffCap(t *testing.T) {
 }
 
 func TestBackoffGrowsBothPathsInLockstep(t *testing.T) {
-	// Regression for jade-guiton-dd's review concern: backing off only the
+	// Backing off only the
 	// active path lets the inactive path snap to full-speed GC the moment
 	// pressure shifts (e.g., back off soft a few times, then suddenly GC at
 	// full speed once hard is breached). Both per-path intervals must grow
