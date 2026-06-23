@@ -2629,7 +2629,7 @@ func TestMapCustomDefaults_ArrayOfObjectsOverrides(t *testing.T) {
 		map[string]any{"url": "http://example.com"},
 	}), "", "")
 
-	require.Equal(t, []string{`[0].Url = "http://example.com"`}, exprs)
+	require.Equal(t, []string{`[0].URL = "http://example.com"`}, exprs)
 }
 
 func TestMapCustomDefaults_Panics(t *testing.T) {
@@ -2764,7 +2764,7 @@ func TestNewCfgFns_DefaultHelpers(t *testing.T) {
 		"endpoint",
 		defaultValue("localhost"),
 	))
-	require.Equal(t, []string{`[0].Url = "http://example.com"`}, mapCustomDefaults(
+	require.Equal(t, []string{`[0].URL = "http://example.com"`}, mapCustomDefaults(
 		&ConfigMetadata{
 			Type: "array",
 			Items: &ConfigMetadata{
@@ -2778,4 +2778,88 @@ func TestNewCfgFns_DefaultHelpers(t *testing.T) {
 	))
 	require.True(t, hasDefaultValue(&ConfigMetadata{Type: "string", Default: defaultValue("localhost")}))
 	require.False(t, hasDefaultValue(&ConfigMetadata{Type: "string"}))
+}
+
+// TestExtractDefs_DefsNotOverwrittenByRefSite verifies that when a type is registered both
+// via md.Defs (the authoritative definition) and again as a property's ResolvedFrom (the ref-site
+// node carrying a property-level GoStruct), ExtractDefs keeps the Defs entry and does not
+// overwrite it with the ref-site node.
+func TestExtractDefs_DefsNotOverwrittenByRefSite(t *testing.T) {
+	authoritativeDef := &ConfigMetadata{
+		Type: "object",
+		GoStruct: GoStructConfig{
+			CustomValidator: &CustomValidatorConfig{Name: "validateBatchConfig"},
+		},
+		Properties: map[string]*ConfigMetadata{
+			"size": {Type: "integer"},
+		},
+	}
+	// Simulates what the resolver produces for a property that $refs batch_config:
+	// the ref-site node copies the property's go_struct (validateBatchProp) over the
+	// resolved type's go_struct (validateBatchConfig).
+	refSiteNode := &ConfigMetadata{
+		Type:         "object",
+		ResolvedFrom: "batch_config",
+		GoStruct: GoStructConfig{
+			CustomValidator: &CustomValidatorConfig{Name: "validateBatchProp"},
+		},
+		Properties: map[string]*ConfigMetadata{
+			"size": {Type: "integer"},
+		},
+	}
+	md := &ConfigMetadata{
+		Defs: map[string]*ConfigMetadata{
+			"batch_config": authoritativeDef,
+		},
+		Properties: map[string]*ConfigMetadata{
+			"batch": refSiteNode,
+		},
+	}
+
+	result := ExtractDefs(md)
+	require.Contains(t, result, "batch_config")
+	require.Same(t, authoritativeDef, result["batch_config"], "Defs entry must not be overwritten by the ref-site node")
+}
+
+// TestExtractValidators_DefsValidatorNotOverwrittenByRefSite verifies that ExtractValidators on
+// a def collected via md.Defs uses the type-level custom validator (validateBatchConfig), not
+// the property-level one (validateBatchProp) that the resolver copies onto the ref-site node.
+func TestExtractValidators_DefsValidatorNotOverwrittenByRefSite(t *testing.T) {
+	authoritativeDef := &ConfigMetadata{
+		Type: "object",
+		GoStruct: GoStructConfig{
+			CustomValidator: &CustomValidatorConfig{Name: "validateBatchConfig"},
+		},
+		Properties: map[string]*ConfigMetadata{
+			"size": {Type: "integer"},
+		},
+	}
+	refSiteNode := &ConfigMetadata{
+		Type:         "object",
+		ResolvedFrom: "batch_config",
+		GoStruct: GoStructConfig{
+			CustomValidator: &CustomValidatorConfig{Name: "validateBatchProp"},
+		},
+		IsOptional: true,
+		Properties: map[string]*ConfigMetadata{
+			"size": {Type: "integer"},
+		},
+	}
+	md := &ConfigMetadata{
+		Defs: map[string]*ConfigMetadata{
+			"batch_config": authoritativeDef,
+		},
+		Properties: map[string]*ConfigMetadata{
+			"batch": refSiteNode,
+		},
+	}
+
+	defs := ExtractDefs(md)
+	require.Contains(t, defs, "batch_config")
+
+	validators := ExtractValidators(defs["batch_config"])
+	require.Len(t, validators, 1)
+	require.Equal(t, ".", validators[0].FieldName)
+	require.Equal(t, "validateBatchConfig", validators[0].CustomValidator,
+		"struct-level validator must come from the type definition, not the ref-site property")
 }

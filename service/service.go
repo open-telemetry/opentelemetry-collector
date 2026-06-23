@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
@@ -45,7 +46,16 @@ type Settings struct {
 	// BuildInfo provides collector start information.
 	BuildInfo component.BuildInfo
 
-	// CollectorConf contains the Collector's current configuration
+	// ConfigSnapshot contains the Collector's current configuration
+	// representations. It is passed to extensions implementing
+	// extensioncapabilities.ConfigSnapshotWatcher.
+	ConfigSnapshot extensioncapabilities.ConfigSnapshot
+
+	// CollectorConf contains the Collector's current effective configuration.
+	// It is passed to extensions implementing extensioncapabilities.ConfigWatcher
+	// via NotifyConfig.
+	//
+	// Deprecated [v0.155.0]: use ConfigSnapshot instead.
 	CollectorConf *confmap.Conf
 
 	// Receivers configuration to its builder.
@@ -101,7 +111,7 @@ type Service struct {
 	buildInfo          component.BuildInfo
 	telemetrySettings  component.TelemetrySettings
 	host               *graph.Host
-	collectorConf      *confmap.Conf
+	configSnapshot     extensioncapabilities.ConfigSnapshot
 	loggerShutdownFunc component.ShutdownFunc
 	meterProvider      telemetry.MeterProvider
 	tracerProvider     telemetry.TracerProvider
@@ -109,6 +119,11 @@ type Service struct {
 
 // New creates a new Service, its telemetry, and Components.
 func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr error) {
+	configSnapshot := set.ConfigSnapshot
+	if configSnapshot == nil && set.CollectorConf != nil {
+		configSnapshot = extensioncapabilities.NewConfigSnapshot(set.CollectorConf, nil)
+	}
+
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &graph.Host{
@@ -122,7 +137,7 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 			BuildInfo:         set.BuildInfo,
 			AsyncErrorChannel: set.AsyncErrorChannel,
 		},
-		collectorConf: set.CollectorConf,
+		configSnapshot: configSnapshot,
 	}
 
 	if set.TelemetryFactory == nil {
@@ -247,8 +262,8 @@ func (srv *Service) Start(ctx context.Context) error {
 		return fmt.Errorf("failed to start extensions: %w", err)
 	}
 
-	if srv.collectorConf != nil {
-		if err := srv.host.ServiceExtensions.NotifyConfig(ctx, srv.collectorConf); err != nil {
+	if srv.configSnapshot != nil {
+		if err := srv.host.ServiceExtensions.NotifyConfigSnapshot(ctx, srv.configSnapshot); err != nil {
 			return err
 		}
 	}
