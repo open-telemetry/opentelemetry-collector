@@ -238,11 +238,11 @@ events:
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
 {{- range $attributeName, $attribute := .ResourceAttributes }}
 | {{ $attributeName }} | {{ $attribute.Description }} |
-{{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} | {{ $attribute.Enabled }} |{{ if $attribute.SemanticConvention }} [{{ $attributeName }}]({{ $attribute.SemanticConvention.SemanticConventionRef }}) |{{ else }} - |{{ end }}
+{{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} | {{ $attribute.Enabled }} |{{ if $attribute.SemanticConvention }} [{{ $attributeName }}]({{ $attribute.SemanticConvention.SemanticConventionRef }}) |{{ else }} - |{{ end }}{{ if $attribute.Stability }} {{ $attribute.Stability }} |{{ else }} - |{{ end }}
 {{- end }}
 
 {{- end }}
