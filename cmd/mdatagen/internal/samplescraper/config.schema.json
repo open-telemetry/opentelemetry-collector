@@ -666,13 +666,14 @@
         },
         "port": {
           "description": "The port to connect to.",
-          "type": "string",
-          "default": "8080"
+          "type": "integer",
+          "default": 8080,
+          "maximum": 10000,
+          "minimum": 1
         }
       },
       "required": [
-        "host_name",
-        "port"
+        "host_name"
       ]
     }
   }
