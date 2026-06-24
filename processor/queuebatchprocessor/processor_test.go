@@ -67,6 +67,18 @@ func attrStr(set attribute.Set, key string) string {
 	return v.AsString()
 }
 
+func TestCreateDefaultConfig(t *testing.T) {
+	cfg, ok := createDefaultConfig().(*Config)
+	require.True(t, ok)
+	require.True(t, cfg.WaitForResult)
+	require.True(t, cfg.BlockOnOverflow)
+	require.Equal(t, 1, cfg.NumConsumers)
+	// Batching must be enabled by default: it is the purpose of this component.
+	require.True(t, cfg.Batch.HasValue(), "batching should be enabled by default")
+	require.Positive(t, cfg.Batch.Get().MinSize)
+	require.NoError(t, componenttest.CheckConfigStruct(cfg))
+}
+
 // assertCounter asserts a monotonic int counter has a single data point with
 // the expected value and the processor/signal attributes.
 func assertCounter(t *testing.T, tt *componenttest.Telemetry, name, id, signal string, value int64) {

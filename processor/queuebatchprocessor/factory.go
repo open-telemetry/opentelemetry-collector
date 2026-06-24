@@ -7,21 +7,12 @@ package queuebatchprocessor // import "go.opentelemetry.io/collector/processor/q
 
 import (
 	"context"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/queuebatchprocessor/internal/metadata"
-)
-
-const (
-	defaultFlushTimeout = 200 * time.Millisecond
-	defaultMinSize      = 8192
-	defaultQueueSize    = 1000
-	defaultNumConsumers = 1
 )
 
 // NewFactory returns a new factory for the queue/batch processor.
@@ -35,23 +26,19 @@ func NewFactory() processor.Factory {
 	)
 }
 
-// createDefaultConfig returns the default configuration. The defaults preserve
-// the batchprocessor's blocking behavior: errors propagate back to the caller
-// (wait_for_result) and the processor applies backpressure when full
-// (block_on_overflow), with batching enabled.
+// createDefaultConfig returns the default configuration, modified from
+// exporterhelper.NewDefaultQueueConfig() to enable backpressure, error
+// propagation, and limit concurrency to 1. Batching is also enabled by
+// default, since that is the purpose of this component; NewDefaultQueueConfig
+// leaves it as a not-yet-enabled default (pending the exporterhelper
+// batching-by-default feature gate).
 func createDefaultConfig() component.Config {
-	return &Config{
-		WaitForResult:   true,
-		BlockOnOverflow: true,
-		Sizer:           exporterhelper.RequestSizerTypeRequests,
-		QueueSize:       defaultQueueSize,
-		NumConsumers:    defaultNumConsumers,
-		Batch: configoptional.Some(exporterhelper.BatchConfig{
-			FlushTimeout: defaultFlushTimeout,
-			Sizer:        exporterhelper.RequestSizerTypeItems,
-			MinSize:      defaultMinSize,
-		}),
-	}
+	cfg := exporterhelper.NewDefaultQueueConfig()
+	cfg.WaitForResult = true
+	cfg.BlockOnOverflow = true
+	cfg.NumConsumers = 1
+	cfg.Batch.GetOrInsertDefault()
+	return &cfg
 }
 
 func createTraces(ctx context.Context, set processor.Settings, cfg component.Config, next consumer.Traces) (processor.Traces, error) {
