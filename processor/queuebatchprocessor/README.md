@@ -43,3 +43,9 @@ The exporterhelper's own queue and sender metrics are disabled (no
 
 All four metrics carry the `processor` (component ID) and `otel.signal`
 attributes.
+
+The processor also emits the exporterhelper's enqueue and export spans, but
+reframed as processor spans: they are reported under this processor's
+instrumentation scope, named `processor/enqueue` and
+`processor/<id>/<signal>`, and carry the `processor` and `otel.signal`
+attributes. When batching, the export span links to each batched request.

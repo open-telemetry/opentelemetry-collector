@@ -20,13 +20,15 @@ import (
 )
 
 // exporterSettings derives exporter.Settings from processor.Settings while
-// disabling the exporterhelper's own telemetry. Substituting a no-op
-// MeterProvider silences every otelcol_exporter_* series (queue and sender)
-// that the exporter helper would otherwise emit; this processor reports the
-// processor item counters and queuebatch histograms itself instead.
+// reframing the exporterhelper's telemetry as the processor's own. The
+// MeterProvider is replaced with a no-op so the exporterhelper emits no
+// otelcol_exporter_* metrics (this processor reports its own), and the
+// TracerProvider is wrapped so the exporterhelper's spans are reported under
+// this processor's scope with processor/-namespaced names and attributes.
 func exporterSettings(set processor.Settings) exporter.Settings {
 	tel := set.TelemetrySettings
 	tel.MeterProvider = noopmetric.NewMeterProvider()
+	tel.TracerProvider = newRenamingTracerProvider(tel.TracerProvider)
 	return exporter.Settings{
 		ID:                set.ID,
 		TelemetrySettings: tel,
