@@ -1,0 +1,17 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: bug_fix
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
+component: configretry
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Validate field-level invariants (e.g. negative durations, out-of-range `randomization_factor`) regardless of the `enabled` flag.
+
+# One or more tracking issues or pull requests related to the change
+issues: [15469]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+subtext:
+
+# Optional: The change log or logs in which this entry should be included.
+change_logs: []

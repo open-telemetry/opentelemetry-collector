@@ -45,9 +45,6 @@ type BackOffConfig struct {
 }
 
 func (bs *BackOffConfig) Validate() error {
-	if !bs.Enabled {
-		return nil
-	}
 	if bs.InitialInterval < 0 {
 		return errors.New("'initial_interval' must be non-negative")
 	}
@@ -62,6 +59,9 @@ func (bs *BackOffConfig) Validate() error {
 	}
 	if bs.MaxElapsedTime < 0 {
 		return errors.New("'max_elapsed_time' must be non-negative")
+	}
+	if !bs.Enabled {
+		return nil
 	}
 	if bs.MaxElapsedTime > 0 {
 		if bs.MaxElapsedTime < bs.InitialInterval {
