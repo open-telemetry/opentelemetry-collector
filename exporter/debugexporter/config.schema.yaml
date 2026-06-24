@@ -13,7 +13,6 @@ properties:
     description: SamplingThereafter defines the sampling rate after the initial samples are logged.
     type: integer
   sending_queue:
-    description: Configuration for the optional in-memory sending queue. When unset the exporter sends synchronously.
     x-optional: true
     $ref: /exporter/exporterhelper.queue_batch_config
   use_internal_logger:

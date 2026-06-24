@@ -1,5 +1,4 @@
-description: |
-  Config defines configuration for batch processor. `timeout` must be non-negative; when `send_batch_max_size` is non-zero it must be greater than or equal to `send_batch_size`; entries in `metadata_keys` are deduplicated case-insensitively.
+description: Config defines configuration for batch processor.
 type: object
 properties:
   metadata_cardinality_limit:

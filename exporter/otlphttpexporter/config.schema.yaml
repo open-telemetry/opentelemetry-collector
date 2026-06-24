@@ -1,12 +1,8 @@
 $defs:
   encoding_type:
-    description: 'EncodingType defines the type for content encoding. Accepts "proto" or "json".'
+    description: EncodingType defines the type for content encoding
     type: string
-    enum:
-      - proto
-      - json
-description: |
-  Config defines configuration for OTLP/HTTP exporter. At least one of `endpoint` (from the squashed HTTP ClientConfig) or the per-signal `*_endpoint` fields must be specified.
+description: Config defines configuration for OTLP/HTTP exporter.
 type: object
 properties:
   encoding:
@@ -22,10 +18,8 @@ properties:
     description: The URL to send profiles to. If omitted the Endpoint + "/v1development/profiles" will be used.
     type: string
   retry_on_failure:
-    description: Retry/back-off settings applied to failed export requests.
     $ref: /config/configretry.back_off_config
   sending_queue:
-    description: Configuration for the optional in-memory sending queue. When unset the exporter sends synchronously.
     x-optional: true
     $ref: /exporter/exporterhelper.queue_batch_config
   traces_endpoint:

@@ -14,19 +14,16 @@ $defs:
     allOf:
       - $ref: /config/confighttp.server_config
   protocols:
-    description: Protocols is the configuration for the supported protocols. At least one of `grpc` or `http` must be set.
+    description: Protocols is the configuration for the supported protocols.
     type: object
     properties:
       grpc:
-        description: Configuration for the OTLP gRPC server. Enable by setting this section (or its `endpoint`).
         x-optional: true
         $ref: /config/configgrpc.server_config
       http:
-        description: Configuration for the OTLP HTTP server. Enable by setting this section (or its `endpoint`).
         x-optional: true
         $ref: http_config
   sanitized_url_path:
-    description: A URL path. A leading slash is automatically prepended when missing.
     type: string
 description: Config defines configuration for OTLP receiver.
 type: object

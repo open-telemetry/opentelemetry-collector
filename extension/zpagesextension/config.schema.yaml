@@ -6,12 +6,10 @@ $defs:
       enabled:
         description: Enabled indicates whether to enable expvar service. (default = false)
         type: boolean
-description: |
-  Config has the configuration for the extension enabling the zPages extension. A non-empty `endpoint` (from the squashed HTTP ServerConfig) is required.
+description: Config has the configuration for the extension enabling the zPages extension.
 type: object
 properties:
   expvar:
-    description: Configuration for the optional expvar HTTP handler.
     $ref: expvar_config
 allOf:
   - $ref: /config/confighttp.server_config
