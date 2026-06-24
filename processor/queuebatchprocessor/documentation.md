@@ -6,18 +6,34 @@
 
 The following telemetry is emitted by this component.
 
-### otelcol_processor_batch_batch_send_size
+### otelcol_processor_incoming_items
 
-Number of units in the batch
+Number of items passed to the processor.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {unit} | Histogram | Int | Development |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {item} | Sum | Int | true | Alpha |
 
-### otelcol_processor_batch_batch_send_size_bytes
+### otelcol_processor_outgoing_items
 
-Number of bytes in batch that was sent. Only available on detailed level.
+Number of items emitted from the processor.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {item} | Sum | Int | true | Alpha |
+
+### otelcol_processor_queuebatch_bytes
+
+Number of bytes in each batch emitted from the processor. Only collected at detailed telemetry level.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | By | Histogram | Int | Development |
+
+### otelcol_processor_queuebatch_items
+
+Number of items in each batch emitted from the processor. Only collected at detailed telemetry level.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {item} | Histogram | Int | Development |

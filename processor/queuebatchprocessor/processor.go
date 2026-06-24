@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 )
 
@@ -22,7 +23,7 @@ import (
 // disabling the exporterhelper's own telemetry. Substituting a no-op
 // MeterProvider silences every otelcol_exporter_* series (queue and sender)
 // that the exporter helper would otherwise emit; this processor reports the
-// batch metrics itself under otelcol_processor_batch_* names instead.
+// processor item counters and queuebatch histograms itself instead.
 func exporterSettings(set processor.Settings) exporter.Settings {
 	tel := set.TelemetrySettings
 	tel.MeterProvider = noopmetric.NewMeterProvider()
@@ -44,41 +45,87 @@ func queueOptions(cfg *Config) []exporterhelper.Option {
 	}
 }
 
+// tracesProcessor wraps the exporterhelper result to count incoming items on
+// arrival, before they are queued and batched.
+type tracesProcessor struct {
+	exporter.Traces
+	bt *batchTelemetry
+}
+
+func (p *tracesProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	p.bt.recordIncoming(ctx, int64(td.SpanCount()))
+	return p.Traces.ConsumeTraces(ctx, td)
+}
+
 func newTracesProcessor(ctx context.Context, set processor.Settings, cfg *Config, next consumer.Traces) (processor.Traces, error) {
-	bt, err := newBatchTelemetry(set.TelemetrySettings, set.ID)
+	bt, err := newBatchTelemetry(set.TelemetrySettings, set.ID, pipeline.SignalTraces)
 	if err != nil {
 		return nil, err
 	}
 	sizer := &ptrace.ProtoMarshaler{}
 	pusher := func(ctx context.Context, td ptrace.Traces) error {
-		bt.recordBatch(ctx, int64(td.SpanCount()), func() int64 { return int64(sizer.TracesSize(td)) })
+		bt.recordOutgoing(ctx, int64(td.SpanCount()), func() int64 { return int64(sizer.TracesSize(td)) })
 		return next.ConsumeTraces(ctx, td)
 	}
-	return exporterhelper.NewTraces(ctx, exporterSettings(set), cfg, pusher, queueOptions(cfg)...)
+	inner, err := exporterhelper.NewTraces(ctx, exporterSettings(set), cfg, pusher, queueOptions(cfg)...)
+	if err != nil {
+		return nil, err
+	}
+	return &tracesProcessor{Traces: inner, bt: bt}, nil
+}
+
+// metricsProcessor wraps the exporterhelper result to count incoming items.
+type metricsProcessor struct {
+	exporter.Metrics
+	bt *batchTelemetry
+}
+
+func (p *metricsProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	p.bt.recordIncoming(ctx, int64(md.DataPointCount()))
+	return p.Metrics.ConsumeMetrics(ctx, md)
 }
 
 func newMetricsProcessor(ctx context.Context, set processor.Settings, cfg *Config, next consumer.Metrics) (processor.Metrics, error) {
-	bt, err := newBatchTelemetry(set.TelemetrySettings, set.ID)
+	bt, err := newBatchTelemetry(set.TelemetrySettings, set.ID, pipeline.SignalMetrics)
 	if err != nil {
 		return nil, err
 	}
 	sizer := &pmetric.ProtoMarshaler{}
 	pusher := func(ctx context.Context, md pmetric.Metrics) error {
-		bt.recordBatch(ctx, int64(md.DataPointCount()), func() int64 { return int64(sizer.MetricsSize(md)) })
+		bt.recordOutgoing(ctx, int64(md.DataPointCount()), func() int64 { return int64(sizer.MetricsSize(md)) })
 		return next.ConsumeMetrics(ctx, md)
 	}
-	return exporterhelper.NewMetrics(ctx, exporterSettings(set), cfg, pusher, queueOptions(cfg)...)
+	inner, err := exporterhelper.NewMetrics(ctx, exporterSettings(set), cfg, pusher, queueOptions(cfg)...)
+	if err != nil {
+		return nil, err
+	}
+	return &metricsProcessor{Metrics: inner, bt: bt}, nil
+}
+
+// logsProcessor wraps the exporterhelper result to count incoming items.
+type logsProcessor struct {
+	exporter.Logs
+	bt *batchTelemetry
+}
+
+func (p *logsProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	p.bt.recordIncoming(ctx, int64(ld.LogRecordCount()))
+	return p.Logs.ConsumeLogs(ctx, ld)
 }
 
 func newLogsProcessor(ctx context.Context, set processor.Settings, cfg *Config, next consumer.Logs) (processor.Logs, error) {
-	bt, err := newBatchTelemetry(set.TelemetrySettings, set.ID)
+	bt, err := newBatchTelemetry(set.TelemetrySettings, set.ID, pipeline.SignalLogs)
 	if err != nil {
 		return nil, err
 	}
 	sizer := &plog.ProtoMarshaler{}
 	pusher := func(ctx context.Context, ld plog.Logs) error {
-		bt.recordBatch(ctx, int64(ld.LogRecordCount()), func() int64 { return int64(sizer.LogsSize(ld)) })
+		bt.recordOutgoing(ctx, int64(ld.LogRecordCount()), func() int64 { return int64(sizer.LogsSize(ld)) })
 		return next.ConsumeLogs(ctx, ld)
 	}
-	return exporterhelper.NewLogs(ctx, exporterSettings(set), cfg, pusher, queueOptions(cfg)...)
+	inner, err := exporterhelper.NewLogs(ctx, exporterSettings(set), cfg, pusher, queueOptions(cfg)...)
+	if err != nil {
+		return nil, err
+	}
+	return &logsProcessor{Logs: inner, bt: bt}, nil
 }

@@ -19,12 +19,20 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
-	tb.ProcessorBatchBatchSendSize.Record(context.Background(), 1)
-	tb.ProcessorBatchBatchSendSizeBytes.Record(context.Background(), 1)
-	AssertEqualProcessorBatchBatchSendSize(t, testTel,
+	tb.ProcessorIncomingItems.Add(context.Background(), 1)
+	tb.ProcessorOutgoingItems.Add(context.Background(), 1)
+	tb.ProcessorQueuebatchBytes.Record(context.Background(), 1)
+	tb.ProcessorQueuebatchItems.Record(context.Background(), 1)
+	AssertEqualProcessorIncomingItems(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorOutgoingItems(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorQueuebatchBytes(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorBatchBatchSendSizeBytes(t, testTel,
+	AssertEqualProcessorQueuebatchItems(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
 

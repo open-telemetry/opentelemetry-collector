@@ -11,50 +11,38 @@ status:
 
 tests:
 
-# Note: the metric names below intentionally match those emitted by the
-# batchprocessor (otelcol_processor_batch_*). The queuebatchprocessor is the
-# exporterhelper-based replacement for batchprocessor, and retaining the same
-# names keeps existing dashboards working across the migration. These metrics
-# are recorded by this processor's own instrumentation; the underlying
-# exporterhelper telemetry is disabled (see processor.go).
+# This processor is built on the exporterhelper queue/batch sender, whose own
+# telemetry is disabled (see processor.go). It instead reports the standard
+# processor item counters (otelcol_processor_incoming_items and
+# otelcol_processor_outgoing_items, matching processorhelper) plus two
+# queue/batch-specific histograms.
+#
+# The histograms are only collected at the "detailed" telemetry level: they are
+# dropped by views below detailed (see service/internal/metricviews/views.go)
+# and their recording is skipped via the instrument Enabled() check, because
+# histograms are relatively expensive and the byte size is costly to compute.
 telemetry:
   metrics:
-    processor_batch_batch_send_size:
+    processor_incoming_items:
       enabled: true
-      stability: development
-      description: Number of units in the batch
-      unit: "{unit}"
-      histogram:
+      stability: alpha
+      description: Number of items passed to the processor.
+      unit: "{item}"
+      sum:
         value_type: int
-        bucket_boundaries:
-          [
-            10,
-            25,
-            50,
-            75,
-            100,
-            250,
-            500,
-            750,
-            1000,
-            2000,
-            3000,
-            4000,
-            5000,
-            6000,
-            7000,
-            8000,
-            9000,
-            10000,
-            20000,
-            30000,
-            50000,
-            100000,
-          ]
-    processor_batch_batch_send_size_bytes:
+        monotonic: true
+    processor_outgoing_items:
+      enabled: true
+      stability: alpha
+      description: Number of items emitted from the processor.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+    processor_queuebatch_bytes:
       enabled: true
       stability: development
-      description: Number of bytes in batch that was sent. Only available on detailed level.
+      description: Number of bytes in each batch emitted from the processor. Only collected at detailed telemetry level.
       unit: By
       histogram:
         value_type: int
@@ -99,4 +87,36 @@ telemetry:
             7000_000,
             8000_000,
             9000_000,
+          ]
+    processor_queuebatch_items:
+      enabled: true
+      stability: development
+      description: Number of items in each batch emitted from the processor. Only collected at detailed telemetry level.
+      unit: "{item}"
+      histogram:
+        value_type: int
+        bucket_boundaries:
+          [
+            10,
+            25,
+            50,
+            75,
+            100,
+            250,
+            500,
+            750,
+            1000,
+            2000,
+            3000,
+            4000,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            10000,
+            20000,
+            30000,
+            50000,
+            100000,
           ]

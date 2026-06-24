@@ -21,32 +21,64 @@ func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 	return set
 }
 
-func AssertEqualProcessorBatchBatchSendSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorIncomingItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_processor_batch_batch_send_size",
-		Description: "Number of units in the batch [Development]",
-		Unit:        "{unit}",
-		Data: metricdata.Histogram[int64]{
+		Name:        "otelcol_processor_incoming_items",
+		Description: "Number of items passed to the processor. [Alpha]",
+		Unit:        "{item}",
+		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_processor_batch_batch_send_size")
+	got, err := tt.GetMetric("otelcol_processor_incoming_items")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorBatchBatchSendSizeBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorOutgoingItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_processor_batch_batch_send_size_bytes",
-		Description: "Number of bytes in batch that was sent. Only available on detailed level. [Development]",
+		Name:        "otelcol_processor_outgoing_items",
+		Description: "Number of items emitted from the processor. [Alpha]",
+		Unit:        "{item}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_outgoing_items")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorQueuebatchBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_queuebatch_bytes",
+		Description: "Number of bytes in each batch emitted from the processor. Only collected at detailed telemetry level. [Development]",
 		Unit:        "By",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_processor_batch_batch_send_size_bytes")
+	got, err := tt.GetMetric("otelcol_processor_queuebatch_bytes")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorQueuebatchItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_queuebatch_items",
+		Description: "Number of items in each batch emitted from the processor. Only collected at detailed telemetry level. [Development]",
+		Unit:        "{item}",
+		Data: metricdata.Histogram[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_queuebatch_items")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }

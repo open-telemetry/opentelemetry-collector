@@ -30,8 +30,16 @@ for the configuration spec.
 
 ## Internal telemetry
 
-This processor reports `otelcol_processor_batch_batch_send_size` and
-`otelcol_processor_batch_batch_send_size_bytes`, matching the batch processor so
-that existing dashboards continue to work. The metrics are recorded by observing
-each batch as it is sent to the next consumer; the exporterhelper's own queue and
-sender metrics are disabled to avoid duplicate, `exporter_`-prefixed series.
+The exporterhelper's own queue and sender metrics are disabled (no
+`otelcol_exporter_*` series are emitted). Instead this processor reports:
+
+- `otelcol_processor_incoming_items` and `otelcol_processor_outgoing_items`,
+  the standard processor item counters (matching `processorhelper`), counted as
+  data arrives and as each batch is sent to the next consumer.
+- `otelcol_processor_queuebatch_items` and `otelcol_processor_queuebatch_bytes`,
+  histograms of the size of each emitted batch. These are collected only at the
+  `detailed` telemetry level, because histograms are relatively expensive and
+  the byte size is costly to compute.
+
+All four metrics carry the `processor` (component ID) and `otel.signal`
+attributes.

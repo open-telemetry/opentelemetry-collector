@@ -23,11 +23,13 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                            metric.Meter
-	mu                               sync.Mutex
-	registrations                    []metric.Registration
-	ProcessorBatchBatchSendSize      metric.Int64Histogram
-	ProcessorBatchBatchSendSizeBytes metric.Int64Histogram
+	meter                    metric.Meter
+	mu                       sync.Mutex
+	registrations            []metric.Registration
+	ProcessorIncomingItems   metric.Int64Counter
+	ProcessorOutgoingItems   metric.Int64Counter
+	ProcessorQueuebatchBytes metric.Int64Histogram
+	ProcessorQueuebatchItems metric.Int64Histogram
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -59,18 +61,30 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.ProcessorBatchBatchSendSize, err = builder.meter.Int64Histogram(
-		"otelcol_processor_batch_batch_send_size",
-		metric.WithDescription("Number of units in the batch [Development]"),
-		metric.WithUnit("{unit}"),
-		metric.WithExplicitBucketBoundaries([]float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000}...),
+	builder.ProcessorIncomingItems, err = builder.meter.Int64Counter(
+		"otelcol_processor_incoming_items",
+		metric.WithDescription("Number of items passed to the processor. [Alpha]"),
+		metric.WithUnit("{item}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorBatchBatchSendSizeBytes, err = builder.meter.Int64Histogram(
-		"otelcol_processor_batch_batch_send_size_bytes",
-		metric.WithDescription("Number of bytes in batch that was sent. Only available on detailed level. [Development]"),
+	builder.ProcessorOutgoingItems, err = builder.meter.Int64Counter(
+		"otelcol_processor_outgoing_items",
+		metric.WithDescription("Number of items emitted from the processor. [Alpha]"),
+		metric.WithUnit("{item}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorQueuebatchBytes, err = builder.meter.Int64Histogram(
+		"otelcol_processor_queuebatch_bytes",
+		metric.WithDescription("Number of bytes in each batch emitted from the processor. Only collected at detailed telemetry level. [Development]"),
 		metric.WithUnit("By"),
 		metric.WithExplicitBucketBoundaries([]float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000, 200000, 300000, 400000, 500000, 600000, 700000, 800000, 900000, 1e+06, 2e+06, 3e+06, 4e+06, 5e+06, 6e+06, 7e+06, 8e+06, 9e+06}...),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorQueuebatchItems, err = builder.meter.Int64Histogram(
+		"otelcol_processor_queuebatch_items",
+		metric.WithDescription("Number of items in each batch emitted from the processor. Only collected at detailed telemetry level. [Development]"),
+		metric.WithUnit("{item}"),
+		metric.WithExplicitBucketBoundaries([]float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000}...),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

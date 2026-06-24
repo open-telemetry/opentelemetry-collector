@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/processor/queuebatchprocessor/internal/metadata"
@@ -61,9 +62,29 @@ func generateLogs(numRecords int) plog.Logs {
 	return ld
 }
 
-// assertSendSize asserts the items histogram recorded one batch of the expected
-// item count, attributed to the processor ID.
-func assertSendSize(t *testing.T, tt *componenttest.Telemetry, id, name string, items int64) {
+func attrStr(set attribute.Set, key string) string {
+	v, _ := set.Value(attribute.Key(key))
+	return v.AsString()
+}
+
+// assertCounter asserts a monotonic int counter has a single data point with
+// the expected value and the processor/signal attributes.
+func assertCounter(t *testing.T, tt *componenttest.Telemetry, name, id, signal string, value int64) {
+	t.Helper()
+	m, err := tt.GetMetric(name)
+	require.NoError(t, err)
+	sum, ok := m.Data.(metricdata.Sum[int64])
+	require.True(t, ok, "expected sum for %s", name)
+	require.Len(t, sum.DataPoints, 1)
+	dp := sum.DataPoints[0]
+	require.Equal(t, value, dp.Value)
+	require.Equal(t, id, attrStr(dp.Attributes, processorKey))
+	require.Equal(t, signal, attrStr(dp.Attributes, signalKey))
+}
+
+// assertHistogram asserts a histogram has a single batch (count 1) and,
+// optionally, the expected sum.
+func assertHistogram(t *testing.T, tt *componenttest.Telemetry, name, id, signal string, sum int64, checkSum bool) {
 	t.Helper()
 	m, err := tt.GetMetric(name)
 	require.NoError(t, err)
@@ -72,9 +93,11 @@ func assertSendSize(t *testing.T, tt *componenttest.Telemetry, id, name string, 
 	require.Len(t, hist.DataPoints, 1)
 	dp := hist.DataPoints[0]
 	require.Equal(t, uint64(1), dp.Count)
-	require.Equal(t, items, dp.Sum)
-	v, _ := dp.Attributes.Value(attribute.Key(processorKey))
-	require.Equal(t, id, v.AsString())
+	if checkSum {
+		require.Equal(t, sum, dp.Sum)
+	}
+	require.Equal(t, id, attrStr(dp.Attributes, processorKey))
+	require.Equal(t, signal, attrStr(dp.Attributes, signalKey))
 }
 
 // assertNoExporterMetrics asserts the exporterhelper's own telemetry is
@@ -91,11 +114,12 @@ func assertNoExporterMetrics(t *testing.T, tt *componenttest.Telemetry) {
 	}
 }
 
-func TestTracesBatchMetrics(t *testing.T) {
+func TestTracesMetrics(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	set, cfg := testSettings(tt)
+	id, signal := set.ID.String(), pipeline.SignalTraces.String()
 	sink := new(consumertest.TracesSink)
 	p, err := newTracesProcessor(context.Background(), set, cfg, sink)
 	require.NoError(t, err)
@@ -105,18 +129,19 @@ func TestTracesBatchMetrics(t *testing.T) {
 	require.NoError(t, p.Shutdown(context.Background()))
 
 	require.Equal(t, 5, sink.SpanCount())
-	assertSendSize(t, tt, set.ID.String(), "otelcol_processor_batch_batch_send_size", 5)
-	bytes, err := tt.GetMetric("otelcol_processor_batch_batch_send_size_bytes")
-	require.NoError(t, err)
-	require.Len(t, bytes.Data.(metricdata.Histogram[int64]).DataPoints, 1)
+	assertCounter(t, tt, "otelcol_processor_incoming_items", id, signal, 5)
+	assertCounter(t, tt, "otelcol_processor_outgoing_items", id, signal, 5)
+	assertHistogram(t, tt, "otelcol_processor_queuebatch_items", id, signal, 5, true)
+	assertHistogram(t, tt, "otelcol_processor_queuebatch_bytes", id, signal, 0, false)
 	assertNoExporterMetrics(t, tt)
 }
 
-func TestMetricsBatchMetrics(t *testing.T) {
+func TestMetricsMetrics(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	set, cfg := testSettings(tt)
+	id, signal := set.ID.String(), pipeline.SignalMetrics.String()
 	sink := new(consumertest.MetricsSink)
 	p, err := newMetricsProcessor(context.Background(), set, cfg, sink)
 	require.NoError(t, err)
@@ -126,15 +151,19 @@ func TestMetricsBatchMetrics(t *testing.T) {
 	require.NoError(t, p.Shutdown(context.Background()))
 
 	require.Equal(t, 3, sink.DataPointCount())
-	assertSendSize(t, tt, set.ID.String(), "otelcol_processor_batch_batch_send_size", 3)
+	assertCounter(t, tt, "otelcol_processor_incoming_items", id, signal, 3)
+	assertCounter(t, tt, "otelcol_processor_outgoing_items", id, signal, 3)
+	assertHistogram(t, tt, "otelcol_processor_queuebatch_items", id, signal, 3, true)
+	assertHistogram(t, tt, "otelcol_processor_queuebatch_bytes", id, signal, 0, false)
 	assertNoExporterMetrics(t, tt)
 }
 
-func TestLogsBatchMetrics(t *testing.T) {
+func TestLogsMetrics(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	set, cfg := testSettings(tt)
+	id, signal := set.ID.String(), pipeline.SignalLogs.String()
 	sink := new(consumertest.LogsSink)
 	p, err := newLogsProcessor(context.Background(), set, cfg, sink)
 	require.NoError(t, err)
@@ -144,6 +173,9 @@ func TestLogsBatchMetrics(t *testing.T) {
 	require.NoError(t, p.Shutdown(context.Background()))
 
 	require.Equal(t, 4, sink.LogRecordCount())
-	assertSendSize(t, tt, set.ID.String(), "otelcol_processor_batch_batch_send_size", 4)
+	assertCounter(t, tt, "otelcol_processor_incoming_items", id, signal, 4)
+	assertCounter(t, tt, "otelcol_processor_outgoing_items", id, signal, 4)
+	assertHistogram(t, tt, "otelcol_processor_queuebatch_items", id, signal, 4, true)
+	assertHistogram(t, tt, "otelcol_processor_queuebatch_bytes", id, signal, 0, false)
 	assertNoExporterMetrics(t, tt)
 }
