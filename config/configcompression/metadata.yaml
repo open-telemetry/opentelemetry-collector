@@ -5,3 +5,25 @@ github_project: open-telemetry/opentelemetry-collector
 status:
   disable_codecov_badge: true
   class: pkg
+
+exported_configs:
+  compression_params:
+    type: object
+    properties:
+      level:
+        $ref: level
+  level:
+    type: integer
+  type:
+    description: Type represents a compression method
+    type: string
+    enum:
+      - "gzip"
+      - "zlib"
+      - "deflate"
+      - "snappy"
+      - "x-snappy-framed"
+      - "zstd"
+      - "lz4"
+      - "none"
+      - ""
