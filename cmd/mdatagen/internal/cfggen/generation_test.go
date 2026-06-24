@@ -2967,3 +2967,150 @@ func TestExtractValidators_DefsValidatorNotOverwrittenByRefSite(t *testing.T) {
 	require.Equal(t, "validateBatchConfig", validators[0].CustomValidator,
 		"struct-level validator must come from the type definition, not the ref-site property")
 }
+
+// ---- go_struct.skip tests ----
+
+func TestExtractDefs_SkipDef(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Defs: map[string]*ConfigMetadata{
+			"VisibleType": {Type: "string"},
+			"SkippedType": {
+				Type:     "string",
+				GoStruct: GoStructConfig{Skip: true},
+			},
+		},
+	}
+
+	result := ExtractDefs(md)
+	require.Contains(t, result, "VisibleType")
+	require.NotContains(t, result, "SkippedType", "skipped def must be excluded from ExtractDefs")
+}
+
+func TestExtractDefs_SkipInlineObjectProperty(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"visible_cfg": {
+				Type:       "object",
+				Properties: map[string]*ConfigMetadata{"field": {Type: "string"}},
+			},
+			"skipped_cfg": {
+				Type:       "object",
+				GoStruct:   GoStructConfig{Skip: true},
+				Properties: map[string]*ConfigMetadata{"field": {Type: "string"}},
+			},
+		},
+	}
+
+	result := ExtractDefs(md)
+	require.Contains(t, result, "visible_cfg")
+	require.NotContains(t, result, "skipped_cfg", "inline object with skip must be excluded from ExtractDefs")
+}
+
+func TestExtractImports_SkippedDefContributesNoImports(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Defs: map[string]*ConfigMetadata{
+			"SkippedType": {
+				Type:     "string",
+				GoType:   "time.Time",
+				GoStruct: GoStructConfig{Skip: true},
+			},
+		},
+	}
+	result, err := ExtractImports(md, "", "")
+	require.NoError(t, err)
+	require.NotContains(t, result, "time", "skipped def must not contribute imports")
+}
+
+func TestExtractValidators_SkippedPropertyOmitted(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:     "object",
+		Required: []string{"visible_field", "skipped_field"},
+		Properties: map[string]*ConfigMetadata{
+			"visible_field": {Type: "string"},
+			"skipped_field": {Type: "string", GoStruct: GoStructConfig{Skip: true}},
+		},
+	}
+	validators := ExtractValidators(md)
+	names := make([]string, 0, len(validators))
+	for _, v := range validators {
+		names = append(names, v.FieldName)
+	}
+	require.Contains(t, names, "visible_field")
+	require.NotContains(t, names, "skipped_field", "skipped property must not produce a validator")
+}
+
+func TestHasGoStructToGenerate(t *testing.T) {
+	tests := []struct {
+		name     string
+		md       *ConfigMetadata
+		expected bool
+	}{
+		{
+			name:     "nil input",
+			md:       nil,
+			expected: false,
+		},
+		{
+			name: "top-level object not skipped",
+			md: &ConfigMetadata{
+				Type:       "object",
+				Properties: map[string]*ConfigMetadata{"field": {Type: "string"}},
+			},
+			expected: true,
+		},
+		{
+			name: "top-level object skipped — no defs",
+			md: &ConfigMetadata{
+				Type:       "object",
+				GoStruct:   GoStructConfig{Skip: true},
+				Properties: map[string]*ConfigMetadata{"field": {Type: "string"}},
+			},
+			expected: false,
+		},
+		{
+			name: "top-level skipped but un-skipped def present",
+			md: &ConfigMetadata{
+				Type:       "object",
+				GoStruct:   GoStructConfig{Skip: true},
+				Properties: map[string]*ConfigMetadata{"field": {Type: "string"}},
+				Defs: map[string]*ConfigMetadata{
+					"helper": {Type: "string"},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "all defs skipped",
+			md: &ConfigMetadata{
+				Type:     "object",
+				GoStruct: GoStructConfig{Skip: true},
+				Defs: map[string]*ConfigMetadata{
+					"a": {Type: "string", GoStruct: GoStructConfig{Skip: true}},
+					"b": {Type: "string", GoStruct: GoStructConfig{Skip: true}},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "one of two defs not skipped",
+			md: &ConfigMetadata{
+				Type:     "object",
+				GoStruct: GoStructConfig{Skip: true},
+				Defs: map[string]*ConfigMetadata{
+					"a": {Type: "string", GoStruct: GoStructConfig{Skip: true}},
+					"b": {Type: "string"},
+				},
+			},
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, HasGoStructToGenerate(tt.md))
+		})
+	}
+}

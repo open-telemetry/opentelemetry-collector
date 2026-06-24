@@ -734,11 +734,24 @@ func generateConfigGoStruct(md Metadata, outputDir string) error {
 
 	packageName := filepath.Base(outputDir)
 
+	generatedFiles := []string{"generated_config.go", "generated_config_test.go"}
+
+	// When every config type is marked go_struct.skip, remove any previously
+	// generated Go files and skip re-generation (JSON schema is kept).
+	if !cfggen.HasGoStructToGenerate(md.Config) {
+		for _, f := range generatedFiles {
+			if removeErr := os.Remove(filepath.Join(outputDir, f)); removeErr != nil && !errors.Is(removeErr, fs.ErrNotExist) {
+				return fmt.Errorf("failed to remove stale %s: %w", f, removeErr)
+			}
+		}
+		return nil
+	}
+
 	fns := cfggen.WithCfgFns(getTemplateFuncMap(md, rootPkg), rootPkg, md.PackageName)
 
 	files := []struct{ tmpl, dst string }{
-		{tmpl: "config_from_cfggen.go.tmpl", dst: "generated_config.go"},
-		{tmpl: "config_from_cfggen_test.go.tmpl", dst: "generated_config_test.go"},
+		{tmpl: "config_from_cfggen.go.tmpl", dst: generatedFiles[0]},
+		{tmpl: "config_from_cfggen_test.go.tmpl", dst: generatedFiles[1]},
 	}
 
 	var allErrs error

@@ -24,6 +24,14 @@ status:
 exported_configs:
   sample_pkg:
     $ref: ../samplepkg.sample_config
+  custom_config:
+    type: object
+    properties:
+      custom_field:
+        type: string
+        default: "value"
+    go_struct:
+      skip: true
 
 config:
   type: object
@@ -82,7 +90,7 @@ config:
             exclusiveMaximum: 30
         required: [labels]
       default:
-        - {} # one item with default values
+        - { } # one item with default values
   required: [job_name, targets]
 
 resource_attributes:

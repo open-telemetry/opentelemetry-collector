@@ -2,7 +2,7 @@
 
 package {{ .Package }}
 
-{{- $hasConfig := eq .Metadata.Config.Type "object" }}
+{{- $hasConfig := and (eq .Metadata.Config.Type "object") (not .Metadata.Config.GoStruct.Skip) }}
 {{- $validators := extractValidators .Metadata.Config }}
 {{ $imports := extractImports .Metadata.Config }}
 {{- if or $hasConfig $imports }}
@@ -217,7 +217,7 @@ import (
     {{- end -}}
 {{ end }}
 
-{{- if $validators }}
+{{- if and $hasConfig $validators }}
     // Validate validates the Config fields.
     func (c *Config) Validate() error {
         var err error

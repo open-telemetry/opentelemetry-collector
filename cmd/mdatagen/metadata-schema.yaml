@@ -139,6 +139,20 @@ config:
       x-pointer: bool
       # Optional: Whether this field is optional in Go code (will use pointer or optional type).
       x-optional: bool
+      # Optional: Go struct generation settings for this schema node.
+      go_struct:
+        # Optional: When true, no Go struct is generated for this type. The JSON schema
+        # and README config docs are still produced. Use this when you provide the
+        # Go struct for this config type by hand instead of having mdatagen generate it.
+        # If every type in a config section is skipped, no Go files are emitted at all.
+        skip: bool
+        # Optional: When true, the struct is embedded anonymously (no field name).
+        anonymous: bool
+        # Optional: When true, default-value setters are not generated for this type.
+        ignore_default: bool
+        # Optional: Name of a custom validator function to call for this type.
+        custom_validator:
+          name: string
   # Optional: List of required property names. Properties in this list must be present in the config.
   required: [string]
   # Optional: Map of reusable schema definitions that can be referenced via $ref.

@@ -1757,3 +1757,116 @@ func TestGenerateConfigSchema_LocalizesSameRootRefs(t *testing.T) {
 	require.Contains(t, string(actual), "$ref: /filter.config")
 	require.NotContains(t, string(actual), "$ref: go.opentelemetry.io/collector/filter.config")
 }
+
+// TestGenerateConfigFiles_SkipTopLevelConfig verifies that setting go_struct.skip
+// on the top-level config suppresses Go file generation while the JSON schema is
+// still produced.
+func TestGenerateConfigFiles_SkipTopLevelConfig(t *testing.T) {
+	root := t.TempDir()
+	tmpdir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(tmpdir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	md := Metadata{
+		Type:        "test",
+		PackageName: "shortname",
+		Status:      &Status{Class: "receiver"},
+		Config: &cfggen.ConfigMetadata{
+			Type:     "object",
+			GoStruct: cfggen.GoStructConfig{Skip: true},
+			Properties: map[string]*cfggen.ConfigMetadata{
+				"endpoint": {Type: "string"},
+			},
+		},
+	}
+
+	err := generateConfigFiles(md, tmpdir, "testmodule")
+	require.NoError(t, err)
+
+	// JSON schema must still be produced.
+	require.FileExists(t, filepath.Join(tmpdir, "config.schema.json"))
+
+	// No Go files should be emitted.
+	require.NoFileExists(t, filepath.Join(tmpdir, "generated_config.go"))
+	require.NoFileExists(t, filepath.Join(tmpdir, "generated_config_test.go"))
+}
+
+// TestGenerateConfigFiles_SkipTopLevelConfig_StaleFilesRemoved verifies that
+// previously generated Go files are deleted when go_struct.skip is set.
+func TestGenerateConfigFiles_SkipTopLevelConfig_StaleFilesRemoved(t *testing.T) {
+	root := t.TempDir()
+	tmpdir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(tmpdir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	// Simulate a stale generated file from a prior run.
+	staleGo := filepath.Join(tmpdir, "generated_config.go")
+	staleTest := filepath.Join(tmpdir, "generated_config_test.go")
+	require.NoError(t, os.WriteFile(staleGo, []byte("// stale\n"), 0o600))
+	require.NoError(t, os.WriteFile(staleTest, []byte("// stale\n"), 0o600))
+
+	md := Metadata{
+		Type:        "test",
+		PackageName: "shortname",
+		Status:      &Status{Class: "receiver"},
+		Config: &cfggen.ConfigMetadata{
+			Type:     "object",
+			GoStruct: cfggen.GoStructConfig{Skip: true},
+			Properties: map[string]*cfggen.ConfigMetadata{
+				"endpoint": {Type: "string"},
+			},
+		},
+	}
+
+	err := generateConfigFiles(md, tmpdir, "testmodule")
+	require.NoError(t, err)
+
+	require.NoFileExists(t, staleGo)
+	require.NoFileExists(t, staleTest)
+}
+
+// TestGenerateConfigFiles_SkipSomeDefs verifies that a skipped def type is absent
+// from the generated Go code while still appearing in the JSON schema.
+func TestGenerateConfigFiles_SkipSomeDefs(t *testing.T) {
+	root := t.TempDir()
+	tmpdir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(tmpdir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	md := Metadata{
+		Type:        "test",
+		PackageName: "shortname",
+		Status:      &Status{Class: "receiver"},
+		Config: &cfggen.ConfigMetadata{
+			Type: "object",
+			Properties: map[string]*cfggen.ConfigMetadata{
+				"endpoint": {Type: "string"},
+			},
+			Defs: map[string]*cfggen.ConfigMetadata{
+				"visible_helper": {
+					Type:       "object",
+					Properties: map[string]*cfggen.ConfigMetadata{"name": {Type: "string"}},
+				},
+				"skipped_helper": {
+					Type:       "object",
+					GoStruct:   cfggen.GoStructConfig{Skip: true},
+					Properties: map[string]*cfggen.ConfigMetadata{"name": {Type: "string"}},
+				},
+			},
+		},
+	}
+
+	err := generateConfigFiles(md, tmpdir, "testmodule")
+	require.NoError(t, err)
+
+	require.FileExists(t, filepath.Join(tmpdir, "config.schema.json"))
+	schema, err := os.ReadFile(filepath.Join(tmpdir, "config.schema.json")) // #nosec G304
+	require.NoError(t, err)
+	require.Contains(t, string(schema), `"skipped_helper"`, "skipped def must remain in JSON schema")
+
+	generatedGo, err := os.ReadFile(filepath.Join(tmpdir, "generated_config.go")) // #nosec G304
+	require.NoError(t, err)
+	require.Contains(t, string(generatedGo), "type Config struct")
+	require.Contains(t, string(generatedGo), "VisibleHelper")
+	require.NotContains(t, string(generatedGo), "SkippedHelper", "skipped def must be absent from generated Go")
+}

@@ -11,7 +11,7 @@ import (
 )
 {{- end }}
 {{- end }}
-{{- if eq .Metadata.Config.Type "object" }}
+{{- if and (eq .Metadata.Config.Type "object") (not .Metadata.Config.GoStruct.Skip) }}
 {{- template "imports" $imports_addded }}
 {{- $imports_addded = true }}
 

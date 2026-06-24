@@ -104,7 +104,25 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return call
 		},
+		"hasGoStruct": HasGoStructToGenerate,
 	}
+}
+
+// HasGoStructToGenerate reports whether the resolved config schema will produce at least one Go struct.
+// It returns false when the top-level config is marked skip AND every extracted def is also marked skip (or there are no defs).
+func HasGoStructToGenerate(md *ConfigMetadata) bool {
+	if md == nil {
+		return false
+	}
+	if md.Type == "object" && !md.GoStruct.Skip {
+		return true
+	}
+	for _, def := range ExtractDefs(md) {
+		if !def.GoStruct.Skip {
+			return true
+		}
+	}
+	return false
 }
 
 // ExternalDefaultCall returns the Go expression that delegates to the upstream package's
@@ -268,8 +286,30 @@ func ExtractImports(md *ConfigMetadata, rootPackage, componentPackage string) ([
 	return slices.Collect(maps.Keys(imports)), nil
 }
 
+// collectImportsForSubNode is like collectImports but respects GoStruct.Skip:
+// sub-nodes marked skip emit no Go code, so they need no imports.
+func collectImportsForSubNode(md *ConfigMetadata, imports map[string]bool, rootPackage, componentPackage string) error {
+	if md == nil || md.GoStruct.Skip {
+		return nil
+	}
+	return collectImports(md, imports, rootPackage, componentPackage)
+}
+
 func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, componentPackage string) error {
 	if md == nil {
+		return nil
+	}
+
+	// When a schema node is skipped, no Go struct is emitted for it.
+	// Skip its own type/validator/property imports, but still collect imports
+	// for all un-skipped definitions reachable from this node (both $defs
+	// entries and inline objects extracted from properties).
+	if md.GoStruct.Skip {
+		for _, def := range ExtractDefs(md) {
+			if err := collectImports(def, imports, rootPackage, componentPackage); err != nil {
+				return err
+			}
+		}
 		return nil
 	}
 
@@ -317,35 +357,35 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 	}
 
 	for _, prop := range md.Properties {
-		if err := collectImports(prop, imports, rootPackage, componentPackage); err != nil {
+		if err := collectImportsForSubNode(prop, imports, rootPackage, componentPackage); err != nil {
 			return err
 		}
 	}
 
 	if md.Items != nil {
-		if err := collectImports(md.Items, imports, rootPackage, componentPackage); err != nil {
+		if err := collectImportsForSubNode(md.Items, imports, rootPackage, componentPackage); err != nil {
 			return err
 		}
 	}
 
 	for _, schema := range md.AllOf {
-		if err := collectImports(schema, imports, rootPackage, componentPackage); err != nil {
+		if err := collectImportsForSubNode(schema, imports, rootPackage, componentPackage); err != nil {
 			return err
 		}
 	}
 
 	for _, def := range md.Defs {
-		if err := collectImports(def, imports, rootPackage, componentPackage); err != nil {
+		if err := collectImportsForSubNode(def, imports, rootPackage, componentPackage); err != nil {
 			return err
 		}
 	}
 
-	if err := collectImports(md.AdditionalProperties, imports, rootPackage, componentPackage); err != nil {
+	if err := collectImportsForSubNode(md.AdditionalProperties, imports, rootPackage, componentPackage); err != nil {
 		return err
 	}
 
 	if md.ContentSchema != nil {
-		if err := collectImports(md.ContentSchema, imports, rootPackage, componentPackage); err != nil {
+		if err := collectImportsForSubNode(md.ContentSchema, imports, rootPackage, componentPackage); err != nil {
 			return err
 		}
 	}
@@ -422,14 +462,19 @@ func collectDefs(md *ConfigMetadata, defs map[string]*ConfigMetadata) {
 		if !refDesc.IsInternal() {
 			return
 		}
-		if _, exists := defs[md.ResolvedFrom]; !exists {
-			defs[md.ResolvedFrom] = md
+		if !md.GoStruct.Skip {
+			if _, exists := defs[md.ResolvedFrom]; !exists {
+				defs[md.ResolvedFrom] = md
+			}
 		}
 	}
 
 	for _, name := range slices.Sorted(maps.Keys(md.Defs)) {
-		defs[name] = md.Defs[name]
-		collectDefs(md.Defs[name], defs)
+		def := md.Defs[name]
+		if def != nil && !def.GoStruct.Skip {
+			defs[name] = def
+		}
+		collectDefs(def, defs)
 	}
 
 	for _, propName := range slices.Sorted(maps.Keys(md.Properties)) {
@@ -450,8 +495,10 @@ func collectDefsForSchema(propName string, md *ConfigMetadata, defs map[string]*
 		refDesc := NewRef(md.ResolvedFrom)
 		if refDesc.IsInternal() {
 			// Only register the ref-site node if no authoritative definition was already collected from md.Defs.
-			if _, exists := defs[md.ResolvedFrom]; !exists {
-				defs[md.ResolvedFrom] = md
+			if !md.GoStruct.Skip {
+				if _, exists := defs[md.ResolvedFrom]; !exists {
+					defs[md.ResolvedFrom] = md
+				}
 			}
 			collectDefs(md, defs)
 		}
@@ -461,7 +508,9 @@ func collectDefsForSchema(propName string, md *ConfigMetadata, defs map[string]*
 	switch md.Type {
 	case "object":
 		if len(md.Properties) > 0 {
-			defs[propName] = md
+			if !md.GoStruct.Skip {
+				defs[propName] = md
+			}
 			collectDefs(md, defs)
 		} else if md.AdditionalProperties != nil {
 			// map[string]V — the value type V inherits the same propName
@@ -522,6 +571,9 @@ type Validator struct {
 func collectValidators(md *ConfigMetadata, validators *[]Validator) {
 	for _, propName := range slices.Sorted(maps.Keys(md.Properties)) {
 		prop := md.Properties[propName]
+		if prop != nil && prop.GoStruct.Skip {
+			continue
+		}
 		rules := ValidationRules{
 			MaxLength:        prop.MaxLength,
 			MinLength:        prop.MinLength,

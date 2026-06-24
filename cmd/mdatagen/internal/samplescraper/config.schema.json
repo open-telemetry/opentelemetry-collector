@@ -648,6 +648,15 @@
     "targets"
   ],
   "$defs": {
+    "custom_config": {
+      "type": "object",
+      "properties": {
+        "custom_field": {
+          "type": "string",
+          "default": "value"
+        }
+      }
+    },
     "sample_pkg": {
       "type": "object",
       "properties": {
