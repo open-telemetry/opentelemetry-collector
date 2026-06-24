@@ -44,7 +44,7 @@ config:
       description: Identifies the scraper, used for telemetry and logging.
       x-customType: go.opentelemetry.io/collector/component.ID
       go_struct:
-        go_name: ComponentID
+        field_name: ComponentID
     job_name:
       description: Name of the scrape job, used to identify the source in telemetry.
       type: string

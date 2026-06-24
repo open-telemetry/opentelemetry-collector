@@ -258,8 +258,8 @@ func (r *Resolver) loadExternalRef(ref *Ref) (*ConfigMetadata, error) {
 
 func resolveGoNames(md *ConfigMetadata) {
 	for name, prop := range md.Properties {
-		if prop.GoStruct.GoName == "" {
-			prop.GoStruct.GoName = name
+		if prop.GoStruct.FieldName == "" {
+			prop.GoStruct.FieldName = name
 		}
 	}
 }
