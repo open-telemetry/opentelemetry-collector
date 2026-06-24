@@ -62,16 +62,19 @@ resource_attributes:
     description: Resource attribute with a map value.
     type: map
     enabled: true
+    stability: development
 
   optional.resource.attr:
     description: Explicitly disabled ResourceAttribute.
     type: string
     enabled: false
+    stability: development
 
   slice.resource.attr:
     description: Resource attribute with a slice value.
     type: slice
     enabled: true
+    stability: development
 
   string.enum.resource.attr:
     description: Resource attribute with a known set of string values.

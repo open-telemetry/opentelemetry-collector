@@ -131,6 +131,7 @@ func TestLoadMetadata(t *testing.T) {
 						},
 						FullName:         "optional.resource.attr",
 						RequirementLevel: AttributeRequirementLevelRecommended,
+						Stability:        component.StabilityLevelDevelopment,
 					},
 					"slice.resource.attr": {
 						Description: "Resource attribute with a slice value.",
@@ -140,6 +141,7 @@ func TestLoadMetadata(t *testing.T) {
 						},
 						FullName:         "slice.resource.attr",
 						RequirementLevel: AttributeRequirementLevelRecommended,
+						Stability:        component.StabilityLevelDevelopment,
 					},
 					"map.resource.attr": {
 						Description: "Resource attribute with a map value.",
@@ -149,6 +151,7 @@ func TestLoadMetadata(t *testing.T) {
 						},
 						FullName:         "map.resource.attr",
 						RequirementLevel: AttributeRequirementLevelRecommended,
+						Stability:        component.StabilityLevelDevelopment,
 					},
 					"string.resource.attr_disable_warning": {
 						Description: "Resource attribute with any string value.",
