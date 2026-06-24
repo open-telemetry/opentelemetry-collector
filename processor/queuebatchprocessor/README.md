@@ -46,6 +46,7 @@ attributes.
 
 The processor also emits the exporterhelper's enqueue and export spans, but
 reframed as processor spans: they are reported under this processor's
-instrumentation scope, named `processor/enqueue` and
-`processor/<id>/<signal>`, and carry the `processor` and `otel.signal`
-attributes. When batching, the export span links to each batched request.
+instrumentation scope and named `processor/enqueue` and
+`processor/<id>/<signal>`. When batching, the export span links to each batched
+request. (In a running collector the service injects `otelcol.component.*` scope
+attributes that identify the spans as belonging to this processor.)
