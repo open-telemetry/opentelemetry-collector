@@ -3,6 +3,38 @@
   "$id": "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplepkg",
   "title": "pkg/samplepkg",
   "$defs": {
+    "map_list": {
+      "description": "MapList is a list of name/value pairs.",
+      "type": "array",
+      "items": {
+        "description": "Pair is an element of a MapList, consisting of a name and a value.",
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "The name of the pair.",
+            "type": "string"
+          },
+          "value": {
+            "description": "The value of the pair.",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "pair": {
+      "description": "Pair is an element of a MapList, consisting of a name and a value.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The name of the pair.",
+          "type": "string"
+        },
+        "value": {
+          "description": "The value of the pair.",
+          "type": "string"
+        }
+      }
+    },
     "port_number": {
       "description": "A port number to connect to.",
       "type": "integer",

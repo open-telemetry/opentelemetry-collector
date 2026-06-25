@@ -120,7 +120,7 @@ require.NotNil(t, cfg)
 {{- $defs := extractDefs .Metadata.Config }}
 {{ range $defName, $def := $defs }}
     {{ $defValidators := extractValidators $def }}
-    {{- if and $defValidators (not (isPrimitiveSchema $def)) }}
+    {{- if and $defValidators (not (isPrimitiveSchema $def)) (not (isArraySchema $def)) }}
         {{- template "imports" $imports_addded }}
         {{- $imports_addded = true }}
         func Test{{ $defName | publicVar }}Validate_DefaultValid(t *testing.T) {

@@ -6,6 +6,19 @@ import (
 	"errors"
 )
 
+// MapList mapList is a list of name/value pairs.
+type MapList []Pair
+
+// Pair pair is an element of a MapList, consisting of a name and a value.
+type Pair struct {
+	// The name of the pair.
+	Name string `mapstructure:"name"`
+	// The value of the pair.
+	Value string `mapstructure:"value"`
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
 // PortNumber a port number to connect to.
 type PortNumber int32
 

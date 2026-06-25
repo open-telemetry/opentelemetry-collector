@@ -28,3 +28,18 @@ exported_configs:
         maximum: 10000
     required:
       - host_name
+  pair:
+    type: object
+    description: Pair is an element of a MapList, consisting of a name and a value.
+    properties:
+      name:
+        type: string
+        description: The name of the pair.
+      value:
+        type: string
+        description: The value of the pair.
+  map_list:
+    type: array
+    description: MapList is a list of name/value pairs.
+    items:
+      $ref: pair

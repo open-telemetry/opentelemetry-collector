@@ -1,0 +1,14 @@
+change_type: enhancement
+
+component: cmd/mdatagen
+
+note: Support generating named slice types (`type Foo []Item`) for exported array config schemas.
+
+issues: []
+
+subtext: |
+  An exported config definition with `type: array` and an `items` entry (including `$ref` to
+  another exported def) now generates a named Go slice type, e.g. `type MapList []Pair`.
+  This mirrors the `configopaque.MapList` pattern.
+
+change_logs: [api]

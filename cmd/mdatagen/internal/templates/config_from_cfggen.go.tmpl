@@ -49,6 +49,8 @@ import (
         type {{ $typeName }} = {{ $def.ResolvedFrom | publicType }}
     {{- else if isPrimitiveSchema $def }}
         type {{ $typeName }} {{ primitiveGoType $def }}
+    {{- else if isArraySchema $def }}
+        type {{ $typeName }} {{ mapGoType $def $defName }}
     {{- else }}
         type {{ $typeName }} struct {
         {{- template "struct" $def }}
@@ -56,7 +58,7 @@ import (
     {{- end }}
 
 {{ $defValidators := extractValidators $def }}
-{{- if and $defValidators (not (isExternalRef $def.ResolvedFrom)) (not (isPrimitiveSchema $def)) }}
+{{- if and $defValidators (not (isExternalRef $def.ResolvedFrom)) (not (isPrimitiveSchema $def)) (not (isArraySchema $def)) }}
     // Validate validates the {{$typeName}} fields according to schema annotations.
     func (c *{{ $typeName }}) Validate() error {
         var err error
@@ -68,7 +70,7 @@ import (
     }
 {{- end }}
 
-    {{- if and (hasDefaultValue $def) (not (isPrimitiveSchema $def)) }}
+    {{- if and (hasDefaultValue $def) (not (isPrimitiveSchema $def)) (not (isArraySchema $def)) }}
     // NewDefault{{ $typeName }} returns a new {{ $typeName }} with default values consistent with the annotations in the schema.
     func NewDefault{{ $typeName }}() {{ $typeName }} {
         {{- if isExternalRef $def.ResolvedFrom }}

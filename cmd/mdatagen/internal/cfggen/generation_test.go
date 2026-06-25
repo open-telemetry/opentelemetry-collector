@@ -120,6 +120,46 @@ func TestPrimitiveGoType(t *testing.T) {
 	}
 }
 
+func TestIsArraySchema(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected bool
+	}{
+		{
+			name:     "array type",
+			metadata: &ConfigMetadata{Type: "array"},
+			expected: true,
+		},
+		{
+			name:     "array with items",
+			metadata: &ConfigMetadata{Type: "array", Items: &ConfigMetadata{Type: "string"}},
+			expected: true,
+		},
+		{
+			name:     "object type",
+			metadata: &ConfigMetadata{Type: "object"},
+			expected: false,
+		},
+		{
+			name:     "primitive type",
+			metadata: &ConfigMetadata{Type: "integer"},
+			expected: false,
+		},
+		{
+			name:     "nil schema",
+			metadata: nil,
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, IsArraySchema(tt.metadata))
+		})
+	}
+}
+
 func TestMapGoType_FormattedStrings(t *testing.T) {
 	tests := []struct {
 		name     string

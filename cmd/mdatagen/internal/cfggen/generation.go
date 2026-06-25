@@ -59,6 +59,7 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return goType
 		},
+		"isArraySchema": IsArraySchema,
 		"publicType": func(ref string) string {
 			typeName, err := FormatTypeName(ref, rootPackage, componentPackage)
 			if err != nil {
@@ -150,6 +151,11 @@ func IsPrimitiveSchema(md *ConfigMetadata) bool {
 	}
 	_, ok := primitiveSchemaGoTypes[md.Type]
 	return ok
+}
+
+// IsArraySchema reports whether the schema represents a named array (slice) type.
+func IsArraySchema(md *ConfigMetadata) bool {
+	return md != nil && md.Type == "array"
 }
 
 func PrimitiveGoType(md *ConfigMetadata, rootPackage, componentPackage string) (string, error) {
