@@ -6,6 +6,7 @@ package controller // import "go.opentelemetry.io/collector/scraper/scraperhelpe
 import (
 	"context"
 	"errors"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"testing/synctest"
@@ -16,13 +17,26 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/extension/xextension/extensionscrapercontroller"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/scraper/scraperhelper/internal/testhelper"
 )
 
 // mockScraper implements component.Component for testing.
 type mockScraper struct {
 	component.StartFunc
 	component.ShutdownFunc
+}
+
+// nilDeregControllerExtension returns a nil DeregisterFunc, violating the
+// ControllerExtension contract. Used to exercise the defensive nil guard in teardown.
+type nilDeregControllerExtension struct {
+	component.StartFunc
+	component.ShutdownFunc
+}
+
+func (e *nilDeregControllerExtension) RegisterScraper(_ context.Context, _ extensionscrapercontroller.ScrapeFunc) (extensionscrapercontroller.DeregisterFunc, error) {
+	return nil, nil
 }
 
 func nopScrapeFunc(context.Context, *Controller[component.Component]) error {
@@ -71,6 +85,19 @@ func TestNewController(t *testing.T) {
 				CollectionInterval: 5 * time.Second,
 				InitialDelay:       2 * time.Second,
 				Timeout:            10 * time.Second,
+			},
+		},
+		{
+			name: "with controllers",
+			cfg: &ControllerConfig{
+				CollectionInterval: time.Minute,
+				Controllers:        []component.ID{component.MustNewID("myext")},
+			},
+		},
+		{
+			name: "zero collection interval with controllers",
+			cfg: &ControllerConfig{
+				Controllers: []component.ID{component.MustNewID("myext")},
 			},
 		},
 		{
@@ -146,18 +173,232 @@ func TestStartScraperError(t *testing.T) {
 	require.ErrorIs(t, err, errScraper)
 }
 
+func TestStartExtensionNotFound(t *testing.T) {
+	t.Parallel()
+
+	cfg := &ControllerConfig{
+		Controllers: []component.ID{component.MustNewID("missing")},
+	}
+	ctrl := newTestController(t, cfg, nil)
+
+	err := ctrl.Start(context.Background(), componenttest.NewNopHost())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `extension "missing" not found`)
+}
+
+func TestStartExtensionNotControllerExtension(t *testing.T) {
+	t.Parallel()
+
+	extID := component.MustNewID("notcontroller")
+	cfg := &ControllerConfig{
+		Controllers: []component.ID{extID},
+	}
+	ctrl := newTestController(t, cfg, nil)
+
+	// Provide an extension that does not implement ControllerExtension.
+	host := &testhelper.MockHost{Extensions: map[component.ID]component.Component{
+		extID: &mockScraper{},
+	}}
+
+	err := ctrl.Start(context.Background(), host)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "is not a scraper controller extension")
+}
+
+func TestStartExtensionRegisterError(t *testing.T) {
+	t.Parallel()
+
+	extID := component.MustNewID("myext")
+	errRegister := errors.New("register failed")
+	mockExt := &testhelper.MockControllerExtension{RegisterErr: errRegister}
+
+	cfg := &ControllerConfig{
+		Controllers: []component.ID{extID},
+	}
+	ctrl := newTestController(t, cfg, nil)
+
+	host := &testhelper.MockHost{Extensions: map[component.ID]component.Component{extID: mockExt}}
+	err := ctrl.Start(context.Background(), host)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to register scraper")
+	assert.ErrorIs(t, err, errRegister)
+}
+
+func TestStartPartialFailureCleansUp(t *testing.T) {
+	t.Parallel()
+
+	// First extension registers successfully, second fails. Start must
+	// deregister the first registration before returning.
+	extID1 := component.MustNewID("ext1")
+	extID2 := component.MustNewID("ext2")
+	okExt := &testhelper.MockControllerExtension{}
+	errRegister := errors.New("register failed")
+	failExt := &testhelper.MockControllerExtension{RegisterErr: errRegister}
+
+	// Scraper that records whether Shutdown was called.
+	var scraperShutdown atomic.Bool
+	scrp := &mockScraper{
+		ShutdownFunc: func(context.Context) error {
+			scraperShutdown.Store(true)
+			return nil
+		},
+	}
+
+	cfg := &ControllerConfig{
+		Controllers: []component.ID{extID1, extID2},
+	}
+	ctrl := newTestController(t, cfg, nil, scrp)
+
+	host := &testhelper.MockHost{Extensions: map[component.ID]component.Component{
+		extID1: okExt,
+		extID2: failExt,
+	}}
+	err := ctrl.Start(context.Background(), host)
+	require.Error(t, err)
+	require.ErrorIs(t, err, errRegister)
+
+	assert.True(t, okExt.Deregistered.Load(), "first extension should have been deregistered")
+	assert.True(t, scraperShutdown.Load(), "already-started scraper should have been shut down")
+	assert.Empty(t, ctrl.deregFuncs, "deregFuncs slice should be cleared after partial-start cleanup")
+}
+
+func TestShutdownWaitsForInFlightExtensionScrape(t *testing.T) {
+	t.Parallel()
+	synctest.Test(t, func(t *testing.T) {
+		// Verify Shutdown does not call scraper.Shutdown until an in-flight
+		// extension-triggered scrape has returned, even if the extension's
+		// Deregister returns immediately.
+		extID := component.MustNewID("myext")
+		mockExt := &testhelper.MockControllerExtension{}
+
+		scrapeStarted := make(chan struct{})
+		releaseScrape := make(chan struct{})
+		scrapeFinished := make(chan struct{})
+		var shutdownBeforeScrapeDone atomic.Bool
+
+		scrp := &mockScraper{
+			ShutdownFunc: func(context.Context) error {
+				select {
+				case <-scrapeFinished:
+				default:
+					shutdownBeforeScrapeDone.Store(true)
+				}
+				return nil
+			},
+		}
+
+		scrapeFn := func(context.Context, *Controller[component.Component]) error {
+			close(scrapeStarted)
+			<-releaseScrape
+			close(scrapeFinished)
+			return nil
+		}
+
+		cfg := &ControllerConfig{
+			Controllers: []component.ID{extID},
+		}
+		ctrl := newTestController(t, cfg, scrapeFn, scrp)
+
+		host := &testhelper.MockHost{Extensions: map[component.ID]component.Component{extID: mockExt}}
+		require.NoError(t, ctrl.Start(context.Background(), host))
+
+		// Trigger a scrape via the extension in a goroutine so we can control timing.
+		scrapeDone := make(chan error, 1)
+		go func() { scrapeDone <- mockExt.Scrape(context.Background()) }()
+		<-scrapeStarted
+
+		// Shutdown in a goroutine: it must block on the in-flight scrape.
+		shutdownDone := make(chan error, 1)
+		go func() { shutdownDone <- ctrl.Shutdown(context.Background()) }()
+
+		// Once all goroutines are blocked, the scrape is on <-releaseScrape and
+		// Shutdown is on wg.Wait() — verify it hasn't returned yet.
+		synctest.Wait()
+		select {
+		case <-shutdownDone:
+			t.Fatal("Shutdown returned before in-flight scrape completed")
+		default:
+		}
+
+		close(releaseScrape)
+		require.NoError(t, <-scrapeDone)
+		require.NoError(t, <-shutdownDone)
+		assert.False(t, shutdownBeforeScrapeDone.Load(),
+			"scraper.Shutdown must not be called while extension-triggered scrape is in flight")
+	})
+}
+
+func TestStartExtensionRegistersAndDeregisters(t *testing.T) {
+	t.Parallel()
+
+	extID := component.MustNewID("myext")
+	mockExt := &testhelper.MockControllerExtension{}
+
+	cfg := &ControllerConfig{
+		Controllers: []component.ID{extID},
+	}
+	ctrl := newTestController(t, cfg, nil)
+
+	host := &testhelper.MockHost{Extensions: map[component.ID]component.Component{extID: mockExt}}
+	require.NoError(t, ctrl.Start(context.Background(), host))
+	require.NotNil(t, mockExt.RegisteredFunc)
+	assert.False(t, mockExt.Deregistered.Load())
+
+	require.NoError(t, ctrl.Shutdown(context.Background()))
+	assert.True(t, mockExt.Deregistered.Load())
+
+	// Calling Scrape after deregistration must return nil without invoking
+	// the scrape function (exercises the Deregistered early-exit path).
+	require.NoError(t, mockExt.Scrape(context.Background()))
+}
+
+func TestStartExtensionCallbackInvokesScrapeFunc(t *testing.T) {
+	t.Parallel()
+
+	extID := component.MustNewID("myext")
+	mockExt := &testhelper.MockControllerExtension{}
+
+	var scraped atomic.Bool
+	scrapeFunc := func(context.Context, *Controller[component.Component]) error {
+		scraped.Store(true)
+		return nil
+	}
+
+	cfg := &ControllerConfig{
+		Controllers: []component.ID{extID},
+	}
+	ctrl := newTestController(t, cfg, scrapeFunc)
+
+	host := &testhelper.MockHost{Extensions: map[component.ID]component.Component{extID: mockExt}}
+	require.NoError(t, ctrl.Start(context.Background(), host))
+
+	// Invoke the callback registered with the extension.
+	require.NotNil(t, mockExt.RegisteredFunc)
+	require.NoError(t, mockExt.Scrape(context.Background()))
+	assert.True(t, scraped.Load())
+
+	require.NoError(t, ctrl.Shutdown(context.Background()))
+}
+
 func TestShutdownScrapers(t *testing.T) {
 	t.Parallel()
 
-	var shutdownOrder []int
+	var (
+		mu            sync.Mutex
+		shutdownOrder []int
+	)
 	cfg := &ControllerConfig{CollectionInterval: time.Minute}
 	ctrl := newTestController(t, cfg, nopScrapeFunc,
 		&mockScraper{ShutdownFunc: component.ShutdownFunc(func(context.Context) error {
+			mu.Lock()
 			shutdownOrder = append(shutdownOrder, 1)
+			mu.Unlock()
 			return nil
 		})},
 		&mockScraper{ShutdownFunc: component.ShutdownFunc(func(context.Context) error {
+			mu.Lock()
 			shutdownOrder = append(shutdownOrder, 2)
+			mu.Unlock()
 			return nil
 		})},
 	)
@@ -165,7 +406,7 @@ func TestShutdownScrapers(t *testing.T) {
 	require.NoError(t, ctrl.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, ctrl.Shutdown(context.Background()))
 
-	assert.Equal(t, []int{1, 2}, shutdownOrder)
+	assert.ElementsMatch(t, []int{1, 2}, shutdownOrder)
 }
 
 func TestShutdownScraperErrors(t *testing.T) {
@@ -287,6 +528,35 @@ func TestStartScrapingShutdownDuringInitialDelay(t *testing.T) {
 	assert.False(t, scraped.Load(), "scrapeFunc should not have been called")
 }
 
+func TestStartScrapingNoCollectionInterval(t *testing.T) {
+	t.Parallel()
+	synctest.Test(t, func(t *testing.T) {
+		var scraped atomic.Bool
+		scrapeFunc := func(context.Context, *Controller[component.Component]) error {
+			scraped.Store(true)
+			return nil
+		}
+
+		extID := component.MustNewID("myext")
+		mockExt := &testhelper.MockControllerExtension{}
+
+		cfg := &ControllerConfig{
+			CollectionInterval: 0,
+			Controllers:        []component.ID{extID},
+		}
+		ctrl := newTestController(t, cfg, scrapeFunc)
+
+		host := &testhelper.MockHost{Extensions: map[component.ID]component.Component{extID: mockExt}}
+		require.NoError(t, ctrl.Start(context.Background(), host))
+
+		// With zero CollectionInterval, startScraping should not be called.
+		synctest.Wait()
+		assert.False(t, scraped.Load())
+
+		require.NoError(t, ctrl.Shutdown(context.Background()))
+	})
+}
+
 func TestGetSettings(t *testing.T) {
 	t.Parallel()
 
@@ -370,4 +640,120 @@ func TestScrapeFuncReturnsError(t *testing.T) {
 	ctrl := newTestController(t, cfg, scrapeFunc)
 
 	assert.ErrorIs(t, ctrl.scrapeFunc(context.Background(), ctrl), scrapeErr)
+}
+
+func TestShutdownDeregisterError(t *testing.T) {
+	t.Parallel()
+
+	extID := component.MustNewID("myext")
+	errDeregister := errors.New("deregister failed")
+	errShutdown := errors.New("scraper shutdown failed")
+
+	mockExt := &testhelper.MockControllerExtension{DeregisterErr: errDeregister}
+	scrapers := []component.Component{
+		&mockScraper{ShutdownFunc: component.ShutdownFunc(func(context.Context) error {
+			return errShutdown
+		})},
+	}
+
+	cfg := &ControllerConfig{
+		Controllers: []component.ID{extID},
+	}
+	ctrl := newTestController(t, cfg,
+		func(context.Context, *Controller[component.Component]) error { return nil },
+		scrapers...,
+	)
+
+	host := &testhelper.MockHost{Extensions: map[component.ID]component.Component{extID: mockExt}}
+	require.NoError(t, ctrl.Start(context.Background(), host))
+
+	err := ctrl.Shutdown(context.Background())
+	require.Error(t, err)
+	// Both the deregister error and the scraper shutdown error should be reported.
+	require.ErrorIs(t, err, errDeregister)
+	require.ErrorIs(t, err, errShutdown)
+	assert.True(t, mockExt.Deregistered.Load())
+}
+
+func TestTeardownNilDeregFunc(t *testing.T) {
+	t.Parallel()
+
+	// An extension that returns (nil, nil) from RegisterScraper, violating
+	// the contract. The controller must not panic when encountering a nil
+	// DeregisterFunc in the deregFuncs slice.
+	extID := component.MustNewID("nilext")
+	cfg := &ControllerConfig{
+		Controllers: []component.ID{extID},
+	}
+	ctrl := newTestController(t, cfg, nil)
+
+	host := &testhelper.MockHost{Extensions: map[component.ID]component.Component{
+		extID: &nilDeregControllerExtension{},
+	}}
+	require.NoError(t, ctrl.Start(context.Background(), host))
+	require.NoError(t, ctrl.Shutdown(context.Background()))
+}
+
+func TestStartMultipleExtensions(t *testing.T) {
+	t.Parallel()
+
+	ext1ID := component.MustNewID("ext1")
+	ext2ID := component.MustNewID("ext2")
+	mockExt1 := &testhelper.MockControllerExtension{}
+	mockExt2 := &testhelper.MockControllerExtension{}
+
+	cfg := &ControllerConfig{
+		Controllers: []component.ID{ext1ID, ext2ID},
+	}
+	ctrl := newTestController(t, cfg, nil)
+
+	host := &testhelper.MockHost{Extensions: map[component.ID]component.Component{
+		ext1ID: mockExt1,
+		ext2ID: mockExt2,
+	}}
+	require.NoError(t, ctrl.Start(context.Background(), host))
+	require.NotNil(t, mockExt1.RegisteredFunc)
+	require.NotNil(t, mockExt2.RegisteredFunc)
+
+	require.NoError(t, ctrl.Shutdown(context.Background()))
+	assert.True(t, mockExt1.Deregistered.Load())
+	assert.True(t, mockExt2.Deregistered.Load())
+}
+
+func TestExtensionScrapeUsesPassedContext(t *testing.T) {
+	t.Parallel()
+
+	type ctxKey struct{}
+
+	extID := component.MustNewID("myext")
+	mockExt := &testhelper.MockControllerExtension{}
+
+	var capturedCtxValue any
+	var capturedCtxErr error
+	scrapeFunc := func(ctx context.Context, _ *Controller[component.Component]) error {
+		capturedCtxValue = ctx.Value(ctxKey{})
+		capturedCtxErr = ctx.Err()
+		return nil
+	}
+
+	cfg := &ControllerConfig{
+		Controllers: []component.ID{extID},
+	}
+	ctrl := newTestController(t, cfg, scrapeFunc)
+
+	startCtx, cancelStart := context.WithCancel(context.Background())
+	host := &testhelper.MockHost{Extensions: map[component.ID]component.Component{extID: mockExt}}
+	require.NoError(t, ctrl.Start(startCtx, host))
+	cancelStart() // should not impact the scrape context
+
+	// Extension later fires a scrape with its own live context carrying a value.
+	extCtx := context.WithValue(context.Background(), ctxKey{}, "from-extension")
+	require.NotNil(t, mockExt.RegisteredFunc)
+	require.NoError(t, mockExt.Scrape(extCtx))
+
+	assert.NoError(t, capturedCtxErr, "scrape context must not be canceled")
+	assert.Equal(t, "from-extension", capturedCtxValue,
+		"scrape function must receive the context the extension passed, not the Start context")
+
+	require.NoError(t, ctrl.Shutdown(context.Background()))
 }

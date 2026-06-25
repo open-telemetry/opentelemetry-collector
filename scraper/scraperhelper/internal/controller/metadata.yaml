@@ -12,7 +12,7 @@ exported_configs:
     type: object
     properties:
       collection_interval:
-        description: Sets how frequently the scraper should be called and used as the context timeout to ensure that scrapers don't exceed the interval.
+        description: Sets how frequently the scraper should be called and used as the context timeout to ensure that scrapers don't exceed the interval. Must be positive, or zero to disable timer-based scraping (requires controllers to be non-empty).
         type: string
         x-customType: time.Duration
         format: duration
@@ -29,6 +29,12 @@ exported_configs:
         x-customType: time.Duration
         format: duration
         default: 0
+      controllers:
+        description: An optional list of extension IDs that control when scrapes occur. When specified, extensions can trigger scrapes based on external events. If controllers is non-empty, collection_interval may be zero to disable timer-based scraping entirely.
+        type: array
+        items:
+          type: string
+          x-customType: go.opentelemetry.io/collector/component.ID
     go_struct:
       custom_validator:
         name: validateControllerConfig
