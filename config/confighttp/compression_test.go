@@ -319,14 +319,14 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			encoding: "zstd",
 			reqBody:  bytes.NewBuffer(testBody),
 			respCode: http.StatusBadRequest,
-			respBody: "invalid input: magic number mismatch",
+			respBody: "invalid input: magic number mismatch\n",
 		},
 		{
 			name:     "InvalidSnappyFramed",
 			encoding: "x-snappy-framed",
 			reqBody:  bytes.NewBuffer(testBody),
 			respCode: http.StatusBadRequest,
-			respBody: "snappy: corrupt input",
+			respBody: "snappy: corrupt input\n",
 		},
 		{
 			name:     "InvalidSnappy",
@@ -631,14 +631,12 @@ func TestCompressionAlgorithmsEdgeCases(t *testing.T) {
 			wantBodyEcho:          true,
 		},
 		{
-			// BUG: "identity" means no encoding per RFC 7231 §3.1.2.2, but
-			// the decompressor rejects it because "identity" is not registered
-			// in availableDecoders. This should be treated the same as "".
 			name:                  "Mixed_Identity_ShouldAccept",
 			compressionAlgorithms: []string{"", "gzip", "zstd"},
 			contentEncoding:       "identity",
 			body:                  testBody,
-			wantStatus:            http.StatusBadRequest, // BUG: should be http.StatusOK
+			wantStatus:            http.StatusOK,
+			wantBodyEcho:          true,
 		},
 		{
 			name:                  "Mixed_Snappy_Rejected",
@@ -656,16 +654,12 @@ func TestCompressionAlgorithmsEdgeCases(t *testing.T) {
 			wantStatus:            http.StatusBadRequest, // gzip reader should error, not panic
 		},
 		// Edge case: zstd header but garbage body.
-		// BUG: The zstd decoder lazily initializes, so NewReader succeeds
-		// but the error surfaces during io.ReadAll in the handler, returning
-		// 500 instead of 400. This can cause panics in handlers that don't
-		// expect decompression errors. See issue #13228 comment.
 		{
 			name:                  "Mixed_Zstd_GarbageBody",
 			compressionAlgorithms: []string{"", "gzip", "zstd"},
 			contentEncoding:       "zstd",
 			body:                  []byte("this is not zstd data at all"),
-			wantStatus:            http.StatusInternalServerError, // BUG: should be http.StatusBadRequest
+			wantStatus:            http.StatusBadRequest,
 		},
 		// Edge case: gzip header but truncated data
 		{
@@ -721,8 +715,8 @@ func TestCompressionAlgorithmsEdgeCases(t *testing.T) {
 }
 
 // TestDecompressionPanicRecovery verifies that a decoder that panics during
-// Read does not crash the server. The panic should be recovered and surfaced
-// as a normal error to the handler.
+// Read does not crash the server. The panic should be recovered and rejected
+// before the downstream handler is called.
 func TestDecompressionPanicRecovery(t *testing.T) {
 	testBody := []byte("some data")
 
@@ -733,12 +727,9 @@ func TestDecompressionPanicRecovery(t *testing.T) {
 		},
 	}
 
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := io.ReadAll(r.Body)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+	handlerCalled := false
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		handlerCalled = true
 		w.WriteHeader(http.StatusOK)
 	})
 
@@ -763,7 +754,9 @@ func TestDecompressionPanicRecovery(t *testing.T) {
 
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	assert.Contains(t, string(body), "decompression panic")
+	assert.False(t, handlerCalled)
 }
 
 func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
@@ -901,12 +894,10 @@ func TestDecompressorAvoidDecompressionBomb(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			downstreamCalled := false
 			h := httpContentDecompressor(
-				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					n, err := io.Copy(io.Discard, r.Body)
-					assert.Equal(t, int64(1024), n, "Must have only read the limited value of bytes")
-					assert.EqualError(t, err, "http: request body too large")
-					w.WriteHeader(http.StatusBadRequest)
+				http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+					downstreamCalled = true
 				}),
 				1024,
 				defaultErrorHandler,
@@ -925,7 +916,8 @@ func TestDecompressorAvoidDecompressionBomb(t *testing.T) {
 			h.ServeHTTP(resp, req)
 
 			assert.Equal(t, http.StatusBadRequest, resp.Code, "Must match the expected code")
-			assert.Empty(t, resp.Body.String(), "Must match the returned string")
+			assert.Contains(t, resp.Body.String(), "http: request body too large")
+			assert.False(t, downstreamCalled, "downstream handler must not run when request is rejected")
 		})
 	}
 }
@@ -1038,35 +1030,18 @@ func TestSnappyBlockClosesOriginalBody(t *testing.T) {
 }
 
 func TestPooledZstdReadCloserReadAfterClose(t *testing.T) {
-	h := httpContentDecompressor(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			buf := make([]byte, 1024)
-			_, err := r.Body.Read(buf)
-			assert.NoError(t, err)
-			err = r.Body.Close()
-			assert.NoError(t, err)
-			_, err = r.Body.Read(buf)
-			assert.ErrorIs(t, err, zstd.ErrDecoderClosed)
-			w.WriteHeader(http.StatusBadRequest)
-		}),
-		defaultMaxRequestBodySize,
-		defaultErrorHandler,
-		defaultCompressionAlgorithms(),
-		availableDecoders,
-	)
-
 	payload := compressZstd(t, make([]byte, 2*1024)) // 2KB uncompressed payload
 	assert.NotEmpty(t, payload.Bytes(), "Must have data available")
 
-	req := httptest.NewRequest(http.MethodPost, "/", payload)
-	req.Header.Set("Content-Encoding", "zstd")
+	zstdBody, err := availableDecoders["zstd"](io.NopCloser(payload))
+	require.NoError(t, err)
 
-	resp := httptest.NewRecorder()
-
-	h.ServeHTTP(resp, req)
-
-	assert.Equal(t, http.StatusBadRequest, resp.Code, "Must match the expected code")
-	assert.Empty(t, resp.Body.String(), "Must match the returned string")
+	buf := make([]byte, 1024)
+	_, err = zstdBody.Read(buf)
+	assert.NoError(t, err)
+	require.NoError(t, zstdBody.Close())
+	_, err = zstdBody.Read(buf)
+	assert.ErrorIs(t, err, zstd.ErrDecoderClosed)
 }
 
 type closeTrackingReadCloser struct {

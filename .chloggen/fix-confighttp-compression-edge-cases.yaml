@@ -1,0 +1,9 @@
+change_type: bug_fix
+
+component: pkg/confighttp
+
+note: "Fix HTTP server decompression handling for identity encoding and malformed compressed request bodies."
+
+issues: [13228]
+
+change_logs: [user]
