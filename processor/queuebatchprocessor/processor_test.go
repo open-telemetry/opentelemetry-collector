@@ -5,8 +5,10 @@ package queuebatchprocessor
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
@@ -16,8 +18,10 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/processor/queuebatchprocessor/internal/metadata"
@@ -62,6 +66,15 @@ func generateLogs(numRecords int) plog.Logs {
 	return ld
 }
 
+func generateProfiles(numSamples int) pprofile.Profiles {
+	pd := pprofile.NewProfiles()
+	p := pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	for range numSamples {
+		p.Samples().AppendEmpty()
+	}
+	return pd
+}
+
 func attrStr(set attribute.Set, key string) string {
 	v, _ := set.Value(attribute.Key(key))
 	return v.AsString()
@@ -70,9 +83,14 @@ func attrStr(set attribute.Set, key string) string {
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg, ok := createDefaultConfig().(*Config)
 	require.True(t, ok)
-	require.True(t, cfg.WaitForResult)
+	// The caller receives success once the request enters the queue;
+	// wait_for_result is disabled by default (see README.md).
+	require.False(t, cfg.WaitForResult)
 	require.True(t, cfg.BlockOnOverflow)
 	require.Equal(t, 1, cfg.NumConsumers)
+	// queue_size defaults to 10 (not exporterhelper's 1000): the logical
+	// equivalent of the legacy batchprocessor's num_cpus queueing.
+	require.Equal(t, int64(10), cfg.QueueSize)
 	// Batching must be enabled by default: it is the purpose of this component.
 	require.True(t, cfg.Batch.HasValue(), "batching should be enabled by default")
 	require.Positive(t, cfg.Batch.Get().MinSize)
@@ -112,7 +130,23 @@ func assertHistogram(t *testing.T, tt *componenttest.Telemetry, name, id, signal
 	require.Equal(t, signal, attrStr(dp.Attributes, signalKey))
 }
 
-// assertNoExporterMetrics asserts the exporterhelper's own telemetry is
+// assertHistogramPositive asserts a histogram recorded a single batch (count 1)
+// with a positive sum. Used for the bytes histogram, whose exact encoded size
+// is not asserted because it depends on the pdata wire encoding.
+func assertHistogramPositive(t *testing.T, tt *componenttest.Telemetry, name, id, signal string) {
+	t.Helper()
+	m, err := tt.GetMetric(name)
+	require.NoError(t, err)
+	hist, ok := m.Data.(metricdata.Histogram[int64])
+	require.True(t, ok, "expected histogram for %s", name)
+	require.Len(t, hist.DataPoints, 1)
+	dp := hist.DataPoints[0]
+	require.Equal(t, uint64(1), dp.Count)
+	require.Positive(t, dp.Sum)
+	require.Equal(t, id, attrStr(dp.Attributes, processorKey))
+	require.Equal(t, signal, attrStr(dp.Attributes, signalKey))
+}
+
 // disabled: no otelcol_exporter_* series are present.
 func assertNoExporterMetrics(t *testing.T, tt *componenttest.Telemetry) {
 	t.Helper()
@@ -190,4 +224,103 @@ func TestLogsMetrics(t *testing.T) {
 	assertHistogram(t, tt, "otelcol_processor_queuebatch_items", id, signal, 4, true)
 	assertHistogram(t, tt, "otelcol_processor_queuebatch_bytes", id, signal, 0, false)
 	assertNoExporterMetrics(t, tt)
+}
+
+func TestProfilesMetrics(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	set, cfg := testSettings(tt)
+	id, signal := set.ID.String(), xpipeline.SignalProfiles.String()
+	sink := new(consumertest.ProfilesSink)
+	p, err := newProfilesProcessor(context.Background(), set, cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
+
+	require.NoError(t, p.ConsumeProfiles(context.Background(), generateProfiles(6)))
+	require.NoError(t, p.Shutdown(context.Background()))
+
+	require.Equal(t, 6, sink.SampleCount())
+	assertCounter(t, tt, "otelcol_processor_incoming_items", id, signal, 6)
+	assertCounter(t, tt, "otelcol_processor_outgoing_items", id, signal, 6)
+	assertHistogram(t, tt, "otelcol_processor_queuebatch_items", id, signal, 6, true)
+	assertHistogram(t, tt, "otelcol_processor_queuebatch_bytes", id, signal, 0, false)
+	assertNoExporterMetrics(t, tt)
+}
+
+// errDownstream is a sentinel returned by the downstream consumer to verify
+// error propagation.
+var errDownstream = errors.New("downstream failure")
+
+// TestBatchingAccumulatesAcrossRequests verifies the core batching behavior:
+// several separate inputs that individually stay below min_size are merged into
+// a single batch, delivered downstream once the processor shuts down.
+func TestBatchingAccumulatesAcrossRequests(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	set := processortest.NewNopSettings(metadata.Type)
+	set.TelemetrySettings = tt.NewTelemetrySettings()
+	cfg := createDefaultConfig().(*Config)
+	// A large min_size and flush_timeout keep the inputs accumulating rather
+	// than flushing on their own. The batch sizer (items) differs from the
+	// queue sizer (requests), so min_size is not bounded by queue_size.
+	cfg.Batch.Get().MinSize = 1000
+	cfg.Batch.Get().FlushTimeout = time.Minute
+
+	id, signal := set.ID.String(), pipeline.SignalTraces.String()
+	sink := new(consumertest.TracesSink)
+	p, err := newTracesProcessor(context.Background(), set, cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
+
+	for range 3 {
+		require.NoError(t, p.ConsumeTraces(context.Background(), generateTraces(2)))
+	}
+	// Shutdown flushes the accumulated batch.
+	require.NoError(t, p.Shutdown(context.Background()))
+
+	// The three two-span inputs are merged and delivered as one batch of six.
+	require.Equal(t, 6, sink.SpanCount())
+	require.Len(t, sink.AllTraces(), 1)
+	assertCounter(t, tt, "otelcol_processor_incoming_items", id, signal, 6)
+	assertCounter(t, tt, "otelcol_processor_outgoing_items", id, signal, 6)
+	assertHistogram(t, tt, "otelcol_processor_queuebatch_items", id, signal, 6, true)
+	assertHistogramPositive(t, tt, "otelcol_processor_queuebatch_bytes", id, signal)
+	assertNoExporterMetrics(t, tt)
+}
+
+// TestWaitForResultPropagatesError verifies that, with wait_for_result enabled,
+// an error from the downstream consumer is propagated back to the caller.
+func TestWaitForResultPropagatesError(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	set, cfg := testSettings(tt)
+	cfg.WaitForResult = true
+
+	p, err := newTracesProcessor(context.Background(), set, cfg, consumertest.NewErr(errDownstream))
+	require.NoError(t, err)
+	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, p.Shutdown(context.Background())) })
+
+	require.ErrorIs(t, p.ConsumeTraces(context.Background(), generateTraces(1)), errDownstream)
+}
+
+// TestDefaultDoesNotWaitForResult verifies the default (wait_for_result=false):
+// the caller receives success as soon as the request enters the queue, even
+// when the downstream consumer subsequently fails.
+func TestDefaultDoesNotWaitForResult(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	set, cfg := testSettings(tt)
+	require.False(t, cfg.WaitForResult, "wait_for_result must be disabled by default")
+
+	p, err := newTracesProcessor(context.Background(), set, cfg, consumertest.NewErr(errDownstream))
+	require.NoError(t, err)
+	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, p.Shutdown(context.Background())) })
+
+	require.NoError(t, p.ConsumeTraces(context.Background(), generateTraces(1)))
 }

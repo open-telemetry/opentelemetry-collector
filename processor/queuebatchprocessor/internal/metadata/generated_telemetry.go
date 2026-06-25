@@ -63,26 +63,26 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	var err, errs error
 	builder.ProcessorIncomingItems, err = builder.meter.Int64Counter(
 		"otelcol_processor_incoming_items",
-		metric.WithDescription("Number of items passed to the processor. [Alpha]"),
+		metric.WithDescription("Number of items entering the queue. [Alpha]"),
 		metric.WithUnit("{item}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorOutgoingItems, err = builder.meter.Int64Counter(
 		"otelcol_processor_outgoing_items",
-		metric.WithDescription("Number of items emitted from the processor. [Alpha]"),
+		metric.WithDescription("Number of items exiting in batches. [Alpha]"),
 		metric.WithUnit("{item}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorQueuebatchBytes, err = builder.meter.Int64Histogram(
 		"otelcol_processor_queuebatch_bytes",
-		metric.WithDescription("Number of bytes in each batch emitted from the processor. Only collected at detailed telemetry level. [Development]"),
+		metric.WithDescription("Batch size in bytes. [Development]"),
 		metric.WithUnit("By"),
 		metric.WithExplicitBucketBoundaries([]float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000, 200000, 300000, 400000, 500000, 600000, 700000, 800000, 900000, 1e+06, 2e+06, 3e+06, 4e+06, 5e+06, 6e+06, 7e+06, 8e+06, 9e+06}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorQueuebatchItems, err = builder.meter.Int64Histogram(
 		"otelcol_processor_queuebatch_items",
-		metric.WithDescription("Number of items in each batch emitted from the processor. Only collected at detailed telemetry level. [Development]"),
+		metric.WithDescription("Batch size in items. [Development]"),
 		metric.WithUnit("{item}"),
 		metric.WithExplicitBucketBoundaries([]float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000}...),
 	)

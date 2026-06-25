@@ -10,13 +10,19 @@ import (
 
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 )
 
 // exporterSettings derives exporter.Settings from processor.Settings while
@@ -130,4 +136,32 @@ func newLogsProcessor(ctx context.Context, set processor.Settings, cfg *Config, 
 		return nil, err
 	}
 	return &logsProcessor{Logs: inner, bt: bt}, nil
+}
+
+// profilesProcessor wraps the exporterhelper result to count incoming items.
+type profilesProcessor struct {
+	xexporter.Profiles
+	bt *batchTelemetry
+}
+
+func (p *profilesProcessor) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) error {
+	p.bt.recordIncoming(ctx, int64(pd.SampleCount()))
+	return p.Profiles.ConsumeProfiles(ctx, pd)
+}
+
+func newProfilesProcessor(ctx context.Context, set processor.Settings, cfg *Config, next xconsumer.Profiles) (xprocessor.Profiles, error) {
+	bt, err := newBatchTelemetry(set.TelemetrySettings, set.ID, xpipeline.SignalProfiles)
+	if err != nil {
+		return nil, err
+	}
+	sizer := &pprofile.ProtoMarshaler{}
+	pusher := func(ctx context.Context, pd pprofile.Profiles) error {
+		bt.recordOutgoing(ctx, int64(pd.SampleCount()), func() int64 { return int64(sizer.ProfilesSize(pd)) })
+		return next.ConsumeProfiles(ctx, pd)
+	}
+	inner, err := xexporterhelper.NewProfiles(ctx, exporterSettings(set), cfg, pusher, queueOptions(cfg)...)
+	if err != nil {
+		return nil, err
+	}
+	return &profilesProcessor{Profiles: inner, bt: bt}, nil
 }

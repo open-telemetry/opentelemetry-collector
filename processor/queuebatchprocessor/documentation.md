@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_processor_incoming_items
 
-Number of items passed to the processor.
+Number of items entering the queue.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -16,7 +16,7 @@ Number of items passed to the processor.
 
 ### otelcol_processor_outgoing_items
 
-Number of items emitted from the processor.
+Number of items exiting in batches.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -24,7 +24,7 @@ Number of items emitted from the processor.
 
 ### otelcol_processor_queuebatch_bytes
 
-Number of bytes in each batch emitted from the processor. Only collected at detailed telemetry level.
+Batch size in bytes.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -32,7 +32,7 @@ Number of bytes in each batch emitted from the processor. Only collected at deta
 
 ### otelcol_processor_queuebatch_items
 
-Number of items in each batch emitted from the processor. Only collected at detailed telemetry level.
+Batch size in items.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |

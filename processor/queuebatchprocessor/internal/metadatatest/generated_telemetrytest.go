@@ -24,7 +24,7 @@ func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 func AssertEqualProcessorIncomingItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_incoming_items",
-		Description: "Number of items passed to the processor. [Alpha]",
+		Description: "Number of items entering the queue. [Alpha]",
 		Unit:        "{item}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -40,7 +40,7 @@ func AssertEqualProcessorIncomingItems(t *testing.T, tt *componenttest.Telemetry
 func AssertEqualProcessorOutgoingItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_outgoing_items",
-		Description: "Number of items emitted from the processor. [Alpha]",
+		Description: "Number of items exiting in batches. [Alpha]",
 		Unit:        "{item}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -56,7 +56,7 @@ func AssertEqualProcessorOutgoingItems(t *testing.T, tt *componenttest.Telemetry
 func AssertEqualProcessorQueuebatchBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_queuebatch_bytes",
-		Description: "Number of bytes in each batch emitted from the processor. Only collected at detailed telemetry level. [Development]",
+		Description: "Batch size in bytes. [Development]",
 		Unit:        "By",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -71,7 +71,7 @@ func AssertEqualProcessorQueuebatchBytes(t *testing.T, tt *componenttest.Telemet
 func AssertEqualProcessorQueuebatchItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_queuebatch_items",
-		Description: "Number of items in each batch emitted from the processor. Only collected at detailed telemetry level. [Development]",
+		Description: "Batch size in items. [Development]",
 		Unit:        "{item}",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,

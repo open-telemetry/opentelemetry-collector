@@ -4,29 +4,18 @@ status:
   disable_codecov_badge: true
   class: processor
   stability:
-    development: [traces, metrics, logs]
+    development: [traces, metrics, logs, profiles]
   distributions: []
-  codeowners:
-    active: [jmacd]
 
-tests:
-
-# This processor is built on the exporterhelper queue/batch sender, whose own
-# telemetry is disabled (see processor.go). It instead reports the standard
-# processor item counters (otelcol_processor_incoming_items and
-# otelcol_processor_outgoing_items, matching processorhelper) plus two
-# queue/batch-specific histograms.
-#
-# The histograms are only collected at the "detailed" telemetry level: they are
-# dropped by views below detailed (see service/internal/metricviews/views.go)
-# and their recording is skipped via the instrument Enabled() check, because
-# histograms are relatively expensive and the byte size is costly to compute.
+# Note queuebatch_bytes and queuebatch_items are copied from
+# ../batchprocessor/metadata.yaml, incoming_items and outgoing_items
+# are copied from ../processorhelper.
 telemetry:
   metrics:
     processor_incoming_items:
       enabled: true
       stability: alpha
-      description: Number of items passed to the processor.
+      description: Number of items entering the queue.
       unit: "{item}"
       sum:
         value_type: int
@@ -34,7 +23,7 @@ telemetry:
     processor_outgoing_items:
       enabled: true
       stability: alpha
-      description: Number of items emitted from the processor.
+      description: Number of items exiting in batches.
       unit: "{item}"
       sum:
         value_type: int
@@ -42,7 +31,7 @@ telemetry:
     processor_queuebatch_bytes:
       enabled: true
       stability: development
-      description: Number of bytes in each batch emitted from the processor. Only collected at detailed telemetry level.
+      description: Batch size in bytes.
       unit: By
       histogram:
         value_type: int
@@ -91,7 +80,7 @@ telemetry:
     processor_queuebatch_items:
       enabled: true
       stability: development
-      description: Number of items in each batch emitted from the processor. Only collected at detailed telemetry level.
+      description: Batch size in items.
       unit: "{item}"
       histogram:
         value_type: int

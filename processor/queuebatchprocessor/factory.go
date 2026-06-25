@@ -31,11 +31,15 @@ func NewFactory() processor.Factory {
 
 // createDefaultConfig returns the default configuration, modified
 // from exporterhelper.NewDefaultQueueConfig() to enable backpressure,
-// batching, and limit concurrency to 1.
+// limit concurrency to 1, w/ queue-size 10.
 func createDefaultConfig() component.Config {
 	cfg := exporterhelper.NewDefaultQueueConfig()
+
+	// These are all different from exporterhelper.
 	cfg.BlockOnOverflow = true
 	cfg.NumConsumers = 1
+	cfg.QueueSize = 10
+
 	cfg.Batch.GetOrInsertDefault()
 	return &cfg
 }
