@@ -10,31 +10,30 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/queuebatchprocessor/internal/metadata"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 )
 
 // NewFactory returns a new factory for the queue/batch processor.
 func NewFactory() processor.Factory {
-	return processor.NewFactory(
+	return xprocessor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		processor.WithTraces(createTraces, metadata.TracesStability),
-		processor.WithMetrics(createMetrics, metadata.MetricsStability),
-		processor.WithLogs(createLogs, metadata.LogsStability),
+		xprocessor.WithTraces(createTraces, metadata.TracesStability),
+		xprocessor.WithMetrics(createMetrics, metadata.MetricsStability),
+		xprocessor.WithLogs(createLogs, metadata.LogsStability),
+		xprocessor.WithProfiles(createProfiles, metadata.ProfilesStability),
 	)
 }
 
-// createDefaultConfig returns the default configuration, modified from
-// exporterhelper.NewDefaultQueueConfig() to enable backpressure, error
-// propagation, and limit concurrency to 1. Batching is also enabled by
-// default, since that is the purpose of this component; NewDefaultQueueConfig
-// leaves it as a not-yet-enabled default (pending the exporterhelper
-// batching-by-default feature gate).
+// createDefaultConfig returns the default configuration, modified
+// from exporterhelper.NewDefaultQueueConfig() to enable backpressure,
+// batching, and limit concurrency to 1.
 func createDefaultConfig() component.Config {
 	cfg := exporterhelper.NewDefaultQueueConfig()
-	cfg.WaitForResult = true
 	cfg.BlockOnOverflow = true
 	cfg.NumConsumers = 1
 	cfg.Batch.GetOrInsertDefault()
@@ -51,4 +50,8 @@ func createMetrics(ctx context.Context, set processor.Settings, cfg component.Co
 
 func createLogs(ctx context.Context, set processor.Settings, cfg component.Config, next consumer.Logs) (processor.Logs, error) {
 	return newLogsProcessor(ctx, set, cfg.(*Config), next)
+}
+
+func createProfiles(ctx context.Context, set processor.Settings, cfg component.Config, next xconsumer.Profiles) (xprocessor.Profiles, error) {
+	return newProfilesProcessor(ctx, set, cfg.(*Config), next)
 }
