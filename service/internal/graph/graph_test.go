@@ -2627,7 +2627,7 @@ func (ter *testEagerReceiver) Start(ctx context.Context, _ component.Host) error
 	td := ptrace.NewTraces()
 	var err error
 	for _, consumer := range ter.next {
-		err = errors.Join(consumer.ConsumeTraces(ctx, td))
+		err = errors.Join(err, consumer.ConsumeTraces(ctx, td))
 	}
 	return err
 }
