@@ -437,7 +437,7 @@ func TestLoadMetadata(t *testing.T) {
 						Signal: Signal{
 							Enabled:               true,
 							Description:           "[DEPRECATED] Non-monotonic delta sum double metric enabled by default.",
-							ExtendedDocumentation: "The metric will be removed soon.",
+							ExtendedDocumentation: "The metric will be removed soon.\n",
 							Stability:             component.StabilityLevelDeprecated,
 							Warnings: Warnings{
 								IfEnabled: "This metric is deprecated and will be removed soon.",
@@ -485,7 +485,7 @@ func TestLoadMetadata(t *testing.T) {
 						Signal: Signal{
 							Enabled:               false,
 							Description:           "[DEPRECATED] Example event disabled by default.",
-							ExtendedDocumentation: "The event will be renamed soon.",
+							ExtendedDocumentation: "The event will be renamed soon.\n",
 							Warnings: Warnings{
 								IfConfigured: "This event is deprecated and will be renamed soon.",
 							},
