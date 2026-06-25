@@ -119,6 +119,9 @@ type TLSInfo struct {
 	// PeerCertificates contains the certificates sent by the peer. Authentication
 	// extensions can use these certificates to authorize the client identity.
 	PeerCertificates []*x509.Certificate
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewTLSInfo creates TLSInfo from a TLS connection state.
