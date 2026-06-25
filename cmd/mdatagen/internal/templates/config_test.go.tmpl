@@ -97,15 +97,15 @@ func TestMetricsBuilderConfig(t *testing.T) {
 {{- range $name, $metric := .Metrics }}
 {{ if hasAggregatableAttributes $metric.Attributes -}}
 func Test{{ $name.Render }}MetricsConfig_Validate(t *testing.T) {
-  cfg := DefaultMetricsConfig().{{ $name.Render }}
-  require.NoError(t, cfg.Validate())
+	cfg := DefaultMetricsConfig().{{ $name.Render }}
+	require.NoError(t, cfg.Validate())
 
-  cfg.EnabledAttributes = []{{ $name.Render }}MetricAttributeKey{"invalid"}
-  require.ErrorContains(t, cfg.Validate(), "metric {{ $name }} doesn't have an attribute invalid, valid attributes: [{{ range $index, $element := $metric.Attributes -}}{{ if $index }}, {{ end }}{{ (attributeInfo $element).Name }}{{ end }}]")
+	cfg.EnabledAttributes = []{{ $name.Render }}MetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric {{ $name }} doesn't have an attribute invalid, valid attributes: [{{ range $index, $element := $metric.Attributes -}}{{ if $index }}, {{ end }}{{ (attributeInfo $element).Name }}{{ end }}]")
 
-  cfg = DefaultMetricsConfig().{{ $name.Render }}
-  cfg.AggregationStrategy = "invalid"
-  require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+	cfg = DefaultMetricsConfig().{{ $name.Render }}
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 {{ end }}
 {{ end }}
