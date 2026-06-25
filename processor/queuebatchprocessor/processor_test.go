@@ -12,6 +12,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
+	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -323,4 +325,59 @@ func TestDefaultDoesNotWaitForResult(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, p.Shutdown(context.Background())) })
 
 	require.NoError(t, p.ConsumeTraces(context.Background(), generateTraces(1)))
+}
+
+// errMeterFail is returned by errMeter to force telemetry construction to fail.
+var errMeterFail = errors.New("meter creation failed")
+
+type errMeterProvider struct{ noopmetric.MeterProvider }
+
+func (errMeterProvider) Meter(string, ...metric.MeterOption) metric.Meter { return errMeter{} }
+
+type errMeter struct{ noopmetric.Meter }
+
+func (errMeter) Int64Counter(string, ...metric.Int64CounterOption) (metric.Int64Counter, error) {
+	return nil, errMeterFail
+}
+
+// TestNewProcessorTelemetryError covers the error path in every signal's
+// constructor when the telemetry builder cannot be created.
+func TestNewProcessorTelemetryError(t *testing.T) {
+	set := processortest.NewNopSettings(metadata.Type)
+	set.MeterProvider = errMeterProvider{}
+	cfg := createDefaultConfig().(*Config)
+	ctx := context.Background()
+
+	_, errT := newTracesProcessor(ctx, set, cfg, consumertest.NewNop())
+	_, errM := newMetricsProcessor(ctx, set, cfg, consumertest.NewNop())
+	_, errL := newLogsProcessor(ctx, set, cfg, consumertest.NewNop())
+	_, errP := newProfilesProcessor(ctx, set, cfg, consumertest.NewNop())
+	for _, err := range []error{errT, errM, errL, errP} {
+		require.ErrorIs(t, err, errMeterFail)
+	}
+}
+
+// TestNewProcessorExporterError covers the error path in every signal's
+// constructor when the exporterhelper cannot be created. The telemetry builder
+// only needs the meter, so a nil logger fails exporter construction while the
+// telemetry succeeds.
+func TestNewProcessorExporterError(t *testing.T) {
+	set := processortest.NewNopSettings(metadata.Type)
+	set.Logger = nil
+	cfg := createDefaultConfig().(*Config)
+	ctx := context.Background()
+
+	_, errT := newTracesProcessor(ctx, set, cfg, consumertest.NewNop())
+	_, errM := newMetricsProcessor(ctx, set, cfg, consumertest.NewNop())
+	_, errL := newLogsProcessor(ctx, set, cfg, consumertest.NewNop())
+	_, errP := newProfilesProcessor(ctx, set, cfg, consumertest.NewNop())
+	for _, err := range []error{errT, errM, errL, errP} {
+		require.Error(t, err)
+	}
+}
+
+// TestInstrumentEnabledFallback covers the default-enabled path for an
+// instrument that does not implement Enabled(context.Context).
+func TestInstrumentEnabledFallback(t *testing.T) {
+	require.True(t, instrumentEnabled(context.Background(), struct{}{}))
 }
