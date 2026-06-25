@@ -4,7 +4,7 @@ component: cmd/mdatagen
 
 note: Support generating named slice types (`type Foo []Item`) for exported array config schemas.
 
-issues: []
+issues: [15497]
 
 subtext: |
   An exported config definition with `type: array` and an `items` entry (including `$ref` to
