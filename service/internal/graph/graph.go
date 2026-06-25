@@ -407,7 +407,7 @@ func (g *Graph) StartAll(ctx context.Context, host *Host) error {
 	}
 
 	nodes, err := topo.SortStabilized(g.componentGraph, func(nodes []graph.Node) {
-		slices.SortFunc(nodes, func(node1 graph.Node, node2 graph.Node) int {
+		slices.SortFunc(nodes, func(node1, node2 graph.Node) int {
 			// Always start receivers after non-receivers, to avoid cases where a shared receiver
 			// is started from one pipeline and starts sending to another, not yet started pipeline.
 			_, isReceiver1 := node1.(*receiverNode)

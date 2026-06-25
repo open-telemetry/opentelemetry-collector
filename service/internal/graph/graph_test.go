@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -2622,7 +2623,7 @@ type testEagerReceiver struct {
 	next []consumer.Traces
 }
 
-func (ter *testEagerReceiver) Start(ctx context.Context, host component.Host) error {
+func (ter *testEagerReceiver) Start(ctx context.Context, _ component.Host) error {
 	td := ptrace.NewTraces()
 	var err error
 	for _, consumer := range ter.next {
@@ -2630,7 +2631,8 @@ func (ter *testEagerReceiver) Start(ctx context.Context, host component.Host) er
 	}
 	return err
 }
-func (ter *testEagerReceiver) Shutdown(ctx context.Context) error {
+
+func (ter *testEagerReceiver) Shutdown(context.Context) error {
 	return nil
 }
 
@@ -2644,17 +2646,20 @@ type testStartableExporter struct {
 func (tse *testStartableExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
-func (tse *testStartableExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+
+func (tse *testStartableExporter) ConsumeTraces(context.Context, ptrace.Traces) error {
 	if !tse.started {
 		return errors.New("not started")
 	}
 	return nil
 }
-func (tse *testStartableExporter) Start(ctx context.Context, host component.Host) error {
+
+func (tse *testStartableExporter) Start(context.Context, component.Host) error {
 	tse.started = true
 	return nil
 }
-func (tse *testStartableExporter) Shutdown(ctx context.Context) error {
+
+func (tse *testStartableExporter) Shutdown(context.Context) error {
 	return nil
 }
 
@@ -2680,7 +2685,7 @@ func TestSharedReceiverStartOrder(t *testing.T) {
 	startableExporterFactory := exporter.NewFactory(
 		startableType,
 		func() component.Config { return nil },
-		exporter.WithTraces(func(ctx context.Context, s exporter.Settings, c component.Config) (exporter.Traces, error) {
+		exporter.WithTraces(func(context.Context, exporter.Settings, component.Config) (exporter.Traces, error) {
 			return &testStartableExporter{}, nil
 		}, component.StabilityLevelStable),
 	)
@@ -2689,7 +2694,7 @@ func TestSharedReceiverStartOrder(t *testing.T) {
 	// we try 10 different names for one instance of the shared receiver, resulting in 10 different node IDs and 10 different initial node orders.
 	for i := range 10 {
 		sharedReceiver = &testEagerReceiver{} // Reset shared instance
-		otherReceiverName := fmt.Sprintf("%d", i)
+		otherReceiverName := strconv.Itoa(i)
 
 		// Build the pipeline
 		set := Settings{
