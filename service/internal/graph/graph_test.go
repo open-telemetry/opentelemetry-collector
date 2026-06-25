@@ -2636,34 +2636,34 @@ func (ter *testEagerReceiver) Shutdown(ctx context.Context) error {
 
 var _ receiver.Traces = (*testEagerReceiver)(nil)
 
-// This processor returns an error if it receives traces before it has been started
-type testStartableProcessor struct {
+// This exporter returns an error if it receives traces before it has been started
+type testStartableExporter struct {
 	started bool
 }
 
-func (tsp *testStartableProcessor) Capabilities() consumer.Capabilities {
+func (tse *testStartableExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
-func (tsp *testStartableProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	if !tsp.started {
+func (tse *testStartableExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	if !tse.started {
 		return errors.New("not started")
 	}
 	return nil
 }
-func (tsp *testStartableProcessor) Start(ctx context.Context, host component.Host) error {
-	tsp.started = true
+func (tse *testStartableExporter) Start(ctx context.Context, host component.Host) error {
+	tse.started = true
 	return nil
 }
-func (tsp *testStartableProcessor) Shutdown(ctx context.Context) error {
+func (tse *testStartableExporter) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-var _ processor.Traces = (*testStartableProcessor)(nil)
+var _ exporter.Traces = (*testStartableExporter)(nil)
 
 func TestSharedReceiverStartOrder(t *testing.T) {
-	// Test that a shared receiver will not start before a processor it sends to
+	// Test that a shared receiver will not start before an exporter it sends to
 
-	// Define component factories:
+	// Define component factories
 
 	sharedType := component.MustNewType("shared")
 	var sharedReceiver *testEagerReceiver
@@ -2677,21 +2677,19 @@ func TestSharedReceiverStartOrder(t *testing.T) {
 	)
 
 	startableType := component.MustNewType("startable")
-	startableProcessorFactory := processor.NewFactory(
+	startableExporterFactory := exporter.NewFactory(
 		startableType,
 		func() component.Config { return nil },
-		processor.WithTraces(func(ctx context.Context, s processor.Settings, c component.Config, t consumer.Traces) (processor.Traces, error) {
-			return &testStartableProcessor{}, nil
+		exporter.WithTraces(func(ctx context.Context, s exporter.Settings, c component.Config) (exporter.Traces, error) {
+			return &testStartableExporter{}, nil
 		}, component.StabilityLevelStable),
 	)
-	nopFactory := exportertest.NewNopFactory()
-	nopType := nopFactory.Type()
 
 	// To check that the outcome isn't affected by how the topological sort decides to arbitrarily order nodes from separate pipelines,
 	// we try 10 different names for one instance of the shared receiver, resulting in 10 different node IDs and 10 different initial node orders.
 	for i := range 10 {
 		sharedReceiver = &testEagerReceiver{} // Reset shared instance
-		otherReceiverId := component.NewIDWithName(sharedType, fmt.Sprintf("%d", i))
+		otherReceiverName := fmt.Sprintf("%d", i)
 
 		// Build the pipeline
 		set := Settings{
@@ -2699,33 +2697,28 @@ func TestSharedReceiverStartOrder(t *testing.T) {
 			BuildInfo: component.NewDefaultBuildInfo(),
 			ReceiverBuilder: builders.NewReceiver(
 				map[component.ID]component.Config{
-					component.NewID(sharedType): sharedReceiverFactory.CreateDefaultConfig(),
-					otherReceiverId:             sharedReceiverFactory.CreateDefaultConfig(),
+					component.NewID(sharedType):                            sharedReceiverFactory.CreateDefaultConfig(),
+					component.NewIDWithName(sharedType, otherReceiverName): sharedReceiverFactory.CreateDefaultConfig(),
 				},
 				map[component.Type]receiver.Factory{sharedType: sharedReceiverFactory},
 			),
-			ProcessorBuilder: builders.NewProcessor(
-				map[component.ID]component.Config{component.NewID(startableType): startableProcessorFactory.CreateDefaultConfig()},
-				map[component.Type]processor.Factory{startableType: startableProcessorFactory},
-			),
+			ProcessorBuilder: builders.NewProcessor(nil, nil),
 			ExporterBuilder: builders.NewExporter(
-				map[component.ID]component.Config{component.NewID(nopType): nopFactory.CreateDefaultConfig()},
-				map[component.Type]exporter.Factory{nopType: nopFactory},
+				map[component.ID]component.Config{
+					component.NewID(startableType):              startableExporterFactory.CreateDefaultConfig(),
+					component.NewIDWithName(startableType, "2"): startableExporterFactory.CreateDefaultConfig(),
+				},
+				map[component.Type]exporter.Factory{startableType: startableExporterFactory},
 			),
-			ConnectorBuilder: builders.NewConnector(
-				map[component.ID]component.Config{},
-				map[component.Type]connector.Factory{},
-			),
+			ConnectorBuilder: builders.NewConnector(nil, nil),
 			PipelineConfigs: pipelines.Config{
 				pipeline.NewID(pipeline.SignalTraces): {
-					Receivers:  []component.ID{component.NewID(sharedType)},
-					Processors: []component.ID{component.NewID(startableType)},
-					Exporters:  []component.ID{component.NewID(nopType)},
+					Receivers: []component.ID{component.NewID(sharedType)},
+					Exporters: []component.ID{component.NewID(startableType)},
 				},
 				pipeline.NewIDWithName(pipeline.SignalTraces, "2"): {
-					Receivers:  []component.ID{otherReceiverId},
-					Processors: []component.ID{component.NewID(startableType)},
-					Exporters:  []component.ID{component.NewID(nopType)},
+					Receivers: []component.ID{component.NewIDWithName(sharedType, otherReceiverName)},
+					Exporters: []component.ID{component.NewIDWithName(startableType, "2")},
 				},
 			},
 		}
