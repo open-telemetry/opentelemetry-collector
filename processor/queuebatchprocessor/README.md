@@ -32,7 +32,7 @@ queue_size: 10
 # The queue blocks the caller when full, with timeout.
 block_on_overflow: true
 
-# The caller receives succses immediately after the request
+# The caller receives success immediately after the request
 # enters the queue. Enable to wait for success/failure.
 wait_for_result: false
 

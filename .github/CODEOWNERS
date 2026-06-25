@@ -98,6 +98,7 @@ processor/memorylimiterprocessor/                      @open-telemetry/collector
 processor/processorhelper/                             @open-telemetry/collector-approvers
 processor/processorhelper/xprocessorhelper/            @open-telemetry/collector-approvers
 processor/processortest/                               @open-telemetry/collector-approvers
+processor/queuebatchprocessor/                         @open-telemetry/collector-approvers
 processor/xprocessor/                                  @open-telemetry/collector-approvers @mx-psi @dmathieu
 receiver/                                              @open-telemetry/collector-approvers
 receiver/nopreceiver/                                  @open-telemetry/collector-approvers @evan-bradley
