@@ -729,6 +729,62 @@ func TestMetricsMergeSplitUnknownSizerType(t *testing.T) {
 	require.EqualError(t, err, "unknown sizer type")
 }
 
+func TestMergeSplitMetricsRequestsSizer(t *testing.T) {
+	// testdata.GenerateMetrics(N) creates N metrics each with 2 data points,
+	// so ItemsCount() == N*2.
+	tests := []struct {
+		name          string
+		mr1           request.Request
+		mr2           request.Request // may be nil
+		maxSize       int             // passed to MergeSplit; irrelevant for requests sizer
+		wantItemCount int
+	}{
+		{
+			name:          "merge_two_requests",
+			mr1:           newMetricsRequest(testdata.GenerateMetrics(5)),
+			mr2:           newMetricsRequest(testdata.GenerateMetrics(3)),
+			maxSize:       0,
+			wantItemCount: 16,
+		},
+		{
+			name:          "maxSize_is_ignored",
+			mr1:           newMetricsRequest(testdata.GenerateMetrics(10)),
+			mr2:           newMetricsRequest(testdata.GenerateMetrics(10)),
+			maxSize:       1, // would split with items/bytes sizer, must not here
+			wantItemCount: 40,
+		},
+		{
+			name:          "nil_second_request",
+			mr1:           newMetricsRequest(testdata.GenerateMetrics(7)),
+			mr2:           nil,
+			maxSize:       0,
+			wantItemCount: 14,
+		},
+		{
+			name:          "empty_first_request",
+			mr1:           newMetricsRequest(pmetric.NewMetrics()),
+			mr2:           newMetricsRequest(testdata.GenerateMetrics(4)),
+			maxSize:       0,
+			wantItemCount: 8,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res, err := tt.mr1.MergeSplit(context.Background(), tt.maxSize, request.SizerTypeRequests, tt.mr2)
+			require.NoError(t, err)
+			require.Len(t, res, 1)
+			assert.Equal(t, tt.wantItemCount, res[0].ItemsCount())
+		})
+	}
+}
+
+func TestMetricsRequestsSizerInvalidInputType(t *testing.T) {
+	mr := newMetricsRequest(testdata.GenerateMetrics(2))
+	_, err := mr.MergeSplit(context.Background(), 0, request.SizerTypeRequests, newLogsRequest(testdata.GenerateLogs(1)))
+	require.Error(t, err)
+}
+
 // mockMetricsSizer implements sizer.MetricsSizer interface for testing
 type mockMetricsSizer struct {
 	dpSize int

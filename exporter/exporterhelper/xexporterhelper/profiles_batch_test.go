@@ -32,6 +32,61 @@ func TestMergeProfilesInvalidInput(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestMergeSplitProfilesRequestsSizer(t *testing.T) {
+	// testdata.GenerateProfiles(N) yields ItemsCount() == N.
+	tests := []struct {
+		name          string
+		pr1           Request
+		pr2           Request // may be nil
+		maxSize       int     // passed to MergeSplit; irrelevant for requests sizer
+		wantItemCount int
+	}{
+		{
+			name:          "merge_two_requests",
+			pr1:           newProfilesRequest(testdata.GenerateProfiles(5)),
+			pr2:           newProfilesRequest(testdata.GenerateProfiles(3)),
+			maxSize:       0,
+			wantItemCount: 8,
+		},
+		{
+			name:          "maxSize_is_ignored",
+			pr1:           newProfilesRequest(testdata.GenerateProfiles(10)),
+			pr2:           newProfilesRequest(testdata.GenerateProfiles(10)),
+			maxSize:       1, // would split with items/bytes sizer, must not here
+			wantItemCount: 20,
+		},
+		{
+			name:          "nil_second_request",
+			pr1:           newProfilesRequest(testdata.GenerateProfiles(7)),
+			pr2:           nil,
+			maxSize:       0,
+			wantItemCount: 7,
+		},
+		{
+			name:          "empty_first_request",
+			pr1:           newProfilesRequest(testdata.GenerateProfiles(0)),
+			pr2:           newProfilesRequest(testdata.GenerateProfiles(4)),
+			maxSize:       0,
+			wantItemCount: 4,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res, err := tt.pr1.MergeSplit(context.Background(), tt.maxSize, exporterhelper.RequestSizerTypeRequests, tt.pr2)
+			require.NoError(t, err)
+			require.Len(t, res, 1)
+			assert.Equal(t, tt.wantItemCount, res[0].ItemsCount())
+		})
+	}
+}
+
+func TestProfilesRequestsSizerInvalidInputType(t *testing.T) {
+	pr := newProfilesRequest(testdata.GenerateProfiles(2))
+	_, err := pr.MergeSplit(context.Background(), 0, exporterhelper.RequestSizerTypeRequests, &requesttest.FakeRequest{Items: 1})
+	require.Error(t, err)
+}
+
 func TestMergeSplitProfiles(t *testing.T) {
 	tests := []struct {
 		name     string

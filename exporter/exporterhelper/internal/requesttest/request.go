@@ -67,6 +67,10 @@ func (r *FakeRequest) MergeSplit(_ context.Context, maxSize int, szt request.Siz
 
 	var res []request.Request
 	switch szt {
+	case request.SizerTypeRequests:
+		// With the requests sizer every request counts as 1 unit, so merging is
+		// always valid and splitting never applies. Return the merged request.
+		return []request.Request{r}, nil
 	case request.SizerTypeItems:
 		for r.Items != 0 {
 			if r.Items <= maxSize {

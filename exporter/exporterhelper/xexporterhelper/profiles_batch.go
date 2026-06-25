@@ -18,6 +18,21 @@ import (
 // Following the OTLP 1.7.0 upgrade, this is currently a noop.
 // See https://github.com/open-telemetry/opentelemetry-collector/issues/13106
 func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt exporterhelper.RequestSizerType, r2 Request) ([]Request, error) {
+	if szt == exporterhelper.RequestSizerTypeRequests {
+		if r2 != nil && r2.ItemsCount() > 0 {
+			req2, ok := r2.(*profilesRequest)
+			if !ok {
+				return nil, errors.New("invalid input type")
+			}
+			// Pass a nil sizer so mergeTo skips updating the cached byte/item
+			// size, which is irrelevant when batching by request count.
+			if err := req2.mergeTo(req, nil); err != nil {
+				return nil, fmt.Errorf("failed merging profiles; %w", err)
+			}
+		}
+		return []Request{req}, nil
+	}
+
 	var sz sizer.ProfilesSizer
 	switch szt {
 	case exporterhelper.RequestSizerTypeItems:
