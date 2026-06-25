@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/client"
 )
@@ -57,7 +58,7 @@ func TestParseIP(t *testing.T) {
 
 func TestContextWithClientIncludesTLSInfo(t *testing.T) {
 	req, err := http.NewRequest(http.MethodPost, "https://localhost/v1/traces", http.NoBody)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	req.RemoteAddr = "1.2.3.4:33455"
 	peerCert := &x509.Certificate{DNSNames: []string{"client.example.com"}}
 	req.TLS = &tls.ConnectionState{
