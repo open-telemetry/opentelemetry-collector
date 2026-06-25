@@ -6,6 +6,8 @@ status:
   stability:
     development: [traces, metrics, logs, profiles]
   distributions: []
+  codeowners:
+    active: [jmacd]
 
 # Note queuebatch_bytes and queuebatch_items are copied from
 # ../batchprocessor/metadata.yaml, incoming_items and outgoing_items
