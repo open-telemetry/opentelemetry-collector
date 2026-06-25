@@ -1,0 +1,15 @@
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+extensions:
+  errorshutdown:
+
+service:
+  extensions: [errorshutdown]
+  pipelines:
+    traces:
+      receivers: [nop]
+      exporters: [nop]
