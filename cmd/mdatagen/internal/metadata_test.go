@@ -76,6 +76,14 @@ func TestValidate(t *testing.T) {
 			wantErr: "empty type for resource attribute: string.resource.attr",
 		},
 		{
+			name:    "testdata/rattr_stability_valid.yaml",
+			wantErr: "",
+		},
+		{
+			name:    "testdata/invalid_rattr_stability.yaml",
+			wantErr: `unsupported stability level: "test42"`,
+		},
+		{
 			name:    "testdata/no_metric_description.yaml",
 			wantErr: "metric \"default.metric\": missing metric description",
 		},
