@@ -207,7 +207,10 @@ func (e *baseExporter) export(ctx context.Context, requestURL string, request []
 	}()
 
 	if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
-		return handlePartialSuccessResponse(resp, partialSuccessHandler)
+		if err := handlePartialSuccessResponse(resp, partialSuccessHandler); err != nil {
+			return consumererror.NewPermanent(err)
+		}
+		return nil
 	}
 
 	respStatus := readResponseStatus(resp)
@@ -332,14 +335,10 @@ func readResponseStatus(resp *http.Response) *status.Status {
 func handlePartialSuccessResponse(resp *http.Response, partialSuccessHandler partialSuccessHandler) error {
 	bodyBytes, err := readResponseBody(resp)
 	if err != nil {
-		return consumererror.NewPermanent(err)
+		return err
 	}
 
-	err = partialSuccessHandler(bodyBytes, resp.Header.Get("Content-Type"))
-	if err != nil {
-		return consumererror.NewPermanent(err)
-	}
-	return nil
+	return partialSuccessHandler(bodyBytes, resp.Header.Get("Content-Type"))
 }
 
 type partialSuccessHandler func(bytes []byte, contentType string) error
