@@ -74,6 +74,8 @@ type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	// MetricsBuilderConfig is a configuration for sample metrics builder.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	// Identifies the scraper, used for telemetry and logging.
+	ComponentID component.ID `mapstructure:"component"`
 	// Name of the scrape job, used to identify the source in telemetry.
 	JobName string `mapstructure:"job_name"`
 	// List of targets to scrape metrics from.

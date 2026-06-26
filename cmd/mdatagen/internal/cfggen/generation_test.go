@@ -1774,6 +1774,23 @@ func TestExtractValidators(t *testing.T) {
 			},
 			expected: []Validator{},
 		},
+		{
+			name: "GoName overrides propName in FieldName",
+			metadata: &ConfigMetadata{
+				Type:     "object",
+				Required: []string{"storage"},
+				Properties: map[string]*ConfigMetadata{
+					"storage": {Type: "string", GoStruct: GoStructConfig{FieldName: "storage_id"}},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "storage_id",
+					FieldType: "string",
+					Rules:     ValidationRules{Required: true},
+				},
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

@@ -906,9 +906,10 @@ func TestGenerateConfigGoStruct_PropertyDefaultsAndImports(t *testing.T) {
 			Type: "object",
 			Properties: map[string]*cfggen.ConfigMetadata{
 				"timeout": {
-					Type:    "string",
-					GoType:  "time.Duration",
-					Default: "30s",
+					Type:     "string",
+					GoType:   "time.Duration",
+					Default:  "30s",
+					GoStruct: cfggen.GoStructConfig{FieldName: "timeout"},
 				},
 			},
 		},
@@ -943,11 +944,13 @@ func TestGenerateConfigGoStruct_InternalResolvedRefGeneratesLocalType(t *testing
 					Type:         "object",
 					ResolvedFrom: "plain_config",
 					Default:      map[string]any{"timeout": "30s"},
+					GoStruct:     cfggen.GoStructConfig{FieldName: "config"},
 					Properties: map[string]*cfggen.ConfigMetadata{
 						"timeout": {
-							Type:    "string",
-							GoType:  "time.Duration",
-							Default: "30s",
+							Type:     "string",
+							GoType:   "time.Duration",
+							Default:  "30s",
+							GoStruct: cfggen.GoStructConfig{FieldName: "timeout"},
 						},
 					},
 				},
@@ -970,6 +973,39 @@ func TestGenerateConfigGoStruct_InternalResolvedRefGeneratesLocalType(t *testing
 	require.Contains(t, generated, "config := NewDefaultPlainConfig()")
 	require.Contains(t, generated, "config.Timeout = 30 * time.Second")
 	require.Contains(t, generated, "Config: config,")
+}
+
+func TestGenerateConfigGoStruct_ComponentIDFieldUsesGoName(t *testing.T) {
+	root := t.TempDir()
+	outputDir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(outputDir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	md := Metadata{
+		Type:        "test",
+		PackageName: "testmodule/shortname",
+		Status:      &Status{Class: "receiver"},
+		Config: &cfggen.ConfigMetadata{
+			Type: "object",
+			Properties: map[string]*cfggen.ConfigMetadata{
+				"storage": {
+					Type:     "string",
+					GoType:   "go.opentelemetry.io/collector/component.ID",
+					GoStruct: cfggen.GoStructConfig{FieldName: "storage_id"},
+				},
+			},
+		},
+	}
+
+	err := generateConfigGoStruct(md, outputDir)
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(filepath.Join(outputDir, "generated_config.go")) // #nosec G304
+	require.NoError(t, err)
+
+	generated := string(content)
+	require.Contains(t, generated, `StorageID component.ID`)
+	require.Contains(t, generated, "`mapstructure:\"storage\"`")
 }
 
 func TestGenerateConfigFiles_GoStructError(t *testing.T) {
@@ -1603,6 +1639,7 @@ func TestGenerateConfigGoStruct_TestFileContainsValidateTestWhenValidatorsPresen
 				"name": {
 					Type:      "string",
 					MinLength: func() *int { v := 1; return &v }(),
+					GoStruct:  cfggen.GoStructConfig{FieldName: "name"},
 				},
 			},
 		},
@@ -1630,8 +1667,9 @@ func TestGenerateConfigGoStruct_TestFileNoValidateTestWhenNoValidators(t *testin
 			Type: "object",
 			Properties: map[string]*cfggen.ConfigMetadata{
 				"timeout": {
-					Type:   "string",
-					GoType: "time.Duration",
+					Type:     "string",
+					GoType:   "time.Duration",
+					GoStruct: cfggen.GoStructConfig{FieldName: "timeout"},
 				},
 			},
 		},
@@ -1665,10 +1703,12 @@ func TestGenerateConfigGoStruct_DefsOnlyConfigGeneratesLibraryTypes(t *testing.T
 							Type:      "string",
 							Default:   "localhost",
 							MinLength: &minLength,
+							GoStruct:  cfggen.GoStructConfig{FieldName: "host_name"},
 						},
 						"port": {
-							Type:    "string",
-							Default: "8080",
+							Type:     "string",
+							Default:  "8080",
+							GoStruct: cfggen.GoStructConfig{FieldName: "port"},
 						},
 					},
 					Required: []string{"host_name", "port"},

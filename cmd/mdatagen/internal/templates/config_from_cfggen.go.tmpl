@@ -33,7 +33,7 @@ import (
         {{- if $prop.Description }}
     // {{ $prop.Description }}
         {{- end }}
-    	{{ $propName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}"`
+    	{{ $prop.GoStruct.FieldName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}"`
     {{- end }}
     // prevent unkeyed literal initialization
     _ struct{}
@@ -277,9 +277,9 @@ import (
             {{- $exprs := mapCustomDefaults $prop $prop.Default }}
             {{- if $exprs }}
                 {{- $varName := camelVar $propName }}
-        {{ $propName | publicVar }}: {{ wrapDefaultValue $prop $varName }},
+        {{ $prop.GoStruct.FieldName | publicVar }}: {{ wrapDefaultValue $prop $varName }},
             {{- else }}
-        {{ $propName | publicVar }}: {{ $defaultValue }},
+        {{ $prop.GoStruct.FieldName | publicVar }}: {{ $defaultValue }},
             {{- end }}
         {{- end }}
     {{- end }}
