@@ -313,16 +313,30 @@ otelcol \
 
 Instead of annotating individual yaml nodes (Approach 1) or touching the command line (Approaches 2 & 3), a config file can carry a dedicated top-level `merge_strategy:` section that declares which paths in *that file* should be merged into the running configuration. The `merge_strategy:` section will be removed before the config is applied.
 
+The `merge_strategy:` block is local to the configuration file that contains it. It controls how that file is merged into the base configuration and is discarded immediately afterward. Because each file's `merge_strategy:` is handled independently during processing, there's no need to merge `merge_strategy:` sections across files.
+
 This keeps URIs opaque, keeps the command line short, and keeps merge intent with the data it governs.
 
 #### Schema
 
 ```yaml
 merge_strategy:
-  mode: append          # append | prepend  (default: append)
+  mode: append          # default mode for all fields: append | prepend  (default: append)
   fields:
-    - "service::extensions"
-    - "service::pipelines::*::receivers"
+    # Inherits top-level mode
+    - path: "service::extensions"
+
+    # per-path mode override
+    - path: "service::pipelines::*::receivers"
+      mode: append
+
+    # Long form with key-field merging:
+    # Merges list items by matching on the given key field.
+    # Items whose key matches an existing entry are updated in place;
+    # items with a new key are appended (or prepended).
+    # - path: "service::telemetry::resource::attributes"
+    #   mode: append
+    #   key: name
 ```
 
 #### Examples
@@ -350,10 +364,10 @@ extensions:
 service:
   extensions: [file_storage]
 
-merge:
+merge_strategy:
   mode: append
   fields:
-    - "service::extensions"
+    - path: "service::extensions"
 ```
 
 ```yaml
@@ -391,13 +405,13 @@ service:
     metrics:
       receivers: [prometheus/sidecar]
 
-merge:
+merge_strategy:
   mode: append
   fields:
-    - "service::extensions"
-    - "service::pipelines::*::receivers"
-    - "service::pipelines::*::processors"
-    - "service::pipelines::*::exporters"
+    - path: "service::extensions"
+    - path: "service::pipelines::*::receivers"
+    - path: "service::pipelines::*::processors"
+    - path: "service::pipelines::*::exporters"
 ```
 
 3. _Mix append and prepend in a single fragment_:
@@ -415,7 +429,7 @@ service:
     logs:
       processors: [transform/enrich] # append: run last
 
-merge:
+merge_strategy:
   fields:
     - path: "service::pipelines::traces::processors"
       mode: prepend
@@ -423,20 +437,74 @@ merge:
       mode: append
 ```
 
+4. _(Future) Merge a list of objects by key field_:
+
+The `key` field is reserved in the schema for a future strategy where list items are matched by a named field rather than by position. Items whose key already exists in the base config are updated in place; items with a new key are inserted according to `mode`. This is not part of the initial implementation but the schema is designed to accommodate it without breaking changes.
+
+```yaml
+# base.yaml
+service:
+  telemetry:
+    resource:
+      attributes:
+        - name: key1
+          value: val1
+        - name: key2
+          value: val2
+```
+
+```yaml
+# override.yaml
+service:
+  telemetry:
+    resource:
+      attributes:
+        - name: key1
+          value: new-val1   # updates existing key1 in place
+        - name: key3
+          value: val3       # new key, appended
+
+merge_strategy:
+  fields:
+    - path: "service::telemetry::resource::attributes"
+      mode: append
+      key: name             # match items by the "name" field
+```
+
+```yaml
+# final (effective) configuration
+service:
+  telemetry:
+    resource:
+      attributes:
+        - name: key1
+          value: new-val1
+        - name: key2
+          value: val2
+        - name: key3
+          value: val3
+```
+
 ---
 
 ## Open questions
 
-- What to do if an invalid option is provided for `merge_mode`, `merge_paths`, `--merge-list`, or `merge:` fields?
+- What to do if an invalid option is provided for `merge_mode`, `merge_paths`, `--merge-list`, or `merge_strategy:` fields?
     - Two possibilities:
         1. Error out (recommended).
         2. Log an error and merge the default way.
-- **Approach 2**:What to do if an invalid query param is provided in a config URI?
+- **Approach 2**: What to do if an invalid query param is provided in a config URI?
     - Strongly prefer erroring out.
 - **Approach 3**: Should `--merge-list` apply to *all* loaded config files?
-- **Approach 4**: Should `merge:` be allowed in the very first config file (where it would be a no-op), or should that produce a warning?
-- **Approach 4**: What is the reserved key name? Alternatives: `_merge`, `x-merge`, `confmap_merge`.
+- **Approach 4**: Should `merge_strategy:` be allowed in the very first config file (where it would be a no-op), or should that produce a warning?
+- **Approach 4**: What is the reserved block name? Current proposal: `merge_strategy`. Alternatives: `_merge`, `x-merge`, `confmap_merge`.
 
 ## Extensibility
 
-The URI-based approach (Approach 2) and the `merge:` block approach (Approach 4) are both highly extensible. In the future they can enable advanced operations such as map overriding. Currently those operations are impossible.
+The URI-based approach (Approach 2) and the `merge_strategy:` block approach (Approach 4) are both highly extensible. In the future they can enable advanced operations such as map overriding. Currently those operations are impossible.
+
+### Key-field (indexed) merging
+
+A future requirement is merging lists of objects by a named key field. For example, merging `service::telemetry::resource::attributes` where each item has a `name` field. In this strategy, items with a matching key are updated in place and items with a new key are inserted according to `mode`. Simple positional append/prepend is insufficient for this use case.
+
+The Approach 4 schema reserves a `key` field in each long-form `fields` entry specifically for this. Adding support for key-field merging in a future version will require only an implementation change — the schema already accommodates it, so there will be no breaking interface change.
