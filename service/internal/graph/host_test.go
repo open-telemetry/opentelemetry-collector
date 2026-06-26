@@ -13,7 +13,7 @@ import (
 )
 
 func TestHost_NotifyComponentStatusChange_NonBlockingOnFullChannel(t *testing.T) {
-	ch := make(chan error)
+	ch := make(chan error, 1)
 	host := &Host{
 		AsyncErrorChannel: ch,
 		ServiceExtensions: &extensions.Extensions{},
