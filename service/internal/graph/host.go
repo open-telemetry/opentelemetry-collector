@@ -85,6 +85,9 @@ func (host *Host) NotifyComponentStatusChange(source *componentstatus.InstanceID
 		select {
 		case host.AsyncErrorChannel <- event.Err():
 		default:
+			// Channel is full or no reader is ready; the error is lost.
+			// A buffered channel with capacity 1 ensures at least one fatal
+			// error is preserved until the receiver reads it.
 		}
 	}
 }
