@@ -51,6 +51,14 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return goType
 		},
+		"isPrimitiveSchema": IsPrimitiveSchema,
+		"primitiveGoType": func(cfg *ConfigMetadata) string {
+			goType, err := PrimitiveGoType(cfg, rootPackage, componentPackage)
+			if err != nil {
+				panic(err)
+			}
+			return goType
+		},
 		"publicType": func(ref string) string {
 			typeName, err := FormatTypeName(ref, rootPackage, componentPackage)
 			if err != nil {
@@ -127,6 +135,42 @@ var goBasicTypes = []string{
 	"uint", "int8", "uint8", "int16", "uint16", "int32", "uint32", "int64", "uint64",
 	"float32", "float64",
 	"time.Time", "time.Duration",
+}
+
+var primitiveSchemaGoTypes = map[string]string{
+	"string":  "string",
+	"integer": "int",
+	"number":  "float64",
+	"boolean": "bool",
+}
+
+func IsPrimitiveSchema(md *ConfigMetadata) bool {
+	if md == nil {
+		return false
+	}
+	_, ok := primitiveSchemaGoTypes[md.Type]
+	return ok
+}
+
+func PrimitiveGoType(md *ConfigMetadata, rootPackage, componentPackage string) (string, error) {
+	if md == nil {
+		return "", errors.New("nil ConfigMetadata")
+	}
+	goType, ok := primitiveSchemaGoTypes[md.Type]
+	if !ok {
+		return "", fmt.Errorf("unsupported primitive type: %q", md.Type)
+	}
+	if md.GoType != "" {
+		if slices.Contains(goBasicTypes, md.GoType) {
+			return md.GoType, nil
+		}
+		typeName, err := FormatTypeName(md.GoType, rootPackage, componentPackage)
+		if err != nil {
+			return "", fmt.Errorf("failed to format custom type %q: %w", md.GoType, err)
+		}
+		return typeName, nil
+	}
+	return goType, nil
 }
 
 // MapGoType maps a ConfigMetadata to its corresponding Go type as a string.
@@ -348,7 +392,8 @@ func collectCustomDefaultImports(md *ConfigMetadata, defaultValue any, imports m
 func hasValidators(md *ConfigMetadata) bool {
 	return md.GoStruct.CustomValidator != nil || // custom validation
 		len(md.Required) > 0 || // required validation
-		md.MinLength != nil || md.MaxLength != nil || md.Pattern != "" // string validation
+		md.MinLength != nil || md.MaxLength != nil || md.Pattern != "" || // string validation
+		md.Minimum != nil || md.Maximum != nil || md.ExclusiveMinimum != nil || md.ExclusiveMaximum != nil // numeric validation
 }
 
 // FormatTypeName resolves a reference string to a Go type expression using GoTypeRef.
@@ -377,7 +422,9 @@ func collectDefs(md *ConfigMetadata, defs map[string]*ConfigMetadata) {
 		if !refDesc.IsInternal() {
 			return
 		}
-		defs[md.ResolvedFrom] = md
+		if _, exists := defs[md.ResolvedFrom]; !exists {
+			defs[md.ResolvedFrom] = md
+		}
 	}
 
 	for _, name := range slices.Sorted(maps.Keys(md.Defs)) {
@@ -402,7 +449,10 @@ func collectDefsForSchema(propName string, md *ConfigMetadata, defs map[string]*
 	if md.ResolvedFrom != "" {
 		refDesc := NewRef(md.ResolvedFrom)
 		if refDesc.IsInternal() {
-			defs[md.ResolvedFrom] = md
+			// Only register the ref-site node if no authoritative definition was already collected from md.Defs.
+			if _, exists := defs[md.ResolvedFrom]; !exists {
+				defs[md.ResolvedFrom] = md
+			}
 			collectDefs(md, defs)
 		}
 		return
@@ -653,7 +703,7 @@ func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPa
 	// handle references
 	isReference := md.ResolvedFrom != ""
 	isSubStruct := md.Type == "object" && md.AdditionalProperties == nil
-	if isReference || isSubStruct {
+	if (isReference && !IsPrimitiveSchema(md)) || isSubStruct {
 		if hasDefaultValue(md) {
 			if isReference {
 				refType, err := ResolveGoTypeRef(md.ResolvedFrom, rootPackage, componentPackage)

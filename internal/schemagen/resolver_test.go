@@ -63,6 +63,53 @@ func TestResolver_ResolveSchema_InternalReference(t *testing.T) {
 	require.Equal(t, "Target type description", result.Properties["config"].Description)
 }
 
+func TestResolver_ResolveSchema_InternalReferencePreservesInlineValidationOverrides(t *testing.T) {
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: NewLoader(""),
+	}
+
+	minimum, aliasMaximum, fieldMaximum := 1.0, 65535.0, 10000.0
+	src := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"port": {
+				Ref:     "port_number",
+				Maximum: &fieldMaximum,
+			},
+		},
+		Defs: map[string]*ConfigMetadata{
+			"port_number": {
+				Type:    "integer",
+				GoType:  "int32",
+				Minimum: &minimum,
+				Maximum: &aliasMaximum,
+			},
+		},
+	}
+
+	result, err := resolver.ResolveSchema(src)
+	require.NoError(t, err)
+
+	port := result.Properties["port"]
+	require.NotNil(t, port)
+	require.Equal(t, "integer", port.Type)
+	require.Equal(t, "port_number", port.ResolvedFrom)
+	require.Empty(t, port.GoType)
+	require.NotNil(t, port.Minimum)
+	require.InEpsilon(t, minimum, *port.Minimum, 1e-9)
+	require.NotNil(t, port.Maximum)
+	require.InEpsilon(t, fieldMaximum, *port.Maximum, 1e-9)
+
+	def := result.Defs["port_number"]
+	require.NotNil(t, def)
+	require.Equal(t, "int32", def.GoType)
+	require.NotNil(t, def.Maximum)
+	require.InEpsilon(t, aliasMaximum, *def.Maximum, 1e-9)
+}
+
 func TestResolver_ResolveSchema_DefsOnlyPreservesDefs(t *testing.T) {
 	resolver := &Resolver{
 		pkgID:  "go.opentelemetry.io/collector/test/pkg",

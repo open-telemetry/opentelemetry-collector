@@ -68,6 +68,13 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 		customDefault := current.Default
 		customEnum := current.Enum
 		customInternalOnly := current.InternalOnly
+		customMaxLength := current.MaxLength
+		customMinLength := current.MinLength
+		customPattern := current.Pattern
+		customMaximum := current.Maximum
+		customExclusiveMaximum := current.ExclusiveMaximum
+		customMinimum := current.Minimum
+		customExclusiveMinimum := current.ExclusiveMinimum
 
 		finalRef := current.Ref
 		resolved, err := r.resolveRef(root, current, origin)
@@ -101,6 +108,11 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 		// Restore custom extensions if they were explicitly set on the reference
 		if customGoType != "" {
 			newCurrent.GoType = customGoType
+		} else if isPrimitiveType(newCurrent.Type) {
+			// A primitive definition may use x-customType to choose the underlying
+			// Go type for its named declaration. Do not let that underlying type
+			// replace the named type at fields that reference the definition.
+			newCurrent.GoType = ""
 		}
 		if customIsPointer {
 			newCurrent.IsPointer = customIsPointer
@@ -116,6 +128,27 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 		}
 		if len(customEnum) > 0 {
 			newCurrent.Enum = customEnum
+		}
+		if customMaxLength != nil {
+			newCurrent.MaxLength = customMaxLength
+		}
+		if customMinLength != nil {
+			newCurrent.MinLength = customMinLength
+		}
+		if customPattern != "" {
+			newCurrent.Pattern = customPattern
+		}
+		if customMaximum != nil {
+			newCurrent.Maximum = customMaximum
+		}
+		if customExclusiveMaximum != nil {
+			newCurrent.ExclusiveMaximum = customExclusiveMaximum
+		}
+		if customMinimum != nil {
+			newCurrent.Minimum = customMinimum
+		}
+		if customExclusiveMinimum != nil {
+			newCurrent.ExclusiveMinimum = customExclusiveMinimum
 		}
 
 		current = &newCurrent
@@ -191,6 +224,15 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 	resolveGoNames(target)
 
 	return nil
+}
+
+func isPrimitiveType(typ string) bool {
+	switch typ {
+	case "string", "integer", "number", "boolean":
+		return true
+	default:
+		return false
+	}
 }
 
 // resolveRef resolves a JSON Schema $ref, handling both internal and external references.
