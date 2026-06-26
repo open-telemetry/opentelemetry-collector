@@ -3,4 +3,4 @@
 
 //go:generate mdatagen metadata.yaml
 
-package internal
+package internal // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal"
