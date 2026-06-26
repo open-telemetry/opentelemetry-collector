@@ -244,17 +244,17 @@ The event will be renamed soon.
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| map.resource.attr | Resource attribute with a map value. | Any Map | true | - |
-| optional.resource.attr | Explicitly disabled ResourceAttribute. | Any Str | false | - |
-| slice.resource.attr | Resource attribute with a slice value. | Any Slice | true | - |
-| string.enum.resource.attr | Resource attribute with a known set of string values. | Str: ``one``, ``two`` | true | - |
-| string.resource.attr | Resource attribute with any string value. | Any Str | true | - |
-| string.resource.attr_disable_warning | Resource attribute with any string value. | Any Str | true | - |
-| string.resource.attr_remove_warning | Resource attribute with any string value. | Any Str | false | - |
-| string.resource.attr_to_be_removed | Resource attribute with any string value. | Any Str | true | - |
-| string.resource.disabled_attr_to_be_removed | Resource attribute with any string value. | Any Str | false | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| map.resource.attr | Resource attribute with a map value. | Any Map | true | - | Development |
+| optional.resource.attr | Explicitly disabled ResourceAttribute. | Any Str | false | - | Development |
+| slice.resource.attr | Resource attribute with a slice value. | Any Slice | true | - | Development |
+| string.enum.resource.attr | Resource attribute with a known set of string values. | Str: ``one``, ``two`` | true | - | - |
+| string.resource.attr | Resource attribute with any string value. | Any Str | true | - | - |
+| string.resource.attr_disable_warning | Resource attribute with any string value. | Any Str | true | - | - |
+| string.resource.attr_remove_warning | Resource attribute with any string value. | Any Str | false | - | - |
+| string.resource.attr_to_be_removed | Resource attribute with any string value. | Any Str | true | - | - |
+| string.resource.disabled_attr_to_be_removed | Resource attribute with any string value. | Any Str | false | - | - |
 
 ## Internal Telemetry
 
