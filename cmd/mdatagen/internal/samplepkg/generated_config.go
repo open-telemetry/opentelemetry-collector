@@ -6,11 +6,14 @@ import (
 	"errors"
 )
 
+// PortNumber a port number to connect to.
+type PortNumber int32
+
 type SampleConfig struct {
 	// The host name to connect to.
 	HostName string `mapstructure:"host_name"`
 	// The port to connect to.
-	Port string `mapstructure:"port"`
+	Port PortNumber `mapstructure:"port"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -27,8 +30,11 @@ func (c *SampleConfig) Validate() error {
 		err = errors.Join(err, errors.New("host_name must have minimum length of 1"))
 	}
 
-	if c.Port == "" {
-		err = errors.Join(err, errors.New("port is required"))
+	if c.Port < 1 {
+		err = errors.Join(err, errors.New("port value must be greater than or equal to 1"))
+	}
+	if c.Port > 10000 {
+		err = errors.Join(err, errors.New("port value must be less than or equal to 10000"))
 	}
 
 	return err
@@ -38,6 +44,6 @@ func (c *SampleConfig) Validate() error {
 func NewDefaultSampleConfig() SampleConfig {
 	return SampleConfig{
 		HostName: "localhost",
-		Port:     "8080",
+		Port:     8080,
 	}
 }

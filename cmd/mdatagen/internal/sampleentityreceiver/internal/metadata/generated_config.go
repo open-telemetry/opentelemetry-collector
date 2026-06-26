@@ -3,18 +3,88 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// K8sPodCPUTimeMetricConfig provides config for the k8s.pod.cpu_time metric.
+type K8sPodCPUTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *K8sPodCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sPodPhaseMetricAttributeKey specifies the key of an attribute for the k8s.pod.phase metric.
+type K8sPodPhaseMetricAttributeKey string
+
+const (
+	K8sPodPhaseMetricAttributeKeyPhase K8sPodPhaseMetricAttributeKey = "phase"
+)
+
+// K8sPodPhaseMetricConfig provides config for the k8s.pod.phase metric.
+type K8sPodPhaseMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []K8sPodPhaseMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *K8sPodPhaseMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *K8sPodPhaseMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case K8sPodPhaseMetricAttributeKeyPhase:
+		default:
+			return fmt.Errorf("metric k8s.pod.phase doesn't have an attribute %v, valid attributes: [phase]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// K8sReplicasetDesiredMetricConfig provides config for the k8s.replicaset.desired metric.
+type K8sReplicasetDesiredMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sReplicasetDesiredMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -30,20 +100,22 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for sampleentity metrics.
 type MetricsConfig struct {
-	K8sPodCPUTime        MetricConfig `mapstructure:"k8s.pod.cpu_time"`
-	K8sPodPhase          MetricConfig `mapstructure:"k8s.pod.phase"`
-	K8sReplicasetDesired MetricConfig `mapstructure:"k8s.replicaset.desired"`
+	K8sPodCPUTime        K8sPodCPUTimeMetricConfig        `mapstructure:"k8s.pod.cpu_time"`
+	K8sPodPhase          K8sPodPhaseMetricConfig          `mapstructure:"k8s.pod.phase"`
+	K8sReplicasetDesired K8sReplicasetDesiredMetricConfig `mapstructure:"k8s.replicaset.desired"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		K8sPodCPUTime: MetricConfig{
+		K8sPodCPUTime: K8sPodCPUTimeMetricConfig{
 			Enabled: true,
 		},
-		K8sPodPhase: MetricConfig{
-			Enabled: true,
+		K8sPodPhase: K8sPodPhaseMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []K8sPodPhaseMetricAttributeKey{K8sPodPhaseMetricAttributeKeyPhase},
 		},
-		K8sReplicasetDesired: MetricConfig{
+		K8sReplicasetDesired: K8sReplicasetDesiredMetricConfig{
 			Enabled: true,
 		},
 	}

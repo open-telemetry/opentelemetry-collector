@@ -38,8 +38,6 @@ type Metadata struct {
 	Parent string `mapstructure:"parent"`
 	// Status information for the component.
 	Status *Status `mapstructure:"status"`
-	// ReaggregationEnabled enables spatial re-aggregation configuration generation. Defaults to true.
-	ReaggregationEnabled bool `mapstructure:"reaggregation_enabled"`
 	// Override value featuregate for resource attributes.
 	OverrideValueEnabled bool `mapstructure:"override_value_enabled"`
 	// The name of the package that will be generated.
@@ -641,6 +639,8 @@ type Attribute struct {
 	RequirementLevel AttributeRequirementLevel `mapstructure:"requirement_level"`
 	// The semantic convention reference of the attribute.
 	SemanticConvention *SemanticConvention `mapstructure:"semantic_convention"`
+	// Stability is the stability level of the resource attribute.
+	Stability component.StabilityLevel `mapstructure:"stability"`
 }
 
 // IsConditional returns true if the attribute is conditionally required.

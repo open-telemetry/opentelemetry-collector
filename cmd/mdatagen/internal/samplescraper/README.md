@@ -22,6 +22,7 @@ This scraper is used for testing purposes to check the output of mdatagen.
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
 | `collection_interval` | duration | 1m | no | Sets how frequently the scraper should be called and used as the context timeout to ensure that scrapers don't exceed the interval. |
+| `component` | string |  | no | Identifies the scraper, used for telemetry and logging. |
 | `initial_delay` | duration | 1s | no | Sets the initial start delay for the scraper, any non positive value is assumed to be immediately. |
 | `job_name` | string | test_job | **yes** | Name of the scrape job, used to identify the source in telemetry. |
 | `metrics` | object (see [metrics](#metrics)) |  | no | MetricsConfig provides config for sample metrics. |
