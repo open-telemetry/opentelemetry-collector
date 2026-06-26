@@ -1,0 +1,19 @@
+type: exporterhelper/timeout_config
+parent: exporterhelper
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  class: pkg
+
+exported_configs:
+  timeout_config:
+    description: A timeout configuration. The timeout applies to individual attempts to send data to the backend.
+    type: object
+    properties:
+      timeout:
+        description: Defines the timeout for every attempt to send data to the backend. A zero timeout means no timeout.
+        type: string
+        format: duration
+        default: 5s
+        minimum: 0
