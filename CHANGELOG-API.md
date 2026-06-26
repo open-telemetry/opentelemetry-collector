@@ -7,6 +7,42 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.61.0/v0.155.0
+
+### 🛑 Breaking changes 🛑
+
+- `cmd/mdatagen`: Remove the `reaggregation_enabled` metadata setting and always generate per-metric reaggregation config. (#15305)
+  Legacy metadata files that still contain `reaggregation_enabled` are accepted, but the value is ignored.
+
+### 🚩 Deprecations 🚩
+
+- `pkg/service`: Deprecate `service.Settings.CollectorConf` and `extensioncapabilities.ConfigWatcher` in favor of `service.Settings.ConfigSnapshot` and `extensioncapabilities.ConfigSnapshotWatcher`, which provide effective and unexpanded configuration representations. (#15432)
+
+### 💡 Enhancements 💡
+
+- `pkg/config/configmiddleware`: Migrated middleware config to schema based (#15440)
+- `pkg/pdata`: Add `DisallowUnknownFields` option to `JSONUnmarshaler` in plog, ptrace, pmetric, pprofile, and xpdata to error on JSON fields not defined by the OTLP schema. (#15279)
+  When `DisallowUnknownFields` is false (the default), unknown fields are silently ignored, matching the previous behavior.
+  Warning: enabling this option breaks forwards compatibility with future evolutions of the OTLP format, as fields added to the format in newer versions will be rejected as unknown.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Fix known acronyms at the end of generated Go identifiers to be all-caps, same as in any other position (#15438)
+
+<!-- previous-version -->
+
+## v1.60.0/v0.154.0
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Handle numeric validators in generated config structs (#14806)
+  Supported validators include `minimum`, `maximum`, `exclusiveMinimum` and `exclusiveMaximum`.
+- `pkg/config/configtls`: Add `include_insecure_cipher_suites` to configtls to enable insecure cipher suites. Insecure cipher suites are disabled by default for security. (#13829)
+- `pkg/confighttp`: Add `ExposedHeaders` field to `CORSConfig` to allow setting the `Access-Control-Expose-Headers` response header. (#15119)
+
+<!-- previous-version -->
+
 ## v1.59.0/v0.153.0
 
 ### 🛑 Breaking changes 🛑

@@ -71,6 +71,7 @@ type GoStructConfig struct {
 	CustomValidator *CustomValidatorConfig `mapstructure:"custom_validator" json:"-" yaml:"custom_validator,omitempty"`
 	Anonymous       bool                   `mapstructure:"anonymous" json:"-" yaml:"anonymous,omitempty"`
 	IgnoreDefault   bool                   `mapstructure:"ignore_default" json:"-" yaml:"ignore_default,omitempty"`
+	FieldName       string                 `mapstructure:"field_name" json:"-" yaml:"field_name,omitempty"`
 }
 
 type CustomValidatorConfig struct {

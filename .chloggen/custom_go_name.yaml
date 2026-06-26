@@ -1,0 +1,6 @@
+change_type: enhancement
+component: cmd/mdatagen
+note: Add `field_name` field to `go_struct` config in `metadata.yaml` to allow customizing the Go struct field name for generated config properties.
+issues: [15486]
+subtext:
+change_logs: [api]
