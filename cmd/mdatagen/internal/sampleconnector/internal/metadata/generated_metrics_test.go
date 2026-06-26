@@ -110,18 +110,15 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount := 0
 			allMetricsCount := 0
 			ebTestEntity := mb.ForTestEntity(NewTestEntityEntity("string.resource.attr-val"))
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebTestEntity.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, WithEnumAttrMetricAttribute(AttributeEnumAttrRed.String()))
 			if tt.name == "reaggregate_set" {
 				ebTestEntity.RecordDefaultMetricDataPoint(ts, 3, "string_attr-val-2", 20, []any{"slice_attr-item3", "slice_attr-item4"}, map[string]any{"key3": "map_attr-val3", "key4": "map_attr-val4"}, WithEnumAttrMetricAttribute(AttributeEnumAttrRed.String()))
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebTestEntity.RecordDefaultMetricToBeRemovedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebTestEntity.RecordMetricInputTypeDataPoint(ts, "1", "string_attr-val", 19, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, WithEnumAttrMetricAttribute(AttributeEnumAttrRed.String()))
@@ -140,7 +137,6 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				ebTestEntity.RecordOptionalMetricEmptyUnitDataPoint(ts, 3, "string_attr-val-2", false)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebTestEntity.RecordReaggregateMetricDataPoint(ts, 1, "string_attr-val", true)

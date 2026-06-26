@@ -115,13 +115,32 @@ func (bes *Extensions) NotifyPipelineNotReady() error {
 	return errs
 }
 
+// NotifyConfig notifies extensions of the Collector's current effective
+// configuration.
+//
+// Deprecated [v0.155.0]: use NotifyConfigSnapshot instead.
 func (bes *Extensions) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {
+	if conf == nil {
+		return nil
+	}
+	return bes.NotifyConfigSnapshot(ctx, extensioncapabilities.NewConfigSnapshot(conf, nil))
+}
+
+func (bes *Extensions) NotifyConfigSnapshot(ctx context.Context, configSnapshot extensioncapabilities.ConfigSnapshot) error {
+	if configSnapshot == nil {
+		return nil
+	}
 	var errs error
 	for _, extID := range bes.extensionIDs {
 		ext := bes.extMap[extID]
+		if cw, ok := ext.(extensioncapabilities.ConfigSnapshotWatcher); ok {
+			errs = multierr.Append(errs, cw.NotifyConfigSnapshot(ctx, configSnapshot))
+			continue
+		}
 		if cw, ok := ext.(extensioncapabilities.ConfigWatcher); ok {
-			clonedConf := confmap.NewFromStringMap(conf.ToStringMap())
-			errs = multierr.Append(errs, cw.NotifyConfig(ctx, clonedConf))
+			if effectiveConf := configSnapshot.Effective(); effectiveConf != nil {
+				errs = multierr.Append(errs, cw.NotifyConfig(ctx, effectiveConf))
+			}
 		}
 	}
 	return errs

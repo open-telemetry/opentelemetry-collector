@@ -88,7 +88,7 @@ vulncheck:
 
 .PHONY: generate
 generate:
-	$(GOCMD) generate ./...
+	$(GOCMD) generate $(shell $(GOCMD) list ./... | grep -v '/internal/metadata')
 
 .PHONY: impi
 impi:
@@ -102,3 +102,11 @@ moddownload:
 
 timebenchmark:
 	go test -bench=. -benchtime=1s ./...
+
+SRC ?= '$(CURDIR)'
+FLAGS ?= '-o=$(CURDIR)/'
+
+.PHONY: schemagen
+schemagen:
+	@echo "Running schemagen with filepath='$(SRC)' and flags='$(FLAGS)'"
+	cd $(SRC_ROOT)/cmd/schemagen && go run . $(FLAGS) $(SRC)
