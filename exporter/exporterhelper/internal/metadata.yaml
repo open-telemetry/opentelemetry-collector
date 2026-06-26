@@ -1,5 +1,5 @@
-type: exporterhelper/timeout_config
-parent: exporterhelper
+type: pkg/exporterhelper/timeout_config
+parent: pkg/exporterhelper
 github_project: open-telemetry/opentelemetry-collector
 
 status:
