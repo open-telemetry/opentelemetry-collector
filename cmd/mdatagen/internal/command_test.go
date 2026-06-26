@@ -906,9 +906,10 @@ func TestGenerateConfigGoStruct_PropertyDefaultsAndImports(t *testing.T) {
 			Type: "object",
 			Properties: map[string]*cfggen.ConfigMetadata{
 				"timeout": {
-					Type:    "string",
-					GoType:  "time.Duration",
-					Default: "30s",
+					Type:     "string",
+					GoType:   "time.Duration",
+					Default:  "30s",
+					GoStruct: cfggen.GoStructConfig{FieldName: "timeout"},
 				},
 			},
 		},
@@ -943,11 +944,13 @@ func TestGenerateConfigGoStruct_InternalResolvedRefGeneratesLocalType(t *testing
 					Type:         "object",
 					ResolvedFrom: "plain_config",
 					Default:      map[string]any{"timeout": "30s"},
+					GoStruct:     cfggen.GoStructConfig{FieldName: "config"},
 					Properties: map[string]*cfggen.ConfigMetadata{
 						"timeout": {
-							Type:    "string",
-							GoType:  "time.Duration",
-							Default: "30s",
+							Type:     "string",
+							GoType:   "time.Duration",
+							Default:  "30s",
+							GoStruct: cfggen.GoStructConfig{FieldName: "timeout"},
 						},
 					},
 				},
@@ -1636,6 +1639,7 @@ func TestGenerateConfigGoStruct_TestFileContainsValidateTestWhenValidatorsPresen
 				"name": {
 					Type:      "string",
 					MinLength: func() *int { v := 1; return &v }(),
+					GoStruct:  cfggen.GoStructConfig{FieldName: "name"},
 				},
 			},
 		},
@@ -1663,8 +1667,9 @@ func TestGenerateConfigGoStruct_TestFileNoValidateTestWhenNoValidators(t *testin
 			Type: "object",
 			Properties: map[string]*cfggen.ConfigMetadata{
 				"timeout": {
-					Type:   "string",
-					GoType: "time.Duration",
+					Type:     "string",
+					GoType:   "time.Duration",
+					GoStruct: cfggen.GoStructConfig{FieldName: "timeout"},
 				},
 			},
 		},
@@ -1698,10 +1703,12 @@ func TestGenerateConfigGoStruct_DefsOnlyConfigGeneratesLibraryTypes(t *testing.T
 							Type:      "string",
 							Default:   "localhost",
 							MinLength: &minLength,
+							GoStruct:  cfggen.GoStructConfig{FieldName: "host_name"},
 						},
 						"port": {
-							Type:    "string",
-							Default: "8080",
+							Type:     "string",
+							Default:  "8080",
+							GoStruct: cfggen.GoStructConfig{FieldName: "port"},
 						},
 					},
 					Required: []string{"host_name", "port"},
