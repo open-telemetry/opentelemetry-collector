@@ -6,17 +6,7 @@ status:
   disable_codecov_badge: true
   class: processor
   stability:
-    deprecated: [traces, metrics, logs]
-  deprecation:
-    traces:
-      migration: "Use the queuebatchprocessor instead; see docs/rfcs/batching-migration.md"
-      date: "2026-08-03"
-    metrics:
-      migration: "Use the queuebatchprocessor instead; see docs/rfcs/batching-migration.md"
-      date: "2026-08-03"
-    logs:
-      migration: "Use the queuebatchprocessor instead; see docs/rfcs/batching-migration.md"
-      date: "2026-08-03"
+    beta: [traces, metrics, logs]
   distributions: [core, contrib, k8s]
 
 tests:
