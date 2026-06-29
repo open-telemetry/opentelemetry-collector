@@ -5,7 +5,9 @@ package graph
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -21,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/pdata/xpdata/pref"
 	"go.opentelemetry.io/collector/pipeline"
@@ -2612,5 +2615,125 @@ func testGraphBuildErrors(t *testing.T) {
 			_, err := Build(context.Background(), set)
 			assert.EqualError(t, err, tt.expected)
 		})
+	}
+}
+
+// This receiver sends a dummy payload to all its consumers as soon as it starts
+type testEagerReceiver struct {
+	next []consumer.Traces
+}
+
+func (ter *testEagerReceiver) Start(ctx context.Context, _ component.Host) error {
+	td := ptrace.NewTraces()
+	var err error
+	for _, consumer := range ter.next {
+		err = errors.Join(err, consumer.ConsumeTraces(ctx, td))
+	}
+	return err
+}
+
+func (ter *testEagerReceiver) Shutdown(context.Context) error {
+	return nil
+}
+
+var _ receiver.Traces = (*testEagerReceiver)(nil)
+
+// This exporter returns an error if it receives traces before it has been started
+type testStartableExporter struct {
+	started bool
+}
+
+func (tse *testStartableExporter) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{}
+}
+
+func (tse *testStartableExporter) ConsumeTraces(context.Context, ptrace.Traces) error {
+	if !tse.started {
+		return errors.New("not started")
+	}
+	return nil
+}
+
+func (tse *testStartableExporter) Start(context.Context, component.Host) error {
+	tse.started = true
+	return nil
+}
+
+func (tse *testStartableExporter) Shutdown(context.Context) error {
+	return nil
+}
+
+var _ exporter.Traces = (*testStartableExporter)(nil)
+
+func TestSharedReceiverStartOrder(t *testing.T) {
+	// Test that a shared receiver will not start before an exporter it sends to
+
+	// Define component factories
+
+	sharedType := component.MustNewType("shared")
+	var sharedReceiver *testEagerReceiver
+	sharedReceiverFactory := receiver.NewFactory(
+		sharedType,
+		func() component.Config { return nil },
+		receiver.WithTraces(func(_ context.Context, _ receiver.Settings, _ component.Config, next consumer.Traces) (receiver.Traces, error) {
+			sharedReceiver.next = append(sharedReceiver.next, next)
+			return sharedReceiver, nil
+		}, component.StabilityLevelStable),
+	)
+
+	startableType := component.MustNewType("startable")
+	startableExporterFactory := exporter.NewFactory(
+		startableType,
+		func() component.Config { return nil },
+		exporter.WithTraces(func(context.Context, exporter.Settings, component.Config) (exporter.Traces, error) {
+			return &testStartableExporter{}, nil
+		}, component.StabilityLevelStable),
+	)
+
+	// To check that the outcome isn't affected by how the topological sort decides to arbitrarily order nodes from separate pipelines,
+	// we try 10 different names for one instance of the shared receiver, resulting in 10 different node IDs and 10 different initial node orders.
+	for i := range 10 {
+		sharedReceiver = &testEagerReceiver{} // Reset shared instance
+		otherReceiverName := strconv.Itoa(i)
+
+		// Build the pipeline
+		set := Settings{
+			Telemetry: componenttest.NewNopTelemetrySettings(),
+			BuildInfo: component.NewDefaultBuildInfo(),
+			ReceiverBuilder: builders.NewReceiver(
+				map[component.ID]component.Config{
+					component.NewID(sharedType):                            sharedReceiverFactory.CreateDefaultConfig(),
+					component.NewIDWithName(sharedType, otherReceiverName): sharedReceiverFactory.CreateDefaultConfig(),
+				},
+				map[component.Type]receiver.Factory{sharedType: sharedReceiverFactory},
+			),
+			ProcessorBuilder: builders.NewProcessor(nil, nil),
+			ExporterBuilder: builders.NewExporter(
+				map[component.ID]component.Config{
+					component.NewID(startableType):              startableExporterFactory.CreateDefaultConfig(),
+					component.NewIDWithName(startableType, "2"): startableExporterFactory.CreateDefaultConfig(),
+				},
+				map[component.Type]exporter.Factory{startableType: startableExporterFactory},
+			),
+			ConnectorBuilder: builders.NewConnector(nil, nil),
+			PipelineConfigs: pipelines.Config{
+				pipeline.NewID(pipeline.SignalTraces): {
+					Receivers: []component.ID{component.NewID(sharedType)},
+					Exporters: []component.ID{component.NewID(startableType)},
+				},
+				pipeline.NewIDWithName(pipeline.SignalTraces, "2"): {
+					Receivers: []component.ID{component.NewIDWithName(sharedType, otherReceiverName)},
+					Exporters: []component.ID{component.NewIDWithName(startableType, "2")},
+				},
+			},
+		}
+
+		pg, err := Build(context.Background(), set)
+		require.NoError(t, err)
+
+		// Check that no "not started" errors bubble up from the processors during startup
+		require.NoError(t, pg.StartAll(context.Background(), &Host{
+			Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {}),
+		}))
 	}
 }

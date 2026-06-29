@@ -1671,6 +1671,11 @@ func TestValidationRules_Enabled(t *testing.T) {
 			expected: true,
 		},
 		{
+			name:     "enum only",
+			rules:    ValidationRules{Enum: []any{"a", "b"}},
+			expected: true,
+		},
+		{
 			name:     "required with value rule",
 			rules:    ValidationRules{Required: true, MaxLength: Ptr(64)},
 			expected: true,
@@ -2983,4 +2988,132 @@ func TestExtractValidators_DefsValidatorNotOverwrittenByRefSite(t *testing.T) {
 	require.Equal(t, ".", validators[0].FieldName)
 	require.Equal(t, "validateBatchConfig", validators[0].CustomValidator,
 		"struct-level validator must come from the type definition, not the ref-site property")
+}
+
+func TestExtractValidators_EnumValidators(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected []Validator
+	}{
+		{
+			name: "enum on string field",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"level": {Type: "string", Enum: []any{"debug", "info", "warn"}},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "level",
+					FieldType: "string",
+					Rules:     ValidationRules{Enum: []any{"debug", "info", "warn"}},
+				},
+			},
+		},
+		{
+			name: "enum on integer field",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"port": {Type: "integer", Enum: []any{80, 443, 8080}},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "port",
+					FieldType: "integer",
+					Rules:     ValidationRules{Enum: []any{80, 443, 8080}},
+				},
+			},
+		},
+		{
+			name: "no enum produces no validator",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string"},
+				},
+			},
+			expected: []Validator{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ExtractValidators(tt.metadata)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestExtractImports_EnumAddsSlices(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"level": {Type: "string", Enum: []any{"a", "b"}},
+		},
+	}
+	imports, err := ExtractImports(md, "example.com/root", "example.com/component")
+	require.NoError(t, err)
+	require.Contains(t, imports, "slices")
+}
+
+func TestFormatEnumSlice(t *testing.T) {
+	tests := []struct {
+		name      string
+		values    []any
+		fieldType string
+		expected  string
+	}{
+		{
+			name:      "string values",
+			values:    []any{"a", "b", "c"},
+			fieldType: "string",
+			expected:  `[]string{"a", "b", "c"}`,
+		},
+		{
+			name:      "integer values",
+			values:    []any{1, 2, 3},
+			fieldType: "integer",
+			expected:  "[]int{1, 2, 3}",
+		},
+		{
+			name:      "number values",
+			values:    []any{1.5, 2.5},
+			fieldType: "number",
+			expected:  "[]float64{1.5, 2.5}",
+		},
+		{
+			name:      "boolean values",
+			values:    []any{true, false},
+			fieldType: "boolean",
+			expected:  "[]bool{true, false}",
+		},
+		{
+			name:      "unknown type falls back to any",
+			values:    []any{"x"},
+			fieldType: "unknown",
+			expected:  `[]any{"x"}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, formatEnumSlice(tt.values, tt.fieldType))
+		})
+	}
+}
+
+func TestFormatEnumValues(t *testing.T) {
+	require.Equal(t, "[a, b, c]", formatEnumValues([]any{"a", "b", "c"}))
+	require.Equal(t, "[1, 2]", formatEnumValues([]any{1, 2}))
+}
+
+func TestInvalidTestValue(t *testing.T) {
+	require.Equal(t, `"__invalid__"`, invalidTestValue("string"))
+	require.Equal(t, "-1", invalidTestValue("integer"))
+	require.Equal(t, "-1.0", invalidTestValue("number"))
+	require.Equal(t, `"__invalid__"`, invalidTestValue("object"))
 }
