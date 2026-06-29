@@ -45,9 +45,6 @@ type BackOffConfig struct {
 }
 
 func (bs *BackOffConfig) Validate() error {
-	if !bs.Enabled {
-		return nil
-	}
 	if bs.InitialInterval < 0 {
 		return errors.New("'initial_interval' must be non-negative")
 	}
