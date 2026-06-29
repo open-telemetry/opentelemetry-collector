@@ -63,6 +63,63 @@ func TestMapGoType_BasicTypes(t *testing.T) {
 	}
 }
 
+func TestPrimitiveGoType(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected string
+		wantErr  bool
+	}{
+		{
+			name:     "string",
+			metadata: &ConfigMetadata{Type: "string"},
+			expected: "string",
+		},
+		{
+			name:     "integer",
+			metadata: &ConfigMetadata{Type: "integer"},
+			expected: "int",
+		},
+		{
+			name:     "number",
+			metadata: &ConfigMetadata{Type: "number"},
+			expected: "float64",
+		},
+		{
+			name:     "boolean",
+			metadata: &ConfigMetadata{Type: "boolean"},
+			expected: "bool",
+		},
+		{
+			name:     "custom primitive Go type",
+			metadata: &ConfigMetadata{Type: "string", GoType: "github.com/example/pkg.CustomString"},
+			expected: "pkg.CustomString",
+		},
+		{
+			name:     "non primitive",
+			metadata: &ConfigMetadata{Type: "object"},
+			wantErr:  true,
+		},
+		{
+			name:    "nil schema",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, !tt.wantErr, IsPrimitiveSchema(tt.metadata))
+			result, err := PrimitiveGoType(tt.metadata, "", "")
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 func TestMapGoType_FormattedStrings(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -976,6 +1033,34 @@ func TestExtractDefs_InternalResolvedReference(t *testing.T) {
 	require.Contains(t, result, "nested_def")
 }
 
+func TestExtractDefs_PreservesExplicitDefOverResolvedFieldCopy(t *testing.T) {
+	aliasMaximum := 65535.0
+	fieldMaximum := 10000.0
+	md := &ConfigMetadata{
+		Type: "object",
+		Defs: map[string]*ConfigMetadata{
+			"port_number": {
+				Type:    "integer",
+				Maximum: &aliasMaximum,
+			},
+		},
+		Properties: map[string]*ConfigMetadata{
+			"port": {
+				Type:         "integer",
+				ResolvedFrom: "port_number",
+				Maximum:      &fieldMaximum,
+			},
+		},
+	}
+
+	result := ExtractDefs(md)
+
+	require.Same(t, md.Defs["port_number"], result["port_number"])
+	require.NotSame(t, md.Properties["port"], result["port_number"])
+	require.NotNil(t, result["port_number"].Maximum)
+	require.InEpsilon(t, aliasMaximum, *result["port_number"].Maximum, 1e-9)
+}
+
 func TestExtractDefs_SkipsExternalResolvedReference(t *testing.T) {
 	md := &ConfigMetadata{
 		Type: "object",
@@ -1522,6 +1607,15 @@ func TestExtractImports_ErrorsImportForValidators(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "maximum triggers errors import",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"count": {Type: "integer", Maximum: Ptr(100.0)},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1679,6 +1773,23 @@ func TestExtractValidators(t *testing.T) {
 				},
 			},
 			expected: []Validator{},
+		},
+		{
+			name: "GoName overrides propName in FieldName",
+			metadata: &ConfigMetadata{
+				Type:     "object",
+				Required: []string{"storage"},
+				Properties: map[string]*ConfigMetadata{
+					"storage": {Type: "string", GoStruct: GoStructConfig{FieldName: "storage_id"}},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "storage_id",
+					FieldType: "string",
+					Rules:     ValidationRules{Required: true},
+				},
+			},
 		},
 	}
 	for _, test := range tests {
@@ -2553,6 +2664,16 @@ func TestFormatDefaultValue_ResolvedReferenceWithDefaults(t *testing.T) {
 		"confighttp.NewDefaultClientConfig()",
 		FormatDefaultValue(md, "client", defaultValue(map[string]any{"timeout": "30s"}), "go.opentelemetry.io/collector", "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"),
 	)
+}
+
+func TestFormatDefaultValue_ResolvedPrimitiveReferenceWithDefault(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:         "integer",
+		ResolvedFrom: "port_number",
+		Default:      defaultValue(8080),
+	}
+
+	require.Equal(t, "8080", FormatDefaultValue(md, "port", defaultValue(8080), "", ""))
 }
 
 func TestFormatDefaultValue_ResolvedReferenceWithoutDefaults(t *testing.T) {
