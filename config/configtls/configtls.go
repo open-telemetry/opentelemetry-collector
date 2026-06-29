@@ -134,6 +134,9 @@ type ServerConfig struct {
 
 	// These are config options specific to server connections.
 
+	// ClientAuth configures how the server requests client certificates.
+	ClientAuth ClientAuthConfig `mapstructure:"client_auth,omitempty"`
+
 	// Path to the TLS cert to use by the server to verify a client certificate. (optional)
 	// This sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. Please refer to
 	// https://godoc.org/crypto/tls#Config for more information. (optional)
@@ -144,6 +147,20 @@ type ServerConfig struct {
 	ReloadClientCAFile bool `mapstructure:"client_ca_file_reload,omitempty"`
 	// prevent unkeyed literal initialization
 	_ struct{}
+}
+
+type ClientAuthType string
+
+const (
+	ClientAuthTypeNoClientCert               ClientAuthType = "no_client_cert"
+	ClientAuthTypeRequestClientCert          ClientAuthType = "request_client_cert"
+	ClientAuthTypeRequireAnyClientCert       ClientAuthType = "require_any_client_cert"
+	ClientAuthTypeVerifyClientCertIfGiven    ClientAuthType = "verify_client_cert_if_given"
+	ClientAuthTypeRequireAndVerifyClientCert ClientAuthType = "require_and_verify_client_cert"
+)
+
+type ClientAuthConfig struct {
+	Type ClientAuthType `mapstructure:"type,omitempty"`
 }
 
 // NewDefaultServerConfig creates a new ServerConfig with any default values set.
@@ -241,6 +258,16 @@ func (c ServerConfig) Validate() error {
 	// - If only one is provided (mismatch), error.
 	if !c.hasCert() && !c.hasKey() {
 		return errors.New("TLS configuration must include both certificate and key for server connections")
+	}
+	switch c.ClientAuth.Type {
+	case "",
+		ClientAuthTypeNoClientCert,
+		ClientAuthTypeRequestClientCert,
+		ClientAuthTypeRequireAnyClientCert,
+		ClientAuthTypeVerifyClientCertIfGiven,
+		ClientAuthTypeRequireAndVerifyClientCert:
+	default:
+		return fmt.Errorf("unsupported client_auth type %q", c.ClientAuth.Type)
 	}
 	return nil
 }
@@ -488,9 +515,31 @@ func (c ServerConfig) LoadTLSConfig(_ context.Context) (*tls.Config, error) {
 			tlsCfg.GetConfigForClient = func(*tls.ClientHelloInfo) (*tls.Config, error) { return reloader.getClientConfig(tlsCfg) }
 		}
 		tlsCfg.ClientCAs = reloader.certPool
-		tlsCfg.ClientAuth = tls.RequireAndVerifyClientCert
+		if c.ClientAuth.Type == "" {
+			tlsCfg.ClientAuth = tls.RequireAndVerifyClientCert
+		}
+	}
+	if c.ClientAuth.Type != "" {
+		tlsCfg.ClientAuth = c.ClientAuth.Type.tlsClientAuthType()
 	}
 	return tlsCfg, nil
+}
+
+func (t ClientAuthType) tlsClientAuthType() tls.ClientAuthType {
+	switch t {
+	case ClientAuthTypeNoClientCert:
+		return tls.NoClientCert
+	case ClientAuthTypeRequestClientCert:
+		return tls.RequestClientCert
+	case ClientAuthTypeRequireAnyClientCert:
+		return tls.RequireAnyClientCert
+	case ClientAuthTypeVerifyClientCertIfGiven:
+		return tls.VerifyClientCertIfGiven
+	case ClientAuthTypeRequireAndVerifyClientCert:
+		return tls.RequireAndVerifyClientCert
+	default:
+		return tls.NoClientCert
+	}
 }
 
 func (c ServerConfig) loadClientCAFile() (*x509.CertPool, error) {

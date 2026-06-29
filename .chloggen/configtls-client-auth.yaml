@@ -1,0 +1,9 @@
+change_type: enhancement
+component: pkg/config/configtls
+note: Add explicit TLS client authentication configuration to `configtls.ServerConfig`
+issues: [15504]
+subtext: |
+  `configtls.ServerConfig` now supports `client_auth.type` to configure server-side
+  TLS client certificate behavior using Collector-friendly names for Go's
+  `tls.ClientAuthType` values.
+change_logs: [user, api]
