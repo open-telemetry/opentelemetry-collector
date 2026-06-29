@@ -13,8 +13,6 @@ import (
 
 const (
 	schemaVersion = "https://json-schema.org/draft/2020-12/schema"
-	// goDurationPattern matches Go duration strings (e.g., "30s", "1h30m", "500ms")
-	goDurationPattern = `^([0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$`
 )
 
 type Resolver struct {
@@ -219,7 +217,9 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 		}
 	}
 	handleEmbeddedStructs(target)
-	enhanceTimeTypes(target)
+	if err := expandExtendedType(target); err != nil {
+		return err
+	}
 	cleanupInternalDefs(target)
 	resolveGoNames(target)
 
@@ -326,19 +326,6 @@ func handleEmbeddedStructs(md *ConfigMetadata) {
 	}
 	md.AllOf = embeddedStructs
 	md.Properties = properties
-}
-
-func enhanceTimeTypes(md *ConfigMetadata) {
-	if md.Type == "string" {
-		switch md.Format {
-		case "duration":
-			md.Format = ""
-			md.GoType = "time.Duration"
-			md.Pattern = goDurationPattern
-		case "date-time":
-			md.GoType = "time.Time"
-		}
-	}
 }
 
 func cleanupInternalDefs(md *ConfigMetadata) {

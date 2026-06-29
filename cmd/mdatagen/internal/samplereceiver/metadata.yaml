@@ -50,9 +50,21 @@ config:
       default: "localhost:12345"
     timeout:
       description: Timeout for scraping metrics.
-      type: string
-      format: duration
+      type: duration
       default: 10s
+    max_results:
+      description: Maximum number of results to return per scrape.
+      type: int64
+      default: 100
+    api_token:
+      description: API token used to authenticate with the endpoint.
+      type: opaque_string
+    component_id:
+      description: Component ID used to identify this receiver instance.
+      type: id
+    headers:
+      description: Extra HTTP headers to attach to each request.
+      type: opaque_map
     sample_pkg:
       $ref: ../samplepkg.sample_config
   required: [endpoint]
