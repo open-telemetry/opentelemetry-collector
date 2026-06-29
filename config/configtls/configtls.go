@@ -160,7 +160,11 @@ const (
 )
 
 type ClientAuthConfig struct {
+	// Type sets the TLS client certificate authentication behavior.
 	Type ClientAuthType `mapstructure:"type,omitempty"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultServerConfig creates a new ServerConfig with any default values set.
