@@ -1065,10 +1065,30 @@
     }
   ],
   "properties": {
+    "api_token": {
+      "description": "API token used to authenticate with the endpoint.",
+      "type": "string"
+    },
+    "component_id": {
+      "description": "Component ID used to identify this receiver instance.",
+      "type": "string"
+    },
     "endpoint": {
       "description": "The endpoint to scrape metrics from.",
       "type": "string",
       "default": "localhost:12345"
+    },
+    "headers": {
+      "description": "Extra HTTP headers to attach to each request.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "max_results": {
+      "description": "Maximum number of results to return per scrape.",
+      "type": "integer",
+      "default": 100
     },
     "sample_pkg": {
       "type": "object",

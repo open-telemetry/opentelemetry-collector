@@ -5,7 +5,6 @@ package samplescraper
 import (
 	"errors"
 	"regexp"
-	"time"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplepkg"
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper/internal/metadata"
@@ -22,7 +21,7 @@ func NewDefaultSamplePkg() SamplePkg {
 }
 
 type TargetsItem struct {
-	Interval configoptional.Optional[time.Duration] `mapstructure:"interval"`
+	Interval configoptional.Optional[string] `mapstructure:"interval"`
 	// Static key-value labels attached to all metrics from this target.
 	Labels map[string]string `mapstructure:"labels"`
 	// Number of retry attempts for failed scrapes.
@@ -61,7 +60,7 @@ func (c *TargetsItem) Validate() error {
 // NewDefaultTargetsItem returns a new TargetsItem with default values consistent with the annotations in the schema.
 func NewDefaultTargetsItem() TargetsItem {
 	return TargetsItem{
-		Interval:       configoptional.Some(10 * time.Second),
+		Interval:       configoptional.Some("10s"),
 		Labels:         map[string]string{"option1": "value1", "option2": "value2"},
 		RetryCount:     3,
 		TimeoutSeconds: 5,
