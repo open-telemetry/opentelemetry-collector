@@ -112,3 +112,18 @@ func TestMetricData(t *testing.T) {
 		assert.Equal(t, arg.wantAsync, arg.metricData.IsAsync())
 	}
 }
+
+func TestEmittedName(t *testing.T) {
+	for _, arg := range []struct {
+		metricName MetricName
+		wantName   string
+	}{
+		{metricName: MetricName("versioned.metric@1"), wantName: "versioned.metric"},
+		{metricName: MetricName("namespace.metric"), wantName: "namespace.metric"},
+	} {
+		name := arg.metricName
+
+		e := name.EmittedName()
+		assert.Equal(t, arg.wantName, e)
+	}
+}

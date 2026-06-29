@@ -63,6 +63,63 @@ func TestMapGoType_BasicTypes(t *testing.T) {
 	}
 }
 
+func TestPrimitiveGoType(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected string
+		wantErr  bool
+	}{
+		{
+			name:     "string",
+			metadata: &ConfigMetadata{Type: "string"},
+			expected: "string",
+		},
+		{
+			name:     "integer",
+			metadata: &ConfigMetadata{Type: "integer"},
+			expected: "int",
+		},
+		{
+			name:     "number",
+			metadata: &ConfigMetadata{Type: "number"},
+			expected: "float64",
+		},
+		{
+			name:     "boolean",
+			metadata: &ConfigMetadata{Type: "boolean"},
+			expected: "bool",
+		},
+		{
+			name:     "custom primitive Go type",
+			metadata: &ConfigMetadata{Type: "string", GoType: "github.com/example/pkg.CustomString"},
+			expected: "pkg.CustomString",
+		},
+		{
+			name:     "non primitive",
+			metadata: &ConfigMetadata{Type: "object"},
+			wantErr:  true,
+		},
+		{
+			name:    "nil schema",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, !tt.wantErr, IsPrimitiveSchema(tt.metadata))
+			result, err := PrimitiveGoType(tt.metadata, "", "")
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 func TestMapGoType_FormattedStrings(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -976,6 +1033,34 @@ func TestExtractDefs_InternalResolvedReference(t *testing.T) {
 	require.Contains(t, result, "nested_def")
 }
 
+func TestExtractDefs_PreservesExplicitDefOverResolvedFieldCopy(t *testing.T) {
+	aliasMaximum := 65535.0
+	fieldMaximum := 10000.0
+	md := &ConfigMetadata{
+		Type: "object",
+		Defs: map[string]*ConfigMetadata{
+			"port_number": {
+				Type:    "integer",
+				Maximum: &aliasMaximum,
+			},
+		},
+		Properties: map[string]*ConfigMetadata{
+			"port": {
+				Type:         "integer",
+				ResolvedFrom: "port_number",
+				Maximum:      &fieldMaximum,
+			},
+		},
+	}
+
+	result := ExtractDefs(md)
+
+	require.Same(t, md.Defs["port_number"], result["port_number"])
+	require.NotSame(t, md.Properties["port"], result["port_number"])
+	require.NotNil(t, result["port_number"].Maximum)
+	require.InEpsilon(t, aliasMaximum, *result["port_number"].Maximum, 1e-9)
+}
+
 func TestExtractDefs_SkipsExternalResolvedReference(t *testing.T) {
 	md := &ConfigMetadata{
 		Type: "object",
@@ -1522,6 +1607,15 @@ func TestExtractImports_ErrorsImportForValidators(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "maximum triggers errors import",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"count": {Type: "integer", Maximum: Ptr(100.0)},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1679,6 +1773,23 @@ func TestExtractValidators(t *testing.T) {
 				},
 			},
 			expected: []Validator{},
+		},
+		{
+			name: "GoName overrides propName in FieldName",
+			metadata: &ConfigMetadata{
+				Type:     "object",
+				Required: []string{"storage"},
+				Properties: map[string]*ConfigMetadata{
+					"storage": {Type: "string", GoStruct: GoStructConfig{FieldName: "storage_id"}},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "storage_id",
+					FieldType: "string",
+					Rules:     ValidationRules{Required: true},
+				},
+			},
 		},
 	}
 	for _, test := range tests {
@@ -2555,6 +2666,16 @@ func TestFormatDefaultValue_ResolvedReferenceWithDefaults(t *testing.T) {
 	)
 }
 
+func TestFormatDefaultValue_ResolvedPrimitiveReferenceWithDefault(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:         "integer",
+		ResolvedFrom: "port_number",
+		Default:      defaultValue(8080),
+	}
+
+	require.Equal(t, "8080", FormatDefaultValue(md, "port", defaultValue(8080), "", ""))
+}
+
 func TestFormatDefaultValue_ResolvedReferenceWithoutDefaults(t *testing.T) {
 	// An external ref with no property defaults must not generate a NewDefault... call.
 	md := &ConfigMetadata{
@@ -2778,4 +2899,88 @@ func TestNewCfgFns_DefaultHelpers(t *testing.T) {
 	))
 	require.True(t, hasDefaultValue(&ConfigMetadata{Type: "string", Default: defaultValue("localhost")}))
 	require.False(t, hasDefaultValue(&ConfigMetadata{Type: "string"}))
+}
+
+// TestExtractDefs_DefsNotOverwrittenByRefSite verifies that when a type is registered both
+// via md.Defs (the authoritative definition) and again as a property's ResolvedFrom (the ref-site
+// node carrying a property-level GoStruct), ExtractDefs keeps the Defs entry and does not
+// overwrite it with the ref-site node.
+func TestExtractDefs_DefsNotOverwrittenByRefSite(t *testing.T) {
+	authoritativeDef := &ConfigMetadata{
+		Type: "object",
+		GoStruct: GoStructConfig{
+			CustomValidator: &CustomValidatorConfig{Name: "validateBatchConfig"},
+		},
+		Properties: map[string]*ConfigMetadata{
+			"size": {Type: "integer"},
+		},
+	}
+	// Simulates what the resolver produces for a property that $refs batch_config:
+	// the ref-site node copies the property's go_struct (validateBatchProp) over the
+	// resolved type's go_struct (validateBatchConfig).
+	refSiteNode := &ConfigMetadata{
+		Type:         "object",
+		ResolvedFrom: "batch_config",
+		GoStruct: GoStructConfig{
+			CustomValidator: &CustomValidatorConfig{Name: "validateBatchProp"},
+		},
+		Properties: map[string]*ConfigMetadata{
+			"size": {Type: "integer"},
+		},
+	}
+	md := &ConfigMetadata{
+		Defs: map[string]*ConfigMetadata{
+			"batch_config": authoritativeDef,
+		},
+		Properties: map[string]*ConfigMetadata{
+			"batch": refSiteNode,
+		},
+	}
+
+	result := ExtractDefs(md)
+	require.Contains(t, result, "batch_config")
+	require.Same(t, authoritativeDef, result["batch_config"], "Defs entry must not be overwritten by the ref-site node")
+}
+
+// TestExtractValidators_DefsValidatorNotOverwrittenByRefSite verifies that ExtractValidators on
+// a def collected via md.Defs uses the type-level custom validator (validateBatchConfig), not
+// the property-level one (validateBatchProp) that the resolver copies onto the ref-site node.
+func TestExtractValidators_DefsValidatorNotOverwrittenByRefSite(t *testing.T) {
+	authoritativeDef := &ConfigMetadata{
+		Type: "object",
+		GoStruct: GoStructConfig{
+			CustomValidator: &CustomValidatorConfig{Name: "validateBatchConfig"},
+		},
+		Properties: map[string]*ConfigMetadata{
+			"size": {Type: "integer"},
+		},
+	}
+	refSiteNode := &ConfigMetadata{
+		Type:         "object",
+		ResolvedFrom: "batch_config",
+		GoStruct: GoStructConfig{
+			CustomValidator: &CustomValidatorConfig{Name: "validateBatchProp"},
+		},
+		IsOptional: true,
+		Properties: map[string]*ConfigMetadata{
+			"size": {Type: "integer"},
+		},
+	}
+	md := &ConfigMetadata{
+		Defs: map[string]*ConfigMetadata{
+			"batch_config": authoritativeDef,
+		},
+		Properties: map[string]*ConfigMetadata{
+			"batch": refSiteNode,
+		},
+	}
+
+	defs := ExtractDefs(md)
+	require.Contains(t, defs, "batch_config")
+
+	validators := ExtractValidators(defs["batch_config"])
+	require.Len(t, validators, 1)
+	require.Equal(t, ".", validators[0].FieldName)
+	require.Equal(t, "validateBatchConfig", validators[0].CustomValidator,
+		"struct-level validator must come from the type definition, not the ref-site property")
 }

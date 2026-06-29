@@ -166,7 +166,7 @@ var (
 //   - if enabled is true: the Optional becomes Some after unmarshaling.
 //   - if enabled is false: the Optional becomes None regardless of other configuration values.
 //
-// T must be derefenceable to a type with struct kind and not have an 'enabled' field.
+// T must be dereferenceable to a type with struct kind and not have an 'enabled' field.
 // Scalar values are not supported, and will be handled by [UnmarshalScalar] instead.
 // We do not need to check this since the hook for [ScalarUnmarshaler] will be called
 // before the hook for [Unmarshaler].
@@ -243,7 +243,7 @@ var (
 // If the Optional is None or Default, it does not marshal anything.
 // If the Optional is Some, it marshals the value into the configuration.
 //
-// T must be derefenceable to a type with struct kind.
+// T must be dereferenceable to a type with struct kind.
 // Scalar values are not supported, and will be handled by [MarshalScalar] instead.
 // We do not need to check this since the hook for [ScalarMarshaler] will be called
 // before the hook for [Marshaler].

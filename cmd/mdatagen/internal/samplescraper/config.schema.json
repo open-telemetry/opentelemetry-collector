@@ -589,6 +589,10 @@
     }
   ],
   "properties": {
+    "component": {
+      "description": "Identifies the scraper, used for telemetry and logging.",
+      "type": "string"
+    },
     "job_name": {
       "description": "Name of the scrape job, used to identify the source in telemetry.",
       "type": "string",
@@ -659,13 +663,14 @@
         },
         "port": {
           "description": "The port to connect to.",
-          "type": "string",
-          "default": "8080"
+          "type": "integer",
+          "default": 8080,
+          "maximum": 10000,
+          "minimum": 1
         }
       },
       "required": [
-        "host_name",
-        "port"
+        "host_name"
       ]
     }
   }

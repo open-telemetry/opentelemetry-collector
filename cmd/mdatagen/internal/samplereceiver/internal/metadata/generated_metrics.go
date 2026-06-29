@@ -102,31 +102,39 @@ var MapAttributeState = map[string]AttributeState{
 
 var MetricsInfo = metricsInfo{
 	DefaultMetric: metricInfo{
-		Name: "default.metric",
+		Name:       "default.metric",
+		Attributes: []string{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "conditional_int_attr", "conditional_string_attr", "opt_in_bool_attr"},
 	},
 	DefaultMetricToBeRemoved: metricInfo{
 		Name: "default.metric.to_be_removed",
 	},
 	MetricInputType: metricInfo{
-		Name: "metric.input_type",
+		Name:       "metric.input_type",
+		Attributes: []string{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
 	},
 	OptionalMetric: metricInfo{
-		Name: "optional.metric",
+		Name:       "optional.metric",
+		Attributes: []string{"string_attr", "boolean_attr", "boolean_attr2", "conditional_string_attr"},
 	},
 	OptionalMetricEmptyUnit: metricInfo{
-		Name: "optional.metric.empty_unit",
+		Name:       "optional.metric.empty_unit",
+		Attributes: []string{"string_attr", "boolean_attr"},
 	},
 	ReaggregateMetric: metricInfo{
-		Name: "reaggregate.metric",
+		Name:       "reaggregate.metric",
+		Attributes: []string{"string_attr", "boolean_attr"},
 	},
 	ReaggregateMetricWithRequired: metricInfo{
-		Name: "reaggregate.metric.with_required",
+		Name:       "reaggregate.metric.with_required",
+		Attributes: []string{"required_string_attr", "string_attr", "boolean_attr"},
 	},
 	SystemCPUTime: metricInfo{
-		Name: "system.cpu.time",
+		Name:       "system.cpu.time",
+		Attributes: []string{"cpu"},
 	},
 	SystemMemoryUsage: metricInfo{
-		Name: "system.memory.usage",
+		Name:       "system.memory.usage",
+		Attributes: []string{"state"},
 	},
 }
 
@@ -143,7 +151,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type MetricAttributeOption interface {
