@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "go.opentelemetry.io/collector/exporter/exporterhelper/internal",
-  "title": "pkg/exporterhelper/timeout_config",
+  "title": "pkg/pkg/exporterhelper/timeout_config",
   "$defs": {
     "timeout_config": {
       "description": "A timeout configuration. The timeout applies to individual attempts to send data to the backend.",
