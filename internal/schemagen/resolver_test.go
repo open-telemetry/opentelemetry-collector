@@ -853,13 +853,11 @@ func TestResolver_ResolveSchema_DurationFormat(t *testing.T) {
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"timeout": {
-				Type:        "string",
-				Format:      "duration",
+				Type:        "duration",
 				Description: "Request timeout",
 			},
 			"interval": {
-				Type:   "string",
-				Format: "duration",
+				Type: "duration",
 			},
 		},
 	}
@@ -1958,12 +1956,10 @@ func TestResolver_ResolveSchema_ExtendedType_OpaqueMap(t *testing.T) {
 	require.NoError(t, err)
 	headers := result.Properties["headers"]
 	require.NotNil(t, headers)
-	assert.Equal(t, "array", headers.Type)
+	assert.Equal(t, "object", headers.Type)
 	assert.Equal(t, "go.opentelemetry.io/collector/config/configopaque.MapList", headers.GoType)
-	require.NotNil(t, headers.Items)
-	assert.Equal(t, "object", headers.Items.Type)
-	assert.Contains(t, headers.Items.Properties, "name")
-	assert.Contains(t, headers.Items.Properties, "value")
+	require.NotNil(t, headers.AdditionalProperties)
+	assert.Equal(t, "string", headers.AdditionalProperties.Type)
 }
 
 func TestResolver_ResolveSchema_ExtendedType_UnknownAlias_Error(t *testing.T) {

@@ -83,15 +83,14 @@ func TestExpandExtendedType_Duration(t *testing.T) {
 	md := &ConfigMetadata{Type: "duration"}
 	require.NoError(t, expandExtendedType(md))
 	assert.Equal(t, "string", md.Type)
-	assert.Empty(t, md.GoType, "GoType is set by enhanceTimeTypes, not here")
-	assert.Equal(t, "duration", md.Format)
+	assert.Equal(t, "time.Duration", md.GoType)
 }
 
 func TestExpandExtendedType_Time(t *testing.T) {
 	md := &ConfigMetadata{Type: "time"}
 	require.NoError(t, expandExtendedType(md))
 	assert.Equal(t, "string", md.Type)
-	assert.Empty(t, md.GoType)
+	assert.Equal(t, "time.Time", md.GoType)
 	assert.Equal(t, "date-time", md.Format)
 }
 
@@ -113,12 +112,10 @@ func TestExpandExtendedType_ID(t *testing.T) {
 func TestExpandExtendedType_OpaqueMap(t *testing.T) {
 	md := &ConfigMetadata{Type: "opaque_map"}
 	require.NoError(t, expandExtendedType(md))
-	assert.Equal(t, "array", md.Type)
+	assert.Equal(t, "object", md.Type)
 	assert.Equal(t, "go.opentelemetry.io/collector/config/configopaque.MapList", md.GoType)
-	require.NotNil(t, md.Items)
-	assert.Equal(t, "object", md.Items.Type)
-	assert.Contains(t, md.Items.Properties, "name")
-	assert.Contains(t, md.Items.Properties, "value")
+	require.NotNil(t, md.AdditionalProperties)
+	assert.Equal(t, "string", md.AdditionalProperties.Type)
 }
 
 // TestExpandExtendedType_DoesNotClobberExplicitGoType verifies that an explicit x-customType
@@ -140,11 +137,11 @@ func TestExpandExtendedType_DoesNotClobberExplicitFormat(t *testing.T) {
 	assert.Equal(t, "custom-format", md.Format, "explicit Format must not be overwritten")
 }
 
-// TestExpandExtendedType_DoesNotClobberExplicitItems verifies that explicit Items is kept.
-func TestExpandExtendedType_DoesNotClobberExplicitItems(t *testing.T) {
+// TestExpandExtendedType_DoesNotClobberExplicitAdditionalProperties verifies that explicit Items is kept.
+func TestExpandExtendedType_DoesNotClobberExplicitAdditionalProperties(t *testing.T) {
 	existingItems := &ConfigMetadata{Type: "integer"}
-	md := &ConfigMetadata{Type: "opaque_map", Items: existingItems}
+	md := &ConfigMetadata{Type: "opaque_map", AdditionalProperties: existingItems}
 	require.NoError(t, expandExtendedType(md))
-	assert.Equal(t, "array", md.Type)
-	assert.Same(t, existingItems, md.Items, "explicit Items must not be overwritten")
+	assert.Equal(t, "object", md.Type)
+	assert.Same(t, existingItems, md.AdditionalProperties, "explicit AdditionalProperties must not be overwritten")
 }
