@@ -11,285 +11,285 @@ import (
 	"{{ . }}"
 {{- end }}
 {{- if $hasConfig }}
-    "go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component"
 {{- end }}
 )
 {{- end }}
 
 {{ define "struct" }}
-    {{- if .AllOf }}
-    {{- range .AllOf }}
-        {{- if .Description }}
-    // {{ .Description }}
-        {{- end }}
-            {{- if .EmbeddedName }}
-                {{ .EmbeddedName | publicType }} {{ .ResolvedFrom | publicType }} `mapstructure:",squash"`
-            {{- else }}
-                {{ .ResolvedFrom | publicType }} `mapstructure:",squash"`
-            {{- end }}
-    {{- end }}
-    {{- end }}
-    {{- range $propName, $prop := .Properties }}
-        {{- if $prop.Description }}
-    // {{ $prop.Description }}
-        {{- end }}
-    	{{ $prop.GoStruct.FieldName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}"`
-    {{- end }}
-    // prevent unkeyed literal initialization
-    _ struct{}
+	{{- if .AllOf }}
+	{{- range .AllOf }}
+		{{- if .Description }}
+	// {{ .Description }}
+		{{- end }}
+			{{- if .EmbeddedName }}
+				{{ .EmbeddedName | publicType }} {{ .ResolvedFrom | publicType }} `mapstructure:",squash"`
+			{{- else }}
+				{{ .ResolvedFrom | publicType }} `mapstructure:",squash"`
+			{{- end }}
+	{{- end }}
+	{{- end }}
+	{{- range $propName, $prop := .Properties }}
+		{{- if $prop.Description }}
+	// {{ $prop.Description }}
+		{{- end }}
+		{{ $prop.GoStruct.FieldName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}"`
+	{{- end }}
+	// prevent unkeyed literal initialization
+	_ struct{}
 {{ end }}
 
 {{- $defs := extractDefs .Metadata.Config }}
 {{ range $defName, $def := $defs }}
-    {{- if $def.Description }}
-        // {{ $defName | publicVar }} {{ $def.Description | uncapitalize }}
-    {{- end }}
-    {{- $typeName := $defName | publicVar }}
-    {{- if isExternalRef $def.ResolvedFrom }}
-        type {{ $typeName }} = {{ $def.ResolvedFrom | publicType }}
-    {{- else if isPrimitiveSchema $def }}
-        type {{ $typeName }} {{ primitiveGoType $def }}
-    {{- else }}
-        type {{ $typeName }} struct {
-        {{- template "struct" $def }}
-        }
-    {{- end }}
+	{{- if $def.Description }}
+		// {{ $defName | publicVar }} {{ $def.Description | uncapitalize }}
+	{{- end }}
+	{{- $typeName := $defName | publicVar }}
+	{{- if isExternalRef $def.ResolvedFrom }}
+		type {{ $typeName }} = {{ $def.ResolvedFrom | publicType }}
+	{{- else if isPrimitiveSchema $def }}
+		type {{ $typeName }} {{ primitiveGoType $def }}
+	{{- else }}
+		type {{ $typeName }} struct {
+		{{- template "struct" $def }}
+		}
+	{{- end }}
 
 {{ $defValidators := extractValidators $def }}
 {{- if and $defValidators (not (isExternalRef $def.ResolvedFrom)) (not (isPrimitiveSchema $def)) }}
-    // Validate validates the {{$typeName}} fields according to schema annotations.
-    func (c *{{ $typeName }}) Validate() error {
-        var err error
-        {{ range $validator := $defValidators -}}
-            {{- template "validation" $validator }}
-        {{- end }}
+	// Validate validates the {{$typeName}} fields according to schema annotations.
+	func (c *{{ $typeName }}) Validate() error {
+		var err error
+		{{ range $validator := $defValidators -}}
+			{{- template "validation" $validator }}
+		{{- end }}
 
-        return err
-    }
+		return err
+	}
 {{- end }}
 
-    {{- if and (hasDefaultValue $def) (not (isPrimitiveSchema $def)) }}
-    // NewDefault{{ $typeName }} returns a new {{ $typeName }} with default values consistent with the annotations in the schema.
-    func NewDefault{{ $typeName }}() {{ $typeName }} {
-        {{- if isExternalRef $def.ResolvedFrom }}
-        return {{ externalDefaultCall $def.ResolvedFrom }}
-        {{- else }}
-        {{- template "structLiteralVars" $def }}
-        return {{ $typeName }}{
-            {{- template "structLiteralFields" $def }}
-        }
-        {{- end }}
-    }
-    {{- end }}
+	{{- if and (hasDefaultValue $def) (not (isPrimitiveSchema $def)) }}
+	// NewDefault{{ $typeName }} returns a new {{ $typeName }} with default values consistent with the annotations in the schema.
+	func NewDefault{{ $typeName }}() {{ $typeName }} {
+		{{- if isExternalRef $def.ResolvedFrom }}
+		return {{ externalDefaultCall $def.ResolvedFrom }}
+		{{- else }}
+		{{- template "structLiteralVars" $def }}
+		return {{ $typeName }}{
+			{{- template "structLiteralFields" $def }}
+		}
+		{{- end }}
+	}
+	{{- end }}
 
 {{ end }}
 
 {{- if $hasConfig }}
-    {{- if .Metadata.Config.Description }}
-        // {{ .Metadata.Config.Description }}
-    {{- else }}
-        // Config defines the configuration for {{ .Metadata.DisplayName }} component.
-    {{- end }}
-    type Config struct {
-        {{- template "struct" .Metadata.Config }}
-    }
+	{{- if .Metadata.Config.Description }}
+		// {{ .Metadata.Config.Description }}
+	{{- else }}
+		// Config defines the configuration for {{ .Metadata.DisplayName }} component.
+	{{- end }}
+	type Config struct {
+		{{- template "struct" .Metadata.Config }}
+	}
 {{- end}}
 
 {{ define "customValidator" -}}
-    {{ $name := .FieldName | publicVar -}}
-    {{ $value := "c" }}
-    {{- if ne .FieldName "." }}
-        {{ $value = printf "c.%s" $name -}}
-    {{ end }}
-    if inner_err := {{ .CustomValidator }}({{ $value }}); inner_err != nil {
-        err = errors.Join(err, inner_err)
-    }
+	{{ $name := .FieldName | publicVar -}}
+	{{ $value := "c" }}
+	{{- if ne .FieldName "." }}
+		{{ $value = printf "c.%s" $name -}}
+	{{ end }}
+	if inner_err := {{ .CustomValidator }}({{ $value }}); inner_err != nil {
+		err = errors.Join(err, inner_err)
+	}
 {{- end }}
 
 {{ define "requiredValidator" -}}
-    {{ $name := .FieldName | publicVar -}}
-    {{- if .IsPointer }}
-        {{- if or (eq .FieldType "array") (eq .FieldType "map") }}
-        if c.{{ $name }} == nil || len(*c.{{ $name }}) == 0 {
-            err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
-        }
-        {{- else }}
-        if c.{{ $name }} == nil {
-            err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
-        }
-        {{- end }}
-    {{- else if eq .FieldType "string" }}
-        if c.{{ $name }} == "" {
-            err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
-        }
-    {{- else if eq .FieldType "array" }}
-        if len(c.{{ $name }}) == 0 {
-            err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
-        }
-    {{- else if eq .FieldType "map" }}
-        if c.{{ $name }} == nil || len(c.{{ $name }}) == 0 {
-            err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
-        }
-    {{- end -}}
+	{{ $name := .FieldName | publicVar -}}
+	{{- if .IsPointer }}
+		{{- if or (eq .FieldType "array") (eq .FieldType "map") }}
+		if c.{{ $name }} == nil || len(*c.{{ $name }}) == 0 {
+			err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
+		}
+		{{- else }}
+		if c.{{ $name }} == nil {
+			err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
+		}
+		{{- end }}
+	{{- else if eq .FieldType "string" }}
+		if c.{{ $name }} == "" {
+			err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
+		}
+	{{- else if eq .FieldType "array" }}
+		if len(c.{{ $name }}) == 0 {
+			err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
+		}
+	{{- else if eq .FieldType "map" }}
+		if c.{{ $name }} == nil || len(c.{{ $name }}) == 0 {
+			err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
+		}
+	{{- end -}}
 {{- end }}
 
 {{- define "fieldValue" -}}
-    {{- $name := .FieldName | publicVar -}}
-    {{- if .IsPointer }}*c.{{ $name -}}
-    {{- else if .IsOptional }}*c.{{ $name }}.Get()
-    {{- else }}c.{{ $name -}}
-    {{- end -}}
+	{{- $name := .FieldName | publicVar -}}
+	{{- if .IsPointer }}*c.{{ $name -}}
+	{{- else if .IsOptional }}*c.{{ $name }}.Get()
+	{{- else }}c.{{ $name -}}
+	{{- end -}}
 {{- end -}}
 
 {{ define "maxLengthValidator" -}}
-    {{ $maxLength := .Rules.MaxLength -}}
-    if len({{ template "fieldValue" . }}) > {{ $maxLength }} {
-        err = errors.Join(err, errors.New("{{ .FieldName }} exceeds maximum length of {{ $maxLength }}"))
-    }
+	{{ $maxLength := .Rules.MaxLength -}}
+	if len({{ template "fieldValue" . }}) > {{ $maxLength }} {
+		err = errors.Join(err, errors.New("{{ .FieldName }} exceeds maximum length of {{ $maxLength }}"))
+	}
 {{- end }}
 
 {{ define "minLengthValidator" -}}
-    {{ $minLength := .Rules.MinLength -}}
-    if len({{ template "fieldValue" . }}) < {{ $minLength }} {
-        err = errors.Join(err, errors.New("{{ .FieldName }} must have minimum length of {{ $minLength }}"))
-    }
+	{{ $minLength := .Rules.MinLength -}}
+	if len({{ template "fieldValue" . }}) < {{ $minLength }} {
+		err = errors.Join(err, errors.New("{{ .FieldName }} must have minimum length of {{ $minLength }}"))
+	}
 {{- end }}
 
 {{ define "patternValidator" -}}
-    {{ $pattern := .Rules.Pattern -}}
-    if matched, _ := regexp.MatchString(`{{ $pattern }}`, {{ template "fieldValue" . }}); !matched {
-        err = errors.Join(err, errors.New("{{ .FieldName }} must match pattern `{{ $pattern }}`"))
-    }
+	{{ $pattern := .Rules.Pattern -}}
+	if matched, _ := regexp.MatchString(`{{ $pattern }}`, {{ template "fieldValue" . }}); !matched {
+		err = errors.Join(err, errors.New("{{ .FieldName }} must match pattern `{{ $pattern }}`"))
+	}
 {{- end }}
 
 {{ define "minimumValidator" -}}
-    {{ $minimum := .Rules.Minimum -}}
-    if {{ template "fieldValue" . }} < {{ $minimum }} {
-        err = errors.Join(err, errors.New("{{ .FieldName }} value must be greater than or equal to {{ $minimum }}"))
-    }
+	{{ $minimum := .Rules.Minimum -}}
+	if {{ template "fieldValue" . }} < {{ $minimum }} {
+		err = errors.Join(err, errors.New("{{ .FieldName }} value must be greater than or equal to {{ $minimum }}"))
+	}
 {{- end }}
 
 {{ define "maximumValidator" -}}
-    {{ $maximum := .Rules.Maximum -}}
-    if {{ template "fieldValue" . }} > {{ $maximum }} {
-        err = errors.Join(err, errors.New("{{ .FieldName }} value must be less than or equal to {{ $maximum }}"))
-    }
+	{{ $maximum := .Rules.Maximum -}}
+	if {{ template "fieldValue" . }} > {{ $maximum }} {
+		err = errors.Join(err, errors.New("{{ .FieldName }} value must be less than or equal to {{ $maximum }}"))
+	}
 {{- end }}
 
 {{ define "exclusiveMinimumValidator" -}}
-    {{ $exclMin := .Rules.ExclusiveMinimum -}}
-    if {{ template "fieldValue" . }} <= {{ $exclMin }} {
-        err = errors.Join(err, errors.New("{{ .FieldName }} value must be greater than {{ $exclMin }}"))
-    }
+	{{ $exclMin := .Rules.ExclusiveMinimum -}}
+	if {{ template "fieldValue" . }} <= {{ $exclMin }} {
+		err = errors.Join(err, errors.New("{{ .FieldName }} value must be greater than {{ $exclMin }}"))
+	}
 {{- end }}
 
 {{ define "exclusiveMaximumValidator" -}}
-    {{ $exclMax := .Rules.ExclusiveMaximum -}}
-    if {{ template "fieldValue" . }} >= {{ $exclMax }} {
-        err = errors.Join(err, errors.New("{{ .FieldName }} value must be less than {{ $exclMax }}"))
-    }
+	{{ $exclMax := .Rules.ExclusiveMaximum -}}
+	if {{ template "fieldValue" . }} >= {{ $exclMax }} {
+		err = errors.Join(err, errors.New("{{ .FieldName }} value must be less than {{ $exclMax }}"))
+	}
 {{- end }}
 
 {{ define "valueValidators" }}
-    {{ if .Rules.MaxLength }}{{ template "maxLengthValidator" . }}{{ end }}
-    {{ if .Rules.MinLength }}{{ template "minLengthValidator" . }}{{ end }}
-    {{ if .Rules.Pattern }}{{ template "patternValidator" . }}{{ end }}
-    {{ if .Rules.Minimum }}{{ template "minimumValidator" . }}{{ end }}
-    {{ if .Rules.Maximum }}{{ template "maximumValidator" . }}{{ end }}
-    {{ if .Rules.ExclusiveMinimum }}{{ template "exclusiveMinimumValidator" . }}{{ end }}
-    {{ if .Rules.ExclusiveMaximum }}{{ template "exclusiveMaximumValidator" . }}{{ end }}
+	{{ if .Rules.MaxLength }}{{ template "maxLengthValidator" . }}{{ end }}
+	{{ if .Rules.MinLength }}{{ template "minLengthValidator" . }}{{ end }}
+	{{ if .Rules.Pattern }}{{ template "patternValidator" . }}{{ end }}
+	{{ if .Rules.Minimum }}{{ template "minimumValidator" . }}{{ end }}
+	{{ if .Rules.Maximum }}{{ template "maximumValidator" . }}{{ end }}
+	{{ if .Rules.ExclusiveMinimum }}{{ template "exclusiveMinimumValidator" . }}{{ end }}
+	{{ if .Rules.ExclusiveMaximum }}{{ template "exclusiveMaximumValidator" . }}{{ end }}
 {{ end -}}
 
 {{ define "validation" }}
 
-    {{ if .Rules.Required -}}
-        {{ template "requiredValidator" . }}
-    {{- end -}}
-    {{- if .Rules.HasValueRule }}
-        {{- $name := .FieldName | publicVar -}}
-        {{- if .IsPointer }}if c.{{ $name }} != nil { {{ end -}}
-        {{- if .IsOptional }}if c.{{ $name }}.HasValue() { {{ end -}}
-            {{ template "valueValidators" . }}
-        {{- if or .IsPointer .IsOptional }}}{{ end -}}
-    {{- end -}}
-    {{- if .CustomValidator }}
-        {{ template "customValidator" . }}
-    {{- end -}}
+	{{ if .Rules.Required -}}
+		{{ template "requiredValidator" . }}
+	{{- end -}}
+	{{- if .Rules.HasValueRule }}
+		{{- $name := .FieldName | publicVar -}}
+		{{- if .IsPointer }}if c.{{ $name }} != nil { {{ end -}}
+		{{- if .IsOptional }}if c.{{ $name }}.HasValue() { {{ end -}}
+			{{ template "valueValidators" . }}
+		{{- if or .IsPointer .IsOptional }}}{{ end -}}
+	{{- end -}}
+	{{- if .CustomValidator }}
+		{{ template "customValidator" . }}
+	{{- end -}}
 {{ end }}
 
 {{- if $validators }}
-    // Validate validates the Config fields.
-    func (c *Config) Validate() error {
-        var err error
-        {{ range $validator := $validators -}}
-            {{- template "validation" $validator }}
-        {{- end }}
+	// Validate validates the Config fields.
+	func (c *Config) Validate() error {
+		var err error
+		{{ range $validator := $validators -}}
+			{{- template "validation" $validator }}
+		{{- end }}
 
-        return err
-    }
+		return err
+	}
 {{- end }}
 
 {{- define "structLiteralVars" }}
-    {{- range $schema := .AllOf }}
-        {{- $exprs := mapCustomDefaults $schema $schema.Default }}
-        {{- if $exprs }}
-            {{- $varName := camelVar $schema.ResolvedFrom }}
-            {{- $name := embeddedName $schema }}
-            {{- $defaultValue := formatBaseValue $schema $name $schema.Default }}
-    {{ $varName }} := {{ $defaultValue }}
-            {{- range $expr := $exprs }}
-    {{ $varName }}{{ $expr }}
-            {{- end }}
+	{{- range $schema := .AllOf }}
+		{{- $exprs := mapCustomDefaults $schema $schema.Default }}
+		{{- if $exprs }}
+			{{- $varName := camelVar $schema.ResolvedFrom }}
+			{{- $name := embeddedName $schema }}
+			{{- $defaultValue := formatBaseValue $schema $name $schema.Default }}
+	{{ $varName }} := {{ $defaultValue }}
+			{{- range $expr := $exprs }}
+	{{ $varName }}{{ $expr }}
+			{{- end }}
 
-        {{- end }}
-    {{- end }}
-    {{- range $propName, $prop := .Properties }}
-        {{- $exprs := mapCustomDefaults $prop $prop.Default }}
-        {{- if $exprs }}
-            {{- $varName := camelVar $propName }}
-            {{- $defaultValue := formatBaseValue $prop $propName $prop.Default }}
-    {{ $varName }} := {{ $defaultValue }}
-            {{- range $expr := $exprs }}
-    {{ $varName }}{{ $expr }}
-            {{- end }}
+		{{- end }}
+	{{- end }}
+	{{- range $propName, $prop := .Properties }}
+		{{- $exprs := mapCustomDefaults $prop $prop.Default }}
+		{{- if $exprs }}
+			{{- $varName := camelVar $propName }}
+			{{- $defaultValue := formatBaseValue $prop $propName $prop.Default }}
+	{{ $varName }} := {{ $defaultValue }}
+			{{- range $expr := $exprs }}
+	{{ $varName }}{{ $expr }}
+			{{- end }}
 
-        {{- end }}
-    {{- end }}
+		{{- end }}
+	{{- end }}
 {{- end }}
 
 {{- define "structLiteralFields" }}
-    {{- range $schema := .AllOf }}
-        {{- $name := embeddedName $schema }}
-        {{- $defaultValue := formatDefaultValue $schema $name $schema.Default }}
-        {{- if $defaultValue }}
-            {{- $exprs := mapCustomDefaults $schema $schema.Default }}
-            {{- if $exprs }}
-                {{- $varName := camelVar $schema.ResolvedFrom }}
-        {{ $name }}: {{ wrapDefaultValue $schema $varName }},
-            {{- else }}
-        {{ $name }}: {{ $defaultValue }},
-            {{- end }}
-        {{- end }}
-    {{- end }}
-    {{- range $propName, $prop := .Properties }}
-        {{- $defaultValue := formatDefaultValue $prop $propName $prop.Default }}
-        {{- if $defaultValue }}
-            {{- $exprs := mapCustomDefaults $prop $prop.Default }}
-            {{- if $exprs }}
-                {{- $varName := camelVar $propName }}
-        {{ $prop.GoStruct.FieldName | publicVar }}: {{ wrapDefaultValue $prop $varName }},
-            {{- else }}
-        {{ $prop.GoStruct.FieldName | publicVar }}: {{ $defaultValue }},
-            {{- end }}
-        {{- end }}
-    {{- end }}
+	{{- range $schema := .AllOf }}
+		{{- $name := embeddedName $schema }}
+		{{- $defaultValue := formatDefaultValue $schema $name $schema.Default }}
+		{{- if $defaultValue }}
+			{{- $exprs := mapCustomDefaults $schema $schema.Default }}
+			{{- if $exprs }}
+				{{- $varName := camelVar $schema.ResolvedFrom }}
+		{{ $name }}: {{ wrapDefaultValue $schema $varName }},
+			{{- else }}
+		{{ $name }}: {{ $defaultValue }},
+			{{- end }}
+		{{- end }}
+	{{- end }}
+	{{- range $propName, $prop := .Properties }}
+		{{- $defaultValue := formatDefaultValue $prop $propName $prop.Default }}
+		{{- if $defaultValue }}
+			{{- $exprs := mapCustomDefaults $prop $prop.Default }}
+			{{- if $exprs }}
+				{{- $varName := camelVar $propName }}
+		{{ $prop.GoStruct.FieldName | publicVar }}: {{ wrapDefaultValue $prop $varName }},
+			{{- else }}
+		{{ $prop.GoStruct.FieldName | publicVar }}: {{ $defaultValue }},
+			{{- end }}
+		{{- end }}
+	{{- end }}
 {{- end }}
 
 {{ if $hasConfig }}
 func createDefaultConfig() component.Config {
-    {{- template "structLiteralVars" .Metadata.Config }}
-    return &Config{
-        {{- template "structLiteralFields" .Metadata.Config }}
-    }
+	{{- template "structLiteralVars" .Metadata.Config }}
+	return &Config{
+		{{- template "structLiteralFields" .Metadata.Config }}
+	}
 }
 {{- end }}

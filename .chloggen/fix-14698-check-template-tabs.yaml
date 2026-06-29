@@ -1,0 +1,6 @@
+change_type: enhancement
+component: cmd/mdatagen
+note: Add CI check to ensure Go template files use tabs for indentation; fix remaining space-indented templates.
+issues: [14698]
+subtext:
+change_logs: [user]

@@ -402,6 +402,14 @@ mdatagen-test:
 	cd cmd/mdatagen && $(MAKE) fmt
 	cd cmd/mdatagen && $(GOCMD) test ./...
 
+.PHONY: check-template-tabs
+check-template-tabs:
+	@if grep -rqP "^ " cmd/mdatagen/internal/templates/*.go.tmpl cmd/builder/internal/builder/templates/*.go.tmpl; then \
+		echo "ERROR: Go template files must use tabs for indentation, not spaces."; \
+		grep -rPn "^ " cmd/mdatagen/internal/templates/*.go.tmpl cmd/builder/internal/builder/templates/*.go.tmpl; \
+		exit 1; \
+	fi
+
 GITHUBGEN_ARGS ?= -skipgithub
 GITHUBGEN := $(GO_TOOL) githubgen $(GITHUBGEN_ARGS)
 
