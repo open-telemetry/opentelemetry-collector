@@ -16,6 +16,7 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
+			rb.SetHostArch("host.arch-val")
 			rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
 			rb.SetOptionalResourceAttr("optional.resource.attr-val")
 			rb.SetSliceResourceAttr([]any{"slice.resource.attr-item1", "slice.resource.attr-item2"})
@@ -33,12 +34,17 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 6, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 9, res.Attributes().Len())
+				assert.Equal(t, 10, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
+			}
+			hostArchAttrVal, ok := res.Attributes().Get("host.arch")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "host.arch-val", hostArchAttrVal.Str())
 			}
 			mapResourceAttrAttrVal, ok := res.Attributes().Get("map.resource.attr")
 			assert.True(t, ok)
@@ -93,6 +99,7 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
 	require.NoError(t, xconfmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
+	rb.SetHostArch("host.arch-val")
 	rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
 	rb.SetOptionalResourceAttr("optional.resource.attr-val")
 	rb.SetSliceResourceAttr([]any{"slice.resource.attr-item1", "slice.resource.attr-item2"})
@@ -104,6 +111,13 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 	rb.SetStringResourceDisabledAttrToBeRemoved("string.resource.disabled_attr_to_be_removed-val")
 
 	res := rb.Emit()
+	{
+		val, ok := res.Attributes().Get("host.arch")
+		assert.True(t, ok, "host.arch should be present")
+		if ok {
+			assert.Equal(t, "override-host.arch", val.Str())
+		}
+	}
 	{
 		val, ok := res.Attributes().Get("map.resource.attr")
 		assert.True(t, ok, "map.resource.attr should be present")
@@ -177,6 +191,13 @@ func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 
 	res := rb.Emit()
 	{
+		val, ok := res.Attributes().Get("host.arch")
+		assert.True(t, ok, "host.arch should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-host.arch", val.Str())
+		}
+	}
+	{
 		val, ok := res.Attributes().Get("map.resource.attr")
 		assert.True(t, ok, "map.resource.attr should be present even without calling Set")
 		if ok {
@@ -244,6 +265,7 @@ func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 // TestResourceBuilderOverrideDisabled disables all attributes, so override should not apply.
 func TestResourceBuilderOverrideDisabled(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
+	cfg.HostArch.Enabled = false
 	cfg.MapResourceAttr.Enabled = false
 	cfg.OptionalResourceAttr.Enabled = false
 	cfg.SliceResourceAttr.Enabled = false
@@ -264,6 +286,7 @@ func TestResourceBuilderOverrideDisabled(t *testing.T) {
 func TestResourceBuilderNoOverride(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "all_set")
 	require.NoError(t, xconfmap.Validate(cfg))
+	assert.Nil(t, cfg.HostArch.OverrideValue, "OverrideValue should be nil for host.arch")
 	assert.Nil(t, cfg.MapResourceAttr.OverrideValue, "OverrideValue should be nil for map.resource.attr")
 	assert.Nil(t, cfg.OptionalResourceAttr.OverrideValue, "OverrideValue should be nil for optional.resource.attr")
 	assert.Nil(t, cfg.SliceResourceAttr.OverrideValue, "OverrideValue should be nil for slice.resource.attr")
@@ -274,6 +297,7 @@ func TestResourceBuilderNoOverride(t *testing.T) {
 	assert.Nil(t, cfg.StringResourceAttrToBeRemoved.OverrideValue, "OverrideValue should be nil for string.resource.attr_to_be_removed")
 	assert.Nil(t, cfg.StringResourceDisabledAttrToBeRemoved.OverrideValue, "OverrideValue should be nil for string.resource.disabled_attr_to_be_removed")
 	rb := NewResourceBuilder(cfg)
+	rb.SetHostArch("host.arch-val")
 	rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
 	rb.SetOptionalResourceAttr("optional.resource.attr-val")
 	rb.SetSliceResourceAttr([]any{"slice.resource.attr-item1", "slice.resource.attr-item2"})
@@ -285,7 +309,12 @@ func TestResourceBuilderNoOverride(t *testing.T) {
 	rb.SetStringResourceDisabledAttrToBeRemoved("string.resource.disabled_attr_to_be_removed-val")
 
 	res := rb.Emit()
-	assert.Equal(t, 9, res.Attributes().Len())
+	assert.Equal(t, 10, res.Attributes().Len())
+	hostArchAttrVal, ok := res.Attributes().Get("host.arch")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "host.arch-val", hostArchAttrVal.Str())
+	}
 	mapResourceAttrAttrVal, ok := res.Attributes().Get("map.resource.attr")
 	assert.True(t, ok)
 	if ok {
