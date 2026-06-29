@@ -400,12 +400,3 @@ func BenchmarkSplittingBasedOnByteSizeHugeProfiles(b *testing.B) {
 		assert.Len(b, merged, 10)
 	}
 }
-
-func BenchmarkProfilesRequestBytesSizeRepeated(b *testing.B) {
-	req := newProfilesRequest(testdata.GenerateProfiles(1000)).(*profilesRequest)
-
-	b.ReportAllocs()
-	for b.Loop() {
-		_ = req.BytesSize()
-	}
-}

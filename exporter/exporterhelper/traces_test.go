@@ -398,3 +398,28 @@ func checkWrapSpanForTraces(t *testing.T, sr *tracetest.SpanRecorder, tracer tra
 		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.ItemsFailed, Value: attribute.Int64Value(failedToSendSpans)}, "SpanData %v", sd)
 	}
 }
+
+func BenchmarkTracesBytesQueueBatchPipeline(b *testing.B) {
+	td := testdata.GenerateTraces(1000)
+	exp, err := NewTraces(context.Background(), exportertest.NewNopSettings(exportertest.NopType), struct{}{}, consumer.ConsumeTracesFunc(func(context.Context, ptrace.Traces) error {
+		return nil
+	}), WithQueue(byteQueueBatchConfig()))
+	if err != nil {
+		b.Fatal(err)
+	}
+	if err := exp.Start(context.Background(), componenttest.NewNopHost()); err != nil {
+		b.Fatal(err)
+	}
+	b.Cleanup(func() {
+		if err := exp.Shutdown(context.Background()); err != nil {
+			b.Fatal(err)
+		}
+	})
+
+	b.ReportAllocs()
+	for b.Loop() {
+		if err := exp.ConsumeTraces(context.Background(), td); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

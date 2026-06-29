@@ -387,3 +387,42 @@ func checkWrapSpanForLogs(t *testing.T, sr *tracetest.SpanRecorder, tracer trace
 		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.ItemsFailed, Value: attribute.Int64Value(failedToSendLogRecords)}, "SpanData %v", sd)
 	}
 }
+
+func byteQueueBatchConfig() configoptional.Optional[QueueBatchConfig] {
+	cfg := NewDefaultQueueConfig()
+	cfg.WaitForResult = true
+	cfg.Sizer = RequestSizerTypeBytes
+	cfg.QueueSize = 1 << 30
+	cfg.NumConsumers = 1
+	cfg.Batch = configoptional.Some(BatchConfig{
+		FlushTimeout: time.Hour,
+		Sizer:        RequestSizerTypeBytes,
+		MinSize:      1,
+	})
+	return configoptional.Some(cfg)
+}
+
+func BenchmarkLogsBytesQueueBatchPipeline(b *testing.B) {
+	ld := testdata.GenerateLogs(1000)
+	exp, err := NewLogs(context.Background(), exportertest.NewNopSettings(exportertest.NopType), struct{}{}, consumer.ConsumeLogsFunc(func(context.Context, plog.Logs) error {
+		return nil
+	}), WithQueue(byteQueueBatchConfig()))
+	if err != nil {
+		b.Fatal(err)
+	}
+	if err := exp.Start(context.Background(), componenttest.NewNopHost()); err != nil {
+		b.Fatal(err)
+	}
+	b.Cleanup(func() {
+		if err := exp.Shutdown(context.Background()); err != nil {
+			b.Fatal(err)
+		}
+	})
+
+	b.ReportAllocs()
+	for b.Loop() {
+		if err := exp.ConsumeLogs(context.Background(), ld); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

@@ -434,12 +434,3 @@ func BenchmarkSplittingBasedOnByteSizeHugeLogs(b *testing.B) {
 		assert.Len(b, merged, 10)
 	}
 }
-
-func BenchmarkLogsRequestBytesSizeRepeated(b *testing.B) {
-	req := newLogsRequest(testdata.GenerateLogs(1000)).(*logsRequest)
-
-	b.ReportAllocs()
-	for b.Loop() {
-		_ = req.BytesSize()
-	}
-}

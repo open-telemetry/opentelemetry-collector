@@ -404,15 +404,6 @@ func BenchmarkSplittingBasedOnItemCountHugeTraces(b *testing.B) {
 	}
 }
 
-func BenchmarkTracesRequestBytesSizeRepeated(b *testing.B) {
-	req := newTracesRequest(testdata.GenerateTraces(1000)).(*tracesRequest)
-
-	b.ReportAllocs()
-	for b.Loop() {
-		_ = req.BytesSize()
-	}
-}
-
 func BenchmarkSplittingBasedOnByteSizeManySmallTraces(b *testing.B) {
 	testutil.SkipGCHeavyBench(b)
 	b.ReportAllocs()

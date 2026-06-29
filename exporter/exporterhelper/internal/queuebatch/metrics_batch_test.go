@@ -330,15 +330,6 @@ func BenchmarkSplittingBasedOnItemCountHugeMetrics(b *testing.B) {
 	}
 }
 
-func BenchmarkMetricsRequestBytesSizeRepeated(b *testing.B) {
-	req := newMetricsRequest(testdata.GenerateMetrics(1000)).(*metricsRequest)
-
-	b.ReportAllocs()
-	for b.Loop() {
-		_ = req.BytesSize()
-	}
-}
-
 func BenchmarkSplittingBasedOnByteSizeManySmallMetrics(b *testing.B) {
 	testutil.SkipGCHeavyBench(b)
 	b.ReportAllocs()
