@@ -359,6 +359,11 @@ func TestLoadTLSServerConfigClientAuth(t *testing.T) {
 			typ:  ClientAuthTypeRequireAndVerifyClientCert,
 			want: tls.RequireAndVerifyClientCert,
 		},
+		{
+			name: "unknown client auth type",
+			typ:  "unknown",
+			want: tls.NoClientCert,
+		},
 	}
 
 	for _, test := range tests {
