@@ -1080,6 +1080,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		resourceAttributeIncludeFilter:      make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:      make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.HostArch.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["host.arch"] = filter.CreateFilter(mbc.ResourceAttributes.HostArch.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.HostArch.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["host.arch"] = filter.CreateFilter(mbc.ResourceAttributes.HostArch.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.MapResourceAttr.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["map.resource.attr"] = filter.CreateFilter(mbc.ResourceAttributes.MapResourceAttr.MetricsInclude)
 	}
