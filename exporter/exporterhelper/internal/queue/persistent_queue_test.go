@@ -400,6 +400,32 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 	}
 }
 
+func TestPersistentQueue_RehydratedRequestGetsQueueOwnedRef(t *testing.T) {
+	set := newSettingsWithStorage(request.SizerTypeRequests, 1000)
+	pq := newPersistentQueue[intRequest](set)
+
+	ac := newAsyncQueue[intRequest](pq, 1, func(_ context.Context, req intRequest, done Done) {
+		// Simulate the downstream pipeline taking ownership of the rehydrated request and
+		// releasing it when processing returns.
+		set.ReferenceCounter.Unref(req)
+		done.OnDone(nil)
+	}, set.ReferenceCounter)
+
+	require.NoError(t, ac.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{
+		{}: storagetest.NewMockStorageExtension(nil),
+	})))
+
+	require.NoError(t, ac.Offer(context.Background(), intRequest(10)))
+	assert.Eventually(t, func() bool {
+		rc := set.ReferenceCounter.(*fakeReferenceCounter)
+		rc.mu.Lock()
+		defer rc.mu.Unlock()
+		return rc.ref == 0
+	}, time.Second, 10*time.Millisecond)
+
+	require.NoError(t, ac.Shutdown(context.Background()))
+}
+
 func TestPersistentBlockingQueue(t *testing.T) {
 	tests := []struct {
 		name      string
