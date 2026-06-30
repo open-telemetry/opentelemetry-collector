@@ -1,0 +1,4 @@
+change_type: enhancement
+component: cmd/mdatagen
+note: Validate context propagation in generated processor lifecycle tests.
+issues: [13142]
