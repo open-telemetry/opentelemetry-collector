@@ -36,6 +36,7 @@ components:
     - pkg/config/configtls
     - pkg/confighttp
     - pkg/configoptional
+    - pkg/configstorage
     - pkg/confmap
     - pkg/connector
     - pkg/connector/connectortest
