@@ -56,16 +56,31 @@ func (req *profilesRequest) mergeTo(dst *profilesRequest, sz sizer.ProfilesSizer
 
 func (req *profilesRequest) split(maxSize int, sz sizer.ProfilesSizer) ([]Request, error) {
 	var res []Request
-	for req.size(sz) > maxSize {
+	droppedItems := 0
+	for req.pd.SampleCount() > 0 && req.size(sz) > maxSize {
 		pd, rmSize := extractProfiles(req.pd, maxSize, sz)
 		if pd.SampleCount() == 0 {
-			return res, fmt.Errorf("one sample size is greater than max size, dropping items: %d", req.pd.SampleCount())
+			// Nothing fit into an empty destination batch, so the next remaining profile is
+			// individually larger than maxSize. Drop that single offending profile and continue
+			// splitting the rest so one bad item does not block the whole request.
+			dropped := dropFirstRemainingProfile(req.pd)
+			if dropped == 0 {
+				return res, errors.New("failed to drop oversized profile")
+			}
+			droppedItems += dropped
+			req.setCachedSize(-1)
+			continue
 		}
 		req.setCachedSize(req.size(sz) - rmSize)
 		res = append(res, newProfilesRequest(pd))
 	}
 
-	res = append(res, req)
+	if req.pd.SampleCount() > 0 || (len(res) == 0 && droppedItems == 0) {
+		res = append(res, req)
+	}
+	if droppedItems > 0 {
+		return res, fmt.Errorf("one sample size is greater than max size, dropping items: %d", droppedItems)
+	}
 	return res, nil
 }
 
@@ -174,4 +189,25 @@ func extractScopeProfiles(srcSS pprofile.ScopeProfiles, capacity int, sz sizer.P
 		return true
 	})
 	return destSS, removedSize
+}
+
+func dropFirstRemainingProfile(pd pprofile.Profiles) int {
+	dropped := 0
+	pd.ResourceProfiles().RemoveIf(func(srcRP pprofile.ResourceProfiles) bool {
+		srcRP.ScopeProfiles().RemoveIf(func(srcSS pprofile.ScopeProfiles) bool {
+			srcSS.Profiles().RemoveIf(func(srcProfile pprofile.Profile) bool {
+				if dropped > 0 {
+					return false
+				}
+				dropped = srcProfile.Samples().Len()
+				if dropped == 0 {
+					dropped = 1
+				}
+				return true
+			})
+			return srcSS.Profiles().Len() == 0
+		})
+		return srcRP.ScopeProfiles().Len() == 0
+	})
+	return dropped
 }
