@@ -1,0 +1,17 @@
+change_type: bug_fix
+
+component: processor/memory_limiter
+
+note: Fix degenerate collector performance when exporter has problems causing permanent CPU-burning GC loop
+
+issues: [4981]
+
+subtext: |
+  Forced GC runs now use exponential backoff when deemed ineffective
+  (still above soft limit and less than 5% reclaimed) to avoid preventing
+  recovery by overloading CPU with excessive GC runs. The cap on the
+  backoff interval is exposed via `max_gc_interval_when_soft_limited` and
+  `max_gc_interval_when_hard_limited` (both default `30s`); set either to
+  `0` to disable backoff on that path.
+
+change_logs: [user]
