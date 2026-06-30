@@ -5,6 +5,8 @@ package configgrpc
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"net"
 	"os"
@@ -17,6 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
@@ -863,6 +866,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 }
 
 func TestContextWithClient(t *testing.T) {
+	peerCert := &x509.Certificate{DNSNames: []string{"client.example.com"}}
 	testCases := []struct {
 		desc       string
 		input      context.Context
@@ -914,6 +918,23 @@ func TestContextWithClient(t *testing.T) {
 			expected: client.Info{
 				Addr: &net.IPAddr{
 					IP: net.IPv4(1, 2, 3, 5),
+				},
+			},
+		},
+		{
+			desc: "peer with TLS information",
+			input: peer.NewContext(context.Background(), &peer.Peer{
+				AuthInfo: credentials.TLSInfo{
+					State: tls.ConnectionState{
+						ServerName:       "service.example.com",
+						PeerCertificates: []*x509.Certificate{peerCert},
+					},
+				},
+			}),
+			expected: client.Info{
+				TLS: &client.TLSInfo{
+					ServerName:       "service.example.com",
+					PeerCertificates: []*x509.Certificate{peerCert},
 				},
 			},
 		},

@@ -7,6 +7,8 @@ package client
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"net"
 	"slices"
 	"testing"
@@ -75,6 +77,19 @@ func TestFromContext(t *testing.T) {
 			assert.Equal(t, tt.expected, FromContext(tt.input))
 		})
 	}
+}
+
+func TestNewTLSInfo(t *testing.T) {
+	peerCert := &x509.Certificate{DNSNames: []string{"client.example.com"}}
+	state := tls.ConnectionState{
+		ServerName:       "service.example.com",
+		PeerCertificates: []*x509.Certificate{peerCert},
+	}
+
+	assert.Equal(t, &TLSInfo{
+		ServerName:       "service.example.com",
+		PeerCertificates: []*x509.Certificate{peerCert},
+	}, NewTLSInfo(state))
 }
 
 func TestMetadata(t *testing.T) {
