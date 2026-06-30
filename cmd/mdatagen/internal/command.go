@@ -635,7 +635,10 @@ func validateYAMLKeyOrder(raw []byte) error {
 	return nil
 }
 
-func injectInternalMetadataDefs(md Metadata, mdDir string, src *cfggen.ConfigMetadata) error {
+// injectInternalMetadataDefs generates on the fly config schema for metrics, events and resource attributes
+// defined within metadata.yaml and injects it to config metadata so it can be properly handled in Go code
+// and JSON schema
+func injectInternalMetadataDefs(md Metadata, mdDir string, src *cfggen.ConfigsMetadata) error {
 	if len(md.Metrics) == 0 && len(md.Events) == 0 && len(md.ResourceAttributes) == 0 {
 		return nil
 	}
@@ -651,7 +654,7 @@ func injectInternalMetadataDefs(md Metadata, mdDir string, src *cfggen.ConfigMet
 	return mergeInternalMetadataDefs(raw, src)
 }
 
-func mergeInternalMetadataDefs(raw []byte, src *cfggen.ConfigMetadata) error {
+func mergeInternalMetadataDefs(raw []byte, src *cfggen.ConfigsMetadata) error {
 	var configs map[string]*cfggen.ConfigMetadata
 	if err := yaml.Unmarshal(raw, &configs); err != nil {
 		return fmt.Errorf("failed to parse internal metadata defs: %w", err)
@@ -665,65 +668,53 @@ func mergeInternalMetadataDefs(raw []byte, src *cfggen.ConfigMetadata) error {
 			cfg.InternalOnly = true
 		}
 	}
-	if src.Defs == nil {
-		src.Defs = make(map[string]*cfggen.ConfigMetadata)
+	if src.ExportedConfigs == nil {
+		src.ExportedConfigs = make(map[string]*cfggen.ConfigMetadata)
 	}
-	maps.Copy(src.Defs, configs)
+	maps.Copy(src.ExportedConfigs, configs)
 	return nil
 }
 
 func generateConfigFiles(md Metadata, mdDir, importRootPath string) error {
-	if md.ExportedConfigs != nil {
-		if md.Config == nil {
-			md.Config = &cfggen.ConfigMetadata{}
-		}
-		md.Config.Defs = md.ExportedConfigs
+	if md.ConfigsMetadata == nil || md.Config == nil && md.ExportedConfigs == nil {
+		return nil
 	}
-
+	// if component config set and internal metrics available, inject schema
 	if md.Config != nil {
-		if err := injectInternalMetadataDefs(md, mdDir, md.Config); err != nil {
+		if err := injectInternalMetadataDefs(md, mdDir, md.ConfigsMetadata); err != nil {
 			return err
 		}
-		resolver := cfggen.NewResolver(md.PackageName, md.Status.Class, md.Type, mdDir)
-		resolvedSchema, err := resolver.ResolveSchema(md.Config)
-		if err != nil {
-			return fmt.Errorf("failed to resolve config schema: %w", err)
-		}
-
-		err = cfggen.WriteJSONSchema(mdDir, resolvedSchema)
-		if err != nil {
-			return fmt.Errorf("failed to write config schema: %w", err)
-		}
-
-		// do a shallow copy of Metadata and replace Config with resolved schema
-		mdWithConfig := md
-		mdWithConfig.Config = resolvedSchema
-
-		if err = generateConfigGoStruct(mdWithConfig, mdDir); err != nil {
-			return fmt.Errorf("failed to generate config Go struct: %w", err)
-		}
-
-		readmePath := filepath.Join(mdDir, "README.md")
-		if _, statErr := os.Stat(readmePath); statErr == nil {
-			rootPkg := importRootPath
-			if rootPkg == "" {
-				rootPkg, err = helpers.RootPackage(mdDir)
-				if err != nil {
-					return fmt.Errorf("unable to determine root package for config doc: %w", err)
-				}
-			}
-			fns := cfggen.WithCfgFns(getTemplateFuncMap(mdWithConfig, rootPkg), rootPkg, md.PackageName)
-			if err := inlineReplaceWithFns(
-				filepath.Join("templates", "config_doc.md.tmpl"),
-				readmePath,
-				mdWithConfig, configDocStart, configDocEnd,
-				md.GeneratedPackageName, rootPkg, fns,
-			); err != nil {
-				return fmt.Errorf("failed to inject config doc into README: %w", err)
-			}
-		}
 	}
+
+	resolver := cfggen.NewResolver(mdDir)
+	resolvedSchema, err := resolver.ResolveSchema(md.ConfigsMetadata)
+	if err != nil {
+		return fmt.Errorf("failed to resolve config schema: %w", err)
+	}
+
+	// do a shallow copy of Metadata and replace Config with resolved schema
+	mdWithConfig := md
+	mdWithConfig.ConfigsMetadata = resolvedSchema
+
+	if err := generateJSONSchema(mdDir, mdWithConfig); err != nil {
+		return fmt.Errorf("failed to write config schema: %w", err)
+	}
+
+	if err := generateConfigGoStruct(mdWithConfig, mdDir); err != nil {
+		return fmt.Errorf("failed to generate config Go struct: %w", err)
+	}
+
+	if err := injectConfigDocsToReadme(mdWithConfig, mdDir, importRootPath); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func generateJSONSchema(dir string, md Metadata) error {
+	id := md.PackageName
+	title := fmt.Sprintf("%s/%s", md.Status.Class, md.Type)
+	return cfggen.WriteJSONSchema(dir, id, title, md.ConfigsMetadata)
 }
 
 func generateConfigGoStruct(md Metadata, outputDir string) error {
@@ -750,6 +741,30 @@ func generateConfigGoStruct(md Metadata, outputDir string) error {
 	}
 
 	return allErrs
+}
+
+func injectConfigDocsToReadme(md Metadata, mdDir, importRootPath string) error {
+	readmePath := filepath.Join(mdDir, "README.md")
+	if _, statErr := os.Stat(readmePath); statErr == nil {
+		rootPkg := importRootPath
+		if rootPkg == "" {
+			pkg, err := helpers.RootPackage(mdDir)
+			if err != nil {
+				return fmt.Errorf("unable to determine root package for config doc: %w", err)
+			}
+			rootPkg = pkg
+		}
+		fns := cfggen.WithCfgFns(getTemplateFuncMap(md, rootPkg), rootPkg, md.PackageName)
+		if err := inlineReplaceWithFns(
+			filepath.Join("templates", "config_doc.md.tmpl"),
+			readmePath,
+			md, configDocStart, configDocEnd,
+			md.GeneratedPackageName, rootPkg, fns,
+		); err != nil {
+			return fmt.Errorf("failed to inject config doc into README: %w", err)
+		}
+	}
+	return nil
 }
 
 func joinCamelCase(parts []string, exported bool) string {

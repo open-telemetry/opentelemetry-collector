@@ -18,17 +18,25 @@ func defaultValue(value any) any {
 	return value
 }
 
+// toSchemaJSON converts a single config metadata node into its JSON Schema
+// representation and marshals it with indentation.
+func toSchemaJSON(t *testing.T, md *ConfigMetadata) []byte {
+	t.Helper()
+	schema := FromMetadata("test", "test", &ConfigsMetadata{Config: md})
+	data, err := json.MarshalIndent(schema, "", "  ")
+	require.NoError(t, err)
+	return data
+}
+
 func TestConfigMetadata_ToJSON(t *testing.T) {
 	md := &ConfigMetadata{
-		Schema: schemaVersion,
-		Type:   "object",
+		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"endpoint": {Type: "string", Description: "The endpoint"},
 		},
 	}
 
-	data, err := md.ToJSON()
-	require.NoError(t, err)
+	data := toSchemaJSON(t, md)
 	assert.Contains(t, string(data), `"$schema"`)
 	assert.Contains(t, string(data), `"endpoint"`)
 	assert.Contains(t, string(data), `"The endpoint"`)
@@ -38,9 +46,6 @@ func TestConfigMetadata_MarshalJSON_NoSpecialFieldsUsesStructLayout(t *testing.T
 	t.Parallel()
 
 	metadata := &ConfigMetadata{
-		ID:          "sample",
-		Schema:      schemaVersion,
-		Title:       "Example",
 		Description: "Example schema",
 		Type:        "object",
 		Properties: map[string]*ConfigMetadata{
@@ -59,19 +64,6 @@ func TestConfigMetadata_MarshalJSON_NoSpecialFieldsUsesStructLayout(t *testing.T
 
 	require.JSONEq(t, string(expected), string(actual))
 	require.Equal(t, string(expected), string(actual))
-}
-
-func TestConfigMetadata_MarshalJSON_SpecialFieldsMarshalError(t *testing.T) {
-	t.Parallel()
-
-	metadata := &ConfigMetadata{
-		Type:                        "object",
-		AdditionalPropertiesAllowed: boolPtr(false),
-		Default:                     func() {},
-	}
-
-	_, err := json.Marshal(metadata)
-	require.Error(t, err)
 }
 
 func TestConfigMetadata_UnmarshalYAMLDefaultValue(t *testing.T) {
@@ -133,14 +125,12 @@ default:
 func TestConfigMetadata_ToJSONDefaultValue(t *testing.T) {
 	absent := &ConfigMetadata{Type: "string"}
 
-	jsonData, err := absent.ToJSON()
-	require.NoError(t, err)
+	jsonData := toSchemaJSON(t, absent)
 	require.NotContains(t, string(jsonData), `"default"`)
 
 	withDefault := &ConfigMetadata{Type: "string", Default: defaultValue("localhost")}
 
-	jsonData, err = withDefault.ToJSON()
-	require.NoError(t, err)
+	jsonData = toSchemaJSON(t, withDefault)
 	require.Contains(t, string(jsonData), `"default": "localhost"`)
 }
 
@@ -193,27 +183,6 @@ func TestConfigMetadata_Validate_Valid(t *testing.T) {
 			},
 		},
 		{
-			name: "valid with allOf",
-			md: &ConfigMetadata{
-				Type: "object",
-				AllOf: []*ConfigMetadata{
-					{Ref: "some_ref"},
-				},
-			},
-		},
-		{
-			name: "valid with both properties and allOf",
-			md: &ConfigMetadata{
-				Type: "object",
-				Properties: map[string]*ConfigMetadata{
-					"endpoint": {Type: "string"},
-				},
-				AllOf: []*ConfigMetadata{
-					{Ref: "some_ref"},
-				},
-			},
-		},
-		{
 			name: "valid with multiple properties",
 			md: &ConfigMetadata{
 				Type: "object",
@@ -221,19 +190,6 @@ func TestConfigMetadata_Validate_Valid(t *testing.T) {
 					"endpoint": {Type: "string"},
 					"timeout":  {Type: "string", GoType: "time.Duration"},
 					"port":     {Type: "integer"},
-				},
-			},
-		},
-		{
-			name: "valid with defs only",
-			md: &ConfigMetadata{
-				Defs: map[string]*ConfigMetadata{
-					"controller_config": {
-						Type: "object",
-						Properties: map[string]*ConfigMetadata{
-							"timeout": {Type: "string"},
-						},
-					},
 				},
 			},
 		},
@@ -247,31 +203,21 @@ func TestConfigMetadata_Validate_Valid(t *testing.T) {
 	}
 }
 
-func TestConfigMetadata_Validate_InvalidType(t *testing.T) {
+func TestConfigsMetadata_Validate_InvalidType(t *testing.T) {
 	tests := []struct {
 		name    string
-		md      *ConfigMetadata
+		md      *ConfigsMetadata
 		wantErr string
 	}{
 		{
 			name: "type is string instead of object",
-			md: &ConfigMetadata{
+			md: &ConfigsMetadata{Config: &ConfigMetadata{
 				Type: "string",
 				Properties: map[string]*ConfigMetadata{
 					"endpoint": {Type: "string"},
 				},
-			},
+			}},
 			wantErr: `config type must be "object", got "string"`,
-		},
-		{
-			name: "type is empty string",
-			md: &ConfigMetadata{
-				Type: "",
-				Properties: map[string]*ConfigMetadata{
-					"endpoint": {Type: "string"},
-				},
-			},
-			wantErr: `config type must be "object", got ""`,
 		},
 	}
 
@@ -285,89 +231,10 @@ func TestConfigMetadata_Validate_InvalidType(t *testing.T) {
 }
 
 func TestConfigMetadata_Validate_EmptyConfig(t *testing.T) {
-	tests := []struct {
-		name    string
-		md      *ConfigMetadata
-		wantErr string
-	}{
-		{
-			name: "no properties and no allOf",
-			md: &ConfigMetadata{
-				Type: "object",
-			},
-			wantErr: "config must not be empty",
-		},
-		{
-			name: "empty properties map and no allOf",
-			md: &ConfigMetadata{
-				Type:       "object",
-				Properties: map[string]*ConfigMetadata{},
-			},
-			wantErr: "config must not be empty",
-		},
-		{
-			name: "empty allOf slice and no properties",
-			md: &ConfigMetadata{
-				Type:  "object",
-				AllOf: []*ConfigMetadata{},
-			},
-			wantErr: "config must not be empty",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.md.Validate()
-			require.Error(t, err)
-			assert.Contains(t, err.Error(), tt.wantErr)
-		})
-	}
-}
-
-func TestConfigMetadata_Validate_MultipleErrors(t *testing.T) {
-	tests := []struct {
-		name            string
-		md              *ConfigMetadata
-		wantErrCount    int
-		wantErrContains []string
-	}{
-		{
-			name: "invalid type and empty config",
-			md: &ConfigMetadata{
-				Type: "string",
-			},
-			wantErrCount: 2,
-			wantErrContains: []string{
-				`config type must be "object", got "string"`,
-				"config must not be empty",
-			},
-		},
-		{
-			name: "invalid type with empty properties and empty allOf",
-			md: &ConfigMetadata{
-				Type:       "array",
-				Properties: map[string]*ConfigMetadata{},
-				AllOf:      []*ConfigMetadata{},
-			},
-			wantErrCount: 2,
-			wantErrContains: []string{
-				`config type must be "object", got "array"`,
-				"config must not be empty",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.md.Validate()
-			require.Error(t, err)
-
-			// Check that error contains all expected substrings
-			for _, expectedErr := range tt.wantErrContains {
-				assert.Contains(t, err.Error(), expectedErr)
-			}
-		})
-	}
+	md := &ConfigMetadata{Type: ""}
+	err := md.Validate()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "config must specify at least one property")
 }
 
 func TestConfigMetadata_Validate_NilMetadata(t *testing.T) {
@@ -377,113 +244,6 @@ func TestConfigMetadata_Validate_NilMetadata(t *testing.T) {
 	assert.Panics(t, func() {
 		_ = md.Validate()
 	}, "Validate() should panic when called on nil ConfigMetadata")
-}
-
-func TestConfigMetadata_Validate_TypeAsInterface(t *testing.T) {
-	// Test when Type field is set as interface{} instead of string
-	// This tests the real-world scenario where YAML/JSON unmarshaling
-	// might produce different types
-	tests := []struct {
-		name    string
-		typeVal string
-		wantErr bool
-	}{
-		{
-			name:    "type as string 'object'",
-			typeVal: "object",
-			wantErr: false,
-		},
-		{
-			name:    "type as string 'string'",
-			typeVal: "string",
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			md := &ConfigMetadata{
-				Type: tt.typeVal,
-				Properties: map[string]*ConfigMetadata{
-					"field": {Type: "string"},
-				},
-			}
-
-			err := md.Validate()
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestConfigMetadata_Validate_EdgeCases(t *testing.T) {
-	tests := []struct {
-		name    string
-		md      *ConfigMetadata
-		wantErr bool
-	}{
-		{
-			name: "single property is sufficient",
-			md: &ConfigMetadata{
-				Type: "object",
-				Properties: map[string]*ConfigMetadata{
-					"only_field": {Type: "string"},
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "single allOf entry is sufficient",
-			md: &ConfigMetadata{
-				Type: "object",
-				AllOf: []*ConfigMetadata{
-					{Ref: "base_config"},
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "properties with nested objects",
-			md: &ConfigMetadata{
-				Type: "object",
-				Properties: map[string]*ConfigMetadata{
-					"server": {
-						Type: "object",
-						Properties: map[string]*ConfigMetadata{
-							"host": {Type: "string"},
-							"port": {Type: "integer"},
-						},
-					},
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "allOf with nil entries",
-			md: &ConfigMetadata{
-				Type: "object",
-				AllOf: []*ConfigMetadata{
-					nil,
-					{Ref: "base_config"},
-				},
-			},
-			wantErr: false, // At least one non-nil entry exists
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.md.Validate()
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
 }
 
 func TestGoStructConfig_Unmarshal(t *testing.T) {

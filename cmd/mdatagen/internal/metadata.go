@@ -68,10 +68,8 @@ type Metadata struct {
 	PackageName string `mapstructure:"package_name"`
 	// FeatureGates that are managed by the component.
 	FeatureGates []FeatureGate `mapstructure:"feature_gates"`
-	// Config is the configuration schema for the component.
-	Config *cfggen.ConfigMetadata `mapstructure:"config"`
-	// ExportedConfigs is the list of additionally exported configs from the component/package
-	ExportedConfigs map[string]*cfggen.ConfigMetadata `mapstructure:"exported_configs"`
+	// Config is the configuration schemas for the component.
+	*cfggen.ConfigsMetadata `mapstructure:",squash"`
 }
 
 type Deprecated struct {
@@ -500,8 +498,8 @@ func (md *Metadata) validateFeatureGates() error {
 }
 
 func (md *Metadata) validateConfig() error {
-	if md.Config != nil {
-		return md.Config.Validate()
+	if md.ConfigsMetadata != nil {
+		return md.ConfigsMetadata.Validate()
 	}
 	return nil
 }
