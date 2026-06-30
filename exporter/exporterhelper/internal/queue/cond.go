@@ -13,51 +13,64 @@ import (
 // Also, it requires the caller to hold the c.L during all calls.
 type cond struct {
 	L       sync.Locker
-	ch      chan struct{}
-	waiting int64
+	waiters []chan struct{}
 }
 
 func newCond(l sync.Locker) *cond {
-	return &cond{L: l, ch: make(chan struct{}, 1)}
+	return &cond{L: l}
 }
 
 // Signal wakes one goroutine waiting on c, if there is any.
 // It requires for the caller to hold c.L during the call.
 func (c *cond) Signal() {
-	if c.waiting == 0 {
+	if len(c.waiters) == 0 {
 		return
 	}
-	c.waiting--
-	c.ch <- struct{}{}
+	// Each waiter owns its own channel, so closing it wakes exactly that waiter
+	// and, unlike a send on a shared buffered channel, close() can never block.
+	// The previous implementation sent on a size-1 buffered channel while holding
+	// c.L, which deadlocked forever once the buffer filled under load.
+	w := c.waiters[0]
+	c.waiters[0] = nil
+	c.waiters = c.waiters[1:]
+	close(w)
 }
 
 // Broadcast wakes all goroutines waiting on c.
 // It requires for the caller to hold c.L during the call.
 func (c *cond) Broadcast() {
-	for ; c.waiting > 0; c.waiting-- {
-		c.ch <- struct{}{}
+	for i, w := range c.waiters {
+		c.waiters[i] = nil
+		close(w)
 	}
+	c.waiters = nil
 }
 
 // Wait atomically unlocks c.L and suspends execution of the calling goroutine. After later resuming execution, Wait locks c.L before returning.
 func (c *cond) Wait(ctx context.Context) error {
-	c.waiting++
+	w := make(chan struct{})
+	c.waiters = append(c.waiters, w)
 	c.L.Unlock()
 	select {
 	case <-ctx.Done():
 		c.L.Lock()
-		if c.waiting == 0 {
-			// If waiting is 0, it means that there was a signal sent and nobody else waits for it.
-			// Consume it, so that we don't unblock other consumer unnecessary,
-			// or we don't block the producer because the channel buffer is full.
-			<-c.ch
-		} else {
-			// Decrease the number of waiting routines.
-			c.waiting--
-		}
+		c.removeWaiter(w)
 		return ctx.Err()
-	case <-c.ch:
+	case <-w:
 		c.L.Lock()
 		return nil
+	}
+}
+
+// removeWaiter removes w from the waiters slice if it is still present. A
+// concurrent Signal/Broadcast may have already popped and closed it, in which
+// case there is nothing to remove. It requires for the caller to hold c.L.
+func (c *cond) removeWaiter(w chan struct{}) {
+	for i, x := range c.waiters {
+		if x == w {
+			c.waiters[i] = nil
+			c.waiters = append(c.waiters[:i], c.waiters[i+1:]...)
+			return
+		}
 	}
 }
