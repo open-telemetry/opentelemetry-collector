@@ -352,6 +352,14 @@ tests:
 # Optional: map of metric names with the key being the metric name and value
 # being described below.
 telemetry:
+  # Optional: when true, the generated TelemetryBuilder takes a required
+  # positional "variation" string and emits every metric as
+  # "otelcol_<variation>_<key>". This is intended for code that is reused
+  # across component kinds, such as exporterhelper reused as a processor:
+  # the exporter call site passes "exporter" and the processor call site
+  # passes "processor". Off by default. See cmd/mdatagen/internal/samplepkg
+  # for an example.
+  allow_name_variation: bool
   metrics:
     <metric.name>:
       # Required: whether the metric is collected by default.

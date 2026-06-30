@@ -43,6 +43,9 @@ type TelemetryBuilder struct {
 	meter metric.Meter
 	mu sync.Mutex
 	registrations []metric.Registration
+	{{- if .Telemetry.AllowNameVariation }}
+	metricVariation string
+	{{- end }}
 	{{- range $name, $metric := .Telemetry.Metrics }}
 	{{ $name.Render }} metric.{{ $metric.Data.Instrument }}
 	{{- if and ($metric.Data.Async) (not $metric.Optional) }}
@@ -126,21 +129,36 @@ func (builder *TelemetryBuilder) Shutdown() {
 
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
-func NewTelemetryBuilder(settings component.TelemetrySettings, options ...TelemetryBuilderOption) (*TelemetryBuilder, error) {
-	builder := TelemetryBuilder{}
+func NewTelemetryBuilder(settings component.TelemetrySettings,{{ if .Telemetry.AllowNameVariation }} metricVariation string,{{ end }} options ...TelemetryBuilderOption) (*TelemetryBuilder, error) {
+	builder := TelemetryBuilder{
+		{{- if .Telemetry.AllowNameVariation }}
+		metricVariation: metricVariation,
+		{{- end }}
+	}
 	for _, op := range options {
 		op.apply(&builder)
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+	{{- if .Telemetry.AllowNameVariation }}
+	if metricVariation == "" {
+		errs = errors.Join(errs, errors.New("metricVariation is required: pass a non-empty variation name when telemetry.allow_name_variation is enabled"))
+	}
+	{{- end }}
 
 	{{- range $name, $metric := .Telemetry.Metrics }}
+	{{- /* Note this code structure preserves an original code path to not generate churn. */}}
+	{{- if $.Telemetry.AllowNameVariation }}
+	builder.{{ $name.Render }}, err = builder.meter.{{ $metric.Data.Instrument }}(
+		"otelcol_" + builder.metricVariation + "_{{ $name }}",
+	{{- else }}
 	builder.{{ $name.Render }}, err = builder.meter.{{ $metric.Data.Instrument }}(
 		{{ if $metric.Prefix -}}
 		"{{ $metric.Prefix }}{{ $name }}",
-		{{ else -}}
+		{{- else -}}
 		"otelcol_{{ $name }}",
-		{{ end -}}
+		{{- end }}
+	{{- end }}
 		metric.WithDescription("{{ $metric.Description }} [{{ $metric.Stability }}]"),
 		metric.WithUnit("{{ $metric.Unit }}"),
 		{{ if eq $metric.Data.Type "Histogram" -}}

@@ -1,0 +1,20 @@
+change_type: enhancement
+
+component: cmd/mdatagen
+
+note: support variation-aware metric naming in generated TelemetryBuilder
+
+issues: [14038]
+
+subtext: |
+  metadata.yaml gains an opt-in telemetry.allow_name_variation flag. When set,
+  the generated NewTelemetryBuilder takes a required positional "variation"
+  string and emits every metric as "otelcol_<variation>_<key>"; passing an
+  empty variation causes NewTelemetryBuilder to return an error. The
+  generated AssertEqual* helpers in metadatatest take a matching variation
+  argument for test-side metric lookup. This unblocks sharing telemetry
+  across component kinds, such as exporterhelper invoked from a processor,
+  by requiring each call site to supply the kind name appropriate to its
+  position ("exporter", "processor", etc.).
+
+change_logs: [api]

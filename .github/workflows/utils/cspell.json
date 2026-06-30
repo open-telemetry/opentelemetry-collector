@@ -449,6 +449,7 @@
       "samplemigration",
       "samplereceiver",
       "samplepkg",
+      "sampletelemetrysubstitution",
       "samplingdecision",
       "samplingprocessor",
       "sarama",

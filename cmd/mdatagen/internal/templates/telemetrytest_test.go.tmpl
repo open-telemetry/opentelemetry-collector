@@ -24,7 +24,11 @@ import (
 
 func TestSetupTelemetry(t *testing.T) {
 	testTel := componenttest.NewTelemetry()
+	{{- if .Telemetry.AllowNameVariation }}
+	tb, err := {{ .Package }}.NewTelemetryBuilder(testTel.NewTelemetrySettings(), "test")
+	{{- else }}
 	tb, err := {{ .Package }}.NewTelemetryBuilder(testTel.NewTelemetrySettings())
+	{{- end }}
 	require.NoError(t, err)
 	defer tb.Shutdown()
 
@@ -49,6 +53,7 @@ func TestSetupTelemetry(t *testing.T) {
 
 	{{- range $name, $metric := .Telemetry.Metrics }}
 	AssertEqual{{ $name.Render }}(t, testTel,
+		{{- if $.Telemetry.AllowNameVariation }} "test",{{ end }}
 		{{ if eq $metric.Data.Type "Gauge" -}}
 		[]metricdata.DataPoint[{{ $metric.Gauge.MetricValueType.BasicType }}]{{"{{Value: 1}}"}},
 		{{- else if eq $metric.Data.Type "Sum" -}}
