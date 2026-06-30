@@ -174,6 +174,64 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.128.0
 ```
 
+### Source archives
+
+Some components cannot be built directly from their version control contents because
+generated code is not committed and is instead published as a release asset. For these
+components, a module may declare a `source_archive` block instead of a `gomod` entry. A
+`source_archive` is a *standalone module source*: the builder downloads the archive, verifies
+its checksum, extracts it into a local cache, and builds the component entirely from the
+extracted directory.
+
+```yaml
+receivers:
+    # import is mandatory for source_archive modules: it selects the package to build
+    # out of the archive, and there is no gomod to default it from.
+  - import: go.opentelemetry.io/obi/collector
+    source_archive:
+      # The URL of the archive to download. Required. Must use the https or file scheme.
+      url: https://github.com/open-telemetry/opentelemetry-ebpf-instrumentation/releases/download/v0.9.0/obi-v0.9.0-source-generated.tar.gz
+      # The expected hex-encoded sha256 digest of the archive. Exactly one of
+      # sha256 or sha256_url is required.
+      sha256: "<hex digest>"
+      # Alternatively, a URL to a SHA256SUMS-style file from which to resolve the
+      # digest, matching on the archive's base file name.
+      # sha256_url: https://github.com/open-telemetry/opentelemetry-ebpf-instrumentation/releases/download/v0.9.0/SHA256SUMS
+      # An optional subdirectory within the archive where the module's go.mod lives. Optional.
+      # subdir: collector
+```
+
+`gomod` and `source_archive` are mutually exclusive: a module is *either* a Go module
+reference *or* an artifact. There is deliberately no module version declared alongside a
+`source_archive`. The artifact **is** the version — pinned exactly by its `sha256` — so the
+manifest never makes a Go module version assertion that cannot be verified against the
+downloaded bytes. (Earlier drafts paired `gomod: foo v0.9.0` with the archive; that allowed
+the manifest to claim a version the archive did not actually contain. The standalone form
+removes that unverifiable claim.) The builder reads the real module path from the extracted
+`go.mod` and synthesizes an internal `replace` against the cache directory, so nothing
+downstream needs a version.
+
+`import` is required and must be the module path from the archive's `go.mod` or a package
+within it; otherwise the component would not actually be built from the archive and the
+builder fails with a clear error. A nested module (its own `go.mod`) along the import path is
+also rejected, since the replace would not cover the import.
+
+Supported archive formats are `.tar.gz`/`.tgz` and `.zip`. The `source_archive` and `path`
+fields are mutually exclusive on the same module. If the extracted archive contains a single
+top-level directory and no top-level `go.mod`, the builder descends into it automatically;
+`subdir` is then applied relative to that.
+
+Multiple components may be built from a single archive — for example a receiver and an
+extension published in one artifact. Declare each with its own `import` and an identical
+`source_archive` (same `sha256`); the archive is downloaded and extracted once (the cache is
+keyed by digest), and the generated `go.mod` emits a single deduplicated `require`/`replace`
+for the shared module. Declaring the same module path from two different archives is an error.
+
+Archives are cached under `os.UserCacheDir()/otelcol-builder/source_archive/<sha256>`. The
+cache root can be overridden with the `--download-cache-dir` flag or the top-level
+`download_cache_dir` configuration field. A cached archive is reused without any network
+access on subsequent builds.
+
 The builder also allows setting the scheme to use as the default URI scheme via `conf_resolver.default_uri_scheme`:
 
 ```yaml

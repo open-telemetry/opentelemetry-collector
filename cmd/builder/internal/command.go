@@ -29,6 +29,7 @@ const (
 	gcflagsFlag                = "gcflags"
 	distributionOutputPathFlag = "output-path"
 	verboseFlag                = "verbose"
+	downloadCacheDirFlag       = "download-cache-dir"
 )
 
 // Command is the main entrypoint for this application
@@ -85,6 +86,7 @@ func initFlags(flags *flag.FlagSet) error {
 	flags.String(ldflagsFlag, "", `ldflags to include in the "go build" command`)
 	flags.String(gcflagsFlag, "", `gcflags to include in the "go build" command`)
 	flags.String(distributionOutputPathFlag, "", "Where to write the resulting files")
+	flags.String(downloadCacheDirFlag, "", "Root directory used to cache downloaded source archives (default os.UserCacheDir()/otelcol-builder/source_archive)")
 	return flags.MarkDeprecated(distributionOutputPathFlag, "use config distribution::output_path")
 }
 
@@ -156,6 +158,11 @@ func applyFlags(flags *flag.FlagSet, cfg *builder.Config) error {
 
 	if flags.Changed(distributionOutputPathFlag) {
 		cfg.Distribution.OutputPath, err = flags.GetString(distributionOutputPathFlag)
+		errs = multierr.Append(errs, err)
+	}
+
+	if flags.Changed(downloadCacheDirFlag) {
+		cfg.DownloadCacheDir, err = flags.GetString(downloadCacheDirFlag)
 		errs = multierr.Append(errs, err)
 	}
 

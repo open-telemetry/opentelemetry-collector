@@ -1,0 +1,32 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
+component: cmd/builder
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Add `source_archive` as a standalone module source for components whose source must be downloaded from a release archive because generated code is not committed to version control.
+
+# One or more tracking issues or pull requests related to the change
+issues: [15430]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  A module may declare a `source_archive` block (with a `url` and either a `sha256` digest or a
+  `sha256_url`) instead of `gomod`; the two are mutually exclusive. The builder downloads,
+  checksum-verifies, and extracts the archive (`.tar.gz`, `.tgz`, or `.zip`) into a local cache and
+  builds the component from it. No module version is declared: the artifact is the version, pinned
+  by `sha256`, so the manifest never asserts a Go module version that cannot be verified against the
+  downloaded bytes. The required `import` selects the package to build from the archive. The cache
+  root can be overridden with the `--download-cache-dir` flag or the `download_cache_dir` config field.
+
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]

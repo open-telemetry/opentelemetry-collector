@@ -4,8 +4,11 @@
 package builder // import "go.opentelemetry.io/collector/cmd/builder/internal/builder"
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -23,8 +26,8 @@ const (
 	DefaultStableOtelColVersion = "v1.61.0"
 )
 
-// errMissingGoMod indicates an empty gomod field
-var errMissingGoMod = errors.New("missing gomod specification for module")
+// errMissingGoMod indicates a module that specifies neither gomod nor source_archive.
+var errMissingGoMod = errors.New("module requires either a gomod specification or a source_archive")
 
 // Config holds the builder's configuration
 type Config struct {
@@ -55,7 +58,12 @@ type Config struct {
 
 	ConfResolver ConfResolver `mapstructure:"conf_resolver,omitempty"`
 
-	downloadModules retry `mapstructure:"-"`
+	// DownloadCacheDir overrides the cache root for downloaded source archives.
+	DownloadCacheDir string `mapstructure:"download_cache_dir,omitempty"`
+
+	downloadModules        retry        `mapstructure:"-"`
+	sourceArchiveCacheRoot string       `mapstructure:"-"` // test-only override
+	httpClient             *http.Client `mapstructure:"-"` // test-only override
 }
 
 type ConfResolver struct {
@@ -81,10 +89,28 @@ type Distribution struct {
 
 // Module represents a receiver, exporter, processor or extension for the distribution
 type Module struct {
-	Name   string `mapstructure:"name,omitempty"`   // if not specified, this is package part of the go mod (last part of the path)
-	Import string `mapstructure:"import,omitempty"` // if not specified, this is the path part of the go mods
-	GoMod  string `mapstructure:"gomod,omitempty"`  // a gomod-compatible spec for the module
-	Path   string `mapstructure:"path,omitempty"`   // an optional path to the local version of this module
+	Name          string         `mapstructure:"name,omitempty"`           // if not specified, this is package part of the go mod (last part of the path)
+	Import        string         `mapstructure:"import,omitempty"`         // if not specified, this is the path part of the go mods; mandatory for source_archive modules
+	GoMod         string         `mapstructure:"gomod,omitempty"`          // a gomod-compatible spec for the module; mutually exclusive with source_archive
+	Path          string         `mapstructure:"path,omitempty"`           // an optional path to the local version of this module
+	SourceArchive *SourceArchive `mapstructure:"source_archive,omitempty"` // a downloaded source archive used as the module's source; mutually exclusive with gomod
+
+	fromSourceArchive bool `mapstructure:"-"`
+}
+
+// IsFromSourceArchive reports whether this module was resolved from a source_archive.
+func (m Module) IsFromSourceArchive() bool {
+	return m.fromSourceArchive
+}
+
+// SourceArchive is a downloaded, checksum-verified archive used as a module's
+// source, for components whose committed source does not compile (e.g. generated
+// code published as a release asset rather than committed).
+type SourceArchive struct {
+	URL       string `mapstructure:"url,omitempty"`        // https or file scheme
+	SHA256    string `mapstructure:"sha256,omitempty"`     // expected hex sha256; exactly one of sha256/sha256_url
+	SHA256URL string `mapstructure:"sha256_url,omitempty"` // SHA256SUMS-style file to resolve the digest from
+	Subdir    string `mapstructure:"subdir,omitempty"`     // optional subdirectory holding the module's go.mod
 }
 
 type retry struct {
@@ -169,6 +195,15 @@ func (c *Config) SetGoPath() error {
 
 // ParseModules will parse the Modules entries and populate the missing values
 func (c *Config) ParseModules() error {
+	// Resolve any declared source archives before path handling, so that the
+	// downloaded/extracted location can be used as the module's replace target.
+	if err := c.resolveSourceArchives(); err != nil {
+		return err
+	}
+	if err := c.checkSourceArchiveConflicts(); err != nil {
+		return err
+	}
+
 	var err error
 	usedNames := make(map[string]int)
 
@@ -218,11 +253,116 @@ func (c *Config) allComponents() []Module {
 	return slices.Concat(c.Exporters, c.Receivers, c.Processors, c.Extensions, c.Connectors, []Module{c.Telemetry}, c.ConfmapProviders, c.ConfmapConverters)
 }
 
+// SourceArchiveModules returns one module per distinct source-archive module
+// path, so the go.mod template emits a single require/replace when several
+// components share one archive.
+func (c *Config) SourceArchiveModules() []Module {
+	seen := make(map[string]struct{})
+	var out []Module
+	for _, mod := range c.allComponents() {
+		if !mod.fromSourceArchive {
+			continue
+		}
+		modulePath, _, _ := strings.Cut(mod.GoMod, " ")
+		if _, ok := seen[modulePath]; ok {
+			continue
+		}
+		seen[modulePath] = struct{}{}
+		out = append(out, mod)
+	}
+	return out
+}
+
+// checkSourceArchiveConflicts rejects two archives claiming the same module path.
+func (c *Config) checkSourceArchiveConflicts() error {
+	paths := make(map[string]string) // module path -> replace target
+	for _, mod := range c.allComponents() {
+		if !mod.fromSourceArchive {
+			continue
+		}
+		modulePath, _, _ := strings.Cut(mod.GoMod, " ")
+		if existing, ok := paths[modulePath]; ok {
+			if existing != mod.Path {
+				return fmt.Errorf("source_archive module %q is provided by two different archives (%q and %q); a module path can only be replaced once", modulePath, existing, mod.Path)
+			}
+			continue
+		}
+		paths[modulePath] = mod.Path
+	}
+	return nil
+}
+
 func validateModules(name string, mods []Module) error {
 	for i, mod := range mods {
-		if mod.GoMod == "" {
-			return fmt.Errorf("%s module at index %v: %w", name, i, errMissingGoMod)
+		if err := validateModuleSource(mod); err != nil {
+			return fmt.Errorf("%s module at index %v: %w", name, i, err)
 		}
+	}
+	return nil
+}
+
+// validateModuleSource enforces exactly one of gomod/source_archive.
+func validateModuleSource(mod Module) error {
+	switch {
+	case mod.GoMod != "" && mod.SourceArchive != nil:
+		return errors.New("gomod and source_archive are mutually exclusive")
+	case mod.GoMod == "" && mod.SourceArchive == nil:
+		return errMissingGoMod
+	}
+	return validateSourceArchive(mod)
+}
+
+// validateSourceArchive checks the source_archive block of a module, if present.
+func validateSourceArchive(mod Module) error {
+	if mod.SourceArchive == nil {
+		return nil
+	}
+	sa := mod.SourceArchive
+	if mod.Path != "" {
+		return errors.New("source_archive and path cannot both be set on the same module")
+	}
+	if mod.Import == "" {
+		return errors.New("source_archive requires import to be set (the package to build from the archive)")
+	}
+	if sa.URL == "" {
+		return errors.New("source_archive requires url")
+	}
+	if err := validateArchiveURLScheme("url", sa.URL); err != nil {
+		return err
+	}
+
+	switch {
+	case sa.SHA256 != "" && sa.SHA256URL != "":
+		return errors.New("source_archive: exactly one of sha256 or sha256_url must be set, not both")
+	case sa.SHA256 == "" && sa.SHA256URL == "":
+		return errors.New("source_archive: exactly one of sha256 or sha256_url must be set")
+	}
+
+	if sa.SHA256 != "" {
+		if len(sa.SHA256) != 64 {
+			return fmt.Errorf("source_archive: sha256 must be 64 hex characters, got %d", len(sa.SHA256))
+		}
+		if _, err := hex.DecodeString(sa.SHA256); err != nil {
+			return fmt.Errorf("source_archive: sha256 is not valid hex: %w", err)
+		}
+	}
+
+	if sa.SHA256URL != "" {
+		if err := validateArchiveURLScheme("sha256_url", sa.SHA256URL); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func validateArchiveURLScheme(field, raw string) error {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return fmt.Errorf("source_archive: %s is not a valid URL: %w", field, err)
+	}
+	if u.Scheme != "https" && u.Scheme != "file" {
+		return fmt.Errorf("source_archive: %s scheme must be https or file, got %q", field, u.Scheme)
 	}
 	return nil
 }
@@ -234,12 +374,18 @@ func validateTelemetry(c *Config) error {
 	// would get a blend of this value and user-provided values. Once
 	// otelconftelemetry is its own module (that is, the `Import` field is not
 	// set), we can likely move the default to createDefaultConfig.
-	if c.Telemetry.Name == "" && c.Telemetry.Import == "" && c.Telemetry.GoMod == "" && c.Telemetry.Path == "" {
+	if c.Telemetry.Name == "" && c.Telemetry.Import == "" && c.Telemetry.GoMod == "" && c.Telemetry.Path == "" && c.Telemetry.SourceArchive == nil {
 		c.Telemetry = Module{
 			GoMod:  "go.opentelemetry.io/collector/service " + DefaultBetaOtelColVersion,
 			Import: "go.opentelemetry.io/collector/service/telemetry/otelconftelemetry",
 		}
-	} else if c.Telemetry.GoMod == "" {
+		return nil
+	}
+	// Telemetry has no component-import wiring, so source_archive is unsupported.
+	if c.Telemetry.SourceArchive != nil {
+		return errors.New("telemetry module: source_archive is not supported for the telemetry module; use gomod")
+	}
+	if c.Telemetry.GoMod == "" {
 		return fmt.Errorf("telemetry module: %w", errMissingGoMod)
 	}
 
@@ -281,7 +427,8 @@ func (c *Config) parseModules(mods []Module, usedNames map[string]int) ([]Module
 				return mods, fmt.Errorf("failed to resolve absolute path for %s: %w", mod.Path, err)
 			}
 
-			if c.Distribution.UseAbsoluteReplacePaths {
+			if c.Distribution.UseAbsoluteReplacePaths || mod.fromSourceArchive {
+				// Archive-derived paths live in a machine-local cache; keep absolute.
 				mod.Path = absPath
 			} else {
 				absOutputPath, err := filepath.Abs(c.Distribution.OutputPath)
