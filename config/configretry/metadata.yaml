@@ -5,3 +5,47 @@ github_project: open-telemetry/opentelemetry-collector
 status:
   disable_codecov_badge: true
   class: pkg
+
+exported_configs:
+  back_off_config:
+    description: Defines configuration for retrying batches in case of export failure. The current supported strategy is exponential backoff.
+    type: object
+    go_struct:
+      custom_validator:
+        name: validateMaxElapsedTime
+    properties:
+      enabled:
+        description: Indicates whether to not retry sending batches in case of export failure.
+        type: boolean
+        default: true
+      initial_interval:
+        description: The time to wait after the first failure before retrying.
+        type: string
+        format: duration
+        default: 5s
+        minimum: 0
+      max_elapsed_time:
+        description: The maximum amount of time (including retries) spent trying to send a request/batch. Once this value is reached, the data is discarded. If set to 0, the retries are never stopped.
+        type: string
+        format: duration
+        default: 5m
+        minimum: 0
+      max_interval:
+        description: The upper bound on backoff interval. Once this value is reached the delay between consecutive retries will always be `MaxInterval`.
+        type: string
+        format: duration
+        default: 30s
+        minimum: 0
+      multiplier:
+        description: The value multiplied by the backoff interval bounds
+        type: number
+        x-customType: float64
+        default: 1.5
+        minimum: 0
+      randomization_factor:
+        description: A random factor used to calculate next backoffs Randomized interval = RetryInterval * (1 ± RandomizationFactor)
+        type: number
+        x-customType: float64
+        default: 0.5
+        minimum: 0
+        maximum: 1
