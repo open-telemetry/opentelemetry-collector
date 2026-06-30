@@ -89,6 +89,11 @@ config:
         required: [labels]
       default:
         - {} # one item with default values
+    log_level:
+      description: Logging level for the scraper.
+      type: string
+      enum: [debug, info, warn, error]
+      default: info
   required: [job_name, targets]
 
 resource_attributes:
