@@ -1,0 +1,35 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
+component: provider/http
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Add opt-in polling to the `http` config provider via an
+`otel_config_polling_interval` URI query parameter, so the Collector
+can pick up remote config changes without a restart.
+
+# One or more tracking issues or pull requests related to the change
+issues: [10264]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  Append `?otel_config_polling_interval=<duration>` (any value parseable by
+  `time.ParseDuration`; a bare number means seconds) to an `http://` `--config` URI to
+  enable. The parameter is namespaced and forwarded to the server unchanged (never
+  stripped), so a server that already uses a parameter of the same name keeps working.
+  Each refresh is sent with `If-None-Match` using the previous `ETag`, falling back to a
+  SHA-256 of the response body when no `ETag` is advertised. A change triggers an
+  in-process reload via the same path used by `SIGHUP`. Omitting the parameter (or
+  setting it to `0s`) preserves the historical one-shot behavior.
+
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]
