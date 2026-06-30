@@ -19,6 +19,8 @@ func TestNewEntity(t *testing.T) {
 
 func TestEntity_CopyToResource(t *testing.T) {
 	e := NewEntity("service")
+	e.SetSchemaURL("https://opentelemetry.io/schemas/1.0.0")
+	e.SetIDContextType("host")
 	e.IdentifyingAttributes().PutStr("service.name", "my-service")
 	e.DescriptiveAttributes().PutStr("service.version", "1.0.0")
 
@@ -28,6 +30,8 @@ func TestEntity_CopyToResource(t *testing.T) {
 	entities := ResourceEntities(res)
 	copied, ok := entities.Get("service")
 	assert.True(t, ok)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.0.0", copied.SchemaURL())
+	assert.Equal(t, "host", copied.IDContextType())
 
 	idVal, ok := copied.IdentifyingAttributes().Get("service.name")
 	assert.True(t, ok)
@@ -56,6 +60,19 @@ func TestEntity_SchemaURL(t *testing.T) {
 
 	e.SetSchemaURL("https://opentelemetry.io/schemas/1.1.0")
 	assert.Equal(t, "https://opentelemetry.io/schemas/1.1.0", e.SchemaURL())
+}
+
+func TestEntity_IDContextType(t *testing.T) {
+	em := NewEntityMap()
+	e := em.PutEmpty("service")
+
+	assert.Empty(t, e.IDContextType())
+
+	e.SetIDContextType("host")
+	assert.Equal(t, "host", e.IDContextType())
+
+	e.SetIDContextType("k8s.cluster")
+	assert.Equal(t, "k8s.cluster", e.IDContextType())
 }
 
 func TestEntity_IdentifyingAttributes(t *testing.T) {

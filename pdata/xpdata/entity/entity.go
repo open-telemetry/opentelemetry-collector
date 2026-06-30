@@ -37,6 +37,14 @@ func (e Entity) SetSchemaURL(schemaURL string) {
 	e.ref.SetSchemaUrl(schemaURL)
 }
 
+func (e Entity) IDContextType() string {
+	return e.ref.IdContextType()
+}
+
+func (e Entity) SetIDContextType(idContextType string) {
+	e.ref.SetIdContextType(idContextType)
+}
+
 // IdentifyingAttributes returns an EntityAttributeMap for managing the entity's identifying attributes.
 func (e Entity) IdentifyingAttributes() EntityAttributeMap {
 	return EntityAttributeMap{
@@ -56,6 +64,8 @@ func (e Entity) DescriptiveAttributes() EntityAttributeMap {
 // CopyToResource moves the entity to the provided resource by overriding existing entities and attributes.
 func (e Entity) CopyToResource(res pcommon.Resource) {
 	ent := ResourceEntities(res).PutEmpty(e.Type())
+	ent.SetSchemaURL(e.SchemaURL())
+	ent.SetIDContextType(e.IDContextType())
 	for k, v := range e.IdentifyingAttributes().All() {
 		v.CopyTo(ent.IdentifyingAttributes().PutEmpty(k))
 	}

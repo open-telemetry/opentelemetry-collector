@@ -198,6 +198,8 @@ func genTestFailingUnmarshalProtoValuesEntityRef() map[string][]byte {
 		"IdKeys/missing_value":            {0x1a},
 		"DescriptionKeys/wrong_wire_type": {0x24},
 		"DescriptionKeys/missing_value":   {0x22},
+		"IdContextType/wrong_wire_type":   {0x2c},
+		"IdContextType/missing_value":     {0x2a},
 	}
 }
 
@@ -208,5 +210,6 @@ func genTestEncodingValuesEntityRef() map[string]*EntityRef {
 		"Type/test":            {Type: "test_type"},
 		"IdKeys/test":          {IdKeys: []string{"", "test_idkeys"}},
 		"DescriptionKeys/test": {DescriptionKeys: []string{"", "test_descriptionkeys"}},
+		"IdContextType/test":   {IdContextType: "test_idcontexttype"},
 	}
 }

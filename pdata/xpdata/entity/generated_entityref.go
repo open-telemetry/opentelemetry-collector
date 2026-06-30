@@ -75,6 +75,17 @@ func (ms EntityRef) DescriptionKeys() pcommon.StringSlice {
 	return pcommon.StringSlice(internal.NewStringSliceWrapper(&ms.getOrig().DescriptionKeys, ms.getState()))
 }
 
+// IdContextType returns the idcontexttype associated with this EntityRef.
+func (ms EntityRef) IdContextType() string {
+	return ms.getOrig().IdContextType
+}
+
+// SetIdContextType replaces the idcontexttype associated with this EntityRef.
+func (ms EntityRef) SetIdContextType(v string) {
+	ms.getState().AssertMutable()
+	ms.getOrig().IdContextType = v
+}
+
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms EntityRef) CopyTo(dest EntityRef) {
 	dest.getState().AssertMutable()
