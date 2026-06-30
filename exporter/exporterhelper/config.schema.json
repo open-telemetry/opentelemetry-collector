@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "go.opentelemetry.io/collector/exporter/exporterhelper",
+  "title": "pkg/exporterhelper",
+  "$defs": {
+    "timeout_config": {
+      "description": "A timeout configuration. The timeout applies to individual attempts to send data to the backend.",
+      "type": "object",
+      "properties": {
+        "timeout": {
+          "description": "Defines the timeout for every attempt to send data to the backend. A zero timeout means no timeout.",
+          "type": "string",
+          "default": "5s",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}
