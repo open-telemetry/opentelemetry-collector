@@ -56,13 +56,13 @@ func TestFromAttributeIndices(t *testing.T) {
 	oob := NewLocation()
 	oob.AttributeIndices().Append(int32(table.Len()))
 	_, err = FromAttributeIndices(table, oob, dic)
-	assert.ErrorContains(t, err, "out of bounds")
+	require.ErrorContains(t, err, "out of bounds")
 
 	// Negative attribute index
 	neg := NewLocation()
 	neg.AttributeIndices().Append(-1)
 	_, err = FromAttributeIndices(table, neg, dic)
-	assert.ErrorContains(t, err, "out of bounds")
+	require.ErrorContains(t, err, "out of bounds")
 
 	// Out-of-bounds key string index
 	badKey := NewKeyValueAndUnitSlice()
