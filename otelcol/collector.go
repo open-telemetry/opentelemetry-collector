@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.opentelemetry.io/collector/otelcol/internal/grpclog"
+	"go.opentelemetry.io/collector/otelcol/internal/metadata"
 	"go.opentelemetry.io/collector/service"
 )
 
@@ -274,7 +275,17 @@ func (col *Collector) reloadConfiguration(ctx context.Context) error {
 	col.setCollectorState(StateClosing)
 
 	if err := col.service.Shutdown(ctx); err != nil {
-		return fmt.Errorf("failed to shutdown the retiring config: %w", err)
+		// A failure to shut down the retiring configuration would normally
+		// terminate the Collector. This is problematic for setups where the
+		// Collector exports its own telemetry to itself, since tearing down the
+		// receiver makes the telemetry shutdown flush fail on every reload (see
+		// issue #11591). When the feature gate is enabled, log the error and
+		// continue starting the new configuration instead of terminating.
+		if metadata.PkgOtelcolContinueOnReloadShutdownErrorFeatureGate.IsEnabled() {
+			col.service.Logger().Error("Failed to shutdown the retiring config, starting the new config regardless", zap.Error(err))
+		} else {
+			return fmt.Errorf("failed to shutdown the retiring config: %w", err)
+		}
 	}
 
 	if err := col.setupConfigurationComponents(ctx); err != nil {

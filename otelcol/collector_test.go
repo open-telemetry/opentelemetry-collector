@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -24,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/otelcol/internal/metadata"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/service/telemetry"
 	"go.opentelemetry.io/collector/service/telemetry/telemetrytest"
@@ -304,6 +307,103 @@ func TestCollectorSendSignal(t *testing.T) {
 		return StateRunning == col.GetState()
 	}, 2*time.Second, 200*time.Millisecond)
 
+	col.signalsChannel <- SIGHUP
+
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	col.signalsChannel <- SIGTERM
+
+	wg.Wait()
+	assert.Equal(t, StateClosed, col.GetState())
+}
+
+// errorShutdownExtension returns an error the first time it is shut down, which
+// is used to make shutting down the retiring config fail during a reload. It
+// succeeds on subsequent shutdowns so the Collector's final shutdown is clean.
+type errorShutdownExtension struct {
+	component.StartFunc
+	shutdownCount *atomic.Int64
+}
+
+func (e errorShutdownExtension) Shutdown(context.Context) error {
+	if e.shutdownCount.Add(1) == 1 {
+		return errors.New("shutdown failed")
+	}
+	return nil
+}
+
+func newErrorShutdownExtensionFactory() extension.Factory {
+	shutdownCount := &atomic.Int64{}
+	return extension.NewFactory(
+		component.MustNewType("errorshutdown"),
+		func() component.Config { return &struct{}{} },
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
+			return errorShutdownExtension{shutdownCount: shutdownCount}, nil
+		},
+		component.StabilityLevelStable)
+}
+
+func newErrorShutdownCollector(t *testing.T) *Collector {
+	factories, err := nopFactories()
+	require.NoError(t, err)
+	factory := newErrorShutdownExtensionFactory()
+	factories.Extensions[factory.Type()] = factory
+
+	col, err := NewCollector(CollectorSettings{
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-errorshutdown.yaml")}),
+	})
+	require.NoError(t, err)
+	return col
+}
+
+// TestCollectorReloadShutdownError_GateDisabled verifies that, by default, an
+// error while shutting down the retiring config during a reload terminates the
+// Collector (the pre-existing behavior).
+func TestCollectorReloadShutdownError_GateDisabled(t *testing.T) {
+	col := newErrorShutdownCollector(t)
+
+	wg := &sync.WaitGroup{}
+	wg.Go(func() {
+		assert.ErrorContains(t, col.Run(context.Background()), "failed to shutdown the retiring config")
+	})
+
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	// Triggering a reload causes the retiring config's shutdown to fail, which
+	// terminates Run with the shutdown error.
+	col.signalsChannel <- SIGHUP
+
+	wg.Wait()
+}
+
+// TestCollectorReloadShutdownError_GateEnabled verifies that, with the feature
+// gate enabled, an error while shutting down the retiring config during a reload
+// is logged and the new config is started regardless, leaving the Collector
+// running. See https://github.com/open-telemetry/opentelemetry-collector/issues/11591.
+func TestCollectorReloadShutdownError_GateEnabled(t *testing.T) {
+	gate := metadata.PkgOtelcolContinueOnReloadShutdownErrorFeatureGate
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), false))
+	})
+
+	col := newErrorShutdownCollector(t)
+
+	wg := startCollector(context.Background(), t, col)
+
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	// The reload's shutdown of the retiring config fails, but with the gate
+	// enabled the Collector logs the error and starts the new config, so it
+	// returns to the running state instead of terminating.
 	col.signalsChannel <- SIGHUP
 
 	assert.Eventually(t, func() bool {

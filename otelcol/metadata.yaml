@@ -1,6 +1,13 @@
 type: otelcol
 github_project: open-telemetry/opentelemetry-collector
 
+feature_gates:
+  - id: pkg.otelcol.continueOnReloadShutdownError
+    description: When enabled, an error while shutting down the retiring configuration during a reload is logged instead of terminating the Collector, and the new configuration is started regardless.
+    stage: alpha
+    from_version: v0.156.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector/issues/11591
+
 status:
   disable_codecov_badge: true
   class: pkg
