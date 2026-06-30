@@ -465,6 +465,16 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 		"isCommand": func() bool {
 			return md.Status.Class == "cmd"
 		},
+		"componentPath": func() string {
+			if md.PackageName == "" || importRootPath == "" {
+				return md.Status.Class + "/" + md.ShortFolderName
+			}
+			prefix := importRootPath + "/"
+			if strings.HasPrefix(md.PackageName, prefix) {
+				return strings.TrimPrefix(md.PackageName, prefix)
+			}
+			return md.Status.Class + "/" + md.ShortFolderName
+		},
 		"supportsLogs":               func() bool { return md.supportsSignal("logs") },
 		"supportsMetrics":            func() bool { return md.supportsSignal("metrics") },
 		"supportsTraces":             func() bool { return md.supportsSignal("traces") },
