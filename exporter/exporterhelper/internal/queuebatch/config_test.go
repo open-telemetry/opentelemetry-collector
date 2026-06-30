@@ -89,6 +89,16 @@ func TestBatchConfig_Validate_MetadataKeys(t *testing.T) {
 		assert.Contains(t, err.Error(), "duplicate entry in metadata_keys")
 		assert.Contains(t, err.Error(), "key1")
 	})
+
+	t.Run("cadinality limit negative - fails if value is negative", func(t *testing.T) {
+		cfg := newTestBatchConfig()
+		cfg.Partition.MetadataKeys = []string{"key1", "key2"}
+		cardinalityLimit := -10
+		cfg.Partition.CardinalityLimit = &cardinalityLimit
+		err := confmap.Validate(cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "`cardinality_limit` must be positive, found -10")
+	})
 }
 
 func TestBatchConfig_Validate(t *testing.T) {

@@ -4,6 +4,7 @@
 package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 import (
 	"context"
+	"errors"
 	"sync"
 
 	lru "github.com/hashicorp/golang-lru/v2/simplelru"
@@ -16,16 +17,19 @@ import (
 )
 
 type multiBatcher struct {
-	cfg         BatchConfig
-	wp          *workerPool
-	sizer       request.Sizer
-	partitioner Partitioner[request.Request]
-	mergeCtx    func(context.Context, context.Context) context.Context
-	consumeFunc sender.SendFunc[request.Request]
-	partitions  *lru.LRU[string, *partitionBatcher]
-	logger      *zap.Logger
-	lock        sync.Mutex
+	cfg              BatchConfig
+	wp               *workerPool
+	sizer            request.Sizer
+	partitioner      Partitioner[request.Request]
+	mergeCtx         func(context.Context, context.Context) context.Context
+	consumeFunc      sender.SendFunc[request.Request]
+	partitions       *lru.LRU[string, *partitionBatcher]
+	logger           *zap.Logger
+	cardinalityLimit int
+	lock             sync.Mutex
 }
+
+const defaultCardinalityLimit = 10000
 
 func newMultiBatcher(
 	bCfg BatchConfig,
@@ -46,9 +50,13 @@ func newMultiBatcher(
 		logger:      logger,
 	}
 
-	// Create LRU cache with eviction callback
-	// TODO: make maxActivePartitionsCount configurable
-	cache, err := lru.NewLRU[string, *partitionBatcher](10000, func(_ string, pb *partitionBatcher) {
+	if bCfg.Partition.CardinalityLimit == nil {
+		mb.cardinalityLimit = defaultCardinalityLimit
+	} else {
+		mb.cardinalityLimit = *bCfg.Partition.CardinalityLimit
+	}
+
+	cache, err := lru.NewLRU[string, *partitionBatcher](mb.cardinalityLimit, func(_ string, pb *partitionBatcher) {
 		// Flush the partition when evicted
 		mb.wp.execute(pb.shutdownInternal)
 	})
@@ -60,7 +68,7 @@ func newMultiBatcher(
 	return mb, nil
 }
 
-func (mb *multiBatcher) getPartition(ctx context.Context, req request.Request) *partitionBatcher {
+func (mb *multiBatcher) getPartition(ctx context.Context, req request.Request) (*partitionBatcher, error) {
 	key := mb.partitioner.GetKey(ctx, req)
 
 	mb.lock.Lock()
@@ -68,7 +76,13 @@ func (mb *multiBatcher) getPartition(ctx context.Context, req request.Request) *
 
 	// Fast path: partition already exists
 	if pb, ok := mb.partitions.Get(key); ok {
-		return pb
+		return pb, nil
+	}
+
+	// Atomic check: only reject if this would be a NEW partition beyond the limit
+	if mb.partitions.Len() >= mb.cardinalityLimit {
+		mb.logger.Error("partition cardinality limit reached, rejecting the data", zap.Int("partition_count", mb.partitions.Len()))
+		return nil, errors.New("partition cardinality limit reached")
 	}
 
 	// Create new partition with onEmpty callback to remove from LRU after idle timeout
@@ -79,7 +93,7 @@ func (mb *multiBatcher) getPartition(ctx context.Context, req request.Request) *
 	})
 	_ = mb.partitions.Add(key, newPB)
 	_ = newPB.Start(ctx, nil)
-	return newPB
+	return newPB, nil
 }
 
 func (mb *multiBatcher) Start(context.Context, component.Host) error {
@@ -87,7 +101,11 @@ func (mb *multiBatcher) Start(context.Context, component.Host) error {
 }
 
 func (mb *multiBatcher) Consume(ctx context.Context, req request.Request, done queue.Done) {
-	shard := mb.getPartition(ctx, req)
+	shard, err := mb.getPartition(ctx, req)
+	if err != nil {
+		done.OnDone(err)
+		return
+	}
 	shard.Consume(ctx, req, done)
 }
 
