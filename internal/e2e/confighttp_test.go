@@ -19,8 +19,7 @@ func TestConfmapMarshalConfigHTTP(t *testing.T) {
 	conf := confmap.New()
 	require.NoError(t, conf.Marshal(confighttp.NewDefaultClientConfig()))
 	assert.Equal(t, map[string]any{
-		"idle_conn_timeout":   90 * time.Second,
-		"max_idle_conns":      100,
+		"keepalive":           nil,
 		"force_attempt_http2": true,
 	}, conf.ToStringMap())
 
@@ -32,8 +31,8 @@ func TestConfmapMarshalConfigHTTP(t *testing.T) {
 	require.NoError(t, conf.Marshal(confighttp.NewDefaultServerConfig()))
 	assert.Equal(t, map[string]any{
 		"cors":                nil,
-		"idle_timeout":        60 * time.Second,
 		"keep_alives_enabled": true,
+		"keepalive":           nil,
 		"read_header_timeout": 60 * time.Second,
 		"tls":                 nil,
 		"transport":           confignet.TransportTypeTCP,
