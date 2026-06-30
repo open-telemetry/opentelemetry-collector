@@ -4,6 +4,8 @@
 package pprofile
 
 import (
+	"fmt"
+	"math/rand/v2"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -717,4 +719,202 @@ func attrMapToStrings(m pcommon.Map) map[string]string {
 		return true
 	})
 	return result
+}
+
+func TestMergeTo_FullDedupAndRoundTrip(t *testing.T) {
+	r := rand.New(rand.NewPCG(7, 0))
+	marshaler := &ProtoMarshaler{}
+	unmarshaler := &ProtoUnmarshaler{}
+
+	// Step a: build dst and src; capture original resource attrs.
+	dst := newRandomProfiles(r, "dst", 6)
+	src := newRandomProfiles(r, "src", 6)
+	origDstAttrs := collectResourceAttrs(dst)
+	origSrcAttrs := collectResourceAttrs(src)
+
+	// Step b: marshal+unmarshal BOTH to make KeyStrindex references "sticky"
+	// (this is the exact pre-condition for the #15084 corruption sequence).
+	dstBytes, err := marshaler.MarshalProfiles(dst)
+	require.NoError(t, err)
+	dst, err = unmarshaler.UnmarshalProfiles(dstBytes)
+	require.NoError(t, err)
+	require.Equal(t, origDstAttrs, collectResourceAttrs(dst),
+		"dst resource attrs must survive initial round-trip (sanity)")
+	assertSampleDictAttr(t, dst, "dst-attr-key", "dict-attr-dst")
+
+	srcBytes, err := marshaler.MarshalProfiles(src)
+	require.NoError(t, err)
+	src, err = unmarshaler.UnmarshalProfiles(srcBytes)
+	require.NoError(t, err)
+	require.Equal(t, origSrcAttrs, collectResourceAttrs(src),
+		"src resource attrs must survive initial round-trip (sanity)")
+	assertSampleDictAttr(t, src, "src-attr-key", "dict-attr-src")
+
+	// Step c: merge.
+	require.NoError(t, src.MergeTo(dst))
+
+	// Step d: no-duplicate dict entries + in-memory resource attrs correct.
+	assertNoDuplicateDictEntries(t, dst.Dictionary())
+
+	expectedMergedAttrs := append(append([]map[string]string{}, origDstAttrs...), origSrcAttrs...)
+	require.Equal(t, expectedMergedAttrs, collectResourceAttrs(dst),
+		"resource attributes must survive merge in-memory")
+
+	// Verify sample attribute resolves to the original key/value after merge.
+	assertSampleDictAttr(t, dst, "dst-attr-key", "dict-attr-dst")
+	assertSampleDictAttr(t, dst, "src-attr-key", "dict-attr-src")
+
+	// Step e: marshal+unmarshal the merged result and verify attrs still match.
+	mergedBytes, err := marshaler.MarshalProfiles(dst)
+	require.NoError(t, err)
+	rt, err := unmarshaler.UnmarshalProfiles(mergedBytes)
+	require.NoError(t, err)
+	require.Equal(t, expectedMergedAttrs, collectResourceAttrs(rt),
+		"resource attributes must survive marshal round-trip after merge")
+
+	// Attribute-table entries must also survive the final round-trip.
+	assertSampleDictAttr(t, rt, "dst-attr-key", "dict-attr-dst")
+	assertSampleDictAttr(t, rt, "src-attr-key", "dict-attr-src")
+}
+
+// assertSampleDictAttr verifies that at least one sample in p contains a
+// dictionary AttributeTable entry whose resolved key/value matches wantKey/wantVal.
+func assertSampleDictAttr(t *testing.T, p Profiles, wantKey, wantVal string) {
+	t.Helper()
+	d := p.Dictionary()
+	for _, rp := range p.ResourceProfiles().All() {
+		for _, sp := range rp.ScopeProfiles().All() {
+			for _, prof := range sp.Profiles().All() {
+				for _, s := range prof.Samples().All() {
+					m := FromAttributeIndices(d.AttributeTable(), s, d)
+					if v, ok := m.Get(wantKey); ok && v.Str() == wantVal {
+						return
+					}
+				}
+			}
+		}
+	}
+	t.Fatalf("no sample found with dict attribute %q=%q", wantKey, wantVal)
+}
+
+func newRandomProfiles(r *rand.Rand, prefix string, nStrings int) Profiles {
+	p := NewProfiles()
+	d := p.Dictionary()
+	d.StringTable().Append("")
+	for i := 1; i < nStrings; i++ {
+		d.StringTable().Append(fmt.Sprintf("%s-%d", prefix, i))
+	}
+
+	// Add a prefix-distinct key string for the dictionary-level attribute.
+	attrKeyIdx := int32(d.StringTable().Len())
+	d.StringTable().Append(prefix + "-attr-key")
+	attrValStr := "dict-attr-" + prefix
+
+	fn := d.FunctionTable().AppendEmpty()
+	fn.SetNameStrindex(int32(r.IntN(nStrings)))
+
+	mp := d.MappingTable().AppendEmpty()
+	mp.SetFilenameStrindex(int32(r.IntN(nStrings)))
+
+	loc := d.LocationTable().AppendEmpty()
+	ln := loc.Lines().AppendEmpty()
+	ln.SetFunctionIndex(0)
+	loc.SetMappingIndex(0)
+
+	// index 0: empty sentinel (required by spec; switchDictionary skips index 0)
+	d.LinkTable().AppendEmpty()
+	// index 1: real link, identical across dst and src so a broken dedup would
+	// append a duplicate that assertNoDuplicateDictEntries would catch.
+	lnk := d.LinkTable().AppendEmpty()
+	lnk.SetTraceID(pcommon.TraceID([16]byte{0xAA, 0xBB, 0xCC, 0xDD, 0xAA, 0xBB, 0xCC, 0xDD, 0xAA, 0xBB, 0xCC, 0xDD, 0xAA, 0xBB, 0xCC, 0xDD}))
+	lnk.SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+
+	stk := d.StackTable().AppendEmpty()
+	stk.LocationIndices().Append(0)
+
+	// Dictionary-level attribute: key is attrKeyIdx, value is attrValStr.
+	kv := d.AttributeTable().AppendEmpty()
+	kv.SetKeyStrindex(attrKeyIdx)
+	kv.Value().SetStr(attrValStr)
+	attrIdx := int32(d.AttributeTable().Len() - 1)
+
+	dstID := [16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+	srcID := [16]byte{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2}
+	var pid [16]byte
+	if prefix == "dst" {
+		pid = dstID
+	} else {
+		pid = srcID
+	}
+
+	rp := p.ResourceProfiles().AppendEmpty()
+	rp.Resource().Attributes().PutStr(prefix+".key", prefix+".value")
+	sp := rp.ScopeProfiles().AppendEmpty()
+	sp.Scope().SetName(prefix + "-scope")
+	prof := sp.Profiles().AppendEmpty()
+	prof.SetProfileID(ProfileID(pid))
+	s := prof.Samples().AppendEmpty()
+	s.SetStackIndex(0)
+	s.SetLinkIndex(1)
+	s.AttributeIndices().Append(attrIdx)
+	return p
+}
+
+func collectResourceAttrs(p Profiles) []map[string]string {
+	out := make([]map[string]string, 0, p.ResourceProfiles().Len())
+	for i := 0; i < p.ResourceProfiles().Len(); i++ {
+		m := map[string]string{}
+		p.ResourceProfiles().At(i).Resource().Attributes().Range(func(k string, v pcommon.Value) bool {
+			m[k] = v.AsString()
+			return true
+		})
+		out = append(out, m)
+	}
+	return out
+}
+
+func assertNoDuplicateDictEntries(t *testing.T, d ProfilesDictionary) {
+	t.Helper()
+	st := d.StringTable()
+	seen := map[string]bool{}
+	for i := 0; i < st.Len(); i++ {
+		require.False(t, seen[st.At(i)], "duplicate string %q at %d", st.At(i), i)
+		seen[st.At(i)] = true
+	}
+	ft := d.FunctionTable()
+	for i := 0; i < ft.Len(); i++ {
+		for j := i + 1; j < ft.Len(); j++ {
+			require.False(t, ft.At(i).Equal(ft.At(j)), "duplicate function %d/%d", i, j)
+		}
+	}
+	lt := d.LocationTable()
+	for i := 0; i < lt.Len(); i++ {
+		for j := i + 1; j < lt.Len(); j++ {
+			require.False(t, lt.At(i).Equal(lt.At(j)), "duplicate location %d/%d", i, j)
+		}
+	}
+	sk := d.StackTable()
+	for i := 0; i < sk.Len(); i++ {
+		for j := i + 1; j < sk.Len(); j++ {
+			require.False(t, sk.At(i).Equal(sk.At(j)), "duplicate stack %d/%d", i, j)
+		}
+	}
+	mt := d.MappingTable()
+	for i := 0; i < mt.Len(); i++ {
+		for j := i + 1; j < mt.Len(); j++ {
+			require.False(t, mt.At(i).Equal(mt.At(j)), "duplicate mapping %d/%d", i, j)
+		}
+	}
+	at := d.AttributeTable()
+	for i := 0; i < at.Len(); i++ {
+		for j := i + 1; j < at.Len(); j++ {
+			require.False(t, at.At(i).Equal(at.At(j)), "duplicate attribute %d/%d", i, j)
+		}
+	}
+	lnk := d.LinkTable()
+	for i := 0; i < lnk.Len(); i++ {
+		for j := i + 1; j < lnk.Len(); j++ {
+			require.False(t, lnk.At(i).Equal(lnk.At(j)), "duplicate link %d/%d", i, j)
+		}
+	}
 }
