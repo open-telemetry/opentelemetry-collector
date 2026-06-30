@@ -303,10 +303,12 @@ REMOTE?=git@github.com:open-telemetry/opentelemetry-collector.git
 .PHONY: push-tags
 push-tags:
 	$(GO_TOOL) multimod verify
-	set -e; for tag in `$(GO_TOOL) multimod tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
-		echo "pushing tag $${tag}"; \
-		git push ${REMOTE} $${tag}; \
-	done;
+	set -e; \
+	tags_output=`$(GO_TOOL) multimod tag -m ${MODSET} -c ${COMMIT} --print-tags`; \
+	tags=`echo "$$tags_output" | grep -E -v "Using|Tagging" || true`; \
+	if [ -n "$$tags" ]; then \
+		git push ${REMOTE} $$tags; \
+	fi
 
 .PHONY: check-changes
 check-changes:
@@ -429,3 +431,4 @@ SCHEMA_DIRS := $(shell find $(CURDIR) -path "*testdata*" -prune -o -path "*inter
 .PHONY: generate-schemas
 generate-schemas:
 	@$(foreach dir,$(SCHEMA_DIRS), cd $(SRC_ROOT)/cmd/schemagen && go run . $(abspath $(dir)) -o $(abspath $(dir));)
+
