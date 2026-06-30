@@ -19,7 +19,7 @@ func TestDefaultProfiles(t *testing.T) {
 	cp, err := NewProfiles(func(context.Context, pprofile.Profiles) error { return nil })
 	assert.NoError(t, err)
 	assert.NoError(t, cp.ConsumeProfiles(context.Background(), pprofile.NewProfiles()))
-	assert.Equal(t, consumer.Capabilities{MutatesData: false}, cp.Capabilities())
+	assert.Equal(t, consumer.Capabilities{MutatesData: false, HasReceivedData: false}, cp.Capabilities())
 }
 
 func TestNilFuncProfiles(t *testing.T) {
@@ -34,6 +34,15 @@ func TestWithCapabilitiesProfiles(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, cp.ConsumeProfiles(context.Background(), pprofile.NewProfiles()))
 	assert.Equal(t, consumer.Capabilities{MutatesData: true}, cp.Capabilities())
+}
+
+func TestWithCapabilitiesHasReceivedDataProfiles(t *testing.T) {
+	cp, err := NewProfiles(
+		func(context.Context, pprofile.Profiles) error { return nil },
+		consumer.WithCapabilities(consumer.Capabilities{HasReceivedData: true}))
+	assert.NoError(t, err)
+	assert.NoError(t, cp.ConsumeProfiles(context.Background(), pprofile.NewProfiles()))
+	assert.Equal(t, consumer.Capabilities{HasReceivedData: true}, cp.Capabilities())
 }
 
 func TestConsumeProfiles(t *testing.T) {

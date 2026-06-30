@@ -18,7 +18,7 @@ func TestDefaultTraces(t *testing.T) {
 	cp, err := NewTraces(func(context.Context, ptrace.Traces) error { return nil })
 	assert.NoError(t, err)
 	assert.NoError(t, cp.ConsumeTraces(context.Background(), ptrace.NewTraces()))
-	assert.Equal(t, Capabilities{MutatesData: false}, cp.Capabilities())
+	assert.Equal(t, Capabilities{MutatesData: false, HasReceivedData: false}, cp.Capabilities())
 }
 
 func TestNilFuncTraces(t *testing.T) {
@@ -33,6 +33,15 @@ func TestWithCapabilitiesTraces(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, cp.ConsumeTraces(context.Background(), ptrace.NewTraces()))
 	assert.Equal(t, Capabilities{MutatesData: true}, cp.Capabilities())
+}
+
+func TestWithCapabilitiesHasReceivedDataTraces(t *testing.T) {
+	cp, err := NewTraces(
+		func(context.Context, ptrace.Traces) error { return nil },
+		WithCapabilities(Capabilities{HasReceivedData: true}))
+	assert.NoError(t, err)
+	assert.NoError(t, cp.ConsumeTraces(context.Background(), ptrace.NewTraces()))
+	assert.Equal(t, Capabilities{HasReceivedData: true}, cp.Capabilities())
 }
 
 func TestConsumeTraces(t *testing.T) {

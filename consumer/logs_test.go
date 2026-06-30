@@ -18,7 +18,7 @@ func TestDefaultLogs(t *testing.T) {
 	cp, err := NewLogs(func(context.Context, plog.Logs) error { return nil })
 	assert.NoError(t, err)
 	assert.NoError(t, cp.ConsumeLogs(context.Background(), plog.NewLogs()))
-	assert.Equal(t, Capabilities{MutatesData: false}, cp.Capabilities())
+	assert.Equal(t, Capabilities{MutatesData: false, HasReceivedData: false}, cp.Capabilities())
 }
 
 func TestNilFuncLogs(t *testing.T) {
@@ -33,6 +33,15 @@ func TestWithCapabilitiesLogs(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, cp.ConsumeLogs(context.Background(), plog.NewLogs()))
 	assert.Equal(t, Capabilities{MutatesData: true}, cp.Capabilities())
+}
+
+func TestWithCapabilitiesHasReceivedDataLogs(t *testing.T) {
+	cp, err := NewLogs(
+		func(context.Context, plog.Logs) error { return nil },
+		WithCapabilities(Capabilities{HasReceivedData: true}))
+	assert.NoError(t, err)
+	assert.NoError(t, cp.ConsumeLogs(context.Background(), plog.NewLogs()))
+	assert.Equal(t, Capabilities{HasReceivedData: true}, cp.Capabilities())
 }
 
 func TestConsumeLogs(t *testing.T) {
