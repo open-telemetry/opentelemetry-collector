@@ -143,6 +143,8 @@ func NewValueBytes() Value {
 }
 
 // NewValueStrindex creates a new Value of strindex type.
+// Note: This is currently used exclusively in the Profiling signal.
+// Status: [Alpha]
 func NewValueStrindex(i int32) Value {
 	ov := internal.NewAnyValueStringValueStrindex()
 	ov.StringValueStrindex = i
