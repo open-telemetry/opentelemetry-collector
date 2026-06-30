@@ -10,11 +10,11 @@ import (
 
 const fileName = "config.schema.json"
 
-// WriteJSONSchema writes the given ConfigMetadata as a JSON Schema file
+// WriteJSONSchema writes the given JSONSchemaDoc as a JSON Schema file
 // named "config.schema.json" in the specified directory.
-func WriteJSONSchema(dir string, md *ConfigMetadata) error {
+func WriteJSONSchema(dir string, doc *JSONSchemaDoc) error {
 	filePath := filepath.Join(dir, fileName)
-	data, err := md.ToJSON()
+	data, err := doc.ToJSON()
 	if err != nil {
 		return err
 	}

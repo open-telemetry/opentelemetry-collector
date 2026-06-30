@@ -4,6 +4,7 @@
 package schemagen // import "go.opentelemetry.io/collector/internal/schemagen"
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"maps"
@@ -35,26 +36,54 @@ func NewResolver(pkgID, class, name, dir string) *Resolver {
 	}
 }
 
-// ResolveSchema takes a source configuration metadata schema and resolves all references ($ref)
-// to produce a fully resolved schema. It handles both internal references (within the same schema) and external references
-// (pointing to other schemas, either locally or remotely). The resolver uses registered loaders to fetch external schemas as needed.
+// Resolve takes the source Metadata parsed from metadata.yaml and produces a resolved
+// schema node with all $ref references resolved. exported_configs from the source are
+// merged into the node's $defs. Pass the result to NewJSONSchemaDoc to build the
+// writer-side document.
 //
-// Returns a new ConfigMetadata with all references resolved, or an error if resolution fails.
-func (r *Resolver) ResolveSchema(src *ConfigMetadata) (*ConfigMetadata, error) {
+// The source Metadata is treated as read-only: the inputs are deep-cloned before the
+// recursive resolver walks them, so internal mutations (the "any" fallback in
+// resolveRef, per-node type writes) cannot leak back into the caller's tree through
+// shared *ConfigMetadata pointers.
+func (r *Resolver) Resolve(src *Metadata) (*ConfigMetadata, error) {
+	if src == nil {
+		return nil, errors.New("nil metadata")
+	}
+	work := src.Clone()
+	config := work.Config
+	if config == nil {
+		config = &ConfigMetadata{}
+	}
+
+	// For ref-lookup purposes the recursive resolver expects the top-level
+	// definitions (both nested $defs and exported_configs) to be reachable from
+	// the root node. Merge them onto the owned root. On collision the nested
+	// $defs win: the legacy mdatagen path injected internal generated defs over
+	// exported_configs, so a generated name like metrics_builder_config must
+	// resolve to the internal def, not an exported config sharing the name.
+	if len(work.ExportedConfigs) > 0 {
+		merged := make(map[string]*ConfigMetadata, len(work.ExportedConfigs)+len(config.Defs))
+		maps.Copy(merged, work.ExportedConfigs)
+		maps.Copy(merged, config.Defs)
+		config.Defs = merged
+	}
+
 	target := &ConfigMetadata{}
-	err := r.resolveSchema(src, src, target, nil)
-	if err != nil {
+	if err := r.resolveSchema(config, config, target, nil); err != nil {
 		return nil, err
 	}
 
 	target.Schema = schemaVersion
 	target.ID = r.pkgID
 	target.Title = fmt.Sprintf("%s/%s", r.class, r.name)
-
-	if len(src.Properties) > 0 {
+	if len(config.Properties) > 0 {
 		target.Type = "object"
 	}
 
+	// target.Defs holds the merged exported_configs and any internal $defs that
+	// survived the resolver's cleanup pass. They stay on the node: NewJSONSchemaDoc
+	// promotes them to the document's $defs at write time, and mdatagen's Go-struct
+	// templates read them off the node directly.
 	return target, nil
 }
 
@@ -277,22 +306,36 @@ func lookupRootDef(root, current *ConfigMetadata, ref *Ref) (*ConfigMetadata, bo
 
 // loadExternalRef uses SchemaLoader to load external references
 func (r *Resolver) loadExternalRef(ref *Ref) (*ConfigMetadata, error) {
-	md, err := r.loader.Load(*ref)
+	m, err := r.loader.Load(*ref)
 	if err != nil {
 		return nil, err
 	}
-	if md == nil {
+	if m == nil {
 		return nil, fmt.Errorf("no loader could resolve external reference: %s", ref)
 	}
 
-	if md.Defs != nil {
-		if def, ok := md.Defs[ref.DefName()]; ok {
-			resolved := &ConfigMetadata{}
-			if err := r.resolveSchema(md, def, resolved, ref); err != nil {
-				return nil, fmt.Errorf("failed to resolve internal references in external schema %s: %w", ref, err)
-			}
-			return resolved, nil
+	// Loaders may cache and reuse the same *Metadata across calls, so deep-clone
+	// here. Otherwise mutations performed by the recursive resolveSchema (the "any"
+	// fallback in resolveRef, per-node type writes) would persist into the cache
+	// and contaminate subsequent loads.
+	m = m.Clone()
+	root := m.Config
+	if root == nil {
+		root = &ConfigMetadata{}
+	}
+	if len(m.ExportedConfigs) > 0 {
+		merged := make(map[string]*ConfigMetadata, len(m.ExportedConfigs)+len(root.Defs))
+		maps.Copy(merged, m.ExportedConfigs)
+		maps.Copy(merged, root.Defs)
+		root.Defs = merged
+	}
+
+	if def, ok := root.Defs[ref.DefName()]; ok {
+		resolved := &ConfigMetadata{}
+		if err := r.resolveSchema(root, def, resolved, ref); err != nil {
+			return nil, fmt.Errorf("failed to resolve internal references in external schema %s: %w", ref, err)
 		}
+		return resolved, nil
 	}
 
 	return nil, fmt.Errorf("type %q not found in loaded schema for reference %s", ref.DefName(), ref)

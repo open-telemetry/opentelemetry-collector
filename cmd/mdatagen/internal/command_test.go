@@ -549,7 +549,7 @@ func TestGenerateConfigFiles(t *testing.T) {
 				Status: &Status{
 					Class: "receiver",
 				},
-				// A local ref without a definition name fails Validate() inside ResolveSchema
+				// A local ref without a definition name fails Validate() inside Resolve
 				Config: &cfggen.ConfigMetadata{
 					Ref: "/config/configauth",
 				},
@@ -1796,4 +1796,50 @@ func TestGenerateConfigSchema_LocalizesSameRootRefs(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, string(actual), "$ref: /filter.config")
 	require.NotContains(t, string(actual), "$ref: go.opentelemetry.io/collector/filter.config")
+}
+
+func TestGenerateConfigFiles_DoesNotMutateSourceMetadata(t *testing.T) {
+	// Regression: generateConfigFiles takes Metadata by value, but Config and
+	// ExportedConfigs hold caller-owned *ConfigMetadata pointers. Before the
+	// upfront Clone, both injectInternalMetadataDefs (which sets Config.Defs)
+	// and the resolver's recursive walk leaked mutations back into the
+	// caller's source-side data.
+	root := t.TempDir()
+	tmpdir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(tmpdir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	srcConfig := &cfggen.ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*cfggen.ConfigMetadata{
+			"endpoint": {Type: "string"},
+		},
+	}
+	srcExported := map[string]*cfggen.ConfigMetadata{
+		"sample_config": {
+			Type: "object",
+			Properties: map[string]*cfggen.ConfigMetadata{
+				"host_name": {Type: "string"},
+			},
+		},
+	}
+	md := Metadata{
+		Type:            "test",
+		PackageName:     "testmodule/shortname",
+		Status:          &Status{Class: "receiver"},
+		Config:          srcConfig,
+		ExportedConfigs: srcExported,
+	}
+
+	configSnapshot := srcConfig.Clone()
+	exportedSnapshot := make(map[string]*cfggen.ConfigMetadata, len(srcExported))
+	for k, v := range srcExported {
+		exportedSnapshot[k] = v.Clone()
+	}
+
+	require.NoError(t, generateConfigFiles(md, tmpdir, "testmodule"))
+
+	require.Nil(t, srcConfig.Defs, "Config.Defs must remain nil; injectInternalMetadataDefs leaked Defs onto the caller's Config")
+	require.Equal(t, configSnapshot, srcConfig, "generateConfigFiles must not mutate the caller's Config tree")
+	require.Equal(t, exportedSnapshot, srcExported, "generateConfigFiles must not mutate the caller's ExportedConfigs tree")
 }

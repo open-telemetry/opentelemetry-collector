@@ -673,31 +673,47 @@ func mergeInternalMetadataDefs(raw []byte, src *cfggen.ConfigMetadata) error {
 }
 
 func generateConfigFiles(md Metadata, mdDir, importRootPath string) error {
-	if md.ExportedConfigs != nil {
-		if md.Config == nil {
+	if md.Config != nil || len(md.ExportedConfigs) > 0 {
+		// Deep-clone the schema inputs so injectInternalMetadataDefs and the
+		// resolver below cannot leak mutations back into the caller's Metadata
+		// through shared *ConfigMetadata pointers. `md Metadata` is passed by
+		// value, but Config and ExportedConfigs hold caller-owned pointers.
+		if md.Config != nil {
+			md.Config = md.Config.Clone()
+		} else {
 			md.Config = &cfggen.ConfigMetadata{}
 		}
-		md.Config.Defs = md.ExportedConfigs
-	}
+		if len(md.ExportedConfigs) > 0 {
+			cloned := make(map[string]*cfggen.ConfigMetadata, len(md.ExportedConfigs))
+			for k, v := range md.ExportedConfigs {
+				cloned[k] = v.Clone()
+			}
+			md.ExportedConfigs = cloned
+		}
 
-	if md.Config != nil {
 		if err := injectInternalMetadataDefs(md, mdDir, md.Config); err != nil {
 			return err
 		}
 		resolver := cfggen.NewResolver(md.PackageName, md.Status.Class, md.Type, mdDir)
-		resolvedSchema, err := resolver.ResolveSchema(md.Config)
+		schemaInput := &cfggen.Metadata{
+			Config:          md.Config,
+			ExportedConfigs: md.ExportedConfigs,
+		}
+		resolvedConfig, err := resolver.Resolve(schemaInput)
 		if err != nil {
 			return fmt.Errorf("failed to resolve config schema: %w", err)
 		}
 
-		err = cfggen.WriteJSONSchema(mdDir, resolvedSchema)
+		err = cfggen.WriteJSONSchema(mdDir, cfggen.NewJSONSchemaDoc(resolvedConfig))
 		if err != nil {
 			return fmt.Errorf("failed to write config schema: %w", err)
 		}
 
-		// do a shallow copy of Metadata and replace Config with resolved schema
+		// do a shallow copy of Metadata and replace Config with the resolved schema.
+		// The Go-struct templates walk Config (Properties, AllOf, $defs); the resolver
+		// leaves the merged $defs on the node, so no reattach is needed here.
 		mdWithConfig := md
-		mdWithConfig.Config = resolvedSchema
+		mdWithConfig.Config = resolvedConfig
 
 		if err = generateConfigGoStruct(mdWithConfig, mdDir); err != nil {
 			return fmt.Errorf("failed to generate config Go struct: %w", err)

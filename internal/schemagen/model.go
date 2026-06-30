@@ -7,11 +7,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// ConfigMetadata represents a JSON schema object, draft 2020-12 (limited), with additional custom fields.
+// ConfigMetadata is a single schema node parsed from metadata.yaml's `config` (and from
+// any externally-loaded schema). It mirrors a subset of JSON Schema 2020-12, plus the
+// project-specific x-* and go_struct extensions.
+//
+// It is NOT the type emitted to disk as a JSON Schema document; that is JSONSchemaDoc.
+// The Defs field is kept here only to back the resolver's internal ref-lookup logic for
+// schemas that carry their own nested $defs. Top-level $defs (built from a component's
+// exported_configs) are owned by JSONSchemaDoc and emitted at write time. The json tag
+// on Defs is "-" so a resolved node's internal defs are never serialized directly; the
+// document's $defs go through JSONSchemaDoc instead.
 type ConfigMetadata struct {
 	Schema               string                     `mapstructure:"$schema,omitempty" json:"$schema,omitempty" yaml:"$schema,omitempty"`
 	ID                   string                     `mapstructure:"$id,omitempty" json:"$id,omitempty" yaml:"$id,omitempty"`
@@ -48,7 +58,7 @@ type ConfigMetadata struct {
 	ExclusiveMaximum     *float64                   `mapstructure:"exclusiveMaximum,omitempty" json:"exclusiveMaximum,omitempty" yaml:"exclusiveMaximum,omitempty"`
 	Minimum              *float64                   `mapstructure:"minimum,omitempty" json:"minimum,omitempty" yaml:"minimum,omitempty"`
 	ExclusiveMinimum     *float64                   `mapstructure:"exclusiveMinimum,omitempty" json:"exclusiveMinimum,omitempty" yaml:"exclusiveMinimum,omitempty"`
-	Defs                 map[string]*ConfigMetadata `mapstructure:"$defs,omitempty" json:"$defs,omitempty" yaml:"$defs,omitempty"`
+	Defs                 map[string]*ConfigMetadata `mapstructure:"$defs,omitempty" json:"-" yaml:"$defs,omitempty"`
 	// Additional custom fields
 	GoStruct   GoStructConfig `mapstructure:"go_struct,omitempty" json:"-" yaml:"go_struct,omitempty"`
 	GoType     string         `mapstructure:"x-customType,omitempty" json:"-" yaml:"x-customType,omitempty"`
@@ -94,8 +104,142 @@ func (g *GoStructConfig) Unmarshal(parser *confmap.Conf) error {
 	return sub.Unmarshal(g.CustomValidator)
 }
 
+// JSONSchemaDoc is the writer-side JSON Schema 2020-12 document produced by schemagen.
+// It is a standalone type, not a wrapper around ConfigMetadata, but it mirrors the full
+// set of JSON Schema fields ConfigMetadata can emit (every json-tagged keyword, minus the
+// metadata-only and internal x-*/go_struct fields) plus the top-level $defs built from the
+// component's exported_configs (and any internal definitions injected by mdatagen). A config
+// root is normally an object, but carrying the complete keyword set means a root that uses
+// scalar/array validation, enum/const, or annotation keywords (default, examples, deprecated)
+// is emitted rather than silently dropped.
+//
+// Keeping it separate lets the on-disk JSON Schema evolve independently of the
+// metadata.yaml config representation, which is free to drift away from JSON Schema
+// shape. Standard encoding/json handles serialization; no custom MarshalJSON is needed.
+//
+// Field order mirrors the declaration order on ConfigMetadata so the serialized document
+// is byte-identical to the prior embedded-node output: allOf precedes properties, and
+// $defs is emitted last.
+type JSONSchemaDoc struct {
+	Schema      string `json:"$schema,omitempty"`
+	ID          string `json:"$id,omitempty"`
+	Title       string `json:"title,omitempty"`
+	Description string `json:"description,omitempty"`
+	Comment     string `json:"$comment,omitempty"`
+	Type        string `json:"type,omitempty"`
+
+	Default    any   `json:"default,omitempty"`
+	Examples   []any `json:"examples,omitempty"`
+	Deprecated bool  `json:"deprecated,omitempty"`
+	Enum       []any `json:"enum,omitempty"`
+	Const      any   `json:"const,omitempty"`
+
+	AllOf                []*ConfigMetadata          `json:"allOf,omitempty"`
+	Properties           map[string]*ConfigMetadata `json:"properties,omitempty"`
+	AdditionalProperties any                        `json:"additionalProperties,omitempty"`
+	PatternProperties    map[string]*ConfigMetadata `json:"patternProperties,omitempty"`
+	Required             []string                   `json:"required,omitempty"`
+	MinProperties        *int                       `json:"minProperties,omitempty"`
+	MaxProperties        *int                       `json:"maxProperties,omitempty"`
+
+	Items       *ConfigMetadata `json:"items,omitempty"`
+	MinItems    *int            `json:"minItems,omitempty"`
+	MaxItems    *int            `json:"maxItems,omitempty"`
+	UniqueItems bool            `json:"uniqueItems,omitempty"`
+
+	MaxLength *int   `json:"maxLength,omitempty"`
+	MinLength *int   `json:"minLength,omitempty"`
+	Pattern   string `json:"pattern,omitempty"`
+	Format    string `json:"format,omitempty"`
+
+	ContentMediaType string          `json:"contentMediaType,omitempty"`
+	ContentEncoding  string          `json:"contentEncoding,omitempty"`
+	ContentSchema    *ConfigMetadata `json:"contentSchema,omitempty"`
+
+	MultipleOf       *float64 `json:"multipleOf,omitempty"`
+	Maximum          *float64 `json:"maximum,omitempty"`
+	ExclusiveMaximum *float64 `json:"exclusiveMaximum,omitempty"`
+	Minimum          *float64 `json:"minimum,omitempty"`
+	ExclusiveMinimum *float64 `json:"exclusiveMinimum,omitempty"`
+
+	Defs map[string]*ConfigMetadata `json:"$defs,omitempty"`
+}
+
+// NewJSONSchemaDoc projects a resolved schema node onto a writer-side JSON Schema
+// document. It copies every JSON Schema keyword the root node can carry and the
+// resolved $defs. The node's internal AdditionalPropertiesAllowed flag becomes a real
+// additionalProperties boolean on the document. The source node is not retained.
+func NewJSONSchemaDoc(root *ConfigMetadata) *JSONSchemaDoc {
+	if root == nil {
+		return &JSONSchemaDoc{}
+	}
+	doc := &JSONSchemaDoc{
+		Schema:            root.Schema,
+		ID:                root.ID,
+		Title:             root.Title,
+		Description:       root.Description,
+		Comment:           root.Comment,
+		Type:              root.Type,
+		Default:           root.Default,
+		Examples:          root.Examples,
+		Deprecated:        root.Deprecated,
+		Enum:              root.Enum,
+		Const:             root.Const,
+		AllOf:             root.AllOf,
+		Properties:        root.Properties,
+		PatternProperties: root.PatternProperties,
+		Required:          root.Required,
+		MinProperties:     root.MinProperties,
+		MaxProperties:     root.MaxProperties,
+		Items:             root.Items,
+		MinItems:          root.MinItems,
+		MaxItems:          root.MaxItems,
+		UniqueItems:       root.UniqueItems,
+		MaxLength:         root.MaxLength,
+		MinLength:         root.MinLength,
+		Pattern:           root.Pattern,
+		Format:            root.Format,
+		ContentMediaType:  root.ContentMediaType,
+		ContentEncoding:   root.ContentEncoding,
+		ContentSchema:     root.ContentSchema,
+		MultipleOf:        root.MultipleOf,
+		Maximum:           root.Maximum,
+		ExclusiveMaximum:  root.ExclusiveMaximum,
+		Minimum:           root.Minimum,
+		ExclusiveMinimum:  root.ExclusiveMinimum,
+		Defs:              root.Defs,
+	}
+	if root.AdditionalPropertiesAllowed != nil {
+		doc.AdditionalProperties = *root.AdditionalPropertiesAllowed
+	} else if root.AdditionalProperties != nil {
+		doc.AdditionalProperties = root.AdditionalProperties
+	}
+	return doc
+}
+
+// ToJSON serializes the JSON Schema document with indentation.
+func (d *JSONSchemaDoc) ToJSON() ([]byte, error) {
+	return json.MarshalIndent(d, "", "  ")
+}
+
+// ToJSON serializes the schema node with indentation. This is the entry point used
+// by callers that operate on a bare ConfigMetadata, such as the combiner output
+// path. The writer-side document path goes through JSONSchemaDoc, which additionally
+// emits the top-level $defs.
 func (md *ConfigMetadata) ToJSON() ([]byte, error) {
 	return json.MarshalIndent(md, "", "  ")
+}
+
+// AsJSONSchema builds a writer-side document directly from this source Metadata without
+// running the resolver. The document's $defs are the source exported_configs. Used where
+// a document is needed without ref resolution.
+func (md *Metadata) AsJSONSchema() *JSONSchemaDoc {
+	if md == nil {
+		return &JSONSchemaDoc{}
+	}
+	doc := NewJSONSchemaDoc(md.Config)
+	doc.Defs = md.ExportedConfigs
+	return doc
 }
 
 func (md *ConfigMetadata) MarshalJSON() ([]byte, error) {
@@ -139,4 +283,75 @@ func (md *ConfigMetadata) Validate() error {
 		}
 	}
 	return errs
+}
+
+// Clone returns a deep copy of the Metadata. The returned Metadata shares no pointers
+// with the receiver, so callers downstream of Clone() can freely mutate the result
+// without affecting the source.
+func (md *Metadata) Clone() *Metadata {
+	if md == nil {
+		return nil
+	}
+	out := &Metadata{Config: md.Config.Clone()}
+	if md.ExportedConfigs != nil {
+		out.ExportedConfigs = make(map[string]*ConfigMetadata, len(md.ExportedConfigs))
+		for k, v := range md.ExportedConfigs {
+			out.ExportedConfigs[k] = v.Clone()
+		}
+	}
+	return out
+}
+
+// Clone returns a deep copy of the ConfigMetadata node and every pointer-bearing field
+// reachable from it (Properties, Items, AllOf, AdditionalProperties, ContentSchema,
+// PatternProperties, Defs). Primitive slices are copied; numeric pointer fields
+// (MinLength, MultipleOf, etc.) are shallow-shared since the resolver only reads them.
+func (md *ConfigMetadata) Clone() *ConfigMetadata {
+	if md == nil {
+		return nil
+	}
+	out := *md
+	if md.AllOf != nil {
+		out.AllOf = make([]*ConfigMetadata, len(md.AllOf))
+		for i, v := range md.AllOf {
+			out.AllOf[i] = v.Clone()
+		}
+	}
+	if md.Properties != nil {
+		out.Properties = make(map[string]*ConfigMetadata, len(md.Properties))
+		for k, v := range md.Properties {
+			out.Properties[k] = v.Clone()
+		}
+	}
+	if md.AdditionalProperties != nil {
+		out.AdditionalProperties = md.AdditionalProperties.Clone()
+	}
+	if md.PatternProperties != nil {
+		out.PatternProperties = make(map[string]*ConfigMetadata, len(md.PatternProperties))
+		for k, v := range md.PatternProperties {
+			out.PatternProperties[k] = v.Clone()
+		}
+	}
+	if md.Items != nil {
+		out.Items = md.Items.Clone()
+	}
+	if md.ContentSchema != nil {
+		out.ContentSchema = md.ContentSchema.Clone()
+	}
+	if md.Defs != nil {
+		out.Defs = make(map[string]*ConfigMetadata, len(md.Defs))
+		for k, v := range md.Defs {
+			out.Defs[k] = v.Clone()
+		}
+	}
+	if md.Examples != nil {
+		out.Examples = slices.Clone(md.Examples)
+	}
+	if md.Enum != nil {
+		out.Enum = slices.Clone(md.Enum)
+	}
+	if md.Required != nil {
+		out.Required = slices.Clone(md.Required)
+	}
+	return &out
 }

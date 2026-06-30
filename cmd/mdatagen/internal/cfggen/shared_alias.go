@@ -7,6 +7,8 @@ import "go.opentelemetry.io/collector/internal/schemagen"
 
 type (
 	ConfigMetadata        = schemagen.ConfigMetadata
+	JSONSchemaDoc         = schemagen.JSONSchemaDoc
+	Metadata              = schemagen.Metadata
 	GoStructConfig        = schemagen.GoStructConfig
 	CustomValidatorConfig = schemagen.CustomValidatorConfig
 	Loader                = schemagen.Loader
@@ -22,11 +24,12 @@ const (
 )
 
 var (
-	ErrNotFound     = schemagen.ErrNotFound
-	NewLoader       = schemagen.NewLoader
-	NewRef          = schemagen.NewRef
-	WithOrigin      = schemagen.WithOrigin
-	LocalizeRef     = schemagen.LocalizeRef
-	NewResolver     = schemagen.NewResolver
-	WriteJSONSchema = schemagen.WriteJSONSchema
+	ErrNotFound      = schemagen.ErrNotFound
+	NewLoader        = schemagen.NewLoader
+	NewRef           = schemagen.NewRef
+	WithOrigin       = schemagen.WithOrigin
+	LocalizeRef      = schemagen.LocalizeRef
+	NewResolver      = schemagen.NewResolver
+	NewJSONSchemaDoc = schemagen.NewJSONSchemaDoc
+	WriteJSONSchema  = schemagen.WriteJSONSchema
 )
