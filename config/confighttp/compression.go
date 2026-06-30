@@ -249,6 +249,9 @@ func httpContentDecompressor(h http.Handler, maxRequestBodySize int64, eh func(w
 	for _, dec := range enableDecoders {
 		enabled[dec] = availableDecoders[dec]
 
+		if dec == "" {
+			enabled["identity"] = availableDecoders[""]
+		}
 		if dec == "deflate" {
 			enabled["deflate"] = availableDecoders["zlib"]
 		}
@@ -276,17 +279,33 @@ func (d *decompressor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if newBody != nil {
-		newBody = &panicRecoverReadCloser{inner: newBody}
-		defer newBody.Close()
+		body, err := d.readDecompressedBody(w, newBody)
+		if err != nil {
+			d.errHandler(w, r, err.Error(), http.StatusBadRequest)
+			return
+		}
 		// "Content-Encoding" header is removed to avoid decompressing twice
 		// in case the next handler(s) have implemented a similar mechanism.
 		r.Header.Del("Content-Encoding")
-		// "Content-Length" is set to -1 as the size of the decompressed body is unknown.
 		r.Header.Del("Content-Length")
-		r.ContentLength = -1
-		r.Body = http.MaxBytesReader(w, newBody, d.maxRequestBodySize)
+		r.ContentLength = int64(len(body))
+		r.Body = io.NopCloser(bytes.NewReader(body))
 	}
 	d.base.ServeHTTP(w, r)
+}
+
+func (d *decompressor) readDecompressedBody(w http.ResponseWriter, body io.ReadCloser) ([]byte, error) {
+	body = &panicRecoverReadCloser{inner: body}
+	limitedBody := http.MaxBytesReader(w, body, d.maxRequestBodySize)
+	decompressed, readErr := io.ReadAll(limitedBody)
+	closeErr := body.Close()
+	if readErr != nil {
+		return nil, readErr
+	}
+	if closeErr != nil {
+		return nil, closeErr
+	}
+	return decompressed, nil
 }
 
 func (d *decompressor) newBodyReader(r *http.Request) (io.ReadCloser, error) {
