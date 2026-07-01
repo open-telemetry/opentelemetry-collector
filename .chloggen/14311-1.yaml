@@ -18,6 +18,10 @@ issues: [14311]
 subtext: |
   This follows the OpenTelemetry configuration schema by treating
   `service::telemetry::resource::detection/development::detectors` as detector selection.
+  Currently supported detector entries are `container`, `host`, `process`, and `service`.
+  See the OpenTelemetry Configuration Go support table and search for
+  `ExperimentalResourceDetector` for current detector support:
+  https://github.com/open-telemetry/opentelemetry-configuration/blob/main/language-support-status.md#go
 
   Example:
   ```yaml
