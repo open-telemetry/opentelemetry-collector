@@ -548,3 +548,53 @@ func TestGoStructConfig_UnmarshalError(t *testing.T) {
 	var g GoStructConfig
 	require.Error(t, g.Unmarshal(parser))
 }
+
+func TestConfigMetadata_Validate_EnumOnComplexType(t *testing.T) {
+	tests := []struct {
+		name    string
+		md      *ConfigMetadata
+		wantErr string
+	}{
+		{
+			name: "enum on object",
+			md: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"nested": {Type: "object", Enum: []any{"a"}},
+				},
+			},
+			wantErr: `property "nested": enum is not supported for type "object"`,
+		},
+		{
+			name: "enum on array",
+			md: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"items": {Type: "array", Enum: []any{"a"}},
+				},
+			},
+			wantErr: `property "items": enum is not supported for type "array"`,
+		},
+		{
+			name: "enum on string is valid",
+			md: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"level": {Type: "string", Enum: []any{"a", "b"}},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.md.Validate()
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

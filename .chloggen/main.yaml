@@ -1,31 +1,25 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: new_component
+change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
-component: cmd/schemagen
+component: cmd/mdatagen
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Move the `schemagen` CLI from opentelemetry-collector-contrib to this repository as `cmd/schemagen`.
+note: Add support for defining stability levels for resource attributes
 
 # One or more tracking issues or pull requests related to the change
-issues: [14543]
+issues: [15312]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  The tool's source is identical to the upstream contrib version
-  (github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen) except for the module path and
-  the test fixtures' namespace, which now reflect the collector module
-  (go.opentelemetry.io/collector/cmd/schemagen). A contrib-only integration test that pointed at three
-  contrib components is removed; contrib's existing `make generate-schemas` + git-diff CI continues to
-  exercise the FactoryMaps feature against real-world components.
+subtext:
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: [user]
+change_logs: []

@@ -19,13 +19,6 @@ scope_name: string
 # Optional: The name of the package that mdatagen generates. If not set, the name "metadata" will be used.
 generated_package_name: string
 
-# Optional: Enables per-metric reaggregation config generation for metrics with attributes.
-# Enabled by default. Set to false to generate metric config with only the `enabled`
-# field.
-# When enabled, generated metrics config includes `aggregation_strategy` and `attributes`
-# fields that let users reduce metric cardinality by choosing which dimensions are kept.
-reaggregation_enabled: bool
-
 # Optional: Enables per-resource-attribute override_value config generation.
 # When enabled, generated resource attribute config includes typed `override_value`
 # fields that let users override resource attribute values in the collector config.
@@ -168,6 +161,8 @@ resource_attributes:
     enum: [string]
     # Required: attribute value type.
     type: <string|int|double|bool|bytes|slice|map>
+    # Optional: the stability level of the resource attribute.
+    stability: <development|alpha|beta|release_candidate|stable>
     # Optional: warnings that will be shown to user under specified conditions.
     warnings:
       # A warning that will be displayed if the resource_attribute is enabled in user config.
@@ -296,6 +291,19 @@ metrics:
     # An example of a full url is: https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/system/system-metrics.md#metric-systemcputime
     semantic_convention:
       ref:
+    # Optional: migration/aliasing information to support dual-schema emission.
+    # When present, generated code will emit this metric and the target metric
+    # according to the gates specified below.
+    migration:
+      # Required: target metric key in this metadata file to emit to during migration.
+      to: string
+      # Required: feature gates controlling emission. The referenced gates must be
+      # declared under feature_gates below in this file.
+      through_gates:
+        # Required: when enabled, emission of the old (current) metric is disabled.
+        disable_old: string
+        # Required: when enabled, emission of the new (target) metric is enabled.
+        enable_new: string
 
 # Optional: map of event names with the key being the event name and value
 # being described below.
