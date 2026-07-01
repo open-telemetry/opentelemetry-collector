@@ -32,11 +32,11 @@ components:
     - pkg/config/confignet
     - pkg/config/configopaque
     - pkg/config/configretry
+    - pkg/config/configstorage
     - pkg/config/configtelemetry
     - pkg/config/configtls
     - pkg/confighttp
     - pkg/configoptional
-    - pkg/configstorage
     - pkg/confmap
     - pkg/connector
     - pkg/connector/connectortest

@@ -20,22 +20,14 @@ var (
 	errWrongExtensionType = errors.New("requested extension is not a storage extension")
 )
 
-type Config struct {
-	//  specifies the name of the storage extension to be used
-	ID component.ID `mapstructure:"id,omitempty"`
-	// prevent unkeyed literal initialization
-	_ struct{}
+type ID component.ID
+
+func (id ID) ComponentID() component.ID {
+	return component.ID(id)
 }
 
-func (c *Config) Validate() error {
-	if c.ID == (component.ID{}) {
-		return errors.New("storage 'id' is required")
-	}
-	return nil
-}
-
-func (c Config) GetStorageClient(ctx context.Context, kind component.Kind, host component.Host, ownerID component.ID, name string) (storage.Client, error) {
-	ext, found := host.GetExtensions()[c.ID]
+func (id ID) GetStorageClient(ctx context.Context, kind component.Kind, host component.Host, ownerID component.ID, name string) (storage.Client, error) {
+	ext, found := host.GetExtensions()[id.ComponentID()]
 	if !found {
 		return nil, errNoStorageClient
 	}
@@ -46,4 +38,12 @@ func (c Config) GetStorageClient(ctx context.Context, kind component.Kind, host 
 	}
 
 	return storageExt.GetClient(ctx, kind, ownerID, name)
+}
+
+func (id ID) MarshalText() ([]byte, error) {
+	return component.ID(id).MarshalText()
+}
+
+func (id *ID) UnmarshalText(text []byte) error {
+	return (*component.ID)(id).UnmarshalText(text)
 }

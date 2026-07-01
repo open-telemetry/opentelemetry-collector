@@ -1,7 +1,4 @@
 $defs:
-  config:
-    type: object
-    properties:
-      id:
-        description: specifies the name of the storage extension to be used
-        x-customType: go.opentelemetry.io/collector/component.id
+  id:
+    description: specifies the name of the storage extension to be used
+    x-customType: go.opentelemetry.io/collector/component.id

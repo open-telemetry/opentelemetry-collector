@@ -5,7 +5,6 @@ package configstorage
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -39,36 +38,76 @@ func (m *mockStorageExtension) GetClient(_ context.Context, _ component.Kind, _ 
 	return storage.NewNopClient(), nil
 }
 
-func TestConfig_Validate(t *testing.T) {
+func TestID_MarshalText(t *testing.T) {
 	tests := []struct {
-		name    string
-		config  Config
-		wantErr error
+		name string
+		id   ID
+		want string
 	}{
 		{
-			name: "valid",
-			config: Config{
-				ID: testID,
-			},
-			wantErr: nil,
+			name: "simple_type",
+			id:   ID(component.MustNewID("file_storage")),
+			want: "file_storage",
 		},
 		{
-			name:    "empty_id",
-			config:  Config{},
-			wantErr: errors.New("storage 'id' is required"),
+			name: "type_with_name",
+			id:   ID(component.MustNewIDWithName("file_storage", "myname")),
+			want: "file_storage/myname",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.config.Validate()
-			if tt.wantErr != nil {
-				require.EqualError(t, err, tt.wantErr.Error())
+			got, err := tt.id.MarshalText()
+			require.NoError(t, err)
+			require.Equal(t, tt.want, string(got))
+		})
+	}
+}
+
+func TestID_UnmarshalText(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    ID
+		wantErr bool
+	}{
+		{
+			name:  "simple_type",
+			input: "file_storage",
+			want:  ID(component.MustNewID("file_storage")),
+		},
+		{
+			name:  "type_with_name",
+			input: "file_storage/myname",
+			want:  ID(component.MustNewIDWithName("file_storage", "myname")),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var id ID
+			err := id.UnmarshalText([]byte(tt.input))
+			if tt.wantErr {
+				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
+				require.Equal(t, tt.want, id)
 			}
 		})
 	}
+}
+
+func TestID_MarshalUnmarshalRoundTrip(t *testing.T) {
+	original := ID(component.MustNewIDWithName("file_storage", "myname"))
+
+	text, err := original.MarshalText()
+	require.NoError(t, err)
+
+	var restored ID
+	err = restored.UnmarshalText(text)
+	require.NoError(t, err)
+	require.Equal(t, original, restored)
 }
 
 func TestConfig_GetStorageClient(t *testing.T) {
@@ -76,33 +115,27 @@ func TestConfig_GetStorageClient(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		config     Config
+		config     ID
 		extensions map[component.ID]component.Component
 		wantErr    error
 	}{
 		{
-			name: "found_and_valid",
-			config: Config{
-				ID: testID,
-			},
+			name:   "found_and_valid",
+			config: ID(testID),
 			extensions: map[component.ID]component.Component{
 				testID: &mockStorageExtension{},
 			},
 			wantErr: nil,
 		},
 		{
-			name: "extension_not_found",
-			config: Config{
-				ID: testID,
-			},
+			name:       "extension_not_found",
+			config:     ID(testID),
 			extensions: map[component.ID]component.Component{},
 			wantErr:    errNoStorageClient,
 		},
 		{
-			name: "extension_wrong_type",
-			config: Config{
-				ID: testID,
-			},
+			name:   "extension_wrong_type",
+			config: ID(testID),
 			extensions: map[component.ID]component.Component{
 				testID: mockWrongType{},
 			},
