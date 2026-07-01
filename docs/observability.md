@@ -155,7 +155,7 @@ service:
                 endpoint: https://backend2:4317
 ```
 
-See the [example configuration][kitchen-sink] for additional options.
+See the [example configuration][otel-sdk-config] for additional options.
 
 > This configuration does not support emitting logs as there is no support for
 > [logs] in the OpenTelemetry Go SDK at this time.
@@ -188,8 +188,8 @@ service:
   https://github.com/open-telemetry/opentelemetry-configuration
 [OpenTelemetry Configuration Go support table]:
   https://github.com/open-telemetry/opentelemetry-configuration/blob/main/language-support-status.md#go
-[kitchen-sink]:
-  https://github.com/open-telemetry/opentelemetry-configuration/blob/main/examples/kitchen-sink.yaml
+[otel-sdk-config]:
+  https://github.com/open-telemetry/opentelemetry-configuration/blob/main/examples/otel-sdk-config.yaml
 [Current values]:
   https://opentelemetry.io/docs/collector/internal-telemetry/#summary-of-values-observable-with-internal-metrics
 [Cumulative values]:
