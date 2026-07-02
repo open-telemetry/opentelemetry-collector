@@ -258,15 +258,253 @@ otelcol --config=main.yaml --config=extra_components.yaml?merge_mode=append --co
 
 - In the above command, we have no specified any options for `override_components.yaml`. Hence, it will override all the conflicting lists from previous configuration, which is the default behaviour.
 
+### Approach 3: CLI flags (`--merge-list`)
+
+This approach adds separate top-level CLI flags to control the merging behaviour, instead of adding it to config file URIs.
+
+#### Design
+
+Two new flags are added to the collector:
+
+| Flag | Description |
+|---|---|
+| `--merge-list=<path>` | Mark a config path (glob pattern) as a merge target. Repeatable. |
+| `--merge-mode=<append\|prepend>` | Merge mode. Default: `append`. |
+
+`<path>` follows the same `::` separator convention already used in confmap (e.g. `service::extensions`, `service::pipelines::*::processors`).
+
+#### Examples
+
+1. _Merge all lists under `service`_:
+
+```bash
+otelcol \
+  --config=main.yaml \
+  --config=extra.yaml \
+  --merge-list="service::*" \
+  --feature-gates=confmap.enableMergeAppendOption
+```
+
+2. _Merge extensions (append) and processors (prepend) independently_:
+
+```bash
+otelcol \
+  --config=main.yaml \
+  --config=extra_extensions.yaml \
+  --config=extra_processors.yaml \
+  --merge-list="service::extensions:append" \
+  --merge-list="service::pipelines::*::processors:prepend" \
+  --feature-gates=confmap.enableMergeAppendOption
+```
+
+3. _Merge a deeply nested transform processor statement list_:
+
+```bash
+otelcol \
+  --config=main.yaml \
+  --config=extra_transforms.yaml \
+  --merge-list="processors::transform::statements" \
+  --feature-gates=confmap.enableMergeAppendOption
+```
+
+---
+
+### Approach 4: `merge_strategy:` block inside a config file
+
+Instead of annotating individual yaml nodes (Approach 1) or touching the command line (Approaches 2 & 3), a config file can carry a dedicated top-level `merge_strategy:` section that declares which paths in *that file* should be merged into the running configuration. The `merge_strategy:` section will be removed before the config is applied.
+
+The `merge_strategy:` block is local to the configuration file that contains it. It controls how that file is merged into the base configuration and is discarded immediately afterward. Because each file's `merge_strategy:` is handled independently during processing, there's no need to merge `merge_strategy:` sections across files.
+
+This keeps URIs opaque, keeps the command line short, and keeps merge intent with the data it governs.
+
+#### Schema
+
+```yaml
+merge_strategy:
+  mode: append          # default mode for all fields: append | prepend  (default: append)
+  fields:
+    # Inherits top-level mode
+    - path: "service::extensions"
+
+    # per-path mode override
+    - path: "service::pipelines::*::receivers"
+      mode: append
+
+    # Long form with key-field merging:
+    # Merges list items by matching on the given key field.
+    # Items whose key matches an existing entry are updated in place;
+    # items with a new key are appended (or prepended).
+    # - path: "service::telemetry::resource::attributes"
+    #   mode: append
+    #   key: name
+```
+
+#### Examples
+
+1. _Append extensions from a supplementary file_:
+
+```yaml
+# main.yaml
+extensions:
+  health_check:
+
+service:
+  extensions: [health_check]
+  pipelines:
+    logs:
+      receivers: [otlp]
+      exporters: [debug]
+```
+
+```yaml
+# extra_extension.yaml
+extensions:
+  file_storage:
+
+service:
+  extensions: [file_storage]
+
+merge_strategy:
+  mode: append
+  fields:
+    - path: "service::extensions"
+```
+
+```yaml
+# final (effective) configuration
+extensions:
+  health_check:
+  file_storage:
+
+service:
+  extensions: [health_check, file_storage]
+  pipelines:
+    logs:
+      receivers: [otlp]
+      exporters: [debug]
+```
+
+```bash
+# No special flags needed — merge intent lives in the file
+otelcol --config=main.yaml --config=extra_extension.yaml \
+  --feature-gates=confmap.enableMergeAppendOption
+```
+
+2. _Merge all pipeline lists (extensions + per-pipeline receivers/processors/exporters)_:
+
+```yaml
+# sidecar_fragment.yaml
+extensions:
+  memory_limiter:
+receivers:
+  prometheus/sidecar:
+
+service:
+  extensions: [memory_limiter]
+  pipelines:
+    metrics:
+      receivers: [prometheus/sidecar]
+
+merge_strategy:
+  mode: append
+  fields:
+    - path: "service::extensions"
+    - path: "service::pipelines::*::receivers"
+    - path: "service::pipelines::*::processors"
+    - path: "service::pipelines::*::exporters"
+```
+
+3. _Mix append and prepend in a single fragment_:
+
+```yaml
+# fragment.yaml
+processors:
+  transform/enrich:
+  memory_limiter:
+
+service:
+  pipelines:
+    traces:
+      processors: [memory_limiter]   # prepend: run first
+    logs:
+      processors: [transform/enrich] # append: run last
+
+merge_strategy:
+  fields:
+    - path: "service::pipelines::traces::processors"
+      mode: prepend
+    - path: "service::pipelines::logs::processors"
+      mode: append
+```
+
+4. _(Future) Merge a list of objects by key field_:
+
+The `key` field is reserved in the schema for a future strategy where list items are matched by a named field rather than by position. Items whose key already exists in the base config are updated in place; items with a new key are inserted according to `mode`. This is not part of the initial implementation but the schema is designed to accommodate it without breaking changes.
+
+```yaml
+# base.yaml
+service:
+  telemetry:
+    resource:
+      attributes:
+        - name: key1
+          value: val1
+        - name: key2
+          value: val2
+```
+
+```yaml
+# override.yaml
+service:
+  telemetry:
+    resource:
+      attributes:
+        - name: key1
+          value: new-val1   # updates existing key1 in place
+        - name: key3
+          value: val3       # new key, appended
+
+merge_strategy:
+  fields:
+    - path: "service::telemetry::resource::attributes"
+      mode: append
+      key: name             # match items by the "name" field
+```
+
+```yaml
+# final (effective) configuration
+service:
+  telemetry:
+    resource:
+      attributes:
+        - name: key1
+          value: new-val1
+        - name: key2
+          value: val2
+        - name: key3
+          value: val3
+```
+
+---
+
 ## Open questions
 
-- What to do if an invalid option is provided for `merge_mode` or `merge_paths`?
-    - I can think of two possibilities:
-        1. Error out.
-        2. Log an error and merge the default way
-- What to do if an invalid query param is provided in config URI?
-    - In this case, I strongly feel that we should error out.
+- What to do if an invalid option is provided for `merge_mode`, `merge_paths`, `--merge-list`, or `merge_strategy:` fields?
+    - Two possibilities:
+        1. Error out (recommended).
+        2. Log an error and merge the default way.
+- **Approach 2**: What to do if an invalid query param is provided in a config URI?
+    - Strongly prefer erroring out.
+- **Approach 3**: Should `--merge-list` apply to *all* loaded config files?
+- **Approach 4**: Should `merge_strategy:` be allowed in the very first config file (where it would be a no-op), or should that produce a warning?
+- **Approach 4**: What is the reserved block name? Current proposal: `merge_strategy`. Alternatives: `_merge`, `x-merge`, `confmap_merge`.
 
 ## Extensibility
 
-This URI-based approach is highly extensible. In the future, it can enable advanced operations such as map overriding. Currently, it's impossible to do so.
+The URI-based approach (Approach 2) and the `merge_strategy:` block approach (Approach 4) are both highly extensible. In the future they can enable advanced operations such as map overriding. Currently those operations are impossible.
+
+### Key-field (indexed) merging
+
+A future requirement is merging lists of objects by a named key field. For example, merging `service::telemetry::resource::attributes` where each item has a `name` field. In this strategy, items with a matching key are updated in place and items with a new key are inserted according to `mode`. Simple positional append/prepend is insufficient for this use case.
+
+The Approach 4 schema reserves a `key` field in each long-form `fields` entry specifically for this. Adding support for key-field merging in a future version will require only an implementation change — the schema already accommodates it, so there will be no breaking interface change.
