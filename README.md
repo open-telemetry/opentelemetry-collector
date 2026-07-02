@@ -67,7 +67,8 @@ Objectives:
 
 The OpenTelemetry Collector SIG is present at the [#otel-collector](https://cloud-native.slack.com/archives/C01N6P7KR6W)
 channel on the CNCF Slack and [meets once a week](https://github.com/open-telemetry/community#implementation-sigs) via
-video calls. Everyone is invited to join those calls, which typically serves the following purposes:
+video calls. If you are new to the CNCF Slack community, you can
+[create an account](https://slack.cncf.io/). Everyone is invited to join those calls, which typically serves the following purposes:
 
 - meet the humans behind the project
 - get an opinion about specific proposals

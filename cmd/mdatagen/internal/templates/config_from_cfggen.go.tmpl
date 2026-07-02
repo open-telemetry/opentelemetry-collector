@@ -33,7 +33,7 @@ import (
         {{- if $prop.Description }}
     // {{ $prop.Description }}
         {{- end }}
-    	{{ $propName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}"`
+    	{{ $prop.GoStruct.FieldName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}"`
     {{- end }}
     // prevent unkeyed literal initialization
     _ struct{}
@@ -42,11 +42,13 @@ import (
 {{- $defs := extractDefs .Metadata.Config }}
 {{ range $defName, $def := $defs }}
     {{- if $def.Description }}
-        // {{ $defName | publicVar }} {{ $def.Description }}
+        // {{ $defName | publicVar }} {{ $def.Description | uncapitalize }}
     {{- end }}
     {{- $typeName := $defName | publicVar }}
     {{- if isExternalRef $def.ResolvedFrom }}
         type {{ $typeName }} = {{ $def.ResolvedFrom | publicType }}
+    {{- else if isPrimitiveSchema $def }}
+        type {{ $typeName }} {{ primitiveGoType $def }}
     {{- else }}
         type {{ $typeName }} struct {
         {{- template "struct" $def }}
@@ -54,7 +56,7 @@ import (
     {{- end }}
 
 {{ $defValidators := extractValidators $def }}
-{{- if and $defValidators (not (isExternalRef $def.ResolvedFrom)) }}
+{{- if and $defValidators (not (isExternalRef $def.ResolvedFrom)) (not (isPrimitiveSchema $def)) }}
     // Validate validates the {{$typeName}} fields according to schema annotations.
     func (c *{{ $typeName }}) Validate() error {
         var err error
@@ -66,7 +68,7 @@ import (
     }
 {{- end }}
 
-    {{- if hasDefaultValue $def }}
+    {{- if and (hasDefaultValue $def) (not (isPrimitiveSchema $def)) }}
     // NewDefault{{ $typeName }} returns a new {{ $typeName }} with default values consistent with the annotations in the schema.
     func NewDefault{{ $typeName }}() {{ $typeName }} {
         {{- if isExternalRef $def.ResolvedFrom }}
@@ -188,6 +190,12 @@ import (
     }
 {{- end }}
 
+{{ define "enumValidator" -}}
+    if !slices.Contains({{ formatEnumSlice .Rules.Enum .FieldType }}, {{ template "fieldValue" . }}) {
+        err = errors.Join(err, errors.New("{{ .FieldName }} must be one of {{ formatEnumValues .Rules.Enum }}"))
+    }
+{{- end }}
+
 {{ define "valueValidators" }}
     {{ if .Rules.MaxLength }}{{ template "maxLengthValidator" . }}{{ end }}
     {{ if .Rules.MinLength }}{{ template "minLengthValidator" . }}{{ end }}
@@ -196,6 +204,7 @@ import (
     {{ if .Rules.Maximum }}{{ template "maximumValidator" . }}{{ end }}
     {{ if .Rules.ExclusiveMinimum }}{{ template "exclusiveMinimumValidator" . }}{{ end }}
     {{ if .Rules.ExclusiveMaximum }}{{ template "exclusiveMaximumValidator" . }}{{ end }}
+    {{ if .Rules.Enum }}{{ template "enumValidator" . }}{{ end }}
 {{ end -}}
 
 {{ define "validation" }}
@@ -275,9 +284,9 @@ import (
             {{- $exprs := mapCustomDefaults $prop $prop.Default }}
             {{- if $exprs }}
                 {{- $varName := camelVar $propName }}
-        {{ $propName | publicVar }}: {{ wrapDefaultValue $prop $varName }},
+        {{ $prop.GoStruct.FieldName | publicVar }}: {{ wrapDefaultValue $prop $varName }},
             {{- else }}
-        {{ $propName | publicVar }}: {{ $defaultValue }},
+        {{ $prop.GoStruct.FieldName | publicVar }}: {{ $defaultValue }},
             {{- end }}
         {{- end }}
     {{- end }}

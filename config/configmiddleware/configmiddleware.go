@@ -24,14 +24,6 @@ var (
 	errNotGRPCClient      = errors.New("requested extension is not a gRPC client middleware")
 )
 
-// Middleware defines the extension ID for a middleware component.
-type Config struct {
-	// ID specifies the name of the extension to use.
-	ID component.ID `mapstructure:"id,omitempty"`
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
 // GetHTTPClientRoundTripper attempts to select the appropriate
 // extensionmiddleware.HTTPClient from the map of extensions, and
 // returns the HTTP client wrapper function. If a middleware is not

@@ -7,6 +7,93 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.61.0/v0.155.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/confighttp`: Remove stabilized gate `confighttp.framedSnappy` (#15420)
+- `pkg/configoptional`: Remove stabilized gate `configoptional.AddEnabledField`. (#15421)
+- `pkg/confmap`: Remove stabilized featuregate `confmap.newExpandedValueSanitizer` (#15418)
+- `pkg/exporterhelper`: Remove stable gate `exporter.PersistRequestContext`. (#15424)
+- `pkg/otelcol`: Remove stable gate `otelcol.printInitialConfig` (#15425)
+- `pkg/service`: Remove stable featuregate `telemetry.UseLocalHostAsDefaultMetricsAddress` (#15419)
+- `pkg/xpdata`: Remove stable gate `pdata.enableRefCounting`. (#15426)
+- `processor/memory_limiter`: Rename deprecated memory limiter metrics to include the `memory_limiter` prefix (e.g. `otelcol_processor_memory_limiter_*`) to clarify they are specific to this processor. (#11203)
+
+### 🚀 New components 🚀
+
+- `cmd/schemagen`: Move the `schemagen` CLI from opentelemetry-collector-contrib to this repository as `cmd/schemagen`. (#14543)
+  The tool's source is identical to the upstream contrib version
+  (github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen) except for the module path and
+  the test fixtures' namespace, which now reflect the collector module
+  (go.opentelemetry.io/collector/cmd/schemagen). A contrib-only integration test that pointed at three
+  contrib components is removed; contrib's existing `make generate-schemas` + git-diff CI continues to
+  exercise the FactoryMaps feature against real-world components.
+  
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Add support for versioned metrics (#15309)
+  Allows metadata to specify versioned metrics for migrating to new semantic conventions.
+  There are two scenarios catered for when the metric name stays the same during migration.
+  When a metric name stays the same but its type differs, just the latest metric is
+  emitted with the new type.
+  When a metric name stays the same but its attributes differ, the latest version
+  is emitted with combined attributes during the migration period.
+  
+- `cmd/schemagen`: Add `overlayFile` support to deep-merge hand-curated schema fragments into generated schemas. (#14543)
+  Components can declare an `overlayFile` in `.schemagen.yaml` pointing to a YAML file
+  whose keys are recursively merged into the auto-generated schema after generation.
+  This allows injecting descriptions, constraints, or additional properties that cannot
+  be derived from Go types.
+  Originally added to the contrib copy of `cmd/schemagen` in
+  open-telemetry/opentelemetry-collector-contrib#48917 and brought over with the tool
+  in this move.
+  
+- `cmd/schemagen`: Add `-p` flag to specify a custom Go package pattern for the config struct. (#14543)
+  The new `-p` flag lets callers override the default `.` package pattern with an arbitrary
+  Go package selector (e.g. a sub-package whose `Config` type schemagen should walk).
+  Originally added to the contrib copy of `cmd/schemagen` in
+  open-telemetry/opentelemetry-collector-contrib#48966 and brought over with the tool
+  in this move.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Fix an issue when the last feature gate is removed, stale files are left. (#15423)
+- `cmd/mdatagen`: Fix known acronyms at the end of generated Go identifiers to be all-caps, same as in any other position (#15438)
+- `cmd/schemagen`: Fix mode detection when using `-p` to target a package outside the current directory. (#15453)
+  A new `-m component|package` flag is available as a manual override when auto-detection is not possible.
+  
+
+<!-- previous-version -->
+
+## v1.60.0/v0.154.0
+
+### 🛑 Breaking changes 🛑
+
+- `cmd/builder`: The `--skip-get-modules` flag will no longer regenerate your `go.mod` file. (#15390)
+  This is mostly a bug fix, as it led to adverse behaviour that was unintended in the described flow in the README.
+  Now when you run `--skip-get-modules`, your `go.mod` file will truly be untouched by `ocb` as the info log claims.
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/config/configtls`: Add `include_insecure_cipher_suites` to configtls to enable insecure cipher suites. Insecure cipher suites are disabled by default for security. (#13829)
+- `pkg/confighttp`: Add `ExposedHeaders` field to `CORSConfig` to allow setting the `Access-Control-Expose-Headers` response header. (#15119)
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Removes the extra line in the README.md between status and description (#15306)
+- `pkg/exporterhelper`: Fix nil-pointer panic in `sending_queue::batch` Unmarshal when `sending_queue::sizer` is set and `sending_queue::batch::enabled` is false. (#14687)
+  When `sending_queue::sizer` was set and `sending_queue::batch::enabled: false`
+  cleared the batch Optional to None, the sizer-inheritance branch in
+  `queuebatch.Config.Unmarshal` dereferenced a nil Optional and crashed the
+  collector at startup. The branch now also requires `Batch.HasValue()`.
+  
+
+<!-- previous-version -->
+
 ## v1.59.0/v0.153.0
 
 ### 🛑 Breaking changes 🛑
