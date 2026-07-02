@@ -35,14 +35,14 @@ var (
 )
 
 type metricsRequest struct {
-	md         pmetric.Metrics
-	cachedSize int
+	md        pmetric.Metrics
+	sizeCache request.SizeCache
 }
 
 func newMetricsRequest(md pmetric.Metrics) request.Request {
 	return &metricsRequest{
-		md:         md,
-		cachedSize: -1,
+		md:        md,
+		sizeCache: request.NewSizeCache(),
 	}
 }
 
@@ -88,19 +88,21 @@ func (req *metricsRequest) ItemsCount() int {
 	return req.md.DataPointCount()
 }
 
-func (req *metricsRequest) size(sizer sizer.MetricsSizer) int {
-	if req.cachedSize == -1 {
-		req.cachedSize = sizer.MetricsSize(req.md)
+func (req *metricsRequest) size(sizer sizer.MetricsSizer, sizeType request.SizerType) int {
+	if size, ok := req.sizeCache.Load(sizeType); ok {
+		return size
 	}
-	return req.cachedSize
+	size := sizer.MetricsSize(req.md)
+	req.sizeCache.Store(size, sizeType)
+	return size
 }
 
-func (req *metricsRequest) setCachedSize(count int) {
-	req.cachedSize = count
+func (req *metricsRequest) setCachedSize(count int, sizeType request.SizerType) {
+	req.sizeCache.Store(count, sizeType)
 }
 
 func (req *metricsRequest) BytesSize() int {
-	return metricsMarshaler.MetricsSize(req.md)
+	return req.size(&sizer.MetricsBytesSizer{}, request.SizerTypeBytes)
 }
 
 // RequestFromMetrics returns a RequestFromMetricsFunc that converts pdata.Metrics into a Request.

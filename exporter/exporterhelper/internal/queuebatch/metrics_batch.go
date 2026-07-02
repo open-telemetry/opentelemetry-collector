@@ -31,32 +31,32 @@ func (req *metricsRequest) MergeSplit(_ context.Context, maxSize int, szt reques
 		if !ok {
 			return nil, errors.New("invalid input type")
 		}
-		req2.mergeTo(req, sz)
+		req2.mergeTo(req, sz, szt)
 	}
 
 	// If no limit we can simply merge the new request into the current and return.
 	if maxSize == 0 {
 		return []request.Request{req}, nil
 	}
-	return req.split(maxSize, sz)
+	return req.split(maxSize, sz, szt)
 }
 
-func (req *metricsRequest) mergeTo(dst *metricsRequest, sz sizer.MetricsSizer) {
+func (req *metricsRequest) mergeTo(dst *metricsRequest, sz sizer.MetricsSizer, sizeType request.SizerType) {
 	if sz != nil {
-		dst.setCachedSize(dst.size(sz) + req.size(sz))
-		req.setCachedSize(0)
+		dst.setCachedSize(dst.size(sz, sizeType)+req.size(sz, sizeType), sizeType)
+		req.setCachedSize(0, sizeType)
 	}
 	req.md.ResourceMetrics().MoveAndAppendTo(dst.md.ResourceMetrics())
 }
 
-func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer) ([]request.Request, error) {
+func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer, sizeType request.SizerType) ([]request.Request, error) {
 	var res []request.Request
-	for req.size(sz) > maxSize {
+	for req.size(sz, sizeType) > maxSize {
 		md, rmSize := extractMetrics(req.md, maxSize, sz)
 		if md.DataPointCount() == 0 {
 			return res, fmt.Errorf("one datapoint size is greater than max size, dropping items: %d", req.md.DataPointCount())
 		}
-		req.setCachedSize(req.size(sz) - rmSize)
+		req.setCachedSize(req.size(sz, sizeType)-rmSize, sizeType)
 		res = append(res, newMetricsRequest(md))
 	}
 	res = append(res, req)

@@ -325,6 +325,29 @@ func TestLogsMergeSplitUnknownSizerType(t *testing.T) {
 	require.EqualError(t, err, "unknown sizer type")
 }
 
+func TestLogsRequestBytesSizeUsesByteCacheAfterItemSizing(t *testing.T) {
+	req := newLogsRequest(testdata.GenerateLogs(7)).(*logsRequest)
+
+	assert.Equal(t, req.ItemsCount(), req.size(&sizer.LogsCountSizer{}, request.SizerTypeItems))
+
+	expected := logsMarshaler.LogsSize(req.ld)
+	assert.Equal(t, expected, req.BytesSize())
+	assert.Equal(t, expected, req.BytesSize())
+}
+
+func TestLogsRequestBytesSizeInvalidatedAfterItemMerge(t *testing.T) {
+	req := newLogsRequest(testdata.GenerateLogs(3)).(*logsRequest)
+	original := req.BytesSize()
+
+	res, err := req.MergeSplit(context.Background(), 0, request.SizerTypeItems, newLogsRequest(testdata.GenerateLogs(2)))
+	require.NoError(t, err)
+
+	merged := res[0].(*logsRequest)
+	expected := logsMarshaler.LogsSize(merged.ld)
+	assert.NotEqual(t, expected, original)
+	assert.Equal(t, expected, merged.BytesSize())
+}
+
 func BenchmarkSplittingBasedOnItemCountManySmallLogs(b *testing.B) {
 	testutil.SkipGCHeavyBench(b)
 	// All requests merge into a single batch.
