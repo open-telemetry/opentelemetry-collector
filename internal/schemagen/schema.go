@@ -1,4 +1,7 @@
-package schemagen
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package schemagen // import "go.opentelemetry.io/collector/internal/schemagen"
 
 import (
 	"encoding/json"
