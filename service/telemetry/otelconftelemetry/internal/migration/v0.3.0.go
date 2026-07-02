@@ -9,6 +9,7 @@ import (
 	"time"
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -262,7 +263,8 @@ type LogsSamplingConfig struct {
 type ResourceConfigV030 struct {
 	config.Resource `mapstructure:",squash"`
 
-	LegacyAttributes map[string]any `mapstructure:",remain"`
+	DetectionDevelopment *xotelconf.ExperimentalResourceDetection `mapstructure:"detection/development,omitempty"`
+	LegacyAttributes     map[string]any                           `mapstructure:",remain"`
 }
 
 var _ xconfmap.Validator = (*ResourceConfigV030)(nil)
