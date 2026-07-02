@@ -5,6 +5,7 @@ package samplescraper
 import (
 	"errors"
 	"regexp"
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplepkg"
@@ -78,6 +79,8 @@ type Config struct {
 	ComponentID component.ID `mapstructure:"component"`
 	// Name of the scrape job, used to identify the source in telemetry.
 	JobName string `mapstructure:"job_name"`
+	// Logging level for the scraper.
+	LogLevel string `mapstructure:"log_level"`
 	// List of targets to scrape metrics from.
 	Targets *[]TargetsItem `mapstructure:"targets"`
 	// prevent unkeyed literal initialization
@@ -105,6 +108,10 @@ func (c *Config) Validate() error {
 		err = errors.Join(err, inner_err)
 	}
 
+	if !slices.Contains([]string{"debug", "info", "warn", "error"}, c.LogLevel) {
+		err = errors.Join(err, errors.New("log_level must be one of [debug, info, warn, error]"))
+	}
+
 	if c.Targets == nil || len(*c.Targets) == 0 {
 		err = errors.Join(err, errors.New("targets is required"))
 	}
@@ -117,6 +124,7 @@ func createDefaultConfig() component.Config {
 		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		JobName:              "test_job",
+		LogLevel:             "info",
 		Targets:              &[]TargetsItem{NewDefaultTargetsItem()},
 	}
 }

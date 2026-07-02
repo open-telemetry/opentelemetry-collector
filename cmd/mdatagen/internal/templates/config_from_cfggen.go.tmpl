@@ -190,6 +190,12 @@ import (
     }
 {{- end }}
 
+{{ define "enumValidator" -}}
+    if !slices.Contains({{ formatEnumSlice .Rules.Enum .FieldType }}, {{ template "fieldValue" . }}) {
+        err = errors.Join(err, errors.New("{{ .FieldName }} must be one of {{ formatEnumValues .Rules.Enum }}"))
+    }
+{{- end }}
+
 {{ define "valueValidators" }}
     {{ if .Rules.MaxLength }}{{ template "maxLengthValidator" . }}{{ end }}
     {{ if .Rules.MinLength }}{{ template "minLengthValidator" . }}{{ end }}
@@ -198,6 +204,7 @@ import (
     {{ if .Rules.Maximum }}{{ template "maximumValidator" . }}{{ end }}
     {{ if .Rules.ExclusiveMinimum }}{{ template "exclusiveMinimumValidator" . }}{{ end }}
     {{ if .Rules.ExclusiveMaximum }}{{ template "exclusiveMaximumValidator" . }}{{ end }}
+    {{ if .Rules.Enum }}{{ template "enumValidator" . }}{{ end }}
 {{ end -}}
 
 {{ define "validation" }}

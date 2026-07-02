@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/receiver/otlpreceiver
 go 1.25.0
 
 require (
-	github.com/klauspost/compress v1.18.6
+	github.com/klauspost/compress v1.18.7
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector v0.155.0
 	go.opentelemetry.io/collector/component v1.61.0
@@ -35,7 +35,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa
-	google.golang.org/grpc v1.81.1
+	google.golang.org/grpc v1.82.0
 	google.golang.org/protobuf v1.36.11
 )
 
