@@ -8,7 +8,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.61.0
 	go.yaml.in/yaml/v3 v3.0.4
 	golang.org/x/mod v0.37.0
-	golang.org/x/tools v0.46.0
+	golang.org/x/tools v0.47.0
 )
 
 require (
