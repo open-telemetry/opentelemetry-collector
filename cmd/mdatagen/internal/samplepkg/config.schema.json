@@ -3,6 +3,12 @@
   "$id": "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplepkg",
   "title": "pkg/samplepkg",
   "$defs": {
+    "port_number": {
+      "description": "A port number to connect to.",
+      "type": "integer",
+      "maximum": 65535,
+      "minimum": 1
+    },
     "sample_config": {
       "type": "object",
       "properties": {
@@ -14,13 +20,14 @@
         },
         "port": {
           "description": "The port to connect to.",
-          "type": "string",
-          "default": "8080"
+          "type": "integer",
+          "default": 8080,
+          "maximum": 10000,
+          "minimum": 1
         }
       },
       "required": [
-        "host_name",
-        "port"
+        "host_name"
       ]
     }
   }
