@@ -221,6 +221,7 @@ func (r *Resolver) resolveSchema(root, current, target *ConfigMetadata, origin *
 	handleEmbeddedStructs(target)
 	enhanceTimeTypes(target)
 	cleanupInternalDefs(target)
+	resolveGoNames(target)
 
 	return nil
 }
@@ -295,6 +296,14 @@ func (r *Resolver) loadExternalRef(ref *Ref) (*ConfigMetadata, error) {
 	}
 
 	return nil, fmt.Errorf("type %q not found in loaded schema for reference %s", ref.DefName(), ref)
+}
+
+func resolveGoNames(md *ConfigMetadata) {
+	for name, prop := range md.Properties {
+		if prop.GoStruct.FieldName == "" {
+			prop.GoStruct.FieldName = name
+		}
+	}
 }
 
 func handleEmbeddedStructs(md *ConfigMetadata) {
