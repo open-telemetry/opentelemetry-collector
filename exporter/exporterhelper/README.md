@@ -1,7 +1,7 @@
 # Exporter Helper
 
 This package provides reusable implementations of common capabilities for exporters.
-Currently, this includes queuing, batching, timeouts, and retries.
+Currently, this includes queuing, batching, timeouts, retries, and request middleware.
 
 ## Configuration
 
@@ -155,5 +155,61 @@ service:
       exporters: [otlp]
 
 ```
+
+### Request Middleware
+
+Request middleware provides an extension point for intercepting and modifying exporter requests after they are pulled from the queue. This enables advanced request execution policies such as:
+
+- **Adaptive concurrency control**: Dynamically adjust in-flight request concurrency based on observed latency and error rates
+- **Circuit breaking**: Fail fast when a backend is unhealthy
+- **Rate limiting / tenant-aware throttling**: Limit request rates per tenant or globally
+- **Request execution policy injection**: Add custom logic before or after request sending
+
+**Feature Gate**: This feature is currently behind the `pkg.exporterhelper.RequestMiddleware` feature gate (alpha stage). Enable it with `--feature-gates=pkg.exporterhelper.RequestMiddleware=true`.
+
+**Configuration**:
+
+- `sending_queue`
+  - `request_middlewares` (default = empty): A list of extension component IDs that implement the `xexporterhelper.RequestMiddleware` interface. Middlewares are executed in the order configured (first listed wraps the outermost layer).
+
+**Problem Statement**:
+
+Static `num_consumers` provides a fixed upper bound on queue worker concurrency, but it cannot dynamically adapt to backend conditions. Retry-after headers and backoff handle transient failures reactively, but they do not provide proactive client-side concurrency control. Request middleware enables exporters to implement sophisticated concurrency control algorithms that observe request outcomes (success, failure, latency) and adjust concurrency in real time.
+
+**Relation to num_consumers**:
+
+The `num_consumers` setting remains the queue worker headroom - the maximum number of workers that can pull requests from the queue. Request middleware wraps the outbound send execution and can gate actual in-flight send concurrency independently of `num_consumers`. This allows middleware to implement adaptive concurrency control while preserving the queue's buffering capacity.
+
+**Example Configuration**:
+
+```yaml
+exporters:
+  otlp:
+    endpoint: https://api.example.com:4317
+    sending_queue:
+      enabled: true
+      num_consumers: 10
+      request_middlewares:
+        - adaptive_concurrency/arc
+extensions:
+  adaptive_concurrency/arc:
+    # ARC extension configuration
+    initial_concurrency: 5
+    max_concurrency: 20
+service:
+  extensions: [adaptive_concurrency/arc]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [otlp]
+```
+
+**Middleware Ordering**:
+
+When multiple middlewares are configured, they are chained in the order specified in the configuration. The first middleware in the list wraps the outermost layer, and subsequent middlewares wrap inner layers. For example, with `request_middlewares: [mw1, mw2]`, the execution chain is: `queue -> mw1 -> mw2 -> exporter`.
+
+**Implementation Note**:
+
+The ARC (Adaptive Request Concurrency) algorithm is not included in exporterhelper core. It is intended to be implemented as an external extension (e.g., in opentelemetry-collector-contrib). This keeps exporterhelper lean while allowing the community to evaluate and refine adaptive concurrency algorithms.
 
 [filestorage]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage/filestorage
