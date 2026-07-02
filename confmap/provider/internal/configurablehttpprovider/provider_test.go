@@ -252,6 +252,35 @@ func TestRetrieveFromShutdownServer(t *testing.T) {
 	require.NoError(t, fp.Shutdown(context.Background()))
 }
 
+func TestRetrieveCanceledContext(t *testing.T) {
+	fp := New(HTTPScheme, confmaptest.NewNopProviderSettings())
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("key: value"))
+	}))
+	defer ts.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := fp.Retrieve(ctx, ts.URL, nil)
+	require.ErrorContains(t, err, context.Canceled.Error())
+	require.NoError(t, fp.Shutdown(context.Background()))
+}
+
+func TestRetrieveNilContext(t *testing.T) {
+	fp := New(HTTPScheme, confmaptest.NewNopProviderSettings())
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("key: value"))
+	}))
+	defer ts.Close()
+
+	_, err := fp.Retrieve(nil, ts.URL, nil) //nolint:staticcheck // Testing nil context handling
+	require.ErrorContains(t, err, "unable to create a HTTP GET request")
+	require.NoError(t, fp.Shutdown(context.Background()))
+}
+
 func TestNonExistent(t *testing.T) {
 	fp := New(HTTPScheme, confmaptest.NewNopProviderSettings())
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
