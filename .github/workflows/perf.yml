@@ -35,7 +35,7 @@ jobs:
       # Disabling until fine-grained permissions token enabled for the
       # repository
       #- name: Store benchmark result
-      #  uses: benchmark-action/github-action-benchmark@v1
+      #  uses: benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba # v1
       #  with:
       #    tool: 'go'
       #    output-file-path: benchmarks.txt
