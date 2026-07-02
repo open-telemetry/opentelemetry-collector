@@ -5,6 +5,7 @@ package internal // import "go.opentelemetry.io/collector/cmd/builder/internal"
 
 import (
 	"bytes"
+	"context"
 	"embed"
 	"errors"
 	"fmt"
@@ -105,7 +106,7 @@ func run(path string) error {
 		return fmt.Errorf("failed creating build folder: %w", err)
 	}
 
-	err = runTidy(path)
+	err = runTidy(context.Background(), path)
 	if err != nil {
 		return fmt.Errorf("failed running go mod tidy: %w", err)
 	}
@@ -157,8 +158,8 @@ func executeTemplate(tmplFile string, m metadata) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func runTidy(path string) error {
-	cmd := exec.Command("go", "mod", "tidy")
+func runTidy(ctx context.Context, path string) error {
+	cmd := exec.CommandContext(ctx, "go", "mod", "tidy")
 	cmd.Dir = path
 	output, err := cmd.CombinedOutput()
 	if err != nil {

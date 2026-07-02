@@ -71,8 +71,11 @@ func TestZPagesExtensionUsage(t *testing.T) {
 	// Give a chance for the server goroutine to run.
 	runtime.Gosched()
 
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://"+addr+"/debug/tracez", http.NoBody)
+	require.NoError(t, err)
+
 	client := &http.Client{}
-	resp, err := client.Get("http://" + addr + "/debug/tracez")
+	resp, err := client.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
@@ -99,7 +102,8 @@ func TestZPagesExtensionBadAuthExtension(t *testing.T) {
 
 func TestZPagesExtensionPortAlreadyInUse(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
-	ln, err := net.Listen("tcp", endpoint)
+	lc := &net.ListenConfig{}
+	ln, err := lc.Listen(t.Context(), "tcp", endpoint)
 	require.NoError(t, err)
 	defer ln.Close()
 
@@ -194,8 +198,11 @@ func TestZPagesEnableExpvar(t *testing.T) {
 	// Give a chance for the server goroutine to run.
 	runtime.Gosched()
 
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://"+addr+"/debug/expvarz", http.NoBody)
+	require.NoError(t, err)
+
 	client := &http.Client{}
-	resp, err := client.Get("http://" + addr + "/debug/expvarz")
+	resp, err := client.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 

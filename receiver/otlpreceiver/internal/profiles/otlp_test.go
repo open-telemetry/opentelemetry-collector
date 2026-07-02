@@ -83,7 +83,8 @@ func makeProfileServiceClient(t *testing.T, tc xconsumer.Profiles) pprofileotlp.
 }
 
 func otlpReceiverOnGRPCServer(t *testing.T, tc xconsumer.Profiles) net.Addr {
-	ln, err := net.Listen("tcp", "localhost:")
+	lc := &net.ListenConfig{}
+	ln, err := lc.Listen(t.Context(), "tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
 	t.Cleanup(func() {

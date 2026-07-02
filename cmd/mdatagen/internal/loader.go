@@ -112,7 +112,7 @@ func shortFolderName(filePath string) string {
 }
 
 func packageName(filePath string) (string, error) {
-	cmd := exec.Command("go", "list", "-f", "{{.ImportPath}}")
+	cmd := exec.CommandContext(context.Background(), "go", "list", "-f", "{{.ImportPath}}")
 	cmd.Dir = filePath
 	output, err := cmd.Output()
 	if err != nil {

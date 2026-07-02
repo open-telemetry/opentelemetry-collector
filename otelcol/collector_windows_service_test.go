@@ -6,6 +6,7 @@
 package otelcol
 
 import (
+	"context"
 	"encoding/xml"
 	"fmt"
 	"os"
@@ -145,7 +146,7 @@ func TestCollectorAsService(t *testing.T) {
 				// Read the events from the otelcorecol source and check that they were emitted after the service
 				// command started. This is a simple validation that the messages are being logged on the
 				// Windows event log.
-				cmd := exec.Command("wevtutil.exe", "qe", "Application", "/c:1", "/rd:true", "/f:RenderedXml", "/q:*[System[Provider[@Name='otelcorecol']]]")
+				cmd := exec.CommandContext(context.Background(), "wevtutil.exe", "qe", "Application", "/c:1", "/rd:true", "/f:RenderedXml", "/q:*[System[Provider[@Name='otelcorecol']]]")
 				out, err := cmd.CombinedOutput()
 				require.NoError(t, err)
 

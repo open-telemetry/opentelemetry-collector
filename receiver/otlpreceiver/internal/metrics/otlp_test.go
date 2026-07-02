@@ -86,7 +86,8 @@ func makeMetricsServiceClient(t *testing.T, mc consumer.Metrics) pmetricotlp.GRP
 }
 
 func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) net.Addr {
-	ln, err := net.Listen("tcp", "localhost:")
+	lc := &net.ListenConfig{}
+	ln, err := lc.Listen(t.Context(), "tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
 	t.Cleanup(func() {

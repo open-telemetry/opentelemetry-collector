@@ -85,7 +85,8 @@ func makeLogsServiceClient(t *testing.T, lc consumer.Logs) plogotlp.GRPCClient {
 }
 
 func otlpReceiverOnGRPCServer(t *testing.T, lc consumer.Logs) net.Addr {
-	ln, err := net.Listen("tcp", "localhost:")
+	lx := &net.ListenConfig{}
+	ln, err := lx.Listen(t.Context(), "tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
 	t.Cleanup(func() {

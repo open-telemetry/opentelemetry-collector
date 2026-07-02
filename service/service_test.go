@@ -253,14 +253,14 @@ func testZPages(t *testing.T, zpagesAddr string) {
 		require.NoError(t, srv.Start(context.Background()))
 
 		assert.Eventually(t, func() bool {
-			return zpagesHealthy(zpagesAddr)
+			return zpagesHealthy(t.Context(), zpagesAddr)
 		}, 10*time.Second, 100*time.Millisecond, "zpages endpoint is not healthy")
 
 		require.NoError(t, srv.Shutdown(context.Background()))
 	}
 }
 
-func zpagesHealthy(zpagesAddr string) bool {
+func zpagesHealthy(ctx context.Context, zpagesAddr string) bool {
 	paths := []string{
 		"/debug/tracez",
 		"/debug/pipelinez",
@@ -269,7 +269,11 @@ func zpagesHealthy(zpagesAddr string) bool {
 	}
 
 	for _, path := range paths {
-		resp, err := http.Get("http://" + zpagesAddr + path)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+zpagesAddr+path, http.NoBody)
+		if err != nil {
+			return false
+		}
+		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			return false
 		}

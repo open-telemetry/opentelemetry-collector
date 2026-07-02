@@ -73,7 +73,8 @@ func findAvailableAddress(tb testing.TB, network string) string {
 	}
 	require.NotEmpty(tb, host, "network must be either of tcp, tcp4 or tcp6")
 
-	ln, err := net.Listen("tcp", host+":0")
+	lc := &net.ListenConfig{}
+	ln, err := lc.Listen(tb.Context(), "tcp", host+":0")
 	require.NoError(tb, err, "Failed to get a free local port")
 	// There is a possible race if something else takes this same port before
 	// the test uses it, however, that is unlikely in practice.
@@ -88,9 +89,9 @@ func getExclusionsList(tb testing.TB, network string) []portpair {
 	var cmdTCP *exec.Cmd
 	switch network {
 	case "tcp", "tcp4":
-		cmdTCP = exec.Command("netsh", "interface", "ipv4", "show", "excludedportrange", "protocol=tcp")
+		cmdTCP = exec.CommandContext(tb.Context(), "netsh", "interface", "ipv4", "show", "excludedportrange", "protocol=tcp")
 	case "tcp6":
-		cmdTCP = exec.Command("netsh", "interface", "ipv6", "show", "excludedportrange", "protocol=tcp")
+		cmdTCP = exec.CommandContext(tb.Context(), "netsh", "interface", "ipv6", "show", "excludedportrange", "protocol=tcp")
 	}
 	require.NotZero(tb, cmdTCP, "network must be either of tcp, tcp4 or tcp6")
 
@@ -98,7 +99,7 @@ func getExclusionsList(tb testing.TB, network string) []portpair {
 	require.NoError(tb, errTCP)
 	exclusions := createExclusionsList(tb, string(outputTCP))
 
-	cmdUDP := exec.Command("netsh", "interface", "ipv4", "show", "excludedportrange", "protocol=udp")
+	cmdUDP := exec.CommandContext(tb.Context(), "netsh", "interface", "ipv4", "show", "excludedportrange", "protocol=udp")
 	outputUDP, errUDP := cmdUDP.CombinedOutput()
 	require.NoError(tb, errUDP)
 	exclusions = append(exclusions, createExclusionsList(tb, string(outputUDP))...)
