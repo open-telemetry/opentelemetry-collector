@@ -628,3 +628,62 @@ type testParams struct {
 	items int
 	err   error
 }
+
+func TestObsReportSenderLogsBatchSize(t *testing.T) {
+	testBatchSize(t, pipeline.SignalLogs, &requesttest.FakeRequest{Items: 2, Bytes: 100})
+}
+
+func TestObsReportSenderTracesBatchSize(t *testing.T) {
+	testBatchSize(t, pipeline.SignalTraces, &requesttest.FakeRequest{Items: 12, Bytes: 200})
+}
+
+func TestObsReportSenderMetricsBatchSize(t *testing.T) {
+	testBatchSize(t, pipeline.SignalMetrics, &requesttest.FakeRequest{Items: 22, Bytes: 300})
+}
+
+func TestObsReportSenderProfilesBatchSize(t *testing.T) {
+	testBatchSize(t, xpipeline.SignalProfiles, &requesttest.FakeRequest{Items: 22, Bytes: 300})
+}
+
+func testBatchSize(t *testing.T, signal pipeline.Signal, req *requesttest.FakeRequest) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	obsrep, err := newObsReportSender(
+		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		signal,
+		nil,
+		sender.NewSender(func(context.Context, request.Request) error { return nil }),
+	)
+	require.NoError(t, err)
+	require.NoError(t, obsrep.Send(context.Background(), req))
+
+	attrs := attribute.NewSet(attribute.String(ExporterKey, exporterID.String()))
+	bounds := []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000}
+
+	itemsBuckets := bucketCountsFor(int64(req.Items), bounds)
+	metadatatest.AssertEqualExporterQueueBatchSendSize(t, tt,
+		[]metricdata.HistogramDataPoint[int64]{
+			{
+				Attributes:   attrs,
+				Count:        1,
+				Bounds:       bounds,
+				BucketCounts: itemsBuckets,
+				Min:          metricdata.NewExtrema[int64](int64(req.Items)),
+				Max:          metricdata.NewExtrema[int64](int64(req.Items)),
+				Sum:          int64(req.Items),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+}
+
+func bucketCountsFor(v int64, bounds []float64) []uint64 {
+	counts := make([]uint64, len(bounds)+1)
+	for i, b := range bounds {
+		if float64(v) <= b {
+			counts[i] = 1
+			return counts
+		}
+	}
+	counts[len(bounds)] = 1
+	return counts
+}
