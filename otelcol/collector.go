@@ -21,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.opentelemetry.io/collector/otelcol/internal/grpclog"
 	"go.opentelemetry.io/collector/service"
@@ -119,6 +120,12 @@ type Collector struct {
 	asyncErrorChannel          chan error
 	bc                         *bufferedCore
 	updateConfigProviderLogger func(core zapcore.Core)
+
+	// currentCfg holds a deep copy of the last successfully applied
+	// configuration. It must be an independent copy (see copyConfig) because
+	// the running components may mutate the configs they were built from.
+	// Only populated when receiver partial reload is enabled.
+	currentCfg *Config
 }
 
 // NewCollector creates and returns a new instance of Collector.
@@ -193,6 +200,16 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
 
+	// Copy the config for later use in partial reload. This must happen before any
+	// can mutate the configuration, so partial reload can compare properly.
+	var storedCfg *Config
+	if service.ReceiverPartialReloadEnabled() {
+		storedCfg, err = copyConfig(cfg, factories)
+		if err != nil {
+			return err
+		}
+	}
+
 	conf := confmap.New()
 
 	if err = conf.Marshal(cfg); err != nil {
@@ -264,12 +281,28 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	if err = col.service.Start(ctx); err != nil {
 		return multierr.Combine(err, col.service.Shutdown(ctx))
 	}
+	if service.ReceiverPartialReloadEnabled() {
+		col.currentCfg = storedCfg
+	}
 	col.setCollectorState(StateRunning)
 
 	return nil
 }
 
 func (col *Collector) reloadConfiguration(ctx context.Context) error {
+	if service.ReceiverPartialReloadEnabled() && col.currentCfg != nil {
+		reloaded, err := col.tryPartialReceiverReload(ctx)
+		if reloaded {
+			// Partial reload was attempted (the change was receiver-only).
+			// Return the result directly — on success err is nil; on failure
+			// we cannot safely fall back to a full reload because the graph
+			// may be in a partially modified state (some receivers shut down,
+			// nodes removed, new nodes without components).
+			return err
+		}
+		// The config change was not receiver-only. Fall through to full reload.
+	}
+
 	col.service.Logger().Warn("Config updated, restart service")
 	col.setCollectorState(StateClosing)
 
@@ -282,6 +315,72 @@ func (col *Collector) reloadConfiguration(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// copyConfig returns a deep copy of cfg with independent component.Config values.
+func copyConfig(cfg *Config, factories Factories) (*Config, error) {
+	conf := confmap.New()
+	if err := conf.Marshal(cfg, xconfmap.WithUnredacted()); err != nil {
+		return nil, fmt.Errorf("could not marshal configuration for copy: %w", err)
+	}
+
+	settings, err := unmarshal(conf, factories)
+	if err != nil {
+		return nil, fmt.Errorf("could not unmarshal configuration copy: %w", err)
+	}
+
+	return &Config{
+		Receivers:  settings.Receivers.Configs(),
+		Processors: settings.Processors.Configs(),
+		Exporters:  settings.Exporters.Configs(),
+		Connectors: settings.Connectors.Configs(),
+		Extensions: settings.Extensions.Configs(),
+		Service:    settings.Service,
+	}, nil
+}
+
+// tryPartialReceiverReload attempts to reload only the receiver components if
+// the configuration change is limited to receivers. The bool return indicates
+// whether a partial reload was attempted (true) or the change requires a full
+// reload (false). When true, the error indicates whether the reload succeeded.
+func (col *Collector) tryPartialReceiverReload(ctx context.Context) (bool, error) {
+	factories, err := col.set.Factories()
+	if err != nil {
+		return false, err
+	}
+
+	newCfg, err := col.configProvider.Get(ctx, factories)
+	if err != nil {
+		return false, err
+	}
+
+	if validateErr := confmap.Validate(newCfg); validateErr != nil {
+		return false, validateErr
+	}
+
+	// copy configuration so comparison uses the same marshal/unmarshal round-trip, without
+	// this then there is no guarantee that the comparison will be accurate.
+	newCfgCopy, err := copyConfig(newCfg, factories)
+	if err != nil {
+		return false, err
+	}
+
+	if !receiversOnlyChange(col.currentCfg, newCfgCopy, isConnectorID(col.currentCfg.Connectors)) {
+		return false, nil
+	}
+
+	col.service.Logger().Info("Config updated, performing partial receiver reload")
+	if err = col.service.UpdateReceivers(ctx,
+		col.currentCfg.Receivers,
+		newCfg.Receivers,
+		factories.Receivers,
+		newCfg.Service.Pipelines,
+	); err != nil {
+		return true, fmt.Errorf("partial receiver reload failed: %w", err)
+	}
+
+	col.currentCfg = newCfgCopy
+	return true, nil
 }
 
 func (col *Collector) DryRun(ctx context.Context) error {
