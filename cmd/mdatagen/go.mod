@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/google/go-cmp v0.7.0
+	github.com/iimos/ucum v0.0.3
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.61.0
