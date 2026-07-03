@@ -297,6 +297,8 @@ func (v Value) Bytes() ByteSlice {
 
 // Strindex returns the strindex value associated with this Value.
 // If the Type() is not ValueTypeStrindex then returns zero value.
+// Note: This is currently used exclusively in the Profiling signal.
+// Status: [Alpha]
 func (v Value) Strindex() int32 {
 	return v.getOrig().GetStringValueStrindex()
 }
@@ -386,6 +388,9 @@ func (v Value) SetEmptySlice() Slice {
 	return newSlice(&ov.ArrayValue.Values, v.getState())
 }
 
+// SetStrindex ...
+// Note: This is currently used exclusively in the Profiling signal.
+// Status: [Alpha]
 func (v Value) SetStrindex(i int32) {
 	v.getState().AssertMutable()
 	// Delete everything but the AnyValue object itself.
