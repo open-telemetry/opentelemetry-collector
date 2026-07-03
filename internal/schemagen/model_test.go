@@ -323,7 +323,7 @@ func TestConfigMetadata_Validate_EnumOnComplexType(t *testing.T) {
 					"nested": {Type: "object", Enum: []any{"a"}},
 				},
 			},
-			wantErr: `property "nested": enum is not supported for type "object"`,
+			wantErr: `property "nested" is invalid: enum is not supported for type "object"`,
 		},
 		{
 			name: "enum on array",
@@ -333,7 +333,7 @@ func TestConfigMetadata_Validate_EnumOnComplexType(t *testing.T) {
 					"items": {Type: "array", Enum: []any{"a"}},
 				},
 			},
-			wantErr: `property "items": enum is not supported for type "array"`,
+			wantErr: `property "items" is invalid: enum is not supported for type "array"`,
 		},
 		{
 			name: "enum on string is valid",
@@ -357,4 +357,293 @@ func TestConfigMetadata_Validate_EnumOnComplexType(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConfigMetadata_Validate_NestedContainers(t *testing.T) {
+	tests := []struct {
+		name    string
+		md      *ConfigMetadata
+		wantErr string
+	}{
+		{
+			name: "invalid additionalProperties",
+			md: &ConfigMetadata{
+				Type:                 "object",
+				AdditionalProperties: &ConfigMetadata{Type: "object", Enum: []any{"a"}},
+			},
+			wantErr: `enum is not supported for type "object"`,
+		},
+		{
+			name: "valid additionalProperties",
+			md: &ConfigMetadata{
+				Type:                 "object",
+				AdditionalProperties: &ConfigMetadata{Type: "string"},
+			},
+		},
+		{
+			name: "invalid items",
+			md: &ConfigMetadata{
+				Type:  "array",
+				Items: &ConfigMetadata{Type: "array", Enum: []any{"a"}},
+			},
+			wantErr: `enum is not supported for type "array"`,
+		},
+		{
+			name: "valid items",
+			md: &ConfigMetadata{
+				Type:  "array",
+				Items: &ConfigMetadata{Type: "string"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.md.Validate()
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestConfigsMetadata_Validate(t *testing.T) {
+	tests := []struct {
+		name    string
+		md      *ConfigsMetadata
+		wantErr string
+	}{
+		{
+			name: "nil config and exported_configs",
+			md:   &ConfigsMetadata{},
+		},
+		{
+			name: "empty config type is allowed with properties",
+			md: &ConfigsMetadata{Config: &ConfigMetadata{
+				Type: "",
+				Properties: map[string]*ConfigMetadata{
+					"endpoint": {Type: "string"},
+				},
+			}},
+		},
+		{
+			name: "config validation error propagates",
+			md: &ConfigsMetadata{Config: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"nested": {Type: "object", Enum: []any{"a"}},
+				},
+			}},
+			wantErr: `enum is not supported for type "object"`,
+		},
+		{
+			name: "empty exported_configs section",
+			md:   &ConfigsMetadata{ExportedConfigs: map[string]*ConfigMetadata{}},
+			// a non-nil but empty map is required to be non-empty
+			wantErr: "empty exported_configs section",
+		},
+		{
+			name: "valid exported_configs",
+			md: &ConfigsMetadata{ExportedConfigs: map[string]*ConfigMetadata{
+				"sample": {
+					Type: "object",
+					Properties: map[string]*ConfigMetadata{
+						"endpoint": {Type: "string"},
+					},
+				},
+			}},
+		},
+		{
+			name: "exported_configs validation error propagates",
+			md: &ConfigsMetadata{ExportedConfigs: map[string]*ConfigMetadata{
+				"sample": {
+					Type: "object",
+					Properties: map[string]*ConfigMetadata{
+						"nested": {Type: "array", Enum: []any{"a"}},
+					},
+				},
+			}},
+			wantErr: `enum is not supported for type "array"`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.md.Validate()
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestConfigMetadata_Clone(t *testing.T) {
+	minProps := 1
+	maximum := 10.5
+	orig := &ConfigMetadata{
+		Description:   "root",
+		Type:          "object",
+		Default:       map[string]any{"nested": []any{"a", "b"}, "flag": true},
+		Enum:          []any{"x", "y"},
+		Required:      []string{"endpoint"},
+		MinProperties: &minProps,
+		Maximum:       &maximum,
+		UniqueItems:   true,
+		Deprecated:    true,
+		IsPointer:     true,
+		IsOptional:    true,
+		Embed:         true,
+		InternalOnly:  true,
+		GoType:        "time.Duration",
+		Pattern:       "^a$",
+		Format:        "duration",
+		Properties: map[string]*ConfigMetadata{
+			"endpoint": {Type: "string", Description: "the endpoint"},
+		},
+		AdditionalProperties: &ConfigMetadata{Type: "string"},
+		Items:                &ConfigMetadata{Type: "integer"},
+		GoStruct: GoStructConfig{
+			Anonymous:       true,
+			IgnoreDefault:   true,
+			FieldName:       "Endpoint",
+			CustomValidator: &CustomValidatorConfig{Name: "validate"},
+		},
+	}
+
+	clone := orig.Clone()
+
+	require.NotSame(t, orig, clone)
+	assert.Equal(t, orig, clone)
+
+	// Mutating the clone must not affect the original (deep copy).
+	clone.Description = "changed"
+	clone.Properties["endpoint"].Type = "integer"
+	clone.Required[0] = "other"
+	clone.Enum[0] = "z"
+	*clone.MinProperties = 99
+	clone.Default.(map[string]any)["flag"] = false
+	clone.Default.(map[string]any)["nested"].([]any)[0] = "changed"
+	clone.GoStruct.CustomValidator.Name = "other"
+	clone.AdditionalProperties.Type = "changed"
+	clone.Items.Type = "changed"
+
+	assert.Equal(t, "root", orig.Description)
+	assert.Equal(t, "string", orig.Properties["endpoint"].Type)
+	assert.Equal(t, "endpoint", orig.Required[0])
+	assert.Equal(t, "x", orig.Enum[0])
+	assert.Equal(t, 1, *orig.MinProperties)
+	assert.Equal(t, true, orig.Default.(map[string]any)["flag"])
+	assert.Equal(t, "a", orig.Default.(map[string]any)["nested"].([]any)[0])
+	assert.Equal(t, "validate", orig.GoStruct.CustomValidator.Name)
+	assert.Equal(t, "string", orig.AdditionalProperties.Type)
+	assert.Equal(t, "integer", orig.Items.Type)
+}
+
+func TestConfigMetadata_Clone_Nil(t *testing.T) {
+	var md *ConfigMetadata
+	assert.Nil(t, md.Clone())
+}
+
+func TestConfigsMetadata_Clone(t *testing.T) {
+	orig := &ConfigsMetadata{
+		Config: &ConfigMetadata{
+			Type: "object",
+			Properties: map[string]*ConfigMetadata{
+				"endpoint": {Type: "string"},
+			},
+		},
+		ExportedConfigs: map[string]*ConfigMetadata{
+			"sample": {Type: "object", Properties: map[string]*ConfigMetadata{"a": {Type: "string"}}},
+		},
+	}
+
+	clone := orig.Clone()
+	require.NotSame(t, orig, clone)
+	assert.Equal(t, orig, clone)
+
+	clone.Config.Type = "changed"
+	clone.ExportedConfigs["sample"].Type = "changed"
+	assert.Equal(t, "object", orig.Config.Type)
+	assert.Equal(t, "object", orig.ExportedConfigs["sample"].Type)
+}
+
+func TestConfigsMetadata_Clone_Nil(t *testing.T) {
+	var md *ConfigsMetadata
+	assert.Nil(t, md.Clone())
+}
+
+func TestConfigMetadata_MergeFrom(t *testing.T) {
+	t.Run("nil other is a no-op", func(t *testing.T) {
+		md := &ConfigMetadata{Type: "string"}
+		md.MergeFrom(nil)
+		assert.Equal(t, "string", md.Type)
+	})
+
+	t.Run("existing fields are preserved", func(t *testing.T) {
+		md := &ConfigMetadata{
+			Description: "mine",
+			Type:        "string",
+			Enum:        []any{"keep"},
+			Required:    []string{"keep"},
+			Properties: map[string]*ConfigMetadata{
+				"shared": {Type: "integer"},
+			},
+		}
+		other := &ConfigMetadata{
+			Description: "theirs",
+			Type:        "object",
+			Enum:        []any{"drop"},
+			Required:    []string{"drop"},
+			Properties: map[string]*ConfigMetadata{
+				"shared": {Type: "string"},
+				"extra":  {Type: "boolean"},
+			},
+		}
+
+		md.MergeFrom(other)
+
+		assert.Equal(t, "mine", md.Description)
+		assert.Equal(t, "string", md.Type)
+		assert.Equal(t, []any{"keep"}, md.Enum)
+		assert.Equal(t, []string{"keep"}, md.Required)
+		// shared property is kept, missing one is merged in
+		assert.Equal(t, "integer", md.Properties["shared"].Type)
+		require.Contains(t, md.Properties, "extra")
+		assert.Equal(t, "boolean", md.Properties["extra"].Type)
+	})
+
+	t.Run("missing fields are filled from other", func(t *testing.T) {
+		md := &ConfigMetadata{}
+		other := &ConfigMetadata{
+			Description: "theirs",
+			Deprecated:  true,
+			UniqueItems: true,
+			IsPointer:   true,
+			IsOptional:  true,
+			Embed:       true,
+			GoStruct: GoStructConfig{
+				Anonymous:     true,
+				IgnoreDefault: true,
+				FieldName:     "Field",
+			},
+		}
+
+		md.MergeFrom(other)
+
+		assert.Equal(t, "theirs", md.Description)
+		assert.True(t, md.Deprecated)
+		assert.True(t, md.UniqueItems)
+		assert.True(t, md.IsPointer)
+		assert.True(t, md.IsOptional)
+		assert.True(t, md.Embed)
+		assert.True(t, md.GoStruct.Anonymous)
+		assert.True(t, md.GoStruct.IgnoreDefault)
+		assert.Equal(t, "Field", md.GoStruct.FieldName)
+	})
 }

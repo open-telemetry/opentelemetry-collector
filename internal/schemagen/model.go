@@ -294,11 +294,22 @@ func (md *ConfigMetadata) Validate() error {
 			errs = errors.Join(errs, errors.New("config must specify at least one property"))
 		}
 	}
-
-	// todo: this has to be done recursively
+	if len(md.Enum) > 0 && (md.Type == "object" || md.Type == "array") {
+		errs = errors.Join(errs, fmt.Errorf("enum is not supported for type %q", md.Type))
+	}
 	for name, prop := range md.Properties {
-		if len(prop.Enum) > 0 && (prop.Type == "object" || prop.Type == "array") {
-			errs = errors.Join(errs, fmt.Errorf("property %q: enum is not supported for type %q", name, prop.Type))
+		if err := prop.Validate(); err != nil {
+			errs = errors.Join(errs, fmt.Errorf("property %q is invalid: %w", name, err))
+		}
+	}
+	if md.AdditionalProperties != nil {
+		if err := md.AdditionalProperties.Validate(); err != nil {
+			errs = errors.Join(errs, err)
+		}
+	}
+	if md.Items != nil {
+		if err := md.Items.Validate(); err != nil {
+			errs = errors.Join(errs, err)
 		}
 	}
 	return errs
