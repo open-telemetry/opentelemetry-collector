@@ -27,7 +27,7 @@ func TestShardedBatcherRequiresPositiveShardCount(t *testing.T) {
 	assert.Nil(t, sb)
 }
 
-func TestNewBatcherUsesOneShardForUnpartitionedBatching(t *testing.T) {
+func TestNewBatcherUsesMaxWorkersForUnpartitionedBatching(t *testing.T) {
 	sink := requesttest.NewSink()
 	batcher, err := NewBatcher(configoptional.Some(BatchConfig{
 		FlushTimeout: 50 * time.Millisecond,
@@ -35,14 +35,14 @@ func TestNewBatcherUsesOneShardForUnpartitionedBatching(t *testing.T) {
 		MinSize:      10,
 	}), batcherSettings[request.Request]{
 		next:       sink.Export,
-		maxWorkers: 1,
+		maxWorkers: 2,
 		logger:     zap.NewNop(),
 	})
 
 	require.NoError(t, err)
 	sb, ok := batcher.(*shardedBatcher)
 	require.True(t, ok)
-	assert.Len(t, sb.shards, 1)
+	assert.Len(t, sb.shards, 2)
 }
 
 func TestShardedBatcherOneShardFlushesOnMinSize(t *testing.T) {
