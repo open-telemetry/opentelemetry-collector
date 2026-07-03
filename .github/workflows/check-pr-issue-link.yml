@@ -39,5 +39,5 @@ jobs:
             echo "Found a linked issue."
             exit 0
           fi
-          echo '::error::Pull requests from non-members must have a linked issue. Link one from the description, for example "Fixes #1234".'
+          echo '::error::Pull requests from non-members must have a linked issue. Link one in the description, for example "Fixes #1234". If you are an OpenTelemetry org member, make your membership public to skip this check: https://docs.github.com/en/account-and-profile/how-tos/organization-membership/publicizing-or-hiding-organization-membership'
           exit 1
