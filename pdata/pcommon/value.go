@@ -388,7 +388,8 @@ func (v Value) SetEmptySlice() Slice {
 	return newSlice(&ov.ArrayValue.Values, v.getState())
 }
 
-// SetStrindex ...
+// SetStr replaces the strindex associated with this Value,
+// it also changes the type to be ValueTypeStrindex.
 // Note: This is currently used exclusively in the Profiling signal.
 // Status: [Alpha]
 func (v Value) SetStrindex(i int32) {
