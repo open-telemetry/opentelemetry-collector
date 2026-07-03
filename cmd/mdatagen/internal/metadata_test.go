@@ -9,10 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/internal/schemagen"
-
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/internal/schemagen"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
