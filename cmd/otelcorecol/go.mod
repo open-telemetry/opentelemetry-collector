@@ -26,6 +26,7 @@ require (
 	go.opentelemetry.io/collector/processor v1.61.0
 	go.opentelemetry.io/collector/processor/batchprocessor v0.155.0
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.155.0
+	go.opentelemetry.io/collector/processor/queuebatchprocessor v0.155.0
 	go.opentelemetry.io/collector/receiver v1.61.0
 	go.opentelemetry.io/collector/receiver/nopreceiver v0.155.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.155.0
@@ -313,6 +314,8 @@ replace go.opentelemetry.io/collector/processor/processortest => ../../processor
 replace go.opentelemetry.io/collector/processor/batchprocessor => ../../processor/batchprocessor
 
 replace go.opentelemetry.io/collector/processor/memorylimiterprocessor => ../../processor/memorylimiterprocessor
+
+replace go.opentelemetry.io/collector/processor/queuebatchprocessor => ../../processor/queuebatchprocessor
 
 replace go.opentelemetry.io/collector/processor/xprocessor => ../../processor/xprocessor
 
