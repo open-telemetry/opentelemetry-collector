@@ -9,10 +9,14 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
-const dataFormatProtobuf = "protobuf"
+const (
+	dataFormatProtobuf = "protobuf"
+	invalidUTF8Message = "request contains invalid UTF-8"
+)
 
 // Receiver is the type used to handle metrics from OpenTelemetry exporters.
 type Receiver struct {
@@ -31,10 +35,19 @@ func New(nextConsumer consumer.Metrics, obsreport *receiverhelper.ObsReport) *Re
 
 // Export implements the service Export metrics func.
 func (r *Receiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (pmetricotlp.ExportResponse, error) {
+	rejectedDataPoints := 0
+	if metadata.OtlpReceiverRejectInvalidUTF8FeatureGate.IsEnabled() {
+		rejectedDataPoints = req.RejectInvalidUTF8()
+	}
+	resp := pmetricotlp.NewExportResponse()
+	if rejectedDataPoints > 0 {
+		resp.PartialSuccess().SetRejectedDataPoints(int64(rejectedDataPoints))
+		resp.PartialSuccess().SetErrorMessage(invalidUTF8Message)
+	}
 	md := req.Metrics()
 	dataPointCount := md.DataPointCount()
 	if dataPointCount == 0 {
-		return pmetricotlp.NewExportResponse(), nil
+		return resp, nil
 	}
 
 	ctx = r.obsreport.StartMetricsOp(ctx)
@@ -51,5 +64,5 @@ func (r *Receiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (p
 		return pmetricotlp.NewExportResponse(), errors.GetStatusFromError(err)
 	}
 
-	return pmetricotlp.NewExportResponse(), nil
+	return resp, nil
 }

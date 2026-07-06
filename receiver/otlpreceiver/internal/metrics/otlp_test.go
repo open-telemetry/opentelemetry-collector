@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
@@ -49,6 +50,26 @@ func TestExport_EmptyRequest(t *testing.T) {
 	resp, err := metricsClient.Export(context.Background(), pmetricotlp.NewExportRequest())
 	require.NoError(t, err)
 	require.NotNil(t, resp)
+}
+
+func TestExport_InvalidUTF8(t *testing.T) {
+	setRejectInvalidUTF8Gate(t, true)
+
+	md := testdata.GenerateMetrics(1)
+	dataPointCount := md.DataPointCount()
+	md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().PutStr("bad", string([]byte{0xff}))
+	req := pmetricotlp.NewExportRequestFromMetrics(md)
+
+	metricSink := new(consumertest.MetricsSink)
+	metricsClient := makeMetricsServiceClient(t, metricSink)
+	resp, err := metricsClient.Export(context.Background(), req)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), resp.PartialSuccess().RejectedDataPoints())
+	assert.Equal(t, invalidUTF8Message, resp.PartialSuccess().ErrorMessage())
+
+	mds := metricSink.AllMetrics()
+	require.Len(t, mds, 1)
+	assert.Equal(t, dataPointCount-1, mds[0].DataPointCount())
 }
 
 func TestExport_NonPermanentErrorConsumer(t *testing.T) {
@@ -110,4 +131,12 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) net.Addr {
 	}()
 
 	return ln.Addr()
+}
+
+func setRejectInvalidUTF8Gate(t *testing.T, enabled bool) {
+	original := metadata.OtlpReceiverRejectInvalidUTF8FeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.OtlpReceiverRejectInvalidUTF8FeatureGate.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.OtlpReceiverRejectInvalidUTF8FeatureGate.ID(), original))
+	})
 }

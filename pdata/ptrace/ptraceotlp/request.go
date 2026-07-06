@@ -74,6 +74,47 @@ func (ms ExportRequest) UnmarshalJSON(data []byte) error {
 	return iter.Error()
 }
 
+// ValidateUTF8 returns false when any string in the request contains invalid UTF-8.
+func (ms ExportRequest) ValidateUTF8() bool {
+	return internal.ValidateUTF8(ms.orig)
+}
+
+// RejectInvalidUTF8 removes spans containing invalid UTF-8 and returns the number removed.
+func (ms ExportRequest) RejectInvalidUTF8() int {
+	td := ms.Traces()
+	rejected := 0
+	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
+		if !internal.ValidateUTF8(rs.Resource()) {
+			rejected += countResourceSpans(rs)
+			return true
+		}
+		rs.ScopeSpans().RemoveIf(func(ss ptrace.ScopeSpans) bool {
+			if !internal.ValidateUTF8(ss.Scope()) {
+				rejected += ss.Spans().Len()
+				return true
+			}
+			ss.Spans().RemoveIf(func(span ptrace.Span) bool {
+				invalid := !internal.ValidateUTF8(span)
+				if invalid {
+					rejected++
+				}
+				return invalid
+			})
+			return ss.Spans().Len() == 0
+		})
+		return rs.ScopeSpans().Len() == 0
+	})
+	return rejected
+}
+
+func countResourceSpans(rs ptrace.ResourceSpans) int {
+	count := 0
+	for i := 0; i < rs.ScopeSpans().Len(); i++ {
+		count += rs.ScopeSpans().At(i).Spans().Len()
+	}
+	return count
+}
+
 func (ms ExportRequest) Traces() ptrace.Traces {
 	return ptrace.Traces(internal.NewTracesWrapper(ms.orig, ms.state))
 }

@@ -74,6 +74,56 @@ func (ms ExportRequest) UnmarshalJSON(data []byte) error {
 	return iter.Error()
 }
 
+// ValidateUTF8 returns false when any string in the request contains invalid UTF-8.
+func (ms ExportRequest) ValidateUTF8() bool {
+	return internal.ValidateUTF8(ms.orig)
+}
+
+// RejectInvalidUTF8 removes profiles containing invalid UTF-8 and returns the number removed.
+func (ms ExportRequest) RejectInvalidUTF8() int {
+	pd := ms.Profiles()
+	rejected := 0
+	if !internal.ValidateUTF8(pd.Dictionary()) {
+		rejected = pd.ProfileCount()
+		pd.ResourceProfiles().RemoveIf(func(pprofile.ResourceProfiles) bool { return true })
+		return rejected
+	}
+	pd.ResourceProfiles().RemoveIf(func(rp pprofile.ResourceProfiles) bool {
+		if !internal.ValidateUTF8(rp.Resource()) {
+			rejected += countResourceProfileSamples(rp)
+			return true
+		}
+		rp.ScopeProfiles().RemoveIf(func(sp pprofile.ScopeProfiles) bool {
+			if !internal.ValidateUTF8(sp.Scope()) {
+				rejected += countScopeProfileSamples(sp)
+				return true
+			}
+			sp.Profiles().RemoveIf(func(profile pprofile.Profile) bool {
+				invalid := !internal.ValidateUTF8(profile)
+				if invalid {
+					rejected += profile.Samples().Len()
+				}
+				return invalid
+			})
+			return sp.Profiles().Len() == 0
+		})
+		return rp.ScopeProfiles().Len() == 0
+	})
+	return rejected
+}
+
+func countResourceProfileSamples(rp pprofile.ResourceProfiles) int {
+	count := 0
+	for i := 0; i < rp.ScopeProfiles().Len(); i++ {
+		count += rp.ScopeProfiles().At(i).Profiles().Len()
+	}
+	return count
+}
+
+func countScopeProfileSamples(sp pprofile.ScopeProfiles) int {
+	return sp.Profiles().Len()
+}
+
 func (ms ExportRequest) Profiles() pprofile.Profiles {
 	return pprofile.Profiles(internal.NewProfilesWrapper(ms.orig, ms.state))
 }

@@ -9,10 +9,14 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
-const dataFormatProtobuf = "protobuf"
+const (
+	dataFormatProtobuf = "protobuf"
+	invalidUTF8Message = "request contains invalid UTF-8"
+)
 
 // Receiver is the type used to handle logs from OpenTelemetry exporters.
 type Receiver struct {
@@ -31,10 +35,19 @@ func New(nextConsumer consumer.Logs, obsreport *receiverhelper.ObsReport) *Recei
 
 // Export implements the service Export logs func.
 func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plogotlp.ExportResponse, error) {
+	rejectedLogRecords := 0
+	if metadata.OtlpReceiverRejectInvalidUTF8FeatureGate.IsEnabled() {
+		rejectedLogRecords = req.RejectInvalidUTF8()
+	}
+	resp := plogotlp.NewExportResponse()
+	if rejectedLogRecords > 0 {
+		resp.PartialSuccess().SetRejectedLogRecords(int64(rejectedLogRecords))
+		resp.PartialSuccess().SetErrorMessage(invalidUTF8Message)
+	}
 	ld := req.Logs()
 	numSpans := ld.LogRecordCount()
 	if numSpans == 0 {
-		return plogotlp.NewExportResponse(), nil
+		return resp, nil
 	}
 
 	ctx = r.obsreport.StartLogsOp(ctx)
@@ -51,5 +64,5 @@ func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plog
 		return plogotlp.NewExportResponse(), errors.GetStatusFromError(err)
 	}
 
-	return plogotlp.NewExportResponse(), nil
+	return resp, nil
 }
