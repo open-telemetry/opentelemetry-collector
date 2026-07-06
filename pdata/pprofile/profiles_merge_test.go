@@ -895,7 +895,8 @@ func assertSampleDictAttr(t *testing.T, p Profiles, wantKey, wantVal string) {
 		for _, sp := range rp.ScopeProfiles().All() {
 			for _, prof := range sp.Profiles().All() {
 				for _, s := range prof.Samples().All() {
-					m := FromAttributeIndices(d.AttributeTable(), s, d)
+					m, err := FromAttributeIndices(d.AttributeTable(), s, d)
+					require.NoError(t, err)
 					if v, ok := m.Get(wantKey); ok && v.Str() == wantVal {
 						return
 					}

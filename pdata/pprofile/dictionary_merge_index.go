@@ -158,8 +158,7 @@ func (mi *mergeIndex) setString(table pcommon.StringSlice, val string) (int32, e
 		return idx, nil
 	}
 	if table.Len() >= math.MaxInt32 {
-		// SetString returns this (mismatched) sentinel on append; preserve parity.
-		return 0, errTooManyMappingTableEntries
+		return 0, errTooManyStringTableEntries
 	}
 	table.Append(val)
 	idx := int32(table.Len() - 1)
