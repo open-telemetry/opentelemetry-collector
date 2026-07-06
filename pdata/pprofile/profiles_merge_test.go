@@ -587,6 +587,115 @@ func TestProfilesMergeTo(t *testing.T) {
 	}
 }
 
+// newConformantProfiles returns a spec-conformant Profiles with the required
+// index-0 sentinel entry in every dictionary table, so that an error injected
+// into a single table is the only invalid reference during a merge.
+func newConformantProfiles() Profiles {
+	p := NewProfiles()
+	d := p.Dictionary()
+	d.StringTable().Append("")
+	d.AttributeTable().AppendEmpty()
+	d.StackTable().AppendEmpty()
+	d.LocationTable().AppendEmpty()
+	d.FunctionTable().AppendEmpty()
+	d.MappingTable().AppendEmpty()
+	d.LinkTable().AppendEmpty()
+	return p
+}
+
+// TestProfilesMergeTo_SwitchDictionaryErrors exercises each error-propagation
+// path in the switchDictionary chain by injecting a single out-of-range index
+// into an otherwise spec-conformant source. Every case asserts the wrapped
+// error surfaces and that the destination is left untouched.
+func TestProfilesMergeTo_SwitchDictionaryErrors(t *testing.T) {
+	const badIdx = 99
+
+	for _, tt := range []struct {
+		name    string
+		mutate  func(Profiles)
+		wantErr string
+	}{
+		{
+			name: "dictionary attribute key index",
+			mutate: func(p Profiles) {
+				p.Dictionary().AttributeTable().AppendEmpty().SetKeyStrindex(badIdx)
+			},
+			wantErr: "invalid key index",
+		},
+		{
+			name: "dictionary function name index",
+			mutate: func(p Profiles) {
+				p.Dictionary().FunctionTable().AppendEmpty().SetNameStrindex(badIdx)
+			},
+			wantErr: "invalid name index",
+		},
+		{
+			name: "dictionary mapping filename index",
+			mutate: func(p Profiles) {
+				p.Dictionary().MappingTable().AppendEmpty().SetFilenameStrindex(badIdx)
+			},
+			wantErr: "invalid filename index",
+		},
+		{
+			name: "dictionary stack location index",
+			mutate: func(p Profiles) {
+				p.Dictionary().StackTable().AppendEmpty().LocationIndices().Append(badIdx)
+			},
+			wantErr: "invalid location index",
+		},
+		{
+			name: "dictionary location line function index",
+			mutate: func(p Profiles) {
+				loc := p.Dictionary().LocationTable().AppendEmpty()
+				loc.Lines().AppendEmpty().SetFunctionIndex(badIdx)
+			},
+			wantErr: "invalid function index",
+		},
+		{
+			name: "sample attribute index",
+			mutate: func(p Profiles) {
+				s := p.ResourceProfiles().AppendEmpty().
+					ScopeProfiles().AppendEmpty().
+					Profiles().AppendEmpty().
+					Samples().AppendEmpty()
+				s.AttributeIndices().Append(badIdx)
+			},
+			wantErr: "invalid attribute index",
+		},
+		{
+			name: "profile period type index",
+			mutate: func(p Profiles) {
+				prof := p.ResourceProfiles().AppendEmpty().
+					ScopeProfiles().AppendEmpty().
+					Profiles().AppendEmpty()
+				prof.PeriodType().SetTypeStrindex(badIdx)
+			},
+			wantErr: "error switching dictionary for period type",
+		},
+		{
+			name: "profile sample type index",
+			mutate: func(p Profiles) {
+				prof := p.ResourceProfiles().AppendEmpty().
+					ScopeProfiles().AppendEmpty().
+					Profiles().AppendEmpty()
+				prof.SampleType().SetTypeStrindex(badIdx)
+			},
+			wantErr: "error switching dictionary for sample type",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			src := newConformantProfiles()
+			tt.mutate(src)
+			dest := newConformantProfiles()
+
+			err := src.MergeTo(dest)
+			require.ErrorContains(t, err, tt.wantErr)
+			assert.Equal(t, 0, dest.ResourceProfiles().Len(),
+				"destination must be left untouched on error")
+		})
+	}
+}
+
 func TestProfilesMergeToSelf(t *testing.T) {
 	profiles := NewProfiles()
 	profiles.Dictionary().StringTable().Append("", "test")
