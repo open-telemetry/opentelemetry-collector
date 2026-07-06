@@ -46,7 +46,7 @@ batch:
 ```
 
 Please refer to the [exporterhelper
-documentation](../../exporter/exporterhelper/README.md) for the more
+documentation](../../exporter/exporterhelper/README.md) for more
 details on this configuration structure. Other than changing the
 default configuration, the entire `queuebatch` functionality is
 available through this processor, including partitioning and storage.
