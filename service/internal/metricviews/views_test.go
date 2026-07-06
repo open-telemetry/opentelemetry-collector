@@ -22,17 +22,17 @@ func TestDefaultViews(t *testing.T) {
 		{
 			name:           "None",
 			level:          configtelemetry.LevelNone,
-			wantViewsCount: 20,
+			wantViewsCount: 18,
 		},
 		{
 			name:           "Basic",
 			level:          configtelemetry.LevelBasic,
-			wantViewsCount: 20,
+			wantViewsCount: 18,
 		},
 		{
 			name:           "Normal",
 			level:          configtelemetry.LevelNormal,
-			wantViewsCount: 17,
+			wantViewsCount: 15,
 		},
 		{
 			name:           "Detailed",

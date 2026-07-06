@@ -129,21 +129,6 @@ func DefaultViews(level configtelemetry.Level) []config.View {
 		}))
 	}
 
-	// Queue/batch processor histograms (collected only at detailed level).
-	if level < configtelemetry.LevelDetailed {
-		queueBatchScope := ptr("go.opentelemetry.io/collector/processor/queuebatchprocessor")
-		views = append(views,
-			dropViewOption(&config.ViewSelector{
-				MeterName:      queueBatchScope,
-				InstrumentName: ptr("otelcol_processor_queuebatch_items"),
-			}),
-			dropViewOption(&config.ViewSelector{
-				MeterName:      queueBatchScope,
-				InstrumentName: ptr("otelcol_processor_queuebatch_bytes"),
-			}),
-		)
-	}
-
 	// Internal graph metrics
 	graphScope := ptr("go.opentelemetry.io/collector/service")
 	if level < configtelemetry.LevelDetailed {
