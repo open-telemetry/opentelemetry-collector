@@ -269,3 +269,47 @@ func randLink(r *rand.Rand) Link {
 	li.SetSpanID(pcommon.SpanID(sid))
 	return li
 }
+
+// TestMergeIndex_TableOverflowGuards drives the int32-overflow guard in every
+// set* method. The threshold is temporarily lowered so the guard fires on the
+// first novel entry instead of requiring billions of rows, and each method must
+// return its own table-specific sentinel.
+func TestMergeIndex_TableOverflowGuards(t *testing.T) {
+	// Mutates the package-global maxDictTableLen, so this test must never call
+	// t.Parallel() or run concurrently with another test that performs a merge.
+	// t.Cleanup restores the default even if an assertion fails.
+	orig := maxDictTableLen
+	maxDictTableLen = 1
+	t.Cleanup(func() { maxDictTableLen = orig })
+
+	dic := newConformantProfiles().Dictionary()
+	mi := newMergeIndex(dic)
+
+	fn := NewFunction()
+	fn.SetNameStrindex(1)
+	ma := NewMapping()
+	ma.SetFileOffset(1)
+	loc := NewLocation()
+	loc.SetAddress(1)
+	st := NewStack()
+	st.LocationIndices().Append(1)
+	attr := NewKeyValueAndUnit()
+	attr.SetKeyStrindex(1)
+	li := NewLink()
+	li.SetTraceID(pcommon.TraceID([16]byte{1}))
+
+	_, err := mi.setString(dic.StringTable(), "overflow")
+	require.ErrorIs(t, err, errTooManyStringTableEntries)
+	_, err = mi.setFunction(dic.FunctionTable(), fn)
+	require.ErrorIs(t, err, errTooManyFunctionTableEntries)
+	_, err = mi.setMapping(dic.MappingTable(), ma)
+	require.ErrorIs(t, err, errTooManyMappingTableEntries)
+	_, err = mi.setLocation(dic.LocationTable(), loc)
+	require.ErrorIs(t, err, errTooManyLocationTableEntries)
+	_, err = mi.setStack(dic.StackTable(), st)
+	require.ErrorIs(t, err, errTooManyStackTableEntries)
+	_, err = mi.setAttribute(dic.AttributeTable(), attr)
+	require.ErrorIs(t, err, errTooManyAttributeTableEntries)
+	_, err = mi.setLink(dic.LinkTable(), li)
+	require.ErrorIs(t, err, errTooManyLinkTableEntries)
+}

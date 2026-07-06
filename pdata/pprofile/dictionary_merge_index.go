@@ -14,6 +14,12 @@ const (
 	fnvPrime64  uint64 = 1099511628211
 )
 
+// maxDictTableLen is the point at which a dictionary table can no longer grow
+// without overflowing an int32 index. It is a variable rather than a bare
+// math.MaxInt32 literal so tests can exercise the overflow guards without
+// allocating billions of entries.
+var maxDictTableLen = math.MaxInt32
+
 func mixU64(h, v uint64) uint64 {
 	h ^= v
 	h *= fnvPrime64
@@ -157,7 +163,7 @@ func (mi *mergeIndex) setString(table pcommon.StringSlice, val string) (int32, e
 	if idx, ok := mi.strings[val]; ok {
 		return idx, nil
 	}
-	if table.Len() >= math.MaxInt32 {
+	if table.Len() >= maxDictTableLen {
 		return 0, errTooManyStringTableEntries
 	}
 	table.Append(val)
@@ -173,7 +179,7 @@ func (mi *mergeIndex) setFunction(table FunctionSlice, fn Function) (int32, erro
 			return idx, nil
 		}
 	}
-	if table.Len() >= math.MaxInt32 {
+	if table.Len() >= maxDictTableLen {
 		return 0, errTooManyFunctionTableEntries
 	}
 	fn.CopyTo(table.AppendEmpty())
@@ -189,7 +195,7 @@ func (mi *mergeIndex) setMapping(table MappingSlice, ma Mapping) (int32, error) 
 			return idx, nil
 		}
 	}
-	if table.Len() >= math.MaxInt32 {
+	if table.Len() >= maxDictTableLen {
 		return 0, errTooManyMappingTableEntries
 	}
 	ma.CopyTo(table.AppendEmpty())
@@ -205,7 +211,7 @@ func (mi *mergeIndex) setLocation(table LocationSlice, loc Location) (int32, err
 			return idx, nil
 		}
 	}
-	if table.Len() >= math.MaxInt32 {
+	if table.Len() >= maxDictTableLen {
 		return 0, errTooManyLocationTableEntries
 	}
 	loc.CopyTo(table.AppendEmpty())
@@ -221,7 +227,7 @@ func (mi *mergeIndex) setStack(table StackSlice, st Stack) (int32, error) {
 			return idx, nil
 		}
 	}
-	if table.Len() >= math.MaxInt32 {
+	if table.Len() >= maxDictTableLen {
 		return 0, errTooManyStackTableEntries
 	}
 	st.CopyTo(table.AppendEmpty())
@@ -237,7 +243,7 @@ func (mi *mergeIndex) setAttribute(table KeyValueAndUnitSlice, attr KeyValueAndU
 			return idx, nil
 		}
 	}
-	if table.Len() >= math.MaxInt32 {
+	if table.Len() >= maxDictTableLen {
 		return 0, errTooManyAttributeTableEntries
 	}
 	attr.CopyTo(table.AppendEmpty())
@@ -253,7 +259,7 @@ func (mi *mergeIndex) setLink(table LinkSlice, li Link) (int32, error) {
 			return idx, nil
 		}
 	}
-	if table.Len() >= math.MaxInt32 {
+	if table.Len() >= maxDictTableLen {
 		return 0, errTooManyLinkTableEntries
 	}
 	li.CopyTo(table.AppendEmpty())
