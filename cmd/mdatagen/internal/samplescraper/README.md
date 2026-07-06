@@ -22,9 +22,11 @@ This scraper is used for testing purposes to check the output of mdatagen.
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
 | `collection_interval` | duration | 1m | no | Sets how frequently the scraper should be called and used as the context timeout to ensure that scrapers don't exceed the interval. Must be positive, or zero to disable timer-based scraping (requires controllers to be non-empty). |
+| `component` | string |  | no | Identifies the scraper, used for telemetry and logging. |
 | `controllers` | []string |  | no | An optional list of extension IDs that control when scrapes occur. When specified, extensions can trigger scrapes based on external events. If controllers is non-empty, collection_interval may be zero to disable timer-based scraping entirely. |
 | `initial_delay` | duration | 1s | no | Sets the initial start delay for the scraper, any non positive value is assumed to be immediately. |
 | `job_name` | string | test_job | **yes** | Name of the scrape job, used to identify the source in telemetry. |
+| `log_level` | string (one of: debug, info, warn, error) | info | no | Logging level for the scraper. |
 | `metrics` | object (see [metrics](#metrics)) |  | no | MetricsConfig provides config for sample metrics. |
 | `resource_attributes` | object (see [resource_attributes](#resource_attributes)) |  | no | ResourceAttributesConfig provides config for sample resource attributes. |
 | `targets` | []object | [{}] | **yes** | List of targets to scrape metrics from. |

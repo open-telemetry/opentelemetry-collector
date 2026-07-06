@@ -639,6 +639,8 @@ type Attribute struct {
 	RequirementLevel AttributeRequirementLevel `mapstructure:"requirement_level"`
 	// The semantic convention reference of the attribute.
 	SemanticConvention *SemanticConvention `mapstructure:"semantic_convention"`
+	// Stability is the stability level of the resource attribute.
+	Stability component.StabilityLevel `mapstructure:"stability"`
 }
 
 // IsConditional returns true if the attribute is conditionally required.
@@ -880,6 +882,22 @@ func (md *Metadata) expandSemConvRefs() error {
 			v.SemanticConvention.SemanticConventionRef = url
 		}
 		md.Metrics[k] = v
+	}
+
+	for k, v := range md.ResourceAttributes {
+		if v.SemanticConvention != nil {
+			if strings.HasPrefix(v.SemanticConvention.SemanticConventionRef, "http") {
+				return fmt.Errorf("resource attribute %q, use relative path for URL, not the full URL", k)
+			}
+			url := fmt.Sprintf(
+				"%s/v%s/docs/registry/attributes/%s",
+				semConvURL,
+				md.SemConvVersion,
+				v.SemanticConvention.SemanticConventionRef,
+			)
+			v.SemanticConvention.SemanticConventionRef = url
+		}
+		md.ResourceAttributes[k] = v
 	}
 
 	return nil
