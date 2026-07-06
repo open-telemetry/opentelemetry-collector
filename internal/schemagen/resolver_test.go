@@ -1690,6 +1690,32 @@ func TestResolver_ResolveSchema_RefWithoutCustomExtensions(t *testing.T) {
 	require.Equal(t, "BaseConfig", base.GoType)
 }
 
+func TestResolver_ResolveSchema_DecoratesPropNames(t *testing.T) {
+	resolver := &Resolver{
+		pkgID:  "go.opentelemetry.io/collector/test/component",
+		class:  "receiver",
+		name:   "test",
+		loader: NewLoader(""),
+	}
+
+	src := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"endpoint": {Type: "string"},
+			"storage": {
+				Type:   "string",
+				GoType: "go.opentelemetry.io/collector/component.ID",
+			},
+		},
+	}
+
+	result, err := resolver.ResolveSchema(src)
+	require.NoError(t, err)
+
+	require.Equal(t, "endpoint", result.Properties["endpoint"].GoStruct.FieldName)
+	require.Equal(t, "storage", result.Properties["storage"].GoStruct.FieldName)
+}
+
 func TestResolver_ResolveSchema_PreservesIntAndFloatPointers(t *testing.T) {
 	// Regression test: *int and *float64 pointer fields must be copied by the resolver.
 	// Previously, only *ConfigMetadata pointers were handled; all other pointer types

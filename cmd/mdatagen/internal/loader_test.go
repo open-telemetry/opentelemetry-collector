@@ -104,6 +104,18 @@ func TestLoadMetadata(t *testing.T) {
 					Required: []string{"endpoint"},
 				},
 				ResourceAttributes: map[AttributeName]Attribute{
+					"host.arch": {
+						Description: "The CPU architecture the host system is running on.",
+						EnabledPtr:  boolPtr(false),
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName:         "host.arch",
+						RequirementLevel: AttributeRequirementLevelRecommended,
+						SemanticConvention: &SemanticConvention{
+							SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-arch",
+						},
+					},
 					"string.resource.attr": {
 						Description: "Resource attribute with any string value.",
 						EnabledPtr:  boolPtr(true),

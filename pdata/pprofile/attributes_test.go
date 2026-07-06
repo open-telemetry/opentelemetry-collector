@@ -28,14 +28,16 @@ func TestFromAttributeIndices(t *testing.T) {
 	att2.SetKeyStrindex(2)
 	att2.Value().SetStr("monde")
 
-	attrs := FromAttributeIndices(table, NewProfile(), dic)
+	attrs, err := FromAttributeIndices(table, NewProfile(), dic)
+	require.NoError(t, err)
 	assert.Equal(t, attrs, pcommon.NewMap())
 
 	// A Location with a single attribute
 	loc := NewLocation()
 	loc.AttributeIndices().Append(0)
 
-	attrs = FromAttributeIndices(table, loc, dic)
+	attrs, err = FromAttributeIndices(table, loc, dic)
+	require.NoError(t, err)
 
 	m := map[string]any{"hello": "world"}
 	assert.Equal(t, attrs.AsRaw(), m)
@@ -44,10 +46,33 @@ func TestFromAttributeIndices(t *testing.T) {
 	mapp := NewLocation()
 	mapp.AttributeIndices().Append(0, 1)
 
-	attrs = FromAttributeIndices(table, mapp, dic)
+	attrs, err = FromAttributeIndices(table, mapp, dic)
+	require.NoError(t, err)
 
 	m = map[string]any{"hello": "world", "bonjour": "monde"}
 	assert.Equal(t, attrs.AsRaw(), m)
+
+	// Out-of-bounds attribute index
+	oob := NewLocation()
+	oob.AttributeIndices().Append(int32(table.Len()))
+	_, err = FromAttributeIndices(table, oob, dic)
+	require.ErrorContains(t, err, "out of bounds")
+
+	// Negative attribute index
+	neg := NewLocation()
+	neg.AttributeIndices().Append(-1)
+	_, err = FromAttributeIndices(table, neg, dic)
+	require.ErrorContains(t, err, "out of bounds")
+
+	// Out-of-bounds key string index
+	badKey := NewKeyValueAndUnitSlice()
+	bk := badKey.AppendEmpty()
+	bk.SetKeyStrindex(int32(dic.StringTable().Len()))
+	bk.Value().SetStr("x")
+	badKeyRec := NewLocation()
+	badKeyRec.AttributeIndices().Append(0)
+	_, err = FromAttributeIndices(badKey, badKeyRec, dic)
+	assert.ErrorContains(t, err, "out of bounds")
 }
 
 func BenchmarkFromAttributeIndices(b *testing.B) {
@@ -68,7 +93,7 @@ func BenchmarkFromAttributeIndices(b *testing.B) {
 	b.ReportAllocs()
 
 	for b.Loop() {
-		_ = FromAttributeIndices(table, obj, dic)
+		_, _ = FromAttributeIndices(table, obj, dic)
 	}
 }
 
