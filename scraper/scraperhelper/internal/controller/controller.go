@@ -80,20 +80,24 @@ func NewController[T component.Component](
 
 // Start the receiver, invoked during service start.
 func (sc *Controller[T]) Start(ctx context.Context, host component.Host) (err error) {
-	var startedScrapers int
 	success := false
 	defer func() {
 		if success {
 			return
 		}
-		err = multierr.Append(err, sc.teardown(ctx, sc.Scrapers[:startedScrapers]))
+		// Deregister any extensions registered so far now, rather than
+		// waiting for Shutdown, since a lingering registration could let an
+		// extension trigger a scrape against a component that failed to
+		// start. Already-started scrapers are left running; Shutdown will
+		// be called on this component regardless of whether Start
+		// succeeded, and will clean them up then.
+		err = multierr.Append(err, sc.deregisterExtensions(ctx))
 	}()
 
 	for _, scrp := range sc.Scrapers {
 		if err := scrp.Start(ctx, host); err != nil {
 			return err
 		}
-		startedScrapers++
 	}
 
 	exts := host.GetExtensions()
@@ -127,12 +131,18 @@ func (sc *Controller[T]) Shutdown(ctx context.Context) error {
 	// Signal the ticker goroutine to stop and wait for it to exit.
 	close(sc.done)
 	sc.wg.Wait()
-	return sc.teardown(ctx, sc.Scrapers)
+
+	errs := sc.deregisterExtensions(ctx)
+	for _, scrp := range sc.Scrapers {
+		errs = multierr.Append(errs, scrp.Shutdown(ctx))
+	}
+	return errs
 }
 
-// teardown invokes all deregister functions concurrently, and then shuts
-// down all given scrapers.
-func (sc *Controller[T]) teardown(ctx context.Context, scrapers []T) error {
+// deregisterExtensions invokes all deregister functions concurrently. It is
+// safe to call more than once: the dereg functions are consumed on the
+// first call, so a repeat call is a no-op.
+func (sc *Controller[T]) deregisterExtensions(ctx context.Context) error {
 	deregFuncs := sc.deregFuncs
 	sc.deregFuncs = nil
 
@@ -141,11 +151,6 @@ func (sc *Controller[T]) teardown(ctx context.Context, scrapers []T) error {
 		mu   sync.Mutex
 		errs error
 	)
-	record := func(e error) {
-		mu.Lock()
-		errs = multierr.Append(errs, e)
-		mu.Unlock()
-	}
 	for _, deregFn := range deregFuncs {
 		if deregFn == nil {
 			// Defensive: prevent nil function calls in case a
@@ -154,15 +159,9 @@ func (sc *Controller[T]) teardown(ctx context.Context, scrapers []T) error {
 		}
 		wg.Go(func() {
 			if err := deregFn(ctx); err != nil {
-				record(err)
-			}
-		})
-	}
-	wg.Wait()
-	for _, scrp := range scrapers {
-		wg.Go(func() {
-			if err := scrp.Shutdown(ctx); err != nil {
-				record(err)
+				mu.Lock()
+				errs = multierr.Append(errs, err)
+				mu.Unlock()
 			}
 		})
 	}

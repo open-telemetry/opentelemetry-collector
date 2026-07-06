@@ -6,7 +6,6 @@ package controller // import "go.opentelemetry.io/collector/scraper/scraperhelpe
 import (
 	"context"
 	"errors"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"testing/synctest"
@@ -228,7 +227,9 @@ func TestStartPartialFailureCleansUp(t *testing.T) {
 	t.Parallel()
 
 	// First extension registers successfully, second fails. Start must
-	// deregister the first registration before returning.
+	// deregister the first registration before returning, since a lingering
+	// registration could let the extension trigger a scrape against a
+	// component that failed to start.
 	extID1 := component.MustNewID("ext1")
 	extID2 := component.MustNewID("ext2")
 	okExt := &testhelper.MockControllerExtension{}
@@ -258,8 +259,35 @@ func TestStartPartialFailureCleansUp(t *testing.T) {
 	require.ErrorIs(t, err, errRegister)
 
 	assert.True(t, okExt.Deregistered.Load(), "first extension should have been deregistered")
-	assert.True(t, scraperShutdown.Load(), "already-started scraper should have been shut down")
+	assert.False(t, scraperShutdown.Load(), "already-started scraper should not be shut down until Shutdown is called")
 	assert.Empty(t, ctrl.deregFuncs, "deregFuncs slice should be cleared after partial-start cleanup")
+
+	// The host calls Shutdown regardless of whether Start succeeded; that
+	// must clean up the scraper Start left running.
+	require.NoError(t, ctrl.Shutdown(context.Background()))
+	assert.True(t, scraperShutdown.Load(), "scraper should be shut down by a subsequent Shutdown call")
+}
+
+func TestShutdownWithoutStartShutsDownAllScrapers(t *testing.T) {
+	t.Parallel()
+
+	// Shutdown must be safe to call without a prior Start, and must still
+	// shut down every configured scraper.
+	var shutdownCount atomic.Int32
+	newScraper := func() *mockScraper {
+		return &mockScraper{
+			ShutdownFunc: func(context.Context) error {
+				shutdownCount.Add(1)
+				return nil
+			},
+		}
+	}
+
+	cfg := &ControllerConfig{CollectionInterval: time.Minute}
+	ctrl := newTestController(t, cfg, nopScrapeFunc, newScraper(), newScraper())
+
+	require.NoError(t, ctrl.Shutdown(context.Background()))
+	assert.EqualValues(t, 2, shutdownCount.Load())
 }
 
 func TestShutdownWaitsForInFlightExtensionScrape(t *testing.T) {
@@ -383,22 +411,15 @@ func TestStartExtensionCallbackInvokesScrapeFunc(t *testing.T) {
 func TestShutdownScrapers(t *testing.T) {
 	t.Parallel()
 
-	var (
-		mu            sync.Mutex
-		shutdownOrder []int
-	)
+	var shutdownOrder []int
 	cfg := &ControllerConfig{CollectionInterval: time.Minute}
 	ctrl := newTestController(t, cfg, nopScrapeFunc,
 		&mockScraper{ShutdownFunc: component.ShutdownFunc(func(context.Context) error {
-			mu.Lock()
 			shutdownOrder = append(shutdownOrder, 1)
-			mu.Unlock()
 			return nil
 		})},
 		&mockScraper{ShutdownFunc: component.ShutdownFunc(func(context.Context) error {
-			mu.Lock()
 			shutdownOrder = append(shutdownOrder, 2)
-			mu.Unlock()
 			return nil
 		})},
 	)
@@ -406,7 +427,7 @@ func TestShutdownScrapers(t *testing.T) {
 	require.NoError(t, ctrl.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, ctrl.Shutdown(context.Background()))
 
-	assert.ElementsMatch(t, []int{1, 2}, shutdownOrder)
+	assert.Equal(t, []int{1, 2}, shutdownOrder)
 }
 
 func TestShutdownScraperErrors(t *testing.T) {
