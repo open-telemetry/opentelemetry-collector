@@ -9,10 +9,14 @@ import (
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
-const dataFormatProtobuf = "protobuf"
+const (
+	dataFormatProtobuf = "protobuf"
+	invalidUTF8Message = "request contains invalid UTF-8"
+)
 
 // Receiver is the type used to handle spans from OpenTelemetry exporters.
 type Receiver struct {
@@ -31,11 +35,20 @@ func New(nextConsumer xconsumer.Profiles, obsreport *receiverhelper.ObsReport) *
 
 // Export implements the service Export profiles func.
 func (r *Receiver) Export(ctx context.Context, req pprofileotlp.ExportRequest) (pprofileotlp.ExportResponse, error) {
+	rejectedProfiles := 0
+	if metadata.OtlpReceiverRejectInvalidUTF8FeatureGate.IsEnabled() {
+		rejectedProfiles = req.RejectInvalidUTF8()
+	}
+	resp := pprofileotlp.NewExportResponse()
+	if rejectedProfiles > 0 {
+		resp.PartialSuccess().SetRejectedProfiles(int64(rejectedProfiles))
+		resp.PartialSuccess().SetErrorMessage(invalidUTF8Message)
+	}
 	td := req.Profiles()
 	// We need to ensure that it propagates the receiver name as a tag
 	numSamples := td.SampleCount()
 	if numSamples == 0 {
-		return pprofileotlp.NewExportResponse(), nil
+		return resp, nil
 	}
 
 	ctx = r.obsreport.StartProfilesOp(ctx)
@@ -52,5 +65,5 @@ func (r *Receiver) Export(ctx context.Context, req pprofileotlp.ExportRequest) (
 		return pprofileotlp.NewExportResponse(), errors.GetStatusFromError(err)
 	}
 
-	return pprofileotlp.NewExportResponse(), nil
+	return resp, nil
 }

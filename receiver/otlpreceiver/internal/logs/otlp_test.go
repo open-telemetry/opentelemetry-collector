@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
@@ -49,6 +50,44 @@ func TestExport_EmptyRequest(t *testing.T) {
 	resp, err := logClient.Export(context.Background(), plogotlp.NewExportRequest())
 	require.NoError(t, err, "Failed to export trace: %v", err)
 	assert.NotNil(t, resp, "The response is missing")
+}
+
+func TestExport_InvalidUTF8(t *testing.T) {
+	setRejectInvalidUTF8Gate(t, true)
+
+	ld := testdata.GenerateLogs(2)
+	ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("bad", string([]byte{0xff}))
+	req := plogotlp.NewExportRequestFromLogs(ld)
+
+	logSink := new(consumertest.LogsSink)
+	logClient := makeLogsServiceClient(t, logSink)
+	resp, err := logClient.Export(context.Background(), req)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), resp.PartialSuccess().RejectedLogRecords())
+	assert.Equal(t, invalidUTF8Message, resp.PartialSuccess().ErrorMessage())
+
+	lds := logSink.AllLogs()
+	require.Len(t, lds, 1)
+	assert.Equal(t, 1, lds[0].LogRecordCount())
+}
+
+func TestExport_InvalidUTF8FeatureGateDisabled(t *testing.T) {
+	setRejectInvalidUTF8Gate(t, false)
+
+	ld := testdata.GenerateLogs(2)
+	ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("bad", string([]byte{0xff}))
+	req := plogotlp.NewExportRequestFromLogs(ld)
+
+	logSink := new(consumertest.LogsSink)
+	logClient := makeLogsServiceClient(t, logSink)
+	resp, err := logClient.Export(context.Background(), req)
+	require.NoError(t, err)
+	assert.Zero(t, resp.PartialSuccess().RejectedLogRecords())
+	assert.Empty(t, resp.PartialSuccess().ErrorMessage())
+
+	lds := logSink.AllLogs()
+	require.Len(t, lds, 1)
+	assert.Equal(t, 2, lds[0].LogRecordCount())
 }
 
 func TestExport_NonPermanentErrorConsumer(t *testing.T) {
@@ -109,4 +148,12 @@ func otlpReceiverOnGRPCServer(t *testing.T, lc consumer.Logs) net.Addr {
 	}()
 
 	return ln.Addr()
+}
+
+func setRejectInvalidUTF8Gate(t *testing.T, enabled bool) {
+	original := metadata.OtlpReceiverRejectInvalidUTF8FeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.OtlpReceiverRejectInvalidUTF8FeatureGate.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.OtlpReceiverRejectInvalidUTF8FeatureGate.ID(), original))
+	})
 }

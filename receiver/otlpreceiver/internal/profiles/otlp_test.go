@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
@@ -47,6 +48,23 @@ func TestExport_EmptyRequest(t *testing.T) {
 	resp, err := profileClient.Export(context.Background(), pprofileotlp.NewExportRequest())
 	require.NoError(t, err, "Failed to export profile: %v", err)
 	assert.NotNil(t, resp, "The response is missing")
+}
+
+func TestExport_InvalidUTF8(t *testing.T) {
+	setRejectInvalidUTF8Gate(t, true)
+
+	td := testdata.GenerateProfiles(2)
+	profileCount := td.ProfileCount()
+	td.Dictionary().StringTable().Append(string([]byte{0xff}))
+	req := pprofileotlp.NewExportRequestFromProfiles(td)
+
+	profileSink := new(consumertest.ProfilesSink)
+	profileClient := makeProfileServiceClient(t, profileSink)
+	resp, err := profileClient.Export(context.Background(), req)
+	require.NoError(t, err)
+	assert.Equal(t, int64(profileCount), resp.PartialSuccess().RejectedProfiles())
+	assert.Equal(t, invalidUTF8Message, resp.PartialSuccess().ErrorMessage())
+	assert.Empty(t, profileSink.AllProfiles())
 }
 
 func TestExport_NonPermanentErrorConsumer(t *testing.T) {
@@ -108,4 +126,12 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc xconsumer.Profiles) net.Addr {
 	}()
 
 	return ln.Addr()
+}
+
+func setRejectInvalidUTF8Gate(t *testing.T, enabled bool) {
+	original := metadata.OtlpReceiverRejectInvalidUTF8FeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.OtlpReceiverRejectInvalidUTF8FeatureGate.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.OtlpReceiverRejectInvalidUTF8FeatureGate.ID(), original))
+	})
 }

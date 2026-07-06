@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
@@ -47,6 +48,25 @@ func TestExport_EmptyRequest(t *testing.T) {
 	resp, err := traceClient.Export(context.Background(), ptraceotlp.NewExportRequest())
 	require.NoError(t, err, "Failed to export trace: %v", err)
 	assert.NotNil(t, resp, "The response is missing")
+}
+
+func TestExport_InvalidUTF8(t *testing.T) {
+	setRejectInvalidUTF8Gate(t, true)
+
+	td := testdata.GenerateTraces(2)
+	td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("bad", string([]byte{0xff}))
+	req := ptraceotlp.NewExportRequestFromTraces(td)
+
+	traceSink := new(consumertest.TracesSink)
+	traceClient := makeTraceServiceClient(t, traceSink)
+	resp, err := traceClient.Export(context.Background(), req)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), resp.PartialSuccess().RejectedSpans())
+	assert.Equal(t, invalidUTF8Message, resp.PartialSuccess().ErrorMessage())
+
+	tds := traceSink.AllTraces()
+	require.Len(t, tds, 1)
+	assert.Equal(t, 1, tds[0].SpanCount())
 }
 
 func TestExport_NonPermanentErrorConsumer(t *testing.T) {
@@ -107,4 +127,12 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Traces) net.Addr {
 	}()
 
 	return ln.Addr()
+}
+
+func setRejectInvalidUTF8Gate(t *testing.T, enabled bool) {
+	original := metadata.OtlpReceiverRejectInvalidUTF8FeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.OtlpReceiverRejectInvalidUTF8FeatureGate.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.OtlpReceiverRejectInvalidUTF8FeatureGate.ID(), original))
+	})
 }
