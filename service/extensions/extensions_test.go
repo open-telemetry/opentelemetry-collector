@@ -518,7 +518,6 @@ func TestExtensionReportsOwnStatus(t *testing.T) {
 		assert.Equal(t, compID, reportedSources[i].ComponentID())
 		assert.Equal(t, component.KindExtension, reportedSources[i].Kind())
 		assert.Equal(t, assert.AnError, ev.Err())
-
 	}
 	assert.True(t, found, "expected extension to report a status event about itself")
 }
