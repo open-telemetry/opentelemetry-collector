@@ -49,7 +49,8 @@ func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 			instanceID,
 			componentstatus.NewEvent(componentstatus.StatusStarting),
 		)
-		if err := ext.Start(ctx, host); err != nil {
+		extHost := &hostWrapper{Host: host, reporter: bes.reporter, instanceID: instanceID}
+		if err := ext.Start(ctx, extHost); err != nil {
 			bes.reporter.ReportStatus(
 				instanceID,
 				componentstatus.NewPermanentErrorEvent(err),
@@ -255,4 +256,19 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 	}
 	exts.extensionIDs = order
 	return exts, nil
+}
+
+var (
+	_ componentstatus.Reporter = (*hostWrapper)(nil)
+	_ component.Host           = (*hostWrapper)(nil)
+)
+
+type hostWrapper struct {
+	component.Host
+	reporter   status.Reporter
+	instanceID *componentstatus.InstanceID
+}
+
+func (host *hostWrapper) Report(event *componentstatus.Event) {
+	host.reporter.ReportStatus(host.instanceID, event)
 }
