@@ -33,7 +33,7 @@ import (
         {{- if $prop.Description }}
     // {{ $prop.Description }}
         {{- end }}
-    	{{ $propName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}"`
+    	{{ $prop.GoStruct.FieldName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}"`
     {{- end }}
     // prevent unkeyed literal initialization
     _ struct{}
@@ -190,6 +190,12 @@ import (
     }
 {{- end }}
 
+{{ define "enumValidator" -}}
+    if !slices.Contains({{ formatEnumSlice .Rules.Enum .FieldType }}, {{ template "fieldValue" . }}) {
+        err = errors.Join(err, errors.New("{{ .FieldName }} must be one of {{ formatEnumValues .Rules.Enum }}"))
+    }
+{{- end }}
+
 {{ define "valueValidators" }}
     {{ if .Rules.MaxLength }}{{ template "maxLengthValidator" . }}{{ end }}
     {{ if .Rules.MinLength }}{{ template "minLengthValidator" . }}{{ end }}
@@ -198,6 +204,7 @@ import (
     {{ if .Rules.Maximum }}{{ template "maximumValidator" . }}{{ end }}
     {{ if .Rules.ExclusiveMinimum }}{{ template "exclusiveMinimumValidator" . }}{{ end }}
     {{ if .Rules.ExclusiveMaximum }}{{ template "exclusiveMaximumValidator" . }}{{ end }}
+    {{ if .Rules.Enum }}{{ template "enumValidator" . }}{{ end }}
 {{ end -}}
 
 {{ define "validation" }}
@@ -277,9 +284,9 @@ import (
             {{- $exprs := mapCustomDefaults $prop $prop.Default }}
             {{- if $exprs }}
                 {{- $varName := camelVar $propName }}
-        {{ $propName | publicVar }}: {{ wrapDefaultValue $prop $varName }},
+        {{ $prop.GoStruct.FieldName | publicVar }}: {{ wrapDefaultValue $prop $varName }},
             {{- else }}
-        {{ $propName | publicVar }}: {{ $defaultValue }},
+        {{ $prop.GoStruct.FieldName | publicVar }}: {{ $defaultValue }},
             {{- end }}
         {{- end }}
     {{- end }}

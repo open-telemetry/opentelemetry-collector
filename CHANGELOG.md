@@ -7,6 +7,44 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.62.0/v0.156.0
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Add support for defining stability levels for resource attributes (#15312)
+- `cmd/mdatagen`: Add semantic convention reference to resource attributes (#15313)
+- `processor/memory_limiter`: Adding health events for the memorylimiter (#14700)
+  Publish health event from memorylimiter using componentstatus.ReportStatus
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Removes the extra line in the documentation.md between extended description and table (#15458)
+- `exporter/otlp_http`: Treat errors parsing successful (2xx) HTTP response bodies as permanent errors to prevent retrying already-accepted data. (#15386)
+  When a server returns a 2xx status but the response body exceeds the 64kB read limit,
+  the body is truncated and proto unmarshaling fails. Previously this was treated as a
+  retryable error, causing duplicate data to be exported. Now it is marked as a permanent
+  error so the retry logic will not re-send data that was already accepted by the server.
+  
+- `pkg/config/configretry`: Always validate BackOffConfig fields regardless of the Enabled flag. (#15437)
+- `pkg/service`: Ensure receivers always start after all other components (#15495)
+  There was previously a race condition where multiple receivers using a shared internal implementation,
+  such as the OTLP receiver, could start sending telemetry into a pipeline before all its components had fully started.
+  
+- `processor/memory_limiter`: Fix degenerate collector performance when exporter has problems causing permanent CPU-burning GC loop (#4981)
+  Forced GC runs now use exponential backoff when deemed ineffective
+  (still above soft limit and less than 5% reclaimed) to avoid preventing
+  recovery by overloading CPU with excessive GC runs. The cap on the
+  backoff interval is exposed via `max_gc_interval_when_soft_limited` and
+  `max_gc_interval_when_hard_limited` (both default `30s`); set either to
+  `0` to disable backoff on that path.
+  
+- `provider/env`: Fix empty env var default resolving to nil instead of empty string (#14587)
+  When using ${env:VAR:-} with an unset variable, the empty default now correctly
+  resolves to an empty string instead of nil.
+  
+
+<!-- previous-version -->
+
 ## v1.61.0/v0.155.0
 
 ### 🛑 Breaking changes 🛑
