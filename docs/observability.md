@@ -21,6 +21,7 @@ for internal telemetry.
   * [Internal telemetry properties](#internal-telemetry-properties)
     + [Units](#units)
     + [Process for defining new metrics](#process-for-defining-new-metrics)
+- [Experimental resource detection](#experimental-resource-detection)
 - [Experimental trace telemetry](#experimental-trace-telemetry)
 
 <!-- tocstop -->
@@ -107,6 +108,24 @@ produce:
 The process to generate new metrics is to configure them via
 `metadata.yaml`, and run `go generate` on the component.
 
+## Experimental resource detection
+
+The Collector can configure resource detection for its internal telemetry using
+the experimental OpenTelemetry configuration `detection/development` field.
+
+```yaml
+service:
+  telemetry:
+    resource:
+      detection/development:
+        detectors:
+          - host: {}
+          - process: {}
+```
+
+Supported values are `container`, `host`, `process`, and `service`
+detector entries.
+
 ## Experimental trace telemetry
 
 The Collector does not expose traces by default, but can be configured.
@@ -136,7 +155,7 @@ service:
                 endpoint: https://backend2:4317
 ```
 
-See the [example configuration][kitchen-sink] for additional options.
+See the [example configuration][otel-sdk-config] for additional options.
 
 > This configuration does not support emitting logs as there is no support for
 > [logs] in the OpenTelemetry Go SDK at this time.
@@ -167,8 +186,10 @@ service:
 [logs]: https://github.com/open-telemetry/opentelemetry-go/issues/3827
 [OpenTelemetry Configuration]:
   https://github.com/open-telemetry/opentelemetry-configuration
-[kitchen-sink]:
-  https://github.com/open-telemetry/opentelemetry-configuration/blob/main/examples/kitchen-sink.yaml
+[OpenTelemetry Configuration Go support table]:
+  https://github.com/open-telemetry/opentelemetry-configuration/blob/main/language-support-status.md#go
+[otel-sdk-config]:
+  https://github.com/open-telemetry/opentelemetry-configuration/blob/main/examples/otel-sdk-config.yaml
 [Current values]:
   https://opentelemetry.io/docs/collector/internal-telemetry/#summary-of-values-observable-with-internal-metrics
 [Cumulative values]:
