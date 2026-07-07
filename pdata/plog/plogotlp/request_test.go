@@ -95,3 +95,36 @@ func TestLogsProtoWireCompatibility(t *testing.T) {
 	otlp.MigrateLogs(ld.orig.ResourceLogs)
 	assert.Equal(t, ld, ld2)
 }
+
+func TestRejectInvalidUTF8(t *testing.T) {
+	t.Run("invalid resource", func(t *testing.T) {
+		ld := plog.NewLogs()
+		rl := ld.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("bad", string([]byte{0xff}))
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		assert.False(t, NewExportRequestFromLogs(ld).ValidateUTF8())
+		assert.Equal(t, 1, NewExportRequestFromLogs(ld).RejectInvalidUTF8())
+		assert.Equal(t, 0, ld.LogRecordCount())
+	})
+
+	t.Run("invalid scope", func(t *testing.T) {
+		ld := plog.NewLogs()
+		sl := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
+		sl.Scope().SetName(string([]byte{0xff}))
+		sl.LogRecords().AppendEmpty()
+
+		assert.Equal(t, 1, NewExportRequestFromLogs(ld).RejectInvalidUTF8())
+		assert.Equal(t, 0, ld.LogRecordCount())
+	})
+
+	t.Run("invalid log record", func(t *testing.T) {
+		ld := plog.NewLogs()
+		logs := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+		logs.AppendEmpty().Body().SetStr("ok")
+		logs.AppendEmpty().Body().SetStr(string([]byte{0xff}))
+
+		assert.Equal(t, 1, NewExportRequestFromLogs(ld).RejectInvalidUTF8())
+		assert.Equal(t, 1, ld.LogRecordCount())
+	})
+}
