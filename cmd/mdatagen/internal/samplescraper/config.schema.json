@@ -601,6 +601,17 @@
       "minLength": 1,
       "pattern": "^[a-zA-Z0-9_.-]+$"
     },
+    "log_level": {
+      "description": "Logging level for the scraper.",
+      "type": "string",
+      "default": "info",
+      "enum": [
+        "debug",
+        "info",
+        "warn",
+        "error"
+      ]
+    },
     "targets": {
       "description": "List of targets to scrape metrics from.",
       "type": "array",
