@@ -509,13 +509,16 @@ func TestExtensionReportsOwnStatus(t *testing.T) {
 	// to the extension that reported it.
 	var found bool
 	for i, ev := range reportedEvents {
-		if ev == reportedEvent {
-			found = true
-			require.NotNil(t, reportedSources[i])
-			assert.Equal(t, compID, reportedSources[i].ComponentID())
-			assert.Equal(t, component.KindExtension, reportedSources[i].Kind())
-			assert.Equal(t, assert.AnError, ev.Err())
+		if ev != reportedEvent {
+			continue
 		}
+
+		found = true
+		require.NotNil(t, reportedSources[i])
+		assert.Equal(t, compID, reportedSources[i].ComponentID())
+		assert.Equal(t, component.KindExtension, reportedSources[i].Kind())
+		assert.Equal(t, assert.AnError, ev.Err())
+
 	}
 	assert.True(t, found, "expected extension to report a status event about itself")
 }
