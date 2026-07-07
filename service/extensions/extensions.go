@@ -272,3 +272,11 @@ type hostWrapper struct {
 func (host *hostWrapper) Report(event *componentstatus.Event) {
 	host.reporter.ReportStatus(host.instanceID, event)
 }
+
+func (host *hostWrapper) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
+	if hostZPages, ok := host.Host.(interface {
+		RegisterZPages(mux *http.ServeMux, pathPrefix string)
+	}); ok {
+		hostZPages.RegisterZPages(mux, pathPrefix)
+	}
+}
