@@ -35,6 +35,7 @@ require (
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.156.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.156.0
 	go.opentelemetry.io/collector/extension v1.62.0
+	go.opentelemetry.io/collector/extension/zpagesextension v0.156.0
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.156.0
 	go.opentelemetry.io/collector/internal/testutil v0.156.0
 	go.opentelemetry.io/collector/otelcol v0.156.0
@@ -138,6 +139,7 @@ require (
 	go.opentelemetry.io/contrib/propagators/b3 v1.44.0 // indirect
 	go.opentelemetry.io/contrib/propagators/jaeger v1.44.0 // indirect
 	go.opentelemetry.io/contrib/propagators/ot v1.44.0 // indirect
+	go.opentelemetry.io/contrib/zpages v0.69.0 // indirect
 	go.opentelemetry.io/otel v1.44.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.20.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.20.0 // indirect
