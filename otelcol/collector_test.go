@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/featuregate"
@@ -492,6 +493,172 @@ func TestCollectorPartialReloadIgnoresStartupMutation(t *testing.T) {
 	}, 2*time.Second, 50*time.Millisecond)
 
 	assert.Equal(t, StateRunning, col.GetState())
+	for _, entry := range observedLogs.All() {
+		assert.NotEqual(t, "Config updated, restart service", entry.Message)
+	}
+
+	col.Shutdown()
+	wg.Wait()
+	assert.Equal(t, StateClosed, col.GetState())
+}
+
+// trackingReceiver records itself as running in a shared map while started,
+// so a test can observe exactly which receiver instances are alive.
+type trackingReceiver struct {
+	nopComponent
+	id      component.ID
+	running *sync.Map
+}
+
+func (r *trackingReceiver) Start(context.Context, component.Host) error {
+	r.running.Store(r.id, struct{}{})
+	return nil
+}
+
+func (r *trackingReceiver) Shutdown(context.Context) error {
+	r.running.Delete(r.id)
+	return nil
+}
+
+func trackingFactories(t *testing.T, running *sync.Map) Factories {
+	trackingType := component.MustNewType("tracking")
+	recFactory := receiver.NewFactory(
+		trackingType,
+		func() component.Config { return &struct{}{} },
+		receiver.WithTraces(func(_ context.Context, set receiver.Settings, _ component.Config, _ consumer.Traces) (receiver.Traces, error) {
+			return &trackingReceiver{id: set.ID, running: running}, nil
+		}, component.StabilityLevelStable),
+	)
+
+	var factories Factories
+	var err error
+	factories.Receivers, err = MakeFactoryMap(recFactory)
+	require.NoError(t, err)
+	factories.Exporters, err = MakeFactoryMap(exportertest.NewNopFactory())
+	require.NoError(t, err)
+	factories.Processors, err = MakeFactoryMap(processortest.NewNopFactory())
+	require.NoError(t, err)
+	factories.Connectors, err = MakeFactoryMap(connectortest.NewNopFactory())
+	require.NoError(t, err)
+	factories.Extensions, err = MakeFactoryMap(extensiontest.NewNopFactory())
+	require.NoError(t, err)
+	return factories
+}
+
+// sameStringSet reports whether a and b contain the same strings,
+// disregarding order and duplicates.
+func sameStringSet(a, b []string) bool {
+	counts := make(map[string]int, len(a))
+	for _, s := range a {
+		counts[s]++
+	}
+	for _, s := range b {
+		counts[s]--
+	}
+	for _, c := range counts {
+		if c != 0 {
+			return false
+		}
+	}
+	return true
+}
+
+// TestCollectorPartialReceiverReloadAddRemove verifies that adding, and then
+// removing, a receiver via live config reloads are each classified as
+// receivers-only and take the partial reload path.
+func TestCollectorPartialReceiverReloadAddRemove(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", false))
+	}()
+
+	observerCore, observedLogs := observer.New(zapcore.InfoLevel)
+	var running sync.Map
+
+	var addSecond, removeSecond atomic.Bool
+	confMap := func() map[string]any {
+		receivers := map[string]any{"tracking/a": map[string]any{}}
+		ids := []any{"tracking/a"}
+		if addSecond.Load() && !removeSecond.Load() {
+			receivers["tracking/b"] = map[string]any{}
+			ids = append(ids, "tracking/b")
+		}
+		return map[string]any{
+			"receivers": receivers,
+			"exporters": map[string]any{"nop": map[string]any{}},
+			"service": map[string]any{
+				"pipelines": map[string]any{
+					"traces": map[string]any{
+						"receivers": ids,
+						"exporters": []any{"nop"},
+					},
+				},
+			},
+		}
+	}
+
+	var watcher confmap.WatcherFunc
+	provider := newFakeProvider("file", func(_ context.Context, _ string, w confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		watcher = w
+		return confmap.NewRetrieved(confMap())
+	})
+
+	factories := trackingFactories(t, &running)
+	factories.Telemetry = telemetry.NewFactory(
+		func() component.Config { return fakeTelemetryConfig{} },
+		telemetrytest.WithLogger(zap.New(observerCore), nil),
+	)
+
+	col, err := NewCollector(CollectorSettings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs:              []string{"file:cfg"},
+				ProviderFactories: []confmap.ProviderFactory{provider},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	assertRunning := func(want ...string) {
+		assert.Eventually(t, func() bool {
+			var got []string
+			running.Range(func(key, _ any) bool {
+				got = append(got, key.(component.ID).String())
+				return true
+			})
+			return sameStringSet(want, got)
+		}, 2*time.Second, 50*time.Millisecond, "expected running receivers %v", want)
+	}
+
+	wg := startCollector(context.Background(), t, col)
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+	assertRunning("tracking/a")
+
+	// Add a second receiver.
+	addSecond.Store(true)
+	watcher(&confmap.ChangeEvent{})
+
+	assert.Eventually(t, func() bool {
+		return observedLogs.FilterMessage("Config updated, performing partial receiver reload").Len() >= 1
+	}, 2*time.Second, 50*time.Millisecond)
+	assert.Equal(t, StateRunning, col.GetState())
+	assertRunning("tracking/a", "tracking/b")
+
+	// Remove the second receiver again.
+	removeSecond.Store(true)
+	watcher(&confmap.ChangeEvent{})
+
+	assert.Eventually(t, func() bool {
+		return observedLogs.FilterMessage("Config updated, performing partial receiver reload").Len() >= 2
+	}, 2*time.Second, 50*time.Millisecond)
+	assert.Equal(t, StateRunning, col.GetState())
+	assertRunning("tracking/a")
+
+	// Neither reload should have fallen back to a full restart.
 	for _, entry := range observedLogs.All() {
 		assert.NotEqual(t, "Config updated, restart service", entry.Message)
 	}
