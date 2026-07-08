@@ -266,16 +266,18 @@ func ExtractImports(md *ConfigsMetadata, rootPackage, componentPackage string) (
 			imports[imp] = true
 		}
 	}
-	for _, expCfg := range md.ExportedConfigs {
-		if expCfg.InternalOnly {
-			continue
-		}
-		collected, err := ExtractImportsFromConfig(expCfg, rootPackage, componentPackage)
-		if err != nil {
-			return nil, err
-		}
-		for _, imp := range collected {
-			imports[imp] = true
+	if md.ExportedConfigs != nil {
+		for _, expCfg := range md.ExportedConfigs {
+			if expCfg.InternalOnly {
+				continue
+			}
+			collected, err := ExtractImportsFromConfig(expCfg, rootPackage, componentPackage)
+			if err != nil {
+				return nil, err
+			}
+			for _, imp := range collected {
+				imports[imp] = true
+			}
 		}
 	}
 	return slices.Collect(maps.Keys(imports)), nil
