@@ -21,7 +21,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.opentelemetry.io/collector/otelcol/internal/grpclog"
 	"go.opentelemetry.io/collector/service"
@@ -121,11 +120,9 @@ type Collector struct {
 	bc                         *bufferedCore
 	updateConfigProviderLogger func(core zapcore.Core)
 
-	// currentCfg holds a deep copy of the last successfully applied
-	// configuration. It must be an independent copy (see copyConfig) because
-	// the running components may mutate the configs they were built from.
-	// Only populated when receiver partial reload is enabled.
-	currentCfg *Config
+	// currentFingerprint holds a fingerprint of the last successfully applied
+	// configuration, derived from the raw (pre-decode) configuration map.
+	currentFingerprint *configFingerprint
 }
 
 // NewCollector creates and returns a new instance of Collector.
@@ -191,7 +188,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return fmt.Errorf("failed to initialize factories: %w", err)
 	}
 
-	cfg, err := col.configProvider.Get(ctx, factories)
+	cfg, rawConf, err := col.configProvider.getWithConf(ctx, factories)
 	if err != nil {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
@@ -200,14 +197,15 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
 
-	// Copy the config for later use in partial reload. This must happen before any
-	// can mutate the configuration, so partial reload can compare properly.
-	var storedCfg *Config
+	// Fingerprint the configuration to compare configuration changes. This
+	// must happen here before any component can mutate the configuration.
+	var fingerprint *configFingerprint
 	if service.ReceiverPartialReloadEnabled() {
-		storedCfg, err = copyConfig(cfg, factories)
-		if err != nil {
-			return err
+		fp, fpErr := fingerprintForPartialReload(rawConf, cfg)
+		if fpErr != nil {
+			return fpErr
 		}
+		fingerprint = &fp
 	}
 
 	conf := confmap.New()
@@ -282,7 +280,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return multierr.Combine(err, col.service.Shutdown(ctx))
 	}
 	if service.ReceiverPartialReloadEnabled() {
-		col.currentCfg = storedCfg
+		col.currentFingerprint = fingerprint
 	}
 	col.setCollectorState(StateRunning)
 
@@ -290,7 +288,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 }
 
 func (col *Collector) reloadConfiguration(ctx context.Context) error {
-	if service.ReceiverPartialReloadEnabled() && col.currentCfg != nil {
+	if service.ReceiverPartialReloadEnabled() && col.currentFingerprint != nil {
 		reloaded, err := col.tryPartialReceiverReload(ctx)
 		if reloaded && err == nil {
 			// Partial reload succeeded; the service keeps running.
@@ -324,28 +322,6 @@ func (col *Collector) reloadConfiguration(ctx context.Context) error {
 	return nil
 }
 
-// copyConfig returns a deep copy of cfg with independent component.Config values.
-func copyConfig(cfg *Config, factories Factories) (*Config, error) {
-	conf := confmap.New()
-	if err := conf.Marshal(cfg, xconfmap.WithUnredacted()); err != nil {
-		return nil, fmt.Errorf("could not marshal configuration for copy: %w", err)
-	}
-
-	settings, err := unmarshal(conf, factories)
-	if err != nil {
-		return nil, fmt.Errorf("could not unmarshal configuration copy: %w", err)
-	}
-
-	return &Config{
-		Receivers:  settings.Receivers.Configs(),
-		Processors: settings.Processors.Configs(),
-		Exporters:  settings.Exporters.Configs(),
-		Connectors: settings.Connectors.Configs(),
-		Extensions: settings.Extensions.Configs(),
-		Service:    settings.Service,
-	}, nil
-}
-
 // tryPartialReceiverReload attempts to reload only the receiver components if
 // the configuration change is limited to receivers. The bool return indicates
 // whether a partial reload was attempted (true) or the change requires a full
@@ -356,7 +332,7 @@ func (col *Collector) tryPartialReceiverReload(ctx context.Context) (bool, error
 		return false, err
 	}
 
-	newCfg, err := col.configProvider.Get(ctx, factories)
+	newCfg, rawConf, err := col.configProvider.getWithConf(ctx, factories)
 	if err != nil {
 		return false, err
 	}
@@ -365,20 +341,18 @@ func (col *Collector) tryPartialReceiverReload(ctx context.Context) (bool, error
 		return false, validateErr
 	}
 
-	// copy configuration so comparison uses the same marshal/unmarshal round-trip, without
-	// this then there is no guarantee that the comparison will be accurate.
-	newCfgCopy, err := copyConfig(newCfg, factories)
+	newFingerprint, err := fingerprintForPartialReload(rawConf, newCfg)
 	if err != nil {
 		return false, err
 	}
 
-	if !receiversOnlyChange(col.currentCfg, newCfgCopy, isConnectorID(col.currentCfg.Connectors)) {
+	if !receiversOnlyChanged(*col.currentFingerprint, newFingerprint, isConnectorID(newCfg.Connectors)) {
 		return false, nil
 	}
 
 	col.service.Logger().Info("Config updated, performing partial receiver reload")
 	if err = col.service.UpdateReceivers(ctx,
-		col.currentCfg.Receivers,
+		changedReceivers(*col.currentFingerprint, newFingerprint),
 		newCfg.Receivers,
 		factories.Receivers,
 		newCfg.Service.Pipelines,
@@ -386,7 +360,7 @@ func (col *Collector) tryPartialReceiverReload(ctx context.Context) (bool, error
 		return true, fmt.Errorf("partial receiver reload failed: %w", err)
 	}
 
-	col.currentCfg = newCfgCopy
+	col.currentFingerprint = &newFingerprint
 	return true, nil
 }
 

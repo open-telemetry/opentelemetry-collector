@@ -297,13 +297,14 @@ func ReceiverPartialReloadEnabled() bool {
 // pipeline membership changed are restarted. All other components remain
 // running without interruption.
 func (srv *Service) UpdateReceivers(ctx context.Context,
-	oldReceiverConfigs, newReceiverConfigs map[component.ID]component.Config,
+	changedReceivers map[component.ID]bool,
+	newReceiverConfigs map[component.ID]component.Config,
 	receiverFactories map[component.Type]receiver.Factory,
 	pipelineConfigs pipelines.Config,
 ) error {
 	srv.telemetrySettings.Logger.Info("Performing partial receiver reload")
 	srv.graphSettings.PipelineConfigs = pipelineConfigs
-	return srv.host.Pipelines.UpdateReceivers(ctx, srv.graphSettings, oldReceiverConfigs, newReceiverConfigs, receiverFactories, srv.host)
+	return srv.host.Pipelines.UpdateReceivers(ctx, srv.graphSettings, changedReceivers, newReceiverConfigs, receiverFactories, srv.host)
 }
 
 // Shutdown the service. Shutdown will do the following steps in order:
