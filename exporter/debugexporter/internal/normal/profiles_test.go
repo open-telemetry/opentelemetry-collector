@@ -24,6 +24,20 @@ func TestMarshalProfiles(t *testing.T) {
 			expected: "",
 		},
 		{
+			name: "two scopes under one resource",
+			input: func() pprofile.Profiles {
+				profiles := pprofile.NewProfiles()
+				resourceProfiles := profiles.ResourceProfiles().AppendEmpty()
+				resourceProfiles.ScopeProfiles().AppendEmpty().Scope().SetName("scope-zero")
+				resourceProfiles.ScopeProfiles().AppendEmpty().Scope().SetName("scope-one")
+				return profiles
+			}(),
+			expected: `ResourceProfiles #0
+ScopeProfiles #0 scope-zero
+ScopeProfiles #1 scope-one
+`,
+		},
+		{
 			name: "one profile",
 			input: func() pprofile.Profiles {
 				profiles := pprofile.NewProfiles()

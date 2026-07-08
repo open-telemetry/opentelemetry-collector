@@ -27,6 +27,13 @@ func TestConfigValidate_RequiredJobName(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "job_name is required")
 }
 
+func TestConfigValidate_InvalidEnumLogLevel(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.LogLevel = "__invalid__"
+
+	require.ErrorContains(t, cfg.Validate(), "log_level must be one of")
+}
+
 func TestConfigValidate_RequiredTargets(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Targets = nil
