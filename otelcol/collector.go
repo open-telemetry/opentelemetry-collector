@@ -292,15 +292,22 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 func (col *Collector) reloadConfiguration(ctx context.Context) error {
 	if service.ReceiverPartialReloadEnabled() && col.currentCfg != nil {
 		reloaded, err := col.tryPartialReceiverReload(ctx)
-		if reloaded {
-			// Partial reload was attempted (the change was receiver-only).
-			// Return the result directly — on success err is nil; on failure
-			// we cannot safely fall back to a full reload because the graph
-			// may be in a partially modified state (some receivers shut down,
-			// nodes removed, new nodes without components).
-			return err
+		if reloaded && err == nil {
+			// Partial reload succeeded; the service keeps running.
+			return nil
 		}
-		// The config change was not receiver-only. Fall through to full reload.
+		if reloaded {
+			// Partial reload was attempted but failed mid-way. The graph may
+			// be in a partially modified state (some receivers shut down,
+			// nodes removed, new nodes without components), so it cannot be
+			// resumed or repaired incrementally. Fall back to a full reload
+			// below, which discards the existing service and graph entirely
+			// and rebuilds from scratch, consistent with how a non-receiver
+			// config change is handled.
+			col.service.Logger().Warn("Partial receiver reload failed, falling back to full reload", zap.Error(err))
+		}
+		// Otherwise, the config change was not receiver-only; fall through to
+		// a full reload.
 	}
 
 	col.service.Logger().Warn("Config updated, restart service")

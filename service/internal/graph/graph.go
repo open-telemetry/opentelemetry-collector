@@ -539,7 +539,6 @@ func (g *Graph) UpdateReceivers(ctx context.Context, set Settings,
 
 	// Phase 2: Determine desired receiver nodes from the new pipeline configs.
 	desiredPipelines := make(map[int64]map[pipeline.ID]bool)
-	desiredComponentID := make(map[int64]component.ID)
 	for pipelineID, pipelineCfg := range set.PipelineConfigs {
 		for _, recvID := range pipelineCfg.Receivers {
 			if set.ConnectorBuilder.IsConfigured(recvID) {
@@ -550,7 +549,6 @@ func (g *Graph) UpdateReceivers(ctx context.Context, set Settings,
 				desiredPipelines[nodeID] = make(map[pipeline.ID]bool)
 			}
 			desiredPipelines[nodeID][pipelineID] = true
-			desiredComponentID[nodeID] = recvID
 		}
 	}
 

@@ -753,6 +753,158 @@ func TestCollectorNonReceiverChangeFullReload(t *testing.T) {
 	assert.Equal(t, StateClosed, col.GetState())
 }
 
+// flakyStartConfig's Generation field lets two otherwise-identical configs
+// compare as different, forcing the receiver to rebuild on reload.
+type flakyStartConfig struct {
+	Generation int `mapstructure:"generation"`
+}
+
+// flakyStartReceiver fails to Start on a caller-chosen call count, letting a
+// test force a specific (re)build attempt to fail while others succeed.
+type flakyStartReceiver struct {
+	nopComponent
+	startCalls *atomic.Int32
+	failOnCall int32
+}
+
+func (r *flakyStartReceiver) Start(context.Context, component.Host) error {
+	if r.startCalls.Add(1) == r.failOnCall {
+		return errors.New("forced start failure")
+	}
+	return nil
+}
+
+// flakyStartFactories returns Factories whose "flakystart" receiver fails to
+// Start on the failOnCall-th call across the collector's lifetime (counting
+// from 1), tracked via startCalls.
+func flakyStartFactories(t *testing.T, startCalls *atomic.Int32, failOnCall int32) Factories {
+	flakyType := component.MustNewType("flakystart")
+	recFactory := receiver.NewFactory(
+		flakyType,
+		func() component.Config { return &flakyStartConfig{} },
+		receiver.WithTraces(func(_ context.Context, _ receiver.Settings, _ component.Config, _ consumer.Traces) (receiver.Traces, error) {
+			return &flakyStartReceiver{startCalls: startCalls, failOnCall: failOnCall}, nil
+		}, component.StabilityLevelStable),
+	)
+	expFactory := exporter.NewFactory(
+		flakyType,
+		func() component.Config { return &flakyStartConfig{} },
+		exporter.WithTraces(func(_ context.Context, _ exporter.Settings, _ component.Config) (exporter.Traces, error) {
+			return &nopComponent{}, nil
+		}, component.StabilityLevelStable),
+	)
+
+	var factories Factories
+	var err error
+	factories.Receivers, err = MakeFactoryMap(recFactory)
+	require.NoError(t, err)
+	factories.Exporters, err = MakeFactoryMap(expFactory)
+	require.NoError(t, err)
+	factories.Processors, err = MakeFactoryMap(processortest.NewNopFactory())
+	require.NoError(t, err)
+	factories.Connectors, err = MakeFactoryMap(connectortest.NewNopFactory())
+	require.NoError(t, err)
+	factories.Extensions, err = MakeFactoryMap(extensiontest.NewNopFactory())
+	require.NoError(t, err)
+
+	return factories
+}
+
+// TestCollectorPartialReceiverReloadFallsBackOnFailure verifies that when a
+// partial receiver reload fails mid-way (a rebuilt receiver fails to start),
+// the collector falls back to a full reload instead of leaving the service
+// running with a partially modified graph or exiting outright.
+func TestCollectorPartialReceiverReloadFallsBackOnFailure(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", false))
+	}()
+
+	observerCore, observedLogs := observer.New(zapcore.InfoLevel)
+
+	var startCalls atomic.Int32
+	var generation atomic.Int32
+	confMap := func() map[string]any {
+		return map[string]any{
+			"receivers": map[string]any{"flakystart": map[string]any{"generation": int(generation.Load())}},
+			"exporters": map[string]any{"flakystart": map[string]any{}},
+			"service": map[string]any{
+				"pipelines": map[string]any{
+					"traces": map[string]any{
+						"receivers": []any{"flakystart"},
+						"exporters": []any{"flakystart"},
+					},
+				},
+			},
+		}
+	}
+
+	var watcher confmap.WatcherFunc
+	provider := newFakeProvider("file", func(_ context.Context, _ string, w confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		watcher = w
+		return confmap.NewRetrieved(confMap())
+	})
+
+	// The first Start call is the initial startup and must succeed. The second
+	// is the partial reload's rebuild attempt and is forced to fail. The third
+	// is the fallback full reload's rebuild attempt and must succeed.
+	factories := flakyStartFactories(t, &startCalls, 2)
+	factories.Telemetry = telemetry.NewFactory(
+		func() component.Config { return fakeTelemetryConfig{} },
+		telemetrytest.WithLogger(zap.New(observerCore), nil),
+	)
+
+	col, err := NewCollector(CollectorSettings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs:              []string{"file:cfg"},
+				ProviderFactories: []confmap.ProviderFactory{provider},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	wg := startCollector(context.Background(), t, col)
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+	require.EqualValues(t, 1, startCalls.Load())
+
+	// Change the receiver config to force a rebuild. The rebuild's Start call
+	// is the forced failure, so tryPartialReceiverReload reports a failure.
+	generation.Store(1)
+	watcher(&confmap.ChangeEvent{})
+
+	assert.Eventually(t, func() bool {
+		for _, entry := range observedLogs.All() {
+			if entry.Message == "Partial receiver reload failed, falling back to full reload" {
+				return true
+			}
+		}
+		return false
+	}, 2*time.Second, 50*time.Millisecond)
+
+	// The collector must fall back to, and complete, a full reload.
+	assert.Eventually(t, func() bool {
+		for _, entry := range observedLogs.All() {
+			if entry.Message == "Config updated, restart service" {
+				return true
+			}
+		}
+		return false
+	}, 2*time.Second, 50*time.Millisecond)
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+	assert.EqualValues(t, 3, startCalls.Load())
+
+	col.Shutdown()
+	wg.Wait()
+	assert.Equal(t, StateClosed, col.GetState())
+}
+
 // validatingConfig fails validation when its endpoint is the sentinel "invalid".
 type validatingConfig struct {
 	Endpoint string `mapstructure:"endpoint"`
