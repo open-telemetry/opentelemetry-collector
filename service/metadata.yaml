@@ -198,13 +198,13 @@ feature_gates:
   - id: service.partialReload
     description: 'Controls whether configuration changes trigger a partial reload that rebuilds only the affected components.'
     stage: alpha
-    from_version: 'v0.154.0'
+    from_version: 'v0.157.0'
     reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/partial-reload.md'
     skip_strict_validation: true
   - id: service.partialReloadReceivers
     description: 'Controls whether receiver-only configuration changes restart only the receivers.'
     stage: beta
-    from_version: 'v0.154.0'
+    from_version: 'v0.157.0'
     reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/partial-reload.md'
     skip_strict_validation: true
   - id: service.profilesSupport

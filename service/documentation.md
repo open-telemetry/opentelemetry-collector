@@ -109,8 +109,8 @@ This component has the following feature gates:
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
 | `service.AllowNoPipelines` | alpha | Allow starting the Collector without starting any pipelines. | v0.122.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/pull/12613) |
-| `service.partialReload` | alpha | Controls whether configuration changes trigger a partial reload that rebuilds only the affected components. | v0.154.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/partial-reload.md) |
-| `service.partialReloadReceivers` | beta | Controls whether receiver-only configuration changes restart only the receivers. | v0.154.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/partial-reload.md) |
+| `service.partialReload` | alpha | Controls whether configuration changes trigger a partial reload that rebuilds only the affected components. | v0.157.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/partial-reload.md) |
+| `service.partialReloadReceivers` | beta | Controls whether receiver-only configuration changes restart only the receivers. | v0.157.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/partial-reload.md) |
 | `service.profilesSupport` | alpha | Controls whether profiles support can be enabled | v0.112.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/pull/11477) |
 | `telemetry.newPipelineTelemetry` | alpha | Injects component-identifying scope attributes in internal Collector metrics | v0.123.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/component-universal-telemetry.md) |
 
