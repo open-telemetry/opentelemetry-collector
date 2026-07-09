@@ -18,7 +18,7 @@ import (
 
 // follows drive-letter specification:
 // https://datatracker.ietf.org/doc/html/draft-kerwin-file-scheme-07.html#section-2.2
-var driverLetterRegexp = regexp.MustCompile("^[A-z]:")
+var driverLetterRegexp = regexp.MustCompile("^[A-Za-z]:")
 
 // Resolver resolves a configuration as a Conf.
 type Resolver struct {
@@ -135,7 +135,7 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 	for i, uri := range set.URIs {
 		// For backwards compatibility:
 		// - empty url scheme means "file".
-		// - "^[A-z]:" also means "file"
+		// - "^[A-Za-z]:" also means "file"
 		if driverLetterRegexp.MatchString(uri) || !strings.Contains(uri, ":") {
 			uris[i] = location{scheme: "file", opaqueValue: uri}
 			continue
