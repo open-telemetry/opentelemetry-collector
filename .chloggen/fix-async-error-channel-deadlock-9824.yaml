@@ -4,7 +4,7 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
-component: service
+component: pkg/service
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Fix deadlock when components report fatal errors during shutdown
@@ -20,8 +20,8 @@ subtext: |
   is not actively reading from the asyncErrorChannel. If a component reports a
   fatal error via NotifyComponentStatusChange during these periods, the unbuffered
   channel send would block forever, deadlocking the component's goroutine.
-  This change makes the channel send non-blocking so the error is silently dropped
-  rather than causing a deadlock.
+  This change buffers one fatal error and makes the channel send non-blocking, so
+  additional errors are dropped rather than causing a deadlock.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'

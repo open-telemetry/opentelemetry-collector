@@ -4,9 +4,11 @@
 package graph
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/service/extensions"
@@ -14,21 +16,19 @@ import (
 
 func TestHost_NotifyComponentStatusChange_NonBlockingOnFullChannel(t *testing.T) {
 	ch := make(chan error, 1)
+	queuedErr := errors.New("queued error")
+	ch <- queuedErr
 	host := &Host{
 		AsyncErrorChannel: ch,
 		ServiceExtensions: &extensions.Extensions{},
 	}
 
-	ev := componentstatus.NewFatalErrorEvent(assert.AnError)
+	ev := componentstatus.NewFatalErrorEvent(errors.New("new error"))
 	host.NotifyComponentStatusChange(nil, ev)
 
-	// Non-blocking send should return immediately without blocking.
-	// No goroutine should be leaked.
-	select {
-	case <-ch:
-		t.Fatal("expected channel to be empty since no reader is running")
-	default:
-	}
+	// A full channel should preserve the error that is already queued.
+	require.ErrorIs(t, <-ch, queuedErr)
+	require.Empty(t, ch)
 }
 
 func TestHost_NotifyComponentStatusChange_SendsWhenChannelReady(t *testing.T) {
