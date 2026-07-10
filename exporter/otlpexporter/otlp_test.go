@@ -657,6 +657,8 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 		},
 	}
 	set := exportertest.NewNopSettings(factory.Type())
+	logger, observed := observer.New(zap.DebugLevel)
+	set.Logger = zap.New(logger)
 	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
@@ -678,7 +680,10 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 		done <- true
 	}()
 
-	time.Sleep(2 * time.Second)
+	// Start the server only once the request has failed to dial and entered retry backoff.
+	require.Eventually(t, func() bool {
+		return observed.FilterMessage("Exporting failed. Will retry the request after interval.").Len() > 0
+	}, 10*time.Second, 5*time.Millisecond)
 	rcv, _ := otlpTracesReceiverOnGRPCServer(ln, false)
 	defer rcv.srv.GracefulStop()
 	// Wait until one of the conditions below triggers.
