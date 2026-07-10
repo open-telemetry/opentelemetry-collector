@@ -4,12 +4,14 @@
 package otelconftelemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
+	"go.opentelemetry.io/otel/attribute"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -18,6 +20,31 @@ import (
 	"go.opentelemetry.io/collector/service/telemetry"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry/internal/migration"
 )
+
+func TestPutSDKAttribute(t *testing.T) {
+	attrs := pcommon.NewMap()
+	putSDKAttribute(attrs, "bool", attribute.BoolValue(true))
+	putSDKAttribute(attrs, "int", attribute.Int64Value(7))
+	putSDKAttribute(attrs, "float", attribute.Float64Value(1.5))
+	putSDKAttribute(attrs, "str", attribute.StringValue("s"))
+	putSDKAttribute(attrs, "bool.slice", attribute.BoolSliceValue([]bool{true, false}))
+	putSDKAttribute(attrs, "int.slice", attribute.Int64SliceValue([]int64{1, 2}))
+	putSDKAttribute(attrs, "float.slice", attribute.Float64SliceValue([]float64{1.5, 2.5}))
+	putSDKAttribute(attrs, "str.slice", attribute.StringSliceValue([]string{"a", "b"}))
+	putSDKAttribute(attrs, "invalid", attribute.Value{})
+
+	assert.Equal(t, map[string]any{
+		"bool":        true,
+		"int":         int64(7),
+		"float":       1.5,
+		"str":         "s",
+		"bool.slice":  []any{true, false},
+		"int.slice":   []any{int64(1), int64(2)},
+		"float.slice": []any{1.5, 2.5},
+		"str.slice":   []any{"a", "b"},
+		"invalid":     nil,
+	}, attrs.AsRaw())
+}
 
 func TestCreateResource(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
@@ -124,6 +151,25 @@ func TestCreateResource(t *testing.T) {
 		assert.Contains(t, raw, "host.name")
 		assert.Contains(t, raw, "os.type")
 		assert.Contains(t, raw, "os.description")
+	})
+	t.Run("with process detector (slice-valued attribute)", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Resource.DetectionDevelopment = &xotelconf.ExperimentalResourceDetection{
+			Detectors: []xotelconf.ExperimentalResourceDetector{
+				{Process: xotelconf.ExperimentalProcessResourceDetector{}},
+			},
+		}
+		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+		res, err := createResource(t.Context(), set, cfg)
+		require.NoError(t, err)
+
+		raw := res.Attributes().AsRaw()
+		require.Contains(t, raw, "process.command_args")
+		expected := make([]any, len(os.Args))
+		for i, arg := range os.Args {
+			expected[i] = arg
+		}
+		assert.Equal(t, expected, raw["process.command_args"])
 	})
 	t.Run("with service detector explicit attributes still win", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
