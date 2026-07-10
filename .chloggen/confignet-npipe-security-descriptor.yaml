@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/config/confignet
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `dialer.security_descriptor` to set an SDDL security descriptor on Windows named pipe (npipe) listeners
+note: Add `npipe.security_descriptor` to set an SDDL security descriptor on Windows named pipe (npipe) listeners
 
 # One or more tracking issues or pull requests related to the change
 issues: [15211]
