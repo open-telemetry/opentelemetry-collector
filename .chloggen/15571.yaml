@@ -1,0 +1,15 @@
+change_type: bug_fix
+
+component: pkg/service
+
+note: Fix collector startup panic when a resource detector emits a slice-valued attribute (e.g. the `process` detector's `process.command_args`)
+
+issues: [15571]
+
+subtext: |
+  `createResource` passed the OTel SDK attribute value straight into `pcommon.Value.FromRaw`, which
+  only accepts `[]any` for slices, so any string, int, float, or bool slice resource attribute produced
+  an `<Invalid value type>` error and aborted `service.New`. Slice-typed attributes are now converted
+  element-wise.
+
+change_logs: [user]
