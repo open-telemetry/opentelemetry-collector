@@ -11,6 +11,8 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 ### 💡 Enhancements 💡
 
+- `config/confignet`: Add `vsock` (VM sockets) transport type for Linux, enabling communication between virtual machines and their host via `cid:port` endpoints.
+
 - `cmd/mdatagen`: Add support for defining stability levels for resource attributes (#15312)
 - `cmd/mdatagen`: Add semantic convention reference to resource attributes (#15313)
 - `processor/memory_limiter`: Adding health events for the memorylimiter (#14700)
