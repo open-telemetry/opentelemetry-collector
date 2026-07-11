@@ -21,6 +21,13 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
+// SetHostArch sets provided value as "host.arch" attribute.
+func (rb *ResourceBuilder) SetHostArch(val string) {
+	if rb.config.HostArch.Enabled {
+		rb.res.Attributes().PutStr("host.arch", val)
+	}
+}
+
 // SetMapResourceAttr sets provided value as "map.resource.attr" attribute.
 func (rb *ResourceBuilder) SetMapResourceAttr(val map[string]any) {
 	if rb.config.MapResourceAttr.Enabled {

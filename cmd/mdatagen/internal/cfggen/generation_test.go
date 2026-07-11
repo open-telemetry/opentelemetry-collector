@@ -63,6 +63,63 @@ func TestMapGoType_BasicTypes(t *testing.T) {
 	}
 }
 
+func TestPrimitiveGoType(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected string
+		wantErr  bool
+	}{
+		{
+			name:     "string",
+			metadata: &ConfigMetadata{Type: "string"},
+			expected: "string",
+		},
+		{
+			name:     "integer",
+			metadata: &ConfigMetadata{Type: "integer"},
+			expected: "int",
+		},
+		{
+			name:     "number",
+			metadata: &ConfigMetadata{Type: "number"},
+			expected: "float64",
+		},
+		{
+			name:     "boolean",
+			metadata: &ConfigMetadata{Type: "boolean"},
+			expected: "bool",
+		},
+		{
+			name:     "custom primitive Go type",
+			metadata: &ConfigMetadata{Type: "string", GoType: "github.com/example/pkg.CustomString"},
+			expected: "pkg.CustomString",
+		},
+		{
+			name:     "non primitive",
+			metadata: &ConfigMetadata{Type: "object"},
+			wantErr:  true,
+		},
+		{
+			name:    "nil schema",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, !tt.wantErr, IsPrimitiveSchema(tt.metadata))
+			result, err := PrimitiveGoType(tt.metadata, "", "")
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 func TestMapGoType_FormattedStrings(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -976,6 +1033,34 @@ func TestExtractDefs_InternalResolvedReference(t *testing.T) {
 	require.Contains(t, result, "nested_def")
 }
 
+func TestExtractDefs_PreservesExplicitDefOverResolvedFieldCopy(t *testing.T) {
+	aliasMaximum := 65535.0
+	fieldMaximum := 10000.0
+	md := &ConfigMetadata{
+		Type: "object",
+		Defs: map[string]*ConfigMetadata{
+			"port_number": {
+				Type:    "integer",
+				Maximum: &aliasMaximum,
+			},
+		},
+		Properties: map[string]*ConfigMetadata{
+			"port": {
+				Type:         "integer",
+				ResolvedFrom: "port_number",
+				Maximum:      &fieldMaximum,
+			},
+		},
+	}
+
+	result := ExtractDefs(md)
+
+	require.Same(t, md.Defs["port_number"], result["port_number"])
+	require.NotSame(t, md.Properties["port"], result["port_number"])
+	require.NotNil(t, result["port_number"].Maximum)
+	require.InEpsilon(t, aliasMaximum, *result["port_number"].Maximum, 1e-9)
+}
+
 func TestExtractDefs_SkipsExternalResolvedReference(t *testing.T) {
 	md := &ConfigMetadata{
 		Type: "object",
@@ -1522,6 +1607,15 @@ func TestExtractImports_ErrorsImportForValidators(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "maximum triggers errors import",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"count": {Type: "integer", Maximum: Ptr(100.0)},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1574,6 +1668,11 @@ func TestValidationRules_Enabled(t *testing.T) {
 		{
 			name:     "pattern only",
 			rules:    ValidationRules{Pattern: Ptr(`^[a-z]+$`)},
+			expected: true,
+		},
+		{
+			name:     "enum only",
+			rules:    ValidationRules{Enum: []any{"a", "b"}},
 			expected: true,
 		},
 		{
@@ -1679,6 +1778,23 @@ func TestExtractValidators(t *testing.T) {
 				},
 			},
 			expected: []Validator{},
+		},
+		{
+			name: "GoName overrides propName in FieldName",
+			metadata: &ConfigMetadata{
+				Type:     "object",
+				Required: []string{"storage"},
+				Properties: map[string]*ConfigMetadata{
+					"storage": {Type: "string", GoStruct: GoStructConfig{FieldName: "storage_id"}},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "storage_id",
+					FieldType: "string",
+					Rules:     ValidationRules{Required: true},
+				},
+			},
 		},
 	}
 	for _, test := range tests {
@@ -2555,6 +2671,16 @@ func TestFormatDefaultValue_ResolvedReferenceWithDefaults(t *testing.T) {
 	)
 }
 
+func TestFormatDefaultValue_ResolvedPrimitiveReferenceWithDefault(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:         "integer",
+		ResolvedFrom: "port_number",
+		Default:      defaultValue(8080),
+	}
+
+	require.Equal(t, "8080", FormatDefaultValue(md, "port", defaultValue(8080), "", ""))
+}
+
 func TestFormatDefaultValue_ResolvedReferenceWithoutDefaults(t *testing.T) {
 	// An external ref with no property defaults must not generate a NewDefault... call.
 	md := &ConfigMetadata{
@@ -2862,4 +2988,132 @@ func TestExtractValidators_DefsValidatorNotOverwrittenByRefSite(t *testing.T) {
 	require.Equal(t, ".", validators[0].FieldName)
 	require.Equal(t, "validateBatchConfig", validators[0].CustomValidator,
 		"struct-level validator must come from the type definition, not the ref-site property")
+}
+
+func TestExtractValidators_EnumValidators(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected []Validator
+	}{
+		{
+			name: "enum on string field",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"level": {Type: "string", Enum: []any{"debug", "info", "warn"}},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "level",
+					FieldType: "string",
+					Rules:     ValidationRules{Enum: []any{"debug", "info", "warn"}},
+				},
+			},
+		},
+		{
+			name: "enum on integer field",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"port": {Type: "integer", Enum: []any{80, 443, 8080}},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "port",
+					FieldType: "integer",
+					Rules:     ValidationRules{Enum: []any{80, 443, 8080}},
+				},
+			},
+		},
+		{
+			name: "no enum produces no validator",
+			metadata: &ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*ConfigMetadata{
+					"name": {Type: "string"},
+				},
+			},
+			expected: []Validator{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ExtractValidators(tt.metadata)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestExtractImports_EnumAddsSlices(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"level": {Type: "string", Enum: []any{"a", "b"}},
+		},
+	}
+	imports, err := ExtractImports(md, "example.com/root", "example.com/component")
+	require.NoError(t, err)
+	require.Contains(t, imports, "slices")
+}
+
+func TestFormatEnumSlice(t *testing.T) {
+	tests := []struct {
+		name      string
+		values    []any
+		fieldType string
+		expected  string
+	}{
+		{
+			name:      "string values",
+			values:    []any{"a", "b", "c"},
+			fieldType: "string",
+			expected:  `[]string{"a", "b", "c"}`,
+		},
+		{
+			name:      "integer values",
+			values:    []any{1, 2, 3},
+			fieldType: "integer",
+			expected:  "[]int{1, 2, 3}",
+		},
+		{
+			name:      "number values",
+			values:    []any{1.5, 2.5},
+			fieldType: "number",
+			expected:  "[]float64{1.5, 2.5}",
+		},
+		{
+			name:      "boolean values",
+			values:    []any{true, false},
+			fieldType: "boolean",
+			expected:  "[]bool{true, false}",
+		},
+		{
+			name:      "unknown type falls back to any",
+			values:    []any{"x"},
+			fieldType: "unknown",
+			expected:  `[]any{"x"}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, formatEnumSlice(tt.values, tt.fieldType))
+		})
+	}
+}
+
+func TestFormatEnumValues(t *testing.T) {
+	require.Equal(t, "[a, b, c]", formatEnumValues([]any{"a", "b", "c"}))
+	require.Equal(t, "[1, 2]", formatEnumValues([]any{1, 2}))
+}
+
+func TestInvalidTestValue(t *testing.T) {
+	require.Equal(t, `"__invalid__"`, invalidTestValue("string"))
+	require.Equal(t, "-1", invalidTestValue("integer"))
+	require.Equal(t, "-1.0", invalidTestValue("number"))
+	require.Equal(t, `"__invalid__"`, invalidTestValue("object"))
 }

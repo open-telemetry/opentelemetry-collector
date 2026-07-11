@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -1302,4 +1303,36 @@ func TestRetryableStatuses_HTTP530_Issue15382(t *testing.T) {
 				tt.retryableStatuses, tt.wantPermanent)
 		})
 	}
+}
+
+func TestPartialSuccess_responseBodyTooLarge(t *testing.T) {
+	srv := createBackend("/v1/metrics", func(writer http.ResponseWriter, _ *http.Request) {
+		response := pmetricotlp.NewExportResponse()
+		response.PartialSuccess().SetErrorMessage(strings.Repeat("x", 70000))
+		response.PartialSuccess().SetRejectedDataPoints(1)
+		b, _ := response.MarshalProto()
+
+		writer.Header().Set("Content-Type", "application/x-protobuf")
+		writer.Header().Set("Content-Length", strconv.Itoa(len(b)))
+		_, err := writer.Write(b)
+		assert.NoError(t, err)
+	})
+	defer srv.Close()
+
+	cfg := &Config{
+		Encoding:        EncodingProto,
+		MetricsEndpoint: srv.URL + "/v1/metrics",
+	}
+	exp, err := createMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	require.NoError(t, err)
+	err = exp.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, exp.Shutdown(context.Background()))
+	}()
+
+	err = exp.ConsumeMetrics(context.Background(), pmetric.NewMetrics())
+	require.Error(t, err)
+	assert.True(t, consumererror.IsPermanent(err))
+	assert.Contains(t, err.Error(), "error parsing protobuf response:")
 }

@@ -172,11 +172,8 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Core Release manager  | Contrib release manager | 'Releases' release manager |
 |------------|----------|-----------------------|-------------------------|----------------------------|
-| 2025-06-08 | v0.154.0 | [@atoulme][5]         | [@atoulme][5]           | [@atoulme][5]              |
-| 2026-06-22 | v0.155.0 | [@jmacd][1]           | [@ArthurSens][11]       | [@TylerHelmuth][3]         |
-| 2026-07-06 | v0.156.0 | [@mx-psi][14]         | [@mx-psi][14]           | [@mx-psi][14]              |
-| 2026-07-20 | v0.157.0 | [@TylerHelmuth][3]    | [@TylerHelmuth][3]      | [@mowies][15]              |
-| 2026-08-03 | v0.158.0 | [@evan-bradley][2]    | [@evan-bradley][2]      | [@evan-bradley][2]         |
+| 2026-07-20 | v0.157.0 | [@evan-bradley][2]    | [@evan-bradley][2]      | [@mowies][15]              |
+| 2026-08-03 | v0.158.0 | [@TylerHelmuth][3]    | [@TylerHelmuth][3]      | [@TylerHelmuth][3]         |
 | 2026-08-17 | v0.159.0 | [@songy23][6]         | [@songy23][6]           | [@songy23][6]              |
 | 2026-08-31 | v0.160.0 | [@dmitryax][7]        | [@dmitryax][7]          | [@dmitryax][7]             |
 | 2026-09-14 | v0.161.0 | [@codeboten][8]       | [@codeboten][8]         | [@codeboten][8]            |
@@ -184,6 +181,9 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2026-10-12 | v0.163.0 | [@bogdandrutu][9]     | [@bogdandrutu][9]       | [@bogdandrutu][9]          |
 | 2026-10-26 | v0.164.0 | [@jade-guiton-dd][10] | [@ChrsMark][19]         | [@dehaansa][16]            |
 | 2026-11-09 | v0.165.0 | [@axw][18]            | [@braydonk][13]         | [@MovieStoreGuy][17]       |
+| 2025-11-23 | v0.166.0 | [@atoulme][5]         | [@atoulme][5]           | [@atoulme][5]              |
+| 2026-12-07 | v0.167.0 | [@jmacd][1]           | [@ArthurSens][11]       | [@TylerHelmuth][3]         |
+| 2026-12-21 | v0.168.0 | [@mx-psi][14]         | [@mx-psi][14]           | [@mx-psi][14]              |
 
 [1]: https://github.com/jmacd
 [2]: https://github.com/evan-bradley

@@ -1,0 +1,14 @@
+namespace: go.opentelemetry.io/collector
+mappings:
+  time:
+    Time:
+      schemaType: string
+      format: date-time
+    Duration:
+      schemaType: string
+      format: duration
+  go.opentelemetry.io/collector/component:
+    ID:
+      schemaType: string
+allowedRefs:
+  - go.opentelemetry.io/collector
