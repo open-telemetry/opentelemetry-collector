@@ -115,7 +115,7 @@ func newCollectorComponentSection() *JSONSchema {
 	return &JSONSchema{
 		Type:                 "object",
 		PatternProperties:    map[string]*JSONSchema{},
-		AdditionalProperties: &JSONSchema{Boolean: boolPtr(false)},
+		AdditionalProperties: &JSONSchema{Not: &JSONSchema{}},
 	}
 }
 
@@ -126,8 +126,4 @@ func cloneOrEmptySchema(schema *JSONSchema) *JSONSchema {
 
 	cloned := *schema
 	return &cloned
-}
-
-func boolPtr(v bool) *bool {
-	return &v
 }

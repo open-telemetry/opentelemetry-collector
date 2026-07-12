@@ -7,53 +7,14 @@ import (
 	"encoding/json"
 	"maps"
 	"slices"
-	"strconv"
+
+	"github.com/google/jsonschema-go/jsonschema"
 )
 
 const schemaVersion = "https://json-schema.org/draft/2020-12/schema"
 
 // JSONSchema models a JSON Schema Draft 2020-12 schema.
-type JSONSchema struct {
-	Schema               string                 `json:"$schema,omitempty"`
-	ID                   string                 `json:"$id,omitempty"`
-	Title                string                 `json:"title,omitempty"`
-	Description          string                 `json:"description,omitempty"`
-	Type                 any                    `json:"type,omitempty"`
-	Default              any                    `json:"default,omitempty"`
-	AllOf                []*JSONSchema          `json:"allOf,omitempty"`
-	Ref                  string                 `json:"$ref,omitempty"`
-	Items                *JSONSchema            `json:"items,omitempty"`
-	AdditionalProperties *JSONSchema            `json:"additionalProperties,omitempty"`
-	Properties           map[string]*JSONSchema `json:"properties,omitempty"`
-	PatternProperties    map[string]*JSONSchema `json:"patternProperties,omitempty"`
-	Enum                 []any                  `json:"enum,omitempty"`
-	Maximum              json.Number            `json:"maximum,omitempty"`
-	ExclusiveMaximum     json.Number            `json:"exclusiveMaximum,omitempty"`
-	Minimum              json.Number            `json:"minimum,omitempty"`
-	ExclusiveMinimum     json.Number            `json:"exclusiveMinimum,omitempty"`
-	MaxLength            *uint64                `json:"maxLength,omitempty"`
-	MinLength            *uint64                `json:"minLength,omitempty"`
-	Pattern              string                 `json:"pattern,omitempty"`
-	MaxItems             *uint64                `json:"maxItems,omitempty"`
-	MinItems             *uint64                `json:"minItems,omitempty"`
-	UniqueItems          bool                   `json:"uniqueItems,omitempty"`
-	MaxProperties        *uint64                `json:"maxProperties,omitempty"`
-	MinProperties        *uint64                `json:"minProperties,omitempty"`
-	Required             []string               `json:"required,omitempty"`
-	Format               string                 `json:"format,omitempty"`
-	Deprecated           bool                   `json:"deprecated,omitempty"`
-	Defs                 map[string]*JSONSchema `json:"$defs,omitempty"`
-	Boolean              *bool                  `json:"-"`
-}
-
-func (s JSONSchema) MarshalJSON() ([]byte, error) {
-	if s.Boolean != nil {
-		return json.Marshal(*s.Boolean)
-	}
-
-	type plainJSONSchema JSONSchema
-	return json.Marshal(plainJSONSchema(s))
-}
+type JSONSchema = jsonschema.Schema
 
 func FromMetadata(id, title string, md *ConfigsMetadata) *JSONSchema {
 	jsonSchema := &JSONSchema{
@@ -103,7 +64,11 @@ func convertMetadataToJSONSchema(md *ConfigMetadata, jsonSchema *JSONSchema) *JS
 		jsonSchema.Type = md.Type
 	}
 	jsonSchema.Description = md.Description
-	jsonSchema.Default = md.Default
+	if md.Default != nil {
+		if raw, err := json.Marshal(md.Default); err == nil {
+			jsonSchema.Default = raw
+		}
+	}
 	jsonSchema.Deprecated = md.Deprecated
 	jsonSchema.Enum = md.Enum
 	jsonSchema.Required = md.Required
@@ -111,42 +76,36 @@ func convertMetadataToJSONSchema(md *ConfigMetadata, jsonSchema *JSONSchema) *JS
 	jsonSchema.Format = md.Format
 
 	if md.MinProperties != nil {
-		v := uint64(*md.MinProperties)
-		jsonSchema.MinProperties = &v
+		jsonSchema.MinProperties = md.MinProperties
 	}
 	if md.MaxProperties != nil {
-		v := uint64(*md.MaxProperties)
-		jsonSchema.MaxProperties = &v
+		jsonSchema.MaxProperties = md.MaxProperties
 	}
 	if md.MinItems != nil {
-		v := uint64(*md.MinItems)
-		jsonSchema.MinItems = &v
+		jsonSchema.MinItems = md.MinItems
 	}
 	if md.MaxItems != nil {
-		v := uint64(*md.MaxItems)
-		jsonSchema.MaxItems = &v
+		jsonSchema.MaxItems = md.MaxItems
 	}
 	if md.MinLength != nil {
-		v := uint64(*md.MinLength)
-		jsonSchema.MinLength = &v
+		jsonSchema.MinLength = md.MinLength
 	}
 	if md.MaxLength != nil {
-		v := uint64(*md.MaxLength)
-		jsonSchema.MaxLength = &v
+		jsonSchema.MaxLength = md.MaxLength
 	}
 	jsonSchema.UniqueItems = md.UniqueItems
 
 	if md.Minimum != nil {
-		jsonSchema.Minimum = json.Number(strconv.FormatFloat(*md.Minimum, 'f', -1, 64))
+		jsonSchema.Minimum = md.Minimum
 	}
 	if md.ExclusiveMinimum != nil {
-		jsonSchema.ExclusiveMinimum = json.Number(strconv.FormatFloat(*md.ExclusiveMinimum, 'f', -1, 64))
+		jsonSchema.ExclusiveMinimum = md.ExclusiveMinimum
 	}
 	if md.Maximum != nil {
-		jsonSchema.Maximum = json.Number(strconv.FormatFloat(*md.Maximum, 'f', -1, 64))
+		jsonSchema.Maximum = md.Maximum
 	}
 	if md.ExclusiveMaximum != nil {
-		jsonSchema.ExclusiveMaximum = json.Number(strconv.FormatFloat(*md.ExclusiveMaximum, 'f', -1, 64))
+		jsonSchema.ExclusiveMaximum = md.ExclusiveMaximum
 	}
 
 	if md.Items != nil {
