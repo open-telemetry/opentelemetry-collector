@@ -56,6 +56,14 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("verbosity level %q is not supported", cfg.Verbosity)
 	}
 
+	if cfg.SamplingInitial < 0 {
+		return errors.New("sampling_initial must not be negative")
+	}
+
+	if cfg.SamplingThereafter < 0 {
+		return errors.New("sampling_thereafter must not be negative")
+	}
+
 	// output_paths is only used when use_internal_logger is false
 	// If set when use_internal_logger is true, it would be ignored, which is confusing
 	if cfg.UseInternalLogger && cfg.OutputPaths != nil {

@@ -201,3 +201,16 @@ func TestValidate(t *testing.T) {
 		})
 	}
 }
+
+func TestConfigValidateNegativeSamplingThereafter(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.SamplingThereafter = -1
+
+	err := cfg.Validate()
+
+	require.EqualError(
+		t,
+		err,
+		"sampling_thereafter must not be negative",
+	)
+}
