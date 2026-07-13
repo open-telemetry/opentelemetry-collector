@@ -94,11 +94,11 @@ func TestZPagesExtensionHost(t *testing.T) {
 		},
 	}
 
-	srv, err := service.New(context.Background(), set, cfg)
+	srv, err := service.New(t.Context(), set, cfg)
 	require.NoError(t, err)
-	require.NoError(t, srv.Start(context.Background()))
+	require.NoError(t, srv.Start(t.Context()))
 	t.Cleanup(func() {
-		require.NoError(t, srv.Shutdown(context.Background()))
+		require.NoError(t, srv.Shutdown(t.Context()))
 	})
 
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
