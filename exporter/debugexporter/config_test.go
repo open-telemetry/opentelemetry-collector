@@ -188,6 +188,20 @@ func TestValidate(t *testing.T) {
 				OutputPaths:       nil,
 			},
 		},
+		{
+			name: "negative sampling_initial",
+			cfg: &Config{
+				SamplingInitial: -1,
+			},
+			expectedErr: "sampling_initial must not be negative",
+		},
+		{
+			name: "negative sampling_thereafter",
+			cfg: &Config{
+				SamplingThereafter: -1,
+			},
+			expectedErr: "sampling_thereafter must not be negative",
+		},
 	}
 
 	for _, tt := range tests {
@@ -200,17 +214,4 @@ func TestValidate(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestConfigValidateNegativeSamplingThereafter(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.SamplingThereafter = -1
-
-	err := cfg.Validate()
-
-	require.EqualError(
-		t,
-		err,
-		"sampling_thereafter must not be negative",
-	)
 }
