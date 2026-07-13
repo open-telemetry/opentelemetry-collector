@@ -4,7 +4,6 @@
 package e2e
 
 import (
-	"context"
 	"net/http"
 	"testing"
 	"time"
