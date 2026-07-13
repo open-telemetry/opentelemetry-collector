@@ -1151,6 +1151,7 @@ func TestInlineReplace(t *testing.T) {
 		distros        []string
 		codeowners     *Codeowners
 		githubProject  string
+		semConvVersion string
 	}{
 		{
 			name: "readme with empty status",
@@ -1309,7 +1310,8 @@ Some info about a component
 				component.StabilityLevelBeta:  {"metrics"},
 				component.StabilityLevelAlpha: {"logs"},
 			},
-			distros: []string{"contrib"},
+			distros:        []string{"contrib"},
+			semConvVersion: "1.40.0",
 		},
 		{
 			name: "readme with multiple signals and deprecation",
@@ -1332,7 +1334,8 @@ Some info about a component
 					Migration: "no migration needed",
 				},
 			},
-			distros: []string{"contrib"},
+			distros:        []string{"contrib"},
+			semConvVersion: "1.40.0",
 		},
 		{
 			name: "readme with cmd class",
@@ -1362,6 +1365,7 @@ Some info about a component
 				GithubProject:   tt.githubProject,
 				Type:            "foo",
 				ShortFolderName: "foo",
+				SemConvVersion:  tt.semConvVersion,
 				Status: &Status{
 					DisableCodeCov: true,
 					Stability:      stability,
