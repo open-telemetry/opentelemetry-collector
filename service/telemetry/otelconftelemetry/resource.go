@@ -9,6 +9,8 @@ import (
 
 	"github.com/google/uuid"
 	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
+	otelsdkresource "go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"go.opentelemetry.io/collector/component"
@@ -30,6 +32,8 @@ var defaultAttributeValues = func(buildInfo component.BuildInfo) (map[string]str
 		string(semconv.ServiceInstanceIDKey): instanceUUID.String(),
 	}, nil
 }
+
+var newExperimentalSDK = xotelconf.NewSDK
 
 func createInitialResourceConfig(buildInfo component.BuildInfo, cfg *ResourceConfig) (*otelconf.Resource, error) {
 	defaults, err := defaultAttributeValues(buildInfo)
@@ -65,41 +69,16 @@ func createInitialResourceConfig(buildInfo component.BuildInfo, cfg *ResourceCon
 	return &sdkCfg, nil
 }
 
-func createFixedResourceConfig(cfg *ResourceConfig, res *pcommon.Resource) (*otelconf.Resource, error) {
-	if res == nil {
-		return nil, errMissingCollectorResource
-	}
-
-	providerConfig := &otelconf.Resource{
-		Attributes: make([]otelconf.AttributeNameValue, 0, res.Attributes().Len()),
-	}
-	if cfg.SchemaUrl != nil {
-		// Preserve the configured schema URL separately because it is not exposed by pcommon.Resource.
-		schemaURL := *cfg.SchemaUrl
-		providerConfig.SchemaUrl = &schemaURL
-	}
-
-	res.Attributes().Range(func(key string, value pcommon.Value) bool {
-		providerConfig.Attributes = append(providerConfig.Attributes, otelconf.AttributeNameValue{
-			Name:  key,
-			Value: value.AsRaw(),
-		})
-		return true
-	})
-
-	return providerConfig, nil
-}
-
 func createResource(
 	ctx context.Context,
 	set telemetry.Settings,
 	componentConfig component.Config,
 ) (pcommon.Resource, error) {
-	sdkCfg, err := createInitialResourceConfig(set.BuildInfo, &componentConfig.(*Config).Resource)
+	cfg := &componentConfig.(*Config).Resource
+	sdkCfg, err := createInitialResourceConfig(set.BuildInfo, cfg)
 	if err != nil {
 		return pcommon.Resource{}, err
 	}
-
 	sdk, err := otelconf.NewSDK(otelconf.WithContext(ctx), otelconf.WithOpenTelemetryConfiguration(otelconf.OpenTelemetryConfiguration{
 		Resource: sdkCfg,
 	}))
@@ -108,6 +87,18 @@ func createResource(
 	}
 
 	sdkResource := sdk.Resource()
+	if cfg.DetectionDevelopment != nil {
+		detectionSDK, err := newDetectionResourceSDK(ctx, cfg.DetectionDevelopment)
+		if err != nil {
+			return pcommon.Resource{}, err
+		}
+		detectedResource := otelsdkresource.NewSchemaless(detectionSDK.Resource().Attributes()...)
+		sdkResource, err = otelsdkresource.Merge(detectedResource, sdkResource)
+		if err != nil {
+			return pcommon.Resource{}, err
+		}
+	}
+
 	sdkIterator := sdkResource.Iter()
 
 	pcommonResource := pcommon.NewResource()
@@ -122,4 +113,38 @@ func createResource(
 	}
 
 	return pcommonResource, nil
+}
+
+func newDetectionResourceSDK(ctx context.Context, detection *xotelconf.ExperimentalResourceDetection) (xotelconf.SDK, error) {
+	return newExperimentalSDK(
+		xotelconf.WithContext(ctx),
+		xotelconf.WithOpenTelemetryConfiguration(xotelconf.OpenTelemetryConfiguration{
+			Resource: &xotelconf.Resource{DetectionDevelopment: detection},
+		}),
+	)
+}
+
+func createFixedResourceConfig(cfg *ResourceConfig, res *pcommon.Resource) (*otelconf.Resource, error) {
+	if res == nil {
+		return nil, errMissingCollectorResource
+	}
+
+	providerConfig := &otelconf.Resource{
+		Attributes: make([]otelconf.AttributeNameValue, 0, res.Attributes().Len()),
+	}
+
+	res.Attributes().Range(func(key string, value pcommon.Value) bool {
+		providerConfig.Attributes = append(providerConfig.Attributes, otelconf.AttributeNameValue{
+			Name:  key,
+			Value: value.AsRaw(),
+		})
+		return true
+	})
+	if cfg.SchemaUrl != nil {
+		// Preserve the configured schema URL separately because it is not exposed by pcommon.Resource.
+		schemaURL := *cfg.SchemaUrl
+		providerConfig.SchemaUrl = &schemaURL
+	}
+
+	return providerConfig, nil
 }
