@@ -46,7 +46,7 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.28.0
 	go.yaml.in/yaml/v3 v3.0.4
-	golang.org/x/text v0.39.0
+	golang.org/x/text v0.40.0
 )
 
 require (
@@ -79,7 +79,7 @@ require (
 	go.opentelemetry.io/collector/service v0.156.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.44.0 // indirect
 	golang.org/x/mod v0.37.0 // indirect
-	golang.org/x/sync v0.21.0 // indirect
+	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/tools v0.47.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
