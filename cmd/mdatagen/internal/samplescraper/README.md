@@ -7,6 +7,7 @@ This scraper is used for testing purposes to check the output of mdatagen.
 | ------------- |-----------|
 | Stability     | [development]: logs, profiles   |
 |               | [stable]: metrics   |
+| Semantic Conventions Version | 1.40.0 |
 | Unsupported Platforms | freebsd, illumos |
 | Distributions | [] |
 | Warnings      | [Any additional information that should be brought to the consumer's attention](#warnings) |
