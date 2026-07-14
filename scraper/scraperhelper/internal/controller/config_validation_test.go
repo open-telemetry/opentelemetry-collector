@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 func TestControllerConfigValidate(t *testing.T) {
@@ -25,7 +27,7 @@ func TestControllerConfigValidate(t *testing.T) {
 		{
 			name:    "zero value configuration",
 			cfg:     ControllerConfig{},
-			wantErr: `"collection_interval": requires positive value`,
+			wantErr: `"collection_interval": requires positive value, or zero when controllers is non-empty`,
 		},
 		{
 			name: "invalid timeout",
@@ -34,6 +36,39 @@ func TestControllerConfigValidate(t *testing.T) {
 				Timeout:            -time.Minute,
 			},
 			wantErr: `"timeout": requires positive value`,
+		},
+		{
+			name: "zero interval with controllers",
+			cfg: ControllerConfig{
+				Controllers: []component.ID{component.MustNewID("myext")},
+			},
+		},
+		{
+			name: "negative interval with controllers",
+			cfg: ControllerConfig{
+				CollectionInterval: -1,
+				Controllers:        []component.ID{component.MustNewID("myext")},
+			},
+			wantErr: `"collection_interval": requires positive value, or zero when controllers is non-empty`,
+		},
+		{
+			name: "positive interval with controllers",
+			cfg: ControllerConfig{
+				CollectionInterval: time.Minute,
+				Controllers:        []component.ID{component.MustNewID("myext")},
+			},
+		},
+		{
+			name: "duplicate controllers",
+			cfg: ControllerConfig{
+				CollectionInterval: time.Minute,
+				Controllers: []component.ID{
+					component.MustNewID("myext"),
+					component.MustNewID("myext"),
+					component.MustNewID("myext"),
+				},
+			},
+			wantErr: `"controllers": duplicate extension ID "myext"`,
 		},
 	}
 
