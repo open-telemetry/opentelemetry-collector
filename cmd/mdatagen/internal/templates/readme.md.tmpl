@@ -25,7 +25,7 @@
 {{- end }}
 {{- end}}
 {{- if .SemConvVersion }}
-| Semantic Conventions Version | {{ .SemConvVersion }} |
+| Semantic Conventions Version | {{ if .SemConvURL }}[{{ .SemConvVersion }}]({{ .SemConvURL }}){{ else }}{{ .SemConvVersion }}{{ end }} |
 {{- end }}
 {{- if .Status.UnsupportedPlatforms }}
 | Unsupported Platforms | {{ stringsJoin .Status.UnsupportedPlatforms ", " }} |
