@@ -46,6 +46,8 @@ type Metadata struct {
 	Telemetry Telemetry `mapstructure:"telemetry"`
 	// SemConvVersion is a version number of OpenTelemetry semantic conventions applied to the scraped metrics.
 	SemConvVersion string `mapstructure:"sem_conv_version"`
+	// SemConvURL is an optional URL to the OpenTelemetry semantic conventions version.
+	SemConvURL string `mapstructure:"sem_conv_url"`
 	// ResourceAttributes that can be emitted by the component.
 	ResourceAttributes map[AttributeName]Attribute `mapstructure:"resource_attributes"`
 	// Entities organizes resource attributes into logical entities.

@@ -11,6 +11,7 @@ This receiver is used for testing purposes to check the output of mdatagen.
 |               | [stable]: metrics   |
 | Deprecation of profiles | [Date]: 2025-02-05   |
 |                      | [Migration Note]: no migration needed   |
+| Semantic Conventions Version | 1.40.0 |
 | Unsupported Platforms | freebsd, illumos |
 | Distributions | [] |
 | Warnings      | [Any additional information that should be brought to the consumer's attention](#warnings) |
