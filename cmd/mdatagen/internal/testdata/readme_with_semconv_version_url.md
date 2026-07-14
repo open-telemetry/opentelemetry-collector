@@ -5,7 +5,7 @@
 | ------------- |-----------|
 | Stability     | [alpha]: logs   |
 |               | [beta]: metrics   |
-| Semantic Conventions Version | 1.40.0 |
+| Semantic Conventions Version | [1.40.0](https://github.com/open-telemetry/semantic-conventions/releases/tag/v1.40.0) |
 | Distributions | [contrib] |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
