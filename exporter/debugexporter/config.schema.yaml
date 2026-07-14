@@ -1,0 +1,23 @@
+description: Config defines configuration for debug exporter.
+type: object
+properties:
+  output_paths:
+    description: OutputPaths is a list of file paths to write logging output to. This option can only be used when use_internal_logger is false. Special strings "stdout" and "stderr" are interpreted as os.Stdout and os.Stderr respectively. All other values are treated as file paths. If not set, defaults to ["stdout"].
+    type: array
+    items:
+      type: string
+  sampling_initial:
+    description: SamplingInitial defines how many samples are initially logged during each second.
+    type: integer
+  sampling_thereafter:
+    description: SamplingThereafter defines the sampling rate after the initial samples are logged.
+    type: integer
+  sending_queue:
+    x-optional: true
+    $ref: /exporter/exporterhelper.queue_batch_config
+  use_internal_logger:
+    description: UseInternalLogger defines whether the exporter sends the output to the collector's internal logger.
+    type: boolean
+  verbosity:
+    description: Verbosity defines the debug exporter verbosity.
+    $ref: /config/configtelemetry.level
