@@ -24,7 +24,6 @@ func TestLoader_LoadFromFile_Success(t *testing.T) {
 	require.NoError(t, os.MkdirAll(schemaPath, 0o750))
 	schemaFile := filepath.Join(schemaPath, schemaFileName)
 	schemaContent := `config:
-  title: "Test Schema"
   description: "A test schema"
   type: object
 `
@@ -35,9 +34,9 @@ func TestLoader_LoadFromFile_Success(t *testing.T) {
 	// For local refs, the loadFromFile method takes a file path
 	result, err := loader.loadFromFile(schemaFile)
 	require.NoError(t, err)
-	require.Equal(t, "Test Schema", result.Title)
-	require.Equal(t, "A test schema", result.Description)
-	require.Equal(t, "object", result.Type)
+	require.NotNil(t, result.Config)
+	require.Equal(t, "A test schema", result.Config.Description)
+	require.Equal(t, "object", result.Config.Type)
 }
 
 func TestLoader_LoadFromFile_ExportedConfigsOnly(t *testing.T) {
@@ -57,9 +56,10 @@ func TestLoader_LoadFromFile_ExportedConfigsOnly(t *testing.T) {
 	result, err := loader.loadFromFile(schemaFile)
 	require.NoError(t, err)
 	require.NotNil(t, result)
-	require.Contains(t, result.Defs, "sample_config")
-	require.Equal(t, "object", result.Defs["sample_config"].Type)
-	require.Contains(t, result.Defs["sample_config"].Properties, "endpoint")
+	require.NotNil(t, result.ExportedConfigs)
+	require.Contains(t, result.ExportedConfigs, "sample_config")
+	require.Equal(t, "object", result.ExportedConfigs["sample_config"].Type)
+	require.Contains(t, result.ExportedConfigs["sample_config"].Properties, "endpoint")
 }
 
 func TestLoader_LoadFromFile_NotFound(t *testing.T) {
@@ -112,8 +112,7 @@ func TestLoader_LoadFromHTTP_Success(t *testing.T) {
 
 	result, err := loader.loadFromHTTP(ref, filepath.Join(tempDir, ".schemas"))
 	require.NoError(t, err)
-	require.Equal(t, "HTTP Schema", result.Title)
-	require.Equal(t, "string", result.Type)
+	require.Equal(t, "string", result.Config.Type)
 }
 
 func TestLoader_LoadFromHTTP_NotFound(t *testing.T) {
@@ -160,9 +159,9 @@ func TestLoader_TryLoad_WithVersion(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		if strings.Contains(r.URL.Path, "v1.0.0") {
-			_, _ = w.Write([]byte("config:\n  title: \"Versioned Schema\"\n"))
+			_, _ = w.Write([]byte("config:\n  description: \"Versioned Schema\"\n"))
 		} else {
-			_, _ = w.Write([]byte("config:\n  title: \"Main Version Schema\"\n"))
+			_, _ = w.Write([]byte("config:\n  description: \"Main Version Schema\"\n"))
 		}
 	}))
 	defer server.Close()
@@ -178,7 +177,7 @@ func TestLoader_TryLoad_WithVersion(t *testing.T) {
 	// Try to load with version
 	result, err := loader.tryLoad(ref, "v1.0.0")
 	require.NoError(t, err)
-	require.Equal(t, "Versioned Schema", result.Title)
+	require.Equal(t, "Versioned Schema", result.Config.Description)
 }
 
 func TestLoader_TryLoad_ExportedConfigsOnly(t *testing.T) {
@@ -204,18 +203,19 @@ func TestLoader_TryLoad_ExportedConfigsOnly(t *testing.T) {
 	result, err := loader.tryLoad(ref, "v1.0.0")
 	require.NoError(t, err)
 	require.NotNil(t, result)
-	require.Contains(t, result.Defs, "sample_config")
-	require.Equal(t, "object", result.Defs["sample_config"].Type)
-	require.Contains(t, result.Defs["sample_config"].Properties, "endpoint")
+	require.Contains(t, result.ExportedConfigs, "sample_config")
+	require.Equal(t, "object", result.ExportedConfigs["sample_config"].Type)
+	require.Contains(t, result.ExportedConfigs["sample_config"].Properties, "endpoint")
 }
 
 func TestLoader_PersistToFile_Success(t *testing.T) {
 	tempDir := t.TempDir()
 	loader := NewLoader(tempDir).(*schemaLoader)
 
-	metadata := &ConfigMetadata{
-		Title:       "Persisted Schema",
-		Description: "Test persistence",
+	metadata := &ConfigsMetadata{
+		Config: &ConfigMetadata{
+			Description: "Test persistence",
+		},
 	}
 
 	filePath := filepath.Join(tempDir, "test", "persisted.yaml")
@@ -227,8 +227,7 @@ func TestLoader_PersistToFile_Success(t *testing.T) {
 
 	roundTripped, err := loader.loadFromFile(filePath)
 	require.NoError(t, err)
-	require.Equal(t, "Persisted Schema", roundTripped.Title)
-	require.Equal(t, "Test persistence", roundTripped.Description)
+	require.Equal(t, "Test persistence", roundTripped.Config.Description)
 }
 
 func TestLoader_Load_CacheInteraction(t *testing.T) {
@@ -237,7 +236,7 @@ func TestLoader_Load_CacheInteraction(t *testing.T) {
 	loader := NewLoader(tempDir).(*schemaLoader)
 	ref := *NewRef("go.opentelemetry.io/collector/test/path.config")
 
-	expected := &ConfigMetadata{Title: "Pre-cached Schema"}
+	expected := &ConfigsMetadata{Config: &ConfigMetadata{Description: "Pre-cached Schema"}}
 	loader.cache[ref.CacheKey()] = expected
 
 	result, err := loader.Load(ref)
@@ -250,23 +249,25 @@ func TestLoader_Integration_MemoryCachePeristence(t *testing.T) {
 	tempDir := t.TempDir()
 
 	loader := &schemaLoader{
-		cache:      make(map[string]*ConfigMetadata),
+		cache:      make(map[string]*ConfigsMetadata),
 		cd:         tempDir,
 		httpClient: &http.Client{Timeout: 30 * time.Second},
 	}
 
 	ref := *NewRef("go.opentelemetry.io/collector/test/path.config")
-	expected := &ConfigMetadata{Title: "Integration Test"}
+	expected := &ConfigsMetadata{
+		Config: &ConfigMetadata{Description: "Integration Test"},
+	}
 
 	loader.cache[ref.CacheKey()] = expected
 
 	result1, err := loader.Load(ref)
 	require.NoError(t, err)
-	require.Equal(t, "Integration Test", result1.Title)
+	require.Equal(t, "Integration Test", result1.Config.Description)
 
 	result2, err := loader.Load(ref)
 	require.NoError(t, err)
-	require.Equal(t, "Integration Test", result2.Title)
+	require.Equal(t, "Integration Test", result2.Config.Description)
 
 	require.Same(t, result1, result2)
 }
@@ -277,7 +278,7 @@ func TestLoader_Load_CachesOnFirstLoad(t *testing.T) {
 	schemaPath := filepath.Join(tempDir, "subdir")
 	require.NoError(t, os.MkdirAll(schemaPath, 0o750))
 	schemaFile := filepath.Join(schemaPath, schemaFileName)
-	require.NoError(t, os.WriteFile(schemaFile, []byte("config:\n  title: Cached\n  type: object\n"), 0o600))
+	require.NoError(t, os.WriteFile(schemaFile, []byte("config:\n  description: Cached\n  type: object\n"), 0o600))
 
 	loader := NewLoader(tempDir).(*schemaLoader)
 	loader.rootDir = tempDir // bypass git
@@ -286,7 +287,7 @@ func TestLoader_Load_CachesOnFirstLoad(t *testing.T) {
 
 	result1, err := loader.Load(ref)
 	require.NoError(t, err)
-	require.Equal(t, "Cached", result1.Title)
+	require.Equal(t, "Cached", result1.Config.Description)
 
 	result2, err := loader.Load(ref)
 	require.NoError(t, err)
@@ -309,7 +310,7 @@ func TestLoader_Load_LocalAbsolutePath(t *testing.T) {
 	// Create schema at <repoRoot>/somepackage/config.schema.yaml
 	schemaDir := filepath.Join(tempDir, "somepackage")
 	require.NoError(t, os.MkdirAll(schemaDir, 0o750))
-	require.NoError(t, os.WriteFile(filepath.Join(schemaDir, schemaFileName), []byte("config:\n  title: AbsoluteLocal\n  type: object\n"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(schemaDir, schemaFileName), []byte("config:\n  description: AbsoluteLocal\n  type: object\n"), 0o600))
 
 	loader := NewLoader(tempDir).(*schemaLoader)
 	loader.rootDir = tempDir // bypass git
@@ -318,14 +319,14 @@ func TestLoader_Load_LocalAbsolutePath(t *testing.T) {
 	ref := Ref{schemaID: "/somepackage", kind: Local}
 	result, err := loader.load(ref)
 	require.NoError(t, err)
-	require.Equal(t, "AbsoluteLocal", result.Title)
+	require.Equal(t, "AbsoluteLocal", result.Config.Description)
 }
 
 func TestLoader_Load_LocalRelativePath(t *testing.T) {
 	tempDir := t.TempDir()
 	subDir := filepath.Join(tempDir, "subdir")
 	require.NoError(t, os.MkdirAll(subDir, 0o750))
-	require.NoError(t, os.WriteFile(filepath.Join(subDir, schemaFileName), []byte("config:\n  title: RelativeLocal\n  type: object\n"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(subDir, schemaFileName), []byte("config:\n  description: RelativeLocal\n  type: object\n"), 0o600))
 
 	loader := NewLoader(tempDir).(*schemaLoader)
 	loader.rootDir = tempDir // bypass git
@@ -334,7 +335,7 @@ func TestLoader_Load_LocalRelativePath(t *testing.T) {
 	ref := Ref{schemaID: "subdir", kind: Local}
 	result, err := loader.load(ref)
 	require.NoError(t, err)
-	require.Equal(t, "RelativeLocal", result.Title)
+	require.Equal(t, "RelativeLocal", result.Config.Description)
 }
 
 func TestLoader_LoadFromFile_ReadError(t *testing.T) {
@@ -368,30 +369,28 @@ func TestLoader_LoadFromHTTP_FileCacheHit(t *testing.T) {
 	fileCacheDir := filepath.Join(tempDir, ".schemas")
 	filePath := filepath.Join(fileCacheDir, version, ref.SchemaID(), schemaFileName)
 	require.NoError(t, os.MkdirAll(filepath.Dir(filePath), 0o750))
-	require.NoError(t, os.WriteFile(filePath, []byte("config:\n  title: FileCached\n  type: object\n"), 0o600))
+	require.NoError(t, os.WriteFile(filePath, []byte("config:\n  description: FileCached\n  type: object\n"), 0o600))
 
 	// Use an httpClient that always panics to confirm no HTTP call is made.
 	loader := &schemaLoader{
-		cache:      make(map[string]*ConfigMetadata),
+		cache:      make(map[string]*ConfigsMetadata),
 		cd:         sgDir,
 		httpClient: &http.Client{},
 	}
 
 	result, err := loader.loadFromHTTP(ref, fileCacheDir)
 	require.NoError(t, err)
-	require.Equal(t, "FileCached", result.Title)
+	require.Equal(t, "FileCached", result.Config.Description)
 }
 
 func TestLoader_LoadFromHTTP_PersistWarning(t *testing.T) {
-	// Test the warning path when persistToFile fails (non-writable dir).
-	// We create a read-only file cache dir so persistToFile fails.
 	if runtime.GOOS == "windows" {
 		t.Skip("file permission test not reliable on Windows")
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("config:\n  title: PersistFail\n  type: object\n"))
+		_, _ = w.Write([]byte("config:\n  description: PersistFail\n  type: object\n"))
 	}))
 	defer server.Close()
 
@@ -411,7 +410,7 @@ func TestLoader_LoadFromHTTP_PersistWarning(t *testing.T) {
 	// Should still return the result even though persist fails (warning only)
 	result, err := loader.loadFromHTTP(ref, cacheDir)
 	require.NoError(t, err)
-	require.Equal(t, "PersistFail", result.Title)
+	require.Equal(t, "PersistFail", result.Config.Description)
 }
 
 func TestLoader_LoadFromHTTP_NonNotFoundFileError(t *testing.T) {
@@ -419,7 +418,7 @@ func TestLoader_LoadFromHTTP_NonNotFoundFileError(t *testing.T) {
 	// fails with a non-ErrNotFound error (directory placed where file is expected).
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("config:\n  title: AfterWarning\n  type: object\n"))
+		_, _ = w.Write([]byte("config:\n  description: AfterWarning\n  type: object\n"))
 	}))
 	defer server.Close()
 
@@ -444,14 +443,14 @@ func TestLoader_LoadFromHTTP_NonNotFoundFileError(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filePath, 0o750))
 
 	loader := &schemaLoader{
-		cache:      make(map[string]*ConfigMetadata),
+		cache:      make(map[string]*ConfigsMetadata),
 		cd:         sgDir,
 		httpClient: &http.Client{},
 	}
 
 	result, err := loader.loadFromHTTP(ref, cacheDir)
 	require.NoError(t, err)
-	require.Equal(t, "AfterWarning", result.Title)
+	require.Equal(t, "AfterWarning", result.Config.Description)
 }
 
 func TestLoader_TryLoad_URLError(t *testing.T) {
@@ -460,7 +459,7 @@ func TestLoader_TryLoad_URLError(t *testing.T) {
 	ref := *NewRef("unknownns/path.type")
 	// namespace is set so Module() returns non-empty, but Namespace() returns false
 	// Actually NewRef sets it as external; let's manually set up a ref with no URL support
-	ref2 := Ref{namespace: "unsupported.example.com", schemaID: "pkg", defName: "t", kind: External}
+	ref2 := Ref{namespace: "unsupported.example.com", schemaID: "pkg", configName: "t", kind: External}
 	_, err := loader.tryLoad(ref2, "v1.0.0")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to construct URL")
@@ -506,7 +505,7 @@ func TestLoader_RefVersion_UnknownModulePath(t *testing.T) {
 	tempDir := t.TempDir()
 	loader := NewLoader(tempDir).(*schemaLoader)
 
-	ref := Ref{namespace: "", schemaID: "pkg", defName: "t", kind: Internal}
+	ref := Ref{namespace: "", schemaID: "pkg", configName: "t", kind: Internal}
 	_, err := loader.refVersion(&ref)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unknown module path")
@@ -556,7 +555,7 @@ func TestLoader_PersistToFile_MkdirAllError(t *testing.T) {
 	require.NoError(t, os.Chmod(tempDir, 0o500)) // #nosec G302
 
 	loader := NewLoader(tempDir).(*schemaLoader)
-	err := loader.persistToFile(filepath.Join(tempDir, "newdir", "schema.yaml"), &ConfigMetadata{Title: "X"})
+	err := loader.persistToFile(filepath.Join(tempDir, "newdir", "schema.yaml"), &ConfigsMetadata{Config: &ConfigMetadata{Description: "X"}})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to create directory")
 }
@@ -568,7 +567,7 @@ func TestLoader_PersistToFile_WriteFileError(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filePath, 0o750))
 
 	loader := NewLoader(tempDir).(*schemaLoader)
-	err := loader.persistToFile(filePath, &ConfigMetadata{Title: "X"})
+	err := loader.persistToFile(filePath, &ConfigsMetadata{Config: &ConfigMetadata{Description: "X"}})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to write file")
 }

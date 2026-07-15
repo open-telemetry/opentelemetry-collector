@@ -28,11 +28,11 @@ var ErrNotFound = errors.New("schema not found")
 
 // Loader loads configuration metadata from various sources (file, HTTP).
 type Loader interface {
-	Load(ref Ref) (*ConfigMetadata, error)
+	Load(ref Ref) (*ConfigsMetadata, error)
 }
 
 type schemaLoader struct {
-	cache      map[string]*ConfigMetadata
+	cache      map[string]*ConfigsMetadata
 	cd         string
 	rootDir    string
 	httpClient *http.Client
@@ -41,13 +41,13 @@ type schemaLoader struct {
 // NewLoader creates a fully configured loader. Takes current component's directory to determine where to look for local schema files.
 func NewLoader(cwd string) Loader {
 	return &schemaLoader{
-		cache:      make(map[string]*ConfigMetadata),
+		cache:      make(map[string]*ConfigsMetadata),
 		cd:         cwd,
 		httpClient: &http.Client{Timeout: 30 * time.Second},
 	}
 }
 
-func (sl *schemaLoader) Load(ref Ref) (*ConfigMetadata, error) {
+func (sl *schemaLoader) Load(ref Ref) (*ConfigsMetadata, error) {
 	if cached, ok := sl.cache[ref.CacheKey()]; ok {
 		return cached, nil
 	}
@@ -61,7 +61,7 @@ func (sl *schemaLoader) Load(ref Ref) (*ConfigMetadata, error) {
 	return metadata, nil
 }
 
-func (sl *schemaLoader) load(ref Ref) (*ConfigMetadata, error) {
+func (sl *schemaLoader) load(ref Ref) (*ConfigsMetadata, error) {
 	repoRoot, err := sl.repoRoot(sl.cd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to determine repo root: %w", err)
@@ -80,7 +80,7 @@ func (sl *schemaLoader) load(ref Ref) (*ConfigMetadata, error) {
 	return sl.loadFromHTTP(ref, filepath.Join(repoRoot, ".schemas"))
 }
 
-func (sl *schemaLoader) loadFromFile(filePath string) (*ConfigMetadata, error) {
+func (sl *schemaLoader) loadFromFile(filePath string) (*ConfigsMetadata, error) {
 	body, err := os.ReadFile(filePath) // #nosec G304
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -89,22 +89,15 @@ func (sl *schemaLoader) loadFromFile(filePath string) (*ConfigMetadata, error) {
 		return nil, fmt.Errorf("failed to read schema from %s: %w", filePath, err)
 	}
 
-	var metadata Metadata
+	var metadata ConfigsMetadata
 	if err := yaml.Unmarshal(body, &metadata); err != nil {
 		return nil, fmt.Errorf("failed to parse schema from %s: %w", filePath, err)
 	}
 
-	if metadata.ExportedConfigs != nil {
-		if metadata.Config == nil {
-			metadata.Config = &ConfigMetadata{}
-		}
-		metadata.Config.Defs = metadata.ExportedConfigs
-	}
-
-	return metadata.Config, nil
+	return &metadata, nil
 }
 
-func (sl *schemaLoader) loadFromHTTP(ref Ref, fileCacheDir string) (*ConfigMetadata, error) {
+func (sl *schemaLoader) loadFromHTTP(ref Ref, fileCacheDir string) (*ConfigsMetadata, error) {
 	version, err := sl.refVersion(&ref)
 	if err != nil {
 		return nil, err
@@ -128,7 +121,7 @@ func (sl *schemaLoader) loadFromHTTP(ref Ref, fileCacheDir string) (*ConfigMetad
 	return metadata, nil
 }
 
-func (sl *schemaLoader) tryLoad(ref Ref, version string) (*ConfigMetadata, error) {
+func (sl *schemaLoader) tryLoad(ref Ref, version string) (*ConfigsMetadata, error) {
 	url, err := ref.URL(version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct URL for %s: %w", ref.CacheKey(), err)
@@ -152,27 +145,20 @@ func (sl *schemaLoader) tryLoad(ref Ref, version string) (*ConfigMetadata, error
 		return nil, fmt.Errorf("failed to read response body from %s: %w", url, err)
 	}
 
-	var metadata Metadata
+	var metadata ConfigsMetadata
 	if err := yaml.Unmarshal(body, &metadata); err != nil {
 		return nil, fmt.Errorf("failed to parse schema from %s: %w", url, err)
 	}
 
-	if metadata.ExportedConfigs != nil {
-		if metadata.Config == nil {
-			metadata.Config = &ConfigMetadata{}
-		}
-		metadata.Config.Defs = metadata.ExportedConfigs
-	}
-
-	return metadata.Config, nil
+	return &metadata, nil
 }
 
-func (sl *schemaLoader) persistToFile(filePath string, md *ConfigMetadata) error {
+func (sl *schemaLoader) persistToFile(filePath string, md *ConfigsMetadata) error {
 	if err := os.MkdirAll(filepath.Dir(filePath), 0o750); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	data, err := yaml.Marshal(Metadata{Config: md})
+	data, err := yaml.Marshal(md)
 	if err != nil {
 		return fmt.Errorf("failed to marshal metadata: %w", err)
 	}

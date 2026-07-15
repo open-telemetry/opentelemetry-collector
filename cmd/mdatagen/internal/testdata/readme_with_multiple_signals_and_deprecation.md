@@ -8,6 +8,7 @@
 |               | [beta]: metrics   |
 | Deprecation of traces | [Date]: 2025-02-05   |
 |                      | [Migration Note]: no migration needed   |
+| Semantic Conventions Version | 1.40.0 |
 | Distributions | [contrib] |
 
 [deprecated]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#deprecated
