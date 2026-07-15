@@ -43,8 +43,8 @@ func (req *logsRequest) MergeSplit(_ context.Context, maxSize int, szt request.S
 
 func (req *logsRequest) mergeTo(dst *logsRequest, sz sizer.LogsSizer) {
 	if sz != nil {
-		dst.setCachedSize(dst.size(sz) + req.size(sz))
-		req.setCachedSize(0)
+		dst.setCachedSize(sz, dst.size(sz)+req.size(sz))
+		req.setCachedSize(sz, 0)
 	}
 	req.ld.ResourceLogs().MoveAndAppendTo(dst.ld.ResourceLogs())
 }
@@ -56,7 +56,7 @@ func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer) ([]request.Reques
 		if ld.LogRecordCount() == 0 {
 			return res, fmt.Errorf("one log record size is greater than max size, dropping items: %d", req.ld.LogRecordCount())
 		}
-		req.setCachedSize(req.size(sz) - removedSize)
+		req.setCachedSize(sz, req.size(sz)-removedSize)
 		res = append(res, newLogsRequest(ld))
 	}
 	res = append(res, req)

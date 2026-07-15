@@ -43,8 +43,8 @@ func (req *metricsRequest) MergeSplit(_ context.Context, maxSize int, szt reques
 
 func (req *metricsRequest) mergeTo(dst *metricsRequest, sz sizer.MetricsSizer) {
 	if sz != nil {
-		dst.setCachedSize(dst.size(sz) + req.size(sz))
-		req.setCachedSize(0)
+		dst.setCachedSize(sz, dst.size(sz)+req.size(sz))
+		req.setCachedSize(sz, 0)
 	}
 	req.md.ResourceMetrics().MoveAndAppendTo(dst.md.ResourceMetrics())
 }
@@ -56,7 +56,7 @@ func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer) ([]request.
 		if md.DataPointCount() == 0 {
 			return res, fmt.Errorf("one datapoint size is greater than max size, dropping items: %d", req.md.DataPointCount())
 		}
-		req.setCachedSize(req.size(sz) - rmSize)
+		req.setCachedSize(sz, req.size(sz)-rmSize)
 		res = append(res, newMetricsRequest(md))
 	}
 	res = append(res, req)
