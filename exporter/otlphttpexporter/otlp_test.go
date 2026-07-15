@@ -1236,7 +1236,7 @@ func TestIsRetryableStatusCode(t *testing.T) {
 		{"502 retryable with spec defaults", http.StatusBadGateway, []int{429, 502, 503, 504}, true},
 		{"503 retryable with spec defaults", http.StatusServiceUnavailable, []int{429, 502, 503, 504}, true},
 		{"504 retryable with spec defaults", http.StatusGatewayTimeout, []int{429, 502, 503, 504}, true},
-		{"530 retryable when added (Cloudflare origin error)", 530, []int{429, 502, 503, 504, 530}, true},
+		{"530 retryable when added", 530, []int{429, 502, 503, 504, 530}, true},
 		{"530 not retryable with spec defaults", 530, []int{429, 502, 503, 504}, false},
 		{"404 never retryable with spec defaults", http.StatusNotFound, []int{429, 502, 503, 504}, false},
 		{"429 not retryable when removed", http.StatusTooManyRequests, []int{502, 503, 504}, false},
@@ -1255,8 +1255,8 @@ func TestIsRetryableStatusCode(t *testing.T) {
 }
 
 // TestRetryableStatuses_HTTP530_Issue15382 is the end-to-end regression test
-// for issue #15382. By default, Cloudflare's HTTP 530 ("origin error") is
-// treated as a permanent error and the data is dropped. Adding 530 to
+// for issue #15382. By default, HTTP 530 (a non-spec status code) is treated
+// as a permanent error and the data is dropped. Adding 530 to
 // retryable_statuses must make it retryable (consumererror.IsPermanent == false).
 func TestRetryableStatuses_HTTP530_Issue15382(t *testing.T) {
 	tests := []struct {

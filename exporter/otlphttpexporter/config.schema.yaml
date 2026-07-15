@@ -7,7 +7,7 @@ $defs:
     type: object
     properties:
       retryable_statuses:
-        description: 'RetryableStatuses lists the HTTP response status codes that should trigger a retry. Defaults to [429, 502, 503, 504] per the OTLP specification: https://opentelemetry.io/docs/specs/otlp/#failures-1 Override this only when the backend returns non-spec-compliant retryable status codes — for example, when fronting the Collector with Cloudflare, which returns HTTP 530 on upstream connectivity errors.'
+        description: 'RetryableStatuses lists the HTTP response status codes that should trigger a retry. Defaults to [429, 502, 503, 504] per the OTLP specification: https://opentelemetry.io/docs/specs/otlp/#failures-1 Override this only when the backend returns non-spec-compliant retryable status codes, such as an intermediary (proxy, load balancer, or CDN) that returns a 5xx status outside the OTLP spec set.'
         type: array
         items:
           type: integer

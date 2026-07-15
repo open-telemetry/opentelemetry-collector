@@ -53,8 +53,8 @@ type RetryConfig struct {
 	// a retry. Defaults to [429, 502, 503, 504] per the OTLP specification:
 	// https://opentelemetry.io/docs/specs/otlp/#failures-1
 	// Override this only when the backend returns non-spec-compliant retryable
-	// status codes — for example, when fronting the Collector with Cloudflare,
-	// which returns HTTP 530 on upstream connectivity errors.
+	// status codes, such as an intermediary (proxy, load balancer, or CDN) that
+	// returns a 5xx status outside the OTLP spec set.
 	RetryableStatuses []int `mapstructure:"retryable_statuses"`
 }
 

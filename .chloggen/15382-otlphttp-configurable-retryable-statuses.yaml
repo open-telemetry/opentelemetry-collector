@@ -18,9 +18,9 @@ issues: [15382, 14228]
 subtext: |
   Defaults to `[429, 502, 503, 504]`, matching the OTLP specification, so
   existing deployments are unaffected. Override this only when the backend
-  returns non-spec-compliant retryable status codes — for example,
-  Cloudflare-fronted Collectors that receive HTTP 530 on upstream errors.
-  Builds on prior work in #14260.
+  returns non-spec-compliant retryable status codes — for example, an
+  intermediary such as a proxy, load balancer, or CDN that returns a 5xx
+  status (like HTTP 530) outside the OTLP spec set.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
