@@ -4,13 +4,17 @@
 package migration // import "go.opentelemetry.io/collector/service/telemetry/otelconftelemetry/internal/migration"
 
 import (
+	"errors"
+	"fmt"
 	"time"
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 type TracesConfigV030 struct {
@@ -24,6 +28,10 @@ type TracesConfigV030 struct {
 	Propagators []string `mapstructure:"propagators"`
 
 	config.TracerProvider `mapstructure:",squash"`
+
+	// MigratedFromV02 is set when the config was transparently migrated from the v0.2.0
+	// format. It is not part of the config schema and is used to emit a deprecation warning.
+	MigratedFromV02 bool `mapstructure:"-"`
 }
 
 func (c *TracesConfigV030) Unmarshal(conf *confmap.Conf) error {
@@ -39,7 +47,7 @@ func (c *TracesConfigV030) Unmarshal(conf *confmap.Conf) error {
 			// compatibility attempts
 			return err
 		}
-		// TODO: add a warning log to tell users to migrate their config
+		c.MigratedFromV02 = true
 		return tracesConfigV02ToV03(v2TracesConfig, c)
 	}
 	// ensure endpoint normalization occurs
@@ -58,6 +66,19 @@ func (c *TracesConfigV030) Unmarshal(conf *confmap.Conf) error {
 	return nil
 }
 
+var _ confmap.Marshaler = TracesConfigV030{}
+
+func (c TracesConfigV030) Marshal(conf *confmap.Conf) error {
+	if err := conf.Marshal(c); err != nil {
+		return fmt.Errorf("otelconftelemetry: failed to marshal traces configuration: %w", err)
+	}
+
+	// Redact header values the way configopaque would
+	sm := conf.ToStringMap()
+	redactHeaders(sm, "processors.*.simple|batch.exporter.otlp.headers.*.value")
+	return conf.Marshal(sm)
+}
+
 type MetricsConfigV030 struct {
 	// Level is the level of telemetry metrics, the possible values are:
 	//  - "none" indicates that no telemetry data should be collected;
@@ -67,6 +88,10 @@ type MetricsConfigV030 struct {
 	Level configtelemetry.Level `mapstructure:"level"`
 
 	config.MeterProvider `mapstructure:",squash"`
+
+	// MigratedFromV02 is set when the config was transparently migrated from the v0.2.0
+	// format. It is not part of the config schema and is used to emit a deprecation warning.
+	MigratedFromV02 bool `mapstructure:"-"`
 }
 
 func (c *MetricsConfigV030) Unmarshal(conf *confmap.Conf) error {
@@ -81,18 +106,63 @@ func (c *MetricsConfigV030) Unmarshal(conf *confmap.Conf) error {
 			// compatibility attempts
 			return err
 		}
-		// TODO: add a warning log to tell users to migrate their config
+		c.MigratedFromV02 = true
 		return metricsConfigV02ToV03(v02, c)
 	}
-	// ensure endpoint normalization occurs
 	for _, r := range c.Readers {
+		// ensure endpoint normalization occurs
 		if r.Periodic != nil {
 			if r.Periodic.Exporter.OTLP != nil && r.Periodic.Exporter.OTLP.Endpoint != nil {
 				r.Periodic.Exporter.OTLP.Endpoint = normalizeEndpoint(*r.Periodic.Exporter.OTLP.Endpoint, r.Periodic.Exporter.OTLP.Insecure)
 			}
 		}
+		// Apply Prometheus exporter defaults for fields not explicitly set.
+		// When users explicitly configure the telemetry section (e.g. to
+		// change the host), unset *bool fields default to nil which the
+		// Prometheus exporter treats as false. This ensures the defaults
+		// match the implicit/default configuration where these are true.
+		//
+		// This is necessary because specifying any metric readers in the
+		// SDK config completely overwrites the list of readers, so the
+		// Prometheus exporter is treated as a new config without any of
+		// the defaults set in the createDefaultConfig function in
+		// otelconftelemetry. We must re-apply those defaults here.
+		if r.Pull != nil && r.Pull.Exporter.Prometheus != nil {
+			applyPrometheusDefaults(r.Pull.Exporter.Prometheus)
+		}
 	}
 	return nil
+}
+
+var _ confmap.Marshaler = MetricsConfigV030{}
+
+func (c MetricsConfigV030) Marshal(conf *confmap.Conf) error {
+	if err := conf.Marshal(c); err != nil {
+		return fmt.Errorf("otelconftelemetry: failed to marshal metrics configuration: %w", err)
+	}
+
+	// Redact header values the way configopaque would
+	sm := conf.ToStringMap()
+	redactHeaders(sm, "readers.*.periodic.exporter.otlp.headers.*.value")
+	return conf.Marshal(sm)
+}
+
+func boolPtr(v bool) *bool {
+	return &v
+}
+
+// applyPrometheusDefaults sets default values for Prometheus exporter
+// fields that were not explicitly provided in the configuration.
+func applyPrometheusDefaults(p *config.Prometheus) {
+	if p.WithoutScopeInfo == nil {
+		p.WithoutScopeInfo = boolPtr(true)
+	}
+	if p.WithoutUnits == nil {
+		p.WithoutUnits = boolPtr(true)
+	}
+	if p.WithoutTypeSuffix == nil {
+		p.WithoutTypeSuffix = boolPtr(true)
+	}
 }
 
 type LogsConfigV030 struct {
@@ -146,7 +216,9 @@ type LogsConfigV030 struct {
 	// "stdout" and "stderr" are interpreted as os.Stdout and os.Stderr.
 	// see details at Open in zap/writer.go.
 	//
-	// Note that this setting only affects the zap internal logger errors.
+	// Note that this setting only affects zap's own internal errors (e.g., failures
+	// to write to the configured output). It does NOT route application error-level
+	// log messages. To control where application logs go, use output_paths instead.
 	// (default = ["stderr"])
 	ErrorOutputPaths []string `mapstructure:"error_output_paths"`
 
@@ -165,6 +237,10 @@ type LogsConfigV030 struct {
 
 	// DisableZapResource disables adding resource attributes to logs exported through Zap. This does not affect logs exported through OTLP.
 	DisableZapResource bool `mapstructure:"disable_zap_resource,omitempty"`
+
+	// MigratedFromV02 is set when the config was transparently migrated from the v0.2.0
+	// format. It is not part of the config schema and is used to emit a deprecation warning.
+	MigratedFromV02 bool `mapstructure:"-"`
 }
 
 // LogsSamplingConfig sets a sampling strategy for the logger. Sampling caps the
@@ -180,6 +256,42 @@ type LogsSamplingConfig struct {
 	// Thereafter represents the sampling rate, every Nth message will be sampled after Initial messages are logged during each Tick.
 	// If Thereafter is zero, the logger will drop all the messages after the Initial each Tick.
 	Thereafter int `mapstructure:"thereafter"`
+}
+
+// ResourceConfigV030 represents the v0.3.0 resource configuration, with
+// backward-compatible support for the legacy map format.
+type ResourceConfigV030 struct {
+	config.Resource `mapstructure:",squash"`
+
+	DetectionDevelopment *xotelconf.ExperimentalResourceDetection `mapstructure:"detection/development,omitempty"`
+	LegacyAttributes     map[string]any                           `mapstructure:",remain"`
+}
+
+var _ xconfmap.Validator = (*ResourceConfigV030)(nil)
+
+func (cfg *ResourceConfigV030) Validate() error {
+	// resource::attributes_list isn't currently supported by otelconf, so we have to put the default values under resource::attributes.
+	// However, resource::attributes_list theoretically has lower priority than resource::attributes,
+	// so if otelconf started supporting it, its values would be overridden by the defaults.
+	// To avoid this surprising behavior, we explicitly disallow the use of resource::attributes_list for now.
+	if cfg.AttributesList != nil {
+		return errors.New("resource::attributes_list is not currently supported, please use resource::attributes")
+	}
+
+	// mapstructure only supports map[string]any for ",remain" fields, but we need it to be equivalent to map[string]*string
+	for key, val := range cfg.LegacyAttributes {
+		switch val.(type) {
+		case nil, string:
+		default:
+			return fmt.Errorf("legacy resource attribute %q must be string or null", key)
+		}
+	}
+
+	if len(cfg.Attributes) > 0 && len(cfg.LegacyAttributes) > 0 {
+		return errors.New("resource::attributes cannot be used together with legacy inline resource attributes")
+	}
+
+	return nil
 }
 
 func (c *LogsConfigV030) Unmarshal(conf *confmap.Conf) error {
@@ -202,7 +314,7 @@ func (c *LogsConfigV030) Unmarshal(conf *confmap.Conf) error {
 			// compatibility attempts
 			return err
 		}
-		// TODO: add a warning log to tell users to migrate their config
+		c.MigratedFromV02 = true
 		return logsConfigV02ToV03(v02, c)
 	}
 	// ensure endpoint normalization occurs
@@ -219,4 +331,17 @@ func (c *LogsConfigV030) Unmarshal(conf *confmap.Conf) error {
 		}
 	}
 	return nil
+}
+
+var _ confmap.Marshaler = LogsConfigV030{}
+
+func (c LogsConfigV030) Marshal(conf *confmap.Conf) error {
+	if err := conf.Marshal(c); err != nil {
+		return fmt.Errorf("otelconftelemetry: failed to marshal logs configuration: %w", err)
+	}
+
+	// Redact header values the way configopaque would
+	sm := conf.ToStringMap()
+	redactHeaders(sm, "processors.*.simple|batch.exporter.otlp.headers.*.value")
+	return conf.Marshal(sm)
 }

@@ -10,10 +10,9 @@ components:
     - all
     - cmd/builder
     - cmd/mdatagen
+    - cmd/schemagen
     - connector/forward
     - connector/sample
-    - consumer/consumererror/xconsumererror
-    - consumer/xconsumer
     - docs/rfcs
     - exporter/debug
     - exporter/nop
@@ -21,7 +20,6 @@ components:
     - exporter/otlp_http
     - extension/memory_limiter
     - extension/zpages
-    - pdata/pprofile
     - pkg/client
     - pkg/component
     - pkg/component/componentstatus
@@ -34,6 +32,7 @@ components:
     - pkg/config/confignet
     - pkg/config/configopaque
     - pkg/config/configretry
+    - pkg/config/configstorage
     - pkg/config/configtelemetry
     - pkg/config/configtls
     - pkg/confighttp
@@ -44,6 +43,7 @@ components:
     - pkg/consumer
     - pkg/consumer/consumererror
     - pkg/consumer/consumertest
+    - pkg/consumererror/xconsumererror
     - pkg/exporter
     - pkg/exporter/exportertest
     - pkg/exporterhelper
@@ -56,10 +56,12 @@ components:
     - pkg/extensionmiddleware/extensionmiddlewaretest
     - pkg/featuregate
     - pkg/filter
+    - pkg/graph
     - pkg/otelcol
     - pkg/otelcol/otelcoltest
     - pkg/pdata
     - pkg/pipeline
+    - pkg/pprofile
     - pkg/processor
     - pkg/processor/processortest
     - pkg/processorhelper
@@ -67,14 +69,17 @@ components:
     - pkg/receiver
     - pkg/receiver/receivertest
     - pkg/receiverhelper
+    - pkg/samplepkg
     - pkg/scraper
     - pkg/scraper/scrapertest
     - pkg/scraperhelper
+    - pkg/scraperhelper/controller
     - pkg/service
     - pkg/service/hostcapabilities
     - pkg/service/telemetry/telemetrytest
     - pkg/xconfmap
     - pkg/xconnector
+    - pkg/xconsumer
     - pkg/xexporter
     - pkg/xexporterhelper
     - pkg/xextension
@@ -100,4 +105,4 @@ components:
     - receiver/sample
     - receiver/sampleentity
     - scraper/sample
-    - service/graph
+    - scraper/samplemigration

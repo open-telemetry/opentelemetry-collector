@@ -10,6 +10,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -201,8 +202,8 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 	if len(sc.Middlewares) > 0 && extensions == nil {
 		return nil, errors.New("middlewares were configured but this component or its host does not support extensions")
 	}
-	for i := len(sc.Middlewares) - 1; i >= 0; i-- {
-		wrapper, err := sc.Middlewares[i].GetHTTPServerHandler(ctx, extensions)
+	for _, m := range slices.Backward(sc.Middlewares) {
+		wrapper, err := m.GetHTTPServerHandler(ctx, extensions)
 		// If we failed to get the middleware
 		if err != nil {
 			return nil, err
@@ -246,6 +247,7 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 			AllowedOrigins:   corsConfig.AllowedOrigins,
 			AllowCredentials: true,
 			AllowedHeaders:   corsConfig.AllowedHeaders,
+			ExposedHeaders:   corsConfig.ExposedHeaders,
 			MaxAge:           corsConfig.MaxAge,
 		}
 		handler = cors.New(co).Handler(handler)
@@ -340,6 +342,10 @@ type CORSConfig struct {
 	// X-Requested-With will also be accepted by default. Include "*" to
 	// allow any request header.
 	AllowedHeaders []string `mapstructure:"allowed_headers,omitempty"`
+
+	// ExposedHeaders sets the value of the Access-Control-Expose-Headers response
+	// header, indicating which headers are safe to expose to the API of a CORS response.
+	ExposedHeaders []string `mapstructure:"exposed_headers,omitempty"`
 
 	// MaxAge sets the value of the Access-Control-Max-Age response header.
 	// Set it to the number of seconds that browsers should cache a CORS

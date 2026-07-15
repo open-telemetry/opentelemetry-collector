@@ -19,10 +19,11 @@ scope_name: string
 # Optional: The name of the package that mdatagen generates. If not set, the name "metadata" will be used.
 generated_package_name: string
 
-# Optional: Enables per-metric reaggregation config generation for metrics with attributes.
-# When enabled, generated metrics config includes `aggregation_strategy` and `attributes`
-# fields that let users reduce metric cardinality by choosing which dimensions are kept.
-reaggregation_enabled: bool
+# Optional: Enables per-resource-attribute override_value config generation.
+# When enabled, generated resource attribute config includes typed `override_value`
+# fields that let users override resource attribute values in the collector config.
+# Components can opt in gradually; defaults to false (shared ResourceAttributeConfig).
+override_value_enabled: bool
 
 # Required for components (Optional for subcomponents): A high-level view of the development status and use of this component
 status:
@@ -54,6 +55,9 @@ status:
 # Optional: OTel Semantic Conventions version that will be associated with the scraped metrics.
 # This attribute should be set for metrics compliant with OTel Semantic Conventions.
 sem_conv_version: 1.9.0
+
+# Optional: URL to the OTel Semantic Conventions version.
+sem_conv_url: https://github.com/open-telemetry/semantic-conventions/releases/tag/v1.9.0
 
 # Optional: JSON Schema based definition for the component's configuration structure.
 # This section defines the schema that could be used to generate:
@@ -160,6 +164,8 @@ resource_attributes:
     enum: [string]
     # Required: attribute value type.
     type: <string|int|double|bool|bytes|slice|map>
+    # Optional: the stability level of the resource attribute.
+    stability: <development|alpha|beta|release_candidate|stable>
     # Optional: warnings that will be shown to user under specified conditions.
     warnings:
       # A warning that will be displayed if the resource_attribute is enabled in user config.
@@ -285,9 +291,22 @@ metrics:
     # Optional: the reference to a semantic convention
     # Relative path to the semantic convention definition (e.g., "system/system-metrics.md#metric-systemcputime")
     # The full URL is constructed using sem_conv_version: {base}/v{version}/docs/{ref}
-    # An example of a full url is: https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime
+    # An example of a full url is: https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/system/system-metrics.md#metric-systemcputime
     semantic_convention:
       ref:
+    # Optional: migration/aliasing information to support dual-schema emission.
+    # When present, generated code will emit this metric and the target metric
+    # according to the gates specified below.
+    migration:
+      # Required: target metric key in this metadata file to emit to during migration.
+      to: string
+      # Required: feature gates controlling emission. The referenced gates must be
+      # declared under feature_gates below in this file.
+      through_gates:
+        # Required: when enabled, emission of the old (current) metric is disabled.
+        disable_old: string
+        # Required: when enabled, emission of the new (target) metric is enabled.
+        enable_new: string
 
 # Optional: map of event names with the key being the event name and value
 # being described below.
@@ -400,7 +419,9 @@ telemetry:
 
 # Optional: list of feature gate definitions.
 feature_gates:
-  - # Required: unique identifier for the feature gate.
+  - # Required: unique identifier for the feature gate. Unless
+    # skip_strict_validation is true on this gate, must be prefixed with
+    # "<status.class>.<type>." so gates are namespaced to their component.
     id: <gate.id>
     # Required: description of the feature gate.
     description: string
@@ -410,5 +431,12 @@ feature_gates:
     from_version: string
     # Required for stable/deprecated gates: version when the feature gate reached stable stage.
     to_version: string
-    # Required: URL with contextual information about the feature gate.
+    # Required: URL with contextual information about the feature gate. Unless
+    # skip_strict_validation is true on this gate, must be a GitHub issue URL
+    # of the form https://github.com/<owner>/<repo>/issues/<number>.
     reference_url: string
+    # Optional: when true, opts this gate out of strict validation (the
+    # GitHub-issue reference_url requirement and the "<status.class>.<type>."
+    # ID prefix requirement). Intended to grandfather in gates that predate
+    # these rules; new gates should leave this unset.
+    skip_strict_validation: false

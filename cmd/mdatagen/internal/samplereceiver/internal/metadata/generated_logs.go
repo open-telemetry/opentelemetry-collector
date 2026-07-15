@@ -5,7 +5,7 @@ package metadata
 import (
 	"context"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
@@ -213,6 +213,12 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 		eventDefaultEventToBeRenamed:   newEventDefaultEventToBeRenamed(lbc.Events.DefaultEventToBeRenamed),
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+	}
+	if lbc.ResourceAttributes.HostArch.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["host.arch"] = filter.CreateFilter(lbc.ResourceAttributes.HostArch.EventsInclude)
+	}
+	if lbc.ResourceAttributes.HostArch.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["host.arch"] = filter.CreateFilter(lbc.ResourceAttributes.HostArch.EventsExclude)
 	}
 	if lbc.ResourceAttributes.MapResourceAttr.EventsInclude != nil {
 		lb.resourceAttributeIncludeFilter["map.resource.attr"] = filter.CreateFilter(lbc.ResourceAttributes.MapResourceAttr.EventsInclude)

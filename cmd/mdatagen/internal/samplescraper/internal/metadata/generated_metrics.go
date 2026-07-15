@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
@@ -56,22 +56,27 @@ var MapAttributeEnumAttr = map[string]AttributeEnumAttr{
 
 var MetricsInfo = metricsInfo{
 	DefaultMetric: metricInfo{
-		Name: "default.metric",
+		Name:       "default.metric",
+		Attributes: []string{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
 	},
 	DefaultMetricToBeRemoved: metricInfo{
 		Name: "default.metric.to_be_removed",
 	},
 	MetricInputType: metricInfo{
-		Name: "metric.input_type",
+		Name:       "metric.input_type",
+		Attributes: []string{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
 	},
 	OptionalMetric: metricInfo{
-		Name: "optional.metric",
+		Name:       "optional.metric",
+		Attributes: []string{"string_attr", "boolean_attr", "boolean_attr2"},
 	},
 	OptionalMetricEmptyUnit: metricInfo{
-		Name: "optional.metric.empty_unit",
+		Name:       "optional.metric.empty_unit",
+		Attributes: []string{"string_attr", "boolean_attr"},
 	},
 	ReaggregateMetric: metricInfo{
-		Name: "reaggregate.metric",
+		Name:       "reaggregate.metric",
+		Attributes: []string{"string_attr", "boolean_attr"},
 	},
 	SystemCPUTime: metricInfo{
 		Name: "system.cpu.time",
@@ -89,7 +94,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricDefaultMetric struct {

@@ -3,7 +3,7 @@
 
 module-sets:
   stable:
-    version: v1.55.0
+    version: v1.62.0
     modules:
       - go.opentelemetry.io/collector/client
       - go.opentelemetry.io/collector/featuregate
@@ -31,23 +31,26 @@ module-sets:
       - go.opentelemetry.io/collector/processor
       - go.opentelemetry.io/collector/receiver
   beta:
-    version: v0.149.0
+    version: v0.156.0
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/internal/componentalias
       - go.opentelemetry.io/collector/internal/memorylimiter
       - go.opentelemetry.io/collector/internal/fanoutconsumer
+      - go.opentelemetry.io/collector/internal/schemagen
       - go.opentelemetry.io/collector/internal/sharedcomponent
       - go.opentelemetry.io/collector/internal/telemetry
       - go.opentelemetry.io/collector/internal/testutil
       - go.opentelemetry.io/collector/cmd/builder
       - go.opentelemetry.io/collector/cmd/mdatagen
+      - go.opentelemetry.io/collector/cmd/schemagen
       - go.opentelemetry.io/collector/component/componentstatus
       - go.opentelemetry.io/collector/component/componenttest
       - go.opentelemetry.io/collector/confmap/xconfmap
       - go.opentelemetry.io/collector/config/configgrpc
       - go.opentelemetry.io/collector/config/confighttp
       - go.opentelemetry.io/collector/config/confighttp/xconfighttp
+      - go.opentelemetry.io/collector/config/configstorage
       - go.opentelemetry.io/collector/config/configtelemetry
       - go.opentelemetry.io/collector/connector
       - go.opentelemetry.io/collector/connector/connectortest

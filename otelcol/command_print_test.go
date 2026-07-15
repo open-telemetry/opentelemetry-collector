@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/otelcol/internal/metadata"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.opentelemetry.io/collector/service/telemetry"
@@ -58,7 +57,6 @@ func TestPrintCommand(t *testing.T) {
 		path            string
 		errString       string
 		outString       map[string]string
-		disableFF       bool // disable the feature flag
 		validate        bool // add validation (even redacted)
 		errOnlyRedacted bool // error applies only in redacted mode
 	}{
@@ -75,19 +73,13 @@ func TestPrintCommand(t *testing.T) {
 			name:            "invalid syntax without validate",
 			path:            invalidConfig1,
 			errString:       "'timeout' time: invalid duration",
-			errOnlyRedacted: true,
+			errOnlyRedacted: false,
 		},
 		{
 			name:      "validation fail",
 			path:      invalidConfig2,
 			validate:  true,
 			errString: "timeout cannot be negative",
-		},
-		{
-			name:      "no feature flag",
-			path:      validConfig,
-			disableFF: true,
-			errString: "use the otelcol.printInitialConfig feature gate",
 		},
 		{
 			name: "field is set yaml",
@@ -101,11 +93,8 @@ func TestPrintCommand(t *testing.T) {
 			name: "default field value",
 			path: defaultConfig,
 			outString: map[string]string{
-				"redacted": `timeout: 1s`,
-
-				// Since the structure is empty before
-				// interpretation, no default is expanded.
-				"unredacted": `e: null`,
+				"redacted":   `timeout: 1s`,
+				"unredacted": `timeout: 1s`,
 			},
 		},
 		{
@@ -113,11 +102,8 @@ func TestPrintCommand(t *testing.T) {
 			ofmt: "json",
 			path: validConfig,
 			outString: map[string]string{
-				// Note: JSON does not format as a time.Duration
-				"redacted": `"timeout": 5000000000`,
-
-				// Note: the original input is "5s"
-				"unredacted": `"timeout": "5s"`,
+				"redacted":   `"timeout": 5000000000`,
+				"unredacted": `"timeout": 5000000000`,
 			},
 		},
 		{
@@ -132,12 +118,8 @@ func TestPrintCommand(t *testing.T) {
 			name: "opaque default",
 			path: defaultConfig,
 			outString: map[string]string{
-				"redacted": `opaque: '[REDACTED]'`,
-
-				// Note: the default opaque value does not print,
-				// the other value is set in defaultConfig so that
-				// the whole component config is not defaulted.
-				"unredacted": `other: lala`,
+				"redacted":   `opaque: '[REDACTED]'`,
+				"unredacted": `opaque: "1234"`,
 			},
 		},
 	}
@@ -145,22 +127,6 @@ func TestPrintCommand(t *testing.T) {
 		testModes := []string{"redacted", "unredacted", "unrecognized"}
 		for _, mode := range testModes {
 			t.Run(fmt.Sprint(test.name, "_", mode), func(t *testing.T) {
-				// Save current feature flag state and restore after test
-				fg := featuregate.GlobalRegistry()
-
-				fg.VisitAll(func(g *featuregate.Gate) {
-					if g.ID() == metadata.OtelcolPrintInitialConfigFeatureGate.ID() {
-						defer func() {
-							_ = fg.Set(metadata.OtelcolPrintInitialConfigFeatureGate.ID(), g.IsEnabled())
-						}()
-					}
-				})
-				if test.disableFF {
-					require.NoError(t, fg.Set(metadata.OtelcolPrintInitialConfigFeatureGate.ID(), false))
-				} else {
-					require.NoError(t, fg.Set(metadata.OtelcolPrintInitialConfigFeatureGate.ID(), true))
-				}
-
 				testR := component.MustNewType("r")
 				testE := component.MustNewType("e")
 				testReceiver := xreceiver.NewFactory(
@@ -238,11 +204,7 @@ func TestPrintCommand(t *testing.T) {
 					}
 				default:
 					expectErr = true
-					if test.disableFF {
-						expectErrMsg = "feature gate"
-					} else {
-						expectErrMsg = "unrecognized"
-					}
+					expectErrMsg = "unrecognized"
 				}
 
 				if expectErr {

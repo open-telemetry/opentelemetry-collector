@@ -13,9 +13,11 @@
 package graph // import "go.opentelemetry.io/collector/service/internal/graph"
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"go.uber.org/multierr"
@@ -296,9 +298,7 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 		return cycleErr(err, topo.DirectedCyclesIn(g.componentGraph))
 	}
 
-	for i := len(nodes) - 1; i >= 0; i-- {
-		node := nodes[i]
-
+	for _, node := range slices.Backward(nodes) {
 		switch n := node.(type) {
 		case *receiverNode:
 			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(n.ID()))
@@ -406,7 +406,21 @@ func (g *Graph) StartAll(ctx context.Context, host *Host) error {
 		return errors.New("host cannot be nil")
 	}
 
-	nodes, err := topo.Sort(g.componentGraph)
+	nodes, err := topo.SortStabilized(g.componentGraph, func(nodes []graph.Node) {
+		slices.SortFunc(nodes, func(node1, node2 graph.Node) int {
+			// Always start receivers after non-receivers, to avoid cases where a shared receiver
+			// is started from one pipeline and starts sending to another, not yet started pipeline.
+			_, isReceiver1 := node1.(*receiverNode)
+			_, isReceiver2 := node2.(*receiverNode)
+			if isReceiver1 && !isReceiver2 {
+				return -1
+			}
+			if isReceiver2 && !isReceiver1 {
+				return 1
+			}
+			return cmp.Compare(node1.ID(), node2.ID())
+		})
+	})
 	if err != nil {
 		return err
 	}
@@ -414,8 +428,7 @@ func (g *Graph) StartAll(ctx context.Context, host *Host) error {
 	// Start in reverse topological order so that downstream components
 	// are started before upstream components. This ensures that each
 	// component's consumer is ready to consume.
-	for i := len(nodes) - 1; i >= 0; i-- {
-		node := nodes[i]
+	for _, node := range slices.Backward(nodes) {
 		comp, ok := node.(component.Component)
 
 		if !ok {

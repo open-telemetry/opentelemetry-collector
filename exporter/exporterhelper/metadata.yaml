@@ -49,6 +49,15 @@ telemetry:
         value_type: int
         monotonic: true
 
+    exporter_in_flight_requests:
+      enabled: true
+      stability: development
+      description: Number of export requests currently in-flight (including retry backoff).
+      unit: "{request}"
+      sum:
+        value_type: int
+        monotonic: false
+
     exporter_queue_batch_send_size:
       enabled: true
       description: Number of units in the batch
@@ -91,20 +100,24 @@ telemetry:
         value_type: int
         bucket_boundaries:
           [
-            10,
-            25,
-            50,
-            75,
-            100,
-            250,
-            500,
-            750,
-            1000,
-            2000,
-            3000,
-            4000,
-            5000,
-            6000,
+            128,
+            256,
+            512,
+            1024,
+            2048,
+            4096,
+            8192,
+            16384,
+            32768,
+            65536,
+            131072,
+            262144,
+            524288,
+            1048576,
+            2097152,
+            4194304,
+            8388608,
+            16777216,
           ]
 
     exporter_queue_capacity:
@@ -196,10 +209,3 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-
-feature_gates:
-  - id: exporter.PersistRequestContext
-    description: 'controls whether context should be stored alongside requests in the persistent queue'
-    stage: beta
-    from_version: 'v0.128.0'
-    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/pull/13188'

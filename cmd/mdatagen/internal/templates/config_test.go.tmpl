@@ -8,13 +8,16 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	{{- if and .OverrideValueEnabled .ResourceAttributes }}
+	"github.com/stretchr/testify/assert"
+	{{- end }}
 	"github.com/stretchr/testify/require"
 
+	{{- if .Metrics }}
 	"go.opentelemetry.io/collector/confmap"
+	{{- end }}
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
-
-{{ $reag := .ReaggregationEnabled }}
 
 {{ if .Metrics }}
 func TestMetricsBuilderConfig(t *testing.T) {
@@ -24,15 +27,15 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					{{- range $name, $metric := .Metrics }}
-					{{- $metricReag := and $reag (hasAggregatableAttributes $metric.Attributes) }}
-					{{ $name.Render }}: {{ if $reag }}{{ $name.Render }}{{ end }}MetricConfig{
+					{{- $metricReag := hasAggregatableAttributes $metric.Attributes }}
+					{{ $name.Render }}: {{ $name.Render }}MetricConfig{
 						Enabled: true,
 						{{- if $metricReag }}
 						AggregationStrategy: AggregationStrategy{{ if eq $metric.Data.Type "Sum" }}Sum{{ else }}Avg{{ end }},
@@ -44,7 +47,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				{{- if .ResourceAttributes }}
 				ResourceAttributes: ResourceAttributesConfig{
 					{{- range $name, $_ := .ResourceAttributes }}
-					{{ $name.Render }}: ResourceAttributeConfig{Enabled: true},
+					{{ $name.Render }}: {{ if $.OverrideValueEnabled }}{{ $name.Render }}{{ end }}ResourceAttributeConfig{Enabled: true},
 					{{- end }}
 				},
 				{{- end }}
@@ -55,8 +58,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					{{- range $name, $metric := .Metrics }}
-					{{- $metricReag := and $reag (hasAggregatableAttributes $metric.Attributes) }}
-					{{ $name.Render }}: {{ if $reag }}{{ $name.Render }}{{ end }}MetricConfig{
+					{{- $metricReag := hasAggregatableAttributes $metric.Attributes }}
+					{{ $name.Render }}: {{ $name.Render }}MetricConfig{
 						Enabled: false,
 						{{- if $metricReag }}
 						AggregationStrategy: AggregationStrategy{{ if eq $metric.Data.Type "Sum" }}Sum{{ else }}Avg{{ end }},
@@ -68,7 +71,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				{{- if .ResourceAttributes }}
 				ResourceAttributes: ResourceAttributesConfig{
 					{{- range $name, $_ := .ResourceAttributes }}
-					{{ $name.Render }}: ResourceAttributeConfig{Enabled: false},
+					{{ $name.Render }}: {{ if $.OverrideValueEnabled }}{{ $name.Render }}{{ end }}ResourceAttributeConfig{Enabled: false},
 					{{- end }}
 				},
 				{{- end }}
@@ -79,22 +82,40 @@ func TestMetricsBuilderConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
 			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(
-				{{- if $reag }}
 				{{- range $name, $metric := .Metrics }}{{ $name.Render }}MetricConfig{}, {{ end }}
-				{{- else }}MetricConfig{},{{ end }}
+				{{- if $.OverrideValueEnabled }}
+				{{- range $name, $_ := .ResourceAttributes }}{{ $name.Render }}ResourceAttributeConfig{}, {{ end }}
+				{{- else }}
 				{{- if .ResourceAttributes }}ResourceAttributeConfig{},{{ end }}
+				{{- end }}
 			))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }
 
+{{- range $name, $metric := .Metrics }}
+{{ if hasAggregatableAttributes $metric.Attributes -}}
+func Test{{ $name.Render }}MetricsConfig_Validate(t *testing.T) {
+  cfg := DefaultMetricsConfig().{{ $name.Render }}
+  require.NoError(t, cfg.Validate())
+
+  cfg.EnabledAttributes = []{{ $name.Render }}MetricAttributeKey{"invalid"}
+  require.ErrorContains(t, cfg.Validate(), "metric {{ $name }} doesn't have an attribute invalid, valid attributes: [{{ range $index, $element := $metric.Attributes -}}{{ if $index }}, {{ end }}{{ (attributeInfo $element).Name }}{{ end }}]")
+
+  cfg = DefaultMetricsConfig().{{ $name.Render }}
+  cfg.AggregationStrategy = "invalid"
+  require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+{{ end }}
+{{ end }}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }
@@ -126,7 +147,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 			name: "all_set",
 			want: ResourceAttributesConfig{
 				{{- range $name, $_ := .ResourceAttributes }}
-				{{ $name.Render }}: ResourceAttributeConfig{Enabled: true},
+				{{ $name.Render }}: {{ if $.OverrideValueEnabled }}{{ $name.Render }}{{ end }}ResourceAttributeConfig{Enabled: true},
 				{{- end }}
 			},
 		},
@@ -134,7 +155,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 			name: "none_set",
 			want: ResourceAttributesConfig{
 				{{- range $name, $_ := .ResourceAttributes }}
-				{{ $name.Render }}: ResourceAttributeConfig{Enabled: false},
+				{{ $name.Render }}: {{ if $.OverrideValueEnabled }}{{ $name.Render }}{{ end }}ResourceAttributeConfig{Enabled: false},
 				{{- end }}
 			},
 		},
@@ -142,11 +163,44 @@ func TestResourceAttributesConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(
+				{{- if $.OverrideValueEnabled }}
+				{{- range $name, $_ := .ResourceAttributes }}{{ $name.Render }}ResourceAttributeConfig{}, {{ end }}
+				{{- else }}ResourceAttributeConfig{}, {{ end }}
+			))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }
+
+{{- if $.OverrideValueEnabled }}
+
+func TestResourceAttributesOverrideConfig(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "override_set")
+	{{- range $name, $_ := .ResourceAttributes }}
+	assert.NotNil(t, cfg.{{ $name.Render }}.OverrideValue, "override_value should be set for {{ $name }}")
+	{{- end }}
+}
+
+{{ $hasEnum := false }}
+{{- range $_, $attr := .ResourceAttributes }}{{- if $attr.Enum }}{{ $hasEnum = true }}{{- end }}{{- end }}
+{{- if $hasEnum }}
+func TestResourceAttributesOverrideEnumValidation(t *testing.T) {
+	{{- range $name, $attr := .ResourceAttributes }}
+	{{- if $attr.Enum }}
+	{
+		invalidVal := "invalid-enum-value"
+		cfg := {{ $name.Render }}ResourceAttributeConfig{
+			Enabled: true,
+			OverrideValue: &invalidVal,
+		}
+		assert.Error(t, cfg.Validate())
+	}
+	{{- end }}
+	{{- end }}
+}
+{{- end }}
+{{- end }}
 
 func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))

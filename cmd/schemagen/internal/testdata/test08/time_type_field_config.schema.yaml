@@ -1,0 +1,68 @@
+type: object
+$defs:
+  schedule:
+    properties:
+      interval:
+        type: string
+        format: duration
+        x-customType: time.Duration
+      next_run:
+        type: string
+        format: date-time
+        x-customType: time.Time
+      timestamps:
+        items:
+          type: string
+          format: date-time
+          x-customType: time.Time
+        type: array
+    type: object
+properties:
+  durations:
+    additionalProperties:
+      type: string
+      format: duration
+      x-customType: time.Duration
+    type: object
+  optional_schedule:
+    $ref: schedule
+    x-pointer: true
+  probes:
+    items:
+      type: string
+      format: date-time
+      x-customType: time.Time
+      x-pointer: true
+    type: array
+  retry_intervals:
+    items:
+      type: string
+      format: duration
+      x-customType: time.Duration
+    type: array
+  schedule:
+    $ref: 'schedule'
+  start_at:
+    type: string
+    format: date-time
+    x-customType: time.Time
+  timeout:
+    type: string
+    format: duration
+    x-customType: time.Duration
+  window:
+    properties:
+      begin:
+        type: string
+        format: date-time
+        x-customType: time.Time
+        x-pointer: true
+      end:
+        type: string
+        format: date-time
+        x-customType: time.Time
+      grace:
+        type: string
+        format: duration
+        x-customType: time.Duration
+    type: object

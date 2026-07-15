@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
 )
@@ -17,21 +19,21 @@ import (
 // baked into closures. This way the template itself never needs to pass these context values around.
 func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 	return map[string]any{
-		"extractImports": func(cfg *ConfigMetadata) []string {
-			if cfg == nil {
+		"extractImports": func(md *ConfigsMetadata) []string {
+			if md == nil {
 				return nil
 			}
-			imports, err := ExtractImports(cfg, rootPackage, componentPackage)
+			imports, err := ExtractImports(md, rootPackage, componentPackage)
 			if err != nil {
-				return []string{}
+				panic(err)
 			}
 			return imports
 		},
-		"extractDefs": func(cfg *ConfigMetadata) map[string]*ConfigMetadata {
-			if cfg == nil {
+		"extractDefs": func(md *ConfigsMetadata) map[string]*ConfigMetadata {
+			if md == nil {
 				return nil
 			}
-			return ExtractDefs(cfg)
+			return ExtractDefs(md)
 		},
 		"extractValidators": func(cfg *ConfigMetadata) []Validator {
 			if cfg == nil {
@@ -49,6 +51,14 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return goType
 		},
+		"isPrimitiveSchema": IsPrimitiveSchema,
+		"primitiveGoType": func(cfg *ConfigMetadata) string {
+			goType, err := PrimitiveGoType(cfg, rootPackage, componentPackage)
+			if err != nil {
+				panic(err)
+			}
+			return goType
+		},
 		"publicType": func(ref string) string {
 			typeName, err := FormatTypeName(ref, rootPackage, componentPackage)
 			if err != nil {
@@ -56,7 +66,60 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return typeName
 		},
+		"camelVar": CamelVar,
+		"formatDefaultValue": func(md *ConfigMetadata, name string, defaultValue any) string {
+			return FormatDefaultValue(md, name, defaultValue, rootPackage, componentPackage)
+		},
+		"formatBaseValue": func(md *ConfigMetadata, name string, defaultValue any) string {
+			return FormatBaseValue(md, name, defaultValue, rootPackage, componentPackage)
+		},
+		"wrapDefaultValue": WrapDefaultValue,
+		"mapCustomDefaults": func(schema *ConfigMetadata, defaultValue any) []string {
+			return MapCustomDefaults(schema, defaultValue, rootPackage, componentPackage)
+		},
+		"hasDefaultValue":  hasDefaultValue,
+		"formatEnumSlice":  formatEnumSlice,
+		"formatEnumValues": formatEnumValues,
+		"invalidTestValue": invalidTestValue,
+		"isExternalRef": func(ref string) bool {
+			if ref == "" {
+				return false
+			}
+			tr, err := ResolveGoTypeRef(ref, rootPackage, componentPackage)
+			return err == nil && tr.ImportPath != ""
+		},
+		"externalDefaultCall": func(ref string) string {
+			call, err := ExternalDefaultCall(ref, rootPackage, componentPackage)
+			if err != nil {
+				panic(err)
+			}
+			return call
+		},
+		"embeddedProps": func(props map[string]*ConfigMetadata) map[string]*ConfigMetadata {
+			return filterProps(props, func(prop *ConfigMetadata) bool {
+				return prop.Embed
+			})
+		},
+		"namedProps": func(props map[string]*ConfigMetadata) map[string]*ConfigMetadata {
+			return filterProps(props, func(prop *ConfigMetadata) bool {
+				return !prop.Embed
+			})
+		},
 	}
+}
+
+// ExternalDefaultCall returns the Go expression that delegates to the upstream package's
+// NewDefault constructor for an external type reference (e.g. "controller.NewDefaultControllerConfig()").
+func ExternalDefaultCall(ref, rootPackage, componentPackage string) (string, error) {
+	tr, err := ResolveGoTypeRef(ref, rootPackage, componentPackage)
+	if err != nil {
+		return "", err
+	}
+	fnCall := fmt.Sprintf("NewDefault%s()", tr.TypeName)
+	if tr.Qualifier() != "" {
+		fnCall = tr.Qualifier() + "." + fnCall
+	}
+	return fnCall, nil
 }
 
 // WithCfgFns merges config generation template functions into the given function map.
@@ -64,6 +127,7 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 func WithCfgFns(fns map[string]any, rootPackage, componentPackage string) map[string]any {
 	cfgFns := NewCfgFns(rootPackage, componentPackage)
 	maps.Copy(fns, cfgFns)
+	maps.Copy(fns, NewCfgDocFns())
 	return fns
 }
 
@@ -71,6 +135,43 @@ var goBasicTypes = []string{
 	"rune", "byte",
 	"uint", "int8", "uint8", "int16", "uint16", "int32", "uint32", "int64", "uint64",
 	"float32", "float64",
+	"time.Time", "time.Duration",
+}
+
+var primitiveSchemaGoTypes = map[string]string{
+	"string":  "string",
+	"integer": "int",
+	"number":  "float64",
+	"boolean": "bool",
+}
+
+func IsPrimitiveSchema(md *ConfigMetadata) bool {
+	if md == nil {
+		return false
+	}
+	_, ok := primitiveSchemaGoTypes[md.Type]
+	return ok
+}
+
+func PrimitiveGoType(md *ConfigMetadata, rootPackage, componentPackage string) (string, error) {
+	if md == nil {
+		return "", errors.New("nil ConfigMetadata")
+	}
+	goType, ok := primitiveSchemaGoTypes[md.Type]
+	if !ok {
+		return "", fmt.Errorf("unsupported primitive type: %q", md.Type)
+	}
+	if md.GoType != "" {
+		if slices.Contains(goBasicTypes, md.GoType) {
+			return md.GoType, nil
+		}
+		typeName, err := FormatTypeName(md.GoType, rootPackage, componentPackage)
+		if err != nil {
+			return "", fmt.Errorf("failed to format custom type %q: %w", md.GoType, err)
+		}
+		return typeName, nil
+	}
+	return goType, nil
 }
 
 // MapGoType maps a ConfigMetadata to its corresponding Go type as a string.
@@ -92,6 +193,13 @@ func MapGoType(md *ConfigMetadata, propName, rootPackage, componentPackage strin
 }
 
 func resolveGoType(md *ConfigMetadata, propName, rootPackage, componentPackage string) (string, error) {
+	if md.Ref != "" {
+		typeName, err := FormatTypeName(md.Ref, rootPackage, componentPackage)
+		if err != nil {
+			return "", fmt.Errorf("failed to format reference type %q: %w", md.Ref, err)
+		}
+		return typeName, nil
+	}
 	if md.GoType != "" {
 		if slices.Contains(goBasicTypes, md.GoType) {
 			return md.GoType, nil
@@ -102,24 +210,13 @@ func resolveGoType(md *ConfigMetadata, propName, rootPackage, componentPackage s
 		}
 		return typeName, nil
 	}
-	if md.Ref != "" {
-		typeName, err := FormatTypeName(md.Ref, rootPackage, componentPackage)
-		if err != nil {
-			return "", fmt.Errorf("failed to format reference type %q: %w", md.Ref, err)
-		}
-		return typeName, nil
-	}
 
 	switch md.Type {
 	case "string":
-		switch md.Format {
-		case "date-time":
-			return "time.Time", nil
-		case "duration":
-			return "time.Duration", nil
-		default:
-			return "string", nil
+		if strings.HasPrefix(md.GoType, "time.") {
+			return md.GoType, nil
 		}
+		return "string", nil
 	case "integer":
 		return "int", nil
 	case "number":
@@ -158,8 +255,36 @@ func resolveGoType(md *ConfigMetadata, propName, rootPackage, componentPackage s
 	}
 }
 
-// ExtractImports recursively scans the ConfigMetadata and collects all unique import paths needed for the generated Go code.
-func ExtractImports(md *ConfigMetadata, rootPackage, componentPackage string) ([]string, error) {
+func ExtractImports(md *ConfigsMetadata, rootPackage, componentPackage string) ([]string, error) {
+	imports := make(map[string]bool)
+	if md.Config != nil {
+		collected, err := ExtractImportsFromConfig(md.Config, rootPackage, componentPackage)
+		if err != nil {
+			return nil, err
+		}
+		for _, imp := range collected {
+			imports[imp] = true
+		}
+	}
+	if md.ExportedConfigs != nil {
+		for _, expCfg := range md.ExportedConfigs {
+			if expCfg.InternalOnly {
+				continue
+			}
+			collected, err := ExtractImportsFromConfig(expCfg, rootPackage, componentPackage)
+			if err != nil {
+				return nil, err
+			}
+			for _, imp := range collected {
+				imports[imp] = true
+			}
+		}
+	}
+	return slices.Collect(maps.Keys(imports)), nil
+}
+
+// ExtractImportsFromConfig recursively scans the ConfigMetadata and collects all unique import paths needed for the generated Go code.
+func ExtractImportsFromConfig(md *ConfigMetadata, rootPackage, componentPackage string) ([]string, error) {
 	if md == nil {
 		return nil, nil
 	}
@@ -179,24 +304,49 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 
 	if md.GoType != "" {
 		ref, err := ResolveGoTypeRef(md.GoType, rootPackage, componentPackage)
-		if err == nil && ref.ImportPath != "" {
+		if err != nil {
+			return fmt.Errorf("failed to resolve import for custom type %q: %w", md.GoType, err)
+		}
+		if ref.ImportPath != "" {
 			imports[ref.ImportPath] = true
 		}
 	}
 
-	if md.Ref != "" {
-		ref, err := ResolveGoTypeRef(md.Ref, rootPackage, componentPackage)
-		if err == nil && ref.ImportPath != "" {
-			imports[ref.ImportPath] = true
-		}
-	}
-
-	if md.Type == "string" && (md.Format == "date-time" || md.Format == "duration") {
+	if md.Type == "string" && strings.HasPrefix(md.GoType, "time.") {
 		imports["time"] = true
 	}
 
 	if md.IsOptional {
 		imports["go.opentelemetry.io/collector/config/configoptional"] = true
+	}
+
+	if md.Ref != "" {
+		ref, err := ResolveGoTypeRef(md.Ref, rootPackage, componentPackage)
+		if err != nil {
+			return fmt.Errorf("failed to resolve import for reference %q: %w", md.Ref, err)
+		}
+		if ref.ImportPath != "" {
+			imports[ref.ImportPath] = true
+		}
+		refDesc := NewRef(md.Ref)
+		if !refDesc.IsInternal() {
+			if err := collectCustomDefaultImports(md, md.Default, imports, rootPackage, componentPackage); err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+
+	if hasValidators(md) {
+		imports["errors"] = true
+	}
+
+	if md.Pattern != "" && !strings.HasPrefix(md.GoType, "time.") {
+		imports["regexp"] = true
+	}
+
+	if len(md.Enum) > 0 {
+		imports["slices"] = true
 	}
 
 	for _, prop := range md.Properties {
@@ -211,29 +361,54 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 		}
 	}
 
-	for _, schema := range md.AllOf {
-		if err := collectImports(schema, imports, rootPackage, componentPackage); err != nil {
-			return err
-		}
-	}
-
-	for _, def := range md.Defs {
-		if err := collectImports(def, imports, rootPackage, componentPackage); err != nil {
-			return err
-		}
-	}
-
 	if err := collectImports(md.AdditionalProperties, imports, rootPackage, componentPackage); err != nil {
 		return err
 	}
 
-	if md.ContentSchema != nil {
-		if err := collectImports(md.ContentSchema, imports, rootPackage, componentPackage); err != nil {
-			return err
+	return nil
+}
+
+func collectCustomDefaultImports(md *ConfigMetadata, defaultValue any, imports map[string]bool, rootPackage, componentPackage string) error {
+	if md == nil || md.GoStruct.IgnoreDefault {
+		return nil
+	}
+
+	switch typedValue := defaultValue.(type) {
+	case map[string]any:
+		if md.AdditionalProperties != nil {
+			return nil
+		}
+		for key, value := range typedValue {
+			prop := md.Properties[key]
+			if prop == nil {
+				continue
+			}
+			if err := collectImports(prop, imports, rootPackage, componentPackage); err != nil {
+				return err
+			}
+			if err := collectCustomDefaultImports(prop, value, imports, rootPackage, componentPackage); err != nil {
+				return err
+			}
+		}
+	case []any:
+		if md.Items == nil || md.Items.Type != "object" {
+			return nil
+		}
+		for _, item := range typedValue {
+			if err := collectCustomDefaultImports(md.Items, item, imports, rootPackage, componentPackage); err != nil {
+				return err
+			}
 		}
 	}
 
 	return nil
+}
+
+func hasValidators(md *ConfigMetadata) bool {
+	return md.GoStruct.CustomValidator != nil || // custom validation
+		len(md.Required) > 0 || // required validation
+		md.MinLength != nil || md.MaxLength != nil || md.Pattern != "" || // string validation
+		md.Minimum != nil || md.Maximum != nil || md.ExclusiveMinimum != nil || md.ExclusiveMaximum != nil // numeric validation
 }
 
 // FormatTypeName resolves a reference string to a Go type expression using GoTypeRef.
@@ -245,9 +420,22 @@ func FormatTypeName(ref, rootPackage, componentPackage string) (string, error) {
 	return tr.String(), nil
 }
 
-// ExtractDefs recursively collects all definitions from the ConfigMetadata, including nested ones,
+func ExtractDefs(md *ConfigsMetadata) map[string]*ConfigMetadata {
+	defs := make(map[string]*ConfigMetadata)
+	if md.Config != nil {
+		maps.Copy(defs, ExtractDefsFromConfig(md.Config))
+	}
+	for name, expCfg := range md.ExportedConfigs {
+		if !expCfg.InternalOnly {
+			defs[name] = expCfg
+		}
+	}
+	return defs
+}
+
+// ExtractDefsFromConfig recursively collects all definitions from the ConfigMetadata, including nested ones,
 // and returns a flat map of definition names to their corresponding ConfigMetadata.
-func ExtractDefs(md *ConfigMetadata) map[string]*ConfigMetadata {
+func ExtractDefsFromConfig(md *ConfigMetadata) map[string]*ConfigMetadata {
 	defs := make(map[string]*ConfigMetadata)
 	collectDefs(md, defs)
 	return defs
@@ -257,23 +445,35 @@ func collectDefs(md *ConfigMetadata, defs map[string]*ConfigMetadata) {
 	if md == nil {
 		return
 	}
-
-	for name, def := range md.Defs {
-		defs[name] = def
-		collectDefs(def, defs)
+	if md.Ref != "" {
+		refDesc := NewRef(md.Ref)
+		if !refDesc.IsInternal() {
+			return
+		}
+		if _, exists := defs[md.Ref]; !exists {
+			defs[md.Ref] = md
+		}
 	}
 
-	for propName, prop := range md.Properties {
-		collectDefsForSchema(propName, prop, defs)
-	}
-
-	for _, schema := range md.AllOf {
-		collectDefs(schema, defs)
+	for _, propName := range slices.Sorted(maps.Keys(md.Properties)) {
+		collectDefsForSchema(propName, md.Properties[propName], defs)
 	}
 }
 
 func collectDefsForSchema(propName string, md *ConfigMetadata, defs map[string]*ConfigMetadata) {
-	if md == nil || md.Ref != "" || md.GoType != "" {
+	if md == nil || md.GoType != "" {
+		return
+	}
+
+	if md.Ref != "" {
+		refDesc := NewRef(md.Ref)
+		if refDesc.IsInternal() {
+			// Only register the ref-site node if no authoritative definition was already collected from md.Defs.
+			if _, exists := defs[md.Ref]; !exists {
+				defs[md.Ref] = md
+			}
+			collectDefs(md, defs)
+		}
 		return
 	}
 
@@ -309,26 +509,90 @@ func ExtractValidators(md *ConfigMetadata) []Validator {
 	return validators
 }
 
+type ValidationRules struct {
+	MaxLength        *int
+	MinLength        *int
+	Pattern          *string
+	Required         bool
+	Minimum          *float64
+	Maximum          *float64
+	ExclusiveMinimum *float64
+	ExclusiveMaximum *float64
+	Enum             []any
+}
+
+func (vr *ValidationRules) HasValueRule() bool {
+	return vr.MaxLength != nil || vr.MinLength != nil || vr.Pattern != nil ||
+		vr.Minimum != nil || vr.Maximum != nil || vr.ExclusiveMinimum != nil || vr.ExclusiveMaximum != nil ||
+		len(vr.Enum) > 0
+}
+
+func (vr *ValidationRules) Enabled() bool {
+	return vr.HasValueRule() || vr.Required
+}
+
 type Validator struct {
-	FieldName  string
-	FieldType  string
-	IsRequired bool
-	IsPointer  bool
-	IsOptional bool
+	FieldName       string
+	FieldType       string
+	IsPointer       bool
+	IsOptional      bool
+	Rules           ValidationRules
+	CustomValidator string
 }
 
 func collectValidators(md *ConfigMetadata, validators *[]Validator) {
-	for propName, prop := range md.Properties {
-		isRequired := slices.Contains(md.Required, propName)
-		if isRequired {
+	for _, propName := range slices.Sorted(maps.Keys(md.Properties)) {
+		prop := md.Properties[propName]
+		if prop.Embed {
+			continue
+		}
+		rules := ValidationRules{
+			MaxLength:        prop.MaxLength,
+			MinLength:        prop.MinLength,
+			Minimum:          prop.Minimum,
+			Maximum:          prop.Maximum,
+			ExclusiveMinimum: prop.ExclusiveMinimum,
+			ExclusiveMaximum: prop.ExclusiveMaximum,
+			Enum:             prop.Enum,
+		}
+
+		rules.Required = slices.Contains(md.Required, propName)
+		if prop.Pattern != "" && !strings.HasPrefix(prop.GoType, "time.") {
+			rules.Pattern = &prop.Pattern
+		}
+
+		fieldName := prop.GoStruct.FieldName
+		if fieldName == "" {
+			fieldName = propName
+		}
+		if rules.Enabled() {
 			*validators = append(*validators, Validator{
-				FieldName:  propName,
+				FieldName:  fieldName,
 				FieldType:  resolveType(prop),
-				IsRequired: isRequired,
 				IsPointer:  prop.IsPointer,
 				IsOptional: prop.IsOptional,
+				Rules:      rules,
 			})
 		}
+
+		if prop.GoStruct.CustomValidator != nil {
+			*validators = append(*validators, Validator{
+				FieldName:       propName,
+				FieldType:       resolveType(prop),
+				IsPointer:       prop.IsPointer,
+				IsOptional:      prop.IsOptional,
+				CustomValidator: generateValidatorName(propName, prop.GoStruct.CustomValidator),
+			})
+		}
+	}
+
+	// root custom validation
+	if md.GoStruct.CustomValidator != nil {
+		*validators = append(*validators, Validator{
+			FieldName:       ".",
+			FieldType:       md.Type,
+			CustomValidator: generateValidatorName("", md.GoStruct.CustomValidator),
+		})
 	}
 }
 
@@ -336,11 +600,304 @@ func resolveType(md *ConfigMetadata) string {
 	switch {
 	case md.Ref != "":
 		return "ref"
-	case md.Type == "string" && md.Format == "date-time":
+	case md.Type == "string" && md.GoType == "time.Time":
 		return "datetime"
-	case md.Type == "string" && md.Format == "duration":
+	case md.Type == "string" && md.GoType == "time.Duration":
 		return "duration"
+	case md.Type == "object" && md.AdditionalProperties != nil:
+		return "map"
 	default:
 		return md.Type
 	}
+}
+
+func generateValidatorName(propName string, desc *CustomValidatorConfig) string {
+	if desc.Name != "" {
+		return desc.Name
+	}
+	id, _ := helpers.FormatIdentifier(propName, true)
+	return "validate" + id
+}
+
+func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, componentPackage string) []string {
+	if schema.GoStruct.IgnoreDefault {
+		return nil
+	}
+	exps := make([]string, 0)
+	switch typedValue := defaultValue.(type) {
+	case map[string]any:
+		// is nested struct
+		if schema.AdditionalProperties == nil {
+			for key, value := range typedValue {
+				propSchema := schema.Properties[key]
+				if propSchema == nil {
+					panic("schema does not contain required property: " + key)
+				}
+				varName, _ := helpers.FormatIdentifier(key, true)
+				exp := fmt.Sprintf(".%s = %s", varName, FormatDefaultValue(propSchema, key, value, rootPackage, componentPackage))
+				exps = append(exps, exp)
+			}
+		} else if schema.AdditionalProperties.Type == "object" { // is a map of object
+			panic("map of structs is not supported yet")
+		}
+	case []any:
+		// is an array of objects
+		if schema.Items == nil || schema.Items.Type != "object" {
+			return nil
+		}
+		for i, item := range typedValue {
+			nestedExps := MapCustomDefaults(schema.Items, item, rootPackage, componentPackage)
+			for _, exp := range nestedExps {
+				exps = append(exps, fmt.Sprintf("[%d]%s", i, exp))
+			}
+		}
+	}
+
+	return exps
+}
+
+func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue any, rootPackage, componentPackage string) string {
+	if md.GoStruct.IgnoreDefault || (defaultValue == nil && !hasDefaultValue(md)) {
+		if md.IsPointer {
+			return "nil"
+		}
+		if md.IsOptional {
+			t, _ := resolveGoType(md, name, rootPackage, componentPackage)
+			return fmt.Sprintf("configoptional.None[%s]()", t)
+		}
+		return ""
+	}
+	exp := formatSimpleValue(md, name, defaultValue, rootPackage, componentPackage)
+	if md.IsPointer {
+		return "&" + exp
+	}
+	if md.IsOptional {
+		if md.Type == "object" && md.Properties != nil {
+			return fmt.Sprintf("configoptional.Default(%s)", exp)
+		}
+		return fmt.Sprintf("configoptional.Some(%s)", exp)
+	}
+	return exp
+}
+
+// FormatBaseValue returns the default value expression without IsPointer/IsOptional wrappers.
+// Use this when initializing a local variable that will be mutated before wrapping.
+func FormatBaseValue(md *ConfigMetadata, name string, defaultValue any, rootPackage, componentPackage string) string {
+	return formatSimpleValue(md, name, defaultValue, rootPackage, componentPackage)
+}
+
+// WrapDefaultValue wraps a variable name expression with IsPointer/IsOptional modifiers.
+// Use this to produce the final field assignment after mutation of the local variable.
+func WrapDefaultValue(md *ConfigMetadata, varName string) string {
+	exp := varName
+	if md.IsPointer {
+		return "&" + exp
+	}
+	if md.IsOptional {
+		if md.Type == "object" && md.Properties != nil {
+			return fmt.Sprintf("configoptional.Default(%s)", exp)
+		}
+		return fmt.Sprintf("configoptional.Some(%s)", exp)
+	}
+	return exp
+}
+
+func hasDefaultValue(md *ConfigMetadata) bool {
+	if !md.GoStruct.IgnoreDefault && md.Default != nil {
+		return true
+	}
+	for _, prop := range md.Properties {
+		if hasDefaultValue(prop) {
+			return true
+		}
+	}
+	return false
+}
+
+// CamelVar converts a reference string to an unexported Go identifier
+func CamelVar(ref string) string {
+	if ref == "" {
+		panic("attempted to use CamelVar with an empty ref")
+	}
+	refDesc := NewRef(ref)
+	name, _ := helpers.FormatIdentifier(refDesc.ConfigName(), false)
+	return name
+}
+
+func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPackage, componentPackage string) string {
+	// handle references
+	isReference := md.Ref != ""
+	isSubStruct := md.Type == "object" && md.AdditionalProperties == nil
+	if (isReference && !IsPrimitiveSchema(md)) || isSubStruct {
+		if hasDefaultValue(md) {
+			if isReference {
+				refType, err := ResolveGoTypeRef(md.Ref, rootPackage, componentPackage)
+				if err != nil {
+					panic(err)
+				}
+
+				fnCall := fmt.Sprintf("NewDefault%s()", refType.TypeName)
+				if refType.Qualifier() != "" {
+					fnCall = refType.Qualifier() + "." + fnCall
+				}
+				return fnCall
+			}
+			typeName, _ := helpers.FormatIdentifier(name, true)
+			return fmt.Sprintf("NewDefault%s()", typeName)
+		}
+		// no defaults, skip it
+		return ""
+	}
+
+	// do not process further if "ignore_default" attribute set
+	if md.GoStruct.IgnoreDefault {
+		return ""
+	}
+
+	switch md.Type {
+	case "array":
+		typeExpr, err := resolveGoType(md.Items, name+"_item", "", "")
+		if err == nil {
+			if defaultValues, ok := defaultValue.([]any); ok {
+				exps := make([]string, 0, len(defaultValues))
+				for _, defaultValue := range defaultValues {
+					exps = append(exps, FormatDefaultValue(md.Items, name+"_item", defaultValue, rootPackage, componentPackage))
+				}
+				return fmt.Sprintf("[]%s{%s}", typeExpr, strings.Join(exps, ", "))
+			}
+			panic("invalid default value, array expected")
+		}
+		panic(fmt.Sprintf("Could not resolve type, due to %e", err))
+	case "object":
+		typeExpr, err := resolveGoType(md.AdditionalProperties, name, "", "")
+		if err == nil {
+			if defaultValues, ok := defaultValue.(map[string]any); ok {
+				exps := make([]string, 0, len(defaultValues))
+				for _, keyName := range slices.Sorted(maps.Keys(defaultValues)) {
+					value := defaultValues[keyName]
+					exps = append(
+						exps,
+						fmt.Sprintf("%q: %v", keyName, FormatDefaultValue(md.AdditionalProperties, name, value, rootPackage, componentPackage)))
+				}
+				return fmt.Sprintf("map[string]%s{%s}", typeExpr, strings.Join(exps, ", "))
+			}
+			panic("invalid default value, map expected")
+		}
+		panic(fmt.Sprintf("Could not resolve type, due to %e", err))
+	case "string":
+		switch md.GoType {
+		case "time.Duration":
+			if durationExpr, ok := renderDurationExpr(defaultValue); ok {
+				return durationExpr
+			}
+		default:
+			return fmt.Sprintf("%q", defaultValue)
+		}
+	default:
+		return fmt.Sprintf("%v", defaultValue)
+	}
+
+	panic("unreachable")
+}
+
+func renderDurationExpr(value any) (string, bool) {
+	switch v := value.(type) {
+	case int:
+		return formatDurationAsGoExpr(time.Duration(v)), true
+	case float64:
+		return formatDurationAsGoExpr(time.Duration(v)), true
+	case string:
+		d, err := time.ParseDuration(v)
+		if err != nil {
+			return "", false
+		}
+		return formatDurationAsGoExpr(d), true
+	default:
+		return "", false
+	}
+}
+
+func formatDurationAsGoExpr(d time.Duration) string {
+	if d == 0 {
+		return "0"
+	}
+	units := []struct {
+		name  string
+		value time.Duration
+	}{
+		{"time.Hour", time.Hour},
+		{"time.Minute", time.Minute},
+		{"time.Second", time.Second},
+		{"time.Millisecond", time.Millisecond},
+		{"time.Microsecond", time.Microsecond},
+		{"time.Nanosecond", time.Nanosecond},
+	}
+	var parts []string
+	rem := d
+	for _, u := range units {
+		if rem >= u.value {
+			n := rem / u.value
+			rem -= n * u.value
+			parts = append(parts, fmt.Sprintf("%d*%s", n, u.name))
+		}
+	}
+	return strings.Join(parts, " + ")
+}
+
+func formatEnumSlice(values []any, fieldType string) string {
+	var goType string
+	switch fieldType {
+	case "string":
+		goType = "string"
+	case "integer":
+		goType = "int"
+	case "number":
+		goType = "float64"
+	case "boolean":
+		goType = "bool"
+	default:
+		goType = "any"
+	}
+
+	formatted := make([]string, 0, len(values))
+	for _, v := range values {
+		switch tv := v.(type) {
+		case string:
+			formatted = append(formatted, fmt.Sprintf("%q", tv))
+		default:
+			formatted = append(formatted, fmt.Sprintf("%v", tv))
+		}
+	}
+	return fmt.Sprintf("[]%s{%s}", goType, strings.Join(formatted, ", "))
+}
+
+func formatEnumValues(values []any) string {
+	formatted := make([]string, 0, len(values))
+	for _, v := range values {
+		formatted = append(formatted, fmt.Sprintf("%v", v))
+	}
+	return "[" + strings.Join(formatted, ", ") + "]"
+}
+
+func invalidTestValue(fieldType string) string {
+	switch fieldType {
+	case "string":
+		return `"__invalid__"`
+	case "integer":
+		return "-1"
+	case "number":
+		return "-1.0"
+	default:
+		return `"__invalid__"`
+	}
+}
+
+func filterProps(props map[string]*ConfigMetadata, pred func(value *ConfigMetadata) bool) map[string]*ConfigMetadata {
+	result := make(map[string]*ConfigMetadata)
+	for k, v := range props {
+		if pred(v) {
+			result[k] = v
+		}
+	}
+	return result
 }

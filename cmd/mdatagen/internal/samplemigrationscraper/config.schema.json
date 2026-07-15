@@ -1,0 +1,126 @@
+{
+  "type": "object",
+  "properties": {
+    "emit_legacy_metrics": {
+      "type": "boolean",
+      "description": "Whether to emit legacy metric names alongside new ones.",
+      "default": false
+    }
+  },
+  "$id": "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplemigrationscraper",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "scraper/samplemigration",
+  "description": "Configuration for the Sample Migration Scraper.",
+  "allOf": [
+    {
+      "type": "object",
+      "properties": {
+        "metrics": {
+          "type": "object",
+          "properties": {
+            "linux.memory.available": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": false
+                }
+              },
+              "description": "LinuxMemoryAvailableMetricConfig provides config for the linux.memory.available metric."
+            },
+            "system.cpu.foo": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": false
+                }
+              },
+              "description": "SystemCPUFooMetricConfig provides config for the system.cpu.foo metric."
+            },
+            "system.cpu.utilization": {
+              "type": "object",
+              "properties": {
+                "aggregation_strategy": {
+                  "type": "string",
+                  "default": "avg",
+                  "enum": [
+                    "sum",
+                    "avg",
+                    "min",
+                    "max"
+                  ]
+                },
+                "attributes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "cpu",
+                      "state"
+                    ]
+                  },
+                  "default": [
+                    "cpu",
+                    "state"
+                  ]
+                },
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                }
+              },
+              "description": "SystemCPUUtilizationMetricConfig provides config for the system.cpu.utilization metric."
+            },
+            "system.cpu.utilization@v1": {
+              "type": "object",
+              "properties": {
+                "aggregation_strategy": {
+                  "type": "string",
+                  "default": "sum",
+                  "enum": [
+                    "sum",
+                    "avg",
+                    "min",
+                    "max"
+                  ]
+                },
+                "attributes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "cpu.logical_number",
+                      "state"
+                    ]
+                  },
+                  "default": [
+                    "cpu.logical_number",
+                    "state"
+                  ]
+                },
+                "enabled": {
+                  "type": "boolean",
+                  "default": false
+                }
+              },
+              "description": "SystemCPUUtilizationV1MetricConfig provides config for the system.cpu.utilization@v1 metric."
+            },
+            "system.memory.linux.available": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": false
+                }
+              },
+              "description": "SystemMemoryLinuxAvailableMetricConfig provides config for the system.memory.linux.available metric."
+            }
+          },
+          "description": "MetricsConfig provides config for samplemigration metrics."
+        }
+      },
+      "description": "MetricsBuilderConfig is a configuration for samplemigration metrics builder."
+    }
+  ]
+}

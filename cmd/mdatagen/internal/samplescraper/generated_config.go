@@ -4,47 +4,127 @@ package samplescraper
 
 import (
 	"errors"
+	"regexp"
+	"slices"
 	"time"
 
-	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplepkg"
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper/internal/metadata"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
-type TargetsItem struct {
-	HTTPClient *confighttp.ClientConfig               `mapstructure:"http_client"`
-	Interval   configoptional.Optional[time.Duration] `mapstructure:"interval"`
-	Options    map[string]string                      `mapstructure:"options"`
+type SamplePkg = samplepkg.SampleConfig
+
+// NewDefaultSamplePkg returns a new SamplePkg with default values consistent with the annotations in the schema.
+func NewDefaultSamplePkg() SamplePkg {
+	return samplepkg.NewDefaultSampleConfig()
 }
 
-// Validate validates the targets_item fields.
+type TargetsItem struct {
+	Interval configoptional.Optional[time.Duration] `mapstructure:"interval"`
+	// Static key-value labels attached to all metrics from this target.
+	Labels map[string]string `mapstructure:"labels"`
+	// Number of retry attempts for failed scrapes.
+	RetryCount int `mapstructure:"retry_count"`
+	// Timeout in seconds for each scrape request.
+	TimeoutSeconds float64 `mapstructure:"timeout_seconds"`
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+// Validate validates the TargetsItem fields according to schema annotations.
 func (c *TargetsItem) Validate() error {
 	var err error
 
-	if c.HTTPClient == nil {
-		err = errors.Join(err, errors.New("http_client is required"))
+	if c.Labels == nil || len(c.Labels) == 0 {
+		err = errors.Join(err, errors.New("labels is required"))
 	}
-	if c.Options == nil || len(c.Options) == 0 {
-		err = errors.Join(err, errors.New("options is required"))
+
+	if c.RetryCount < 0 {
+		err = errors.Join(err, errors.New("retry_count value must be greater than or equal to 0"))
+	}
+	if c.RetryCount > 10 {
+		err = errors.Join(err, errors.New("retry_count value must be less than or equal to 10"))
+	}
+
+	if c.TimeoutSeconds <= 0 {
+		err = errors.Join(err, errors.New("timeout_seconds value must be greater than 0"))
+	}
+	if c.TimeoutSeconds >= 30 {
+		err = errors.Join(err, errors.New("timeout_seconds value must be less than 30"))
 	}
 
 	return err
 }
 
+// NewDefaultTargetsItem returns a new TargetsItem with default values consistent with the annotations in the schema.
+func NewDefaultTargetsItem() TargetsItem {
+	return TargetsItem{
+		Interval:       configoptional.Some(10 * time.Second),
+		Labels:         map[string]string{"option1": "value1", "option2": "value2"},
+		RetryCount:     3,
+		TimeoutSeconds: 5,
+	}
+}
+
 // Configuration for the Sample Scraper.
 type Config struct {
+	// Defines common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed.
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	// Targets configuration for the scraper.
+	// MetricsBuilderConfig is a configuration for sample metrics builder.
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	// Identifies the scraper, used for telemetry and logging.
+	ComponentID component.ID `mapstructure:"component"`
+	// Name of the scrape job, used to identify the source in telemetry.
+	JobName string `mapstructure:"job_name"`
+	// Logging level for the scraper.
+	LogLevel string `mapstructure:"log_level"`
+	// List of targets to scrape metrics from.
 	Targets *[]TargetsItem `mapstructure:"targets"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Validate validates the Config fields.
 func (c *Config) Validate() error {
 	var err error
 
+	if c.JobName == "" {
+		err = errors.Join(err, errors.New("job_name is required"))
+	}
+	if len(c.JobName) > 255 {
+		err = errors.Join(err, errors.New("job_name exceeds maximum length of 255"))
+	}
+	if len(c.JobName) < 1 {
+		err = errors.Join(err, errors.New("job_name must have minimum length of 1"))
+	}
+	if matched, _ := regexp.MatchString(`^[a-zA-Z0-9_.-]+$`, c.JobName); !matched {
+		err = errors.Join(err, errors.New("job_name must match pattern `^[a-zA-Z0-9_.-]+$`"))
+	}
+
+	if inner_err := validateJobName(c.JobName); inner_err != nil {
+		err = errors.Join(err, inner_err)
+	}
+
+	if !slices.Contains([]string{"debug", "info", "warn", "error"}, c.LogLevel) {
+		err = errors.Join(err, errors.New("log_level must be one of [debug, info, warn, error]"))
+	}
+
 	if c.Targets == nil || len(*c.Targets) == 0 {
 		err = errors.Join(err, errors.New("targets is required"))
 	}
 
 	return err
+}
+
+func createDefaultConfig() component.Config {
+	return &Config{
+		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+		JobName:              "test_job",
+		LogLevel:             "info",
+		Targets:              &[]TargetsItem{NewDefaultTargetsItem()},
+	}
 }

@@ -3,11 +3,11 @@
 type: sample
 display_name: Sample Receiver
 description: This receiver is used for testing purposes to check the output of mdatagen.
-reaggregation_enabled: true
+override_value_enabled: true
 scope_name: go.opentelemetry.io/collector/internal/receiver/samplereceiver
 github_project: open-telemetry/opentelemetry-collector
 
-sem_conv_version: 1.38.0
+sem_conv_version: 1.40.0
 
 feature_gates:
   - id: receiver.sample.featuregate.example
@@ -37,9 +37,13 @@ status:
 
 config:
   type: object
-  allOf:
-    - $ref: ./internal/metadata.metrics_builder_config
   properties:
+    metrics_builder_config:
+      $ref: ./internal/metadata.metrics_builder_config
+      embed: true
+      go_struct:
+        anonymous: true
+        ignore_default: true
     endpoint:
       description: The endpoint to scrape metrics from.
       type: string
@@ -49,23 +53,35 @@ config:
       type: string
       format: duration
       default: 10s
+    sample_pkg:
+      $ref: ../samplepkg.sample_config
   required: [endpoint]
 
 resource_attributes:
+  host.arch:
+    description: The CPU architecture the host system is running on.
+    type: string
+    enabled: false
+    semantic_convention:
+      ref: host.md#host-arch
+
   map.resource.attr:
     description: Resource attribute with a map value.
     type: map
     enabled: true
+    stability: development
 
   optional.resource.attr:
     description: Explicitly disabled ResourceAttribute.
     type: string
     enabled: false
+    stability: development
 
   slice.resource.attr:
     description: Resource attribute with a slice value.
     type: slice
     enabled: true
+    stability: development
 
   string.enum.resource.attr:
     description: Resource attribute with a known set of string values.
@@ -200,7 +216,8 @@ events:
   default.event.to_be_renamed:
     enabled: false
     description: "[DEPRECATED] Example event disabled by default."
-    extended_documentation: The event will be renamed soon.
+    extended_documentation: |
+            The event will be renamed soon.
     attributes: [string_attr, boolean_attr, boolean_attr2, conditional_string_attr]
     warnings:
       if_configured: This event is deprecated and will be renamed soon.
@@ -236,7 +253,8 @@ metrics:
   default.metric.to_be_removed:
     enabled: true
     description: "[DEPRECATED] Non-monotonic delta sum double metric enabled by default."
-    extended_documentation: The metric will be removed soon.
+    extended_documentation: |
+            The metric will be removed soon.
     stability: deprecated
     deprecated:
       since: "1.0.0"

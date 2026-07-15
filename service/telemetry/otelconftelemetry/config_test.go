@@ -13,11 +13,13 @@ import (
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/service/telemetry"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry/internal/migration"
 )
 
 func TestComponentConfigStruct(t *testing.T) {
@@ -96,6 +98,24 @@ func TestConfig(t *testing.T) {
 		"config_invalid_metrics_views_level.yaml": {
 			validateErr: `service::telemetry::metrics::views can only be set when service::telemetry::metrics::level is detailed`,
 		},
+		"config_prometheus_host_only.yaml": {
+			config: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				host := "[::0]"
+				cfg.Metrics.Readers = []config.MetricReader{
+					{
+						Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
+							WithoutScopeInfo:  ptr(true),
+							WithoutUnits:      ptr(true),
+							WithoutTypeSuffix: ptr(true),
+							Host:              &host,
+							Port:              ptr(8888),
+						}}},
+					},
+				}
+				return cfg
+			}(),
+		},
 	}
 
 	for filename, test := range tests {
@@ -115,7 +135,7 @@ func TestConfig(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			err = xconfmap.Validate(cfg)
+			err = confmap.Validate(cfg)
 			if test.validateErr != "" {
 				assert.ErrorContains(t, err, test.validateErr)
 				return
@@ -125,4 +145,59 @@ func TestConfig(t *testing.T) {
 			assert.Equal(t, test.config, cfg)
 		})
 	}
+}
+
+func TestConfigMarshalResource(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Resource = migration.ResourceConfigV030{
+		Resource: config.Resource{
+			Attributes: []config.AttributeNameValue{
+				{Name: "service.name", Value: "custom-service"},
+			},
+		},
+		LegacyAttributes: map[string]any{
+			"legacy.attr":     "legacy-value",
+			"service.version": nil,
+		},
+	}
+
+	cm := confmap.New()
+	require.NoError(t, cm.Marshal(cfg))
+	raw := cm.ToStringMap()
+
+	resourceRaw, ok := raw["resource"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "legacy-value", resourceRaw["legacy.attr"])
+	assert.Contains(t, resourceRaw, "service.version")
+	assert.Nil(t, resourceRaw["service.version"])
+
+	attrs, ok := resourceRaw["attributes"].([]any)
+	require.True(t, ok)
+	require.Len(t, attrs, 1)
+	attr, ok := attrs[0].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "service.name", attr["name"])
+	assert.Equal(t, "custom-service", attr["value"])
+}
+
+func TestConfigResourceDetectionDevelopmentE2E(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_resource_detection_development.yaml"))
+	require.NoError(t, err)
+
+	cfg := createDefaultConfig().(*Config)
+	require.NoError(t, cm.Unmarshal(cfg))
+	require.NoError(t, confmap.Validate(cfg))
+	require.NotNil(t, cfg.Resource.DetectionDevelopment)
+	require.Len(t, cfg.Resource.DetectionDevelopment.Detectors, 1)
+	require.NotNil(t, cfg.Resource.DetectionDevelopment.Detectors[0].Host)
+
+	set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+	res, err := createResource(t.Context(), set, cfg)
+	require.NoError(t, err)
+
+	raw := res.Attributes().AsRaw()
+	assert.Equal(t, "bar", raw["foo"])
+	assert.Contains(t, raw, "host.name")
+	assert.Contains(t, raw, "os.type")
+	assert.Contains(t, raw, "os.description")
 }

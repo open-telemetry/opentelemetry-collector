@@ -10,6 +10,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/internal/schemagen"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func TestValidate(t *testing.T) {
@@ -72,6 +75,14 @@ func TestValidate(t *testing.T) {
 		{
 			name:    "testdata/no_type_rattr.yaml",
 			wantErr: "empty type for resource attribute: string.resource.attr",
+		},
+		{
+			name:    "testdata/rattr_stability_valid.yaml",
+			wantErr: "",
+		},
+		{
+			name:    "testdata/invalid_rattr_stability.yaml",
+			wantErr: `unsupported stability level: "test42"`,
 		},
 		{
 			name:    "testdata/no_metric_description.yaml",
@@ -190,6 +201,26 @@ func TestValidate(t *testing.T) {
 		{
 			name:    "testdata/invalid_histogram_aggregation.yaml",
 			wantErr: "invalid aggregation \"invalid_aggregation_type\"",
+		},
+		{
+			name:    "testdata/no_stability_noncomponent.yaml",
+			wantErr: "",
+		},
+		{
+			name:    "testdata/versioned_metric.yaml",
+			wantErr: "",
+		},
+		{
+			name:    "testdata/validate_migrations_error.yaml",
+			wantErr: "metric \"system.cpu.time\": migration.to refers to undefined metric \"system.cpu.time@v1\"\nfeature gate \"versioned.metrics.DontEmitV0SystemConventions\": ID must be prefixed with \"receiver.test_versioned.\"\nfeature gate \"versioned.metrics.EmitV1SystemConventions\": ID must be prefixed with \"receiver.test_versioned.\"",
+		},
+		{
+			name:    "testdata/feature_gates.yaml",
+			wantErr: "",
+		},
+		{
+			name:    "testdata/feature_gates_not_sorted.yaml",
+			wantErr: "feature gates must be sorted by ID",
 		},
 	}
 	for _, tt := range tests {
@@ -394,6 +425,386 @@ func TestAttributeRequirementLevelUnmarshalText(t *testing.T) {
 	}
 }
 
+func TestValidateMigrations(t *testing.T) {
+	tests := []struct {
+		name         string
+		featureGates []FeatureGate
+		metrics      map[MetricName]Metric
+		wantErr      string
+	}{
+		{
+			name: "valid metric no migration returns no error",
+			featureGates: []FeatureGate{
+				{
+					ID:           "test.migration",
+					Description:  "Test migration gate",
+					Stage:        FeatureGateStageAlpha,
+					FromVersion:  "v0.100.0",
+					ReferenceURL: "https://example.com",
+				},
+			},
+			metrics: map[MetricName]Metric{
+				"test.metric": {
+					Signal: Signal{
+						Enabled:               true,
+						Description:           "Monotonic cumulative sum int metric enabled by default.",
+						ExtendedDocumentation: "The metric will be become optional soon.",
+						Stability:             component.StabilityLevelAlpha,
+						Warnings: Warnings{
+							IfEnabledNotSet: "This metric will be disabled by default soon.",
+						},
+						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
+					},
+					Unit: strPtr("s"),
+					Sum: &Sum{
+						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
+						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+						Mono:                   Mono{Monotonic: true},
+					},
+				},
+			},
+		},
+		{
+			name: "valid metric and migration returns no error",
+			featureGates: []FeatureGate{
+				{
+					ID:           "DontEmitV0SystemConventions",
+					Description:  "Test disable gate",
+					Stage:        FeatureGateStageAlpha,
+					FromVersion:  "v0.100.0",
+					ReferenceURL: "https://example.com",
+				},
+				{
+					ID:           "EmitV1SystemConventions",
+					Description:  "Test emit gate",
+					Stage:        FeatureGateStageAlpha,
+					FromVersion:  "v0.100.0",
+					ReferenceURL: "https://example.com",
+				},
+			},
+			metrics: map[MetricName]Metric{
+				"test.metric": {
+					Signal: Signal{
+						Enabled:               true,
+						Description:           "Monotonic cumulative sum int metric enabled by default.",
+						ExtendedDocumentation: "The metric will be become optional soon.",
+						Stability:             component.StabilityLevelAlpha,
+						Warnings: Warnings{
+							IfEnabledNotSet: "This metric will be disabled by default soon.",
+						},
+						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
+					},
+					Unit: strPtr("s"),
+					Sum: &Sum{
+						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
+						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+						Mono:                   Mono{Monotonic: true},
+					},
+					Migration: &MetricMigration{
+						To: MetricName("test.migration"),
+						ThroughGates: MigrationGates{
+							DisableOld: FeatureGateID("DontEmitV0SystemConventions"),
+							EnableNew:  FeatureGateID("EmitV1SystemConventions"),
+						},
+					},
+				},
+				"test.migration": {
+					Signal: Signal{
+						Enabled:               true,
+						Description:           "Monotonic cumulative sum int metric enabled by default.",
+						ExtendedDocumentation: "The metric will be become optional soon.",
+						Stability:             component.StabilityLevelAlpha,
+						Warnings: Warnings{
+							IfEnabledNotSet: "This metric will be disabled by default soon.",
+						},
+						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
+					},
+					Unit: strPtr("s"),
+					Sum: &Sum{
+						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
+						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+						Mono:                   Mono{Monotonic: true},
+					},
+				},
+			},
+		},
+		{
+			name: "migration to undefined metric returns error",
+			featureGates: []FeatureGate{
+				{
+					ID:           "DontEmitV0SystemConventions",
+					Description:  "Test disable gate",
+					Stage:        FeatureGateStageAlpha,
+					FromVersion:  "v0.100.0",
+					ReferenceURL: "https://example.com",
+				},
+				{
+					ID:           "EmitV1SystemConventions",
+					Description:  "Test emit gate",
+					Stage:        FeatureGateStageAlpha,
+					FromVersion:  "v0.100.0",
+					ReferenceURL: "https://example.com",
+				},
+			},
+			metrics: map[MetricName]Metric{
+				"test.metric": {
+					Signal: Signal{
+						Enabled:               true,
+						Description:           "Monotonic cumulative sum int metric enabled by default.",
+						ExtendedDocumentation: "The metric will be become optional soon.",
+						Stability:             component.StabilityLevelAlpha,
+						Warnings: Warnings{
+							IfEnabledNotSet: "This metric will be disabled by default soon.",
+						},
+						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
+					},
+					Unit: strPtr("s"),
+					Sum: &Sum{
+						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
+						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+						Mono:                   Mono{Monotonic: true},
+					},
+					Migration: &MetricMigration{
+						To: MetricName("invalid.metric"),
+						ThroughGates: MigrationGates{
+							DisableOld: FeatureGateID("DontEmitV0SystemConventions"),
+							EnableNew:  FeatureGateID("EmitV1SystemConventions"),
+						},
+					},
+				},
+			},
+			wantErr: "metric \"test.metric\": migration.to refers to undefined metric \"invalid.metric\"",
+		},
+		{
+			name: "migration with undefined feature gates returns error",
+			metrics: map[MetricName]Metric{
+				"test.metric": {
+					Signal: Signal{
+						Enabled:               true,
+						Description:           "Monotonic cumulative sum int metric enabled by default.",
+						ExtendedDocumentation: "The metric will be become optional soon.",
+						Stability:             component.StabilityLevelAlpha,
+						Warnings: Warnings{
+							IfEnabledNotSet: "This metric will be disabled by default soon.",
+						},
+						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
+					},
+					Unit: strPtr("s"),
+					Sum: &Sum{
+						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
+						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+						Mono:                   Mono{Monotonic: true},
+					},
+					Migration: &MetricMigration{
+						To: MetricName("test.migration"),
+						ThroughGates: MigrationGates{
+							DisableOld: FeatureGateID("DontEmitV0SystemConventions"),
+							EnableNew:  FeatureGateID("EmitV1SystemConventions"),
+						},
+					},
+				},
+				"test.migration": {
+					Signal: Signal{
+						Enabled:               true,
+						Description:           "Monotonic cumulative sum int metric enabled by default.",
+						ExtendedDocumentation: "The metric will be become optional soon.",
+						Stability:             component.StabilityLevelAlpha,
+						Warnings: Warnings{
+							IfEnabledNotSet: "This metric will be disabled by default soon.",
+						},
+						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
+					},
+					Unit: strPtr("s"),
+					Sum: &Sum{
+						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
+						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+						Mono:                   Mono{Monotonic: true},
+					},
+				},
+			},
+			wantErr: "metric \"test.metric\": migration.through_gates.disable_old must reference an existing feature gate\nmetric \"test.metric\": migration.through_gates.enable_new must reference an existing feature gate",
+		},
+		{
+			name: "migration with only enable_new gate undefined returns error",
+			featureGates: []FeatureGate{
+				{
+					ID:           "DontEmitV0SystemConventions",
+					Description:  "Test disable gate",
+					Stage:        FeatureGateStageAlpha,
+					FromVersion:  "v0.100.0",
+					ReferenceURL: "https://example.com",
+				},
+			},
+			metrics: map[MetricName]Metric{
+				"test.metric": {
+					Signal: Signal{
+						Enabled:               true,
+						Description:           "Monotonic cumulative sum int metric enabled by default.",
+						ExtendedDocumentation: "The metric will be become optional soon.",
+						Stability:             component.StabilityLevelAlpha,
+						Warnings: Warnings{
+							IfEnabledNotSet: "This metric will be disabled by default soon.",
+						},
+						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
+					},
+					Unit: strPtr("s"),
+					Sum: &Sum{
+						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
+						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+						Mono:                   Mono{Monotonic: true},
+					},
+					Migration: &MetricMigration{
+						To: MetricName("test.migration"),
+						ThroughGates: MigrationGates{
+							DisableOld: FeatureGateID("DontEmitV0SystemConventions"),
+							EnableNew:  FeatureGateID("EmitV1SystemConventions"),
+						},
+					},
+				},
+				"test.migration": {
+					Signal: Signal{
+						Enabled:               true,
+						Description:           "Monotonic cumulative sum int metric enabled by default.",
+						ExtendedDocumentation: "The metric will be become optional soon.",
+						Stability:             component.StabilityLevelAlpha,
+						Warnings: Warnings{
+							IfEnabledNotSet: "This metric will be disabled by default soon.",
+						},
+						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
+					},
+					Unit: strPtr("s"),
+					Sum: &Sum{
+						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
+						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+						Mono:                   Mono{Monotonic: true},
+					},
+				},
+			},
+			wantErr: "metric \"test.metric\": migration.through_gates.enable_new must reference an existing feature gate",
+		},
+		{
+			name: "migration with only disable_old gate undefined returns error",
+			featureGates: []FeatureGate{
+				{
+					ID:           "EmitV1SystemConventions",
+					Description:  "Test emit gate",
+					Stage:        FeatureGateStageAlpha,
+					FromVersion:  "v0.100.0",
+					ReferenceURL: "https://example.com",
+				},
+			},
+			metrics: map[MetricName]Metric{
+				"test.metric": {
+					Signal: Signal{
+						Enabled:               true,
+						Description:           "Monotonic cumulative sum int metric enabled by default.",
+						ExtendedDocumentation: "The metric will be become optional soon.",
+						Stability:             component.StabilityLevelAlpha,
+						Warnings: Warnings{
+							IfEnabledNotSet: "This metric will be disabled by default soon.",
+						},
+						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
+					},
+					Unit: strPtr("s"),
+					Sum: &Sum{
+						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
+						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+						Mono:                   Mono{Monotonic: true},
+					},
+					Migration: &MetricMigration{
+						To: MetricName("test.migration"),
+						ThroughGates: MigrationGates{
+							DisableOld: FeatureGateID("DontEmitV0SystemConventions"),
+							EnableNew:  FeatureGateID("EmitV1SystemConventions"),
+						},
+					},
+				},
+				"test.migration": {
+					Signal: Signal{
+						Enabled:               true,
+						Description:           "Monotonic cumulative sum int metric enabled by default.",
+						ExtendedDocumentation: "The metric will be become optional soon.",
+						Stability:             component.StabilityLevelAlpha,
+						Warnings: Warnings{
+							IfEnabledNotSet: "This metric will be disabled by default soon.",
+						},
+						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
+					},
+					Unit: strPtr("s"),
+					Sum: &Sum{
+						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
+						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+						Mono:                   Mono{Monotonic: true},
+					},
+				},
+			},
+			wantErr: "metric \"test.metric\": migration.through_gates.disable_old must reference an existing feature gate",
+		},
+		{
+			name: "migration to self returns error",
+			featureGates: []FeatureGate{
+				{
+					ID:           "DontEmitV0SystemConventions",
+					Description:  "Test disable gate",
+					Stage:        FeatureGateStageAlpha,
+					FromVersion:  "v0.100.0",
+					ReferenceURL: "https://example.com",
+				},
+				{
+					ID:           "EmitV1SystemConventions",
+					Description:  "Test emit gate",
+					Stage:        FeatureGateStageAlpha,
+					FromVersion:  "v0.100.0",
+					ReferenceURL: "https://example.com",
+				},
+			},
+			metrics: map[MetricName]Metric{
+				"test.metric": {
+					Signal: Signal{
+						Enabled:               true,
+						Description:           "Monotonic cumulative sum int metric enabled by default.",
+						ExtendedDocumentation: "The metric will be become optional soon.",
+						Stability:             component.StabilityLevelAlpha,
+						Warnings: Warnings{
+							IfEnabledNotSet: "This metric will be disabled by default soon.",
+						},
+						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
+					},
+					Unit: strPtr("s"),
+					Sum: &Sum{
+						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
+						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+						Mono:                   Mono{Monotonic: true},
+					},
+					Migration: &MetricMigration{
+						To: MetricName("test.metric"),
+						ThroughGates: MigrationGates{
+							DisableOld: FeatureGateID("DontEmitV0SystemConventions"),
+							EnableNew:  FeatureGateID("EmitV1SystemConventions"),
+						},
+					},
+				},
+			},
+			wantErr: "metric \"test.metric\": migration.to must not reference itself \"test.metric\"",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			md := &Metadata{
+				FeatureGates: tt.featureGates,
+				Metrics:      tt.metrics,
+			}
+			err := md.validateMigrations()
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestValidateFeatureGates(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -407,7 +818,7 @@ func TestValidateFeatureGates(t *testing.T) {
 				Description:  "Test feature gate",
 				Stage:        FeatureGateStageAlpha,
 				FromVersion:  "v0.100.0",
-				ReferenceURL: "https://example.com",
+				ReferenceURL: "https://github.com/open-telemetry/opentelemetry-collector/issues/12345",
 			},
 		},
 		{
@@ -418,7 +829,7 @@ func TestValidateFeatureGates(t *testing.T) {
 				Stage:        FeatureGateStageStable,
 				FromVersion:  "v0.90.0",
 				ToVersion:    "v0.95.0",
-				ReferenceURL: "https://example.com",
+				ReferenceURL: "https://github.com/open-telemetry/opentelemetry-collector/issues/12345",
 			},
 		},
 		{
@@ -512,13 +923,46 @@ func TestValidateFeatureGates(t *testing.T) {
 			wantErr: `reference_url is required`,
 		},
 		{
+			name: "non-issue reference_url ignored when strict validation is skipped",
+			featureGate: FeatureGate{
+				ID:                   "component.feature",
+				Description:          "Test feature",
+				Stage:                FeatureGateStageAlpha,
+				FromVersion:          "v0.100.0",
+				ReferenceURL:         "https://example.com",
+				SkipStrictValidation: true,
+			},
+		},
+		{
+			name: "reference_url is not a GitHub issue",
+			featureGate: FeatureGate{
+				ID:           "component.feature",
+				Description:  "Test feature",
+				Stage:        FeatureGateStageAlpha,
+				FromVersion:  "v0.100.0",
+				ReferenceURL: "https://example.com",
+			},
+			wantErr: `must be a GitHub issue URL`,
+		},
+		{
+			name: "reference_url is a GitHub pull request",
+			featureGate: FeatureGate{
+				ID:           "component.feature",
+				Description:  "Test feature",
+				Stage:        FeatureGateStageAlpha,
+				FromVersion:  "v0.100.0",
+				ReferenceURL: "https://github.com/open-telemetry/opentelemetry-collector/pull/12345",
+			},
+			wantErr: `must be a GitHub issue URL`,
+		},
+		{
 			name: "invalid characters in ID",
 			featureGate: FeatureGate{
 				ID:           "component.feature@invalid",
 				Description:  "Test feature",
 				Stage:        FeatureGateStageAlpha,
 				FromVersion:  "v0.100.0",
-				ReferenceURL: "https://example.com",
+				ReferenceURL: "https://github.com/open-telemetry/opentelemetry-collector/issues/12345",
 			},
 			wantErr: `ID contains invalid characters`,
 		},
@@ -574,6 +1018,65 @@ func TestValidateFeatureGatesDuplicateID(t *testing.T) {
 	assert.ErrorContains(t, err, "duplicate ID")
 }
 
+func TestValidateFeatureGatesIDPrefix(t *testing.T) {
+	tests := []struct {
+		name       string
+		gateID     FeatureGateID
+		skipStrict bool
+		wantErr    string
+	}{
+		{
+			name:   "valid prefix",
+			gateID: "receiver.otlp.example",
+		},
+		{
+			name:    "missing prefix",
+			gateID:  "example",
+			wantErr: `ID must be prefixed with "receiver.otlp."`,
+		},
+		{
+			name:    "wrong class",
+			gateID:  "exporter.otlp.example",
+			wantErr: `ID must be prefixed with "receiver.otlp."`,
+		},
+		{
+			name:    "prefix without trailing segment",
+			gateID:  "receiver.otlp",
+			wantErr: `ID must be prefixed with "receiver.otlp."`,
+		},
+		{
+			name:       "prefix not enforced when gate skips strict validation",
+			gateID:     "example",
+			skipStrict: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			md := &Metadata{
+				Type:   "otlp",
+				Status: &Status{Class: "receiver"},
+				FeatureGates: []FeatureGate{
+					{
+						ID:                   tt.gateID,
+						Description:          "Test feature",
+						Stage:                FeatureGateStageAlpha,
+						FromVersion:          "v0.100.0",
+						ReferenceURL:         "https://github.com/open-telemetry/opentelemetry-collector/issues/12345",
+						SkipStrictValidation: tt.skipStrict,
+					},
+				},
+			}
+			err := md.validateFeatureGates()
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestValidateFeatureGatesNotSorted(t *testing.T) {
 	md := &Metadata{
 		FeatureGates: []FeatureGate{
@@ -581,13 +1084,13 @@ func TestValidateFeatureGatesNotSorted(t *testing.T) {
 				ID:           "component.zebra",
 				Description:  "Test feature",
 				Stage:        FeatureGateStageAlpha,
-				ReferenceURL: "https://example.com",
+				ReferenceURL: "https://github.com/open-telemetry/opentelemetry-collector/issues/12345",
 			},
 			{
 				ID:           "component.alpha",
 				Description:  "Another feature",
 				Stage:        FeatureGateStageAlpha,
-				ReferenceURL: "https://example.com",
+				ReferenceURL: "https://github.com/open-telemetry/opentelemetry-collector/issues/12345",
 			},
 		},
 	}
@@ -606,8 +1109,8 @@ func TestValidateConfig(t *testing.T) {
 			name: "valid config",
 			config: &cfggen.ConfigMetadata{
 				Type: "object",
-				AllOf: []*cfggen.ConfigMetadata{
-					{
+				Properties: map[string]*schemagen.ConfigMetadata{
+					"embedded": {
 						Ref: "component.config",
 					},
 				},
@@ -630,7 +1133,9 @@ func TestValidateConfig(t *testing.T) {
 						6: {"traces"},
 					},
 				},
-				Config: tt.config,
+				ConfigsMetadata: &cfggen.ConfigsMetadata{
+					Config: tt.config,
+				},
 			}
 			err := md.Validate()
 			if tt.wantErr {

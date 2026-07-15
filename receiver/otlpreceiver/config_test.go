@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 func TestUnmarshalDefaultConfig(t *testing.T) {
@@ -30,8 +29,8 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	require.NoError(t, cm.Unmarshal(&cfg))
 	expectedCfg := factory.CreateDefaultConfig().(*Config)
-	expectedCfg.GRPC.GetOrInsertDefault()
-	expectedCfg.HTTP.GetOrInsertDefault()
+	expectedCfg.Protocols.GRPC.GetOrInsertDefault()
+	expectedCfg.Protocols.HTTP.GetOrInsertDefault()
 	assert.Equal(t, expectedCfg, cfg)
 }
 
@@ -43,7 +42,7 @@ func TestUnmarshalConfigOnlyGRPC(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyGRPC := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyGRPC.GRPC.GetOrInsertDefault()
+	defaultOnlyGRPC.Protocols.GRPC.GetOrInsertDefault()
 	assert.Equal(t, defaultOnlyGRPC, cfg)
 }
 
@@ -55,7 +54,7 @@ func TestUnmarshalConfigOnlyHTTP(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyHTTP.HTTP.GetOrInsertDefault()
+	defaultOnlyHTTP.Protocols.HTTP.GetOrInsertDefault()
 	assert.Equal(t, defaultOnlyHTTP, cfg)
 }
 
@@ -67,7 +66,7 @@ func TestUnmarshalConfigOnlyHTTPNull(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyHTTP.HTTP.GetOrInsertDefault()
+	defaultOnlyHTTP.Protocols.HTTP.GetOrInsertDefault()
 	assert.Equal(t, defaultOnlyHTTP, cfg)
 }
 
@@ -79,7 +78,7 @@ func TestUnmarshalConfigOnlyHTTPEmptyMap(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyHTTP.HTTP.GetOrInsertDefault()
+	defaultOnlyHTTP.Protocols.HTTP.GetOrInsertDefault()
 	assert.Equal(t, defaultOnlyHTTP, cfg)
 }
 
@@ -208,7 +207,7 @@ func TestUnmarshalConfigEmptyProtocols(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NoError(t, cm.Unmarshal(&cfg))
-	assert.EqualError(t, xconfmap.Validate(cfg), "must specify at least one protocol when using the OTLP receiver")
+	assert.EqualError(t, confmap.Validate(cfg), "must specify at least one protocol when using the OTLP receiver")
 }
 
 func TestUnmarshalConfigInvalidSignalPath(t *testing.T) {
@@ -245,5 +244,5 @@ func TestUnmarshalConfigEmpty(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NoError(t, confmap.New().Unmarshal(&cfg))
-	assert.EqualError(t, xconfmap.Validate(cfg), "must specify at least one protocol when using the OTLP receiver")
+	assert.EqualError(t, confmap.Validate(cfg), "must specify at least one protocol when using the OTLP receiver")
 }

@@ -12,7 +12,7 @@ telemetry:
   metrics:
     request_latency:
       description: Latency (in microseconds) of a given sampling policy
-      unit: µs
+      unit: us
       enabled: true
       stability: alpha
       histogram:

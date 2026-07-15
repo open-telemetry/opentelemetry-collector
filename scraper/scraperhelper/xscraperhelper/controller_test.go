@@ -409,6 +409,84 @@ func assertProfilesScraperObsMetrics(t *testing.T, tel *componenttest.Telemetry,
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
+// TestScrapeProfilesPreservesDictionaryMultipleScrapers verifies that the
+// dictionary is correctly merged when multiple scrapers produce profiles
+// with different dictionary entries.
+func TestScrapeProfilesPreservesDictionaryMultipleScrapers(t *testing.T) {
+	makeScraper := func(typeName, unitName string) func(context.Context) (pprofile.Profiles, error) {
+		return func(context.Context) (pprofile.Profiles, error) {
+			pd := pprofile.NewProfiles()
+			dic := pd.Dictionary()
+			dic.StringTable().Append("")       // index 0
+			dic.StringTable().Append(typeName) // index 1
+			dic.StringTable().Append(unitName) // index 2
+
+			profile := pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+			profile.SampleType().SetTypeStrindex(1)
+			profile.SampleType().SetUnitStrindex(2)
+			profile.Samples().AppendEmpty().Values().Append(1)
+
+			return pd, nil
+		}
+	}
+
+	tickerCh := make(chan time.Time)
+	sink := new(consumertest.ProfilesSink)
+
+	scpCPU, err := xscraper.NewProfiles(makeScraper("cpu", "nanoseconds"))
+	require.NoError(t, err)
+	scpHeap, err := xscraper.NewProfiles(makeScraper("alloc_space", "bytes"))
+	require.NoError(t, err)
+
+	recv, err := NewProfilesController(
+		newTestNoDelaySettings(),
+		receivertest.NewNopSettings(receivertest.NopType),
+		sink,
+		AddProfilesScraper(component.MustNewType("cpu_scraper"), scpCPU),
+		AddProfilesScraper(component.MustNewType("heap_scraper"), scpHeap),
+		WithTickerChannel(tickerCh),
+	)
+	require.NoError(t, err)
+	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, recv.Shutdown(context.Background())) }()
+
+	// Wait for the initial scrape
+	require.Eventually(t, func() bool {
+		return sink.SampleCount() >= 2
+	}, time.Second, 10*time.Millisecond)
+
+	profiles := sink.AllProfiles()
+	require.NotEmpty(t, profiles)
+
+	// The merged profiles should have both resource profiles and a unified dictionary
+	pd := profiles[0]
+	dic := pd.Dictionary()
+	require.Equal(t, 2, pd.ResourceProfiles().Len(),
+		"should have resource profiles from both scrapers")
+
+	// Collect all strings in the merged dictionary
+	allStrings := make(map[string]bool)
+	for i := range dic.StringTable().Len() {
+		allStrings[dic.StringTable().At(i)] = true
+	}
+
+	assert.True(t, allStrings["cpu"], "merged dictionary must contain 'cpu'")
+	assert.True(t, allStrings["nanoseconds"], "merged dictionary must contain 'nanoseconds'")
+	assert.True(t, allStrings["alloc_space"], "merged dictionary must contain 'alloc_space'")
+	assert.True(t, allStrings["bytes"], "merged dictionary must contain 'bytes'")
+
+	// Verify that SampleType indices resolve correctly for both profiles
+	for i := range pd.ResourceProfiles().Len() {
+		profile := pd.ResourceProfiles().At(i).ScopeProfiles().At(0).Profiles().At(0)
+		st := profile.SampleType()
+		typeName := dic.StringTable().At(int(st.TypeStrindex()))
+		unitName := dic.StringTable().At(int(st.UnitStrindex()))
+		assert.True(t, (typeName == "cpu" && unitName == "nanoseconds") ||
+			(typeName == "alloc_space" && unitName == "bytes"),
+			"SampleType must resolve to valid strings, got %s/%s", typeName, unitName)
+	}
+}
+
 // TestNewProfilesControllerCreateError tests that NewProfilesController returns an error
 // when the scraper factory's CreateProfiles method fails.
 func TestNewProfilesControllerCreateError(t *testing.T) {

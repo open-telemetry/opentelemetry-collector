@@ -106,7 +106,7 @@ The metric will be become optional soon.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability | Semantic Convention |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- | ------------------- |
-| s | Sum | Int | Cumulative | true | Beta | [system.cpu.time](https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/system/system-metrics.md#metric-systemcputime) |
+| s | Sum | Int | Cumulative | true | Beta | [system.cpu.time](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/system/system-metrics.md#metric-systemcputime) |
 
 #### Attributes
 
@@ -126,7 +126,7 @@ Bytes of memory in use.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used`` | Recommended | [state](https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/docs/registry/attributes/system.md#system-memory-state) |
+| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used`` | Recommended | [state](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/system.md#system-memory-state) |
 
 ## Optional Metrics
 
@@ -244,17 +244,18 @@ The event will be renamed soon.
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| map.resource.attr | Resource attribute with a map value. | Any Map | true | - |
-| optional.resource.attr | Explicitly disabled ResourceAttribute. | Any Str | false | - |
-| slice.resource.attr | Resource attribute with a slice value. | Any Slice | true | - |
-| string.enum.resource.attr | Resource attribute with a known set of string values. | Str: ``one``, ``two`` | true | - |
-| string.resource.attr | Resource attribute with any string value. | Any Str | true | - |
-| string.resource.attr_disable_warning | Resource attribute with any string value. | Any Str | true | - |
-| string.resource.attr_remove_warning | Resource attribute with any string value. | Any Str | false | - |
-| string.resource.attr_to_be_removed | Resource attribute with any string value. | Any Str | true | - |
-| string.resource.disabled_attr_to_be_removed | Resource attribute with any string value. | Any Str | false | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| host.arch | The CPU architecture the host system is running on. | Any Str | false | [host.arch](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-arch) | - |
+| map.resource.attr | Resource attribute with a map value. | Any Map | true | - | Development |
+| optional.resource.attr | Explicitly disabled ResourceAttribute. | Any Str | false | - | Development |
+| slice.resource.attr | Resource attribute with a slice value. | Any Slice | true | - | Development |
+| string.enum.resource.attr | Resource attribute with a known set of string values. | Str: ``one``, ``two`` | true | - | - |
+| string.resource.attr | Resource attribute with any string value. | Any Str | true | - | - |
+| string.resource.attr_disable_warning | Resource attribute with any string value. | Any Str | true | - | - |
+| string.resource.attr_remove_warning | Resource attribute with any string value. | Any Str | false | - | - |
+| string.resource.attr_to_be_removed | Resource attribute with any string value. | Any Str | true | - | - |
+| string.resource.disabled_attr_to_be_removed | Resource attribute with any string value. | Any Str | false | - | - |
 
 ## Internal Telemetry
 
