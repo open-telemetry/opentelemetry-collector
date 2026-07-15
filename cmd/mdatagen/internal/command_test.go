@@ -1713,6 +1713,7 @@ func TestGenerateTelemetryMetadata_ExponentialHistogram(t *testing.T) {
 	assert.Contains(t, content, "MaxSize:  160")
 	assert.Contains(t, content, "MaxScale: 10")
 }
+
 func TestGenerateConfigGoStruct_GeneratesTestFile(t *testing.T) {
 	root := t.TempDir()
 	outputDir := filepath.Join(root, "shortname")
