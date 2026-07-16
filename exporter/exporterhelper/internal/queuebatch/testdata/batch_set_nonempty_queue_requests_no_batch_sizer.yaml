@@ -1,0 +1,6 @@
+enabled: true
+sizer: requests
+queue_size: 2000
+batch:
+  # batch inherits the queue sizer (requests), which is invalid for batches and fails validation
+  min_size: 100

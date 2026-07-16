@@ -144,9 +144,10 @@ func TestUnmarshal(t *testing.T) {
 		})
 	}
 	tests := []struct {
-		path        string
-		expectedErr string
-		expectedCfg func() configoptional.Optional[Config]
+		path        		string
+		expectedErr 		string
+		expectedValidateErr string
+		expectedCfg         func() configoptional.Optional[Config]
 	}{
 		{
 			path: "batch_set_empty_explicit_sizer.yaml",
@@ -210,6 +211,69 @@ func TestUnmarshal(t *testing.T) {
 				return cfg
 			},
 		},
+		{
+			path: "batch_set_nonempty_queue_items_no_batch_sizer.yaml",
+			expectedCfg: func() configoptional.Optional[Config] {
+				cfg := newBaseCfg()
+				cfg.Get().Sizer = request.SizerTypeItems
+				cfg.Get().QueueSize = 2000
+				cfg.Get().Batch = configoptional.Some(BatchConfig{
+					FlushTimeout: 200 * time.Millisecond,
+					// Batch sizer inherited from the queue sizer (items).
+					Sizer:   request.SizerTypeItems,
+					MinSize: 100,
+				})
+				return cfg
+			},
+		},
+		{
+			path: "batch_set_nonempty_queue_requests_no_batch_sizer.yaml",
+			// The queue sizer (requests) is inherited by the batch, but "requests"
+			// is not a valid batch sizer, so Validate rejects the resulting config.
+			expectedValidateErr: "`batch` supports only `items` or `bytes` sizer, found \"requests\"",
+			expectedCfg: func() configoptional.Optional[Config] {
+				cfg := newBaseCfg()
+				cfg.Get().Sizer = request.SizerTypeRequests
+				cfg.Get().QueueSize = 2000
+				cfg.Get().Batch = configoptional.Some(BatchConfig{
+					FlushTimeout: 200 * time.Millisecond,
+					// Batch sizer inherited from the queue sizer (requests).
+					Sizer:   request.SizerTypeRequests,
+					MinSize: 100,
+				})
+				return cfg
+			},
+		},
+		{
+			path: "batch_set_nonempty_explicit_batch_sizer_items.yaml",
+			expectedCfg: func() configoptional.Optional[Config] {
+				cfg := newBaseCfg()
+				cfg.Get().Sizer = request.SizerTypeBytes
+				cfg.Get().QueueSize = 2000
+				cfg.Get().Batch = configoptional.Some(BatchConfig{
+					FlushTimeout: 200 * time.Millisecond,
+					// Explicit batch sizer (items) is not overridden by the queue sizer (bytes).
+					Sizer:   request.SizerTypeItems,
+					MinSize: 100,
+				})
+				return cfg
+			},
+		},
+		{
+			path: "batch_set_nonempty_explicit_batch_sizer_bytes.yaml",
+			expectedCfg: func() configoptional.Optional[Config] {
+				cfg := newBaseCfg()
+				cfg.Get().Sizer = request.SizerTypeItems
+				cfg.Get().QueueSize = 2000
+				cfg.Get().Batch = configoptional.Some(BatchConfig{
+					FlushTimeout: 200 * time.Millisecond,
+					// Explicit batch sizer (bytes) is not overridden by the queue sizer (items).
+					Sizer:   request.SizerTypeBytes,
+					MinSize: 100,
+				})
+				return cfg
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -225,6 +289,10 @@ func TestUnmarshal(t *testing.T) {
 			}
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedCfg(), cfg)
+			if tt.expectedValidateErr != "" {
+				assert.ErrorContains(t, confmap.Validate(cfg), tt.expectedValidateErr)
+				return
+			}
 			assert.NoError(t, confmap.Validate(cfg))
 		})
 	}
