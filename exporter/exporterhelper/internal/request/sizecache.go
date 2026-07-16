@@ -5,20 +5,28 @@ package request // import "go.opentelemetry.io/collector/exporter/exporterhelper
 
 const uncachedSize = -1
 
+// SizeCache caches the byte size of a request.
+// Currently, only bytes are cached because are expensive to calculate.
 type SizeCache struct {
-	size     int
-	sizeType SizerType
+	bytesSize int
 }
 
 func NewSizeCache() SizeCache {
-	return SizeCache{size: uncachedSize}
+	return SizeCache{bytesSize: uncachedSize}
 }
 
-func (sc *SizeCache) Load(sizeType SizerType) (int, bool) {
-	return sc.size, sc.size != uncachedSize && sc.sizeType == sizeType
+// Get returns the cached byte size if present.
+func (sc *SizeCache) Get() (int, bool) {
+	return sc.bytesSize, sc.bytesSize != uncachedSize
 }
 
-func (sc *SizeCache) Store(size int, sizeType SizerType) {
-	sc.size = size
-	sc.sizeType = sizeType
+// Set stores the byte size of the request.
+func (sc *SizeCache) Set(size int) {
+	sc.bytesSize = size
+}
+
+// Invalidate clears the cached byte size. Call when the request data changes
+// and the new byte size is not known (for example after an items-based merge).
+func (sc *SizeCache) Invalidate() {
+	sc.bytesSize = uncachedSize
 }

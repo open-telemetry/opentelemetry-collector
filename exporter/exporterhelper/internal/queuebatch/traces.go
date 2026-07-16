@@ -92,16 +92,24 @@ func (req *tracesRequest) ItemsCount() int {
 }
 
 func (req *tracesRequest) size(sizer sizer.TracesSizer, sizeType request.SizerType) int {
-	if size, ok := req.sizeCache.Load(sizeType); ok {
-		return size
+	if sizeType == request.SizerTypeBytes {
+		if size, ok := req.sizeCache.Get(); ok {
+			return size
+		}
 	}
 	size := sizer.TracesSize(req.td)
-	req.sizeCache.Store(size, sizeType)
+	if sizeType == request.SizerTypeBytes {
+		req.sizeCache.Set(size)
+	}
 	return size
 }
 
 func (req *tracesRequest) setCachedSize(size int, sizeType request.SizerType) {
-	req.sizeCache.Store(size, sizeType)
+	if sizeType == request.SizerTypeBytes {
+		req.sizeCache.Set(size)
+		return
+	}
+	req.sizeCache.Invalidate()
 }
 
 func (req *tracesRequest) BytesSize() int {

@@ -92,16 +92,24 @@ func (req *logsRequest) ItemsCount() int {
 }
 
 func (req *logsRequest) size(sizer sizer.LogsSizer, sizeType request.SizerType) int {
-	if size, ok := req.sizeCache.Load(sizeType); ok {
-		return size
+	if sizeType == request.SizerTypeBytes {
+		if size, ok := req.sizeCache.Get(); ok {
+			return size
+		}
 	}
 	size := sizer.LogsSize(req.ld)
-	req.sizeCache.Store(size, sizeType)
+	if sizeType == request.SizerTypeBytes {
+		req.sizeCache.Set(size)
+	}
 	return size
 }
 
 func (req *logsRequest) setCachedSize(size int, sizeType request.SizerType) {
-	req.sizeCache.Store(size, sizeType)
+	if sizeType == request.SizerTypeBytes {
+		req.sizeCache.Set(size)
+		return
+	}
+	req.sizeCache.Invalidate()
 }
 
 func (req *logsRequest) BytesSize() int {

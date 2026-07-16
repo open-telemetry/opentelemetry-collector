@@ -101,16 +101,24 @@ func (req *profilesRequest) ItemsCount() int {
 }
 
 func (req *profilesRequest) size(sizer sizer.ProfilesSizer, sizeType request.SizerType) int {
-	if size, ok := req.sizeCache.Load(sizeType); ok {
-		return size
+	if sizeType == request.SizerTypeBytes {
+		if size, ok := req.sizeCache.Get(); ok {
+			return size
+		}
 	}
 	size := sizer.ProfilesSize(req.pd)
-	req.sizeCache.Store(size, sizeType)
+	if sizeType == request.SizerTypeBytes {
+		req.sizeCache.Set(size)
+	}
 	return size
 }
 
 func (req *profilesRequest) setCachedSize(size int, sizeType request.SizerType) {
-	req.sizeCache.Store(size, sizeType)
+	if sizeType == request.SizerTypeBytes {
+		req.sizeCache.Set(size)
+		return
+	}
+	req.sizeCache.Invalidate()
 }
 
 func (req *profilesRequest) BytesSize() int {
