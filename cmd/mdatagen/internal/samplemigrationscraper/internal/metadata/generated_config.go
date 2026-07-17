@@ -102,7 +102,7 @@ type SystemCPUUtilizationV1MetricAttributeKey string
 
 const (
 	SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber SystemCPUUtilizationV1MetricAttributeKey = "cpu.logical_number"
-	SystemCPUUtilizationV1MetricAttributeKeyState            SystemCPUUtilizationV1MetricAttributeKey = "state"
+	SystemCPUUtilizationV1MetricAttributeKeyCPUMode          SystemCPUUtilizationV1MetricAttributeKey = "cpu.mode"
 )
 
 // SystemCPUUtilizationV1MetricConfig provides config for the system.cpu.utilization@v1 metric.
@@ -131,9 +131,9 @@ func (ms *SystemCPUUtilizationV1MetricConfig) Unmarshal(parser *confmap.Conf) er
 func (ms *SystemCPUUtilizationV1MetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber, SystemCPUUtilizationV1MetricAttributeKeyState:
+		case SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber, SystemCPUUtilizationV1MetricAttributeKeyCPUMode:
 		default:
-			return fmt.Errorf("metric system.cpu.utilization@v1 doesn't have an attribute %v, valid attributes: [cpu.logical_number, state]", val)
+			return fmt.Errorf("metric system.cpu.utilization@v1 doesn't have an attribute %v, valid attributes: [cpu.logical_number, cpu.mode]", val)
 		}
 	}
 
@@ -191,7 +191,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		SystemCPUUtilizationV1: SystemCPUUtilizationV1MetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SystemCPUUtilizationV1MetricAttributeKey{SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber, SystemCPUUtilizationV1MetricAttributeKeyState},
+			EnabledAttributes:   []SystemCPUUtilizationV1MetricAttributeKey{SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber, SystemCPUUtilizationV1MetricAttributeKeyCPUMode},
 		},
 		SystemMemoryLinuxAvailable: SystemMemoryLinuxAvailableMetricConfig{
 			Enabled: false,

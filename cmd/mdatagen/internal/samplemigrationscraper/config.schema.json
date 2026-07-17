@@ -85,13 +85,13 @@
                   "type": "array",
                   "default": [
                     "cpu.logical_number",
-                    "state"
+                    "cpu.mode"
                   ],
                   "items": {
                     "type": "string",
                     "enum": [
                       "cpu.logical_number",
-                      "state"
+                      "cpu.mode"
                     ]
                   }
                 },

@@ -40,8 +40,14 @@ attributes:
     requirement_level: recommended
 
   cpu.logical_number:
-      description: The logical CPU number [0, n-1].
-      type: int
+    description: The logical CPU number [0, n-1].
+    type: int
+
+  cpu.mode:
+    description: The CPU mode for this data point.
+    type: string
+    requirement_level: recommended
+    enum: [system, user, iowait]
 
   state:
     description: Breakdown of CPU usage by type.
@@ -100,7 +106,7 @@ metrics:
       value_type: double
       aggregation_temporality: cumulative
       monotonic: true
-    attributes: [cpu.logical_number, state]
+    attributes: [cpu.logical_number, cpu.mode]
 
   system.memory.linux.available:
     enabled: false
