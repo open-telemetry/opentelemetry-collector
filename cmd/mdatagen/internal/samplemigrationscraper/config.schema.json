@@ -87,10 +87,6 @@
                 },
                 "attributes": {
                   "type": "array",
-                  "default": [
-                    "cpu.logical_number",
-                    "cpu.mode"
-                  ],
                   "items": {
                     "type": "string",
                     "enum": [
@@ -100,7 +96,7 @@
                   },
                   "default": [
                     "cpu.logical_number",
-                    "state"
+                    "cpu.mode"
                   ]
                 },
                 "enabled": {
