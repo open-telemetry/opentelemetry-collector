@@ -7,7 +7,7 @@ change_type: bug_fix
 component: cmd/mdatagen
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Allow underscores in feature gate IDs for compatibility with compoent names with underscores
+note: Allow underscores in feature gate IDs for compatibility with component names with underscores
 
 # One or more tracking issues or pull requests related to the change
 issues: [15592]
