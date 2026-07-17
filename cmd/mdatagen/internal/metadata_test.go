@@ -809,6 +809,16 @@ func TestValidateFeatureGates(t *testing.T) {
 			},
 		},
 		{
+			name: "valid gate with underscore",
+			featureGate: FeatureGate{
+				ID:           "component_underscore.stable",
+				Description:  "Stable feature gate with underscore",
+				Stage:        FeatureGateStageAlpha,
+				FromVersion:  "v0.90.0",
+				ReferenceURL: "https://github.com/open-telemetry/opentelemetry-collector/issues/12345",
+			},
+		},
+		{
 			name: "valid stable gate with to_version",
 			featureGate: FeatureGate{
 				ID:           "component.stable",
