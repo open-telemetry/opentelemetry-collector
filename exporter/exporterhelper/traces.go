@@ -14,7 +14,22 @@ import (
 )
 
 // NewTraces creates an exporter.Traces that records observability metrics and wraps every request with a Span.
+//
+// Deprecated: [v0.159.0] Use NewTracesWithConfig instead. In a future release NewTraces will change to drop the cfg parameter.
+//
+//go:fix inline
 func NewTraces(
+	ctx context.Context,
+	set exporter.Settings,
+	cfg component.Config,
+	pusher consumer.ConsumeTracesFunc,
+	options ...Option,
+) (exporter.Traces, error) {
+	return NewTracesWithConfig(ctx, set, cfg, pusher, options...)
+}
+
+// NewTracesWithConfig creates an exporter.Traces that records observability metrics and wraps every request with a Span.
+func NewTracesWithConfig(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
