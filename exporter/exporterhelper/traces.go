@@ -6,7 +6,6 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
@@ -17,13 +16,9 @@ import (
 func NewTraces(
 	ctx context.Context,
 	set exporter.Settings,
-	cfg component.Config,
 	pusher consumer.ConsumeTracesFunc,
 	options ...Option,
 ) (exporter.Traces, error) {
-	if cfg == nil {
-		return nil, errNilConfig
-	}
 	if pusher == nil {
 		return nil, errNilPushTraces
 	}
