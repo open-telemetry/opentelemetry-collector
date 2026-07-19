@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -48,8 +49,11 @@ type batchProcessor[T any] struct {
 	// with the appropriate signal.
 	batchFunc func() batch[T]
 
-	shutdownC  chan struct{}
-	goroutines sync.WaitGroup
+	shutdownC   chan struct{}
+	goroutines  sync.WaitGroup
+
+	// Shutdown context used for the final flush
+	shutdownCtx atomic.Value
 
 	telemetry *batchProcessorTelemetry
 
@@ -173,7 +177,8 @@ func (bp *batchProcessor[T]) Start(ctx context.Context, _ component.Host) error 
 }
 
 // Shutdown is invoked during service shutdown.
-func (bp *batchProcessor[T]) Shutdown(context.Context) error {
+func (bp *batchProcessor[T]) Shutdown(ctx context.Context) error {
+	bp.shutdownCtx.Store(ctx)
 	close(bp.shutdownC)
 
 	// Wait until all goroutines are done.
@@ -208,8 +213,6 @@ func (b *shard[T]) startLoop() {
 			}
 			// This is the close of the channel
 			if b.batch.itemCount() > 0 {
-				// TODO: Set a timeout on sendTraces or
-				// make it cancellable using the context that Shutdown gets as a parameter
 				b.sendItems(triggerTimeout)
 			}
 			return
@@ -267,12 +270,20 @@ func (b *shard[T]) sendItems(trigger trigger) {
 		bytes = b.batch.sizeBytes(req)
 	}
 
-	err := b.batch.export(b.exportCtx, req)
+	err := b.batch.export(b.exportContext(), req)
 	if err != nil {
 		b.processor.logger.Warn("Sender failed", zap.Error(err))
 		return
 	}
 	bpt.record(trigger, int64(sent), int64(bytes))
+}
+
+// exportContext prefers the Shutdown context (with shard metadata) when shutting down.
+func (b *shard[T]) exportContext() context.Context {
+	if v := b.processor.shutdownCtx.Load(); v != nil {
+		return client.NewContext(v.(context.Context), client.FromContext(b.exportCtx))
+	}
+	return b.exportCtx
 }
 
 // singleShardBatcher is used when metadataKeys is empty, to avoid the

@@ -1221,3 +1221,148 @@ func TestBatchSplitOnly(t *testing.T) {
 		require.Equal(t, maxBatch, ld.LogRecordCount())
 	}
 }
+
+type blockingLogsConsumer struct {
+	started  chan struct{}
+	gotCtx   context.Context
+	gotErr   error
+	mu       sync.Mutex
+	received int
+}
+
+func (c *blockingLogsConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
+func (c *blockingLogsConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	c.mu.Lock()
+	c.gotCtx = ctx
+	c.received += ld.LogRecordCount()
+	c.mu.Unlock()
+
+	select {
+	case <-c.started:
+	default:
+		close(c.started)
+	}
+	<-ctx.Done()
+	err := ctx.Err()
+	c.mu.Lock()
+	c.gotErr = err
+	c.mu.Unlock()
+	return err
+}
+
+func TestBatchProcessorShutdownCancelsFinalFlush(t *testing.T) {
+	cfg := &Config{
+		Timeout:       100 * time.Second,
+		SendBatchSize: 1000,
+	}
+	require.NoError(t, cfg.Validate())
+
+	next := &blockingLogsConsumer{started: make(chan struct{})}
+	logs, err := NewFactory().CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, next)
+	require.NoError(t, err)
+	require.NoError(t, logs.Start(context.Background(), componenttest.NewNopHost()))
+
+	require.NoError(t, logs.ConsumeLogs(context.Background(), testdata.GenerateLogs(5)))
+
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	shutdownDone := make(chan error, 1)
+	go func() {
+		shutdownDone <- logs.Shutdown(shutdownCtx)
+	}()
+
+	select {
+	case <-next.started:
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for final flush export to start")
+	}
+
+	cancel()
+
+	select {
+	case err := <-shutdownDone:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("Shutdown did not return after cancelling shutdown context")
+	}
+
+	next.mu.Lock()
+	defer next.mu.Unlock()
+	require.ErrorIs(t, next.gotErr, context.Canceled)
+	require.Equal(t, 5, next.received)
+}
+
+func TestBatchProcessorShutdownFinalFlushHonorsDeadline(t *testing.T) {
+	cfg := &Config{
+		Timeout:       100 * time.Second,
+		SendBatchSize: 1000,
+	}
+	require.NoError(t, cfg.Validate())
+
+	next := &blockingLogsConsumer{started: make(chan struct{})}
+	logs, err := NewFactory().CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, next)
+	require.NoError(t, err)
+	require.NoError(t, logs.Start(context.Background(), componenttest.NewNopHost()))
+
+	require.NoError(t, logs.ConsumeLogs(context.Background(), testdata.GenerateLogs(3)))
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	// Shutdown blocks in the final flush until the deadline expires.
+	require.NoError(t, logs.Shutdown(shutdownCtx))
+
+	next.mu.Lock()
+	defer next.mu.Unlock()
+	require.ErrorIs(t, next.gotErr, context.DeadlineExceeded)
+	require.Equal(t, 3, next.received)
+}
+
+func TestBatchProcessorShutdownFinalFlushPreservesMetadata(t *testing.T) {
+	cfg := &Config{
+		Timeout:       100 * time.Second,
+		SendBatchSize: 1000,
+		MetadataKeys:  []string{"token1"},
+	}
+	require.NoError(t, cfg.Validate())
+
+	next := &blockingLogsConsumer{started: make(chan struct{})}
+	logs, err := NewFactory().CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, next)
+	require.NoError(t, err)
+	require.NoError(t, logs.Start(context.Background(), componenttest.NewNopHost()))
+
+	callCtx := client.NewContext(context.Background(), client.Info{
+		Metadata: client.NewMetadata(map[string][]string{
+			"token1": {"shutdown-meta"},
+		}),
+	})
+	require.NoError(t, logs.ConsumeLogs(callCtx, testdata.GenerateLogs(2)))
+
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	shutdownDone := make(chan error, 1)
+	go func() {
+		shutdownDone <- logs.Shutdown(shutdownCtx)
+	}()
+
+	select {
+	case <-next.started:
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for final flush export to start")
+	}
+
+	next.mu.Lock()
+	gotCtx := next.gotCtx
+	next.mu.Unlock()
+	require.Equal(t, []string{"shutdown-meta"}, client.FromContext(gotCtx).Metadata.Get("token1"))
+
+	cancel()
+
+	select {
+	case err := <-shutdownDone:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("Shutdown did not return after cancelling shutdown context")
+	}
+}
