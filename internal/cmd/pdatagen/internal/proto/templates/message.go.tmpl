@@ -147,6 +147,12 @@ func (orig *{{ .messageName }}) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *{{ .messageName }}) UnmarshalJSON(iter *json.Iterator) {
+{{ if .recursive -}}
+	if !iter.EnterRecursive() {
+		return
+	}
+	defer iter.ExitRecursive()
+{{ end -}}
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		{{ range .fields -}}
