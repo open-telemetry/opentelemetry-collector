@@ -22,7 +22,7 @@ const (
 type CollectorComponentSchema struct {
 	Type           string
 	DeprecatedType string
-	Schema         *ConfigMetadata
+	Schema         *JSONSchema
 }
 
 type CollectorSchemaParts struct {
@@ -31,11 +31,11 @@ type CollectorSchemaParts struct {
 	Exporters  []CollectorComponentSchema
 	Connectors []CollectorComponentSchema
 	Extensions []CollectorComponentSchema
-	Service    *ConfigMetadata
+	Service    *JSONSchema
 }
 
-func CombineCollectorSchema(parts CollectorSchemaParts) (*ConfigMetadata, error) {
-	properties := map[string]*ConfigMetadata{
+func CombineCollectorSchema(parts CollectorSchemaParts) (*JSONSchema, error) {
+	properties := map[string]*JSONSchema{
 		string(CollectorSectionReceivers):  newCollectorComponentSection(),
 		string(CollectorSectionProcessors): newCollectorComponentSection(),
 		string(CollectorSectionExporters):  newCollectorComponentSection(),
@@ -63,15 +63,14 @@ func CombineCollectorSchema(parts CollectorSchemaParts) (*ConfigMetadata, error)
 		properties[string(section.name)] = schema
 	}
 
-	return &ConfigMetadata{
-		Schema:                      schemaVersion,
-		Type:                        "object",
-		Properties:                  properties,
-		AdditionalPropertiesAllowed: boolPtr(false),
+	return &JSONSchema{
+		Schema:     schemaVersion,
+		Type:       "object",
+		Properties: properties,
 	}, nil
 }
 
-func combineCollectorComponentSection(section CollectorSection, components []CollectorComponentSchema) (*ConfigMetadata, error) {
+func combineCollectorComponentSection(section CollectorSection, components []CollectorComponentSchema) (*JSONSchema, error) {
 	sectionSchema := newCollectorComponentSection()
 
 	for _, component := range components {
@@ -93,7 +92,7 @@ func combineCollectorComponentSection(section CollectorSection, components []Col
 	return sectionSchema, nil
 }
 
-func addCollectorComponentPattern(section *ConfigMetadata, componentType string, schema *ConfigMetadata, deprecated bool) error {
+func addCollectorComponentPattern(section *JSONSchema, componentType string, schema *JSONSchema, deprecated bool) error {
 	pattern := collectorComponentPattern(componentType)
 	if _, exists := section.PatternProperties[pattern]; exists {
 		return fmt.Errorf("duplicate component identifier %q", componentType)
@@ -112,23 +111,19 @@ func collectorComponentPattern(componentType string) string {
 	return "^" + regexp.QuoteMeta(componentType) + "(?:/.+)?$"
 }
 
-func newCollectorComponentSection() *ConfigMetadata {
-	return &ConfigMetadata{
-		Type:                        "object",
-		PatternProperties:           map[string]*ConfigMetadata{},
-		AdditionalPropertiesAllowed: boolPtr(false),
+func newCollectorComponentSection() *JSONSchema {
+	return &JSONSchema{
+		Type:                 "object",
+		PatternProperties:    map[string]*JSONSchema{},
+		AdditionalProperties: &JSONSchema{Not: &JSONSchema{}},
 	}
 }
 
-func cloneOrEmptySchema(schema *ConfigMetadata) *ConfigMetadata {
+func cloneOrEmptySchema(schema *JSONSchema) *JSONSchema {
 	if schema == nil {
-		return &ConfigMetadata{}
+		return &JSONSchema{}
 	}
 
 	cloned := *schema
 	return &cloned
-}
-
-func boolPtr(v bool) *bool {
-	return &v
 }
