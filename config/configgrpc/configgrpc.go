@@ -37,7 +37,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/internal/grpccompression/snappy"
 	"go.opentelemetry.io/collector/internal/grpccompression/zstd"
@@ -74,7 +74,7 @@ func BalancerName() string {
 	return DefaultBalancerName
 }
 
-var _ xconfmap.Validator = (*ClientConfig)(nil)
+var _ confmap.Validator = (*ClientConfig)(nil)
 
 // ClientConfig defines common settings for a gRPC client configuration.
 type ClientConfig struct {
@@ -189,7 +189,7 @@ func NewDefaultKeepaliveEnforcementPolicy() KeepaliveEnforcementPolicy {
 	return KeepaliveEnforcementPolicy{}
 }
 
-var _ xconfmap.Validator = (*ServerConfig)(nil)
+var _ confmap.Validator = (*ServerConfig)(nil)
 
 // ServerConfig defines common settings for a gRPC server configuration.
 type ServerConfig struct {
@@ -205,7 +205,7 @@ type ServerConfig struct {
 
 	// MaxConcurrentStreams sets the limit on the number of concurrent streams to each ServerTransport.
 	// It has effect only for streaming RPCs.
-	MaxConcurrentStreams uint32 `mapstructure:"max_concurrent_streams,omitempty,omitempty"`
+	MaxConcurrentStreams uint32 `mapstructure:"max_concurrent_streams,omitempty"`
 
 	// ReadBufferSize for gRPC server. See grpc.ReadBufferSize.
 	// (https://godoc.org/google.golang.org/grpc#ReadBufferSize).
@@ -436,7 +436,7 @@ func (cc *ClientConfig) getGrpcDialOptions(
 
 		perRPCCredentials, perr := grpcAuthenticator.PerRPCCredentials()
 		if perr != nil {
-			return nil, err
+			return nil, perr
 		}
 		opts = append(opts, grpc.WithPerRPCCredentials(perRPCCredentials))
 	}

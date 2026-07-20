@@ -56,6 +56,9 @@ status:
 # This attribute should be set for metrics compliant with OTel Semantic Conventions.
 sem_conv_version: 1.9.0
 
+# Optional: URL to the OTel Semantic Conventions version.
+sem_conv_url: https://github.com/open-telemetry/semantic-conventions/releases/tag/v1.9.0
+
 # Optional: JSON Schema based definition for the component's configuration structure.
 # This section defines the schema that could be used to generate:
 # - JSON Schema files that can be used for validation and documentation. (current)

@@ -185,7 +185,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_exporter_queue_batch_send_size_bytes",
 		metric.WithDescription("Number of bytes in batch that was sent. Only available on detailed level. [Development]"),
 		metric.WithUnit("By"),
-		metric.WithExplicitBucketBoundaries([]float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000}...),
+		metric.WithExplicitBucketBoundaries([]float64{128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1.048576e+06, 2.097152e+06, 4.194304e+06, 8.388608e+06, 1.6777216e+07}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterQueueCapacity, err = builder.meter.Int64ObservableGauge(

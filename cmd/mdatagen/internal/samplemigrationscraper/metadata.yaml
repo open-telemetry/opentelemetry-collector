@@ -13,9 +13,12 @@ status:
 config:
   type: object
   description: Configuration for the Sample Migration Scraper.
-  allOf:
-    - $ref: ./internal/metadata.metrics_builder_config
   properties:
+    metrics_builder_config:
+      $ref: ./internal/metadata.metrics_builder_config
+      embed: true
+      go_struct:
+        anonymous: true
     emit_legacy_metrics:
       description: Whether to emit legacy metric names alongside new ones.
       type: boolean
@@ -40,8 +43,8 @@ attributes:
     requirement_level: recommended
 
   cpu.logical_number:
-      description: The logical CPU number [0, n-1].
-      type: int
+    description: The logical CPU number [0, n-1].
+    type: int
 
   state:
     description: Breakdown of CPU usage by type.
