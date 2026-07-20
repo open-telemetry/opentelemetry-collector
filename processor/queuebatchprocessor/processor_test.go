@@ -22,8 +22,6 @@ import (
 	"go.opentelemetry.io/collector/processor/queuebatchprocessor/internal/metadata"
 )
 
-// testSettings returns processor settings wired to tt's (real) meter and a
-// config that flushes on every request so assertions are deterministic.
 func testSettings(tt *componenttest.Telemetry) (processor.Settings, *Config) {
 	set := processortest.NewNopSettings(metadata.Type)
 	set.TelemetrySettings = tt.NewTelemetrySettings()
@@ -73,15 +71,10 @@ func generateProfiles(numSamples int) pprofile.Profiles {
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg, ok := createDefaultConfig().(*Config)
 	require.True(t, ok)
-	// The caller receives success once the request enters the queue;
-	// wait_for_result is disabled by default (see README.md).
 	require.False(t, cfg.WaitForResult)
 	require.True(t, cfg.BlockOnOverflow)
 	require.Equal(t, 1, cfg.NumConsumers)
-	// queue_size defaults to 10 (not exporterhelper's 1000): the logical
-	// equivalent of the legacy batchprocessor's num_cpus queueing.
 	require.Equal(t, int64(10), cfg.QueueSize)
-	// Batching must be enabled by default: it is the purpose of this component.
 	require.True(t, cfg.Batch.HasValue(), "batching should be enabled by default")
 	require.Positive(t, cfg.Batch.Get().MinSize)
 	require.NoError(t, componenttest.CheckConfigStruct(cfg))
@@ -151,8 +144,6 @@ func TestProfiles(t *testing.T) {
 	require.Equal(t, 6, sink.SampleCount())
 }
 
-// errDownstream is a sentinel returned by the downstream consumer to verify
-// error propagation.
 var errDownstream = errors.New("downstream failure")
 
 // TestBatchingAccumulatesAcrossRequests verifies the core batching behavior:
@@ -204,7 +195,7 @@ func TestWaitForResultPropagatesError(t *testing.T) {
 	require.ErrorIs(t, p.ConsumeTraces(context.Background(), generateTraces(1)), errDownstream)
 }
 
-// TestDefaultDoesNotWaitForResult verifies the default (wait_for_result=false):
+// TestDefaultDoesNotWaitForResult verifies the default wait_for_result=false:
 // the caller receives success as soon as the request enters the queue, even
 // when the downstream consumer subsequently fails.
 func TestDefaultDoesNotWaitForResult(t *testing.T) {

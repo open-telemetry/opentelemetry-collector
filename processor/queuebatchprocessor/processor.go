@@ -16,11 +16,6 @@ import (
 	"go.opentelemetry.io/collector/processor/xprocessor"
 )
 
-// exporterSettings derives exporter.Settings from processor.Settings so the
-// processor can build on the exporterhelper queue/batch implementation. The
-// telemetry emitted by the exporterhelper is currently reported under its own
-// exporter-namespaced names and scope; reframing it as processor telemetry is
-// deferred to follow-up work.
 func exporterSettings(set processor.Settings) exporter.Settings {
 	return exporter.Settings{
 		ID:                set.ID,
@@ -29,10 +24,6 @@ func exporterSettings(set processor.Settings) exporter.Settings {
 	}
 }
 
-// queueOptions are the exporterhelper options shared by all signals: the
-// queue/batch configuration and a disabled per-export timeout. The batch
-// processor never imposed an export timeout, so neither does this processor;
-// callers that want one can wrap the next consumer.
 func queueOptions(cfg *Config) []exporterhelper.Option {
 	return []exporterhelper.Option{
 		exporterhelper.WithQueue(configoptional.Some(*cfg)),

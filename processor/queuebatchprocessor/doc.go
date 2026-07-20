@@ -4,7 +4,5 @@
 //go:generate mdatagen metadata.yaml
 
 // Package queuebatchprocessor implements a processor that queues and batches
-// telemetry using the exporterhelper queue/batch implementation. It is the
-// replacement for the batchprocessor described in
-// docs/rfcs/batching-migration.md.
+// using the same implementation as exporterhelper.
 package queuebatchprocessor // import "go.opentelemetry.io/collector/processor/queuebatchprocessor"

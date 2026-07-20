@@ -21,23 +21,25 @@ general behavior. This component uses default settings taken from the
 `batchprocessor` mapped into `exporterhelper` settings:
 
 ```yaml
-# This processor will produce and export one batch at a time.
+# The processor will produce and export one batch at a time.
 num_consumers: 1
 
-# The queue is measured in requests.
+# The queue is measured in request units.
 sizer: requests
 
 # The queue admits 10 requests.
 queue_size: 10
 
-# The queue blocks the caller when full, with timeout.
+# Backpressure: The queue blocks the caller when full until
+# canceled.
 block_on_overflow: true
 
-# The caller receives success immediately after the request
-# enters the queue. Enable to wait for success/failure.
+# Error propagation: The caller receives success immediately 
+# after the request enters the queue. Enable to wait for success
+# or failure.
 wait_for_result: false
 
-# Matches both batchprocessor and exporterhelper.
+# These defaults match both batchprocessor and exporterhelper.
 batch: 
   enabled: true
   sizer: items
@@ -45,7 +47,7 @@ batch:
   flush_timeout: 200ms
 ```
 
-Please refer to the [exporterhelper
+Refer to the [exporterhelper
 documentation](../../exporter/exporterhelper/README.md) for more
 details on this configuration structure. Other than changing the
 default configuration, the entire `queuebatch` functionality is
