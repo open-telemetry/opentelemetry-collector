@@ -52,3 +52,86 @@ documentation](../../exporter/exporterhelper/README.md) for more
 details on this configuration structure. Other than changing the
 default configuration, the entire `queuebatch` functionality is
 available through this processor, including partitioning and storage.
+
+## Examples
+
+The following examples show two capabilities that Collector users
+frequently rely on: batching by client metadata and buffering the
+queue on disk.
+
+### Emulating the batch processor's `metadata_keys`
+
+The former batch processor supported a `metadata_keys` setting that
+formed a distinct batch for each combination of `client.Metadata`
+values, so that a multi-tenant pipeline could batch each tenant's data
+separately. The queue/batch processor offers the same behavior through
+the `batch::partition::metadata_keys` setting.
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        # Capture client metadata so it is available for partitioning.
+        include_metadata: true
+
+processors:
+  queuebatch:
+    batch:
+      partition:
+        # Produce one batch per distinct tenant_id value.
+        metadata_keys:
+        - tenant_id
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [queuebatch]
+      exporters: [otlp]
+```
+
+Receivers must be configured with `include_metadata: true` so the
+metadata keys are available to the processor. An empty value and unset
+metadata are treated as distinct cases, and entries are
+case-insensitive.
+
+This processor has no equivalent of the batch processor's
+`metadata_cardinality_limit`. Rather than returning an error once too
+many distinct combinations appear, the processor bounds the number of
+active partitions using an internal cache and flushes the
+least-recently-used partition when that bound is reached.
+
+### Persisting the queue with a storage extension
+
+By default the queue is held in memory, so any buffered data is lost
+if the Collector stops. Set the top-level `storage` field to the ID of
+a [storage extension][filestorage] to persist the queue on disk, so
+that buffered data is recovered and exporting continues after a
+restart.
+
+```yaml
+extensions:
+  file_storage:
+    directory: /var/lib/otelcol/queuebatch
+
+processors:
+  queuebatch:
+    # Persist the queue using the file_storage extension.
+    storage: file_storage
+
+service:
+  extensions: [file_storage]
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [queuebatch]
+      exporters: [otlp]
+```
+
+When `storage` is set there is no in-memory queue. Each request is
+serialized as it enters the queue and read back from disk before
+export. The `wait_for_result` setting is not supported together with
+`storage`.
+
+[filestorage]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage/filestorage
