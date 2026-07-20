@@ -24,15 +24,7 @@ func exporterSettings(set processor.Settings) exporter.Settings {
 	}
 }
 
-// queueOptions returns the exporterhelper options shared by every signal and
-// derives the processor's MutatesData capability from the configuration and the
-// next consumer. When batching is enabled the batcher merges and mutates
-// requests, so the processor mutates data. When a persistent queue is configured
-// the request is serialized on enqueue and the next consumer receives a freshly
-// deserialized copy, so the caller's data is never mutated regardless of the
-// next consumer. Otherwise the in-memory queue forwards the same pdata to the
-// next consumer, so the processor mutates data exactly when the next consumer
-// does.
+// queueOptions returns the exporterhelper options shared by every signal.
 func queueOptions(cfg *Config, next consumer.Capabilities) []exporterhelper.Option {
 	var mutates bool
 	if cfg.Batch.HasValue() {

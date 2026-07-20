@@ -218,15 +218,7 @@ func TestDefaultDoesNotWaitForResult(t *testing.T) {
 	require.NoError(t, p.ConsumeTraces(context.Background(), generateTraces(1)))
 }
 
-// capabilityCases enumerates the MutatesData capability the processor must
-// report, across the three factors that determine it:
-//   - batching enabled: the batcher merges/mutates requests, so the processor
-//     always reports MutatesData (exporterhelper also forces this to true).
-//   - persistent storage (batching disabled): the queue serializes each request
-//     and hands the next consumer a freshly deserialized copy, so the caller's
-//     data is never mutated regardless of what the next consumer does.
-//   - in-memory queue (batching disabled): the queue forwards the same pdata to
-//     the next consumer, so the processor mutates data exactly when next does.
+// capabilityCases enumerates the MutatesData capability the processor must exhibit.
 var capabilityCases = []struct {
 	name         string
 	batchEnabled bool
