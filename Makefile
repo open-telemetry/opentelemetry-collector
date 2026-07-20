@@ -426,6 +426,31 @@ generate-chloggen-components:
 
 SCHEMA_DIRS := $(shell find $(CURDIR) -path "*testdata*" -prune -o -path "*internal/metadata/*" -prune -o -name "config.schema.yaml" -exec dirname {} \; | sort -u)
 
+# SCHEMA_CHECK_DIRS is the subset of SCHEMA_DIRS that the `check-schemas`
+# CI step regenerates and diffs. Limited to schemas whose Go source schemagen
+# currently reproduces byte-for-byte; pre-existing shared-library schemas
+# (config/configgrpc, scraperhelper, etc.) have a separate maintenance
+# lifecycle and aren't in scope. Add a dir here once it generates cleanly.
+SCHEMA_CHECK_DIRS := exporter/debugexporter \
+                     exporter/otlpexporter \
+                     exporter/otlphttpexporter \
+                     receiver/otlpreceiver \
+                     processor/batchprocessor \
+                     processor/memorylimiterprocessor \
+                     extension/memorylimiterextension \
+                     extension/zpagesextension \
+                     internal/memorylimiter
+
 .PHONY: generate-schemas
 generate-schemas:
 	@$(foreach dir,$(SCHEMA_DIRS), cd $(SRC_ROOT)/cmd/schemagen && go run . $(abspath $(dir)) -o $(abspath $(dir));)
+
+# check-schemas regenerates the in-scope schemas in place and fails if the
+# working tree changed — mirroring the contrib `schemas-and-templates` shard.
+# Hand-edits to these schemas will be wiped; rich descriptions must come from
+# Go doc comments (which schemagen propagates) or from an `overlayFile` in
+# `.schemagen.yaml`.
+.PHONY: check-schemas
+check-schemas:
+	@$(foreach dir,$(SCHEMA_CHECK_DIRS), cd $(SRC_ROOT)/cmd/schemagen && go run . $(SRC_ROOT)/$(dir) -o $(SRC_ROOT)/$(dir);)
+	@git diff --exit-code -- $(SCHEMA_CHECK_DIRS:%=%/config.schema.yaml) || { echo 'Config schemas are out of date, please run "make check-schemas" and commit the changes in this PR.'; exit 1; }
