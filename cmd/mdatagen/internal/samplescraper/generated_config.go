@@ -5,6 +5,8 @@ package samplescraper
 import (
 	"errors"
 	"regexp"
+	"slices"
+	"time"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplepkg"
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper/internal/metadata"
@@ -21,7 +23,7 @@ func NewDefaultSamplePkg() SamplePkg {
 }
 
 type TargetsItem struct {
-	Interval configoptional.Optional[string] `mapstructure:"interval"`
+	Interval configoptional.Optional[time.Duration] `mapstructure:"interval"`
 	// Static key-value labels attached to all metrics from this target.
 	Labels map[string]string `mapstructure:"labels"`
 	// Number of retry attempts for failed scrapes.
@@ -60,7 +62,7 @@ func (c *TargetsItem) Validate() error {
 // NewDefaultTargetsItem returns a new TargetsItem with default values consistent with the annotations in the schema.
 func NewDefaultTargetsItem() TargetsItem {
 	return TargetsItem{
-		Interval:       configoptional.Some("10s"),
+		Interval:       configoptional.Some(10 * time.Second),
 		Labels:         map[string]string{"option1": "value1", "option2": "value2"},
 		RetryCount:     3,
 		TimeoutSeconds: 5,
@@ -77,6 +79,8 @@ type Config struct {
 	ComponentID component.ID `mapstructure:"component"`
 	// Name of the scrape job, used to identify the source in telemetry.
 	JobName string `mapstructure:"job_name"`
+	// Logging level for the scraper.
+	LogLevel string `mapstructure:"log_level"`
 	// List of targets to scrape metrics from.
 	Targets *[]TargetsItem `mapstructure:"targets"`
 	// prevent unkeyed literal initialization
@@ -104,6 +108,10 @@ func (c *Config) Validate() error {
 		err = errors.Join(err, inner_err)
 	}
 
+	if !slices.Contains([]string{"debug", "info", "warn", "error"}, c.LogLevel) {
+		err = errors.Join(err, errors.New("log_level must be one of [debug, info, warn, error]"))
+	}
+
 	if c.Targets == nil || len(*c.Targets) == 0 {
 		err = errors.Join(err, errors.New("targets is required"))
 	}
@@ -116,6 +124,7 @@ func createDefaultConfig() component.Config {
 		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		JobName:              "test_job",
+		LogLevel:             "info",
 		Targets:              &[]TargetsItem{NewDefaultTargetsItem()},
 	}
 }

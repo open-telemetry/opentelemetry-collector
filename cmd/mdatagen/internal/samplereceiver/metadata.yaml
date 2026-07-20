@@ -70,6 +70,13 @@ config:
   required: [endpoint]
 
 resource_attributes:
+  host.arch:
+    description: The CPU architecture the host system is running on.
+    type: string
+    enabled: false
+    semantic_convention:
+      ref: host.md#host-arch
+
   map.resource.attr:
     description: Resource attribute with a map value.
     type: map
