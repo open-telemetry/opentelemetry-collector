@@ -66,6 +66,10 @@ Available `batch::partition` options:
   separate batches. When empty, a single batcher instance is used. When set, one batcher will be used
   per distinct combination of values for the listed metadata keys. Empty value and unset metadata are
   treated as distinct cases. Entries are case-insensitive. Duplicated entries will trigger a validation error. Default is empty.
+- `idle_cycles` (default = 10): number of `flush_timeout` periods an empty partition may remain idle
+  before it is removed. Useful to reclaim memory when many distinct metadata key combinations are seen over time.
+- `max_active_partitions` (default = 10000): maximum number of concurrent partition batchers. When the
+  limit is reached, the least recently used partition is flushed and removed.
 
 ### Timeout
 
