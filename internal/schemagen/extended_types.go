@@ -49,7 +49,7 @@ var extendedTypes = map[string]ConfigMetadata{
 	},
 }
 
-var standardJSONTypes = map[string]bool{
+var basicTypes = map[string]bool{
 	"":        true, // empty is allowed (treated as "any" by the generator)
 	"string":  true,
 	"integer": true,
@@ -60,8 +60,8 @@ var standardJSONTypes = map[string]bool{
 	"null":    true,
 }
 
-func isStandardJSONType(typ string) bool {
-	return standardJSONTypes[typ]
+func isBasicType(typ string) bool {
+	return basicTypes[typ]
 }
 
 // expandExtendedType rewrites md.Type from an extended alias to the equivalent standard JSON Schema fields.
@@ -70,7 +70,7 @@ func isStandardJSONType(typ string) bool {
 //
 // Returns an actionable error for unknown aliases.
 func expandExtendedType(md *ConfigMetadata) error {
-	if isStandardJSONType(md.Type) {
+	if isBasicType(md.Type) {
 		return nil
 	}
 	ext, ok := extendedTypes[md.Type]
