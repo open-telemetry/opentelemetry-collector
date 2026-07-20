@@ -1,52 +1,52 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "go.opentelemetry.io/collector/config/configretry",
-  "title": "pkg/config/configretry",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$defs": {
     "back_off_config": {
-      "description": "Defines configuration for retrying batches in case of export failure. The current supported strategy is exponential backoff.",
       "type": "object",
       "properties": {
         "enabled": {
-          "description": "Indicates whether to not retry sending batches in case of export failure.",
           "type": "boolean",
+          "description": "Indicates whether to not retry sending batches in case of export failure.",
           "default": true
         },
         "initial_interval": {
-          "description": "The time to wait after the first failure before retrying.",
           "type": "string",
+          "description": "The time to wait after the first failure before retrying.",
           "default": "5s",
-          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$",
-          "minimum": 0
+          "minimum": 0,
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
         },
         "max_elapsed_time": {
-          "description": "The maximum amount of time (including retries) spent trying to send a request/batch. Once this value is reached, the data is discarded. If set to 0, the retries are never stopped.",
           "type": "string",
+          "description": "The maximum amount of time (including retries) spent trying to send a request/batch. Once this value is reached, the data is discarded. If set to 0, the retries are never stopped.",
           "default": "5m",
-          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$",
-          "minimum": 0
+          "minimum": 0,
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
         },
         "max_interval": {
-          "description": "The upper bound on backoff interval. Once this value is reached the delay between consecutive retries will always be `MaxInterval`.",
           "type": "string",
+          "description": "The upper bound on backoff interval. Once this value is reached the delay between consecutive retries will always be `MaxInterval`.",
           "default": "30s",
-          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$",
-          "minimum": 0
+          "minimum": 0,
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
         },
         "multiplier": {
-          "description": "The value multiplied by the backoff interval bounds",
           "type": "number",
+          "description": "The value multiplied by the backoff interval bounds",
           "default": 1.5,
           "minimum": 0
         },
         "randomization_factor": {
-          "description": "A random factor used to calculate next backoffs Randomized interval = RetryInterval * (1 ± RandomizationFactor)",
           "type": "number",
+          "description": "A random factor used to calculate next backoffs Randomized interval = RetryInterval * (1 ± RandomizationFactor)",
           "default": 0.5,
-          "maximum": 1,
-          "minimum": 0
+          "minimum": 0,
+          "maximum": 1
         }
-      }
+      },
+      "description": "Defines configuration for retrying batches in case of export failure. The current supported strategy is exponential backoff."
     }
-  }
+  },
+  "title": "pkg/config/configretry"
 }
