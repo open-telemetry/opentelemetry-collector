@@ -27,11 +27,12 @@ func exporterSettings(set processor.Settings) exporter.Settings {
 // queueOptions returns the exporterhelper options shared by every signal.
 func queueOptions(cfg *Config, next consumer.Capabilities) []exporterhelper.Option {
 	var mutates bool
-	if cfg.Batch.HasValue() {
+	switch {
+	case cfg.Batch.HasValue():
 		mutates = true
-	} else if cfg.StorageID != nil {
+	case cfg.StorageID != nil:
 		mutates = false
-	} else {
+	default:
 		mutates = next.MutatesData
 	}
 	return []exporterhelper.Option{

@@ -59,13 +59,13 @@ The following examples show two capabilities that Collector users
 frequently rely on: batching by client metadata and buffering the
 queue on disk.
 
-### Emulating the batch processor's `metadata_keys`
+### Partitioning with `metadata_keys`
 
-The former batch processor supported a `metadata_keys` setting that
-formed a distinct batch for each combination of `client.Metadata`
-values, so that a multi-tenant pipeline could batch each tenant's data
-separately. The queue/batch processor offers the same behavior through
-the `batch::partition::metadata_keys` setting.
+The `metadata_keys` setting enables forming distinct batch for each
+combination of `client.Metadata` values, so that a multi-tenant
+pipeline could batch each tenant's data separately. The queue/batch
+processor offers the same behavior through the
+`batch::partition::metadata_keys` setting.
 
 ```yaml
 receivers:
@@ -95,12 +95,6 @@ Receivers must be configured with `include_metadata: true` so the
 metadata keys are available to the processor. An empty value and unset
 metadata are treated as distinct cases, and entries are
 case-insensitive.
-
-This processor has no equivalent of the batch processor's
-`metadata_cardinality_limit`. Rather than returning an error once too
-many distinct combinations appear, the processor bounds the number of
-active partitions using an internal cache and flushes the
-least-recently-used partition when that bound is reached.
 
 ### Persisting the queue with a storage extension
 

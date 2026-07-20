@@ -40,7 +40,7 @@ func createDefaultConfig() component.Config {
 	cfg.NumConsumers = 1
 	cfg.QueueSize = 10
 
-	// Enable batching with default settings. 
+	// Enable batching with default settings.
 	_ = cfg.Batch.GetOrInsertDefault()
 	return &cfg
 }
