@@ -291,6 +291,27 @@ func TestNotifyConfig(t *testing.T) {
 	}
 }
 
+func TestNotifyConfigWithNilConfig(t *testing.T) {
+	called := false
+	extensionFactory := newConfigWatcherExtensionFactory(component.MustNewType("notifiable"), func() error {
+		called = true
+		return errors.New("unexpected notification")
+	})
+
+	extensions, err := New(context.Background(), Settings{
+		Telemetry: componenttest.NewNopTelemetrySettings(),
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Extensions: builders.NewExtension(
+			map[component.ID]component.Config{component.MustNewID("notifiable"): extensionFactory.CreateDefaultConfig()},
+			map[component.Type]extension.Factory{component.MustNewType("notifiable"): extensionFactory},
+		),
+	}, []component.ID{component.MustNewID("notifiable")})
+	require.NoError(t, err)
+
+	require.NoError(t, extensions.NotifyConfig(context.Background(), nil))
+	assert.False(t, called)
+}
+
 type configWatcherExtension struct {
 	fn func() error
 }
@@ -444,6 +465,104 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 	}
 }
 
+func TestExtensionReportsOwnStatus(t *testing.T) {
+	statusType := component.MustNewType("selfreporting")
+	compID := component.NewID(statusType)
+
+	reportedEvent := componentstatus.NewRecoverableErrorEvent(assert.AnError)
+	factory := newSelfReportingExtensionFactory(statusType, reportedEvent)
+	extensionsConfigs := map[component.ID]component.Config{
+		compID: factory.CreateDefaultConfig(),
+	}
+	factories := map[component.Type]extension.Factory{
+		statusType: factory,
+	}
+
+	var reportedSources []*componentstatus.InstanceID
+	var reportedEvents []*componentstatus.Event
+	rep := status.NewReporter(func(source *componentstatus.InstanceID, ev *componentstatus.Event) {
+		reportedSources = append(reportedSources, source)
+		reportedEvents = append(reportedEvents, ev)
+	}, func(err error) {
+		require.NoError(t, err)
+	})
+
+	extensions, err := New(
+		context.Background(),
+		Settings{
+			Telemetry:  componenttest.NewNopTelemetrySettings(),
+			BuildInfo:  component.NewDefaultBuildInfo(),
+			Extensions: builders.NewExtension(extensionsConfigs, factories),
+		},
+		[]component.ID{compID},
+		WithReporter(rep),
+	)
+	require.NoError(t, err)
+
+	// The host must implement status.Reporter so that events reported by an
+	// extension about itself are routed through the reporter.
+	host := &statusReporterHost{Host: componenttest.NewNopHost(), reporter: rep}
+	require.NoError(t, extensions.Start(context.Background(), host))
+	require.NoError(t, extensions.Shutdown(context.Background()))
+
+	// Find the self-reported RecoverableError event and verify it was attributed
+	// to the extension that reported it.
+	var found bool
+	for i, ev := range reportedEvents {
+		if ev != reportedEvent {
+			continue
+		}
+
+		found = true
+		require.NotNil(t, reportedSources[i])
+		assert.Equal(t, compID, reportedSources[i].ComponentID())
+		assert.Equal(t, component.KindExtension, reportedSources[i].Kind())
+		assert.Equal(t, assert.AnError, ev.Err())
+	}
+	assert.True(t, found, "expected extension to report a status event about itself")
+}
+
+// statusReporterHost is a component.Host that also implements status.Reporter,
+// mirroring the host provided to extensions by the running service.
+type statusReporterHost struct {
+	component.Host
+	reporter status.Reporter
+}
+
+func (h *statusReporterHost) ReportStatus(id *componentstatus.InstanceID, ev *componentstatus.Event) {
+	h.reporter.ReportStatus(id, ev)
+}
+
+func (h *statusReporterHost) ReportOKIfStarting(id *componentstatus.InstanceID) {
+	h.reporter.ReportOKIfStarting(id)
+}
+
+type selfReportingExtension struct {
+	event *componentstatus.Event
+}
+
+func (ext *selfReportingExtension) Start(_ context.Context, host component.Host) error {
+	componentstatus.ReportStatus(host, ext.event)
+	return nil
+}
+
+func (ext *selfReportingExtension) Shutdown(context.Context) error {
+	return nil
+}
+
+func newSelfReportingExtensionFactory(name component.Type, event *componentstatus.Event) extension.Factory {
+	return extension.NewFactory(
+		name,
+		func() component.Config {
+			return &struct{}{}
+		},
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
+			return &selfReportingExtension{event: event}, nil
+		},
+		component.StabilityLevelDevelopment,
+	)
+}
+
 type statusTestExtension struct {
 	startErr    error
 	shutdownErr error
@@ -525,4 +644,207 @@ func (ext *recordingExtension) Start(_ context.Context, host component.Host) err
 
 func (ext *recordingExtension) Shutdown(context.Context) error {
 	return ext.shutdownCallback(ext.createSettings)
+}
+
+func TestNotifyConfigSnapshot(t *testing.T) {
+	notificationError := errors.New("Error processing config snapshot")
+	nopExtensionFactory := extensiontest.NewNopFactory()
+	nopExtensionConfig := nopExtensionFactory.CreateDefaultConfig()
+	n1ExtensionFactory := newConfigSnapshotWatcherExtensionFactory(component.MustNewType("snapshotnotifiable1"), func(extensioncapabilities.ConfigSnapshot) error { return nil })
+	n1ExtensionConfig := n1ExtensionFactory.CreateDefaultConfig()
+	nErrExtensionFactory := newConfigSnapshotWatcherExtensionFactory(component.MustNewType("snapshotnotifiableErr"), func(extensioncapabilities.ConfigSnapshot) error { return notificationError })
+	nErrExtensionConfig := nErrExtensionFactory.CreateDefaultConfig()
+
+	tests := []struct {
+		name              string
+		factories         map[component.Type]extension.Factory
+		extensionsConfigs map[component.ID]component.Config
+		serviceExtensions []component.ID
+		want              error
+	}{
+		{
+			name: "No config-snapshot-watcher extensions",
+			factories: map[component.Type]extension.Factory{
+				component.MustNewType("nop"): nopExtensionFactory,
+			},
+			extensionsConfigs: map[component.ID]component.Config{
+				component.MustNewID("nop"): nopExtensionConfig,
+			},
+			serviceExtensions: []component.ID{component.MustNewID("nop")},
+		},
+		{
+			name: "One config-snapshot-watcher extension",
+			factories: map[component.Type]extension.Factory{
+				component.MustNewType("snapshotnotifiable1"): n1ExtensionFactory,
+			},
+			extensionsConfigs: map[component.ID]component.Config{
+				component.MustNewID("snapshotnotifiable1"): n1ExtensionConfig,
+			},
+			serviceExtensions: []component.ID{component.MustNewID("snapshotnotifiable1")},
+		},
+		{
+			name: "Errors in config-snapshot notification",
+			factories: map[component.Type]extension.Factory{
+				component.MustNewType("snapshotnotifiableErr"): nErrExtensionFactory,
+			},
+			extensionsConfigs: map[component.ID]component.Config{
+				component.MustNewID("snapshotnotifiableErr"): nErrExtensionConfig,
+			},
+			serviceExtensions: []component.ID{component.MustNewID("snapshotnotifiableErr")},
+			want:              notificationError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			extensions, err := New(context.Background(), Settings{
+				Telemetry:  componenttest.NewNopTelemetrySettings(),
+				BuildInfo:  component.NewDefaultBuildInfo(),
+				Extensions: builders.NewExtension(tt.extensionsConfigs, tt.factories),
+			}, tt.serviceExtensions)
+			require.NoError(t, err)
+			errs := extensions.NotifyConfigSnapshot(
+				context.Background(),
+				extensioncapabilities.NewConfigSnapshot(confmap.NewFromStringMap(map[string]any{}), nil),
+			)
+			assert.Equal(t, tt.want, errs)
+		})
+	}
+}
+
+func TestNotifyConfigSnapshotWithNilSnapshot(t *testing.T) {
+	called := false
+	extensionFactory := newConfigSnapshotWatcherExtensionFactory(component.MustNewType("snapshotnotifiable"), func(extensioncapabilities.ConfigSnapshot) error {
+		called = true
+		return errors.New("unexpected notification")
+	})
+
+	exts, err := New(context.Background(), Settings{
+		Telemetry: componenttest.NewNopTelemetrySettings(),
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Extensions: builders.NewExtension(
+			map[component.ID]component.Config{component.MustNewID("snapshotnotifiable"): extensionFactory.CreateDefaultConfig()},
+			map[component.Type]extension.Factory{component.MustNewType("snapshotnotifiable"): extensionFactory},
+		),
+	}, []component.ID{component.MustNewID("snapshotnotifiable")})
+	require.NoError(t, err)
+
+	require.NoError(t, exts.NotifyConfigSnapshot(context.Background(), nil))
+	assert.False(t, called)
+}
+
+func TestNotifyConfigSnapshotWithNilEffectiveConfig(t *testing.T) {
+	called := false
+	extensionFactory := newConfigWatcherExtensionFactory(component.MustNewType("notifiable"), func() error {
+		called = true
+		return errors.New("unexpected notification")
+	})
+
+	exts, err := New(context.Background(), Settings{
+		Telemetry: componenttest.NewNopTelemetrySettings(),
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Extensions: builders.NewExtension(
+			map[component.ID]component.Config{component.MustNewID("notifiable"): extensionFactory.CreateDefaultConfig()},
+			map[component.Type]extension.Factory{component.MustNewType("notifiable"): extensionFactory},
+		),
+	}, []component.ID{component.MustNewID("notifiable")})
+	require.NoError(t, err)
+
+	err = exts.NotifyConfigSnapshot(
+		context.Background(),
+		extensioncapabilities.NewConfigSnapshot(nil, confmap.NewFromStringMap(map[string]any{"unexpanded": "${env:VALUE}"})),
+	)
+	require.NoError(t, err)
+	assert.False(t, called)
+}
+
+func TestNotifyConfigSnapshotPrefersSnapshotWatcher(t *testing.T) {
+	var configSnapshotNotifications, configNotifications int
+	extensionFactory := newConfigSnapshotAndConfigWatcherExtensionFactory(
+		component.MustNewType("bothwatchers"),
+		func() { configSnapshotNotifications++ },
+		func() { configNotifications++ },
+	)
+
+	exts, err := New(context.Background(), Settings{
+		Telemetry: componenttest.NewNopTelemetrySettings(),
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Extensions: builders.NewExtension(
+			map[component.ID]component.Config{component.MustNewID("bothwatchers"): extensionFactory.CreateDefaultConfig()},
+			map[component.Type]extension.Factory{component.MustNewType("bothwatchers"): extensionFactory},
+		),
+	}, []component.ID{component.MustNewID("bothwatchers")})
+	require.NoError(t, err)
+
+	err = exts.NotifyConfigSnapshot(
+		context.Background(),
+		extensioncapabilities.NewConfigSnapshot(confmap.NewFromStringMap(map[string]any{}), nil),
+	)
+	require.NoError(t, err)
+	assert.Equal(t, 1, configSnapshotNotifications)
+	assert.Zero(t, configNotifications)
+}
+
+type configSnapshotWatcherExtension struct {
+	fn func(extensioncapabilities.ConfigSnapshot) error
+}
+
+func (comp *configSnapshotWatcherExtension) Start(context.Context, component.Host) error {
+	return nil
+}
+
+func (comp *configSnapshotWatcherExtension) Shutdown(context.Context) error {
+	return nil
+}
+
+func (comp *configSnapshotWatcherExtension) NotifyConfigSnapshot(_ context.Context, configSnapshot extensioncapabilities.ConfigSnapshot) error {
+	return comp.fn(configSnapshot)
+}
+
+func newConfigSnapshotWatcherExtensionFactory(name component.Type, fn func(extensioncapabilities.ConfigSnapshot) error) extension.Factory {
+	return extension.NewFactory(
+		name,
+		func() component.Config { return &struct{}{} },
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
+			return &configSnapshotWatcherExtension{fn: fn}, nil
+		},
+		component.StabilityLevelDevelopment,
+	)
+}
+
+type configSnapshotAndConfigWatcherExtension struct {
+	notifyConfigSnapshot func()
+	notifyConfig         func()
+}
+
+func (comp *configSnapshotAndConfigWatcherExtension) Start(context.Context, component.Host) error {
+	return nil
+}
+
+func (comp *configSnapshotAndConfigWatcherExtension) Shutdown(context.Context) error {
+	return nil
+}
+
+func (comp *configSnapshotAndConfigWatcherExtension) NotifyConfigSnapshot(context.Context, extensioncapabilities.ConfigSnapshot) error {
+	comp.notifyConfigSnapshot()
+	return nil
+}
+
+func (comp *configSnapshotAndConfigWatcherExtension) NotifyConfig(context.Context, *confmap.Conf) error {
+	comp.notifyConfig()
+	return nil
+}
+
+func newConfigSnapshotAndConfigWatcherExtensionFactory(name component.Type, notifyConfigSnapshot, notifyConfig func()) extension.Factory {
+	return extension.NewFactory(
+		name,
+		func() component.Config { return &struct{}{} },
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
+			return &configSnapshotAndConfigWatcherExtension{
+				notifyConfigSnapshot: notifyConfigSnapshot,
+				notifyConfig:         notifyConfig,
+			}, nil
+		},
+		component.StabilityLevelDevelopment,
+	)
 }

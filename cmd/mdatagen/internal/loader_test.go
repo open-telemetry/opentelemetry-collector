@@ -52,7 +52,6 @@ func TestLoadMetadata(t *testing.T) {
 				Description:          "This receiver is used for testing purposes to check the output of mdatagen.",
 				SemConvVersion:       "1.40.0",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver",
-				ReaggregationEnabled: true,
 				OverrideValueEnabled: true,
 				Status: &Status{
 					DisableCodeCov: true,
@@ -76,35 +75,49 @@ func TestLoadMetadata(t *testing.T) {
 					Warnings:             []string{"Any additional information that should be brought to the consumer's attention"},
 					UnsupportedPlatforms: []string{"freebsd", "illumos"},
 				},
-				Config: &cfggen.ConfigMetadata{
-					Type: "object",
-					Properties: map[string]*cfggen.ConfigMetadata{
-						"metrics_builder_config": {
-							Ref:   "./internal/metadata.metrics_builder_config",
-							Embed: true,
-							GoStruct: cfggen.GoStructConfig{
-								Anonymous:     true,
-								IgnoreDefault: true,
+				ConfigsMetadata: &cfggen.ConfigsMetadata{
+					Config: &cfggen.ConfigMetadata{
+						Type: "object",
+						Properties: map[string]*cfggen.ConfigMetadata{
+							"metrics_builder_config": {
+								Ref:   "./internal/metadata.metrics_builder_config",
+								Embed: true,
+								GoStruct: cfggen.GoStructConfig{
+									Anonymous:     true,
+									IgnoreDefault: true,
+								},
+							},
+							"endpoint": {
+								Description: "The endpoint to scrape metrics from.",
+								Type:        "string",
+								Default:     "localhost:12345",
+							},
+							"sample_pkg": {
+								Ref: "../samplepkg.sample_config",
+							},
+							"timeout": {
+								Description: "Timeout for scraping metrics.",
+								Type:        "string",
+								Format:      "duration",
+								Default:     "10s",
 							},
 						},
-						"endpoint": {
-							Description: "The endpoint to scrape metrics from.",
-							Type:        "string",
-							Default:     "localhost:12345",
-						},
-						"sample_pkg": {
-							Ref: "../samplepkg.sample_config",
-						},
-						"timeout": {
-							Description: "Timeout for scraping metrics.",
-							Type:        "string",
-							Format:      "duration",
-							Default:     "10s",
-						},
+						Required: []string{"endpoint"},
 					},
-					Required: []string{"endpoint"},
 				},
 				ResourceAttributes: map[AttributeName]Attribute{
+					"host.arch": {
+						Description: "The CPU architecture the host system is running on.",
+						EnabledPtr:  boolPtr(false),
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName:         "host.arch",
+						RequirementLevel: AttributeRequirementLevelRecommended,
+						SemanticConvention: &SemanticConvention{
+							SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-arch",
+						},
+					},
 					"string.resource.attr": {
 						Description: "Resource attribute with any string value.",
 						EnabledPtr:  boolPtr(true),
@@ -132,6 +145,7 @@ func TestLoadMetadata(t *testing.T) {
 						},
 						FullName:         "optional.resource.attr",
 						RequirementLevel: AttributeRequirementLevelRecommended,
+						Stability:        component.StabilityLevelDevelopment,
 					},
 					"slice.resource.attr": {
 						Description: "Resource attribute with a slice value.",
@@ -141,6 +155,7 @@ func TestLoadMetadata(t *testing.T) {
 						},
 						FullName:         "slice.resource.attr",
 						RequirementLevel: AttributeRequirementLevelRecommended,
+						Stability:        component.StabilityLevelDevelopment,
 					},
 					"map.resource.attr": {
 						Description: "Resource attribute with a map value.",
@@ -150,6 +165,7 @@ func TestLoadMetadata(t *testing.T) {
 						},
 						FullName:         "map.resource.attr",
 						RequirementLevel: AttributeRequirementLevelRecommended,
+						Stability:        component.StabilityLevelDevelopment,
 					},
 					"string.resource.attr_disable_warning": {
 						Description: "Resource attribute with any string value.",
@@ -435,7 +451,7 @@ func TestLoadMetadata(t *testing.T) {
 						Signal: Signal{
 							Enabled:               true,
 							Description:           "[DEPRECATED] Non-monotonic delta sum double metric enabled by default.",
-							ExtendedDocumentation: "The metric will be removed soon.",
+							ExtendedDocumentation: "The metric will be removed soon.\n",
 							Stability:             component.StabilityLevelDeprecated,
 							Warnings: Warnings{
 								IfEnabled: "This metric is deprecated and will be removed soon.",
@@ -483,7 +499,7 @@ func TestLoadMetadata(t *testing.T) {
 						Signal: Signal{
 							Enabled:               false,
 							Description:           "[DEPRECATED] Example event disabled by default.",
-							ExtendedDocumentation: "The event will be renamed soon.",
+							ExtendedDocumentation: "The event will be renamed soon.\n",
 							Warnings: Warnings{
 								IfConfigured: "This event is deprecated and will be renamed soon.",
 							},
@@ -601,8 +617,8 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
-				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
+				ConfigsMetadata:      &cfggen.ConfigsMetadata{},
 			},
 		},
 		{
@@ -613,7 +629,6 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
-				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -623,6 +638,7 @@ func TestLoadMetadata(t *testing.T) {
 						component.StabilityLevelStable:      {"metrics"},
 					},
 				},
+				ConfigsMetadata: &cfggen.ConfigsMetadata{},
 			},
 		},
 		{
@@ -633,7 +649,6 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
-				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -641,6 +656,7 @@ func TestLoadMetadata(t *testing.T) {
 						component.StabilityLevelBeta: {"logs"},
 					},
 				},
+				ConfigsMetadata: &cfggen.ConfigsMetadata{},
 			},
 		},
 		{
@@ -651,7 +667,6 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
-				ReaggregationEnabled: false,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -659,6 +674,7 @@ func TestLoadMetadata(t *testing.T) {
 						component.StabilityLevelBeta: {"logs"},
 					},
 				},
+				ConfigsMetadata: &cfggen.ConfigsMetadata{},
 			},
 		},
 		{
@@ -744,7 +760,6 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
-				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -752,6 +767,7 @@ func TestLoadMetadata(t *testing.T) {
 						component.StabilityLevelBeta: {"logs"},
 					},
 				},
+				ConfigsMetadata: &cfggen.ConfigsMetadata{},
 			},
 		},
 		{
@@ -763,7 +779,6 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
-				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -771,6 +786,7 @@ func TestLoadMetadata(t *testing.T) {
 						component.StabilityLevelBeta: {"logs"},
 					},
 				},
+				ConfigsMetadata: &cfggen.ConfigsMetadata{},
 			},
 		},
 		{
@@ -783,7 +799,6 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
-				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -791,6 +806,7 @@ func TestLoadMetadata(t *testing.T) {
 						component.StabilityLevelBeta: {"logs"},
 					},
 				},
+				ConfigsMetadata: &cfggen.ConfigsMetadata{},
 			},
 		},
 		{
@@ -804,13 +820,13 @@ func TestLoadMetadata(t *testing.T) {
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
-				ReaggregationEnabled: true,
 				Status: &Status{
 					Class: "receiver",
 					Stability: map[component.StabilityLevel][]string{
 						component.StabilityLevelBeta: {"logs"},
 					},
 				},
+				ConfigsMetadata: &cfggen.ConfigsMetadata{},
 			},
 		},
 		{
@@ -822,7 +838,6 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
-				ReaggregationEnabled: true,
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -852,6 +867,7 @@ func TestLoadMetadata(t *testing.T) {
 						},
 					},
 				},
+				ConfigsMetadata: &cfggen.ConfigsMetadata{},
 			},
 		},
 	}
