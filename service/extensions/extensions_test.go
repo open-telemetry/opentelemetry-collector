@@ -465,6 +465,104 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 	}
 }
 
+func TestExtensionReportsOwnStatus(t *testing.T) {
+	statusType := component.MustNewType("selfreporting")
+	compID := component.NewID(statusType)
+
+	reportedEvent := componentstatus.NewRecoverableErrorEvent(assert.AnError)
+	factory := newSelfReportingExtensionFactory(statusType, reportedEvent)
+	extensionsConfigs := map[component.ID]component.Config{
+		compID: factory.CreateDefaultConfig(),
+	}
+	factories := map[component.Type]extension.Factory{
+		statusType: factory,
+	}
+
+	var reportedSources []*componentstatus.InstanceID
+	var reportedEvents []*componentstatus.Event
+	rep := status.NewReporter(func(source *componentstatus.InstanceID, ev *componentstatus.Event) {
+		reportedSources = append(reportedSources, source)
+		reportedEvents = append(reportedEvents, ev)
+	}, func(err error) {
+		require.NoError(t, err)
+	})
+
+	extensions, err := New(
+		context.Background(),
+		Settings{
+			Telemetry:  componenttest.NewNopTelemetrySettings(),
+			BuildInfo:  component.NewDefaultBuildInfo(),
+			Extensions: builders.NewExtension(extensionsConfigs, factories),
+		},
+		[]component.ID{compID},
+		WithReporter(rep),
+	)
+	require.NoError(t, err)
+
+	// The host must implement status.Reporter so that events reported by an
+	// extension about itself are routed through the reporter.
+	host := &statusReporterHost{Host: componenttest.NewNopHost(), reporter: rep}
+	require.NoError(t, extensions.Start(context.Background(), host))
+	require.NoError(t, extensions.Shutdown(context.Background()))
+
+	// Find the self-reported RecoverableError event and verify it was attributed
+	// to the extension that reported it.
+	var found bool
+	for i, ev := range reportedEvents {
+		if ev != reportedEvent {
+			continue
+		}
+
+		found = true
+		require.NotNil(t, reportedSources[i])
+		assert.Equal(t, compID, reportedSources[i].ComponentID())
+		assert.Equal(t, component.KindExtension, reportedSources[i].Kind())
+		assert.Equal(t, assert.AnError, ev.Err())
+	}
+	assert.True(t, found, "expected extension to report a status event about itself")
+}
+
+// statusReporterHost is a component.Host that also implements status.Reporter,
+// mirroring the host provided to extensions by the running service.
+type statusReporterHost struct {
+	component.Host
+	reporter status.Reporter
+}
+
+func (h *statusReporterHost) ReportStatus(id *componentstatus.InstanceID, ev *componentstatus.Event) {
+	h.reporter.ReportStatus(id, ev)
+}
+
+func (h *statusReporterHost) ReportOKIfStarting(id *componentstatus.InstanceID) {
+	h.reporter.ReportOKIfStarting(id)
+}
+
+type selfReportingExtension struct {
+	event *componentstatus.Event
+}
+
+func (ext *selfReportingExtension) Start(_ context.Context, host component.Host) error {
+	componentstatus.ReportStatus(host, ext.event)
+	return nil
+}
+
+func (ext *selfReportingExtension) Shutdown(context.Context) error {
+	return nil
+}
+
+func newSelfReportingExtensionFactory(name component.Type, event *componentstatus.Event) extension.Factory {
+	return extension.NewFactory(
+		name,
+		func() component.Config {
+			return &struct{}{}
+		},
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
+			return &selfReportingExtension{event: event}, nil
+		},
+		component.StabilityLevelDevelopment,
+	)
+}
+
 type statusTestExtension struct {
 	startErr    error
 	shutdownErr error
