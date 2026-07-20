@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 type flavor int
@@ -191,7 +190,7 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 		}
 	}
 
-	if err := conf.Unmarshal(&o.value, xconfmap.WithForceUnmarshaler()); err != nil {
+	if err := conf.Unmarshal(&o.value, confmap.WithForceUnmarshaler()); err != nil {
 		return err
 	}
 
