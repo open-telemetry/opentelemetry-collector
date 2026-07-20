@@ -1,6 +1,0 @@
-change_type: bug_fix
-component: pkg/config/configretry
-note: Always validate BackOffConfig fields regardless of the Enabled flag.
-issues: [15437]
-subtext:
-change_logs: [user]

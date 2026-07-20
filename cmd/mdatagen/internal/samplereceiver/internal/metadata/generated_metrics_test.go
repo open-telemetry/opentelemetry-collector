@@ -169,6 +169,7 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			rb := mb.NewResourceBuilder()
+			rb.SetHostArch("host.arch-val")
 			rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
 			rb.SetOptionalResourceAttr("optional.resource.attr-val")
 			rb.SetSliceResourceAttr([]any{"slice.resource.attr-item1", "slice.resource.attr-item2"})
