@@ -270,22 +270,29 @@ checkapi:
 checkdoc:
 	$(GO_TOOL) checkfile --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "README.md"
 
+STABLE_MODULES := $(shell sed -n '/stable:/,/beta:/p' versions.yaml | sed -n -e 's/.*- go.opentelemetry.io\/collector/./p')
+
+.PHONY: all-stable-modules
+all-stable-modules:
+	@echo $(STABLE_MODULES) | tr ' ' '\n' | sort
+
+.PHONY: for-all-stable-target
+for-all-stable-target: $(STABLE_MODULES)
+
 # Construct new API state snapshots
 .PHONY: apidiff-build
 apidiff-build:
-	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/gen-apidiff.sh -p $(pkg)))
+	@$(MAKE) for-all-stable-target TARGET="apidiff-build-mod"
 
-# If we are running in CI, change input directory
-ifeq ($(CI), true)
-APICOMPARE_OPTS=$(COMPARE_OPTS)
-else
-APICOMPARE_OPTS=-d "./internal/data/apidiff"
-endif
-
-# Compare API state snapshots
+# Compare API state snapshots and log differences
 .PHONY: apidiff-compare
 apidiff-compare:
-	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/compare-apidiff.sh -p $(pkg)))
+	@$(MAKE) for-all-stable-target TARGET="apidiff-compare-mod"
+
+# Compare API state snapshots and fail if there are differences
+.PHONY: apidiff-check
+apidiff-check:
+	@$(MAKE) for-all-stable-target TARGET="apidiff-check-mod"
 
 .PHONY: multimod-verify
 multimod-verify:
