@@ -386,13 +386,16 @@ func (cc *ClientConfig) getGrpcDialOptions(
 	extraOpts []ToClientConnOption,
 ) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
+	var callOpts []grpc.CallOption
+	callOpts = append(callOpts, grpc.WaitForReady(cc.WaitForReady))
 	if cc.Compression.IsCompressed() {
 		cp, err := getGRPCCompressionName(cc.Compression)
 		if err != nil {
 			return nil, err
 		}
-		opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor(cp)))
+		callOpts = append(callOpts, grpc.UseCompressor(cp))
 	}
+	opts = append(opts, grpc.WithDefaultCallOptions(callOpts...))
 
 	tlsCfg, err := cc.TLS.LoadTLSConfig(ctx)
 	if err != nil {
