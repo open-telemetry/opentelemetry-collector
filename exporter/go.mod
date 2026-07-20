@@ -36,7 +36,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/client v1.62.0 // indirect
 	go.opentelemetry.io/collector/confmap v1.62.0 // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.156.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.156.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.156.0 // indirect
 	go.opentelemetry.io/collector/extension v1.62.0 // indirect
@@ -106,8 +105,6 @@ replace go.opentelemetry.io/collector/pdata/xpdata => ../pdata/xpdata
 replace go.opentelemetry.io/collector/confmap => ../confmap
 
 replace go.opentelemetry.io/collector/config/configoptional => ../config/configoptional
-
-replace go.opentelemetry.io/collector/confmap/xconfmap => ../confmap/xconfmap
 
 replace go.opentelemetry.io/collector/exporter/exporterhelper => ./exporterhelper
 
