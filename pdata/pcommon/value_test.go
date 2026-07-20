@@ -255,6 +255,19 @@ func TestValue_CopyTo(t *testing.T) {
 	assert.Equal(t, internal.GenTestAnyValue(), dest.getOrig())
 }
 
+func TestValue_CopyToBytesIsDeepCopy(t *testing.T) {
+	src := NewValueBytes()
+	src.Bytes().FromRaw([]byte{1, 2, 3})
+
+	dest := NewValueEmpty()
+	src.CopyTo(dest)
+
+	// mutating the copy must not affect the source, since CopyTo is a deep copy.
+	dest.Bytes().SetAt(0, 99)
+	assert.Equal(t, []byte{1, 2, 3}, src.Bytes().AsRaw())
+	assert.Equal(t, []byte{99, 2, 3}, dest.Bytes().AsRaw())
+}
+
 func TestSliceWithNilValues(t *testing.T) {
 	origWithNil := []internal.AnyValue{
 		{},
