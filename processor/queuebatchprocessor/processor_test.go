@@ -11,8 +11,13 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -211,4 +216,132 @@ func TestDefaultDoesNotWaitForResult(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, p.Shutdown(context.Background())) })
 
 	require.NoError(t, p.ConsumeTraces(context.Background(), generateTraces(1)))
+}
+
+// capabilityCases enumerates the MutatesData capability the processor must
+// report, across the three factors that determine it:
+//   - batching enabled: the batcher merges/mutates requests, so the processor
+//     always reports MutatesData (exporterhelper also forces this to true).
+//   - persistent storage (batching disabled): the queue serializes each request
+//     and hands the next consumer a freshly deserialized copy, so the caller's
+//     data is never mutated regardless of what the next consumer does.
+//   - in-memory queue (batching disabled): the queue forwards the same pdata to
+//     the next consumer, so the processor mutates data exactly when next does.
+var capabilityCases = []struct {
+	name         string
+	batchEnabled bool
+	storage      bool
+	nextMutates  bool
+	want         bool
+}{
+	{"batch_enabled_next_readonly", true, false, false, true},
+	{"batch_enabled_next_mutating", true, false, true, true},
+	{"storage_next_readonly", false, true, false, false},
+	{"storage_next_mutating", false, true, true, false},
+	{"memory_next_readonly", false, false, false, false},
+	{"memory_next_mutating", false, false, true, true},
+}
+
+func capabilityConfig(batchEnabled, storage bool) *Config {
+	cfg := createDefaultConfig().(*Config)
+	if !batchEnabled {
+		cfg.Batch = configoptional.None[exporterhelper.BatchConfig]()
+	}
+	if storage {
+		id := component.MustNewID("file_storage")
+		cfg.StorageID = &id
+	}
+	return cfg
+}
+
+func mutatingTraces(t *testing.T) consumer.Traces {
+	c, err := consumer.NewTraces(
+		func(context.Context, ptrace.Traces) error { return nil },
+		consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+	require.NoError(t, err)
+	return c
+}
+
+func mutatingMetrics(t *testing.T) consumer.Metrics {
+	c, err := consumer.NewMetrics(
+		func(context.Context, pmetric.Metrics) error { return nil },
+		consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+	require.NoError(t, err)
+	return c
+}
+
+func mutatingLogs(t *testing.T) consumer.Logs {
+	c, err := consumer.NewLogs(
+		func(context.Context, plog.Logs) error { return nil },
+		consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+	require.NoError(t, err)
+	return c
+}
+
+func mutatingProfiles(t *testing.T) xconsumer.Profiles {
+	c, err := xconsumer.NewProfiles(
+		func(context.Context, pprofile.Profiles) error { return nil },
+		consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+	require.NoError(t, err)
+	return c
+}
+
+func TestTracesCapabilities(t *testing.T) {
+	set := processortest.NewNopSettings(metadata.Type)
+	for _, tc := range capabilityCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var next consumer.Traces = consumertest.NewNop()
+			if tc.nextMutates {
+				next = mutatingTraces(t)
+			}
+			p, err := newTracesProcessor(context.Background(), set, capabilityConfig(tc.batchEnabled, tc.storage), next)
+			require.NoError(t, err)
+			require.Equal(t, tc.want, p.Capabilities().MutatesData)
+		})
+	}
+}
+
+func TestMetricsCapabilities(t *testing.T) {
+	set := processortest.NewNopSettings(metadata.Type)
+	for _, tc := range capabilityCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var next consumer.Metrics = consumertest.NewNop()
+			if tc.nextMutates {
+				next = mutatingMetrics(t)
+			}
+			p, err := newMetricsProcessor(context.Background(), set, capabilityConfig(tc.batchEnabled, tc.storage), next)
+			require.NoError(t, err)
+			require.Equal(t, tc.want, p.Capabilities().MutatesData)
+		})
+	}
+}
+
+func TestLogsCapabilities(t *testing.T) {
+	set := processortest.NewNopSettings(metadata.Type)
+	for _, tc := range capabilityCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var next consumer.Logs = consumertest.NewNop()
+			if tc.nextMutates {
+				next = mutatingLogs(t)
+			}
+			p, err := newLogsProcessor(context.Background(), set, capabilityConfig(tc.batchEnabled, tc.storage), next)
+			require.NoError(t, err)
+			require.Equal(t, tc.want, p.Capabilities().MutatesData)
+		})
+	}
+}
+
+func TestProfilesCapabilities(t *testing.T) {
+	set := processortest.NewNopSettings(metadata.Type)
+	for _, tc := range capabilityCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var next xconsumer.Profiles = consumertest.NewNop()
+			if tc.nextMutates {
+				next = mutatingProfiles(t)
+			}
+			p, err := newProfilesProcessor(context.Background(), set, capabilityConfig(tc.batchEnabled, tc.storage), next)
+			require.NoError(t, err)
+			require.Equal(t, tc.want, p.Capabilities().MutatesData)
+		})
+	}
 }
