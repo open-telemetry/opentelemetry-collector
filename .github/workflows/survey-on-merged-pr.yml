@@ -1,50 +1,17 @@
 name: Survey on Merged PR by Non-Member
 
 on:
+  # zizmor: ignore[dangerous-triggers] — this workflow only calls the reusable shared workflow; no PR code is checked out or executed.
   pull_request_target:
     types: [closed]
+    branches: [main]
 
-permissions:
-  contents: read
-
-env:
-  PR_NUM: ${{ github.event.pull_request.number }}
-  SURVEY_URL: https://docs.google.com/forms/d/e/1FAIpQLSf2FfCsW-DimeWzdQgfl0KDzT2UEAqu69_f7F2BVPSxVae1cQ/viewform?entry.1540511742=open-telemetry/opentelemetry-collector
+permissions: {}
 
 jobs:
-  comment-on-pr:
-    name: Add survey to PR if author is not a member
-    runs-on: ubuntu-latest
-    if: github.event.pull_request.merged == true
-    steps:
-      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
-        id: otelbot-token
-        with:
-          app-id: ${{ vars.OTELBOT_APP_ID }}
-          private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
-
-      - name: Add survey comment if author is not a member or bot
-        run: |
-          USERNAME="${GITHUB_EVENT_PULL_REQUEST_USER_LOGIN}"
-          USER_TYPE="${GITHUB_EVENT_PULL_REQUEST_USER_TYPE}"
-          ORG="${{ github.repository_owner }}"
-          
-          # Skip if user is a bot
-          if [[ "$USER_TYPE" == "Bot" ]]; then
-            echo "Skipping survey for bot user: $USERNAME"
-            exit 0
-          fi
-          
-          # Skip if user is an org member
-          if gh api "orgs/$ORG/members/$USERNAME" --silent; then
-            echo "Skipping survey for org member: $USERNAME"
-            exit 0
-          fi
-          
-          # Add survey comment for external contributor
-          echo "Adding survey comment for external contributor: $USERNAME"
-          gh pr comment ${PR_NUM} --repo ${{ github.repository }} --body "Thank you for your contribution @${USERNAME}! 🎉 We would like to hear from you about your experience contributing to OpenTelemetry by taking a few minutes to fill out this [survey](${SURVEY_URL})."
-        env:
-          GH_TOKEN: ${{ steps.otelbot-token.outputs.token }}
-          GITHUB_EVENT_PULL_REQUEST_USER_LOGIN: ${{ github.event.pull_request.user.login }}
-          GITHUB_EVENT_PULL_REQUEST_USER_TYPE: ${{ github.event.pull_request.user.type }}
+  survey:
+    uses: open-telemetry/shared-workflows/.github/workflows/survey-on-merged-pr.yml@9cdb8625f2e5a1d160834bb7f7738d157f22a19c # v0.2.1
+    with:
+      client_id: ${{ vars.OTELBOT_CLIENT_ID }}
+    secrets:
+      private_key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
