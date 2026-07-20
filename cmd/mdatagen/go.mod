@@ -12,7 +12,6 @@ require (
 	go.opentelemetry.io/collector/config/configoptional v1.62.0
 	go.opentelemetry.io/collector/confmap v1.62.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.62.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.156.0
 	go.opentelemetry.io/collector/connector v0.156.0
 	go.opentelemetry.io/collector/connector/connectortest v0.156.0
 	go.opentelemetry.io/collector/connector/xconnector v0.156.0
@@ -72,6 +71,7 @@ require (
 	github.com/spf13/pflag v1.0.10 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.156.0 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.156.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.156.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.156.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.156.0 // indirect

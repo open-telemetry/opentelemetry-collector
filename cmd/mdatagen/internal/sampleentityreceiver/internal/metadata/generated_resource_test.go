@@ -7,8 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestResourceBuilder(t *testing.T) {
@@ -67,7 +66,7 @@ func TestResourceBuilder(t *testing.T) {
 
 func TestResourceBuilderOverrideValue(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 	rb.SetK8sNamespaceName("k8s.namespace.name-val")
 	rb.SetK8sPodName("k8s.pod.name-val")
@@ -116,7 +115,7 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 // TestResourceBuilderOverrideWithoutSet does not call any Set* methods, but override should still apply via Emit().
 func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 
 	res := rb.Emit()
@@ -165,7 +164,7 @@ func TestResourceBuilderOverrideDisabled(t *testing.T) {
 	cfg.K8sPodUID.Enabled = false
 	cfg.K8sReplicasetName.Enabled = false
 	cfg.K8sReplicasetUID.Enabled = false
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 
 	res := rb.Emit()
@@ -175,7 +174,7 @@ func TestResourceBuilderOverrideDisabled(t *testing.T) {
 // TestResourceBuilderNoOverride has no override_value set, Validate should still succeed.
 func TestResourceBuilderNoOverride(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "all_set")
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	assert.Nil(t, cfg.K8sNamespaceName.OverrideValue, "OverrideValue should be nil for k8s.namespace.name")
 	assert.Nil(t, cfg.K8sPodName.OverrideValue, "OverrideValue should be nil for k8s.pod.name")
 	assert.Nil(t, cfg.K8sPodUID.OverrideValue, "OverrideValue should be nil for k8s.pod.uid")
