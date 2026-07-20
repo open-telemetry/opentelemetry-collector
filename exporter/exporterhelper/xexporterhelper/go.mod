@@ -51,7 +51,6 @@ require (
 	go.opentelemetry.io/collector/client v1.62.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.62.0 // indirect
 	go.opentelemetry.io/collector/confmap v1.62.0 // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.156.0 // indirect
 	go.opentelemetry.io/collector/extension v1.62.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.156.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.62.0 // indirect
