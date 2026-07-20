@@ -149,6 +149,7 @@
       "confignet",
       "configopaque",
       "configoptional",
+      "configstorage",
       "configparser",
       "configretry",
       "configrpc",
