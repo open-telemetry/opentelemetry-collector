@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.156.0
 	go.opentelemetry.io/collector/exporter v1.62.0
 	go.opentelemetry.io/collector/exporter/exporterhelper v0.156.0
-	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.156.0
 	go.opentelemetry.io/collector/pdata v1.62.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.156.0
 	go.opentelemetry.io/collector/processor v1.62.0
