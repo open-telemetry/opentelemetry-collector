@@ -13,5 +13,4 @@ exported_configs:
     properties:
       id:
         description: Specifies the name of the extension to use.
-        type: string
-        x-customType: go.opentelemetry.io/collector/component.ID
+        type: id

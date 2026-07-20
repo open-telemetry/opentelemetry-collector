@@ -774,13 +774,10 @@ func TestResolver_ResolveSchema_DecoratesPropNames(t *testing.T) {
 
 func TestResolver_ResolveSchema_ExtendedTypes_InProperties(t *testing.T) {
 	resolver := &Resolver{
-		pkgID:  "go.opentelemetry.io/collector/test/component",
-		class:  "receiver",
-		name:   "test",
 		loader: NewLoader(""),
 	}
 
-	src := &ConfigMetadata{
+	src := &ConfigsMetadata{Config: &ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"count":     {Type: "int64"},
@@ -790,39 +787,39 @@ func TestResolver_ResolveSchema_ExtendedTypes_InProperties(t *testing.T) {
 			"token":     {Type: "opaque_string"},
 			"component": {Type: "id"},
 		},
-	}
+	}}
 
 	result, err := resolver.ResolveSchema(src)
 	require.NoError(t, err)
 
-	count := result.Properties["count"]
+	count := result.Config.Properties["count"]
 	require.NotNil(t, count)
 	assert.Equal(t, "integer", count.Type)
 	assert.Equal(t, "int64", count.GoType)
 
-	ratio := result.Properties["ratio"]
+	ratio := result.Config.Properties["ratio"]
 	require.NotNil(t, ratio)
 	assert.Equal(t, "number", ratio.Type)
 	assert.Equal(t, "float32", ratio.GoType)
 
-	timeout := result.Properties["timeout"]
+	timeout := result.Config.Properties["timeout"]
 	require.NotNil(t, timeout)
 	assert.Equal(t, "string", timeout.Type)
 	assert.Equal(t, "time.Duration", timeout.GoType)
 	assert.Equal(t, goDurationPattern, timeout.Pattern)
-	assert.Empty(t, timeout.Format, "format must be cleared by enhanceTimeTypes")
+	assert.Empty(t, timeout.Format)
 
-	ts := result.Properties["ts"]
+	ts := result.Config.Properties["ts"]
 	require.NotNil(t, ts)
 	assert.Equal(t, "string", ts.Type)
 	assert.Equal(t, "time.Time", ts.GoType)
 
-	token := result.Properties["token"]
+	token := result.Config.Properties["token"]
 	require.NotNil(t, token)
 	assert.Equal(t, "string", token.Type)
 	assert.Equal(t, "go.opentelemetry.io/collector/config/configopaque.String", token.GoType)
 
-	comp := result.Properties["component"]
+	comp := result.Config.Properties["component"]
 	require.NotNil(t, comp)
 	assert.Equal(t, "string", comp.Type)
 	assert.Equal(t, "go.opentelemetry.io/collector/component.ID", comp.GoType)
@@ -830,13 +827,10 @@ func TestResolver_ResolveSchema_ExtendedTypes_InProperties(t *testing.T) {
 
 func TestResolver_ResolveSchema_ExtendedType_InArrayItems(t *testing.T) {
 	resolver := &Resolver{
-		pkgID:  "go.opentelemetry.io/collector/test/component",
-		class:  "receiver",
-		name:   "test",
 		loader: NewLoader(""),
 	}
 
-	src := &ConfigMetadata{
+	src := &ConfigsMetadata{Config: &ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"ids": {
@@ -844,11 +838,11 @@ func TestResolver_ResolveSchema_ExtendedType_InArrayItems(t *testing.T) {
 				Items: &ConfigMetadata{Type: "id"},
 			},
 		},
-	}
+	}}
 
 	result, err := resolver.ResolveSchema(src)
 	require.NoError(t, err)
-	ids := result.Properties["ids"]
+	ids := result.Config.Properties["ids"]
 	require.NotNil(t, ids)
 	assert.Equal(t, "array", ids.Type)
 	require.NotNil(t, ids.Items)
@@ -858,13 +852,10 @@ func TestResolver_ResolveSchema_ExtendedType_InArrayItems(t *testing.T) {
 
 func TestResolver_ResolveSchema_ExtendedType_InAdditionalProperties(t *testing.T) {
 	resolver := &Resolver{
-		pkgID:  "go.opentelemetry.io/collector/test/component",
-		class:  "receiver",
-		name:   "test",
 		loader: NewLoader(""),
 	}
 
-	src := &ConfigMetadata{
+	src := &ConfigsMetadata{Config: &ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"secrets": {
@@ -872,11 +863,11 @@ func TestResolver_ResolveSchema_ExtendedType_InAdditionalProperties(t *testing.T
 				AdditionalProperties: &ConfigMetadata{Type: "opaque_string"},
 			},
 		},
-	}
+	}}
 
 	result, err := resolver.ResolveSchema(src)
 	require.NoError(t, err)
-	secrets := result.Properties["secrets"]
+	secrets := result.Config.Properties["secrets"]
 	require.NotNil(t, secrets)
 	require.NotNil(t, secrets.AdditionalProperties)
 	assert.Equal(t, "string", secrets.AdditionalProperties.Type)
@@ -885,25 +876,24 @@ func TestResolver_ResolveSchema_ExtendedType_InAdditionalProperties(t *testing.T
 
 func TestResolver_ResolveSchema_ExtendedType_InDefs_ViaRef(t *testing.T) {
 	resolver := &Resolver{
-		pkgID:  "go.opentelemetry.io/collector/test/component",
-		class:  "receiver",
-		name:   "test",
 		loader: NewLoader(""),
 	}
 
-	src := &ConfigMetadata{
-		Type: "object",
-		Properties: map[string]*ConfigMetadata{
-			"count": {Ref: "counter"},
+	src := &ConfigsMetadata{
+		Config: &ConfigMetadata{
+			Type: "object",
+			Properties: map[string]*ConfigMetadata{
+				"count": {Ref: "counter"},
+			},
 		},
-		Defs: map[string]*ConfigMetadata{
-			"counter": {Type: "int64"},
+		ExportedConfigs: map[string]*ConfigMetadata{
+			"counter": {Type: "int64", InternalOnly: true},
 		},
 	}
 
 	result, err := resolver.ResolveSchema(src)
 	require.NoError(t, err)
-	count := result.Properties["count"]
+	count := result.Config.Properties["count"]
 	require.NotNil(t, count)
 	assert.Equal(t, "integer", count.Type)
 	assert.Equal(t, "int64", count.GoType)
@@ -911,22 +901,19 @@ func TestResolver_ResolveSchema_ExtendedType_InDefs_ViaRef(t *testing.T) {
 
 func TestResolver_ResolveSchema_ExtendedType_OpaqueMap(t *testing.T) {
 	resolver := &Resolver{
-		pkgID:  "go.opentelemetry.io/collector/test/component",
-		class:  "receiver",
-		name:   "test",
 		loader: NewLoader(""),
 	}
 
-	src := &ConfigMetadata{
+	src := &ConfigsMetadata{Config: &ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"headers": {Type: "opaque_map"},
 		},
-	}
+	}}
 
 	result, err := resolver.ResolveSchema(src)
 	require.NoError(t, err)
-	headers := result.Properties["headers"]
+	headers := result.Config.Properties["headers"]
 	require.NotNil(t, headers)
 	assert.Equal(t, "object", headers.Type)
 	assert.Equal(t, "go.opentelemetry.io/collector/config/configopaque.MapList", headers.GoType)
@@ -936,18 +923,15 @@ func TestResolver_ResolveSchema_ExtendedType_OpaqueMap(t *testing.T) {
 
 func TestResolver_ResolveSchema_ExtendedType_UnknownAlias_Error(t *testing.T) {
 	resolver := &Resolver{
-		pkgID:  "go.opentelemetry.io/collector/test/component",
-		class:  "receiver",
-		name:   "test",
 		loader: NewLoader(""),
 	}
 
-	src := &ConfigMetadata{
+	src := &ConfigsMetadata{Config: &ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"bad": {Type: "not_a_type"},
 		},
-	}
+	}}
 
 	_, err := resolver.ResolveSchema(src)
 	require.Error(t, err)
