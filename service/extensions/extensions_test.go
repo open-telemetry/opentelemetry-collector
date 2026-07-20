@@ -561,8 +561,8 @@ func TestExtensionHostForwardsHostCapabilities(t *testing.T) {
 		},
 		factory: factory,
 	}
-	require.NoError(t, exts.Start(context.Background(), host))
-	require.NoError(t, exts.Shutdown(context.Background()))
+	require.NoError(t, exts.Start(t.Context(), host))
+	require.NoError(t, exts.Shutdown(t.Context()))
 
 	mi, ok := extHost.(hostcapabilities.ModuleInfo)
 	require.True(t, ok, "host passed to extensions must implement hostcapabilities.ModuleInfo")
