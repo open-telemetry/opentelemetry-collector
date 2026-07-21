@@ -10,6 +10,7 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.62.0
 	go.opentelemetry.io/collector/confmap v1.62.0
 	go.opentelemetry.io/collector/internal/testutil v0.156.0
+	go.uber.org/goleak v1.3.0
 )
 
 require (

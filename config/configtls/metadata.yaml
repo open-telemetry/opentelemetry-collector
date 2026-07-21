@@ -5,3 +5,13 @@ github_project: open-telemetry/opentelemetry-collector
 status:
   disable_codecov_badge: true
   class: pkg
+
+tests:
+  goleak:
+    ignore:
+      top:
+        # https://github.com/open-telemetry/opentelemetry-collector/issues/9221
+        - "go.opentelemetry.io/collector/config/configtls.(*clientCAsFileReloader).handleWatcherEvents"
+      any:
+        # https://github.com/open-telemetry/opentelemetry-collector/issues/9221
+        - "github.com/fsnotify/fsnotify.(*inotify).readEvents"
