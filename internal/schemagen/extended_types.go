@@ -33,7 +33,7 @@ var extendedTypes = map[string]ConfigMetadata{
 
 	// String-backed aliases using full import-path GoType convention
 	"opaque_string": {Type: "string", GoType: "go.opentelemetry.io/collector/config/configopaque.String"},
-	"id":            {Type: "string", GoType: "go.opentelemetry.io/collector/component.ID"},
+	"component_id":  {Type: "string", GoType: "go.opentelemetry.io/collector/component.ID"},
 
 	// duration and time
 	"duration": {Type: "string", GoType: "time.Duration", Pattern: goDurationPattern},

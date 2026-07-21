@@ -785,7 +785,7 @@ func TestResolver_ResolveSchema_ExtendedTypes_InProperties(t *testing.T) {
 			"timeout":   {Type: "duration"},
 			"ts":        {Type: "time"},
 			"token":     {Type: "opaque_string"},
-			"component": {Type: "id"},
+			"component": {Type: "component_id"},
 		},
 	}}
 
@@ -835,7 +835,7 @@ func TestResolver_ResolveSchema_ExtendedType_InArrayItems(t *testing.T) {
 		Properties: map[string]*ConfigMetadata{
 			"ids": {
 				Type:  "array",
-				Items: &ConfigMetadata{Type: "id"},
+				Items: &ConfigMetadata{Type: "component_id"},
 			},
 		},
 	}}

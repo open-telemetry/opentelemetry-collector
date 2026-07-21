@@ -61,7 +61,7 @@ config:
       type: opaque_string
     component_id:
       description: Component ID used to identify this receiver instance.
-      type: id
+      type: component_id
     headers:
       description: Extra HTTP headers to attach to each request.
       type: opaque_map

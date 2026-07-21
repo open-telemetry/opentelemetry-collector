@@ -13,4 +13,4 @@ exported_configs:
     properties:
       id:
         description: Specifies the name of the extension to use.
-        type: id
+        type: component_id

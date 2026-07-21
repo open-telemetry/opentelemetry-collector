@@ -103,7 +103,7 @@ func TestExpandExtendedType_OpaqueString(t *testing.T) {
 }
 
 func TestExpandExtendedType_ID(t *testing.T) {
-	md := &ConfigMetadata{Type: "id"}
+	md := &ConfigMetadata{Type: "component_id"}
 	require.NoError(t, expandExtendedType(md))
 	assert.Equal(t, "string", md.Type)
 	assert.Equal(t, "go.opentelemetry.io/collector/component.ID", md.GoType)

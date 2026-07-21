@@ -40,7 +40,7 @@ config:
       go_struct:
         anonymous: true
     component:
-      type: id
+      type: component_id
       description: Identifies the scraper, used for telemetry and logging.
       go_struct:
         field_name: ComponentID
