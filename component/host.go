@@ -20,4 +20,6 @@ type Host interface {
 	//
 	// The returned map should only be nil if the host does not support extensions at all.
 	GetExtensions() map[ID]Component
+
+	Haha()
 }

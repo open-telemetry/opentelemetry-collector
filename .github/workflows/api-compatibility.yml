@@ -19,10 +19,10 @@ jobs:
       BASE_REF: ${{ github.base_ref }}
       HEAD_REF: ${{ github.head_ref }}
     steps:
-      - name: Checkout-Main
+      - name: Checkout-Test-Branch
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          ref: ${{ github.base_ref }}
+          ref: 2aac7ca17261a68aa8d5f5233c1a3204558a1690
           path: ${{ github.base_ref }}
           persist-credentials: false
 
