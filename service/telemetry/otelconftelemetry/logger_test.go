@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -150,7 +151,7 @@ func TestCreateLogger(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buildInfo := component.BuildInfo{}
 			factory := NewFactory()
-			resource, err := factory.CreateResource(context.Background(), telemetry.Settings{BuildInfo: buildInfo}, &tt.cfg)
+			resource, _, err := factory.CreateResource(context.Background(), telemetry.Settings{BuildInfo: buildInfo}, &tt.cfg)
 			require.NoError(t, err)
 
 			_, provider, err := factory.CreateLogger(
@@ -181,7 +182,7 @@ func TestCreateLogger_MissingResource(t *testing.T) {
 
 func TestCreateLogger_BuildZapLoggerError(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	resource, _, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
 
 	_, shutdown, err := createLogger(t.Context(), telemetry.LoggerSettings{
@@ -200,6 +201,7 @@ func TestCreateLoggerWithResource(t *testing.T) {
 		buildInfo      component.BuildInfo
 		resourceConfig migration.ResourceConfigV030
 		wantFields     map[string]string
+		wantSchemaURL  string
 		setConfig      func(cfg *Config)
 	}{
 		{
@@ -294,6 +296,24 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				cfg.Logs.DisableZapResource = true
 			},
 		},
+		{
+			name: "schema URL is propagated",
+			buildInfo: component.BuildInfo{
+				Command: "mycommand",
+				Version: "1.0.0",
+			},
+			resourceConfig: migration.ResourceConfigV030{
+				Resource: config.Resource{
+					SchemaUrl: ptr(semconv.SchemaURL),
+				},
+			},
+			wantFields: map[string]string{
+				"service.name":        "mycommand",
+				"service.version":     "1.0.0",
+				"service.instance.id": "",
+			},
+			wantSchemaURL: string(semconv.SchemaURL),
+		},
 	}
 
 	for _, tt := range tests {
@@ -311,11 +331,12 @@ func TestCreateLoggerWithResource(t *testing.T) {
 				tt.setConfig(cfg)
 			}
 
-			resource, err := createResource(t.Context(), telemetry.Settings{BuildInfo: tt.buildInfo}, cfg)
+			resource, schemaURL, err := createResource(t.Context(), telemetry.Settings{BuildInfo: tt.buildInfo}, cfg)
 			require.NoError(t, err)
+			assert.Equal(t, tt.wantSchemaURL, schemaURL)
 
 			set := telemetry.LoggerSettings{
-				Settings: telemetry.Settings{BuildInfo: tt.buildInfo, Resource: &resource},
+				Settings: telemetry.Settings{BuildInfo: tt.buildInfo, Resource: &resource, SchemaURL: schemaURL},
 				BuildZapLogger: func(zap.Config, ...zap.Option) (*zap.Logger, error) {
 					// Redirect logs to the observer core
 					return zap.New(core), nil
@@ -371,7 +392,7 @@ func TestCreateLoggerWarnsOnLegacyResourceAttributes(t *testing.T) {
 		},
 	}
 
-	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	resource, _, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
 
 	set := telemetry.LoggerSettings{
@@ -405,7 +426,7 @@ func TestCreateLogger_020MigrationWarning(t *testing.T) {
 		},
 	}
 
-	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	resource, _, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
 
 	set := telemetry.LoggerSettings{
@@ -438,7 +459,7 @@ func TestCreateLogger_NoMigrationWarning(t *testing.T) {
 		},
 	}
 
-	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	resource, _, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
 
 	set := telemetry.LoggerSettings{
@@ -466,7 +487,7 @@ func TestCreateLoggerZapOptions(t *testing.T) {
 			Encoding: "json",
 		},
 	}
-	resource, err := factory.CreateResource(
+	resource, _, err := factory.CreateResource(
 		context.Background(), telemetry.Settings{BuildInfo: buildInfo}, cfg,
 	)
 	require.NoError(t, err)
@@ -565,7 +586,7 @@ func newOTLPLogger(t *testing.T, level zapcore.Level, handler func(plogotlp.Expo
 		},
 	}
 
-	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	resource, _, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
 
 	logger, shutdown, err := createLogger(t.Context(), telemetry.LoggerSettings{
@@ -630,7 +651,7 @@ func TestLogAttributeInjection(t *testing.T) {
 		},
 	}
 
-	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	resource, _, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
 
 	set := telemetry.LoggerSettings{

@@ -38,7 +38,7 @@ func createTracerProvider(
 		set.Logger.Warn("Telemetry traces configuration is using the deprecated v0.2.0 Declarative Configuration format, please migrate to the v0.3.0 format",
 			zap.String("url", "https://opentelemetry.io/docs/specs/otel/configuration/#declarative-configuration"))
 	}
-	resourceConfig, err := createFixedResourceConfig(&cfg.Resource, set.Resource)
+	resourceConfig, err := createFixedResourceConfig(&cfg.Resource, set.Resource, set.SchemaURL)
 	if err != nil {
 		return nil, err
 	}

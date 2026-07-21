@@ -23,7 +23,7 @@ func createLogger(
 ) (*zap.Logger, component.ShutdownFunc, error) {
 	cfg := componentConfig.(*Config)
 
-	resourceConfig, err := createFixedResourceConfig(&cfg.Resource, set.Resource)
+	resourceConfig, err := createFixedResourceConfig(&cfg.Resource, set.Resource, set.SchemaURL)
 	if err != nil {
 		return nil, nil, err
 	}

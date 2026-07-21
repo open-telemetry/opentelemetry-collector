@@ -74,29 +74,29 @@ func createResource(
 	ctx context.Context,
 	set telemetry.Settings,
 	componentConfig component.Config,
-) (pcommon.Resource, error) {
+) (pcommon.Resource, string, error) {
 	cfg := &componentConfig.(*Config).Resource
 	sdkCfg, err := createInitialResourceConfig(set.BuildInfo, cfg)
 	if err != nil {
-		return pcommon.Resource{}, err
+		return pcommon.Resource{}, "", err
 	}
 	sdk, err := otelconf.NewSDK(otelconf.WithContext(ctx), otelconf.WithOpenTelemetryConfiguration(otelconf.OpenTelemetryConfiguration{
 		Resource: sdkCfg,
 	}))
 	if err != nil {
-		return pcommon.Resource{}, err
+		return pcommon.Resource{}, "", err
 	}
 
 	sdkResource := sdk.Resource()
 	if cfg.DetectionDevelopment != nil {
 		detectionSDK, err := newDetectionResourceSDK(ctx, cfg.DetectionDevelopment)
 		if err != nil {
-			return pcommon.Resource{}, err
+			return pcommon.Resource{}, "", err
 		}
 		detectedResource := otelsdkresource.NewSchemaless(detectionSDK.Resource().Attributes()...)
 		sdkResource, err = otelsdkresource.Merge(detectedResource, sdkResource)
 		if err != nil {
-			return pcommon.Resource{}, err
+			return pcommon.Resource{}, "", err
 		}
 	}
 
@@ -111,7 +111,7 @@ func createResource(
 		putSDKAttribute(pcommonAttributes, string(kv.Key), kv.Value)
 	}
 
-	return pcommonResource, nil
+	return pcommonResource, sdkResource.SchemaURL(), nil
 }
 
 // putSDKAttribute copies an OTel SDK attribute value into a pcommon.Map, handling every
@@ -163,7 +163,7 @@ func newDetectionResourceSDK(ctx context.Context, detection *xotelconf.Experimen
 	)
 }
 
-func createFixedResourceConfig(cfg *ResourceConfig, res *pcommon.Resource) (*otelconf.Resource, error) {
+func createFixedResourceConfig(cfg *ResourceConfig, res *pcommon.Resource, schemaURL string) (*otelconf.Resource, error) {
 	if res == nil {
 		return nil, errMissingCollectorResource
 	}
@@ -179,9 +179,7 @@ func createFixedResourceConfig(cfg *ResourceConfig, res *pcommon.Resource) (*ote
 		})
 		return true
 	})
-	if cfg.SchemaUrl != nil {
-		// Preserve the configured schema URL separately because it is not exposed by pcommon.Resource.
-		schemaURL := *cfg.SchemaUrl
+	if schemaURL != "" {
 		providerConfig.SchemaUrl = &schemaURL
 	}
 

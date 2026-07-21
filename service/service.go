@@ -150,11 +150,12 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 	// Create the resource first. This ensures all telemetry providers
 	// (logger, meter, tracer) use the same resource with a consistent service.instance.id.
 	telemetrySettings := telemetry.Settings{BuildInfo: set.BuildInfo}
-	resource, err := set.TelemetryFactory.CreateResource(ctx, telemetrySettings, cfg.Telemetry)
+	resource, schemaURL, err := set.TelemetryFactory.CreateResource(ctx, telemetrySettings, cfg.Telemetry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create resource: %w", err)
 	}
 	telemetrySettings.Resource = &resource
+	telemetrySettings.SchemaURL = schemaURL
 
 	// Create a function for telemetry providers to build the Zap logger.
 	// This injects any LoggingOptions specified in the Settings.
@@ -218,10 +219,11 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 	srv.tracerProvider = tracerProvider
 
 	srv.telemetrySettings = component.TelemetrySettings{
-		Logger:         logger,
-		MeterProvider:  meterProvider,
-		TracerProvider: tracerProvider,
-		Resource:       resource,
+		Logger:            logger,
+		MeterProvider:     meterProvider,
+		TracerProvider:    tracerProvider,
+		Resource:          resource,
+		ResourceSchemaURL: schemaURL,
 	}
 	srv.host.Reporter = status.NewReporter(srv.host.NotifyComponentStatusChange, func(err error) {
 		if errors.Is(err, status.ErrStatusNotReady) {
