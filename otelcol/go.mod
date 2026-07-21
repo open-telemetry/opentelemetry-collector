@@ -5,30 +5,30 @@ go 1.25.0
 require (
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.62.0
+	go.opentelemetry.io/collector/component v1.63.0
 	go.opentelemetry.io/collector/component/componentstatus v0.156.0
-	go.opentelemetry.io/collector/config/configopaque v1.62.0
-	go.opentelemetry.io/collector/confmap v1.62.0
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.62.0
+	go.opentelemetry.io/collector/config/configopaque v1.63.0
+	go.opentelemetry.io/collector/confmap v1.63.0
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.63.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.156.0
 	go.opentelemetry.io/collector/connector v0.156.0
 	go.opentelemetry.io/collector/connector/connectortest v0.156.0
 	go.opentelemetry.io/collector/connector/xconnector v0.156.0
-	go.opentelemetry.io/collector/consumer v1.62.0
-	go.opentelemetry.io/collector/exporter v1.62.0
+	go.opentelemetry.io/collector/consumer v1.63.0
+	go.opentelemetry.io/collector/exporter v1.63.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.156.0
 	go.opentelemetry.io/collector/exporter/xexporter v0.156.0
-	go.opentelemetry.io/collector/extension v1.62.0
+	go.opentelemetry.io/collector/extension v1.63.0
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.156.0
 	go.opentelemetry.io/collector/extension/extensiontest v0.156.0
-	go.opentelemetry.io/collector/featuregate v1.62.0
+	go.opentelemetry.io/collector/featuregate v1.63.0
 	go.opentelemetry.io/collector/internal/componentalias v0.156.0
-	go.opentelemetry.io/collector/pdata v1.62.0
-	go.opentelemetry.io/collector/pipeline v1.62.0
-	go.opentelemetry.io/collector/processor v1.62.0
+	go.opentelemetry.io/collector/pdata v1.63.0
+	go.opentelemetry.io/collector/pipeline v1.63.0
+	go.opentelemetry.io/collector/processor v1.63.0
 	go.opentelemetry.io/collector/processor/processortest v0.156.0
 	go.opentelemetry.io/collector/processor/xprocessor v0.156.0
-	go.opentelemetry.io/collector/receiver v1.62.0
+	go.opentelemetry.io/collector/receiver v1.63.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.156.0
 	go.opentelemetry.io/collector/receiver/xreceiver v0.156.0
 	go.opentelemetry.io/collector/service v0.156.0
