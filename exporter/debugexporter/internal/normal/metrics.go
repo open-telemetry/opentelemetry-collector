@@ -33,7 +33,7 @@ func (normalMetricsMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error)
 		for j := 0; j < resourceMetrics.ScopeMetrics().Len(); j++ {
 			scopeMetrics := resourceMetrics.ScopeMetrics().At(j)
 
-			buffer.WriteString(fmt.Sprintf("ScopeMetrics #%d%s%s\n", i, writeScopeDetails(scopeMetrics.Scope().Name(), scopeMetrics.Scope().Version(), scopeMetrics.SchemaUrl()), writeAttributesString(scopeMetrics.Scope().Attributes())))
+			buffer.WriteString(fmt.Sprintf("ScopeMetrics #%d%s%s\n", j, writeScopeDetails(scopeMetrics.Scope().Name(), scopeMetrics.Scope().Version(), scopeMetrics.SchemaUrl()), writeAttributesString(scopeMetrics.Scope().Attributes())))
 
 			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
 				metric := scopeMetrics.Metrics().At(k)

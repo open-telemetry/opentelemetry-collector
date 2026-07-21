@@ -13,15 +13,14 @@ import (
 
 func TestWriteJSONSchema(t *testing.T) {
 	dir := t.TempDir()
-	md := &ConfigMetadata{
-		Schema: schemaVersion,
-		Type:   "object",
+	md := &ConfigsMetadata{Config: &ConfigMetadata{
+		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"endpoint": {Type: "string"},
 		},
-	}
+	}}
 
-	err := WriteJSONSchema(dir, md)
+	err := WriteJSONSchema(dir, "test", "test", md)
 	require.NoError(t, err)
 
 	content, err := os.ReadFile(filepath.Join(dir, fileName)) // #nosec G304
@@ -30,30 +29,28 @@ func TestWriteJSONSchema(t *testing.T) {
 	require.Contains(t, string(content), `"endpoint"`)
 }
 
-func TestWriteJSONSchema_OmitsInternalResolvedFrom(t *testing.T) {
+func TestWriteJSONSchema_OmitsInternalFields(t *testing.T) {
 	dir := t.TempDir()
-	md := &ConfigMetadata{
-		Schema:       schemaVersion,
-		Type:         "object",
-		ResolvedFrom: "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
+	md := &ConfigsMetadata{Config: &ConfigMetadata{
+		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"endpoint": {
-				Type:         "string",
-				ResolvedFrom: "string",
+				Type:   "string",
+				GoType: "string",
 			},
 		},
-	}
+	}}
 
-	err := WriteJSONSchema(dir, md)
+	err := WriteJSONSchema(dir, "test", "test", md)
 	require.NoError(t, err)
 
 	content, err := os.ReadFile(filepath.Join(dir, fileName)) // #nosec G304
 	require.NoError(t, err)
-	require.NotContains(t, string(content), "ResolvedFrom")
+	require.NotContains(t, string(content), "x-customType")
 }
 
 func TestWriteJSONSchema_InvalidDir(t *testing.T) {
-	md := &ConfigMetadata{Type: "object"}
-	err := WriteJSONSchema("/nonexistent/path/that/does/not/exist", md)
+	md := &ConfigsMetadata{Config: &ConfigMetadata{Type: "object"}}
+	err := WriteJSONSchema("/nonexistent/path/that/does/not/exist", "test", "test", md)
 	require.Error(t, err)
 }

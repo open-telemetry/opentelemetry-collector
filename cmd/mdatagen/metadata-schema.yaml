@@ -19,13 +19,6 @@ scope_name: string
 # Optional: The name of the package that mdatagen generates. If not set, the name "metadata" will be used.
 generated_package_name: string
 
-# Optional: Enables per-metric reaggregation config generation for metrics with attributes.
-# Enabled by default. Set to false to generate metric config with only the `enabled`
-# field.
-# When enabled, generated metrics config includes `aggregation_strategy` and `attributes`
-# fields that let users reduce metric cardinality by choosing which dimensions are kept.
-reaggregation_enabled: bool
-
 # Optional: Enables per-resource-attribute override_value config generation.
 # When enabled, generated resource attribute config includes typed `override_value`
 # fields that let users override resource attribute values in the collector config.
@@ -62,6 +55,9 @@ status:
 # Optional: OTel Semantic Conventions version that will be associated with the scraped metrics.
 # This attribute should be set for metrics compliant with OTel Semantic Conventions.
 sem_conv_version: 1.9.0
+
+# Optional: URL to the OTel Semantic Conventions version.
+sem_conv_url: https://github.com/open-telemetry/semantic-conventions/releases/tag/v1.9.0
 
 # Optional: JSON Schema based definition for the component's configuration structure.
 # This section defines the schema that could be used to generate:
@@ -168,6 +164,8 @@ resource_attributes:
     enum: [string]
     # Required: attribute value type.
     type: <string|int|double|bool|bytes|slice|map>
+    # Optional: the stability level of the resource attribute.
+    stability: <development|alpha|beta|release_candidate|stable>
     # Optional: warnings that will be shown to user under specified conditions.
     warnings:
       # A warning that will be displayed if the resource_attribute is enabled in user config.

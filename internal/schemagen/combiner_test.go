@@ -18,9 +18,9 @@ func TestCombineCollectorSchema_LayoutAndValidation(t *testing.T) {
 		Receivers: []CollectorComponentSchema{
 			{
 				Type: "otlp",
-				Schema: &ConfigMetadata{
+				Schema: &JSONSchema{
 					Type: "object",
-					Properties: map[string]*ConfigMetadata{
+					Properties: map[string]*JSONSchema{
 						"endpoint": {Type: "string"},
 					},
 					Required: []string{"endpoint"},
@@ -30,23 +30,22 @@ func TestCombineCollectorSchema_LayoutAndValidation(t *testing.T) {
 		Processors: []CollectorComponentSchema{
 			{
 				Type: "batch",
-				Schema: &ConfigMetadata{
+				Schema: &JSONSchema{
 					Type: "object",
-					Properties: map[string]*ConfigMetadata{
+					Properties: map[string]*JSONSchema{
 						"timeout": {Type: "string"},
 					},
 				},
 			},
 		},
-		Service: &ConfigMetadata{
+		Service: &JSONSchema{
 			Type: "object",
-			Properties: map[string]*ConfigMetadata{
+			Properties: map[string]*JSONSchema{
 				"pipelines": {Type: "object"},
 			},
 		},
 	})
 	require.NoError(t, err)
-	require.Equal(t, schemaVersion, schema.Schema)
 	require.Contains(t, schema.Properties, "receivers")
 	require.Contains(t, schema.Properties, "processors")
 	require.Contains(t, schema.Properties, "exporters")
@@ -92,9 +91,9 @@ func TestCombineCollectorSchema_DeprecatedTypeAndMissingSchema(t *testing.T) {
 			{
 				Type:           "otlp_http",
 				DeprecatedType: "otlphttp",
-				Schema: &ConfigMetadata{
+				Schema: &JSONSchema{
 					Type: "object",
-					Properties: map[string]*ConfigMetadata{
+					Properties: map[string]*JSONSchema{
 						"endpoint": {Type: "string"},
 					},
 					Required: []string{"endpoint"},
@@ -174,10 +173,10 @@ func TestCombineCollectorSchema_DeprecatedTypeDuplicatesMainType(t *testing.T) {
 	require.ErrorContains(t, err, `duplicate component identifier "health_check"`)
 }
 
-func compileSchema(t *testing.T, schema *ConfigMetadata) *jsonschema.Schema {
+func compileSchema(t *testing.T, schema *JSONSchema) *jsonschema.Schema {
 	t.Helper()
 
-	data, err := schema.ToJSON()
+	data, err := schema.MarshalJSON()
 	require.NoError(t, err)
 
 	compiler := jsonschema.NewCompiler()
@@ -198,96 +197,4 @@ func unmarshalJSON(t *testing.T, data string) any {
 	require.NoError(t, json.Unmarshal([]byte(data), &value))
 
 	return value
-}
-
-func TestConfigMetadata_MarshalJSON(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name     string
-		metadata *ConfigMetadata
-		expected map[string]any
-	}{
-		{
-			name: "with pattern properties",
-			metadata: &ConfigMetadata{
-				Type: "object",
-				PatternProperties: map[string]*ConfigMetadata{
-					"^test": {Type: "string"},
-				},
-			},
-			expected: map[string]any{
-				"type": "object",
-				"patternProperties": map[string]any{
-					"^test": map[string]any{"type": "string"},
-				},
-			},
-		},
-		{
-			name: "with additional properties allowed false",
-			metadata: &ConfigMetadata{
-				Type:                        "object",
-				AdditionalPropertiesAllowed: boolPtr(false),
-			},
-			expected: map[string]any{
-				"type":                 "object",
-				"additionalProperties": false,
-			},
-		},
-		{
-			name: "with additional properties allowed true",
-			metadata: &ConfigMetadata{
-				Type:                        "object",
-				AdditionalPropertiesAllowed: boolPtr(true),
-			},
-			expected: map[string]any{
-				"type":                 "object",
-				"additionalProperties": true,
-			},
-		},
-		{
-			name: "with both pattern properties and additional properties",
-			metadata: &ConfigMetadata{
-				Type: "object",
-				PatternProperties: map[string]*ConfigMetadata{
-					"^foo": {Type: "number"},
-				},
-				AdditionalPropertiesAllowed: boolPtr(false),
-			},
-			expected: map[string]any{
-				"type": "object",
-				"patternProperties": map[string]any{
-					"^foo": map[string]any{"type": "number"},
-				},
-				"additionalProperties": false,
-			},
-		},
-		{
-			name: "without pattern properties or additional properties",
-			metadata: &ConfigMetadata{
-				Type: "string",
-			},
-			expected: map[string]any{
-				"type": "string",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			data, err := json.Marshal(tt.metadata)
-			require.NoError(t, err)
-
-			var actual map[string]any
-			require.NoError(t, json.Unmarshal(data, &actual))
-
-			for key, expectedValue := range tt.expected {
-				actualValue, ok := actual[key]
-				require.True(t, ok, "expected key %q not found in output", key)
-				require.Equal(t, expectedValue, actualValue, "value mismatch for key %q", key)
-			}
-		})
-	}
 }

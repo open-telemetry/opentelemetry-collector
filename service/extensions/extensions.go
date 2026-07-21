@@ -49,7 +49,8 @@ func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 			instanceID,
 			componentstatus.NewEvent(componentstatus.StatusStarting),
 		)
-		if err := ext.Start(ctx, host); err != nil {
+		extHost := &hostWrapper{Host: host, reporter: bes.reporter, instanceID: instanceID}
+		if err := ext.Start(ctx, extHost); err != nil {
 			bes.reporter.ReportStatus(
 				instanceID,
 				componentstatus.NewPermanentErrorEvent(err),
@@ -115,13 +116,32 @@ func (bes *Extensions) NotifyPipelineNotReady() error {
 	return errs
 }
 
+// NotifyConfig notifies extensions of the Collector's current effective
+// configuration.
+//
+// Deprecated [v0.155.0]: use NotifyConfigSnapshot instead.
 func (bes *Extensions) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {
+	if conf == nil {
+		return nil
+	}
+	return bes.NotifyConfigSnapshot(ctx, extensioncapabilities.NewConfigSnapshot(conf, nil))
+}
+
+func (bes *Extensions) NotifyConfigSnapshot(ctx context.Context, configSnapshot extensioncapabilities.ConfigSnapshot) error {
+	if configSnapshot == nil {
+		return nil
+	}
 	var errs error
 	for _, extID := range bes.extensionIDs {
 		ext := bes.extMap[extID]
+		if cw, ok := ext.(extensioncapabilities.ConfigSnapshotWatcher); ok {
+			errs = multierr.Append(errs, cw.NotifyConfigSnapshot(ctx, configSnapshot))
+			continue
+		}
 		if cw, ok := ext.(extensioncapabilities.ConfigWatcher); ok {
-			clonedConf := confmap.NewFromStringMap(conf.ToStringMap())
-			errs = multierr.Append(errs, cw.NotifyConfig(ctx, clonedConf))
+			if effectiveConf := configSnapshot.Effective(); effectiveConf != nil {
+				errs = multierr.Append(errs, cw.NotifyConfig(ctx, effectiveConf))
+			}
 		}
 	}
 	return errs
@@ -236,4 +256,27 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 	}
 	exts.extensionIDs = order
 	return exts, nil
+}
+
+var (
+	_ componentstatus.Reporter = (*hostWrapper)(nil)
+	_ component.Host           = (*hostWrapper)(nil)
+)
+
+type hostWrapper struct {
+	component.Host
+	reporter   status.Reporter
+	instanceID *componentstatus.InstanceID
+}
+
+func (host *hostWrapper) Report(event *componentstatus.Event) {
+	host.reporter.ReportStatus(host.instanceID, event)
+}
+
+func (host *hostWrapper) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
+	if hostZPages, ok := host.Host.(interface {
+		RegisterZPages(mux *http.ServeMux, pathPrefix string)
+	}); ok {
+		hostZPages.RegisterZPages(mux, pathPrefix)
+	}
 }

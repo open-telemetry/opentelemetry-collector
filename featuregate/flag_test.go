@@ -26,6 +26,27 @@ func TestNewFlag(t *testing.T) {
 			expectedStr: "-alpha,beta,-deprecated,stable",
 		},
 		{
+			name:           "trailing empty item",
+			input:          "alpha,",
+			expectedSetErr: true,
+			expected:       map[string]bool{"alpha": true, "beta": true, "deprecated": false, "stable": true},
+			expectedStr:    "alpha,beta,-deprecated,stable",
+		},
+		{
+			name:           "leading empty item",
+			input:          ",alpha",
+			expectedSetErr: true,
+			expected:       map[string]bool{"alpha": true, "beta": true, "deprecated": false, "stable": true},
+			expectedStr:    "alpha,beta,-deprecated,stable",
+		},
+		{
+			name:           "only comma",
+			input:          ",",
+			expectedSetErr: true,
+			expected:       map[string]bool{"alpha": false, "beta": true, "deprecated": false, "stable": true},
+			expectedStr:    "-alpha,beta,-deprecated,stable",
+		},
+		{
 			name:        "simple enable alpha",
 			input:       "alpha",
 			expected:    map[string]bool{"alpha": true, "beta": true, "deprecated": false, "stable": true},
