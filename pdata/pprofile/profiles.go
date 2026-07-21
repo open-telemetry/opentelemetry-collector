@@ -35,35 +35,35 @@ func (ms Profiles) SampleCount() int {
 // switchDictionary updates the Profiles, switching its indices from one
 // dictionary to another.
 func (ms Profiles) switchDictionary(src, dst ProfilesDictionary) error {
-	idx := newMergeIndex(dst)
+	mi := newMergeIndex(dst)
 
 	for i, v := range ms.Dictionary().AttributeTable().All() {
-		if err := v.switchDictionary(src, dst, idx); err != nil {
+		if err := v.switchDictionary(src, dst, mi); err != nil {
 			return fmt.Errorf("couldn't switch attribute %d: %w", i, err)
 		}
 	}
 	for i, v := range ms.Dictionary().FunctionTable().All() {
-		if err := v.switchDictionary(src, dst, idx); err != nil {
+		if err := v.switchDictionary(src, dst, mi); err != nil {
 			return fmt.Errorf("couldn't switch function %d: %w", i, err)
 		}
 	}
 	for i, v := range ms.Dictionary().MappingTable().All() {
-		if err := v.switchDictionary(src, dst, idx); err != nil {
+		if err := v.switchDictionary(src, dst, mi); err != nil {
 			return fmt.Errorf("couldn't switch mapping %d: %w", i, err)
 		}
 	}
 	for i, v := range ms.Dictionary().LocationTable().All() {
-		if err := v.switchDictionary(src, dst, idx); err != nil {
+		if err := v.switchDictionary(src, dst, mi); err != nil {
 			return fmt.Errorf("couldn't switch location %d: %w", i, err)
 		}
 	}
 	for i, v := range ms.Dictionary().StackTable().All() {
-		if err := v.switchDictionary(src, dst, idx); err != nil {
+		if err := v.switchDictionary(src, dst, mi); err != nil {
 			return fmt.Errorf("couldn't switch stack %d: %w", i, err)
 		}
 	}
 	for i, v := range ms.ResourceProfiles().All() {
-		if err := v.switchDictionary(src, dst, idx); err != nil {
+		if err := v.switchDictionary(src, dst, mi); err != nil {
 			return fmt.Errorf("error switching dictionary for resource profile %d: %w", i, err)
 		}
 	}
