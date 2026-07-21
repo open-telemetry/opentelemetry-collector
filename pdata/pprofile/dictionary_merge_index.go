@@ -12,6 +12,8 @@ import (
 const (
 	fnvOffset64 uint64 = 14695981039346656037
 	fnvPrime64  uint64 = 1099511628211
+
+	negZeroBits uint64 = 1 << 63
 )
 
 // maxDictTableLen is the point at which a dictionary table can no longer grow
@@ -23,6 +25,69 @@ var maxDictTableLen = math.MaxInt32
 func mixU64(h, v uint64) uint64 {
 	h ^= v
 	h *= fnvPrime64
+	return h
+}
+
+// mixBytes reads the slice in place: ByteSlice.AsRaw would copy, and hashing
+// must not allocate per entry.
+func mixBytes(h uint64, b pcommon.ByteSlice) uint64 {
+	for i := 0; i < b.Len(); i++ {
+		h = mixU64(h, uint64(b.At(i)))
+	}
+	return mixU64(h, uint64(b.Len()))
+}
+
+func mixString(h uint64, s string) uint64 {
+	for i := 0; i < len(s); i++ {
+		h = mixU64(h, uint64(s[i]))
+	}
+	return mixU64(h, uint64(len(s)))
+}
+
+// hashValue mixes an attribute value into h. It must agree with
+// [pcommon.Value.Equal]: values that compare equal must hash equal, or the
+// index would file them in different buckets and append a duplicate where the
+// linear scan deduped. Two consequences of that contract are non-obvious:
+// -0.0 is normalized to +0.0 (Equal compares doubles with ==), and maps are
+// combined order-independently (Map.Equal matches by key, not by position).
+func hashValue(h uint64, v pcommon.Value) uint64 {
+	h = mixU64(h, uint64(v.Type()))
+
+	switch v.Type() {
+	case pcommon.ValueTypeStr:
+		return mixString(h, v.Str())
+	case pcommon.ValueTypeInt:
+		return mixU64(h, uint64(v.Int()))
+	case pcommon.ValueTypeDouble:
+		bits := math.Float64bits(v.Double())
+		if bits == negZeroBits {
+			bits = 0
+		}
+		return mixU64(h, bits)
+	case pcommon.ValueTypeBool:
+		if v.Bool() {
+			return mixU64(h, 1)
+		}
+		return mixU64(h, 0)
+	case pcommon.ValueTypeBytes:
+		return mixBytes(h, v.Bytes())
+	case pcommon.ValueTypeSlice:
+		s := v.Slice()
+		h = mixU64(h, uint64(s.Len()))
+		for i := 0; i < s.Len(); i++ {
+			h = hashValue(h, s.At(i))
+		}
+		return h
+	case pcommon.ValueTypeMap:
+		m := v.Map()
+		var acc uint64
+		for k, mv := range m.All() {
+			acc += hashValue(mixString(fnvOffset64, k), mv)
+		}
+		return mixU64(mixU64(h, uint64(m.Len())), acc)
+	case pcommon.ValueTypeEmpty:
+	}
+
 	return h
 }
 
@@ -79,7 +144,7 @@ func hashAttribute(a KeyValueAndUnit) uint64 {
 	h := fnvOffset64
 	h = mixU64(h, uint64(uint32(a.KeyStrindex())))
 	h = mixU64(h, uint64(uint32(a.UnitStrindex())))
-	h = mixU64(h, uint64(a.Value().Type()))
+	h = hashValue(h, a.Value())
 	return h
 }
 

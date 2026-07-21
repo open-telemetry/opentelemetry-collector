@@ -4,6 +4,8 @@
 package pprofile
 
 import (
+	"fmt"
+	"math"
 	"math/rand/v2"
 	"testing"
 
@@ -142,6 +144,162 @@ func TestMergeIndex_SetAttribute_MatchesLinearScan(t *testing.T) {
 	assert.Equal(t, ref, got)
 }
 
+// TestHashValue_DistinguishesValues is the guard against hashing only the
+// value's type: every distinct value below must land in its own bucket. With a
+// type-only hash all four strings (and all three ints, …) would collide, and the
+// bucket walk would degrade back into the linear Equal scan the index replaces.
+func TestHashValue_DistinguishesValues(t *testing.T) {
+	sliceOf := func(vals ...string) pcommon.Value {
+		v := pcommon.NewValueSlice()
+		for _, s := range vals {
+			v.Slice().AppendEmpty().SetStr(s)
+		}
+		return v
+	}
+	mapOf := func(kvs ...string) pcommon.Value {
+		v := pcommon.NewValueMap()
+		for i := 0; i < len(kvs); i += 2 {
+			v.Map().PutStr(kvs[i], kvs[i+1])
+		}
+		return v
+	}
+	bytesOf := func(b ...byte) pcommon.Value {
+		v := pcommon.NewValueBytes()
+		v.Bytes().Append(b...)
+		return v
+	}
+
+	vals := map[string]pcommon.Value{
+		"empty":       pcommon.NewValueEmpty(),
+		"str-empty":   pcommon.NewValueStr(""),
+		"str-a":       pcommon.NewValueStr("a"),
+		"str-b":       pcommon.NewValueStr("b"),
+		"str-ab":      pcommon.NewValueStr("ab"),
+		"int-0":       pcommon.NewValueInt(0),
+		"int-1":       pcommon.NewValueInt(1),
+		"int-neg":     pcommon.NewValueInt(-1),
+		"double-0.5":  pcommon.NewValueDouble(0.5),
+		"double-1.5":  pcommon.NewValueDouble(1.5),
+		"bool-true":   pcommon.NewValueBool(true),
+		"bool-false":  pcommon.NewValueBool(false),
+		"bytes-empty": bytesOf(),
+		"bytes-01":    bytesOf(0, 1),
+		"bytes-10":    bytesOf(1, 0),
+		"slice-empty": sliceOf(),
+		"slice-ab":    sliceOf("a", "b"),
+		"slice-ba":    sliceOf("b", "a"),
+		"map-empty":   mapOf(),
+		"map-a1":      mapOf("a", "1"),
+		"map-a2":      mapOf("a", "2"),
+		"map-b1":      mapOf("b", "1"),
+		"map-a1b2":    mapOf("a", "1", "b", "2"),
+	}
+
+	seen := make(map[uint64]string, len(vals))
+	for name, v := range vals {
+		h := hashValue(fnvOffset64, v)
+		if prev, ok := seen[h]; ok {
+			t.Errorf("hash collision between %q and %q", prev, name)
+		}
+		seen[h] = name
+	}
+}
+
+// TestHashValue_AgreesWithEqual covers the pairs where the hash must NOT
+// distinguish, because [pcommon.Value.Equal] does not: -0.0 compares equal to
+// +0.0, and maps compare by key rather than by insertion order. Hashing them
+// apart would append a duplicate entry where the linear scan deduped.
+func TestHashValue_AgreesWithEqual(t *testing.T) {
+	negZero := pcommon.NewValueDouble(math.Copysign(0, -1))
+	posZero := pcommon.NewValueDouble(0)
+	require.True(t, negZero.Equal(posZero), "precondition: Equal treats -0.0 as 0.0")
+	assert.Equal(t, hashValue(fnvOffset64, posZero), hashValue(fnvOffset64, negZero))
+
+	forward := pcommon.NewValueMap()
+	forward.Map().PutStr("a", "1")
+	forward.Map().PutInt("b", 2)
+	forward.Map().PutBool("c", true)
+
+	reverse := pcommon.NewValueMap()
+	reverse.Map().PutBool("c", true)
+	reverse.Map().PutInt("b", 2)
+	reverse.Map().PutStr("a", "1")
+
+	require.True(t, forward.Equal(reverse), "precondition: Map.Equal is order-independent")
+	assert.Equal(t, hashValue(fnvOffset64, forward), hashValue(fnvOffset64, reverse))
+}
+
+// TestHashValue_DoesNotAllocate guards the merge path's allocation budget. The
+// index is rebuilt on every MergeTo, so one allocation inside the hash is paid
+// once per attribute per merge; the copying accessors (ByteSlice.AsRaw,
+// Map.AsRaw) are the easy way to reintroduce that.
+func TestHashValue_DoesNotAllocate(t *testing.T) {
+	bytesVal := pcommon.NewValueBytes()
+	bytesVal.Bytes().Append(1, 2, 3, 4)
+
+	sliceVal := pcommon.NewValueSlice()
+	sliceVal.Slice().AppendEmpty().SetStr("a")
+	sliceVal.Slice().AppendEmpty().SetInt(2)
+
+	mapVal := pcommon.NewValueMap()
+	mapVal.Map().PutStr("a", "1")
+	mapVal.Map().PutInt("b", 2)
+
+	for name, v := range map[string]pcommon.Value{
+		"str":    pcommon.NewValueStr("worker-1"),
+		"int":    pcommon.NewValueInt(7),
+		"double": pcommon.NewValueDouble(1.5),
+		"bool":   pcommon.NewValueBool(true),
+		"bytes":  bytesVal,
+		"slice":  sliceVal,
+		"map":    mapVal,
+	} {
+		t.Run(name, func(t *testing.T) {
+			assert.Zero(t, testing.AllocsPerRun(100, func() {
+				hashValue(fnvOffset64, v)
+			}))
+		})
+	}
+}
+
+// TestMergeIndex_SetAttribute_SameKeyDistinctValues is the shape the type-only
+// hash handled worst and the existing differential test missed: one hot key
+// (think thread.name or process.pid) carrying many distinct values. All entries
+// share key and unit, so only the value can spread them across buckets.
+func TestMergeIndex_SetAttribute_SameKeyDistinctValues(t *testing.T) {
+	const distinct = 200
+
+	ref := NewKeyValueAndUnitSlice()
+	got := NewKeyValueAndUnitSlice()
+	mi := newMergeIndex(NewProfilesDictionary())
+
+	// Two passes: the second must dedup every entry against the first.
+	for pass := range 2 {
+		for i := range distinct {
+			attr := NewKeyValueAndUnit()
+			attr.SetKeyStrindex(1)
+			attr.SetUnitStrindex(2)
+			attr.Value().SetStr(fmt.Sprintf("worker-%d", i))
+
+			refIdx, err := SetAttribute(ref, attr)
+			require.NoError(t, err)
+			gotIdx, err := mi.setAttribute(got, attr)
+			require.NoError(t, err)
+			assert.Equal(t, refIdx, gotIdx, "pass %d, value %d", pass, i)
+		}
+	}
+
+	assert.Equal(t, ref, got)
+	assert.Equal(t, distinct, got.Len(), "second pass must dedup entirely")
+
+	longest := 0
+	for _, bucket := range mi.attributes {
+		longest = max(longest, len(bucket))
+	}
+	assert.Less(t, longest, distinct/10,
+		"values must spread across buckets; a type-only hash would put all %d in one", distinct)
+}
+
 func TestMergeIndex_SetLink_MatchesLinearScan(t *testing.T) {
 	r := rand.New(rand.NewPCG(6, 0))
 	ref := NewLinkSlice()
@@ -248,13 +406,27 @@ func randAttribute(r *rand.Rand) KeyValueAndUnit {
 	a := NewKeyValueAndUnit()
 	a.SetKeyStrindex(int32(r.IntN(8)))
 	a.SetUnitStrindex(int32(r.IntN(4)))
-	switch r.IntN(3) {
+	switch r.IntN(7) {
 	case 0:
 		a.Value().SetStr([]string{"x", "y", "z"}[r.IntN(3)])
 	case 1:
 		a.Value().SetInt(int64(r.IntN(4)))
-	default:
+	case 2:
 		a.Value().SetBool(r.IntN(2) == 0)
+	case 3:
+		a.Value().SetDouble(float64(r.IntN(4)) / 2)
+	case 4:
+		a.Value().SetEmptyBytes().Append(byte(r.IntN(3)), byte(r.IntN(3)))
+	case 5:
+		s := a.Value().SetEmptySlice()
+		for n := r.IntN(3); n > 0; n-- {
+			s.AppendEmpty().SetInt(int64(r.IntN(3)))
+		}
+	default:
+		m := a.Value().SetEmptyMap()
+		for _, k := range []string{"k0", "k1", "k2"}[:r.IntN(4)] {
+			m.PutInt(k, int64(r.IntN(3)))
+		}
 	}
 	return a
 }

@@ -56,6 +56,7 @@ func fillRealisticProfile(dict ProfilesDictionary, sz profileSizes, overlap floa
 	const (
 		linesPerLoc  = 2
 		locsPerStack = 16
+		attrsPerLoc  = 2
 	)
 
 	sharedOf := func(n int) int {
@@ -103,6 +104,8 @@ func fillRealisticProfile(dict ProfilesDictionary, sz profileSizes, overlap floa
 	sMap := func(k int) int32 { return pick(k, mapShared, mapUnique, true) }
 	sLoc := func(k int) int32 { return pick(k, locShared, locUnique, true) }
 	uLoc := func(k int) int32 { return pick(k, locShared, locUnique, false) }
+	sAttr := func(k int) int32 { return pick(k, attrShared, attrUnique, true) }
+	uAttr := func(k int) int32 { return pick(k, attrShared, attrUnique, false) }
 
 	st := dict.StringTable()
 	st.Append("")
@@ -149,6 +152,9 @@ func fillRealisticProfile(dict ProfilesDictionary, sz profileSizes, overlap floa
 		loc := lt.AppendEmpty()
 		loc.SetMappingIndex(sMap(i))
 		loc.SetAddress(uint64(i))
+		for j := range attrsPerLoc {
+			loc.AttributeIndices().Append(sAttr(i + j))
+		}
 		for j := range linesPerLoc {
 			ln := loc.Lines().AppendEmpty()
 			ln.SetFunctionIndex(sFn(i + j))
@@ -159,6 +165,10 @@ func fillRealisticProfile(dict ProfilesDictionary, sz profileSizes, overlap floa
 		loc := lt.AppendEmpty()
 		loc.SetMappingIndex(sMap(i))
 		loc.SetAddress(uint64(i))
+		loc.AttributeIndices().Append(uAttr(i))
+		for j := 1; j < attrsPerLoc; j++ {
+			loc.AttributeIndices().Append(sAttr(i + j))
+		}
 		ln := loc.Lines().AppendEmpty()
 		ln.SetFunctionIndex(uFn(i))
 		ln.SetLine(int64(i * 100))
@@ -190,18 +200,62 @@ func fillRealisticProfile(dict ProfilesDictionary, sz profileSizes, overlap floa
 	for i := 1; i <= attrShared; i++ {
 		a := at.AppendEmpty()
 		a.SetKeyStrindex(sStr(i))
-		a.Value().SetInt(int64(i))
+		if i%2 == 0 {
+			a.Value().SetStr(fmt.Sprintf("sattr-%d", i))
+		} else {
+			a.Value().SetInt(int64(i))
+		}
 	}
 	for i := 1; i <= attrUnique; i++ {
 		a := at.AppendEmpty()
 		a.SetKeyStrindex(uStr(i))
-		a.Value().SetInt(int64(i))
+		if i%2 == 0 {
+			a.Value().SetStr(fmt.Sprintf("p%d-uattr-%d", profileID, i))
+		} else {
+			a.Value().SetInt(int64(i))
+		}
 	}
 }
 
-// benchmarkFlush merges a batch of realistic profiles into one initially-empty
-// destination, mirroring a single exporter-queue batch flush.
-func benchmarkFlush(b *testing.B, sz profileSizes, overlap float64, batch int) {
+// fillHotKeyProfile models the dictionary shape a type-only value hash degrades
+// on: one hot attribute key (thread.name, k8s.pod.name, http.route) carrying
+// many distinct values. Every entry shares key and unit, so the value is the
+// only thing that can spread them across index buckets. Each attribute gets its
+// own location because only referenced attributes reach the merge path.
+func fillHotKeyProfile(dict ProfilesDictionary, attrs int, overlap float64, profileID int) {
+	shared := int(float64(attrs) * overlap)
+
+	st := dict.StringTable()
+	st.Append("")
+	st.Append("thread.name")
+	st.Append("by")
+
+	dict.MappingTable().AppendEmpty()
+	at := dict.AttributeTable()
+	at.AppendEmpty()
+	lt := dict.LocationTable()
+	lt.AppendEmpty()
+
+	for i := 1; i <= attrs; i++ {
+		a := at.AppendEmpty()
+		a.SetKeyStrindex(1)
+		a.SetUnitStrindex(2)
+		if i <= shared {
+			a.Value().SetStr(fmt.Sprintf("shared-worker-%d", i))
+		} else {
+			a.Value().SetStr(fmt.Sprintf("p%d-worker-%d", profileID, i))
+		}
+
+		loc := lt.AppendEmpty()
+		loc.SetAddress(uint64(i))
+		loc.AttributeIndices().Append(int32(i))
+	}
+}
+
+// benchmarkFlush merges a batch of profiles into one initially-empty
+// destination, mirroring a single exporter-queue batch flush. fill populates the
+// dictionary of the profileID'th source.
+func benchmarkFlush(b *testing.B, batch int, fill func(dict ProfilesDictionary, profileID int)) {
 	b.ReportAllocs()
 	for b.Loop() {
 		b.StopTimer()
@@ -209,7 +263,7 @@ func benchmarkFlush(b *testing.B, sz profileSizes, overlap float64, batch int) {
 		srcs := make([]Profiles, batch)
 		for i := range srcs {
 			s := NewProfiles()
-			fillRealisticProfile(s.Dictionary(), sz, overlap, i)
+			fill(s.Dictionary(), i)
 			srcs[i] = s
 		}
 		b.StartTimer()
@@ -222,6 +276,12 @@ func benchmarkFlush(b *testing.B, sz profileSizes, overlap float64, batch int) {
 	}
 }
 
+func benchmarkRealisticFlush(b *testing.B, sz profileSizes, overlap float64, batch int) {
+	benchmarkFlush(b, batch, func(dict ProfilesDictionary, profileID int) {
+		fillRealisticProfile(dict, sz, overlap, profileID)
+	})
+}
+
 // BenchmarkDictionaryMerge sweeps the realistic exporter-queue flush across the
 // three dimensions that drive merge cost: symbol overlap between profiles,
 // batch size (number of merges per flush, which drives the per-merge reseed
@@ -232,7 +292,7 @@ func BenchmarkDictionaryMerge(b *testing.B) {
 	b.Run("overlap", func(b *testing.B) {
 		for _, o := range []float64{0, 0.5, 0.9, 0.99} {
 			b.Run(fmt.Sprintf("overlap=%d%%", int(o*100)), func(b *testing.B) {
-				benchmarkFlush(b, base, o, 20)
+				benchmarkRealisticFlush(b, base, o, 20)
 			})
 		}
 	})
@@ -240,7 +300,7 @@ func BenchmarkDictionaryMerge(b *testing.B) {
 	b.Run("batch", func(b *testing.B) {
 		for _, k := range []int{5, 20, 50} {
 			b.Run(fmt.Sprintf("batch=%d", k), func(b *testing.B) {
-				benchmarkFlush(b, base, 0.9, k)
+				benchmarkRealisticFlush(b, base, 0.9, k)
 			})
 		}
 	})
@@ -248,8 +308,23 @@ func BenchmarkDictionaryMerge(b *testing.B) {
 	b.Run("size", func(b *testing.B) {
 		for _, scale := range []float64{0.5, 1, 2} {
 			b.Run(fmt.Sprintf("scale=%gx", scale), func(b *testing.B) {
-				benchmarkFlush(b, realisticSizes(scale), 0.9, 20)
+				benchmarkRealisticFlush(b, realisticSizes(scale), 0.9, 20)
 			})
 		}
 	})
+}
+
+// BenchmarkDictionaryMergeHotKey isolates the attribute table under a single hot
+// key. The realistic sweep keeps the attribute table small and its keys varied,
+// which hides how well the index spreads attributes by value; this sweep does
+// not, so a regression to hashing the value's type rather than its content shows
+// up here as quadratic growth in the attrs dimension.
+func BenchmarkDictionaryMergeHotKey(b *testing.B) {
+	for _, attrs := range []int{500, 2000, 8000} {
+		b.Run(fmt.Sprintf("attrs=%d", attrs), func(b *testing.B) {
+			benchmarkFlush(b, 10, func(dict ProfilesDictionary, profileID int) {
+				fillHotKeyProfile(dict, attrs, 0.9, profileID)
+			})
+		})
+	}
 }
