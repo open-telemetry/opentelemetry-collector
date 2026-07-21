@@ -18,9 +18,12 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensioncapabilities"
+	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/service/hostcapabilities"
 	"go.opentelemetry.io/collector/service/internal/attribute"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/componentattribute"
+	"go.opentelemetry.io/collector/service/internal/moduleinfo"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/internal/zpages"
 )
@@ -259,8 +262,11 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 }
 
 var (
-	_ componentstatus.Reporter = (*hostWrapper)(nil)
-	_ component.Host           = (*hostWrapper)(nil)
+	_ componentstatus.Reporter          = (*hostWrapper)(nil)
+	_ component.Host                    = (*hostWrapper)(nil)
+	_ hostcapabilities.ModuleInfo       = (*hostWrapper)(nil)
+	_ hostcapabilities.ExposeExporters  = (*hostWrapper)(nil) //nolint:staticcheck // SA1019
+	_ hostcapabilities.ComponentFactory = (*hostWrapper)(nil)
 )
 
 type hostWrapper struct {
@@ -279,4 +285,26 @@ func (host *hostWrapper) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
 	}); ok {
 		hostZPages.RegisterZPages(mux, pathPrefix)
 	}
+}
+
+func (host *hostWrapper) GetModuleInfos() moduleinfo.ModuleInfos {
+	if mi, ok := host.Host.(hostcapabilities.ModuleInfo); ok {
+		return mi.GetModuleInfos()
+	}
+	return moduleinfo.ModuleInfos{}
+}
+
+//nolint:staticcheck // SA1019 forwards the deprecated hostcapabilities.ExposeExporters capability.
+func (host *hostWrapper) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
+	if ee, ok := host.Host.(hostcapabilities.ExposeExporters); ok {
+		return ee.GetExporters()
+	}
+	return nil
+}
+
+func (host *hostWrapper) GetFactory(kind component.Kind, componentType component.Type) component.Factory {
+	if cf, ok := host.Host.(hostcapabilities.ComponentFactory); ok {
+		return cf.GetFactory(kind, componentType)
+	}
+	return nil
 }
