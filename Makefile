@@ -304,8 +304,7 @@ REMOTE?=git@github.com:open-telemetry/opentelemetry-collector.git
 push-tags:
 	$(GO_TOOL) multimod verify
 	set -e; \
-	tags_output=`$(GO_TOOL) multimod tag -m ${MODSET} -c ${COMMIT} --print-tags`; \
-	tags=`echo "$$tags_output" | grep -E -v "Using" || true`; \
+	tags=`$(GO_TOOL) multimod tag -m ${MODSET} -c ${COMMIT} --print-tags 2>&1 | grep 'v[0-9]'`; \
 	if [ -n "$$tags" ]; then \
 		git push ${REMOTE} $$tags; \
 	fi
