@@ -67,13 +67,6 @@ func NewDefaultKeepaliveClientConfig() KeepaliveClientConfig {
 	}
 }
 
-// BalancerName returns a string with default load balancer value
-//
-// Deprecated[v0.151.0]: Use the DefaultBalancerName constant instead.
-func BalancerName() string {
-	return DefaultBalancerName
-}
-
 var _ confmap.Validator = (*ClientConfig)(nil)
 
 // ClientConfig defines common settings for a gRPC client configuration.
@@ -386,13 +379,16 @@ func (cc *ClientConfig) getGrpcDialOptions(
 	extraOpts []ToClientConnOption,
 ) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
+	var callOpts []grpc.CallOption
+	callOpts = append(callOpts, grpc.WaitForReady(cc.WaitForReady))
 	if cc.Compression.IsCompressed() {
 		cp, err := getGRPCCompressionName(cc.Compression)
 		if err != nil {
 			return nil, err
 		}
-		opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor(cp)))
+		callOpts = append(callOpts, grpc.UseCompressor(cp))
 	}
+	opts = append(opts, grpc.WithDefaultCallOptions(callOpts...))
 
 	tlsCfg, err := cc.TLS.LoadTLSConfig(ctx)
 	if err != nil {
