@@ -279,17 +279,17 @@ for-all-stable-target: $(STABLE_MODULES)
 # Construct new API state snapshots
 .PHONY: apidiff-build
 apidiff-build:
-	@$(MAKE) for-all-stable-target TARGET="apidiff-build-mod"
+	@$(MAKE) --silent for-all-stable-target TARGET="apidiff-build-mod"
 
 # Compare API state snapshots and log differences
 .PHONY: apidiff-compare
 apidiff-compare:
-	@$(MAKE) for-all-stable-target TARGET="apidiff-compare-mod"
+	@$(MAKE) --silent for-all-stable-target TARGET="apidiff-compare-mod"
 
 # Compare API state snapshots and fail if there are differences
 .PHONY: apidiff-check
 apidiff-check:
-	@$(MAKE) for-all-stable-target TARGET="apidiff-check-mod"
+	@$(MAKE) --silent for-all-stable-target TARGET="apidiff-check-mod"
 
 .PHONY: multimod-verify
 multimod-verify:
