@@ -270,11 +270,8 @@ checkapi:
 checkdoc:
 	$(GO_TOOL) checkfile --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "README.md"
 
-STABLE_MODULES := $(shell sed -n '/stable:/,/beta:/p' versions.yaml | sed -n -e 's/.*- go.opentelemetry.io\/collector/./p')
-
-.PHONY: all-stable-modules
-all-stable-modules:
-	@echo $(STABLE_MODULES) | tr ' ' '\n' | sort
+# Extract the relative path of every module listed between "stable:" and "beta:" in versions.yaml
+STABLE_MODULES := $(shell sed -n -e '/stable:/,/beta:/ s/.*- go.opentelemetry.io\/collector/./p' versions.yaml)
 
 .PHONY: for-all-stable-target
 for-all-stable-target: $(STABLE_MODULES)
