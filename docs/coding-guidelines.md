@@ -386,12 +386,11 @@ that is exposed to users.
 
 ## Graceful Shutdown
 
-Collector does not yet support graceful shutdown but we plan to add it. All components
-must be ready to shutdown gracefully via `Shutdown()` function that all component
-interfaces require. If components contain any temporary data they need to process
-and export it out of the Collector before shutdown is completed. The shutdown process
-will have a maximum allowed duration so put a limit on how long your shutdown
-operation can take.
+The Collector supports graceful shutdown. All components must be ready to shutdown
+gracefully via `Shutdown()` function that all component interfaces require. If
+components contain any temporary data they need to process and export it out of the
+Collector before shutdown is completed. The shutdown process will have a maximum
+allowed duration so put a limit on how long your shutdown operation can take.
 
 ## Unit Tests
 
