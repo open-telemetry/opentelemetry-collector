@@ -66,6 +66,11 @@ var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, erro
 		// Not a compressed payload. Nothing to do.
 		return nil, nil
 	},
+	"identity": func(io.ReadCloser) (io.ReadCloser, error) {
+		// RFC 7231 defines identity as the absence of content coding.
+		// Treat it the same as an empty Content-Encoding header.
+		return nil, nil
+	},
 	"gzip": func(body io.ReadCloser) (io.ReadCloser, error) {
 		gr, err := gzip.NewReader(body)
 		if err != nil {
@@ -294,6 +299,9 @@ func (d *decompressor) newBodyReader(r *http.Request) (io.ReadCloser, error) {
 		return nil, nil // Signal: don't replace r.Body
 	}
 	encoding := r.Header.Get(headerContentEncoding)
+	if encoding == "identity" {
+		encoding = ""
+	}
 
 	decoder, ok := d.decoders[encoding]
 	if !ok {
