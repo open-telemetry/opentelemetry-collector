@@ -203,3 +203,5 @@ exporters:
 ```
 
 The `client-tss2.key` private key with TSS2 format will be loaded from the TPM device `/dev/tpmrm0`.
+
+> **Note:** TPM key loading is not supported when building with the `requirefips` build tag (FIPS 140-3 mode). The underlying `go-tpm-keyfiles` library uses ChaCha20-Poly1305 for key wrapping, which is not a FIPS-approved algorithm. Setting `tpm.enabled: true` in FIPS mode will return an error at runtime.
