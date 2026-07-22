@@ -3,7 +3,7 @@
 
 module-sets:
   stable:
-    version: v1.62.0
+    version: v1.63.0
     modules:
       - go.opentelemetry.io/collector/client
       - go.opentelemetry.io/collector/featuregate
@@ -31,7 +31,7 @@ module-sets:
       - go.opentelemetry.io/collector/processor
       - go.opentelemetry.io/collector/receiver
   beta:
-    version: v0.156.0
+    version: v0.157.0
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/internal/componentalias
@@ -50,6 +50,7 @@ module-sets:
       - go.opentelemetry.io/collector/config/configgrpc
       - go.opentelemetry.io/collector/config/confighttp
       - go.opentelemetry.io/collector/config/confighttp/xconfighttp
+      - go.opentelemetry.io/collector/config/configstorage
       - go.opentelemetry.io/collector/config/configtelemetry
       - go.opentelemetry.io/collector/connector
       - go.opentelemetry.io/collector/connector/connectortest

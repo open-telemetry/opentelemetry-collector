@@ -24,6 +24,20 @@ func TestMarshalTraces(t *testing.T) {
 			expected: "",
 		},
 		{
+			name: "two scopes under one resource",
+			input: func() ptrace.Traces {
+				traces := ptrace.NewTraces()
+				resourceSpans := traces.ResourceSpans().AppendEmpty()
+				resourceSpans.ScopeSpans().AppendEmpty().Scope().SetName("scope-zero")
+				resourceSpans.ScopeSpans().AppendEmpty().Scope().SetName("scope-one")
+				return traces
+			}(),
+			expected: `ResourceTraces #0
+ScopeTraces #0 scope-zero
+ScopeTraces #1 scope-one
+`,
+		},
+		{
 			name: "one span with resource and scope attributes",
 			input: func() ptrace.Traces {
 				traces := ptrace.NewTraces()

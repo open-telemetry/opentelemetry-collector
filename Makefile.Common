@@ -110,3 +110,24 @@ FLAGS ?= '-o=$(CURDIR)/'
 schemagen:
 	@echo "Running schemagen with filepath='$(SRC)' and flags='$(FLAGS)'"
 	cd $(SRC_ROOT)/cmd/schemagen && go run . $(FLAGS) $(SRC)
+
+EXTERNAL_PKGS := $(shell go list ./... | grep -v -E '/internal($|/)')
+APIDIFF_DATA_DIR ?= internal/data/apidiff
+
+.PHONY: apidiff-build-mod
+apidiff-build-mod:
+	@for pkg in $(EXTERNAL_PKGS); do \
+		$(SRC_ROOT)/internal/buildscripts/gen-apidiff.sh -p $$pkg -o $(SRC_ROOT)/$(APIDIFF_DATA_DIR) || exit 1; \
+	done
+
+.PHONY: apidiff-compare-mod
+apidiff-compare-mod:
+	@for pkg in $(EXTERNAL_PKGS); do \
+		$(SRC_ROOT)/internal/buildscripts/compare-apidiff.sh -p $$pkg -d $(SRC_ROOT)/$(APIDIFF_DATA_DIR) || exit 1; \
+	done
+
+.PHONY: apidiff-check-mod
+apidiff-check-mod:
+	@for pkg in $(EXTERNAL_PKGS); do \
+		$(SRC_ROOT)/internal/buildscripts/compare-apidiff.sh -p $$pkg -d $(SRC_ROOT)/$(APIDIFF_DATA_DIR) -c || exit 1; \
+	done

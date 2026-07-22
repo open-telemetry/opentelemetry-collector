@@ -19,7 +19,10 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/service/hostcapabilities"
 	"go.opentelemetry.io/collector/service/internal/builders"
+	"go.opentelemetry.io/collector/service/internal/moduleinfo"
 	"go.opentelemetry.io/collector/service/internal/status"
 )
 
@@ -463,6 +466,186 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			assertEqualStatuses(t, tt.expectedStatuses, actualStatuses)
 		})
 	}
+}
+
+func TestExtensionReportsOwnStatus(t *testing.T) {
+	statusType := component.MustNewType("selfreporting")
+	compID := component.NewID(statusType)
+
+	reportedEvent := componentstatus.NewRecoverableErrorEvent(assert.AnError)
+	factory := newSelfReportingExtensionFactory(statusType, reportedEvent)
+	extensionsConfigs := map[component.ID]component.Config{
+		compID: factory.CreateDefaultConfig(),
+	}
+	factories := map[component.Type]extension.Factory{
+		statusType: factory,
+	}
+
+	var reportedSources []*componentstatus.InstanceID
+	var reportedEvents []*componentstatus.Event
+	rep := status.NewReporter(func(source *componentstatus.InstanceID, ev *componentstatus.Event) {
+		reportedSources = append(reportedSources, source)
+		reportedEvents = append(reportedEvents, ev)
+	}, func(err error) {
+		require.NoError(t, err)
+	})
+
+	extensions, err := New(
+		context.Background(),
+		Settings{
+			Telemetry:  componenttest.NewNopTelemetrySettings(),
+			BuildInfo:  component.NewDefaultBuildInfo(),
+			Extensions: builders.NewExtension(extensionsConfigs, factories),
+		},
+		[]component.ID{compID},
+		WithReporter(rep),
+	)
+	require.NoError(t, err)
+
+	// The host must implement status.Reporter so that events reported by an
+	// extension about itself are routed through the reporter.
+	host := &statusReporterHost{Host: componenttest.NewNopHost(), reporter: rep}
+	require.NoError(t, extensions.Start(context.Background(), host))
+	require.NoError(t, extensions.Shutdown(context.Background()))
+
+	// Find the self-reported RecoverableError event and verify it was attributed
+	// to the extension that reported it.
+	var found bool
+	for i, ev := range reportedEvents {
+		if ev != reportedEvent {
+			continue
+		}
+
+		found = true
+		require.NotNil(t, reportedSources[i])
+		assert.Equal(t, compID, reportedSources[i].ComponentID())
+		assert.Equal(t, component.KindExtension, reportedSources[i].Kind())
+		assert.Equal(t, assert.AnError, ev.Err())
+	}
+	assert.True(t, found, "expected extension to report a status event about itself")
+}
+
+func TestExtensionHostForwardsHostCapabilities(t *testing.T) {
+	var extHost component.Host
+	factory := newRecordingExtensionFactory(func(_ extension.Settings, host component.Host) error {
+		extHost = host
+		return nil
+	}, func(extension.Settings) error {
+		return nil
+	})
+	compID := component.NewID(factory.Type())
+
+	exts, err := New(
+		context.Background(),
+		Settings{
+			Telemetry: componenttest.NewNopTelemetrySettings(),
+			BuildInfo: component.NewDefaultBuildInfo(),
+			Extensions: builders.NewExtension(
+				map[component.ID]component.Config{compID: recordingExtensionConfig{}},
+				map[component.Type]extension.Factory{factory.Type(): factory},
+			),
+		},
+		[]component.ID{compID},
+	)
+	require.NoError(t, err)
+
+	host := &capabilitiesHost{
+		Host: componenttest.NewNopHost(),
+		moduleInfos: moduleinfo.ModuleInfos{
+			Extension: map[component.Type]moduleinfo.ModuleInfo{
+				factory.Type(): {BuilderRef: "example.com/recording v1.2.3"},
+			},
+		},
+		exporters: map[pipeline.Signal]map[component.ID]component.Component{
+			pipeline.SignalTraces: {},
+		},
+		factory: factory,
+	}
+	require.NoError(t, exts.Start(t.Context(), host))
+	require.NoError(t, exts.Shutdown(t.Context()))
+
+	mi, ok := extHost.(hostcapabilities.ModuleInfo)
+	require.True(t, ok, "host passed to extensions must implement hostcapabilities.ModuleInfo")
+	assert.Equal(t, host.moduleInfos, mi.GetModuleInfos())
+
+	ee, ok := extHost.(hostcapabilities.ExposeExporters) //nolint:staticcheck // SA1019
+	require.True(t, ok, "host passed to extensions must implement hostcapabilities.ExposeExporters")
+	assert.Equal(t, host.exporters, ee.GetExporters())
+
+	cf, ok := extHost.(hostcapabilities.ComponentFactory)
+	require.True(t, ok, "host passed to extensions must implement hostcapabilities.ComponentFactory")
+	assert.Equal(t, factory, cf.GetFactory(component.KindExtension, factory.Type()))
+}
+
+func TestExtensionHostCapabilitiesZeroValues(t *testing.T) {
+	// When the underlying host does not implement the optional capabilities,
+	// the wrapper falls back to zero values.
+	wrapper := &hostWrapper{Host: componenttest.NewNopHost()}
+	assert.Equal(t, moduleinfo.ModuleInfos{}, wrapper.GetModuleInfos())
+	assert.Nil(t, wrapper.GetExporters())
+	assert.Nil(t, wrapper.GetFactory(component.KindExtension, component.MustNewType("recording")))
+}
+
+// capabilitiesHost is a component.Host that also implements the optional
+// hostcapabilities interfaces, mirroring the service's graph.Host.
+type capabilitiesHost struct {
+	component.Host
+	moduleInfos moduleinfo.ModuleInfos
+	exporters   map[pipeline.Signal]map[component.ID]component.Component
+	factory     component.Factory
+}
+
+func (h *capabilitiesHost) GetModuleInfos() moduleinfo.ModuleInfos {
+	return h.moduleInfos
+}
+
+func (h *capabilitiesHost) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
+	return h.exporters
+}
+
+func (h *capabilitiesHost) GetFactory(component.Kind, component.Type) component.Factory {
+	return h.factory
+}
+
+// statusReporterHost is a component.Host that also implements status.Reporter,
+// mirroring the host provided to extensions by the running service.
+type statusReporterHost struct {
+	component.Host
+	reporter status.Reporter
+}
+
+func (h *statusReporterHost) ReportStatus(id *componentstatus.InstanceID, ev *componentstatus.Event) {
+	h.reporter.ReportStatus(id, ev)
+}
+
+func (h *statusReporterHost) ReportOKIfStarting(id *componentstatus.InstanceID) {
+	h.reporter.ReportOKIfStarting(id)
+}
+
+type selfReportingExtension struct {
+	event *componentstatus.Event
+}
+
+func (ext *selfReportingExtension) Start(_ context.Context, host component.Host) error {
+	componentstatus.ReportStatus(host, ext.event)
+	return nil
+}
+
+func (ext *selfReportingExtension) Shutdown(context.Context) error {
+	return nil
+}
+
+func newSelfReportingExtensionFactory(name component.Type, event *componentstatus.Event) extension.Factory {
+	return extension.NewFactory(
+		name,
+		func() component.Config {
+			return &struct{}{}
+		},
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
+			return &selfReportingExtension{event: event}, nil
+		},
+		component.StabilityLevelDevelopment,
+	)
 }
 
 type statusTestExtension struct {

@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -23,8 +24,15 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/connector/connectortest"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/telemetry"
 	"go.opentelemetry.io/collector/service/telemetry/telemetrytest"
 )
@@ -152,6 +160,863 @@ func TestCollectorStateAfterConfigChange(t *testing.T) {
 	close(<-shutdownRequests)
 	wg.Wait()
 	assert.Equal(t, StateClosed, col.GetState())
+}
+
+// normalizingConfig mutates a value on every unmarshal, modeling component
+// configs whose custom handlers change values when going through
+// marshal/unmarshal. Used to prove that fingerprintForPartialReload, which
+// hashes the raw pre-decode configuration map, is unaffected by such
+// normalization: it never invokes a component's Unmarshal at all.
+type normalizingConfig struct {
+	Endpoint string `mapstructure:"endpoint"`
+}
+
+func (c *normalizingConfig) Unmarshal(conf *confmap.Conf) error {
+	type plain normalizingConfig
+	if err := conf.Unmarshal((*plain)(c)); err != nil {
+		return err
+	}
+	if c.Endpoint != "" {
+		c.Endpoint += "-normalized"
+	}
+	return nil
+}
+
+func normalizingFactories(t *testing.T) Factories {
+	normType := component.MustNewType("normalizing")
+	recFactory := receiver.NewFactory(
+		normType,
+		func() component.Config { return &normalizingConfig{} },
+		receiver.WithTraces(func(_ context.Context, _ receiver.Settings, _ component.Config, _ consumer.Traces) (receiver.Traces, error) {
+			return &nopComponent{}, nil
+		}, component.StabilityLevelStable),
+	)
+	expFactory := exporter.NewFactory(
+		normType,
+		func() component.Config { return &normalizingConfig{} },
+		exporter.WithTraces(func(_ context.Context, _ exporter.Settings, _ component.Config) (exporter.Traces, error) {
+			return &nopComponent{}, nil
+		}, component.StabilityLevelStable),
+	)
+
+	var factories Factories
+	var err error
+	factories.Receivers, err = MakeFactoryMap(recFactory)
+	require.NoError(t, err)
+	factories.Exporters, err = MakeFactoryMap(expFactory)
+	require.NoError(t, err)
+	factories.Processors, err = MakeFactoryMap(processortest.NewNopFactory())
+	require.NoError(t, err)
+	factories.Connectors, err = MakeFactoryMap(connectortest.NewNopFactory())
+	require.NoError(t, err)
+	factories.Extensions, err = MakeFactoryMap(extensiontest.NewNopFactory())
+	require.NoError(t, err)
+	factories.Telemetry = telemetry.NewFactory(func() component.Config { return fakeTelemetryConfig{} })
+
+	return factories
+}
+
+func TestCollectorPartialReceiverReload(t *testing.T) {
+	// Enable partial receiver reload for this test. The receiver phase gate is
+	// Beta (enabled by default), so only the master gate needs to be toggled.
+	require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", false))
+	}()
+
+	// Set up an observer logger to detect log messages.
+	observerCore, observedLogs := observer.New(zapcore.InfoLevel)
+
+	var watcher confmap.WatcherFunc
+	fileProvider := newFakeProvider("file", func(_ context.Context, uri string, w confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		watcher = w
+		return confmap.NewRetrieved(newConfFromFile(t, uri[5:]))
+	})
+
+	factories, err := nopFactories()
+	require.NoError(t, err)
+
+	// Custom telemetry factory that uses an observer logger so we can
+	// verify which reload path was taken.
+	factories.Telemetry = telemetry.NewFactory(
+		func() component.Config { return fakeTelemetryConfig{} },
+		telemetrytest.WithLogger(zap.New(observerCore), nil),
+	)
+
+	col, err := NewCollector(CollectorSettings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs: []string{filepath.Join("testdata", "otelcol-nop.yaml")},
+				ProviderFactories: []confmap.ProviderFactory{
+					fileProvider,
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	wg := startCollector(context.Background(), t, col)
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	// Trigger a config change. The config file hasn't changed, so
+	// receiversOnlyChanged returns true and partial reload executes
+	// instead of a full service restart.
+	watcher(&confmap.ChangeEvent{})
+
+	// Wait for the partial reload log message, confirming the
+	// partial reload path was taken instead of a full restart.
+	assert.Eventually(t, func() bool {
+		for _, entry := range observedLogs.All() {
+			if entry.Message == "Config updated, performing partial receiver reload" {
+				return true
+			}
+		}
+		return false
+	}, 2*time.Second, 50*time.Millisecond)
+
+	// Verify the collector stayed in StateRunning (a full reload
+	// would transition through StateClosing).
+	assert.Equal(t, StateRunning, col.GetState())
+
+	// Verify no full restart log message was emitted.
+	for _, entry := range observedLogs.All() {
+		assert.NotEqual(t, "Config updated, restart service", entry.Message)
+	}
+
+	col.Shutdown()
+	wg.Wait()
+	assert.Equal(t, StateClosed, col.GetState())
+}
+
+// TestCollectorPartialReceiverReloadNormalizingConfig drives a reload with
+// component configs that normalize values on every unmarshal. The config
+// served by the provider never changes, so an unchanged reload must take the
+// partial receiver reload path. The fingerprint is computed from the raw,
+// pre-decode config map, so it never invokes the component's custom
+// Unmarshal (and its normalization) in the first place — unlike a
+// decode-and-recompare approach, which would see the normalized stored value
+// differ from a freshly (once-normalized) decoded value and wrongly fall
+// back to a full restart.
+func TestCollectorPartialReceiverReloadNormalizingConfig(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", false))
+	}()
+
+	observerCore, observedLogs := observer.New(zapcore.InfoLevel)
+
+	confMap := map[string]any{
+		"receivers": map[string]any{"normalizing": map[string]any{"endpoint": "receiver"}},
+		"exporters": map[string]any{"normalizing": map[string]any{"endpoint": "exporter"}},
+		"service": map[string]any{
+			"pipelines": map[string]any{
+				"traces": map[string]any{
+					"receivers": []any{"normalizing"},
+					"exporters": []any{"normalizing"},
+				},
+			},
+		},
+	}
+
+	var watcher confmap.WatcherFunc
+	provider := newFakeProvider("file", func(_ context.Context, _ string, w confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		watcher = w
+		return confmap.NewRetrieved(confMap)
+	})
+
+	factories := normalizingFactories(t)
+	factories.Telemetry = telemetry.NewFactory(
+		func() component.Config { return fakeTelemetryConfig{} },
+		telemetrytest.WithLogger(zap.New(observerCore), nil),
+	)
+
+	col, err := NewCollector(CollectorSettings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs:              []string{"file:cfg"},
+				ProviderFactories: []confmap.ProviderFactory{provider},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	wg := startCollector(context.Background(), t, col)
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	// The config is unchanged. The reload must still be recognized as
+	// receivers-only and take the partial path.
+	watcher(&confmap.ChangeEvent{})
+
+	assert.Eventually(t, func() bool {
+		for _, entry := range observedLogs.All() {
+			if entry.Message == "Config updated, performing partial receiver reload" {
+				return true
+			}
+		}
+		return false
+	}, 2*time.Second, 50*time.Millisecond)
+
+	assert.Equal(t, StateRunning, col.GetState())
+	for _, entry := range observedLogs.All() {
+		assert.NotEqual(t, "Config updated, restart service", entry.Message)
+	}
+
+	col.Shutdown()
+	wg.Wait()
+	assert.Equal(t, StateClosed, col.GetState())
+}
+
+// mutatingExporterConfig is a config whose value is rewritten by the component
+// during Start, modeling a component that mutates the config it was handed.
+type mutatingExporterConfig struct {
+	Endpoint string `mapstructure:"endpoint"`
+}
+
+type mutatingExporter struct {
+	nopComponent
+	cfg *mutatingExporterConfig
+}
+
+func (e *mutatingExporter) Start(context.Context, component.Host) error {
+	e.cfg.Endpoint += "-started"
+	return nil
+}
+
+func mutatingExporterFactories(t *testing.T) Factories {
+	recFactory := receiver.NewFactory(
+		component.MustNewType("rec"),
+		func() component.Config { return &mutatingExporterConfig{} },
+		receiver.WithTraces(func(_ context.Context, _ receiver.Settings, _ component.Config, _ consumer.Traces) (receiver.Traces, error) {
+			return &nopComponent{}, nil
+		}, component.StabilityLevelStable),
+	)
+	expFactory := exporter.NewFactory(
+		component.MustNewType("mut"),
+		func() component.Config { return &mutatingExporterConfig{} },
+		exporter.WithTraces(func(_ context.Context, _ exporter.Settings, cfg component.Config) (exporter.Traces, error) {
+			return &mutatingExporter{cfg: cfg.(*mutatingExporterConfig)}, nil
+		}, component.StabilityLevelStable),
+	)
+
+	var factories Factories
+	var err error
+	factories.Receivers, err = MakeFactoryMap(recFactory)
+	require.NoError(t, err)
+	factories.Exporters, err = MakeFactoryMap(expFactory)
+	require.NoError(t, err)
+	factories.Processors, err = MakeFactoryMap(processortest.NewNopFactory())
+	require.NoError(t, err)
+	factories.Connectors, err = MakeFactoryMap(connectortest.NewNopFactory())
+	require.NoError(t, err)
+	factories.Extensions, err = MakeFactoryMap(extensiontest.NewNopFactory())
+	require.NoError(t, err)
+
+	return factories
+}
+
+// TestCollectorPartialReloadIgnoresStartupMutation verifies that a component
+// mutating its config during Start does not pollute the stored partial-reload
+// baseline. The exporter rewrites its Endpoint during Start; if the baseline were
+// captured after Start, an unchanged reload would see the (mutated) exporter
+// differ from the freshly fetched config and fall back to a full restart instead
+// of a partial receiver reload.
+func TestCollectorPartialReloadIgnoresStartupMutation(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", false))
+	}()
+
+	observerCore, observedLogs := observer.New(zapcore.InfoLevel)
+
+	confMap := map[string]any{
+		"receivers": map[string]any{"rec": map[string]any{"endpoint": "receiver"}},
+		"exporters": map[string]any{"mut": map[string]any{"endpoint": "exporter"}},
+		"service": map[string]any{
+			"pipelines": map[string]any{
+				"traces": map[string]any{
+					"receivers": []any{"rec"},
+					"exporters": []any{"mut"},
+				},
+			},
+		},
+	}
+
+	var watcher confmap.WatcherFunc
+	provider := newFakeProvider("file", func(_ context.Context, _ string, w confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		watcher = w
+		return confmap.NewRetrieved(confMap)
+	})
+
+	factories := mutatingExporterFactories(t)
+	factories.Telemetry = telemetry.NewFactory(
+		func() component.Config { return fakeTelemetryConfig{} },
+		telemetrytest.WithLogger(zap.New(observerCore), nil),
+	)
+
+	col, err := NewCollector(CollectorSettings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs:              []string{"file:cfg"},
+				ProviderFactories: []confmap.ProviderFactory{provider},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	wg := startCollector(context.Background(), t, col)
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	// Config is unchanged. The exporter mutated its Endpoint during Start, but the
+	// baseline was snapshotted before Start, so the comparison must still see a
+	// receivers-only (no-op) change and take the partial reload path.
+	watcher(&confmap.ChangeEvent{})
+
+	assert.Eventually(t, func() bool {
+		for _, entry := range observedLogs.All() {
+			if entry.Message == "Config updated, performing partial receiver reload" {
+				return true
+			}
+		}
+		return false
+	}, 2*time.Second, 50*time.Millisecond)
+
+	assert.Equal(t, StateRunning, col.GetState())
+	for _, entry := range observedLogs.All() {
+		assert.NotEqual(t, "Config updated, restart service", entry.Message)
+	}
+
+	col.Shutdown()
+	wg.Wait()
+	assert.Equal(t, StateClosed, col.GetState())
+}
+
+// trackingReceiver records itself as running in a shared map while started,
+// so a test can observe exactly which receiver instances are alive.
+type trackingReceiver struct {
+	nopComponent
+	id      component.ID
+	running *sync.Map
+}
+
+func (r *trackingReceiver) Start(context.Context, component.Host) error {
+	r.running.Store(r.id, struct{}{})
+	return nil
+}
+
+func (r *trackingReceiver) Shutdown(context.Context) error {
+	r.running.Delete(r.id)
+	return nil
+}
+
+func trackingFactories(t *testing.T, running *sync.Map) Factories {
+	trackingType := component.MustNewType("tracking")
+	recFactory := receiver.NewFactory(
+		trackingType,
+		func() component.Config { return &struct{}{} },
+		receiver.WithTraces(func(_ context.Context, set receiver.Settings, _ component.Config, _ consumer.Traces) (receiver.Traces, error) {
+			return &trackingReceiver{id: set.ID, running: running}, nil
+		}, component.StabilityLevelStable),
+	)
+
+	var factories Factories
+	var err error
+	factories.Receivers, err = MakeFactoryMap(recFactory)
+	require.NoError(t, err)
+	factories.Exporters, err = MakeFactoryMap(exportertest.NewNopFactory())
+	require.NoError(t, err)
+	factories.Processors, err = MakeFactoryMap(processortest.NewNopFactory())
+	require.NoError(t, err)
+	factories.Connectors, err = MakeFactoryMap(connectortest.NewNopFactory())
+	require.NoError(t, err)
+	factories.Extensions, err = MakeFactoryMap(extensiontest.NewNopFactory())
+	require.NoError(t, err)
+	return factories
+}
+
+// sameStringSet reports whether a and b contain the same strings,
+// disregarding order and duplicates.
+func sameStringSet(a, b []string) bool {
+	counts := make(map[string]int, len(a))
+	for _, s := range a {
+		counts[s]++
+	}
+	for _, s := range b {
+		counts[s]--
+	}
+	for _, c := range counts {
+		if c != 0 {
+			return false
+		}
+	}
+	return true
+}
+
+// TestCollectorPartialReceiverReloadAddRemove verifies that adding, and then
+// removing, a receiver via live config reloads are each classified as
+// receivers-only and take the partial reload path.
+func TestCollectorPartialReceiverReloadAddRemove(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", false))
+	}()
+
+	observerCore, observedLogs := observer.New(zapcore.InfoLevel)
+	var running sync.Map
+
+	var addSecond, removeSecond atomic.Bool
+	confMap := func() map[string]any {
+		receivers := map[string]any{"tracking/a": map[string]any{}}
+		ids := []any{"tracking/a"}
+		if addSecond.Load() && !removeSecond.Load() {
+			receivers["tracking/b"] = map[string]any{}
+			ids = append(ids, "tracking/b")
+		}
+		return map[string]any{
+			"receivers": receivers,
+			"exporters": map[string]any{"nop": map[string]any{}},
+			"service": map[string]any{
+				"pipelines": map[string]any{
+					"traces": map[string]any{
+						"receivers": ids,
+						"exporters": []any{"nop"},
+					},
+				},
+			},
+		}
+	}
+
+	var watcher confmap.WatcherFunc
+	provider := newFakeProvider("file", func(_ context.Context, _ string, w confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		watcher = w
+		return confmap.NewRetrieved(confMap())
+	})
+
+	factories := trackingFactories(t, &running)
+	factories.Telemetry = telemetry.NewFactory(
+		func() component.Config { return fakeTelemetryConfig{} },
+		telemetrytest.WithLogger(zap.New(observerCore), nil),
+	)
+
+	col, err := NewCollector(CollectorSettings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs:              []string{"file:cfg"},
+				ProviderFactories: []confmap.ProviderFactory{provider},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	assertRunning := func(want ...string) {
+		assert.Eventually(t, func() bool {
+			var got []string
+			running.Range(func(key, _ any) bool {
+				got = append(got, key.(component.ID).String())
+				return true
+			})
+			return sameStringSet(want, got)
+		}, 2*time.Second, 50*time.Millisecond, "expected running receivers %v", want)
+	}
+
+	wg := startCollector(context.Background(), t, col)
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+	assertRunning("tracking/a")
+
+	// Add a second receiver.
+	addSecond.Store(true)
+	watcher(&confmap.ChangeEvent{})
+
+	assert.Eventually(t, func() bool {
+		return observedLogs.FilterMessage("Config updated, performing partial receiver reload").Len() >= 1
+	}, 2*time.Second, 50*time.Millisecond)
+	assert.Equal(t, StateRunning, col.GetState())
+	assertRunning("tracking/a", "tracking/b")
+
+	// Remove the second receiver again.
+	removeSecond.Store(true)
+	watcher(&confmap.ChangeEvent{})
+
+	assert.Eventually(t, func() bool {
+		return observedLogs.FilterMessage("Config updated, performing partial receiver reload").Len() >= 2
+	}, 2*time.Second, 50*time.Millisecond)
+	assert.Equal(t, StateRunning, col.GetState())
+	assertRunning("tracking/a")
+
+	// Neither reload should have fallen back to a full restart.
+	for _, entry := range observedLogs.All() {
+		assert.NotEqual(t, "Config updated, restart service", entry.Message)
+	}
+
+	col.Shutdown()
+	wg.Wait()
+	assert.Equal(t, StateClosed, col.GetState())
+}
+
+// TestCollectorNonReceiverChangeFullReload verifies that when a config change is
+// not receiver-only (here an exporter changes), tryPartialReceiverReload reports
+// it cannot handle the change and the collector falls back to a full restart.
+func TestCollectorNonReceiverChangeFullReload(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", false))
+	}()
+
+	observerCore, observedLogs := observer.New(zapcore.InfoLevel)
+
+	var exporterChanged atomic.Bool
+	confMap := func() map[string]any {
+		exporterEndpoint := "exporter"
+		if exporterChanged.Load() {
+			exporterEndpoint = "exporter-changed"
+		}
+		return map[string]any{
+			"receivers": map[string]any{"normalizing": map[string]any{"endpoint": "receiver"}},
+			"exporters": map[string]any{"normalizing": map[string]any{"endpoint": exporterEndpoint}},
+			"service": map[string]any{
+				"pipelines": map[string]any{
+					"traces": map[string]any{
+						"receivers": []any{"normalizing"},
+						"exporters": []any{"normalizing"},
+					},
+				},
+			},
+		}
+	}
+
+	var watcher confmap.WatcherFunc
+	provider := newFakeProvider("file", func(_ context.Context, _ string, w confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		watcher = w
+		return confmap.NewRetrieved(confMap())
+	})
+
+	factories := normalizingFactories(t)
+	factories.Telemetry = telemetry.NewFactory(
+		func() component.Config { return fakeTelemetryConfig{} },
+		telemetrytest.WithLogger(zap.New(observerCore), nil),
+	)
+
+	col, err := NewCollector(CollectorSettings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs:              []string{"file:cfg"},
+				ProviderFactories: []confmap.ProviderFactory{provider},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	wg := startCollector(context.Background(), t, col)
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	// Change the exporter config, then trigger a reload. Because the change is
+	// not receiver-only, the collector must perform a full restart.
+	exporterChanged.Store(true)
+	watcher(&confmap.ChangeEvent{})
+
+	assert.Eventually(t, func() bool {
+		for _, entry := range observedLogs.All() {
+			if entry.Message == "Config updated, restart service" {
+				return true
+			}
+		}
+		return false
+	}, 2*time.Second, 50*time.Millisecond)
+
+	// The partial receiver reload path must not have been taken.
+	for _, entry := range observedLogs.All() {
+		assert.NotEqual(t, "Config updated, performing partial receiver reload", entry.Message)
+	}
+
+	col.Shutdown()
+	wg.Wait()
+	assert.Equal(t, StateClosed, col.GetState())
+}
+
+// flakyStartConfig's Generation field lets two otherwise-identical configs
+// compare as different, forcing the receiver to rebuild on reload.
+type flakyStartConfig struct {
+	Generation int `mapstructure:"generation"`
+}
+
+// flakyStartReceiver fails to Start on a caller-chosen call count, letting a
+// test force a specific (re)build attempt to fail while others succeed.
+type flakyStartReceiver struct {
+	nopComponent
+	startCalls *atomic.Int32
+	failOnCall int32
+}
+
+func (r *flakyStartReceiver) Start(context.Context, component.Host) error {
+	if r.startCalls.Add(1) == r.failOnCall {
+		return errors.New("forced start failure")
+	}
+	return nil
+}
+
+// flakyStartFactories returns Factories whose "flakystart" receiver fails to
+// Start on the failOnCall-th call across the collector's lifetime (counting
+// from 1), tracked via startCalls.
+func flakyStartFactories(t *testing.T, startCalls *atomic.Int32, failOnCall int32) Factories {
+	flakyType := component.MustNewType("flakystart")
+	recFactory := receiver.NewFactory(
+		flakyType,
+		func() component.Config { return &flakyStartConfig{} },
+		receiver.WithTraces(func(_ context.Context, _ receiver.Settings, _ component.Config, _ consumer.Traces) (receiver.Traces, error) {
+			return &flakyStartReceiver{startCalls: startCalls, failOnCall: failOnCall}, nil
+		}, component.StabilityLevelStable),
+	)
+	expFactory := exporter.NewFactory(
+		flakyType,
+		func() component.Config { return &flakyStartConfig{} },
+		exporter.WithTraces(func(_ context.Context, _ exporter.Settings, _ component.Config) (exporter.Traces, error) {
+			return &nopComponent{}, nil
+		}, component.StabilityLevelStable),
+	)
+
+	var factories Factories
+	var err error
+	factories.Receivers, err = MakeFactoryMap(recFactory)
+	require.NoError(t, err)
+	factories.Exporters, err = MakeFactoryMap(expFactory)
+	require.NoError(t, err)
+	factories.Processors, err = MakeFactoryMap(processortest.NewNopFactory())
+	require.NoError(t, err)
+	factories.Connectors, err = MakeFactoryMap(connectortest.NewNopFactory())
+	require.NoError(t, err)
+	factories.Extensions, err = MakeFactoryMap(extensiontest.NewNopFactory())
+	require.NoError(t, err)
+
+	return factories
+}
+
+// TestCollectorPartialReceiverReloadFallsBackOnFailure verifies that when a
+// partial receiver reload fails mid-way (a rebuilt receiver fails to start),
+// the collector falls back to a full reload instead of leaving the service
+// running with a partially modified graph or exiting outright.
+func TestCollectorPartialReceiverReloadFallsBackOnFailure(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", false))
+	}()
+
+	observerCore, observedLogs := observer.New(zapcore.InfoLevel)
+
+	var startCalls atomic.Int32
+	var generation atomic.Int32
+	confMap := func() map[string]any {
+		return map[string]any{
+			"receivers": map[string]any{"flakystart": map[string]any{"generation": int(generation.Load())}},
+			"exporters": map[string]any{"flakystart": map[string]any{}},
+			"service": map[string]any{
+				"pipelines": map[string]any{
+					"traces": map[string]any{
+						"receivers": []any{"flakystart"},
+						"exporters": []any{"flakystart"},
+					},
+				},
+			},
+		}
+	}
+
+	var watcher confmap.WatcherFunc
+	provider := newFakeProvider("file", func(_ context.Context, _ string, w confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		watcher = w
+		return confmap.NewRetrieved(confMap())
+	})
+
+	// The first Start call is the initial startup and must succeed. The second
+	// is the partial reload's rebuild attempt and is forced to fail. The third
+	// is the fallback full reload's rebuild attempt and must succeed.
+	factories := flakyStartFactories(t, &startCalls, 2)
+	factories.Telemetry = telemetry.NewFactory(
+		func() component.Config { return fakeTelemetryConfig{} },
+		telemetrytest.WithLogger(zap.New(observerCore), nil),
+	)
+
+	col, err := NewCollector(CollectorSettings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs:              []string{"file:cfg"},
+				ProviderFactories: []confmap.ProviderFactory{provider},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	wg := startCollector(context.Background(), t, col)
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+	require.EqualValues(t, 1, startCalls.Load())
+
+	// Change the receiver config to force a rebuild. The rebuild's Start call
+	// is the forced failure, so tryPartialReceiverReload reports a failure.
+	generation.Store(1)
+	watcher(&confmap.ChangeEvent{})
+
+	assert.Eventually(t, func() bool {
+		for _, entry := range observedLogs.All() {
+			if entry.Message == "Partial receiver reload failed, falling back to full reload" {
+				return true
+			}
+		}
+		return false
+	}, 2*time.Second, 50*time.Millisecond)
+
+	// The collector must fall back to, and complete, a full reload.
+	assert.Eventually(t, func() bool {
+		for _, entry := range observedLogs.All() {
+			if entry.Message == "Config updated, restart service" {
+				return true
+			}
+		}
+		return false
+	}, 2*time.Second, 50*time.Millisecond)
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+	assert.EqualValues(t, 3, startCalls.Load())
+
+	col.Shutdown()
+	wg.Wait()
+	assert.Equal(t, StateClosed, col.GetState())
+}
+
+// validatingConfig fails validation when its endpoint is the sentinel "invalid".
+type validatingConfig struct {
+	Endpoint string `mapstructure:"endpoint"`
+}
+
+func (c *validatingConfig) Validate() error {
+	if c.Endpoint == "invalid" {
+		return errors.New("invalid endpoint value")
+	}
+	return nil
+}
+
+func validatingFactories(t *testing.T) Factories {
+	valType := component.MustNewType("validating")
+	recFactory := receiver.NewFactory(
+		valType,
+		func() component.Config { return &validatingConfig{} },
+		receiver.WithTraces(func(_ context.Context, _ receiver.Settings, _ component.Config, _ consumer.Traces) (receiver.Traces, error) {
+			return &nopComponent{}, nil
+		}, component.StabilityLevelStable),
+	)
+	expFactory := exporter.NewFactory(
+		valType,
+		func() component.Config { return &validatingConfig{} },
+		exporter.WithTraces(func(_ context.Context, _ exporter.Settings, _ component.Config) (exporter.Traces, error) {
+			return &nopComponent{}, nil
+		}, component.StabilityLevelStable),
+	)
+
+	var factories Factories
+	var err error
+	factories.Receivers, err = MakeFactoryMap(recFactory)
+	require.NoError(t, err)
+	factories.Exporters, err = MakeFactoryMap(expFactory)
+	require.NoError(t, err)
+	factories.Processors, err = MakeFactoryMap(processortest.NewNopFactory())
+	require.NoError(t, err)
+	factories.Connectors, err = MakeFactoryMap(connectortest.NewNopFactory())
+	require.NoError(t, err)
+	factories.Extensions, err = MakeFactoryMap(extensiontest.NewNopFactory())
+	require.NoError(t, err)
+
+	return factories
+}
+
+// TestCollectorInvalidConfigOnReload verifies that when the config fetched during
+// a partial-reload attempt fails validation, the reload reports the error rather
+// than proceeding. The config served on reload sets the receiver endpoint to the
+// sentinel "invalid", so confmap.Validate fails in tryPartialReceiverReload.
+func TestCollectorInvalidConfigOnReload(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", false))
+	}()
+
+	var invalid atomic.Bool
+	confMap := func() map[string]any {
+		endpoint := "receiver"
+		if invalid.Load() {
+			endpoint = "invalid"
+		}
+		return map[string]any{
+			"receivers": map[string]any{"validating": map[string]any{"endpoint": endpoint}},
+			"exporters": map[string]any{"validating": map[string]any{"endpoint": "exporter"}},
+			"service": map[string]any{
+				"pipelines": map[string]any{
+					"traces": map[string]any{
+						"receivers": []any{"validating"},
+						"exporters": []any{"validating"},
+					},
+				},
+			},
+		}
+	}
+
+	var watcher confmap.WatcherFunc
+	provider := newFakeProvider("file", func(_ context.Context, _ string, w confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		watcher = w
+		return confmap.NewRetrieved(confMap())
+	})
+
+	factories := validatingFactories(t)
+	factories.Telemetry = telemetry.NewFactory(func() component.Config { return fakeTelemetryConfig{} })
+
+	col, err := NewCollector(CollectorSettings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs:              []string{"file:cfg"},
+				ProviderFactories: []confmap.ProviderFactory{provider},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	errCh := make(chan error, 1)
+	go func() { errCh <- col.Run(context.Background()) }()
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	// Serve an invalid config and trigger a reload; the collector must report the
+	// validation error.
+	invalid.Store(true)
+	watcher(&confmap.ChangeEvent{})
+
+	select {
+	case runErr := <-errCh:
+		require.ErrorContains(t, runErr, "invalid endpoint value")
+	case <-time.After(2 * time.Second):
+		t.Fatal("collector did not exit after invalid config reload")
+	}
 }
 
 func TestCollectorReportError(t *testing.T) {
