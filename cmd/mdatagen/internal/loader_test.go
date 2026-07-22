@@ -111,7 +111,7 @@ func TestLoadMetadata(t *testing.T) {
 							},
 							"component_id": {
 								Description: "Component ID used to identify this receiver instance.",
-								Type:        "id",
+								Type:        "component_id",
 							},
 							"headers": {
 								Description: "Extra HTTP headers to attach to each request.",
