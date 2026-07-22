@@ -4,29 +4,29 @@ go 1.25.0
 
 require (
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector v0.154.0
-	go.opentelemetry.io/collector/client v1.60.0
-	go.opentelemetry.io/collector/component v1.60.0
-	go.opentelemetry.io/collector/component/componenttest v0.154.0
-	go.opentelemetry.io/collector/config/configauth v1.60.0
-	go.opentelemetry.io/collector/config/configcompression v1.60.0
-	go.opentelemetry.io/collector/config/configmiddleware v1.60.0
-	go.opentelemetry.io/collector/config/confignet v1.60.0
-	go.opentelemetry.io/collector/config/configopaque v1.60.0
-	go.opentelemetry.io/collector/config/configoptional v1.60.0
-	go.opentelemetry.io/collector/config/configtls v1.60.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.154.0
-	go.opentelemetry.io/collector/extension v1.60.0
-	go.opentelemetry.io/collector/extension/extensionauth v1.60.0
-	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.154.0
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.154.0
-	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.154.0
-	go.opentelemetry.io/collector/pdata v1.60.0
-	go.opentelemetry.io/collector/pdata/testdata v0.154.0
+	go.opentelemetry.io/collector v0.157.0
+	go.opentelemetry.io/collector/client v1.63.0
+	go.opentelemetry.io/collector/component v1.63.0
+	go.opentelemetry.io/collector/component/componenttest v0.157.0
+	go.opentelemetry.io/collector/config/configauth v1.63.0
+	go.opentelemetry.io/collector/config/configcompression v1.63.0
+	go.opentelemetry.io/collector/config/configmiddleware v1.63.0
+	go.opentelemetry.io/collector/config/confignet v1.63.0
+	go.opentelemetry.io/collector/config/configopaque v1.63.0
+	go.opentelemetry.io/collector/config/configoptional v1.63.0
+	go.opentelemetry.io/collector/config/configtls v1.63.0
+	go.opentelemetry.io/collector/confmap v1.63.0
+	go.opentelemetry.io/collector/extension v1.63.0
+	go.opentelemetry.io/collector/extension/extensionauth v1.63.0
+	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.157.0
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.157.0
+	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.157.0
+	go.opentelemetry.io/collector/pdata v1.63.0
+	go.opentelemetry.io/collector/pdata/testdata v0.157.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.69.0
 	go.opentelemetry.io/otel v1.44.0
 	go.uber.org/goleak v1.3.0
-	google.golang.org/grpc v1.81.1
+	google.golang.org/grpc v1.82.0
 )
 
 require (
@@ -44,7 +44,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.18.6 // indirect
+	github.com/klauspost/compress v1.19.0 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
 	github.com/knadh/koanf/v2 v2.3.5 // indirect
@@ -54,10 +54,9 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/confmap v1.60.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.60.0 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.154.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.154.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.63.0 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.157.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.157.0 // indirect
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.44.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.44.0 // indirect
@@ -117,8 +116,6 @@ replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../extension/extensionmiddleware/extensionmiddlewaretest
 
 replace go.opentelemetry.io/collector/confmap => ../../confmap
-
-replace go.opentelemetry.io/collector/confmap/xconfmap => ../../confmap/xconfmap
 
 replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
 

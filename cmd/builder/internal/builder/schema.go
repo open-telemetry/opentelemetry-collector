@@ -4,6 +4,7 @@
 package builder // import "go.opentelemetry.io/collector/cmd/builder/internal/builder"
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -118,7 +119,7 @@ func buildEmbeddedSchemaWithDeps(cfg *Config, deps builderDeps, resolveModuleDir
 		return nil, fmt.Errorf("failed to combine collector schema: %w", err)
 	}
 
-	return combined.ToJSON()
+	return json.MarshalIndent(combined, "", "  ")
 }
 
 func selectedComponentSchemaRefs(cfg *Config) []componentSchemaRef {
@@ -195,11 +196,18 @@ func readComponentSchemaFile(moduleDir string) ([]byte, string, bool, error) {
 	return nil, "", false, nil
 }
 
-func parseComponentConfigSchema(schemaBytes []byte) (*schemagen.ConfigMetadata, error) {
-	var schema schemagen.ConfigMetadata
-	if err := yaml.Unmarshal(schemaBytes, &schema); err != nil {
+func parseComponentConfigSchema(schemaBytes []byte) (*schemagen.JSONSchema, error) {
+	var raw map[string]any
+	if err := yaml.Unmarshal(schemaBytes, &raw); err != nil {
 		return nil, err
 	}
-
+	jsonBytes, err := json.Marshal(raw)
+	if err != nil {
+		return nil, err
+	}
+	var schema schemagen.JSONSchema
+	if err := json.Unmarshal(jsonBytes, &schema); err != nil {
+		return nil, err
+	}
 	return &schema, nil
 }

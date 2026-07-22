@@ -1,11 +1,10 @@
-{{- $reag := .ReaggregationEnabled }}
 {{- if .Metrics }}
   metrics_config:
     description: MetricsConfig provides config for {{ .Type }} metrics.
     type: object
     properties:
       {{- range $name, $metric := .Metrics }}
-      {{- $metricReag := and $reag (hasAggregatableAttributes $metric.Attributes) }}
+      {{- $metricReag := hasAggregatableAttributes $metric.Attributes }}
       {{ $name }}:
         description: "{{ $name.Render }}MetricConfig provides config for the {{ $name }} metric."
         type: object

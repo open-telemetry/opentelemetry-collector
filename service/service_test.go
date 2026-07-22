@@ -28,7 +28,9 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pipeline"
@@ -408,6 +410,49 @@ func TestNilCollectorEffectiveConfig(t *testing.T) {
 	require.NoError(t, srv.Shutdown(context.Background()))
 }
 
+func TestConfigSnapshotNotification(t *testing.T) {
+	set := newNopSettings()
+	set.CollectorConf = nil
+	set.ConfigSnapshot = extensioncapabilities.NewConfigSnapshot(
+		confmap.NewFromStringMap(map[string]any{"effective": "value"}),
+		confmap.NewFromStringMap(map[string]any{"unexpanded": "${env:VALUE}"}),
+	)
+	cfg := newNopConfig()
+
+	extName := component.MustNewType("configSnapshotWatcher")
+	factory := newConfigSnapshotWatcherExtensionFactory(extName)
+	set.ExtensionsConfigs = map[component.ID]component.Config{component.NewID(extName): factory.CreateDefaultConfig()}
+	set.ExtensionsFactories = map[component.Type]extension.Factory{extName: factory}
+	cfg.Extensions = []component.ID{component.NewID(extName)}
+
+	srv, err := New(context.Background(), set, cfg)
+	require.NoError(t, err)
+
+	// Start surfaces the error returned by the extension's NotifyConfig.
+	require.ErrorContains(t, srv.Start(context.Background()), "config-snapshot error")
+	require.NoError(t, srv.Shutdown(context.Background()))
+}
+
+func TestConfigSnapshotNotSetSkipsHook(t *testing.T) {
+	set := newNopSettings()
+	set.CollectorConf = nil
+	set.ConfigSnapshot = nil
+	cfg := newNopConfig()
+
+	extName := component.MustNewType("configSnapshotWatcher")
+	factory := newConfigSnapshotWatcherExtensionFactory(extName)
+	set.ExtensionsConfigs = map[component.ID]component.Config{component.NewID(extName): factory.CreateDefaultConfig()}
+	set.ExtensionsFactories = map[component.Type]extension.Factory{extName: factory}
+	cfg.Extensions = []component.ID{component.NewID(extName)}
+
+	srv, err := New(context.Background(), set, cfg)
+	require.NoError(t, err)
+
+	// With ConfigSnapshot nil, the hook is skipped and Start succeeds.
+	require.NoError(t, srv.Start(context.Background()))
+	require.NoError(t, srv.Shutdown(context.Background()))
+}
+
 func TestServiceTelemetryLogger(t *testing.T) {
 	srv, err := New(context.Background(), newNopSettings(), newNopConfig())
 	require.NoError(t, err)
@@ -559,6 +604,31 @@ func newConfigWatcherExtensionFactory(name component.Type) extension.Factory {
 		},
 		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
 			return &configWatcherExtension{}, nil
+		},
+		component.StabilityLevelDevelopment,
+	)
+}
+
+type configSnapshotWatcherExtension struct{}
+
+func (comp *configSnapshotWatcherExtension) Start(context.Context, component.Host) error {
+	return nil
+}
+
+func (comp *configSnapshotWatcherExtension) Shutdown(context.Context) error {
+	return nil
+}
+
+func (comp *configSnapshotWatcherExtension) NotifyConfigSnapshot(context.Context, extensioncapabilities.ConfigSnapshot) error {
+	return errors.New("config-snapshot error")
+}
+
+func newConfigSnapshotWatcherExtensionFactory(name component.Type) extension.Factory {
+	return extension.NewFactory(
+		name,
+		func() component.Config { return &struct{}{} },
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
+			return &configSnapshotWatcherExtension{}, nil
 		},
 		component.StabilityLevelDevelopment,
 	)
@@ -784,4 +854,46 @@ func TestRegisterProcessMetrics_SupportedOS_RegisterFails_ReturnsError(t *testin
 	require.Error(t, err)
 	require.ErrorIs(t, err, wantErr)
 	require.Contains(t, err.Error(), "failed to register process metrics")
+}
+
+func TestReceiverPartialReloadEnabled(t *testing.T) {
+	// Both the master gate and the receiver phase gate must be enabled.
+	cases := []struct {
+		name     string
+		master   bool
+		receiver bool
+		want     bool
+	}{
+		{"both disabled", false, false, false},
+		{"master only", true, false, false},
+		{"receiver only", false, true, false},
+		{"both enabled", true, true, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", tc.master))
+			require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReloadReceivers", tc.receiver))
+			defer func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", false))
+				require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReloadReceivers", true))
+			}()
+			assert.Equal(t, tc.want, ReceiverPartialReloadEnabled())
+		})
+	}
+}
+
+func TestServiceUpdateReceivers(t *testing.T) {
+	ctx := context.Background()
+	cfg := newNopConfig()
+	srv, err := New(ctx, newNopSettings(), cfg)
+	require.NoError(t, err)
+	require.NoError(t, srv.Start(ctx))
+	t.Cleanup(func() {
+		require.NoError(t, srv.Shutdown(ctx))
+	})
+
+	// An unchanged update is a no-op that still exercises the public
+	// UpdateReceivers entry point on the running service.
+	rcvrCfgs, rcvrFactories := builders.NewNopReceiverConfigsAndFactories()
+	require.NoError(t, srv.UpdateReceivers(ctx, nil, rcvrCfgs, rcvrFactories, cfg.Pipelines))
 }
