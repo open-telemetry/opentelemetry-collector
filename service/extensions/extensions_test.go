@@ -19,7 +19,10 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/service/hostcapabilities"
 	"go.opentelemetry.io/collector/service/internal/builders"
+	"go.opentelemetry.io/collector/service/internal/moduleinfo"
 	"go.opentelemetry.io/collector/service/internal/status"
 )
 
@@ -520,6 +523,88 @@ func TestExtensionReportsOwnStatus(t *testing.T) {
 		assert.Equal(t, assert.AnError, ev.Err())
 	}
 	assert.True(t, found, "expected extension to report a status event about itself")
+}
+
+func TestExtensionHostForwardsHostCapabilities(t *testing.T) {
+	var extHost component.Host
+	factory := newRecordingExtensionFactory(func(_ extension.Settings, host component.Host) error {
+		extHost = host
+		return nil
+	}, func(extension.Settings) error {
+		return nil
+	})
+	compID := component.NewID(factory.Type())
+
+	exts, err := New(
+		context.Background(),
+		Settings{
+			Telemetry: componenttest.NewNopTelemetrySettings(),
+			BuildInfo: component.NewDefaultBuildInfo(),
+			Extensions: builders.NewExtension(
+				map[component.ID]component.Config{compID: recordingExtensionConfig{}},
+				map[component.Type]extension.Factory{factory.Type(): factory},
+			),
+		},
+		[]component.ID{compID},
+	)
+	require.NoError(t, err)
+
+	host := &capabilitiesHost{
+		Host: componenttest.NewNopHost(),
+		moduleInfos: moduleinfo.ModuleInfos{
+			Extension: map[component.Type]moduleinfo.ModuleInfo{
+				factory.Type(): {BuilderRef: "example.com/recording v1.2.3"},
+			},
+		},
+		exporters: map[pipeline.Signal]map[component.ID]component.Component{
+			pipeline.SignalTraces: {},
+		},
+		factory: factory,
+	}
+	require.NoError(t, exts.Start(t.Context(), host))
+	require.NoError(t, exts.Shutdown(t.Context()))
+
+	mi, ok := extHost.(hostcapabilities.ModuleInfo)
+	require.True(t, ok, "host passed to extensions must implement hostcapabilities.ModuleInfo")
+	assert.Equal(t, host.moduleInfos, mi.GetModuleInfos())
+
+	ee, ok := extHost.(hostcapabilities.ExposeExporters) //nolint:staticcheck // SA1019
+	require.True(t, ok, "host passed to extensions must implement hostcapabilities.ExposeExporters")
+	assert.Equal(t, host.exporters, ee.GetExporters())
+
+	cf, ok := extHost.(hostcapabilities.ComponentFactory)
+	require.True(t, ok, "host passed to extensions must implement hostcapabilities.ComponentFactory")
+	assert.Equal(t, factory, cf.GetFactory(component.KindExtension, factory.Type()))
+}
+
+func TestExtensionHostCapabilitiesZeroValues(t *testing.T) {
+	// When the underlying host does not implement the optional capabilities,
+	// the wrapper falls back to zero values.
+	wrapper := &hostWrapper{Host: componenttest.NewNopHost()}
+	assert.Equal(t, moduleinfo.ModuleInfos{}, wrapper.GetModuleInfos())
+	assert.Nil(t, wrapper.GetExporters())
+	assert.Nil(t, wrapper.GetFactory(component.KindExtension, component.MustNewType("recording")))
+}
+
+// capabilitiesHost is a component.Host that also implements the optional
+// hostcapabilities interfaces, mirroring the service's graph.Host.
+type capabilitiesHost struct {
+	component.Host
+	moduleInfos moduleinfo.ModuleInfos
+	exporters   map[pipeline.Signal]map[component.ID]component.Component
+	factory     component.Factory
+}
+
+func (h *capabilitiesHost) GetModuleInfos() moduleinfo.ModuleInfos {
+	return h.moduleInfos
+}
+
+func (h *capabilitiesHost) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
+	return h.exporters
+}
+
+func (h *capabilitiesHost) GetFactory(component.Kind, component.Type) component.Factory {
+	return h.factory
 }
 
 // statusReporterHost is a component.Host that also implements status.Reporter,
