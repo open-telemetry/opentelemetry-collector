@@ -97,6 +97,50 @@ The `config` section is based on [JSON Schema standard](https://json-schema.org/
 - **References**: Internal (`$ref: definition_name`), external (`$ref: package.path.type`), or relative (`$ref: ./internal/config.type`)
 - **Reusable definitions**: Define common schemas in `$defs` and reference them with `$ref`
 - **Schema composition**: Use `allOf` for complex configurations
+- **Extended type aliases**: first-class aliases that expand to the correct JSON Schema shape and Go type automatically (see table below)
+
+#### Extended type aliases
+
+Instead of combining `type`+`format` or `type`+`x-customType` by hand, you can use an alias directly as the `type` value:
+
+| Alias | Go type | JSON Schema representation        |
+|---|---|-----------------------------------|
+| `rune` | `rune` | `integer`                         |
+| `byte` | `byte` | `integer`                         |
+| `uint` | `uint` | `integer`                         |
+| `int8` | `int8` | `integer`                         |
+| `uint8` | `uint8` | `integer`                         |
+| `int16` | `int16` | `integer`                         |
+| `uint16` | `uint16` | `integer`                         |
+| `int32` | `int32` | `integer`                         |
+| `uint32` | `uint32` | `integer`                         |
+| `int64` | `int64` | `integer`                         |
+| `uint64` | `uint64` | `integer`                         |
+| `float32` | `float32` | `number`                          |
+| `float64` | `float64` | `number`                          |
+| `duration` | `time.Duration` | `string` with Go duration pattern |
+| `time` | `time.Time` | `string` with `format: date-time` |
+| `opaque_string` | `configopaque.String` | `string`                          |
+| `opaque_map` | `configopaque.MapList` | `object` of name/value pairs      |
+| `id` | `component.ID` | `string`                          |
+
+Example:
+
+```yaml
+config:
+  type: object
+  properties:
+    max_results:
+      type: int64
+      default: 100
+    timeout:
+      type: duration
+      default: 30s
+    api_token:
+      type: opaque_string
+```
+
+Aliases are additive: existing uses of standard JSON Schema types, `format`, and `x-customType` remain supported without migration.
 
 ### Metrics Builder Configuration
 
