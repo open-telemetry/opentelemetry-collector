@@ -38,3 +38,19 @@ func TestUnmarshalConfig(t *testing.T) {
 
 	assert.Equal(t, &Config{ServerConfig: expectedServerConfig}, cfg)
 }
+
+// Regression test: fields declared next to the squash-embedded ServerConfig must
+// still be decoded now that ServerConfig implements confmap.Unmarshaler.
+func TestUnmarshalConfigWithExpvar(t *testing.T) {
+	cm := confmap.NewFromStringMap(map[string]any{
+		"endpoint": "localhost:56888",
+		"expvar":   map[string]any{"enabled": true},
+	})
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	require.NoError(t, cm.Unmarshal(&cfg))
+
+	zCfg := cfg.(*Config)
+	assert.Equal(t, "localhost:56888", zCfg.ServerConfig.NetAddr.Endpoint)
+	assert.True(t, zCfg.Expvar.Enabled)
+}
