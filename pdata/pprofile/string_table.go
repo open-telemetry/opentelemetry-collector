@@ -25,7 +25,7 @@ func SetString(table pcommon.StringSlice, val string) (int32, error) {
 	}
 
 	if table.Len() >= math.MaxInt32 {
-		return 0, errTooManyMappingTableEntries
+		return 0, errTooManyStringTableEntries
 	}
 
 	table.Append(val)

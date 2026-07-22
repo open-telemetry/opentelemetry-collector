@@ -11,6 +11,7 @@ This receiver is used for testing purposes to check the output of mdatagen.
 |               | [stable]: metrics   |
 | Deprecation of profiles | [Date]: 2025-02-05   |
 |                      | [Migration Note]: no migration needed   |
+| Semantic Conventions Version | 1.40.0 |
 | Unsupported Platforms | freebsd, illumos |
 | Distributions | [] |
 | Warnings      | [Any additional information that should be brought to the consumer's attention](#warnings) |
@@ -116,6 +117,7 @@ This is where warnings are described.
 ### <a id="resource_attributes"></a>resource_attributes
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
+| `host.arch` | object (see [resource_attributes.host.arch](#resource_attributes.host.arch)) |  | no | ResourceAttributeConfig provides common config for a host.arch resource attribute. |
 | `map.resource.attr` | object (see [resource_attributes.map.resource.attr](#resource_attributes.map.resource.attr)) |  | no | ResourceAttributeConfig provides common config for a map.resource.attr resource attribute. |
 | `optional.resource.attr` | object (see [resource_attributes.optional.resource.attr](#resource_attributes.optional.resource.attr)) |  | no | ResourceAttributeConfig provides common config for a optional.resource.attr resource attribute. |
 | `slice.resource.attr` | object (see [resource_attributes.slice.resource.attr](#resource_attributes.slice.resource.attr)) |  | no | ResourceAttributeConfig provides common config for a slice.resource.attr resource attribute. |
@@ -125,6 +127,15 @@ This is where warnings are described.
 | `string.resource.attr_remove_warning` | object (see [resource_attributes.string.resource.attr_remove_warning](#resource_attributes.string.resource.attr_remove_warning)) |  | no | ResourceAttributeConfig provides common config for a string.resource.attr_remove_warning resource attribute. |
 | `string.resource.attr_to_be_removed` | object (see [resource_attributes.string.resource.attr_to_be_removed](#resource_attributes.string.resource.attr_to_be_removed)) |  | no | ResourceAttributeConfig provides common config for a string.resource.attr_to_be_removed resource attribute. |
 | `string.resource.disabled_attr_to_be_removed` | object (see [resource_attributes.string.resource.disabled_attr_to_be_removed](#resource_attributes.string.resource.disabled_attr_to_be_removed)) |  | no | ResourceAttributeConfig provides common config for a string.resource.disabled_attr_to_be_removed resource attribute. |
+
+### <a id="resource_attributes.host.arch"></a>resource_attributes.host.arch
+| Setting | Type | Default | Required | Description |
+| ------- | ---- | ------- | -------- | ----------- |
+| `enabled` | bool | false | no |  |
+| `events_exclude` | []object |  | no | Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude. |
+| `events_include` | []object |  | no | Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted. |
+| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
+| `metrics_include` | []object |  | no | Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted. |
 
 ### <a id="resource_attributes.map.resource.attr"></a>resource_attributes.map.resource.attr
 | Setting | Type | Default | Required | Description |
