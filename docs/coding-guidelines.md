@@ -386,11 +386,19 @@ that is exposed to users.
 
 ## Graceful Shutdown
 
-The Collector supports graceful shutdown. All components must be ready to shutdown
-gracefully via `Shutdown()` function that all component interfaces require. If
-components contain any temporary data they need to process and export it out of the
-Collector before shutdown is completed. The shutdown process will have a maximum
-allowed duration so put a limit on how long your shutdown operation can take.
+All components must be ready to shutdown gracefully in the `Shutdown()` function defined as part of the `component.Component` interface. As part of shutting down, any in-flight data held by the component must be processed and forwarded or exported as soon as possible to avoid data loss.
+
+The `Shutdown()` method must be safe to call even if `Start()` was never invoked or if the component has already been shut down.
+
+When `Shutdown()` is called, components must:
+- Stop accepting new data immediately (e.g., close listeners, reject new requests).
+- Cancel or stop any background operations that were started in `Start()`.
+- Flush any buffered data to the next component in the pipeline before returning.
+- Release all held resources (connections, goroutines, file handles).
+
+`Shutdown()` receives a `context.Context` that may carry a deadline. Components must honor the context and return when it is cancelled or its deadline is exceeded rather than blocking indefinitely.
+
+The component's lifecycle ends once `Shutdown()` returns; no other component methods are called afterward. A new instance with the same or different configuration may be created and started afterward (e.g., during a live reload).
 
 ## Unit Tests
 
