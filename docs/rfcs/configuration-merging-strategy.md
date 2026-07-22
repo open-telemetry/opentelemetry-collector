@@ -319,24 +319,40 @@ This keeps URIs opaque, keeps the command line short, and keeps merge intent wit
 
 #### Schema
 
+The `mode` field controls how the incoming list is combined with the list already present in the base configuration. Supported values:
+
+| Mode | Description |
+|---|---|
+| `override` | Incoming list overwrites the base list entirely. |
+| `append` | Incoming items are added after the base items (duplicates allowed). |
+| `prepend` | Incoming items are added before the base items (duplicates allowed). |
+| `append_unique` | Only items not already present in the base list are appended after it. |
+| `prepend_unique` | Only items not already present in the base list are prepended before it. |
+| `keep` | The base list is left unchanged i.e. incoming items are ignored. |
+| `fail` | The collector fails to start if the incoming config contains a list at this path that conflicts with the base. |
+
+Default: `override`
+
 ```yaml
 merge_strategy:
-  mode: append          # default mode for all fields: append | prepend  (default: append)
-  fields:
-    # Inherits top-level mode
-    - path: "service::extensions"
+  lists:
+    mode: override          # default mode applied to all list paths not listed in fields
+    fields:
+      # Inherits top-level mode unless overridden
+      - path: "service::extensions"
+        mode: append_unique
 
-    # per-path mode override
-    - path: "service::pipelines::*::receivers"
-      mode: append
+      # per-path mode override
+      - path: "service::pipelines::*::processors"
+        mode: prepend_unique
 
-    # Long form with key-field merging:
-    # Merges list items by matching on the given key field.
-    # Items whose key matches an existing entry are updated in place;
-    # items with a new key are appended (or prepended).
-    # - path: "service::telemetry::resource::attributes"
-    #   mode: append
-    #   key: name
+      # Long form with key-field merging (future):
+      # Merges list items by matching on the given key field.
+      # Items whose key matches an existing entry are updated in place;
+      # items with a new key are appended (or prepended).
+      # - path: "service::telemetry::resource::attributes"
+      #   mode: append
+      #   key: name
 ```
 
 #### Examples
@@ -365,9 +381,10 @@ service:
   extensions: [file_storage]
 
 merge_strategy:
-  mode: append
-  fields:
-    - path: "service::extensions"
+  lists:
+    mode: append
+    fields:
+      - path: "service::extensions"
 ```
 
 ```yaml
@@ -406,12 +423,13 @@ service:
       receivers: [prometheus/sidecar]
 
 merge_strategy:
-  mode: append
-  fields:
-    - path: "service::extensions"
-    - path: "service::pipelines::*::receivers"
-    - path: "service::pipelines::*::processors"
-    - path: "service::pipelines::*::exporters"
+  lists:
+    mode: append
+    fields:
+      - path: "service::extensions"
+      - path: "service::pipelines::*::receivers"
+      - path: "service::pipelines::*::processors"
+      - path: "service::pipelines::*::exporters"
 ```
 
 3. _Mix append and prepend in a single fragment_:
@@ -430,11 +448,12 @@ service:
       processors: [transform/enrich] # append: run last
 
 merge_strategy:
-  fields:
-    - path: "service::pipelines::traces::processors"
-      mode: prepend
-    - path: "service::pipelines::logs::processors"
-      mode: append
+  lists:
+    fields:
+      - path: "service::pipelines::traces::processors"
+        mode: prepend
+      - path: "service::pipelines::logs::processors"
+        mode: append
 ```
 
 4. _(Future) Merge a list of objects by key field_:
@@ -465,10 +484,11 @@ service:
           value: val3       # new key, appended
 
 merge_strategy:
-  fields:
-    - path: "service::telemetry::resource::attributes"
-      mode: append
-      key: name             # match items by the "name" field
+  lists:
+    fields:
+      - path: "service::telemetry::resource::attributes"
+        mode: append
+        key: name             # match items by the "name" field
 ```
 
 ```yaml
@@ -489,10 +509,10 @@ service:
 
 ## Open questions
 
-- What to do if an invalid option is provided for `merge_mode`, `merge_paths`, `--merge-list`, or `merge_strategy:` fields?
+- What to do if an invalid `mode` value is provided in `merge_strategy:` fields?
     - Two possibilities:
         1. Error out (recommended).
-        2. Log an error and merge the default way.
+        2. Log an error and fall back to the default mode.
 - **Approach 2**: What to do if an invalid query param is provided in a config URI?
     - Strongly prefer erroring out.
 - **Approach 3**: Should `--merge-list` apply to *all* loaded config files?
@@ -507,4 +527,4 @@ The URI-based approach (Approach 2) and the `merge_strategy:` block approach (Ap
 
 A future requirement is merging lists of objects by a named key field. For example, merging `service::telemetry::resource::attributes` where each item has a `name` field. In this strategy, items with a matching key are updated in place and items with a new key are inserted according to `mode`. Simple positional append/prepend is insufficient for this use case.
 
-The Approach 4 schema reserves a `key` field in each long-form `fields` entry specifically for this. Adding support for key-field merging in a future version will require only an implementation change — the schema already accommodates it, so there will be no breaking interface change.
+The Approach 4 schema reserves a `key` field in each long-form `lists.fields` entry specifically for this. Adding support for key-field merging in a future version will require only an implementation change — the schema already accommodates it, so there will be no breaking interface change.
