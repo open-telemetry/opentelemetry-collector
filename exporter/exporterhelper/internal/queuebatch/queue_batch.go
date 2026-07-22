@@ -50,12 +50,6 @@ func NewQueueBatch(
 	if err != nil {
 		return nil, err
 	}
-	if cfg.Batch.HasValue() && set.Partitioner == nil {
-		// If batching is enabled and partitioner is not defined then keep the number of queue consumers to 1.
-		// see: https://github.com/open-telemetry/opentelemetry-collector/issues/12473
-		cfg.NumConsumers = 1
-	}
-
 	q, err := queue.NewQueue(queue.Settings[request.Request]{
 		SizerType:        cfg.Sizer,
 		Capacity:         cfg.QueueSize,

@@ -530,6 +530,71 @@ func TestQueueBatch_DrainActiveRequests(t *testing.T) {
 	assert.Equal(t, 3, sink.ItemsCount())
 }
 
+func TestQueueBatch_UnpartitionedShardsDrainOnShutdown(t *testing.T) {
+	sink := requesttest.NewSink()
+	cfg := newTestConfig()
+	cfg.NumConsumers = 2
+	cfg.Batch = configoptional.Some(BatchConfig{Sizer: request.SizerTypeItems, MinSize: 10})
+	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
+	require.NoError(t, err)
+	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
+
+	require.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 4}))
+	require.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 3}))
+
+	require.NoError(t, qb.Shutdown(context.Background()))
+
+	assert.Equal(t, 2, sink.RequestsCount())
+	assert.Equal(t, 7, sink.ItemsCount())
+	require.Zero(t, qb.queue.Size())
+}
+
+func TestQueueBatch_UnpartitionedWaitForResultMultipleShards(t *testing.T) {
+	started := make(chan struct{}, 2)
+	release := make(chan struct{})
+	export := func(ctx context.Context, _ request.Request) error {
+		started <- struct{}{}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-release:
+			return nil
+		}
+	}
+	cfg := newTestConfig()
+	cfg.NumConsumers = 2
+	cfg.WaitForResult = true
+	cfg.Batch = configoptional.Some(BatchConfig{Sizer: request.SizerTypeItems, MinSize: 2})
+	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, export)
+	require.NoError(t, err)
+	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, qb.Shutdown(context.Background()))
+	})
+
+	done := make(chan error, 4)
+	for range 4 {
+		go func() {
+			done <- qb.Send(context.Background(), &requesttest.FakeRequest{Items: 1})
+		}()
+	}
+
+	require.Eventually(t, func() bool {
+		return len(started) == 2
+	}, time.Second, 10*time.Millisecond)
+	select {
+	case err := <-done:
+		require.NoError(t, err)
+		t.Fatal("Send returned before its shard export completed")
+	default:
+	}
+
+	close(release)
+	for range 4 {
+		require.NoError(t, <-done)
+	}
+}
+
 func TestQueueBatchTimerResetNoConflict(t *testing.T) {
 	sink := requesttest.NewSink()
 	cfg := newTestConfig()
@@ -603,7 +668,7 @@ func newTestConfig() Config {
 	return Config{
 		WaitForResult:   false,
 		Sizer:           request.SizerTypeItems,
-		NumConsumers:    runtime.NumCPU(),
+		NumConsumers:    1,
 		QueueSize:       100_000,
 		BlockOnOverflow: true,
 		Batch: configoptional.Some(BatchConfig{
