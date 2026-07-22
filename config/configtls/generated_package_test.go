@@ -3,11 +3,10 @@
 package configtls
 
 import (
-	"testing"
-
 	"go.uber.org/goleak"
+	"testing"
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("go.opentelemetry.io/collector/config/configtls.(*clientCAsFileReloader).handleWatcherEvents"), goleak.IgnoreAnyFunction("github.com/fsnotify/fsnotify.(*inotify).readEvents"))
+	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("go.opentelemetry.io/collector/config/configtls.(*clientCAsFileReloader).handleWatcherEvents"), goleak.IgnoreAnyFunction("github.com/fsnotify/fsnotify.(*inotify).readEvents"), goleak.IgnoreAnyFunction("github.com/fsnotify/fsnotify.(*readDirChangesW).readEvents"))
 }

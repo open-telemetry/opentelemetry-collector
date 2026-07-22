@@ -15,3 +15,4 @@ tests:
       any:
         # https://github.com/open-telemetry/opentelemetry-collector/issues/9221
         - "github.com/fsnotify/fsnotify.(*inotify).readEvents"
+        - "github.com/fsnotify/fsnotify.(*readDirChangesW).readEvents"
