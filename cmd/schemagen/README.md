@@ -4,7 +4,7 @@
 JSON Schema that mirrors the exported structs.
 
 Script is only for temporary use. The aim is to facilitate the process of introducing schemas for
-Open Telemetry Collector components. Ultimately, the configuration schemas would be maintained manually,
+OpenTelemetry Collector components. Ultimately, the configuration schemas would be maintained manually,
 and the generation process would be reversed – Go config files from schemas.
 
 > **Status:** In Development.
