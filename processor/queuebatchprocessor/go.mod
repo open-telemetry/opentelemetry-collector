@@ -133,8 +133,6 @@ replace go.opentelemetry.io/collector/config/configoptional => ../../config/conf
 
 replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry
 
-replace go.opentelemetry.io/collector/confmap/xconfmap => ../../confmap/xconfmap
-
 replace go.opentelemetry.io/collector/extension => ../../extension
 
 replace go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest
