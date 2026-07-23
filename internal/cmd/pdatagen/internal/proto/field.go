@@ -217,9 +217,10 @@ func (pf *Field) getTemplateFields() map[string]any {
 		"repeated":          pf.Repeated,
 		"nullable":          pf.Nullable,
 		"bitSize":           bitSize,
-		"goType":            pf.GoType(),
-		"defaultValue":      pf.DefaultValue(),
-		"testValue":         pf.TestValue(),
+		"goType":           pf.GoType(),
+		"defaultValue":     pf.DefaultValue(),
+		"testValue":        pf.TestValue(),
+		"generatedMessage": pf.MessageName != "TraceID" && pf.MessageName != "SpanID" && pf.MessageName != "ProfileID",
 	}
 }
 

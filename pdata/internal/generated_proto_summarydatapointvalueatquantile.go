@@ -186,6 +186,14 @@ func (orig *SummaryDataPointValueAtQuantile) MarshalProto(buf []byte) int {
 }
 
 func (orig *SummaryDataPointValueAtQuantile) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, 0)
+}
+
+func (orig *SummaryDataPointValueAtQuantile) unmarshalProto(buf []byte, depth int) error {
+	if depth >= proto.RecursionLimit {
+		return proto.ErrRecursionDepth
+	}
+	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType

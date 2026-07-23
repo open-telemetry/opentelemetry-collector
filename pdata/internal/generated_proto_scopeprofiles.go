@@ -221,6 +221,14 @@ func (orig *ScopeProfiles) MarshalProto(buf []byte) int {
 }
 
 func (orig *ScopeProfiles) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, 0)
+}
+
+func (orig *ScopeProfiles) unmarshalProto(buf []byte, depth int) error {
+	if depth >= proto.RecursionLimit {
+		return proto.ErrRecursionDepth
+	}
+	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -246,7 +254,7 @@ func (orig *ScopeProfiles) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Scope.UnmarshalProto(buf[startPos:pos])
+			err = orig.Scope.unmarshalProto(buf[startPos:pos], depth)
 			if err != nil {
 				return err
 			}
@@ -262,7 +270,7 @@ func (orig *ScopeProfiles) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 			orig.Profiles = append(orig.Profiles, NewProfile())
-			err = orig.Profiles[len(orig.Profiles)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.Profiles[len(orig.Profiles)-1].unmarshalProto(buf[startPos:pos], depth)
 			if err != nil {
 				return err
 			}

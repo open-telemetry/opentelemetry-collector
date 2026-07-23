@@ -319,20 +319,20 @@ const unmarshalProtoMessage = `
 			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
 		}
 		ov.{{ .fieldName }} = New{{ .messageName }}()
-		err = ov.{{ .fieldName }}.UnmarshalProto(buf[startPos:pos])
+		err = ov.{{ .fieldName }}.{{ if .generatedMessage }}unmarshalProto(buf[startPos:pos], depth){{ else }}UnmarshalProto(buf[startPos:pos]){{ end }}
 		if err != nil {
 			return err
 		}
 		orig.{{ .oneOfGroup }} = ov
 {{- else if .repeated -}}
 		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, {{ if .nullable }}New{{ .messageName }}(){{ else }}{{ .defaultValue }}{{ end }})
-		err = orig.{{ .fieldName }}[len(orig.{{ .fieldName }})-1].UnmarshalProto(buf[startPos:pos])
+		err = orig.{{ .fieldName }}[len(orig.{{ .fieldName }})-1].{{ if .generatedMessage }}unmarshalProto(buf[startPos:pos], depth){{ else }}UnmarshalProto(buf[startPos:pos]){{ end }}
 		if err != nil {
 			return err
 		}
 {{- else }}
 		{{ if .nullable }}orig.{{ .fieldName }} = New{{ .messageName }}(){{ end }}
-		err = orig.{{ .fieldName }}.UnmarshalProto(buf[startPos:pos]) 
+		err = orig.{{ .fieldName }}.{{ if .generatedMessage }}unmarshalProto(buf[startPos:pos], depth){{ else }}UnmarshalProto(buf[startPos:pos]){{ end }}
 		if err != nil {
 			return err
 		}
