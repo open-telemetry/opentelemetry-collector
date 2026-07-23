@@ -27,6 +27,7 @@ type ConfigMetadata struct {
 	MinItems             *int                       `mapstructure:"minItems,omitempty" json:"minItems,omitempty" yaml:"minItems,omitempty"`
 	MaxItems             *int                       `mapstructure:"maxItems,omitempty" json:"maxItems,omitempty" yaml:"maxItems,omitempty"`
 	UniqueItems          bool                       `mapstructure:"uniqueItems,omitempty" json:"uniqueItems,omitempty" yaml:"uniqueItems,omitempty"`
+	Contains             *ConfigMetadata            `mapstructure:"contains,omitempty" json:"contains,omitempty" yaml:"contains,omitempty"`
 	MaxLength            *int                       `mapstructure:"maxLength,omitempty" json:"maxLength,omitempty" yaml:"maxLength,omitempty"`
 	MinLength            *int                       `mapstructure:"minLength,omitempty" json:"minLength,omitempty" yaml:"minLength,omitempty"`
 	Pattern              string                     `mapstructure:"pattern,omitempty" json:"pattern,omitempty" yaml:"pattern,omitempty"`
@@ -181,6 +182,9 @@ func (md *ConfigMetadata) MergeFrom(other *ConfigMetadata) {
 	if md.Items == nil {
 		md.Items = other.Items.Clone()
 	}
+	if md.Contains == nil {
+		md.Contains = other.Contains.Clone()
+	}
 
 	// *int
 	if md.MinProperties == nil {
@@ -309,6 +313,11 @@ func (md *ConfigMetadata) Validate() error {
 	}
 	if md.Items != nil {
 		if err := md.Items.Validate(); err != nil {
+			errs = errors.Join(errs, err)
+		}
+	}
+	if md.Contains != nil {
+		if err := md.Contains.Validate(); err != nil {
 			errs = errors.Join(errs, err)
 		}
 	}

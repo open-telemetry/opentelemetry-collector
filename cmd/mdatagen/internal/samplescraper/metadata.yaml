@@ -53,10 +53,23 @@ config:
       default: "test_job"
       go_struct:
         custom_validator:
+    tags:
+      description: Tags for the scraper instance.
+      type: array
+      items:
+        type: string
+      uniqueItems: true
+      contains:
+        type: string
+        enum: [production, staging]
+      default:
+        - production
     targets:
       description: List of targets to scrape metrics from.
       x-pointer: true
       type: array
+      minItems: 1
+      maxItems: 100
       items:
         type: object
         properties:

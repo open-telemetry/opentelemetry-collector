@@ -349,6 +349,10 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 		imports["slices"] = true
 	}
 
+	if md.Contains != nil && len(md.Contains.Enum) > 0 {
+		imports["slices"] = true
+	}
+
 	for _, prop := range md.Properties {
 		if err := collectImports(prop, imports, rootPackage, componentPackage); err != nil {
 			return err
@@ -408,7 +412,9 @@ func hasValidators(md *ConfigMetadata) bool {
 	return md.GoStruct.CustomValidator != nil || // custom validation
 		len(md.Required) > 0 || // required validation
 		md.MinLength != nil || md.MaxLength != nil || md.Pattern != "" || // string validation
-		md.Minimum != nil || md.Maximum != nil || md.ExclusiveMinimum != nil || md.ExclusiveMaximum != nil // numeric validation
+		md.Minimum != nil || md.Maximum != nil || md.ExclusiveMinimum != nil || md.ExclusiveMaximum != nil || // numeric validation
+		md.MinItems != nil || md.MaxItems != nil || md.UniqueItems || // array validation
+		(md.Contains != nil && len(md.Contains.Enum) > 0) // contains validation
 }
 
 // FormatTypeName resolves a reference string to a Go type expression using GoTypeRef.
@@ -519,12 +525,19 @@ type ValidationRules struct {
 	ExclusiveMinimum *float64
 	ExclusiveMaximum *float64
 	Enum             []any
+	MinItems         *int
+	MaxItems         *int
+	UniqueItems      bool
+	ItemGoType       string
+	ContainsEnum     []any
+	ItemFieldType    string
 }
 
 func (vr *ValidationRules) HasValueRule() bool {
 	return vr.MaxLength != nil || vr.MinLength != nil || vr.Pattern != nil ||
 		vr.Minimum != nil || vr.Maximum != nil || vr.ExclusiveMinimum != nil || vr.ExclusiveMaximum != nil ||
-		len(vr.Enum) > 0
+		len(vr.Enum) > 0 ||
+		vr.MinItems != nil || vr.MaxItems != nil || vr.UniqueItems || len(vr.ContainsEnum) > 0
 }
 
 func (vr *ValidationRules) Enabled() bool {
@@ -554,6 +567,19 @@ func collectValidators(md *ConfigMetadata, validators *[]Validator) {
 			ExclusiveMinimum: prop.ExclusiveMinimum,
 			ExclusiveMaximum: prop.ExclusiveMaximum,
 			Enum:             prop.Enum,
+			MinItems:         prop.MinItems,
+			MaxItems:         prop.MaxItems,
+			UniqueItems:      prop.UniqueItems,
+		}
+
+		if prop.UniqueItems && prop.Items != nil {
+			rules.ItemGoType = schemaTypeToGoType(prop.Items.Type)
+		}
+		if prop.Contains != nil && len(prop.Contains.Enum) > 0 {
+			rules.ContainsEnum = prop.Contains.Enum
+			if prop.Items != nil {
+				rules.ItemFieldType = prop.Items.Type
+			}
 		}
 
 		rules.Required = slices.Contains(md.Required, propName)
@@ -609,6 +635,13 @@ func resolveType(md *ConfigMetadata) string {
 	default:
 		return md.Type
 	}
+}
+
+func schemaTypeToGoType(schemaType string) string {
+	if goType, ok := primitiveSchemaGoTypes[schemaType]; ok {
+		return goType
+	}
+	return "any"
 }
 
 func generateValidatorName(propName string, desc *CustomValidatorConfig) string {

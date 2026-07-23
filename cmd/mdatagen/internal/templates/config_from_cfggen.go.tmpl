@@ -195,6 +195,48 @@ import (
     }
 {{- end }}
 
+{{ define "minItemsValidator" -}}
+    {{ $minItems := .Rules.MinItems -}}
+    if len({{ template "fieldValue" . }}) < {{ $minItems }} {
+        err = errors.Join(err, errors.New("{{ .FieldName }} must have at least {{ $minItems }} items"))
+    }
+{{- end }}
+
+{{ define "maxItemsValidator" -}}
+    {{ $maxItems := .Rules.MaxItems -}}
+    if len({{ template "fieldValue" . }}) > {{ $maxItems }} {
+        err = errors.Join(err, errors.New("{{ .FieldName }} must have at most {{ $maxItems }} items"))
+    }
+{{- end }}
+
+{{ define "uniqueItemsValidator" -}}
+    {
+        seen := make(map[{{ .Rules.ItemGoType }}]struct{})
+        for _, v := range {{ template "fieldValue" . }} {
+            if _, exists := seen[v]; exists {
+                err = errors.Join(err, errors.New("{{ .FieldName }} must not contain duplicate items"))
+                break
+            }
+            seen[v] = struct{}{}
+        }
+    }
+{{- end }}
+
+{{ define "containsEnumValidator" -}}
+    {
+        found := false
+        for _, v := range {{ template "fieldValue" . }} {
+            if slices.Contains({{ formatEnumSlice .Rules.ContainsEnum .Rules.ItemFieldType }}, v) {
+                found = true
+                break
+            }
+        }
+        if !found {
+            err = errors.Join(err, errors.New("{{ .FieldName }} must contain at least one of {{ formatEnumValues .Rules.ContainsEnum }}"))
+        }
+    }
+{{- end }}
+
 {{ define "valueValidators" }}
     {{ if .Rules.MaxLength }}{{ template "maxLengthValidator" . }}{{ end }}
     {{ if .Rules.MinLength }}{{ template "minLengthValidator" . }}{{ end }}
@@ -204,17 +246,23 @@ import (
     {{ if .Rules.ExclusiveMinimum }}{{ template "exclusiveMinimumValidator" . }}{{ end }}
     {{ if .Rules.ExclusiveMaximum }}{{ template "exclusiveMaximumValidator" . }}{{ end }}
     {{ if .Rules.Enum }}{{ template "enumValidator" . }}{{ end }}
+    {{ if .Rules.MinItems }}{{ template "minItemsValidator" . }}{{ end }}
+    {{ if .Rules.MaxItems }}{{ template "maxItemsValidator" . }}{{ end }}
+    {{ if .Rules.UniqueItems }}{{ template "uniqueItemsValidator" . }}{{ end }}
+    {{ if .Rules.ContainsEnum }}{{ template "containsEnumValidator" . }}{{ end }}
 {{ end -}}
 
 {{ define "validation" }}
 
     {{ if .Rules.Required -}}
         {{ template "requiredValidator" . }}
-    {{- end -}}
+    {{ end -}}
     {{- if .Rules.HasValueRule }}
         {{- $name := .FieldName | publicVar -}}
-        {{- if .IsPointer }}if c.{{ $name }} != nil { {{ end -}}
-        {{- if .IsOptional }}if c.{{ $name }}.HasValue() { {{ end -}}
+        {{- if .IsPointer }}
+        if c.{{ $name }} != nil { {{ end -}}
+        {{- if .IsOptional }}
+        if c.{{ $name }}.HasValue() { {{ end -}}
             {{ template "valueValidators" . }}
         {{- if or .IsPointer .IsOptional }}}{{ end -}}
     {{- end -}}

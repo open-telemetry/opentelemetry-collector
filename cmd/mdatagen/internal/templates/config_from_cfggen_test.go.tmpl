@@ -121,6 +121,63 @@ require.NotNil(t, cfg)
             require.ErrorContains(t, cfg.Validate(), "{{ $validator.FieldName }} must be one of")
             }
         {{ end }}
+        {{- if $validator.Rules.MinItems }}
+            func TestConfigValidate_MinItems{{ $validator.FieldName | publicVar }}(t *testing.T) {
+            cfg := createDefaultConfig().(*Config)
+            {{- $fieldName := $validator.FieldName | publicVar }}
+            {{- if $validator.IsPointer }}
+                *cfg.{{ $fieldName }} = (*cfg.{{ $fieldName }})[:0]
+            {{- else }}
+                cfg.{{ $fieldName }} = cfg.{{ $fieldName }}[:0]
+            {{- end }}
+
+            require.ErrorContains(t, cfg.Validate(), "{{ $validator.FieldName }} must have at least {{ $validator.Rules.MinItems }} items")
+            }
+        {{ end }}
+        {{- if $validator.Rules.MaxItems }}
+            func TestConfigValidate_MaxItems{{ $validator.FieldName | publicVar }}(t *testing.T) {
+            cfg := createDefaultConfig().(*Config)
+            {{- $fieldName := $validator.FieldName | publicVar }}
+            {{- $maxItems := $validator.Rules.MaxItems }}
+            {{- if $validator.IsPointer }}
+                for len(*cfg.{{ $fieldName }}) <= {{ $maxItems }} {
+                    *cfg.{{ $fieldName }} = append(*cfg.{{ $fieldName }}, (*cfg.{{ $fieldName }})[0])
+                }
+            {{- else }}
+                for len(cfg.{{ $fieldName }}) <= {{ $maxItems }} {
+                    cfg.{{ $fieldName }} = append(cfg.{{ $fieldName }}, cfg.{{ $fieldName }}[0])
+                }
+            {{- end }}
+
+            require.ErrorContains(t, cfg.Validate(), "{{ $validator.FieldName }} must have at most {{ $maxItems }} items")
+            }
+        {{ end }}
+        {{- if $validator.Rules.UniqueItems }}
+            func TestConfigValidate_UniqueItems{{ $validator.FieldName | publicVar }}(t *testing.T) {
+            cfg := createDefaultConfig().(*Config)
+            {{- $fieldName := $validator.FieldName | publicVar }}
+            {{- if $validator.IsPointer }}
+                *cfg.{{ $fieldName }} = append(*cfg.{{ $fieldName }}, (*cfg.{{ $fieldName }})[0])
+            {{- else }}
+                cfg.{{ $fieldName }} = append(cfg.{{ $fieldName }}, cfg.{{ $fieldName }}[0])
+            {{- end }}
+
+            require.ErrorContains(t, cfg.Validate(), "{{ $validator.FieldName }} must not contain duplicate items")
+            }
+        {{ end }}
+        {{- if $validator.Rules.ContainsEnum }}
+            func TestConfigValidate_ContainsEnum{{ $validator.FieldName | publicVar }}(t *testing.T) {
+            cfg := createDefaultConfig().(*Config)
+            {{- $fieldName := $validator.FieldName | publicVar }}
+            {{- if $validator.IsPointer }}
+                *cfg.{{ $fieldName }} = (*cfg.{{ $fieldName }})[:0]
+            {{- else }}
+                cfg.{{ $fieldName }} = cfg.{{ $fieldName }}[:0]
+            {{- end }}
+
+            require.ErrorContains(t, cfg.Validate(), "{{ $validator.FieldName }} must contain at least one of")
+            }
+        {{ end }}
     {{- end }}
 {{- end }}
 {{- end }}
@@ -228,6 +285,63 @@ require.NotNil(t, cfg)
                 cfg.{{ $validator.FieldName | publicVar }} = {{ invalidTestValue $validator.FieldType }}
 
                 require.ErrorContains(t, cfg.Validate(), "{{ $validator.FieldName }} must be one of")
+                }
+            {{ end }}
+            {{- if $validator.Rules.MinItems }}
+                func Test{{ $defName | publicVar }}Validate_MinItems{{ $validator.FieldName | publicVar }}(t *testing.T) {
+                cfg := NewDefault{{ $defName | publicVar }}()
+                {{- $fieldName := $validator.FieldName | publicVar }}
+                {{- if $validator.IsPointer }}
+                    *cfg.{{ $fieldName }} = (*cfg.{{ $fieldName }})[:0]
+                {{- else }}
+                    cfg.{{ $fieldName }} = cfg.{{ $fieldName }}[:0]
+                {{- end }}
+
+                require.ErrorContains(t, cfg.Validate(), "{{ $validator.FieldName }} must have at least {{ $validator.Rules.MinItems }} items")
+                }
+            {{ end }}
+            {{- if $validator.Rules.MaxItems }}
+                func Test{{ $defName | publicVar }}Validate_MaxItems{{ $validator.FieldName | publicVar }}(t *testing.T) {
+                cfg := NewDefault{{ $defName | publicVar }}()
+                {{- $fieldName := $validator.FieldName | publicVar }}
+                {{- $maxItems := $validator.Rules.MaxItems }}
+                {{- if $validator.IsPointer }}
+                    for len(*cfg.{{ $fieldName }}) <= {{ $maxItems }} {
+                        *cfg.{{ $fieldName }} = append(*cfg.{{ $fieldName }}, (*cfg.{{ $fieldName }})[0])
+                    }
+                {{- else }}
+                    for len(cfg.{{ $fieldName }}) <= {{ $maxItems }} {
+                        cfg.{{ $fieldName }} = append(cfg.{{ $fieldName }}, cfg.{{ $fieldName }}[0])
+                    }
+                {{- end }}
+
+                require.ErrorContains(t, cfg.Validate(), "{{ $validator.FieldName }} must have at most {{ $maxItems }} items")
+                }
+            {{ end }}
+            {{- if $validator.Rules.UniqueItems }}
+                func Test{{ $defName | publicVar }}Validate_UniqueItems{{ $validator.FieldName | publicVar }}(t *testing.T) {
+                cfg := NewDefault{{ $defName | publicVar }}()
+                {{- $fieldName := $validator.FieldName | publicVar }}
+                {{- if $validator.IsPointer }}
+                    *cfg.{{ $fieldName }} = append(*cfg.{{ $fieldName }}, (*cfg.{{ $fieldName }})[0])
+                {{- else }}
+                    cfg.{{ $fieldName }} = append(cfg.{{ $fieldName }}, cfg.{{ $fieldName }}[0])
+                {{- end }}
+
+                require.ErrorContains(t, cfg.Validate(), "{{ $validator.FieldName }} must not contain duplicate items")
+                }
+            {{ end }}
+            {{- if $validator.Rules.ContainsEnum }}
+                func Test{{ $defName | publicVar }}Validate_ContainsEnum{{ $validator.FieldName | publicVar }}(t *testing.T) {
+                cfg := NewDefault{{ $defName | publicVar }}()
+                {{- $fieldName := $validator.FieldName | publicVar }}
+                {{- if $validator.IsPointer }}
+                    *cfg.{{ $fieldName }} = (*cfg.{{ $fieldName }})[:0]
+                {{- else }}
+                    cfg.{{ $fieldName }} = cfg.{{ $fieldName }}[:0]
+                {{- end }}
+
+                require.ErrorContains(t, cfg.Validate(), "{{ $validator.FieldName }} must contain at least one of")
                 }
             {{ end }}
         {{- end }}
