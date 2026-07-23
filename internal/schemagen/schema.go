@@ -94,6 +94,9 @@ func convertMetadataToJSONSchema(md *ConfigMetadata, jsonSchema *JSONSchema) *JS
 		jsonSchema.MaxLength = md.MaxLength
 	}
 	jsonSchema.UniqueItems = md.UniqueItems
+	if md.Contains != nil {
+		jsonSchema.Contains = convertMetadataToJSONSchema(md.Contains, &JSONSchema{})
+	}
 
 	if md.Minimum != nil {
 		jsonSchema.Minimum = md.Minimum

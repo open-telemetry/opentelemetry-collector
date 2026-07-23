@@ -34,11 +34,41 @@ func TestConfigValidate_InvalidEnumLogLevel(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "log_level must be one of")
 }
 
+func TestConfigValidate_UniqueItemsTags(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Tags = append(cfg.Tags, cfg.Tags[0])
+
+	require.ErrorContains(t, cfg.Validate(), "tags must not contain duplicate items")
+}
+
+func TestConfigValidate_ContainsEnumTags(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Tags = cfg.Tags[:0]
+
+	require.ErrorContains(t, cfg.Validate(), "tags must contain at least one of")
+}
+
 func TestConfigValidate_RequiredTargets(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Targets = nil
 
 	require.ErrorContains(t, cfg.Validate(), "targets is required")
+}
+
+func TestConfigValidate_MinItemsTargets(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	*cfg.Targets = (*cfg.Targets)[:0]
+
+	require.ErrorContains(t, cfg.Validate(), "targets must have at least 1 items")
+}
+
+func TestConfigValidate_MaxItemsTargets(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	for len(*cfg.Targets) <= 100 {
+		*cfg.Targets = append(*cfg.Targets, (*cfg.Targets)[0])
+	}
+
+	require.ErrorContains(t, cfg.Validate(), "targets must have at most 100 items")
 }
 
 func TestSamplePkgValidate_DefaultValid(t *testing.T) {
