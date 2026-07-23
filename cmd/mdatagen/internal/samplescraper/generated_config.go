@@ -4,15 +4,14 @@ package samplescraper
 
 import (
 	"errors"
-	"regexp"
-	"slices"
-	"time"
-
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplepkg"
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
+	"regexp"
+	"slices"
+	"time"
 )
 
 type SamplePkg = samplepkg.SampleConfig
@@ -81,6 +80,8 @@ type Config struct {
 	JobName string `mapstructure:"job_name"`
 	// Logging level for the scraper.
 	LogLevel string `mapstructure:"log_level"`
+	// Tags for the scraper instance.
+	Tags []string `mapstructure:"tags"`
 	// List of targets to scrape metrics from.
 	Targets *[]TargetsItem `mapstructure:"targets"`
 	// prevent unkeyed literal initialization
@@ -94,6 +95,7 @@ func (c *Config) Validate() error {
 	if c.JobName == "" {
 		err = errors.Join(err, errors.New("job_name is required"))
 	}
+
 	if len(c.JobName) > 255 {
 		err = errors.Join(err, errors.New("job_name exceeds maximum length of 255"))
 	}
@@ -112,8 +114,42 @@ func (c *Config) Validate() error {
 		err = errors.Join(err, errors.New("log_level must be one of [debug, info, warn, error]"))
 	}
 
+	{
+		seen := make(map[string]struct{})
+		for _, v := range c.Tags {
+			if _, exists := seen[v]; exists {
+				err = errors.Join(err, errors.New("tags must not contain duplicate items"))
+				break
+			}
+			seen[v] = struct{}{}
+		}
+	}
+	{
+		found := false
+		for _, v := range c.Tags {
+			if slices.Contains([]string{"production", "staging"}, v) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			err = errors.Join(err, errors.New("tags must contain at least one of [production, staging]"))
+		}
+	}
+
 	if c.Targets == nil || len(*c.Targets) == 0 {
 		err = errors.Join(err, errors.New("targets is required"))
+	}
+
+	if c.Targets != nil {
+
+		if len(*c.Targets) < 1 {
+			err = errors.Join(err, errors.New("targets must have at least 1 items"))
+		}
+		if len(*c.Targets) > 100 {
+			err = errors.Join(err, errors.New("targets must have at most 100 items"))
+		}
+
 	}
 
 	return err
@@ -125,6 +161,7 @@ func createDefaultConfig() component.Config {
 		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		JobName:              "test_job",
 		LogLevel:             "info",
+		Tags:                 []string{"production"},
 		Targets:              &[]TargetsItem{NewDefaultTargetsItem()},
 	}
 }
