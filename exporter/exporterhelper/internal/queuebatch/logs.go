@@ -38,14 +38,14 @@ var (
 )
 
 type logsRequest struct {
-	ld         plog.Logs
-	cachedSize int
+	ld        plog.Logs
+	sizeCache request.SizeCache
 }
 
 func newLogsRequest(ld plog.Logs) request.Request {
 	return &logsRequest{
-		ld:         ld,
-		cachedSize: -1,
+		ld:        ld,
+		sizeCache: request.NewSizeCache(),
 	}
 }
 
@@ -91,19 +91,29 @@ func (req *logsRequest) ItemsCount() int {
 	return req.ld.LogRecordCount()
 }
 
-func (req *logsRequest) size(sizer sizer.LogsSizer) int {
-	if req.cachedSize == -1 {
-		req.cachedSize = sizer.LogsSize(req.ld)
+func (req *logsRequest) size(sizer sizer.LogsSizer, sizeType request.SizerType) int {
+	if sizeType == request.SizerTypeBytes {
+		if size, ok := req.sizeCache.Get(); ok {
+			return size
+		}
 	}
-	return req.cachedSize
+	size := sizer.LogsSize(req.ld)
+	if sizeType == request.SizerTypeBytes {
+		req.sizeCache.Set(size)
+	}
+	return size
 }
 
-func (req *logsRequest) setCachedSize(size int) {
-	req.cachedSize = size
+func (req *logsRequest) setCachedSize(size int, sizeType request.SizerType) {
+	if sizeType == request.SizerTypeBytes {
+		req.sizeCache.Set(size)
+		return
+	}
+	req.sizeCache.Invalidate()
 }
 
 func (req *logsRequest) BytesSize() int {
-	return logsMarshaler.LogsSize(req.ld)
+	return req.size(&sizer.LogsBytesSizer{}, request.SizerTypeBytes)
 }
 
 // RequestConsumeFromLogs returns a RequestConsumeFunc that consumes plog.Logs.

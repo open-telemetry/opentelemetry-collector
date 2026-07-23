@@ -33,7 +33,7 @@ func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt expor
 		if !ok {
 			return nil, errors.New("invalid input type")
 		}
-		err := req2.mergeTo(req, sz)
+		err := req2.mergeTo(req, sz, szt)
 		if err != nil {
 			return nil, fmt.Errorf("failed merging profiles; %w", err)
 		}
@@ -43,25 +43,25 @@ func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt expor
 	if maxSize == 0 {
 		return []Request{req}, nil
 	}
-	return req.split(maxSize, sz)
+	return req.split(maxSize, sz, szt)
 }
 
-func (req *profilesRequest) mergeTo(dst *profilesRequest, sz sizer.ProfilesSizer) error {
+func (req *profilesRequest) mergeTo(dst *profilesRequest, sz sizer.ProfilesSizer, sizeType exporterhelper.RequestSizerType) error {
 	if sz != nil {
-		dst.setCachedSize(dst.size(sz) + req.size(sz))
-		req.setCachedSize(0)
+		dst.setCachedSize(dst.size(sz, sizeType)+req.size(sz, sizeType), sizeType)
+		req.setCachedSize(0, sizeType)
 	}
 	return req.pd.MergeTo(dst.pd)
 }
 
-func (req *profilesRequest) split(maxSize int, sz sizer.ProfilesSizer) ([]Request, error) {
+func (req *profilesRequest) split(maxSize int, sz sizer.ProfilesSizer, sizeType exporterhelper.RequestSizerType) ([]Request, error) {
 	var res []Request
-	for req.size(sz) > maxSize {
+	for req.size(sz, sizeType) > maxSize {
 		pd, rmSize := extractProfiles(req.pd, maxSize, sz)
 		if pd.SampleCount() == 0 {
 			return res, fmt.Errorf("one sample size is greater than max size, dropping items: %d", req.pd.SampleCount())
 		}
-		req.setCachedSize(req.size(sz) - rmSize)
+		req.setCachedSize(req.size(sz, sizeType)-rmSize, sizeType)
 		res = append(res, newProfilesRequest(pd))
 	}
 

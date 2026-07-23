@@ -338,6 +338,29 @@ func TestTracesMergeSplitUnknownSizerType(t *testing.T) {
 	require.EqualError(t, err, "unknown sizer type")
 }
 
+func TestTracesRequestBytesSizeUsesByteCacheAfterItemSizing(t *testing.T) {
+	req := newTracesRequest(testdata.GenerateTraces(7)).(*tracesRequest)
+
+	assert.Equal(t, req.ItemsCount(), req.size(&sizer.TracesCountSizer{}, request.SizerTypeItems))
+
+	expected := tracesMarshaler.TracesSize(req.td)
+	assert.Equal(t, expected, req.BytesSize())
+	assert.Equal(t, expected, req.BytesSize())
+}
+
+func TestTracesRequestBytesSizeInvalidatedAfterItemMerge(t *testing.T) {
+	req := newTracesRequest(testdata.GenerateTraces(3)).(*tracesRequest)
+	original := req.BytesSize()
+
+	res, err := req.MergeSplit(context.Background(), 0, request.SizerTypeItems, newTracesRequest(testdata.GenerateTraces(2)))
+	require.NoError(t, err)
+
+	merged := res[0].(*tracesRequest)
+	expected := tracesMarshaler.TracesSize(merged.td)
+	assert.NotEqual(t, expected, original)
+	assert.Equal(t, expected, merged.BytesSize())
+}
+
 func BenchmarkSplittingBasedOnItemCountManySmallTraces(b *testing.B) {
 	testutil.SkipGCHeavyBench(b)
 	// All requests merge into a single batch.
@@ -376,6 +399,47 @@ func BenchmarkSplittingBasedOnItemCountHugeTraces(b *testing.B) {
 		merged := []request.Request{newTracesRequest(testdata.GenerateTraces(0))}
 		lr2 := newTracesRequest(testdata.GenerateTraces(100000))
 		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, request.SizerTypeItems, lr2)
+		merged = append(merged[0:len(merged)-1], res...)
+		assert.Len(b, merged, 10)
+	}
+}
+
+func BenchmarkSplittingBasedOnByteSizeManySmallTraces(b *testing.B) {
+	testutil.SkipGCHeavyBench(b)
+	b.ReportAllocs()
+	for b.Loop() {
+		merged := []request.Request{newTracesRequest(testdata.GenerateTraces(10))}
+		for range 1000 {
+			lr2 := newTracesRequest(testdata.GenerateTraces(10))
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), tracesMarshaler.TracesSize(testdata.GenerateTraces(10010)), request.SizerTypeBytes, lr2)
+			merged = append(merged[0:len(merged)-1], res...)
+		}
+		assert.Len(b, merged, 1)
+	}
+}
+
+func BenchmarkSplittingBasedOnByteSizeManyTracesSlightlyAboveLimit(b *testing.B) {
+	testutil.SkipGCHeavyBench(b)
+	b.ReportAllocs()
+	for b.Loop() {
+		merged := []request.Request{newTracesRequest(testdata.GenerateTraces(0))}
+		for range 10 {
+			lr2 := newTracesRequest(testdata.GenerateTraces(10001))
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), tracesMarshaler.TracesSize(testdata.GenerateTraces(10000)), request.SizerTypeBytes, lr2)
+			assert.Len(b, res, 2)
+			merged = append(merged[0:len(merged)-1], res...)
+		}
+		assert.Len(b, merged, 11)
+	}
+}
+
+func BenchmarkSplittingBasedOnByteSizeHugeTraces(b *testing.B) {
+	testutil.SkipGCHeavyBench(b)
+	b.ReportAllocs()
+	for b.Loop() {
+		merged := []request.Request{newTracesRequest(testdata.GenerateTraces(0))}
+		lr2 := newTracesRequest(testdata.GenerateTraces(100000))
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), tracesMarshaler.TracesSize(testdata.GenerateTraces(10010)), request.SizerTypeBytes, lr2)
 		merged = append(merged[0:len(merged)-1], res...)
 		assert.Len(b, merged, 10)
 	}

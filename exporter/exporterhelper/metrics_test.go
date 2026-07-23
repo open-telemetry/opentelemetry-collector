@@ -406,3 +406,28 @@ func checkWrapSpanForMetrics(t *testing.T, sr *tracetest.SpanRecorder, tracer tr
 		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.ItemsFailed, Value: attribute.Int64Value(failedToSendMetricPoints)}, "SpanData %v", sd)
 	}
 }
+
+func BenchmarkMetricsBytesQueueBatchPipeline(b *testing.B) {
+	md := testdata.GenerateMetrics(1000)
+	exp, err := NewMetrics(context.Background(), exportertest.NewNopSettings(exportertest.NopType), struct{}{}, consumer.ConsumeMetricsFunc(func(context.Context, pmetric.Metrics) error {
+		return nil
+	}), WithQueue(byteQueueBatchConfig()))
+	if err != nil {
+		b.Fatal(err)
+	}
+	if err := exp.Start(context.Background(), componenttest.NewNopHost()); err != nil {
+		b.Fatal(err)
+	}
+	b.Cleanup(func() {
+		if err := exp.Shutdown(context.Background()); err != nil {
+			b.Fatal(err)
+		}
+	})
+
+	b.ReportAllocs()
+	for b.Loop() {
+		if err := exp.ConsumeMetrics(context.Background(), md); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
