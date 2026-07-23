@@ -44,32 +44,23 @@ const (
 	fakeMetricsParentSpanName = "fake_metrics_parent_span_name"
 )
 
-var (
-	fakeMetricsName   = component.MustNewIDWithName("fake_metrics_exporter", "with_name")
-	fakeMetricsConfig = struct{}{}
-)
-
-func TestMetrics_NilConfig(t *testing.T) {
-	me, err := NewMetrics(context.Background(), exportertest.NewNopSettings(exportertest.NopType), nil, newPushMetricsData(nil))
-	require.Nil(t, me)
-	require.Equal(t, errNilConfig, err)
-}
+var fakeMetricsName = component.MustNewIDWithName("fake_metrics_exporter", "with_name")
 
 func TestMetrics_NilLogger(t *testing.T) {
-	me, err := NewMetrics(context.Background(), exporter.Settings{}, &fakeMetricsConfig, newPushMetricsData(nil))
+	me, err := NewMetrics(context.Background(), exporter.Settings{}, newPushMetricsData(nil))
 	require.Nil(t, me)
 	require.Equal(t, errNilLogger, err)
 }
 
 func TestMetrics_NilPushMetricsData(t *testing.T) {
-	me, err := NewMetrics(context.Background(), exportertest.NewNopSettings(exportertest.NopType), &fakeMetricsConfig, nil)
+	me, err := NewMetrics(context.Background(), exportertest.NewNopSettings(exportertest.NopType), nil)
 	require.Nil(t, me)
 	require.Equal(t, errNilPushMetrics, err)
 }
 
 func TestMetrics_Default(t *testing.T) {
 	md := pmetric.NewMetrics()
-	me, err := NewMetrics(context.Background(), exportertest.NewNopSettings(exportertest.NopType), &fakeMetricsConfig, newPushMetricsData(nil))
+	me, err := NewMetrics(context.Background(), exportertest.NewNopSettings(exportertest.NopType), newPushMetricsData(nil))
 	require.NoError(t, err)
 	assert.NotNil(t, me)
 
@@ -81,7 +72,7 @@ func TestMetrics_Default(t *testing.T) {
 
 func TestMetrics_WithCapabilities(t *testing.T) {
 	capabilities := consumer.Capabilities{MutatesData: true}
-	me, err := NewMetrics(context.Background(), exportertest.NewNopSettings(exportertest.NopType), &fakeMetricsConfig, newPushMetricsData(nil), WithCapabilities(capabilities))
+	me, err := NewMetrics(context.Background(), exportertest.NewNopSettings(exportertest.NopType), newPushMetricsData(nil), WithCapabilities(capabilities))
 	require.NoError(t, err)
 	assert.NotNil(t, me)
 
@@ -91,7 +82,7 @@ func TestMetrics_WithCapabilities(t *testing.T) {
 func TestMetrics_Default_ReturnError(t *testing.T) {
 	md := pmetric.NewMetrics()
 	want := errors.New("my_error")
-	me, err := NewMetrics(context.Background(), exportertest.NewNopSettings(exportertest.NopType), &fakeMetricsConfig, newPushMetricsData(want))
+	me, err := NewMetrics(context.Background(), exportertest.NewNopSettings(exportertest.NopType), newPushMetricsData(want))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 	require.Equal(t, want, me.ConsumeMetrics(context.Background(), md))
@@ -140,7 +131,7 @@ func TestMetrics_WithPersistentQueue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ms := consumertest.MetricsSink{}
-			te, err := NewMetrics(context.Background(), set, &fakeMetricsConfig, ms.ConsumeMetrics, WithQueue(configoptional.Some(qCfg)))
+			te, err := NewMetrics(context.Background(), set, ms.ConsumeMetrics, WithQueue(configoptional.Some(qCfg)))
 			require.NoError(t, err)
 			require.NoError(t, te.Start(context.Background(), host))
 			t.Cleanup(func() { require.NoError(t, te.Shutdown(context.Background())) })
@@ -166,7 +157,7 @@ func TestMetrics_WithRecordMetrics(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	me, err := NewMetrics(context.Background(), exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeMetricsConfig, newPushMetricsData(nil))
+	me, err := NewMetrics(context.Background(), exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, newPushMetricsData(nil))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 
@@ -181,7 +172,7 @@ func TestMetrics_WithAttrs(t *testing.T) {
 		attribute.Bool("test", true),
 		attribute.String("example", "value"),
 	}
-	me, err := NewMetrics(context.Background(), exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeMetricsConfig, newPushMetricsData(nil), WithAttrs(attrs...))
+	me, err := NewMetrics(context.Background(), exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, newPushMetricsData(nil), WithAttrs(attrs...))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 
@@ -192,7 +183,7 @@ func TestMetrics_pMetricModifiedDownStream_WithRecordMetrics(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	me, err := NewMetrics(context.Background(), exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeMetricsConfig, newPushMetricsDataModifiedDownstream(nil), WithCapabilities(consumer.Capabilities{MutatesData: true}))
+	me, err := NewMetrics(context.Background(), exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, newPushMetricsDataModifiedDownstream(nil), WithCapabilities(consumer.Capabilities{MutatesData: true}))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 	md := testdata.GenerateMetrics(2)
@@ -228,7 +219,7 @@ func TestMetrics_WithRecordMetrics_ReturnError(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	me, err := NewMetrics(context.Background(), exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeMetricsConfig, newPushMetricsData(want))
+	me, err := NewMetrics(context.Background(), exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, newPushMetricsData(want))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 
@@ -256,7 +247,7 @@ func TestMetrics_WithSpan(t *testing.T) {
 	otel.SetTracerProvider(set.TracerProvider)
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
-	me, err := NewMetrics(context.Background(), set, &fakeMetricsConfig, newPushMetricsData(nil))
+	me, err := NewMetrics(context.Background(), set, newPushMetricsData(nil))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 	checkWrapSpanForMetrics(t, sr, set.TracerProvider.Tracer("test"), me, nil)
@@ -283,7 +274,7 @@ func TestMetrics_WithSpan_ReturnError(t *testing.T) {
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
 	want := errors.New("my_error")
-	me, err := NewMetrics(context.Background(), set, &fakeMetricsConfig, newPushMetricsData(want))
+	me, err := NewMetrics(context.Background(), set, newPushMetricsData(want))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 	checkWrapSpanForMetrics(t, sr, set.TracerProvider.Tracer("test"), me, want)
@@ -307,7 +298,7 @@ func TestMetrics_WithShutdown(t *testing.T) {
 	shutdownCalled := false
 	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
-	me, err := NewMetrics(context.Background(), exportertest.NewNopSettings(exportertest.NopType), &fakeMetricsConfig, newPushMetricsData(nil), WithShutdown(shutdown))
+	me, err := NewMetrics(context.Background(), exportertest.NewNopSettings(exportertest.NopType), newPushMetricsData(nil), WithShutdown(shutdown))
 	assert.NotNil(t, me)
 	assert.NoError(t, err)
 
@@ -320,7 +311,7 @@ func TestMetrics_WithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	shutdownErr := func(context.Context) error { return want }
 
-	me, err := NewMetrics(context.Background(), exportertest.NewNopSettings(exportertest.NopType), &fakeMetricsConfig, newPushMetricsData(nil), WithShutdown(shutdownErr))
+	me, err := NewMetrics(context.Background(), exportertest.NewNopSettings(exportertest.NopType), newPushMetricsData(nil), WithShutdown(shutdownErr))
 	assert.NotNil(t, me)
 	assert.NoError(t, err)
 
