@@ -537,12 +537,19 @@ func (rl AttributeRequirementLevel) String() string {
 	return ""
 }
 
-func (mn AttributeName) Render() (string, error) {
-	return helpers.FormatIdentifier(string(mn), true)
+func (an AttributeName) EmittedName() string {
+	if emittedName, _, found := strings.Cut(string(an), "@"); found {
+		return emittedName
+	}
+	return string(an)
 }
 
-func (mn AttributeName) RenderUnexported() (string, error) {
-	return helpers.FormatIdentifier(string(mn), false)
+func (an AttributeName) Render() (string, error) {
+	return helpers.FormatIdentifier(string(an), true)
+}
+
+func (an AttributeName) RenderUnexported() (string, error) {
+	return helpers.FormatIdentifier(string(an), false)
 }
 
 // ValueType defines an attribute value type.
