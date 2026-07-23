@@ -91,12 +91,12 @@
                     "type": "string",
                     "enum": [
                       "cpu.logical_number",
-                      "state"
+                      "cpu.mode"
                     ]
                   },
                   "default": [
                     "cpu.logical_number",
-                    "state"
+                    "cpu.mode"
                   ]
                 },
                 "enabled": {

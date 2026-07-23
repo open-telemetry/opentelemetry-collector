@@ -533,6 +533,7 @@
       "validatable",
       "vanityurl",
       "vmmetrics",
+      "winio",
       "withauth",
       "xconfighttp",
       "xconfmap",
