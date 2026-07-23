@@ -39,6 +39,11 @@ config:
       embed: true
       go_struct:
         anonymous: true
+    component:
+      type: component_id
+      description: Identifies the scraper, used for telemetry and logging.
+      go_struct:
+        field_name: ComponentID
     job_name:
       description: Name of the scrape job, used to identify the source in telemetry.
       type: string
@@ -56,8 +61,7 @@ config:
         type: object
         properties:
           interval:
-            type: string
-            format: duration
+            type: duration
             x-optional: true
             default: 10s
           labels:
@@ -83,6 +87,11 @@ config:
         required: [labels]
       default:
         - {} # one item with default values
+    log_level:
+      description: Logging level for the scraper.
+      type: string
+      enum: [debug, info, warn, error]
+      default: info
   required: [job_name, targets]
 
 resource_attributes:

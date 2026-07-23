@@ -72,6 +72,30 @@ Single line log message key1=value1 key2=value2
 `,
 		},
 		{
+			name: "two scopes under one resource",
+			input: func() plog.Logs {
+				logs := plog.NewLogs()
+				resourceLogs := logs.ResourceLogs().AppendEmpty()
+				scopeLogs0 := resourceLogs.ScopeLogs().AppendEmpty()
+				scopeLogs0.Scope().SetName("scope-zero")
+				logRecord0 := scopeLogs0.LogRecords().AppendEmpty()
+				logRecord0.Body().SetStr("first message")
+				logRecord0.Attributes().PutStr("key", "value")
+				scopeLogs1 := resourceLogs.ScopeLogs().AppendEmpty()
+				scopeLogs1.Scope().SetName("scope-one")
+				logRecord1 := scopeLogs1.LogRecords().AppendEmpty()
+				logRecord1.Body().SetStr("second message")
+				logRecord1.Attributes().PutStr("key", "value")
+				return logs
+			}(),
+			expected: `ResourceLog #0
+ScopeLog #0 scope-zero
+first message key=value
+ScopeLog #1 scope-one
+second message key=value
+`,
+		},
+		{
 			name: "multiline log",
 			input: func() plog.Logs {
 				logs := plog.NewLogs()

@@ -57,4 +57,6 @@ if [ -e "$input_dir"/"$package"/apidiff.state ]; then
       echo "$changes"
     fi
   fi
+else
+  echo "WARNING: No snapshot exists for package $package; either it is newly stable or snapshot creation failed"
 fi

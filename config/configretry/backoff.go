@@ -7,7 +7,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/cenkalti/backoff/v6"
+	"github.com/cenkalti/backoff/v7"
 )
 
 // NewDefaultBackOffConfig returns the default settings for RetryConfig.

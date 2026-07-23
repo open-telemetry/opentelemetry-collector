@@ -33,14 +33,14 @@ jobs:
           persist-credentials: false
 
       - name: Setup Go
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version: oldstable
           cache: false
 
       - name: Cache Go
         id: go-cache
-        uses: actions/cache@2c8a9bd7457de244a408f35966fab2fb45fda9c8 # v6.0.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/go/bin
@@ -56,8 +56,7 @@ jobs:
       # Compare apidiff states of Main with PR
       - name: Compare-States
         env:
-          CI: true
-          COMPARE_OPTS: -d "../${{ github.base_ref }}/internal/data/apidiff"
+          APIDIFF_DATA_DIR: "../${{ github.base_ref }}/internal/data/apidiff"
         run: |
           cd $HEAD_REF
           make apidiff-compare
@@ -65,8 +64,7 @@ jobs:
       # Fail GitHub Action if there are incompatible changes
       - name: Check-States
         env:
-          CI: true
-          COMPARE_OPTS: -d "../${{ github.base_ref }}/internal/data/apidiff" -c
+          APIDIFF_DATA_DIR: "../${{ github.base_ref }}/internal/data/apidiff"
         run: |
           cd $HEAD_REF
-          make apidiff-compare
+          make apidiff-check
