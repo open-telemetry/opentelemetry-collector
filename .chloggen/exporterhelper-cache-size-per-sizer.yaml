@@ -1,0 +1,32 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
+component: exporterhelper
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Cache the request size per sizer type so byte-sized batching no longer recomputes the serialized proto size of the whole accumulated batch on every consumed request.
+
+# One or more tracking issues or pull requests related to the change
+issues: [12636]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  With `sizer: bytes`, the batcher's MinSize check called `BytesSize()`, which
+  ignored the cached size and re-walked the entire batch's protobuf on every
+  consumed request, making accumulation O(n^2) in the number of merged requests.
+  The size is now cached separately for the bytes and items dimensions and
+  maintained incrementally during merge/split, so the check is O(1). A single
+  untyped cache could not be reused safely because the batcher and the queue may
+  ask for different sizer types on the same request.
+
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]

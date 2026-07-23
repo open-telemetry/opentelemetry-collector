@@ -35,14 +35,19 @@ var (
 )
 
 type metricsRequest struct {
-	md         pmetric.Metrics
-	cachedSize int
+	md pmetric.Metrics
+	// Sizes are cached per sizer type: the batcher and the queue may ask for
+	// bytes and items on the same request, and a single cache would return a
+	// value computed for the wrong sizer. -1 means "not yet computed".
+	cachedItemsSize int
+	cachedBytesSize int
 }
 
 func newMetricsRequest(md pmetric.Metrics) request.Request {
 	return &metricsRequest{
-		md:         md,
-		cachedSize: -1,
+		md:              md,
+		cachedItemsSize: -1,
+		cachedBytesSize: -1,
 	}
 }
 
@@ -85,22 +90,49 @@ func (req *metricsRequest) OnError(err error) request.Request {
 }
 
 func (req *metricsRequest) ItemsCount() int {
-	return req.md.DataPointCount()
-}
-
-func (req *metricsRequest) size(sizer sizer.MetricsSizer) int {
-	if req.cachedSize == -1 {
-		req.cachedSize = sizer.MetricsSize(req.md)
+	if req.cachedItemsSize < 0 {
+		req.cachedItemsSize = req.md.DataPointCount()
 	}
-	return req.cachedSize
+	return req.cachedItemsSize
 }
 
-func (req *metricsRequest) setCachedSize(count int) {
-	req.cachedSize = count
+func (req *metricsRequest) size(sz sizer.MetricsSizer) int {
+	switch sz.(type) {
+	case *sizer.MetricsCountSizer:
+		if req.cachedItemsSize < 0 {
+			req.cachedItemsSize = sz.MetricsSize(req.md)
+		}
+		return req.cachedItemsSize
+	case *sizer.MetricsBytesSizer:
+		if req.cachedBytesSize < 0 {
+			req.cachedBytesSize = sz.MetricsSize(req.md)
+		}
+		return req.cachedBytesSize
+	default:
+		return sz.MetricsSize(req.md)
+	}
+}
+
+// setCachedSize records the size for sz's dimension and invalidates the other,
+// which the caller (mergeTo/split) did not maintain. This keeps the dimension
+// used by the batcher (a single configured sizer) O(1) across merges while
+// never returning a stale value for the other dimension.
+func (req *metricsRequest) setCachedSize(sz sizer.MetricsSizer, size int) {
+	switch sz.(type) {
+	case *sizer.MetricsCountSizer:
+		req.cachedItemsSize = size
+		req.cachedBytesSize = -1
+	case *sizer.MetricsBytesSizer:
+		req.cachedBytesSize = size
+		req.cachedItemsSize = -1
+	}
 }
 
 func (req *metricsRequest) BytesSize() int {
-	return metricsMarshaler.MetricsSize(req.md)
+	if req.cachedBytesSize < 0 {
+		req.cachedBytesSize = metricsMarshaler.MetricsSize(req.md)
+	}
+	return req.cachedBytesSize
 }
 
 // RequestFromMetrics returns a RequestFromMetricsFunc that converts pdata.Metrics into a Request.

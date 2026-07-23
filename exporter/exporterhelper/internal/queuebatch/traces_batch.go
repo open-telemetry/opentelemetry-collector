@@ -43,8 +43,8 @@ func (req *tracesRequest) MergeSplit(_ context.Context, maxSize int, szt request
 
 func (req *tracesRequest) mergeTo(dst *tracesRequest, sz sizer.TracesSizer) {
 	if sz != nil {
-		dst.setCachedSize(dst.size(sz) + req.size(sz))
-		req.setCachedSize(0)
+		dst.setCachedSize(sz, dst.size(sz)+req.size(sz))
+		req.setCachedSize(sz, 0)
 	}
 	req.td.ResourceSpans().MoveAndAppendTo(dst.td.ResourceSpans())
 }
@@ -56,7 +56,7 @@ func (req *tracesRequest) split(maxSize int, sz sizer.TracesSizer) ([]request.Re
 		if td.SpanCount() == 0 {
 			return res, fmt.Errorf("one span size is greater than max size, dropping items: %d", req.td.SpanCount())
 		}
-		req.setCachedSize(req.size(sz) - rmSize)
+		req.setCachedSize(sz, req.size(sz)-rmSize)
 		res = append(res, newTracesRequest(td))
 	}
 	res = append(res, req)
