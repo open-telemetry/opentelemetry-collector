@@ -678,6 +678,9 @@ func contextWithClient(ctx context.Context, includeMetadata bool) context.Contex
 	cl := client.FromContext(ctx)
 	if p, ok := peer.FromContext(ctx); ok {
 		cl.Addr = p.Addr
+		if tlsInfo, ok := p.AuthInfo.(credentials.TLSInfo); ok {
+			cl.TLS = &tlsInfo.State
+		}
 	}
 	if includeMetadata {
 		if md, ok := metadata.FromIncomingContext(ctx); ok {

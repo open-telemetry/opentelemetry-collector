@@ -79,6 +79,7 @@ package client // import "go.opentelemetry.io/collector/client"
 
 import (
 	"context"
+	"crypto/tls"
 	"iter"
 	"maps"
 	"net"
@@ -101,6 +102,12 @@ type Info struct {
 
 	// Metadata is the request metadata from the client connecting to this connector.
 	Metadata Metadata
+
+	// TLS contains the TLS connection state for the client, when the
+	// connection to the receiver was established over TLS. It is nil for
+	// non-TLS connections. Authentication extensions can use the peer
+	// certificates and verified chains to authorize the client identity.
+	TLS *tls.ConnectionState
 
 	// prevent unkeyed literal initialization
 	_ struct{}
