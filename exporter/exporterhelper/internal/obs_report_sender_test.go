@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 	grpccodes "google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -627,4 +629,169 @@ func TestExportProfilesOp(t *testing.T) {
 type testParams struct {
 	items int
 	err   error
+}
+
+func TestExportMetricsDroppedOp(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	const totalItems = 10
+	const droppedItems = 3
+	const reason = "incompatible temporality"
+
+	parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+	defer parentSpan.End()
+
+	obsrep, err := newObsReportSender(
+		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		pipeline.SignalMetrics,
+		nil,
+		sender.NewSender(func(context.Context, request.Request) error {
+			return experr.NewDroppedItemsErr(droppedItems, reason)
+		}),
+	)
+	require.NoError(t, err)
+
+	// A DroppedItemsErr must not be returned to the caller.
+	sendErr := obsrep.Send(parentCtx, &requesttest.FakeRequest{Items: totalItems})
+	require.NoError(t, sendErr)
+
+	metadatatest.AssertEqualExporterSentMetricPoints(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(attribute.String("exporter", exporterID.String())),
+				Value:      int64(totalItems - droppedItems),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	metadatatest.AssertEqualExporterDroppedMetricPoints(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", exporterID.String()),
+					attribute.String(DroppedReasonKey, reason),
+				),
+				Value: int64(droppedItems),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	// No items should be counted as send failures.
+	_, getErr := tt.GetMetric("otelcol_exporter_send_failed_metric_points")
+	require.Error(t, getErr, "send_failed_metric_points should not be recorded when items are dropped")
+
+	// Span attribute items.dropped must reflect the dropped count, and
+	// items.sent must reflect the post-clamp value.
+	spans := tt.SpanRecorder.Ended()
+	require.Len(t, spans, 1)
+	require.Contains(t, spans[0].Attributes(), attribute.KeyValue{Key: ItemsDropped, Value: attribute.Int64Value(int64(droppedItems))})
+	require.Contains(t, spans[0].Attributes(), attribute.KeyValue{Key: ItemsSent, Value: attribute.Int64Value(int64(totalItems - droppedItems))})
+	require.Contains(t, spans[0].Attributes(), attribute.KeyValue{Key: ItemsFailed, Value: attribute.Int64Value(0)})
+}
+
+func TestExportAllItemsDroppedOp(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	const totalItems = 5
+	const reason = "unsupported"
+
+	obsrep, err := newObsReportSender(
+		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		pipeline.SignalMetrics,
+		nil,
+		sender.NewSender(func(context.Context, request.Request) error {
+			// Drop all items.
+			return experr.NewDroppedItemsErr(totalItems, reason)
+		}),
+	)
+	require.NoError(t, err)
+
+	sendErr := obsrep.Send(context.Background(), &requesttest.FakeRequest{Items: totalItems})
+	require.NoError(t, sendErr)
+
+	metadatatest.AssertEqualExporterSentMetricPoints(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(attribute.String("exporter", exporterID.String())),
+				Value:      0,
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	metadatatest.AssertEqualExporterDroppedMetricPoints(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", exporterID.String()),
+					attribute.String(DroppedReasonKey, reason),
+				),
+				Value: int64(totalItems),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+}
+
+// TestExportDroppedMoreThanSentLogsWarning exercises the defensive branch where
+// an exporter author reports more dropped items than the request contained. The
+// behavior must be: clamp numSent to 0, do not count as a send failure, and
+// emit a single warning identifying the misbehaving exporter.
+func TestExportDroppedMoreThanSentLogsWarning(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	core, observed := observer.New(zap.WarnLevel)
+	logger := zap.New(core)
+
+	telSettings := tt.NewTelemetrySettings()
+	settings := exporter.Settings{
+		ID:                exporterID,
+		TelemetrySettings: telSettings,
+		BuildInfo:         component.NewDefaultBuildInfo(),
+	}
+	settings.Logger = logger
+
+	const totalItems = 3
+	const droppedItems = 5 // intentionally more than totalItems
+	const reason = "exporter bug"
+
+	obsrep, err := newObsReportSender(
+		settings,
+		pipeline.SignalMetrics,
+		nil,
+		sender.NewSender(func(context.Context, request.Request) error {
+			return experr.NewDroppedItemsErr(droppedItems, reason)
+		}),
+	)
+	require.NoError(t, err)
+
+	sendErr := obsrep.Send(context.Background(), &requesttest.FakeRequest{Items: totalItems})
+	require.NoError(t, sendErr)
+
+	// sent clamps to zero.
+	metadatatest.AssertEqualExporterSentMetricPoints(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(attribute.String("exporter", exporterID.String())),
+				Value:      0,
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	// dropped counter still records the (possibly bogus) value the exporter reported.
+	metadatatest.AssertEqualExporterDroppedMetricPoints(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", exporterID.String()),
+					attribute.String(DroppedReasonKey, reason),
+				),
+				Value: int64(droppedItems),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	// Exactly one warning was emitted, naming the exporter and the counts.
+	entries := observed.FilterMessage("exporter reported more dropped items than the request contained").All()
+	require.Len(t, entries, 1)
+	got := entries[0].ContextMap()
+	assert.Equal(t, exporterID.String(), got["exporter"])
+	assert.Equal(t, int64(droppedItems), got["dropped"])
+	assert.Equal(t, int64(totalItems), got["items"])
+	assert.Equal(t, reason, got["reason"])
 }
