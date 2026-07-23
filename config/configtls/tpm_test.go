@@ -156,7 +156,8 @@ VGhpcyBpcyBub3QgYSBjZXJ0aWZpY2F0ZS4=
 
 func TestTPM_open(t *testing.T) {
 	socketPath := filepath.Join(t.TempDir(), "app.sock")
-	listener, err := net.Listen("unix", socketPath)
+	lc := &net.ListenConfig{}
+	listener, err := lc.Listen(t.Context(), "unix", socketPath)
 	require.NoError(t, err)
 	defer listener.Close()
 

@@ -466,6 +466,19 @@ func TestLoader_TryLoad_URLError(t *testing.T) {
 	_ = ref
 }
 
+func TestLoader_TryLoad_RequestCreationError(t *testing.T) {
+	loader := NewLoader("").(*schemaLoader)
+	ref := *NewRef("go.opentelemetry.io/collector/test/path.config")
+
+	originalURL := namespaceToURL["go.opentelemetry.io/collector"]
+	namespaceToURL["go.opentelemetry.io/collector"] = "http://bad host"
+	defer func() { namespaceToURL["go.opentelemetry.io/collector"] = originalURL }()
+
+	_, err := loader.tryLoad(ref, "v1.0.0")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "unable to create a HTTP GET request")
+}
+
 func TestLoader_TryLoad_HTTPError(t *testing.T) {
 	// Use a server that closes connections immediately to simulate a network error
 	// The simplest approach: use an invalid URL

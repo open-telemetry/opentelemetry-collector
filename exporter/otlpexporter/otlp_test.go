@@ -300,8 +300,9 @@ func otlpProfilesReceiverOnGRPCServer(ln net.Listener, useTLS bool) (*mockProfil
 }
 
 func TestSendTraces(t *testing.T) {
+	lc := &net.ListenConfig{}
 	// Start an OTLP-compatible receiver.
-	ln, err := net.Listen("tcp", "localhost:")
+	ln, err := lc.Listen(t.Context(), "tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 	rcv, _ := otlpTracesReceiverOnGRPCServer(ln, false)
 	// Also closes the connection.
@@ -425,8 +426,9 @@ func TestSendTracesWhenEndpointHasHTTPScheme(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			lc := &net.ListenConfig{}
 			// Start an OTLP-compatible receiver.
-			ln, err := net.Listen("tcp", "localhost:")
+			ln, err := lc.Listen(t.Context(), "tcp", "localhost:")
 			require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 			rcv, err := otlpTracesReceiverOnGRPCServer(ln, test.useTLS)
 			require.NoError(t, err, "Failed to start mock OTLP receiver")
@@ -472,8 +474,9 @@ func TestSendTracesWhenEndpointHasHTTPScheme(t *testing.T) {
 }
 
 func TestSendMetrics(t *testing.T) {
+	lc := &net.ListenConfig{}
 	// Start an OTLP-compatible receiver.
-	ln, err := net.Listen("tcp", "localhost:")
+	ln, err := lc.Listen(t.Context(), "tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 	rcv := otlpMetricsReceiverOnGRPCServer(ln)
 	// Also closes the connection.
@@ -580,8 +583,9 @@ func TestSendMetrics(t *testing.T) {
 }
 
 func TestSendTraceDataServerDownAndUp(t *testing.T) {
+	lc := &net.ListenConfig{}
 	// Find the addr, but don't start the server.
-	ln, err := net.Listen("tcp", "localhost:")
+	ln, err := lc.Listen(t.Context(), "tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
 	// Start an OTLP exporter and point to the receiver.
@@ -632,7 +636,7 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 
 	// First call to startServerAndMakeRequest closed the connection. There is a race condition here that the
 	// port may be reused, if this gets flaky rethink what to do.
-	ln, err = net.Listen("tcp", ln.Addr().String())
+	ln, err = lc.Listen(t.Context(), "tcp", ln.Addr().String())
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 	startServerAndMakeRequest(t, exp, td, ln)
 
@@ -643,8 +647,9 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 }
 
 func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
+	lc := &net.ListenConfig{}
 	// Find the addr, but don't start the server.
-	ln, err := net.Listen("tcp", "localhost:")
+	ln, err := lc.Listen(t.Context(), "tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
 	// Start an OTLP exporter and point to the receiver.
@@ -692,7 +697,8 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 }
 
 func TestSendTracesOnResourceExhaustion(t *testing.T) {
-	ln, err := net.Listen("tcp", "localhost:")
+	lc := &net.ListenConfig{}
+	ln, err := lc.Listen(t.Context(), "tcp", "localhost:")
 	require.NoError(t, err)
 	rcv, _ := otlpTracesReceiverOnGRPCServer(ln, false)
 	rcv.setExportError(status.Error(codes.ResourceExhausted, "resource exhausted"))
@@ -769,8 +775,9 @@ func startServerAndMakeRequest(t *testing.T, exp exporter.Traces, td ptrace.Trac
 }
 
 func TestSendLogData(t *testing.T) {
+	lc := &net.ListenConfig{}
 	// Start an OTLP-compatible receiver.
-	ln, err := net.Listen("tcp", "localhost:")
+	ln, err := lc.Listen(t.Context(), "tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 	rcv := otlpLogsReceiverOnGRPCServer(ln)
 	// Also closes the connection.
@@ -873,8 +880,9 @@ func TestSendLogData(t *testing.T) {
 }
 
 func TestSendProfiles(t *testing.T) {
+	lc := &net.ListenConfig{}
 	// Start an OTLP-compatible receiver.
-	ln, err := net.Listen("tcp", "localhost:")
+	ln, err := lc.Listen(t.Context(), "tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 	rcv, _ := otlpProfilesReceiverOnGRPCServer(ln, false)
 	// Also closes the connection.
@@ -1038,8 +1046,9 @@ func TestSendProfilesWhenEndpointHasHTTPScheme(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			lc := &net.ListenConfig{}
 			// Start an OTLP-compatible receiver.
-			ln, err := net.Listen("tcp", "localhost:")
+			ln, err := lc.Listen(t.Context(), "tcp", "localhost:")
 			require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 			rcv, err := otlpProfilesReceiverOnGRPCServer(ln, test.useTLS)
 			require.NoError(t, err, "Failed to start mock OTLP receiver")
@@ -1086,7 +1095,8 @@ func TestSendProfilesWhenEndpointHasHTTPScheme(t *testing.T) {
 
 func TestUserAgentHeader_OverriddenByConfig(t *testing.T) {
 	// Start an OTLP-compatible receiver.
-	ln, err := net.Listen("tcp", "localhost:")
+	lc := &net.ListenConfig{}
+	ln, err := lc.Listen(t.Context(), "tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 	rcv := otlpMetricsReceiverOnGRPCServer(ln)
 	defer rcv.srv.GracefulStop()

@@ -152,7 +152,8 @@ func TestHTTPToHTTP(t *testing.T) {
 func createGRPCExporter(t *testing.T, s *status.Status) consumer.Logs {
 	t.Helper()
 
-	ln, err := net.Listen("tcp", "localhost:")
+	lc := &net.ListenConfig{}
+	ln, err := lc.Listen(t.Context(), "tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
 	srv := grpc.NewServer()
@@ -331,7 +332,7 @@ func createHTTPRequest(
 ) *http.Request {
 	buf := bytes.NewBuffer(data)
 
-	req, err := http.NewRequest(http.MethodPost, "http://"+url, buf)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, "http://"+url, buf)
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/x-protobuf")
 

@@ -77,13 +77,18 @@ func (fmp *provider) createClient() (*http.Client, error) {
 	}
 }
 
-func (fmp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+func (fmp *provider) Retrieve(ctx context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
 	if !strings.HasPrefix(uri, string(fmp.scheme)+":") {
 		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, string(fmp.scheme))
 	}
 
 	if _, err := url.ParseRequestURI(uri); err != nil {
 		return nil, fmt.Errorf("invalid uri %q: %w", uri, err)
+	}
+	// create a HTTP GET request
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, uri, http.NoBody)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create a HTTP GET request for uri %q: %w", uri, err)
 	}
 
 	client, err := fmp.createClient()
@@ -92,7 +97,7 @@ func (fmp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 	}
 
 	// send a HTTP GET request
-	resp, err := client.Get(uri)
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("unable to download the file via HTTP GET for uri %q: %w ", uri, err)
 	}

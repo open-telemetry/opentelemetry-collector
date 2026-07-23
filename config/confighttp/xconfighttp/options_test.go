@@ -52,7 +52,7 @@ func TestServerWithOtelHTTPOptions(t *testing.T) {
 
 	for _, path := range []string{"/path", "/foobar"} {
 		response := &httptest.ResponseRecorder{}
-		req, err := http.NewRequest(http.MethodGet, srv.Addr+path, http.NoBody)
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, srv.Addr+path, http.NoBody)
 		require.NoError(t, err)
 		srv.Handler.ServeHTTP(response, req)
 		assert.Equal(t, http.StatusOK, response.Result().StatusCode)

@@ -4,6 +4,7 @@
 package builder // import "go.opentelemetry.io/collector/cmd/builder/internal/builder"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -155,7 +156,7 @@ func (c *Config) Validate() error {
 func (c *Config) SetGoPath() error {
 	if !c.SkipCompilation || !c.SkipGetModules {
 		//nolint:gosec // #nosec G204
-		if _, err := exec.Command(c.Distribution.Go, "env").CombinedOutput(); err != nil {
+		if _, err := exec.CommandContext(context.Background(), c.Distribution.Go, "env").CombinedOutput(); err != nil {
 			path, err := exec.LookPath("go")
 			if err != nil {
 				return ErrGoNotFound
