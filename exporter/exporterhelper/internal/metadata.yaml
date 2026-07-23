@@ -1,4 +1,4 @@
-type: pkg/exporterhelper/timeout_config
+type: timeout_config
 parent: pkg/exporterhelper
 github_project: open-telemetry/opentelemetry-collector
 
@@ -13,7 +13,6 @@ exported_configs:
     properties:
       timeout:
         description: Defines the timeout for every attempt to send data to the backend. A zero timeout means no timeout.
-        type: string
-        format: duration
+        type: duration
         default: 5s
         minimum: 0
