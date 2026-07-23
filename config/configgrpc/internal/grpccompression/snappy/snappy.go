@@ -4,7 +4,7 @@
 
 // Package snappy registers a gRPC snappy compressor compatible with the
 // collector's configgrpc package.
-package snappy // import "go.opentelemetry.io/collector/internal/grpccompression/snappy"
+package snappy // import "go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/snappy"
 
 import (
 	"io"
