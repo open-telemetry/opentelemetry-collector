@@ -22,6 +22,10 @@ func dialNpipe(ctx context.Context, endpoint string, timeout time.Duration) (net
 	return winio.DialPipeContext(ctx, endpoint)
 }
 
-func listenNpipe(endpoint string) (net.Listener, error) {
-	return winio.ListenPipe(endpoint, nil)
+func listenNpipe(endpoint, securityDescriptor string) (net.Listener, error) {
+	var cfg *winio.PipeConfig
+	if securityDescriptor != "" {
+		cfg = &winio.PipeConfig{SecurityDescriptor: securityDescriptor}
+	}
+	return winio.ListenPipe(endpoint, cfg)
 }

@@ -72,6 +72,27 @@ func NewDefaultDialerConfig() DialerConfig {
 	return DialerConfig{}
 }
 
+// NpipeConfig contains options specific to Windows named pipe transport.
+type NpipeConfig struct {
+	// SecurityDescriptor is a Security Descriptor Definition Language (SDDL)
+	// string applied to the named pipe when a listener is created. When empty,
+	// Windows applies its default named pipe DACL, which is roughly equivalent
+	// to "D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;0x12019b;;;WD)(A;;0x12019b;;;AN)"
+	// — full control for LocalSystem (SY) and Administrators (BA), and read
+	// plus limited write for Everyone (WD) and Anonymous Logon (AN).
+	// See:
+	//   - https://learn.microsoft.com/en-us/windows/win32/ipc/named-pipe-security-and-access-rights
+	//   - https://learn.microsoft.com/en-us/windows/win32/secauthz/security-descriptor-definition-language
+	SecurityDescriptor string `mapstructure:"security_descriptor,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+// NewDefaultNpipeConfig creates a new NpipeConfig with any default values set
+func NewDefaultNpipeConfig() NpipeConfig {
+	return NpipeConfig{}
+}
+
 // AddrConfig represents a network endpoint address.
 type AddrConfig struct {
 	// Endpoint configures the address for this network connection.
@@ -88,6 +109,10 @@ type AddrConfig struct {
 
 	// DialerConfig contains options for connecting to an address.
 	DialerConfig DialerConfig `mapstructure:"dialer,omitempty"`
+
+	// NpipeConfig contains options specific to the "npipe" transport (Windows named pipes).
+	// Settings in this section are ignored for all other transport types.
+	NpipeConfig NpipeConfig `mapstructure:"npipe,omitempty"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -96,6 +121,7 @@ type AddrConfig struct {
 func NewDefaultAddrConfig() AddrConfig {
 	return AddrConfig{
 		DialerConfig: NewDefaultDialerConfig(),
+		NpipeConfig:  NewDefaultNpipeConfig(),
 	}
 }
 
@@ -111,7 +137,7 @@ func (na *AddrConfig) Dial(ctx context.Context) (net.Conn, error) {
 // Listen equivalent with net.ListenConfig's Listen for this address.
 func (na *AddrConfig) Listen(ctx context.Context) (net.Listener, error) {
 	if na.Transport == TransportTypeNpipe {
-		return listenNpipe(na.Endpoint)
+		return listenNpipe(na.Endpoint, na.NpipeConfig.SecurityDescriptor)
 	}
 	lc := net.ListenConfig{}
 	return lc.Listen(ctx, string(na.Transport), na.Endpoint)

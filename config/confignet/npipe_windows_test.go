@@ -52,3 +52,33 @@ func TestNpipeListenAndDial(t *testing.T) {
 	assert.NoError(t, conn.Close())
 	<-done
 }
+
+func TestNpipeListenSecurityDescriptor(t *testing.T) {
+	tests := []struct {
+		name               string
+		securityDescriptor string
+		wantErr            bool
+	}{
+		{name: "default", securityDescriptor: "", wantErr: false},
+		{name: "owner local system, allow everyone read/write", securityDescriptor: "O:SYG:SYD:(A;;GRGW;;;WD)", wantErr: false},
+		{name: "invalid SDDL", securityDescriptor: "not-a-valid-sddl", wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			nas := &AddrConfig{
+				Endpoint:  `\\.\pipe\otel-test-confignet-sd`,
+				Transport: TransportTypeNpipe,
+				NpipeConfig: NpipeConfig{
+					SecurityDescriptor: tt.securityDescriptor,
+				},
+			}
+			ln, err := nas.Listen(t.Context())
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.NoError(t, ln.Close())
+		})
+	}
+}

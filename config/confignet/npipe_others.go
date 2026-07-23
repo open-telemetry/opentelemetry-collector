@@ -18,6 +18,6 @@ func dialNpipe(_ context.Context, _ string, _ time.Duration) (net.Conn, error) {
 	return nil, errNpipeUnsupported
 }
 
-func listenNpipe(_ string) (net.Listener, error) {
+func listenNpipe(_, _ string) (net.Listener, error) {
 	return nil, errNpipeUnsupported
 }
