@@ -73,6 +73,7 @@ type persistentQueue[T request.Request] struct {
 	logger      *zap.Logger
 	client      storage.Client
 	encoding    Encoding[T]
+	refCounter  ReferenceCounter[T]
 	capacity    int64
 	sizerType   request.SizerType
 	activeSizer request.Sizer
@@ -98,6 +99,7 @@ func newPersistentQueue[T request.Request](set Settings[T]) readableQueue[T] {
 	pq := &persistentQueue[T]{
 		logger:          set.Telemetry.Logger,
 		encoding:        set.Encoding,
+		refCounter:      set.ReferenceCounter,
 		capacity:        set.Capacity,
 		sizerType:       set.SizerType,
 		activeSizer:     request.NewSizer(set.SizerType),
@@ -381,6 +383,13 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, conte
 		}
 
 		return 0, req, restoredCtx, false
+	}
+
+	// Persistent queues rehydrate a fresh request before handing it to another async boundary.
+	// Keep one queue-owned reference so downstream pipeline ownership and the queue's post-consume
+	// release remain balanced.
+	if pq.refCounter != nil {
+		pq.refCounter.Ref(req)
 	}
 
 	// Increase the reference count, so the client is not closed while the request is being processed.
