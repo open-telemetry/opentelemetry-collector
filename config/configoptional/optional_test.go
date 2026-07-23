@@ -154,6 +154,13 @@ func TestNone(t *testing.T) {
 	assert.Equal(t, &zeroVal, ret)
 }
 
+func TestIsNone(t *testing.T) {
+	assert.True(t, None[Sub]().IsNone())
+	assert.True(t, (Optional[Sub]{}).IsNone()) // zero value is None
+	assert.False(t, Some(Sub{}).IsNone())
+	assert.False(t, Default(Sub{}).IsNone())
+}
+
 func ExampleNone() {
 	type Person struct {
 		Name string

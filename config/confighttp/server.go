@@ -89,20 +89,30 @@ type ServerConfig struct {
 	// A zero or negative value means there will be no timeout.
 	WriteTimeout time.Duration `mapstructure:"write_timeout"`
 
-	// IdleTimeout is the maximum amount of time to wait for the
-	// next request when keep-alives are enabled. If IdleTimeout
-	// is zero, the value of ReadTimeout is used. If both are
-	// zero, there is no timeout.
-	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
-
 	// Middlewares are used to add custom functionality to the HTTP server.
 	// Middleware handlers are called in the order they appear in this list,
 	// with the first middleware becoming the outermost handler.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
 
-	// KeepAlivesEnabled controls whether HTTP keep-alives are enabled.
+	// Keepalive controls HTTP keep-alives.
 	// By default, keep-alives are always enabled. Only very resource-constrained environments should disable them.
+	Keepalive configoptional.Optional[KeepaliveServerConfig] `mapstructure:"keepalive,omitempty"`
+
+	// Deprecated: use Keepalive.IdleTimeout instead.
+	IdleTimeout time.Duration `mapstructure:"idle_timeout,omitempty"`
+	// Deprecated: set Keepalive to None to disable keep-alives.
+	// Note: only the false value is meaningful; true is indistinguishable from the default.
 	KeepAlivesEnabled bool `mapstructure:"keep_alives_enabled,omitempty"`
+}
+
+type KeepaliveServerConfig struct {
+	_ struct{}
+
+	// IdleTimeout is the maximum amount of time to wait for the
+	// next request when keep-alives are enabled. If IdleTimeout
+	// is zero, the value of ReadTimeout is used. If both are
+	// zero, there is no timeout.
+	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
 }
 
 // NewDefaultServerConfig returns ServerConfig type object with default values.
@@ -116,9 +126,18 @@ func NewDefaultServerConfig() ServerConfig {
 		NetAddr:           netAddr,
 		WriteTimeout:      30 * time.Second,
 		ReadHeaderTimeout: 1 * time.Minute,
-		IdleTimeout:       1 * time.Minute,
+		Keepalive: configoptional.Default(KeepaliveServerConfig{
+			IdleTimeout: 1 * time.Minute,
+		}),
 		KeepAlivesEnabled: true,
 	}
+}
+
+func (sc *ServerConfig) Validate() error {
+	if sc.Keepalive.HasValue() && (sc.IdleTimeout != 0 || !sc.KeepAlivesEnabled) {
+		return errors.New("confighttp.ServerConfig: cannot use deprecated keepalive fields (idle_timeout, keep_alives_enabled) alongside the 'keepalive' section; migrate to the 'keepalive' section")
+	}
+	return nil
 }
 
 type AuthConfig struct {
@@ -185,6 +204,13 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 // the `extensions` argument should be the output of `host.GetExtensions()`.
 // It may also be `nil` in tests where no such extension is expected to be used.
 func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.ID]component.Component, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
+	if sc.IdleTimeout != 0 {
+		settings.Logger.Warn("'idle_timeout' is deprecated; use 'keepalive.idle_timeout' instead")
+	}
+	if !sc.KeepAlivesEnabled {
+		settings.Logger.Warn("'keep_alives_enabled' is deprecated; set keepalive to null (keepalive: null) to disable keep-alives")
+	}
+
 	serverOpts := &toServerOptions{}
 	serverOpts.Apply(opts...)
 
@@ -300,17 +326,32 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 		return nil, err // If an error occurs while creating the logger, return nil and the error
 	}
 
+	// Convert deprecated fields into the canonical Keepalive optional so the
+	// application logic below only has to deal with one struct.
+	if !sc.Keepalive.HasValue() && !sc.KeepAlivesEnabled {
+		sc.Keepalive = configoptional.None[KeepaliveServerConfig]()
+	} else if sc.IdleTimeout != 0 {
+		sc.Keepalive = configoptional.Some(KeepaliveServerConfig{
+			IdleTimeout: sc.IdleTimeout,
+		})
+	}
+
+	keepAlivesEnabled := !sc.Keepalive.IsNone()
+	var idleTimeout time.Duration
+	if keepAlivesEnabled {
+		idleTimeout = sc.Keepalive.GetOrInsertDefault().IdleTimeout
+	}
+
 	server := &http.Server{
 		Handler:           handler,
 		ReadTimeout:       sc.ReadTimeout,
 		ReadHeaderTimeout: sc.ReadHeaderTimeout,
 		WriteTimeout:      sc.WriteTimeout,
-		IdleTimeout:       sc.IdleTimeout,
+		IdleTimeout:       idleTimeout,
 		ErrorLog:          errorLog,
 	}
 
-	// Set keep-alives enabled/disabled
-	server.SetKeepAlivesEnabled(sc.KeepAlivesEnabled)
+	server.SetKeepAlivesEnabled(keepAlivesEnabled)
 
 	return server, err
 }
