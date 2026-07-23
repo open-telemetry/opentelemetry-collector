@@ -23,6 +23,9 @@ import (
 	{{- end }}
 	{{- end }}
 	{{- end }}
+	{{- if hasExponentialHistogram .Telemetry.Metrics }}
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	{{- end }}
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
@@ -143,8 +146,8 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		{{ end -}}
 		metric.WithDescription("{{ $metric.Description }} [{{ $metric.Stability }}]"),
 		metric.WithUnit("{{ $metric.Unit }}"),
-		{{ if eq $metric.Data.Type "Histogram" -}}
-		{{- if $metric.Data.Boundaries -}}metric.WithExplicitBucketBoundaries([]float64{ {{- range $metric.Data.Boundaries }} {{.}}, {{- end }} }...),{{- end }}
+		{{ if $metric.Histogram -}}
+		{{- if and $metric.Histogram.Boundaries (not $metric.Histogram.IsExponential) -}}metric.WithExplicitBucketBoundaries([]float64{ {{- range $metric.Histogram.Boundaries }} {{.}}, {{- end }} }...),{{- end }}
 		{{- end }}
 	)
 	errs = errors.Join(errs, err)
@@ -152,4 +155,25 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	return &builder, errs
 }
 
+{{- end }}
+
+{{- if hasExponentialHistogram .Telemetry.Metrics }}
+
+// Views returns the SDK metric Views required to produce exponential histograms
+// for metrics declared with aggregation: exponential in this component's metadata.
+func Views() []sdkmetric.View {
+	return []sdkmetric.View{
+		{{- range $name, $metric := .Telemetry.Metrics }}
+		{{- if and $metric.Histogram $metric.Histogram.IsExponential }}
+		sdkmetric.NewView(
+			sdkmetric.Instrument{Name: "{{ if $metric.Prefix }}{{ $metric.Prefix }}{{ $name }}{{ else }}otelcol_{{ $name }}{{ end }}"},
+			sdkmetric.Stream{Aggregation: sdkmetric.AggregationBase2ExponentialHistogram{
+				MaxSize:  {{ if $metric.Histogram.MaxSize }}{{ $metric.Histogram.MaxSize }}{{ else }}160{{ end }},
+				MaxScale: {{ if $metric.Histogram.MaxScale }}{{ $metric.Histogram.MaxScale }}{{ else }}20{{ end }},
+			}},
+		),
+		{{- end }}
+		{{- end }}
+	}
+}
 {{- end }}

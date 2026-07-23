@@ -17,13 +17,22 @@ import (
 	{{- end }}
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	{{- if hasExponentialHistogram .Telemetry.Metrics }}
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	{{- end }}
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"{{ .PackageName }}/internal/{{ .GeneratedPackageName }}"
 )
 
 func TestSetupTelemetry(t *testing.T) {
+	{{- if hasExponentialHistogram .Telemetry.Metrics }}
+	testTel := componenttest.NewTelemetry(
+		componenttest.WithMetricOptions(sdkmetric.WithView({{ .GeneratedPackageName }}.Views()...)),
+	)
+	{{- else }}
 	testTel := componenttest.NewTelemetry()
+	{{- end }}
 	tb, err := {{ .Package }}.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
@@ -55,6 +64,8 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.DataPoint[{{ $metric.Sum.MetricValueType.BasicType }}]{{"{{Value: 1}}"}},
 		{{- else if eq $metric.Data.Type "Histogram" -}}
 		[]metricdata.HistogramDataPoint[{{ $metric.Histogram.MetricValueType.BasicType }}]{{"{{}}"}}, metricdatatest.IgnoreValue(),
+		{{- else if eq $metric.Data.Type "ExponentialHistogram" -}}
+		[]metricdata.ExponentialHistogramDataPoint[{{ $metric.Histogram.MetricValueType.BasicType }}]{{"{{}}"}}, metricdatatest.IgnoreValue(),
 		{{- end }}
 		metricdatatest.IgnoreTimestamp())
 	{{- end }}

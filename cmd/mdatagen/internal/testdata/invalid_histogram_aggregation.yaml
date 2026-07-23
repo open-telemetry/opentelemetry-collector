@@ -4,17 +4,13 @@ status:
   class: receiver
   stability:
     beta: [traces, logs, metrics]
-attributes:
-  name:
-    description: Name of sampling decision
-    type: string
 telemetry:
   metrics:
     request_latency:
       description: Latency (in microseconds) of a given sampling policy
-      unit: us
+      unit: µs
       enabled: true
       stability: alpha
       histogram:
         value_type: int
-      attributes: [name]
+        aggregation: invalid_aggregation_type

@@ -414,6 +414,14 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 			}
 			return false
 		},
+		"hasExponentialHistogram": func(metrics map[MetricName]Metric) bool {
+			for _, m := range metrics {
+				if m.Histogram != nil && m.Histogram.IsExponential() {
+					return true
+				}
+			}
+			return false
+		},
 		"stringsJoin":  strings.Join,
 		"stringsSplit": strings.Split,
 		"trimRight":    strings.TrimRight,
