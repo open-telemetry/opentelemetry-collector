@@ -137,6 +137,7 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 		lr2                request.Request
 		expected           []request.Request
 		expectPartialError bool
+		validate           func(*testing.T, []request.Request)
 	}{
 		{
 			name:     "both_requests_empty",
@@ -247,11 +248,47 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 			}()),
 			lr2: nil,
 			expected: []request.Request{newLogsRequest(func() plog.Logs {
-				ld := testdata.GenerateLogs(1)
+				ld := testdata.GenerateLogs(2)
 				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(string(make([]byte, 10)))
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Body().SetStr(string(make([]byte, 1001)))
+				logRecordIndex := 0
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().RemoveIf(func(_ plog.LogRecord) bool {
+					defer func() {
+						logRecordIndex++
+					}()
+					return logRecordIndex == 1
+				})
 				return ld
 			}())},
 			expectPartialError: true,
+			validate: func(t *testing.T, res []request.Request) {
+				require.Len(t, res, 1)
+				logs := res[0].(*logsRequest).ld
+				require.Equal(t, 1, logs.LogRecordCount())
+				require.LessOrEqual(t, logsMarshaler.LogsSize(logs), 1000)
+				assert.Len(t, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str(), 10)
+			},
+		},
+		{
+			name:    "unsplittable_then_splittable_log",
+			szt:     request.SizerTypeBytes,
+			maxSize: 1000,
+			lr1: newLogsRequest(func() plog.Logs {
+				ld := testdata.GenerateLogs(2)
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(string(make([]byte, 1001)))
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Body().SetStr(string(make([]byte, 10)))
+				return ld
+			}()),
+			lr2:                nil,
+			expected:           nil,
+			expectPartialError: true,
+			validate: func(t *testing.T, res []request.Request) {
+				require.Len(t, res, 1)
+				logs := res[0].(*logsRequest).ld
+				require.Equal(t, 1, logs.LogRecordCount())
+				require.LessOrEqual(t, logsMarshaler.LogsSize(logs), 1000)
+				assert.Len(t, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str(), 10)
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -261,6 +298,10 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 				require.ErrorContains(t, err, "one log record size is greater than max size, dropping")
 			} else {
 				require.NoError(t, err)
+			}
+			if tt.validate != nil {
+				tt.validate(t, res)
+				return
 			}
 			assert.Len(t, res, len(tt.expected))
 			for i := range res {
@@ -288,6 +329,12 @@ func TestExtractLogs(t *testing.T) {
 		assert.Equal(t, i, extractedLogs.LogRecordCount())
 		assert.Equal(t, 10-i, ld.LogRecordCount())
 	}
+}
+
+func TestDropFirstRemainingLogRecord(t *testing.T) {
+	ld := testdata.GenerateLogs(2)
+	require.Equal(t, 1, dropFirstRemainingLogRecord(ld))
+	assert.Equal(t, 1, ld.LogRecordCount())
 }
 
 func TestMergeSplitManySmallLogs(t *testing.T) {
@@ -409,5 +456,20 @@ func BenchmarkSplittingBasedOnByteSizeHugeLogs(b *testing.B) {
 		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), logsMarshaler.LogsSize(testdata.GenerateLogs(10010)), request.SizerTypeBytes, lr2)
 		merged = append(merged[0:len(merged)-1], res...)
 		assert.Len(b, merged, 10)
+	}
+}
+
+func BenchmarkSplittingBasedOnByteSizeLogsWithOversizedRecord(b *testing.B) {
+	testutil.SkipGCHeavyBench(b)
+	b.ReportAllocs()
+	for b.Loop() {
+		req := newLogsRequest(func() plog.Logs {
+			ld := testdata.GenerateLogs(10)
+			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(string(make([]byte, 1001)))
+			return ld
+		}())
+		res, err := req.MergeSplit(context.Background(), 1000, request.SizerTypeBytes, nil)
+		require.ErrorContains(b, err, "one log record size is greater than max size, dropping items: 1")
+		require.Len(b, res, 1)
 	}
 }

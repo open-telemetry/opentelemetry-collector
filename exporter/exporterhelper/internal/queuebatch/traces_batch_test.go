@@ -149,6 +149,7 @@ func TestMergeSplitTracesBasedOnByteSize(t *testing.T) {
 		lr2                request.Request
 		expected           []request.Request
 		expectPartialError bool
+		validate           func(*testing.T, []request.Request)
 	}{
 		{
 			name:     "both_requests_empty",
@@ -260,11 +261,47 @@ func TestMergeSplitTracesBasedOnByteSize(t *testing.T) {
 			}()),
 			lr2: nil,
 			expected: []request.Request{newTracesRequest(func() ptrace.Traces {
-				ld := testdata.GenerateTraces(1)
+				ld := testdata.GenerateTraces(2)
 				ld.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("large_attr", string(make([]byte, 10)))
+				ld.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("large_attr", string(make([]byte, 1001)))
+				spanIndex := 0
+				ld.ResourceSpans().At(0).ScopeSpans().At(0).Spans().RemoveIf(func(_ ptrace.Span) bool {
+					defer func() {
+						spanIndex++
+					}()
+					return spanIndex == 1
+				})
 				return ld
 			}())},
 			expectPartialError: true,
+			validate: func(t *testing.T, res []request.Request) {
+				require.Len(t, res, 1)
+				traces := res[0].(*tracesRequest).td
+				require.Equal(t, 1, traces.SpanCount())
+				require.LessOrEqual(t, tracesMarshaler.TracesSize(traces), 1000)
+				assert.Len(t, traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().AsRaw()["large_attr"].(string), 10)
+			},
+		},
+		{
+			name:    "unsplittable_then_splittable_trace",
+			szt:     request.SizerTypeBytes,
+			maxSize: 1000,
+			lr1: newTracesRequest(func() ptrace.Traces {
+				ld := testdata.GenerateTraces(2)
+				ld.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("large_attr", string(make([]byte, 1001)))
+				ld.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("large_attr", string(make([]byte, 10)))
+				return ld
+			}()),
+			lr2:                nil,
+			expected:           nil,
+			expectPartialError: true,
+			validate: func(t *testing.T, res []request.Request) {
+				require.Len(t, res, 1)
+				traces := res[0].(*tracesRequest).td
+				require.Equal(t, 1, traces.SpanCount())
+				require.LessOrEqual(t, tracesMarshaler.TracesSize(traces), 1000)
+				assert.Len(t, traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().AsRaw()["large_attr"].(string), 10)
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -274,6 +311,10 @@ func TestMergeSplitTracesBasedOnByteSize(t *testing.T) {
 				require.ErrorContains(t, err, "one span size is greater than max size, dropping items:")
 			} else {
 				require.NoError(t, err)
+			}
+			if tt.validate != nil {
+				tt.validate(t, res)
+				return
 			}
 			assert.Len(t, res, len(tt.expected))
 			for i := range res {
@@ -302,6 +343,12 @@ func TestExtractTraces(t *testing.T) {
 		assert.Equal(t, 10-i, td.SpanCount())
 		assert.Equal(t, i, removedSize)
 	}
+}
+
+func TestDropFirstRemainingSpan(t *testing.T) {
+	td := testdata.GenerateTraces(2)
+	require.Equal(t, 1, dropFirstRemainingSpan(td))
+	assert.Equal(t, 1, td.SpanCount())
 }
 
 func TestMergeSplitManySmallTraces(t *testing.T) {
@@ -378,5 +425,20 @@ func BenchmarkSplittingBasedOnItemCountHugeTraces(b *testing.B) {
 		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, request.SizerTypeItems, lr2)
 		merged = append(merged[0:len(merged)-1], res...)
 		assert.Len(b, merged, 10)
+	}
+}
+
+func BenchmarkSplittingBasedOnByteSizeTracesWithOversizedSpan(b *testing.B) {
+	testutil.SkipGCHeavyBench(b)
+	b.ReportAllocs()
+	for b.Loop() {
+		req := newTracesRequest(func() ptrace.Traces {
+			td := testdata.GenerateTraces(10)
+			td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("large_attr", string(make([]byte, 1001)))
+			return td
+		}())
+		res, err := req.MergeSplit(context.Background(), 1000, request.SizerTypeBytes, nil)
+		require.ErrorContains(b, err, "one span size is greater than max size, dropping items:")
+		require.NotEmpty(b, res)
 	}
 }
