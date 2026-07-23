@@ -593,6 +593,16 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			},
 		},
 		{
+			err: "failed to get per-RPC credentials",
+			settings: ClientConfig{
+				Endpoint: "localhost:1234",
+				Auth:     configoptional.Some(configauth.Config{AuthenticatorID: testAuthID}),
+			},
+			extensions: map[component.ID]component.Component{
+				testAuthID: extensionauthtest.NewErr(errors.New("failed to get per-RPC credentials")),
+			},
+		},
+		{
 			err: "unsupported compression type \"zlib\"",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
