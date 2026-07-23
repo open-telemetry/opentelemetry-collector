@@ -32,7 +32,7 @@ func createMeterProvider(
 		cfg.Metrics.Views = set.DefaultViews(cfg.Metrics.Level)
 	}
 
-	resourceConfig, err := createFixedResourceConfig(&cfg.Resource, set.Resource)
+	resourceConfig, err := createFixedResourceConfig(&cfg.Resource, set.Resource, set.SchemaURL)
 	if err != nil {
 		return nil, err
 	}
