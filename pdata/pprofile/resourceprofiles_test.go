@@ -77,7 +77,7 @@ func TestResourceProfilesSwitchDictionary(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			rp := tt.resourceProfiles
 			dst := tt.dst
-			err := rp.switchDictionary(tt.src, dst)
+			err := rp.switchDictionary(tt.src, dst, newMergeIndex(dst))
 
 			if tt.wantErr == nil {
 				require.NoError(t, err)
@@ -109,6 +109,6 @@ func BenchmarkResourceProfilesSwitchDictionary(b *testing.B) {
 		dst := NewProfilesDictionary()
 		b.StartTimer()
 
-		_ = r.switchDictionary(src, dst)
+		_ = r.switchDictionary(src, dst, newMergeIndex(dst))
 	}
 }

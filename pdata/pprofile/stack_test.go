@@ -209,7 +209,7 @@ func TestStackSwitchDictionary(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			stack := tt.stack
 			dst := tt.dst
-			err := stack.switchDictionary(tt.src, dst)
+			err := stack.switchDictionary(tt.src, dst, newMergeIndex(dst))
 
 			if tt.wantErr == nil {
 				require.NoError(t, err)
@@ -243,6 +243,6 @@ func BenchmarkStackSwitchDictionary(b *testing.B) {
 		dst.LocationTable().AppendEmpty().SetAddress(43)
 		b.StartTimer()
 
-		_ = s.switchDictionary(src, dst)
+		_ = s.switchDictionary(src, dst, newMergeIndex(dst))
 	}
 }
