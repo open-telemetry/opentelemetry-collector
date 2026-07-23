@@ -5,3 +5,14 @@ github_project: open-telemetry/opentelemetry-collector
 status:
   disable_codecov_badge: true
   class: pkg
+
+exported_configs:
+  config:
+    description: Defines the auth settings for the receiver.
+    type: object
+    properties:
+      authenticator:
+        description: Specifies the name of the extension to use in order to authenticate the incoming data point.
+        type: component_id
+        go_struct:
+          field_name: AuthenticatorID
