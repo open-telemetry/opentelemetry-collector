@@ -10,7 +10,7 @@ all_set:
       attributes: ["cpu","state"]
     system.cpu.utilization@v1:
       enabled: true
-      attributes: ["cpu.logical_number","state"]
+      attributes: ["cpu.logical_number","cpu.mode"]
     system.memory.linux.available:
       enabled: true
 reaggregate_set:
@@ -38,6 +38,6 @@ none_set:
       attributes: ["cpu","state"]
     system.cpu.utilization@v1:
       enabled: false
-      attributes: ["cpu.logical_number","state"]
+      attributes: ["cpu.logical_number","cpu.mode"]
     system.memory.linux.available:
       enabled: false
