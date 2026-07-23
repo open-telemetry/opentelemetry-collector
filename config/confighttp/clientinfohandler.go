@@ -37,7 +37,7 @@ func contextWithClient(req *http.Request, includeMetadata bool) context.Context 
 	}
 
 	if req.TLS != nil {
-		cl.TLS = client.NewTLSInfo(*req.TLS)
+		cl.TLS = req.TLS
 	}
 
 	if includeMetadata {

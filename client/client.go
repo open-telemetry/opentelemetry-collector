@@ -80,7 +80,6 @@ package client // import "go.opentelemetry.io/collector/client"
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"iter"
 	"maps"
 	"net"
@@ -104,32 +103,14 @@ type Info struct {
 	// Metadata is the request metadata from the client connecting to this connector.
 	Metadata Metadata
 
-	// TLS contains information about the TLS connection with the client.
-	TLS *TLSInfo
+	// TLS contains the TLS connection state for the client, when the
+	// connection to the receiver was established over TLS. It is nil for
+	// non-TLS connections. Authentication extensions can use the peer
+	// certificates and verified chains to authorize the client identity.
+	TLS *tls.ConnectionState
 
 	// prevent unkeyed literal initialization
 	_ struct{}
-}
-
-// TLSInfo contains TLS connection data for clients connecting to receivers.
-type TLSInfo struct {
-	// ServerName is the SNI server name provided by the client.
-	ServerName string
-
-	// PeerCertificates contains the certificates sent by the peer. Authentication
-	// extensions can use these certificates to authorize the client identity.
-	PeerCertificates []*x509.Certificate
-
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
-// NewTLSInfo creates TLSInfo from a TLS connection state.
-func NewTLSInfo(state tls.ConnectionState) *TLSInfo {
-	return &TLSInfo{
-		ServerName:       state.ServerName,
-		PeerCertificates: state.PeerCertificates,
-	}
 }
 
 // AuthData represents the authentication data as seen by authenticators tied to

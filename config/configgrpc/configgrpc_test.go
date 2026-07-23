@@ -932,7 +932,7 @@ func TestContextWithClient(t *testing.T) {
 				},
 			}),
 			expected: client.Info{
-				TLS: &client.TLSInfo{
+				TLS: &tls.ConnectionState{
 					ServerName:       "service.example.com",
 					PeerCertificates: []*x509.Certificate{peerCert},
 				},

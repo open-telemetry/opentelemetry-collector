@@ -68,7 +68,7 @@ func TestContextWithClientIncludesTLSInfo(t *testing.T) {
 
 	got := client.FromContext(contextWithClient(req, false))
 
-	assert.Equal(t, &client.TLSInfo{
+	assert.Equal(t, &tls.ConnectionState{
 		ServerName:       "service.example.com",
 		PeerCertificates: []*x509.Certificate{peerCert},
 	}, got.TLS)
