@@ -96,7 +96,11 @@ type MemoryLimiter struct {
 	waitGroup      sync.WaitGroup
 	closed         chan struct{}
 
-	host component.Host
+	// host is set on every Start and read by the monitor goroutine (via
+	// componentstatus.ReportStatus) without holding refCounterLock, so it is
+	// stored atomically to avoid a data race when a shared instance is started
+	// by more than one pipeline while the goroutine is already running.
+	host atomic.Pointer[component.Host]
 }
 
 // NewMemoryLimiter returns a new memory limiter component
@@ -129,7 +133,7 @@ func NewMemoryLimiter(cfg *Config, logger *zap.Logger) (*MemoryLimiter, error) {
 }
 
 func (ml *MemoryLimiter) Start(_ context.Context, host component.Host) error {
-	ml.host = host
+	ml.host.Store(&host)
 	ml.refCounterLock.Lock()
 	defer ml.refCounterLock.Unlock()
 
@@ -253,6 +257,15 @@ func (ml *MemoryLimiter) nextBackoffInterval(current, configMin, configMax time.
 	return min(max(current, minInterval)*2, maxInterval)
 }
 
+// reportStatus reports a status event to the host set by the most recent
+// Start. The host is loaded atomically because Start may run concurrently
+// with the monitor goroutine that calls this method.
+func (ml *MemoryLimiter) reportStatus(event *componentstatus.Event) {
+	if host := ml.host.Load(); host != nil {
+		componentstatus.ReportStatus(*host, event)
+	}
+}
+
 // CheckMemLimits inspects current memory usage against threshold and toggles mustRefuse when threshold is exceeded
 func (ml *MemoryLimiter) CheckMemLimits() {
 	ms := ml.readMemStats()
@@ -269,7 +282,7 @@ func (ml *MemoryLimiter) CheckMemLimits() {
 			// Was previously refusing but enough memory is available now, no need to limit.
 			ml.logger.Info("Memory usage back within limits. Resuming normal operation.", memstatToZapField(ms))
 		}
-		componentstatus.ReportStatus(ml.host, componentstatus.NewEvent(componentstatus.StatusOK))
+		ml.reportStatus(componentstatus.NewEvent(componentstatus.StatusOK))
 		ml.mustRefuse.Store(aboveSoftLimit)
 		return
 	}
@@ -297,13 +310,13 @@ func (ml *MemoryLimiter) CheckMemLimits() {
 	}
 
 	if !ml.mustRefuse.Load() && aboveSoftLimit {
-		componentstatus.ReportStatus(ml.host, componentstatus.NewRecoverableErrorEvent(ErrDataRefused))
+		ml.reportStatus(componentstatus.NewRecoverableErrorEvent(ErrDataRefused))
 		ml.logger.Warn("Memory usage is above soft limit. Refusing data.", memstatToZapField(ms))
 	}
 
 	if !aboveSoftLimit {
 		// GC brought memory back within limits in this same tick — report OK immediately.
-		componentstatus.ReportStatus(ml.host, componentstatus.NewEvent(componentstatus.StatusOK))
+		ml.reportStatus(componentstatus.NewEvent(componentstatus.StatusOK))
 	}
 
 	ml.mustRefuse.Store(aboveSoftLimit)
