@@ -11,6 +11,10 @@ status:
   stability:
     beta: [traces, metrics, logs]
 
+exported_configs:
+  timeout_config:
+    $ref: ./internal.timeout_config
+
 telemetry:
   metrics:
     exporter_enqueue_failed_log_records:
