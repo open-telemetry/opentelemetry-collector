@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"runtime"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -351,6 +352,35 @@ func TestPartitionBatcher_Shutdown(t *testing.T) {
 	assert.EqualValues(t, 2, done.success.Load())
 }
 
+// TestPartitionBatcher_ConcurrentConsumeAndShutdown is a regression test for
+// https://github.com/open-telemetry/opentelemetry-collector/issues/15422.
+// A Consume call that reads active==true and then calls flush() (which does
+// stopWG.Add(1)) can race with shutdownInternal()'s stopWG.Wait(), panicking
+// with "sync: WaitGroup is reused before previous Wait has returned".
+func TestPartitionBatcher_ConcurrentConsumeAndShutdown(t *testing.T) {
+	for range 100 {
+		cfg := BatchConfig{
+			FlushTimeout: time.Millisecond,
+			Sizer:        request.SizerTypeItems,
+			MinSize:      1,
+		}
+
+		sink := requesttest.NewSink()
+		ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(4), sink.Export, zap.NewNop(), nil)
+		require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+
+		var wg sync.WaitGroup
+		for range 8 {
+			wg.Go(func() {
+				ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 1, Bytes: 1}, newFakeDone())
+			})
+		}
+
+		require.NoError(t, ba.Shutdown(context.Background()))
+		wg.Wait()
+	}
+}
+
 func TestPartitionBatcher_MergeError(t *testing.T) {
 	cfg := BatchConfig{
 		FlushTimeout: 200 * time.Second,
@@ -593,6 +623,34 @@ func TestPartitionBatcher_OnEmptyCallbackTriggered(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return onEmptyCalled.Load() >= 1
 	}, 500*time.Millisecond, 10*time.Millisecond)
+}
+
+// TestPartitionBatcher_ShutdownNoDeadlock catches the deadlock that occurs when
+// shutdownInternal holds currentBatchMu across stopWG.Wait while the timer goroutine
+// (counted in stopWG) is blocked trying to acquire currentBatchMu.
+func TestPartitionBatcher_ShutdownNoDeadlock(t *testing.T) {
+	cfg := BatchConfig{
+		FlushTimeout: time.Nanosecond,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      100,
+	}
+	sink := requesttest.NewSink()
+	ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(2), sink.Export, zap.NewNop(), nil)
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 1}, newFakeDone())
+
+	shutdownDone := make(chan struct{})
+	go func() {
+		defer close(shutdownDone)
+		_ = ba.Shutdown(context.Background())
+	}()
+
+	select {
+	case <-shutdownDone:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Shutdown deadlocked")
+	}
 }
 
 func TestPartitionBatcher_OnEmptyNotCalledWithActiveData(t *testing.T) {

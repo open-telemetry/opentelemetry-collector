@@ -5,6 +5,7 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"time"
 
@@ -45,6 +46,7 @@ type partitionBatcher struct {
 	onEmpty        func()    // callback triggered when partition is idle for given time period.
 	lastDataTime   time.Time // tracks when data was last present
 	active         bool      // indicates if partition is still active i.e timer is running and shutdown is not called yet. If Consume is called on inactive partition then data is flushed sync because timer is not running.
+	stopped        bool      // set to true during shutdown to block new stopWG.Add calls in flush(), protecting against WaitGroup reuse panic.
 }
 
 func newPartitionBatcher(
@@ -245,6 +247,12 @@ func (qb *partitionBatcher) shutdownInternal() {
 	close(qb.shutdownCh)
 	// Make sure execute one last flush if necessary.
 	qb.flushCurrentBatchOrRemovePartition()
+	// Block new stopWG.Add calls before waiting, preventing WaitGroup reuse panic.
+	// The lock is released before Wait so the timer goroutine (which holds a stopWG count
+	// and may need currentBatchMu) can exit without deadlocking.
+	qb.currentBatchMu.Lock()
+	qb.stopped = true
+	qb.currentBatchMu.Unlock()
 	qb.stopWG.Wait()
 }
 
@@ -288,7 +296,15 @@ func (qb *partitionBatcher) flushCurrentBatchOrRemovePartition() {
 
 // flush starts a goroutine that calls consumeFunc. It blocks until a worker is available if necessary.
 func (qb *partitionBatcher) flush(ctx context.Context, req request.Request, done queue.Done) {
+	// Add under the lock so it cannot race with the stopped flag set in shutdownInternal.
+	qb.currentBatchMu.Lock()
+	if qb.stopped {
+		qb.currentBatchMu.Unlock()
+		done.OnDone(errors.New("partitionBatcher is stopped"))
+		return
+	}
 	qb.stopWG.Add(1)
+	qb.currentBatchMu.Unlock()
 	qb.wp.execute(func() {
 		defer qb.stopWG.Done()
 		done.OnDone(qb.consumeFunc(ctx, req))
