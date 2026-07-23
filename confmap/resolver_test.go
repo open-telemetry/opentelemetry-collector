@@ -130,6 +130,26 @@ func TestNewResolverDuplicateScheme(t *testing.T) {
 	assert.EqualError(t, err, `duplicate 'confmap.Provider' scheme "mock"`)
 }
 
+func TestNewResolverDriveLetterShortcut(t *testing.T) {
+	// The drive-letter shortcut treats "^<ALPHA>:" URIs as file paths for
+	// backwards compatibility. It must only fire for real letters (A-Z/a-z),
+	// not for the ASCII characters between 'Z' and 'a' ([ \ ] ^ _ `).
+	t.Run("non-letter prefix is not a drive letter", func(t *testing.T) {
+		for _, uri := range []string{"_:foo", "]:foo"} {
+			_, err := NewResolver(ResolverSettings{URIs: []string{uri}, ProviderFactories: []ProviderFactory{newMockProvider(&mockProvider{scheme: "mock"})}})
+			assert.EqualError(t, err, `invalid uri: "`+uri+`"`)
+		}
+	})
+	t.Run("letter prefix resolves to the file provider", func(t *testing.T) {
+		for _, uri := range []string{"c:/config.yaml", "Z:/config.yaml"} {
+			r, err := NewResolver(ResolverSettings{URIs: []string{uri}, ProviderFactories: []ProviderFactory{newFileProvider(t)}})
+			require.NoError(t, err)
+			require.Len(t, r.uris, 1)
+			assert.Equal(t, "file", r.uris[0].scheme)
+		}
+	})
+}
+
 func TestResolverErrors(t *testing.T) {
 	tests := []struct {
 		name              string

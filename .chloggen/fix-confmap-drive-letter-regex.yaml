@@ -1,0 +1,29 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: bug_fix
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
+component: pkg/confmap
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Restrict the drive-letter detection to real letters so non-letter URIs are no longer misread as file paths
+
+# One or more tracking issues or pull requests related to the change
+issues: [15525]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  The drive-letter shortcut used the `[A-z]` character class, which also matches
+  the ASCII characters between `Z` and `a` (`[`, `\`, `]`, `^`, `_`, and `` ` ``).
+  A config URI beginning with one of those followed by `:` was silently treated
+  as a file path instead of failing scheme validation. It now uses `[A-Za-z]`.
+
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]
