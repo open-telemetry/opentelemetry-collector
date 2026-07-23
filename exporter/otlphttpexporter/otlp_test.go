@@ -257,7 +257,12 @@ func TestErrorResponses(t *testing.T) {
 			cfg := &Config{
 				Encoding:       EncodingProto,
 				TracesEndpoint: srv.URL + "/v1/traces",
-				// Create without QueueConfig and RetryConfig so that ConsumeTraces
+				RetryConfig: RetryConfig{
+					// Use the spec default retryable status codes so existing
+					// permanent-vs-retryable assertions continue to match.
+					RetryableStatuses: []int{429, 502, 503, 504},
+				},
+				// Create without QueueConfig so that ConsumeTraces
 				// returns the errors that we want to check immediately.
 			}
 			exp, err := createTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
@@ -1215,6 +1220,89 @@ func TestExport_ErrorShowsModifiedURL(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), modifiedURL, "Error message should contain the modified destination URL")
 	assert.NotContains(t, err.Error(), originalURL, "Error message should NOT contain the original placeholder URL")
+}
+
+// TestIsRetryableStatusCode covers the configured retryable_statuses lookup,
+// including the spec defaults and a non-spec status code (530) added per
+// issue #15382.
+func TestIsRetryableStatusCode(t *testing.T) {
+	tests := []struct {
+		name              string
+		statusCode        int
+		retryableStatuses []int
+		want              bool
+	}{
+		{"429 retryable with spec defaults", http.StatusTooManyRequests, []int{429, 502, 503, 504}, true},
+		{"502 retryable with spec defaults", http.StatusBadGateway, []int{429, 502, 503, 504}, true},
+		{"503 retryable with spec defaults", http.StatusServiceUnavailable, []int{429, 502, 503, 504}, true},
+		{"504 retryable with spec defaults", http.StatusGatewayTimeout, []int{429, 502, 503, 504}, true},
+		{"530 retryable when added", 530, []int{429, 502, 503, 504, 530}, true},
+		{"530 not retryable with spec defaults", 530, []int{429, 502, 503, 504}, false},
+		{"404 never retryable with spec defaults", http.StatusNotFound, []int{429, 502, 503, 504}, false},
+		{"429 not retryable when removed", http.StatusTooManyRequests, []int{502, 503, 504}, false},
+		{"empty list — no code retryable", http.StatusServiceUnavailable, []int{}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			exp := &baseExporter{
+				config: &Config{
+					RetryConfig: RetryConfig{RetryableStatuses: tt.retryableStatuses},
+				},
+			}
+			assert.Equal(t, tt.want, exp.isRetryableStatusCode(tt.statusCode))
+		})
+	}
+}
+
+// TestRetryableStatuses_HTTP530_Issue15382 is the end-to-end regression test
+// for issue #15382. By default, HTTP 530 (a non-spec status code) is treated
+// as a permanent error and the data is dropped. Adding 530 to
+// retryable_statuses must make it retryable (consumererror.IsPermanent == false).
+func TestRetryableStatuses_HTTP530_Issue15382(t *testing.T) {
+	tests := []struct {
+		name              string
+		retryableStatuses []int
+		wantPermanent     bool
+	}{
+		{
+			name:              "default list — HTTP 530 is permanent (current behavior)",
+			retryableStatuses: []int{429, 502, 503, 504},
+			wantPermanent:     true,
+		},
+		{
+			name:              "extended list — HTTP 530 is retryable (issue #15382 fix)",
+			retryableStatuses: []int{429, 502, 503, 504, 530},
+			wantPermanent:     false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := createBackend("/v1/traces", func(writer http.ResponseWriter, _ *http.Request) {
+				writer.WriteHeader(530)
+			})
+			defer srv.Close()
+
+			cfg := &Config{
+				Encoding:       EncodingProto,
+				TracesEndpoint: srv.URL + "/v1/traces",
+				RetryConfig: RetryConfig{
+					RetryableStatuses: tt.retryableStatuses,
+				},
+			}
+			exp, err := createTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+			require.NoError(t, err)
+			require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
+			t.Cleanup(func() {
+				require.NoError(t, exp.Shutdown(context.Background()))
+			})
+
+			err = exp.ConsumeTraces(context.Background(), ptrace.NewTraces())
+			require.Error(t, err)
+			assert.Equal(t, tt.wantPermanent, consumererror.IsPermanent(err),
+				"HTTP 530 with retryable_statuses=%v: expected permanent=%v",
+				tt.retryableStatuses, tt.wantPermanent)
+		})
+	}
 }
 
 func TestPartialSuccess_responseBodyTooLarge(t *testing.T) {
