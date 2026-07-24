@@ -178,8 +178,8 @@ func (md *Metadata) validateResourceAttributes() error {
 		if attr.EnabledPtr == nil {
 			errs = errors.Join(errs, fmt.Errorf("enabled field is required for resource attribute: %v", name))
 		}
-		if attr.Enum != nil && len(attr.Enum) == 0 {
-			errs = errors.Join(errs, fmt.Errorf("empty enum for resource attribute: %v", name))
+		if attr.Enum != nil && len(attr.Enum) < 2 {
+			errs = errors.Join(errs, fmt.Errorf("enum for resource attribute %v must have at least two values", name))
 		}
 	}
 	return errs
@@ -319,8 +319,8 @@ func (md *Metadata) validateAttributes(usedAttrs map[AttributeName]bool) error {
 		if attr.EnabledPtr != nil {
 			errs = errors.Join(errs, fmt.Errorf("enabled field is not allowed for regular attribute: %v", attrName))
 		}
-		if attr.Enum != nil && len(attr.Enum) == 0 {
-			errs = errors.Join(errs, fmt.Errorf("empty enum for attribute: %v", attrName))
+		if attr.Enum != nil && len(attr.Enum) < 2 {
+			errs = errors.Join(errs, fmt.Errorf("enum for attribute %v must have at least two values", attrName))
 		}
 		if !usedAttrs[attrName] {
 			unusedAttrs = append(unusedAttrs, attrName)
@@ -732,9 +732,6 @@ func (a Attribute) TestValue() string {
 func (a Attribute) TestValueTwo() string {
 	if len(a.Enum) > 1 {
 		return fmt.Sprintf(`%q`, a.Enum[1])
-	}
-	if len(a.Enum) == 1 {
-		return fmt.Sprintf(`%q`, a.Enum[0])
 	}
 	switch a.Type.ValueType {
 	case pcommon.ValueTypeEmpty:

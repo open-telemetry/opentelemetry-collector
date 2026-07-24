@@ -133,11 +133,19 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			name:    "testdata/empty_enum_attr.yaml",
-			wantErr: "empty enum for attribute: string_attr",
+			wantErr: "enum for attribute string_attr must have at least two values",
+		},
+		{
+			name:    "testdata/single_enum_attr.yaml",
+			wantErr: "enum for attribute string_attr must have at least two values",
 		},
 		{
 			name:    "testdata/empty_enum_rattr.yaml",
-			wantErr: "empty enum for resource attribute: string.resource.attr",
+			wantErr: "enum for resource attribute string.resource.attr must have at least two values",
+		},
+		{
+			name:    "testdata/single_enum_rattr.yaml",
+			wantErr: "enum for resource attribute string.resource.attr must have at least two values",
 		},
 		{
 			name:    "testdata/entity_undefined_id_attribute.yaml",
@@ -358,7 +366,7 @@ func TestAttributeTestValueAndTestValueTwo(t *testing.T) {
 				Enum:     []string{"default"},
 			},
 			wantTestVal:  `"default"`,
-			wantTestVal2: `"default"`,
+			wantTestVal2: `"mode-val-2"`,
 		},
 		{
 			name: "empty enum slice",
