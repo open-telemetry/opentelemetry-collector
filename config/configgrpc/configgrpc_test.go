@@ -263,6 +263,20 @@ func TestAllGrpcClientSettings(t *testing.T) {
 	}
 }
 
+func TestGetGRPCDialOptionsPerRPCCredentialsError(t *testing.T) {
+	cc := ClientConfig{
+		Endpoint: "localhost:1234",
+		TLS:      configtls.ClientConfig{Insecure: true},
+		Auth:     configoptional.Some(configauth.Config{AuthenticatorID: testAuthID}),
+	}
+	extensions := map[component.ID]component.Component{
+		testAuthID: extensionauthtest.NewErr(errors.New("per-rpc credentials failure")),
+	}
+	_, err := cc.getGrpcDialOptions(context.Background(), extensions, componenttest.NewNopTelemetrySettings(), []ToClientConnOption{})
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "per-rpc credentials failure")
+}
+
 func TestSanitizeEndpoint(t *testing.T) {
 	cfg := NewDefaultClientConfig()
 	cfg.Endpoint = "dns://authority/backend.example.com:4317"

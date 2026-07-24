@@ -436,7 +436,7 @@ func (cc *ClientConfig) getGrpcDialOptions(
 
 		perRPCCredentials, perr := grpcAuthenticator.PerRPCCredentials()
 		if perr != nil {
-			return nil, err
+			return nil, perr
 		}
 		opts = append(opts, grpc.WithPerRPCCredentials(perRPCCredentials))
 	}
