@@ -46,7 +46,7 @@ func mustParseInt64(s string) int64 {
   re := regexp.MustCompile(`-?\d+`)
   match := re.FindString(s)
   if match == "" {
-      return 0
+	  return 0
   }
 	v, _ := strconv.ParseInt(match, 10, 64)
 	return v
@@ -408,30 +408,30 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings {{ .Status.Class }}.Se
   {{- range $name, $metric := .Metrics }}
   {{- if $metric.Migration }}
   if {{ printf "%s" $metric.Migration.ThroughGates.EnableNew | publicVar }}FeatureGate.IsEnabled() {
-    if mb.metric{{ $name.Render }}.config.Enabled && mb.metric{{ $metric.Migration.To.Render }}.config.Enabled {
-      var disable bool
-      if mb.metric{{ $name.Render }}.data.Type() != mb.metric{{ $metric.Migration.To.Render }}.data.Type() {
-        // Disable legacy metric if legacy and latest have same name but different types
-        disable = true
-        settings.Logger.Warn("[WARNING] Legacy metric `{{ $name }}` disabled: same emitted name as `{{ $metric.Migration.To }}` with different type; only latest will be emitted")
-      }
-      if !slices.Equal(MetricsInfo.{{ $name.Render }}.Attributes, MetricsInfo.{{ $metric.Migration.To.Render }}.Attributes) {
-        // Disable legacy metric if legacy and latest have same name but different attributes
-        // The latest metric will emit both attribute sets during migration
-        disable = true
-        settings.Logger.Warn("[WARNING] Legacy metric `{{ $name }}` disabled: same emitted name as `{{ $metric.Migration.To }}` with different attributes; only latest will be emitted with combined attributes",
-          zap.Strings("legacy_attributes", MetricsInfo.{{ $name.Render }}.Attributes),
-          zap.Strings("latest_attributes", MetricsInfo.{{ $metric.Migration.To.Render }}.Attributes))
-      }
-      if disable {
-        mb.metric{{ $name.Render }}.config.Enabled = false
-      }
-    }
+	if mb.metric{{ $name.Render }}.config.Enabled && mb.metric{{ $metric.Migration.To.Render }}.config.Enabled {
+	  var disable bool
+	  if mb.metric{{ $name.Render }}.data.Type() != mb.metric{{ $metric.Migration.To.Render }}.data.Type() {
+		// Disable legacy metric if legacy and latest have same name but different types
+		disable = true
+		settings.Logger.Warn("[WARNING] Legacy metric `{{ $name }}` disabled: same emitted name as `{{ $metric.Migration.To }}` with different type; only latest will be emitted")
+	  }
+	  if !slices.Equal(MetricsInfo.{{ $name.Render }}.Attributes, MetricsInfo.{{ $metric.Migration.To.Render }}.Attributes) {
+		// Disable legacy metric if legacy and latest have same name but different attributes
+		// The latest metric will emit both attribute sets during migration
+		disable = true
+		settings.Logger.Warn("[WARNING] Legacy metric `{{ $name }}` disabled: same emitted name as `{{ $metric.Migration.To }}` with different attributes; only latest will be emitted with combined attributes",
+		  zap.Strings("legacy_attributes", MetricsInfo.{{ $name.Render }}.Attributes),
+		  zap.Strings("latest_attributes", MetricsInfo.{{ $metric.Migration.To.Render }}.Attributes))
+	  }
+	  if disable {
+		mb.metric{{ $name.Render }}.config.Enabled = false
+	  }
+	}
   } else {
-    if !{{ printf "%s" $metric.Migration.ThroughGates.EnableNew | publicVar}}FeatureGate.IsEnabled() && mb.metric{{ $metric.Migration.To.Render }}.config.Enabled {
-      mb.metric{{ $metric.Migration.To.Render }}.config.Enabled = false
-      settings.Logger.Warn("[WARNING] metric `{{ $metric.Migration.To }}` requires feature gate `{{ $metric.Migration.ThroughGates.EnableNew }}` to be enabled, metric has been disabled")
-    }
+	if !{{ printf "%s" $metric.Migration.ThroughGates.EnableNew | publicVar}}FeatureGate.IsEnabled() && mb.metric{{ $metric.Migration.To.Render }}.config.Enabled {
+	  mb.metric{{ $metric.Migration.To.Render }}.config.Enabled = false
+	  settings.Logger.Warn("[WARNING] metric `{{ $metric.Migration.To }}` requires feature gate `{{ $metric.Migration.ThroughGates.EnableNew }}` to be enabled, metric has been disabled")
+	}
   }
   {{- end }}
   {{- end }}
@@ -623,9 +623,9 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 		{{- end -}}
 		{{- end -}}
 		{{- if $metric.HasConditionalAttributes $.Attributes -}}
-        , options...
-        {{- end -}}
-        )
+		, options...
+		{{- end -}}
+		)
 	}
 	{{- $targetMetric := index $.Metrics $metric.Migration.To }}
 	if {{ printf "%s" $metric.Migration.ThroughGates.EnableNew | publicVar }}FeatureGate.IsEnabled() {
