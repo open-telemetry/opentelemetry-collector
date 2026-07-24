@@ -183,7 +183,7 @@ metrics:
     stability: development
     unit: s
     sum:
-      values: int
+      value_type: int
       monotonic: true
       aggregation_temporality: cumulative
     attributes:
@@ -201,7 +201,7 @@ metrics:
       note: "This metric will be removed"
     unit: s
     sum:
-      values: double
+      value_type: double
       monotonic: false
       aggregation_temporality: delta
     warnings:
@@ -213,7 +213,7 @@ metrics:
     description: Monotonic cumulative sum int metric with string input_type enabled by default.
     unit: s
     sum:
-      values: int
+      value_type: int
       input_type: string
       monotonic: true
       aggregation_temporality: cumulative
@@ -229,7 +229,7 @@ metrics:
       note: "This metric will be removed"
     unit: "1"
     gauge:
-      values: double
+      value_type: double
     attributes: [string_attr, boolean_attr, boolean_attr2]
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
@@ -243,7 +243,7 @@ metrics:
       note: "This metric will be removed"
     unit: ""
     gauge:
-      values: double
+      value_type: double
     attributes: [string_attr, boolean_attr]
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
@@ -254,7 +254,7 @@ metrics:
     unit: "1"
     stability: beta
     gauge:
-      values: double
+      value_type: double
     attributes: [string_attr, boolean_attr]
 
   system.cpu.time:
@@ -264,7 +264,7 @@ metrics:
     extended_documentation: The metric will be become optional soon.
     unit: s
     sum:
-      values: int
+      value_type: int
       monotonic: true
       aggregation_temporality: cumulative
     semantic_convention:

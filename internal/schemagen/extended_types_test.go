@@ -12,8 +12,10 @@ import (
 
 func TestExpandExtendedType_StandardTypes_NoOp(t *testing.T) {
 	// These are the native types the generator understands directly — expandType is a no-op for them.
-	standardTypes := []string{"", "string", "bool", "int", "uint", "int8", "uint8", "int16", "uint16",
-		"int32", "uint32", "int64", "uint64", "object", "slice", "map", "any"}
+	standardTypes := []string{
+		"", "string", "bool", "int", "uint", "int8", "uint8", "int16", "uint16",
+		"int32", "uint32", "int64", "uint64", "object", "slice", "map", "any",
+	}
 	for _, typ := range standardTypes {
 		t.Run(typ, func(t *testing.T) {
 			md := &ConfigMetadata{Type: typ}
