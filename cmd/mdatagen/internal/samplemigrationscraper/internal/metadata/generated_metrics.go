@@ -535,6 +535,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 		metricSystemMemoryLinuxAvailable: newMetricSystemMemoryLinuxAvailable(mbc.Metrics.SystemMemoryLinuxAvailable),
 	}
 	if ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		if mb.metricLinuxMemoryAvailable.config.Enabled && !mb.metricSystemMemoryLinuxAvailable.config.enabledSetByUser {
+			mb.metricSystemMemoryLinuxAvailable.config.Enabled = true
+			mb.metricSystemMemoryLinuxAvailable.data = pmetric.NewMetric()
+			mb.metricSystemMemoryLinuxAvailable.init()
+		}
 		if mb.metricLinuxMemoryAvailable.config.Enabled && mb.metricSystemMemoryLinuxAvailable.config.Enabled {
 			var disable bool
 			if mb.metricLinuxMemoryAvailable.data.Type() != mb.metricSystemMemoryLinuxAvailable.data.Type() {
@@ -561,6 +566,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 		}
 	}
 	if ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		if mb.metricSystemCPUUtilization.config.Enabled && !mb.metricSystemCPUUtilizationV1.config.enabledSetByUser {
+			mb.metricSystemCPUUtilizationV1.config.Enabled = true
+			mb.metricSystemCPUUtilizationV1.data = pmetric.NewMetric()
+			mb.metricSystemCPUUtilizationV1.init()
+		}
 		if mb.metricSystemCPUUtilization.config.Enabled && mb.metricSystemCPUUtilizationV1.config.Enabled {
 			var disable bool
 			if mb.metricSystemCPUUtilization.data.Type() != mb.metricSystemCPUUtilizationV1.data.Type() {

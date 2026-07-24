@@ -408,6 +408,15 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings {{ .Status.Class }}.Se
   {{- range $name, $metric := .Metrics }}
   {{- if $metric.Migration }}
   if {{ printf "%s" $metric.Migration.ThroughGates.EnableNew | publicVar }}FeatureGate.IsEnabled() {
+   {{- /* If a legacy metric is enabled, programmatically enable the v1 metric.
+   The v1 metric may be disabled in metadata.yaml; when the v1 feature gate
+   is on we need to enable it automatically so users don't have to update
+   their config. */}}
+    if mb.metric{{ $name.Render }}.config.Enabled && !mb.metric{{ $metric.Migration.To.Render }}.config.enabledSetByUser {
+      mb.metric{{ $metric.Migration.To.Render }}.config.Enabled = true
+      mb.metric{{ $metric.Migration.To.Render }}.data = pmetric.NewMetric()
+      mb.metric{{ $metric.Migration.To.Render }}.init()
+    }
     if mb.metric{{ $name.Render }}.config.Enabled && mb.metric{{ $metric.Migration.To.Render }}.config.Enabled {
       var disable bool
       if mb.metric{{ $name.Render }}.data.Type() != mb.metric{{ $metric.Migration.To.Render }}.data.Type() {
