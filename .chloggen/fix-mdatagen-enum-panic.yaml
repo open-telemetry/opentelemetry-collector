@@ -1,0 +1,9 @@
+change_type: bug_fix
+
+component: cmd/mdatagen
+
+note: Fix panic when handling single-element or empty enum attributes in cmd/mdatagen
+
+issues: [15644]
+
+change_logs: [user]
