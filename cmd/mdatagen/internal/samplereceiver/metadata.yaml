@@ -66,6 +66,7 @@ config:
       description: Extra HTTP headers to attach to each request.
       type: opaque_map
     sample_pkg:
+      description: Configuration imported from the sample shared package.
       $ref: ../samplepkg.sample_config
   required: [endpoint]
 

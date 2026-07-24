@@ -6,6 +6,8 @@ package schemagen // import "go.opentelemetry.io/collector/internal/schemagen"
 import (
 	"errors"
 	"fmt"
+	"sort"
+	"strings"
 
 	"go.opentelemetry.io/collector/confmap"
 )
@@ -97,6 +99,55 @@ func (md *ConfigsMetadata) Validate() error {
 		}
 	}
 	return nil
+}
+
+// CollectMissingDescriptions returns the config fields without a description.
+func (md *ConfigsMetadata) CollectMissingDescriptions() []string {
+	var missing []string
+	if md.Config != nil {
+		collectMissingDescriptions(md.Config, "config", &missing)
+	}
+	for _, name := range sortedConfigKeys(md.ExportedConfigs) {
+		cfg := md.ExportedConfigs[name]
+		if cfg == nil || cfg.InternalOnly {
+			continue
+		}
+		collectMissingDescriptions(cfg, "exported_configs."+name, &missing)
+	}
+	sort.Strings(missing)
+	return missing
+}
+
+func collectMissingDescriptions(md *ConfigMetadata, path string, missing *[]string) {
+	for _, name := range sortedConfigKeys(md.Properties) {
+		prop := md.Properties[name]
+		if prop == nil {
+			continue
+		}
+		fieldPath := path + "." + name
+		if strings.TrimSpace(prop.Description) == "" {
+			*missing = append(*missing, fieldPath)
+		}
+		// Ignore external types.
+		if prop.Ref == "" {
+			collectMissingDescriptions(prop, fieldPath, missing)
+		}
+	}
+	if md.Items != nil && md.Items.Ref == "" {
+		collectMissingDescriptions(md.Items, path+".items", missing)
+	}
+	if md.AdditionalProperties != nil && md.AdditionalProperties.Ref == "" {
+		collectMissingDescriptions(md.AdditionalProperties, path+".additionalProperties", missing)
+	}
+}
+
+func sortedConfigKeys(m map[string]*ConfigMetadata) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 // MergeFrom copies any field from other that is not already set on md.
