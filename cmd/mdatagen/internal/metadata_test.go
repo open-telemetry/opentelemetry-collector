@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/internal/schemagen"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -129,6 +130,14 @@ func TestValidate(t *testing.T) {
 		{
 			name:    "testdata/no_type_attr.yaml",
 			wantErr: "empty type for attribute: used_attr",
+		},
+		{
+			name:    "testdata/empty_enum_attr.yaml",
+			wantErr: "empty enum for attribute: string_attr",
+		},
+		{
+			name:    "testdata/empty_enum_rattr.yaml",
+			wantErr: "empty enum for resource attribute: string.resource.attr",
 		},
 		{
 			name:    "testdata/entity_undefined_id_attribute.yaml",
@@ -320,6 +329,62 @@ func TestCodeCovID(t *testing.T) {
 		t.Run(tt.md.Type, func(t *testing.T) {
 			got := tt.md.GetCodeCovComponentID()
 			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestAttributeTestValueAndTestValueTwo(t *testing.T) {
+	tests := []struct {
+		name         string
+		attr         Attribute
+		wantTestVal  string
+		wantTestVal2 string
+	}{
+		{
+			name: "multi element enum",
+			attr: Attribute{
+				FullName: AttributeName("mode"),
+				Type:     ValueType{ValueType: pcommon.ValueTypeStr},
+				Enum:     []string{"first", "second", "third"},
+			},
+			wantTestVal:  `"first"`,
+			wantTestVal2: `"second"`,
+		},
+		{
+			name: "single element enum",
+			attr: Attribute{
+				FullName: AttributeName("mode"),
+				Type:     ValueType{ValueType: pcommon.ValueTypeStr},
+				Enum:     []string{"default"},
+			},
+			wantTestVal:  `"default"`,
+			wantTestVal2: `"default"`,
+		},
+		{
+			name: "empty enum slice",
+			attr: Attribute{
+				FullName: AttributeName("mode"),
+				Type:     ValueType{ValueType: pcommon.ValueTypeStr},
+				Enum:     []string{},
+			},
+			wantTestVal:  `"mode-val"`,
+			wantTestVal2: `"mode-val-2"`,
+		},
+		{
+			name: "non-enum string attribute",
+			attr: Attribute{
+				FullName: AttributeName("mode"),
+				Type:     ValueType{ValueType: pcommon.ValueTypeStr},
+			},
+			wantTestVal:  `"mode-val"`,
+			wantTestVal2: `"mode-val-2"`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.wantTestVal, tt.attr.TestValue())
+			assert.Equal(t, tt.wantTestVal2, tt.attr.TestValueTwo())
 		})
 	}
 }

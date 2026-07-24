@@ -1,0 +1,24 @@
+type: file
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+
+attributes:
+  string_attr:
+    description: string attribute description
+    type: string
+    enum: []
+
+metrics:
+  default.metric:
+    enabled: true
+    description: Monotonic cumulative sum int metric enabled by default.
+    stability: development
+    unit: s
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [string_attr]
