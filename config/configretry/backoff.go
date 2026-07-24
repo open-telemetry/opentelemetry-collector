@@ -3,6 +3,8 @@
 
 package configretry // import "go.opentelemetry.io/collector/config/configretry"
 
+//go:generate mdatagen metadata.yaml
+
 import (
 	"errors"
 	"time"
