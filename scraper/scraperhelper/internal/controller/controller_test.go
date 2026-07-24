@@ -291,49 +291,53 @@ func TestStartScrapingShutdownDuringInitialDelay(t *testing.T) {
 func TestShutdownDuringHang(t *testing.T) {
 	t.Parallel()
 
-	synctest.Test(t, func(t *testing.T) {
-		var hang atomic.Bool
-		hangDone := make(chan struct{})
-		var scrapes atomic.Int64
-		scrapeFunc := func(context.Context, *Controller[component.Component]) error {
-			if hang.Load() {
-				<-hangDone
+	// This tests a bug caused by select's randomness, so
+	// we need a few trials for it to be deterministic-ish.
+	for range 10 {
+		synctest.Test(t, func(t *testing.T) {
+			var hang atomic.Bool
+			hangDone := make(chan struct{})
+			var scrapes atomic.Int64
+			scrapeFunc := func(context.Context, *Controller[component.Component]) error {
+				if hang.Load() {
+					<-hangDone
+				}
+				scrapes.Add(1)
+				return nil
 			}
-			scrapes.Add(1)
-			return nil
-		}
 
-		cfg := &ControllerConfig{CollectionInterval: time.Minute}
-		ctrl := newTestController(t, cfg, scrapeFunc)
+			cfg := &ControllerConfig{CollectionInterval: time.Minute}
+			ctrl := newTestController(t, cfg, scrapeFunc)
 
-		require.NoError(t, ctrl.Start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, ctrl.Start(context.Background(), componenttest.NewNopHost()))
 
-		// Wait until the initial scrape has happened and force the next to hang.
-		synctest.Wait()
-		require.Equal(t, int64(1), scrapes.Load())
-		hang.Store(true)
+			// Wait until the initial scrape has happened and force the next to hang.
+			synctest.Wait()
+			require.Equal(t, int64(1), scrapes.Load())
+			hang.Store(true)
 
-		// Wait until we are hung inside the scrapeFunc.
-		time.Sleep(time.Minute)
-		synctest.Wait()
+			// Wait until we are hung inside the scrapeFunc.
+			time.Sleep(time.Minute)
+			synctest.Wait()
 
-		// And then make sc.done and sc.tickerCh ready.
-		time.Sleep(time.Minute)
-		var wg sync.WaitGroup
-		wg.Go(func() {
-			// This function blocks until shutdown occurs.
-			require.NoError(t, ctrl.Shutdown(context.Background()))
+			// And then make sc.done and sc.tickerCh ready.
+			time.Sleep(time.Minute)
+			var wg sync.WaitGroup
+			wg.Go(func() {
+				// This function blocks until shutdown occurs.
+				require.NoError(t, ctrl.Shutdown(context.Background()))
+			})
+
+			// Wait until ctrl.Shutdown blocks on its wg, confirming it has closed sc.done.
+			synctest.Wait()
+
+			// Then stop the hanging scrape and wait for shutdown.
+			close(hangDone)
+			wg.Wait()
+
+			require.Equal(t, int64(2), scrapes.Load(), "if we did a third scrape, we didn't respect shutdown")
 		})
-
-		// Wait until ctrl.Shutdown blocks on its wg, confirming it has closed sc.done.
-		synctest.Wait()
-
-		// Then stop the hanging scrape and wait for shutdown.
-		close(hangDone)
-		wg.Wait()
-
-		require.Equal(t, int64(2), scrapes.Load(), "if we did a third scrape, we didn't respect shutdown")
-	})
+	}
 }
 
 func TestGetSettings(t *testing.T) {
