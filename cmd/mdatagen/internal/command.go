@@ -692,6 +692,11 @@ func generateConfigFiles(md Metadata, mdDir, importRootPath string) error {
 		return fmt.Errorf("failed to resolve config schema: %w", err)
 	}
 
+	if missing := resolvedSchema.CollectMissingDescriptions(); len(missing) > 0 {
+		return fmt.Errorf("one or more config field(s) missing a description:\n\t%s",
+			strings.Join(missing, "\n\t"))
+	}
+
 	// do a shallow copy of Metadata and replace Config with resolved schema
 	mdWithConfig := md
 	mdWithConfig.ConfigsMetadata = resolvedSchema

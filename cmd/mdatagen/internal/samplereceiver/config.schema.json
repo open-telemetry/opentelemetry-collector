@@ -43,6 +43,7 @@
           "maximum": 10000
         }
       },
+      "description": "Configuration imported from the sample shared package.",
       "required": [
         "host_name"
       ]

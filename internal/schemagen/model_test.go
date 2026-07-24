@@ -647,3 +647,103 @@ func TestConfigMetadata_MergeFrom(t *testing.T) {
 		assert.Equal(t, "Field", md.GoStruct.FieldName)
 	})
 }
+
+func TestConfigsMetadata_CollectMissingDescriptions(t *testing.T) {
+	tests := []struct {
+		name string
+		md   *ConfigsMetadata
+		want []string
+	}{
+		{
+			name: "nil config",
+			md:   &ConfigsMetadata{},
+			want: nil,
+		},
+		{
+			name: "all described",
+			md: &ConfigsMetadata{
+				Config: &ConfigMetadata{Properties: map[string]*ConfigMetadata{
+					"endpoint": {Description: "The endpoint.", Type: "string"},
+				}},
+			},
+			want: nil,
+		},
+		{
+			name: "missing on config property",
+			md: &ConfigsMetadata{
+				Config: &ConfigMetadata{Properties: map[string]*ConfigMetadata{
+					"endpoint": {Description: "The endpoint.", Type: "string"},
+					"timeout":  {Type: "duration"},
+				}},
+			},
+			want: []string{"config.timeout"},
+		},
+		{
+			name: "whitespace-only description counts as missing",
+			md: &ConfigsMetadata{
+				Config: &ConfigMetadata{Properties: map[string]*ConfigMetadata{
+					"endpoint": {Description: "   ", Type: "string"},
+				}},
+			},
+			want: []string{"config.endpoint"},
+		},
+		{
+			name: "ref property requires its own description but is not recursed into",
+			md: &ConfigsMetadata{
+				Config: &ConfigMetadata{Properties: map[string]*ConfigMetadata{
+					// Field has no description, so it is reported. The subtree
+					// merged from the ref must not be walked (would misattribute).
+					"tls": {Ref: "../configtls.client_config", Properties: map[string]*ConfigMetadata{
+						"insecure": {Type: "bool"},
+					}},
+				}},
+			},
+			want: []string{"config.tls"},
+		},
+		{
+			name: "nested inline object is recursed",
+			md: &ConfigsMetadata{
+				Config: &ConfigMetadata{Properties: map[string]*ConfigMetadata{
+					"auth": {Description: "Auth settings.", Type: "object", Properties: map[string]*ConfigMetadata{
+						"token": {Type: "string"},
+					}},
+				}},
+			},
+			want: []string{"config.auth.token"},
+		},
+		{
+			name: "array items are recursed",
+			md: &ConfigsMetadata{
+				Config: &ConfigMetadata{Properties: map[string]*ConfigMetadata{
+					"targets": {Description: "Targets.", Type: "array", Items: &ConfigMetadata{
+						Type: "object", Properties: map[string]*ConfigMetadata{
+							"interval": {Type: "duration"},
+						},
+					}},
+				}},
+			},
+			want: []string{"config.targets.items.interval"},
+		},
+		{
+			name: "internal-only exported configs are skipped, non-internal reported, sorted",
+			md: &ConfigsMetadata{
+				ExportedConfigs: map[string]*ConfigMetadata{
+					"MetricsConfig": {InternalOnly: true, Properties: map[string]*ConfigMetadata{
+						"enabled": {Type: "bool"},
+					}},
+					"ClientConfig": {Properties: map[string]*ConfigMetadata{
+						"timeout":  {Type: "duration"},
+						"endpoint": {Type: "string"},
+					}},
+				},
+			},
+			want: []string{"exported_configs.ClientConfig.endpoint", "exported_configs.ClientConfig.timeout"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.md.CollectMissingDescriptions())
+		})
+	}
+}

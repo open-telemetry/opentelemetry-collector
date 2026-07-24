@@ -61,6 +61,7 @@ config:
         type: object
         properties:
           interval:
+            description: Scrape interval for this target.
             type: duration
             x-optional: true
             default: 10s

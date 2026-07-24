@@ -11,6 +11,7 @@ exported_configs:
     type: object
     properties:
       level:
+        description: Level of compression.
         $ref: level
   level:
     type: integer

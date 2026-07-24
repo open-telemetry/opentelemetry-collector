@@ -41,7 +41,7 @@ This is where warnings are described.
 | `max_results` | int | 100 | no | Maximum number of results to return per scrape. |
 | `metrics` | object (see [metrics](#metrics)) |  | no | MetricsConfig provides config for sample metrics. |
 | `resource_attributes` | object (see [resource_attributes](#resource_attributes)) |  | no | ResourceAttributesConfig provides config for sample resource attributes. |
-| `sample_pkg` | object (see [sample_pkg](#sample_pkg)) |  | no |  |
+| `sample_pkg` | object (see [sample_pkg](#sample_pkg)) |  | no | Configuration imported from the sample shared package. |
 | `timeout` | duration | 10s | no | Timeout for scraping metrics. |
 
 ### <a id="metrics"></a>metrics
