@@ -154,7 +154,7 @@ The following metrics are emitted by default. Each of them can be disabled by ap
 ```yaml
 metrics:
   <metric_name>:
-    enabled: false
+	enabled: false
 ```
 
 {{- end }}
@@ -179,7 +179,7 @@ The following metrics are not emitted by default. Each of them can be enabled by
 ```yaml
 metrics:
   <metric_name>:
-    enabled: true
+	enabled: true
 ```
 
 {{- end }}
@@ -199,7 +199,7 @@ The following events are emitted by default. Each of them can be disabled by app
 ```yaml
 events:
   <event_name>:
-    enabled: false
+	enabled: false
 ```
 
 {{- range $eventName, $event := .Events }}
@@ -223,7 +223,7 @@ The following events are not emitted by default. Each of them can be enabled by 
 ```yaml
 events:
   <event_name>:
-    enabled: true
+	enabled: true
 ```
 
 {{- end }}
