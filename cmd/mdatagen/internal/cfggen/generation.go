@@ -15,6 +15,13 @@ import (
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
 )
 
+const (
+	StringType = "string"
+	SliceType  = "slice"
+	MapType    = "map"
+	ObjectType = "object"
+)
+
 // NewCfgFns returns template functions for config generation with rootPackage and componentPackage
 // baked into closures. This way the template itself never needs to pass these context values around.
 func NewCfgFns(rootPackage, componentPackage string) map[string]any {
@@ -212,12 +219,12 @@ func resolveGoType(md *ConfigMetadata, propName, rootPackage, componentPackage s
 	}
 
 	switch md.Type {
-	case "string":
+	case StringType:
 		if strings.HasPrefix(md.GoType, "time.") {
 			return md.GoType, nil
 		}
 		return "string", nil
-	case "slice":
+	case SliceType:
 		if md.Values == nil {
 			return "[]any", nil
 		}
@@ -226,7 +233,7 @@ func resolveGoType(md *ConfigMetadata, propName, rootPackage, componentPackage s
 			return "", fmt.Errorf("failed to resolve slice value type: %w", err)
 		}
 		return "[]" + itemType, nil
-	case "map":
+	case MapType:
 		if md.Values != nil {
 			valueType, err := MapGoType(md.Values, propName, rootPackage, componentPackage)
 			if err != nil {
@@ -235,7 +242,7 @@ func resolveGoType(md *ConfigMetadata, propName, rootPackage, componentPackage s
 			return "map[string]" + valueType, nil
 		}
 		return "map[string]any", nil
-	case "object":
+	case ObjectType:
 		if md.Properties != nil {
 			formatted, err := helpers.FormatIdentifier(propName, true)
 			if err != nil {
@@ -470,12 +477,12 @@ func collectDefsForSchema(propName string, md *ConfigMetadata, defs map[string]*
 	}
 
 	switch md.Type {
-	case "object":
+	case ObjectType:
 		if len(md.Properties) > 0 {
 			defs[propName] = md
 			collectDefs(md, defs)
 		}
-	case "slice", "map":
+	case SliceType, MapType:
 		if md.Values != nil {
 			collectDefsForSchema(propName+"_item", md.Values, defs)
 		}
@@ -588,9 +595,9 @@ func resolveType(md *ConfigMetadata) string {
 	switch {
 	case md.Ref != "":
 		return "ref"
-	case md.Type == "string" && md.GoType == "time.Time":
+	case md.GoType == "time.Time":
 		return "datetime"
-	case md.Type == "string" && md.GoType == "time.Duration":
+	case md.GoType == "time.Duration":
 		return "duration"
 	default:
 		return md.Type
@@ -741,7 +748,7 @@ func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPa
 	}
 
 	switch md.Type {
-	case "slice":
+	case SliceType:
 		typeExpr, err := resolveGoType(md.Values, name+"_item", "", "")
 		if err == nil {
 			if defaultValues, ok := defaultValue.([]any); ok {
@@ -754,7 +761,7 @@ func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPa
 			panic("invalid default value, array expected")
 		}
 		panic(fmt.Sprintf("Could not resolve type, due to %e", err))
-	case "map":
+	case MapType:
 		typeExpr, err := resolveGoType(md.Values, name, "", "")
 		if err == nil {
 			if defaultValues, ok := defaultValue.(map[string]any); ok {
@@ -770,7 +777,7 @@ func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPa
 			panic("invalid default value, map expected")
 		}
 		panic(fmt.Sprintf("Could not resolve type, due to %e", err))
-	case "string":
+	case StringType:
 		switch md.GoType {
 		case "time.Duration":
 			if durationExpr, ok := renderDurationExpr(defaultValue); ok {
