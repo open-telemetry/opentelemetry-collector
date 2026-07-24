@@ -1,0 +1,13 @@
+type: file
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+
+resource_attributes:
+  string.resource.attr:
+    description: string resource attribute
+    type: string
+    enabled: true
+    enum: []
