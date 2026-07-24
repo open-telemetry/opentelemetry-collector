@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 )
 
@@ -96,13 +97,17 @@ type ServerConfig struct {
 
 	// Keepalive controls HTTP keep-alives.
 	// By default, keep-alives are always enabled. Only very resource-constrained environments should disable them.
+	// When set, it takes precedence over the deprecated flat fields below.
 	Keepalive configoptional.Optional[KeepaliveServerConfig] `mapstructure:"keepalive,omitempty"`
 
 	// Deprecated: use Keepalive.IdleTimeout instead.
 	IdleTimeout time.Duration `mapstructure:"idle_timeout,omitempty"`
-	// Deprecated: set Keepalive to None to disable keep-alives.
-	// Note: only the false value is meaningful; true is indistinguishable from the default.
+	// Deprecated: set 'keepalive::enabled' to false to disable keep-alives.
 	KeepAlivesEnabled bool `mapstructure:"keep_alives_enabled,omitempty"`
+
+	// deprecationWarnings records use of deprecated fields observed while
+	// unmarshaling; ToServer logs them, as no logger is available here.
+	deprecationWarnings []string
 }
 
 type KeepaliveServerConfig struct {
@@ -126,16 +131,62 @@ func NewDefaultServerConfig() ServerConfig {
 		NetAddr:           netAddr,
 		WriteTimeout:      30 * time.Second,
 		ReadHeaderTimeout: 1 * time.Minute,
+		// The deprecated flat fields keep carrying the defaults so that
+		// configurations and code which still use them behave as before.
+		IdleTimeout:       1 * time.Minute,
+		KeepAlivesEnabled: true,
 		Keepalive: configoptional.Default(KeepaliveServerConfig{
 			IdleTimeout: 1 * time.Minute,
 		}),
-		KeepAlivesEnabled: true,
 	}
 }
 
-func (sc *ServerConfig) Validate() error {
-	if sc.Keepalive.HasValue() && (sc.IdleTimeout != 0 || !sc.KeepAlivesEnabled) {
+var _ confmap.Unmarshaler = (*ServerConfig)(nil)
+
+// Unmarshal implements confmap.Unmarshaler. It rejects configurations mixing the
+// deprecated keepalive fields with the 'keepalive' section and records deprecation
+// warnings for ToServer to log. Only keys present in the configuration count:
+// values set programmatically (e.g. by a component's default config) are neither
+// deprecated usage nor a conflict.
+func (sc *ServerConfig) Unmarshal(conf *confmap.Conf) error {
+	prevKeepalive := sc.Keepalive
+	// Read before unmarshaling: decoding the Optional consumes the 'enabled' key.
+	keepaliveDisabled := conf.Get("keepalive::enabled") == false
+
+	// WithIgnoreUnused is needed because ServerConfig is commonly squash-embedded
+	// into component configs, in which case conf also holds the parent's sibling fields.
+	if err := conf.Unmarshal(sc, confmap.WithIgnoreUnused()); err != nil {
+		return err
+	}
+
+	// A null 'keepalive' key carries no settings, but decodes as an enabled
+	// section. Marshaling produces it for an unset Keepalive, so treat it as
+	// unset to keep marshaled configurations loadable.
+	keepaliveSet := conf.IsSet("keepalive") && conf.Get("keepalive") != nil
+	if !keepaliveSet {
+		sc.Keepalive = prevKeepalive
+	}
+
+	// Values which are no-ops in the legacy logic (a zero idle_timeout, or
+	// keep_alives_enabled: true) neither conflict with the 'keepalive' section
+	// nor deserve a warning.
+	var deprecated []string
+	if conf.IsSet("idle_timeout") && sc.IdleTimeout != 0 {
+		deprecated = append(deprecated, "'idle_timeout' is deprecated; use 'keepalive::idle_timeout' instead")
+	}
+	if conf.IsSet("keep_alives_enabled") && !sc.KeepAlivesEnabled {
+		deprecated = append(deprecated, "'keep_alives_enabled' is deprecated; set 'keepalive::enabled' to false to disable keep-alives")
+	}
+	if keepaliveSet && len(deprecated) > 0 {
 		return errors.New("confighttp.ServerConfig: cannot use deprecated keepalive fields (idle_timeout, keep_alives_enabled) alongside the 'keepalive' section; migrate to the 'keepalive' section")
+	}
+	sc.deprecationWarnings = deprecated
+
+	// 'keepalive::enabled: false' leaves the Optional without a value, which is
+	// indistinguishable from an unset section; carry the intent in the flat
+	// field, which the resolution in ToServer falls back to.
+	if keepaliveDisabled {
+		sc.KeepAlivesEnabled = false
 	}
 	return nil
 }
@@ -204,11 +255,8 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 // the `extensions` argument should be the output of `host.GetExtensions()`.
 // It may also be `nil` in tests where no such extension is expected to be used.
 func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.ID]component.Component, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
-	if sc.IdleTimeout != 0 {
-		settings.Logger.Warn("'idle_timeout' is deprecated; use 'keepalive.idle_timeout' instead")
-	}
-	if !sc.KeepAlivesEnabled {
-		settings.Logger.Warn("'keep_alives_enabled' is deprecated; set keepalive to null (keepalive: null) to disable keep-alives")
+	for _, warning := range sc.deprecationWarnings {
+		settings.Logger.Warn(warning)
 	}
 
 	serverOpts := &toServerOptions{}
@@ -327,20 +375,15 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 		return nil, err // If an error occurs while creating the logger, return nil and the error
 	}
 
-	// Convert deprecated fields into the canonical Keepalive optional so the
-	// application logic below only has to deal with one struct.
-	if !sc.Keepalive.HasValue() && !sc.KeepAlivesEnabled {
-		sc.Keepalive = configoptional.None[KeepaliveServerConfig]()
-	} else if sc.IdleTimeout != 0 {
-		sc.Keepalive = configoptional.Some(KeepaliveServerConfig{
-			IdleTimeout: sc.IdleTimeout,
-		})
-	}
-
-	keepAlivesEnabled := !sc.Keepalive.IsNone()
+	keepAlivesEnabled := true
 	var idleTimeout time.Duration
-	if keepAlivesEnabled {
-		idleTimeout = sc.Keepalive.GetOrInsertDefault().IdleTimeout
+	if kaCfg := sc.Keepalive.Get(); kaCfg != nil {
+		idleTimeout = kaCfg.IdleTimeout
+	} else {
+		// The 'keepalive' section is not in use; apply the deprecated flat
+		// fields exactly as the code before the section's introduction did.
+		keepAlivesEnabled = sc.KeepAlivesEnabled
+		idleTimeout = sc.IdleTimeout
 	}
 
 	server := &http.Server{

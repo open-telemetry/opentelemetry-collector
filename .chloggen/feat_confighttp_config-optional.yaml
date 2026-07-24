@@ -20,12 +20,13 @@ subtext: |
     - `idle_conn_timeout` -> `keepalive::idle_conn_timeout`
     - `max_idle_conns` -> `keepalive::max_idle_conns`
     - `max_idle_conns_per_host` -> `keepalive::max_idle_conns_per_host`
-    - `disable_keep_alives` -> omit the `keepalive` section entirely
+    - `disable_keep_alives: true` -> `keepalive::enabled: false`
   The following server configuration fields are deprecated in favor of the `keepalive` section:
     - `idle_timeout` -> `keepalive::idle_timeout`
-    - `keep_alives_enabled: false` -> omit the `keepalive` section entirely
-  A deprecation warning is emitted on the first `ToClient`/`ToServer` call when deprecated fields
-  are present. Using deprecated fields together with the new `keepalive` section is an error.
+    - `keep_alives_enabled: false` -> `keepalive::enabled: false`
+  Deprecated fields set in the configuration keep working exactly as before and produce a
+  deprecation warning when the client or server is created. Setting deprecated fields together
+  with the new `keepalive` section is an error.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'

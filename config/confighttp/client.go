@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 const (
@@ -94,7 +95,8 @@ type ClientConfig struct {
 	// with the first middleware becoming the outermost handler.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
 
-	// Keepalive configuration.
+	// Keepalive configuration. When set, it takes precedence over the
+	// deprecated flat fields below.
 	Keepalive configoptional.Optional[KeepaliveClientConfig] `mapstructure:"keepalive,omitempty"`
 
 	// Deprecated: use Keepalive.IdleConnTimeout instead.
@@ -103,8 +105,12 @@ type ClientConfig struct {
 	MaxIdleConns int `mapstructure:"max_idle_conns,omitempty"`
 	// Deprecated: use Keepalive.MaxIdleConnsPerHost instead.
 	MaxIdleConnsPerHost int `mapstructure:"max_idle_conns_per_host,omitempty"`
-	// Deprecated: set Keepalive to None to disable keep-alives.
+	// Deprecated: set 'keepalive::enabled' to false to disable keep-alives.
 	DisableKeepAlives bool `mapstructure:"disable_keep_alives,omitempty"`
+
+	// deprecationWarnings records use of deprecated fields observed while
+	// unmarshaling; ToClient logs them, as no logger is available here.
+	deprecationWarnings []string
 }
 
 // CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.
@@ -138,6 +144,10 @@ func NewDefaultClientConfig() ClientConfig {
 	defaultTransport := http.DefaultTransport.(*http.Transport)
 
 	return ClientConfig{
+		// The deprecated flat fields keep carrying the defaults so that
+		// configurations and code which still use them behave as before.
+		MaxIdleConns:    defaultTransport.MaxIdleConns,
+		IdleConnTimeout: defaultTransport.IdleConnTimeout,
 		Keepalive: configoptional.Default(KeepaliveClientConfig{
 			MaxIdleConns:    defaultTransport.MaxIdleConns,
 			IdleConnTimeout: defaultTransport.IdleConnTimeout,
@@ -146,20 +156,68 @@ func NewDefaultClientConfig() ClientConfig {
 	}
 }
 
+var _ confmap.Unmarshaler = (*ClientConfig)(nil)
+
+// Unmarshal implements confmap.Unmarshaler. It rejects configurations mixing the
+// deprecated keepalive fields with the 'keepalive' section and records deprecation
+// warnings for ToClient to log. Only keys present in the configuration count:
+// values set programmatically (e.g. by a component's default config) are neither
+// deprecated usage nor a conflict.
+func (cc *ClientConfig) Unmarshal(conf *confmap.Conf) error {
+	prevKeepalive := cc.Keepalive
+	// Read before unmarshaling: decoding the Optional consumes the 'enabled' key.
+	keepaliveDisabled := conf.Get("keepalive::enabled") == false
+
+	// WithIgnoreUnused is needed because ClientConfig is commonly squash-embedded
+	// into component configs, in which case conf also holds the parent's sibling fields.
+	if err := conf.Unmarshal(cc, confmap.WithIgnoreUnused()); err != nil {
+		return err
+	}
+
+	// A null 'keepalive' key carries no settings, but decodes as an enabled
+	// section. Marshaling produces it for an unset Keepalive, so treat it as
+	// unset to keep marshaled configurations loadable.
+	keepaliveSet := conf.IsSet("keepalive") && conf.Get("keepalive") != nil
+	if !keepaliveSet {
+		cc.Keepalive = prevKeepalive
+	}
+
+	// Values which match the field's zero value are no-ops in the legacy logic,
+	// so they neither conflict with the 'keepalive' section nor deserve a warning.
+	var deprecated []string
+	if conf.IsSet("idle_conn_timeout") && cc.IdleConnTimeout != 0 {
+		deprecated = append(deprecated, "'idle_conn_timeout' is deprecated; use 'keepalive::idle_conn_timeout' instead")
+	}
+	if conf.IsSet("max_idle_conns") && cc.MaxIdleConns != 0 {
+		deprecated = append(deprecated, "'max_idle_conns' is deprecated; use 'keepalive::max_idle_conns' instead")
+	}
+	if conf.IsSet("max_idle_conns_per_host") && cc.MaxIdleConnsPerHost != 0 {
+		deprecated = append(deprecated, "'max_idle_conns_per_host' is deprecated; use 'keepalive::max_idle_conns_per_host' instead")
+	}
+	if conf.IsSet("disable_keep_alives") && cc.DisableKeepAlives {
+		deprecated = append(deprecated, "'disable_keep_alives' is deprecated; set 'keepalive::enabled' to false to disable keep-alives")
+	}
+	if keepaliveSet && len(deprecated) > 0 {
+		return errors.New("confighttp.ClientConfig: cannot use deprecated keepalive fields (idle_conn_timeout, max_idle_conns, max_idle_conns_per_host, disable_keep_alives) alongside the 'keepalive' section; migrate to the 'keepalive' section")
+	}
+	cc.deprecationWarnings = deprecated
+
+	// 'keepalive::enabled: false' leaves the Optional without a value, which is
+	// indistinguishable from an unset section; carry the intent in the flat
+	// field, which the resolution in ToClient falls back to.
+	if keepaliveDisabled {
+		cc.DisableKeepAlives = true
+	}
+	return nil
+}
+
 func (cc *ClientConfig) Validate() error {
 	if cc.Compression.IsCompressed() {
 		if err := cc.Compression.ValidateParams(cc.CompressionParams); err != nil {
 			return err
 		}
 	}
-	if cc.Keepalive.HasValue() && cc.hasDeprecatedKeepaliveFields() {
-		return errors.New("confighttp.ClientConfig: cannot use deprecated keepalive fields (idle_conn_timeout, max_idle_conns, max_idle_conns_per_host, disable_keep_alives) alongside the 'keepalive' section; migrate to the 'keepalive' section")
-	}
 	return nil
-}
-
-func (cc *ClientConfig) hasDeprecatedKeepaliveFields() bool {
-	return cc.DisableKeepAlives || cc.IdleConnTimeout != 0 || cc.MaxIdleConns != 0 || cc.MaxIdleConnsPerHost != 0
 }
 
 // ToClientOption is an option to change the behavior of the HTTP client
@@ -175,17 +233,8 @@ type ToClientOption interface {
 // the `extensions` argument should be the output of `host.GetExtensions()`.
 // It may also be `nil` in tests where no such extension is expected to be used.
 func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.ID]component.Component, settings component.TelemetrySettings, _ ...ToClientOption) (*http.Client, error) {
-	if cc.DisableKeepAlives {
-		settings.Logger.Warn("'disable_keep_alives' is deprecated; set keepalive to null (keepalive: null) to disable keep-alives")
-	}
-	if cc.IdleConnTimeout != 0 {
-		settings.Logger.Warn("'idle_conn_timeout' is deprecated; use 'keepalive.idle_conn_timeout' instead")
-	}
-	if cc.MaxIdleConns != 0 {
-		settings.Logger.Warn("'max_idle_conns' is deprecated; use 'keepalive.max_idle_conns' instead")
-	}
-	if cc.MaxIdleConnsPerHost != 0 {
-		settings.Logger.Warn("'max_idle_conns_per_host' is deprecated; use 'keepalive.max_idle_conns_per_host' instead")
+	for _, warning := range cc.deprecationWarnings {
+		settings.Logger.Warn(warning)
 	}
 
 	tlsCfg, err := cc.TLS.LoadTLSConfig(ctx)
@@ -203,27 +252,18 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 		transport.WriteBufferSize = cc.WriteBufferSize
 	}
 
-	// Convert deprecated fields into the canonical Keepalive optional so the
-	// application logic below only has to deal with one struct.
-	if cc.DisableKeepAlives {
-		cc.Keepalive = configoptional.None[KeepaliveClientConfig]()
-	} else if cc.hasDeprecatedKeepaliveFields() {
-		cc.Keepalive = configoptional.Some(KeepaliveClientConfig{
-			IdleConnTimeout:     cc.IdleConnTimeout,
-			MaxIdleConns:        cc.MaxIdleConns,
-			MaxIdleConnsPerHost: cc.MaxIdleConnsPerHost,
-		})
-	}
-
-	if cc.Keepalive.IsNone() {
-		transport.DisableKeepAlives = true
-	} else {
-		kaCfg := cc.Keepalive.GetOrInsertDefault()
+	if kaCfg := cc.Keepalive.Get(); kaCfg != nil {
 		transport.MaxIdleConns = kaCfg.MaxIdleConns
 		transport.MaxIdleConnsPerHost = kaCfg.MaxIdleConnsPerHost
 		transport.IdleConnTimeout = kaCfg.IdleConnTimeout
+	} else {
+		// The 'keepalive' section is not in use; apply the deprecated flat
+		// fields exactly as the code before the section's introduction did.
+		transport.DisableKeepAlives = cc.DisableKeepAlives
+		transport.MaxIdleConns = cc.MaxIdleConns
+		transport.MaxIdleConnsPerHost = cc.MaxIdleConnsPerHost
+		transport.IdleConnTimeout = cc.IdleConnTimeout
 	}
-	// else Default: transport.Clone() already carries the right defaults (MaxIdleConns=100, IdleConnTimeout=90s).
 	transport.MaxConnsPerHost = cc.MaxConnsPerHost
 	transport.ForceAttemptHTTP2 = cc.ForceAttemptHTTP2
 	// Setting the Proxy URL
