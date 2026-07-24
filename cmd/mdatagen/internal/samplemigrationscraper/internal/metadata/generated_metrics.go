@@ -534,31 +534,9 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 		metricSystemCPUUtilizationV1:     newMetricSystemCPUUtilizationV1(mbc.Metrics.SystemCPUUtilizationV1),
 		metricSystemMemoryLinuxAvailable: newMetricSystemMemoryLinuxAvailable(mbc.Metrics.SystemMemoryLinuxAvailable),
 	}
-	if ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() {
-		if mb.metricLinuxMemoryAvailable.config.Enabled && mb.metricSystemMemoryLinuxAvailable.config.Enabled {
-			var disable bool
-			if mb.metricLinuxMemoryAvailable.data.Type() != mb.metricSystemMemoryLinuxAvailable.data.Type() {
-				// Disable legacy metric if legacy and latest have same name but different types
-				disable = true
-				settings.Logger.Warn("[WARNING] Legacy metric `linux.memory.available` disabled: same emitted name as `system.memory.linux.available` with different type; only latest will be emitted")
-			}
-			if !slices.Equal(MetricsInfo.LinuxMemoryAvailable.Attributes, MetricsInfo.SystemMemoryLinuxAvailable.Attributes) {
-				// Disable legacy metric if legacy and latest have same name but different attributes
-				// The latest metric will emit both attribute sets during migration
-				disable = true
-				settings.Logger.Warn("[WARNING] Legacy metric `linux.memory.available` disabled: same emitted name as `system.memory.linux.available` with different attributes; only latest will be emitted with combined attributes",
-					zap.Strings("legacy_attributes", MetricsInfo.LinuxMemoryAvailable.Attributes),
-					zap.Strings("latest_attributes", MetricsInfo.SystemMemoryLinuxAvailable.Attributes))
-			}
-			if disable {
-				mb.metricLinuxMemoryAvailable.config.Enabled = false
-			}
-		}
-	} else {
-		if !ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() && mb.metricSystemMemoryLinuxAvailable.config.Enabled {
-			mb.metricSystemMemoryLinuxAvailable.config.Enabled = false
-			settings.Logger.Warn("[WARNING] metric `system.memory.linux.available` requires feature gate `scraper.samplemigration.EmitV1SystemConventions` to be enabled, metric has been disabled")
-		}
+	if !ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() && mb.metricSystemMemoryLinuxAvailable.config.Enabled {
+		mb.metricSystemMemoryLinuxAvailable.config.Enabled = false
+		settings.Logger.Warn("[WARNING] metric `system.memory.linux.available` requires feature gate `scraper.samplemigration.EmitV1SystemConventions` to be enabled, metric has been disabled")
 	}
 	if ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() {
 		if mb.metricSystemCPUUtilization.config.Enabled && mb.metricSystemCPUUtilizationV1.config.Enabled {
@@ -581,7 +559,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 			}
 		}
 	} else {
-		if !ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() && mb.metricSystemCPUUtilizationV1.config.Enabled {
+		if mb.metricSystemCPUUtilizationV1.config.Enabled {
 			mb.metricSystemCPUUtilizationV1.config.Enabled = false
 			settings.Logger.Warn("[WARNING] metric `system.cpu.utilization@v1` requires feature gate `scraper.samplemigration.EmitV1SystemConventions` to be enabled, metric has been disabled")
 		}

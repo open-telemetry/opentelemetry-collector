@@ -3,6 +3,7 @@
 package metadata
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -213,7 +214,9 @@ func TestVersionedMetrics(t *testing.T) {
 
 				start := pcommon.Timestamp(1_000_000_000)
 				ts := pcommon.Timestamp(1_000_001_000)
+				observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 				settings := scrapertest.NewNopSettings(scrapertest.NopType)
+				settings.Logger = zap.New(observedZapCore)
 				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
 
 				mb.RecordLinuxMemoryAvailableDataPoint(ts, 1)
@@ -237,6 +240,17 @@ func TestVersionedMetrics(t *testing.T) {
 				}
 				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
 				assert.Equal(t, tt.expectNewMetric, newFound)
+				// For metrics with different emitted names, no collison warning shoulds be logged
+				// This guards against the regression where same name collision logic was
+				// incorrectly applied to renamed metrics.
+				if tt.enableNew {
+					for _, log := range observedLogs.All() {
+						if strings.Contains(log.Message, "linux.memory.available") {
+							assert.NotContains(t, log.Message, "same emitted name",
+								"should not log same name collision warning for metrics with different names")
+						}
+					}
+				}
 			})
 		}
 	})
