@@ -71,14 +71,8 @@ func (r *Resolver) resolveSchema(root *ConfigsMetadata, target *ConfigMetadata, 
 		}
 	}
 
-	if target.AdditionalProperties != nil {
-		if err := r.resolveSchema(root, target.AdditionalProperties, origin); err != nil {
-			return err
-		}
-	}
-
-	if target.Items != nil {
-		if err := r.resolveSchema(root, target.Items, origin); err != nil {
+	if target.Values != nil {
+		if err := r.resolveSchema(root, target.Values, origin); err != nil {
 			return err
 		}
 	}

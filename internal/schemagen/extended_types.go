@@ -3,8 +3,6 @@
 
 package schemagen // import "go.opentelemetry.io/collector/internal/schemagen"
 
-import "fmt"
-
 // goDurationPattern matches Go duration strings (e.g., "30s", "1h30m", "500ms")
 const goDurationPattern = `^([0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$`
 
@@ -14,22 +12,8 @@ const goDurationPattern = `^([0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$`
 //
 // To add a new alias, add a single entry here. No other switch or case needs editing.
 var extendedTypes = map[string]ConfigMetadata{
-	// Integer aliases
-	"rune":   {Type: "integer", GoType: "rune"},
-	"byte":   {Type: "integer", GoType: "byte"},
-	"uint":   {Type: "integer", GoType: "uint"},
-	"int8":   {Type: "integer", GoType: "int8"},
-	"uint8":  {Type: "integer", GoType: "uint8"},
-	"int16":  {Type: "integer", GoType: "int16"},
-	"uint16": {Type: "integer", GoType: "uint16"},
-	"int32":  {Type: "integer", GoType: "int32"},
-	"uint32": {Type: "integer", GoType: "uint32"},
-	"int64":  {Type: "integer", GoType: "int64"},
-	"uint64": {Type: "integer", GoType: "uint64"},
-
-	// Number aliases
-	"float32": {Type: "number", GoType: "float32"},
-	"float64": {Type: "number", GoType: "float64"},
+	"float":  {Type: "float32"},
+	"double": {Type: "float64"},
 
 	// String-backed aliases using full import-path GoType convention
 	"opaque_string": {Type: "string", GoType: "go.opentelemetry.io/collector/config/configopaque.String"},
@@ -41,27 +25,12 @@ var extendedTypes = map[string]ConfigMetadata{
 
 	// opaque_map: Go uses configopaque.MapList; JSON gets a map[string]string
 	"opaque_map": {
-		Type:   "object",
+		Type:   "map",
 		GoType: "go.opentelemetry.io/collector/config/configopaque.MapList",
-		AdditionalProperties: &ConfigMetadata{
+		Values: &ConfigMetadata{
 			Type: "string",
 		},
 	},
-}
-
-var basicTypes = map[string]bool{
-	"":        true, // empty is allowed (treated as "any" by the generator)
-	"string":  true,
-	"integer": true,
-	"number":  true,
-	"boolean": true,
-	"object":  true,
-	"array":   true,
-	"null":    true,
-}
-
-func isBasicType(typ string) bool {
-	return basicTypes[typ]
 }
 
 // expandExtendedType rewrites md.Type from an extended alias to the equivalent standard JSON Schema fields.
@@ -70,12 +39,9 @@ func isBasicType(typ string) bool {
 //
 // Returns an actionable error for unknown aliases.
 func expandExtendedType(md *ConfigMetadata) error {
-	if isBasicType(md.Type) {
-		return nil
-	}
 	ext, ok := extendedTypes[md.Type]
-	if !ok {
-		return fmt.Errorf("unknown config type %q: not a JSON Schema type and not a known extended type alias (e.g. int64, duration, opaque_string, id, opaque_map)", md.Type)
+	if !ok { // not an extended type
+		return nil
 	}
 
 	md.Type = ext.Type
@@ -92,12 +58,8 @@ func expandExtendedType(md *ConfigMetadata) error {
 		md.Pattern = ext.Pattern
 	}
 
-	if md.Items == nil {
-		md.Items = ext.Items
-	}
-
-	if md.AdditionalProperties == nil {
-		md.AdditionalProperties = ext.AdditionalProperties
+	if md.Values == nil {
+		md.Values = ext.Values
 	}
 
 	return nil

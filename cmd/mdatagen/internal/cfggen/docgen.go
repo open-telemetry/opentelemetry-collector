@@ -111,24 +111,18 @@ func CfgDocType(cfg *ConfigMetadata) string {
 			return "string (one of: " + strings.Join(vals, ", ") + ")"
 		}
 		return "string"
-	case "integer":
-		return "int"
-	case "number":
-		return "float"
-	case "boolean":
-		return "bool"
-	case "array":
-		if cfg.Items != nil {
-			return "[]" + CfgDocType(cfg.Items)
+	case "slice":
+		if cfg.Values != nil {
+			return "[]" + CfgDocType(cfg.Values)
 		}
 		return "[]any"
-	case "object":
-		if cfg.AdditionalProperties != nil {
-			return "map[string]" + CfgDocType(cfg.AdditionalProperties)
+	case "map":
+		if cfg.Values != nil {
+			return "map[string]" + CfgDocType(cfg.Values)
 		}
-		return "object"
+		return "map[string]any"
 	default:
-		return "any"
+		return cfg.Type
 	}
 }
 

@@ -131,18 +131,24 @@ func WithCfgFns(fns map[string]any, rootPackage, componentPackage string) map[st
 	return fns
 }
 
-var goBasicTypes = []string{
-	"rune", "byte",
-	"uint", "int8", "uint8", "int16", "uint16", "int32", "uint32", "int64", "uint64",
-	"float32", "float64",
-	"time.Time", "time.Duration",
-}
-
 var primitiveSchemaGoTypes = map[string]string{
 	"string":  "string",
-	"integer": "int",
-	"number":  "float64",
-	"boolean": "bool",
+	"bool":    "bool",
+	"byte":    "byte",
+	"rune":    "rune",
+	"uint":    "uint",
+	"int":     "int",
+	"int8":    "int8",
+	"uint8":   "uint8",
+	"int16":   "int16",
+	"uint16":  "uint16",
+	"int32":   "int32",
+	"uint32":  "uint32",
+	"int64":   "int64",
+	"uint64":  "uint64",
+	"float32": "float32",
+	"float64": "float64",
+	"any":     "any",
 }
 
 func IsPrimitiveSchema(md *ConfigMetadata) bool {
@@ -162,9 +168,6 @@ func PrimitiveGoType(md *ConfigMetadata, rootPackage, componentPackage string) (
 		return "", fmt.Errorf("unsupported primitive type: %q", md.Type)
 	}
 	if md.GoType != "" {
-		if slices.Contains(goBasicTypes, md.GoType) {
-			return md.GoType, nil
-		}
 		typeName, err := FormatTypeName(md.GoType, rootPackage, componentPackage)
 		if err != nil {
 			return "", fmt.Errorf("failed to format custom type %q: %w", md.GoType, err)
@@ -201,9 +204,6 @@ func resolveGoType(md *ConfigMetadata, propName, rootPackage, componentPackage s
 		return typeName, nil
 	}
 	if md.GoType != "" {
-		if slices.Contains(goBasicTypes, md.GoType) {
-			return md.GoType, nil
-		}
 		typeName, err := FormatTypeName(md.GoType, rootPackage, componentPackage)
 		if err != nil {
 			return "", fmt.Errorf("failed to format custom type %q: %w", md.GoType, err)
@@ -217,29 +217,25 @@ func resolveGoType(md *ConfigMetadata, propName, rootPackage, componentPackage s
 			return md.GoType, nil
 		}
 		return "string", nil
-	case "integer":
-		return "int", nil
-	case "number":
-		return "float64", nil
-	case "boolean":
-		return "bool", nil
-	case "array":
-		if md.Items == nil {
+	case "slice":
+		if md.Values == nil {
 			return "[]any", nil
 		}
-		itemType, err := MapGoType(md.Items, propName+"_item", rootPackage, componentPackage)
+		itemType, err := MapGoType(md.Values, propName+"_item", rootPackage, componentPackage)
 		if err != nil {
-			return "", fmt.Errorf("failed to map array item type: %w", err)
+			return "", fmt.Errorf("failed to resolve slice value type: %w", err)
 		}
 		return "[]" + itemType, nil
-	case "object":
-		if md.AdditionalProperties != nil {
-			valueType, err := MapGoType(md.AdditionalProperties, propName, rootPackage, componentPackage)
+	case "map":
+		if md.Values != nil {
+			valueType, err := MapGoType(md.Values, propName, rootPackage, componentPackage)
 			if err != nil {
-				return "", fmt.Errorf("failed to map additionalProperties type: %w", err)
+				return "", fmt.Errorf("failed to resolve map value type: %w", err)
 			}
 			return "map[string]" + valueType, nil
 		}
+		return "map[string]any", nil
+	case "object":
 		if md.Properties != nil {
 			formatted, err := helpers.FormatIdentifier(propName, true)
 			if err != nil {
@@ -247,11 +243,11 @@ func resolveGoType(md *ConfigMetadata, propName, rootPackage, componentPackage s
 			}
 			return formatted, nil
 		}
-		return "map[string]any", nil
+		return "", fmt.Errorf("empty object properties in %q field", propName)
 	case "":
 		return "any", nil
 	default:
-		return "", fmt.Errorf("unsupported type: %q", md.Type)
+		return md.Type, nil
 	}
 }
 
@@ -355,14 +351,10 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 		}
 	}
 
-	if md.Items != nil {
-		if err := collectImports(md.Items, imports, rootPackage, componentPackage); err != nil {
+	if md.Values != nil {
+		if err := collectImports(md.Values, imports, rootPackage, componentPackage); err != nil {
 			return err
 		}
-	}
-
-	if err := collectImports(md.AdditionalProperties, imports, rootPackage, componentPackage); err != nil {
-		return err
 	}
 
 	return nil
@@ -375,7 +367,7 @@ func collectCustomDefaultImports(md *ConfigMetadata, defaultValue any, imports m
 
 	switch typedValue := defaultValue.(type) {
 	case map[string]any:
-		if md.AdditionalProperties != nil {
+		if md.Values != nil {
 			return nil
 		}
 		for key, value := range typedValue {
@@ -391,11 +383,11 @@ func collectCustomDefaultImports(md *ConfigMetadata, defaultValue any, imports m
 			}
 		}
 	case []any:
-		if md.Items == nil || md.Items.Type != "object" {
+		if md.Values == nil || md.Values.Type != "object" {
 			return nil
 		}
 		for _, item := range typedValue {
-			if err := collectCustomDefaultImports(md.Items, item, imports, rootPackage, componentPackage); err != nil {
+			if err := collectCustomDefaultImports(md.Values, item, imports, rootPackage, componentPackage); err != nil {
 				return err
 			}
 		}
@@ -482,14 +474,10 @@ func collectDefsForSchema(propName string, md *ConfigMetadata, defs map[string]*
 		if len(md.Properties) > 0 {
 			defs[propName] = md
 			collectDefs(md, defs)
-		} else if md.AdditionalProperties != nil {
-			// map[string]V — the value type V inherits the same propName
-			collectDefsForSchema(propName, md.AdditionalProperties, defs)
 		}
-	case "array":
-		if md.Items != nil {
-			// []T — item type uses propName+"_item", matching MapGoType
-			collectDefsForSchema(propName+"_item", md.Items, defs)
+	case "slice", "map":
+		if md.Values != nil {
+			collectDefsForSchema(propName+"_item", md.Values, defs)
 		}
 	}
 }
@@ -604,8 +592,6 @@ func resolveType(md *ConfigMetadata) string {
 		return "datetime"
 	case md.Type == "string" && md.GoType == "time.Duration":
 		return "duration"
-	case md.Type == "object" && md.AdditionalProperties != nil:
-		return "map"
 	default:
 		return md.Type
 	}
@@ -627,7 +613,7 @@ func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, co
 	switch typedValue := defaultValue.(type) {
 	case map[string]any:
 		// is nested struct
-		if schema.AdditionalProperties == nil {
+		if schema.Values == nil {
 			for key, value := range typedValue {
 				propSchema := schema.Properties[key]
 				if propSchema == nil {
@@ -637,16 +623,16 @@ func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, co
 				exp := fmt.Sprintf(".%s = %s", varName, FormatDefaultValue(propSchema, key, value, rootPackage, componentPackage))
 				exps = append(exps, exp)
 			}
-		} else if schema.AdditionalProperties.Type == "object" { // is a map of object
+		} else if schema.Values.Type == "object" { // is a map of object
 			panic("map of structs is not supported yet")
 		}
 	case []any:
 		// is an array of objects
-		if schema.Items == nil || schema.Items.Type != "object" {
+		if schema.Values == nil || schema.Values.Type != "object" {
 			return nil
 		}
 		for i, item := range typedValue {
-			nestedExps := MapCustomDefaults(schema.Items, item, rootPackage, componentPackage)
+			nestedExps := MapCustomDefaults(schema.Values, item, rootPackage, componentPackage)
 			for _, exp := range nestedExps {
 				exps = append(exps, fmt.Sprintf("[%d]%s", i, exp))
 			}
@@ -727,7 +713,7 @@ func CamelVar(ref string) string {
 func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPackage, componentPackage string) string {
 	// handle references
 	isReference := md.Ref != ""
-	isSubStruct := md.Type == "object" && md.AdditionalProperties == nil
+	isSubStruct := md.Type == "object"
 	if (isReference && !IsPrimitiveSchema(md)) || isSubStruct {
 		if hasDefaultValue(md) {
 			if isReference {
@@ -755,21 +741,21 @@ func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPa
 	}
 
 	switch md.Type {
-	case "array":
-		typeExpr, err := resolveGoType(md.Items, name+"_item", "", "")
+	case "slice":
+		typeExpr, err := resolveGoType(md.Values, name+"_item", "", "")
 		if err == nil {
 			if defaultValues, ok := defaultValue.([]any); ok {
 				exps := make([]string, 0, len(defaultValues))
 				for _, defaultValue := range defaultValues {
-					exps = append(exps, FormatDefaultValue(md.Items, name+"_item", defaultValue, rootPackage, componentPackage))
+					exps = append(exps, FormatDefaultValue(md.Values, name+"_item", defaultValue, rootPackage, componentPackage))
 				}
 				return fmt.Sprintf("[]%s{%s}", typeExpr, strings.Join(exps, ", "))
 			}
 			panic("invalid default value, array expected")
 		}
 		panic(fmt.Sprintf("Could not resolve type, due to %e", err))
-	case "object":
-		typeExpr, err := resolveGoType(md.AdditionalProperties, name, "", "")
+	case "map":
+		typeExpr, err := resolveGoType(md.Values, name, "", "")
 		if err == nil {
 			if defaultValues, ok := defaultValue.(map[string]any); ok {
 				exps := make([]string, 0, len(defaultValues))
@@ -777,7 +763,7 @@ func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPa
 					value := defaultValues[keyName]
 					exps = append(
 						exps,
-						fmt.Sprintf("%q: %v", keyName, FormatDefaultValue(md.AdditionalProperties, name, value, rootPackage, componentPackage)))
+						fmt.Sprintf("%q: %v", keyName, FormatDefaultValue(md.Values, name, value, rootPackage, componentPackage)))
 				}
 				return fmt.Sprintf("map[string]%s{%s}", typeExpr, strings.Join(exps, ", "))
 			}

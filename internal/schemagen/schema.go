@@ -16,6 +16,29 @@ const schemaVersion = "https://json-schema.org/draft/2020-12/schema"
 // JSONSchema models a JSON Schema Draft 2020-12 schema.
 type JSONSchema = jsonschema.Schema
 
+var typesMapping = map[string]string{
+	"object":  "object",
+	"map":     "object",
+	"slice":   "array",
+	"string":  "string",
+	"bool":    "boolean",
+	"byte":    "integer",
+	"rune":    "integer",
+	"uint":    "integer",
+	"int":     "integer",
+	"int8":    "integer",
+	"uint8":   "integer",
+	"int16":   "integer",
+	"uint16":  "integer",
+	"int32":   "integer",
+	"uint32":  "integer",
+	"int64":   "integer",
+	"uint64":  "integer",
+	"float32": "number",
+	"float64": "number",
+	"any":     "",
+}
+
 func FromMetadata(id, title string, md *ConfigsMetadata) *JSONSchema {
 	jsonSchema := &JSONSchema{
 		Schema: schemaVersion,
@@ -61,7 +84,7 @@ func convertMetadataToJSONSchema(md *ConfigMetadata, jsonSchema *JSONSchema) *JS
 	}
 
 	if md.Type != "" {
-		jsonSchema.Type = md.Type
+		jsonSchema.Type = typesMapping[md.Type]
 	}
 	jsonSchema.Description = md.Description
 	if md.Default != nil {
@@ -108,11 +131,13 @@ func convertMetadataToJSONSchema(md *ConfigMetadata, jsonSchema *JSONSchema) *JS
 		jsonSchema.ExclusiveMaximum = md.ExclusiveMaximum
 	}
 
-	if md.Items != nil {
-		jsonSchema.Items = convertMetadataToJSONSchema(md.Items, &JSONSchema{})
-	}
-	if md.AdditionalProperties != nil {
-		jsonSchema.AdditionalProperties = convertMetadataToJSONSchema(md.AdditionalProperties, &JSONSchema{})
+	if md.Values != nil {
+		if md.Type == "slice" {
+			jsonSchema.Items = convertMetadataToJSONSchema(md.Values, &JSONSchema{})
+		}
+		if md.Type == "map" {
+			jsonSchema.AdditionalProperties = convertMetadataToJSONSchema(md.Values, &JSONSchema{})
+		}
 	}
 
 	return jsonSchema

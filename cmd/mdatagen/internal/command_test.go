@@ -697,7 +697,7 @@ func TestInjectInternalMetadataDefs(t *testing.T) {
 
 		resourceAttribute := resourceAttributes.Properties["service.name"]
 		require.Contains(t, resourceAttribute.Properties, "enabled")
-		require.Equal(t, "boolean", resourceAttribute.Properties["enabled"].Type)
+		require.Equal(t, "bool", resourceAttribute.Properties["enabled"].Type)
 		require.Equal(t, true, resourceAttribute.Properties["enabled"].Default)
 	})
 

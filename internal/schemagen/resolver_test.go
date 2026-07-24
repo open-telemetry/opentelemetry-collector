@@ -128,8 +128,8 @@ func TestResolver_ResolveSchema_ArrayItems(t *testing.T) {
 	}
 
 	src := &ConfigsMetadata{Config: &ConfigMetadata{
-		Type: "array",
-		Items: &ConfigMetadata{
+		Type: "slice",
+		Values: &ConfigMetadata{
 			Type: "object",
 			Properties: map[string]*ConfigMetadata{
 				"name": {Type: "string"},
@@ -139,10 +139,10 @@ func TestResolver_ResolveSchema_ArrayItems(t *testing.T) {
 
 	result, err := resolver.ResolveSchema(src)
 	require.NoError(t, err)
-	require.Equal(t, "array", result.Config.Type)
-	require.NotNil(t, result.Config.Items)
-	require.Equal(t, "object", result.Config.Items.Type)
-	require.NotNil(t, result.Config.Items.Properties["name"])
+	require.Equal(t, "slice", result.Config.Type)
+	require.NotNil(t, result.Config.Values)
+	require.Equal(t, "object", result.Config.Values.Type)
+	require.NotNil(t, result.Config.Values.Properties["name"])
 }
 
 func TestResolver_LoadExternalRef_Success(t *testing.T) {
@@ -656,8 +656,8 @@ func TestResolver_ResolveSchema_PointerFields(t *testing.T) {
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"tags": {
-				Type:     "array",
-				Items:    &ConfigMetadata{Type: "string"},
+				Type:     "slice",
+				Values:   &ConfigMetadata{Type: "string"},
 				MinItems: &minItems,
 				MaxItems: &maxItems,
 			},
@@ -668,9 +668,9 @@ func TestResolver_ResolveSchema_PointerFields(t *testing.T) {
 	require.NoError(t, err)
 	tags := result.Config.Properties["tags"]
 	require.NotNil(t, tags)
-	require.Equal(t, "array", tags.Type)
-	require.NotNil(t, tags.Items)
-	require.Equal(t, "string", tags.Items.Type)
+	require.Equal(t, "slice", tags.Type)
+	require.NotNil(t, tags.Values)
+	require.Equal(t, "string", tags.Values.Type)
 }
 
 func TestResolver_ResolveSchema_PreservesIntAndFloatPointers(t *testing.T) {
@@ -794,13 +794,13 @@ func TestResolver_ResolveSchema_ExtendedTypes_InProperties(t *testing.T) {
 
 	count := result.Config.Properties["count"]
 	require.NotNil(t, count)
-	assert.Equal(t, "integer", count.Type)
-	assert.Equal(t, "int64", count.GoType)
+	assert.Equal(t, "int64", count.Type)
+	assert.Empty(t, count.GoType)
 
 	ratio := result.Config.Properties["ratio"]
 	require.NotNil(t, ratio)
-	assert.Equal(t, "number", ratio.Type)
-	assert.Equal(t, "float32", ratio.GoType)
+	assert.Equal(t, "float32", ratio.Type)
+	assert.Empty(t, ratio.GoType)
 
 	timeout := result.Config.Properties["timeout"]
 	require.NotNil(t, timeout)
@@ -834,8 +834,8 @@ func TestResolver_ResolveSchema_ExtendedType_InArrayItems(t *testing.T) {
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"ids": {
-				Type:  "array",
-				Items: &ConfigMetadata{Type: "component_id"},
+				Type:   "slice",
+				Values: &ConfigMetadata{Type: "component_id"},
 			},
 		},
 	}}
@@ -844,10 +844,10 @@ func TestResolver_ResolveSchema_ExtendedType_InArrayItems(t *testing.T) {
 	require.NoError(t, err)
 	ids := result.Config.Properties["ids"]
 	require.NotNil(t, ids)
-	assert.Equal(t, "array", ids.Type)
-	require.NotNil(t, ids.Items)
-	assert.Equal(t, "string", ids.Items.Type)
-	assert.Equal(t, "go.opentelemetry.io/collector/component.ID", ids.Items.GoType)
+	assert.Equal(t, "slice", ids.Type)
+	require.NotNil(t, ids.Values)
+	assert.Equal(t, "string", ids.Values.Type)
+	assert.Equal(t, "go.opentelemetry.io/collector/component.ID", ids.Values.GoType)
 }
 
 func TestResolver_ResolveSchema_ExtendedType_InAdditionalProperties(t *testing.T) {
@@ -859,8 +859,8 @@ func TestResolver_ResolveSchema_ExtendedType_InAdditionalProperties(t *testing.T
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"secrets": {
-				Type:                 "object",
-				AdditionalProperties: &ConfigMetadata{Type: "opaque_string"},
+				Type:   "map",
+				Values: &ConfigMetadata{Type: "opaque_string"},
 			},
 		},
 	}}
@@ -869,9 +869,9 @@ func TestResolver_ResolveSchema_ExtendedType_InAdditionalProperties(t *testing.T
 	require.NoError(t, err)
 	secrets := result.Config.Properties["secrets"]
 	require.NotNil(t, secrets)
-	require.NotNil(t, secrets.AdditionalProperties)
-	assert.Equal(t, "string", secrets.AdditionalProperties.Type)
-	assert.Equal(t, "go.opentelemetry.io/collector/config/configopaque.String", secrets.AdditionalProperties.GoType)
+	require.NotNil(t, secrets.Values)
+	assert.Equal(t, "string", secrets.Values.Type)
+	assert.Equal(t, "go.opentelemetry.io/collector/config/configopaque.String", secrets.Values.GoType)
 }
 
 func TestResolver_ResolveSchema_ExtendedType_InDefs_ViaRef(t *testing.T) {
@@ -895,8 +895,8 @@ func TestResolver_ResolveSchema_ExtendedType_InDefs_ViaRef(t *testing.T) {
 	require.NoError(t, err)
 	count := result.Config.Properties["count"]
 	require.NotNil(t, count)
-	assert.Equal(t, "integer", count.Type)
-	assert.Equal(t, "int64", count.GoType)
+	assert.Equal(t, "int64", count.Type)
+	assert.Empty(t, count.GoType)
 }
 
 func TestResolver_ResolveSchema_ExtendedType_OpaqueMap(t *testing.T) {
@@ -915,13 +915,14 @@ func TestResolver_ResolveSchema_ExtendedType_OpaqueMap(t *testing.T) {
 	require.NoError(t, err)
 	headers := result.Config.Properties["headers"]
 	require.NotNil(t, headers)
-	assert.Equal(t, "object", headers.Type)
+	assert.Equal(t, "map", headers.Type)
 	assert.Equal(t, "go.opentelemetry.io/collector/config/configopaque.MapList", headers.GoType)
-	require.NotNil(t, headers.AdditionalProperties)
-	assert.Equal(t, "string", headers.AdditionalProperties.Type)
+	require.NotNil(t, headers.Values)
+	assert.Equal(t, "string", headers.Values.Type)
 }
 
-func TestResolver_ResolveSchema_ExtendedType_UnknownAlias_Error(t *testing.T) {
+func TestResolver_ResolveSchema_ExtendedType_UnknownAlias_PassThrough(t *testing.T) {
+	// expandType is a no-op for unknown types; the generator handles them in resolveGoType.
 	resolver := &Resolver{
 		loader: NewLoader(""),
 	}
@@ -929,11 +930,11 @@ func TestResolver_ResolveSchema_ExtendedType_UnknownAlias_Error(t *testing.T) {
 	src := &ConfigsMetadata{Config: &ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
-			"bad": {Type: "not_a_type"},
+			"custom": {Type: "not_a_known_alias"},
 		},
 	}}
 
-	_, err := resolver.ResolveSchema(src)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "not_a_type")
+	result, err := resolver.ResolveSchema(src)
+	require.NoError(t, err)
+	assert.Equal(t, "not_a_known_alias", result.Config.Properties["custom"].Type)
 }

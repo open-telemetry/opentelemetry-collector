@@ -320,20 +320,21 @@ func TestConfigMetadata_Validate_EnumOnComplexType(t *testing.T) {
 			md: &ConfigMetadata{
 				Type: "object",
 				Properties: map[string]*ConfigMetadata{
-					"nested": {Type: "object", Enum: []any{"a"}},
+					// Ref satisfies the "must have properties" check; Enum triggers the type check.
+					"nested": {Type: "object", Ref: "some_type", Enum: []any{"a"}},
 				},
 			},
 			wantErr: `property "nested" is invalid: enum is not supported for type "object"`,
 		},
 		{
-			name: "enum on array",
+			name: "enum on slice",
 			md: &ConfigMetadata{
 				Type: "object",
 				Properties: map[string]*ConfigMetadata{
-					"items": {Type: "array", Enum: []any{"a"}},
+					"items": {Type: "slice", Enum: []any{"a"}},
 				},
 			},
-			wantErr: `property "items" is invalid: enum is not supported for type "array"`,
+			wantErr: `property "items" is invalid: enum is not supported for type "slice"`,
 		},
 		{
 			name: "enum on string is valid",
@@ -366,33 +367,33 @@ func TestConfigMetadata_Validate_NestedContainers(t *testing.T) {
 		wantErr string
 	}{
 		{
-			name: "invalid additionalProperties",
+			name: "invalid map value type",
 			md: &ConfigMetadata{
-				Type:                 "object",
-				AdditionalProperties: &ConfigMetadata{Type: "object", Enum: []any{"a"}},
+				Type:   "map",
+				Values: &ConfigMetadata{Type: "object", Enum: []any{"a"}},
 			},
 			wantErr: `enum is not supported for type "object"`,
 		},
 		{
-			name: "valid additionalProperties",
+			name: "valid map value type",
 			md: &ConfigMetadata{
-				Type:                 "object",
-				AdditionalProperties: &ConfigMetadata{Type: "string"},
+				Type:   "map",
+				Values: &ConfigMetadata{Type: "string"},
 			},
 		},
 		{
-			name: "invalid items",
+			name: "invalid slice value type",
 			md: &ConfigMetadata{
-				Type:  "array",
-				Items: &ConfigMetadata{Type: "array", Enum: []any{"a"}},
+				Type:   "slice",
+				Values: &ConfigMetadata{Type: "slice", Enum: []any{"a"}},
 			},
-			wantErr: `enum is not supported for type "array"`,
+			wantErr: `enum is not supported for type "slice"`,
 		},
 		{
-			name: "valid items",
+			name: "valid slice value type",
 			md: &ConfigMetadata{
-				Type:  "array",
-				Items: &ConfigMetadata{Type: "string"},
+				Type:   "slice",
+				Values: &ConfigMetadata{Type: "string"},
 			},
 		},
 	}
@@ -462,11 +463,11 @@ func TestConfigsMetadata_Validate(t *testing.T) {
 				"sample": {
 					Type: "object",
 					Properties: map[string]*ConfigMetadata{
-						"nested": {Type: "array", Enum: []any{"a"}},
+						"nested": {Type: "slice", Enum: []any{"a"}},
 					},
 				},
 			}},
-			wantErr: `enum is not supported for type "array"`,
+			wantErr: `enum is not supported for type "slice"`,
 		},
 	}
 
@@ -488,7 +489,7 @@ func TestConfigMetadata_Clone(t *testing.T) {
 	maximum := 10.5
 	orig := &ConfigMetadata{
 		Description:   "root",
-		Type:          "object",
+		Type:          "map",
 		Default:       map[string]any{"nested": []any{"a", "b"}, "flag": true},
 		Enum:          []any{"x", "y"},
 		Required:      []string{"endpoint"},
@@ -506,8 +507,7 @@ func TestConfigMetadata_Clone(t *testing.T) {
 		Properties: map[string]*ConfigMetadata{
 			"endpoint": {Type: "string", Description: "the endpoint"},
 		},
-		AdditionalProperties: &ConfigMetadata{Type: "string"},
-		Items:                &ConfigMetadata{Type: "integer"},
+		Values: &ConfigMetadata{Type: "string"},
 		GoStruct: GoStructConfig{
 			Anonymous:       true,
 			IgnoreDefault:   true,
@@ -530,8 +530,7 @@ func TestConfigMetadata_Clone(t *testing.T) {
 	clone.Default.(map[string]any)["flag"] = false
 	clone.Default.(map[string]any)["nested"].([]any)[0] = "changed"
 	clone.GoStruct.CustomValidator.Name = "other"
-	clone.AdditionalProperties.Type = "changed"
-	clone.Items.Type = "changed"
+	clone.Values.Type = "changed"
 
 	assert.Equal(t, "root", orig.Description)
 	assert.Equal(t, "string", orig.Properties["endpoint"].Type)
@@ -541,8 +540,7 @@ func TestConfigMetadata_Clone(t *testing.T) {
 	assert.Equal(t, true, orig.Default.(map[string]any)["flag"])
 	assert.Equal(t, "a", orig.Default.(map[string]any)["nested"].([]any)[0])
 	assert.Equal(t, "validate", orig.GoStruct.CustomValidator.Name)
-	assert.Equal(t, "string", orig.AdditionalProperties.Type)
-	assert.Equal(t, "integer", orig.Items.Type)
+	assert.Equal(t, "string", orig.Values.Type)
 }
 
 func TestConfigMetadata_Clone_Nil(t *testing.T) {

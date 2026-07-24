@@ -56,8 +56,8 @@ config:
     targets:
       description: List of targets to scrape metrics from.
       x-pointer: true
-      type: array
-      items:
+      type: slice
+      values:
         type: object
         properties:
           interval:
@@ -66,21 +66,21 @@ config:
             default: 10s
           labels:
             description: Static key-value labels attached to all metrics from this target.
-            type: object
-            additionalProperties:
+            type: map
+            values:
               type: string
             default:
               option1: value1
               option2: value2
           retry_count:
             description: Number of retry attempts for failed scrapes.
-            type: integer
+            type: int
             default: 3
             minimum: 0
             maximum: 10
           timeout_seconds:
             description: Timeout in seconds for each scrape request.
-            type: number
+            type: double
             default: 5.0
             exclusiveMinimum: 0
             exclusiveMaximum: 30
@@ -183,7 +183,7 @@ metrics:
     stability: development
     unit: s
     sum:
-      value_type: int
+      values: int
       monotonic: true
       aggregation_temporality: cumulative
     attributes:
@@ -201,7 +201,7 @@ metrics:
       note: "This metric will be removed"
     unit: s
     sum:
-      value_type: double
+      values: double
       monotonic: false
       aggregation_temporality: delta
     warnings:
@@ -213,7 +213,7 @@ metrics:
     description: Monotonic cumulative sum int metric with string input_type enabled by default.
     unit: s
     sum:
-      value_type: int
+      values: int
       input_type: string
       monotonic: true
       aggregation_temporality: cumulative
@@ -229,7 +229,7 @@ metrics:
       note: "This metric will be removed"
     unit: "1"
     gauge:
-      value_type: double
+      values: double
     attributes: [string_attr, boolean_attr, boolean_attr2]
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
@@ -243,7 +243,7 @@ metrics:
       note: "This metric will be removed"
     unit: ""
     gauge:
-      value_type: double
+      values: double
     attributes: [string_attr, boolean_attr]
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
@@ -254,7 +254,7 @@ metrics:
     unit: "1"
     stability: beta
     gauge:
-      value_type: double
+      values: double
     attributes: [string_attr, boolean_attr]
 
   system.cpu.time:
@@ -264,7 +264,7 @@ metrics:
     extended_documentation: The metric will be become optional soon.
     unit: s
     sum:
-      value_type: int
+      values: int
       monotonic: true
       aggregation_temporality: cumulative
     semantic_convention:

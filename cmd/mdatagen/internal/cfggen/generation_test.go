@@ -29,20 +29,20 @@ func TestMapGoType_BasicTypes(t *testing.T) {
 			expected: "string",
 		},
 		{
-			name:     "integer type",
-			metadata: &ConfigMetadata{Type: "integer"},
+			name:     "int type",
+			metadata: &ConfigMetadata{Type: "int"},
 			propName: "field",
 			expected: "int",
 		},
 		{
-			name:     "number type",
-			metadata: &ConfigMetadata{Type: "number"},
+			name:     "float64 type",
+			metadata: &ConfigMetadata{Type: "float64"},
 			propName: "field",
 			expected: "float64",
 		},
 		{
-			name:     "boolean type",
-			metadata: &ConfigMetadata{Type: "boolean"},
+			name:     "bool type",
+			metadata: &ConfigMetadata{Type: "bool"},
 			propName: "field",
 			expected: "bool",
 		},
@@ -76,18 +76,18 @@ func TestPrimitiveGoType(t *testing.T) {
 			expected: "string",
 		},
 		{
-			name:     "integer",
-			metadata: &ConfigMetadata{Type: "integer"},
+			name:     "int",
+			metadata: &ConfigMetadata{Type: "int"},
 			expected: "int",
 		},
 		{
-			name:     "number",
-			metadata: &ConfigMetadata{Type: "number"},
+			name:     "float64",
+			metadata: &ConfigMetadata{Type: "float64"},
 			expected: "float64",
 		},
 		{
-			name:     "boolean",
-			metadata: &ConfigMetadata{Type: "boolean"},
+			name:     "bool",
+			metadata: &ConfigMetadata{Type: "bool"},
 			expected: "bool",
 		},
 		{
@@ -165,34 +165,34 @@ func TestMapGoType_Arrays(t *testing.T) {
 		expected string
 	}{
 		{
-			name: "array with string items",
+			name: "slice with string value type",
 			metadata: &ConfigMetadata{
-				Type:  "array",
-				Items: &ConfigMetadata{Type: "string"},
+				Type:   "slice",
+				Values: &ConfigMetadata{Type: "string"},
 			},
 			expected: "[]string",
 		},
 		{
-			name: "array with int items",
+			name: "slice with int value type",
 			metadata: &ConfigMetadata{
-				Type:  "array",
-				Items: &ConfigMetadata{Type: "integer"},
+				Type:   "slice",
+				Values: &ConfigMetadata{Type: "int"},
 			},
 			expected: "[]int",
 		},
 		{
-			name: "array with ref items",
+			name: "slice with ref value type",
 			metadata: &ConfigMetadata{
-				Type:  "array",
-				Items: &ConfigMetadata{Ref: "./internal/metadata.custom_type"},
+				Type:   "slice",
+				Values: &ConfigMetadata{Ref: "./internal/metadata.custom_type"},
 			},
 			expected: "[]metadata.CustomType",
 		},
 		{
-			name: "array with nested object items ",
+			name: "slice with nested object value type",
 			metadata: &ConfigMetadata{
-				Type: "array",
-				Items: &ConfigMetadata{
+				Type: "slice",
+				Values: &ConfigMetadata{
 					Type: "object",
 					Properties: map[string]*ConfigMetadata{
 						"name": {Type: "string"},
@@ -202,10 +202,10 @@ func TestMapGoType_Arrays(t *testing.T) {
 			expected: "[]FieldItem",
 		},
 		{
-			name: "array without items defaults to any",
+			name: "slice without value type defaults to any",
 			metadata: &ConfigMetadata{
-				Type:  "array",
-				Items: nil,
+				Type:   "slice",
+				Values: nil,
 			},
 			expected: "[]any",
 		},
@@ -230,36 +230,36 @@ func TestMapGoType_Objects(t *testing.T) {
 		expected string
 	}{
 		{
-			name: "object with additionalProperties string",
+			name: "map with string value type",
 			metadata: &ConfigMetadata{
-				Type:                 "object",
-				AdditionalProperties: &ConfigMetadata{Type: "string"},
+				Type:   "map",
+				Values: &ConfigMetadata{Type: "string"},
 			},
 			propName: "field",
 			expected: "map[string]string",
 		},
 		{
-			name: "object with additionalProperties int",
+			name: "map with int value type",
 			metadata: &ConfigMetadata{
-				Type:                 "object",
-				AdditionalProperties: &ConfigMetadata{Type: "integer"},
+				Type:   "map",
+				Values: &ConfigMetadata{Type: "int"},
 			},
 			propName: "field",
 			expected: "map[string]int",
 		},
 		{
-			name: "object with additionalProperties ref",
+			name: "map with ref value type",
 			metadata: &ConfigMetadata{
-				Type:                 "object",
-				AdditionalProperties: &ConfigMetadata{Ref: "./internal/metadata.custom_type"},
+				Type:   "map",
+				Values: &ConfigMetadata{Ref: "./internal/metadata.custom_type"},
 			},
 			propName: "field",
 			expected: "map[string]metadata.CustomType",
 		},
 		{
-			name: "object without additionalProperties or properties",
+			name: "map without value type defaults to map[string]any",
 			metadata: &ConfigMetadata{
-				Type: "object",
+				Type: "map",
 			},
 			propName: "field",
 			expected: "map[string]any",
@@ -276,12 +276,12 @@ func TestMapGoType_Objects(t *testing.T) {
 			expected: "MyConfig",
 		},
 		{
-			name: "map of arrays of objects",
+			name: "map of slices of objects",
 			metadata: &ConfigMetadata{
-				Type: "object",
-				AdditionalProperties: &ConfigMetadata{
-					Type: "array",
-					Items: &ConfigMetadata{
+				Type: "map",
+				Values: &ConfigMetadata{
+					Type: "slice",
+					Values: &ConfigMetadata{
 						Type: "object",
 						Properties: map[string]*ConfigMetadata{
 							"id": {Type: "integer"},
@@ -310,10 +310,9 @@ func TestMapGoType_CustomTypes(t *testing.T) {
 		expected string
 	}{
 		{
-			name: "custom type with basic type",
+			name: "custom type with primitive go type — uses type field not GoType",
 			metadata: &ConfigMetadata{
-				Type:   "string",
-				GoType: "rune",
+				Type: "rune",
 			},
 			expected: "rune",
 		},
@@ -406,10 +405,10 @@ func TestMapGoType_Modifiers(t *testing.T) {
 			expected: "configoptional.Optional[*string]",
 		},
 		{
-			name: "array of pointers",
+			name: "slice of pointers",
 			metadata: &ConfigMetadata{
-				Type: "array",
-				Items: &ConfigMetadata{
+				Type: "slice",
+				Values: &ConfigMetadata{
 					Type:      "string",
 					IsPointer: true,
 				},
@@ -433,13 +432,15 @@ func TestMapGoType_NilInput(t *testing.T) {
 	require.Contains(t, err.Error(), "nil ConfigMetadata")
 }
 
-func TestMapGoType_UnsupportedType(t *testing.T) {
+func TestMapGoType_UnknownTypePassThrough(t *testing.T) {
+	// Unknown types are passed through as-is so metadata.yaml authors can reference
+	// custom Go types directly in the type field without a GoType override.
 	md := &ConfigMetadata{
-		Type: "unsupported_type",
+		Type: "custom_vendor_type",
 	}
-	_, err := MapGoType(md, "field", "", "")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "unsupported type")
+	result, err := MapGoType(md, "field", "", "")
+	require.NoError(t, err)
+	require.Equal(t, "custom_vendor_type", result)
 }
 
 func TestExtractImports_BasicTypes(t *testing.T) {
@@ -604,10 +605,10 @@ func TestCollectCustomDefaultImports(t *testing.T) {
 			defaultValue: map[string]any{"timeout": "30s"},
 		},
 		{
-			name: "map schema with additional properties does not inspect entries",
+			name: "map schema does not inspect entries",
 			metadata: &ConfigMetadata{
-				Type:                 "object",
-				AdditionalProperties: &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+				Type:   "map",
+				Values: &ConfigMetadata{Type: "string", GoType: "time.Duration"},
 			},
 			defaultValue: map[string]any{"timeout": "30s"},
 		},
@@ -631,10 +632,10 @@ func TestCollectCustomDefaultImports(t *testing.T) {
 			expected:     []string{"time"},
 		},
 		{
-			name: "array default imports object item property types",
+			name: "slice default imports object value type property types",
 			metadata: &ConfigMetadata{
-				Type: "array",
-				Items: &ConfigMetadata{
+				Type: "slice",
+				Values: &ConfigMetadata{
 					Type: "object",
 					Properties: map[string]*ConfigMetadata{
 						"timestamp": {Type: "string", GoType: "time.Time"},
@@ -645,10 +646,10 @@ func TestCollectCustomDefaultImports(t *testing.T) {
 			expected:     []string{"time"},
 		},
 		{
-			name: "array default with non-object item does not inspect entries",
+			name: "slice default with non-object value type does not inspect entries",
 			metadata: &ConfigMetadata{
-				Type:  "array",
-				Items: &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+				Type:   "slice",
+				Values: &ConfigMetadata{Type: "string", GoType: "time.Duration"},
 			},
 			defaultValue: []any{"30s"},
 		},
@@ -734,10 +735,10 @@ func TestExtractImports_AllOf(t *testing.T) {
 	require.Contains(t, result, "time")
 }
 
-func TestExtractImports_ArrayItems(t *testing.T) {
+func TestExtractImports_SliceValueType(t *testing.T) {
 	md := &ConfigMetadata{
-		Type: "array",
-		Items: &ConfigMetadata{
+		Type: "slice",
+		Values: &ConfigMetadata{
 			Type:   "string",
 			GoType: "time.Time",
 		},
@@ -747,10 +748,10 @@ func TestExtractImports_ArrayItems(t *testing.T) {
 	require.Contains(t, result, "time")
 }
 
-func TestExtractImports_AdditionalProperties(t *testing.T) {
+func TestExtractImports_MapValueType(t *testing.T) {
 	md := &ConfigMetadata{
-		Type: "object",
-		AdditionalProperties: &ConfigMetadata{
+		Type: "map",
+		Values: &ConfigMetadata{
 			Type:   "string",
 			GoType: "time.Duration",
 		},
@@ -935,8 +936,8 @@ func TestExtractDefs_MapValueObject(t *testing.T) {
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"labels": {
-				Type: "object",
-				AdditionalProperties: &ConfigMetadata{
+				Type: "map",
+				Values: &ConfigMetadata{
 					Type: "object",
 					Properties: map[string]*ConfigMetadata{
 						"name": {Type: "string"},
@@ -955,17 +956,17 @@ func TestExtractDefs_MapValueObject(t *testing.T) {
 
 	result := ExtractDefsFromConfig(md)
 	require.Len(t, result, 1)
-	require.Contains(t, result, "labels")
-	require.Same(t, md.Properties["labels"].AdditionalProperties, result["labels"])
+	require.Contains(t, result, "labels_item")
+	require.Same(t, md.Properties["labels"].Values, result["labels_item"])
 }
 
-func TestExtractDefs_ArrayItems(t *testing.T) {
+func TestExtractDefs_SliceValueObject(t *testing.T) {
 	md := &ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"servers": {
-				Type: "array",
-				Items: &ConfigMetadata{
+				Type: "slice",
+				Values: &ConfigMetadata{
 					Type: "object",
 					Properties: map[string]*ConfigMetadata{
 						"host": {Type: "string"},
@@ -1290,26 +1291,26 @@ func TestResolveGoType_RefFormatError(t *testing.T) {
 	require.Contains(t, err.Error(), "failed to format reference type")
 }
 
-func TestResolveGoType_ArrayItemError(t *testing.T) {
-	// Array whose item type fails to resolve
+func TestResolveGoType_SliceValueTypeError(t *testing.T) {
+	// Slice whose value type GoType is malformed
 	md := &ConfigMetadata{
-		Type:  "array",
-		Items: &ConfigMetadata{Type: "unsupported_array_item"},
+		Type:   "slice",
+		Values: &ConfigMetadata{GoType: "github.com/pkg."},
 	}
 	_, err := MapGoType(md, "field", "", "")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to map array item type")
+	require.Contains(t, err.Error(), "failed to resolve slice value type")
 }
 
-func TestResolveGoType_AdditionalPropertiesError(t *testing.T) {
-	// Object with additionalProperties whose type fails to resolve
+func TestResolveGoType_MapValueTypeError(t *testing.T) {
+	// Map whose value type GoType is malformed
 	md := &ConfigMetadata{
-		Type:                 "object",
-		AdditionalProperties: &ConfigMetadata{Type: "unsupported_value"},
+		Type:   "map",
+		Values: &ConfigMetadata{GoType: "github.com/pkg."},
 	}
 	_, err := MapGoType(md, "field", "", "")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to map additionalProperties type")
+	require.Contains(t, err.Error(), "failed to resolve map value type")
 }
 
 func TestResolveGoType_EmbeddedObjectNameError(t *testing.T) {
@@ -1351,10 +1352,10 @@ func TestExtractImports_RefError(t *testing.T) {
 	require.Contains(t, err.Error(), "failed to resolve import for reference")
 }
 
-func TestExtractImports_ItemsError(t *testing.T) {
+func TestExtractImports_SliceValueTypeError(t *testing.T) {
 	md := &ConfigMetadata{
-		Type:  "array",
-		Items: &ConfigMetadata{GoType: "github.com/pkg."},
+		Type:   "slice",
+		Values: &ConfigMetadata{GoType: "github.com/pkg."},
 	}
 	_, err := ExtractImportsFromConfig(md, "", "")
 	require.Error(t, err)
@@ -1385,10 +1386,10 @@ func TestExtractImports_DefsError(t *testing.T) {
 	require.Contains(t, err.Error(), "failed to resolve import for custom type")
 }
 
-func TestExtractImports_AdditionalPropertiesError(t *testing.T) {
+func TestExtractImports_MapValueTypeError(t *testing.T) {
 	md := &ConfigMetadata{
-		Type:                 "object",
-		AdditionalProperties: &ConfigMetadata{GoType: "github.com/pkg."},
+		Type:   "map",
+		Values: &ConfigMetadata{GoType: "github.com/pkg."},
 	}
 	_, err := ExtractImportsFromConfig(md, "", "")
 	require.Error(t, err)
@@ -1446,12 +1447,12 @@ func TestExtractImports_ExternalRefNestedDefaultsError(t *testing.T) {
 	require.Contains(t, err.Error(), "failed to resolve import for custom type")
 }
 
-func TestExtractImports_ExternalRefArrayDefaultsError(t *testing.T) {
-	// collectCustomDefaultImports over array items fails (line 306-307)
+func TestExtractImports_ExternalRefSliceDefaultsError(t *testing.T) {
+	// collectCustomDefaultImports over slice value type fails
 	md := &ConfigMetadata{
 		Ref:  "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
-		Type: "array",
-		Items: &ConfigMetadata{
+		Type: "slice",
+		Values: &ConfigMetadata{
 			Type: "object",
 			Properties: map[string]*ConfigMetadata{
 				"bad": {GoType: "github.com/pkg."},
@@ -1464,10 +1465,10 @@ func TestExtractImports_ExternalRefArrayDefaultsError(t *testing.T) {
 	require.Contains(t, err.Error(), "failed to resolve import for custom type")
 }
 
-func TestExtractImports_ItemsPath(t *testing.T) {
+func TestExtractImports_SliceValueTypePath(t *testing.T) {
 	md := &ConfigMetadata{
-		Type: "array",
-		Items: &ConfigMetadata{
+		Type: "slice",
+		Values: &ConfigMetadata{
 			Type:       "string",
 			IsOptional: true,
 		},
@@ -1526,10 +1527,10 @@ func TestExtractImports_Pattern(t *testing.T) {
 			},
 		},
 		{
-			name: "pattern in array items",
+			name: "pattern in slice value type",
 			metadata: &ConfigMetadata{
-				Type:  "array",
-				Items: &ConfigMetadata{Type: "string", Pattern: `^[a-z]+$`},
+				Type:   "slice",
+				Values: &ConfigMetadata{Type: "string", Pattern: `^[a-z]+$`},
 			},
 		},
 	}
@@ -1751,15 +1752,13 @@ func TestExtractValidators(t *testing.T) {
 			},
 		},
 		{
-			name: "object with additionalProperties but no required children emits nothing",
+			name: "map type but no required children emits nothing",
 			metadata: &ConfigMetadata{
 				Type: "object",
 				Properties: map[string]*ConfigMetadata{
 					"labels": {
-						Type: "object",
-						AdditionalProperties: &ConfigMetadata{
-							Type: "string",
-						},
+						Type:   "map",
+						Values: &ConfigMetadata{Type: "string"},
 					},
 				},
 			},
@@ -2283,8 +2282,8 @@ func TestResolveType(t *testing.T) {
 		{
 			name: "map",
 			metadata: &ConfigMetadata{
-				Type:                 "object",
-				AdditionalProperties: &ConfigMetadata{Type: "string"},
+				Type:   "map",
+				Values: &ConfigMetadata{Type: "string"},
 			},
 			expected: "map",
 		},
@@ -2449,8 +2448,8 @@ func TestRenderDurationExpr_InvalidInputs(t *testing.T) {
 
 func TestFormatDefaultValue_MapDefault(t *testing.T) {
 	md := &ConfigMetadata{
-		Type:                 "object",
-		AdditionalProperties: &ConfigMetadata{Type: "string"},
+		Type:   "map",
+		Values: &ConfigMetadata{Type: "string"},
 	}
 
 	require.Equal(t, `map[string]string{"env": "prod"}`, FormatDefaultValue(md, "labels", defaultValue(map[string]any{"env": "prod"}), "", ""))
@@ -2468,11 +2467,11 @@ func TestFormatDefaultValue_OptionalObjectDefault(t *testing.T) {
 	require.Equal(t, "configoptional.Default(NewDefaultClient())", FormatDefaultValue(md, "client", defaultValue(map[string]any{"endpoint": "localhost"}), "", ""))
 }
 
-func TestFormatDefaultValue_PointerArrayOfObjects(t *testing.T) {
+func TestFormatDefaultValue_PointerSliceOfObjects(t *testing.T) {
 	md := &ConfigMetadata{
-		Type:      "array",
+		Type:      "slice",
 		IsPointer: true,
-		Items: &ConfigMetadata{
+		Values: &ConfigMetadata{
 			Type: "object",
 			Properties: map[string]*ConfigMetadata{
 				"url": {Type: "string", Default: defaultValue("http://example.com")},
@@ -2549,34 +2548,34 @@ func TestFormatDefaultValue_Panics(t *testing.T) {
 			defaultValue: defaultValue(map[string]any{}),
 		},
 		{
-			name: "invalid array default value",
+			name: "invalid slice default value",
 			metadata: &ConfigMetadata{
-				Type:  "array",
-				Items: &ConfigMetadata{Type: "string"},
+				Type:   "slice",
+				Values: &ConfigMetadata{Type: "string"},
 			},
 			defaultValue: defaultValue("localhost"),
 		},
 		{
-			name: "invalid array item type",
+			name: "invalid slice value type GoType",
 			metadata: &ConfigMetadata{
-				Type:  "array",
-				Items: &ConfigMetadata{Type: "unknown"},
+				Type:   "slice",
+				Values: &ConfigMetadata{GoType: "github.com/pkg."},
 			},
 			defaultValue: defaultValue([]any{"localhost"}),
 		},
 		{
 			name: "invalid map default value",
 			metadata: &ConfigMetadata{
-				Type:                 "object",
-				AdditionalProperties: &ConfigMetadata{Type: "string"},
+				Type:   "map",
+				Values: &ConfigMetadata{Type: "string"},
 			},
 			defaultValue: defaultValue("localhost"),
 		},
 		{
-			name: "invalid map value type",
+			name: "invalid map value type GoType",
 			metadata: &ConfigMetadata{
-				Type:                 "object",
-				AdditionalProperties: &ConfigMetadata{Type: "unknown"},
+				Type:   "map",
+				Values: &ConfigMetadata{GoType: "github.com/pkg."},
 			},
 			defaultValue: defaultValue(map[string]any{"endpoint": "localhost"}),
 		},
@@ -2659,7 +2658,7 @@ func TestFormatDefaultValue_ResolvedReferenceWithDefaults(t *testing.T) {
 
 func TestFormatDefaultValue_ResolvedPrimitiveReferenceWithDefault(t *testing.T) {
 	md := &ConfigMetadata{
-		Type:    "integer",
+		Type:    "int",
 		Ref:     "port_number",
 		Default: defaultValue(8080),
 	}
@@ -2726,10 +2725,10 @@ func TestMapCustomDefaults_NestedObjectOverrides(t *testing.T) {
 	}, exprs)
 }
 
-func TestMapCustomDefaults_ArrayOfObjectsOverrides(t *testing.T) {
+func TestMapCustomDefaults_SliceOfObjectsOverrides(t *testing.T) {
 	md := &ConfigMetadata{
-		Type: "array",
-		Items: &ConfigMetadata{
+		Type: "slice",
+		Values: &ConfigMetadata{
 			Type: "object",
 			Properties: map[string]*ConfigMetadata{
 				"url": {Type: "string"},
@@ -2761,8 +2760,8 @@ func TestMapCustomDefaults_Panics(t *testing.T) {
 		{
 			name: "map of structs",
 			metadata: &ConfigMetadata{
-				Type:                 "object",
-				AdditionalProperties: &ConfigMetadata{Type: "object"},
+				Type:   "map",
+				Values: &ConfigMetadata{Type: "object"},
 			},
 			defaultValue: defaultValue(map[string]any{"entry": map[string]any{}}),
 		},
@@ -2781,10 +2780,10 @@ func TestMapCustomDefaults_EmptyInput(t *testing.T) {
 	require.Empty(t, MapCustomDefaults(&ConfigMetadata{Type: "string"}, nil, "", ""))
 }
 
-func TestMapCustomDefaults_ScalarArray(t *testing.T) {
+func TestMapCustomDefaults_ScalarSlice(t *testing.T) {
 	md := &ConfigMetadata{
-		Type:  "array",
-		Items: &ConfigMetadata{Type: "string"},
+		Type:   "slice",
+		Values: &ConfigMetadata{Type: "string"},
 	}
 
 	require.Empty(t, MapCustomDefaults(md, defaultValue([]any{"value"}), "", ""))
@@ -2878,8 +2877,8 @@ func TestNewCfgFns_DefaultHelpers(t *testing.T) {
 	))
 	require.Equal(t, []string{`[0].URL = "http://example.com"`}, mapCustomDefaults(
 		&ConfigMetadata{
-			Type: "array",
-			Items: &ConfigMetadata{
+			Type: "slice",
+			Values: &ConfigMetadata{
 				Type: "object",
 				Properties: map[string]*ConfigMetadata{
 					"url": {Type: "string"},
