@@ -639,7 +639,7 @@ func TestCompressionAlgorithmsEdgeCases(t *testing.T) {
 			compressionAlgorithms: []string{"", "gzip", "zstd"},
 			contentEncoding:       "identity",
 			body:                  testBody,
-			wantStatus:            http.StatusBadRequest, // BUG: should be http.StatusOK
+			wantStatus:            http.StatusOK, // BUG: should be http.StatusOK
 		},
 		{
 			name:                  "Mixed_Snappy_Rejected",
