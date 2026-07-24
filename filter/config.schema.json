@@ -1,0 +1,21 @@
+{
+  "$id": "go.opentelemetry.io/collector/filter",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "config": {
+      "type": "object",
+      "properties": {
+        "regexp": {
+          "type": "string",
+          "description": "Filter using a Go regexp."
+        },
+        "strict": {
+          "type": "string",
+          "description": "Filter using a string literal."
+        }
+      },
+      "description": "Config configures the matching behavior of a Filter."
+    }
+  },
+  "title": "pkg/filter"
+}
