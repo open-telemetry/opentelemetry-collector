@@ -57,7 +57,7 @@ type batchProcessor[T any] struct {
 	batcher batcher[T]
 }
 
-// batcher is describes a *singletonBatcher or *multiBatcher.
+// batcher describes a *singletonBatcher or *multiBatcher.
 type batcher[T any] interface {
 	// start initializes background resources used by this batcher.
 	start(ctx context.Context) error
