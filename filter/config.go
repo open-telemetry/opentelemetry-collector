@@ -8,24 +8,16 @@ import (
 	"regexp"
 )
 
-// Config configures the matching behavior of a Filter.
-type Config struct {
-	Strict string `mapstructure:"strict"`
-	Regex  string `mapstructure:"regexp"`
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
-func (c Config) Validate() error {
-	if c.Strict == "" && c.Regex == "" {
+func validateConfig(c *Config) error {
+	if c.Strict == "" && c.Regexp == "" {
 		return errors.New("must specify either strict or regex")
 	}
-	if c.Strict != "" && c.Regex != "" {
+	if c.Strict != "" && c.Regexp != "" {
 		return errors.New("strict and regex cannot be used together")
 	}
 
-	if c.Regex != "" {
-		_, err := regexp.Compile(c.Regex)
+	if c.Regexp != "" {
+		_, err := regexp.Compile(c.Regexp)
 		if err != nil {
 			return err
 		}
@@ -49,9 +41,9 @@ func CreateFilter(configs []Config) Filter {
 			cf.stricts[config.Strict] = struct{}{}
 		}
 
-		if config.Regex != "" {
+		if config.Regexp != "" {
 			// Validate() call above ensures that the regex is valid.
-			re := regexp.MustCompile(config.Regex)
+			re := regexp.MustCompile(config.Regexp)
 			cf.regexes = append(cf.regexes, re)
 		}
 	}

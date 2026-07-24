@@ -9,8 +9,13 @@ exported_configs:
   config:
     description: Config configures the matching behavior of a Filter.
     type: object
+    go_struct:
+      custom_validator:
+        name: validateConfig
     properties:
       regexp:
         type: string
+        description: Filter using a Go regexp.
       strict:
+        description: Filter using a string literal.
         type: string

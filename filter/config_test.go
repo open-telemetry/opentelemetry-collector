@@ -29,7 +29,7 @@ func TestConfig(t *testing.T) {
 	expectedConfigs := map[string][]Config{
 		"regexp/default": {
 			{
-				Regex: "one|two",
+				Regexp: "one|two",
 			},
 		},
 		"strict/default": {
@@ -63,7 +63,7 @@ func TestMatches(t *testing.T) {
 			Strict: "b",
 		},
 		{
-			Regex: "a|b|c",
+			Regexp: "a|b|c",
 		},
 	}
 
@@ -82,18 +82,18 @@ func TestConfigInvalid(t *testing.T) {
 	expectedConfigs := map[string][]Config{
 		"invalid/regexp": {
 			{
-				Regex: "(.*[",
+				Regexp: "(.*[",
 			},
 		},
 		"invalid/config_empty": {
 			{
-				Regex:  "",
+				Regexp: "",
 				Strict: "",
 			},
 		},
 		"invalid/config_both_set": {
 			{
-				Regex:  "1",
+				Regexp: "1",
 				Strict: "1",
 			},
 		},
