@@ -360,6 +360,16 @@ func checkRecordedMetricsForTraces(t *testing.T, tt *componenttest.Telemetry, id
 					Value: int64(numBatches * td.SpanCount()),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+		// The failed metric must be present with a zero value even when all
+		// sends succeed. See https://github.com/open-telemetry/opentelemetry-collector/issues/15568.
+		metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String(internal.ExporterKey, id.String())),
+					Value: 0,
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	}
 }
 
