@@ -56,6 +56,12 @@ func CfgPropDocs(cfg *ConfigMetadata) []PropDoc {
 func collectPropDocs(cfg *ConfigMetadata, docs *[]PropDoc) {
 	for _, name := range slices.Sorted(maps.Keys(cfg.Properties)) {
 		prop := cfg.Properties[name]
+
+		if prop.Embed {
+			collectPropDocs(prop, docs)
+			continue
+		}
+
 		*docs = append(*docs, PropDoc{
 			Name:        name,
 			Schema:      prop,
@@ -63,11 +69,6 @@ func collectPropDocs(cfg *ConfigMetadata, docs *[]PropDoc) {
 			Description: prop.Description,
 			Deprecated:  prop.Deprecated,
 		})
-	}
-	for _, embed := range cfg.AllOf {
-		if embed != nil {
-			collectPropDocs(embed, docs)
-		}
 	}
 }
 

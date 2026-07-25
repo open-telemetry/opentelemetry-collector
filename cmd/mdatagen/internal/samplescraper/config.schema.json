@@ -1,608 +1,31 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper",
-  "title": "scraper/sample",
-  "description": "Configuration for the Sample Scraper.",
   "type": "object",
-  "allOf": [
-    {
-      "description": "Defines common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed.",
-      "type": "object",
-      "properties": {
-        "collection_interval": {
-          "description": "Sets how frequently the scraper should be called and used as the context timeout to ensure that scrapers don't exceed the interval.",
-          "type": "string",
-          "default": "1m",
-          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
-        },
-        "initial_delay": {
-          "description": "Sets the initial start delay for the scraper, any non positive value is assumed to be immediately.",
-          "type": "string",
-          "default": "1s",
-          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
-        },
-        "timeout": {
-          "description": "An optional value used to set scraper's context deadline.",
-          "type": "string",
-          "default": 0,
-          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
-        }
-      }
-    },
-    {
-      "description": "MetricsBuilderConfig is a configuration for sample metrics builder.",
-      "type": "object",
-      "properties": {
-        "metrics": {
-          "description": "MetricsConfig provides config for sample metrics.",
-          "type": "object",
-          "properties": {
-            "default.metric": {
-              "description": "DefaultMetricMetricConfig provides config for the default.metric metric.",
-              "type": "object",
-              "properties": {
-                "aggregation_strategy": {
-                  "type": "string",
-                  "default": "sum",
-                  "enum": [
-                    "sum",
-                    "avg",
-                    "min",
-                    "max"
-                  ]
-                },
-                "attributes": {
-                  "type": "array",
-                  "default": [
-                    "string_attr",
-                    "state",
-                    "enum_attr",
-                    "slice_attr",
-                    "map_attr"
-                  ],
-                  "items": {
-                    "type": "string",
-                    "enum": [
-                      "string_attr",
-                      "state",
-                      "enum_attr",
-                      "slice_attr",
-                      "map_attr"
-                    ]
-                  }
-                },
-                "enabled": {
-                  "type": "boolean",
-                  "default": true
-                }
-              }
-            },
-            "default.metric.to_be_removed": {
-              "description": "DefaultMetricToBeRemovedMetricConfig provides config for the default.metric.to_be_removed metric.",
-              "type": "object",
-              "properties": {
-                "enabled": {
-                  "type": "boolean",
-                  "default": true
-                }
-              }
-            },
-            "metric.input_type": {
-              "description": "MetricInputTypeMetricConfig provides config for the metric.input_type metric.",
-              "type": "object",
-              "properties": {
-                "aggregation_strategy": {
-                  "type": "string",
-                  "default": "sum",
-                  "enum": [
-                    "sum",
-                    "avg",
-                    "min",
-                    "max"
-                  ]
-                },
-                "attributes": {
-                  "type": "array",
-                  "default": [
-                    "string_attr",
-                    "state",
-                    "enum_attr",
-                    "slice_attr",
-                    "map_attr"
-                  ],
-                  "items": {
-                    "type": "string",
-                    "enum": [
-                      "string_attr",
-                      "state",
-                      "enum_attr",
-                      "slice_attr",
-                      "map_attr"
-                    ]
-                  }
-                },
-                "enabled": {
-                  "type": "boolean",
-                  "default": true
-                }
-              }
-            },
-            "optional.metric": {
-              "description": "OptionalMetricMetricConfig provides config for the optional.metric metric.",
-              "type": "object",
-              "properties": {
-                "aggregation_strategy": {
-                  "type": "string",
-                  "default": "avg",
-                  "enum": [
-                    "sum",
-                    "avg",
-                    "min",
-                    "max"
-                  ]
-                },
-                "attributes": {
-                  "type": "array",
-                  "default": [
-                    "string_attr",
-                    "boolean_attr",
-                    "boolean_attr2"
-                  ],
-                  "items": {
-                    "type": "string",
-                    "enum": [
-                      "string_attr",
-                      "boolean_attr",
-                      "boolean_attr2"
-                    ]
-                  }
-                },
-                "enabled": {
-                  "type": "boolean",
-                  "default": false
-                }
-              }
-            },
-            "optional.metric.empty_unit": {
-              "description": "OptionalMetricEmptyUnitMetricConfig provides config for the optional.metric.empty_unit metric.",
-              "type": "object",
-              "properties": {
-                "aggregation_strategy": {
-                  "type": "string",
-                  "default": "avg",
-                  "enum": [
-                    "sum",
-                    "avg",
-                    "min",
-                    "max"
-                  ]
-                },
-                "attributes": {
-                  "type": "array",
-                  "default": [
-                    "string_attr",
-                    "boolean_attr"
-                  ],
-                  "items": {
-                    "type": "string",
-                    "enum": [
-                      "string_attr",
-                      "boolean_attr"
-                    ]
-                  }
-                },
-                "enabled": {
-                  "type": "boolean",
-                  "default": false
-                }
-              }
-            },
-            "reaggregate.metric": {
-              "description": "ReaggregateMetricMetricConfig provides config for the reaggregate.metric metric.",
-              "type": "object",
-              "properties": {
-                "aggregation_strategy": {
-                  "type": "string",
-                  "default": "avg",
-                  "enum": [
-                    "sum",
-                    "avg",
-                    "min",
-                    "max"
-                  ]
-                },
-                "attributes": {
-                  "type": "array",
-                  "default": [
-                    "string_attr",
-                    "boolean_attr"
-                  ],
-                  "items": {
-                    "type": "string",
-                    "enum": [
-                      "string_attr",
-                      "boolean_attr"
-                    ]
-                  }
-                },
-                "enabled": {
-                  "type": "boolean",
-                  "default": true
-                }
-              }
-            },
-            "system.cpu.time": {
-              "description": "SystemCPUTimeMetricConfig provides config for the system.cpu.time metric.",
-              "type": "object",
-              "properties": {
-                "enabled": {
-                  "type": "boolean",
-                  "default": true
-                }
-              }
-            }
-          }
-        },
-        "resource_attributes": {
-          "description": "ResourceAttributesConfig provides config for sample resource attributes.",
-          "type": "object",
-          "properties": {
-            "map.resource.attr": {
-              "description": "ResourceAttributeConfig provides common config for a map.resource.attr resource attribute.",
-              "type": "object",
-              "properties": {
-                "enabled": {
-                  "type": "boolean",
-                  "default": true
-                },
-                "metrics_exclude": {
-                  "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.",
-                  "type": "array",
-                  "items": {
-                    "description": "Config configures the matching behavior of a Filter.",
-                    "type": "object",
-                    "properties": {
-                      "regexp": {
-                        "type": "string"
-                      },
-                      "strict": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                },
-                "metrics_include": {
-                  "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.",
-                  "type": "array",
-                  "items": {
-                    "description": "Config configures the matching behavior of a Filter.",
-                    "type": "object",
-                    "properties": {
-                      "regexp": {
-                        "type": "string"
-                      },
-                      "strict": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                }
-              }
-            },
-            "optional.resource.attr": {
-              "description": "ResourceAttributeConfig provides common config for a optional.resource.attr resource attribute.",
-              "type": "object",
-              "properties": {
-                "enabled": {
-                  "type": "boolean",
-                  "default": false
-                },
-                "metrics_exclude": {
-                  "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.",
-                  "type": "array",
-                  "items": {
-                    "description": "Config configures the matching behavior of a Filter.",
-                    "type": "object",
-                    "properties": {
-                      "regexp": {
-                        "type": "string"
-                      },
-                      "strict": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                },
-                "metrics_include": {
-                  "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.",
-                  "type": "array",
-                  "items": {
-                    "description": "Config configures the matching behavior of a Filter.",
-                    "type": "object",
-                    "properties": {
-                      "regexp": {
-                        "type": "string"
-                      },
-                      "strict": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                }
-              }
-            },
-            "slice.resource.attr": {
-              "description": "ResourceAttributeConfig provides common config for a slice.resource.attr resource attribute.",
-              "type": "object",
-              "properties": {
-                "enabled": {
-                  "type": "boolean",
-                  "default": true
-                },
-                "metrics_exclude": {
-                  "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.",
-                  "type": "array",
-                  "items": {
-                    "description": "Config configures the matching behavior of a Filter.",
-                    "type": "object",
-                    "properties": {
-                      "regexp": {
-                        "type": "string"
-                      },
-                      "strict": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                },
-                "metrics_include": {
-                  "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.",
-                  "type": "array",
-                  "items": {
-                    "description": "Config configures the matching behavior of a Filter.",
-                    "type": "object",
-                    "properties": {
-                      "regexp": {
-                        "type": "string"
-                      },
-                      "strict": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                }
-              }
-            },
-            "string.enum.resource.attr": {
-              "description": "ResourceAttributeConfig provides common config for a string.enum.resource.attr resource attribute.",
-              "type": "object",
-              "properties": {
-                "enabled": {
-                  "type": "boolean",
-                  "default": true
-                },
-                "metrics_exclude": {
-                  "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.",
-                  "type": "array",
-                  "items": {
-                    "description": "Config configures the matching behavior of a Filter.",
-                    "type": "object",
-                    "properties": {
-                      "regexp": {
-                        "type": "string"
-                      },
-                      "strict": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                },
-                "metrics_include": {
-                  "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.",
-                  "type": "array",
-                  "items": {
-                    "description": "Config configures the matching behavior of a Filter.",
-                    "type": "object",
-                    "properties": {
-                      "regexp": {
-                        "type": "string"
-                      },
-                      "strict": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                }
-              }
-            },
-            "string.resource.attr": {
-              "description": "ResourceAttributeConfig provides common config for a string.resource.attr resource attribute.",
-              "type": "object",
-              "properties": {
-                "enabled": {
-                  "type": "boolean",
-                  "default": true
-                },
-                "metrics_exclude": {
-                  "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.",
-                  "type": "array",
-                  "items": {
-                    "description": "Config configures the matching behavior of a Filter.",
-                    "type": "object",
-                    "properties": {
-                      "regexp": {
-                        "type": "string"
-                      },
-                      "strict": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                },
-                "metrics_include": {
-                  "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.",
-                  "type": "array",
-                  "items": {
-                    "description": "Config configures the matching behavior of a Filter.",
-                    "type": "object",
-                    "properties": {
-                      "regexp": {
-                        "type": "string"
-                      },
-                      "strict": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                }
-              }
-            },
-            "string.resource.attr_disable_warning": {
-              "description": "ResourceAttributeConfig provides common config for a string.resource.attr_disable_warning resource attribute.",
-              "type": "object",
-              "properties": {
-                "enabled": {
-                  "type": "boolean",
-                  "default": true
-                },
-                "metrics_exclude": {
-                  "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.",
-                  "type": "array",
-                  "items": {
-                    "description": "Config configures the matching behavior of a Filter.",
-                    "type": "object",
-                    "properties": {
-                      "regexp": {
-                        "type": "string"
-                      },
-                      "strict": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                },
-                "metrics_include": {
-                  "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.",
-                  "type": "array",
-                  "items": {
-                    "description": "Config configures the matching behavior of a Filter.",
-                    "type": "object",
-                    "properties": {
-                      "regexp": {
-                        "type": "string"
-                      },
-                      "strict": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                }
-              }
-            },
-            "string.resource.attr_remove_warning": {
-              "description": "ResourceAttributeConfig provides common config for a string.resource.attr_remove_warning resource attribute.",
-              "type": "object",
-              "properties": {
-                "enabled": {
-                  "type": "boolean",
-                  "default": false
-                },
-                "metrics_exclude": {
-                  "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.",
-                  "type": "array",
-                  "items": {
-                    "description": "Config configures the matching behavior of a Filter.",
-                    "type": "object",
-                    "properties": {
-                      "regexp": {
-                        "type": "string"
-                      },
-                      "strict": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                },
-                "metrics_include": {
-                  "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.",
-                  "type": "array",
-                  "items": {
-                    "description": "Config configures the matching behavior of a Filter.",
-                    "type": "object",
-                    "properties": {
-                      "regexp": {
-                        "type": "string"
-                      },
-                      "strict": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                }
-              }
-            },
-            "string.resource.attr_to_be_removed": {
-              "description": "ResourceAttributeConfig provides common config for a string.resource.attr_to_be_removed resource attribute.",
-              "type": "object",
-              "properties": {
-                "enabled": {
-                  "type": "boolean",
-                  "default": true
-                },
-                "metrics_exclude": {
-                  "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.",
-                  "type": "array",
-                  "items": {
-                    "description": "Config configures the matching behavior of a Filter.",
-                    "type": "object",
-                    "properties": {
-                      "regexp": {
-                        "type": "string"
-                      },
-                      "strict": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                },
-                "metrics_include": {
-                  "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.",
-                  "type": "array",
-                  "items": {
-                    "description": "Config configures the matching behavior of a Filter.",
-                    "type": "object",
-                    "properties": {
-                      "regexp": {
-                        "type": "string"
-                      },
-                      "strict": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  ],
   "properties": {
-    "job_name": {
-      "description": "Name of the scrape job, used to identify the source in telemetry.",
+    "component": {
       "type": "string",
+      "description": "Identifies the scraper, used for telemetry and logging."
+    },
+    "job_name": {
+      "type": "string",
+      "description": "Name of the scrape job, used to identify the source in telemetry.",
       "default": "test_job",
-      "maxLength": 255,
       "minLength": 1,
+      "maxLength": 255,
       "pattern": "^[a-zA-Z0-9_.-]+$"
     },
+    "log_level": {
+      "type": "string",
+      "description": "Logging level for the scraper.",
+      "default": "info",
+      "enum": [
+        "debug",
+        "info",
+        "warn",
+        "error"
+      ]
+    },
     "targets": {
-      "description": "List of targets to scrape metrics from.",
       "type": "array",
-      "default": [
-        {}
-      ],
       "items": {
         "type": "object",
         "properties": {
@@ -612,8 +35,8 @@
             "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
           },
           "labels": {
-            "description": "Static key-value labels attached to all metrics from this target.",
             "type": "object",
+            "description": "Static key-value labels attached to all metrics from this target.",
             "default": {
               "option1": "value1",
               "option2": "value2"
@@ -623,50 +46,643 @@
             }
           },
           "retry_count": {
-            "description": "Number of retry attempts for failed scrapes.",
             "type": "integer",
+            "description": "Number of retry attempts for failed scrapes.",
             "default": 3,
-            "maximum": 10,
-            "minimum": 0
+            "minimum": 0,
+            "maximum": 10
           },
           "timeout_seconds": {
-            "description": "Timeout in seconds for each scrape request.",
             "type": "number",
+            "description": "Timeout in seconds for each scrape request.",
             "default": 5,
-            "exclusiveMaximum": 30,
-            "exclusiveMinimum": 0
+            "exclusiveMinimum": 0,
+            "exclusiveMaximum": 30
           }
         },
         "required": [
           "labels"
         ]
-      }
+      },
+      "description": "List of targets to scrape metrics from.",
+      "default": [
+        {}
+      ]
     }
   },
-  "required": [
-    "job_name",
-    "targets"
-  ],
+  "$id": "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$defs": {
     "sample_pkg": {
       "type": "object",
       "properties": {
         "host_name": {
-          "description": "The host name to connect to.",
           "type": "string",
+          "description": "The host name to connect to.",
           "default": "localhost",
           "minLength": 1
         },
         "port": {
+          "type": "integer",
           "description": "The port to connect to.",
-          "type": "string",
-          "default": "8080"
+          "default": 8080,
+          "minimum": 1,
+          "maximum": 10000
         }
       },
       "required": [
-        "host_name",
-        "port"
+        "host_name"
       ]
     }
-  }
+  },
+  "title": "scraper/sample",
+  "description": "Configuration for the Sample Scraper.",
+  "required": [
+    "job_name",
+    "targets"
+  ],
+  "allOf": [
+    {
+      "type": "object",
+      "properties": {
+        "collection_interval": {
+          "type": "string",
+          "description": "Sets how frequently the scraper should be called and used as the context timeout to ensure that scrapers don't exceed the interval.",
+          "default": "1m",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        },
+        "initial_delay": {
+          "type": "string",
+          "description": "Sets the initial start delay for the scraper, any non positive value is assumed to be immediately.",
+          "default": "1s",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        },
+        "timeout": {
+          "type": "string",
+          "description": "An optional value used to set scraper's context deadline.",
+          "default": 0,
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        }
+      },
+      "description": "Defines common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed."
+    },
+    {
+      "type": "object",
+      "properties": {
+        "metrics": {
+          "type": "object",
+          "properties": {
+            "default.metric": {
+              "type": "object",
+              "properties": {
+                "aggregation_strategy": {
+                  "type": "string",
+                  "default": "sum",
+                  "enum": [
+                    "sum",
+                    "avg",
+                    "min",
+                    "max"
+                  ]
+                },
+                "attributes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "string_attr",
+                      "state",
+                      "enum_attr",
+                      "slice_attr",
+                      "map_attr"
+                    ]
+                  },
+                  "default": [
+                    "string_attr",
+                    "state",
+                    "enum_attr",
+                    "slice_attr",
+                    "map_attr"
+                  ]
+                },
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                }
+              },
+              "description": "DefaultMetricMetricConfig provides config for the default.metric metric."
+            },
+            "default.metric.to_be_removed": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                }
+              },
+              "description": "DefaultMetricToBeRemovedMetricConfig provides config for the default.metric.to_be_removed metric."
+            },
+            "metric.input_type": {
+              "type": "object",
+              "properties": {
+                "aggregation_strategy": {
+                  "type": "string",
+                  "default": "sum",
+                  "enum": [
+                    "sum",
+                    "avg",
+                    "min",
+                    "max"
+                  ]
+                },
+                "attributes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "string_attr",
+                      "state",
+                      "enum_attr",
+                      "slice_attr",
+                      "map_attr"
+                    ]
+                  },
+                  "default": [
+                    "string_attr",
+                    "state",
+                    "enum_attr",
+                    "slice_attr",
+                    "map_attr"
+                  ]
+                },
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                }
+              },
+              "description": "MetricInputTypeMetricConfig provides config for the metric.input_type metric."
+            },
+            "optional.metric": {
+              "type": "object",
+              "properties": {
+                "aggregation_strategy": {
+                  "type": "string",
+                  "default": "avg",
+                  "enum": [
+                    "sum",
+                    "avg",
+                    "min",
+                    "max"
+                  ]
+                },
+                "attributes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "string_attr",
+                      "boolean_attr",
+                      "boolean_attr2"
+                    ]
+                  },
+                  "default": [
+                    "string_attr",
+                    "boolean_attr",
+                    "boolean_attr2"
+                  ]
+                },
+                "enabled": {
+                  "type": "boolean",
+                  "default": false
+                }
+              },
+              "description": "OptionalMetricMetricConfig provides config for the optional.metric metric."
+            },
+            "optional.metric.empty_unit": {
+              "type": "object",
+              "properties": {
+                "aggregation_strategy": {
+                  "type": "string",
+                  "default": "avg",
+                  "enum": [
+                    "sum",
+                    "avg",
+                    "min",
+                    "max"
+                  ]
+                },
+                "attributes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "string_attr",
+                      "boolean_attr"
+                    ]
+                  },
+                  "default": [
+                    "string_attr",
+                    "boolean_attr"
+                  ]
+                },
+                "enabled": {
+                  "type": "boolean",
+                  "default": false
+                }
+              },
+              "description": "OptionalMetricEmptyUnitMetricConfig provides config for the optional.metric.empty_unit metric."
+            },
+            "reaggregate.metric": {
+              "type": "object",
+              "properties": {
+                "aggregation_strategy": {
+                  "type": "string",
+                  "default": "avg",
+                  "enum": [
+                    "sum",
+                    "avg",
+                    "min",
+                    "max"
+                  ]
+                },
+                "attributes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "string_attr",
+                      "boolean_attr"
+                    ]
+                  },
+                  "default": [
+                    "string_attr",
+                    "boolean_attr"
+                  ]
+                },
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                }
+              },
+              "description": "ReaggregateMetricMetricConfig provides config for the reaggregate.metric metric."
+            },
+            "system.cpu.time": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                }
+              },
+              "description": "SystemCPUTimeMetricConfig provides config for the system.cpu.time metric."
+            }
+          },
+          "description": "MetricsConfig provides config for sample metrics."
+        },
+        "resource_attributes": {
+          "type": "object",
+          "properties": {
+            "map.resource.attr": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "metrics_exclude": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    },
+                    "description": "Config configures the matching behavior of a Filter."
+                  },
+                  "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
+                },
+                "metrics_include": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    },
+                    "description": "Config configures the matching behavior of a Filter."
+                  },
+                  "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
+                }
+              },
+              "description": "ResourceAttributeConfig provides common config for a map.resource.attr resource attribute."
+            },
+            "optional.resource.attr": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": false
+                },
+                "metrics_exclude": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    },
+                    "description": "Config configures the matching behavior of a Filter."
+                  },
+                  "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
+                },
+                "metrics_include": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    },
+                    "description": "Config configures the matching behavior of a Filter."
+                  },
+                  "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
+                }
+              },
+              "description": "ResourceAttributeConfig provides common config for a optional.resource.attr resource attribute."
+            },
+            "slice.resource.attr": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "metrics_exclude": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    },
+                    "description": "Config configures the matching behavior of a Filter."
+                  },
+                  "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
+                },
+                "metrics_include": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    },
+                    "description": "Config configures the matching behavior of a Filter."
+                  },
+                  "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
+                }
+              },
+              "description": "ResourceAttributeConfig provides common config for a slice.resource.attr resource attribute."
+            },
+            "string.enum.resource.attr": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "metrics_exclude": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    },
+                    "description": "Config configures the matching behavior of a Filter."
+                  },
+                  "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
+                },
+                "metrics_include": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    },
+                    "description": "Config configures the matching behavior of a Filter."
+                  },
+                  "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
+                }
+              },
+              "description": "ResourceAttributeConfig provides common config for a string.enum.resource.attr resource attribute."
+            },
+            "string.resource.attr": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "metrics_exclude": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    },
+                    "description": "Config configures the matching behavior of a Filter."
+                  },
+                  "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
+                },
+                "metrics_include": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    },
+                    "description": "Config configures the matching behavior of a Filter."
+                  },
+                  "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
+                }
+              },
+              "description": "ResourceAttributeConfig provides common config for a string.resource.attr resource attribute."
+            },
+            "string.resource.attr_disable_warning": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "metrics_exclude": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    },
+                    "description": "Config configures the matching behavior of a Filter."
+                  },
+                  "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
+                },
+                "metrics_include": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    },
+                    "description": "Config configures the matching behavior of a Filter."
+                  },
+                  "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
+                }
+              },
+              "description": "ResourceAttributeConfig provides common config for a string.resource.attr_disable_warning resource attribute."
+            },
+            "string.resource.attr_remove_warning": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": false
+                },
+                "metrics_exclude": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    },
+                    "description": "Config configures the matching behavior of a Filter."
+                  },
+                  "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
+                },
+                "metrics_include": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    },
+                    "description": "Config configures the matching behavior of a Filter."
+                  },
+                  "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
+                }
+              },
+              "description": "ResourceAttributeConfig provides common config for a string.resource.attr_remove_warning resource attribute."
+            },
+            "string.resource.attr_to_be_removed": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "metrics_exclude": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    },
+                    "description": "Config configures the matching behavior of a Filter."
+                  },
+                  "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
+                },
+                "metrics_include": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "regexp": {
+                        "type": "string"
+                      },
+                      "strict": {
+                        "type": "string"
+                      }
+                    },
+                    "description": "Config configures the matching behavior of a Filter."
+                  },
+                  "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
+                }
+              },
+              "description": "ResourceAttributeConfig provides common config for a string.resource.attr_to_be_removed resource attribute."
+            }
+          },
+          "description": "ResourceAttributesConfig provides config for sample resource attributes."
+        }
+      },
+      "description": "MetricsBuilderConfig is a configuration for sample metrics builder."
+    }
+  ]
 }

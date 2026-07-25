@@ -5,3 +5,9 @@ github_project: open-telemetry/opentelemetry-collector
 status:
   disable_codecov_badge: true
   class: pkg
+
+tests:
+  goleak:
+    ignore:
+      # go-winio starts a background goroutine for I/O completion on Windows that outlives the test.
+      any: ["github.com/Microsoft/go-winio.ioCompletionProcessor"]

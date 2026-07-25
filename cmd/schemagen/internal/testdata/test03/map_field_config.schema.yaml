@@ -1,0 +1,6 @@
+type: object
+properties:
+  settings:
+    additionalProperties:
+      type: integer
+    type: object

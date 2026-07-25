@@ -7,6 +7,12 @@ status:
   class: pkg
 
 exported_configs:
+  port_number:
+    type: integer
+    description: A port number to connect to.
+    x-customType: int32
+    minimum: 1
+    maximum: 65535
   sample_config:
     type: object
     properties:
@@ -16,9 +22,9 @@ exported_configs:
         default: "localhost"
         minLength: 1
       port:
-        type: string
+        $ref: port_number
         description: The port to connect to.
-        default: "8080"
+        default: 8080
+        maximum: 10000
     required:
       - host_name
-      - port

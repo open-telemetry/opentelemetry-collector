@@ -4,6 +4,7 @@
 package schemagen // import "go.opentelemetry.io/collector/internal/schemagen"
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 )
@@ -12,9 +13,12 @@ const fileName = "config.schema.json"
 
 // WriteJSONSchema writes the given ConfigMetadata as a JSON Schema file
 // named "config.schema.json" in the specified directory.
-func WriteJSONSchema(dir string, md *ConfigMetadata) error {
+func WriteJSONSchema(dir, id, title string, md *ConfigsMetadata) error {
 	filePath := filepath.Join(dir, fileName)
-	data, err := md.ToJSON()
+
+	jsonSchema := FromMetadata(id, title, md)
+
+	data, err := json.MarshalIndent(jsonSchema, "", "  ")
 	if err != nil {
 		return err
 	}

@@ -129,6 +129,65 @@ func TestMetricsBuilderConfig(t *testing.T) {
 		})
 	}
 }
+func TestDefaultMetricMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().DefaultMetric
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []DefaultMetricMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric default.metric doesn't have an attribute invalid, valid attributes: [string_attr, state, enum_attr, slice_attr, map_attr]")
+
+	cfg = DefaultMetricsConfig().DefaultMetric
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestMetricInputTypeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().MetricInputType
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []MetricInputTypeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric metric.input_type doesn't have an attribute invalid, valid attributes: [string_attr, state, enum_attr, slice_attr, map_attr]")
+
+	cfg = DefaultMetricsConfig().MetricInputType
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOptionalMetricMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OptionalMetric
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OptionalMetricMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric optional.metric doesn't have an attribute invalid, valid attributes: [string_attr, boolean_attr, boolean_attr2]")
+
+	cfg = DefaultMetricsConfig().OptionalMetric
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestOptionalMetricEmptyUnitMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OptionalMetricEmptyUnit
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []OptionalMetricEmptyUnitMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric optional.metric.empty_unit doesn't have an attribute invalid, valid attributes: [string_attr, boolean_attr]")
+
+	cfg = DefaultMetricsConfig().OptionalMetricEmptyUnit
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestReaggregateMetricMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ReaggregateMetric
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ReaggregateMetricMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric reaggregate.metric doesn't have an attribute invalid, valid attributes: [string_attr, boolean_attr]")
+
+	cfg = DefaultMetricsConfig().ReaggregateMetric
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))

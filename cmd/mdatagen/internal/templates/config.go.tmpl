@@ -2,10 +2,9 @@
 
 package {{ .Package }}
 
-{{ $reag := .ReaggregationEnabled }}
 {{- $hasReagMetrics := false }}
 {{- $hasReagMetricsWithRequired := false }}
-{{- range $name, $metric := .Metrics }}{{- if and $reag (hasAggregatableAttributes $metric.Attributes) }}{{- $hasReagMetrics = true }}{{- range $element := $metric.Attributes }}{{- if (attributeInfo $element).IsRequired }}{{- $hasReagMetricsWithRequired = true }}{{- end }}{{- end }}{{- end }}{{- end }}
+{{- range $name, $metric := .Metrics }}{{- if hasAggregatableAttributes $metric.Attributes }}{{- $hasReagMetrics = true }}{{- range $element := $metric.Attributes }}{{- if (attributeInfo $element).IsRequired }}{{- $hasReagMetricsWithRequired = true }}{{- end }}{{- end }}{{- end }}{{- end }}
 {{- $hasEnumResourceAttr := false }}
 {{- range $_, $attr := .ResourceAttributes }}{{- if $attr.Enum }}{{- $hasEnumResourceAttr = true }}{{- end }}{{- end }}
 
@@ -26,18 +25,6 @@ import (
 	{{- end }}
 )
 {{ if .Metrics -}}
-
-{{- if not $reag }}
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-}
-
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
-	{{- template "metricUnmarshal" "ms" }}
-}
-{{- else }}
 
 {{- range $name, $metric := .Metrics }}
 {{- if hasAggregatableAttributes $metric.Attributes }}
@@ -94,20 +81,19 @@ func (ms *{{ $name.Render }}MetricConfig) Validate() error {
 }
 {{- end }}
 {{- end }}
-{{- end }}
 
 // MetricsConfig provides config for {{ .Type }} metrics.
 type MetricsConfig struct {
 	{{- range $name, $metric := .Metrics }}
-	{{ $name.Render }} {{ if $reag }}{{ $name.Render }}{{ end }}MetricConfig `mapstructure:"{{ $name }}"`
+	{{ $name.Render }} {{ $name.Render }}MetricConfig `mapstructure:"{{ $name }}"`
 	{{- end }}
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		{{- range $name, $metric := .Metrics }}
-		{{- $metricReag := and $reag (hasAggregatableAttributes $metric.Attributes) }}
-		{{ $name.Render }}: {{ if $reag }}{{ $name.Render }}{{ end }}MetricConfig{
+		{{- $metricReag := hasAggregatableAttributes $metric.Attributes }}
+		{{ $name.Render }}: {{ $name.Render }}MetricConfig{
 			Enabled: {{ $metric.Enabled }},
 			{{- if $metricReag }}
 			AggregationStrategy: AggregationStrategy{{ if eq $metric.Data.Type "Sum" }}Sum{{ else }}Avg{{ end }},

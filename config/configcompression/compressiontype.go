@@ -8,17 +8,6 @@ import (
 	"fmt"
 )
 
-// Type represents a compression method
-type Type string
-
-type Level int
-
-type CompressionParams struct {
-	Level Level `mapstructure:"level"`
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
 const (
 	TypeGzip                Type = "gzip"
 	TypeZlib                Type = "zlib"

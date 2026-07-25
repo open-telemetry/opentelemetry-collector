@@ -32,6 +32,7 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	lb := NewLogsBuilder(loadLogsBuilderConfig(t, "all_set"), settings)
 
 	rb := lb.NewResourceBuilder()
+	rb.SetHostArch("host.arch-val")
 	rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
 	rb.SetOptionalResourceAttr("optional.resource.attr-val")
 	rb.SetSliceResourceAttr([]any{"slice.resource.attr-item1", "slice.resource.attr-item2"})
@@ -175,6 +176,7 @@ func TestLogsBuilder(t *testing.T) {
 			lb.RecordDefaultEventToBeRenamedEvent(ctx, timestamp, "string_attr-val", true, false, WithConditionalStringAttrEventAttribute("conditional_string_attr-val"))
 
 			rb := lb.NewResourceBuilder()
+			rb.SetHostArch("host.arch-val")
 			rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
 			rb.SetOptionalResourceAttr("optional.resource.attr-val")
 			rb.SetSliceResourceAttr([]any{"slice.resource.attr-item1", "slice.resource.attr-item2"})

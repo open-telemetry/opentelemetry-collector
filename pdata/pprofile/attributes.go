@@ -5,6 +5,7 @@ package pprofile // import "go.opentelemetry.io/collector/pdata/pprofile"
 
 import (
 	"errors"
+	"fmt"
 	"math"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -18,17 +19,25 @@ type attributable interface {
 // record.
 // The record can be any struct that implements an `AttributeIndices` method.
 // Updates made to the return map will not be applied back to the record.
-func FromAttributeIndices(table KeyValueAndUnitSlice, record attributable, dic ProfilesDictionary) pcommon.Map {
+func FromAttributeIndices(table KeyValueAndUnitSlice, record attributable, dic ProfilesDictionary) (pcommon.Map, error) {
 	m := pcommon.NewMap()
 	m.EnsureCapacity(record.AttributeIndices().Len())
 
 	for i := 0; i < record.AttributeIndices().Len(); i++ {
-		kv := table.At(int(record.AttributeIndices().At(i)))
-		key := dic.StringTable().At(int(kv.KeyStrindex()))
+		idx := record.AttributeIndices().At(i)
+		if idx < 0 || int(idx) >= table.Len() {
+			return m, fmt.Errorf("attribute index %d out of bounds [0, %d)", idx, table.Len())
+		}
+		kv := table.At(int(idx))
+		keyIdx := kv.KeyStrindex()
+		if keyIdx < 0 || int(keyIdx) >= dic.StringTable().Len() {
+			return m, fmt.Errorf("key string index %d out of bounds [0, %d)", keyIdx, dic.StringTable().Len())
+		}
+		key := dic.StringTable().At(int(keyIdx))
 		kv.Value().CopyTo(m.PutEmpty(key))
 	}
 
-	return m
+	return m, nil
 }
 
 var errTooManyAttributeTableEntries = errors.New("too many entries in AttributeTable")

@@ -32,17 +32,19 @@ func TestCfgPropDocs_DirectProperties(t *testing.T) {
 func TestCfgPropDocs_FlattensAllOf(t *testing.T) {
 	t.Parallel()
 	embedded := &ConfigMetadata{
-		Type: "object",
+		Type:  "object",
+		Embed: true,
 		Properties: map[string]*ConfigMetadata{
 			"retry_on_failure": {Type: "boolean", Description: "retry on failure"},
 		},
+		GoStruct: GoStructConfig{Anonymous: true},
 	}
 	cfg := &ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"endpoint": {Type: "string", Description: "endpoint URL"},
+			"embedded": embedded,
 		},
-		AllOf: []*ConfigMetadata{embedded},
 	}
 
 	docs := CfgPropDocs(cfg)
@@ -59,21 +61,27 @@ func TestCfgPropDocs_FlattensNestedAllOf(t *testing.T) {
 	t.Parallel()
 	// An embed that itself contains an AllOf
 	inner := &ConfigMetadata{
-		Type: "object",
+		Type:  "object",
+		Embed: true,
 		Properties: map[string]*ConfigMetadata{
 			"level2": {Type: "string"},
 		},
+		GoStruct: GoStructConfig{Anonymous: true},
 	}
 	outer := &ConfigMetadata{
 		Type:  "object",
-		AllOf: []*ConfigMetadata{inner},
+		Embed: true,
+		Properties: map[string]*ConfigMetadata{
+			"inner": inner,
+		},
+		GoStruct: GoStructConfig{Anonymous: true},
 	}
 	cfg := &ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
-			"top": {Type: "string"},
+			"top":   {Type: "string"},
+			"outer": outer,
 		},
-		AllOf: []*ConfigMetadata{outer},
 	}
 
 	docs := CfgPropDocs(cfg)
@@ -101,7 +109,7 @@ func TestCfgIsObject(t *testing.T) {
 		{"primitive string", &ConfigMetadata{Type: "string"}, false},
 		{"array of strings", &ConfigMetadata{Type: "array", Items: &ConfigMetadata{Type: "string"}}, false},
 		{"inline object", &ConfigMetadata{Type: "object", Properties: map[string]*ConfigMetadata{"x": {Type: "string"}}}, true},
-		{"ref-resolved object", &ConfigMetadata{Type: "object", ResolvedFrom: "confighttp.ServerConfig", Properties: map[string]*ConfigMetadata{"port": {Type: "integer"}}}, true},
+		{"ref-resolved object", &ConfigMetadata{Type: "object", Ref: "confighttp.ServerConfig", Properties: map[string]*ConfigMetadata{"port": {Type: "integer"}}}, true},
 		{"map without properties", &ConfigMetadata{Type: "object", AdditionalProperties: &ConfigMetadata{Type: "string"}}, false},
 	}
 	for _, tc := range cases {

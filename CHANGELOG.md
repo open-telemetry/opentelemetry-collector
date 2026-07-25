@@ -7,6 +7,175 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.63.0/v0.157.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/exporterhelper`: Replace histogram bucket boundaries for `otelcol_exporter_queue_batch_send_size_bytes` and `otelcol_processor_batch_batch_send_size_bytes` with a power-of-2 byte-scale set spanning 128 B to 16 MiB. (#15535)
+  The previous boundaries included many small sub-kilobyte buckets that were not useful for byte-scale
+  payloads, and `otelcol_exporter_queue_batch_send_size_bytes` topped out at 6000 bytes so nearly all
+  observations fell into the `+Inf` overflow bucket. The new boundaries are powers of two from 128 B
+  to 16777216 (16 MiB), giving a meaningful distribution for real batch payload sizes (including small
+  timeout-flushed batches) and keeping the two
+  metrics directly comparable on the same dashboards. Dashboards or alerts that hard-code specific `le`
+  values for these histograms will need to be updated.
+  
+- `processor/batch`: Replace histogram bucket boundaries for `otelcol_processor_batch_batch_send_size_bytes` with a power-of-2 byte-scale set spanning 128 B to 16 MiB. (#15535)
+  The previous boundaries included many small sub-kilobyte buckets that were not useful for byte-scale
+  payloads. The new boundaries are powers of two from 128 B to 16777216 (16 MiB), giving a meaningful
+  distribution for real batch payload sizes (including small timeout-flushed batches) and keeping the
+  metric directly comparable with
+  `otelcol_exporter_queue_batch_send_size_bytes` on the same dashboards. Dashboards or alerts that
+  hard-code specific `le` values for this histogram will need to be updated.
+  
+
+### 💡 Enhancements 💡
+
+- `all`: Bootstrap `config.schema.yaml` for core components (debug/otlp/otlphttp exporters, otlp receiver, batch/memory_limiter processors, memory_limiter/zpages extensions). Implements Phase 1 of the component configuration schema roadmap RFC. (#14543)
+  Schemas are generated using the `schemagen` tool from opentelemetry-collector-contrib and hand-tuned to capture
+  validation rules and references to shared library schemas (confighttp, configgrpc, configretry, exporterhelper,
+  etc.). A `.schemagen.yaml` settings file and a `generate-schemas` Makefile target are added so the schemas can
+  be regenerated reproducibly.
+  
+- `pkg/service`: Apply experimental `service::telemetry::resource::detection/development` resource detection to the Collector's internal telemetry resource. (#14311)
+  This follows the OpenTelemetry configuration schema by treating
+  `service::telemetry::resource::detection/development::detectors` as detector selection.
+  Currently supported detector entries are `container`, `host`, `process`, and `service`.
+  See the OpenTelemetry Configuration Go support table and search for
+  `ExperimentalResourceDetector` for current detector support:
+  https://github.com/open-telemetry/opentelemetry-configuration/blob/main/language-support-status.md#go
+  
+  Example:
+  ```yaml
+  service:
+    telemetry:
+      resource:
+        attributes:
+          - name: foo
+            value: bar
+        detection/development:
+          detectors:
+            - host: {}
+  ```
+  
+- `pkg/service`: Add `service.partialReload` feature gate (Alpha) and `service.partialReloadReceivers` feature gate (Beta) that together restart only receivers on config reload when non-receiver config sections are unchanged, avoiding unnecessary disruption to processors, exporters, and extensions. Enable with `--feature-gates=service.partialReload`. (#5966)
+
+### 🧰 Bug fixes 🧰
+
+- `exporter/debug`: Fix the scope index printed by the `normal` verbosity marshaler; each scope was labelled with its parent resource's index instead of its own position (#15541)
+  Affected all four signals (logs, traces, metrics, profiles) — e.g. the second scope under a resource printed `#0` instead of `#1`.
+- `pkg/config/configgrpc`: Fix `WaitForReady` option not being applied to gRPC client connections. (#15615)
+- `pkg/featuregate`: Fix panic when a `--feature-gates` value contains an empty comma-separated element (e.g. `--feature-gates=alpha,`) (#15536)
+  An empty identifier now produces a returned error instead of an index-out-of-range panic during flag parsing.
+- `pkg/service`: Fix collector startup panic when a resource detector emits a slice-valued attribute (e.g. the `process` detector's `process.command_args`) (#15571)
+  `createResource` passed the OTel SDK attribute value straight into `pcommon.Value.FromRaw`, which
+  only accepts `[]any` for slices, so any string, int, float, or bool slice resource attribute produced
+  an `<Invalid value type>` error and aborted `service.New`. Slice-typed attributes are now converted
+  element-wise.
+  
+- `pkg/service`: Record status events reported by extensions (#15557)
+
+<!-- previous-version -->
+
+## v1.62.0/v0.156.0
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Add support for defining stability levels for resource attributes (#15312)
+- `cmd/mdatagen`: Add semantic convention reference to resource attributes (#15313)
+- `processor/memory_limiter`: Adding health events for the memorylimiter (#14700)
+  Publish health event from memorylimiter using componentstatus.ReportStatus
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Removes the extra line in the documentation.md between extended description and table (#15458)
+- `exporter/otlp_http`: Treat errors parsing successful (2xx) HTTP response bodies as permanent errors to prevent retrying already-accepted data. (#15386)
+  When a server returns a 2xx status but the response body exceeds the 64kB read limit,
+  the body is truncated and proto unmarshaling fails. Previously this was treated as a
+  retryable error, causing duplicate data to be exported. Now it is marked as a permanent
+  error so the retry logic will not re-send data that was already accepted by the server.
+  
+- `pkg/config/configretry`: Always validate BackOffConfig fields regardless of the Enabled flag. (#15437)
+- `pkg/service`: Ensure receivers always start after all other components (#15495)
+  There was previously a race condition where multiple receivers using a shared internal implementation,
+  such as the OTLP receiver, could start sending telemetry into a pipeline before all its components had fully started.
+  
+- `processor/memory_limiter`: Fix degenerate collector performance when exporter has problems causing permanent CPU-burning GC loop (#4981)
+  Forced GC runs now use exponential backoff when deemed ineffective
+  (still above soft limit and less than 5% reclaimed) to avoid preventing
+  recovery by overloading CPU with excessive GC runs. The cap on the
+  backoff interval is exposed via `max_gc_interval_when_soft_limited` and
+  `max_gc_interval_when_hard_limited` (both default `30s`); set either to
+  `0` to disable backoff on that path.
+  
+- `provider/env`: Fix empty env var default resolving to nil instead of empty string (#14587)
+  When using ${env:VAR:-} with an unset variable, the empty default now correctly
+  resolves to an empty string instead of nil.
+  
+
+<!-- previous-version -->
+
+## v1.61.0/v0.155.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/confighttp`: Remove stabilized gate `confighttp.framedSnappy` (#15420)
+- `pkg/configoptional`: Remove stabilized gate `configoptional.AddEnabledField`. (#15421)
+- `pkg/confmap`: Remove stabilized featuregate `confmap.newExpandedValueSanitizer` (#15418)
+- `pkg/exporterhelper`: Remove stable gate `exporter.PersistRequestContext`. (#15424)
+- `pkg/otelcol`: Remove stable gate `otelcol.printInitialConfig` (#15425)
+- `pkg/service`: Remove stable featuregate `telemetry.UseLocalHostAsDefaultMetricsAddress` (#15419)
+- `pkg/xpdata`: Remove stable gate `pdata.enableRefCounting`. (#15426)
+- `processor/memory_limiter`: Rename deprecated memory limiter metrics to include the `memory_limiter` prefix (e.g. `otelcol_processor_memory_limiter_*`) to clarify they are specific to this processor. (#11203)
+
+### 🚀 New components 🚀
+
+- `cmd/schemagen`: Move the `schemagen` CLI from opentelemetry-collector-contrib to this repository as `cmd/schemagen`. (#14543)
+  The tool's source is identical to the upstream contrib version
+  (github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen) except for the module path and
+  the test fixtures' namespace, which now reflect the collector module
+  (go.opentelemetry.io/collector/cmd/schemagen). A contrib-only integration test that pointed at three
+  contrib components is removed; contrib's existing `make generate-schemas` + git-diff CI continues to
+  exercise the FactoryMaps feature against real-world components.
+  
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Add support for versioned metrics (#15309)
+  Allows metadata to specify versioned metrics for migrating to new semantic conventions.
+  There are two scenarios catered for when the metric name stays the same during migration.
+  When a metric name stays the same but its type differs, just the latest metric is
+  emitted with the new type.
+  When a metric name stays the same but its attributes differ, the latest version
+  is emitted with combined attributes during the migration period.
+  
+- `cmd/schemagen`: Add `overlayFile` support to deep-merge hand-curated schema fragments into generated schemas. (#14543)
+  Components can declare an `overlayFile` in `.schemagen.yaml` pointing to a YAML file
+  whose keys are recursively merged into the auto-generated schema after generation.
+  This allows injecting descriptions, constraints, or additional properties that cannot
+  be derived from Go types.
+  Originally added to the contrib copy of `cmd/schemagen` in
+  open-telemetry/opentelemetry-collector-contrib#48917 and brought over with the tool
+  in this move.
+  
+- `cmd/schemagen`: Add `-p` flag to specify a custom Go package pattern for the config struct. (#14543)
+  The new `-p` flag lets callers override the default `.` package pattern with an arbitrary
+  Go package selector (e.g. a sub-package whose `Config` type schemagen should walk).
+  Originally added to the contrib copy of `cmd/schemagen` in
+  open-telemetry/opentelemetry-collector-contrib#48966 and brought over with the tool
+  in this move.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Fix an issue when the last feature gate is removed, stale files are left. (#15423)
+- `cmd/mdatagen`: Fix known acronyms at the end of generated Go identifiers to be all-caps, same as in any other position (#15438)
+- `cmd/schemagen`: Fix mode detection when using `-p` to target a package outside the current directory. (#15453)
+  A new `-m component|package` flag is available as a manual override when auto-detection is not possible.
+  
+
+<!-- previous-version -->
+
 ## v1.60.0/v0.154.0
 
 ### 🛑 Breaking changes 🛑
