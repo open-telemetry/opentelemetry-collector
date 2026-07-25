@@ -21,3 +21,9 @@ func dialNpipe(_ context.Context, _ string, _ time.Duration) (net.Conn, error) {
 func listenNpipe(_, _ string) (net.Listener, error) {
 	return nil, errNpipeUnsupported
 }
+
+// validateNpipeSecurityDescriptor is a no-op on non-Windows platforms: parsing an SDDL
+// string requires the Windows API.
+func validateNpipeSecurityDescriptor(_ string) error {
+	return nil
+}

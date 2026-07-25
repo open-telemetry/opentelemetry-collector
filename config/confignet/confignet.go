@@ -5,6 +5,7 @@ package confignet // import "go.opentelemetry.io/collector/config/confignet"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"strings"
@@ -159,7 +160,10 @@ func (na *AddrConfig) Validate() error {
 		TransportTypeUnixPacket:
 		return nil
 	case TransportTypeNpipe:
-		return validateNpipePath(na.Endpoint)
+		return errors.Join(
+			validateNpipePath(na.Endpoint),
+			validateNpipeSecurityDescriptor(na.NpipeConfig.SecurityDescriptor),
+		)
 	default:
 		return fmt.Errorf("invalid transport type %q", na.Transport)
 	}

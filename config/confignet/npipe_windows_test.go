@@ -53,6 +53,49 @@ func TestNpipeListenAndDial(t *testing.T) {
 	<-done
 }
 
+func TestNpipeValidateSecurityDescriptor(t *testing.T) {
+	tests := []struct {
+		name               string
+		securityDescriptor string
+		wantErr            string
+	}{
+		{name: "empty", securityDescriptor: ""},
+		{name: "owner local system, allow everyone read/write", securityDescriptor: "O:SYG:SYD:(A;;GRGW;;;WD)"},
+		{name: "dacl only", securityDescriptor: "D:P(A;;GA;;;SY)(A;;GA;;;BA)"},
+		{name: "invalid SDDL", securityDescriptor: "not-a-valid-sddl", wantErr: "invalid named pipe security descriptor"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			nas := &AddrConfig{
+				Endpoint:  `\\.\pipe\test`,
+				Transport: TransportTypeNpipe,
+				NpipeConfig: NpipeConfig{
+					SecurityDescriptor: tt.securityDescriptor,
+				},
+			}
+			err := nas.Validate()
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestNpipeValidateReportsAllErrors(t *testing.T) {
+	nas := &AddrConfig{
+		Endpoint:  "not-a-pipe-path",
+		Transport: TransportTypeNpipe,
+		NpipeConfig: NpipeConfig{
+			SecurityDescriptor: "not-a-valid-sddl",
+		},
+	}
+	err := nas.Validate()
+	require.ErrorContains(t, err, `named pipe path must start with "\\"`)
+	require.ErrorContains(t, err, "invalid named pipe security descriptor")
+}
+
 func TestNpipeListenSecurityDescriptor(t *testing.T) {
 	tests := []struct {
 		name               string
