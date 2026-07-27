@@ -33,6 +33,36 @@ func mustParseInt64(s string) int64 {
 	return v
 }
 
+// AttributeCPUMode specifies the value cpu.mode attribute.
+type AttributeCPUMode int
+
+const (
+	_ AttributeCPUMode = iota
+	AttributeCPUModeSystem
+	AttributeCPUModeUser
+	AttributeCPUModeIowait
+)
+
+// String returns the string representation of the AttributeCPUMode.
+func (av AttributeCPUMode) String() string {
+	switch av {
+	case AttributeCPUModeSystem:
+		return "system"
+	case AttributeCPUModeUser:
+		return "user"
+	case AttributeCPUModeIowait:
+		return "iowait"
+	}
+	return ""
+}
+
+// MapAttributeCPUMode is a helper map of string to AttributeCPUMode attribute value.
+var MapAttributeCPUMode = map[string]AttributeCPUMode{
+	"system": AttributeCPUModeSystem,
+	"user":   AttributeCPUModeUser,
+	"iowait": AttributeCPUModeIowait,
+}
+
 // AttributeState specifies the value state attribute.
 type AttributeState int
 
@@ -96,7 +126,7 @@ var MetricsInfo = metricsInfo{
 	},
 	SystemCPUUtilizationV1: metricInfo{
 		Name:       "system.cpu.utilization",
-		Attributes: []string{"cpu.logical_number", "state"},
+		Attributes: []string{"cpu.logical_number", "cpu.mode"},
 	},
 	SystemMemoryLinuxAvailable: metricInfo{
 		Name: "system.memory.linux.available",
@@ -329,7 +359,7 @@ func (m *metricSystemCPUUtilizationV1) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSystemCPUUtilizationV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuLogicalNumberAttributeValue int64, stateAttributeValue string, cpuAttributeValue string, emitLegacyAttrs bool) {
+func (m *metricSystemCPUUtilizationV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuLogicalNumberAttributeValue int64, cpuModeAttributeValue string, cpuAttributeValue string, stateAttributeValue string, emitLegacyAttrs bool) {
 	if !m.config.Enabled {
 		return
 	}
@@ -340,8 +370,8 @@ func (m *metricSystemCPUUtilizationV1) recordDataPoint(start pcommon.Timestamp, 
 	if slices.Contains(m.config.EnabledAttributes, SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber) {
 		dp.Attributes().PutInt("cpu.logical_number", cpuLogicalNumberAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SystemCPUUtilizationV1MetricAttributeKeyState) {
-		dp.Attributes().PutStr("state", stateAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SystemCPUUtilizationV1MetricAttributeKeyCPUMode) {
+		dp.Attributes().PutStr("cpu.mode", cpuModeAttributeValue)
 	}
 	if emitLegacyAttrs {
 		dp.Attributes().PutStr("cpu", cpuAttributeValue)
@@ -663,13 +693,13 @@ func (mb *MetricsBuilder) RecordSystemCPUFooDataPoint(ts pcommon.Timestamp, val 
 }
 
 // RecordSystemCPUUtilizationDataPoint adds a data point to system.cpu.utilization metric.
-func (mb *MetricsBuilder) RecordSystemCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue AttributeState) {
+func (mb *MetricsBuilder) RecordSystemCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue AttributeState, cpuLogicalNumberAttributeValue int64, cpuModeAttributeValue AttributeCPUMode) {
 	// Dual-schema emission controlled by feature gates
 	if !ScraperSamplemigrationDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
 		mb.metricSystemCPUUtilization.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue.String())
 	}
 	if ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() {
-		mb.metricSystemCPUUtilizationV1.recordDataPoint(mb.startTime, ts, val, mustParseInt64(cpuAttributeValue), stateAttributeValue.String(), cpuAttributeValue, true)
+		mb.metricSystemCPUUtilizationV1.recordDataPoint(mb.startTime, ts, val, cpuLogicalNumberAttributeValue, cpuModeAttributeValue.String(), cpuAttributeValue, stateAttributeValue.String(), true)
 	}
 }
 

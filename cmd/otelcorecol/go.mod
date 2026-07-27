@@ -26,6 +26,7 @@ require (
 	go.opentelemetry.io/collector/processor v1.63.0
 	go.opentelemetry.io/collector/processor/batchprocessor v0.157.0
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.157.0
+	go.opentelemetry.io/collector/processor/queuebatchprocessor v0.157.0
 	go.opentelemetry.io/collector/receiver v1.63.0
 	go.opentelemetry.io/collector/receiver/nopreceiver v0.157.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.157.0
@@ -175,7 +176,7 @@ require (
 	gonum.org/v1/gonum v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
-	google.golang.org/grpc v1.82.0 // indirect
+	google.golang.org/grpc v1.82.1 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
@@ -317,6 +318,8 @@ replace go.opentelemetry.io/collector/processor/processortest => ../../processor
 replace go.opentelemetry.io/collector/processor/batchprocessor => ../../processor/batchprocessor
 
 replace go.opentelemetry.io/collector/processor/memorylimiterprocessor => ../../processor/memorylimiterprocessor
+
+replace go.opentelemetry.io/collector/processor/queuebatchprocessor => ../../processor/queuebatchprocessor
 
 replace go.opentelemetry.io/collector/processor/xprocessor => ../../processor/xprocessor
 
