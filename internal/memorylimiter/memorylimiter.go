@@ -55,6 +55,7 @@ type MemoryLimiter struct {
 	maxGCIntervalWhenSoftLimited time.Duration
 	maxGCIntervalWhenHardLimited time.Duration
 	lastGCDone                   time.Time
+	gcDisabled                   bool
 
 	// The functions to read the mem values and run GC are set as a reference to help with
 	// testing different values.
@@ -121,6 +122,7 @@ func NewMemoryLimiter(cfg *Config, logger *zap.Logger) (*MemoryLimiter, error) {
 		maxGCIntervalWhenHardLimited: cfg.MaxGCIntervalWhenHardLimited,
 		lastStats:                    &runtime.MemStats{},
 		lastGCDone:                   time.Now(),
+		gcDisabled:                   !cfg.GarbageCollector.HasValue(),
 		readMemStatsFn:               ReadMemStatsFn,
 		runGCFn:                      runtime.GC,
 		logger:                       logger,
@@ -278,7 +280,7 @@ func (ml *MemoryLimiter) CheckMemLimits() {
 		gateInterval := max(ml.minGCIntervalWhenHardLimited, ml.currentHardGCInterval)
 		// We are above hard limit, do a GC if it wasn't done recently and see if
 		// it brings memory usage below the soft limit.
-		if time.Since(ml.lastGCDone) > gateInterval {
+		if !ml.gcDisabled && time.Since(ml.lastGCDone) > gateInterval {
 			ml.logger.Warn("Memory usage is above hard limit. Forcing a GC.", memstatToZapField(ms))
 			ms = ml.doGCandReadMemStats()
 			// Check the limit again to see if GC helped.
@@ -288,7 +290,7 @@ func (ml *MemoryLimiter) CheckMemLimits() {
 		gateInterval := max(ml.minGCIntervalWhenSoftLimited, ml.currentSoftGCInterval)
 		// We are above soft limit, do a GC if it wasn't done recently and see if
 		// it brings memory usage below the soft limit.
-		if time.Since(ml.lastGCDone) > gateInterval {
+		if !ml.gcDisabled && time.Since(ml.lastGCDone) > gateInterval {
 			ml.logger.Info("Memory usage is above soft limit. Forcing a GC.", memstatToZapField(ms))
 			ms = ml.doGCandReadMemStats()
 			// Check the limit again to see if GC helped.
