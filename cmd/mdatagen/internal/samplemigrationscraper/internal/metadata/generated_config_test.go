@@ -41,7 +41,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SystemCPUUtilizationV1: SystemCPUUtilizationV1MetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SystemCPUUtilizationV1MetricAttributeKey{SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber, SystemCPUUtilizationV1MetricAttributeKeyState},
+						EnabledAttributes:   []SystemCPUUtilizationV1MetricAttributeKey{SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber, SystemCPUUtilizationV1MetricAttributeKeyCPUMode},
 					},
 					SystemMemoryLinuxAvailable: SystemMemoryLinuxAvailableMetricConfig{
 						Enabled: true,
@@ -67,7 +67,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SystemCPUUtilizationV1: SystemCPUUtilizationV1MetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SystemCPUUtilizationV1MetricAttributeKey{SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber, SystemCPUUtilizationV1MetricAttributeKeyState},
+						EnabledAttributes:   []SystemCPUUtilizationV1MetricAttributeKey{SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber, SystemCPUUtilizationV1MetricAttributeKeyCPUMode},
 					},
 					SystemMemoryLinuxAvailable: SystemMemoryLinuxAvailableMetricConfig{
 						Enabled: false,
@@ -102,7 +102,7 @@ func TestSystemCPUUtilizationV1MetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SystemCPUUtilizationV1MetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric system.cpu.utilization@v1 doesn't have an attribute invalid, valid attributes: [cpu.logical_number, state]")
+	require.ErrorContains(t, cfg.Validate(), "metric system.cpu.utilization@v1 doesn't have an attribute invalid, valid attributes: [cpu.logical_number, cpu.mode]")
 
 	cfg = DefaultMetricsConfig().SystemCPUUtilizationV1
 	cfg.AggregationStrategy = "invalid"

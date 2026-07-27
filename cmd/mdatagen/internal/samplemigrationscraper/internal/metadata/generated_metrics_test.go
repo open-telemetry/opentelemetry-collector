@@ -98,7 +98,7 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name != "all_set" {
 				defaultMetricsCount++
 				allMetricsCount++
-				mb.RecordSystemCPUUtilizationDataPoint(ts, 1, "cpu-val", AttributeStateIdle)
+				mb.RecordSystemCPUUtilizationDataPoint(ts, 1, "cpu-val", AttributeStateIdle, 18, AttributeCPUModeSystem)
 			}
 
 			allMetricsCount++
@@ -291,7 +291,7 @@ func TestVersionedMetrics(t *testing.T) {
 				settings := scrapertest.NewNopSettings(scrapertest.NopType)
 				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
 
-				mb.RecordSystemCPUUtilizationDataPoint(ts, 1, "cpu-val", AttributeStateIdle)
+				mb.RecordSystemCPUUtilizationDataPoint(ts, 1, "cpu-val", AttributeStateIdle, 18, AttributeCPUModeSystem)
 
 				metrics := mb.Emit(WithResource(pcommon.NewResource()))
 

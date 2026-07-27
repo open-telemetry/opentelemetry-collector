@@ -14,10 +14,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-  {{- if $hasVersionedMetrics }}
-  "github.com/stretchr/testify/require"
-  "go.opentelemetry.io/collector/featuregate"
-  {{- end }}
+	{{- if $hasVersionedMetrics }}
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
+	{{- end }}
 	{{- if or isReceiver isScraper isConnector }}
 	"go.opentelemetry.io/collector/{{ .Status.Class }}/{{ .Status.Class }}test"
 	{{- end }}
@@ -86,19 +86,19 @@ func TestMetricsBuilder(t *testing.T) {
 			{{- end }}
 			settings.Logger = zap.New(observedZapCore)
 
-      {{- if $hasVersionedMetrics }}
-      if tt.name == "all_set" {
-          {{- range $name, $metric := .Metrics }}
-          {{- if $metric.Migration }}
-          require.NoError(t, featuregate.GlobalRegistry().Set(
-              "{{ $metric.Migration.ThroughGates.EnableNew }}", true))
-          t.Cleanup(func() {
-              featuregate.GlobalRegistry().Set("{{ $metric.Migration.ThroughGates.EnableNew }}", false)
-          })
-          {{- end }}
-          {{- end }}
-      }
-      {{- end }}
+			{{- if $hasVersionedMetrics }}
+			if tt.name == "all_set" {
+				{{- range $name, $metric := .Metrics }}
+				{{- if $metric.Migration }}
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"{{ $metric.Migration.ThroughGates.EnableNew }}", true))
+				t.Cleanup(func() {
+					featuregate.GlobalRegistry().Set("{{ $metric.Migration.ThroughGates.EnableNew }}", false)
+				})
+				{{- end }}
+				{{- end }}
+			}
+			{{- end }}
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
 			{{- if $hasReagMetrics }}
@@ -153,19 +153,19 @@ func TestMetricsBuilder(t *testing.T) {
 			{{- end }}
 			{{- if $hasVersionedMetrics }}
 			if tt.name == "all_set" {
-        {{- range $name, $metric := .Metrics }}
-        {{- if $metric.Migration }}
-        {{- if eq $name.EmittedName $metric.Migration.To.EmittedName }}
-        {{- $targetMetric := metricInfo $metric.Migration.To }}
-        {{- if ne $metric.Data.Type $targetMetric.Data.Type }}
-        expectedWarnings++ // type differs
-        {{- end }}
-        {{- if hasDifferentAttributes $name }}
-        expectedWarnings++ // attributes differ
-        {{- end }}
-        {{- end }}
-        {{- end }}
-        {{- end }}
+				{{- range $name, $metric := .Metrics }}
+				{{- if $metric.Migration }}
+				{{- if eq $name.EmittedName $metric.Migration.To.EmittedName }}
+				{{- $targetMetric := metricInfo $metric.Migration.To }}
+				{{- if ne $metric.Data.Type $targetMetric.Data.Type }}
+				expectedWarnings++ // type differs
+				{{- end }}
+				{{- if hasDifferentAttributes $name }}
+				expectedWarnings++ // attributes differ
+				{{- end }}
+				{{- end }}
+				{{- end }}
+				{{- end }}
 			}
 			{{- end }}
 
@@ -191,7 +191,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			{{- range $name, $metric := .Metrics }}
 
-      {{- if not $metric.Versioned }}
+			{{- if not $metric.Versioned }}
 			{{- if $metric.Migration }}
 			if tt.name != "all_set" {
 				{{ if $metric.Enabled }}defaultMetricsCount++{{ end }}
@@ -199,12 +199,23 @@ func TestMetricsBuilder(t *testing.T) {
 				{{ if $metric.Entity }}eb{{ publicVar $metric.Entity }}{{ else }}mb{{ end }}.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
 				{{- range $metric.Attributes -}}
 				{{- if not (attributeInfo .).IsConditional -}}
-					, {{- template "getAttributeValue" . -}}
+				, {{- template "getAttributeValue" . -}}
+				{{- end -}}
+				{{- end -}}
+				{{- if $metric.Migration -}}
+				{{- $targetMetric := index $.Metrics $metric.Migration.To -}}
+				{{- range $i, $attr := $metric.Attributes -}}
+				{{- if not (attributeInfo $attr).IsConditional -}}
+				{{- $v1Attr := index $targetMetric.Attributes $i -}}
+				{{- if or (ne (attributeInfo $v1Attr).Name (attributeInfo $attr).Name) (ne (attributeInfo $v1Attr).Type.String (attributeInfo $attr).Type.String) -}}
+				, {{- template "getAttributeValue" $v1Attr -}}
+				{{- end -}}
+				{{- end -}}
 				{{- end -}}
 				{{- end -}}
 				{{- range $metric.Attributes -}}
 				{{- if (attributeInfo .).IsConditional -}}
-					, With{{ .Render }}MetricAttribute({{- template "getAttributeValue" . -}})
+				, With{{ .Render }}MetricAttribute({{- template "getAttributeValue" . -}})
 				{{- end -}}
 				{{- end -}}
 				)
@@ -245,7 +256,7 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 			{{- end }}
 			{{- end }}
-      {{- end }}
+			{{- end }}
 			{{- end }}
 
 			{{- range $ent := .Entities }}
@@ -302,8 +313,8 @@ func TestMetricsBuilder(t *testing.T) {
 			for _, mi := range allMetricsList {
 				switch mi.Name() {
 				{{- range $name, $metric := .Metrics }}
-        {{- if and (not $metric.Versioned) (not $metric.Migration) }}
-        case "{{ $name.EmittedName }}":
+				{{- if and (not $metric.Versioned) (not $metric.Migration) }}
+				case "{{ $name.EmittedName }}":
 					{{- if hasAggregatableAttributes $metric.Attributes }}
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["{{ $name }}"], "Found a duplicate in the metrics slice: {{ $name }}")
@@ -430,7 +441,7 @@ func TestMetricsBuilder(t *testing.T) {
 					{{- end }}
 					{{- end }}
 					{{- end }}
-          {{- end }}
+				{{- end }}
 				}
 			}
 		})
@@ -517,6 +528,17 @@ func TestVersionedMetrics(t *testing.T) {
                 , {{- template "getAttributeValue" . -}}
                 {{- end -}}
                 {{- end -}}
+                {{- if $metric.Migration -}}
+                {{- $targetMetric := index $.Metrics $metric.Migration.To -}}
+                {{- range $i, $attr := $metric.Attributes -}}
+                {{- if not (attributeInfo $attr).IsConditional -}}
+                {{- $v1Attr := index $targetMetric.Attributes $i -}}
+                {{- if or (ne (attributeInfo $v1Attr).Name (attributeInfo $attr).Name) (ne (attributeInfo $v1Attr).Type.String (attributeInfo $attr).Type.String) -}}
+                , {{- template "getAttributeValue" $v1Attr -}}
+                {{- end -}}
+                {{- end -}}
+                {{- end -}}
+                {{- end -}}
                 )
 
                 metrics := mb.Emit(WithResource(pcommon.NewResource()))
@@ -554,7 +576,11 @@ func TestVersionedMetrics(t *testing.T) {
                           dp := m.{{ $metric.Data.Type }}().DataPoints().At(0)
                           {{- $newAttr := index $targetMetric.Attributes 0 }}
                           _, hasNewAttr := dp.Attributes().Get("{{ (attributeInfo $newAttr).Name }}")
+                          {{- if ne $metric.Unit $targetMetric.Unit }}
+                          if hasNewAttr && m.Unit() == "{{ $targetMetric.Unit }}" {
+                          {{- else }}
                           if hasNewAttr {
+                          {{- end }}
                               // Has v1-specific attribute - this is the new metric
                               newFound = true
                               {{- if $targetLegacyAttrs }}
