@@ -124,11 +124,12 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 	}
 	opts, err := cc.getGrpcDialOptions(context.Background(), nil, componenttest.NewNopTelemetrySettings(), []ToClientConnOption{})
 	require.NoError(t, err)
-	/* Expecting 2 DialOptions:
+	/* Expecting 3 DialOptions:
+	 * - WithDefaultCallOptions (WaitForReady)
 	 * - WithTransportCredentials (TLS)
 	 * - WithStatsHandler (always, for self-telemetry)
 	 */
-	assert.Len(t, opts, 2)
+	assert.Len(t, opts, 3)
 }
 
 func TestGrpcClientExtraOption(t *testing.T) {
@@ -146,12 +147,13 @@ func TestGrpcClientExtraOption(t *testing.T) {
 	)
 	require.NoError(t, err)
 	/* Expecting 3 DialOptions:
+	 * - WithDefaultCallOptions (WaitForReady)
 	 * - WithTransportCredentials (TLS)
 	 * - WithStatsHandler (always, for self-telemetry)
 	 * - extraOpt
 	 */
-	assert.Len(t, opts, 3)
-	assert.Equal(t, opts[2], extraOpt)
+	assert.Len(t, opts, 4)
+	assert.Equal(t, opts[3], extraOpt)
 }
 
 func TestAllGrpcClientSettings(t *testing.T) {
@@ -640,7 +642,7 @@ func TestUseSecure(t *testing.T) {
 	}
 	dialOpts, err := cc.getGrpcDialOptions(context.Background(), nil, componenttest.NewNopTelemetrySettings(), []ToClientConnOption{})
 	require.NoError(t, err)
-	assert.Len(t, dialOpts, 2)
+	assert.Len(t, dialOpts, 3)
 }
 
 func TestGRPCServerSettingsError(t *testing.T) {
@@ -1409,9 +1411,10 @@ func TestGrpcClientUserAgent(t *testing.T) {
 	)
 	require.NoError(t, err)
 	/* Expecting 3 DialOptions:
+	 * - WithDefaultCallOptions (WaitForReady)
 	 * - WithTransportCredentials (TLS)
 	 * - WithStatsHandler (always, for self-telemetry)
 	 * - WithUserAgent (from UserAgent field)
 	 */
-	assert.Len(t, opts, 3)
+	assert.Len(t, opts, 4)
 }

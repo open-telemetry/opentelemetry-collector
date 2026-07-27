@@ -11,6 +11,7 @@ This receiver is used for testing purposes to check the output of mdatagen.
 |               | [stable]: metrics   |
 | Deprecation of profiles | [Date]: 2025-02-05   |
 |                      | [Migration Note]: no migration needed   |
+| Semantic Conventions Version | 1.40.0 |
 | Unsupported Platforms | freebsd, illumos |
 | Distributions | [] |
 | Warnings      | [Any additional information that should be brought to the consumer's attention](#warnings) |
@@ -33,7 +34,11 @@ This is where warnings are described.
 ## Configuration
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
+| `api_token` | string |  | no | API token used to authenticate with the endpoint. |
+| `component_id` | string |  | no | Component ID used to identify this receiver instance. |
 | `endpoint` | string | localhost:12345 | **yes** | The endpoint to scrape metrics from. |
+| `headers` | map[string]string |  | no | Extra HTTP headers to attach to each request. |
+| `max_results` | int | 100 | no | Maximum number of results to return per scrape. |
 | `metrics` | object (see [metrics](#metrics)) |  | no | MetricsConfig provides config for sample metrics. |
 | `resource_attributes` | object (see [resource_attributes](#resource_attributes)) |  | no | ResourceAttributesConfig provides config for sample resource attributes. |
 | `sample_pkg` | object (see [sample_pkg](#sample_pkg)) |  | no |  |

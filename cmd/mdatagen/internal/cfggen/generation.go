@@ -19,21 +19,21 @@ import (
 // baked into closures. This way the template itself never needs to pass these context values around.
 func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 	return map[string]any{
-		"extractImports": func(cfg *ConfigMetadata) []string {
-			if cfg == nil {
+		"extractImports": func(md *ConfigsMetadata) []string {
+			if md == nil {
 				return nil
 			}
-			imports, err := ExtractImports(cfg, rootPackage, componentPackage)
+			imports, err := ExtractImports(md, rootPackage, componentPackage)
 			if err != nil {
 				panic(err)
 			}
 			return imports
 		},
-		"extractDefs": func(cfg *ConfigMetadata) map[string]*ConfigMetadata {
-			if cfg == nil {
+		"extractDefs": func(md *ConfigsMetadata) map[string]*ConfigMetadata {
+			if md == nil {
 				return nil
 			}
-			return ExtractDefs(cfg)
+			return ExtractDefs(md)
 		},
 		"extractValidators": func(cfg *ConfigMetadata) []Validator {
 			if cfg == nil {
@@ -66,18 +66,6 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return typeName
 		},
-		"embeddedName": func(md *ConfigMetadata) string {
-			id := md.EmbeddedName
-			if id == "" {
-				if md.ResolvedFrom == "" {
-					panic("attempted to use embedded name with an empty ref")
-				}
-				refDesc := NewRef(md.ResolvedFrom)
-				id = refDesc.DefName()
-			}
-			name, _ := helpers.FormatIdentifier(id, true)
-			return name
-		},
 		"camelVar": CamelVar,
 		"formatDefaultValue": func(md *ConfigMetadata, name string, defaultValue any) string {
 			return FormatDefaultValue(md, name, defaultValue, rootPackage, componentPackage)
@@ -106,6 +94,16 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 				panic(err)
 			}
 			return call
+		},
+		"embeddedProps": func(props map[string]*ConfigMetadata) map[string]*ConfigMetadata {
+			return filterProps(props, func(prop *ConfigMetadata) bool {
+				return prop.Embed
+			})
+		},
+		"namedProps": func(props map[string]*ConfigMetadata) map[string]*ConfigMetadata {
+			return filterProps(props, func(prop *ConfigMetadata) bool {
+				return !prop.Embed
+			})
 		},
 	}
 }
@@ -195,6 +193,13 @@ func MapGoType(md *ConfigMetadata, propName, rootPackage, componentPackage strin
 }
 
 func resolveGoType(md *ConfigMetadata, propName, rootPackage, componentPackage string) (string, error) {
+	if md.Ref != "" {
+		typeName, err := FormatTypeName(md.Ref, rootPackage, componentPackage)
+		if err != nil {
+			return "", fmt.Errorf("failed to format reference type %q: %w", md.Ref, err)
+		}
+		return typeName, nil
+	}
 	if md.GoType != "" {
 		if slices.Contains(goBasicTypes, md.GoType) {
 			return md.GoType, nil
@@ -202,13 +207,6 @@ func resolveGoType(md *ConfigMetadata, propName, rootPackage, componentPackage s
 		typeName, err := FormatTypeName(md.GoType, rootPackage, componentPackage)
 		if err != nil {
 			return "", fmt.Errorf("failed to format custom type %q: %w", md.GoType, err)
-		}
-		return typeName, nil
-	}
-	if md.ResolvedFrom != "" {
-		typeName, err := FormatTypeName(md.ResolvedFrom, rootPackage, componentPackage)
-		if err != nil {
-			return "", fmt.Errorf("failed to format reference type %q: %w", md.ResolvedFrom, err)
 		}
 		return typeName, nil
 	}
@@ -257,8 +255,36 @@ func resolveGoType(md *ConfigMetadata, propName, rootPackage, componentPackage s
 	}
 }
 
-// ExtractImports recursively scans the ConfigMetadata and collects all unique import paths needed for the generated Go code.
-func ExtractImports(md *ConfigMetadata, rootPackage, componentPackage string) ([]string, error) {
+func ExtractImports(md *ConfigsMetadata, rootPackage, componentPackage string) ([]string, error) {
+	imports := make(map[string]bool)
+	if md.Config != nil {
+		collected, err := ExtractImportsFromConfig(md.Config, rootPackage, componentPackage)
+		if err != nil {
+			return nil, err
+		}
+		for _, imp := range collected {
+			imports[imp] = true
+		}
+	}
+	if md.ExportedConfigs != nil {
+		for _, expCfg := range md.ExportedConfigs {
+			if expCfg.InternalOnly {
+				continue
+			}
+			collected, err := ExtractImportsFromConfig(expCfg, rootPackage, componentPackage)
+			if err != nil {
+				return nil, err
+			}
+			for _, imp := range collected {
+				imports[imp] = true
+			}
+		}
+	}
+	return slices.Collect(maps.Keys(imports)), nil
+}
+
+// ExtractImportsFromConfig recursively scans the ConfigMetadata and collects all unique import paths needed for the generated Go code.
+func ExtractImportsFromConfig(md *ConfigMetadata, rootPackage, componentPackage string) ([]string, error) {
 	if md == nil {
 		return nil, nil
 	}
@@ -294,15 +320,15 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 		imports["go.opentelemetry.io/collector/config/configoptional"] = true
 	}
 
-	if md.ResolvedFrom != "" {
-		ref, err := ResolveGoTypeRef(md.ResolvedFrom, rootPackage, componentPackage)
+	if md.Ref != "" {
+		ref, err := ResolveGoTypeRef(md.Ref, rootPackage, componentPackage)
 		if err != nil {
-			return fmt.Errorf("failed to resolve import for reference %q: %w", md.ResolvedFrom, err)
+			return fmt.Errorf("failed to resolve import for reference %q: %w", md.Ref, err)
 		}
 		if ref.ImportPath != "" {
 			imports[ref.ImportPath] = true
 		}
-		refDesc := NewRef(md.ResolvedFrom)
+		refDesc := NewRef(md.Ref)
 		if !refDesc.IsInternal() {
 			if err := collectCustomDefaultImports(md, md.Default, imports, rootPackage, componentPackage); err != nil {
 				return err
@@ -335,26 +361,8 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 		}
 	}
 
-	for _, schema := range md.AllOf {
-		if err := collectImports(schema, imports, rootPackage, componentPackage); err != nil {
-			return err
-		}
-	}
-
-	for _, def := range md.Defs {
-		if err := collectImports(def, imports, rootPackage, componentPackage); err != nil {
-			return err
-		}
-	}
-
 	if err := collectImports(md.AdditionalProperties, imports, rootPackage, componentPackage); err != nil {
 		return err
-	}
-
-	if md.ContentSchema != nil {
-		if err := collectImports(md.ContentSchema, imports, rootPackage, componentPackage); err != nil {
-			return err
-		}
 	}
 
 	return nil
@@ -412,9 +420,22 @@ func FormatTypeName(ref, rootPackage, componentPackage string) (string, error) {
 	return tr.String(), nil
 }
 
-// ExtractDefs recursively collects all definitions from the ConfigMetadata, including nested ones,
+func ExtractDefs(md *ConfigsMetadata) map[string]*ConfigMetadata {
+	defs := make(map[string]*ConfigMetadata)
+	if md.Config != nil {
+		maps.Copy(defs, ExtractDefsFromConfig(md.Config))
+	}
+	for name, expCfg := range md.ExportedConfigs {
+		if !expCfg.InternalOnly {
+			defs[name] = expCfg
+		}
+	}
+	return defs
+}
+
+// ExtractDefsFromConfig recursively collects all definitions from the ConfigMetadata, including nested ones,
 // and returns a flat map of definition names to their corresponding ConfigMetadata.
-func ExtractDefs(md *ConfigMetadata) map[string]*ConfigMetadata {
+func ExtractDefsFromConfig(md *ConfigMetadata) map[string]*ConfigMetadata {
 	defs := make(map[string]*ConfigMetadata)
 	collectDefs(md, defs)
 	return defs
@@ -424,27 +445,18 @@ func collectDefs(md *ConfigMetadata, defs map[string]*ConfigMetadata) {
 	if md == nil {
 		return
 	}
-	if md.ResolvedFrom != "" {
-		refDesc := NewRef(md.ResolvedFrom)
+	if md.Ref != "" {
+		refDesc := NewRef(md.Ref)
 		if !refDesc.IsInternal() {
 			return
 		}
-		if _, exists := defs[md.ResolvedFrom]; !exists {
-			defs[md.ResolvedFrom] = md
+		if _, exists := defs[md.Ref]; !exists {
+			defs[md.Ref] = md
 		}
-	}
-
-	for _, name := range slices.Sorted(maps.Keys(md.Defs)) {
-		defs[name] = md.Defs[name]
-		collectDefs(md.Defs[name], defs)
 	}
 
 	for _, propName := range slices.Sorted(maps.Keys(md.Properties)) {
 		collectDefsForSchema(propName, md.Properties[propName], defs)
-	}
-
-	for _, schema := range md.AllOf {
-		collectDefs(schema, defs)
 	}
 }
 
@@ -453,12 +465,12 @@ func collectDefsForSchema(propName string, md *ConfigMetadata, defs map[string]*
 		return
 	}
 
-	if md.ResolvedFrom != "" {
-		refDesc := NewRef(md.ResolvedFrom)
+	if md.Ref != "" {
+		refDesc := NewRef(md.Ref)
 		if refDesc.IsInternal() {
 			// Only register the ref-site node if no authoritative definition was already collected from md.Defs.
-			if _, exists := defs[md.ResolvedFrom]; !exists {
-				defs[md.ResolvedFrom] = md
+			if _, exists := defs[md.Ref]; !exists {
+				defs[md.Ref] = md
 			}
 			collectDefs(md, defs)
 		}
@@ -531,6 +543,9 @@ type Validator struct {
 func collectValidators(md *ConfigMetadata, validators *[]Validator) {
 	for _, propName := range slices.Sorted(maps.Keys(md.Properties)) {
 		prop := md.Properties[propName]
+		if prop.Embed {
+			continue
+		}
 		rules := ValidationRules{
 			MaxLength:        prop.MaxLength,
 			MinLength:        prop.MinLength,
@@ -583,7 +598,7 @@ func collectValidators(md *ConfigMetadata, validators *[]Validator) {
 
 func resolveType(md *ConfigMetadata) string {
 	switch {
-	case md.ResolvedFrom != "":
+	case md.Ref != "":
 		return "ref"
 	case md.Type == "string" && md.GoType == "time.Time":
 		return "datetime"
@@ -696,7 +711,7 @@ func hasDefaultValue(md *ConfigMetadata) bool {
 			return true
 		}
 	}
-	return slices.ContainsFunc(md.AllOf, hasDefaultValue)
+	return false
 }
 
 // CamelVar converts a reference string to an unexported Go identifier
@@ -705,18 +720,18 @@ func CamelVar(ref string) string {
 		panic("attempted to use CamelVar with an empty ref")
 	}
 	refDesc := NewRef(ref)
-	name, _ := helpers.FormatIdentifier(refDesc.DefName(), false)
+	name, _ := helpers.FormatIdentifier(refDesc.ConfigName(), false)
 	return name
 }
 
 func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPackage, componentPackage string) string {
 	// handle references
-	isReference := md.ResolvedFrom != ""
+	isReference := md.Ref != ""
 	isSubStruct := md.Type == "object" && md.AdditionalProperties == nil
 	if (isReference && !IsPrimitiveSchema(md)) || isSubStruct {
 		if hasDefaultValue(md) {
 			if isReference {
-				refType, err := ResolveGoTypeRef(md.ResolvedFrom, rootPackage, componentPackage)
+				refType, err := ResolveGoTypeRef(md.Ref, rootPackage, componentPackage)
 				if err != nil {
 					panic(err)
 				}
@@ -875,4 +890,14 @@ func invalidTestValue(fieldType string) string {
 	default:
 		return `"__invalid__"`
 	}
+}
+
+func filterProps(props map[string]*ConfigMetadata, pred func(value *ConfigMetadata) bool) map[string]*ConfigMetadata {
+	result := make(map[string]*ConfigMetadata)
+	for k, v := range props {
+		if pred(v) {
+			result[k] = v
+		}
+	}
+	return result
 }

@@ -4,14 +4,14 @@ go 1.25.0
 
 require (
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/featuregate v1.62.0
-	go.opentelemetry.io/collector/internal/testutil v0.156.0
-	go.opentelemetry.io/collector/pdata v1.62.0
+	go.opentelemetry.io/collector/featuregate v1.63.0
+	go.opentelemetry.io/collector/internal/testutil v0.157.0
+	go.opentelemetry.io/collector/pdata v1.63.0
 	go.opentelemetry.io/otel v1.44.0
 	go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development v0.3.0
 	go.opentelemetry.io/proto/slim/otlp/profiles/v1development v0.3.0
 	go.uber.org/goleak v1.3.0
-	google.golang.org/grpc v1.82.0
+	google.golang.org/grpc v1.82.1
 	google.golang.org/protobuf v1.36.11
 )
 

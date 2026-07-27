@@ -32,6 +32,7 @@ components:
     - pkg/config/confignet
     - pkg/config/configopaque
     - pkg/config/configretry
+    - pkg/config/configstorage
     - pkg/config/configtelemetry
     - pkg/config/configtls
     - pkg/confighttp

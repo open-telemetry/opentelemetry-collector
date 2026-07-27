@@ -43,6 +43,7 @@ config/confignet/                                      @open-telemetry/collector
 config/configopaque/                                   @open-telemetry/collector-approvers
 config/configoptional/                                 @open-telemetry/collector-approvers
 config/configretry/                                    @open-telemetry/collector-approvers
+config/configstorage/                                  @open-telemetry/collector-approvers
 config/configtelemetry/                                @open-telemetry/collector-approvers
 config/configtls/                                      @open-telemetry/collector-approvers
 confmap/                                               @open-telemetry/collector-approvers @mx-psi @evan-bradley

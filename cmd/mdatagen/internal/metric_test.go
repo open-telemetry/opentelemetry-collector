@@ -9,8 +9,53 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
+
+func TestMetricValidateUnit(t *testing.T) {
+	strPtr := func(s string) *string { return &s }
+	newMetric := func(unit *string) *Metric {
+		return &Metric{
+			Signal: Signal{
+				Description: "a metric",
+				Stability:   component.StabilityLevelBeta,
+			},
+			Unit: unit,
+			Sum: &Sum{
+				MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeInt},
+				Mono:            Mono{Monotonic: true},
+			},
+		}
+	}
+	tests := []struct {
+		name    string
+		unit    *string
+		wantErr string
+	}{
+		{name: "valid seconds", unit: strPtr("s")},
+		{name: "valid dimensionless", unit: strPtr("1")},
+		{name: "valid bytes", unit: strPtr("By")},
+		{name: "valid percent", unit: strPtr("%")},
+		{name: "valid annotation", unit: strPtr("{packets}")},
+		{name: "valid compound", unit: strPtr("By/s")},
+		{name: "empty unit allowed", unit: strPtr("")},
+		{name: "missing unit", unit: nil, wantErr: "missing metric unit"},
+		{name: "non-ucum micro sign", unit: strPtr("µs"), wantErr: `invalid metric unit "µs"`},
+		{name: "unknown unit", unit: strPtr("bytes"), wantErr: `invalid metric unit "bytes"`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := newMetric(tt.unit).validate("metric.name", "")
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
 
 func TestValidateSemConvMetricURL(t *testing.T) {
 	validURL := "https://github.com/open-telemetry/semantic-conventions/blob/v1.37.2/docs/system/system-metrics.md#metric-systemcputime"
