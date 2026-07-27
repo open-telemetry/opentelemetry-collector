@@ -1,0 +1,30 @@
+# Default configuration for the queuebatch processor, documenting the
+# values produced by createDefaultConfig(). These are derived from
+# exporterhelper.NewDefaultQueueConfig() with backpressure enabled,
+# concurrency limited to a single consumer, and a smaller queue size.
+# See README.md for details.
+
+# A single consumer drains the queue, producing one batch at a time.
+num_consumers: 1
+
+# The queue is measured in requests.
+sizer: requests
+
+# The queue admits 10 requests.
+queue_size: 10
+
+# Block the caller when the queue is full (with timeout) instead of
+# dropping data.
+block_on_overflow: true
+
+# The caller receives success once the request enters the queue; it
+# does not wait for the downstream export result.
+wait_for_result: false
+
+# Batching is enabled and measured in items. Matches both the legacy
+# batchprocessor and exporterhelper.
+batch:
+  enabled: true
+  sizer: items
+  min_size: 8192
+  flush_timeout: 200ms
