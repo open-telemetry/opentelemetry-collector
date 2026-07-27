@@ -27,6 +27,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/memorylimiterextension/internal/metadatatest"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
@@ -143,6 +144,7 @@ func TestMemoryPressureResponse(t *testing.T) {
 				CheckInterval:         time.Second,
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 1,
+				GarbageCollector:      configoptional.Some(memorylimiter.GarbageCollectorConfig{}),
 			},
 			memAlloc:    800,
 			expectError: false,
@@ -153,6 +155,7 @@ func TestMemoryPressureResponse(t *testing.T) {
 				CheckInterval:         time.Second,
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 1,
+				GarbageCollector:      configoptional.Some(memorylimiter.GarbageCollectorConfig{}),
 			},
 			memAlloc:    1800,
 			expectError: true,
@@ -163,6 +166,7 @@ func TestMemoryPressureResponse(t *testing.T) {
 				CheckInterval:         time.Second,
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 10,
+				GarbageCollector:      configoptional.Some(memorylimiter.GarbageCollectorConfig{}),
 			},
 			memAlloc:    800,
 			expectError: false,
@@ -173,6 +177,7 @@ func TestMemoryPressureResponse(t *testing.T) {
 				CheckInterval:         time.Second,
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 11,
+				GarbageCollector:      configoptional.Some(memorylimiter.GarbageCollectorConfig{}),
 			},
 			memAlloc:    800,
 			expectError: true,

@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: processor/memory_limiter
+
+note: Add `garbage_collector` config section to allow disabling forced garbage collection via `enabled` field.
+
+issues: [15081]
+
+change_logs: [user]
