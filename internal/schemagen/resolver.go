@@ -46,7 +46,7 @@ func (r *Resolver) ResolveSchema(src *ConfigsMetadata) (*ConfigsMetadata, error)
 
 func (r *Resolver) resolveSchema(root *ConfigsMetadata, target *ConfigMetadata, origin *Ref) error {
 	if len(target.Properties) > 0 {
-		target.Type = "object"
+		target.Type = ObjectType
 	}
 
 	if target.Ref != "" {

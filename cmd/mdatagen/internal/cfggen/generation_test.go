@@ -928,7 +928,7 @@ func TestExtractDefs_EmbeddedObjects(t *testing.T) {
 	result := ExtractDefsFromConfig(md)
 	require.Len(t, result, 1)
 	require.Contains(t, result, "config")
-	require.Equal(t, "object", result["config"].Type)
+	require.Equal(t, SchemaType("object"), result["config"].Type)
 }
 
 func TestExtractDefs_MapValueObject(t *testing.T) {
@@ -979,7 +979,7 @@ func TestExtractDefs_SliceValueObject(t *testing.T) {
 	result := ExtractDefsFromConfig(md)
 	require.Len(t, result, 1)
 	require.Contains(t, result, "servers_item")
-	require.Equal(t, "object", result["servers_item"].Type)
+	require.Equal(t, SchemaType("object"), result["servers_item"].Type)
 }
 
 func TestExtractDefs_InternalResolvedReference(t *testing.T) {

@@ -10,10 +10,35 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
+type SchemaType string
+
+const (
+	StringType  SchemaType = "string"
+	BoolType    SchemaType = "bool"
+	IntType     SchemaType = "int"
+	Int8Type    SchemaType = "int8"
+	Int16Type   SchemaType = "int16"
+	Int32Type   SchemaType = "int32"
+	Int64Type   SchemaType = "int64"
+	UintType    SchemaType = "uint"
+	Uint8Type   SchemaType = "uint8"
+	Uint16Type  SchemaType = "uint16"
+	Uint32Type  SchemaType = "uint32"
+	Uint64Type  SchemaType = "uint64"
+	ByteType    SchemaType = "byte"
+	RuneType    SchemaType = "rune"
+	Float32Type SchemaType = "float32"
+	Float64Type SchemaType = "float64"
+	AnyType     SchemaType = "any"
+	ObjectType  SchemaType = "object"
+	SliceType   SchemaType = "slice"
+	MapType     SchemaType = "map"
+)
+
 // ConfigMetadata represents a component's configuration definition of metadata.yaml
 type ConfigMetadata struct {
 	Description      string                     `mapstructure:"description,omitempty" json:"description,omitempty" yaml:"description,omitempty"`
-	Type             string                     `mapstructure:"type,omitempty" json:"type,omitempty" yaml:"type,omitempty"`
+	Type             SchemaType                 `mapstructure:"type,omitempty" json:"type,omitempty" yaml:"type,omitempty"`
 	Ref              string                     `mapstructure:"$ref,omitempty" json:"-" yaml:"$ref,omitempty"`
 	Default          any                        `mapstructure:"default,omitempty" json:"default,omitempty" yaml:"default,omitempty"`
 	Deprecated       bool                       `mapstructure:"deprecated,omitempty" json:"deprecated,omitempty" yaml:"deprecated,omitempty"`
@@ -78,7 +103,7 @@ func (g *GoStructConfig) Unmarshal(parser *confmap.Conf) error {
 
 func (md *ConfigsMetadata) Validate() error {
 	if md.Config != nil {
-		if md.Config.Type != "object" && md.Config.Type != "" {
+		if md.Config.Type != ObjectType && md.Config.Type != "" {
 			return fmt.Errorf("config type must be \"object\", got %q", md.Config.Type)
 		}
 		if err := md.Config.Validate(); err != nil {
@@ -283,12 +308,12 @@ func cloneAny(v any) any {
 func (md *ConfigMetadata) Validate() error {
 	var errs error
 
-	if md.Type == "" || md.Type == "object" {
+	if md.Type == "" || md.Type == ObjectType {
 		if len(md.Properties) == 0 && md.Ref == "" {
 			errs = errors.Join(errs, errors.New("config must specify at least one property"))
 		}
 	}
-	if len(md.Enum) > 0 && (md.Type == "object" || md.Type == "array" || md.Type == "slice" || md.Type == "map") {
+	if len(md.Enum) > 0 && (md.Type == ObjectType || md.Type == "array" || md.Type == SliceType || md.Type == MapType) {
 		errs = errors.Join(errs, fmt.Errorf("enum is not supported for type %q", md.Type))
 	}
 	for name, prop := range md.Properties {

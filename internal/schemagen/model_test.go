@@ -533,14 +533,14 @@ func TestConfigMetadata_Clone(t *testing.T) {
 	clone.Values.Type = "changed"
 
 	assert.Equal(t, "root", orig.Description)
-	assert.Equal(t, "string", orig.Properties["endpoint"].Type)
+	assert.Equal(t, SchemaType("string"), orig.Properties["endpoint"].Type)
 	assert.Equal(t, "endpoint", orig.Required[0])
 	assert.Equal(t, "x", orig.Enum[0])
 	assert.Equal(t, 1, *orig.MinProperties)
 	assert.Equal(t, true, orig.Default.(map[string]any)["flag"])
 	assert.Equal(t, "a", orig.Default.(map[string]any)["nested"].([]any)[0])
 	assert.Equal(t, "validate", orig.GoStruct.CustomValidator.Name)
-	assert.Equal(t, "string", orig.Values.Type)
+	assert.Equal(t, SchemaType("string"), orig.Values.Type)
 }
 
 func TestConfigMetadata_Clone_Nil(t *testing.T) {
@@ -567,8 +567,8 @@ func TestConfigsMetadata_Clone(t *testing.T) {
 
 	clone.Config.Type = "changed"
 	clone.ExportedConfigs["sample"].Type = "changed"
-	assert.Equal(t, "object", orig.Config.Type)
-	assert.Equal(t, "object", orig.ExportedConfigs["sample"].Type)
+	assert.Equal(t, SchemaType("object"), orig.Config.Type)
+	assert.Equal(t, SchemaType("object"), orig.ExportedConfigs["sample"].Type)
 }
 
 func TestConfigsMetadata_Clone_Nil(t *testing.T) {
@@ -580,7 +580,7 @@ func TestConfigMetadata_MergeFrom(t *testing.T) {
 	t.Run("nil other is a no-op", func(t *testing.T) {
 		md := &ConfigMetadata{Type: "string"}
 		md.MergeFrom(nil)
-		assert.Equal(t, "string", md.Type)
+		assert.Equal(t, SchemaType("string"), md.Type)
 	})
 
 	t.Run("existing fields are preserved", func(t *testing.T) {
@@ -607,13 +607,13 @@ func TestConfigMetadata_MergeFrom(t *testing.T) {
 		md.MergeFrom(other)
 
 		assert.Equal(t, "mine", md.Description)
-		assert.Equal(t, "string", md.Type)
+		assert.Equal(t, SchemaType("string"), md.Type)
 		assert.Equal(t, []any{"keep"}, md.Enum)
 		assert.Equal(t, []string{"keep"}, md.Required)
 		// shared property is kept, missing one is merged in
-		assert.Equal(t, "integer", md.Properties["shared"].Type)
+		assert.Equal(t, SchemaType("integer"), md.Properties["shared"].Type)
 		require.Contains(t, md.Properties, "extra")
-		assert.Equal(t, "boolean", md.Properties["extra"].Type)
+		assert.Equal(t, SchemaType("boolean"), md.Properties["extra"].Type)
 	})
 
 	t.Run("missing fields are filled from other", func(t *testing.T) {

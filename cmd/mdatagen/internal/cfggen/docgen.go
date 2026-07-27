@@ -96,7 +96,7 @@ func CfgDocType(cfg *ConfigMetadata) string {
 		return "object"
 	}
 	switch cfg.Type {
-	case "string":
+	case StringType:
 		if cfg.GoType == "time.Duration" || cfg.Format == "duration" {
 			return "duration"
 		}
@@ -111,18 +111,18 @@ func CfgDocType(cfg *ConfigMetadata) string {
 			return "string (one of: " + strings.Join(vals, ", ") + ")"
 		}
 		return "string"
-	case "slice":
+	case SliceType:
 		if cfg.Values != nil {
 			return "[]" + CfgDocType(cfg.Values)
 		}
 		return "[]any"
-	case "map":
+	case MapType:
 		if cfg.Values != nil {
 			return "map[string]" + CfgDocType(cfg.Values)
 		}
 		return "map[string]any"
 	default:
-		return cfg.Type
+		return string(cfg.Type)
 	}
 }
 

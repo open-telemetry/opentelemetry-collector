@@ -15,13 +15,6 @@ import (
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
 )
 
-const (
-	StringType = "string"
-	SliceType  = "slice"
-	MapType    = "map"
-	ObjectType = "object"
-)
-
 // NewCfgFns returns template functions for config generation with rootPackage and componentPackage
 // baked into closures. This way the template itself never needs to pass these context values around.
 func NewCfgFns(rootPackage, componentPackage string) map[string]any {
@@ -138,24 +131,24 @@ func WithCfgFns(fns map[string]any, rootPackage, componentPackage string) map[st
 	return fns
 }
 
-var primitiveSchemaGoTypes = map[string]string{
-	"string":  "string",
-	"bool":    "bool",
-	"byte":    "byte",
-	"rune":    "rune",
-	"uint":    "uint",
-	"int":     "int",
-	"int8":    "int8",
-	"uint8":   "uint8",
-	"int16":   "int16",
-	"uint16":  "uint16",
-	"int32":   "int32",
-	"uint32":  "uint32",
-	"int64":   "int64",
-	"uint64":  "uint64",
-	"float32": "float32",
-	"float64": "float64",
-	"any":     "any",
+var primitiveSchemaGoTypes = map[SchemaType]string{
+	StringType:  "string",
+	BoolType:    "bool",
+	ByteType:    "byte",
+	RuneType:    "rune",
+	UintType:    "uint",
+	IntType:     "int",
+	Int8Type:    "int8",
+	Uint8Type:   "uint8",
+	Int16Type:   "int16",
+	Uint16Type:  "uint16",
+	Int32Type:   "int32",
+	Uint32Type:  "uint32",
+	Int64Type:   "int64",
+	Uint64Type:  "uint64",
+	Float32Type: "float32",
+	Float64Type: "float64",
+	AnyType:     "any",
 }
 
 func IsPrimitiveSchema(md *ConfigMetadata) bool {
@@ -254,7 +247,7 @@ func resolveGoType(md *ConfigMetadata, propName, rootPackage, componentPackage s
 	case "":
 		return "any", nil
 	default:
-		return md.Type, nil
+		return string(md.Type), nil
 	}
 }
 
@@ -315,7 +308,7 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 		}
 	}
 
-	if md.Type == "string" && strings.HasPrefix(md.GoType, "time.") {
+	if md.Type == StringType && strings.HasPrefix(md.GoType, "time.") {
 		imports["time"] = true
 	}
 
@@ -390,7 +383,7 @@ func collectCustomDefaultImports(md *ConfigMetadata, defaultValue any, imports m
 			}
 		}
 	case []any:
-		if md.Values == nil || md.Values.Type != "object" {
+		if md.Values == nil || md.Values.Type != ObjectType {
 			return nil
 		}
 		for _, item := range typedValue {
@@ -585,7 +578,7 @@ func collectValidators(md *ConfigMetadata, validators *[]Validator) {
 	if md.GoStruct.CustomValidator != nil {
 		*validators = append(*validators, Validator{
 			FieldName:       ".",
-			FieldType:       md.Type,
+			FieldType:       string(md.Type),
 			CustomValidator: generateValidatorName("", md.GoStruct.CustomValidator),
 		})
 	}
@@ -600,7 +593,7 @@ func resolveType(md *ConfigMetadata) string {
 	case md.GoType == "time.Duration":
 		return "duration"
 	default:
-		return md.Type
+		return string(md.Type)
 	}
 }
 
@@ -630,12 +623,12 @@ func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, co
 				exp := fmt.Sprintf(".%s = %s", varName, FormatDefaultValue(propSchema, key, value, rootPackage, componentPackage))
 				exps = append(exps, exp)
 			}
-		} else if schema.Values.Type == "object" { // is a map of object
+		} else if schema.Values.Type == ObjectType { // is a map of object
 			panic("map of structs is not supported yet")
 		}
 	case []any:
 		// is an array of objects
-		if schema.Values == nil || schema.Values.Type != "object" {
+		if schema.Values == nil || schema.Values.Type != ObjectType {
 			return nil
 		}
 		for i, item := range typedValue {
@@ -665,7 +658,7 @@ func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue any, rootP
 		return "&" + exp
 	}
 	if md.IsOptional {
-		if md.Type == "object" && md.Properties != nil {
+		if md.Type == ObjectType && md.Properties != nil {
 			return fmt.Sprintf("configoptional.Default(%s)", exp)
 		}
 		return fmt.Sprintf("configoptional.Some(%s)", exp)
@@ -687,7 +680,7 @@ func WrapDefaultValue(md *ConfigMetadata, varName string) string {
 		return "&" + exp
 	}
 	if md.IsOptional {
-		if md.Type == "object" && md.Properties != nil {
+		if md.Type == ObjectType && md.Properties != nil {
 			return fmt.Sprintf("configoptional.Default(%s)", exp)
 		}
 		return fmt.Sprintf("configoptional.Some(%s)", exp)
@@ -720,7 +713,7 @@ func CamelVar(ref string) string {
 func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPackage, componentPackage string) string {
 	// handle references
 	isReference := md.Ref != ""
-	isSubStruct := md.Type == "object"
+	isSubStruct := md.Type == ObjectType
 	if (isReference && !IsPrimitiveSchema(md)) || isSubStruct {
 		if hasDefaultValue(md) {
 			if isReference {

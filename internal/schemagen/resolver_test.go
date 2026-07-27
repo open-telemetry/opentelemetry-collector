@@ -42,7 +42,7 @@ func TestResolver_ResolveSchema_BasicMetadata(t *testing.T) {
 	result, err := resolver.ResolveSchema(src)
 	require.NoError(t, err)
 	require.Equal(t, "OTLP receiver configuration", result.Config.Description)
-	require.Equal(t, "object", result.Config.Type)
+	require.Equal(t, SchemaType("object"), result.Config.Type)
 }
 
 func TestResolver_ResolveSchema_InternalReference(t *testing.T) {
@@ -69,9 +69,9 @@ func TestResolver_ResolveSchema_InternalReference(t *testing.T) {
 
 	result, err := resolver.ResolveSchema(src)
 	require.NoError(t, err)
-	require.Equal(t, "object", result.Config.Type)
+	require.Equal(t, SchemaType("object"), result.Config.Type)
 	require.NotNil(t, result.Config.Properties["config"])
-	require.Equal(t, "string", result.Config.Properties["config"].Type)
+	require.Equal(t, SchemaType("string"), result.Config.Properties["config"].Type)
 	require.Equal(t, "Target type description", result.Config.Properties["config"].Description)
 }
 
@@ -117,9 +117,9 @@ func TestResolver_ResolveSchema_NestedStructures(t *testing.T) {
 	require.NoError(t, err)
 	nested := result.Config.Properties["nested"]
 	require.NotNil(t, nested)
-	require.Equal(t, "object", nested.Type)
-	require.Equal(t, "string", nested.Properties["field1"].Type)
-	require.Equal(t, "integer", nested.Properties["field2"].Type)
+	require.Equal(t, SchemaType("object"), nested.Type)
+	require.Equal(t, SchemaType("string"), nested.Properties["field1"].Type)
+	require.Equal(t, SchemaType("integer"), nested.Properties["field2"].Type)
 }
 
 func TestResolver_ResolveSchema_ArrayItems(t *testing.T) {
@@ -139,9 +139,9 @@ func TestResolver_ResolveSchema_ArrayItems(t *testing.T) {
 
 	result, err := resolver.ResolveSchema(src)
 	require.NoError(t, err)
-	require.Equal(t, "slice", result.Config.Type)
+	require.Equal(t, SchemaType("slice"), result.Config.Type)
 	require.NotNil(t, result.Config.Values)
-	require.Equal(t, "object", result.Config.Values.Type)
+	require.Equal(t, SchemaType("object"), result.Config.Values.Type)
 	require.NotNil(t, result.Config.Values.Properties["name"])
 }
 
@@ -168,9 +168,9 @@ func TestResolver_LoadExternalRef_Success(t *testing.T) {
 	ref := NewRef("go.opentelemetry.io/collector/scraper/scraperhelper.controller_config")
 	result, err := resolver.loadExternalRef(ref)
 	require.NoError(t, err)
-	require.Equal(t, "object", result.Type)
+	require.Equal(t, SchemaType("object"), result.Type)
 	require.NotNil(t, result.Properties["timeout"])
-	require.Equal(t, "string", result.Properties["timeout"].Type)
+	require.Equal(t, SchemaType("string"), result.Properties["timeout"].Type)
 }
 
 func TestResolver_LoadExternalRef_InvalidPath(t *testing.T) {
@@ -335,7 +335,7 @@ func TestResolver_ResolveSchema_ExternalReference_Integration(t *testing.T) {
 	require.NoError(t, err)
 	http := result.Config.Properties["http"]
 	require.NotNil(t, http)
-	require.Equal(t, "object", http.Type)
+	require.Equal(t, SchemaType("object"), http.Type)
 	require.Equal(t, "HTTP endpoint", http.Properties["endpoint"].Description)
 	require.Equal(t, "Request timeout", http.Properties["timeout"].Description)
 }
@@ -362,14 +362,14 @@ func TestResolver_ResolveSchema_DurationFormat(t *testing.T) {
 	require.NoError(t, err)
 
 	timeout := result.Config.Properties["timeout"]
-	require.Equal(t, "string", timeout.Type)
+	require.Equal(t, SchemaType("string"), timeout.Type)
 	require.Empty(t, timeout.Format, "format should be cleared")
 	require.Equal(t, "time.Duration", timeout.GoType)
 	require.Equal(t, `^([0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$`, timeout.Pattern)
 	require.Equal(t, "Request timeout", timeout.Description)
 
 	interval := result.Config.Properties["interval"]
-	require.Equal(t, "string", interval.Type)
+	require.Equal(t, SchemaType("string"), interval.Type)
 	require.Empty(t, interval.Format)
 	require.Equal(t, "time.Duration", interval.GoType)
 	require.Equal(t, `^([0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$`, interval.Pattern)
@@ -426,11 +426,11 @@ func TestResolver_ResolveSchema_OriginConvertsLocalRefToExternal(t *testing.T) {
 	require.NoError(t, err)
 	http := result.Config.Properties["http"]
 	require.NotNil(t, http)
-	require.Equal(t, "object", http.Type)
-	require.Equal(t, "string", http.Properties["endpoint"].Type)
+	require.Equal(t, SchemaType("object"), http.Type)
+	require.Equal(t, SchemaType("string"), http.Properties["endpoint"].Type)
 	auth := http.Properties["auth"]
 	require.NotNil(t, auth)
-	require.Equal(t, "object", auth.Type)
+	require.Equal(t, SchemaType("object"), auth.Type)
 	require.Equal(t, "Auth configuration", auth.Description)
 	require.NotNil(t, auth.Properties["token"])
 }
@@ -497,10 +497,10 @@ func TestResolver_ResolveSchema_NestedOriginPropagation(t *testing.T) {
 	require.NoError(t, err)
 	auth := result.Config.Properties["http"].Properties["auth"]
 	require.NotNil(t, auth)
-	require.Equal(t, "object", auth.Type)
+	require.Equal(t, SchemaType("object"), auth.Type)
 	tls := auth.Properties["tls"]
 	require.NotNil(t, tls)
-	require.Equal(t, "object", tls.Type)
+	require.Equal(t, SchemaType("object"), tls.Type)
 	require.Equal(t, "TLS configuration", tls.Description)
 }
 
@@ -551,7 +551,7 @@ func TestResolver_ResolveSchema_RelativeRefWithOrigin(t *testing.T) {
 	require.NoError(t, err)
 	metrics := result.Config.Properties["http"].Properties["metrics"]
 	require.NotNil(t, metrics)
-	require.Equal(t, "object", metrics.Type)
+	require.Equal(t, SchemaType("object"), metrics.Type)
 	require.Equal(t, "Metrics configuration", metrics.Description)
 }
 
@@ -602,7 +602,7 @@ func TestResolver_ResolveSchema_ParentRelativeRefWithOrigin(t *testing.T) {
 	require.NoError(t, err)
 	tls := result.Config.Properties["http"].Properties["tls"]
 	require.NotNil(t, tls)
-	require.Equal(t, "object", tls.Type)
+	require.Equal(t, SchemaType("object"), tls.Type)
 	require.Equal(t, "TLS settings", tls.Description)
 }
 
@@ -668,9 +668,9 @@ func TestResolver_ResolveSchema_PointerFields(t *testing.T) {
 	require.NoError(t, err)
 	tags := result.Config.Properties["tags"]
 	require.NotNil(t, tags)
-	require.Equal(t, "slice", tags.Type)
+	require.Equal(t, SchemaType("slice"), tags.Type)
 	require.NotNil(t, tags.Values)
-	require.Equal(t, "string", tags.Values.Type)
+	require.Equal(t, SchemaType("string"), tags.Values.Type)
 }
 
 func TestResolver_ResolveSchema_PreservesIntAndFloatPointers(t *testing.T) {
@@ -794,34 +794,34 @@ func TestResolver_ResolveSchema_ExtendedTypes_InProperties(t *testing.T) {
 
 	count := result.Config.Properties["count"]
 	require.NotNil(t, count)
-	assert.Equal(t, "int64", count.Type)
+	assert.Equal(t, SchemaType("int64"), count.Type)
 	assert.Empty(t, count.GoType)
 
 	ratio := result.Config.Properties["ratio"]
 	require.NotNil(t, ratio)
-	assert.Equal(t, "float32", ratio.Type)
+	assert.Equal(t, SchemaType("float32"), ratio.Type)
 	assert.Empty(t, ratio.GoType)
 
 	timeout := result.Config.Properties["timeout"]
 	require.NotNil(t, timeout)
-	assert.Equal(t, "string", timeout.Type)
+	assert.Equal(t, SchemaType("string"), timeout.Type)
 	assert.Equal(t, "time.Duration", timeout.GoType)
 	assert.Equal(t, goDurationPattern, timeout.Pattern)
 	assert.Empty(t, timeout.Format)
 
 	ts := result.Config.Properties["ts"]
 	require.NotNil(t, ts)
-	assert.Equal(t, "string", ts.Type)
+	assert.Equal(t, SchemaType("string"), ts.Type)
 	assert.Equal(t, "time.Time", ts.GoType)
 
 	token := result.Config.Properties["token"]
 	require.NotNil(t, token)
-	assert.Equal(t, "string", token.Type)
+	assert.Equal(t, SchemaType("string"), token.Type)
 	assert.Equal(t, "go.opentelemetry.io/collector/config/configopaque.String", token.GoType)
 
 	comp := result.Config.Properties["component"]
 	require.NotNil(t, comp)
-	assert.Equal(t, "string", comp.Type)
+	assert.Equal(t, SchemaType("string"), comp.Type)
 	assert.Equal(t, "go.opentelemetry.io/collector/component.ID", comp.GoType)
 }
 
@@ -844,9 +844,9 @@ func TestResolver_ResolveSchema_ExtendedType_InArrayItems(t *testing.T) {
 	require.NoError(t, err)
 	ids := result.Config.Properties["ids"]
 	require.NotNil(t, ids)
-	assert.Equal(t, "slice", ids.Type)
+	assert.Equal(t, SchemaType("slice"), ids.Type)
 	require.NotNil(t, ids.Values)
-	assert.Equal(t, "string", ids.Values.Type)
+	assert.Equal(t, SchemaType("string"), ids.Values.Type)
 	assert.Equal(t, "go.opentelemetry.io/collector/component.ID", ids.Values.GoType)
 }
 
@@ -870,7 +870,7 @@ func TestResolver_ResolveSchema_ExtendedType_InAdditionalProperties(t *testing.T
 	secrets := result.Config.Properties["secrets"]
 	require.NotNil(t, secrets)
 	require.NotNil(t, secrets.Values)
-	assert.Equal(t, "string", secrets.Values.Type)
+	assert.Equal(t, SchemaType("string"), secrets.Values.Type)
 	assert.Equal(t, "go.opentelemetry.io/collector/config/configopaque.String", secrets.Values.GoType)
 }
 
@@ -895,7 +895,7 @@ func TestResolver_ResolveSchema_ExtendedType_InDefs_ViaRef(t *testing.T) {
 	require.NoError(t, err)
 	count := result.Config.Properties["count"]
 	require.NotNil(t, count)
-	assert.Equal(t, "int64", count.Type)
+	assert.Equal(t, SchemaType("int64"), count.Type)
 	assert.Empty(t, count.GoType)
 }
 
@@ -915,10 +915,10 @@ func TestResolver_ResolveSchema_ExtendedType_OpaqueMap(t *testing.T) {
 	require.NoError(t, err)
 	headers := result.Config.Properties["headers"]
 	require.NotNil(t, headers)
-	assert.Equal(t, "map", headers.Type)
+	assert.Equal(t, SchemaType("map"), headers.Type)
 	assert.Equal(t, "go.opentelemetry.io/collector/config/configopaque.MapList", headers.GoType)
 	require.NotNil(t, headers.Values)
-	assert.Equal(t, "string", headers.Values.Type)
+	assert.Equal(t, SchemaType("string"), headers.Values.Type)
 }
 
 func TestResolver_ResolveSchema_ExtendedType_UnknownAlias_PassThrough(t *testing.T) {
@@ -936,5 +936,5 @@ func TestResolver_ResolveSchema_ExtendedType_UnknownAlias_PassThrough(t *testing
 
 	result, err := resolver.ResolveSchema(src)
 	require.NoError(t, err)
-	assert.Equal(t, "not_a_known_alias", result.Config.Properties["custom"].Type)
+	assert.Equal(t, SchemaType("not_a_known_alias"), result.Config.Properties["custom"].Type)
 }
