@@ -56,6 +56,12 @@ func CfgPropDocs(cfg *ConfigMetadata) []PropDoc {
 func collectPropDocs(cfg *ConfigMetadata, docs *[]PropDoc) {
 	for _, name := range slices.Sorted(maps.Keys(cfg.Properties)) {
 		prop := cfg.Properties[name]
+
+		if prop.Embed {
+			collectPropDocs(prop, docs)
+			continue
+		}
+
 		*docs = append(*docs, PropDoc{
 			Name:        name,
 			Schema:      prop,
@@ -63,11 +69,6 @@ func collectPropDocs(cfg *ConfigMetadata, docs *[]PropDoc) {
 			Description: prop.Description,
 			Deprecated:  prop.Deprecated,
 		})
-	}
-	for _, embed := range cfg.AllOf {
-		if embed != nil {
-			collectPropDocs(embed, docs)
-		}
 	}
 }
 
@@ -95,7 +96,7 @@ func CfgDocType(cfg *ConfigMetadata) string {
 		return "object"
 	}
 	switch cfg.Type {
-	case "string":
+	case StringType:
 		if cfg.GoType == "time.Duration" || cfg.Format == "duration" {
 			return "duration"
 		}
@@ -110,24 +111,18 @@ func CfgDocType(cfg *ConfigMetadata) string {
 			return "string (one of: " + strings.Join(vals, ", ") + ")"
 		}
 		return "string"
-	case "integer":
-		return "int"
-	case "number":
-		return "float"
-	case "boolean":
-		return "bool"
-	case "array":
-		if cfg.Items != nil {
-			return "[]" + CfgDocType(cfg.Items)
+	case SliceType:
+		if cfg.Values != nil {
+			return "[]" + CfgDocType(cfg.Values)
 		}
 		return "[]any"
-	case "object":
-		if cfg.AdditionalProperties != nil {
-			return "map[string]" + CfgDocType(cfg.AdditionalProperties)
+	case MapType:
+		if cfg.Values != nil {
+			return "map[string]" + CfgDocType(cfg.Values)
 		}
-		return "object"
+		return "map[string]any"
 	default:
-		return "any"
+		return string(cfg.Type)
 	}
 }
 
