@@ -23,9 +23,6 @@ func TestMultiBatcher_NoTimeout(t *testing.T) {
 		FlushTimeout: 0,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      10,
-		Partition: PartitionConfig{
-			CardinalityLimit: configoptional.Some(10000),
-		},
 	}
 	sink := requesttest.NewSink()
 
@@ -83,9 +80,6 @@ func TestMultiBatcher_Timeout(t *testing.T) {
 		FlushTimeout: 100 * time.Millisecond,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      100,
-		Partition: PartitionConfig{
-			CardinalityLimit: configoptional.Some(10000),
-		},
 	}
 	sink := requesttest.NewSink()
 
@@ -183,9 +177,6 @@ func TestMultiBatcher_PartitionRemovedAfterIdleTimeout(t *testing.T) {
 		FlushTimeout: 10 * time.Millisecond,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      100, // High min size to prevent immediate flush
-		Partition: PartitionConfig{
-			CardinalityLimit: configoptional.Some(10000),
-		},
 	}
 	sink := requesttest.NewSink()
 
