@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 )
@@ -22,6 +23,9 @@ func TestMultiBatcher_NoTimeout(t *testing.T) {
 		FlushTimeout: 0,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      10,
+		Partition: PartitionConfig{
+			CardinalityLimit: configoptional.Some(10000),
+		},
 	}
 	sink := requesttest.NewSink()
 
@@ -79,6 +83,9 @@ func TestMultiBatcher_Timeout(t *testing.T) {
 		FlushTimeout: 100 * time.Millisecond,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      100,
+		Partition: PartitionConfig{
+			CardinalityLimit: configoptional.Some(10000),
+		},
 	}
 	sink := requesttest.NewSink()
 
@@ -123,13 +130,13 @@ func TestMultiBatcher_Timeout(t *testing.T) {
 }
 
 func TestMultiBatcher_CardinalityLimitReached(t *testing.T) {
-	cardinalityLimit := 2
+	cardinalityLimit := configoptional.Some(2)
 	cfg := BatchConfig{
 		FlushTimeout: 100 * time.Millisecond,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      100, // High min size to prevent immediate flush
 		Partition: PartitionConfig{
-			CardinalityLimit: &cardinalityLimit,
+			CardinalityLimit: cardinalityLimit,
 		},
 	}
 	sink := requesttest.NewSink()
@@ -176,6 +183,9 @@ func TestMultiBatcher_PartitionRemovedAfterIdleTimeout(t *testing.T) {
 		FlushTimeout: 10 * time.Millisecond,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      100, // High min size to prevent immediate flush
+		Partition: PartitionConfig{
+			CardinalityLimit: configoptional.Some(10000),
+		},
 	}
 	sink := requesttest.NewSink()
 

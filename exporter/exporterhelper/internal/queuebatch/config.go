@@ -121,7 +121,7 @@ type PartitionConfig struct {
 	MetadataKeys []string `mapstructure:"metadata_keys"`
 
 	// Hard limit for the number of active partitions
-	CardinalityLimit *int `mapstructure:"cardinality_limit"`
+	CardinalityLimit configoptional.Optional[int] `mapstructure:"cardinality_limit"`
 }
 
 func (cfg *BatchConfig) Validate() error {
@@ -168,8 +168,8 @@ func (cfg *PartitionConfig) Validate() error {
 		uniq[l] = true
 	}
 
-	if cfg.CardinalityLimit != nil && *cfg.CardinalityLimit <= 0 {
-		return fmt.Errorf("`cardinality_limit` must be positive, found %d", *cfg.CardinalityLimit)
+	if cfg.CardinalityLimit.HasValue() && *cfg.CardinalityLimit.Get() <= 0 {
+		return fmt.Errorf("`cardinality_limit` must be positive, found %d", *cfg.CardinalityLimit.Get())
 	}
 
 	return nil

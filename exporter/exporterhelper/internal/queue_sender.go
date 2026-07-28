@@ -32,6 +32,9 @@ func NewDefaultQueueConfig() queuebatch.Config {
 			FlushTimeout: 200 * time.Millisecond,
 			Sizer:        request.SizerTypeItems,
 			MinSize:      8192,
+			Partition: queuebatch.PartitionConfig{
+				CardinalityLimit: configoptional.Some(10000),
+			},
 		}),
 	}
 }
