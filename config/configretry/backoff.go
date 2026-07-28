@@ -3,11 +3,13 @@
 
 package configretry // import "go.opentelemetry.io/collector/config/configretry"
 
+//go:generate mdatagen metadata.yaml
+
 import (
 	"errors"
 	"time"
 
-	"github.com/cenkalti/backoff/v5"
+	"github.com/cenkalti/backoff/v7"
 )
 
 // NewDefaultBackOffConfig returns the default settings for RetryConfig.
@@ -45,9 +47,6 @@ type BackOffConfig struct {
 }
 
 func (bs *BackOffConfig) Validate() error {
-	if !bs.Enabled {
-		return nil
-	}
 	if bs.InitialInterval < 0 {
 		return errors.New("'initial_interval' must be non-negative")
 	}

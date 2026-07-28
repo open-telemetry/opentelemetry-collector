@@ -1,0 +1,33 @@
+{
+  "$id": "go.opentelemetry.io/collector/config/configcompression",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "compression_params": {
+      "type": "object",
+      "properties": {
+        "level": {
+          "type": "integer"
+        }
+      }
+    },
+    "level": {
+      "type": "integer"
+    },
+    "type": {
+      "type": "string",
+      "description": "Type represents a compression method",
+      "enum": [
+        "gzip",
+        "zlib",
+        "deflate",
+        "snappy",
+        "x-snappy-framed",
+        "zstd",
+        "lz4",
+        "none",
+        ""
+      ]
+    }
+  },
+  "title": "pkg/config/configcompression"
+}

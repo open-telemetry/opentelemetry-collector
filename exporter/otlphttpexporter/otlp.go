@@ -207,7 +207,10 @@ func (e *baseExporter) export(ctx context.Context, requestURL string, request []
 	}()
 
 	if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
-		return handlePartialSuccessResponse(resp, partialSuccessHandler)
+		if err := handlePartialSuccessResponse(resp, partialSuccessHandler); err != nil {
+			return consumererror.NewPermanent(err)
+		}
+		return nil
 	}
 
 	respStatus := readResponseStatus(resp)

@@ -12,8 +12,9 @@ import (
 	"go.uber.org/multierr"
 )
 
-// The regular expression for valid config field tag.
-var configFieldTagRegExp = regexp.MustCompile("^[a-z0-9][a-z0-9_]*$")
+// The regular expression for valid config field tags. Slashes are allowed for
+// declarative configuration keys such as "detection/development".
+var configFieldTagRegExp = regexp.MustCompile("^[a-z0-9][a-z0-9_]*(/[a-z0-9][a-z0-9_]*)*$")
 
 // CheckConfigStruct enforces that given configuration object is following the patterns
 // used by the collector. This ensures consistency between different implementations

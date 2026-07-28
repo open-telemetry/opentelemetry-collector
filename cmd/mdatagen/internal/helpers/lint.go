@@ -17,7 +17,7 @@ func FormatIdentifier(s string, exported bool) (string, error) {
 		return "", errors.New("string cannot be empty")
 	}
 	// Convert various characters to . for strings.Title to operate on.
-	replace := strings.NewReplacer("_", ".", "-", ".", "<", ".", ">", ".", "/", ".", ":", ".")
+	replace := strings.NewReplacer("_", ".", "-", ".", "<", ".", ">", ".", "/", ".", ":", ".", "@", ".")
 	str := replace.Replace(s)
 	str = strings.Title(str) //nolint:staticcheck // SA1019
 	str = strings.ReplaceAll(str, ".", "")
@@ -50,7 +50,7 @@ func FormatIdentifier(s string, exported bool) (string, error) {
 		}
 	}
 
-	if golint.Acronyms[strings.ToUpper(word)] && output != "" {
+	if golint.Acronyms[strings.ToUpper(word)] && (exported || output != "") {
 		output += strings.ToUpper(word)
 	} else {
 		output += word

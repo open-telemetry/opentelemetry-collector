@@ -19,15 +19,17 @@
 # Start components list
 
 client/                                                @open-telemetry/collector-approvers
-cmd/builder/                                           @open-telemetry/collector-approvers @dmathieu
+cmd/builder/                                           @open-telemetry/collector-approvers @dmathieu @braydonk @jmacd
 cmd/mdatagen/                                          @open-telemetry/collector-approvers @dmitryax
 cmd/mdatagen/internal/sampleconnector/                 @open-telemetry/collector-approvers
 cmd/mdatagen/internal/sampleentityreceiver/            @open-telemetry/collector-approvers @dmitryax
 cmd/mdatagen/internal/samplefactoryreceiver/           @open-telemetry/collector-approvers @dmitryax
+cmd/mdatagen/internal/samplemigrationscraper/          @open-telemetry/collector-approvers
 cmd/mdatagen/internal/samplepkg/                       @open-telemetry/collector-approvers
 cmd/mdatagen/internal/sampleprocessor/                 @open-telemetry/collector-approvers
 cmd/mdatagen/internal/samplereceiver/                  @open-telemetry/collector-approvers @dmitryax
 cmd/mdatagen/internal/samplescraper/                   @open-telemetry/collector-approvers @dmitryax
+cmd/schemagen/                                         @open-telemetry/collector-approvers
 component/                                             @open-telemetry/collector-approvers
 component/componentstatus/                             @open-telemetry/collector-approvers
 component/componenttest/                               @open-telemetry/collector-approvers
@@ -41,6 +43,7 @@ config/confignet/                                      @open-telemetry/collector
 config/configopaque/                                   @open-telemetry/collector-approvers
 config/configoptional/                                 @open-telemetry/collector-approvers
 config/configretry/                                    @open-telemetry/collector-approvers
+config/configstorage/                                  @open-telemetry/collector-approvers
 config/configtelemetry/                                @open-telemetry/collector-approvers
 config/configtls/                                      @open-telemetry/collector-approvers
 confmap/                                               @open-telemetry/collector-approvers @mx-psi @evan-bradley
@@ -96,6 +99,7 @@ processor/memorylimiterprocessor/                      @open-telemetry/collector
 processor/processorhelper/                             @open-telemetry/collector-approvers
 processor/processorhelper/xprocessorhelper/            @open-telemetry/collector-approvers
 processor/processortest/                               @open-telemetry/collector-approvers
+processor/queuebatchprocessor/                         @open-telemetry/collector-approvers @jmacd @iblancasa
 processor/xprocessor/                                  @open-telemetry/collector-approvers @mx-psi @dmathieu
 receiver/                                              @open-telemetry/collector-approvers
 receiver/nopreceiver/                                  @open-telemetry/collector-approvers @evan-bradley

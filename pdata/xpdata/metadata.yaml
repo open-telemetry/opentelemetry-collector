@@ -6,12 +6,3 @@ status:
   class: pkg
   stability:
     development: [traces, metrics, logs, profiles]
-
-feature_gates:
-  - id: pdata.enableRefCounting
-    description: 'When enabled, enables using ref counting to know when pdata memory can be freed up. This featuregate is here only to protect if unexpected bugs happens because of ref counting logic.'
-    stage: stable
-    from_version: 'v0.133.0'
-    to_version: 'v0.154.0'
-    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/issues/13631'
-    skip_strict_validation: true

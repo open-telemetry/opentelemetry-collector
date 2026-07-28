@@ -31,7 +31,7 @@ func (normalTracesMarshaler) MarshalTraces(md ptrace.Traces) ([]byte, error) {
 		for j := 0; j < resourceTraces.ScopeSpans().Len(); j++ {
 			scopeTraces := resourceTraces.ScopeSpans().At(j)
 
-			buffer.WriteString(fmt.Sprintf("ScopeTraces #%d%s%s\n", i, writeScopeDetails(scopeTraces.Scope().Name(), scopeTraces.Scope().Version(), scopeTraces.SchemaUrl()), writeAttributesString(scopeTraces.Scope().Attributes())))
+			buffer.WriteString(fmt.Sprintf("ScopeTraces #%d%s%s\n", j, writeScopeDetails(scopeTraces.Scope().Name(), scopeTraces.Scope().Version(), scopeTraces.SchemaUrl()), writeAttributesString(scopeTraces.Scope().Attributes())))
 
 			for k := 0; k < scopeTraces.Spans().Len(); k++ {
 				span := scopeTraces.Spans().At(k)

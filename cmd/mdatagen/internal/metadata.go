@@ -38,8 +38,6 @@ type Metadata struct {
 	Parent string `mapstructure:"parent"`
 	// Status information for the component.
 	Status *Status `mapstructure:"status"`
-	// ReaggregationEnabled enables spatial re-aggregation configuration generation. Defaults to true.
-	ReaggregationEnabled bool `mapstructure:"reaggregation_enabled"`
 	// Override value featuregate for resource attributes.
 	OverrideValueEnabled bool `mapstructure:"override_value_enabled"`
 	// The name of the package that will be generated.
@@ -48,6 +46,8 @@ type Metadata struct {
 	Telemetry Telemetry `mapstructure:"telemetry"`
 	// SemConvVersion is a version number of OpenTelemetry semantic conventions applied to the scraped metrics.
 	SemConvVersion string `mapstructure:"sem_conv_version"`
+	// SemConvURL is an optional URL to the OpenTelemetry semantic conventions version.
+	SemConvURL string `mapstructure:"sem_conv_url"`
 	// ResourceAttributes that can be emitted by the component.
 	ResourceAttributes map[AttributeName]Attribute `mapstructure:"resource_attributes"`
 	// Entities organizes resource attributes into logical entities.
@@ -70,10 +70,8 @@ type Metadata struct {
 	PackageName string `mapstructure:"package_name"`
 	// FeatureGates that are managed by the component.
 	FeatureGates []FeatureGate `mapstructure:"feature_gates"`
-	// Config is the configuration schema for the component.
-	Config *cfggen.ConfigMetadata `mapstructure:"config"`
-	// ExportedConfigs is the list of additionally exported configs from the component/package
-	ExportedConfigs map[string]*cfggen.ConfigMetadata `mapstructure:"exported_configs"`
+	// Config is the configuration schemas for the component.
+	*cfggen.ConfigsMetadata `mapstructure:",squash"`
 }
 
 type Deprecated struct {
@@ -129,6 +127,10 @@ func (md *Metadata) Validate() error {
 		errs = errors.Join(errs, err)
 	}
 
+	if err := md.validateMigrations(); err != nil {
+		errs = errors.Join(errs, err)
+	}
+
 	if err := md.validateFeatureGates(); err != nil {
 		errs = errors.Join(errs, err)
 	}
@@ -175,6 +177,38 @@ func (md *Metadata) validateResourceAttributes() error {
 		}
 		if attr.EnabledPtr == nil {
 			errs = errors.Join(errs, fmt.Errorf("enabled field is required for resource attribute: %v", name))
+		}
+	}
+	return errs
+}
+
+// validateMigrations verifies that any metric-level migration references valid
+// target metrics and existing feature gates.
+func (md *Metadata) validateMigrations() error {
+	var errs error
+	if len(md.Metrics) == 0 {
+		return nil
+	}
+	gates := make(map[FeatureGateID]struct{}, len(md.FeatureGates))
+	for _, g := range md.FeatureGates {
+		gates[g.ID] = struct{}{}
+	}
+	for mn, m := range md.Metrics {
+		if m.Migration == nil {
+			continue
+		}
+		if _, ok := md.Metrics[m.Migration.To]; !ok {
+			errs = errors.Join(errs, fmt.Errorf(`metric "%v": migration.to refers to undefined metric "%v"`, mn, m.Migration.To))
+		}
+		if mn == m.Migration.To {
+			errs = errors.Join(errs, fmt.Errorf(`metric "%v": migration.to must not reference itself "%v"`, mn, m.Migration.To))
+		}
+		// Gates must exist.
+		if _, ok := gates[m.Migration.ThroughGates.DisableOld]; !ok || m.Migration.ThroughGates.DisableOld == "" {
+			errs = errors.Join(errs, fmt.Errorf(`metric "%v": migration.through_gates.disable_old must reference an existing feature gate`, mn))
+		}
+		if _, ok := gates[m.Migration.ThroughGates.EnableNew]; !ok || m.Migration.ThroughGates.EnableNew == "" {
+			errs = errors.Join(errs, fmt.Errorf(`metric "%v": migration.through_gates.enable_new must reference an existing feature gate`, mn))
 		}
 	}
 	return errs
@@ -466,8 +500,8 @@ func (md *Metadata) validateFeatureGates() error {
 }
 
 func (md *Metadata) validateConfig() error {
-	if md.Config != nil {
-		return md.Config.Validate()
+	if md.ConfigsMetadata != nil {
+		return md.ConfigsMetadata.Validate()
 	}
 	return nil
 }
@@ -503,12 +537,19 @@ func (rl AttributeRequirementLevel) String() string {
 	return ""
 }
 
-func (mn AttributeName) Render() (string, error) {
-	return helpers.FormatIdentifier(string(mn), true)
+func (an AttributeName) EmittedName() string {
+	if emittedName, _, found := strings.Cut(string(an), "@"); found {
+		return emittedName
+	}
+	return string(an)
 }
 
-func (mn AttributeName) RenderUnexported() (string, error) {
-	return helpers.FormatIdentifier(string(mn), false)
+func (an AttributeName) Render() (string, error) {
+	return helpers.FormatIdentifier(string(an), true)
+}
+
+func (an AttributeName) RenderUnexported() (string, error) {
+	return helpers.FormatIdentifier(string(an), false)
 }
 
 // ValueType defines an attribute value type.
@@ -605,6 +646,8 @@ type Attribute struct {
 	RequirementLevel AttributeRequirementLevel `mapstructure:"requirement_level"`
 	// The semantic convention reference of the attribute.
 	SemanticConvention *SemanticConvention `mapstructure:"semantic_convention"`
+	// Stability is the stability level of the resource attribute.
+	Stability component.StabilityLevel `mapstructure:"stability"`
 }
 
 // IsConditional returns true if the attribute is conditionally required.
@@ -846,6 +889,22 @@ func (md *Metadata) expandSemConvRefs() error {
 			v.SemanticConvention.SemanticConventionRef = url
 		}
 		md.Metrics[k] = v
+	}
+
+	for k, v := range md.ResourceAttributes {
+		if v.SemanticConvention != nil {
+			if strings.HasPrefix(v.SemanticConvention.SemanticConventionRef, "http") {
+				return fmt.Errorf("resource attribute %q, use relative path for URL, not the full URL", k)
+			}
+			url := fmt.Sprintf(
+				"%s/v%s/docs/registry/attributes/%s",
+				semConvURL,
+				md.SemConvVersion,
+				v.SemanticConvention.SemanticConventionRef,
+			)
+			v.SemanticConvention.SemanticConventionRef = url
+		}
+		md.ResourceAttributes[k] = v
 	}
 
 	return nil

@@ -200,6 +200,16 @@ func TestUnmarshal(t *testing.T) {
 			// Batch remains unset, sizer override does not apply.
 			expectedCfg: newBaseCfg,
 		},
+		{
+			path: "batch_disabled_explicit_sizer.yaml",
+			// Batch is explicitly disabled. Sizer inheritance must not
+			// panic and Batch must remain absent.
+			expectedCfg: func() configoptional.Optional[Config] {
+				cfg := newBaseCfg()
+				cfg.Get().Batch = configoptional.None[BatchConfig]()
+				return cfg
+			},
+		},
 	}
 
 	for _, tt := range tests {

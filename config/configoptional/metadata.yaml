@@ -7,12 +7,3 @@ status:
   stability:
     beta: [metrics, traces, logs]
     alpha: [profiles]
-
-feature_gates:
-  - id: configoptional.AddEnabledField
-    description: "Allows optional fields to be toggled via an 'enabled' field."
-    stage: stable
-    from_version: 'v0.138.0'
-    to_version: 'v0.154.0'
-    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/issues/14021'
-    skip_strict_validation: true

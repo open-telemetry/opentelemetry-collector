@@ -95,6 +95,83 @@ func TestConfigValidate(t *testing.T) {
 			},
 			err: errInconsistentGCMinInterval,
 		},
+		{
+			name: "negative max soft interval",
+			cfg: &Config{
+				CheckInterval:                100 * time.Millisecond,
+				MaxGCIntervalWhenSoftLimited: -1 * time.Second,
+				MemoryLimitMiB:               5722,
+				MemorySpikeLimitMiB:          1907,
+			},
+			err: errNegativeGCMaxSoftInterval,
+		},
+		{
+			name: "negative max hard interval",
+			cfg: &Config{
+				CheckInterval:                100 * time.Millisecond,
+				MaxGCIntervalWhenHardLimited: -1 * time.Second,
+				MemoryLimitMiB:               5722,
+				MemorySpikeLimitMiB:          1907,
+			},
+			err: errNegativeGCMaxHardInterval,
+		},
+		{
+			name: "max soft less than min soft",
+			cfg: &Config{
+				CheckInterval:                100 * time.Millisecond,
+				MinGCIntervalWhenSoftLimited: 10 * time.Second,
+				MaxGCIntervalWhenSoftLimited: 5 * time.Second,
+				MaxGCIntervalWhenHardLimited: 5 * time.Second,
+				MemoryLimitMiB:               5722,
+				MemorySpikeLimitMiB:          1907,
+			},
+			err: errInconsistentGCMaxSoftInterval,
+		},
+		{
+			name: "max hard less than min hard",
+			cfg: &Config{
+				CheckInterval:                100 * time.Millisecond,
+				MinGCIntervalWhenHardLimited: 20 * time.Second,
+				MinGCIntervalWhenSoftLimited: 20 * time.Second,
+				MaxGCIntervalWhenHardLimited: 5 * time.Second,
+				MemoryLimitMiB:               5722,
+				MemorySpikeLimitMiB:          1907,
+			},
+			err: errInconsistentGCMaxHardInterval,
+		},
+		{
+			name: "max soft less than max hard",
+			cfg: &Config{
+				CheckInterval:                100 * time.Millisecond,
+				MaxGCIntervalWhenSoftLimited: 5 * time.Second,
+				MaxGCIntervalWhenHardLimited: 30 * time.Second,
+				MemoryLimitMiB:               5722,
+				MemorySpikeLimitMiB:          1907,
+			},
+			err: errInconsistentGCMaxInterval,
+		},
+		{
+			name: "valid max gc intervals: both zero (disabled)",
+			cfg: &Config{
+				CheckInterval:                100 * time.Millisecond,
+				MaxGCIntervalWhenSoftLimited: 0,
+				MaxGCIntervalWhenHardLimited: 0,
+				MemoryLimitMiB:               5722,
+				MemorySpikeLimitMiB:          1907,
+			},
+			err: nil,
+		},
+		{
+			name: "valid max gc intervals: only hard disabled",
+			cfg: &Config{
+				CheckInterval:                100 * time.Millisecond,
+				MaxGCIntervalWhenSoftLimited: 30 * time.Second,
+				MaxGCIntervalWhenHardLimited: 0,
+				MemoryLimitMiB:               5722,
+				MemorySpikeLimitMiB:          1907,
+			},
+			err: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -215,7 +216,9 @@ type LogsConfigV030 struct {
 	// "stdout" and "stderr" are interpreted as os.Stdout and os.Stderr.
 	// see details at Open in zap/writer.go.
 	//
-	// Note that this setting only affects the zap internal logger errors.
+	// Note that this setting only affects zap's own internal errors (e.g., failures
+	// to write to the configured output). It does NOT route application error-level
+	// log messages. To control where application logs go, use output_paths instead.
 	// (default = ["stderr"])
 	ErrorOutputPaths []string `mapstructure:"error_output_paths"`
 
@@ -260,7 +263,8 @@ type LogsSamplingConfig struct {
 type ResourceConfigV030 struct {
 	config.Resource `mapstructure:",squash"`
 
-	LegacyAttributes map[string]any `mapstructure:",remain"`
+	DetectionDevelopment *xotelconf.ExperimentalResourceDetection `mapstructure:"detection/development,omitempty"`
+	LegacyAttributes     map[string]any                           `mapstructure:",remain"`
 }
 
 var _ xconfmap.Validator = (*ResourceConfigV030)(nil)

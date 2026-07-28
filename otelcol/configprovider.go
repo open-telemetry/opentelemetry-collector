@@ -53,14 +53,21 @@ func NewConfigProvider(set ConfigProviderSettings) (*ConfigProvider, error) {
 //
 // Should never be called concurrently with itself, Watch or Shutdown.
 func (cm *ConfigProvider) Get(ctx context.Context, factories Factories) (*Config, error) {
+	cfg, _, err := cm.getWithConf(ctx, factories)
+	return cfg, err
+}
+
+// getWithConf returns the service configuration along with the raw,
+// pre-decode confmap.Conf it was unmarshalled from.
+func (cm *ConfigProvider) getWithConf(ctx context.Context, factories Factories) (*Config, *confmap.Conf, error) {
 	conf, err := cm.mapResolver.Resolve(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("cannot resolve the configuration: %w", err)
+		return nil, nil, fmt.Errorf("cannot resolve the configuration: %w", err)
 	}
 
 	var cfg *configSettings
 	if cfg, err = unmarshal(conf, factories); err != nil {
-		return nil, fmt.Errorf("cannot unmarshal the configuration: %w", err)
+		return nil, nil, fmt.Errorf("cannot unmarshal the configuration: %w", err)
 	}
 
 	return &Config{
@@ -70,7 +77,7 @@ func (cm *ConfigProvider) Get(ctx context.Context, factories Factories) (*Config
 		Connectors: cfg.Connectors.Configs(),
 		Extensions: cfg.Extensions.Configs(),
 		Service:    cfg.Service,
-	}, nil
+	}, conf, nil
 }
 
 // Watch blocks until any configuration change was detected or an unrecoverable error

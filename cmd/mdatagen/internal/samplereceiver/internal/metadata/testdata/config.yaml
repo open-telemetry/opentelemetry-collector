@@ -35,6 +35,8 @@ all_set:
     default.event.to_be_renamed:
       enabled: true
   resource_attributes:
+    host.arch:
+      enabled: true
     map.resource.attr:
       enabled: true
     optional.resource.attr:
@@ -89,6 +91,8 @@ reaggregate_set:
     default.event.to_be_renamed:
       enabled: true
   resource_attributes:
+    host.arch:
+      enabled: true
     map.resource.attr:
       enabled: true
     optional.resource.attr:
@@ -143,6 +147,8 @@ none_set:
     default.event.to_be_renamed:
       enabled: false
   resource_attributes:
+    host.arch:
+      enabled: false
     map.resource.attr:
       enabled: false
     optional.resource.attr:
@@ -163,6 +169,9 @@ none_set:
       enabled: false
 override_set:
   resource_attributes:
+    host.arch:
+      enabled: true
+      override_value: "override-host.arch"
     map.resource.attr:
       enabled: true
       override_value:
@@ -193,6 +202,12 @@ override_set:
       override_value: "override-string.resource.disabled_attr_to_be_removed"
 filter_set_include:
   resource_attributes:
+    host.arch:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     map.resource.attr:
       enabled: true
       metrics_include:
@@ -249,6 +264,12 @@ filter_set_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
+    host.arch:
+      enabled: true
+      metrics_exclude:
+        - strict: "host.arch-val"
+      events_exclude:
+        - strict: "host.arch-val"
     map.resource.attr:
       enabled: true
       metrics_exclude:

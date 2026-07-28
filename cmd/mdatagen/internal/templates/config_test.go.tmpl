@@ -19,8 +19,6 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
-{{ $reag := .ReaggregationEnabled }}
-
 {{ if .Metrics }}
 func TestMetricsBuilderConfig(t *testing.T) {
 	tests := []struct {
@@ -36,8 +34,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					{{- range $name, $metric := .Metrics }}
-					{{- $metricReag := and $reag (hasAggregatableAttributes $metric.Attributes) }}
-					{{ $name.Render }}: {{ if $reag }}{{ $name.Render }}{{ end }}MetricConfig{
+					{{- $metricReag := hasAggregatableAttributes $metric.Attributes }}
+					{{ $name.Render }}: {{ $name.Render }}MetricConfig{
 						Enabled: true,
 						{{- if $metricReag }}
 						AggregationStrategy: AggregationStrategy{{ if eq $metric.Data.Type "Sum" }}Sum{{ else }}Avg{{ end }},
@@ -60,8 +58,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					{{- range $name, $metric := .Metrics }}
-					{{- $metricReag := and $reag (hasAggregatableAttributes $metric.Attributes) }}
-					{{ $name.Render }}: {{ if $reag }}{{ $name.Render }}{{ end }}MetricConfig{
+					{{- $metricReag := hasAggregatableAttributes $metric.Attributes }}
+					{{ $name.Render }}: {{ $name.Render }}MetricConfig{
 						Enabled: false,
 						{{- if $metricReag }}
 						AggregationStrategy: AggregationStrategy{{ if eq $metric.Data.Type "Sum" }}Sum{{ else }}Avg{{ end }},
@@ -84,9 +82,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
 			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(
-				{{- if $reag }}
 				{{- range $name, $metric := .Metrics }}{{ $name.Render }}MetricConfig{}, {{ end }}
-				{{- else }}MetricConfig{},{{ end }}
 				{{- if $.OverrideValueEnabled }}
 				{{- range $name, $_ := .ResourceAttributes }}{{ $name.Render }}ResourceAttributeConfig{}, {{ end }}
 				{{- else }}
@@ -97,6 +93,22 @@ func TestMetricsBuilderConfig(t *testing.T) {
 		})
 	}
 }
+
+{{- range $name, $metric := .Metrics }}
+{{ if hasAggregatableAttributes $metric.Attributes -}}
+func Test{{ $name.Render }}MetricsConfig_Validate(t *testing.T) {
+  cfg := DefaultMetricsConfig().{{ $name.Render }}
+  require.NoError(t, cfg.Validate())
+
+  cfg.EnabledAttributes = []{{ $name.Render }}MetricAttributeKey{"invalid"}
+  require.ErrorContains(t, cfg.Validate(), "metric {{ $name }} doesn't have an attribute invalid, valid attributes: [{{ range $index, $element := $metric.Attributes -}}{{ if $index }}, {{ end }}{{ (attributeInfo $element).Name }}{{ end }}]")
+
+  cfg = DefaultMetricsConfig().{{ $name.Render }}
+  cfg.AggregationStrategy = "invalid"
+  require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+{{ end }}
+{{ end }}
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
