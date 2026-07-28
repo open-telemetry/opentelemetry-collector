@@ -81,8 +81,7 @@ config:
       description: The endpoint to listen on
       default: "localhost:4317"
     timeout:
-      type: string
-      format: duration
+      type: duration
       description: Request timeout duration
       default: "30s"
     tls:
@@ -90,41 +89,82 @@ config:
   required: [endpoint]
 ```
 
-The `config` section is based on [JSON Schema standard](https://json-schema.org/) (draft 2020-12) and supports:
+The `config` section uses Go-centric types directly in the `type` field, and also supports:
 
-- **Standard JSON Schema types**: string, number, integer, boolean, object, array, null
 - **Validation constraints**: minLength, maxLength, pattern, minimum, maximum, enum, etc.
 - **References**: Internal (`$ref: definition_name`), external (`$ref: package.path.type`), or relative (`$ref: ./internal/config.type`)
 - **Reusable definitions**: Define common schemas in `$defs` and reference them with `$ref`
 - **Schema composition**: Use `allOf` for complex configurations
-- **Extended type aliases**: first-class aliases that expand to the correct JSON Schema shape and Go type automatically (see table below)
 
-#### Extended type aliases
+#### Supported types
 
-Instead of combining `type`+`format` or `type`+`x-customType` by hand, you can use an alias directly as the `type` value:
+##### Primitive types
 
-| Alias | Go type | JSON Schema representation        |
-|---|---|-----------------------------------|
-| `rune` | `rune` | `integer`                         |
-| `byte` | `byte` | `integer`                         |
-| `uint` | `uint` | `integer`                         |
-| `int8` | `int8` | `integer`                         |
-| `uint8` | `uint8` | `integer`                         |
-| `int16` | `int16` | `integer`                         |
-| `uint16` | `uint16` | `integer`                         |
-| `int32` | `int32` | `integer`                         |
-| `uint32` | `uint32` | `integer`                         |
-| `int64` | `int64` | `integer`                         |
-| `uint64` | `uint64` | `integer`                         |
-| `float32` | `float32` | `number`                          |
-| `float64` | `float64` | `number`                          |
-| `duration` | `time.Duration` | `string` with Go duration pattern |
-| `time` | `time.Time` | `string` with `format: date-time` |
-| `opaque_string` | `configopaque.String` | `string`                          |
-| `opaque_map` | `configopaque.MapList` | `object` of name/value pairs      |
-| `id` | `component.ID` | `string`                          |
+Use Go type names directly in the `type` field:
 
-Example:
+| Type | Go type | JSON Schema type |
+|------|---------|-----------------|
+| `string` | `string` | `string` |
+| `bool` | `bool` | `boolean` |
+| `int` | `int` | `integer` |
+| `int8` | `int8` | `integer` |
+| `int16` | `int16` | `integer` |
+| `int32` | `int32` | `integer` |
+| `int64` | `int64` | `integer` |
+| `uint` | `uint` | `integer` |
+| `uint8` | `uint8` | `integer` |
+| `uint16` | `uint16` | `integer` |
+| `uint32` | `uint32` | `integer` |
+| `uint64` | `uint64` | `integer` |
+| `byte` | `byte` | `integer` |
+| `rune` | `rune` | `integer` |
+| `float32` | `float32` | `number` |
+| `float64` | `float64` | `number` |
+| `any` | `any` | *(no type constraint)* |
+
+##### Container types
+
+| Type | Go type | JSON Schema type | Notes |
+|------|---------|-----------------|-------|
+| `object` | struct | `object` | Requires `properties:` |
+| `slice` | `[]T` | `array` | Requires `values:` for the element type |
+| `map` | `map[string]T` | `object` | Requires `values:` for the value type |
+
+Example using container types:
+
+```yaml
+config:
+  type: object
+  properties:
+    endpoints:
+      type: slice
+      values:
+        type: string
+      description: List of endpoints to connect to.
+    headers:
+      type: map
+      values:
+        type: string
+      description: Extra HTTP headers to attach to each request.
+    tls:
+      $ref: go.opentelemetry.io/collector/config/configtls.server_config
+```
+
+##### Alias types
+
+Shorthand types that expand to a primitive or container type with additional annotations:
+
+| Alias | Go type | JSON Schema representation | Notes |
+|-------|---------|---------------------------|-------|
+| `float` | `float32` | `number` | Shorthand for `float32` |
+| `double` | `float64` | `number` | Shorthand for `float64` |
+| `duration` | `time.Duration` | `string` with Go duration pattern | e.g. `"30s"`, `"1h30m"` |
+| `time` | `time.Time` | `string` with `format: date-time` | RFC 3339 format |
+| `opaque_string` | `configopaque.String` | `string` | Masked in logs |
+| `component_id` | `component.ID` | `string` | Collector component ID |
+| `opaque_map` | `configopaque.MapList` | `object` of name/value pairs | Values masked in logs |
+
+Example using alias types:
 
 ```yaml
 config:
@@ -139,8 +179,6 @@ config:
     api_token:
       type: opaque_string
 ```
-
-Aliases are additive: existing uses of standard JSON Schema types, `format`, and `x-customType` remain supported without migration.
 
 ### Metrics Builder Configuration
 
@@ -172,7 +210,7 @@ metrics:
     description: Number of received requests.
     unit: "{request}"
     sum:
-      value_type: int
+      values: int
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [status_code]
