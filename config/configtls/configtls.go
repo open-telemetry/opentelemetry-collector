@@ -481,10 +481,6 @@ func (c ServerConfig) LoadTLSConfig(_ context.Context) (*tls.Config, error) {
 			return nil, err
 		}
 		if c.ReloadClientCAFile {
-			err = reloader.startWatching()
-			if err != nil {
-				return nil, err
-			}
 			tlsCfg.GetConfigForClient = func(*tls.ClientHelloInfo) (*tls.Config, error) { return reloader.getClientConfig(tlsCfg) }
 		}
 		tlsCfg.ClientCAs = reloader.certPool
