@@ -58,6 +58,15 @@ Below are some more examples that can be used for reference:
 
 You can run `cd cmd/mdatagen && $(GOCMD) install .` to install the `mdatagen` tool in `GOBIN` and then run `mdatagen metadata.yaml` to generate documentation for a specific component or you can run `make generate` to generate documentation for all components.
 
+### Central configuration file
+
+`mdatagen` supports a repository-level configuration file named `.mdatagen.yaml`.
+
+This is used for skipping validation and configuring project-level hooks.
+
+Currently it is opt-in, it will become mandatory in a future minor release.
+
+
 ### Component Config Documentation
 
 The metadata generator supports automatic generation of configuration schemas for components.
