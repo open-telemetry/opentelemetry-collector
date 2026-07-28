@@ -50,7 +50,11 @@ func newMultiBatcher(
 		logger:      logger,
 	}
 
-	mb.cardinalityLimit = *bCfg.Partition.CardinalityLimit.Get()
+	if bCfg.Partition.CardinalityLimit.HasValue() {
+		mb.cardinalityLimit = *bCfg.Partition.CardinalityLimit.Get()
+	} else {
+		mb.cardinalityLimit = defaultCardinalityLimit
+	}
 
 	cache, err := lru.NewLRU[string, *partitionBatcher](mb.cardinalityLimit, func(_ string, pb *partitionBatcher) {
 		// Flush the partition when evicted
