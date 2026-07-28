@@ -40,9 +40,8 @@ config:
       go_struct:
         anonymous: true
     component:
-      type: string
+      type: component_id
       description: Identifies the scraper, used for telemetry and logging.
-      x-customType: go.opentelemetry.io/collector/component.ID
       go_struct:
         field_name: ComponentID
     job_name:
@@ -62,8 +61,7 @@ config:
         type: object
         properties:
           interval:
-            type: string
-            format: duration
+            type: duration
             x-optional: true
             default: 10s
           labels:

@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestResourceBuilder(t *testing.T) {
@@ -85,7 +85,7 @@ func TestResourceBuilder(t *testing.T) {
 
 func TestResourceBuilderOverrideValue(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 	rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
 	rb.SetOptionalResourceAttr("optional.resource.attr-val")
@@ -158,7 +158,7 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 // TestResourceBuilderOverrideWithoutSet does not call any Set* methods, but override should still apply via Emit().
 func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 
 	res := rb.Emit()
@@ -231,7 +231,7 @@ func TestResourceBuilderOverrideDisabled(t *testing.T) {
 	cfg.StringResourceAttrDisableWarning.Enabled = false
 	cfg.StringResourceAttrRemoveWarning.Enabled = false
 	cfg.StringResourceAttrToBeRemoved.Enabled = false
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 
 	res := rb.Emit()
@@ -241,7 +241,7 @@ func TestResourceBuilderOverrideDisabled(t *testing.T) {
 // TestResourceBuilderNoOverride has no override_value set, Validate should still succeed.
 func TestResourceBuilderNoOverride(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "all_set")
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	assert.Nil(t, cfg.MapResourceAttr.OverrideValue, "OverrideValue should be nil for map.resource.attr")
 	assert.Nil(t, cfg.OptionalResourceAttr.OverrideValue, "OverrideValue should be nil for optional.resource.attr")
 	assert.Nil(t, cfg.SliceResourceAttr.OverrideValue, "OverrideValue should be nil for slice.resource.attr")
