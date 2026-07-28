@@ -608,7 +608,7 @@ func TestProfilesMergeTo_ReservesDictionaryZeroValues(t *testing.T) {
 	dest := NewProfiles()
 	require.NoError(t, src.MergeTo(dest))
 
-	assert.Equal(t, "", dest.Dictionary().StringTable().At(0))
+	assert.Empty(t, dest.Dictionary().StringTable().At(0))
 	assert.Equal(t, "inuse_space", dest.Dictionary().StringTable().At(1))
 
 	require.Equal(t, 1, dest.Dictionary().AttributeTable().Len())

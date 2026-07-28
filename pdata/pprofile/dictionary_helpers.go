@@ -19,8 +19,7 @@ func mapKeyValues(m pcommon.Map) []internal.KeyValue {
 // ProfilesDictionary contract, index 0 of every table MUST hold the zero
 // value for that table's element type, since unset references (e.g. an
 // unset Strindex) resolve to it. Tables that already hold entries are left
-// untouched, since inserting at index 0 would invalidate every existing
-// reference into them.
+// untouched.
 func ensureDictionarySentinels(dst ProfilesDictionary) {
 	if dst.StringTable().Len() == 0 {
 		dst.StringTable().Append("")
