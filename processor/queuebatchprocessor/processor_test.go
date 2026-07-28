@@ -249,7 +249,8 @@ func capabilityConfig(batchEnabled, storage bool) *Config {
 func mutatingTraces(t *testing.T) consumer.Traces {
 	c, err := consumer.NewTraces(
 		func(context.Context, ptrace.Traces) error { return nil },
-		consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+		consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+	)
 	require.NoError(t, err)
 	return c
 }
@@ -257,7 +258,8 @@ func mutatingTraces(t *testing.T) consumer.Traces {
 func mutatingMetrics(t *testing.T) consumer.Metrics {
 	c, err := consumer.NewMetrics(
 		func(context.Context, pmetric.Metrics) error { return nil },
-		consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+		consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+	)
 	require.NoError(t, err)
 	return c
 }
@@ -265,7 +267,8 @@ func mutatingMetrics(t *testing.T) consumer.Metrics {
 func mutatingLogs(t *testing.T) consumer.Logs {
 	c, err := consumer.NewLogs(
 		func(context.Context, plog.Logs) error { return nil },
-		consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+		consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+	)
 	require.NoError(t, err)
 	return c
 }
@@ -273,7 +276,8 @@ func mutatingLogs(t *testing.T) consumer.Logs {
 func mutatingProfiles(t *testing.T) xconsumer.Profiles {
 	c, err := xconsumer.NewProfiles(
 		func(context.Context, pprofile.Profiles) error { return nil },
-		consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+		consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+	)
 	require.NoError(t, err)
 	return c
 }
