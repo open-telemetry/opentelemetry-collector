@@ -21,7 +21,7 @@ config:
         anonymous: true
     emit_legacy_metrics:
       description: Whether to emit legacy metric names alongside new ones.
-      type: boolean
+      type: bool
       default: false
 
 feature_gates:
