@@ -141,7 +141,7 @@ type metric{{ $name.Render }} struct {
 // init fills {{ $name }} metric with initial data.
 func (m *metric{{ $name.Render }}) init() {
 	m.data.SetName("{{ $name.EmittedName }}")
-	m.data.SetDescription("{{ $metric.Description }}")
+	m.data.SetDescription("{{ trimRight $metric.Description "\n" }}")
 	m.data.SetUnit("{{ $metric.Unit }}")
 	m.data.SetEmpty{{ $metric.Data.Type }}()
 	{{- if $metric.Data.HasMonotonic }}
