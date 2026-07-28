@@ -41,7 +41,8 @@ func NewFactory() xprocessor.Factory {
 		xprocessor.WithTraces(f.createTraces, metadata.TracesStability),
 		xprocessor.WithMetrics(f.createMetrics, metadata.MetricsStability),
 		xprocessor.WithLogs(f.createLogs, metadata.LogsStability),
-		xprocessor.WithProfiles(f.createProfiles, metadata.ProfilesStability))
+		xprocessor.WithProfiles(f.createProfiles, metadata.ProfilesStability),
+	)
 }
 
 // CreateDefaultConfig creates the default configuration for processor. Notice
