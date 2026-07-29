@@ -97,7 +97,11 @@ type ServerConfig struct {
 
 	// Keepalive controls HTTP keep-alives.
 	// By default, keep-alives are always enabled. Only very resource-constrained environments should disable them.
-	// When set, it takes precedence over the deprecated flat fields below.
+	// Unmarshal folds this section into the deprecated fields below, which
+	// remain the source of truth during their deprecation window, and always
+	// resets it to None. A value visible to ToServer was therefore set
+	// programmatically after unmarshaling (or the config was never unmarshaled)
+	// and takes precedence over the deprecated fields.
 	Keepalive configoptional.Optional[KeepaliveServerConfig] `mapstructure:"keepalive,omitempty"`
 
 	// Deprecated: use Keepalive.IdleTimeout instead.
@@ -133,11 +137,9 @@ func NewDefaultServerConfig() ServerConfig {
 		ReadHeaderTimeout: 1 * time.Minute,
 		// The deprecated flat fields keep carrying the defaults so that
 		// configurations and code which still use them behave as before.
+		// Keepalive stays None; see its documentation.
 		IdleTimeout:       1 * time.Minute,
 		KeepAlivesEnabled: true,
-		Keepalive: configoptional.Default(KeepaliveServerConfig{
-			IdleTimeout: 1 * time.Minute,
-		}),
 	}
 }
 
@@ -148,8 +150,18 @@ var _ confmap.Unmarshaler = (*ServerConfig)(nil)
 // warnings for ToServer to log. Only keys present in the configuration count:
 // values set programmatically (e.g. by a component's default config) are neither
 // deprecated usage nor a conflict.
+//
+// The 'keepalive' section is folded into the deprecated fields, which stay the
+// source of truth during their deprecation window, and Keepalive is always reset
+// to None afterwards.
 func (sc *ServerConfig) Unmarshal(conf *confmap.Conf) error {
-	prevKeepalive := sc.Keepalive
+	// Fold a Keepalive set programmatically (e.g. by a component's default
+	// config) into the deprecated fields, so that the configuration decodes
+	// over it below.
+	if ka := sc.Keepalive.Get(); ka != nil {
+		sc.IdleTimeout = ka.IdleTimeout
+		sc.KeepAlivesEnabled = true
+	}
 	// Read before unmarshaling: decoding the Optional consumes the 'enabled' key.
 	keepaliveDisabled := conf.Get("keepalive::enabled") == false
 
@@ -163,9 +175,6 @@ func (sc *ServerConfig) Unmarshal(conf *confmap.Conf) error {
 	// section. Marshaling produces it for an unset Keepalive, so treat it as
 	// unset to keep marshaled configurations loadable.
 	keepaliveSet := conf.IsSet("keepalive") && conf.Get("keepalive") != nil
-	if !keepaliveSet {
-		sc.Keepalive = prevKeepalive
-	}
 
 	// Values which are no-ops in the legacy logic (a zero idle_timeout, or
 	// keep_alives_enabled: true) neither conflict with the 'keepalive' section
@@ -182,12 +191,22 @@ func (sc *ServerConfig) Unmarshal(conf *confmap.Conf) error {
 	}
 	sc.deprecationWarnings = deprecated
 
-	// 'keepalive::enabled: false' leaves the Optional without a value, which is
-	// indistinguishable from an unset section; carry the intent in the flat
-	// field, which the resolution in ToServer falls back to.
-	if keepaliveDisabled {
-		sc.KeepAlivesEnabled = false
+	// Fold the 'keepalive' section into the deprecated fields. Only keys
+	// present in the configuration are copied; the deprecated fields supply
+	// the values for the rest.
+	if keepaliveSet {
+		if ka := sc.Keepalive.Get(); ka != nil {
+			if conf.IsSet("keepalive::idle_timeout") {
+				sc.IdleTimeout = ka.IdleTimeout
+			}
+		}
+		// The section's presence determines keep-alives: enabled unless
+		// 'keepalive::enabled' is false.
+		sc.KeepAlivesEnabled = !keepaliveDisabled
 	}
+
+	// Keepalive is always None after unmarshaling; see the field documentation.
+	sc.Keepalive = configoptional.None[KeepaliveServerConfig]()
 	return nil
 }
 
@@ -378,10 +397,13 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 	keepAlivesEnabled := true
 	var idleTimeout time.Duration
 	if kaCfg := sc.Keepalive.Get(); kaCfg != nil {
+		// Unmarshal always leaves Keepalive at None, so a value here was set
+		// programmatically afterwards and takes precedence.
 		idleTimeout = kaCfg.IdleTimeout
 	} else {
-		// The 'keepalive' section is not in use; apply the deprecated flat
-		// fields exactly as the code before the section's introduction did.
+		// Apply the deprecated flat fields exactly as the code before the
+		// 'keepalive' section's introduction did; Unmarshal has already folded
+		// the section into them.
 		keepAlivesEnabled = sc.KeepAlivesEnabled
 		idleTimeout = sc.IdleTimeout
 	}

@@ -95,8 +95,11 @@ type ClientConfig struct {
 	// with the first middleware becoming the outermost handler.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
 
-	// Keepalive configuration. When set, it takes precedence over the
-	// deprecated flat fields below.
+	// Keepalive configuration. Unmarshal folds this section into the deprecated
+	// fields below, which remain the source of truth during their deprecation
+	// window, and always resets it to None. A value visible to ToClient was
+	// therefore set programmatically after unmarshaling (or the config was
+	// never unmarshaled) and takes precedence over the deprecated fields.
 	Keepalive configoptional.Optional[KeepaliveClientConfig] `mapstructure:"keepalive,omitempty"`
 
 	// Deprecated: use Keepalive.IdleConnTimeout instead.
@@ -146,12 +149,9 @@ func NewDefaultClientConfig() ClientConfig {
 	return ClientConfig{
 		// The deprecated flat fields keep carrying the defaults so that
 		// configurations and code which still use them behave as before.
-		MaxIdleConns:    defaultTransport.MaxIdleConns,
-		IdleConnTimeout: defaultTransport.IdleConnTimeout,
-		Keepalive: configoptional.Default(KeepaliveClientConfig{
-			MaxIdleConns:    defaultTransport.MaxIdleConns,
-			IdleConnTimeout: defaultTransport.IdleConnTimeout,
-		}),
+		// Keepalive stays None; see its documentation.
+		MaxIdleConns:      defaultTransport.MaxIdleConns,
+		IdleConnTimeout:   defaultTransport.IdleConnTimeout,
 		ForceAttemptHTTP2: true,
 	}
 }
@@ -163,8 +163,20 @@ var _ confmap.Unmarshaler = (*ClientConfig)(nil)
 // warnings for ToClient to log. Only keys present in the configuration count:
 // values set programmatically (e.g. by a component's default config) are neither
 // deprecated usage nor a conflict.
+//
+// The 'keepalive' section is folded into the deprecated fields, which stay the
+// source of truth during their deprecation window, and Keepalive is always reset
+// to None afterwards.
 func (cc *ClientConfig) Unmarshal(conf *confmap.Conf) error {
-	prevKeepalive := cc.Keepalive
+	// Fold a Keepalive set programmatically (e.g. by a component's default
+	// config) into the deprecated fields, so that the configuration decodes
+	// over it below.
+	if ka := cc.Keepalive.Get(); ka != nil {
+		cc.IdleConnTimeout = ka.IdleConnTimeout
+		cc.MaxIdleConns = ka.MaxIdleConns
+		cc.MaxIdleConnsPerHost = ka.MaxIdleConnsPerHost
+		cc.DisableKeepAlives = false
+	}
 	// Read before unmarshaling: decoding the Optional consumes the 'enabled' key.
 	keepaliveDisabled := conf.Get("keepalive::enabled") == false
 
@@ -178,9 +190,6 @@ func (cc *ClientConfig) Unmarshal(conf *confmap.Conf) error {
 	// section. Marshaling produces it for an unset Keepalive, so treat it as
 	// unset to keep marshaled configurations loadable.
 	keepaliveSet := conf.IsSet("keepalive") && conf.Get("keepalive") != nil
-	if !keepaliveSet {
-		cc.Keepalive = prevKeepalive
-	}
 
 	// Values which match the field's zero value are no-ops in the legacy logic,
 	// so they neither conflict with the 'keepalive' section nor deserve a warning.
@@ -202,12 +211,28 @@ func (cc *ClientConfig) Unmarshal(conf *confmap.Conf) error {
 	}
 	cc.deprecationWarnings = deprecated
 
-	// 'keepalive::enabled: false' leaves the Optional without a value, which is
-	// indistinguishable from an unset section; carry the intent in the flat
-	// field, which the resolution in ToClient falls back to.
-	if keepaliveDisabled {
-		cc.DisableKeepAlives = true
+	// Fold the 'keepalive' section into the deprecated fields. Only keys
+	// present in the configuration are copied; the deprecated fields supply
+	// the values for the rest.
+	if keepaliveSet {
+		if ka := cc.Keepalive.Get(); ka != nil {
+			if conf.IsSet("keepalive::idle_conn_timeout") {
+				cc.IdleConnTimeout = ka.IdleConnTimeout
+			}
+			if conf.IsSet("keepalive::max_idle_conns") {
+				cc.MaxIdleConns = ka.MaxIdleConns
+			}
+			if conf.IsSet("keepalive::max_idle_conns_per_host") {
+				cc.MaxIdleConnsPerHost = ka.MaxIdleConnsPerHost
+			}
+		}
+		// The section's presence determines keep-alives: enabled unless
+		// 'keepalive::enabled' is false.
+		cc.DisableKeepAlives = keepaliveDisabled
 	}
+
+	// Keepalive is always None after unmarshaling; see the field documentation.
+	cc.Keepalive = configoptional.None[KeepaliveClientConfig]()
 	return nil
 }
 
@@ -253,12 +278,15 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 	}
 
 	if kaCfg := cc.Keepalive.Get(); kaCfg != nil {
+		// Unmarshal always leaves Keepalive at None, so a value here was set
+		// programmatically afterwards and takes precedence.
 		transport.MaxIdleConns = kaCfg.MaxIdleConns
 		transport.MaxIdleConnsPerHost = kaCfg.MaxIdleConnsPerHost
 		transport.IdleConnTimeout = kaCfg.IdleConnTimeout
 	} else {
-		// The 'keepalive' section is not in use; apply the deprecated flat
-		// fields exactly as the code before the section's introduction did.
+		// Apply the deprecated flat fields exactly as the code before the
+		// 'keepalive' section's introduction did; Unmarshal has already folded
+		// the section into them.
 		transport.DisableKeepAlives = cc.DisableKeepAlives
 		transport.MaxIdleConns = cc.MaxIdleConns
 		transport.MaxIdleConnsPerHost = cc.MaxIdleConnsPerHost

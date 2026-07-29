@@ -109,7 +109,8 @@ func TestKeepaliveCompatFactoryCustomDeprecatedFields(t *testing.T) {
 // Deprecated-field values set programmatically by a factory are not "the user
 // set both": a user must be able to adopt the keepalive section on a component
 // whose factory customizes the deprecated fields without hitting the
-// mixed-config error.
+// mixed-config error, and the factory's values must survive for the settings
+// the keepalive section does not mention.
 func TestKeepaliveCompatFactoryFieldsDoNotConflictWithNewSection(t *testing.T) {
 	cfg := NewDefaultClientConfig()
 	cfg.MaxIdleConns = 30000
@@ -118,6 +119,11 @@ func TestKeepaliveCompatFactoryFieldsDoNotConflictWithNewSection(t *testing.T) {
 		"keepalive": map[string]any{"idle_conn_timeout": "5m"},
 	})
 	require.NoError(t, conf.Unmarshal(&cfg))
+
+	transport := compatClientTransport(t, cfg)
+	assert.Equal(t, 5*time.Minute, transport.IdleConnTimeout)
+	assert.Equal(t, 30000, transport.MaxIdleConns)
+	assert.Equal(t, 30000, transport.MaxIdleConnsPerHost)
 }
 
 // Deprecation warnings must be triggered only by configuration the user wrote,
@@ -202,6 +208,27 @@ func TestKeepaliveCompatServerMarshalRoundtrip(t *testing.T) {
 
 	cfg2 := NewDefaultServerConfig()
 	require.NoError(t, marshaled.Unmarshal(&cfg2), "marshaled output must load without a mixed-config error")
+}
+
+// The same for a config loaded from the new keepalive section: Unmarshal folds
+// the section into the deprecated fields, so the marshaled form is legacy-style
+// and must reload to the same effective settings.
+func TestKeepaliveCompatNewSyntaxMarshalRoundtrip(t *testing.T) {
+	cfg := NewDefaultClientConfig()
+	require.NoError(t, confmap.NewFromStringMap(map[string]any{
+		"keepalive": map[string]any{"idle_conn_timeout": "60s"},
+	}).Unmarshal(&cfg))
+
+	marshaled := confmap.New()
+	require.NoError(t, marshaled.Marshal(cfg))
+
+	cfg2 := NewDefaultClientConfig()
+	require.NoError(t, marshaled.Unmarshal(&cfg2), "marshaled output must load without a mixed-config error")
+
+	transport := compatClientTransport(t, cfg2)
+	assert.Equal(t, 60*time.Second, transport.IdleConnTimeout)
+	assert.Equal(t, 100, transport.MaxIdleConns)
+	assert.False(t, transport.DisableKeepAlives)
 }
 
 // Strict unmarshaling rejects unknown keys on main, but implementing
