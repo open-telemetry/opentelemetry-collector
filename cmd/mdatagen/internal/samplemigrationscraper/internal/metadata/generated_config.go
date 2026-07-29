@@ -146,13 +146,13 @@ func (ms *SystemCPUUtilizationV1MetricConfig) Validate() error {
 	return nil
 }
 
-// SystemMemoryLinuxAvailableMetricConfig provides config for the system.memory.linux.available metric.
-type SystemMemoryLinuxAvailableMetricConfig struct {
+// SystemMemoryLinuxAvailableV1MetricConfig provides config for the system.memory.linux.available@v1 metric.
+type SystemMemoryLinuxAvailableV1MetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SystemMemoryLinuxAvailableMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemMemoryLinuxAvailableV1MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -168,11 +168,11 @@ func (ms *SystemMemoryLinuxAvailableMetricConfig) Unmarshal(parser *confmap.Conf
 
 // MetricsConfig provides config for samplemigration metrics.
 type MetricsConfig struct {
-	LinuxMemoryAvailable       LinuxMemoryAvailableMetricConfig       `mapstructure:"linux.memory.available"`
-	SystemCPUFoo               SystemCPUFooMetricConfig               `mapstructure:"system.cpu.foo"`
-	SystemCPUUtilization       SystemCPUUtilizationMetricConfig       `mapstructure:"system.cpu.utilization"`
-	SystemCPUUtilizationV1     SystemCPUUtilizationV1MetricConfig     `mapstructure:"system.cpu.utilization@v1"`
-	SystemMemoryLinuxAvailable SystemMemoryLinuxAvailableMetricConfig `mapstructure:"system.memory.linux.available"`
+	LinuxMemoryAvailable         LinuxMemoryAvailableMetricConfig         `mapstructure:"linux.memory.available"`
+	SystemCPUFoo                 SystemCPUFooMetricConfig                 `mapstructure:"system.cpu.foo"`
+	SystemCPUUtilization         SystemCPUUtilizationMetricConfig         `mapstructure:"system.cpu.utilization"`
+	SystemCPUUtilizationV1       SystemCPUUtilizationV1MetricConfig       `mapstructure:"system.cpu.utilization@v1"`
+	SystemMemoryLinuxAvailableV1 SystemMemoryLinuxAvailableV1MetricConfig `mapstructure:"system.memory.linux.available@v1"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -193,7 +193,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []SystemCPUUtilizationV1MetricAttributeKey{SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber, SystemCPUUtilizationV1MetricAttributeKeyCPUMode},
 		},
-		SystemMemoryLinuxAvailable: SystemMemoryLinuxAvailableMetricConfig{
+		SystemMemoryLinuxAvailableV1: SystemMemoryLinuxAvailableV1MetricConfig{
 			Enabled: false,
 		},
 	}
