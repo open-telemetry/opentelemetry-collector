@@ -3,6 +3,7 @@
 package metadata
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -101,9 +102,6 @@ func TestMetricsBuilder(t *testing.T) {
 				mb.RecordSystemCPUUtilizationDataPoint(ts, 1, "cpu-val", AttributeStateIdle, 18, AttributeCPUModeSystem)
 			}
 
-			allMetricsCount++
-			mb.RecordSystemMemoryLinuxAvailableDataPoint(ts, 1)
-
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
@@ -148,20 +146,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "system.memory.linux.available":
-					assert.False(t, validatedMetrics["system.memory.linux.available"], "Found a duplicate in the metrics slice: system.memory.linux.available")
-					validatedMetrics["system.memory.linux.available"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "An estimate of how much memory is available without swapping. (Linux only)", mi.Description())
-					assert.Equal(t, "By", mi.Unit())
-					assert.False(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
 				}
 			}
 		})
@@ -213,7 +197,9 @@ func TestVersionedMetrics(t *testing.T) {
 
 				start := pcommon.Timestamp(1_000_000_000)
 				ts := pcommon.Timestamp(1_000_001_000)
+				observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 				settings := scrapertest.NewNopSettings(scrapertest.NopType)
+				settings.Logger = zap.New(observedZapCore)
 				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
 
 				mb.RecordLinuxMemoryAvailableDataPoint(ts, 1)
@@ -237,6 +223,17 @@ func TestVersionedMetrics(t *testing.T) {
 				}
 				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
 				assert.Equal(t, tt.expectNewMetric, newFound)
+				// For metrics with different emitted names, no collison warning shoulds be logged
+				// This guards against the regression where same name collision logic was
+				// incorrectly applied to renamed metrics.
+				if tt.enableNew {
+					for _, log := range observedLogs.All() {
+						if strings.Contains(log.Message, "linux.memory.available") {
+							assert.NotContains(t, log.Message, "same emitted name",
+								"should not log same name collision warning for metrics with different names")
+						}
+					}
+				}
 			})
 		}
 	})
