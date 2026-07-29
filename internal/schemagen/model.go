@@ -10,31 +10,55 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
+type SchemaType string
+
+const (
+	StringType  SchemaType = "string"
+	BoolType    SchemaType = "bool"
+	IntType     SchemaType = "int"
+	Int8Type    SchemaType = "int8"
+	Int16Type   SchemaType = "int16"
+	Int32Type   SchemaType = "int32"
+	Int64Type   SchemaType = "int64"
+	UintType    SchemaType = "uint"
+	Uint8Type   SchemaType = "uint8"
+	Uint16Type  SchemaType = "uint16"
+	Uint32Type  SchemaType = "uint32"
+	Uint64Type  SchemaType = "uint64"
+	ByteType    SchemaType = "byte"
+	RuneType    SchemaType = "rune"
+	Float32Type SchemaType = "float32"
+	Float64Type SchemaType = "float64"
+	AnyType     SchemaType = "any"
+	ObjectType  SchemaType = "object"
+	SliceType   SchemaType = "slice"
+	MapType     SchemaType = "map"
+)
+
 // ConfigMetadata represents a component's configuration definition of metadata.yaml
 type ConfigMetadata struct {
-	Description          string                     `mapstructure:"description,omitempty" json:"description,omitempty" yaml:"description,omitempty"`
-	Type                 string                     `mapstructure:"type,omitempty" json:"type,omitempty" yaml:"type,omitempty"`
-	Ref                  string                     `mapstructure:"$ref,omitempty" json:"-" yaml:"$ref,omitempty"`
-	Default              any                        `mapstructure:"default,omitempty" json:"default,omitempty" yaml:"default,omitempty"`
-	Deprecated           bool                       `mapstructure:"deprecated,omitempty" json:"deprecated,omitempty" yaml:"deprecated,omitempty"`
-	Enum                 []any                      `mapstructure:"enum,omitempty" json:"enum,omitempty" yaml:"enum,omitempty"`
-	Properties           map[string]*ConfigMetadata `mapstructure:"properties,omitempty" json:"properties,omitempty" yaml:"properties,omitempty"`
-	AdditionalProperties *ConfigMetadata            `mapstructure:"additionalProperties,omitempty" json:"additionalProperties,omitempty" yaml:"additionalProperties,omitempty"`
-	Required             []string                   `mapstructure:"required,omitempty" json:"required,omitempty" yaml:"required,omitempty"`
-	MinProperties        *int                       `mapstructure:"minProperties,omitempty" json:"minProperties,omitempty" yaml:"minProperties,omitempty"`
-	MaxProperties        *int                       `mapstructure:"maxProperties,omitempty" json:"maxProperties,omitempty" yaml:"maxProperties,omitempty"`
-	Items                *ConfigMetadata            `mapstructure:"items,omitempty" json:"items,omitempty" yaml:"items,omitempty"`
-	MinItems             *int                       `mapstructure:"minItems,omitempty" json:"minItems,omitempty" yaml:"minItems,omitempty"`
-	MaxItems             *int                       `mapstructure:"maxItems,omitempty" json:"maxItems,omitempty" yaml:"maxItems,omitempty"`
-	UniqueItems          bool                       `mapstructure:"uniqueItems,omitempty" json:"uniqueItems,omitempty" yaml:"uniqueItems,omitempty"`
-	MaxLength            *int                       `mapstructure:"maxLength,omitempty" json:"maxLength,omitempty" yaml:"maxLength,omitempty"`
-	MinLength            *int                       `mapstructure:"minLength,omitempty" json:"minLength,omitempty" yaml:"minLength,omitempty"`
-	Pattern              string                     `mapstructure:"pattern,omitempty" json:"pattern,omitempty" yaml:"pattern,omitempty"`
-	Format               string                     `mapstructure:"format,omitempty" json:"format,omitempty" yaml:"format,omitempty"`
-	Maximum              *float64                   `mapstructure:"maximum,omitempty" json:"maximum,omitempty" yaml:"maximum,omitempty"`
-	ExclusiveMaximum     *float64                   `mapstructure:"exclusiveMaximum,omitempty" json:"exclusiveMaximum,omitempty" yaml:"exclusiveMaximum,omitempty"`
-	Minimum              *float64                   `mapstructure:"minimum,omitempty" json:"minimum,omitempty" yaml:"minimum,omitempty"`
-	ExclusiveMinimum     *float64                   `mapstructure:"exclusiveMinimum,omitempty" json:"exclusiveMinimum,omitempty" yaml:"exclusiveMinimum,omitempty"`
+	Description      string                     `mapstructure:"description,omitempty" json:"description,omitempty" yaml:"description,omitempty"`
+	Type             SchemaType                 `mapstructure:"type,omitempty" json:"type,omitempty" yaml:"type,omitempty"`
+	Ref              string                     `mapstructure:"$ref,omitempty" json:"-" yaml:"$ref,omitempty"`
+	Default          any                        `mapstructure:"default,omitempty" json:"default,omitempty" yaml:"default,omitempty"`
+	Deprecated       bool                       `mapstructure:"deprecated,omitempty" json:"deprecated,omitempty" yaml:"deprecated,omitempty"`
+	Enum             []any                      `mapstructure:"enum,omitempty" json:"enum,omitempty" yaml:"enum,omitempty"`
+	Properties       map[string]*ConfigMetadata `mapstructure:"properties,omitempty" json:"properties,omitempty" yaml:"properties,omitempty"`
+	Values           *ConfigMetadata            `mapstructure:"values,omitempty" json:"values,omitempty" yaml:"values,omitempty"`
+	Required         []string                   `mapstructure:"required,omitempty" json:"required,omitempty" yaml:"required,omitempty"`
+	MinProperties    *int                       `mapstructure:"minProperties,omitempty" json:"minProperties,omitempty" yaml:"minProperties,omitempty"`
+	MaxProperties    *int                       `mapstructure:"maxProperties,omitempty" json:"maxProperties,omitempty" yaml:"maxProperties,omitempty"`
+	MinItems         *int                       `mapstructure:"minItems,omitempty" json:"minItems,omitempty" yaml:"minItems,omitempty"`
+	MaxItems         *int                       `mapstructure:"maxItems,omitempty" json:"maxItems,omitempty" yaml:"maxItems,omitempty"`
+	UniqueItems      bool                       `mapstructure:"uniqueItems,omitempty" json:"uniqueItems,omitempty" yaml:"uniqueItems,omitempty"`
+	MaxLength        *int                       `mapstructure:"maxLength,omitempty" json:"maxLength,omitempty" yaml:"maxLength,omitempty"`
+	MinLength        *int                       `mapstructure:"minLength,omitempty" json:"minLength,omitempty" yaml:"minLength,omitempty"`
+	Pattern          string                     `mapstructure:"pattern,omitempty" json:"pattern,omitempty" yaml:"pattern,omitempty"`
+	Format           string                     `mapstructure:"format,omitempty" json:"format,omitempty" yaml:"format,omitempty"`
+	Maximum          *float64                   `mapstructure:"maximum,omitempty" json:"maximum,omitempty" yaml:"maximum,omitempty"`
+	ExclusiveMaximum *float64                   `mapstructure:"exclusiveMaximum,omitempty" json:"exclusiveMaximum,omitempty" yaml:"exclusiveMaximum,omitempty"`
+	Minimum          *float64                   `mapstructure:"minimum,omitempty" json:"minimum,omitempty" yaml:"minimum,omitempty"`
+	ExclusiveMinimum *float64                   `mapstructure:"exclusiveMinimum,omitempty" json:"exclusiveMinimum,omitempty" yaml:"exclusiveMinimum,omitempty"`
 	// Additional custom fields
 	GoStruct   GoStructConfig `mapstructure:"go_struct,omitempty" json:"-" yaml:"go_struct,omitempty"`
 	GoType     string         `mapstructure:"x-customType,omitempty" json:"-" yaml:"x-customType,omitempty"`
@@ -79,7 +103,7 @@ func (g *GoStructConfig) Unmarshal(parser *confmap.Conf) error {
 
 func (md *ConfigsMetadata) Validate() error {
 	if md.Config != nil {
-		if md.Config.Type != "object" && md.Config.Type != "" {
+		if md.Config.Type != ObjectType && md.Config.Type != "" {
 			return fmt.Errorf("config type must be \"object\", got %q", md.Config.Type)
 		}
 		if err := md.Config.Validate(); err != nil {
@@ -175,11 +199,8 @@ func (md *ConfigMetadata) MergeFrom(other *ConfigMetadata) {
 		}
 	}
 	// *ConfigMetadata
-	if md.AdditionalProperties == nil {
-		md.AdditionalProperties = other.AdditionalProperties.Clone()
-	}
-	if md.Items == nil {
-		md.Items = other.Items.Clone()
+	if md.Values == nil {
+		md.Values = other.Values.Clone()
 	}
 
 	// *int
@@ -287,14 +308,12 @@ func cloneAny(v any) any {
 func (md *ConfigMetadata) Validate() error {
 	var errs error
 
-	switch md.Type {
-	case "object":
-	case "":
-		if len(md.Properties) == 0 && md.AdditionalProperties == nil && md.Ref == "" {
+	if md.Type == "" || md.Type == ObjectType {
+		if len(md.Properties) == 0 && md.Ref == "" {
 			errs = errors.Join(errs, errors.New("config must specify at least one property"))
 		}
 	}
-	if len(md.Enum) > 0 && (md.Type == "object" || md.Type == "array") {
+	if len(md.Enum) > 0 && (md.Type == ObjectType || md.Type == "array" || md.Type == SliceType || md.Type == MapType) {
 		errs = errors.Join(errs, fmt.Errorf("enum is not supported for type %q", md.Type))
 	}
 	for name, prop := range md.Properties {
@@ -302,13 +321,8 @@ func (md *ConfigMetadata) Validate() error {
 			errs = errors.Join(errs, fmt.Errorf("property %q is invalid: %w", name, err))
 		}
 	}
-	if md.AdditionalProperties != nil {
-		if err := md.AdditionalProperties.Validate(); err != nil {
-			errs = errors.Join(errs, err)
-		}
-	}
-	if md.Items != nil {
-		if err := md.Items.Validate(); err != nil {
+	if md.Values != nil {
+		if err := md.Values.Validate(); err != nil {
 			errs = errors.Join(errs, err)
 		}
 	}

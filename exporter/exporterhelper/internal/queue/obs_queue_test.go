@@ -64,7 +64,8 @@ func TestObsQueueLogsSizeCapacity(t *testing.T) {
 			{
 				Attributes: attribute.NewSet(
 					attribute.String(exporterKey, exporterID.String()),
-					attribute.String(dataTypeKey, pipeline.SignalLogs.String())),
+					attribute.String(dataTypeKey, pipeline.SignalLogs.String()),
+				),
 				Value: int64(7),
 			},
 		}, metricdatatest.IgnoreTimestamp())
@@ -73,7 +74,8 @@ func TestObsQueueLogsSizeCapacity(t *testing.T) {
 			{
 				Attributes: attribute.NewSet(
 					attribute.String(exporterKey, exporterID.String()),
-					attribute.String(dataTypeKey, pipeline.SignalLogs.String())),
+					attribute.String(dataTypeKey, pipeline.SignalLogs.String()),
+				),
 				Value: int64(9),
 			},
 		}, metricdatatest.IgnoreTimestamp())
@@ -94,7 +96,8 @@ func TestObsQueueLogsFailure(t *testing.T) {
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(exporterKey, exporterID.String())),
+					attribute.String(exporterKey, exporterID.String()),
+				),
 				Value: int64(2),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -116,7 +119,8 @@ func TestObsQueueTracesSizeCapacity(t *testing.T) {
 			{
 				Attributes: attribute.NewSet(
 					attribute.String(exporterKey, exporterID.String()),
-					attribute.String(dataTypeKey, pipeline.SignalTraces.String())),
+					attribute.String(dataTypeKey, pipeline.SignalTraces.String()),
+				),
 				Value: int64(17),
 			},
 		}, metricdatatest.IgnoreTimestamp())
@@ -125,7 +129,8 @@ func TestObsQueueTracesSizeCapacity(t *testing.T) {
 			{
 				Attributes: attribute.NewSet(
 					attribute.String(exporterKey, exporterID.String()),
-					attribute.String(dataTypeKey, pipeline.SignalTraces.String())),
+					attribute.String(dataTypeKey, pipeline.SignalTraces.String()),
+				),
 				Value: int64(19),
 			},
 		}, metricdatatest.IgnoreTimestamp())
@@ -146,7 +151,8 @@ func TestObsQueueTracesFailure(t *testing.T) {
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(exporterKey, exporterID.String())),
+					attribute.String(exporterKey, exporterID.String()),
+				),
 				Value: int64(12),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -168,7 +174,8 @@ func TestObsQueueMetrics(t *testing.T) {
 			{
 				Attributes: attribute.NewSet(
 					attribute.String(exporterKey, exporterID.String()),
-					attribute.String(dataTypeKey, pipeline.SignalMetrics.String())),
+					attribute.String(dataTypeKey, pipeline.SignalMetrics.String()),
+				),
 				Value: int64(27),
 			},
 		}, metricdatatest.IgnoreTimestamp())
@@ -177,7 +184,8 @@ func TestObsQueueMetrics(t *testing.T) {
 			{
 				Attributes: attribute.NewSet(
 					attribute.String(exporterKey, exporterID.String()),
-					attribute.String(dataTypeKey, pipeline.SignalMetrics.String())),
+					attribute.String(dataTypeKey, pipeline.SignalMetrics.String()),
+				),
 				Value: int64(29),
 			},
 		}, metricdatatest.IgnoreTimestamp())
@@ -198,7 +206,8 @@ func TestObsQueueMetricsFailure(t *testing.T) {
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(exporterKey, exporterID.String())),
+					attribute.String(exporterKey, exporterID.String()),
+				),
 				Value: int64(22),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -220,7 +229,8 @@ func TestObsQueueProfiles(t *testing.T) {
 			{
 				Attributes: attribute.NewSet(
 					attribute.String(exporterKey, exporterID.String()),
-					attribute.String(dataTypeKey, xpipeline.SignalProfiles.String())),
+					attribute.String(dataTypeKey, xpipeline.SignalProfiles.String()),
+				),
 				Value: int64(27),
 			},
 		}, metricdatatest.IgnoreTimestamp())
@@ -229,7 +239,8 @@ func TestObsQueueProfiles(t *testing.T) {
 			{
 				Attributes: attribute.NewSet(
 					attribute.String(exporterKey, exporterID.String()),
-					attribute.String(dataTypeKey, xpipeline.SignalProfiles.String())),
+					attribute.String(dataTypeKey, xpipeline.SignalProfiles.String()),
+				),
 				Value: int64(29),
 			},
 		}, metricdatatest.IgnoreTimestamp())
@@ -250,7 +261,8 @@ func TestObsQueueProfilesFailure(t *testing.T) {
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(exporterKey, exporterID.String())),
+					attribute.String(exporterKey, exporterID.String()),
+				),
 				Value: int64(22),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -271,7 +283,8 @@ func TestObsQueueLogsBatchSize(t *testing.T) {
 		[]metricdata.HistogramDataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(exporterKey, exporterID.String())),
+					attribute.String(exporterKey, exporterID.String()),
+				),
 				Count:        1,
 				Bounds:       []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
 				BucketCounts: []uint64{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -297,7 +310,8 @@ func TestObsQueueTracesBatchSize(t *testing.T) {
 		[]metricdata.HistogramDataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(exporterKey, exporterID.String())),
+					attribute.String(exporterKey, exporterID.String()),
+				),
 				Count:        1,
 				Bounds:       []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
 				BucketCounts: []uint64{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -323,7 +337,8 @@ func TestObsQueueMetricsBatchSize(t *testing.T) {
 		[]metricdata.HistogramDataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(exporterKey, exporterID.String())),
+					attribute.String(exporterKey, exporterID.String()),
+				),
 				Count:        1,
 				Bounds:       []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
 				BucketCounts: []uint64{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -349,7 +364,8 @@ func TestObsQueueProfilesBatchSize(t *testing.T) {
 		[]metricdata.HistogramDataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String(exporterKey, exporterID.String())),
+					attribute.String(exporterKey, exporterID.String()),
+				),
 				Count:        1,
 				Bounds:       []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
 				BucketCounts: []uint64{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
