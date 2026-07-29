@@ -369,16 +369,50 @@ func TestPartitionBatcher_ConcurrentConsumeAndShutdown(t *testing.T) {
 		ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(4), sink.Export, zap.NewNop(), nil)
 		require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
+		done := newFakeDone()
 		var wg sync.WaitGroup
 		for range 8 {
 			wg.Go(func() {
-				ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 1, Bytes: 1}, newFakeDone())
+				ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 1, Bytes: 1}, done)
 			})
 		}
 
 		require.NoError(t, ba.Shutdown(context.Background()))
 		wg.Wait()
+
+		// Every request must be exported, whether it was flushed by a worker or, if it raced
+		// with the shutdown, synchronously by the Consume caller. None may be dropped.
+		assert.Equal(t, 8, sink.ItemsCount())
+		assert.EqualValues(t, 0, done.errors.Load())
+		assert.EqualValues(t, 8, done.success.Load())
 	}
+}
+
+// TestPartitionBatcher_ConsumeAfterShutdownExportsBatch covers the window where a flush
+// starts after shutdown has begun waiting on stopWG. This is reachable in production when
+// multiBatcher evicts a partition from its LRU while a Consume call still holds a reference
+// to it. The batch cannot be handed to a worker at that point, so flush() must export it
+// synchronously rather than fail it.
+func TestPartitionBatcher_ConsumeAfterShutdownExportsBatch(t *testing.T) {
+	cfg := BatchConfig{
+		FlushTimeout: 200 * time.Second,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      100,
+	}
+
+	sink := requesttest.NewSink()
+	ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(1), sink.Export, zap.NewNop(), nil)
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, ba.Shutdown(context.Background()))
+
+	// The partition is stopped, so Consume flushes inline instead of waiting for the timer.
+	done := newFakeDone()
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, Bytes: 8}, done)
+
+	assert.Equal(t, 1, sink.RequestsCount())
+	assert.Equal(t, 8, sink.ItemsCount())
+	assert.EqualValues(t, 0, done.errors.Load())
+	assert.EqualValues(t, 1, done.success.Load())
 }
 
 func TestPartitionBatcher_MergeError(t *testing.T) {
