@@ -18,11 +18,10 @@ import (
 
 const embeddedSchemaFileName = "schema.go"
 
-var componentSchemaFileNames = []string{
-	"config.schema.json",
-	"config.schema.yaml",
-	"config.schema.yml",
-}
+// componentSchemaFileName is the only schema artifact accepted for embedding.
+// config.schema.yaml / .yml are unresolved bootstrap files with dangling $refs;
+// only config.schema.json (written by mdatagen) is fully resolved and self-contained.
+const componentSchemaFileName = "config.schema.json"
 
 type componentSchemaRef struct {
 	section schemagen.CollectorSection
@@ -76,7 +75,7 @@ func buildEmbeddedSchema(cfg *Config, resolveModuleDir func(string) (string, err
 
 func buildEmbeddedSchemaWithDeps(cfg *Config, deps builderDeps, resolveModuleDir func(string) (string, error)) ([]byte, error) {
 	parts := schemagen.CollectorSchemaParts{}
-	schemaCount := 0
+	schemaFileCount := 0
 
 	for _, ref := range deps.selectedComponentSchemaRefs(cfg) {
 		modulePath, _, _ := strings.Cut(ref.module.GoMod, " ")
@@ -85,15 +84,14 @@ func buildEmbeddedSchemaWithDeps(cfg *Config, deps builderDeps, resolveModuleDir
 			return nil, fmt.Errorf("failed to resolve module directory for %q: %w", modulePath, err)
 		}
 
-		componentSchema, ok, err := loadCollectorComponentSchema(moduleDir)
+		componentSchema, hasSchemaFile, err := loadCollectorComponentSchema(moduleDir)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load component schema for %q: %w", modulePath, err)
 		}
-		if !ok {
-			continue
+		if hasSchemaFile {
+			schemaFileCount++
 		}
 
-		schemaCount++
 		switch ref.section {
 		case schemagen.CollectorSectionReceivers:
 			parts.Receivers = append(parts.Receivers, componentSchema)
@@ -110,7 +108,7 @@ func buildEmbeddedSchemaWithDeps(cfg *Config, deps builderDeps, resolveModuleDir
 		}
 	}
 
-	if schemaCount == 0 {
+	if schemaFileCount == 0 {
 		return nil, nil
 	}
 
@@ -159,54 +157,44 @@ func loadCollectorComponentSchema(moduleDir string) (schemagen.CollectorComponen
 		return schemagen.CollectorComponentSchema{}, false, errors.New("metadata.yaml missing component type")
 	}
 
-	schemaBytes, schemaFileName, found, err := readComponentSchemaFile(moduleDir)
+	result := schemagen.CollectorComponentSchema{
+		Type:           metadata.Type,
+		DeprecatedType: metadata.DeprecatedType,
+	}
+
+	schemaBytes, found, err := readComponentSchemaFile(moduleDir)
 	if err != nil {
 		return schemagen.CollectorComponentSchema{}, false, err
 	}
 	if !found {
-		return schemagen.CollectorComponentSchema{}, false, nil
+		return result, false, nil
 	}
 
 	componentSchema, err := parseComponentConfigSchema(schemaBytes)
 	if err != nil {
-		return schemagen.CollectorComponentSchema{}, false, fmt.Errorf("failed to parse %s: %w", schemaFileName, err)
+		return schemagen.CollectorComponentSchema{}, false, fmt.Errorf("failed to parse %s: %w", componentSchemaFileName, err)
 	}
 
-	return schemagen.CollectorComponentSchema{
-		Type:           metadata.Type,
-		DeprecatedType: metadata.DeprecatedType,
-		Schema:         componentSchema,
-	}, true, nil
+	result.Schema = componentSchema
+	return result, true, nil
 }
 
-func readComponentSchemaFile(moduleDir string) ([]byte, string, bool, error) {
-	for _, schemaFileName := range componentSchemaFileNames {
-		schemaPath := filepath.Join(moduleDir, schemaFileName)
-		// #nosec G304 -- moduleDir is resolved from go mod list command output
-		schemaBytes, err := os.ReadFile(schemaPath)
-		if err == nil {
-			return schemaBytes, schemaFileName, true, nil
-		}
-		if errors.Is(err, os.ErrNotExist) {
-			continue
-		}
-		return nil, "", false, fmt.Errorf("failed to read %s: %w", schemaFileName, err)
+func readComponentSchemaFile(moduleDir string) ([]byte, bool, error) {
+	schemaPath := filepath.Join(moduleDir, componentSchemaFileName)
+	// #nosec G304 -- moduleDir is resolved from go mod list command output
+	schemaBytes, err := os.ReadFile(schemaPath)
+	if err == nil {
+		return schemaBytes, true, nil
 	}
-
-	return nil, "", false, nil
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, false, nil
+	}
+	return nil, false, fmt.Errorf("failed to read %s: %w", componentSchemaFileName, err)
 }
 
 func parseComponentConfigSchema(schemaBytes []byte) (*schemagen.JSONSchema, error) {
-	var raw map[string]any
-	if err := yaml.Unmarshal(schemaBytes, &raw); err != nil {
-		return nil, err
-	}
-	jsonBytes, err := json.Marshal(raw)
-	if err != nil {
-		return nil, err
-	}
 	var schema schemagen.JSONSchema
-	if err := json.Unmarshal(jsonBytes, &schema); err != nil {
+	if err := json.Unmarshal(schemaBytes, &schema); err != nil {
 		return nil, err
 	}
 	return &schema, nil

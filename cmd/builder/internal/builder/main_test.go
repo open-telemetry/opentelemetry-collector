@@ -610,6 +610,80 @@ func TestBuildEmbeddedSchemaWithoutAvailableSchemas(t *testing.T) {
 	require.Nil(t, schemaBytes)
 }
 
+func TestBuildEmbeddedSchemaJSONOnlyAndPermissiveFallback(t *testing.T) {
+	t.Parallel()
+
+	withJSON := writeSchemaModule(t, componentSchemaMetadata{Type: "otlp"}, map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			"endpoint": map[string]any{"type": "string"},
+		},
+	})
+
+	yamlOnly := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(yamlOnly, "metadata.yaml"), []byte("type: yaml_only\n"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(yamlOnly, "config.schema.yaml"), []byte("type: object\nproperties:\n  leaked:\n    type: string\n"), 0o600))
+
+	noSchema := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(noSchema, "metadata.yaml"), []byte("type: nop\ndeprecated_type: nop_legacy\n"), 0o600))
+
+	cfg := newTestConfig(t)
+	cfg.Receivers = []Module{
+		{GoMod: "example.com/withjson v0.0.1"},
+		{GoMod: "example.com/yamlonly v0.0.1"},
+		{GoMod: "example.com/noschema v0.0.1"},
+	}
+
+	schemaBytes, err := buildEmbeddedSchema(cfg, func(modulePath string) (string, error) {
+		switch modulePath {
+		case "example.com/withjson":
+			return withJSON, nil
+		case "example.com/yamlonly":
+			return yamlOnly, nil
+		case "example.com/noschema":
+			return noSchema, nil
+		default:
+			return "", fmt.Errorf("unexpected module path %q", modulePath)
+		}
+	})
+	require.NoError(t, err)
+	require.NotNil(t, schemaBytes)
+
+	var schema map[string]any
+	require.NoError(t, json.Unmarshal(schemaBytes, &schema))
+	receivers := schema["properties"].(map[string]any)["receivers"].(map[string]any)
+	patterns := receivers["patternProperties"].(map[string]any)
+
+	otlpSchema := patterns["^otlp(?:/.+)?$"].(map[string]any)
+	require.Equal(t, "object", otlpSchema["type"])
+	require.Contains(t, otlpSchema["properties"].(map[string]any), "endpoint")
+
+	// Empty/permissive schemas marshal as JSON Schema boolean true.
+	require.Equal(t, true, patterns["^yaml_only(?:/.+)?$"])
+	require.NotContains(t, string(schemaBytes), "leaked")
+
+	require.Equal(t, true, patterns["^nop(?:/.+)?$"])
+	require.Equal(t, true, patterns["^nop_legacy(?:/.+)?$"].(map[string]any)["deprecated"])
+}
+
+func TestBuildEmbeddedSchemaIgnoresYAMLOnlyModules(t *testing.T) {
+	t.Parallel()
+
+	yamlOnly := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(yamlOnly, "metadata.yaml"), []byte("type: otlp\n"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(yamlOnly, "config.schema.yaml"), []byte("type: object\nproperties:\n  endpoint:\n    type: string\n"), 0o600))
+
+	cfg := newTestConfig(t)
+	cfg.Receivers = []Module{{GoMod: "example.com/receiver v0.0.1"}}
+
+	schemaBytes, err := buildEmbeddedSchema(cfg, func(modulePath string) (string, error) {
+		require.Equal(t, "example.com/receiver", modulePath)
+		return yamlOnly, nil
+	})
+	require.NoError(t, err)
+	require.Nil(t, schemaBytes)
+}
+
 func TestWriteEmbeddedSchemaSourceFile(t *testing.T) {
 	t.Parallel()
 
@@ -659,25 +733,53 @@ func TestLoadCollectorComponentSchemaErrors(t *testing.T) {
 		require.ErrorContains(t, err, "failed to parse config.schema.json")
 	})
 
-	t.Run("yaml fallback", func(t *testing.T) {
+	t.Run("yaml schema ignored", func(t *testing.T) {
 		dir := t.TempDir()
 		require.NoError(t, os.WriteFile(filepath.Join(dir, "metadata.yaml"), []byte("type: otlp\n"), 0o600))
 		require.NoError(t, os.WriteFile(filepath.Join(dir, "config.schema.yaml"), []byte("type: object\nproperties:\n  endpoint:\n    type: string\n"), 0o600))
-		schema, ok, err := loadCollectorComponentSchema(dir)
+		schema, hasSchemaFile, err := loadCollectorComponentSchema(dir)
 		require.NoError(t, err)
-		require.True(t, ok)
-		require.Equal(t, "object", schema.Schema.Type)
-		require.Equal(t, "string", schema.Schema.Properties["endpoint"].Type)
+		require.False(t, hasSchemaFile)
+		require.Equal(t, "otlp", schema.Type)
+		require.Nil(t, schema.Schema)
 	})
 
-	t.Run("yml fallback", func(t *testing.T) {
+	t.Run("yml schema ignored", func(t *testing.T) {
 		dir := t.TempDir()
 		require.NoError(t, os.WriteFile(filepath.Join(dir, "metadata.yaml"), []byte("type: otlp\n"), 0o600))
 		require.NoError(t, os.WriteFile(filepath.Join(dir, "config.schema.yml"), []byte("type: object\n"), 0o600))
-		schema, ok, err := loadCollectorComponentSchema(dir)
+		schema, hasSchemaFile, err := loadCollectorComponentSchema(dir)
 		require.NoError(t, err)
-		require.True(t, ok)
+		require.False(t, hasSchemaFile)
+		require.Equal(t, "otlp", schema.Type)
+		require.Nil(t, schema.Schema)
+	})
+
+	t.Run("no schema file still registers type", func(t *testing.T) {
+		dir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "metadata.yaml"), []byte("type: nop\ndeprecated_type: nop_legacy\n"), 0o600))
+		schema, hasSchemaFile, err := loadCollectorComponentSchema(dir)
+		require.NoError(t, err)
+		require.False(t, hasSchemaFile)
+		require.Equal(t, "nop", schema.Type)
+		require.Equal(t, "nop_legacy", schema.DeprecatedType)
+		require.Nil(t, schema.Schema)
+	})
+
+	t.Run("json schema loaded", func(t *testing.T) {
+		dir := writeSchemaModule(t, componentSchemaMetadata{Type: "otlp", DeprecatedType: "otlp_legacy"}, map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"endpoint": map[string]any{"type": "string"},
+			},
+		})
+		schema, hasSchemaFile, err := loadCollectorComponentSchema(dir)
+		require.NoError(t, err)
+		require.True(t, hasSchemaFile)
+		require.Equal(t, "otlp", schema.Type)
+		require.Equal(t, "otlp_legacy", schema.DeprecatedType)
 		require.Equal(t, "object", schema.Schema.Type)
+		require.Equal(t, "string", schema.Schema.Properties["endpoint"].Type)
 	})
 
 	t.Run("schema read error", func(t *testing.T) {

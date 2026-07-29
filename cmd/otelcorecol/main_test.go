@@ -15,6 +15,9 @@ import (
 func TestNewCollectorSettingsIncludesEmbeddedSchema(t *testing.T) {
 	set := newCollectorSettings()
 
+	// No component in this distribution currently ships a resolved config.schema.json,
+	// so the builder embeds an empty schema rather than a document of dangling refs.
+	require.Nil(t, embeddedConfigSchema)
 	require.Equal(t, embeddedConfigSchema, set.ConfigSchema)
 	require.Equal(t, "otelcorecol", set.BuildInfo.Command)
 	require.Equal(t, "Local OpenTelemetry Collector binary, testing only.", set.BuildInfo.Description)
@@ -33,6 +36,7 @@ func TestRunMainSuccess(t *testing.T) {
 	})
 
 	require.False(t, exitCalled)
+	require.Nil(t, embeddedConfigSchema)
 	require.Equal(t, embeddedConfigSchema, got.ConfigSchema)
 }
 
@@ -60,6 +64,7 @@ func TestMain(t *testing.T) {
 	exitCalled := false
 	runCollector = func(set otelcol.CollectorSettings) error {
 		runCalled = true
+		require.Nil(t, embeddedConfigSchema)
 		require.Equal(t, embeddedConfigSchema, set.ConfigSchema)
 		return nil
 	}
