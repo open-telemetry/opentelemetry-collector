@@ -102,7 +102,7 @@ type SystemCPUUtilizationV1MetricAttributeKey string
 
 const (
 	SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber SystemCPUUtilizationV1MetricAttributeKey = "cpu.logical_number"
-	SystemCPUUtilizationV1MetricAttributeKeyState            SystemCPUUtilizationV1MetricAttributeKey = "state"
+	SystemCPUUtilizationV1MetricAttributeKeyCPUMode          SystemCPUUtilizationV1MetricAttributeKey = "cpu.mode"
 )
 
 // SystemCPUUtilizationV1MetricConfig provides config for the system.cpu.utilization@v1 metric.
@@ -131,9 +131,9 @@ func (ms *SystemCPUUtilizationV1MetricConfig) Unmarshal(parser *confmap.Conf) er
 func (ms *SystemCPUUtilizationV1MetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber, SystemCPUUtilizationV1MetricAttributeKeyState:
+		case SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber, SystemCPUUtilizationV1MetricAttributeKeyCPUMode:
 		default:
-			return fmt.Errorf("metric system.cpu.utilization@v1 doesn't have an attribute %v, valid attributes: [cpu.logical_number, state]", val)
+			return fmt.Errorf("metric system.cpu.utilization@v1 doesn't have an attribute %v, valid attributes: [cpu.logical_number, cpu.mode]", val)
 		}
 	}
 
@@ -146,13 +146,13 @@ func (ms *SystemCPUUtilizationV1MetricConfig) Validate() error {
 	return nil
 }
 
-// SystemMemoryLinuxAvailableMetricConfig provides config for the system.memory.linux.available metric.
-type SystemMemoryLinuxAvailableMetricConfig struct {
+// SystemMemoryLinuxAvailableV1MetricConfig provides config for the system.memory.linux.available@v1 metric.
+type SystemMemoryLinuxAvailableV1MetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SystemMemoryLinuxAvailableMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemMemoryLinuxAvailableV1MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -168,11 +168,11 @@ func (ms *SystemMemoryLinuxAvailableMetricConfig) Unmarshal(parser *confmap.Conf
 
 // MetricsConfig provides config for samplemigration metrics.
 type MetricsConfig struct {
-	LinuxMemoryAvailable       LinuxMemoryAvailableMetricConfig       `mapstructure:"linux.memory.available"`
-	SystemCPUFoo               SystemCPUFooMetricConfig               `mapstructure:"system.cpu.foo"`
-	SystemCPUUtilization       SystemCPUUtilizationMetricConfig       `mapstructure:"system.cpu.utilization"`
-	SystemCPUUtilizationV1     SystemCPUUtilizationV1MetricConfig     `mapstructure:"system.cpu.utilization@v1"`
-	SystemMemoryLinuxAvailable SystemMemoryLinuxAvailableMetricConfig `mapstructure:"system.memory.linux.available"`
+	LinuxMemoryAvailable         LinuxMemoryAvailableMetricConfig         `mapstructure:"linux.memory.available"`
+	SystemCPUFoo                 SystemCPUFooMetricConfig                 `mapstructure:"system.cpu.foo"`
+	SystemCPUUtilization         SystemCPUUtilizationMetricConfig         `mapstructure:"system.cpu.utilization"`
+	SystemCPUUtilizationV1       SystemCPUUtilizationV1MetricConfig       `mapstructure:"system.cpu.utilization@v1"`
+	SystemMemoryLinuxAvailableV1 SystemMemoryLinuxAvailableV1MetricConfig `mapstructure:"system.memory.linux.available@v1"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -191,9 +191,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		SystemCPUUtilizationV1: SystemCPUUtilizationV1MetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SystemCPUUtilizationV1MetricAttributeKey{SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber, SystemCPUUtilizationV1MetricAttributeKeyState},
+			EnabledAttributes:   []SystemCPUUtilizationV1MetricAttributeKey{SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber, SystemCPUUtilizationV1MetricAttributeKeyCPUMode},
 		},
-		SystemMemoryLinuxAvailable: SystemMemoryLinuxAvailableMetricConfig{
+		SystemMemoryLinuxAvailableV1: SystemMemoryLinuxAvailableV1MetricConfig{
 			Enabled: false,
 		},
 	}
