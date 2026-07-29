@@ -57,25 +57,25 @@ func TestProfilesTextSampleAttributeValues(t *testing.T) {
 		setValue func(pcommon.Value)
 		expected string
 	}{
-		{name: "empty", setValue: func(_ pcommon.Value) {}, expected: "<nil>"},
-		{name: "string", setValue: func(v pcommon.Value) { v.SetStr("value") }, expected: "value"},
-		{name: "integer", setValue: func(v pcommon.Value) { v.SetInt(42) }, expected: "42"},
-		{name: "double", setValue: func(v pcommon.Value) { v.SetDouble(3.14) }, expected: "3.14"},
-		{name: "boolean", setValue: func(v pcommon.Value) { v.SetBool(true) }, expected: "true"},
+		{name: "empty", setValue: func(_ pcommon.Value) {}, expected: "Empty()"},
+		{name: "string", setValue: func(v pcommon.Value) { v.SetStr("value") }, expected: "Str(value)"},
+		{name: "integer", setValue: func(v pcommon.Value) { v.SetInt(42) }, expected: "Int(42)"},
+		{name: "double", setValue: func(v pcommon.Value) { v.SetDouble(3.14) }, expected: "Double(3.14)"},
+		{name: "boolean", setValue: func(v pcommon.Value) { v.SetBool(true) }, expected: "Bool(true)"},
 		{
 			name:     "bytes",
 			setValue: func(v pcommon.Value) { v.SetEmptyBytes().FromRaw([]byte{1, 2, 3}) },
-			expected: "[1 2 3]",
+			expected: "Bytes(AQID)",
 		},
 		{
 			name:     "map",
 			setValue: func(v pcommon.Value) { _ = v.SetEmptyMap().FromRaw(map[string]any{"nested": "value"}) },
-			expected: "map[nested:value]",
+			expected: `Map({"nested":"value"})`,
 		},
 		{
 			name:     "slice",
 			setValue: func(v pcommon.Value) { _ = v.SetEmptySlice().FromRaw([]any{"value", true}) },
-			expected: "[value true]",
+			expected: `Slice(["value",true])`,
 		},
 	}
 

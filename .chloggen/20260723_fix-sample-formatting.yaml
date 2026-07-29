@@ -15,7 +15,10 @@ issues: [15647]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  Previously, non-string values produced malformed output such as `%!s(int64=42)`.
+  Profile sample attributes now use the debug exporter's typed attribute format, such as `Int(42)`.
+  This will also change strings from `hello-world` to `Str(hello-world)`.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
