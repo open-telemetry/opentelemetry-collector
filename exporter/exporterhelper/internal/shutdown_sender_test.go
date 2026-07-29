@@ -57,7 +57,8 @@ func TestShutdownSender(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ss := newShutdownSender[request.Request](
-				sender.NewSender(func(context.Context, request.Request) error { return tt.sendErr }))
+				sender.NewSender(func(context.Context, request.Request) error { return tt.sendErr }),
+			)
 
 			if tt.afterShutdown {
 				require.NoError(t, ss.Shutdown(context.Background()))
