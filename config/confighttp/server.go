@@ -145,28 +145,40 @@ func NewDefaultServerConfig() ServerConfig {
 
 var _ confmap.Unmarshaler = (*ServerConfig)(nil)
 
-// Unmarshal implements confmap.Unmarshaler. It rejects configurations mixing the
-// deprecated keepalive fields with the 'keepalive' section and records deprecation
-// warnings for ToServer to log. Only keys present in the configuration count:
-// values set programmatically (e.g. by a component's default config) are neither
-// deprecated usage nor a conflict.
+// Unmarshal implements confmap.Unmarshaler. The keepalive settings can arrive
+// through two representations (the deprecated flat fields and the 'keepalive'
+// section) and two channels (programmatic changes to the struct and the
+// configuration). Unmarshal resolves them by folding everything into the
+// deprecated fields, in order of increasing precedence:
 //
-// The 'keepalive' section is folded into the deprecated fields, which stay the
-// source of truth during their deprecation window, and Keepalive is always reset
-// to None afterwards.
+//  1. programmatic values already on the struct, in either representation;
+//  2. deprecated keys present in the configuration;
+//  3. the 'keepalive' section present in the configuration.
+//
+// Mixing 2 and 3 is rejected, so their relative precedence never matters in
+// practice. Deprecated keys in the configuration are also recorded as warnings
+// for ToServer to log. Only keys present in the configuration count for the
+// error and the warnings: programmatic values are neither deprecated usage nor
+// a conflict.
+//
+// The deprecated fields end up holding the effective settings and remain the
+// sole source of truth for ToServer during their deprecation window; Keepalive
+// is always left as None.
 func (sc *ServerConfig) Unmarshal(conf *confmap.Conf) error {
-	// Fold a Keepalive set programmatically (e.g. by a component's default
-	// config) into the deprecated fields, so that the configuration decodes
-	// over it below.
+	// Step 1: fold a programmatically set Keepalive into the deprecated
+	// fields. This must precede decoding so that the configuration overrides
+	// it. A present value can only mean keep-alives enabled with these
+	// settings.
 	if ka := sc.Keepalive.Get(); ka != nil {
 		sc.IdleTimeout = ka.IdleTimeout
 		sc.KeepAlivesEnabled = true
 	}
-	// Read before unmarshaling: decoding the Optional consumes the 'enabled' key.
-	keepaliveDisabled := conf.Get("keepalive::enabled") == false
 
-	// WithIgnoreUnused is needed because ServerConfig is commonly squash-embedded
-	// into component configs, in which case conf also holds the parent's sibling fields.
+	// Step 2: decode the configuration. Deprecated keys overwrite their
+	// fields directly; the 'keepalive' section decodes into Keepalive and is
+	// folded in step 4. WithIgnoreUnused is needed because ServerConfig is
+	// commonly squash-embedded into component configs, in which case conf
+	// also holds the parent's sibling fields.
 	if err := conf.Unmarshal(sc, confmap.WithIgnoreUnused()); err != nil {
 		return err
 	}
@@ -176,9 +188,11 @@ func (sc *ServerConfig) Unmarshal(conf *confmap.Conf) error {
 	// unset to keep marshaled configurations loadable.
 	keepaliveSet := conf.IsSet("keepalive") && conf.Get("keepalive") != nil
 
-	// Values which are no-ops in the legacy logic (a zero idle_timeout, or
-	// keep_alives_enabled: true) neither conflict with the 'keepalive' section
-	// nor deserve a warning.
+	// Step 3: with the decoded values at hand, reject configurations mixing
+	// both representations, and record uses of the deprecated keys for
+	// ToServer to warn about. Values which are no-ops in the legacy logic (a
+	// zero idle_timeout, or keep_alives_enabled: true) neither conflict with
+	// the 'keepalive' section nor deserve a warning.
 	var deprecated []string
 	if conf.IsSet("idle_timeout") && sc.IdleTimeout != 0 {
 		deprecated = append(deprecated, "'idle_timeout' is deprecated; use 'keepalive::idle_timeout' instead")
@@ -191,21 +205,23 @@ func (sc *ServerConfig) Unmarshal(conf *confmap.Conf) error {
 	}
 	sc.deprecationWarnings = deprecated
 
-	// Fold the 'keepalive' section into the deprecated fields. Only keys
-	// present in the configuration are copied; the deprecated fields supply
-	// the values for the rest.
+	// Step 4: fold the decoded 'keepalive' section into the deprecated
+	// fields. Only keys present in the configuration are copied; the
+	// deprecated fields keep supplying the values for the rest. Decoding
+	// leaves Keepalive without a value only for 'keepalive::enabled: false',
+	// so a present section fully determines whether keep-alives are on.
 	if keepaliveSet {
 		if ka := sc.Keepalive.Get(); ka != nil {
 			if conf.IsSet("keepalive::idle_timeout") {
 				sc.IdleTimeout = ka.IdleTimeout
 			}
 		}
-		// The section's presence determines keep-alives: enabled unless
-		// 'keepalive::enabled' is false.
-		sc.KeepAlivesEnabled = !keepaliveDisabled
+		sc.KeepAlivesEnabled = sc.Keepalive.HasValue()
 	}
 
-	// Keepalive is always None after unmarshaling; see the field documentation.
+	// Step 5: the deprecated fields now hold the effective settings; restore
+	// the invariant that Keepalive is None after unmarshaling (see the field
+	// documentation).
 	sc.Keepalive = configoptional.None[KeepaliveServerConfig]()
 	return nil
 }
