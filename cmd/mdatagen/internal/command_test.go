@@ -691,13 +691,13 @@ func TestInjectInternalMetadataDefs(t *testing.T) {
 
 		require.Contains(t, src.ExportedConfigs, "resource_attributes_config")
 		resourceAttributes := src.ExportedConfigs["resource_attributes_config"]
-		require.Equal(t, "object", resourceAttributes.Type)
+		require.Equal(t, schemagen.ObjectType, resourceAttributes.Type)
 		require.True(t, resourceAttributes.InternalOnly)
 		require.Contains(t, resourceAttributes.Properties, "service.name")
 
 		resourceAttribute := resourceAttributes.Properties["service.name"]
 		require.Contains(t, resourceAttribute.Properties, "enabled")
-		require.Equal(t, "boolean", resourceAttribute.Properties["enabled"].Type)
+		require.Equal(t, schemagen.BoolType, resourceAttribute.Properties["enabled"].Type)
 		require.Equal(t, true, resourceAttribute.Properties["enabled"].Default)
 	})
 

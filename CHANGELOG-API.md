@@ -7,6 +7,31 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.63.0/v0.157.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/config/configgrpc`: Remove the `BalancerName` function (#9477)
+  Use the `DefaultBalancerName` constant instead.
+
+### 🚩 Deprecations 🚩
+
+- `pkg/xconfmap`: Deprecate `WithForceUnmarshaler` option. (#15614)
+  Use `confmap.WithForceUnmarshaler` instead.
+
+### 🚀 New components 🚀
+
+- `pkg/config/configstorage`: Add a new configstorage module to support storage configuration fields. (#5832)
+
+### 💡 Enhancements 💡
+
+- `pkg/confmap`: Add `WithForceUnmarshaler` option. (#15614)
+  This option allows forcing the top-level Unmarshal method even if the Conf is
+  already a parameter from an Unmarshal method. See the Godoc for more details.
+  
+
+<!-- previous-version -->
+
 ## v1.62.0/v0.156.0
 
 ### 🛑 Breaking changes 🛑
