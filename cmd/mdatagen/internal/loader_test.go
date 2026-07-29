@@ -83,7 +83,6 @@ func TestLoadMetadata(t *testing.T) {
 								Ref:   "./internal/metadata.metrics_builder_config",
 								Embed: true,
 								GoStruct: cfggen.GoStructConfig{
-									Anonymous:     true,
 									IgnoreDefault: true,
 								},
 							},

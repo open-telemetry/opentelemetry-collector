@@ -24,7 +24,7 @@
           "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
         }
       },
-      "description": "Defines common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed."
+      "description": "Defines common settings for a scraper controller configuration. Scraper controller receivers should include this struct as a named field with a mapstructure squash tag, instead of receiver.Settings, and extend it with more fields if needed."
     }
   },
   "title": "pkg/scraperhelper"

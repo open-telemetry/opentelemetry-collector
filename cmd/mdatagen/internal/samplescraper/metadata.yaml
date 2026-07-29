@@ -32,13 +32,9 @@ config:
     controller_config:
       $ref: /scraper/scraperhelper.controller_config
       embed: true
-      go_struct:
-        anonymous: true
     metrics_builder_config:
       $ref: ./internal/metadata.metrics_builder_config
       embed: true
-      go_struct:
-        anonymous: true
     component:
       type: component_id
       description: Identifies the scraper, used for telemetry and logging.
