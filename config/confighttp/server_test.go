@@ -1021,18 +1021,12 @@ func TestHTTPServerKeepAlives(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var kaCfg configoptional.Optional[KeepaliveServerConfig]
-			if tt.expectedKeepAlives {
-				kaCfg = configoptional.Some(KeepaliveServerConfig{
-					IdleTimeout: 1 * time.Minute,
-				})
-			}
 			sc := &ServerConfig{
 				NetAddr: confignet.AddrConfig{
 					Endpoint:  "localhost:0",
 					Transport: confignet.TransportTypeTCP,
 				},
-				Keepalive: kaCfg,
+				KeepAlivesEnabled: tt.keepAlivesEnabled,
 			}
 
 			ln, err := sc.ToListener(context.Background())
@@ -1051,6 +1045,8 @@ func TestHTTPServerKeepAlives(t *testing.T) {
 			require.NotNil(t, resp)
 			_ = resp.Body.Close()
 			assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+			assert.Equal(t, tt.keepAlivesEnabled, sc.KeepAlivesEnabled)
 		})
 	}
 }

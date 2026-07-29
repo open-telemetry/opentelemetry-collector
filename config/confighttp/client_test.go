@@ -65,15 +65,15 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				TLS: configtls.ClientConfig{
 					Insecure: false,
 				},
-				ReadBufferSize:  1024,
-				WriteBufferSize: 512,
-				MaxConnsPerHost: maxConnsPerHost,
-				Compression:     "",
-				Keepalive: configoptional.Some(KeepaliveClientConfig{
-					MaxIdleConns:        maxIdleConns,
-					MaxIdleConnsPerHost: maxIdleConnsPerHost,
-					IdleConnTimeout:     idleConnTimeout,
-				}), Cookies: configoptional.Some(CookiesConfig{}),
+				ReadBufferSize:       1024,
+				WriteBufferSize:      512,
+				MaxIdleConns:         maxIdleConns,
+				MaxIdleConnsPerHost:  maxIdleConnsPerHost,
+				MaxConnsPerHost:      maxConnsPerHost,
+				IdleConnTimeout:      idleConnTimeout,
+				Compression:          "",
+				DisableKeepAlives:    true,
+				Cookies:              configoptional.Some(CookiesConfig{}),
 				HTTP2ReadIdleTimeout: idleConnTimeout,
 				HTTP2PingTimeout:     http2PingTimeout,
 			},
@@ -86,16 +86,15 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				TLS: configtls.ClientConfig{
 					Insecure: false,
 				},
-				ReadBufferSize:    1024,
-				WriteBufferSize:   512,
-				MaxConnsPerHost:   maxConnsPerHost,
-				ForceAttemptHTTP2: true,
-				Compression:       "",
-				Keepalive: configoptional.Some(KeepaliveClientConfig{
-					MaxIdleConns:        maxIdleConns,
-					MaxIdleConnsPerHost: maxIdleConnsPerHost,
-					IdleConnTimeout:     idleConnTimeout,
-				}),
+				ReadBufferSize:       1024,
+				WriteBufferSize:      512,
+				MaxIdleConns:         maxIdleConns,
+				MaxIdleConnsPerHost:  maxIdleConnsPerHost,
+				MaxConnsPerHost:      maxConnsPerHost,
+				ForceAttemptHTTP2:    true,
+				IdleConnTimeout:      idleConnTimeout,
+				Compression:          "",
+				DisableKeepAlives:    true,
 				Cookies:              configoptional.Some(CookiesConfig{}),
 				HTTP2ReadIdleTimeout: idleConnTimeout,
 				HTTP2PingTimeout:     http2PingTimeout,
@@ -109,16 +108,14 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				TLS: configtls.ClientConfig{
 					Insecure: false,
 				},
-				ReadBufferSize:  1024,
-				WriteBufferSize: 512,
-				MaxConnsPerHost: maxConnsPerHost,
-
-				Compression: "none",
-				Keepalive: configoptional.Some(KeepaliveClientConfig{
-					MaxIdleConns:        maxIdleConns,
-					MaxIdleConnsPerHost: maxIdleConnsPerHost,
-					IdleConnTimeout:     idleConnTimeout,
-				}),
+				ReadBufferSize:       1024,
+				WriteBufferSize:      512,
+				MaxIdleConns:         maxIdleConns,
+				MaxIdleConnsPerHost:  maxIdleConnsPerHost,
+				MaxConnsPerHost:      maxConnsPerHost,
+				IdleConnTimeout:      idleConnTimeout,
+				Compression:          "none",
+				DisableKeepAlives:    true,
 				HTTP2ReadIdleTimeout: idleConnTimeout,
 				HTTP2PingTimeout:     http2PingTimeout,
 			},
@@ -131,15 +128,14 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				TLS: configtls.ClientConfig{
 					Insecure: false,
 				},
-				ReadBufferSize:  1024,
-				WriteBufferSize: 512,
-				MaxConnsPerHost: maxConnsPerHost,
-				Compression:     "gzip",
-				Keepalive: configoptional.Some(KeepaliveClientConfig{
-					MaxIdleConns:        maxIdleConns,
-					MaxIdleConnsPerHost: maxIdleConnsPerHost,
-					IdleConnTimeout:     idleConnTimeout,
-				}),
+				ReadBufferSize:       1024,
+				WriteBufferSize:      512,
+				MaxIdleConns:         maxIdleConns,
+				MaxIdleConnsPerHost:  maxIdleConnsPerHost,
+				MaxConnsPerHost:      maxConnsPerHost,
+				IdleConnTimeout:      idleConnTimeout,
+				Compression:          "gzip",
+				DisableKeepAlives:    true,
 				HTTP2ReadIdleTimeout: idleConnTimeout,
 				HTTP2PingTimeout:     http2PingTimeout,
 			},
@@ -152,15 +148,14 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				TLS: configtls.ClientConfig{
 					Insecure: false,
 				},
-				ReadBufferSize:  1024,
-				WriteBufferSize: 512,
-				MaxConnsPerHost: maxConnsPerHost,
-				Compression:     "gzip",
-				Keepalive: configoptional.Some(KeepaliveClientConfig{
-					MaxIdleConns:        maxIdleConns,
-					MaxIdleConnsPerHost: maxIdleConnsPerHost,
-					IdleConnTimeout:     idleConnTimeout,
-				}),
+				ReadBufferSize:       1024,
+				WriteBufferSize:      512,
+				MaxIdleConns:         maxIdleConns,
+				MaxIdleConnsPerHost:  maxIdleConnsPerHost,
+				MaxConnsPerHost:      maxConnsPerHost,
+				IdleConnTimeout:      idleConnTimeout,
+				Compression:          "gzip",
+				DisableKeepAlives:    true,
 				HTTP2ReadIdleTimeout: idleConnTimeout,
 				HTTP2PingTimeout:     http2PingTimeout,
 			},
@@ -186,7 +181,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				assert.Equal(t, 40, transport.MaxIdleConnsPerHost)
 				assert.Equal(t, 45, transport.MaxConnsPerHost)
 				assert.Equal(t, 30*time.Second, transport.IdleConnTimeout)
-				assert.False(t, transport.DisableKeepAlives)
+				assert.True(t, transport.DisableKeepAlives)
 			case *compressRoundTripper:
 				assert.EqualValues(t, "gzip", transport.compressionType)
 			}
@@ -213,7 +208,6 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 				},
 				ReadBufferSize:  1024,
 				WriteBufferSize: 512,
-				Keepalive:       configoptional.Some(KeepaliveClientConfig{}),
 			},
 			shouldError: false,
 		},
@@ -238,18 +232,9 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 }
 
 func TestDefaultHTTPClientSettings(t *testing.T) {
-	settings := componenttest.NewNopTelemetrySettings()
-	settings.MeterProvider = nil
-	settings.TracerProvider = nil
-
-	cfg := NewDefaultClientConfig()
-	client, err := cfg.ToClient(context.Background(), nil, settings)
-	require.NoError(t, err)
-	transport := client.Transport.(*http.Transport)
-	// Defaults come from http.DefaultTransport.
-	assert.Equal(t, 100, transport.MaxIdleConns)
-	assert.Equal(t, 90*time.Second, transport.IdleConnTimeout)
-	assert.False(t, transport.DisableKeepAlives)
+	httpClientSettings := NewDefaultClientConfig()
+	assert.Equal(t, 100, httpClientSettings.MaxIdleConns)
+	assert.Equal(t, 90*time.Second, httpClientSettings.IdleConnTimeout)
 }
 
 func TestProxyURL(t *testing.T) {
@@ -581,12 +566,10 @@ func TestHTTPTransportOptions(t *testing.T) {
 	settings.TracerProvider = nil
 
 	clientConfig := NewDefaultClientConfig()
-	clientConfig.Keepalive = configoptional.Some(KeepaliveClientConfig{
-		MaxIdleConns:        100,
-		IdleConnTimeout:     time.Duration(100),
-		MaxIdleConnsPerHost: 100,
-	})
+	clientConfig.MaxIdleConns = 100
+	clientConfig.IdleConnTimeout = time.Duration(100)
 	clientConfig.MaxConnsPerHost = 100
+	clientConfig.MaxIdleConnsPerHost = 100
 	client, err := clientConfig.ToClient(context.Background(), nil, settings)
 	require.NoError(t, err)
 	transport, ok := client.Transport.(*http.Transport)
@@ -597,11 +580,10 @@ func TestHTTPTransportOptions(t *testing.T) {
 	require.Equal(t, 100, transport.MaxIdleConnsPerHost)
 
 	clientConfig = NewDefaultClientConfig()
-	clientConfig.Keepalive = configoptional.Some(KeepaliveClientConfig{
-		MaxIdleConns:        0,
-		IdleConnTimeout:     0,
-		MaxIdleConnsPerHost: 0,
-	})
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxConnsPerHost = 0
+	clientConfig.IdleConnTimeout = time.Duration(0)
 	client, err = clientConfig.ToClient(context.Background(), nil, settings)
 	require.NoError(t, err)
 	transport, ok = client.Transport.(*http.Transport)

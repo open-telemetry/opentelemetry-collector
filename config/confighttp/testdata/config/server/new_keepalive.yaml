@@ -1,3 +1,0 @@
-endpoint: "0.0.0.0:4318"
-keepalive:
-  idle_timeout: 90s

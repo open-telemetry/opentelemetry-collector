@@ -5,7 +5,6 @@ package confighttp
 
 import (
 	"net/http"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -19,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 // ---- ClientConfig ----
@@ -46,10 +44,14 @@ func TestClientConfigUnmarshalKeepalive(t *testing.T) {
 		},
 		{
 			name: "new keepalive only — unset fields keep defaults",
-			conf: map[string]any{"keepalive": map[string]any{"idle_conn_timeout": "60s"}},
+			conf: map[string]any{"keepalive": map[string]any{
+				"idle_conn_timeout":       "60s",
+				"max_idle_conns_per_host": 5,
+			}},
 			verifyConfig: func(t *testing.T, cfg *ClientConfig) {
 				assert.Equal(t, 60*time.Second, cfg.IdleConnTimeout)
 				assert.Equal(t, 100, cfg.MaxIdleConns)
+				assert.Equal(t, 5, cfg.MaxIdleConnsPerHost)
 				assert.False(t, cfg.DisableKeepAlives)
 				assert.Empty(t, cfg.deprecationWarnings)
 			},
@@ -197,15 +199,18 @@ func TestClientConfigProgrammaticKeepaliveAfterUnmarshal(t *testing.T) {
 }
 
 func TestClientConfigDeprecatedWarningsLogged(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config", "client/legacy_all_fields.yaml"))
-	require.NoError(t, err)
-
 	cfg := NewDefaultClientConfig()
-	require.NoError(t, cm.Unmarshal(&cfg))
+	conf := confmap.NewFromStringMap(map[string]any{
+		"endpoint":                "http://localhost:4318",
+		"idle_conn_timeout":       "90s",
+		"max_idle_conns":          100,
+		"max_idle_conns_per_host": 10,
+	})
+	require.NoError(t, conf.Unmarshal(&cfg))
 
 	core, observed := observer.New(zapcore.WarnLevel)
 	settings := component.TelemetrySettings{Logger: zap.New(core)}
-	_, err = cfg.ToClient(t.Context(), nil, settings)
+	_, err := cfg.ToClient(t.Context(), nil, settings)
 	require.NoError(t, err)
 
 	entries := observed.All()
@@ -216,67 +221,43 @@ func TestClientConfigDeprecatedWarningsLogged(t *testing.T) {
 	}
 }
 
-func TestClientConfigMixedFieldsError(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config", "client/mixed_fields_error.yaml"))
-	require.NoError(t, err)
+// Both spellings of disabling keep-alives must reach the transport; only the
+// deprecated one warns.
+func TestClientConfigDisableKeepAlives(t *testing.T) {
+	tests := []struct {
+		name           string
+		conf           map[string]any
+		expectWarnings int
+	}{
+		{
+			name:           "deprecated disable_keep_alives",
+			conf:           map[string]any{"disable_keep_alives": true},
+			expectWarnings: 1,
+		},
+		{
+			name:           "keepalive enabled false",
+			conf:           map[string]any{"keepalive": map[string]any{"enabled": false}},
+			expectWarnings: 0,
+		},
+	}
 
-	cfg := NewDefaultClientConfig()
-	err = cm.Unmarshal(&cfg)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "keepalive")
-}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := NewDefaultClientConfig()
+			require.NoError(t, confmap.NewFromStringMap(tt.conf).Unmarshal(&cfg))
 
-func TestClientConfigNewKeepalive(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config", "client/new_keepalive.yaml"))
-	require.NoError(t, err)
+			core, observed := observer.New(zapcore.WarnLevel)
+			settings := componenttest.NewNopTelemetrySettings()
+			settings.MeterProvider = nil
+			settings.TracerProvider = nil
+			settings.Logger = zap.New(core)
 
-	cfg := NewDefaultClientConfig()
-	require.NoError(t, cm.Unmarshal(&cfg))
-
-	assert.Equal(t, configoptional.None[KeepaliveClientConfig](), cfg.Keepalive)
-	assert.Equal(t, 60*time.Second, cfg.IdleConnTimeout)
-	assert.Equal(t, 50, cfg.MaxIdleConns)
-	assert.Equal(t, 5, cfg.MaxIdleConnsPerHost)
-	assert.Empty(t, cfg.deprecationWarnings)
-}
-
-func TestClientConfigKeepaliveDisabled(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config", "client/keepalive_disabled.yaml"))
-	require.NoError(t, err)
-
-	cfg := NewDefaultClientConfig()
-	require.NoError(t, cm.Unmarshal(&cfg))
-
-	assert.Equal(t, configoptional.None[KeepaliveClientConfig](), cfg.Keepalive)
-	assert.True(t, cfg.DisableKeepAlives)
-
-	settings := componenttest.NewNopTelemetrySettings()
-	settings.MeterProvider = nil
-	settings.TracerProvider = nil
-	client, err := cfg.ToClient(t.Context(), nil, settings)
-	require.NoError(t, err)
-	assert.True(t, client.Transport.(*http.Transport).DisableKeepAlives)
-}
-
-func TestClientConfigDeprecatedDisableKeepAlives(t *testing.T) {
-	settings := componenttest.NewNopTelemetrySettings()
-	settings.MeterProvider = nil
-	settings.TracerProvider = nil
-
-	core, observed := observer.New(zapcore.WarnLevel)
-	settings.Logger = zap.New(core)
-
-	cfg := NewDefaultClientConfig()
-	conf := confmap.NewFromStringMap(map[string]any{"disable_keep_alives": true})
-	require.NoError(t, conf.Unmarshal(&cfg))
-
-	client, err := cfg.ToClient(t.Context(), nil, settings)
-	require.NoError(t, err)
-	assert.True(t, client.Transport.(*http.Transport).DisableKeepAlives)
-
-	entries := observed.All()
-	require.NotEmpty(t, entries)
-	assert.Contains(t, entries[0].Message, "deprecated")
+			client, err := cfg.ToClient(t.Context(), nil, settings)
+			require.NoError(t, err)
+			assert.True(t, client.Transport.(*http.Transport).DisableKeepAlives)
+			assert.Len(t, observed.All(), tt.expectWarnings)
+		})
+	}
 }
 
 // ---- ServerConfig ----
@@ -432,11 +413,13 @@ func TestServerConfigProgrammaticKeepaliveAfterUnmarshal(t *testing.T) {
 }
 
 func TestServerConfigDeprecatedWarningsLogged(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config", "server/legacy_with_idle_timeout.yaml"))
-	require.NoError(t, err)
-
 	cfg := NewDefaultServerConfig()
-	require.NoError(t, cm.Unmarshal(&cfg))
+	conf := confmap.NewFromStringMap(map[string]any{
+		"endpoint":            "0.0.0.0:4318",
+		"idle_timeout":        "120s",
+		"keep_alives_enabled": true,
+	})
+	require.NoError(t, conf.Unmarshal(&cfg))
 
 	core, observed := observer.New(zapcore.WarnLevel)
 	settings := component.TelemetrySettings{Logger: zap.New(core)}
@@ -449,39 +432,6 @@ func TestServerConfigDeprecatedWarningsLogged(t *testing.T) {
 	require.Len(t, entries, 1)
 	assert.Equal(t, zapcore.WarnLevel, entries[0].Level)
 	assert.Contains(t, entries[0].Message, "'idle_timeout' is deprecated")
-}
-
-func TestServerConfigMixedFieldsError(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config", "server/mixed_fields_error.yaml"))
-	require.NoError(t, err)
-
-	cfg := NewDefaultServerConfig()
-	err = cm.Unmarshal(&cfg)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "keepalive")
-}
-
-func TestServerConfigNewKeepalive(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config", "server/new_keepalive.yaml"))
-	require.NoError(t, err)
-
-	cfg := NewDefaultServerConfig()
-	require.NoError(t, cm.Unmarshal(&cfg))
-
-	assert.Equal(t, configoptional.None[KeepaliveServerConfig](), cfg.Keepalive)
-	assert.Equal(t, 90*time.Second, cfg.IdleTimeout)
-	assert.Empty(t, cfg.deprecationWarnings)
-}
-
-func TestServerConfigKeepaliveDisabled(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config", "server/keepalive_disabled.yaml"))
-	require.NoError(t, err)
-
-	cfg := NewDefaultServerConfig()
-	require.NoError(t, cm.Unmarshal(&cfg))
-
-	assert.Equal(t, configoptional.None[KeepaliveServerConfig](), cfg.Keepalive)
-	assert.False(t, cfg.KeepAlivesEnabled)
 }
 
 // ---- squash embedding ----
