@@ -241,7 +241,8 @@ func getModulesWithDeps(cfg *Config, deps builderDeps) error {
 	if semver.MajorMinor(coreDepVersion) != betaVersion {
 		return fmt.Errorf(
 			"%w: core collector version calculated by component dependencies %q does not match configured version %q. %s",
-			ErrVersionMismatch, coreDepVersion, betaVersion, skipStrictMsg)
+			ErrVersionMismatch, coreDepVersion, betaVersion, skipStrictMsg,
+		)
 	}
 
 	for _, mod := range cfg.allComponents() {
@@ -259,7 +260,8 @@ func getModulesWithDeps(cfg *Config, deps builderDeps) error {
 		if semver.MajorMinor(moduleDepVersion) != semver.MajorMinor(version) {
 			return fmt.Errorf(
 				"%w: component %q version calculated by dependencies %q does not match configured version %q. %s",
-				ErrVersionMismatch, module, moduleDepVersion, version, skipStrictMsg)
+				ErrVersionMismatch, module, moduleDepVersion, version, skipStrictMsg,
+			)
 		}
 	}
 
