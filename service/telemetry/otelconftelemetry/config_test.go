@@ -13,10 +13,12 @@ import (
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/service/telemetry"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry/internal/migration"
 )
 
@@ -176,4 +178,26 @@ func TestConfigMarshalResource(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "service.name", attr["name"])
 	assert.Equal(t, "custom-service", attr["value"])
+}
+
+func TestConfigResourceDetectionDevelopmentE2E(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_resource_detection_development.yaml"))
+	require.NoError(t, err)
+
+	cfg := createDefaultConfig().(*Config)
+	require.NoError(t, cm.Unmarshal(cfg))
+	require.NoError(t, confmap.Validate(cfg))
+	require.NotNil(t, cfg.Resource.DetectionDevelopment)
+	require.Len(t, cfg.Resource.DetectionDevelopment.Detectors, 1)
+	require.NotNil(t, cfg.Resource.DetectionDevelopment.Detectors[0].Host)
+
+	set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+	res, err := createResource(t.Context(), set, cfg)
+	require.NoError(t, err)
+
+	raw := res.Attributes().AsRaw()
+	assert.Equal(t, "bar", raw["foo"])
+	assert.Contains(t, raw, "host.name")
+	assert.Contains(t, raw, "os.type")
+	assert.Contains(t, raw, "os.description")
 }

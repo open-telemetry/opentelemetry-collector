@@ -270,22 +270,26 @@ checkapi:
 checkdoc:
 	$(GO_TOOL) checkfile --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "README.md"
 
+# Extract the relative path of every module listed between "stable:" and "beta:" in versions.yaml
+STABLE_MODULES := $(shell sed -n -e '/stable:/,/beta:/ s/.*- go.opentelemetry.io\/collector/./p' versions.yaml)
+
+.PHONY: for-all-stable-target
+for-all-stable-target: $(STABLE_MODULES)
+
 # Construct new API state snapshots
 .PHONY: apidiff-build
 apidiff-build:
-	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/gen-apidiff.sh -p $(pkg)))
+	@$(MAKE) --silent for-all-stable-target TARGET="apidiff-build-mod"
 
-# If we are running in CI, change input directory
-ifeq ($(CI), true)
-APICOMPARE_OPTS=$(COMPARE_OPTS)
-else
-APICOMPARE_OPTS=-d "./internal/data/apidiff"
-endif
-
-# Compare API state snapshots
+# Compare API state snapshots and log differences
 .PHONY: apidiff-compare
 apidiff-compare:
-	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/compare-apidiff.sh -p $(pkg)))
+	@$(MAKE) --silent for-all-stable-target TARGET="apidiff-compare-mod"
+
+# Compare API state snapshots and fail if there are differences
+.PHONY: apidiff-check
+apidiff-check:
+	@$(MAKE) --silent for-all-stable-target TARGET="apidiff-check-mod"
 
 .PHONY: multimod-verify
 multimod-verify:
@@ -426,6 +430,31 @@ generate-chloggen-components:
 
 SCHEMA_DIRS := $(shell find $(CURDIR) -path "*testdata*" -prune -o -path "*internal/metadata/*" -prune -o -name "config.schema.yaml" -exec dirname {} \; | sort -u)
 
+# SCHEMA_CHECK_DIRS is the subset of SCHEMA_DIRS that the `check-schemas`
+# CI step regenerates and diffs. Limited to schemas whose Go source schemagen
+# currently reproduces byte-for-byte; pre-existing shared-library schemas
+# (config/configgrpc, scraperhelper, etc.) have a separate maintenance
+# lifecycle and aren't in scope. Add a dir here once it generates cleanly.
+SCHEMA_CHECK_DIRS := exporter/debugexporter \
+                     exporter/otlpexporter \
+                     exporter/otlphttpexporter \
+                     receiver/otlpreceiver \
+                     processor/batchprocessor \
+                     processor/memorylimiterprocessor \
+                     extension/memorylimiterextension \
+                     extension/zpagesextension \
+                     internal/memorylimiter
+
 .PHONY: generate-schemas
 generate-schemas:
 	@$(foreach dir,$(SCHEMA_DIRS), cd $(SRC_ROOT)/cmd/schemagen && go run . $(abspath $(dir)) -o $(abspath $(dir));)
+
+# check-schemas regenerates the in-scope schemas in place and fails if the
+# working tree changed — mirroring the contrib `schemas-and-templates` shard.
+# Hand-edits to these schemas will be wiped; rich descriptions must come from
+# Go doc comments (which schemagen propagates) or from an `overlayFile` in
+# `.schemagen.yaml`.
+.PHONY: check-schemas
+check-schemas:
+	@$(foreach dir,$(SCHEMA_CHECK_DIRS), cd $(SRC_ROOT)/cmd/schemagen && go run . $(SRC_ROOT)/$(dir) -o $(SRC_ROOT)/$(dir);)
+	@git diff --exit-code -- $(SCHEMA_CHECK_DIRS:%=%/config.schema.yaml) || { echo 'Config schemas are out of date, please run "make check-schemas" and commit the changes in this PR.'; exit 1; }

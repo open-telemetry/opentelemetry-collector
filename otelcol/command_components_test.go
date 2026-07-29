@@ -152,11 +152,6 @@ func newNamedNopFactories(
 	}
 }
 
-type nopComponent struct {
-	component.StartFunc
-	component.ShutdownFunc
-}
-
 func newNamedConnecterNopFactory(typeName string) connector.Factory {
 	return xconnector.NewFactory(
 		component.MustNewType(typeName),
