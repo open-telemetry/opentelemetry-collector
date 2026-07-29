@@ -534,6 +534,13 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 		metricSystemCPUUtilizationV1:       newMetricSystemCPUUtilizationV1(mbc.Metrics.SystemCPUUtilizationV1),
 		metricSystemMemoryLinuxAvailableV1: newMetricSystemMemoryLinuxAvailableV1(mbc.Metrics.SystemMemoryLinuxAvailableV1),
 	}
+	if ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		if mb.metricLinuxMemoryAvailable.config.Enabled && !mb.metricSystemMemoryLinuxAvailableV1.config.enabledSetByUser {
+			mb.metricSystemMemoryLinuxAvailableV1.config.Enabled = true
+			mb.metricSystemMemoryLinuxAvailableV1.data = pmetric.NewMetric()
+			mb.metricSystemMemoryLinuxAvailableV1.init()
+		}
+	}
 	if !ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() && mb.metricSystemMemoryLinuxAvailableV1.config.Enabled {
 		mb.metricSystemMemoryLinuxAvailableV1.config.Enabled = false
 		settings.Logger.Warn("[WARNING] metric `system.memory.linux.available@v1` requires feature gate `scraper.samplemigration.EmitV1SystemConventions` to be enabled, metric has been disabled")
@@ -544,6 +551,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 			mb.metricSystemCPUUtilizationV1.data = pmetric.NewMetric()
 			mb.metricSystemCPUUtilizationV1.init()
 		}
+	}
+	if ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() {
 		if mb.metricSystemCPUUtilization.config.Enabled && mb.metricSystemCPUUtilizationV1.config.Enabled {
 			var disable bool
 			if mb.metricSystemCPUUtilization.data.Type() != mb.metricSystemCPUUtilizationV1.data.Type() {
