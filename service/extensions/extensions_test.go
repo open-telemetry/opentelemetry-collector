@@ -187,7 +187,8 @@ func (tc testOrderCase) testOrdering(t *testing.T) {
 			extCfgs,
 			map[component.Type]extension.Factory{
 				recordingExtensionFactory.Type(): recordingExtensionFactory,
-			}),
+			},
+		),
 	}, Config(extIDs))
 	if tc.err != "" {
 		require.ErrorContains(t, err, tc.err)
