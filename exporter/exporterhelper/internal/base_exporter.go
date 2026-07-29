@@ -41,7 +41,8 @@ type BaseExporter struct {
 	QueueSender sender.Sender[request.Request]
 	RetrySender sender.Sender[request.Request]
 
-	firstSender sender.Sender[request.Request]
+	shutdownSender *shutdownSender[request.Request]
+	firstSender    sender.Sender[request.Request]
 
 	ConsumerOptions []consumer.Option
 
@@ -79,6 +80,11 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 		be.RetrySender = newRetrySender(be.retryCfg, set, be.firstSender)
 		be.firstSender = be.RetrySender
 	}
+
+	// Setup the shutdown Sender below the obsreport Sender, so the failures caused by the shutdown are
+	// reported as such, and above the retry Sender, so it also covers exporters without retry_on_failure.
+	be.shutdownSender = newShutdownSender(be.firstSender)
+	be.firstSender = be.shutdownSender
 
 	var err error
 	be.firstSender, err = newObsReportSender(set, signal, be.ExtraAttrs, be.firstSender)
@@ -138,7 +144,11 @@ func (be *BaseExporter) Start(ctx context.Context, host component.Host) error {
 func (be *BaseExporter) Shutdown(ctx context.Context) error {
 	var err error
 
-	// First shutdown the retry sender, so the queue sender can flush the queue without retries.
+	// First mark the sender chain as shutting down, so the requests that fail from now on are reported
+	// as shutdown failures and the persistent queue keeps them instead of deleting them.
+	err = multierr.Append(err, be.shutdownSender.Shutdown(ctx))
+
+	// Then shutdown the retry sender, so the queue sender can flush the queue without retries.
 	if be.RetrySender != nil {
 		err = multierr.Append(err, be.RetrySender.Shutdown(ctx))
 	}
