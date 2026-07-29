@@ -6,7 +6,8 @@
       "type": "object",
       "properties": {
         "level": {
-          "type": "integer"
+          "type": "integer",
+          "description": "Level of compression."
         }
       }
     },

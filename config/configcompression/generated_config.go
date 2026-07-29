@@ -3,6 +3,7 @@
 package configcompression
 
 type CompressionParams struct {
+	// Level of compression.
 	Level Level `mapstructure:"level"`
 	// prevent unkeyed literal initialization
 	_ struct{}

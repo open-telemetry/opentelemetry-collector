@@ -25,8 +25,9 @@ type Config struct {
 	// Extra HTTP headers to attach to each request.
 	Headers configopaque.MapList `mapstructure:"headers"`
 	// Maximum number of results to return per scrape.
-	MaxResults int64                  `mapstructure:"max_results"`
-	SamplePkg  samplepkg.SampleConfig `mapstructure:"sample_pkg"`
+	MaxResults int64 `mapstructure:"max_results"`
+	// Configuration imported from the sample shared package.
+	SamplePkg samplepkg.SampleConfig `mapstructure:"sample_pkg"`
 	// Timeout for scraping metrics.
 	Timeout time.Duration `mapstructure:"timeout"`
 	// prevent unkeyed literal initialization

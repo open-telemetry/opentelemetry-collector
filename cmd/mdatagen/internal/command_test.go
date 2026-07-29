@@ -600,7 +600,7 @@ func TestGenerateConfigFiles_ExportedConfigsWithoutConfig(t *testing.T) {
 				"sample_config": {
 					Type: "object",
 					Properties: map[string]*cfggen.ConfigMetadata{
-						"endpoint": {Type: "string"},
+						"endpoint": {Type: "string", Description: "The endpoint to connect to."},
 					},
 				},
 			},
@@ -635,14 +635,14 @@ func TestGenerateConfigFiles_ExportedConfigsWithConfig(t *testing.T) {
 			Config: &cfggen.ConfigMetadata{
 				Type: "object",
 				Properties: map[string]*cfggen.ConfigMetadata{
-					"endpoint": {Type: "string"},
+					"endpoint": {Type: "string", Description: "The endpoint to connect to."},
 				},
 			},
 			ExportedConfigs: map[string]*cfggen.ConfigMetadata{
 				"sample_config": {
 					Type: "object",
 					Properties: map[string]*cfggen.ConfigMetadata{
-						"host_name": {Type: "string"},
+						"host_name": {Type: "string", Description: "Host name to connect to."},
 					},
 				},
 			},
@@ -662,6 +662,36 @@ func TestGenerateConfigFiles_ExportedConfigsWithConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, string(generatedConfig), "type Config struct")
 	require.Contains(t, string(generatedConfig), "type SampleConfig struct")
+}
+
+func TestGenerateConfigFiles_MissingDescriptionFails(t *testing.T) {
+	root := t.TempDir()
+	tmpdir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(tmpdir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	md := Metadata{
+		Type:        "test",
+		PackageName: "testmodule/shortname",
+		Status:      &Status{Class: "receiver"},
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			Config: &cfggen.ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*cfggen.ConfigMetadata{
+					"endpoint": {Type: "string", Description: "The endpoint to connect to."},
+					"timeout":  {Type: "duration"},
+				},
+			},
+		},
+	}
+
+	err := generateConfigFiles(md, tmpdir, "testmodule")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "config.timeout")
+	require.NotContains(t, err.Error(), "config.endpoint")
+
+	// No files should have been generated when validation fails.
+	require.NoFileExists(t, filepath.Join(tmpdir, "generated_config.go"))
 }
 
 func TestInjectInternalMetadataDefs(t *testing.T) {

@@ -23,6 +23,7 @@ func NewDefaultSamplePkg() SamplePkg {
 }
 
 type TargetsItem struct {
+	// Scrape interval for this target.
 	Interval configoptional.Optional[time.Duration] `mapstructure:"interval"`
 	// Static key-value labels attached to all metrics from this target.
 	Labels map[string]string `mapstructure:"labels"`

@@ -31,6 +31,7 @@
         "properties": {
           "interval": {
             "type": "string",
+            "description": "Scrape interval for this target.",
             "default": "10s",
             "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
           },
