@@ -177,10 +177,7 @@ the components, evaluating for every exporter whether a `Default` or
 `None` should become `Some` in each exporter's default queue config.
 
 A feature flag for this change will be defined,
-`pkg.exporterhelper.exporterQueueBatchEnabled`. The name follows the
-mdatagen convention that feature gates are prefixed with the
-component's `<class>.<type>.`, so the gate is declared in
-`exporter/exporterhelper/metadata.yaml`.
+`pkg.exporterhelper.exporterQueueBatchEnabled`.
 
 #### Recommended final default queue configuration
 
@@ -196,10 +193,12 @@ func NewDefaultQueueConfig() queuebatch.Config {
         Sizer:        request.SizerTypeItems,
         MinSize:      8192,
     }
-    // CHANGED: Batching is becoming enabled by default.
-    batch := configoptional.Default(batchCfg)
+	var batch configoptional.Optional[queuebatch.BatchConfig]
     if metadata.PkgExporterhelperExporterQueueBatchEnabledFeatureGate.IsEnabled() {
+        // CHANGED: Batching enabled by default under the feature gate.
         batch = configoptional.Some(batchCfg)
+    } else {
+        batch = configoptional.Default(batchCfg)
     }
     return queuebatch.Config{
         Sizer:           request.SizerTypeRequests,
@@ -273,13 +272,13 @@ The sequence of events is ordered in phases.  The following table
 summarizes what an operator running a typical pipeline observes at
 each phase:
 
-| Phase | `batchprocessor` in config                                   | exporterhelper defaults                                                    | Net behavior                                                                                                                                                               | Release version  |
-|-------|--------------------------------------------------------------|----------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------|
-| <1    | OK                                                           | `batch::enabled: false`                                                    | Documented behavior                                                                                                                                                        |               |
-| 1     | OK                                                           | Unchanged; feature gate is Alpha (default off)                             | No change for users; new `queuebatchprocessor` and docs available for opt-in migration.                                                                                    | v0.158.0      |
-| 2     | Works, prints deprecation warning pointing to migration docs | Unchanged; gate still Alpha/off                                            | Users see warnings and have at least six releases to migrate; Helm chart switches to the new path while `batchprocessor` still works. Exit gated on early-adopter success. | v0.160.0    |
-| 3     | Removed from default distribution; still available to custom builds. Pipelines using the removed component in the default binary fail to start. | Gate Beta (default on): `batch::enabled: true`                             | Pipelines that didn't migrate fail fast; exporters batch by default; users can still opt out via gate for six releases.                                                    | v0.166.0  |
-| 4     | n/a                                                          | Gate Stable and removed; new default permanent                             | Users choose `exporterhelper` or `queuebatchprocessor` for batching                                                                                                        | v0.172.0 |
+| Phase | `batchprocessor` in config                                                                                                                      | exporterhelper defaults                        | Net behavior                                                                                                                                                               | Release version |
+|-------|-------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|
+| <1    | OK                                                                                                                                              | `batch::enabled: false`                        | Documented behavior                                                                                                                                                        |                 |
+| 1     | OK                                                                                                                                              | Unchanged; feature gate is Alpha (default off) | No change for users; new `queuebatchprocessor` and docs available for opt-in migration.                                                                                    | v0.158.0+       |
+| 2     | Works, prints deprecation warning pointing to migration docs                                                                                    | Unchanged; gate still Alpha/off                | Users see warnings and have at least six releases to migrate; Helm chart switches to the new path while `batchprocessor` still works. Exit gated on early-adopter success. | v0.160.0        |
+| 3     | Removed from default distribution; still available to custom builds. Pipelines using the removed component in the default binary fail to start. | Gate Beta (default on): `batch::enabled: true` | Pipelines that didn't migrate fail fast; exporters batch by default; users can still opt out via gate for six releases.                                                    | v0.166.0        |
+| 4     | n/a                                                                                                                                             | Gate Stable and removed; new default permanent | Users choose `exporterhelper` or `queuebatchprocessor` for batching                                                                                                        | v0.172.0        |
 
 ### Phase 1
 
@@ -291,34 +290,28 @@ These are loosely dependent,
    config omits `queue_sender` or sets it to a non-standard value.
    Exporters that legitimately need different defaults (e.g., pull-based
    exporters) must declare the opt-out in their `metadata.yaml`.
-   **Not started.**
 2. Introduce the `pkg.exporterhelper.exporterQueueBatchEnabled` feature
-   gate at **Alpha** stability (default off). **Landing in v0.158.0.**
+   gate at Alpha stability. [#15690](https://github.com/open-telemetry/opentelemetry-collector/pull/15690)
 3. Support a configurable metrics prefix to distinguish processor
    batching from exporter batching
    ([#14038](https://github.com/open-telemetry/opentelemetry-collector/issues/14038)).
-   **Not started.**
-4. Implement `queuebatchprocessor`
-   ([#13583](https://github.com/open-telemetry/opentelemetry-collector/pull/13583)).
-   **Done**, merged in
-   [#15500](https://github.com/open-telemetry/opentelemetry-collector/pull/15500).
+4. Implement `queuebatchprocessor`. [#15500](https://github.com/open-telemetry/opentelemetry-collector/pull/15500)
 5. Detect pipelines that combine `batchprocessor` with an
    exporterhelper that has batching enabled, and emit a startup warning
    identifying the affected pipeline and exporter. This protects users
    from silently paying for double batching during Phase 2 and
    continues to protect custom-build users who keep `batchprocessor`
-   through Phase 3 and beyond. **Not started.**
+   through Phase 3 and beyond.
 6. Update documentation explaining `batchprocessor` deprecation with
    instructions to adopt explicit exporterhelper `queue_sender`
    settings or the new `queuebatchprocessor`. Issue release notes and
    advisories to distros to remove `batchprocessor` from
    documentation. Create a blog post about what's happening to
-   `batchprocessor`, get it approved. **Not started.**
+   `batchprocessor`, get it approved.
 
-Phase 2 does not begin until items 1, 3, 5, and 6 are complete. Two
-more releases are budgeted for this work, which is why the Phase 2
-transition is scheduled for v0.160.0 rather than v0.158.0, with the
-later phases shifted by the same two releases.
+#### Exit criteria for Phase 1
+
+All of the above must be completed.
 
 ### Phase 2
 

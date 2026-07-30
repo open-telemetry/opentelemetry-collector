@@ -33,9 +33,11 @@ func NewDefaultQueueConfig() queuebatch.Config {
 		Sizer:        request.SizerTypeItems,
 		MinSize:      8192,
 	}
-	batch := configoptional.Default(batchCfg)
+	var batch configoptional.Optional[queuebatch.BatchConfig]
 	if metadata.PkgExporterhelperExporterQueueBatchEnabledFeatureGate.IsEnabled() {
 		batch = configoptional.Some(batchCfg)
+	} else {
+		batch = configoptional.Default(batchCfg)
 	}
 	return queuebatch.Config{
 		Sizer:           request.SizerTypeRequests,
