@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
@@ -22,17 +23,26 @@ import (
 // - is non-blocking when full
 // - concurrent exports limited to 10
 // - emits batches of 8192 items, timeout 200ms
+//
+// Batching is disabled by default, unless the
+// pkg.exporterhelper.exporterQueueBatchEnabled feature gate is enabled. See
+// https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/batching-migration.md.
 func NewDefaultQueueConfig() queuebatch.Config {
+	batchCfg := queuebatch.BatchConfig{
+		FlushTimeout: 200 * time.Millisecond,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      8192,
+	}
+	batch := configoptional.Default(batchCfg)
+	if metadata.PkgExporterhelperExporterQueueBatchEnabledFeatureGate.IsEnabled() {
+		batch = configoptional.Some(batchCfg)
+	}
 	return queuebatch.Config{
 		Sizer:           request.SizerTypeRequests,
 		NumConsumers:    10,
 		QueueSize:       1_000,
 		BlockOnOverflow: false,
-		Batch: configoptional.Default(queuebatch.BatchConfig{
-			FlushTimeout: 200 * time.Millisecond,
-			Sizer:        request.SizerTypeItems,
-			MinSize:      8192,
-		}),
+		Batch:           batch,
 	}
 }
 
