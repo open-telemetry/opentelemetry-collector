@@ -13,21 +13,15 @@ exported_configs:
     properties:
       collection_interval:
         description: Sets how frequently the scraper should be called and used as the context timeout to ensure that scrapers don't exceed the interval.
-        type: string
-        x-customType: time.Duration
-        format: duration
+        type: duration
         default: 1m
       initial_delay:
         description: Sets the initial start delay for the scraper, any non positive value is assumed to be immediately.
-        type: string
-        x-customType: time.Duration
-        format: duration
+        type: duration
         default: 1s
       timeout:
         description: An optional value used to set scraper's context deadline.
-        type: string
-        x-customType: time.Duration
-        format: duration
+        type: duration
         default: 0
     go_struct:
       custom_validator:
