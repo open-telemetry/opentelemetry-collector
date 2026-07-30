@@ -1,6 +1,6 @@
 change_type: enhancement
 
-component: exporterhelper
+component: pkg/exporterhelper
 
 note: Add the `pkg.exporterhelper.exporterQueueBatchEnabled` feature gate
 
