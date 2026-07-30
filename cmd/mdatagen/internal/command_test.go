@@ -1033,7 +1033,7 @@ func TestGenerateConfigGoStruct_ComponentIDFieldUsesGoName(t *testing.T) {
 
 	generated := string(content)
 	require.Contains(t, generated, `StorageID component.ID`)
-	require.Contains(t, generated, "`mapstructure:\"storage\"`")
+	require.Contains(t, generated, "`mapstructure:\"storage,omitempty\"`")
 }
 
 func TestGenerateConfigFiles_GoStructError(t *testing.T) {

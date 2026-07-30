@@ -13,7 +13,6 @@ import (
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 func TestUnmarshalLogsConfigV030(t *testing.T) {
@@ -179,7 +178,7 @@ func TestResourceConfigV030UnmarshalLegacyFormat(t *testing.T) {
 		})
 		var cfg ResourceConfigV030
 		require.NoError(t, conf.Unmarshal(&cfg))
-		require.Error(t, xconfmap.Validate(&cfg))
+		require.Error(t, confmap.Validate(&cfg))
 	})
 }
 
@@ -227,7 +226,7 @@ func TestResourceConfigV030UnmarshalDeclarativeFormat(t *testing.T) {
 		})
 		var cfg ResourceConfigV030
 		require.NoError(t, conf.Unmarshal(&cfg))
-		require.ErrorContains(t, xconfmap.Validate(&cfg), "resource::attributes cannot be used together with legacy inline resource attributes")
+		require.ErrorContains(t, confmap.Validate(&cfg), "resource::attributes cannot be used together with legacy inline resource attributes")
 	})
 
 	t.Run("declarative only with forward-compatible detectors", func(t *testing.T) {
@@ -256,7 +255,7 @@ func TestResourceConfigV030UnmarshalDeclarativeFormat(t *testing.T) {
 		require.NotNil(t, cfg.DetectionDevelopment)
 		require.Len(t, cfg.DetectionDevelopment.Detectors, 1)
 		assert.NotNil(t, cfg.DetectionDevelopment.Detectors[0].Host)
-		require.NoError(t, xconfmap.Validate(&cfg))
+		require.NoError(t, confmap.Validate(&cfg))
 	})
 
 	t.Run("experimental detection development marshals", func(t *testing.T) {
@@ -304,6 +303,6 @@ func TestResourceConfigV030UnmarshalDeclarativeFormat(t *testing.T) {
 		})
 		var cfg ResourceConfigV030
 		require.NoError(t, conf.Unmarshal(&cfg))
-		require.NoError(t, xconfmap.Validate(&cfg))
+		require.NoError(t, confmap.Validate(&cfg))
 	})
 }
