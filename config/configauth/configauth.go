@@ -6,6 +6,8 @@
 // exporters to add authentication on outgoing requests.
 package configauth // import "go.opentelemetry.io/collector/config/configauth"
 
+//go:generate mdatagen metadata.yaml
+
 import (
 	"context"
 	"errors"
