@@ -407,6 +407,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings {{ .Status.Class }}.Se
 
   {{- range $name, $metric := .Metrics }}
   {{- if $metric.Migration }}
+  {{- if eq $name.EmittedName $metric.Migration.To.EmittedName }}
+  {{- /* same emitted name: legacy & v1 collide, so disable legacy when schema differs */}}
   if {{ printf "%s" $metric.Migration.ThroughGates.EnableNew | publicVar }}FeatureGate.IsEnabled() {
     if mb.metric{{ $name.Render }}.config.Enabled && mb.metric{{ $metric.Migration.To.Render }}.config.Enabled {
       var disable bool
@@ -428,11 +430,18 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings {{ .Status.Class }}.Se
       }
     }
   } else {
-    if !{{ printf "%s" $metric.Migration.ThroughGates.EnableNew | publicVar}}FeatureGate.IsEnabled() && mb.metric{{ $metric.Migration.To.Render }}.config.Enabled {
+    if mb.metric{{ $metric.Migration.To.Render }}.config.Enabled {
       mb.metric{{ $metric.Migration.To.Render }}.config.Enabled = false
       settings.Logger.Warn("[WARNING] metric `{{ $metric.Migration.To }}` requires feature gate `{{ $metric.Migration.ThroughGates.EnableNew }}` to be enabled, metric has been disabled")
     }
   }
+  {{- else }}
+  {{- /* rename: no wire collision; both names emit during transition. Only gate the v1 metric. */}}
+  if !{{ printf "%s" $metric.Migration.ThroughGates.EnableNew | publicVar }}FeatureGate.IsEnabled() && mb.metric{{ $metric.Migration.To.Render }}.config.Enabled {
+    mb.metric{{ $metric.Migration.To.Render }}.config.Enabled = false
+    settings.Logger.Warn("[WARNING] metric `{{ $metric.Migration.To }}` requires feature gate `{{ $metric.Migration.ThroughGates.EnableNew }}` to be enabled, metric has been disabled")
+  }
+  {{- end }}
   {{- end }}
   {{- end }}
 
