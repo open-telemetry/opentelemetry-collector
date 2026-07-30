@@ -19,8 +19,8 @@ var (
 	globalRegistry = NewRegistry()
 
 	// idRegexp is used to validate the ID of a Gate.
-	// IDs' characters must be alphanumeric or dots.
-	idRegexp = regexp.MustCompile(`^[0-9a-zA-Z.]*$`)
+	// IDs must contain alphanumeric segments separated by dots.
+	idRegexp = regexp.MustCompile(`^[0-9a-zA-Z]+(?:\.[0-9a-zA-Z]+)*$`)
 )
 
 // ErrAlreadyRegistered is returned when adding a Gate that is already registered.
@@ -126,7 +126,7 @@ func validateID(id string) error {
 }
 
 // Register a Gate and return it. The returned Gate can be used to check if is enabled or not.
-// id must be an ASCII alphanumeric nonempty string. Dots are allowed for namespacing.
+// id must contain nonempty ASCII alphanumeric segments separated by dots.
 func (r *Registry) Register(id string, stage Stage, opts ...RegisterOption) (*Gate, error) {
 	if err := validateID(id); err != nil {
 		return nil, fmt.Errorf("invalid ID %q: %w", id, err)

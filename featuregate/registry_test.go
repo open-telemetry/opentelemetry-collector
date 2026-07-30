@@ -153,6 +153,24 @@ func TestRegisterGateLifecycle(t *testing.T) {
 			shouldErr: true,
 		},
 		{
+			name:      "Invalid gate name with leading dot",
+			id:        ".invalid.gate.name",
+			stage:     StageAlpha,
+			shouldErr: true,
+		},
+		{
+			name:      "Invalid gate name with trailing dot",
+			id:        "invalid.gate.name.",
+			stage:     StageAlpha,
+			shouldErr: true,
+		},
+		{
+			name:      "Invalid gate name with consecutive dots",
+			id:        "invalid..gate.name",
+			stage:     StageAlpha,
+			shouldErr: true,
+		},
+		{
 			name:      "Invalid empty gate",
 			id:        "",
 			stage:     StageAlpha,

@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: pkg/featuregate
+note: Reject feature gate IDs with empty dot-separated namespace segments.
+issues: [15676]
+change_logs: [user, api]
