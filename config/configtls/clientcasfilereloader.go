@@ -4,23 +4,61 @@
 package configtls // import "go.opentelemetry.io/collector/config/configtls"
 
 import (
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
-	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sync"
-
-	"github.com/fsnotify/fsnotify"
+	"time"
 )
 
+// defaultClientCAsReloadInterval bounds how often the client CA file is checked
+// for modifications. The check only happens while TLS handshakes are being
+// served, so an idle server does no work at all.
+const defaultClientCAsReloadInterval = time.Second
+
 type clientCAsFileReloader struct {
-	clientCAsFile   string
+	clientCAsFile string
+	loader        clientCAsFileLoader
+	// reloadInterval is the minimum duration between two checks of
+	// clientCAsFile. Overridden by tests.
+	reloadInterval time.Duration
+
+	lock            sync.Mutex
 	certPool        *x509.CertPool
 	lastReloadError error
-	lock            sync.RWMutex
-	loader          clientCAsFileLoader
-	watcher         *fsnotify.Watcher
-	shutdownCH      chan bool
+	// lastCheck is when clientCAsFile was most recently checked for changes.
+	lastCheck time.Time
+	// fileID identifies the contents of clientCAsFile as of the last check.
+	fileID fileIdentity
+}
+
+// fileIdentity identifies the contents of a file by hash.
+//
+// Hashing the contents rather than comparing os.Stat metadata keeps detection
+// independent of how the file came to be updated. In particular, Kubernetes
+// projects ConfigMap and Secret volumes as a symlink to a timestamped directory
+// and swaps that symlink on update, so the path being read resolves to a
+// different underlying inode each time; and file modification timestamps carry
+// filesystem-dependent granularity. Reading the file each check sidesteps both.
+// The read is bounded by reloadInterval and CA bundles are small.
+type fileIdentity struct {
+	exists bool
+	sum    [sha256.Size]byte
+}
+
+// identifyFile returns the identity of the file at path, following symlinks. A
+// path that cannot be read yields the zero identity, which never compares equal
+// to that of a readable file, so a file that disappears or reappears is always
+// treated as a change.
+func identifyFile(path string) fileIdentity {
+	contents, err := os.ReadFile(filepath.Clean(path))
+	if err != nil {
+		return fileIdentity{}
+	}
+	return fileIdentity{exists: true, sum: sha256.Sum256(contents)}
 }
 
 type clientCAsFileLoader interface {
@@ -28,25 +66,31 @@ type clientCAsFileLoader interface {
 }
 
 func newClientCAsReloader(clientCAsFile string, loader clientCAsFileLoader) (*clientCAsFileReloader, error) {
+	// Identify the file before loading it, so that a change racing with the
+	// initial load is detected by the next check rather than being missed.
+	fileID := identifyFile(clientCAsFile)
+
 	certPool, err := loader.loadClientCAFile()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load client CA CertPool: %w", err)
 	}
 
-	reloader := &clientCAsFileReloader{
-		clientCAsFile: clientCAsFile,
-		certPool:      certPool,
-		loader:        loader,
-		shutdownCH:    nil,
-		watcher:       nil,
-	}
-
-	return reloader, nil
+	return &clientCAsFileReloader{
+		clientCAsFile:  clientCAsFile,
+		loader:         loader,
+		reloadInterval: defaultClientCAsReloadInterval,
+		certPool:       certPool,
+		lastCheck:      time.Now(),
+		fileID:         fileID,
+	}, nil
 }
 
 func (r *clientCAsFileReloader) getClientConfig(original *tls.Config) (*tls.Config, error) {
-	r.lock.RLock()
-	defer r.lock.RUnlock()
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	r.reloadIfModified(time.Now())
+
 	return &tls.Config{
 		RootCAs:              original.RootCAs,
 		GetCertificate:       original.GetCertificate,
@@ -59,84 +103,35 @@ func (r *clientCAsFileReloader) getClientConfig(original *tls.Config) (*tls.Conf
 	}, nil
 }
 
-func (r *clientCAsFileReloader) reload() {
-	r.lock.Lock()
-	defer r.lock.Unlock()
+// reloadIfModified reloads the client CA CertPool if clientCAsFile has changed
+// since the last check. Checks are rate limited to one per reloadInterval. A
+// failed reload is recorded and leaves the previously loaded CertPool in place,
+// so that a truncated or malformed file cannot break client authentication.
+//
+// The caller must hold r.lock.
+func (r *clientCAsFileReloader) reloadIfModified(now time.Time) {
+	if now.Sub(r.lastCheck) < r.reloadInterval {
+		return
+	}
+	r.lastCheck = now
+
+	fileID := identifyFile(r.clientCAsFile)
+	if fileID == r.fileID {
+		return
+	}
+	r.fileID = fileID
+
 	certPool, err := r.loader.loadClientCAFile()
 	if err != nil {
 		r.lastReloadError = err
-	} else {
-		r.certPool = certPool
-		r.lastReloadError = nil
+		return
 	}
+	r.certPool = certPool
+	r.lastReloadError = nil
 }
 
 func (r *clientCAsFileReloader) getLastError() error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	return r.lastReloadError
-}
-
-func (r *clientCAsFileReloader) startWatching() error {
-	if r.shutdownCH != nil {
-		return errors.New("client CA file watcher already started")
-	}
-
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		return fmt.Errorf("failed to create watcher to reload client CA CertPool: %w", err)
-	}
-	r.watcher = watcher
-
-	err = watcher.Add(r.clientCAsFile)
-	if err != nil {
-		return fmt.Errorf("failed to add client CA file to watcher: %w", err)
-	}
-
-	r.shutdownCH = make(chan bool)
-	go r.handleWatcherEvents()
-
-	return nil
-}
-
-func (r *clientCAsFileReloader) handleWatcherEvents() {
-	defer r.watcher.Close()
-	for {
-		select {
-		case _, ok := <-r.shutdownCH:
-			_ = ok
-			return
-		case event, ok := <-r.watcher.Events:
-			if !ok {
-				continue
-			}
-			// NOTE: k8s configmaps uses symlinks, we need this workaround.
-			// original configmap file is removed.
-			// SEE: https://martensson.io/go-fsnotify-and-kubernetes-configmaps/
-			if event.Has(fsnotify.Remove) || event.Has(fsnotify.Chmod) {
-				// remove the watcher since the file is removed
-				if err := r.watcher.Remove(event.Name); err != nil {
-					r.lastReloadError = err
-				}
-				// add a new watcher pointing to the new symlink/file
-				if err := r.watcher.Add(r.clientCAsFile); err != nil {
-					r.lastReloadError = err
-				}
-				r.reload()
-			}
-			if event.Has(fsnotify.Write) {
-				r.reload()
-			}
-		}
-	}
-}
-
-func (r *clientCAsFileReloader) shutdown() error {
-	if r.shutdownCH == nil {
-		return errors.New("client CAs file watcher is not running")
-	}
-	r.shutdownCH <- true
-	close(r.shutdownCH)
-	r.shutdownCH = nil
-	return nil
 }
