@@ -7,6 +7,8 @@ import (
 	"context"
 
 	"go.opentelemetry.io/otel/metric"
+
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 )
 
 // ObsMetrics reports the metrics produced by exporterhelper for one signal.
@@ -27,21 +29,12 @@ type ObsMetrics interface {
 }
 
 // QueueObserver observes the current size or capacity of a queue.
-type QueueObserver interface {
-	Observe() int64
-}
+type QueueObserver = queue.QueueObserver
 
 // ObserveQueueFunc returns the current size or capacity of a queue.
-type ObserveQueueFunc func() int64
+type ObserveQueueFunc = queue.ObserveQueueFunc
 
 var _ QueueObserver = ObserveQueueFunc(nil)
-
-func (f ObserveQueueFunc) Observe() int64 {
-	if f == nil {
-		return 0
-	}
-	return f()
-}
 
 // RecordEnqueueFailureFunc is the equivalent of ObsMetrics.RecordEnqueueFailure.
 type RecordEnqueueFailureFunc func(context.Context, int64)

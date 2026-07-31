@@ -21,12 +21,27 @@ const (
 	dataTypeKey = "data_type"
 )
 
+// QueueObserver observes the current size or capacity of a queue.
+type QueueObserver interface {
+	Observe() int64
+}
+
+// ObserveQueueFunc returns the current size or capacity of a queue.
+type ObserveQueueFunc func() int64
+
+func (f ObserveQueueFunc) Observe() int64 {
+	if f == nil {
+		return 0
+	}
+	return f()
+}
+
 // ObsMetrics reports the metrics produced by a Queue.
 type ObsMetrics interface {
 	RecordEnqueueFailure(context.Context, int64)
 	RecordBatchSendSize(context.Context, int64, int64)
-	RegisterQueueSize(func() int64) error
-	RegisterQueueCapacity(func() int64) error
+	RegisterQueueSize(QueueObserver) error
+	RegisterQueueCapacity(QueueObserver) error
 }
 
 type defaultQueueObsMetrics struct {
@@ -75,16 +90,16 @@ func (om *defaultQueueObsMetrics) RecordBatchSendSize(ctx context.Context, items
 	om.queueBatchSizeByteInst.Record(ctx, bytes, om.metricAttr)
 }
 
-func (om *defaultQueueObsMetrics) RegisterQueueSize(observe func() int64) error {
+func (om *defaultQueueObsMetrics) RegisterQueueSize(observe QueueObserver) error {
 	return om.tb.RegisterExporterQueueSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
-		o.Observe(observe(), om.asyncAttr)
+		o.Observe(observe.Observe(), om.asyncAttr)
 		return nil
 	})
 }
 
-func (om *defaultQueueObsMetrics) RegisterQueueCapacity(observe func() int64) error {
+func (om *defaultQueueObsMetrics) RegisterQueueCapacity(observe QueueObserver) error {
 	return om.tb.RegisterExporterQueueCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
-		o.Observe(observe(), om.asyncAttr)
+		o.Observe(observe.Observe(), om.asyncAttr)
 		return nil
 	})
 }
@@ -108,11 +123,11 @@ func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T
 		obsMetrics = defaultMetrics
 		tb = defaultMetrics.tb
 	}
-	if err := obsMetrics.RegisterQueueSize(delegate.Size); err != nil {
+	if err := obsMetrics.RegisterQueueSize(ObserveQueueFunc(delegate.Size)); err != nil {
 		return nil, err
 	}
 
-	if err := obsMetrics.RegisterQueueCapacity(delegate.Capacity); err != nil {
+	if err := obsMetrics.RegisterQueueCapacity(ObserveQueueFunc(delegate.Capacity)); err != nil {
 		return nil, err
 	}
 

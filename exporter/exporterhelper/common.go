@@ -12,18 +12,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 )
 
-type obsMetricsAdapter struct {
-	ObsMetrics
-}
-
-func (a obsMetricsAdapter) RegisterQueueSize(observe func() int64) error {
-	return a.ObsMetrics.RegisterQueueSize(ObserveQueueFunc(observe))
-}
-
-func (a obsMetricsAdapter) RegisterQueueCapacity(observe func() int64) error {
-	return a.ObsMetrics.RegisterQueueCapacity(ObserveQueueFunc(observe))
-}
-
 // Option apply changes to BaseExporter.
 type Option = internal.Option
 
@@ -70,5 +58,5 @@ func WithAttrs(attrs ...attribute.KeyValue) Option {
 // controls when each operation is called and takes ownership of obsMetrics
 // when this option is applied.
 func WithObsMetrics(obsMetrics ObsMetrics) Option {
-	return internal.WithObsMetrics(obsMetricsAdapter{ObsMetrics: obsMetrics})
+	return internal.WithObsMetrics(obsMetrics)
 }
