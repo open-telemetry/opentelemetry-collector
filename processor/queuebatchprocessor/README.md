@@ -56,7 +56,9 @@ available through this processor, including partitioning and storage.
 The processor reports queue and batch telemetry using
 `otelcol_processor_*` metric names and a `processor` attribute. It does not
 emit the `otelcol_exporter_*` metrics used by exporterhelper's default
-implementation. See [documentation.md](documentation.md) for the metric list.
+implementation. Exporterhelper defines the observation events and the
+processor connects those events to its generated instruments. See
+[documentation.md](documentation.md) for the metric list.
 
 ## Examples
 

@@ -299,8 +299,8 @@ These are loosely dependent,
    exporters) must declare the opt-out in their `metadata.yaml`.
 2. Introduce the `exporterhelper.exporterQueueBatchEnabled` feature
    gate at **Alpha** stability (default off).
-3. Support injected queue/batch metrics so processors and exporters define
-   their own metric names and attributes without rewriting telemetry
+3. Support injected queue/batch metric operations so processors and exporters
+   connect their generated metrics without rewriting telemetry
    ([#14038](https://github.com/open-telemetry/opentelemetry-collector/issues/14038)).
 4. Implement `queuebatchprocessor`
    ([#13583](https://github.com/open-telemetry/opentelemetry-collector/pull/13583)).

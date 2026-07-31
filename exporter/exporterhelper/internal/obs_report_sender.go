@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/metric"
 	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
@@ -109,7 +110,7 @@ func (ors *obsReportSender[K]) endOp(ctx context.Context, numRecords int, err er
 	ors.obsMetrics.RecordSent(ctx, numSent)
 
 	if numFailedToSend > 0 {
-		ors.obsMetrics.RecordSendFailure(ctx, numFailedToSend, extractFailureAttributes(err))
+		ors.obsMetrics.RecordSendFailure(ctx, numFailedToSend, metric.WithAttributeSet(extractFailureAttributes(err)))
 	}
 
 	span := trace.SpanFromContext(ctx)

@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/processor/queuebatchprocessor/internal/metadata"
@@ -32,7 +33,7 @@ type obsMetrics struct {
 	queueBatchSizeByteInst metric.Int64Histogram
 }
 
-func newObsMetrics(set component.TelemetrySettings, id component.ID, signal pipeline.Signal) (*obsMetrics, error) {
+func newObsMetrics(set component.TelemetrySettings, id component.ID, signal pipeline.Signal) (exporterhelper.ObsMetrics, error) {
 	tb, err := metadata.NewTelemetryBuilder(set)
 	if err != nil {
 		return nil, err
@@ -66,7 +67,16 @@ func newObsMetrics(set component.TelemetrySettings, id component.ID, signal pipe
 		om.itemsSentInst = tb.ProcessorSentProfileSamples
 		om.itemsFailedInst = tb.ProcessorSendFailedProfileSamples
 	}
-	return om, nil
+	return exporterhelper.NewObsMetrics(
+		exporterhelper.WithRecordEnqueueFailure(om.RecordEnqueueFailure),
+		exporterhelper.WithRecordBatchSendSize(om.RecordBatchSendSize),
+		exporterhelper.WithRegisterQueueSize(om.RegisterQueueSize),
+		exporterhelper.WithRegisterQueueCapacity(om.RegisterQueueCapacity),
+		exporterhelper.WithRecordInFlight(om.RecordInFlight),
+		exporterhelper.WithRecordSent(om.RecordSent),
+		exporterhelper.WithRecordSendFailure(om.RecordSendFailure),
+		exporterhelper.WithObsMetricsShutdown(om.Shutdown),
+	), nil
 }
 
 func (om *obsMetrics) RecordEnqueueFailure(ctx context.Context, items int64) {
@@ -78,16 +88,16 @@ func (om *obsMetrics) RecordBatchSendSize(ctx context.Context, items, bytes int6
 	om.queueBatchSizeByteInst.Record(ctx, bytes, om.metricAttr)
 }
 
-func (om *obsMetrics) RegisterQueueSize(observe func() int64) error {
+func (om *obsMetrics) RegisterQueueSize(observe exporterhelper.QueueObserver) error {
 	return om.tb.RegisterProcessorQueueSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
-		o.Observe(observe(), om.asyncAttr)
+		o.Observe(observe.Observe(), om.asyncAttr)
 		return nil
 	})
 }
 
-func (om *obsMetrics) RegisterQueueCapacity(observe func() int64) error {
+func (om *obsMetrics) RegisterQueueCapacity(observe exporterhelper.QueueObserver) error {
 	return om.tb.RegisterProcessorQueueCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
-		o.Observe(observe(), om.asyncAttr)
+		o.Observe(observe.Observe(), om.asyncAttr)
 		return nil
 	})
 }
@@ -100,8 +110,8 @@ func (om *obsMetrics) RecordSent(ctx context.Context, items int64) {
 	om.itemsSentInst.Add(ctx, items, om.metricAttr)
 }
 
-func (om *obsMetrics) RecordSendFailure(ctx context.Context, items int64, attrs attribute.Set) {
-	om.itemsFailedInst.Add(ctx, items, om.metricAttr, metric.WithAttributeSet(attrs))
+func (om *obsMetrics) RecordSendFailure(ctx context.Context, items int64, options ...metric.AddOption) {
+	om.itemsFailedInst.Add(ctx, items, append([]metric.AddOption{om.metricAttr}, options...)...)
 }
 
 func (om *obsMetrics) Shutdown() {

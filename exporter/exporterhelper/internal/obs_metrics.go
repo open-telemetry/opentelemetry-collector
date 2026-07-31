@@ -25,7 +25,7 @@ type ObsMetrics interface {
 	queue.ObsMetrics
 	RecordInFlight(context.Context, int64)
 	RecordSent(context.Context, int64)
-	RecordSendFailure(context.Context, int64, attribute.Set)
+	RecordSendFailure(context.Context, int64, ...metric.AddOption)
 	Shutdown()
 }
 
@@ -125,9 +125,9 @@ func (om *exporterObsMetrics) RecordSent(ctx context.Context, items int64) {
 	}
 }
 
-func (om *exporterObsMetrics) RecordSendFailure(ctx context.Context, items int64, attrs attribute.Set) {
+func (om *exporterObsMetrics) RecordSendFailure(ctx context.Context, items int64, options ...metric.AddOption) {
 	if om.itemsFailedInst != nil {
-		om.itemsFailedInst.Add(ctx, items, om.metricAttr, metric.WithAttributeSet(attrs))
+		om.itemsFailedInst.Add(ctx, items, append([]metric.AddOption{om.metricAttr}, options...)...)
 	}
 }
 

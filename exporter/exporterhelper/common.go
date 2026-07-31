@@ -12,11 +12,20 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 )
 
+type obsMetricsAdapter struct {
+	ObsMetrics
+}
+
+func (a obsMetricsAdapter) RegisterQueueSize(observe func() int64) error {
+	return a.ObsMetrics.RegisterQueueSize(ObserveQueueFunc(observe))
+}
+
+func (a obsMetricsAdapter) RegisterQueueCapacity(observe func() int64) error {
+	return a.ObsMetrics.RegisterQueueCapacity(ObserveQueueFunc(observe))
+}
+
 // Option apply changes to BaseExporter.
 type Option = internal.Option
-
-// ObsMetrics reports the metrics produced by exporterhelper for one signal.
-type ObsMetrics = internal.ObsMetrics
 
 // WithStart overrides the default Start function for an exporter.
 // The default start function does nothing and always returns nil.
@@ -57,8 +66,9 @@ func WithAttrs(attrs ...attribute.KeyValue) Option {
 
 // WithObsMetrics overrides the metrics emitted by exporterhelper. Components
 // that reuse exporterhelper can use this option to report component-oriented
-// metrics instead of exporter-oriented metrics. Exporterhelper takes ownership
-// of obsMetrics when this option is applied.
+// instruments for exporterhelper-defined observation events. Exporterhelper
+// controls when each operation is called and takes ownership of obsMetrics
+// when this option is applied.
 func WithObsMetrics(obsMetrics ObsMetrics) Option {
-	return internal.WithObsMetrics(obsMetrics)
+	return internal.WithObsMetrics(obsMetricsAdapter{ObsMetrics: obsMetrics})
 }
