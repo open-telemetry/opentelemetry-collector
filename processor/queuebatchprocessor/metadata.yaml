@@ -9,3 +9,142 @@ status:
   distributions: []
   codeowners:
     active: [jmacd, iblancasa]
+
+telemetry:
+  metrics:
+    processor_enqueue_failed_log_records:
+      enabled: true
+      stability: development
+      description: Number of log records failed to be added to the sending queue.
+      unit: "{record}"
+      sum:
+        value_type: int
+        monotonic: true
+    processor_enqueue_failed_metric_points:
+      enabled: true
+      stability: development
+      description: Number of metric points failed to be added to the sending queue.
+      unit: "{datapoint}"
+      sum:
+        value_type: int
+        monotonic: true
+    processor_enqueue_failed_profile_samples:
+      enabled: true
+      stability: development
+      description: Number of profile samples failed to be added to the sending queue.
+      unit: "{sample}"
+      sum:
+        value_type: int
+        monotonic: true
+    processor_enqueue_failed_spans:
+      enabled: true
+      stability: development
+      description: Number of spans failed to be added to the sending queue.
+      unit: "{span}"
+      sum:
+        value_type: int
+        monotonic: true
+    processor_in_flight_requests:
+      enabled: true
+      stability: development
+      description: Number of requests currently being processed.
+      unit: "{request}"
+      sum:
+        value_type: int
+        monotonic: false
+    processor_queue_batch_send_size:
+      enabled: true
+      stability: development
+      description: Number of units in the batch.
+      unit: "{unit}"
+      histogram:
+        value_type: int
+        bucket_boundaries: [10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000]
+    processor_queue_batch_send_size_bytes:
+      enabled: true
+      stability: development
+      description: Number of bytes in the batch.
+      unit: By
+      histogram:
+        value_type: int
+        bucket_boundaries: [128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576, 2097152, 4194304, 8388608, 16777216]
+    processor_queue_capacity:
+      enabled: true
+      stability: development
+      description: Fixed capacity of the queue.
+      unit: "{batch}"
+      gauge:
+        value_type: int
+        async: true
+    processor_queue_size:
+      enabled: true
+      stability: development
+      description: Current size of the queue.
+      unit: "{batch}"
+      gauge:
+        value_type: int
+        async: true
+    processor_send_failed_log_records:
+      enabled: true
+      stability: development
+      description: Number of log records that failed to be sent to the next consumer.
+      unit: "{record}"
+      sum:
+        value_type: int
+        monotonic: true
+    processor_send_failed_metric_points:
+      enabled: true
+      stability: development
+      description: Number of metric points that failed to be sent to the next consumer.
+      unit: "{datapoint}"
+      sum:
+        value_type: int
+        monotonic: true
+    processor_send_failed_profile_samples:
+      enabled: true
+      stability: development
+      description: Number of profile samples that failed to be sent to the next consumer.
+      unit: "{sample}"
+      sum:
+        value_type: int
+        monotonic: true
+    processor_send_failed_spans:
+      enabled: true
+      stability: development
+      description: Number of spans that failed to be sent to the next consumer.
+      unit: "{span}"
+      sum:
+        value_type: int
+        monotonic: true
+    processor_sent_log_records:
+      enabled: true
+      stability: development
+      description: Number of log records successfully sent to the next consumer.
+      unit: "{record}"
+      sum:
+        value_type: int
+        monotonic: true
+    processor_sent_metric_points:
+      enabled: true
+      stability: development
+      description: Number of metric points successfully sent to the next consumer.
+      unit: "{datapoint}"
+      sum:
+        value_type: int
+        monotonic: true
+    processor_sent_profile_samples:
+      enabled: true
+      stability: development
+      description: Number of profile samples successfully sent to the next consumer.
+      unit: "{sample}"
+      sum:
+        value_type: int
+        monotonic: true
+    processor_sent_spans:
+      enabled: true
+      stability: development
+      description: Number of spans successfully sent to the next consumer.
+      unit: "{span}"
+      sum:
+        value_type: int
+        monotonic: true

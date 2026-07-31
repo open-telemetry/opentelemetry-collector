@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -22,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/processor/queuebatchprocessor/internal/metadata"
@@ -99,6 +103,85 @@ func TestTraces(t *testing.T) {
 	require.NoError(t, p.Shutdown(context.Background()))
 
 	require.Equal(t, 5, sink.SpanCount())
+}
+
+func TestTracesProcessorMetrics(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	set, cfg := testSettings(tt)
+	p, err := newTracesProcessor(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
+
+	require.NoError(t, p.ConsumeTraces(context.Background(), generateTraces(5)))
+
+	capacityMetric, err := tt.GetMetric("otelcol_processor_queue_capacity")
+	require.NoError(t, err)
+	capacity := capacityMetric.Data.(metricdata.Gauge[int64])
+	require.Equal(t, int64(10), capacity.DataPoints[0].Value)
+	require.Equal(t, attribute.NewSet(
+		attribute.String(processorKey, set.ID.String()),
+		attribute.String(dataTypeKey, pipeline.SignalTraces.String()),
+	), capacity.DataPoints[0].Attributes)
+
+	require.NoError(t, p.Shutdown(context.Background()))
+
+	sentMetric, err := tt.GetMetric("otelcol_processor_sent_spans")
+	require.NoError(t, err)
+	sent := sentMetric.Data.(metricdata.Sum[int64])
+	require.Equal(t, int64(5), sent.DataPoints[0].Value)
+	require.Equal(t, attribute.NewSet(
+		attribute.String(processorKey, set.ID.String()),
+	), sent.DataPoints[0].Attributes)
+
+	batchMetric, err := tt.GetMetric("otelcol_processor_queue_batch_send_size")
+	require.NoError(t, err)
+	batch := batchMetric.Data.(metricdata.Histogram[int64])
+	require.Equal(t, uint64(1), batch.DataPoints[0].Count)
+	require.Equal(t, int64(5), batch.DataPoints[0].Sum)
+
+	_, err = tt.GetMetric("otelcol_exporter_sent_spans")
+	require.Error(t, err)
+	_, err = tt.GetMetric("otelcol_exporter_queue_batch_send_size")
+	require.Error(t, err)
+	_, err = tt.GetMetric("otelcol_exporter_queue_capacity")
+	require.Error(t, err)
+	_, err = tt.GetMetric("otelcol_exporter_in_flight_requests")
+	require.Error(t, err)
+}
+
+func TestObsMetricsSignalInstruments(t *testing.T) {
+	tests := []struct {
+		name   string
+		signal pipeline.Signal
+		metric string
+	}{
+		{name: "traces", signal: pipeline.SignalTraces, metric: "otelcol_processor_sent_spans"},
+		{name: "metrics", signal: pipeline.SignalMetrics, metric: "otelcol_processor_sent_metric_points"},
+		{name: "logs", signal: pipeline.SignalLogs, metric: "otelcol_processor_sent_log_records"},
+		{name: "profiles", signal: xpipeline.SignalProfiles, metric: "otelcol_processor_sent_profile_samples"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tt := componenttest.NewTelemetry()
+			t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+			set := processortest.NewNopSettings(metadata.Type)
+			om, err := newObsMetrics(tt.NewTelemetrySettings(), set.ID, tc.signal)
+			require.NoError(t, err)
+			t.Cleanup(om.Shutdown)
+
+			om.RecordSent(context.Background(), 7)
+			got, err := tt.GetMetric(tc.metric)
+			require.NoError(t, err)
+			sum := got.Data.(metricdata.Sum[int64])
+			require.Equal(t, int64(7), sum.DataPoints[0].Value)
+			require.Equal(t, attribute.NewSet(
+				attribute.String(processorKey, set.ID.String()),
+			), sum.DataPoints[0].Attributes)
+		})
+	}
 }
 
 func TestMetrics(t *testing.T) {

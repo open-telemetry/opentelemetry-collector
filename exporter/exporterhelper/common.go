@@ -15,6 +15,9 @@ import (
 // Option apply changes to BaseExporter.
 type Option = internal.Option
 
+// ObsMetrics reports the metrics produced by exporterhelper for one signal.
+type ObsMetrics = internal.ObsMetrics
+
 // WithStart overrides the default Start function for an exporter.
 // The default start function does nothing and always returns nil.
 func WithStart(start component.StartFunc) Option {
@@ -50,4 +53,12 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 // The default set of extra attribute is empty
 func WithAttrs(attrs ...attribute.KeyValue) Option {
 	return internal.WithAttributes(attrs...)
+}
+
+// WithObsMetrics overrides the metrics emitted by exporterhelper. Components
+// that reuse exporterhelper can use this option to report component-oriented
+// metrics instead of exporter-oriented metrics. Exporterhelper takes ownership
+// of obsMetrics when this option is applied.
+func WithObsMetrics(obsMetrics ObsMetrics) Option {
+	return internal.WithObsMetrics(obsMetrics)
 }

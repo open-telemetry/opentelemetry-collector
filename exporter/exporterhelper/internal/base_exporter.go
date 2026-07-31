@@ -46,6 +46,7 @@ type BaseExporter struct {
 	ConsumerOptions []consumer.Option
 
 	ExtraAttrs []attribute.KeyValue
+	ObsMetrics ObsMetrics
 
 	timeoutCfg TimeoutConfig
 	retryCfg   configretry.BackOffConfig
@@ -62,6 +63,17 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 
 	for _, op := range options {
 		if err := op(be); err != nil {
+			if be.ObsMetrics != nil {
+				be.ObsMetrics.Shutdown()
+			}
+			return nil, err
+		}
+	}
+
+	if be.ObsMetrics == nil {
+		var err error
+		be.ObsMetrics, err = newExporterObsMetrics(set.TelemetrySettings, set.ID, signal, be.ExtraAttrs)
+		if err != nil {
 			return nil, err
 		}
 	}
@@ -81,8 +93,9 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 	}
 
 	var err error
-	be.firstSender, err = newObsReportSender(set, signal, be.ExtraAttrs, be.firstSender)
+	be.firstSender, err = newObsReportSender(set, signal, be.ObsMetrics, be.firstSender)
 	if err != nil {
+		be.ObsMetrics.Shutdown()
 		return nil, err
 	}
 
@@ -93,13 +106,15 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 
 	if be.queueCfg.HasValue() {
 		qSet := queuebatch.AllSettings[request.Request]{
-			Settings:  be.queueBatchSettings,
-			Signal:    signal,
-			ID:        set.ID,
-			Telemetry: set.TelemetrySettings,
+			Settings:   be.queueBatchSettings,
+			Signal:     signal,
+			ID:         set.ID,
+			Telemetry:  set.TelemetrySettings,
+			ObsMetrics: be.ObsMetrics,
 		}
 		be.QueueSender, err = NewQueueSender(qSet, *be.queueCfg.Get(), be.ExportFailureMessage, be.firstSender)
 		if err != nil {
+			be.ObsMetrics.Shutdown()
 			return nil, err
 		}
 		be.firstSender = be.QueueSender
@@ -136,6 +151,7 @@ func (be *BaseExporter) Start(ctx context.Context, host component.Host) error {
 }
 
 func (be *BaseExporter) Shutdown(ctx context.Context) error {
+	defer be.ObsMetrics.Shutdown()
 	var err error
 
 	// First shutdown the retry sender, so the queue sender can flush the queue without retries.
@@ -249,6 +265,17 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 func WithAttributes(attrs ...attribute.KeyValue) Option {
 	return func(o *BaseExporter) error {
 		o.ExtraAttrs = attrs
+		return nil
+	}
+}
+
+// WithObsMetrics overrides the metrics emitted by exporterhelper.
+func WithObsMetrics(obsMetrics ObsMetrics) Option {
+	return func(o *BaseExporter) error {
+		if obsMetrics == nil {
+			return errors.New("ObsMetrics must not be nil")
+		}
+		o.ObsMetrics = obsMetrics
 		return nil
 	}
 }
