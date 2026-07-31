@@ -173,6 +173,22 @@ func (f obsMetricsOptionFunc) apply(metrics *obsMetrics) {
 	f(metrics)
 }
 
+// Config defines the operation functions used by ObsMetrics. Nil functions are
+// no-ops.
+type Config struct {
+	RecordEnqueueFailure  RecordEnqueueFailureFunc
+	RecordBatchSendSize   RecordBatchSendSizeFunc
+	RegisterQueueSize     RegisterQueueSizeFunc
+	RegisterQueueCapacity RegisterQueueCapacityFunc
+	RecordInFlight        RecordInFlightFunc
+	RecordSent            RecordSentFunc
+	RecordSendFailure     RecordSendFailureFunc
+	Shutdown              ShutdownObsMetricsFunc
+
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
 // NewObsMetrics creates an ObsMetrics from operation functions. Exporterhelper
 // defines the meaning and timing of each operation; options connect those
 // operations to component-owned instruments. Operations without a
@@ -185,58 +201,16 @@ func NewObsMetrics(options ...ObsMetricsOption) ObsMetrics {
 	return metrics
 }
 
-// WithRecordEnqueueFailure sets the function used to record enqueue failures.
-func WithRecordEnqueueFailure(f RecordEnqueueFailureFunc) ObsMetricsOption {
+// WithConfig sets the operation functions used by ObsMetrics.
+func WithConfig(cfg Config) ObsMetricsOption {
 	return obsMetricsOptionFunc(func(metrics *obsMetrics) {
-		metrics.RecordEnqueueFailureFunc = f
-	})
-}
-
-// WithRecordBatchSendSize sets the function used to record batch sizes.
-func WithRecordBatchSendSize(f RecordBatchSendSizeFunc) ObsMetricsOption {
-	return obsMetricsOptionFunc(func(metrics *obsMetrics) {
-		metrics.RecordBatchSendSizeFunc = f
-	})
-}
-
-// WithRegisterQueueSize sets the function used to register queue-size observation.
-func WithRegisterQueueSize(f RegisterQueueSizeFunc) ObsMetricsOption {
-	return obsMetricsOptionFunc(func(metrics *obsMetrics) {
-		metrics.RegisterQueueSizeFunc = f
-	})
-}
-
-// WithRegisterQueueCapacity sets the function used to register queue-capacity observation.
-func WithRegisterQueueCapacity(f RegisterQueueCapacityFunc) ObsMetricsOption {
-	return obsMetricsOptionFunc(func(metrics *obsMetrics) {
-		metrics.RegisterQueueCapacityFunc = f
-	})
-}
-
-// WithRecordInFlight sets the function used to record in-flight requests.
-func WithRecordInFlight(f RecordInFlightFunc) ObsMetricsOption {
-	return obsMetricsOptionFunc(func(metrics *obsMetrics) {
-		metrics.RecordInFlightFunc = f
-	})
-}
-
-// WithRecordSent sets the function used to record successfully sent items.
-func WithRecordSent(f RecordSentFunc) ObsMetricsOption {
-	return obsMetricsOptionFunc(func(metrics *obsMetrics) {
-		metrics.RecordSentFunc = f
-	})
-}
-
-// WithRecordSendFailure sets the function used to record send failures.
-func WithRecordSendFailure(f RecordSendFailureFunc) ObsMetricsOption {
-	return obsMetricsOptionFunc(func(metrics *obsMetrics) {
-		metrics.RecordSendFailureFunc = f
-	})
-}
-
-// WithObsMetricsShutdown sets the function called when ObsMetrics shuts down.
-func WithObsMetricsShutdown(f ShutdownObsMetricsFunc) ObsMetricsOption {
-	return obsMetricsOptionFunc(func(metrics *obsMetrics) {
-		metrics.ShutdownObsMetricsFunc = f
+		metrics.RecordEnqueueFailureFunc = cfg.RecordEnqueueFailure
+		metrics.RecordBatchSendSizeFunc = cfg.RecordBatchSendSize
+		metrics.RegisterQueueSizeFunc = cfg.RegisterQueueSize
+		metrics.RegisterQueueCapacityFunc = cfg.RegisterQueueCapacity
+		metrics.RecordInFlightFunc = cfg.RecordInFlight
+		metrics.RecordSentFunc = cfg.RecordSent
+		metrics.RecordSendFailureFunc = cfg.RecordSendFailure
+		metrics.ShutdownObsMetricsFunc = cfg.Shutdown
 	})
 }

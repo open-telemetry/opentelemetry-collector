@@ -68,14 +68,16 @@ func newObsMetrics(set component.TelemetrySettings, id component.ID, signal pipe
 		om.itemsFailedInst = tb.ProcessorSendFailedProfileSamples
 	}
 	return exporterhelper.NewObsMetrics(
-		exporterhelper.WithRecordEnqueueFailure(om.RecordEnqueueFailure),
-		exporterhelper.WithRecordBatchSendSize(om.RecordBatchSendSize),
-		exporterhelper.WithRegisterQueueSize(om.RegisterQueueSize),
-		exporterhelper.WithRegisterQueueCapacity(om.RegisterQueueCapacity),
-		exporterhelper.WithRecordInFlight(om.RecordInFlight),
-		exporterhelper.WithRecordSent(om.RecordSent),
-		exporterhelper.WithRecordSendFailure(om.RecordSendFailure),
-		exporterhelper.WithObsMetricsShutdown(om.Shutdown),
+		exporterhelper.WithConfig(exporterhelper.Config{
+			RecordEnqueueFailure:  om.RecordEnqueueFailure,
+			RecordBatchSendSize:   om.RecordBatchSendSize,
+			RegisterQueueSize:     om.RegisterQueueSize,
+			RegisterQueueCapacity: om.RegisterQueueCapacity,
+			RecordInFlight:        om.RecordInFlight,
+			RecordSent:            om.RecordSent,
+			RecordSendFailure:     om.RecordSendFailure,
+			Shutdown:              om.Shutdown,
+		}),
 	), nil
 }
 

@@ -13,8 +13,10 @@ import (
 func TestObsMetricsFunctions(t *testing.T) {
 	var recorded int64
 	metrics := NewObsMetrics(
-		WithRecordSent(func(_ context.Context, items int64) {
-			recorded = items
+		WithConfig(Config{
+			RecordSent: func(_ context.Context, items int64) {
+				recorded = items
+			},
 		}),
 	)
 
