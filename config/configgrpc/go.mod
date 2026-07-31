@@ -3,8 +3,9 @@ module go.opentelemetry.io/collector/config/configgrpc
 go 1.25.0
 
 require (
+	github.com/golang/snappy v1.0.0
+	github.com/klauspost/compress v1.19.1
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector v0.157.0
 	go.opentelemetry.io/collector/client v1.63.0
 	go.opentelemetry.io/collector/component v1.63.0
 	go.opentelemetry.io/collector/component/componenttest v0.157.0
@@ -34,17 +35,14 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20251226215517-609e4778396f // indirect
-	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
-	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/go-tpm v0.9.8 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.19.1 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
 	github.com/knadh/koanf/v2 v2.3.5 // indirect
@@ -74,8 +72,6 @@ require (
 )
 
 replace go.opentelemetry.io/collector/client => ../../client
-
-replace go.opentelemetry.io/collector => ../..
 
 replace go.opentelemetry.io/collector/config/configauth => ../configauth
 
