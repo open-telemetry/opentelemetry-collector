@@ -11,160 +11,22 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 )
 
-// ObsMetrics reports the metrics produced by exporterhelper for one signal.
-//
-// This interface cannot be directly implemented. Implementations must use
-// NewObsMetrics.
-type ObsMetrics interface {
-	RecordEnqueueFailure(context.Context, int64)
-	RecordBatchSendSize(context.Context, int64, int64)
-	RegisterQueueSize(QueueObserver) error
-	RegisterQueueCapacity(QueueObserver) error
-	RecordInFlight(context.Context, int64)
-	RecordSent(context.Context, int64)
-	RecordSendFailure(context.Context, int64, ...metric.AddOption)
-	Shutdown()
-
-	unexportedObsMetricsFunc()
-}
-
 // QueueObserver observes the current size or capacity of a queue.
 type QueueObserver = queue.QueueObserver
 
 // ObserveQueueFunc returns the current size or capacity of a queue.
 type ObserveQueueFunc = queue.ObserveQueueFunc
 
-var _ QueueObserver = ObserveQueueFunc(nil)
-
-// RecordEnqueueFailureFunc is the equivalent of ObsMetrics.RecordEnqueueFailure.
-type RecordEnqueueFailureFunc func(context.Context, int64)
-
-var _ interface {
-	RecordEnqueueFailure(context.Context, int64)
-} = RecordEnqueueFailureFunc(nil)
-
-func (f RecordEnqueueFailureFunc) RecordEnqueueFailure(ctx context.Context, items int64) {
-	if f != nil {
-		f(ctx, items)
-	}
-}
-
-// RecordBatchSendSizeFunc is the equivalent of ObsMetrics.RecordBatchSendSize.
-type RecordBatchSendSizeFunc func(context.Context, int64, int64)
-
-var _ interface {
-	RecordBatchSendSize(context.Context, int64, int64)
-} = RecordBatchSendSizeFunc(nil)
-
-func (f RecordBatchSendSizeFunc) RecordBatchSendSize(ctx context.Context, items, bytes int64) {
-	if f != nil {
-		f(ctx, items, bytes)
-	}
-}
-
-// RegisterQueueSizeFunc is the equivalent of ObsMetrics.RegisterQueueSize.
-type RegisterQueueSizeFunc func(QueueObserver) error
-
-var _ interface {
-	RegisterQueueSize(QueueObserver) error
-} = RegisterQueueSizeFunc(nil)
-
-func (f RegisterQueueSizeFunc) RegisterQueueSize(observe QueueObserver) error {
-	if f == nil {
-		return nil
-	}
-	return f(observe)
-}
-
-// RegisterQueueCapacityFunc is the equivalent of ObsMetrics.RegisterQueueCapacity.
-type RegisterQueueCapacityFunc func(QueueObserver) error
-
-var _ interface {
-	RegisterQueueCapacity(QueueObserver) error
-} = RegisterQueueCapacityFunc(nil)
-
-func (f RegisterQueueCapacityFunc) RegisterQueueCapacity(observe QueueObserver) error {
-	if f == nil {
-		return nil
-	}
-	return f(observe)
-}
-
-// RecordInFlightFunc is the equivalent of ObsMetrics.RecordInFlight.
-type RecordInFlightFunc func(context.Context, int64)
-
-var _ interface {
-	RecordInFlight(context.Context, int64)
-} = RecordInFlightFunc(nil)
-
-func (f RecordInFlightFunc) RecordInFlight(ctx context.Context, delta int64) {
-	if f != nil {
-		f(ctx, delta)
-	}
-}
-
-// RecordSentFunc is the equivalent of ObsMetrics.RecordSent.
-type RecordSentFunc func(context.Context, int64)
-
-var _ interface {
-	RecordSent(context.Context, int64)
-} = RecordSentFunc(nil)
-
-func (f RecordSentFunc) RecordSent(ctx context.Context, items int64) {
-	if f != nil {
-		f(ctx, items)
-	}
-}
-
-// RecordSendFailureFunc is the equivalent of ObsMetrics.RecordSendFailure.
-type RecordSendFailureFunc func(context.Context, int64, ...metric.AddOption)
-
-var _ interface {
-	RecordSendFailure(context.Context, int64, ...metric.AddOption)
-} = RecordSendFailureFunc(nil)
-
-func (f RecordSendFailureFunc) RecordSendFailure(ctx context.Context, items int64, options ...metric.AddOption) {
-	if f != nil {
-		f(ctx, items, options...)
-	}
-}
-
-// ShutdownObsMetricsFunc is the equivalent of ObsMetrics.Shutdown.
-type ShutdownObsMetricsFunc func()
-
-var _ interface {
-	Shutdown()
-} = ShutdownObsMetricsFunc(nil)
-
-func (f ShutdownObsMetricsFunc) Shutdown() {
-	if f != nil {
-		f()
-	}
-}
-
-type obsMetrics struct {
-	RecordEnqueueFailureFunc
-	RecordBatchSendSizeFunc
-	RegisterQueueSizeFunc
-	RegisterQueueCapacityFunc
-	RecordInFlightFunc
-	RecordSentFunc
-	RecordSendFailureFunc
-	ShutdownObsMetricsFunc
-}
-
-func (*obsMetrics) unexportedObsMetricsFunc() {}
-
-// ObsMetricsOption applies an option to ObsMetrics.
-type ObsMetricsOption interface {
-	apply(*obsMetrics)
-}
-
-type obsMetricsOptionFunc func(*obsMetrics)
-
-func (f obsMetricsOptionFunc) apply(metrics *obsMetrics) {
-	f(metrics)
-}
+type (
+	RecordEnqueueFailureFunc  func(context.Context, int64)
+	RecordBatchSendSizeFunc   func(context.Context, int64, int64)
+	RegisterQueueSizeFunc     func(QueueObserver) error
+	RegisterQueueCapacityFunc func(QueueObserver) error
+	RecordInFlightFunc        func(context.Context, int64)
+	RecordSentFunc            func(context.Context, int64)
+	RecordSendFailureFunc     func(context.Context, int64, ...metric.AddOption)
+	ShutdownObsMetricsFunc    func()
+)
 
 // Config defines the operation functions used by ObsMetrics. Nil functions are
 // no-ops.
@@ -182,12 +44,27 @@ type Config struct {
 	_ struct{}
 }
 
-// NewObsMetrics creates an ObsMetrics from operation functions. Exporterhelper
-// defines the meaning and timing of each operation; options connect those
-// operations to component-owned instruments. Operations without a
-// corresponding option are intentionally no-ops.
-func NewObsMetrics(options ...ObsMetricsOption) ObsMetrics {
-	metrics := &obsMetrics{}
+// ObsMetrics reports the metrics produced by exporterhelper for one signal.
+type ObsMetrics struct {
+	config Config
+}
+
+// ObsMetricsOption applies an option to ObsMetrics.
+type ObsMetricsOption interface {
+	apply(*ObsMetrics)
+}
+
+type obsMetricsOptionFunc func(*ObsMetrics)
+
+func (f obsMetricsOptionFunc) apply(metrics *ObsMetrics) {
+	f(metrics)
+}
+
+// NewObsMetrics creates ObsMetrics from operation functions. Exporterhelper
+// defines the meaning and timing of each operation; unset operations are
+// no-ops.
+func NewObsMetrics(options ...ObsMetricsOption) *ObsMetrics {
+	metrics := &ObsMetrics{}
 	for _, option := range options {
 		option.apply(metrics)
 	}
@@ -196,14 +73,57 @@ func NewObsMetrics(options ...ObsMetricsOption) ObsMetrics {
 
 // WithConfig sets the operation functions used by ObsMetrics.
 func WithConfig(cfg Config) ObsMetricsOption {
-	return obsMetricsOptionFunc(func(metrics *obsMetrics) {
-		metrics.RecordEnqueueFailureFunc = cfg.RecordEnqueueFailure
-		metrics.RecordBatchSendSizeFunc = cfg.RecordBatchSendSize
-		metrics.RegisterQueueSizeFunc = cfg.RegisterQueueSize
-		metrics.RegisterQueueCapacityFunc = cfg.RegisterQueueCapacity
-		metrics.RecordInFlightFunc = cfg.RecordInFlight
-		metrics.RecordSentFunc = cfg.RecordSent
-		metrics.RecordSendFailureFunc = cfg.RecordSendFailure
-		metrics.ShutdownObsMetricsFunc = cfg.Shutdown
+	return obsMetricsOptionFunc(func(metrics *ObsMetrics) {
+		metrics.config = cfg
 	})
+}
+
+func (m *ObsMetrics) RecordEnqueueFailure(ctx context.Context, items int64) {
+	if m.config.RecordEnqueueFailure != nil {
+		m.config.RecordEnqueueFailure(ctx, items)
+	}
+}
+
+func (m *ObsMetrics) RecordBatchSendSize(ctx context.Context, items, bytes int64) {
+	if m.config.RecordBatchSendSize != nil {
+		m.config.RecordBatchSendSize(ctx, items, bytes)
+	}
+}
+
+func (m *ObsMetrics) RegisterQueueSize(observe QueueObserver) error {
+	if m.config.RegisterQueueSize == nil {
+		return nil
+	}
+	return m.config.RegisterQueueSize(observe)
+}
+
+func (m *ObsMetrics) RegisterQueueCapacity(observe QueueObserver) error {
+	if m.config.RegisterQueueCapacity == nil {
+		return nil
+	}
+	return m.config.RegisterQueueCapacity(observe)
+}
+
+func (m *ObsMetrics) RecordInFlight(ctx context.Context, delta int64) {
+	if m.config.RecordInFlight != nil {
+		m.config.RecordInFlight(ctx, delta)
+	}
+}
+
+func (m *ObsMetrics) RecordSent(ctx context.Context, items int64) {
+	if m.config.RecordSent != nil {
+		m.config.RecordSent(ctx, items)
+	}
+}
+
+func (m *ObsMetrics) RecordSendFailure(ctx context.Context, items int64, options ...metric.AddOption) {
+	if m.config.RecordSendFailure != nil {
+		m.config.RecordSendFailure(ctx, items, options...)
+	}
+}
+
+func (m *ObsMetrics) Shutdown() {
+	if m.config.Shutdown != nil {
+		m.config.Shutdown()
+	}
 }

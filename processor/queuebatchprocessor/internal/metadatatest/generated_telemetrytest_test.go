@@ -28,31 +28,13 @@ func TestSetupTelemetry(t *testing.T) {
 		observer.Observe(1)
 		return nil
 	}))
-	tb.ProcessorEnqueueFailedLogRecords.Add(context.Background(), 1)
-	tb.ProcessorEnqueueFailedMetricPoints.Add(context.Background(), 1)
-	tb.ProcessorEnqueueFailedProfileSamples.Add(context.Background(), 1)
-	tb.ProcessorEnqueueFailedSpans.Add(context.Background(), 1)
+	tb.ProcessorEnqueueFailedItems.Add(context.Background(), 1)
 	tb.ProcessorInFlightRequests.Add(context.Background(), 1)
 	tb.ProcessorQueueBatchSendSize.Record(context.Background(), 1)
 	tb.ProcessorQueueBatchSendSizeBytes.Record(context.Background(), 1)
-	tb.ProcessorSendFailedLogRecords.Add(context.Background(), 1)
-	tb.ProcessorSendFailedMetricPoints.Add(context.Background(), 1)
-	tb.ProcessorSendFailedProfileSamples.Add(context.Background(), 1)
-	tb.ProcessorSendFailedSpans.Add(context.Background(), 1)
-	tb.ProcessorSentLogRecords.Add(context.Background(), 1)
-	tb.ProcessorSentMetricPoints.Add(context.Background(), 1)
-	tb.ProcessorSentProfileSamples.Add(context.Background(), 1)
-	tb.ProcessorSentSpans.Add(context.Background(), 1)
-	AssertEqualProcessorEnqueueFailedLogRecords(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorEnqueueFailedMetricPoints(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorEnqueueFailedProfileSamples(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorEnqueueFailedSpans(t, testTel,
+	tb.ProcessorSendFailedItems.Add(context.Background(), 1)
+	tb.ProcessorSentItems.Add(context.Background(), 1)
+	AssertEqualProcessorEnqueueFailedItems(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorInFlightRequests(t, testTel,
@@ -70,28 +52,10 @@ func TestSetupTelemetry(t *testing.T) {
 	AssertEqualProcessorQueueSize(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorSendFailedLogRecords(t, testTel,
+	AssertEqualProcessorSendFailedItems(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorSendFailedMetricPoints(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorSendFailedProfileSamples(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorSendFailedSpans(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorSentLogRecords(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorSentMetricPoints(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorSentProfileSamples(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorSentSpans(t, testTel,
+	AssertEqualProcessorSentItems(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 

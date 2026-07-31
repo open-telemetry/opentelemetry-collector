@@ -122,17 +122,18 @@ func TestTracesProcessorMetrics(t *testing.T) {
 	require.Equal(t, int64(10), capacity.DataPoints[0].Value)
 	require.Equal(t, attribute.NewSet(
 		attribute.String(processorKey, set.ID.String()),
-		attribute.String(dataTypeKey, pipeline.SignalTraces.String()),
+		attribute.String(signalKey, pipeline.SignalTraces.String()),
 	), capacity.DataPoints[0].Attributes)
 
 	require.NoError(t, p.Shutdown(context.Background()))
 
-	sentMetric, err := tt.GetMetric("otelcol_processor_sent_spans")
+	sentMetric, err := tt.GetMetric("otelcol_processor_sent_items")
 	require.NoError(t, err)
 	sent := sentMetric.Data.(metricdata.Sum[int64])
 	require.Equal(t, int64(5), sent.DataPoints[0].Value)
 	require.Equal(t, attribute.NewSet(
 		attribute.String(processorKey, set.ID.String()),
+		attribute.String(signalKey, pipeline.SignalTraces.String()),
 	), sent.DataPoints[0].Attributes)
 
 	batchMetric, err := tt.GetMetric("otelcol_processor_queue_batch_send_size")
@@ -155,12 +156,11 @@ func TestObsMetricsSignalInstruments(t *testing.T) {
 	tests := []struct {
 		name   string
 		signal pipeline.Signal
-		metric string
 	}{
-		{name: "traces", signal: pipeline.SignalTraces, metric: "otelcol_processor_sent_spans"},
-		{name: "metrics", signal: pipeline.SignalMetrics, metric: "otelcol_processor_sent_metric_points"},
-		{name: "logs", signal: pipeline.SignalLogs, metric: "otelcol_processor_sent_log_records"},
-		{name: "profiles", signal: xpipeline.SignalProfiles, metric: "otelcol_processor_sent_profile_samples"},
+		{name: "traces", signal: pipeline.SignalTraces},
+		{name: "metrics", signal: pipeline.SignalMetrics},
+		{name: "logs", signal: pipeline.SignalLogs},
+		{name: "profiles", signal: xpipeline.SignalProfiles},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -173,12 +173,13 @@ func TestObsMetricsSignalInstruments(t *testing.T) {
 			t.Cleanup(om.Shutdown)
 
 			om.RecordSent(context.Background(), 7)
-			got, err := tt.GetMetric(tc.metric)
+			got, err := tt.GetMetric("otelcol_processor_sent_items")
 			require.NoError(t, err)
 			sum := got.Data.(metricdata.Sum[int64])
 			require.Equal(t, int64(7), sum.DataPoints[0].Value)
 			require.Equal(t, attribute.NewSet(
 				attribute.String(processorKey, set.ID.String()),
+				attribute.String(signalKey, tc.signal.String()),
 			), sum.DataPoints[0].Attributes)
 		})
 	}

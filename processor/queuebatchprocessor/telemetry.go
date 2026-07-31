@@ -12,19 +12,17 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pipeline"
-	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/processor/queuebatchprocessor/internal/metadata"
 )
 
 const (
 	processorKey = "processor"
-	dataTypeKey  = "data_type"
+	signalKey    = "otel.signal"
 )
 
 type obsMetrics struct {
 	tb                     *metadata.TelemetryBuilder
 	metricAttr             metric.MeasurementOption
-	asyncAttr              metric.MeasurementOption
 	enqueueFailedInst      metric.Int64Counter
 	itemsSentInst          metric.Int64Counter
 	itemsFailedInst        metric.Int64Counter
@@ -33,7 +31,7 @@ type obsMetrics struct {
 	queueBatchSizeByteInst metric.Int64Histogram
 }
 
-func newObsMetrics(set component.TelemetrySettings, id component.ID, signal pipeline.Signal) (exporterhelper.ObsMetrics, error) {
+func newObsMetrics(set component.TelemetrySettings, id component.ID, signal pipeline.Signal) (*exporterhelper.ObsMetrics, error) {
 	tb, err := metadata.NewTelemetryBuilder(set)
 	if err != nil {
 		return nil, err
@@ -42,30 +40,13 @@ func newObsMetrics(set component.TelemetrySettings, id component.ID, signal pipe
 	processorAttr := attribute.String(processorKey, id.String())
 	om := &obsMetrics{
 		tb:                     tb,
-		metricAttr:             metric.WithAttributeSet(attribute.NewSet(processorAttr)),
-		asyncAttr:              metric.WithAttributeSet(attribute.NewSet(processorAttr, attribute.String(dataTypeKey, signal.String()))),
+		metricAttr:             metric.WithAttributeSet(attribute.NewSet(processorAttr, attribute.String(signalKey, signal.String()))),
+		enqueueFailedInst:      tb.ProcessorEnqueueFailedItems,
+		itemsSentInst:          tb.ProcessorSentItems,
+		itemsFailedInst:        tb.ProcessorSendFailedItems,
 		inFlightInst:           tb.ProcessorInFlightRequests,
 		queueBatchSizeInst:     tb.ProcessorQueueBatchSendSize,
 		queueBatchSizeByteInst: tb.ProcessorQueueBatchSendSizeBytes,
-	}
-
-	switch signal {
-	case pipeline.SignalTraces:
-		om.enqueueFailedInst = tb.ProcessorEnqueueFailedSpans
-		om.itemsSentInst = tb.ProcessorSentSpans
-		om.itemsFailedInst = tb.ProcessorSendFailedSpans
-	case pipeline.SignalMetrics:
-		om.enqueueFailedInst = tb.ProcessorEnqueueFailedMetricPoints
-		om.itemsSentInst = tb.ProcessorSentMetricPoints
-		om.itemsFailedInst = tb.ProcessorSendFailedMetricPoints
-	case pipeline.SignalLogs:
-		om.enqueueFailedInst = tb.ProcessorEnqueueFailedLogRecords
-		om.itemsSentInst = tb.ProcessorSentLogRecords
-		om.itemsFailedInst = tb.ProcessorSendFailedLogRecords
-	case xpipeline.SignalProfiles:
-		om.enqueueFailedInst = tb.ProcessorEnqueueFailedProfileSamples
-		om.itemsSentInst = tb.ProcessorSentProfileSamples
-		om.itemsFailedInst = tb.ProcessorSendFailedProfileSamples
 	}
 	return exporterhelper.NewObsMetrics(
 		exporterhelper.WithConfig(exporterhelper.Config{
@@ -92,20 +73,20 @@ func (om *obsMetrics) RecordBatchSendSize(ctx context.Context, items, bytes int6
 
 func (om *obsMetrics) RegisterQueueSize(observe exporterhelper.QueueObserver) error {
 	return om.tb.RegisterProcessorQueueSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
-		o.Observe(observe.Observe(), om.asyncAttr)
+		o.Observe(observe.Observe(), om.metricAttr)
 		return nil
 	})
 }
 
 func (om *obsMetrics) RegisterQueueCapacity(observe exporterhelper.QueueObserver) error {
 	return om.tb.RegisterProcessorQueueCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
-		o.Observe(observe.Observe(), om.asyncAttr)
+		o.Observe(observe.Observe(), om.metricAttr)
 		return nil
 	})
 }
 
 func (om *obsMetrics) RecordInFlight(ctx context.Context, delta int64) {
-	om.inFlightInst.Add(ctx, delta, om.asyncAttr)
+	om.inFlightInst.Add(ctx, delta, om.metricAttr)
 }
 
 func (om *obsMetrics) RecordSent(ctx context.Context, items int64) {

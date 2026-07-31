@@ -6,37 +6,13 @@
 
 The following telemetry is emitted by this component.
 
-### otelcol_processor_enqueue_failed_log_records
+### otelcol_processor_enqueue_failed_items
 
-Number of log records failed to be added to the sending queue.
-
-| Unit | Metric Type | Value Type | Monotonic | Stability |
-| ---- | ----------- | ---------- | --------- | --------- |
-| {record} | Sum | Int | true | Development |
-
-### otelcol_processor_enqueue_failed_metric_points
-
-Number of metric points failed to be added to the sending queue.
+Number of items failed to be added to the queue.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoint} | Sum | Int | true | Development |
-
-### otelcol_processor_enqueue_failed_profile_samples
-
-Number of profile samples failed to be added to the sending queue.
-
-| Unit | Metric Type | Value Type | Monotonic | Stability |
-| ---- | ----------- | ---------- | --------- | --------- |
-| {sample} | Sum | Int | true | Development |
-
-### otelcol_processor_enqueue_failed_spans
-
-Number of spans failed to be added to the sending queue.
-
-| Unit | Metric Type | Value Type | Monotonic | Stability |
-| ---- | ----------- | ---------- | --------- | --------- |
-| {span} | Sum | Int | true | Development |
+| {item} | Sum | Int | true | Development |
 
 ### otelcol_processor_in_flight_requests
 
@@ -78,66 +54,18 @@ Current size of the queue.
 | ---- | ----------- | ---------- | --------- |
 | {batch} | Gauge | Int | Development |
 
-### otelcol_processor_send_failed_log_records
+### otelcol_processor_send_failed_items
 
-Number of log records that failed to be sent to the next consumer.
-
-| Unit | Metric Type | Value Type | Monotonic | Stability |
-| ---- | ----------- | ---------- | --------- | --------- |
-| {record} | Sum | Int | true | Development |
-
-### otelcol_processor_send_failed_metric_points
-
-Number of metric points that failed to be sent to the next consumer.
+Number of items that failed to be sent to the next consumer.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoint} | Sum | Int | true | Development |
+| {item} | Sum | Int | true | Development |
 
-### otelcol_processor_send_failed_profile_samples
+### otelcol_processor_sent_items
 
-Number of profile samples that failed to be sent to the next consumer.
-
-| Unit | Metric Type | Value Type | Monotonic | Stability |
-| ---- | ----------- | ---------- | --------- | --------- |
-| {sample} | Sum | Int | true | Development |
-
-### otelcol_processor_send_failed_spans
-
-Number of spans that failed to be sent to the next consumer.
+Number of items successfully sent to the next consumer.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {span} | Sum | Int | true | Development |
-
-### otelcol_processor_sent_log_records
-
-Number of log records successfully sent to the next consumer.
-
-| Unit | Metric Type | Value Type | Monotonic | Stability |
-| ---- | ----------- | ---------- | --------- | --------- |
-| {record} | Sum | Int | true | Development |
-
-### otelcol_processor_sent_metric_points
-
-Number of metric points successfully sent to the next consumer.
-
-| Unit | Metric Type | Value Type | Monotonic | Stability |
-| ---- | ----------- | ---------- | --------- | --------- |
-| {datapoint} | Sum | Int | true | Development |
-
-### otelcol_processor_sent_profile_samples
-
-Number of profile samples successfully sent to the next consumer.
-
-| Unit | Metric Type | Value Type | Monotonic | Stability |
-| ---- | ----------- | ---------- | --------- | --------- |
-| {sample} | Sum | Int | true | Development |
-
-### otelcol_processor_sent_spans
-
-Number of spans successfully sent to the next consumer.
-
-| Unit | Metric Type | Value Type | Monotonic | Stability |
-| ---- | ----------- | ---------- | --------- | --------- |
-| {span} | Sum | Int | true | Development |
+| {item} | Sum | Int | true | Development |

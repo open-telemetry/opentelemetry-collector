@@ -22,8 +22,8 @@ type Settings[T any] struct {
 	MergeCtx         func(context.Context, context.Context) context.Context
 }
 
-// ObsMetrics reports the metrics produced by a QueueBatch.
-type ObsMetrics = queue.ObsMetrics
+// Metrics reports the metrics produced by a QueueBatch.
+type Metrics = queue.Metrics
 
 // AllSettings defines settings for creating a QueueBatch.
 type AllSettings[T any] struct {
@@ -31,7 +31,7 @@ type AllSettings[T any] struct {
 	Signal     pipeline.Signal
 	ID         component.ID
 	Telemetry  component.TelemetrySettings
-	ObsMetrics ObsMetrics
+	ObsMetrics Metrics
 }
 
 type QueueBatch struct {

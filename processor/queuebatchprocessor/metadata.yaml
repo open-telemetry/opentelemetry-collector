@@ -12,35 +12,11 @@ status:
 
 telemetry:
   metrics:
-    processor_enqueue_failed_log_records:
+    processor_enqueue_failed_items:
       enabled: true
       stability: development
-      description: Number of log records failed to be added to the sending queue.
-      unit: "{record}"
-      sum:
-        value_type: int
-        monotonic: true
-    processor_enqueue_failed_metric_points:
-      enabled: true
-      stability: development
-      description: Number of metric points failed to be added to the sending queue.
-      unit: "{datapoint}"
-      sum:
-        value_type: int
-        monotonic: true
-    processor_enqueue_failed_profile_samples:
-      enabled: true
-      stability: development
-      description: Number of profile samples failed to be added to the sending queue.
-      unit: "{sample}"
-      sum:
-        value_type: int
-        monotonic: true
-    processor_enqueue_failed_spans:
-      enabled: true
-      stability: development
-      description: Number of spans failed to be added to the sending queue.
-      unit: "{span}"
+      description: Number of items failed to be added to the queue.
+      unit: "{item}"
       sum:
         value_type: int
         monotonic: true
@@ -84,67 +60,19 @@ telemetry:
       gauge:
         value_type: int
         async: true
-    processor_send_failed_log_records:
+    processor_send_failed_items:
       enabled: true
       stability: development
-      description: Number of log records that failed to be sent to the next consumer.
-      unit: "{record}"
+      description: Number of items that failed to be sent to the next consumer.
+      unit: "{item}"
       sum:
         value_type: int
         monotonic: true
-    processor_send_failed_metric_points:
+    processor_sent_items:
       enabled: true
       stability: development
-      description: Number of metric points that failed to be sent to the next consumer.
-      unit: "{datapoint}"
-      sum:
-        value_type: int
-        monotonic: true
-    processor_send_failed_profile_samples:
-      enabled: true
-      stability: development
-      description: Number of profile samples that failed to be sent to the next consumer.
-      unit: "{sample}"
-      sum:
-        value_type: int
-        monotonic: true
-    processor_send_failed_spans:
-      enabled: true
-      stability: development
-      description: Number of spans that failed to be sent to the next consumer.
-      unit: "{span}"
-      sum:
-        value_type: int
-        monotonic: true
-    processor_sent_log_records:
-      enabled: true
-      stability: development
-      description: Number of log records successfully sent to the next consumer.
-      unit: "{record}"
-      sum:
-        value_type: int
-        monotonic: true
-    processor_sent_metric_points:
-      enabled: true
-      stability: development
-      description: Number of metric points successfully sent to the next consumer.
-      unit: "{datapoint}"
-      sum:
-        value_type: int
-        monotonic: true
-    processor_sent_profile_samples:
-      enabled: true
-      stability: development
-      description: Number of profile samples successfully sent to the next consumer.
-      unit: "{sample}"
-      sum:
-        value_type: int
-        monotonic: true
-    processor_sent_spans:
-      enabled: true
-      stability: development
-      description: Number of spans successfully sent to the next consumer.
-      unit: "{span}"
+      description: Number of items successfully sent to the next consumer.
+      unit: "{item}"
       sum:
         value_type: int
         monotonic: true

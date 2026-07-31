@@ -36,8 +36,9 @@ func (f ObserveQueueFunc) Observe() int64 {
 	return f()
 }
 
-// ObsMetrics reports the metrics produced by a Queue.
-type ObsMetrics interface {
+// Metrics reports the metrics produced by a Queue. The caller owns its
+// lifecycle because the same metrics instance may also serve other senders.
+type Metrics interface {
 	RecordEnqueueFailure(context.Context, int64)
 	RecordBatchSendSize(context.Context, int64, int64)
 	RegisterQueueSize(QueueObserver) error
@@ -107,7 +108,7 @@ func (om *defaultQueueObsMetrics) RegisterQueueCapacity(observe QueueObserver) e
 // obsQueue is a helper to add observability to a queue.
 type obsQueue[T request.Request] struct {
 	Queue[T]
-	obsMetrics ObsMetrics
+	obsMetrics Metrics
 	tb         *metadata.TelemetryBuilder
 	tracer     trace.Tracer
 }

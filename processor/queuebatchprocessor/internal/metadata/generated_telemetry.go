@@ -25,26 +25,17 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                                metric.Meter
-	mu                                   sync.Mutex
-	registrations                        []metric.Registration
-	ProcessorEnqueueFailedLogRecords     metric.Int64Counter
-	ProcessorEnqueueFailedMetricPoints   metric.Int64Counter
-	ProcessorEnqueueFailedProfileSamples metric.Int64Counter
-	ProcessorEnqueueFailedSpans          metric.Int64Counter
-	ProcessorInFlightRequests            metric.Int64UpDownCounter
-	ProcessorQueueBatchSendSize          metric.Int64Histogram
-	ProcessorQueueBatchSendSizeBytes     metric.Int64Histogram
-	ProcessorQueueCapacity               metric.Int64ObservableGauge
-	ProcessorQueueSize                   metric.Int64ObservableGauge
-	ProcessorSendFailedLogRecords        metric.Int64Counter
-	ProcessorSendFailedMetricPoints      metric.Int64Counter
-	ProcessorSendFailedProfileSamples    metric.Int64Counter
-	ProcessorSendFailedSpans             metric.Int64Counter
-	ProcessorSentLogRecords              metric.Int64Counter
-	ProcessorSentMetricPoints            metric.Int64Counter
-	ProcessorSentProfileSamples          metric.Int64Counter
-	ProcessorSentSpans                   metric.Int64Counter
+	meter                            metric.Meter
+	mu                               sync.Mutex
+	registrations                    []metric.Registration
+	ProcessorEnqueueFailedItems      metric.Int64Counter
+	ProcessorInFlightRequests        metric.Int64UpDownCounter
+	ProcessorQueueBatchSendSize      metric.Int64Histogram
+	ProcessorQueueBatchSendSizeBytes metric.Int64Histogram
+	ProcessorQueueCapacity           metric.Int64ObservableGauge
+	ProcessorQueueSize               metric.Int64ObservableGauge
+	ProcessorSendFailedItems         metric.Int64Counter
+	ProcessorSentItems               metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -116,28 +107,10 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.ProcessorEnqueueFailedLogRecords, err = builder.meter.Int64Counter(
-		"otelcol_processor_enqueue_failed_log_records",
-		metric.WithDescription("Number of log records failed to be added to the sending queue. [Development]"),
-		metric.WithUnit("{record}"),
-	)
-	errs = errors.Join(errs, err)
-	builder.ProcessorEnqueueFailedMetricPoints, err = builder.meter.Int64Counter(
-		"otelcol_processor_enqueue_failed_metric_points",
-		metric.WithDescription("Number of metric points failed to be added to the sending queue. [Development]"),
-		metric.WithUnit("{datapoint}"),
-	)
-	errs = errors.Join(errs, err)
-	builder.ProcessorEnqueueFailedProfileSamples, err = builder.meter.Int64Counter(
-		"otelcol_processor_enqueue_failed_profile_samples",
-		metric.WithDescription("Number of profile samples failed to be added to the sending queue. [Development]"),
-		metric.WithUnit("{sample}"),
-	)
-	errs = errors.Join(errs, err)
-	builder.ProcessorEnqueueFailedSpans, err = builder.meter.Int64Counter(
-		"otelcol_processor_enqueue_failed_spans",
-		metric.WithDescription("Number of spans failed to be added to the sending queue. [Development]"),
-		metric.WithUnit("{span}"),
+	builder.ProcessorEnqueueFailedItems, err = builder.meter.Int64Counter(
+		"otelcol_processor_enqueue_failed_items",
+		metric.WithDescription("Number of items failed to be added to the queue. [Development]"),
+		metric.WithUnit("{item}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorInFlightRequests, err = builder.meter.Int64UpDownCounter(
@@ -172,52 +145,16 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("{batch}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorSendFailedLogRecords, err = builder.meter.Int64Counter(
-		"otelcol_processor_send_failed_log_records",
-		metric.WithDescription("Number of log records that failed to be sent to the next consumer. [Development]"),
-		metric.WithUnit("{record}"),
+	builder.ProcessorSendFailedItems, err = builder.meter.Int64Counter(
+		"otelcol_processor_send_failed_items",
+		metric.WithDescription("Number of items that failed to be sent to the next consumer. [Development]"),
+		metric.WithUnit("{item}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorSendFailedMetricPoints, err = builder.meter.Int64Counter(
-		"otelcol_processor_send_failed_metric_points",
-		metric.WithDescription("Number of metric points that failed to be sent to the next consumer. [Development]"),
-		metric.WithUnit("{datapoint}"),
-	)
-	errs = errors.Join(errs, err)
-	builder.ProcessorSendFailedProfileSamples, err = builder.meter.Int64Counter(
-		"otelcol_processor_send_failed_profile_samples",
-		metric.WithDescription("Number of profile samples that failed to be sent to the next consumer. [Development]"),
-		metric.WithUnit("{sample}"),
-	)
-	errs = errors.Join(errs, err)
-	builder.ProcessorSendFailedSpans, err = builder.meter.Int64Counter(
-		"otelcol_processor_send_failed_spans",
-		metric.WithDescription("Number of spans that failed to be sent to the next consumer. [Development]"),
-		metric.WithUnit("{span}"),
-	)
-	errs = errors.Join(errs, err)
-	builder.ProcessorSentLogRecords, err = builder.meter.Int64Counter(
-		"otelcol_processor_sent_log_records",
-		metric.WithDescription("Number of log records successfully sent to the next consumer. [Development]"),
-		metric.WithUnit("{record}"),
-	)
-	errs = errors.Join(errs, err)
-	builder.ProcessorSentMetricPoints, err = builder.meter.Int64Counter(
-		"otelcol_processor_sent_metric_points",
-		metric.WithDescription("Number of metric points successfully sent to the next consumer. [Development]"),
-		metric.WithUnit("{datapoint}"),
-	)
-	errs = errors.Join(errs, err)
-	builder.ProcessorSentProfileSamples, err = builder.meter.Int64Counter(
-		"otelcol_processor_sent_profile_samples",
-		metric.WithDescription("Number of profile samples successfully sent to the next consumer. [Development]"),
-		metric.WithUnit("{sample}"),
-	)
-	errs = errors.Join(errs, err)
-	builder.ProcessorSentSpans, err = builder.meter.Int64Counter(
-		"otelcol_processor_sent_spans",
-		metric.WithDescription("Number of spans successfully sent to the next consumer. [Development]"),
-		metric.WithUnit("{span}"),
+	builder.ProcessorSentItems, err = builder.meter.Int64Counter(
+		"otelcol_processor_sent_items",
+		metric.WithDescription("Number of items successfully sent to the next consumer. [Development]"),
+		metric.WithUnit("{item}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

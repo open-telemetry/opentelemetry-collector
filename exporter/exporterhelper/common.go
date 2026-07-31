@@ -57,6 +57,9 @@ func WithAttrs(attrs ...attribute.KeyValue) Option {
 // instruments for exporterhelper-defined observation events. Exporterhelper
 // controls when each operation is called and takes ownership of obsMetrics
 // when this option is applied.
-func WithObsMetrics(obsMetrics ObsMetrics) Option {
+func WithObsMetrics(obsMetrics *ObsMetrics) Option {
+	if obsMetrics == nil {
+		return internal.WithObsMetrics(nil)
+	}
 	return internal.WithObsMetrics(obsMetrics)
 }

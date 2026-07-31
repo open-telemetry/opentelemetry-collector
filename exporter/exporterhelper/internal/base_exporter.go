@@ -60,12 +60,15 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 		Set:        set,
 		timeoutCfg: NewDefaultTimeoutConfig(),
 	}
+	constructed := false
+	defer func() {
+		if !constructed && be.ObsMetrics != nil {
+			be.ObsMetrics.Shutdown()
+		}
+	}()
 
 	for _, op := range options {
 		if err := op(be); err != nil {
-			if be.ObsMetrics != nil {
-				be.ObsMetrics.Shutdown()
-			}
 			return nil, err
 		}
 	}
@@ -95,7 +98,6 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 	var err error
 	be.firstSender, err = newObsReportSender(set, signal, be.ObsMetrics, be.firstSender)
 	if err != nil {
-		be.ObsMetrics.Shutdown()
 		return nil, err
 	}
 
@@ -114,12 +116,12 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 		}
 		be.QueueSender, err = NewQueueSender(qSet, *be.queueCfg.Get(), be.ExportFailureMessage, be.firstSender)
 		if err != nil {
-			be.ObsMetrics.Shutdown()
 			return nil, err
 		}
 		be.firstSender = be.QueueSender
 	}
 
+	constructed = true
 	return be, nil
 }
 

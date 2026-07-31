@@ -27,7 +27,7 @@ func exporterSettings(set processor.Settings) exporter.Settings {
 }
 
 // queueOptions returns the exporterhelper options shared by every signal.
-func queueOptions(cfg *Config, next consumer.Capabilities, obsMetrics exporterhelper.ObsMetrics) []exporterhelper.Option {
+func queueOptions(cfg *Config, next consumer.Capabilities, obsMetrics *exporterhelper.ObsMetrics) []exporterhelper.Option {
 	var mutates bool
 	switch {
 	case cfg.Batch.HasValue():

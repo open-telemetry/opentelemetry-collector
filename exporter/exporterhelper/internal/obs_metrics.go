@@ -22,7 +22,7 @@ import (
 // Exporterhelper owns the instance after WithObsMetrics applies successfully
 // and calls Shutdown when construction fails or the component shuts down.
 type ObsMetrics interface {
-	queue.ObsMetrics
+	queue.Metrics
 	RecordInFlight(context.Context, int64)
 	RecordSent(context.Context, int64)
 	RecordSendFailure(context.Context, int64, ...metric.AddOption)
