@@ -105,6 +105,9 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 				return !prop.Embed
 			})
 		},
+		"isRequired": func(md *ConfigMetadata, propName string) bool {
+			return slices.Contains(md.Required, propName)
+		},
 	}
 }
 
