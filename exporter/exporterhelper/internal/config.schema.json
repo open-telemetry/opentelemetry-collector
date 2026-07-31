@@ -16,5 +16,5 @@
       "description": "A timeout configuration. The timeout applies to individual attempts to send data to the backend."
     }
   },
-  "title": "pkg/timeout_config"
+  "title": "pkg/exporterhelper"
 }

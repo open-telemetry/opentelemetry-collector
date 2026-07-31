@@ -77,7 +77,6 @@ components:
     - pkg/service
     - pkg/service/hostcapabilities
     - pkg/service/telemetry/telemetrytest
-    - pkg/timeout_config
     - pkg/xconfmap
     - pkg/xconnector
     - pkg/xconsumer
