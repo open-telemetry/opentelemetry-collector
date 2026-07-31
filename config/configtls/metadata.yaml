@@ -106,14 +106,3 @@ exported_configs:
       path:
         description: The path to the TPM device or Unix domain socket. For instance /dev/tpm0 or /dev/tpmrm0.
         type: string
-
-tests:
-  goleak:
-    ignore:
-      top:
-        # https://github.com/open-telemetry/opentelemetry-collector/issues/9221
-        - "go.opentelemetry.io/collector/config/configtls.(*clientCAsFileReloader).handleWatcherEvents"
-      any:
-        # https://github.com/open-telemetry/opentelemetry-collector/issues/9221
-        - "github.com/fsnotify/fsnotify.(*inotify).readEvents"
-        - "github.com/fsnotify/fsnotify.(*readDirChangesW).readEvents"
