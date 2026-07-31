@@ -65,7 +65,7 @@ require (
 	go.opentelemetry.io/collector/receiver v1.63.0 // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.157.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.157.0 // indirect
-	go.yaml.in/yaml/v3 v3.0.4 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/sys v0.45.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260414002931-afd174a4e478 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

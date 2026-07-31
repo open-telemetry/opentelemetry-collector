@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	batchprocessor "go.opentelemetry.io/collector/processor/batchprocessor"
 	memorylimiterprocessor "go.opentelemetry.io/collector/processor/memorylimiterprocessor"
+	queuebatchprocessor "go.opentelemetry.io/collector/processor/queuebatchprocessor"
 	"go.opentelemetry.io/collector/receiver"
 	nopreceiver "go.opentelemetry.io/collector/receiver/nopreceiver"
 	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
@@ -87,6 +88,7 @@ func components() (otelcol.Factories, error) {
 	factories.Processors, err = otelcol.MakeFactoryMap[processor.Factory](
 		batchprocessor.NewFactory(),
 		memorylimiterprocessor.NewFactory(),
+		queuebatchprocessor.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err
@@ -94,6 +96,7 @@ func components() (otelcol.Factories, error) {
 	factories.ProcessorModules = makeModulesMap(factories.Processors, map[component.Type]string{
 		batchprocessor.NewFactory().Type():         "go.opentelemetry.io/collector/processor/batchprocessor v0.157.0",
 		memorylimiterprocessor.NewFactory().Type(): "go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.157.0",
+		queuebatchprocessor.NewFactory().Type():    "go.opentelemetry.io/collector/processor/queuebatchprocessor v0.157.0",
 	})
 
 	factories.Connectors, err = otelcol.MakeFactoryMap[connector.Factory](
