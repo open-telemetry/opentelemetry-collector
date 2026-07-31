@@ -177,12 +177,12 @@ the components, evaluating for every exporter whether a `Default` or
 `None` should become `Some` in each exporter's default queue config.
 
 A feature flag for this change will be defined,
-`pkg.exporterhelper.exporterQueueBatchEnabled`.
+`pkg.exporterhelper.queueBatchEnabled`.
 
 #### Recommended final default queue configuration
 
 The `NewDefaultQueueConfig` function will begin being influenced by
-the `pkg.exporterhelper.exporterQueueBatchEnabled` feature flag. Only the
+the `pkg.exporterhelper.queueBatchEnabled` feature flag. Only the
 `Batch` field's default changes; `BlockOnOverflow` and `WaitForResult`
 remain `false`.
 
@@ -194,7 +194,7 @@ func NewDefaultQueueConfig() queuebatch.Config {
         MinSize:      8192,
     }
 	var batch configoptional.Optional[queuebatch.BatchConfig]
-    if metadata.PkgExporterhelperExporterQueueBatchEnabledFeatureGate.IsEnabled() {
+    if metadata.PkgExporterhelperQueueBatchEnabledFeatureGate.IsEnabled() {
         // CHANGED: Batching enabled by default under the feature gate.
         batch = configoptional.Some(batchCfg)
     } else {
@@ -290,7 +290,7 @@ These are loosely dependent,
    config omits `queue_sender` or sets it to a non-standard value.
    Exporters that legitimately need different defaults (e.g., pull-based
    exporters) must declare the opt-out in their `metadata.yaml`.
-2. Introduce the `pkg.exporterhelper.exporterQueueBatchEnabled` feature
+2. Introduce the `pkg.exporterhelper.queueBatchEnabled` feature
    gate at Alpha stability. [#15690](https://github.com/open-telemetry/opentelemetry-collector/pull/15690)
 3. Support a configurable metrics prefix to distinguish processor
    batching from exporter batching

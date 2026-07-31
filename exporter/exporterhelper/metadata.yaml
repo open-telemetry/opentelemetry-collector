@@ -12,7 +12,7 @@ status:
     beta: [traces, metrics, logs]
 
 feature_gates:
-  - id: pkg.exporterhelper.exporterQueueBatchEnabled
+  - id: pkg.exporterhelper.queueBatchEnabled
     description: "Enables exporterhelper batching by default in NewDefaultQueueConfig, as described in the batching migration RFC."
     stage: alpha
     from_version: 'v0.158.0'

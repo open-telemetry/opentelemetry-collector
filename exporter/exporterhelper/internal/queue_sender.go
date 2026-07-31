@@ -25,7 +25,7 @@ import (
 // - emits batches of 8192 items, timeout 200ms
 //
 // Batching is disabled by default, unless the
-// pkg.exporterhelper.exporterQueueBatchEnabled feature gate is enabled. See
+// pkg.exporterhelper.queueBatchEnabled feature gate is enabled. See
 // https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/batching-migration.md.
 func NewDefaultQueueConfig() queuebatch.Config {
 	batchCfg := queuebatch.BatchConfig{
@@ -34,7 +34,7 @@ func NewDefaultQueueConfig() queuebatch.Config {
 		MinSize:      8192,
 	}
 	var batch configoptional.Optional[queuebatch.BatchConfig]
-	if metadata.PkgExporterhelperExporterQueueBatchEnabledFeatureGate.IsEnabled() {
+	if metadata.PkgExporterhelperQueueBatchEnabledFeatureGate.IsEnabled() {
 		batch = configoptional.Some(batchCfg)
 	} else {
 		batch = configoptional.Default(batchCfg)

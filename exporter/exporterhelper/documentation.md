@@ -148,6 +148,6 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `pkg.exporterhelper.exporterQueueBatchEnabled` | alpha | Enables exporterhelper batching by default in NewDefaultQueueConfig, as described in the batching migration RFC. | v0.158.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/15047) |
+| `pkg.exporterhelper.queueBatchEnabled` | alpha | Enables exporterhelper batching by default in NewDefaultQueueConfig, as described in the batching migration RFC. | v0.158.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/15047) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

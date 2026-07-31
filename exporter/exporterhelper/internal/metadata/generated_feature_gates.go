@@ -6,8 +6,8 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-var PkgExporterhelperExporterQueueBatchEnabledFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"pkg.exporterhelper.exporterQueueBatchEnabled",
+var PkgExporterhelperQueueBatchEnabledFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"pkg.exporterhelper.queueBatchEnabled",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("Enables exporterhelper batching by default in NewDefaultQueueConfig, as described in the batching migration RFC."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/15047"),

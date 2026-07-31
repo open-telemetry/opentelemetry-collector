@@ -54,9 +54,9 @@ func TestNewDefaultQueueConfigBatchFeatureGate(t *testing.T) {
 	require.False(t, qCfg.Batch.HasValue())
 	require.Equal(t, int64(8192), qCfg.Batch.GetOrInsertDefault().MinSize)
 
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgExporterhelperExporterQueueBatchEnabledFeatureGate.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgExporterhelperQueueBatchEnabledFeatureGate.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgExporterhelperExporterQueueBatchEnabledFeatureGate.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgExporterhelperQueueBatchEnabledFeatureGate.ID(), false))
 	}()
 
 	qCfg = NewDefaultQueueConfig()
