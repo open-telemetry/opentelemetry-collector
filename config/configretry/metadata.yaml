@@ -16,7 +16,7 @@ exported_configs:
     properties:
       enabled:
         description: Indicates whether to not retry sending batches in case of export failure.
-        type: boolean
+        type: bool
         default: true
       initial_interval:
         description: The time to wait after the first failure before retrying.
@@ -35,12 +35,12 @@ exported_configs:
         minimum: 0
       multiplier:
         description: The value multiplied by the backoff interval bounds
-        type: float64
+        type: double
         default: 1.5
         minimum: 0
       randomization_factor:
         description: A random factor used to calculate next backoffs Randomized interval = RetryInterval * (1 ± RandomizationFactor)
-        type: float64
+        type: double
         default: 0.5
         minimum: 0
         maximum: 1
