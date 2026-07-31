@@ -103,6 +103,9 @@ type ServerConfig struct {
 	// KeepAlivesEnabled controls whether HTTP keep-alives are enabled.
 	// By default, keep-alives are always enabled. Only very resource-constrained environments should disable them.
 	KeepAlivesEnabled bool `mapstructure:"keep_alives_enabled,omitempty"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultServerConfig returns ServerConfig type object with default values.
