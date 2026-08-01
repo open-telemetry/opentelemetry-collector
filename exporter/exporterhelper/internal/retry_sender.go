@@ -86,7 +86,8 @@ func (rs *retrySender) Send(ctx context.Context, req request.Request) error {
 	for {
 		span.AddEvent(
 			"Sending request.",
-			trace.WithAttributes(attribute.Int64("retry_num", retryNum)))
+			trace.WithAttributes(attribute.Int64("retry_num", retryNum)),
+		)
 
 		err := rs.next.Send(ctx, req)
 		if err == nil {
@@ -129,7 +130,9 @@ func (rs *retrySender) Send(ctx context.Context, req request.Request) error {
 			"Exporting failed. Will retry the request after interval.",
 			trace.WithAttributes(
 				attribute.String("interval", backoffDelayStr),
-				attribute.String("error", err.Error())))
+				attribute.String("error", err.Error()),
+			),
+		)
 		rs.logger.Info(
 			"Exporting failed. Will retry the request after interval.",
 			zap.Error(err),
