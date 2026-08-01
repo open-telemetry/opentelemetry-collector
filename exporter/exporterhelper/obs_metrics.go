@@ -18,15 +18,39 @@ type QueueObserver = queue.QueueObserver
 type ObserveQueueFunc = queue.ObserveQueueFunc
 
 type (
-	RecordEnqueueFailureFunc  func(context.Context, int64)
-	RecordBatchSendSizeFunc   func(context.Context, int64, int64)
-	RegisterQueueSizeFunc     func(QueueObserver) error
-	RegisterQueueCapacityFunc func(QueueObserver) error
+	RecordEnqueueFailureFunc  = queue.RecordEnqueueFailureFunc
+	RecordBatchSendSizeFunc   = queue.RecordBatchSendSizeFunc
+	RegisterQueueSizeFunc     = queue.RegisterQueueSizeFunc
+	RegisterQueueCapacityFunc = queue.RegisterQueueCapacityFunc
 	RecordInFlightFunc        func(context.Context, int64)
 	RecordSentFunc            func(context.Context, int64)
 	RecordSendFailureFunc     func(context.Context, int64, ...metric.AddOption)
 	ShutdownObsMetricsFunc    func()
 )
+
+func (f RecordInFlightFunc) RecordInFlight(ctx context.Context, delta int64) {
+	if f != nil {
+		f(ctx, delta)
+	}
+}
+
+func (f RecordSentFunc) RecordSent(ctx context.Context, items int64) {
+	if f != nil {
+		f(ctx, items)
+	}
+}
+
+func (f RecordSendFailureFunc) RecordSendFailure(ctx context.Context, items int64, options ...metric.AddOption) {
+	if f != nil {
+		f(ctx, items, options...)
+	}
+}
+
+func (f ShutdownObsMetricsFunc) Shutdown() {
+	if f != nil {
+		f()
+	}
+}
 
 // Config defines the operation functions used by ObsMetrics. Nil functions are
 // no-ops.
@@ -79,51 +103,33 @@ func WithConfig(cfg Config) ObsMetricsOption {
 }
 
 func (m *ObsMetrics) RecordEnqueueFailure(ctx context.Context, items int64) {
-	if m.config.RecordEnqueueFailure != nil {
-		m.config.RecordEnqueueFailure(ctx, items)
-	}
+	m.config.RecordEnqueueFailure.RecordEnqueueFailure(ctx, items)
 }
 
 func (m *ObsMetrics) RecordBatchSendSize(ctx context.Context, items, bytes int64) {
-	if m.config.RecordBatchSendSize != nil {
-		m.config.RecordBatchSendSize(ctx, items, bytes)
-	}
+	m.config.RecordBatchSendSize.RecordBatchSendSize(ctx, items, bytes)
 }
 
 func (m *ObsMetrics) RegisterQueueSize(observe QueueObserver) error {
-	if m.config.RegisterQueueSize == nil {
-		return nil
-	}
-	return m.config.RegisterQueueSize(observe)
+	return m.config.RegisterQueueSize.RegisterQueueSize(observe)
 }
 
 func (m *ObsMetrics) RegisterQueueCapacity(observe QueueObserver) error {
-	if m.config.RegisterQueueCapacity == nil {
-		return nil
-	}
-	return m.config.RegisterQueueCapacity(observe)
+	return m.config.RegisterQueueCapacity.RegisterQueueCapacity(observe)
 }
 
 func (m *ObsMetrics) RecordInFlight(ctx context.Context, delta int64) {
-	if m.config.RecordInFlight != nil {
-		m.config.RecordInFlight(ctx, delta)
-	}
+	m.config.RecordInFlight.RecordInFlight(ctx, delta)
 }
 
 func (m *ObsMetrics) RecordSent(ctx context.Context, items int64) {
-	if m.config.RecordSent != nil {
-		m.config.RecordSent(ctx, items)
-	}
+	m.config.RecordSent.RecordSent(ctx, items)
 }
 
 func (m *ObsMetrics) RecordSendFailure(ctx context.Context, items int64, options ...metric.AddOption) {
-	if m.config.RecordSendFailure != nil {
-		m.config.RecordSendFailure(ctx, items, options...)
-	}
+	m.config.RecordSendFailure.RecordSendFailure(ctx, items, options...)
 }
 
 func (m *ObsMetrics) Shutdown() {
-	if m.config.Shutdown != nil {
-		m.config.Shutdown()
-	}
+	m.config.Shutdown.Shutdown()
 }
