@@ -29,18 +29,47 @@ type ObsMetrics interface {
 	Shutdown()
 }
 
+type RecordInFlightFunc func(context.Context, int64)
+
+func (f RecordInFlightFunc) RecordInFlight(ctx context.Context, delta int64) {
+	if f != nil {
+		f(ctx, delta)
+	}
+}
+
+type RecordSentFunc func(context.Context, int64)
+
+func (f RecordSentFunc) RecordSent(ctx context.Context, items int64) {
+	if f != nil {
+		f(ctx, items)
+	}
+}
+
+type RecordSendFailureFunc func(context.Context, int64, ...metric.AddOption)
+
+func (f RecordSendFailureFunc) RecordSendFailure(ctx context.Context, items int64, options ...metric.AddOption) {
+	if f != nil {
+		f(ctx, items, options...)
+	}
+}
+
+type ShutdownObsMetricsFunc func()
+
+func (f ShutdownObsMetricsFunc) Shutdown() {
+	if f != nil {
+		f()
+	}
+}
+
 type exporterObsMetrics struct {
-	tb                     *metadata.TelemetryBuilder
-	metricAttr             metric.MeasurementOption
-	queueMetricAttr        metric.MeasurementOption
-	inFlightMetricAttr     metric.MeasurementOption
-	asyncAttr              metric.MeasurementOption
-	enqueueFailedInst      metric.Int64Counter
-	itemsSentInst          metric.Int64Counter
-	itemsFailedInst        metric.Int64Counter
-	inFlightInst           metric.Int64UpDownCounter
-	queueBatchSizeInst     metric.Int64Histogram
-	queueBatchSizeByteInst metric.Int64Histogram
+	queue.RecordEnqueueFailureFunc
+	queue.RecordBatchSendSizeFunc
+	queue.RegisterQueueSizeFunc
+	queue.RegisterQueueCapacityFunc
+	RecordInFlightFunc
+	RecordSentFunc
+	RecordSendFailureFunc
+	ShutdownObsMetricsFunc
 }
 
 func newExporterObsMetrics(
@@ -55,82 +84,65 @@ func newExporterObsMetrics(
 	}
 
 	exporterAttr := attribute.String(ExporterKey, id.String())
-	om := &exporterObsMetrics{
-		tb:                     tb,
-		metricAttr:             metric.WithAttributeSet(attribute.NewSet(append(extraAttrs, exporterAttr)...)),
-		queueMetricAttr:        metric.WithAttributeSet(attribute.NewSet(exporterAttr)),
-		inFlightMetricAttr:     metric.WithAttributeSet(attribute.NewSet(exporterAttr, attribute.String(DataTypeKey, signal.String()))),
-		asyncAttr:              metric.WithAttributeSet(attribute.NewSet(exporterAttr, attribute.String(DataTypeKey, signal.String()))),
-		inFlightInst:           tb.ExporterInFlightRequests,
-		queueBatchSizeInst:     tb.ExporterQueueBatchSendSize,
-		queueBatchSizeByteInst: tb.ExporterQueueBatchSendSizeBytes,
-	}
-
+	metricAttr := metric.WithAttributeSet(attribute.NewSet(append(extraAttrs, exporterAttr)...))
+	queueMetricAttr := metric.WithAttributeSet(attribute.NewSet(exporterAttr))
+	asyncAttr := metric.WithAttributeSet(attribute.NewSet(exporterAttr, attribute.String(DataTypeKey, signal.String())))
+	var enqueueFailedInst, itemsSentInst, itemsFailedInst metric.Int64Counter
 	switch signal {
 	case pipeline.SignalTraces:
-		om.enqueueFailedInst = tb.ExporterEnqueueFailedSpans
-		om.itemsSentInst = tb.ExporterSentSpans
-		om.itemsFailedInst = tb.ExporterSendFailedSpans
+		enqueueFailedInst = tb.ExporterEnqueueFailedSpans
+		itemsSentInst = tb.ExporterSentSpans
+		itemsFailedInst = tb.ExporterSendFailedSpans
 	case pipeline.SignalMetrics:
-		om.enqueueFailedInst = tb.ExporterEnqueueFailedMetricPoints
-		om.itemsSentInst = tb.ExporterSentMetricPoints
-		om.itemsFailedInst = tb.ExporterSendFailedMetricPoints
+		enqueueFailedInst = tb.ExporterEnqueueFailedMetricPoints
+		itemsSentInst = tb.ExporterSentMetricPoints
+		itemsFailedInst = tb.ExporterSendFailedMetricPoints
 	case pipeline.SignalLogs:
-		om.enqueueFailedInst = tb.ExporterEnqueueFailedLogRecords
-		om.itemsSentInst = tb.ExporterSentLogRecords
-		om.itemsFailedInst = tb.ExporterSendFailedLogRecords
+		enqueueFailedInst = tb.ExporterEnqueueFailedLogRecords
+		itemsSentInst = tb.ExporterSentLogRecords
+		itemsFailedInst = tb.ExporterSendFailedLogRecords
 	case xpipeline.SignalProfiles:
-		om.enqueueFailedInst = tb.ExporterEnqueueFailedProfileSamples
-		om.itemsSentInst = tb.ExporterSentProfileSamples
-		om.itemsFailedInst = tb.ExporterSendFailedProfileSamples
+		enqueueFailedInst = tb.ExporterEnqueueFailedProfileSamples
+		itemsSentInst = tb.ExporterSentProfileSamples
+		itemsFailedInst = tb.ExporterSendFailedProfileSamples
+	}
+	om := &exporterObsMetrics{
+		RecordBatchSendSizeFunc: func(ctx context.Context, items, bytes int64) {
+			tb.ExporterQueueBatchSendSize.Record(ctx, items, queueMetricAttr)
+			tb.ExporterQueueBatchSendSizeBytes.Record(ctx, bytes, queueMetricAttr)
+		},
+		RegisterQueueSizeFunc: func(observe queue.QueueObserver) error {
+			return tb.RegisterExporterQueueSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
+				o.Observe(observe.Observe(), asyncAttr)
+				return nil
+			})
+		},
+		RegisterQueueCapacityFunc: func(observe queue.QueueObserver) error {
+			return tb.RegisterExporterQueueCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
+				o.Observe(observe.Observe(), asyncAttr)
+				return nil
+			})
+		},
+		RecordInFlightFunc: func(ctx context.Context, delta int64) {
+			tb.ExporterInFlightRequests.Add(ctx, delta, asyncAttr)
+		},
+		ShutdownObsMetricsFunc: tb.Shutdown,
+	}
+	if enqueueFailedInst != nil {
+		om.RecordEnqueueFailureFunc = func(ctx context.Context, items int64) {
+			enqueueFailedInst.Add(ctx, items, queueMetricAttr)
+		}
+	}
+	if itemsSentInst != nil {
+		om.RecordSentFunc = func(ctx context.Context, items int64) {
+			itemsSentInst.Add(ctx, items, metricAttr)
+		}
+	}
+	if itemsFailedInst != nil {
+		om.RecordSendFailureFunc = func(ctx context.Context, items int64, options ...metric.AddOption) {
+			itemsFailedInst.Add(ctx, items, append([]metric.AddOption{metricAttr}, options...)...)
+		}
 	}
 
 	return om, nil
-}
-
-func (om *exporterObsMetrics) RecordEnqueueFailure(ctx context.Context, items int64) {
-	if om.enqueueFailedInst != nil {
-		om.enqueueFailedInst.Add(ctx, items, om.queueMetricAttr)
-	}
-}
-
-func (om *exporterObsMetrics) RecordBatchSendSize(ctx context.Context, items, bytes int64) {
-	om.queueBatchSizeInst.Record(ctx, items, om.queueMetricAttr)
-	om.queueBatchSizeByteInst.Record(ctx, bytes, om.queueMetricAttr)
-}
-
-func (om *exporterObsMetrics) RegisterQueueSize(observe queue.QueueObserver) error {
-	return om.tb.RegisterExporterQueueSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
-		o.Observe(observe.Observe(), om.asyncAttr)
-		return nil
-	})
-}
-
-func (om *exporterObsMetrics) RegisterQueueCapacity(observe queue.QueueObserver) error {
-	return om.tb.RegisterExporterQueueCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
-		o.Observe(observe.Observe(), om.asyncAttr)
-		return nil
-	})
-}
-
-func (om *exporterObsMetrics) RecordInFlight(ctx context.Context, delta int64) {
-	if om.inFlightInst != nil {
-		om.inFlightInst.Add(ctx, delta, om.inFlightMetricAttr)
-	}
-}
-
-func (om *exporterObsMetrics) RecordSent(ctx context.Context, items int64) {
-	if om.itemsSentInst != nil {
-		om.itemsSentInst.Add(ctx, items, om.metricAttr)
-	}
-}
-
-func (om *exporterObsMetrics) RecordSendFailure(ctx context.Context, items int64, options ...metric.AddOption) {
-	if om.itemsFailedInst != nil {
-		om.itemsFailedInst.Add(ctx, items, append([]metric.AddOption{om.metricAttr}, options...)...)
-	}
-}
-
-func (om *exporterObsMetrics) Shutdown() {
-	om.tb.Shutdown()
 }

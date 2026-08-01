@@ -8,6 +8,7 @@ import (
 
 	"go.opentelemetry.io/otel/metric"
 
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 )
 
@@ -22,35 +23,11 @@ type (
 	RecordBatchSendSizeFunc   = queue.RecordBatchSendSizeFunc
 	RegisterQueueSizeFunc     = queue.RegisterQueueSizeFunc
 	RegisterQueueCapacityFunc = queue.RegisterQueueCapacityFunc
-	RecordInFlightFunc        func(context.Context, int64)
-	RecordSentFunc            func(context.Context, int64)
-	RecordSendFailureFunc     func(context.Context, int64, ...metric.AddOption)
-	ShutdownObsMetricsFunc    func()
+	RecordInFlightFunc        = internal.RecordInFlightFunc
+	RecordSentFunc            = internal.RecordSentFunc
+	RecordSendFailureFunc     = internal.RecordSendFailureFunc
+	ShutdownObsMetricsFunc    = internal.ShutdownObsMetricsFunc
 )
-
-func (f RecordInFlightFunc) RecordInFlight(ctx context.Context, delta int64) {
-	if f != nil {
-		f(ctx, delta)
-	}
-}
-
-func (f RecordSentFunc) RecordSent(ctx context.Context, items int64) {
-	if f != nil {
-		f(ctx, items)
-	}
-}
-
-func (f RecordSendFailureFunc) RecordSendFailure(ctx context.Context, items int64, options ...metric.AddOption) {
-	if f != nil {
-		f(ctx, items, options...)
-	}
-}
-
-func (f ShutdownObsMetricsFunc) Shutdown() {
-	if f != nil {
-		f()
-	}
-}
 
 // Config defines the operation functions used by ObsMetrics. Nil functions are
 // no-ops.
