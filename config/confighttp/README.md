@@ -49,7 +49,7 @@ README](../configtls/README.md).
       - SpeedBestCompression: `11`
     - `snappy`
       No compression levels supported yet
-    - `x-snappy-framed` (When feature gate `confighttp.framedSnappy` is enabled)
+    - `x-snappy-framed`
       No compression levels supported yet
 - [`max_idle_conns`](https://golang.org/pkg/net/http/#Transport)
 - [`max_idle_conns_per_host`](https://golang.org/pkg/net/http/#Transport)
