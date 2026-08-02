@@ -17,9 +17,11 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -269,6 +271,106 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 
 func errExport(context.Context, request.Request) error {
 	return errors.New("my error")
+}
+
+// statusRecordingHost captures the component status events reported by the
+// exporter under test.
+type statusRecordingHost struct {
+	component.Host
+	events []*componentstatus.Event
+}
+
+func (h *statusRecordingHost) Report(e *componentstatus.Event) {
+	h.events = append(h.events, e)
+}
+
+func TestBaseExporterReportsHealth(t *testing.T) {
+	permanentErr := consumererror.NewPermanent(errors.New("permanent error"))
+	recoverableErr := errors.New("recoverable error")
+
+	tests := []struct {
+		name string
+		// errs is the error returned by the pusher for each successive Send.
+		errs []error
+		want []componentstatus.Status
+	}{
+		{
+			name: "healthy exporter reports nothing",
+			errs: []error{nil, nil},
+			want: nil,
+		},
+		{
+			name: "recoverable failure is reported once",
+			errs: []error{recoverableErr, recoverableErr},
+			want: []componentstatus.Status{componentstatus.StatusRecoverableError},
+		},
+		{
+			name: "permanent failure is reported as permanent",
+			errs: []error{permanentErr},
+			want: []componentstatus.Status{componentstatus.StatusPermanentError},
+		},
+		{
+			name: "recovery is reported after a failure",
+			errs: []error{recoverableErr, nil},
+			want: []componentstatus.Status{componentstatus.StatusRecoverableError, componentstatus.StatusOK},
+		},
+		{
+			name: "escalation from recoverable to permanent is reported",
+			errs: []error{recoverableErr, permanentErr},
+			want: []componentstatus.Status{componentstatus.StatusRecoverableError, componentstatus.StatusPermanentError},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var next int
+			errs := tt.errs
+			pusher := func(context.Context, request.Request) error {
+				err := errs[next]
+				next++
+				return err
+			}
+
+			rCfg := configretry.NewDefaultBackOffConfig()
+			rCfg.Enabled = false
+			be, err := NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType),
+				pipeline.SignalMetrics, pusher, WithRetry(rCfg))
+			require.NoError(t, err)
+
+			host := &statusRecordingHost{Host: componenttest.NewNopHost()}
+			require.NoError(t, be.Start(context.Background(), host))
+
+			for range tt.errs {
+				//nolint:errcheck // The pusher error is the subject of the assertions below.
+				_ = be.Send(context.Background(), &requesttest.FakeRequest{Items: 1})
+			}
+			require.NoError(t, be.Shutdown(context.Background()))
+
+			got := make([]componentstatus.Status, 0, len(host.events))
+			for _, e := range host.events {
+				got = append(got, e.Status())
+			}
+			assert.Equal(t, tt.want, nilIfEmpty(got))
+		})
+	}
+}
+
+func TestBaseExporterReportsHealthWithoutStatusReporter(t *testing.T) {
+	be, err := NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType),
+		pipeline.SignalMetrics, errExport)
+	require.NoError(t, err)
+
+	// A host that is not a componentstatus.Reporter must not cause a failure.
+	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+	require.Error(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 1}))
+	require.NoError(t, be.Shutdown(context.Background()))
+}
+
+func nilIfEmpty(s []componentstatus.Status) []componentstatus.Status {
+	if len(s) == 0 {
+		return nil
+	}
+	return s
 }
 
 func noopExport(context.Context, request.Request) error {
