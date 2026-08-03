@@ -6,15 +6,18 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 import (
 	"context"
 	"errors"
+	"sync/atomic"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -52,6 +55,13 @@ type BaseExporter struct {
 
 	queueBatchSettings queuebatch.Settings[request.Request]
 	queueCfg           configoptional.Optional[queuebatch.Config]
+
+	// host is captured on Start so export outcomes can be reported as status events.
+	host component.Host
+
+	// lastStatus is the status last reported by reportHealth, so that only
+	// transitions produce an event.
+	lastStatus atomic.Int32
 }
 
 func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sender.SendFunc[request.Request], options ...Option) (*BaseExporter, error) {
@@ -118,10 +128,45 @@ func (be *BaseExporter) Send(ctx context.Context, req request.Request) error {
 		be.Set.Logger.Error("Exporting failed. Rejecting data."+be.ExportFailureMessage,
 			zap.Error(err), zap.Int("rejected_items", itemsCount))
 	}
+	be.reportHealth(err)
 	return err
 }
 
+// reportHealth reports the outcome of an export as a component status event, so
+// status watchers such as the healthcheck extensions can observe an exporter that
+// is failing to deliver data. Only transitions are reported.
+func (be *BaseExporter) reportHealth(err error) {
+	if be.host == nil {
+		return
+	}
+
+	status := componentstatus.StatusOK
+	switch {
+	case err == nil:
+	case consumererror.IsPermanent(err):
+		status = componentstatus.StatusPermanentError
+	default:
+		status = componentstatus.StatusRecoverableError
+	}
+
+	if componentstatus.Status(be.lastStatus.Swap(int32(status))) == status {
+		return
+	}
+
+	switch status {
+	case componentstatus.StatusPermanentError:
+		componentstatus.ReportStatus(be.host, componentstatus.NewPermanentErrorEvent(err))
+	case componentstatus.StatusRecoverableError:
+		componentstatus.ReportStatus(be.host, componentstatus.NewRecoverableErrorEvent(err))
+	default:
+		componentstatus.ReportStatus(be.host, componentstatus.NewEvent(componentstatus.StatusOK))
+	}
+}
+
 func (be *BaseExporter) Start(ctx context.Context, host component.Host) error {
+	be.host = host
+	be.lastStatus.Store(int32(componentstatus.StatusOK))
+
 	// First start the wrapped exporter.
 	if err := be.StartFunc.Start(ctx, host); err != nil {
 		return err

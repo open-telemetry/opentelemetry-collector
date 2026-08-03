@@ -8,6 +8,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/client v1.63.0
 	go.opentelemetry.io/collector/component v1.63.0
+	go.opentelemetry.io/collector/component/componentstatus v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/component/componenttest v0.157.0
 	go.opentelemetry.io/collector/config/configoptional v1.63.0
 	go.opentelemetry.io/collector/config/configretry v1.63.0
@@ -126,3 +127,5 @@ replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testut
 replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/componentalias
 
 replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../pipeline/xpipeline
+
+replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
