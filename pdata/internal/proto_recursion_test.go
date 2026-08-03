@@ -23,6 +23,14 @@ func TestUnmarshalProtoAnyValueKeyValueListRecursionLimit(t *testing.T) {
 	require.ErrorIs(t, err, proto.ErrRecursionDepth)
 }
 
+func TestUnmarshalProtoArrayValueRecursionLimitDirect(t *testing.T) {
+	require.ErrorIs(t, NewArrayValue().unmarshalProto(nil, proto.RecursionLimit), proto.ErrRecursionDepth)
+}
+
+func TestUnmarshalProtoKeyValueRecursionLimitDirect(t *testing.T) {
+	require.ErrorIs(t, (&KeyValue{}).unmarshalProto(nil, proto.RecursionLimit), proto.ErrRecursionDepth)
+}
+
 func nestedArrayValueProto(depth int) []byte {
 	var payload []byte
 	for range depth {
