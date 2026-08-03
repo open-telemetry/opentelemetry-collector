@@ -252,6 +252,14 @@ func (orig *Location) MarshalProto(buf []byte) int {
 }
 
 func (orig *Location) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, 0)
+}
+
+func (orig *Location) unmarshalProto(buf []byte, depth int) error {
+	if depth >= proto.RecursionLimit {
+		return proto.ErrRecursionDepth
+	}
+	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -299,7 +307,7 @@ func (orig *Location) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 			orig.Lines = append(orig.Lines, NewLine())
-			err = orig.Lines[len(orig.Lines)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.Lines[len(orig.Lines)-1].unmarshalProto(buf[startPos:pos], depth)
 			if err != nil {
 				return err
 			}

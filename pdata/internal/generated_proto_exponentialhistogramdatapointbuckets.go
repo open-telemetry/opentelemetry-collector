@@ -202,6 +202,14 @@ func (orig *ExponentialHistogramDataPointBuckets) MarshalProto(buf []byte) int {
 }
 
 func (orig *ExponentialHistogramDataPointBuckets) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, 0)
+}
+
+func (orig *ExponentialHistogramDataPointBuckets) unmarshalProto(buf []byte, depth int) error {
+	if depth >= proto.RecursionLimit {
+		return proto.ErrRecursionDepth
+	}
+	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType

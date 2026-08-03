@@ -208,6 +208,14 @@ func (orig *UDPAddr) MarshalProto(buf []byte) int {
 }
 
 func (orig *UDPAddr) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, 0)
+}
+
+func (orig *UDPAddr) unmarshalProto(buf []byte, depth int) error {
+	if depth >= proto.RecursionLimit {
+		return proto.ErrRecursionDepth
+	}
+	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
