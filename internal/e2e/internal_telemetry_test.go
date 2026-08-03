@@ -163,9 +163,11 @@ service:
 			require.NoError(t, err)
 
 			// Start collector
+			runErr := make(chan error, 1)
 			go func() {
-				assert.NoError(t, collector.Run(t.Context()))
+				runErr <- collector.Run(t.Context())
 			}()
+			waitCollectorRunning(t, collector, runErr)
 			waitMetricsReady(t, metricsPort)
 
 			// Send some data through the pipeline to trigger internal telemetry
