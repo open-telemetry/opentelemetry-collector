@@ -378,14 +378,6 @@ func (orig *ProfilesDictionary) MarshalProto(buf []byte) int {
 }
 
 func (orig *ProfilesDictionary) UnmarshalProto(buf []byte) error {
-	return orig.unmarshalProto(buf, 0)
-}
-
-func (orig *ProfilesDictionary) unmarshalProto(buf []byte, depth int) error {
-	if depth >= proto.RecursionLimit {
-		return proto.ErrRecursionDepth
-	}
-	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -411,7 +403,7 @@ func (orig *ProfilesDictionary) unmarshalProto(buf []byte, depth int) error {
 			}
 			startPos := pos - length
 			orig.MappingTable = append(orig.MappingTable, NewMapping())
-			err = orig.MappingTable[len(orig.MappingTable)-1].unmarshalProto(buf[startPos:pos], depth)
+			err = orig.MappingTable[len(orig.MappingTable)-1].UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -427,7 +419,7 @@ func (orig *ProfilesDictionary) unmarshalProto(buf []byte, depth int) error {
 			}
 			startPos := pos - length
 			orig.LocationTable = append(orig.LocationTable, NewLocation())
-			err = orig.LocationTable[len(orig.LocationTable)-1].unmarshalProto(buf[startPos:pos], depth)
+			err = orig.LocationTable[len(orig.LocationTable)-1].UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -443,7 +435,7 @@ func (orig *ProfilesDictionary) unmarshalProto(buf []byte, depth int) error {
 			}
 			startPos := pos - length
 			orig.FunctionTable = append(orig.FunctionTable, NewFunction())
-			err = orig.FunctionTable[len(orig.FunctionTable)-1].unmarshalProto(buf[startPos:pos], depth)
+			err = orig.FunctionTable[len(orig.FunctionTable)-1].UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -459,7 +451,7 @@ func (orig *ProfilesDictionary) unmarshalProto(buf []byte, depth int) error {
 			}
 			startPos := pos - length
 			orig.LinkTable = append(orig.LinkTable, NewLink())
-			err = orig.LinkTable[len(orig.LinkTable)-1].unmarshalProto(buf[startPos:pos], depth)
+			err = orig.LinkTable[len(orig.LinkTable)-1].UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -487,7 +479,7 @@ func (orig *ProfilesDictionary) unmarshalProto(buf []byte, depth int) error {
 			}
 			startPos := pos - length
 			orig.AttributeTable = append(orig.AttributeTable, NewKeyValueAndUnit())
-			err = orig.AttributeTable[len(orig.AttributeTable)-1].unmarshalProto(buf[startPos:pos], depth)
+			err = orig.AttributeTable[len(orig.AttributeTable)-1].UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -503,7 +495,7 @@ func (orig *ProfilesDictionary) unmarshalProto(buf []byte, depth int) error {
 			}
 			startPos := pos - length
 			orig.StackTable = append(orig.StackTable, NewStack())
-			err = orig.StackTable[len(orig.StackTable)-1].unmarshalProto(buf[startPos:pos], depth)
+			err = orig.StackTable[len(orig.StackTable)-1].UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}

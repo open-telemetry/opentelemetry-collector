@@ -182,14 +182,6 @@ func (orig *ExportLogsServiceRequest) MarshalProto(buf []byte) int {
 }
 
 func (orig *ExportLogsServiceRequest) UnmarshalProto(buf []byte) error {
-	return orig.unmarshalProto(buf, 0)
-}
-
-func (orig *ExportLogsServiceRequest) unmarshalProto(buf []byte, depth int) error {
-	if depth >= proto.RecursionLimit {
-		return proto.ErrRecursionDepth
-	}
-	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -215,7 +207,7 @@ func (orig *ExportLogsServiceRequest) unmarshalProto(buf []byte, depth int) erro
 			}
 			startPos := pos - length
 			orig.ResourceLogs = append(orig.ResourceLogs, NewResourceLogs())
-			err = orig.ResourceLogs[len(orig.ResourceLogs)-1].unmarshalProto(buf[startPos:pos], depth)
+			err = orig.ResourceLogs[len(orig.ResourceLogs)-1].UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}

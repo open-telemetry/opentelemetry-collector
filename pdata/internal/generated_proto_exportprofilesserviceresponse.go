@@ -165,14 +165,6 @@ func (orig *ExportProfilesServiceResponse) MarshalProto(buf []byte) int {
 }
 
 func (orig *ExportProfilesServiceResponse) UnmarshalProto(buf []byte) error {
-	return orig.unmarshalProto(buf, 0)
-}
-
-func (orig *ExportProfilesServiceResponse) unmarshalProto(buf []byte, depth int) error {
-	if depth >= proto.RecursionLimit {
-		return proto.ErrRecursionDepth
-	}
-	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -198,7 +190,7 @@ func (orig *ExportProfilesServiceResponse) unmarshalProto(buf []byte, depth int)
 			}
 			startPos := pos - length
 
-			err = orig.PartialSuccess.unmarshalProto(buf[startPos:pos], depth)
+			err = orig.PartialSuccess.UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}

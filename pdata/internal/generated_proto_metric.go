@@ -581,14 +581,6 @@ func (orig *Metric) MarshalProto(buf []byte) int {
 }
 
 func (orig *Metric) UnmarshalProto(buf []byte) error {
-	return orig.unmarshalProto(buf, 0)
-}
-
-func (orig *Metric) unmarshalProto(buf []byte, depth int) error {
-	if depth >= proto.RecursionLimit {
-		return proto.ErrRecursionDepth
-	}
-	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -656,7 +648,7 @@ func (orig *Metric) unmarshalProto(buf []byte, depth int) error {
 				ov = ProtoPoolMetric_Gauge.Get().(*Metric_Gauge)
 			}
 			ov.Gauge = NewGauge()
-			err = ov.Gauge.unmarshalProto(buf[startPos:pos], depth)
+			err = ov.Gauge.UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -679,7 +671,7 @@ func (orig *Metric) unmarshalProto(buf []byte, depth int) error {
 				ov = ProtoPoolMetric_Sum.Get().(*Metric_Sum)
 			}
 			ov.Sum = NewSum()
-			err = ov.Sum.unmarshalProto(buf[startPos:pos], depth)
+			err = ov.Sum.UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -702,7 +694,7 @@ func (orig *Metric) unmarshalProto(buf []byte, depth int) error {
 				ov = ProtoPoolMetric_Histogram.Get().(*Metric_Histogram)
 			}
 			ov.Histogram = NewHistogram()
-			err = ov.Histogram.unmarshalProto(buf[startPos:pos], depth)
+			err = ov.Histogram.UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -725,7 +717,7 @@ func (orig *Metric) unmarshalProto(buf []byte, depth int) error {
 				ov = ProtoPoolMetric_ExponentialHistogram.Get().(*Metric_ExponentialHistogram)
 			}
 			ov.ExponentialHistogram = NewExponentialHistogram()
-			err = ov.ExponentialHistogram.unmarshalProto(buf[startPos:pos], depth)
+			err = ov.ExponentialHistogram.UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -748,7 +740,7 @@ func (orig *Metric) unmarshalProto(buf []byte, depth int) error {
 				ov = ProtoPoolMetric_Summary.Get().(*Metric_Summary)
 			}
 			ov.Summary = NewSummary()
-			err = ov.Summary.unmarshalProto(buf[startPos:pos], depth)
+			err = ov.Summary.UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -765,7 +757,7 @@ func (orig *Metric) unmarshalProto(buf []byte, depth int) error {
 			}
 			startPos := pos - length
 			orig.Metadata = append(orig.Metadata, KeyValue{})
-			err = orig.Metadata[len(orig.Metadata)-1].unmarshalProto(buf[startPos:pos], depth)
+			err = orig.Metadata[len(orig.Metadata)-1].UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}

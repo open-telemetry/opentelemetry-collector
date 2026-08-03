@@ -221,14 +221,6 @@ func (orig *ScopeMetrics) MarshalProto(buf []byte) int {
 }
 
 func (orig *ScopeMetrics) UnmarshalProto(buf []byte) error {
-	return orig.unmarshalProto(buf, 0)
-}
-
-func (orig *ScopeMetrics) unmarshalProto(buf []byte, depth int) error {
-	if depth >= proto.RecursionLimit {
-		return proto.ErrRecursionDepth
-	}
-	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -254,7 +246,7 @@ func (orig *ScopeMetrics) unmarshalProto(buf []byte, depth int) error {
 			}
 			startPos := pos - length
 
-			err = orig.Scope.unmarshalProto(buf[startPos:pos], depth)
+			err = orig.Scope.UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -270,7 +262,7 @@ func (orig *ScopeMetrics) unmarshalProto(buf []byte, depth int) error {
 			}
 			startPos := pos - length
 			orig.Metrics = append(orig.Metrics, NewMetric())
-			err = orig.Metrics[len(orig.Metrics)-1].unmarshalProto(buf[startPos:pos], depth)
+			err = orig.Metrics[len(orig.Metrics)-1].UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}

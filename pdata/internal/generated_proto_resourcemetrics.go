@@ -255,14 +255,6 @@ func (orig *ResourceMetrics) MarshalProto(buf []byte) int {
 }
 
 func (orig *ResourceMetrics) UnmarshalProto(buf []byte) error {
-	return orig.unmarshalProto(buf, 0)
-}
-
-func (orig *ResourceMetrics) unmarshalProto(buf []byte, depth int) error {
-	if depth >= proto.RecursionLimit {
-		return proto.ErrRecursionDepth
-	}
-	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -288,7 +280,7 @@ func (orig *ResourceMetrics) unmarshalProto(buf []byte, depth int) error {
 			}
 			startPos := pos - length
 
-			err = orig.Resource.unmarshalProto(buf[startPos:pos], depth)
+			err = orig.Resource.UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -304,7 +296,7 @@ func (orig *ResourceMetrics) unmarshalProto(buf []byte, depth int) error {
 			}
 			startPos := pos - length
 			orig.ScopeMetrics = append(orig.ScopeMetrics, NewScopeMetrics())
-			err = orig.ScopeMetrics[len(orig.ScopeMetrics)-1].unmarshalProto(buf[startPos:pos], depth)
+			err = orig.ScopeMetrics[len(orig.ScopeMetrics)-1].UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -332,7 +324,7 @@ func (orig *ResourceMetrics) unmarshalProto(buf []byte, depth int) error {
 			}
 			startPos := pos - length
 			orig.DeprecatedScopeMetrics = append(orig.DeprecatedScopeMetrics, NewScopeMetrics())
-			err = orig.DeprecatedScopeMetrics[len(orig.DeprecatedScopeMetrics)-1].unmarshalProto(buf[startPos:pos], depth)
+			err = orig.DeprecatedScopeMetrics[len(orig.DeprecatedScopeMetrics)-1].UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}

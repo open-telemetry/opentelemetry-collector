@@ -31,6 +31,11 @@ type FieldInterface interface {
 
 	GenUnmarshalProto() string
 
+	// GenUnmarshalProtoNoDepth generates proto unmarshal code that always calls
+	// child.UnmarshalProto(buf) (resetting depth to 0) instead of propagating depth.
+	// Used for types that cannot be nested inside AnyValue.
+	GenUnmarshalProtoNoDepth() string
+
 	GenMessageField() string
 
 	GenOneOfMessages() string
@@ -220,7 +225,7 @@ func (pf *Field) getTemplateFields() map[string]any {
 		"goType":            pf.GoType(),
 		"defaultValue":      pf.DefaultValue(),
 		"testValue":         pf.TestValue(),
-		"generatedMessage":  pf.MessageName != "TraceID" && pf.MessageName != "SpanID" && pf.MessageName != "ProfileID",
+		"generatedMessage":  pf.MessageName == "AnyValue" || pf.MessageName == "ArrayValue" || pf.MessageName == "KeyValueList" || pf.MessageName == "KeyValue",
 	}
 }
 

@@ -255,14 +255,6 @@ func (orig *ResourceLogs) MarshalProto(buf []byte) int {
 }
 
 func (orig *ResourceLogs) UnmarshalProto(buf []byte) error {
-	return orig.unmarshalProto(buf, 0)
-}
-
-func (orig *ResourceLogs) unmarshalProto(buf []byte, depth int) error {
-	if depth >= proto.RecursionLimit {
-		return proto.ErrRecursionDepth
-	}
-	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -288,7 +280,7 @@ func (orig *ResourceLogs) unmarshalProto(buf []byte, depth int) error {
 			}
 			startPos := pos - length
 
-			err = orig.Resource.unmarshalProto(buf[startPos:pos], depth)
+			err = orig.Resource.UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -304,7 +296,7 @@ func (orig *ResourceLogs) unmarshalProto(buf []byte, depth int) error {
 			}
 			startPos := pos - length
 			orig.ScopeLogs = append(orig.ScopeLogs, NewScopeLogs())
-			err = orig.ScopeLogs[len(orig.ScopeLogs)-1].unmarshalProto(buf[startPos:pos], depth)
+			err = orig.ScopeLogs[len(orig.ScopeLogs)-1].UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -332,7 +324,7 @@ func (orig *ResourceLogs) unmarshalProto(buf []byte, depth int) error {
 			}
 			startPos := pos - length
 			orig.DeprecatedScopeLogs = append(orig.DeprecatedScopeLogs, NewScopeLogs())
-			err = orig.DeprecatedScopeLogs[len(orig.DeprecatedScopeLogs)-1].unmarshalProto(buf[startPos:pos], depth)
+			err = orig.DeprecatedScopeLogs[len(orig.DeprecatedScopeLogs)-1].UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}

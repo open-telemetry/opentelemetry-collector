@@ -181,14 +181,6 @@ func (orig *Summary) MarshalProto(buf []byte) int {
 }
 
 func (orig *Summary) UnmarshalProto(buf []byte) error {
-	return orig.unmarshalProto(buf, 0)
-}
-
-func (orig *Summary) unmarshalProto(buf []byte, depth int) error {
-	if depth >= proto.RecursionLimit {
-		return proto.ErrRecursionDepth
-	}
-	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -214,7 +206,7 @@ func (orig *Summary) unmarshalProto(buf []byte, depth int) error {
 			}
 			startPos := pos - length
 			orig.DataPoints = append(orig.DataPoints, NewSummaryDataPoint())
-			err = orig.DataPoints[len(orig.DataPoints)-1].unmarshalProto(buf[startPos:pos], depth)
+			err = orig.DataPoints[len(orig.DataPoints)-1].UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}

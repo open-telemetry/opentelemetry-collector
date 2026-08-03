@@ -303,14 +303,6 @@ func (orig *SummaryDataPoint) MarshalProto(buf []byte) int {
 }
 
 func (orig *SummaryDataPoint) UnmarshalProto(buf []byte) error {
-	return orig.unmarshalProto(buf, 0)
-}
-
-func (orig *SummaryDataPoint) unmarshalProto(buf []byte, depth int) error {
-	if depth >= proto.RecursionLimit {
-		return proto.ErrRecursionDepth
-	}
-	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -336,7 +328,7 @@ func (orig *SummaryDataPoint) unmarshalProto(buf []byte, depth int) error {
 			}
 			startPos := pos - length
 			orig.Attributes = append(orig.Attributes, KeyValue{})
-			err = orig.Attributes[len(orig.Attributes)-1].unmarshalProto(buf[startPos:pos], depth)
+			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -399,7 +391,7 @@ func (orig *SummaryDataPoint) unmarshalProto(buf []byte, depth int) error {
 			}
 			startPos := pos - length
 			orig.QuantileValues = append(orig.QuantileValues, NewSummaryDataPointValueAtQuantile())
-			err = orig.QuantileValues[len(orig.QuantileValues)-1].unmarshalProto(buf[startPos:pos], depth)
+			err = orig.QuantileValues[len(orig.QuantileValues)-1].UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}

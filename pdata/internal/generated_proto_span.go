@@ -488,14 +488,6 @@ func (orig *Span) MarshalProto(buf []byte) int {
 }
 
 func (orig *Span) UnmarshalProto(buf []byte) error {
-	return orig.unmarshalProto(buf, 0)
-}
-
-func (orig *Span) unmarshalProto(buf []byte, depth int) error {
-	if depth >= proto.RecursionLimit {
-		return proto.ErrRecursionDepth
-	}
-	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -640,7 +632,7 @@ func (orig *Span) unmarshalProto(buf []byte, depth int) error {
 			}
 			startPos := pos - length
 			orig.Attributes = append(orig.Attributes, KeyValue{})
-			err = orig.Attributes[len(orig.Attributes)-1].unmarshalProto(buf[startPos:pos], depth)
+			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -667,7 +659,7 @@ func (orig *Span) unmarshalProto(buf []byte, depth int) error {
 			}
 			startPos := pos - length
 			orig.Events = append(orig.Events, NewSpanEvent())
-			err = orig.Events[len(orig.Events)-1].unmarshalProto(buf[startPos:pos], depth)
+			err = orig.Events[len(orig.Events)-1].UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -694,7 +686,7 @@ func (orig *Span) unmarshalProto(buf []byte, depth int) error {
 			}
 			startPos := pos - length
 			orig.Links = append(orig.Links, NewSpanLink())
-			err = orig.Links[len(orig.Links)-1].unmarshalProto(buf[startPos:pos], depth)
+			err = orig.Links[len(orig.Links)-1].UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
@@ -721,7 +713,7 @@ func (orig *Span) unmarshalProto(buf []byte, depth int) error {
 			}
 			startPos := pos - length
 
-			err = orig.Status.unmarshalProto(buf[startPos:pos], depth)
+			err = orig.Status.UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}

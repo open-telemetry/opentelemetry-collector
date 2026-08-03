@@ -240,14 +240,6 @@ func (orig *SpanEvent) MarshalProto(buf []byte) int {
 }
 
 func (orig *SpanEvent) UnmarshalProto(buf []byte) error {
-	return orig.unmarshalProto(buf, 0)
-}
-
-func (orig *SpanEvent) unmarshalProto(buf []byte, depth int) error {
-	if depth >= proto.RecursionLimit {
-		return proto.ErrRecursionDepth
-	}
-	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -297,7 +289,7 @@ func (orig *SpanEvent) unmarshalProto(buf []byte, depth int) error {
 			}
 			startPos := pos - length
 			orig.Attributes = append(orig.Attributes, KeyValue{})
-			err = orig.Attributes[len(orig.Attributes)-1].unmarshalProto(buf[startPos:pos], depth)
+			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}
