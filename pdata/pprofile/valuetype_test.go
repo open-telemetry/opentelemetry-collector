@@ -213,8 +213,9 @@ func BenchmarkValueTypeSwitchDictionary(b *testing.B) {
 		b.StopTimer()
 		dst := NewProfilesDictionary()
 		dst.StringTable().Append("", "foo")
+		mi := newMergeIndex(dst)
 		b.StartTimer()
 
-		_ = vt.switchDictionary(src, dst, newMergeIndex(dst))
+		_ = vt.switchDictionary(src, dst, mi)
 	}
 }

@@ -107,8 +107,9 @@ func BenchmarkResourceProfilesSwitchDictionary(b *testing.B) {
 	for b.Loop() {
 		b.StopTimer()
 		dst := NewProfilesDictionary()
+		mi := newMergeIndex(dst)
 		b.StartTimer()
 
-		_ = r.switchDictionary(src, dst, newMergeIndex(dst))
+		_ = r.switchDictionary(src, dst, mi)
 	}
 }

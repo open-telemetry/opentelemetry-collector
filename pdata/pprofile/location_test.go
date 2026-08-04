@@ -343,9 +343,10 @@ func BenchmarkLocationSwitchDictionary(b *testing.B) {
 		dst.StringTable().Append("", "foo")
 		dst.AttributeTable().AppendEmpty()
 		dst.AttributeTable().AppendEmpty().SetKeyStrindex(1)
+		mi := newMergeIndex(dst)
 		b.StartTimer()
 
-		_ = l.switchDictionary(src, dst, newMergeIndex(dst))
+		_ = l.switchDictionary(src, dst, mi)
 	}
 }
 

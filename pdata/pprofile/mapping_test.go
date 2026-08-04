@@ -292,9 +292,10 @@ func BenchmarkMappingSwitchDictionary(b *testing.B) {
 		dst.StringTable().Append("", "foo")
 		dst.AttributeTable().AppendEmpty()
 		dst.AttributeTable().AppendEmpty().SetKeyStrindex(1)
+		mi := newMergeIndex(dst)
 		b.StartTimer()
 
-		_ = m.switchDictionary(src, dst, newMergeIndex(dst))
+		_ = m.switchDictionary(src, dst, mi)
 	}
 }
 

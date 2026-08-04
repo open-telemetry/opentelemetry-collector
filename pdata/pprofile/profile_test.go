@@ -351,9 +351,10 @@ func BenchmarkProfileSwitchDictionary(b *testing.B) {
 		dst.StringTable().Append("", "foo")
 		dst.AttributeTable().AppendEmpty()
 		dst.AttributeTable().AppendEmpty().SetKeyStrindex(1)
+		mi := newMergeIndex(dst)
 		b.StartTimer()
 
-		_ = p.switchDictionary(src, dst, newMergeIndex(dst))
+		_ = p.switchDictionary(src, dst, mi)
 	}
 }
 

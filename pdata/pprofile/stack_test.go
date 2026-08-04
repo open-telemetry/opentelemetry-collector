@@ -241,8 +241,9 @@ func BenchmarkStackSwitchDictionary(b *testing.B) {
 		dst := NewProfilesDictionary()
 		dst.LocationTable().AppendEmpty()
 		dst.LocationTable().AppendEmpty().SetAddress(43)
+		mi := newMergeIndex(dst)
 		b.StartTimer()
 
-		_ = s.switchDictionary(src, dst, newMergeIndex(dst))
+		_ = s.switchDictionary(src, dst, mi)
 	}
 }

@@ -330,9 +330,11 @@ func BenchmarkSampleSwitchDictionary(b *testing.B) {
 	src.LinkTable().AppendEmpty()
 	src.LinkTable().AppendEmpty().SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 
+	mi := newMergeIndex(dst)
+
 	b.ReportAllocs()
 
 	for b.Loop() {
-		_ = s.switchDictionary(src, dst, newMergeIndex(dst))
+		_ = s.switchDictionary(src, dst, mi)
 	}
 }
