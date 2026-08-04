@@ -339,9 +339,10 @@ func BenchmarkFunctionSwitchDictionary(b *testing.B) {
 		b.StopTimer()
 		dst := NewProfilesDictionary()
 		dst.StringTable().Append("", "foo")
+		mi := newMergeIndex(dst)
 		b.StartTimer()
 
-		_ = fn.switchDictionary(src, dst, newMergeIndex(dst))
+		_ = fn.switchDictionary(src, dst, mi)
 	}
 }
 

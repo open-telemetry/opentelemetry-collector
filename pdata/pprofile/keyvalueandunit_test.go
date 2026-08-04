@@ -260,9 +260,10 @@ func BenchmarkKeyValueAndUnitSwitchDictionary(b *testing.B) {
 	for b.Loop() {
 		b.StopTimer()
 		dst := NewProfilesDictionary()
+		mi := newMergeIndex(dst)
 		b.StartTimer()
 
-		_ = kvu.switchDictionary(src, dst, newMergeIndex(dst))
+		_ = kvu.switchDictionary(src, dst, mi)
 	}
 }
 

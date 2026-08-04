@@ -265,9 +265,10 @@ func BenchmarkLineSwitchDictionary(b *testing.B) {
 	for b.Loop() {
 		b.StopTimer()
 		dst := NewProfilesDictionary()
+		mi := newMergeIndex(dst)
 		b.StartTimer()
 
-		_ = l.switchDictionary(src, dst, newMergeIndex(dst))
+		_ = l.switchDictionary(src, dst, mi)
 	}
 }
 
