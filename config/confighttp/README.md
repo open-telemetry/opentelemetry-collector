@@ -49,7 +49,7 @@ README](../configtls/README.md).
       - SpeedBestCompression: `11`
     - `snappy`
       No compression levels supported yet
-    - `x-snappy-framed` (When feature gate `confighttp.framedSnappy` is enabled)
+    - `x-snappy-framed`
       No compression levels supported yet
 - [`max_idle_conns`](https://golang.org/pkg/net/http/#Transport)
 - [`max_idle_conns_per_host`](https://golang.org/pkg/net/http/#Transport)
@@ -115,7 +115,6 @@ will not be enabled.
 - `include_metadata`: propagates the client metadata from the incoming requests to the downstream consumers. Default: `false`
 - `response_headers`: Additional headers attached to each HTTP response sent to the client. Header values are opaque since they may be sensitive
 - `compression_algorithms`: configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4"]
-  - `x-snappy-framed` can be used if feature gate `confighttp.snappyFramed` is enabled.
 - `read_timeout`: maximum duration for reading the entire request, including the body. A zero or negative value means there will be no timeout. Default: `0` (no timeout)
 - `read_header_timeout`: amount of time allowed to read request headers. If zero, the value of `read_timeout` is used. If both are zero, there is no timeout. Default: `1m`
 - `write_timeout`: maximum duration before timing out writes of the response. A zero or negative value means there will be no timeout. Default: `30s`
