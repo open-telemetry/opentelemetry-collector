@@ -6,8 +6,8 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/gobwas/glob v0.2.3
 	github.com/knadh/koanf/maps v0.1.2
-	github.com/knadh/koanf/providers/confmap v1.0.0
-	github.com/knadh/koanf/v2 v2.3.5
+	github.com/knadh/koanf/providers/confmap v1.0.1
+	github.com/knadh/koanf/v2 v2.3.6
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/featuregate v1.63.0
 	go.opentelemetry.io/collector/internal/testutil v0.157.0
