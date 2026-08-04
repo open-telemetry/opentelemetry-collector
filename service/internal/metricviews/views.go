@@ -113,6 +113,17 @@ func DefaultViews(level configtelemetry.Level) []config.View {
 					},
 				},
 			},
+			config.View{
+				Selector: &config.ViewSelector{
+					MeterName:      scope,
+					InstrumentName: ptr("otelcol_exporter_dropped_*"),
+				},
+				Stream: &config.ViewStream{
+					AttributeKeys: &config.IncludeExclude{
+						Excluded: []string{"exporter.dropped.reason"},
+					},
+				},
+			},
 		)
 	}
 

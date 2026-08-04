@@ -22,17 +22,17 @@ func TestDefaultViews(t *testing.T) {
 		{
 			name:           "None",
 			level:          configtelemetry.LevelNone,
-			wantViewsCount: 18,
+			wantViewsCount: 19,
 		},
 		{
 			name:           "Basic",
 			level:          configtelemetry.LevelBasic,
-			wantViewsCount: 18,
+			wantViewsCount: 19,
 		},
 		{
 			name:           "Normal",
 			level:          configtelemetry.LevelNormal,
-			wantViewsCount: 15,
+			wantViewsCount: 16,
 		},
 		{
 			name:           "Detailed",
@@ -95,6 +95,59 @@ func TestDefaultViewsFiltersSendFailedAttributes(t *testing.T) {
 			} else {
 				assert.False(t, foundSendFailedView,
 					"Did not expect to find send_failed attribute filtering view at level %s", tt.level)
+			}
+		})
+	}
+}
+
+func TestDefaultViewsFiltersDroppedAttributes(t *testing.T) {
+	tests := []struct {
+		name                      string
+		level                     configtelemetry.Level
+		expectDroppedFilteredView bool
+	}{
+		{
+			name:                      "basic level filters dropped reason attribute",
+			level:                     configtelemetry.LevelBasic,
+			expectDroppedFilteredView: true,
+		},
+		{
+			name:                      "normal level filters dropped reason attribute",
+			level:                     configtelemetry.LevelNormal,
+			expectDroppedFilteredView: true,
+		},
+		{
+			name:                      "detailed level does not filter dropped reason attribute",
+			level:                     configtelemetry.LevelDetailed,
+			expectDroppedFilteredView: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			views := DefaultViews(tt.level)
+
+			foundDroppedView := false
+			for _, view := range views {
+				if view.Selector == nil ||
+					view.Selector.InstrumentName == nil ||
+					*view.Selector.InstrumentName != "otelcol_exporter_dropped_*" {
+					continue
+				}
+				foundDroppedView = true
+				require.NotNil(t, view.Stream, "dropped view should have a stream")
+				require.NotNil(t, view.Stream.AttributeKeys, "dropped view should have attribute keys")
+				require.Equal(t, []string{"exporter.dropped.reason"}, view.Stream.AttributeKeys.Excluded,
+					"dropped view should exclude 'exporter.dropped.reason' attribute")
+				break
+			}
+
+			if tt.expectDroppedFilteredView {
+				assert.True(t, foundDroppedView,
+					"Expected to find dropped attribute filtering view at level %s", tt.level)
+			} else {
+				assert.False(t, foundDroppedView,
+					"Did not expect to find dropped attribute filtering view at level %s", tt.level)
 			}
 		})
 	}
