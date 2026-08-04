@@ -443,19 +443,13 @@ func randLink(r *rand.Rand) Link {
 }
 
 // TestMergeIndex_TableOverflowGuards drives the int32-overflow guard in every
-// set* method. The threshold is temporarily lowered so the guard fires on the
+// set* method. This index's threshold is lowered so the guard fires on the
 // first novel entry instead of requiring billions of rows, and each method must
 // return its own table-specific sentinel.
 func TestMergeIndex_TableOverflowGuards(t *testing.T) {
-	// Mutates the package-global maxDictTableLen, so this test must never call
-	// t.Parallel() or run concurrently with another test that performs a merge.
-	// t.Cleanup restores the default even if an assertion fails.
-	orig := maxDictTableLen
-	maxDictTableLen = 1
-	t.Cleanup(func() { maxDictTableLen = orig })
-
 	dic := newConformantProfiles().Dictionary()
 	mi := newMergeIndex(dic)
+	mi.maxTableLen = 1
 
 	fn := NewFunction()
 	fn.SetNameStrindex(1)
