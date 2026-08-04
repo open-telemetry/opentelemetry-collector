@@ -328,6 +328,59 @@ func TestLoadTLSServerConfig(t *testing.T) {
 	assert.NotNil(t, tlsCfg)
 }
 
+func TestLoadTLSServerConfigClientAuth(t *testing.T) {
+	tests := []struct {
+		name string
+		typ  ClientAuthType
+		want tls.ClientAuthType
+	}{
+		{
+			name: "no client cert",
+			typ:  ClientAuthTypeNoClientCert,
+			want: tls.NoClientCert,
+		},
+		{
+			name: "request client cert",
+			typ:  ClientAuthTypeRequestClientCert,
+			want: tls.RequestClientCert,
+		},
+		{
+			name: "require any client cert",
+			typ:  ClientAuthTypeRequireAnyClientCert,
+			want: tls.RequireAnyClientCert,
+		},
+		{
+			name: "verify client cert if given",
+			typ:  ClientAuthTypeVerifyClientCertIfGiven,
+			want: tls.VerifyClientCertIfGiven,
+		},
+		{
+			name: "require and verify client cert",
+			typ:  ClientAuthTypeRequireAndVerifyClientCert,
+			want: tls.RequireAndVerifyClientCert,
+		},
+		{
+			name: "unknown client auth type",
+			typ:  "unknown",
+			want: tls.NoClientCert,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			tlsSetting := ServerConfig{
+				ClientAuth: ClientAuthConfig{
+					Type: test.typ,
+				},
+			}
+
+			tlsCfg, err := tlsSetting.LoadTLSConfig(context.Background())
+			require.NoError(t, err)
+			assert.Equal(t, test.want, tlsCfg.ClientAuth)
+		})
+	}
+}
+
 func TestLoadTLSServerConfigReload(t *testing.T) {
 	tmpCaPath := createTempClientCaFile(t)
 
@@ -1044,6 +1097,19 @@ func TestServerConfigValidate(t *testing.T) {
 					KeyPem:   "key-pem",
 				},
 			},
+		},
+		{
+			name: "unsupported client auth type",
+			serverConfig: ServerConfig{
+				Config: Config{
+					CertFile: "cert.pem",
+					KeyFile:  "key.pem",
+				},
+				ClientAuth: ClientAuthConfig{
+					Type: "unknown",
+				},
+			},
+			errorTxt: `unsupported client_auth type "unknown"`,
 		},
 	}
 
