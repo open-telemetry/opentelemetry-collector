@@ -198,6 +198,16 @@ func TestClientConfigProgrammaticKeepaliveAfterUnmarshal(t *testing.T) {
 	assert.False(t, transport.DisableKeepAlives)
 }
 
+// The keepalive defaults must stay in sync with the defaults that
+// NewDefaultClientConfig sets on the corresponding deprecated fields.
+func TestNewDefaultKeepaliveClientConfig(t *testing.T) {
+	defaultCfg := NewDefaultClientConfig()
+	keepalive := NewDefaultKeepaliveClientConfig()
+	assert.Equal(t, defaultCfg.IdleConnTimeout, keepalive.IdleConnTimeout)
+	assert.Equal(t, defaultCfg.MaxIdleConns, keepalive.MaxIdleConns)
+	assert.Equal(t, defaultCfg.MaxIdleConnsPerHost, keepalive.MaxIdleConnsPerHost)
+}
+
 func TestClientConfigDeprecatedWarningsLogged(t *testing.T) {
 	cfg := NewDefaultClientConfig()
 	conf := confmap.NewFromStringMap(map[string]any{
@@ -410,6 +420,14 @@ func TestServerConfigProgrammaticKeepaliveAfterUnmarshal(t *testing.T) {
 	srv, err := cfg.ToServer(t.Context(), nil, componenttest.NewNopTelemetrySettings(), http.NewServeMux())
 	require.NoError(t, err)
 	assert.Equal(t, 5*time.Minute, srv.IdleTimeout)
+}
+
+// The keepalive defaults must stay in sync with the defaults that
+// NewDefaultServerConfig sets on the corresponding deprecated fields.
+func TestNewDefaultKeepaliveServerConfig(t *testing.T) {
+	defaultCfg := NewDefaultServerConfig()
+	keepalive := NewDefaultKeepaliveServerConfig()
+	assert.Equal(t, defaultCfg.IdleTimeout, keepalive.IdleTimeout)
 }
 
 func TestServerConfigDeprecatedWarningsLogged(t *testing.T) {

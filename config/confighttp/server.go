@@ -128,6 +128,15 @@ type KeepaliveServerConfig struct {
 	_ struct{}
 }
 
+// NewDefaultKeepaliveServerConfig returns a KeepaliveServerConfig with the same
+// defaults that NewDefaultServerConfig sets on the corresponding deprecated
+// fields.
+func NewDefaultKeepaliveServerConfig() KeepaliveServerConfig {
+	return KeepaliveServerConfig{
+		IdleTimeout: 1 * time.Minute,
+	}
+}
+
 // NewDefaultServerConfig returns ServerConfig type object with default values.
 // We encourage to use this function to create an object of ServerConfig.
 func NewDefaultServerConfig() ServerConfig {

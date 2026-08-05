@@ -142,6 +142,18 @@ type KeepaliveClientConfig struct {
 	_ struct{}
 }
 
+// NewDefaultKeepaliveClientConfig returns a KeepaliveClientConfig with the same
+// defaults that NewDefaultClientConfig sets on the corresponding deprecated
+// fields, taken from [http.DefaultTransport].
+func NewDefaultKeepaliveClientConfig() KeepaliveClientConfig {
+	defaultTransport := http.DefaultTransport.(*http.Transport)
+
+	return KeepaliveClientConfig{
+		IdleConnTimeout: defaultTransport.IdleConnTimeout,
+		MaxIdleConns:    defaultTransport.MaxIdleConns,
+	}
+}
+
 // NewDefaultClientConfig returns ClientConfig type object with
 // the default values of 'MaxIdleConns' and 'IdleConnTimeout', as well as [http.DefaultTransport] values.
 // Other config options are not added as they are initialized with 'zero value' by GoLang as default.

@@ -27,6 +27,9 @@ subtext: |
   Deprecated fields set in the configuration keep working exactly as before and produce a
   deprecation warning when the client or server is created. Setting deprecated fields together
   with the new `keepalive` section is an error.
+  Code migrating off the deprecated fields can use the new `NewDefaultKeepaliveClientConfig`
+  and `NewDefaultKeepaliveServerConfig` functions to build a `keepalive` section with the
+  default values.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
