@@ -163,7 +163,7 @@ Here is a list of community roles with current and previous members:
 
 ### Maintainers
 
-- [Alex Boten](https://github.com/codeboten), Honeycomb
+- [Alex Boten](https://github.com/codeboten), Grafana Labs
 - [Bogdan Drutu](https://github.com/bogdandrutu), Snowflake
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [Evan Bradley](https://github.com/evan-bradley), Dynatrace

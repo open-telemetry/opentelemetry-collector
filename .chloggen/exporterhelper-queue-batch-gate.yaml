@@ -1,0 +1,13 @@
+change_type: enhancement
+
+component: pkg/exporterhelper
+
+note: Add the `pkg.exporterhelper.queueBatchEnabled` feature gate
+
+issues: [14038, 13582, 12022]
+
+subtext: |
+  When enabled, the batch settings returned by `NewDefaultQueueConfig()` have
+  `batch::enabled` true. See [migration RFC](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/batching-migration.md#phase-1).
+
+change_logs: [user]
