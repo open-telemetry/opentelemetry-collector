@@ -38,9 +38,11 @@ func TestSplitMetrics(t *testing.T) {
 	cpMetrics := cp.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 	cpMetrics.EnsureCapacity(5)
 	md.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().CopyTo(
-		cp.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope())
+		cp.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope(),
+	)
 	md.ResourceMetrics().At(0).Resource().CopyTo(
-		cp.ResourceMetrics().At(0).Resource())
+		cp.ResourceMetrics().At(0).Resource(),
+	)
 	metrics.At(0).CopyTo(cpMetrics.AppendEmpty())
 	metrics.At(1).CopyTo(cpMetrics.AppendEmpty())
 	metrics.At(2).CopyTo(cpMetrics.AppendEmpty())

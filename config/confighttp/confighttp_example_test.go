@@ -21,7 +21,8 @@ func ExampleServerConfig() {
 		context.Background(),
 		host.GetExtensions(),
 		componenttest.NewNopTelemetrySettings(),
-		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
+	)
 	if err != nil {
 		panic(err)
 	}
