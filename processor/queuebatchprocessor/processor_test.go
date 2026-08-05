@@ -131,27 +131,27 @@ func TestTracesProcessorMetrics(t *testing.T) {
 
 	attrs := processorAttrs(set, pipeline.SignalTraces)
 
-	metadatatest.AssertEqualProcessorQueueCapacity(t, tt,
+	metadatatest.AssertEqualProcessorQueuebatchQueueCapacity(t, tt,
 		[]metricdata.DataPoint[int64]{{Value: 10, Attributes: attrs}},
 		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
-	metadatatest.AssertEqualProcessorQueueSize(t, tt,
+	metadatatest.AssertEqualProcessorQueuebatchQueueSize(t, tt,
 		[]metricdata.DataPoint[int64]{{Value: 0, Attributes: attrs}},
 		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
-	metadatatest.AssertEqualProcessorInFlightRequests(t, tt,
+	metadatatest.AssertEqualProcessorQueuebatchInFlightRequests(t, tt,
 		[]metricdata.DataPoint[int64]{{Value: 0, Attributes: attrs}},
 		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
-	metadatatest.AssertEqualProcessorSentItems(t, tt,
+	metadatatest.AssertEqualProcessorQueuebatchSentItems(t, tt,
 		[]metricdata.DataPoint[int64]{{Value: 5, Attributes: attrs}},
 		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
-	batchMetric, err := tt.GetMetric("otelcol_processor_queue_batch_send_size")
+	batchMetric, err := tt.GetMetric("otelcol_processor_queuebatch_batch_send_size")
 	require.NoError(t, err)
 	batch := batchMetric.Data.(metricdata.Histogram[int64])
 	require.Equal(t, uint64(1), batch.DataPoints[0].Count)
 	require.Equal(t, int64(5), batch.DataPoints[0].Sum)
 	require.Equal(t, attrs, batch.DataPoints[0].Attributes)
 
-	bytesMetric, err := tt.GetMetric("otelcol_processor_queue_batch_send_size_bytes")
+	bytesMetric, err := tt.GetMetric("otelcol_processor_queuebatch_batch_send_size_bytes")
 	require.NoError(t, err)
 	bytes := bytesMetric.Data.(metricdata.Histogram[int64])
 	require.Equal(t, uint64(1), bytes.DataPoints[0].Count)
@@ -191,7 +191,7 @@ func TestTracesProcessorSendFailureMetrics(t *testing.T) {
 	require.ErrorIs(t, p.ConsumeTraces(context.Background(), generateTraces(5)), consumeErr)
 	require.NoError(t, p.Shutdown(context.Background()))
 
-	failed, err := tt.GetMetric("otelcol_processor_send_failed_items")
+	failed, err := tt.GetMetric("otelcol_processor_queuebatch_send_failed_items")
 	require.NoError(t, err)
 	sum := failed.Data.(metricdata.Sum[int64])
 	require.Equal(t, int64(5), sum.DataPoints[0].Value)
@@ -225,7 +225,7 @@ func TestTracesProcessorEnqueueFailureMetrics(t *testing.T) {
 	require.Error(t, lastErr)
 	require.NoError(t, p.Shutdown(context.Background()))
 
-	metadatatest.AssertEqualProcessorEnqueueFailedItems(t, tt,
+	metadatatest.AssertEqualProcessorQueuebatchEnqueueFailedItems(t, tt,
 		[]metricdata.DataPoint[int64]{{Value: 5, Attributes: processorAttrs(set, pipeline.SignalTraces)}},
 		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
@@ -253,13 +253,13 @@ func TestObsMetricsSignalAttribute(t *testing.T) {
 			om.RecordEnqueueFailure(context.Background(), 3)
 			om.RecordInFlight(context.Background(), 1)
 
-			metadatatest.AssertEqualProcessorSentItems(t, tt,
+			metadatatest.AssertEqualProcessorQueuebatchSentItems(t, tt,
 				[]metricdata.DataPoint[int64]{{Value: 7, Attributes: attrs}},
 				metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
-			metadatatest.AssertEqualProcessorEnqueueFailedItems(t, tt,
+			metadatatest.AssertEqualProcessorQueuebatchEnqueueFailedItems(t, tt,
 				[]metricdata.DataPoint[int64]{{Value: 3, Attributes: attrs}},
 				metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
-			metadatatest.AssertEqualProcessorInFlightRequests(t, tt,
+			metadatatest.AssertEqualProcessorQueuebatchInFlightRequests(t, tt,
 				[]metricdata.DataPoint[int64]{{Value: 1, Attributes: attrs}},
 				metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 		})

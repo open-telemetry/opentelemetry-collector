@@ -7,8 +7,10 @@ note: Report queue and batch telemetry using processor-oriented metrics
 issues: [14038]
 
 subtext: |
-  The processor reports `otelcol_processor_*` instruments with `processor` and
-  `otel.signal` attributes instead of exporterhelper's `otelcol_exporter_*`
-  instruments. It does not emit any `otelcol_exporter_*` metric.
+  The processor reports `otelcol_processor_queuebatch_*` instruments with
+  `processor` and `otel.signal` attributes instead of exporterhelper's
+  `otelcol_exporter_*` instruments. It does not emit any `otelcol_exporter_*`
+  metric. Spans and log messages are still emitted by exporterhelper and remain
+  exporter-oriented; see the component README.
 
-change_logs: [user, api]
+change_logs: [user]

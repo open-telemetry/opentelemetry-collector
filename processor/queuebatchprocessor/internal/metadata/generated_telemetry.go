@@ -25,17 +25,17 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                            metric.Meter
-	mu                               sync.Mutex
-	registrations                    []metric.Registration
-	ProcessorEnqueueFailedItems      metric.Int64Counter
-	ProcessorInFlightRequests        metric.Int64UpDownCounter
-	ProcessorQueueBatchSendSize      metric.Int64Histogram
-	ProcessorQueueBatchSendSizeBytes metric.Int64Histogram
-	ProcessorQueueCapacity           metric.Int64ObservableGauge
-	ProcessorQueueSize               metric.Int64ObservableGauge
-	ProcessorSendFailedItems         metric.Int64Counter
-	ProcessorSentItems               metric.Int64Counter
+	meter                                 metric.Meter
+	mu                                    sync.Mutex
+	registrations                         []metric.Registration
+	ProcessorQueuebatchBatchSendSize      metric.Int64Histogram
+	ProcessorQueuebatchBatchSendSizeBytes metric.Int64Histogram
+	ProcessorQueuebatchEnqueueFailedItems metric.Int64Counter
+	ProcessorQueuebatchInFlightRequests   metric.Int64UpDownCounter
+	ProcessorQueuebatchQueueCapacity      metric.Int64ObservableGauge
+	ProcessorQueuebatchQueueSize          metric.Int64ObservableGauge
+	ProcessorQueuebatchSendFailedItems    metric.Int64Counter
+	ProcessorQueuebatchSentItems          metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -49,12 +49,12 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
 }
 
-// RegisterProcessorQueueCapacityCallback sets callback for observable ProcessorQueueCapacity metric.
-func (builder *TelemetryBuilder) RegisterProcessorQueueCapacityCallback(cb metric.Int64Callback) error {
+// RegisterProcessorQueuebatchQueueCapacityCallback sets callback for observable ProcessorQueuebatchQueueCapacity metric.
+func (builder *TelemetryBuilder) RegisterProcessorQueuebatchQueueCapacityCallback(cb metric.Int64Callback) error {
 	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
-		cb(ctx, &observerInt64{inst: builder.ProcessorQueueCapacity, obs: o})
+		cb(ctx, &observerInt64{inst: builder.ProcessorQueuebatchQueueCapacity, obs: o})
 		return nil
-	}, builder.ProcessorQueueCapacity)
+	}, builder.ProcessorQueuebatchQueueCapacity)
 	if err != nil {
 		return err
 	}
@@ -64,12 +64,12 @@ func (builder *TelemetryBuilder) RegisterProcessorQueueCapacityCallback(cb metri
 	return nil
 }
 
-// RegisterProcessorQueueSizeCallback sets callback for observable ProcessorQueueSize metric.
-func (builder *TelemetryBuilder) RegisterProcessorQueueSizeCallback(cb metric.Int64Callback) error {
+// RegisterProcessorQueuebatchQueueSizeCallback sets callback for observable ProcessorQueuebatchQueueSize metric.
+func (builder *TelemetryBuilder) RegisterProcessorQueuebatchQueueSizeCallback(cb metric.Int64Callback) error {
 	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
-		cb(ctx, &observerInt64{inst: builder.ProcessorQueueSize, obs: o})
+		cb(ctx, &observerInt64{inst: builder.ProcessorQueuebatchQueueSize, obs: o})
 		return nil
-	}, builder.ProcessorQueueSize)
+	}, builder.ProcessorQueuebatchQueueSize)
 	if err != nil {
 		return err
 	}
@@ -107,52 +107,52 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.ProcessorEnqueueFailedItems, err = builder.meter.Int64Counter(
-		"otelcol_processor_enqueue_failed_items",
-		metric.WithDescription("Number of items failed to be added to the queue. [Development]"),
-		metric.WithUnit("{item}"),
-	)
-	errs = errors.Join(errs, err)
-	builder.ProcessorInFlightRequests, err = builder.meter.Int64UpDownCounter(
-		"otelcol_processor_in_flight_requests",
-		metric.WithDescription("Number of requests currently being processed. [Development]"),
-		metric.WithUnit("{request}"),
-	)
-	errs = errors.Join(errs, err)
-	builder.ProcessorQueueBatchSendSize, err = builder.meter.Int64Histogram(
-		"otelcol_processor_queue_batch_send_size",
+	builder.ProcessorQueuebatchBatchSendSize, err = builder.meter.Int64Histogram(
+		"otelcol_processor_queuebatch_batch_send_size",
 		metric.WithDescription("Number of units in the batch. [Development]"),
 		metric.WithUnit("{unit}"),
 		metric.WithExplicitBucketBoundaries([]float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000}...),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorQueueBatchSendSizeBytes, err = builder.meter.Int64Histogram(
-		"otelcol_processor_queue_batch_send_size_bytes",
+	builder.ProcessorQueuebatchBatchSendSizeBytes, err = builder.meter.Int64Histogram(
+		"otelcol_processor_queuebatch_batch_send_size_bytes",
 		metric.WithDescription("Number of bytes in the batch. [Development]"),
 		metric.WithUnit("By"),
 		metric.WithExplicitBucketBoundaries([]float64{128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1.048576e+06, 2.097152e+06, 4.194304e+06, 8.388608e+06, 1.6777216e+07}...),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorQueueCapacity, err = builder.meter.Int64ObservableGauge(
-		"otelcol_processor_queue_capacity",
+	builder.ProcessorQueuebatchEnqueueFailedItems, err = builder.meter.Int64Counter(
+		"otelcol_processor_queuebatch_enqueue_failed_items",
+		metric.WithDescription("Number of items failed to be added to the queue. [Development]"),
+		metric.WithUnit("{item}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorQueuebatchInFlightRequests, err = builder.meter.Int64UpDownCounter(
+		"otelcol_processor_queuebatch_in_flight_requests",
+		metric.WithDescription("Number of requests currently being processed. [Development]"),
+		metric.WithUnit("{request}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorQueuebatchQueueCapacity, err = builder.meter.Int64ObservableGauge(
+		"otelcol_processor_queuebatch_queue_capacity",
 		metric.WithDescription("Fixed capacity of the queue. [Development]"),
 		metric.WithUnit("{batch}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorQueueSize, err = builder.meter.Int64ObservableGauge(
-		"otelcol_processor_queue_size",
+	builder.ProcessorQueuebatchQueueSize, err = builder.meter.Int64ObservableGauge(
+		"otelcol_processor_queuebatch_queue_size",
 		metric.WithDescription("Current size of the queue. [Development]"),
 		metric.WithUnit("{batch}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorSendFailedItems, err = builder.meter.Int64Counter(
-		"otelcol_processor_send_failed_items",
+	builder.ProcessorQueuebatchSendFailedItems, err = builder.meter.Int64Counter(
+		"otelcol_processor_queuebatch_send_failed_items",
 		metric.WithDescription("Number of items that failed to be sent to the next consumer. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent. [Development]"),
 		metric.WithUnit("{item}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorSentItems, err = builder.meter.Int64Counter(
-		"otelcol_processor_sent_items",
+	builder.ProcessorQueuebatchSentItems, err = builder.meter.Int64Counter(
+		"otelcol_processor_queuebatch_sent_items",
 		metric.WithDescription("Number of items successfully sent to the next consumer. [Development]"),
 		metric.WithUnit("{item}"),
 	)

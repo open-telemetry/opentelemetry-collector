@@ -12,23 +12,7 @@ status:
 
 telemetry:
   metrics:
-    processor_enqueue_failed_items:
-      enabled: true
-      stability: development
-      description: Number of items failed to be added to the queue.
-      unit: "{item}"
-      sum:
-        value_type: int
-        monotonic: true
-    processor_in_flight_requests:
-      enabled: true
-      stability: development
-      description: Number of requests currently being processed.
-      unit: "{request}"
-      sum:
-        value_type: int
-        monotonic: false
-    processor_queue_batch_send_size:
+    processor_queuebatch_batch_send_size:
       enabled: true
       stability: development
       description: Number of units in the batch.
@@ -36,7 +20,7 @@ telemetry:
       histogram:
         value_type: int
         bucket_boundaries: [10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000]
-    processor_queue_batch_send_size_bytes:
+    processor_queuebatch_batch_send_size_bytes:
       enabled: true
       stability: development
       description: Number of bytes in the batch.
@@ -44,7 +28,23 @@ telemetry:
       histogram:
         value_type: int
         bucket_boundaries: [128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576, 2097152, 4194304, 8388608, 16777216]
-    processor_queue_capacity:
+    processor_queuebatch_enqueue_failed_items:
+      enabled: true
+      stability: development
+      description: Number of items failed to be added to the queue.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+    processor_queuebatch_in_flight_requests:
+      enabled: true
+      stability: development
+      description: Number of requests currently being processed.
+      unit: "{request}"
+      sum:
+        value_type: int
+        monotonic: false
+    processor_queuebatch_queue_capacity:
       enabled: true
       stability: development
       description: Fixed capacity of the queue.
@@ -52,7 +52,7 @@ telemetry:
       gauge:
         value_type: int
         async: true
-    processor_queue_size:
+    processor_queuebatch_queue_size:
       enabled: true
       stability: development
       description: Current size of the queue.
@@ -60,7 +60,7 @@ telemetry:
       gauge:
         value_type: int
         async: true
-    processor_send_failed_items:
+    processor_queuebatch_send_failed_items:
       enabled: true
       stability: development
       description: "Number of items that failed to be sent to the next consumer. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent."
@@ -68,7 +68,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-    processor_sent_items:
+    processor_queuebatch_sent_items:
       enabled: true
       stability: development
       description: Number of items successfully sent to the next consumer.

@@ -15,12 +15,22 @@ import (
 // QueueObserver observes the current size or capacity of a queue. Exporterhelper
 // passes an observer to the RegisterQueueSize and RegisterQueueCapacity
 // operations, which are expected to install it as an asynchronous callback.
+//
+// Experimental: This API is at the early stage of development and may change
+// without backward compatibility until
+// https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is
+// resolved.
 type QueueObserver = queue.QueueObserver
 
 // ObsMetricsConfig defines the operations invoked by exporterhelper to report
 // its observation events. Exporterhelper owns the meaning and timing of each
 // operation; a component supplies the instruments. Nil operations are no-ops,
 // so a component only implements the events it reports.
+//
+// Experimental: This API is at the early stage of development and may change
+// without backward compatibility until
+// https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is
+// resolved.
 type ObsMetricsConfig struct {
 	// RecordEnqueueFailure reports the number of items dropped because they
 	// could not be added to the queue.
@@ -47,8 +57,9 @@ type ObsMetricsConfig struct {
 	// options carry the failure attributes derived from the error.
 	RecordSendFailure func(ctx context.Context, items int64, options ...metric.AddOption)
 
-	// Shutdown releases the resources backing the instruments above. It is
-	// called once, by exporterhelper, per the WithObsMetrics contract.
+	// Shutdown releases the resources backing the instruments above.
+	// ObsMetrics.Shutdown deduplicates calls, so this runs at most once even
+	// though both exporterhelper and the component may request it.
 	Shutdown func()
 
 	// prevent unkeyed literal initialization
@@ -56,6 +67,11 @@ type ObsMetricsConfig struct {
 }
 
 // ObsMetrics reports the metrics produced by exporterhelper for one signal.
+//
+// Experimental: This API is at the early stage of development and may change
+// without backward compatibility until
+// https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is
+// resolved.
 type ObsMetrics struct {
 	config       ObsMetricsConfig
 	shutdownOnce sync.Once

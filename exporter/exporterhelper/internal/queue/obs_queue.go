@@ -143,9 +143,9 @@ type obsQueue[T request.Request] struct {
 
 func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T], error) {
 	obsMetrics := set.ObsMetrics
-	// tb is non-nil only when this queue owns the telemetry builder, which
-	// happens when the queue is used standalone rather than through
-	// exporterhelper.
+	// tb is non-nil only when this queue owns the telemetry builder. Callers
+	// reaching the queue through exporterhelper always supply ObsMetrics, so
+	// this branch covers direct users of the queue packages.
 	var tb *metadata.TelemetryBuilder
 	if obsMetrics == nil {
 		var err error

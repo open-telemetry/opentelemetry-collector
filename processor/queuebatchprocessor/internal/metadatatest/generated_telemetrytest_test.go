@@ -20,42 +20,42 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
-	require.NoError(t, tb.RegisterProcessorQueueCapacityCallback(func(_ context.Context, observer metric.Int64Observer) error {
+	require.NoError(t, tb.RegisterProcessorQueuebatchQueueCapacityCallback(func(_ context.Context, observer metric.Int64Observer) error {
 		observer.Observe(1)
 		return nil
 	}))
-	require.NoError(t, tb.RegisterProcessorQueueSizeCallback(func(_ context.Context, observer metric.Int64Observer) error {
+	require.NoError(t, tb.RegisterProcessorQueuebatchQueueSizeCallback(func(_ context.Context, observer metric.Int64Observer) error {
 		observer.Observe(1)
 		return nil
 	}))
-	tb.ProcessorEnqueueFailedItems.Add(context.Background(), 1)
-	tb.ProcessorInFlightRequests.Add(context.Background(), 1)
-	tb.ProcessorQueueBatchSendSize.Record(context.Background(), 1)
-	tb.ProcessorQueueBatchSendSizeBytes.Record(context.Background(), 1)
-	tb.ProcessorSendFailedItems.Add(context.Background(), 1)
-	tb.ProcessorSentItems.Add(context.Background(), 1)
-	AssertEqualProcessorEnqueueFailedItems(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorInFlightRequests(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorQueueBatchSendSize(t, testTel,
+	tb.ProcessorQueuebatchBatchSendSize.Record(context.Background(), 1)
+	tb.ProcessorQueuebatchBatchSendSizeBytes.Record(context.Background(), 1)
+	tb.ProcessorQueuebatchEnqueueFailedItems.Add(context.Background(), 1)
+	tb.ProcessorQueuebatchInFlightRequests.Add(context.Background(), 1)
+	tb.ProcessorQueuebatchSendFailedItems.Add(context.Background(), 1)
+	tb.ProcessorQueuebatchSentItems.Add(context.Background(), 1)
+	AssertEqualProcessorQueuebatchBatchSendSize(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorQueueBatchSendSizeBytes(t, testTel,
+	AssertEqualProcessorQueuebatchBatchSendSizeBytes(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorQueueCapacity(t, testTel,
+	AssertEqualProcessorQueuebatchEnqueueFailedItems(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorQueueSize(t, testTel,
+	AssertEqualProcessorQueuebatchInFlightRequests(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorSendFailedItems(t, testTel,
+	AssertEqualProcessorQueuebatchQueueCapacity(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorSentItems(t, testTel,
+	AssertEqualProcessorQueuebatchQueueSize(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorQueuebatchSendFailedItems(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorQueuebatchSentItems(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 

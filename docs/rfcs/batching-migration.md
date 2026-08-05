@@ -392,6 +392,10 @@ accomplished during Phase 1:
 - Reject `wait_for_result: true` combined with a configured storage
   extension at configuration validation time (see "Recommendation: no
   error propagation by default" above).
+- Extend the injected telemetry of step 3 to spans and log messages.
+  Injection currently covers metrics only, so `queuebatchprocessor`
+  still emits `exporter/...` spans and `Exporting failed.` log
+  messages produced by exporterhelper.
 
 ## Conclusion
 

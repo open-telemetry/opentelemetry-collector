@@ -56,12 +56,21 @@ func WithAttrs(attrs ...attribute.KeyValue) Option {
 // that reuse exporterhelper can use this option to report component-oriented
 // instruments for exporterhelper-defined observation events.
 //
-// Exporterhelper controls when each operation is called and takes ownership of
-// obsMetrics once the exporter constructor reaches option application: it calls
-// Shutdown exactly once, either when construction fails or when the component
-// shuts down. Callers must not share one instance between components, and must
-// shut it down themselves if the constructor rejects its arguments before
-// applying options.
+// Exporterhelper controls when each operation is called. Once it has applied
+// this option it takes over shutting obsMetrics down, either when a later
+// stage of construction fails or when the component shuts down. Because
+// options are applied in order, an error raised before this one is applied
+// leaves the caller responsible; ObsMetrics.Shutdown is idempotent, so the
+// caller should simply shut obsMetrics down whenever the constructor returns
+// an error. Callers must not share one instance between components.
+//
+// Note that only metrics are redirected: spans and log messages emitted by
+// exporterhelper remain exporter-oriented.
+//
+// Experimental: This API is at the early stage of development and may change
+// without backward compatibility until
+// https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is
+// resolved.
 func WithObsMetrics(obsMetrics *ObsMetrics) Option {
 	if obsMetrics == nil {
 		// Pass an untyped nil so the option reports an error instead of

@@ -53,19 +53,55 @@ details on this configuration structure. Other than changing the
 default configuration, the entire `queuebatch` functionality is
 available through this processor, including partitioning and storage.
 
+## Internal telemetry
+
 The processor reports queue and batch telemetry using
-`otelcol_processor_*` metric names with `processor` and `otel.signal`
-attributes, following the same convention as `processorhelper`. It does not
-emit the `otelcol_exporter_*` metrics used by exporterhelper's default
-implementation. Exporterhelper defines the observation events and the
-processor connects those events to its generated instruments. See
-[documentation.md](documentation.md) for the metric list.
+`otelcol_processor_queuebatch_*` metric names with `processor` and
+`otel.signal` attributes, following the naming convention used by other
+processors. It does not emit the `otelcol_exporter_*` metrics used by
+exporterhelper's default implementation. Exporterhelper defines the
+observation events and the processor connects those events to its generated
+instruments. See [documentation.md](documentation.md) for the metric list.
 
 Note that these are queue and batch metrics, not the
 `otelcol_processor_incoming_items` and `otelcol_processor_outgoing_items`
 metrics emitted by processors built on `processorhelper`. This processor is
 built on exporterhelper's queue and batch machinery, so it reports what that
 machinery observes.
+
+### Migrating from `batchprocessor` metrics
+
+| `batchprocessor`                                  | `queuebatch`                                         |
+| ------------------------------------------------- | ---------------------------------------------------- |
+| `otelcol_processor_batch_batch_send_size`         | `otelcol_processor_queuebatch_batch_send_size`       |
+| `otelcol_processor_batch_batch_send_size_bytes`   | `otelcol_processor_queuebatch_batch_send_size_bytes` |
+| `otelcol_processor_batch_batch_size_trigger_send` | no equivalent                                        |
+| `otelcol_processor_batch_timeout_trigger_send`    | no equivalent                                        |
+| `otelcol_processor_batch_metadata_cardinality`    | no equivalent                                        |
+
+The batch processor's attribute is `processor`, as here, but the
+`queuebatch` metrics add an `otel.signal` attribute, so a single processor
+name used in more than one signal's pipeline produces one series per signal.
+The queue-oriented metrics (`_queue_size`, `_queue_capacity`,
+`_enqueue_failed_items`, `_in_flight_requests`, `_sent_items`,
+`_send_failed_items`) have no batch processor counterpart; they describe the
+queue that the batch processor did not have.
+
+### Known limitations
+
+Only metrics are reported with processor-oriented names. Spans and log
+messages are still produced by exporterhelper and remain exporter-oriented:
+the processor emits spans named `exporter/<name>/<signal>` and
+`exporter/enqueue` carrying an `exporter` attribute, and export failures are
+logged as `Exporting failed.`.
+
+`otelcol_processor_queuebatch_queue_size` and
+`otelcol_processor_queuebatch_queue_capacity` are asynchronous gauges keyed
+only by `processor` and `otel.signal`. Using the same processor name in two
+pipelines of the same signal (for example `queuebatch` in both `traces/a` and
+`traces/b`) creates two independent queues that report to the same series, so
+only one of them is observed. Give each pipeline its own named instance (for
+example `queuebatch/a` and `queuebatch/b`) when both queues must be observed.
 
 ## Examples
 

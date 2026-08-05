@@ -6,12 +6,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 )
 
 func NewSettings(tt *componenttest.Telemetry) processor.Settings {
@@ -21,9 +22,39 @@ func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 	return set
 }
 
-func AssertEqualProcessorEnqueueFailedItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorQueuebatchBatchSendSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_processor_enqueue_failed_items",
+		Name:        "otelcol_processor_queuebatch_batch_send_size",
+		Description: "Number of units in the batch. [Development]",
+		Unit:        "{unit}",
+		Data: metricdata.Histogram[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_queuebatch_batch_send_size")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorQueuebatchBatchSendSizeBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_queuebatch_batch_send_size_bytes",
+		Description: "Number of bytes in the batch. [Development]",
+		Unit:        "By",
+		Data: metricdata.Histogram[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_queuebatch_batch_send_size_bytes")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorQueuebatchEnqueueFailedItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_queuebatch_enqueue_failed_items",
 		Description: "Number of items failed to be added to the queue. [Development]",
 		Unit:        "{item}",
 		Data: metricdata.Sum[int64]{
@@ -32,14 +63,14 @@ func AssertEqualProcessorEnqueueFailedItems(t *testing.T, tt *componenttest.Tele
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_processor_enqueue_failed_items")
+	got, err := tt.GetMetric("otelcol_processor_queuebatch_enqueue_failed_items")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorInFlightRequests(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorQueuebatchInFlightRequests(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_processor_in_flight_requests",
+		Name:        "otelcol_processor_queuebatch_in_flight_requests",
 		Description: "Number of requests currently being processed. [Development]",
 		Unit:        "{request}",
 		Data: metricdata.Sum[int64]{
@@ -48,72 +79,42 @@ func AssertEqualProcessorInFlightRequests(t *testing.T, tt *componenttest.Teleme
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_processor_in_flight_requests")
+	got, err := tt.GetMetric("otelcol_processor_queuebatch_in_flight_requests")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorQueueBatchSendSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorQueuebatchQueueCapacity(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_processor_queue_batch_send_size",
-		Description: "Number of units in the batch. [Development]",
-		Unit:        "{unit}",
-		Data: metricdata.Histogram[int64]{
-			Temporality: metricdata.CumulativeTemporality,
-			DataPoints:  dps,
-		},
-	}
-	got, err := tt.GetMetric("otelcol_processor_queue_batch_send_size")
-	require.NoError(t, err)
-	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func AssertEqualProcessorQueueBatchSendSizeBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
-	want := metricdata.Metrics{
-		Name:        "otelcol_processor_queue_batch_send_size_bytes",
-		Description: "Number of bytes in the batch. [Development]",
-		Unit:        "By",
-		Data: metricdata.Histogram[int64]{
-			Temporality: metricdata.CumulativeTemporality,
-			DataPoints:  dps,
-		},
-	}
-	got, err := tt.GetMetric("otelcol_processor_queue_batch_send_size_bytes")
-	require.NoError(t, err)
-	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func AssertEqualProcessorQueueCapacity(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
-	want := metricdata.Metrics{
-		Name:        "otelcol_processor_queue_capacity",
+		Name:        "otelcol_processor_queuebatch_queue_capacity",
 		Description: "Fixed capacity of the queue. [Development]",
 		Unit:        "{batch}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_processor_queue_capacity")
+	got, err := tt.GetMetric("otelcol_processor_queuebatch_queue_capacity")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorQueueSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorQueuebatchQueueSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_processor_queue_size",
+		Name:        "otelcol_processor_queuebatch_queue_size",
 		Description: "Current size of the queue. [Development]",
 		Unit:        "{batch}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_processor_queue_size")
+	got, err := tt.GetMetric("otelcol_processor_queuebatch_queue_size")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorSendFailedItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorQueuebatchSendFailedItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_processor_send_failed_items",
+		Name:        "otelcol_processor_queuebatch_send_failed_items",
 		Description: "Number of items that failed to be sent to the next consumer. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent. [Development]",
 		Unit:        "{item}",
 		Data: metricdata.Sum[int64]{
@@ -122,14 +123,14 @@ func AssertEqualProcessorSendFailedItems(t *testing.T, tt *componenttest.Telemet
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_processor_send_failed_items")
+	got, err := tt.GetMetric("otelcol_processor_queuebatch_send_failed_items")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorSentItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorQueuebatchSentItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_processor_sent_items",
+		Name:        "otelcol_processor_queuebatch_sent_items",
 		Description: "Number of items successfully sent to the next consumer. [Development]",
 		Unit:        "{item}",
 		Data: metricdata.Sum[int64]{
@@ -138,7 +139,7 @@ func AssertEqualProcessorSentItems(t *testing.T, tt *componenttest.Telemetry, dp
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_processor_sent_items")
+	got, err := tt.GetMetric("otelcol_processor_queuebatch_sent_items")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }

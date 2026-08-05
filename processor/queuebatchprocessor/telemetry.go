@@ -41,12 +41,12 @@ func newObsMetrics(set component.TelemetrySettings, id component.ID, signal pipe
 	om := &obsMetrics{
 		tb:                     tb,
 		metricAttr:             metric.WithAttributeSet(attribute.NewSet(processorAttr, attribute.String(signalKey, signal.String()))),
-		enqueueFailedInst:      tb.ProcessorEnqueueFailedItems,
-		itemsSentInst:          tb.ProcessorSentItems,
-		itemsFailedInst:        tb.ProcessorSendFailedItems,
-		inFlightInst:           tb.ProcessorInFlightRequests,
-		queueBatchSizeInst:     tb.ProcessorQueueBatchSendSize,
-		queueBatchSizeByteInst: tb.ProcessorQueueBatchSendSizeBytes,
+		enqueueFailedInst:      tb.ProcessorQueuebatchEnqueueFailedItems,
+		itemsSentInst:          tb.ProcessorQueuebatchSentItems,
+		itemsFailedInst:        tb.ProcessorQueuebatchSendFailedItems,
+		inFlightInst:           tb.ProcessorQueuebatchInFlightRequests,
+		queueBatchSizeInst:     tb.ProcessorQueuebatchBatchSendSize,
+		queueBatchSizeByteInst: tb.ProcessorQueuebatchBatchSendSizeBytes,
 	}
 	return exporterhelper.NewObsMetrics(exporterhelper.ObsMetricsConfig{
 		RecordEnqueueFailure:  om.RecordEnqueueFailure,
@@ -70,14 +70,14 @@ func (om *obsMetrics) RecordBatchSendSize(ctx context.Context, items, bytes int6
 }
 
 func (om *obsMetrics) RegisterQueueSize(observe exporterhelper.QueueObserver) error {
-	return om.tb.RegisterProcessorQueueSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
+	return om.tb.RegisterProcessorQueuebatchQueueSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
 		o.Observe(observe.Observe(), om.metricAttr)
 		return nil
 	})
 }
 
 func (om *obsMetrics) RegisterQueueCapacity(observe exporterhelper.QueueObserver) error {
-	return om.tb.RegisterProcessorQueueCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
+	return om.tb.RegisterProcessorQueuebatchQueueCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
 		o.Observe(observe.Observe(), om.metricAttr)
 		return nil
 	})

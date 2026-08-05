@@ -6,23 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### otelcol_processor_enqueue_failed_items
-
-Number of items failed to be added to the queue.
-
-| Unit | Metric Type | Value Type | Monotonic | Stability |
-| ---- | ----------- | ---------- | --------- | --------- |
-| {item} | Sum | Int | true | Development |
-
-### otelcol_processor_in_flight_requests
-
-Number of requests currently being processed.
-
-| Unit | Metric Type | Value Type | Monotonic | Stability |
-| ---- | ----------- | ---------- | --------- | --------- |
-| {request} | Sum | Int | false | Development |
-
-### otelcol_processor_queue_batch_send_size
+### otelcol_processor_queuebatch_batch_send_size
 
 Number of units in the batch.
 
@@ -30,7 +14,7 @@ Number of units in the batch.
 | ---- | ----------- | ---------- | --------- |
 | {unit} | Histogram | Int | Development |
 
-### otelcol_processor_queue_batch_send_size_bytes
+### otelcol_processor_queuebatch_batch_send_size_bytes
 
 Number of bytes in the batch.
 
@@ -38,7 +22,23 @@ Number of bytes in the batch.
 | ---- | ----------- | ---------- | --------- |
 | By | Histogram | Int | Development |
 
-### otelcol_processor_queue_capacity
+### otelcol_processor_queuebatch_enqueue_failed_items
+
+Number of items failed to be added to the queue.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {item} | Sum | Int | true | Development |
+
+### otelcol_processor_queuebatch_in_flight_requests
+
+Number of requests currently being processed.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {request} | Sum | Int | false | Development |
+
+### otelcol_processor_queuebatch_queue_capacity
 
 Fixed capacity of the queue.
 
@@ -46,7 +46,7 @@ Fixed capacity of the queue.
 | ---- | ----------- | ---------- | --------- |
 | {batch} | Gauge | Int | Development |
 
-### otelcol_processor_queue_size
+### otelcol_processor_queuebatch_queue_size
 
 Current size of the queue.
 
@@ -54,7 +54,7 @@ Current size of the queue.
 | ---- | ----------- | ---------- | --------- |
 | {batch} | Gauge | Int | Development |
 
-### otelcol_processor_send_failed_items
+### otelcol_processor_queuebatch_send_failed_items
 
 Number of items that failed to be sent to the next consumer. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent.
 
@@ -62,7 +62,7 @@ Number of items that failed to be sent to the next consumer. At detailed telemet
 | ---- | ----------- | ---------- | --------- | --------- |
 | {item} | Sum | Int | true | Development |
 
-### otelcol_processor_sent_items
+### otelcol_processor_queuebatch_sent_items
 
 Number of items successfully sent to the next consumer.
 
