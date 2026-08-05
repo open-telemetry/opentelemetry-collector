@@ -3,6 +3,7 @@
 package confignet
 
 import (
+	"errors"
 	"time"
 )
 
@@ -37,11 +38,30 @@ func NewDefaultAddrConfig() AddrConfig {
 
 // DialerConfig contains options for connecting to an address.
 type DialerConfig struct {
+	// DSCP sets the Differentiated Services Code Point (DSCP) value on outgoing connections.
+	// This value is used to set the DS field in the IP header, enabling QoS classification
+	// by network devices. Valid values are 0 to 63. Common values: 0 (Default/Best Effort, CS0),
+	// 46 (Expedited Forwarding, EF, for low-latency traffic), 34 (Assured Forwarding AF41).
+	// Default is 0 (disabled, no marking applied).
+	DSCP int `mapstructure:"dscp,omitempty"`
+
 	// Timeout the maximum amount of time a dial will wait for a connect to complete. The default is no timeout.
 	Timeout time.Duration `mapstructure:"timeout,omitempty"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
+}
+
+// Validate validates the DialerConfig fields according to schema annotations.
+// Called by confmap on config resolution. Don't call it explicitly to avoid duplicate errors.
+func (c *DialerConfig) Validate() error {
+	var err error
+
+	if inner_err := validateDSCP(c.DSCP); inner_err != nil {
+		err = errors.Join(err, inner_err)
+	}
+
+	return err
 }
 
 // NewDefaultDialerConfig returns a new DialerConfig with default values consistent with the annotations in the schema.
