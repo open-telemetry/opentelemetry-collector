@@ -12,7 +12,7 @@ Number of log records that were unable to be scraped.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoint} | Sum | Int | true | Alpha |
+| {record} | Sum | Int | true | Alpha |
 
 ### otelcol_scraper_errored_metric_points
 
@@ -28,7 +28,7 @@ Number of log records successfully scraped.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {datapoint} | Sum | Int | true | Alpha |
+| {record} | Sum | Int | true | Alpha |
 
 ### otelcol_scraper_scraped_metric_points
 
