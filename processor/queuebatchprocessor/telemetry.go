@@ -48,18 +48,16 @@ func newObsMetrics(set component.TelemetrySettings, id component.ID, signal pipe
 		queueBatchSizeInst:     tb.ProcessorQueueBatchSendSize,
 		queueBatchSizeByteInst: tb.ProcessorQueueBatchSendSizeBytes,
 	}
-	return exporterhelper.NewObsMetrics(
-		exporterhelper.WithConfig(exporterhelper.Config{
-			RecordEnqueueFailure:  om.RecordEnqueueFailure,
-			RecordBatchSendSize:   om.RecordBatchSendSize,
-			RegisterQueueSize:     om.RegisterQueueSize,
-			RegisterQueueCapacity: om.RegisterQueueCapacity,
-			RecordInFlight:        om.RecordInFlight,
-			RecordSent:            om.RecordSent,
-			RecordSendFailure:     om.RecordSendFailure,
-			Shutdown:              om.Shutdown,
-		}),
-	), nil
+	return exporterhelper.NewObsMetrics(exporterhelper.ObsMetricsConfig{
+		RecordEnqueueFailure:  om.RecordEnqueueFailure,
+		RecordBatchSendSize:   om.RecordBatchSendSize,
+		RegisterQueueSize:     om.RegisterQueueSize,
+		RegisterQueueCapacity: om.RegisterQueueCapacity,
+		RecordInFlight:        om.RecordInFlight,
+		RecordSent:            om.RecordSent,
+		RecordSendFailure:     om.RecordSendFailure,
+		Shutdown:              om.Shutdown,
+	}), nil
 }
 
 func (om *obsMetrics) RecordEnqueueFailure(ctx context.Context, items int64) {

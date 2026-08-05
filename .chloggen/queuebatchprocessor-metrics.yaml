@@ -7,8 +7,8 @@ note: Report queue and batch telemetry using processor-oriented metrics
 issues: [14038]
 
 subtext: |
-  Exporterhelper now provides a sealed, signal-scoped metrics interface,
-  allowing queuebatchprocessor to connect its generated `otelcol_processor_*`
-  instruments without rewriting exporter telemetry.
+  The processor reports `otelcol_processor_*` instruments with `processor` and
+  `otel.signal` attributes instead of exporterhelper's `otelcol_exporter_*`
+  instruments. It does not emit any `otelcol_exporter_*` metric.
 
 change_logs: [user, api]

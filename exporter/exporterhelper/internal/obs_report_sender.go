@@ -58,11 +58,7 @@ type obsReportSender[K request.Request] struct {
 
 func newObsReportSender[K request.Request](set exporter.Settings, signal pipeline.Signal, obsMetrics ObsMetrics, next sender.Sender[K]) (sender.Sender[K], error) {
 	if obsMetrics == nil {
-		var err error
-		obsMetrics, err = newExporterObsMetrics(set.TelemetrySettings, set.ID, signal, nil)
-		if err != nil {
-			return nil, err
-		}
+		return nil, errors.New("ObsMetrics must not be nil")
 	}
 	idStr := set.ID.String()
 	expAttr := attribute.String(ExporterKey, idStr)

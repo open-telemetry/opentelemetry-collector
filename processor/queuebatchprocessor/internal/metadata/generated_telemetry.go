@@ -147,7 +147,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ProcessorSendFailedItems, err = builder.meter.Int64Counter(
 		"otelcol_processor_send_failed_items",
-		metric.WithDescription("Number of items that failed to be sent to the next consumer. [Development]"),
+		metric.WithDescription("Number of items that failed to be sent to the next consumer. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent. [Development]"),
 		metric.WithUnit("{item}"),
 	)
 	errs = errors.Join(errs, err)

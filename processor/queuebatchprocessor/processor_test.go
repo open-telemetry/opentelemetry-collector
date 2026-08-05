@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -29,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/processor/queuebatchprocessor/internal/metadata"
+	"go.opentelemetry.io/collector/processor/queuebatchprocessor/internal/metadatatest"
 )
 
 func testSettings(tt *componenttest.Telemetry) (processor.Settings, *Config) {
@@ -105,84 +107,178 @@ func TestTraces(t *testing.T) {
 	require.Equal(t, 5, sink.SpanCount())
 }
 
+func processorAttrs(set processor.Settings, signal pipeline.Signal) attribute.Set {
+	return attribute.NewSet(
+		attribute.String(processorKey, set.ID.String()),
+		attribute.String(signalKey, signal.String()),
+	)
+}
+
+// TestTracesProcessorMetrics asserts every instrument declared in metadata.yaml
+// is reported on the success path, and that no exporter-oriented instrument
+// leaks through.
 func TestTracesProcessorMetrics(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	set, cfg := testSettings(tt)
+	cfg.WaitForResult = true
 	p, err := newTracesProcessor(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 
 	require.NoError(t, p.ConsumeTraces(context.Background(), generateTraces(5)))
 
-	capacityMetric, err := tt.GetMetric("otelcol_processor_queue_capacity")
-	require.NoError(t, err)
-	capacity := capacityMetric.Data.(metricdata.Gauge[int64])
-	require.Equal(t, int64(10), capacity.DataPoints[0].Value)
-	require.Equal(t, attribute.NewSet(
-		attribute.String(processorKey, set.ID.String()),
-		attribute.String(signalKey, pipeline.SignalTraces.String()),
-	), capacity.DataPoints[0].Attributes)
+	attrs := processorAttrs(set, pipeline.SignalTraces)
 
-	require.NoError(t, p.Shutdown(context.Background()))
-
-	sentMetric, err := tt.GetMetric("otelcol_processor_sent_items")
-	require.NoError(t, err)
-	sent := sentMetric.Data.(metricdata.Sum[int64])
-	require.Equal(t, int64(5), sent.DataPoints[0].Value)
-	require.Equal(t, attribute.NewSet(
-		attribute.String(processorKey, set.ID.String()),
-		attribute.String(signalKey, pipeline.SignalTraces.String()),
-	), sent.DataPoints[0].Attributes)
+	metadatatest.AssertEqualProcessorQueueCapacity(t, tt,
+		[]metricdata.DataPoint[int64]{{Value: 10, Attributes: attrs}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	metadatatest.AssertEqualProcessorQueueSize(t, tt,
+		[]metricdata.DataPoint[int64]{{Value: 0, Attributes: attrs}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	metadatatest.AssertEqualProcessorInFlightRequests(t, tt,
+		[]metricdata.DataPoint[int64]{{Value: 0, Attributes: attrs}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	metadatatest.AssertEqualProcessorSentItems(t, tt,
+		[]metricdata.DataPoint[int64]{{Value: 5, Attributes: attrs}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
 	batchMetric, err := tt.GetMetric("otelcol_processor_queue_batch_send_size")
 	require.NoError(t, err)
 	batch := batchMetric.Data.(metricdata.Histogram[int64])
 	require.Equal(t, uint64(1), batch.DataPoints[0].Count)
 	require.Equal(t, int64(5), batch.DataPoints[0].Sum)
+	require.Equal(t, attrs, batch.DataPoints[0].Attributes)
 
-	_, err = tt.GetMetric("otelcol_exporter_sent_spans")
-	require.Error(t, err)
-	_, err = tt.GetMetric("otelcol_exporter_queue_batch_send_size")
-	require.Error(t, err)
-	_, err = tt.GetMetric("otelcol_exporter_queue_capacity")
-	require.Error(t, err)
-	_, err = tt.GetMetric("otelcol_exporter_in_flight_requests")
-	require.Error(t, err)
+	bytesMetric, err := tt.GetMetric("otelcol_processor_queue_batch_send_size_bytes")
+	require.NoError(t, err)
+	bytes := bytesMetric.Data.(metricdata.Histogram[int64])
+	require.Equal(t, uint64(1), bytes.DataPoints[0].Count)
+	require.Positive(t, bytes.DataPoints[0].Sum)
+	require.Equal(t, attrs, bytes.DataPoints[0].Attributes)
+
+	require.NoError(t, p.Shutdown(context.Background()))
+
+	for _, name := range []string{
+		"otelcol_exporter_sent_spans",
+		"otelcol_exporter_send_failed_spans",
+		"otelcol_exporter_enqueue_failed_spans",
+		"otelcol_exporter_queue_batch_send_size",
+		"otelcol_exporter_queue_batch_send_size_bytes",
+		"otelcol_exporter_queue_size",
+		"otelcol_exporter_queue_capacity",
+		"otelcol_exporter_in_flight_requests",
+	} {
+		_, err = tt.GetMetric(name)
+		require.Error(t, err, "exporter instrument %q must not be reported", name)
+	}
 }
 
-func TestObsMetricsSignalInstruments(t *testing.T) {
-	tests := []struct {
-		name   string
-		signal pipeline.Signal
-	}{
-		{name: "traces", signal: pipeline.SignalTraces},
-		{name: "metrics", signal: pipeline.SignalMetrics},
-		{name: "logs", signal: pipeline.SignalLogs},
-		{name: "profiles", signal: xpipeline.SignalProfiles},
+// TestTracesProcessorSendFailureMetrics covers the failure path, which routes
+// the error attributes derived by exporterhelper onto processor instruments.
+func TestTracesProcessorSendFailureMetrics(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	set, cfg := testSettings(tt)
+	cfg.WaitForResult = true
+	consumeErr := errors.New("consume failed")
+	p, err := newTracesProcessor(context.Background(), set, cfg, consumertest.NewErr(consumeErr))
+	require.NoError(t, err)
+	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
+
+	require.ErrorIs(t, p.ConsumeTraces(context.Background(), generateTraces(5)), consumeErr)
+	require.NoError(t, p.Shutdown(context.Background()))
+
+	failed, err := tt.GetMetric("otelcol_processor_send_failed_items")
+	require.NoError(t, err)
+	sum := failed.Data.(metricdata.Sum[int64])
+	require.Equal(t, int64(5), sum.DataPoints[0].Value)
+	require.Equal(t, attribute.NewSet(
+		attribute.String(processorKey, set.ID.String()),
+		attribute.String(signalKey, pipeline.SignalTraces.String()),
+		attribute.String("error.type", "_OTHER"),
+		attribute.Bool("error.permanent", false),
+	), sum.DataPoints[0].Attributes)
+}
+
+// TestTracesProcessorEnqueueFailureMetrics covers the drop path, which is only
+// reachable when the queue rejects a request.
+func TestTracesProcessorEnqueueFailureMetrics(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	set, cfg := testSettings(tt)
+	cfg.BlockOnOverflow = false
+	cfg.QueueSize = 1
+	cfg.Batch.Get().MinSize = 1000
+	p, err := newTracesProcessor(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	// Not started, so nothing drains the queue and it overflows.
+	var lastErr error
+	for range 100 {
+		if lastErr = p.ConsumeTraces(context.Background(), generateTraces(5)); lastErr != nil {
+			break
+		}
 	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+	require.Error(t, lastErr)
+	require.NoError(t, p.Shutdown(context.Background()))
+
+	metadatatest.AssertEqualProcessorEnqueueFailedItems(t, tt,
+		[]metricdata.DataPoint[int64]{{Value: 5, Attributes: processorAttrs(set, pipeline.SignalTraces)}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+}
+
+// TestObsMetricsSignalAttribute verifies each signal reports through the same
+// instruments, distinguished only by the signal attribute.
+func TestObsMetricsSignalAttribute(t *testing.T) {
+	for _, signal := range []pipeline.Signal{
+		pipeline.SignalTraces,
+		pipeline.SignalMetrics,
+		pipeline.SignalLogs,
+		xpipeline.SignalProfiles,
+	} {
+		t.Run(signal.String(), func(t *testing.T) {
 			tt := componenttest.NewTelemetry()
 			t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 			set := processortest.NewNopSettings(metadata.Type)
-			om, err := newObsMetrics(tt.NewTelemetrySettings(), set.ID, tc.signal)
+			om, err := newObsMetrics(tt.NewTelemetrySettings(), set.ID, signal)
 			require.NoError(t, err)
 			t.Cleanup(om.Shutdown)
 
+			attrs := processorAttrs(set, signal)
 			om.RecordSent(context.Background(), 7)
-			got, err := tt.GetMetric("otelcol_processor_sent_items")
-			require.NoError(t, err)
-			sum := got.Data.(metricdata.Sum[int64])
-			require.Equal(t, int64(7), sum.DataPoints[0].Value)
-			require.Equal(t, attribute.NewSet(
-				attribute.String(processorKey, set.ID.String()),
-				attribute.String(signalKey, tc.signal.String()),
-			), sum.DataPoints[0].Attributes)
+			om.RecordEnqueueFailure(context.Background(), 3)
+			om.RecordInFlight(context.Background(), 1)
+
+			metadatatest.AssertEqualProcessorSentItems(t, tt,
+				[]metricdata.DataPoint[int64]{{Value: 7, Attributes: attrs}},
+				metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+			metadatatest.AssertEqualProcessorEnqueueFailedItems(t, tt,
+				[]metricdata.DataPoint[int64]{{Value: 3, Attributes: attrs}},
+				metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+			metadatatest.AssertEqualProcessorInFlightRequests(t, tt,
+				[]metricdata.DataPoint[int64]{{Value: 1, Attributes: attrs}},
+				metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 		})
 	}
+}
+
+// TestObsMetricsShutdownOnConstructionFailure verifies the processor releases
+// its telemetry when exporterhelper rejects the arguments before taking
+// ownership of the metrics.
+func TestObsMetricsShutdownOnConstructionFailure(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	set, _ := testSettings(tt)
+	_, err := newSignalProcessor(set, pipeline.SignalTraces,
+		func(*exporterhelper.ObsMetrics) (processor.Traces, error) {
+			return nil, errors.New("construction failed")
+		})
+	require.Error(t, err)
 }
 
 func TestMetrics(t *testing.T) {

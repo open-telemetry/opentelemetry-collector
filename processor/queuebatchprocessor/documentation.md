@@ -56,7 +56,7 @@ Current size of the queue.
 
 ### otelcol_processor_send_failed_items
 
-Number of items that failed to be sent to the next consumer.
+Number of items that failed to be sent to the next consumer. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |

@@ -114,7 +114,7 @@ func AssertEqualProcessorQueueSize(t *testing.T, tt *componenttest.Telemetry, dp
 func AssertEqualProcessorSendFailedItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_send_failed_items",
-		Description: "Number of items that failed to be sent to the next consumer. [Development]",
+		Description: "Number of items that failed to be sent to the next consumer. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent. [Development]",
 		Unit:        "{item}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

@@ -54,11 +54,18 @@ func WithAttrs(attrs ...attribute.KeyValue) Option {
 
 // WithObsMetrics overrides the metrics emitted by exporterhelper. Components
 // that reuse exporterhelper can use this option to report component-oriented
-// instruments for exporterhelper-defined observation events. Exporterhelper
-// controls when each operation is called and takes ownership of obsMetrics
-// when this option is applied.
+// instruments for exporterhelper-defined observation events.
+//
+// Exporterhelper controls when each operation is called and takes ownership of
+// obsMetrics once the exporter constructor reaches option application: it calls
+// Shutdown exactly once, either when construction fails or when the component
+// shuts down. Callers must not share one instance between components, and must
+// shut it down themselves if the constructor rejects its arguments before
+// applying options.
 func WithObsMetrics(obsMetrics *ObsMetrics) Option {
 	if obsMetrics == nil {
+		// Pass an untyped nil so the option reports an error instead of
+		// storing a non-nil interface holding a nil *ObsMetrics.
 		return internal.WithObsMetrics(nil)
 	}
 	return internal.WithObsMetrics(obsMetrics)

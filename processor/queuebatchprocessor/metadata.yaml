@@ -63,7 +63,7 @@ telemetry:
     processor_send_failed_items:
       enabled: true
       stability: development
-      description: Number of items that failed to be sent to the next consumer.
+      description: "Number of items that failed to be sent to the next consumer. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent."
       unit: "{item}"
       sum:
         value_type: int

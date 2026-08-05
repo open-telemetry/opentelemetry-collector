@@ -45,34 +45,48 @@ func queueOptions(cfg *Config, next consumer.Capabilities, obsMetrics *exporterh
 	}
 }
 
-func newTracesProcessor(ctx context.Context, set processor.Settings, cfg *Config, next consumer.Traces) (processor.Traces, error) {
-	obsMetrics, err := newObsMetrics(set.TelemetrySettings, set.ID, pipeline.SignalTraces)
+// newSignalProcessor builds the per-signal metrics and hands them to
+// exporterhelper. Exporterhelper takes ownership only once it applies the
+// options, so shut the metrics down when construction fails earlier;
+// ObsMetrics.Shutdown is idempotent, making this safe in either case.
+func newSignalProcessor[P any](
+	set processor.Settings,
+	signal pipeline.Signal,
+	create func(*exporterhelper.ObsMetrics) (P, error),
+) (P, error) {
+	var zero P
+	obsMetrics, err := newObsMetrics(set.TelemetrySettings, set.ID, signal)
 	if err != nil {
-		return nil, err
+		return zero, err
 	}
-	return exporterhelper.NewTraces(ctx, exporterSettings(set), cfg, next.ConsumeTraces, queueOptions(cfg, next.Capabilities(), obsMetrics)...)
+	p, err := create(obsMetrics)
+	if err != nil {
+		obsMetrics.Shutdown()
+		return zero, err
+	}
+	return p, nil
+}
+
+func newTracesProcessor(ctx context.Context, set processor.Settings, cfg *Config, next consumer.Traces) (processor.Traces, error) {
+	return newSignalProcessor(set, pipeline.SignalTraces, func(obsMetrics *exporterhelper.ObsMetrics) (processor.Traces, error) {
+		return exporterhelper.NewTraces(ctx, exporterSettings(set), cfg, next.ConsumeTraces, queueOptions(cfg, next.Capabilities(), obsMetrics)...)
+	})
 }
 
 func newMetricsProcessor(ctx context.Context, set processor.Settings, cfg *Config, next consumer.Metrics) (processor.Metrics, error) {
-	obsMetrics, err := newObsMetrics(set.TelemetrySettings, set.ID, pipeline.SignalMetrics)
-	if err != nil {
-		return nil, err
-	}
-	return exporterhelper.NewMetrics(ctx, exporterSettings(set), cfg, next.ConsumeMetrics, queueOptions(cfg, next.Capabilities(), obsMetrics)...)
+	return newSignalProcessor(set, pipeline.SignalMetrics, func(obsMetrics *exporterhelper.ObsMetrics) (processor.Metrics, error) {
+		return exporterhelper.NewMetrics(ctx, exporterSettings(set), cfg, next.ConsumeMetrics, queueOptions(cfg, next.Capabilities(), obsMetrics)...)
+	})
 }
 
 func newLogsProcessor(ctx context.Context, set processor.Settings, cfg *Config, next consumer.Logs) (processor.Logs, error) {
-	obsMetrics, err := newObsMetrics(set.TelemetrySettings, set.ID, pipeline.SignalLogs)
-	if err != nil {
-		return nil, err
-	}
-	return exporterhelper.NewLogs(ctx, exporterSettings(set), cfg, next.ConsumeLogs, queueOptions(cfg, next.Capabilities(), obsMetrics)...)
+	return newSignalProcessor(set, pipeline.SignalLogs, func(obsMetrics *exporterhelper.ObsMetrics) (processor.Logs, error) {
+		return exporterhelper.NewLogs(ctx, exporterSettings(set), cfg, next.ConsumeLogs, queueOptions(cfg, next.Capabilities(), obsMetrics)...)
+	})
 }
 
 func newProfilesProcessor(ctx context.Context, set processor.Settings, cfg *Config, next xconsumer.Profiles) (xprocessor.Profiles, error) {
-	obsMetrics, err := newObsMetrics(set.TelemetrySettings, set.ID, xpipeline.SignalProfiles)
-	if err != nil {
-		return nil, err
-	}
-	return xexporterhelper.NewProfiles(ctx, exporterSettings(set), cfg, next.ConsumeProfiles, queueOptions(cfg, next.Capabilities(), obsMetrics)...)
+	return newSignalProcessor(set, xpipeline.SignalProfiles, func(obsMetrics *exporterhelper.ObsMetrics) (xprocessor.Profiles, error) {
+		return xexporterhelper.NewProfiles(ctx, exporterSettings(set), cfg, next.ConsumeProfiles, queueOptions(cfg, next.Capabilities(), obsMetrics)...)
+	})
 }

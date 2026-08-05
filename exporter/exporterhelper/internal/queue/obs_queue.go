@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/pipeline"
@@ -79,24 +80,21 @@ func (f RegisterQueueCapacityFunc) RegisterQueueCapacity(observe QueueObserver) 
 	return f(observe)
 }
 
-type defaultQueueObsMetrics struct {
-	tb *metadata.TelemetryBuilder
+type exporterQueueMetrics struct {
 	RecordEnqueueFailureFunc
 	RecordBatchSendSizeFunc
 	RegisterQueueSizeFunc
 	RegisterQueueCapacityFunc
 }
 
-func newDefaultQueueObsMetrics[T request.Request](set Settings[T]) (*defaultQueueObsMetrics, error) {
-	tb, err := metadata.NewTelemetryBuilder(set.Telemetry)
-	if err != nil {
-		return nil, err
-	}
-	exporterAttr := attribute.String(exporterKey, set.ID.String())
+// NewExporterMetrics returns Metrics reporting the exporter-oriented queue
+// instruments of tb. The caller owns tb and is responsible for shutting it
+// down, because the same builder may also back non-queue instruments.
+func NewExporterMetrics(tb *metadata.TelemetryBuilder, id component.ID, signal pipeline.Signal) Metrics {
+	exporterAttr := attribute.String(exporterKey, id.String())
 	metricAttr := metric.WithAttributeSet(attribute.NewSet(exporterAttr))
-	asyncAttr := metric.WithAttributeSet(attribute.NewSet(exporterAttr, attribute.String(dataTypeKey, set.Signal.String())))
-	om := &defaultQueueObsMetrics{
-		tb: tb,
+	asyncAttr := metric.WithAttributeSet(attribute.NewSet(exporterAttr, attribute.String(dataTypeKey, signal.String())))
+	om := &exporterQueueMetrics{
 		RecordBatchSendSizeFunc: func(ctx context.Context, items, bytes int64) {
 			tb.ExporterQueueBatchSendSize.Record(ctx, items, metricAttr)
 			tb.ExporterQueueBatchSendSizeBytes.Record(ctx, bytes, metricAttr)
@@ -115,7 +113,7 @@ func newDefaultQueueObsMetrics[T request.Request](set Settings[T]) (*defaultQueu
 		},
 	}
 	var enqueueFailedInst metric.Int64Counter
-	switch set.Signal {
+	switch signal {
 	case pipeline.SignalTraces:
 		enqueueFailedInst = tb.ExporterEnqueueFailedSpans
 	case pipeline.SignalMetrics:
@@ -125,12 +123,14 @@ func newDefaultQueueObsMetrics[T request.Request](set Settings[T]) (*defaultQueu
 	case xpipeline.SignalProfiles:
 		enqueueFailedInst = tb.ExporterEnqueueFailedProfileSamples
 	}
+	// Profiles have no enqueue-failure instrument yet; drop the nil check once
+	// they do.
 	if enqueueFailedInst != nil {
 		om.RecordEnqueueFailureFunc = func(ctx context.Context, items int64) {
 			enqueueFailedInst.Add(ctx, items, metricAttr)
 		}
 	}
-	return om, nil
+	return om
 }
 
 // obsQueue is a helper to add observability to a queue.
@@ -143,14 +143,17 @@ type obsQueue[T request.Request] struct {
 
 func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T], error) {
 	obsMetrics := set.ObsMetrics
+	// tb is non-nil only when this queue owns the telemetry builder, which
+	// happens when the queue is used standalone rather than through
+	// exporterhelper.
 	var tb *metadata.TelemetryBuilder
 	if obsMetrics == nil {
-		defaultMetrics, err := newDefaultQueueObsMetrics(set)
+		var err error
+		tb, err = metadata.NewTelemetryBuilder(set.Telemetry)
 		if err != nil {
 			return nil, err
 		}
-		obsMetrics = defaultMetrics
-		tb = defaultMetrics.tb
+		obsMetrics = NewExporterMetrics(tb, set.ID, set.Signal)
 	}
 	if err := obsMetrics.RegisterQueueSize(ObserveQueueFunc(delegate.Size)); err != nil {
 		return nil, err
@@ -190,7 +193,6 @@ func (or *obsQueue[T]) Offer(ctx context.Context, req T) error {
 	err := or.Queue.Offer(ctx, req)
 	span.End()
 
-	// No metrics recorded for profiles, remove enqueueFailedInst check with nil when profiles metrics available.
 	if err != nil {
 		or.obsMetrics.RecordEnqueueFailure(ctx, int64(numItems))
 	}

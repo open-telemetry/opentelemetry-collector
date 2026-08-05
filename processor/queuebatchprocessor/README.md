@@ -54,11 +54,18 @@ default configuration, the entire `queuebatch` functionality is
 available through this processor, including partitioning and storage.
 
 The processor reports queue and batch telemetry using
-`otelcol_processor_*` metric names and a `processor` attribute. It does not
+`otelcol_processor_*` metric names with `processor` and `otel.signal`
+attributes, following the same convention as `processorhelper`. It does not
 emit the `otelcol_exporter_*` metrics used by exporterhelper's default
 implementation. Exporterhelper defines the observation events and the
 processor connects those events to its generated instruments. See
 [documentation.md](documentation.md) for the metric list.
+
+Note that these are queue and batch metrics, not the
+`otelcol_processor_incoming_items` and `otelcol_processor_outgoing_items`
+metrics emitted by processors built on `processorhelper`. This processor is
+built on exporterhelper's queue and batch machinery, so it reports what that
+machinery observes.
 
 ## Examples
 
