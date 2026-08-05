@@ -14,6 +14,36 @@ func mapKeyValues(m pcommon.Map) []internal.KeyValue {
 	return *internal.GetMapOrig(internal.MapWrapper(m))
 }
 
+// ensureDictionarySentinels seeds index 0 of each of dst's tables with that
+// table's zero value, but only for tables that are still empty. Per the
+// ProfilesDictionary contract, index 0 of every table MUST hold the zero
+// value for that table's element type, since unset references (e.g. an
+// unset Strindex) resolve to it. Tables that already hold entries are left
+// untouched.
+func ensureDictionarySentinels(dst ProfilesDictionary) {
+	if dst.StringTable().Len() == 0 {
+		dst.StringTable().Append("")
+	}
+	if dst.AttributeTable().Len() == 0 {
+		dst.AttributeTable().AppendEmpty()
+	}
+	if dst.FunctionTable().Len() == 0 {
+		dst.FunctionTable().AppendEmpty()
+	}
+	if dst.LinkTable().Len() == 0 {
+		dst.LinkTable().AppendEmpty()
+	}
+	if dst.LocationTable().Len() == 0 {
+		dst.LocationTable().AppendEmpty()
+	}
+	if dst.MappingTable().Len() == 0 {
+		dst.MappingTable().AppendEmpty()
+	}
+	if dst.StackTable().Len() == 0 {
+		dst.StackTable().AppendEmpty()
+	}
+}
+
 // resolveProfilesReferences walks through all profiles data after unmarshaling
 // and resolves any string_value_ref and key_ref to their actual string values.
 // This ensures the pdata API works transparently with referenced strings.

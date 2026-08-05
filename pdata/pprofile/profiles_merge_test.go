@@ -585,6 +585,59 @@ func TestProfilesMergeTo(t *testing.T) {
 	}
 }
 
+// TestProfilesMergeTo_ReservesDictionaryZeroValues verifies that MergeTo
+// reserves index 0 of every destination table for that table's zero value,
+// even when the destination dictionary starts out completely empty (not
+// pre-populated by the caller). See
+// https://github.com/open-telemetry/opentelemetry-collector/issues/15661.
+func TestProfilesMergeTo_ReservesDictionaryZeroValues(t *testing.T) {
+	src := NewProfiles()
+	dic := src.Dictionary()
+	dic.StringTable().Append("") // conformant source
+	dic.AttributeTable().AppendEmpty()
+	dic.StackTable().AppendEmpty()
+	dic.LocationTable().AppendEmpty()
+	dic.FunctionTable().AppendEmpty()
+	dic.MappingTable().AppendEmpty()
+	dic.LinkTable().AppendEmpty()
+	dic.StringTable().Append("inuse_space") // index 1
+
+	prof := src.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	prof.SampleType().SetTypeStrindex(1)
+
+	dest := NewProfiles()
+	require.NoError(t, src.MergeTo(dest))
+
+	assert.Empty(t, dest.Dictionary().StringTable().At(0))
+	assert.Equal(t, "inuse_space", dest.Dictionary().StringTable().At(1))
+
+	require.Equal(t, 1, dest.Dictionary().AttributeTable().Len())
+	attr := dest.Dictionary().AttributeTable().At(0)
+	assert.Zero(t, attr.KeyStrindex())
+	assert.Zero(t, attr.UnitStrindex())
+	assert.Equal(t, pcommon.ValueTypeEmpty, attr.Value().Type())
+
+	require.Equal(t, 1, dest.Dictionary().StackTable().Len())
+	assert.Zero(t, dest.Dictionary().StackTable().At(0).LocationIndices().Len())
+
+	require.Equal(t, 1, dest.Dictionary().LocationTable().Len())
+	loc := dest.Dictionary().LocationTable().At(0)
+	assert.Zero(t, loc.MappingIndex())
+	assert.Zero(t, loc.Address())
+	assert.Zero(t, loc.Lines().Len())
+
+	require.Equal(t, 1, dest.Dictionary().FunctionTable().Len())
+	fn := dest.Dictionary().FunctionTable().At(0)
+	assert.Zero(t, fn.NameStrindex())
+	assert.Zero(t, fn.SystemNameStrindex())
+	assert.Zero(t, fn.FilenameStrindex())
+
+	require.Equal(t, 1, dest.Dictionary().MappingTable().Len())
+	assert.Zero(t, dest.Dictionary().MappingTable().At(0).FilenameStrindex())
+
+	require.Equal(t, 1, dest.Dictionary().LinkTable().Len())
+}
+
 func TestProfilesMergeToSelf(t *testing.T) {
 	profiles := NewProfiles()
 	profiles.Dictionary().StringTable().Append("", "test")
