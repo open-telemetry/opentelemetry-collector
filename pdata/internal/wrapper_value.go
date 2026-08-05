@@ -75,3 +75,10 @@ func NewAnyValueKvlistValue() *AnyValue_KvlistValue {
 	}
 	return ProtoPoolAnyValue_KvlistValue.Get().(*AnyValue_KvlistValue)
 }
+
+func NewAnyValueStringValueStrindex() *AnyValue_StringValueStrindex {
+	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
+		return &AnyValue_StringValueStrindex{}
+	}
+	return ProtoPoolAnyValue_StringValueStrindex.Get().(*AnyValue_StringValueStrindex)
+}
