@@ -116,6 +116,34 @@ func DefaultViews(level configtelemetry.Level) []config.View {
 		)
 	}
 
+	// Queue batch processor metrics. These mirror the exporterhelper views
+	// above because the processor reports the same observation events through
+	// processor-oriented instruments.
+	if level < configtelemetry.LevelDetailed {
+		scope := ptr("go.opentelemetry.io/collector/processor/queuebatchprocessor")
+		views = append(views,
+			dropViewOption(&config.ViewSelector{
+				MeterName:      scope,
+				InstrumentName: ptr("otelcol_processor_queuebatch_batch_send_size_bytes"),
+			}),
+			dropViewOption(&config.ViewSelector{
+				MeterName:      scope,
+				InstrumentName: ptr("otelcol_processor_queuebatch_batch_send_size"),
+			}),
+			config.View{
+				Selector: &config.ViewSelector{
+					MeterName:      scope,
+					InstrumentName: ptr("otelcol_processor_queuebatch_send_failed_*"),
+				},
+				Stream: &config.ViewStream{
+					AttributeKeys: &config.IncludeExclude{
+						Excluded: []string{"error.type", "error.permanent"},
+					},
+				},
+			},
+		)
+	}
+
 	// Batch processor metrics
 	scope := ptr("go.opentelemetry.io/collector/processor/batchprocessor")
 	if level < configtelemetry.LevelNormal {

@@ -63,6 +63,13 @@ exporterhelper's default implementation. Exporterhelper defines the
 observation events and the processor connects those events to its generated
 instruments. See [documentation.md](documentation.md) for the metric list.
 
+The service applies the same telemetry-level filtering these instruments
+receive under their exporterhelper names. Below the `detailed` level,
+`otelcol_processor_queuebatch_batch_send_size` and
+`otelcol_processor_queuebatch_batch_send_size_bytes` are dropped, and
+`otelcol_processor_queuebatch_send_failed_items` reports without its
+`error.type` and `error.permanent` attributes.
+
 Note that these are queue and batch metrics, not the
 `otelcol_processor_incoming_items` and `otelcol_processor_outgoing_items`
 metrics emitted by processors built on `processorhelper`. This processor is

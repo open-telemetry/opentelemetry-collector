@@ -10,7 +10,10 @@ subtext: |
   The processor reports `otelcol_processor_queuebatch_*` instruments with
   `processor` and `otel.signal` attributes instead of exporterhelper's
   `otelcol_exporter_*` instruments. It does not emit any `otelcol_exporter_*`
-  metric. Spans and log messages are still emitted by exporterhelper and remain
-  exporter-oriented; see the component README.
+  metric. The default metric views apply the same telemetry-level filtering
+  these instruments get under their exporterhelper names: the batch size
+  histograms are dropped and the `error.type`/`error.permanent` attributes are
+  excluded below the `detailed` level. Spans and log messages are still emitted
+  by exporterhelper and remain exporter-oriented; see the component README.
 
 change_logs: [user]

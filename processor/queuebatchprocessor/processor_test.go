@@ -268,18 +268,30 @@ func TestObsMetricsSignalAttribute(t *testing.T) {
 
 // TestObsMetricsShutdownOnConstructionFailure verifies the processor releases
 // its telemetry when exporterhelper rejects the arguments before taking
-// ownership of the metrics.
+// ownership of the metrics. Shutdown unregisters the asynchronous callbacks,
+// so registering them first makes the release observable.
 func TestObsMetricsShutdownOnConstructionFailure(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	set, _ := testSettings(tt)
 	_, err := newSignalProcessor(set, pipeline.SignalTraces,
-		func(*exporterhelper.ObsMetrics) (processor.Traces, error) {
+		func(om *exporterhelper.ObsMetrics) (processor.Traces, error) {
+			require.NoError(t, om.RegisterQueueSize(constantQueueObserver(7)))
+			require.NoError(t, om.RegisterQueueCapacity(constantQueueObserver(9)))
 			return nil, errors.New("construction failed")
 		})
 	require.Error(t, err)
+
+	_, err = tt.GetMetric("otelcol_processor_queuebatch_queue_size")
+	require.Error(t, err, "queue size callback must be unregistered")
+	_, err = tt.GetMetric("otelcol_processor_queuebatch_queue_capacity")
+	require.Error(t, err, "queue capacity callback must be unregistered")
 }
+
+type constantQueueObserver int64
+
+func (o constantQueueObserver) Observe() int64 { return int64(o) }
 
 func TestMetrics(t *testing.T) {
 	tt := componenttest.NewTelemetry()

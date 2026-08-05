@@ -123,8 +123,8 @@ func NewExporterMetrics(tb *metadata.TelemetryBuilder, id component.ID, signal p
 	case xpipeline.SignalProfiles:
 		enqueueFailedInst = tb.ExporterEnqueueFailedProfileSamples
 	}
-	// Profiles have no enqueue-failure instrument yet; drop the nil check once
-	// they do.
+	// enqueueFailedInst is nil only when the signal is not one of the four
+	// known signals, in which case enqueue failures go unreported.
 	if enqueueFailedInst != nil {
 		om.RecordEnqueueFailureFunc = func(ctx context.Context, items int64) {
 			enqueueFailedInst.Add(ctx, items, metricAttr)
@@ -156,10 +156,12 @@ func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T
 		obsMetrics = NewExporterMetrics(tb, set.ID, set.Signal)
 	}
 	if err := obsMetrics.RegisterQueueSize(ObserveQueueFunc(delegate.Size)); err != nil {
+		shutdownOwnedBuilder(tb)
 		return nil, err
 	}
 
 	if err := obsMetrics.RegisterQueueCapacity(ObserveQueueFunc(delegate.Capacity)); err != nil {
+		shutdownOwnedBuilder(tb)
 		return nil, err
 	}
 
@@ -176,10 +178,16 @@ func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T
 }
 
 func (or *obsQueue[T]) Shutdown(ctx context.Context) error {
-	if or.tb != nil {
-		defer or.tb.Shutdown()
-	}
+	defer shutdownOwnedBuilder(or.tb)
 	return or.Queue.Shutdown(ctx)
+}
+
+// shutdownOwnedBuilder releases tb when this queue owns it. tb is nil when the
+// caller supplied Metrics, in which case the caller owns the builder.
+func shutdownOwnedBuilder(tb *metadata.TelemetryBuilder) {
+	if tb != nil {
+		tb.Shutdown()
+	}
 }
 
 func (or *obsQueue[T]) Offer(ctx context.Context, req T) error {

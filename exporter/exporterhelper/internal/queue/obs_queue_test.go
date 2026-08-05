@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
@@ -374,4 +375,55 @@ func TestObsQueueProfilesBatchSize(t *testing.T) {
 				Sum:          22,
 			},
 		}, metricdatatest.IgnoreTimestamp())
+}
+
+var errRegisterCallback = errors.New("register callback failed")
+
+// failingMeterProvider delegates to a real MeterProvider but fails the
+// RegisterCallback call at index failAt (1-based).
+type failingMeterProvider struct {
+	metric.MeterProvider
+	calls  *int
+	failAt int
+}
+
+func (p failingMeterProvider) Meter(name string, opts ...metric.MeterOption) metric.Meter {
+	return failingMeter{Meter: p.MeterProvider.Meter(name, opts...), calls: p.calls, failAt: p.failAt}
+}
+
+type failingMeter struct {
+	metric.Meter
+	calls  *int
+	failAt int
+}
+
+func (m failingMeter) RegisterCallback(f metric.Callback, instruments ...metric.Observable) (metric.Registration, error) {
+	*m.calls++
+	if *m.calls == m.failAt {
+		return nil, errRegisterCallback
+	}
+	return m.Meter.RegisterCallback(f, instruments...)
+}
+
+// TestObsQueueReleasesOwnedTelemetryOnRegistrationFailure verifies that a queue
+// owning its telemetry builder releases it when a later registration fails,
+// instead of leaving the already-registered callback observing a dead queue.
+func TestObsQueueReleasesOwnedTelemetryOnRegistrationFailure(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	set := tt.NewTelemetrySettings()
+	calls := 0
+	// The queue capacity callback is registered second.
+	set.MeterProvider = failingMeterProvider{MeterProvider: set.MeterProvider, calls: &calls, failAt: 2}
+
+	_, err := newObsQueue[request.Request](Settings[request.Request]{
+		Signal:    pipeline.SignalLogs,
+		ID:        exporterID,
+		Telemetry: set,
+	}, newFakeQueue[request.Request](nil, 7, 9))
+	require.ErrorIs(t, err, errRegisterCallback)
+
+	_, err = tt.GetMetric("otelcol_exporter_queue_size")
+	require.Error(t, err, "queue size callback must be unregistered")
 }
