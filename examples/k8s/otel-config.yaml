@@ -40,7 +40,7 @@ data:
         traces:
           receivers: [otlp]
           processors: [memory_limiter]
-          exporters: [otlp]
+          exporters: [otlp_grpc]
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -132,7 +132,7 @@ data:
         traces/1:
           receivers: [otlp]
           processors: [memory_limiter]
-          exporters: [otlp]
+          exporters: [otlp_grpc]
 ---
 apiVersion: v1
 kind: Service
