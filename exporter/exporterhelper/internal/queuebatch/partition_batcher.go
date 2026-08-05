@@ -45,6 +45,7 @@ type partitionBatcher struct {
 	onEmpty        func()    // callback triggered when partition is idle for given time period.
 	lastDataTime   time.Time // tracks when data was last present
 	active         bool      // indicates if partition is still active i.e timer is running and shutdown is not called yet. If Consume is called on inactive partition then data is flushed sync because timer is not running.
+	stopped        bool      // set to true during shutdown so flush() exports synchronously instead of calling stopWG.Add, which would panic with WaitGroup reuse.
 }
 
 func newPartitionBatcher(
@@ -245,6 +246,13 @@ func (qb *partitionBatcher) shutdownInternal() {
 	close(qb.shutdownCh)
 	// Make sure execute one last flush if necessary.
 	qb.flushCurrentBatchOrRemovePartition()
+	// Redirect any later flush to a synchronous export before waiting, so no new stopWG.Add
+	// can race with Wait and panic with WaitGroup reuse. The lock is released before Wait so
+	// the timer goroutine (which holds a stopWG count and may need currentBatchMu) can exit
+	// without deadlocking.
+	qb.currentBatchMu.Lock()
+	qb.stopped = true
+	qb.currentBatchMu.Unlock()
 	qb.stopWG.Wait()
 }
 
@@ -288,7 +296,19 @@ func (qb *partitionBatcher) flushCurrentBatchOrRemovePartition() {
 
 // flush starts a goroutine that calls consumeFunc. It blocks until a worker is available if necessary.
 func (qb *partitionBatcher) flush(ctx context.Context, req request.Request, done queue.Done) {
+	// Add under the lock so it cannot race with the stopped flag set in shutdownInternal.
+	qb.currentBatchMu.Lock()
+	if qb.stopped {
+		qb.currentBatchMu.Unlock()
+		// shutdownInternal is already waiting on stopWG, so this batch cannot be handed to
+		// a worker. Export it on the caller's goroutine instead of dropping it: the
+		// downstream sender is still available because the wrapped exporter is shut down
+		// only after the queue sender.
+		done.OnDone(qb.consumeFunc(ctx, req))
+		return
+	}
 	qb.stopWG.Add(1)
+	qb.currentBatchMu.Unlock()
 	qb.wp.execute(func() {
 		defer qb.stopWG.Done()
 		done.OnDone(qb.consumeFunc(ctx, req))
