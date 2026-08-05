@@ -4,7 +4,7 @@ component: pkg/scraperhelper
 
 note: Use `{record}` instead of `{datapoint}` as the unit of the log record and profile record scraper metrics
 
-issues: []
+issues: [15730]
 
 subtext: |
   Affects `otelcol_scraper_scraped_log_records`, `otelcol_scraper_errored_log_records`,
