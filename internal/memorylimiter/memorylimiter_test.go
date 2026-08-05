@@ -31,6 +31,12 @@ func (m *mockHost) Report(e *componentstatus.Event) {
 	m.events = append(m.events, e)
 }
 
+// setHost injects a host directly for tests that call CheckMemLimits without
+// going through Start.
+func setHost(ml *MemoryLimiter, host component.Host) {
+	ml.host.Store(&host)
+}
+
 // TestMemoryPressureResponse manipulates results from querying memory and
 // check expected side effects.
 func TestMemoryPressureResponse(t *testing.T) {
@@ -47,7 +53,7 @@ func TestMemoryPressureResponse(t *testing.T) {
 	}
 
 	host := &mockHost{}
-	ml.host = host
+	setHost(ml, host)
 
 	// Below memAllocLimit.
 	currentMemAlloc = 800
@@ -203,7 +209,7 @@ func TestCheckMemLimitsHealthEvents(t *testing.T) {
 			}, zap.NewNop())
 			require.NoError(t, err)
 			host := &mockHost{}
-			ml.host = host
+			setHost(ml, host)
 			ml.runGCFn = func() {}
 			var currentMemMiB uint64
 			ml.readMemStatsFn = func(ms *runtime.MemStats) { ms.Alloc = currentMemMiB * mibBytes }
@@ -904,7 +910,7 @@ func TestGCRecovery(t *testing.T) {
 			require.NoError(t, err)
 
 			host := &mockHost{}
-			ml.host = host
+			setHost(ml, host)
 
 			// Ensure the GC-interval guard passes on the first check.
 			ml.lastGCDone = ml.lastGCDone.Add(-time.Minute)
@@ -937,6 +943,35 @@ func TestStart(t *testing.T) {
 	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
 	require.NoError(t, err)
 	require.NoError(t, ml.Start(context.Background(), host))
-	assert.Equal(t, host, ml.host)
+	assert.Equal(t, host, *ml.host.Load())
 	require.NoError(t, ml.Shutdown(context.Background()))
+}
+
+// TestStartConcurrentReuse exercises the case where a single MemoryLimiter is
+// shared across multiple pipelines: the factory caches one instance per config
+// and registers its Start hook for every pipeline, so Start is invoked more
+// than once on the same instance. The first Start launches the monitor
+// goroutine, which reads the host on every tick via componentstatus.ReportStatus;
+// subsequent Start calls must not write the host in a way that races that read.
+// Runs under `go test -race`.
+func TestStartConcurrentReuse(t *testing.T) {
+	cfg := &Config{
+		CheckInterval:  time.Millisecond,
+		MemoryLimitMiB: 1024,
+	}
+	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
+	require.NoError(t, err)
+	// Keep reported memory below the soft limit so every tick reaches a
+	// status report call, continuously reading the host.
+	ml.readMemStatsFn = func(ms *runtime.MemStats) { ms.Alloc = 0 }
+
+	const starts = 8
+	for range starts {
+		require.NoError(t, ml.Start(context.Background(), componenttest.NewNopHost()))
+		// Let the monitor goroutine tick and read host between Start calls.
+		time.Sleep(2 * time.Millisecond)
+	}
+	for range starts {
+		require.NoError(t, ml.Shutdown(context.Background()))
+	}
 }
