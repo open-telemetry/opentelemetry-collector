@@ -7,6 +7,7 @@ import (
 	"encoding"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -80,6 +81,158 @@ var subDefault = Sub{
 
 func ptr[T any](v T) *T {
 	return &v
+}
+
+type textID struct {
+	typ  string
+	name string
+}
+
+func (tid textID) String() string {
+	return tid.typ + "/" + tid.name
+}
+
+var (
+	_ encoding.TextMarshaler   = textID{}
+	_ encoding.TextUnmarshaler = (*textID)(nil)
+)
+
+func (tid textID) MarshalText() ([]byte, error) {
+	return []byte(tid.String()), nil
+}
+
+func (tid *textID) UnmarshalText(text []byte) error {
+	parts := string(text)
+	typeStr, nameStr, _ := strings.Cut(parts, "/")
+	typeStr = strings.TrimSpace(typeStr)
+	nameStr = strings.TrimSpace(nameStr)
+	tid.typ = typeStr
+	tid.name = nameStr
+	return nil
+}
+
+func TestMarshalScalarTextMarshalerStruct(t *testing.T) {
+	type Cfg struct {
+		Storage Optional[textID] `mapstructure:"storage"`
+	}
+
+	tests := []struct {
+		name     string
+		value    Cfg
+		expected map[string]any
+	}{
+		{
+			name:     "none",
+			value:    Cfg{Storage: None[textID]()},
+			expected: map[string]any{"storage": map[string]any(nil)},
+		},
+		{
+			name:     "default",
+			value:    Cfg{Storage: Default(textID{typ: "file_storage", name: "mystore"})},
+			expected: map[string]any{"storage": map[string]any(nil)},
+		},
+		{
+			name:     "some_type_and_name",
+			value:    Cfg{Storage: Some(textID{typ: "file_storage", name: "mystore"})},
+			expected: map[string]any{"storage": "file_storage/mystore"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			conf := confmap.New()
+			require.NoError(t, conf.Marshal(tc.value))
+			assert.Equal(t, tc.expected, conf.ToStringMap())
+		})
+	}
+}
+
+func TestUnmarshalScalarTextMarshalerStruct(t *testing.T) {
+	type Cfg struct {
+		Storage Optional[textID] `mapstructure:"storage"`
+	}
+
+	tests := []struct {
+		name         string
+		config       map[string]any
+		initial      Cfg
+		expectHasVal bool
+		expectVal    textID
+	}{
+		{
+			name:         "scalar_value_with_values",
+			config:       map[string]any{"storage": "file_storage/mystore"},
+			initial:      Cfg{Storage: None[textID]()},
+			expectHasVal: true,
+			expectVal:    textID{typ: "file_storage", name: "mystore"},
+		},
+		{
+			name:         "null_clears_to_none",
+			config:       map[string]any{"storage": map[string]any(nil)},
+			initial:      Cfg{Storage: Some(textID{typ: "file_storage"})},
+			expectHasVal: false,
+		},
+		{
+			name:         "absent_key_leaves_unchanged",
+			config:       map[string]any{},
+			initial:      Cfg{Storage: Some(textID{typ: "file_storage"})},
+			expectHasVal: true,
+			expectVal:    textID{typ: "file_storage"},
+		},
+		{
+			name:         "default_with_value",
+			config:       map[string]any{"storage": "file_storage/mystore"},
+			initial:      Cfg{Storage: Default(textID{typ: "memory"})},
+			expectHasVal: true,
+			expectVal:    textID{typ: "file_storage", name: "mystore"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := tc.initial
+			conf := confmap.NewFromStringMap(tc.config)
+			require.NoError(t, conf.Unmarshal(&cfg))
+			require.Equal(t, tc.expectHasVal, cfg.Storage.HasValue())
+			if tc.expectHasVal {
+				require.Equal(t, tc.expectVal, *cfg.Storage.Get())
+			} else {
+				require.Nil(t, cfg.Storage.Get())
+			}
+		})
+	}
+}
+
+func TestRoundTripScalarTextMarshalerStruct(t *testing.T) {
+	type Cfg struct {
+		Storage Optional[textID] `mapstructure:"storage"`
+	}
+
+	tests := []struct {
+		name         string
+		initial      Cfg
+		expectHasVal bool
+		expectVal    textID
+	}{
+		{name: "none", initial: Cfg{Storage: None[textID]()}, expectHasVal: false},
+		{name: "default", initial: Cfg{Storage: Default(textID{typ: "file_storage", name: "mystore"})}, expectHasVal: false},
+		{name: "some", initial: Cfg{Storage: Some(textID{typ: "file_storage", name: "mystore"})}, expectHasVal: true, expectVal: textID{typ: "file_storage", name: "mystore"}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			conf := confmap.New()
+			require.NoError(t, conf.Marshal(tc.initial))
+
+			var result Cfg
+			require.NoError(t, conf.Unmarshal(&result))
+
+			require.Equal(t, tc.expectHasVal, result.Storage.HasValue())
+			if tc.expectHasVal {
+				require.Equal(t, tc.expectVal, *result.Storage.Get())
+			}
+		})
+	}
 }
 
 func TestDefaultPanics(t *testing.T) {
