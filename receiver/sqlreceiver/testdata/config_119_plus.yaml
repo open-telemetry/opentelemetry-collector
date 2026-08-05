@@ -1,0 +1,364 @@
+receivers:
+  filelog/system:
+    include: [/home/sundb/sundb-server-5.0.22.1.0-linux-x86_64/sundb_data/trc/system.trc]
+    # 多行日志合并：以 "[时间戳" 开头的行作为新日志的起始
+    multiline:
+      line_start_pattern: '^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+)'
+    operators:
+      # 使用正则解析 SUNDB system.trc 日志格式
+      # 格式: [2025-12-09 07:19:49.379721 INSTANCE(SUNDB) THREAD(15562,126947832010560)] [INFORMATION]
+      - type: regex_parser
+        regex: '^\[(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+) INSTANCE\((?P<instance>[^)]+)\) THREAD\((?P<thread_id>[^,]+),(?P<thread_addr>[^)]+)\)\] \[(?P<severity>[A-Z]+)\]\s*\n?\[?(?P<component>[^\]]*)\]?\s*(?P<message>.*)'
+        on_error: send
+        timestamp:
+          parse_from: attributes.timestamp
+          layout: '%Y-%m-%d %H:%M:%S.%f'
+          layout_type: strptime
+        severity:
+          parse_from: attributes.severity
+          mapping:
+            info: INFORMATION
+            warn: WARNING
+            error: ERROR
+            debug: DEBUG
+      # 将解析后的 message 移动到 body，替换原始日志全文
+      - type: move
+        from: attributes.message
+        to: body
+      # 删除冗余的 timestamp 和 severity 字段（已在顶层有对应列）
+      - type: remove
+        field: attributes.timestamp
+      - type: remove
+        field: attributes.severity
+    include_file_name: true
+    include_file_path: true
+    poll_interval: 200ms
+    start_at: end
+
+  # Listener 日志接收器
+  filelog/listener:
+    include: [/home/sundb/sundb-server-5.0.22.1.0-linux-x86_64/sundb_data/trc/listener.trc]
+    # 多行日志合并
+    multiline:
+      line_start_pattern: '^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+)'
+    operators:
+      # 解析 listener.trc 日志格式
+      # 格式: [2025-12-09 08:52:15.871311 THREAD(18069,139796128126592)]
+      - type: regex_parser
+        regex: '^\[(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+) THREAD\((?P<thread_id>[^,]+),(?P<thread_addr>[^)]+)\)\]\s*\n?\[?(?P<component>[^\]]*)\]?\s*(?P<message>.*)'
+        on_error: send
+        timestamp:
+          parse_from: attributes.timestamp
+          layout: '%Y-%m-%d %H:%M:%S.%f'
+          layout_type: strptime
+      # 将解析后的 message 移动到 body，替换原始日志全文
+      - type: move
+        from: attributes.message
+        to: body
+      # 删除冗余的 timestamp 字段（已在顶层有对应列）
+      - type: remove
+        field: attributes.timestamp
+    include_file_name: true
+    include_file_path: true
+    poll_interval: 200ms
+    start_at: end
+
+  # [新增] 系统指标采集器 (Phase 4)
+  sysreceiver:
+    collection_interval: 30s
+    node_value: "G1N1"
+    node_column_name: "NODE"
+    host_ip: "172.19.19.119"      # 请修改为实际IP
+    deployment_instance: "sundb-119"
+
+  # SQL 采集器 (Metrics)
+  sqlreceiver:
+    endpoint: "http://localhost:9989/query"
+    # HTTP 客户端设置
+    timeout: 10s
+    # 采集频率
+    # 采集频率
+    collection_interval: 30s
+    # [NEW] 部署实例名 -> 对应指标表中的 deployment.instance 列
+    deployment_instance: "sundb-119"
+    # 动态 Auth 配置 (6小时自动刷新)
+    auth_endpoint: "http://127.0.0.1:9989/auth/login"
+    auth_password: "21232f297a57a5a743894a0e4a801fc3"
+    headers:
+      # Authorization has been removed in favor of dynamic auth
+    
+    queries:
+      # =========================================================================
+      # 2.2.1 [monitors.BUFFERCACHE]
+      # =========================================================================
+      - name: "buffercache"
+        sql: "SELECT nvl(buff.CLUSTER_MEMBER_NAME,'STANDALONE') AS \"MEMBER_NAME\",CAST(buff.BUFFER_POOL_SIZE AS NUMBER)* 8/1024 AS \"POOL_SIZE\",CAST( buff.HOT_REGION_PERCENTAGE AS NUMBER)  AS \"LRU_HOT_REGION\",round(CAST((BUFFER_HIT /(BUFFER_HIT + BUFFER_MISS)* 100) AS number), 2) AS \"BUFFER_HIT\",CAST( buff.TOTAL_WRITES AS NUMBER )  AS  \"TOTAL_WRITES\" FROM X$BUFFER_STAT@local AS buff"
+        signal_type: "metrics"
+        metrics:
+          - name: "db.buffer.pool_size"
+            value_field: "POOL_SIZE"
+            metric_type: "gauge"
+            attributes:
+              member: "MEMBER_NAME"
+          - name: "db.buffer.hot_region"
+            value_field: "LRU_HOT_REGION"
+            metric_type: "gauge"
+            attributes:
+              member: "MEMBER_NAME"
+          - name: "db.buffer.hit_ratio"
+            value_field: "BUFFER_HIT"
+            metric_type: "gauge"
+            attributes:
+              member: "MEMBER_NAME"
+          - name: "db.buffer.total_writes"
+            value_field: "TOTAL_WRITES"
+            metric_type: "sum"
+            attributes:
+              member: "MEMBER_NAME"
+
+      # =========================================================================
+      # 2.2.6 [monitors.INDEX]
+      # =========================================================================
+      - name: "index_usage"
+        sql: "select OWNER,TAB_SCHEMA,TAB_NAME,IDX_NAME,TBS_NAME,USE_MBYTE,PERCENTAGE from TECH_INDEX order by PERCENTAGE DESC limit 5"
+        signal_type: "metrics"
+        metrics:
+          - name: "db.index.use_mbyte"
+            value_field: "USE_MBYTE"
+            metric_type: "gauge"
+            attributes:
+              owner: "OWNER"
+              schema: "TAB_SCHEMA"
+              table: "TAB_NAME"
+              index: "IDX_NAME"
+              tablespace: "TBS_NAME"
+          - name: "db.index.percentage"
+            value_field: "PERCENTAGE"
+            metric_type: "gauge"
+            attributes:
+              owner: "OWNER"
+              schema: "TAB_SCHEMA"
+              table: "TAB_NAME"
+              index: "IDX_NAME"
+              tablespace: "TBS_NAME"
+
+      # =========================================================================
+      # 2.2.11 [monitors.PSA]
+      # =========================================================================
+      - name: "psa_stats"
+        sql: "SELECT NVL(XS.CLUSTER_MEMBER_NAME, 'STANDALONE') AS \"MEMBER_NAME\", XS.ID AS \"ID\", XS.SERIAL AS \"SERIAL\", XS.PROGRAM AS \"PROGRAM\", XP.VALUE / 1024 / 1024 AS \"TOTAL_PSA_MEGA\", SUM(XKPS.VALUE) / 1024 / 1024 AS \"ALLOC_PSA_MEGA\", (SUM(XKPS.VALUE) / XP.VALUE) * 100 AS \"ALLOC_PERCENT\" FROM X$KN_PROC_STAT@local XKPS, X$KN_PROC_ENV@local XKPE, X$PROPERTY@local XP, X$SESSION@local XS WHERE XKPS.ID = XKPE.ID AND XKPE.OS_PROC_ID = XS.SERVER_PROCESS AND XP.PROPERTY_NAME = 'PRIVATE_STATIC_AREA_SIZE' AND XS.TOP_LAYER != 12 AND XS.PROGRAM != 'cluster peer' AND XKPS.NAME LIKE '%TOTAL%' GROUP BY XS.CLUSTER_MEMBER_NAME, XP.VALUE, XS.ID, XS.SERIAL, XS.PROGRAM ORDER BY \"MEMBER_NAME\", XS.ID"
+        signal_type: "metrics"
+        metrics:
+          - name: "db.psa.total_mega"
+            value_field: "TOTAL_PSA_MEGA"
+            metric_type: "gauge"
+            attributes:
+              member: "MEMBER_NAME"
+              program: "PROGRAM"
+              sid: "ID"
+          - name: "db.psa.alloc_mega"
+            value_field: "ALLOC_PSA_MEGA"
+            metric_type: "gauge"
+            attributes:
+              member: "MEMBER_NAME"
+              program: "PROGRAM"
+              sid: "ID"
+          - name: "db.psa.alloc_percent"
+            value_field: "ALLOC_PERCENT"
+            metric_type: "gauge"
+            attributes:
+              member: "MEMBER_NAME"
+              program: "PROGRAM"
+              sid: "ID"
+
+      # =========================================================================
+      # 2.2.12 [monitors.QPS]
+      # =========================================================================
+      - name: "qps_select"
+        sql: "SELECT t.*, TO_CHAR(SYSTIMESTAMP, 'YYYY-MM-DD HH24:MI:SS') AS mon_time FROM V$SYSTEM_SQL_STAT@local t WHERE STAT_NAME = 'COMMAND: SELECT'"
+        signal_type: "metrics"
+        metrics:
+          - name: "db.qps.select"
+            value_field: "STAT_VALUE"
+            metric_type: "sum"
+            attributes:
+              stat_name: "STAT_NAME"
+              comments: "COMMENTS"
+
+      # =========================================================================
+      # 2.2.13 [monitors.REDOLOG_SWITCH]
+      # =========================================================================
+      - name: "redolog_stats"
+        sql: "select * from FIXED_TABLE_SCHEMA.X$LOG_GROUP"
+        signal_type: "metrics"
+        metrics:
+          - name: "db.redolog.file_size"
+            value_field: "FILE_SIZE"
+            metric_type: "gauge"
+            attributes:
+              group_id: "GROUP_ID"
+              group_ord: "GROUP_ORD_ID"
+              state: "STATE"
+          - name: "db.redolog.member_count"
+            value_field: "MEMBER_COUNT"
+            metric_type: "gauge"
+            attributes:
+              group_id: "GROUP_ID"
+              group_ord: "GROUP_ORD_ID"
+              state: "STATE"
+
+      # =========================================================================
+      # 2.2.14 [monitors.SESSION]
+      # =========================================================================
+      - name: "session_count"
+        sql: "SELECT count(*) as COUNT FROM V$SESSION"
+        signal_type: "metrics"
+        metrics:
+          - name: "db.session.count"
+            value_field: "COUNT"
+            metric_type: "gauge"
+
+      # =========================================================================
+      # 2.2.15 [monitors.SQL] & 2.2.19 [monitors.TPS]
+      # Combined as they query the same table/logic
+      # =========================================================================
+      - name: "sql_stats"
+        sql: "SELECT t.*, to_char(SYSTIMESTAMP, 'YYYY-MM-DD HH24:MI:SS') AS mon_time FROM gv$system_sql_stat t WHERE STAT_NAME LIKE 'COMMAND: INSERT%' OR STAT_NAME LIKE 'COMMAND: UPDATE%' OR STAT_NAME LIKE 'COMMAND: DELETE%' OR STAT_NAME='COMMAND: SELECT'"
+        signal_type: "metrics"
+        metrics:
+          - name: "db.sql.stats"
+            value_field: "STAT_VALUE"
+            metric_type: "sum"
+            attributes:
+              origin_member: "ORIGIN_MEMBER_NAME"
+              stat_name: "STAT_NAME"
+
+      # =========================================================================
+      # 2.2.17 [monitors.SSA]
+      # =========================================================================
+      - name: "ssa_stats"
+        sql: "SELECT NVL( CLUSTER_GROUP_NAME, 'dummy') GROUP_NAME, NVL(CLUSTER_MEMBER_NAME, 'dummy' ) MEMBER_NAME, NAME, VALUE FROM X$KN_SYSTEM_INFO@LOCAL WHERE NAME IN ('VARIABLE_STATIC_TOTAL_SIZE' , 'VARIABLE_STATIC_ALLOC_SIZE')"
+        signal_type: "metrics"
+        metrics:
+          - name: "db.ssa.value"
+            value_field: "VALUE"
+            metric_type: "gauge"
+            attributes:
+              group_name: "GROUP_NAME"
+              member_name: "MEMBER_NAME"
+              name: "NAME"
+
+      # =========================================================================
+      # 2.2.18 [monitors.TABLESPACE]
+      # =========================================================================
+      - name: "tablespace_usage"
+        sql: "SELECT CLUSTER_NAME AS \"MEMBER_NAME\",TABLESPACE_NAME,TOTAL_MEGABYTE,USED_MEGABYTE,FREE_MEGABYTE,USED_PERCENTAGE FROM TECH_TABLESPACE@LOCAL"
+        signal_type: "metrics"
+        metrics:
+          - name: "db.tablespace.total_mb"
+            value_field: "TOTAL_MEGABYTE"
+            metric_type: "gauge"
+            attributes:
+              member: "MEMBER_NAME"
+              tablespace: "TABLESPACE_NAME"
+          - name: "db.tablespace.used_mb"
+            value_field: "USED_MEGABYTE"
+            metric_type: "gauge"
+            attributes:
+              member: "MEMBER_NAME"
+              tablespace: "TABLESPACE_NAME"
+          - name: "db.tablespace.free_mb"
+            value_field: "FREE_MEGABYTE"
+            metric_type: "gauge"
+            attributes:
+              member: "MEMBER_NAME"
+              tablespace: "TABLESPACE_NAME"
+          - name: "db.tablespace.used_percent"
+            value_field: "USED_PERCENTAGE"
+            metric_type: "gauge"
+            attributes:
+              member: "MEMBER_NAME"
+              tablespace: "TABLESPACE_NAME"
+
+      # =========================================================================
+      # 2.2.20 [monitors.TRANSACTION]
+      # =========================================================================
+      - name: "transaction_count"
+        sql: "SELECT count(distinct TRANS_ID) \"TRANS_COUNT\" FROM v$transaction"
+        signal_type: "metrics"
+        metrics:
+          - name: "db.transaction.count"
+            value_field: "TRANS_COUNT"
+            metric_type: "gauge"
+
+processors:
+  # 资源检测处理器
+  resourcedetection:
+    detectors: [system, env]
+    timeout: 2s
+    override: false
+  # 资源属性处理器
+  resource:
+    attributes:
+      - key: service.name
+        value: "sundb"
+        action: insert
+      - key: deployment.instance
+        value: "sundb-119"
+        action: insert
+  # 内存限制处理器
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+  # 批处理器
+  batch:
+    timeout: 5s
+    send_batch_size: 1024
+
+exporters:
+  # 用于 Logs 的 Exporter (保留原配置)
+  otlphttp:
+    endpoint: "http://172.19.19.127:4000/v1/otlp"
+    tls:
+      insecure: true
+    headers:
+      X-Greptime-DB-Name: "sundb_logs"
+      X-Greptime-Log-Table-Name: "sundb_logs"
+      X-Greptime-Log-Extract-Keys: "deployment.instance,host.name"
+
+  # [新增] 用于 Metrics 的 Exporter (去除 Log 特定 Header)
+  otlphttp/metrics:
+    endpoint: "http://172.19.19.127:4000/v1/otlp"
+    tls:
+      insecure: true
+    headers:
+      X-Greptime-DB-Name: "sundb_metrics"
+
+  # =========================================================================
+  # [新增] Kafka Exporters
+  # =========================================================================
+  kafka/metrics:
+    brokers:
+      - "172.19.19.117:9092"
+    topic: otel-metrics
+    encoding: otlp_proto
+
+  kafka/logs:
+    brokers:
+      - "172.19.19.117:9092"
+    topic: otel-logs
+    encoding: otlp_proto
+
+service:
+  pipelines:
+    logs:
+      receivers: [filelog/system, filelog/listener]
+      processors: [memory_limiter, resourcedetection, resource, batch]
+      exporters: [otlphttp, kafka/logs]
+    
+    # [新增] Metrics 流水线
+    metrics:
+      receivers: [sqlreceiver, sysreceiver]
+      processors: [memory_limiter, resourcedetection, resource, batch]
+      exporters: [otlphttp/metrics, kafka/metrics]

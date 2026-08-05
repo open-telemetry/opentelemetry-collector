@@ -1,0 +1,18 @@
+[Unit]
+Description=OpenTelemetry Collector (Custom Sundb Monitor)
+After=network.target
+
+[Service]
+# 根据您的截图，您使用的是 root 用户运行，此处保持 root
+# 如果需要使用 sundb 用户，请修改为 User=sundb 并确保文件权限正确
+User=root
+Type=simple
+# 显式指定工作目录，防止相对路径文件找不到
+WorkingDirectory=/home/sundb/otel/otelcol-contrib/usr/bin/
+# 启动命令 (绝对路径)
+ExecStart=/home/sundb/otel/otelcol-contrib/usr/bin/otelcorecol_linux --config=config_119_plus.yaml
+Restart=always
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

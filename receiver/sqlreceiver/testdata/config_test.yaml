@@ -1,0 +1,24 @@
+receivers:
+  sqlreceiver:
+    endpoint: "http://localhost:9989/query"
+    timeout: 10s
+    headers:
+      Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjc2lpIiwiZXhwIjoxNzY3MjU3OTU5LCJpYXQiOjE3NjY5OTg3NTksIlBhc3N3ZCI6ImFkbWluIn0.tuZImsONB_aX6ablFs00iFvzvTNAfDO1qhsoIyqaHTc"
+    queries:
+      - name: "test_query"
+        sql: "SELECT * FROM metrics"
+        metric_name: "test.metrics"
+
+processors:
+  batch:
+
+exporters:
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    metrics:
+      receivers: [sqlreceiver]
+      processors: [batch]
+      exporters: [debug]
