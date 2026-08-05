@@ -114,6 +114,9 @@ type ClientConfig struct {
 	// deprecationWarnings records use of deprecated fields observed while
 	// unmarshaling; ToClient logs them, as no logger is available here.
 	deprecationWarnings []string
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.

@@ -39,8 +39,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	assert.Equal(t, &Config{ServerConfig: expectedServerConfig}, cfg)
 }
 
-// Regression test: fields declared next to the squash-embedded ServerConfig must
-// still be decoded now that ServerConfig implements confmap.Unmarshaler.
+// Fields declared next to the squashed ServerConfig must still be decoded.
 func TestUnmarshalConfigWithExpvar(t *testing.T) {
 	cm := confmap.NewFromStringMap(map[string]any{
 		"endpoint": "localhost:56888",
