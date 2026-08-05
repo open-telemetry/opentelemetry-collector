@@ -22,7 +22,14 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	nopreceiver "go.opentelemetry.io/collector/receiver/nopreceiver"
 	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
-	otelconftelemetry "go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
+	"go.opentelemetry.io/collector/receiver/sqlreceiver"
+	"go.opentelemetry.io/collector/receiver/sysreceiver"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 )
 
 type aliasProvider interface{ DeprecatedAlias() component.Type }
@@ -60,13 +67,19 @@ func components() (otelcol.Factories, error) {
 	factories.Receivers, err = otelcol.MakeFactoryMap[receiver.Factory](
 		nopreceiver.NewFactory(),
 		otlpreceiver.NewFactory(),
+		sqlreceiver.NewFactory(),
+		sysreceiver.NewFactory(),
+		filelogreceiver.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err
 	}
 	factories.ReceiverModules = makeModulesMap(factories.Receivers, map[component.Type]string{
-		nopreceiver.NewFactory().Type():  "go.opentelemetry.io/collector/receiver/nopreceiver v0.158.0",
-		otlpreceiver.NewFactory().Type(): "go.opentelemetry.io/collector/receiver/otlpreceiver v0.158.0",
+		nopreceiver.NewFactory().Type():     "go.opentelemetry.io/collector/receiver/nopreceiver v0.158.0",
+		otlpreceiver.NewFactory().Type():    "go.opentelemetry.io/collector/receiver/otlpreceiver v0.158.0",
+		sqlreceiver.NewFactory().Type():     "go.opentelemetry.io/collector/receiver/sqlreceiver v0.158.0",
+		sysreceiver.NewFactory().Type():     "go.opentelemetry.io/collector/receiver/sysreceiver v0.158.0",
+		filelogreceiver.NewFactory().Type(): "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.158.0",
 	})
 
 	factories.Exporters, err = otelcol.MakeFactoryMap[exporter.Factory](
@@ -74,6 +87,7 @@ func components() (otelcol.Factories, error) {
 		nopexporter.NewFactory(),
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
+		kafkaexporter.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err
@@ -83,12 +97,15 @@ func components() (otelcol.Factories, error) {
 		nopexporter.NewFactory().Type():      "go.opentelemetry.io/collector/exporter/nopexporter v0.158.0",
 		otlpexporter.NewFactory().Type():     "go.opentelemetry.io/collector/exporter/otlpexporter v0.158.0",
 		otlphttpexporter.NewFactory().Type(): "go.opentelemetry.io/collector/exporter/otlphttpexporter v0.158.0",
+		kafkaexporter.NewFactory().Type():    "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.158.0",
 	})
 
 	factories.Processors, err = otelcol.MakeFactoryMap[processor.Factory](
 		batchprocessor.NewFactory(),
 		memorylimiterprocessor.NewFactory(),
 		queuebatchprocessor.NewFactory(),
+		resourcedetectionprocessor.NewFactory(),
+		resourceprocessor.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err
@@ -97,6 +114,8 @@ func components() (otelcol.Factories, error) {
 		batchprocessor.NewFactory().Type():         "go.opentelemetry.io/collector/processor/batchprocessor v0.158.0",
 		memorylimiterprocessor.NewFactory().Type(): "go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.158.0",
 		queuebatchprocessor.NewFactory().Type():    "go.opentelemetry.io/collector/processor/queuebatchprocessor v0.158.0",
+		resourcedetectionprocessor.NewFactory().Type(): "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.158.0",
+		resourceprocessor.NewFactory().Type():      "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.158.0",
 	})
 
 	factories.Connectors, err = otelcol.MakeFactoryMap[connector.Factory](

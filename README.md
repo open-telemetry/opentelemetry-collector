@@ -1,5 +1,36 @@
 ---
 
+# OpenTelemetry Collector（Sundb 定制版）
+
+这是 [open-telemetry/opentelemetry-collector](https://github.com/open-telemetry/opentelemetry-collector) 的定制分支，针对 **Sundb 数据库** 及特定 Linux 服务器环境进行了深度改造，实现了全自动化、高可靠的监控采集探针。
+
+## 定制修改说明
+
+本项目在官方 Collector 基础上新增/修改了以下内容：
+
+| 组件 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `sqlreceiver` | 新增 Receiver | 通过 Sundb HTTP API 执行 SQL 查询，支持 JWT 动态认证、自动 Token 刷新（6h）、启动自愈重试、1-to-N 指标映射，覆盖 18+ 数据库内部指标 |
+| `sysreceiver` | 新增 Receiver | 直接读取 `/proc` 文件系统采集操作系统指标（CPU / 内存 / 磁盘 / 磁盘 IO / 网络 IO），差值法采样计算瞬时速率 |
+| `filelogreceiver` | 集成 Receiver | 采集 Sundb `system.trc` 和 `listener.trc` 日志，实时尾随读取 |
+| `kafkaexporter` | 新增 Exporter | 将指标/日志以 OTLP Protobuf 格式输出到 Kafka |
+| `resourcedetectionprocessor` / `resourceprocessor` | 新增 Processor | 自动检测主机资源属性并 enrich 数据 |
+
+### 核心特性
+
+- **动态认证**：启动时自动登录获取 JWT Token，失败时每 30 秒疯狂重试直至成功；正常运行期间每 6 小时主动刷新 Token。
+- **1-to-N 指标映射**：单条 SQL 查询返回的一行数据可同时映射为多个 OTel Metric，将数据库查询频率降低 50% 以上。
+- **身份自动注入**：所有指标自动附带 `host.name`、`service.name=sundb`、`deployment.instance` 标签。
+- **静态编译**：使用 `CGO_ENABLED=0` 全静态编译，生成二进制不依赖系统动态库，支持 **"Copy & Run"**。
+- **Systemd 服务化**：内置 `otelcol.service`，支持 `systemctl start/stop/status`，配置 `Restart=always` 自动拉起。
+
+### 文档
+
+- [Sundb 监控指标手册](sundb_monitoring_guide.md) — 所有可监控指标的详细说明（SQL、计算公式、OTel 数据点结构）
+- [定制化技术报告](customization_summary.md) — 架构设计与工程化改造总结
+
+---
+
 <p align="center">
   <strong>
     <a href="https://opentelemetry.io/docs/collector/getting-started/">Getting Started</a>
