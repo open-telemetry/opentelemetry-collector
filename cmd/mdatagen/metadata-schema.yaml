@@ -70,14 +70,18 @@ config:
   # Optional: Additional comments for developers (not included in JSON output).
   $comment: string
   # Required: The type of the configuration object. Typically "object" for component configs.
-  type: <string|number|integer|boolean|object|array|null>
+  # Primitive types: string, bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, byte, rune, float32, float64, any
+  # Container types: object (requires properties:), slice (requires values:), map (requires values:)
+  # Alias types: float (→float32), double (→float64), duration (→time.Duration), time (→time.Time),
+  #              opaque_string (→configopaque.String), component_id (→component.ID), opaque_map (→configopaque.MapList)
+  type: <string|bool|int|int8|int16|int32|int64|uint|uint8|uint16|uint32|uint64|byte|rune|float32|float64|any|object|slice|map|float|double|duration|time|opaque_string|component_id|opaque_map>
   # Optional: Map of configuration properties that define the component's configuration fields.
   properties:
     <property.name>:
       # Optional: Description of this configuration property.
       description: string
-      # Optional: The JSON Schema type of this property.
-      type: <string|number|integer|boolean|object|array|null>
+      # Optional: The type of this property. See the type comment above for supported values.
+      type: <string|bool|int|int8|int16|int32|int64|uint|uint8|uint16|uint32|uint64|byte|rune|float32|float64|any|object|slice|map|float|double|duration|time|opaque_string|component_id|opaque_map>
       # Optional: Reference to another schema definition. Can be:
       # - Internal reference: name of a type in $defs (e.g., "endpoint_config")
       # - External reference: full package path with type (e.g., "go.opentelemetry.io/collector/config/confighttp.client_config")
@@ -113,23 +117,21 @@ config:
       multipleOf: number
       # Optional: For object types - properties of the nested object.
       properties: {} # Recursively follows same structure
-      # Optional: For object types - whether additional properties beyond those defined are allowed.
-      # Can be true, false, or an object schema defining the type of additional properties.
-      additionalProperties: <bool|object>
+      # Optional: For slice and map types - schema for the element/value type.
+      # Required when type is "slice" (element type) or "map" (value type).
+      values:
+        # Same structure as property definition
+        type: string
+        # ... other item properties
       # Optional: For object types - minimum number of properties required.
       minProperties: int
       # Optional: For object types - maximum number of properties allowed.
       maxProperties: int
-      # Optional: For array types - schema for array items.
-      items:
-        # Same structure as property definition
-        type: string
-        # ... other item properties
-      # Optional: For array types - minimum number of items.
+      # Optional: For slice types - minimum number of items.
       minItems: int
-      # Optional: For array types - maximum number of items.
+      # Optional: For slice types - maximum number of items.
       maxItems: int
-      # Optional: For array types - whether all items must be unique.
+      # Optional: For slice types - whether all items must be unique.
       uniqueItems: bool
       # Optional: All of these schemas must be satisfied (schema composition).
       allOf:
@@ -148,7 +150,7 @@ config:
   # These definitions are not directly part of the config but can be reused multiple times.
   $defs:
     <definition.name>:
-      # Same structure as property definition
+      # Same structure as property definition. Type can be any supported type (see type comment above).
       type: object
       properties: {}
       # ... other schema properties
@@ -265,7 +267,7 @@ metrics:
     # Required: metric type with its settings.
     <sum|gauge>:
       # Required for sum and gauge metrics: type of number data point values.
-      value_type: <int|double>
+      values: <int|double>
       # Required for sum metric: whether the metric is monotonic (no negative delta values).
       monotonic: bool
       # Required for sum metric: whether reported values incorporate previous measurements
@@ -397,7 +399,7 @@ telemetry:
         # pass in options to the callbacks that are called when the metric is observed.
         async: bool
         # Required: type of number data point values.
-        value_type: <int|double>
+        values: <int|double>
         # Required for sum metric: whether the metric is monotonic (no negative delta values).
         monotonic: bool
         # Bucket boundaries are only available to set for histogram metrics.

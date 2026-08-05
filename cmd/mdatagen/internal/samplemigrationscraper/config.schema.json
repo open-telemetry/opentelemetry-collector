@@ -91,12 +91,12 @@
                     "type": "string",
                     "enum": [
                       "cpu.logical_number",
-                      "state"
+                      "cpu.mode"
                     ]
                   },
                   "default": [
                     "cpu.logical_number",
-                    "state"
+                    "cpu.mode"
                   ]
                 },
                 "enabled": {
@@ -106,7 +106,7 @@
               },
               "description": "SystemCPUUtilizationV1MetricConfig provides config for the system.cpu.utilization@v1 metric."
             },
-            "system.memory.linux.available": {
+            "system.memory.linux.available@v1": {
               "type": "object",
               "properties": {
                 "enabled": {
@@ -114,7 +114,7 @@
                   "default": false
                 }
               },
-              "description": "SystemMemoryLinuxAvailableMetricConfig provides config for the system.memory.linux.available metric."
+              "description": "SystemMemoryLinuxAvailableV1MetricConfig provides config for the system.memory.linux.available@v1 metric."
             }
           },
           "description": "MetricsConfig provides config for samplemigration metrics."
