@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pipeline"
@@ -853,4 +854,46 @@ func TestRegisterProcessMetrics_SupportedOS_RegisterFails_ReturnsError(t *testin
 	require.Error(t, err)
 	require.ErrorIs(t, err, wantErr)
 	require.Contains(t, err.Error(), "failed to register process metrics")
+}
+
+func TestReceiverPartialReloadEnabled(t *testing.T) {
+	// Both the master gate and the receiver phase gate must be enabled.
+	cases := []struct {
+		name     string
+		master   bool
+		receiver bool
+		want     bool
+	}{
+		{"both disabled", false, false, false},
+		{"master only", true, false, false},
+		{"receiver only", false, true, false},
+		{"both enabled", true, true, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", tc.master))
+			require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReloadReceivers", tc.receiver))
+			defer func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", false))
+				require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReloadReceivers", true))
+			}()
+			assert.Equal(t, tc.want, ReceiverPartialReloadEnabled())
+		})
+	}
+}
+
+func TestServiceUpdateReceivers(t *testing.T) {
+	ctx := context.Background()
+	cfg := newNopConfig()
+	srv, err := New(ctx, newNopSettings(), cfg)
+	require.NoError(t, err)
+	require.NoError(t, srv.Start(ctx))
+	t.Cleanup(func() {
+		require.NoError(t, srv.Shutdown(ctx))
+	})
+
+	// An unchanged update is a no-op that still exercises the public
+	// UpdateReceivers entry point on the running service.
+	rcvrCfgs, rcvrFactories := builders.NewNopReceiverConfigsAndFactories()
+	require.NoError(t, srv.UpdateReceivers(ctx, nil, rcvrCfgs, rcvrFactories, cfg.Pipelines))
 }
