@@ -67,6 +67,34 @@ func TestRegistryApply(t *testing.T) {
 	assert.True(t, fooGate.IsEnabled())
 }
 
+func TestValidateID(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		id        string
+		shouldErr bool
+	}{
+		{name: "empty", id: "", shouldErr: true},
+		{name: "single segment", id: "foo", shouldErr: false},
+		{name: "alphanumeric segment", id: "foo123", shouldErr: false},
+		{name: "namespaced", id: "foo.bar", shouldErr: false},
+		{name: "multiple namespaces", id: "foo.bar.baz", shouldErr: false},
+		{name: "leading dot", id: ".foo", shouldErr: true},
+		{name: "trailing dot", id: "foo.", shouldErr: true},
+		{name: "consecutive dots", id: "foo..bar", shouldErr: true},
+		{name: "only a dot", id: ".", shouldErr: true},
+		{name: "invalid character", id: "foo-bar", shouldErr: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateID(tc.id)
+			if tc.shouldErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestRegisterGateLifecycle(t *testing.T) {
 	for _, tc := range []struct {
 		name      string
