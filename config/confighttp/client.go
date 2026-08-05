@@ -126,8 +126,6 @@ type CookiesConfig struct {
 
 // KeepaliveClientConfig describes the keepalive configuration.
 type KeepaliveClientConfig struct {
-	_ struct{}
-
 	// IdleConnTimeout is the maximum amount of time an iddle (keep-alive) connection will remain open before closing itself.
 	// By default, it is set to 90 seconds.
 	IdleConnTimeout time.Duration `mapstructure:"idle_conn_timeout"`
@@ -139,6 +137,9 @@ type KeepaliveClientConfig struct {
 	// MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connections the host can keep open.
 	// If zero, [net/http.DefaultMaxIdleConnsPerHost] is used.
 	MaxIdleConnsPerHost int `mapstructure:"max_idle_conns_per_host,omitempty"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultClientConfig returns ClientConfig type object with

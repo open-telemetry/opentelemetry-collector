@@ -118,13 +118,14 @@ type ServerConfig struct {
 }
 
 type KeepaliveServerConfig struct {
-	_ struct{}
-
 	// IdleTimeout is the maximum amount of time to wait for the
 	// next request when keep-alives are enabled. If IdleTimeout
 	// is zero, the value of ReadTimeout is used. If both are
 	// zero, there is no timeout.
 	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultServerConfig returns ServerConfig type object with default values.
