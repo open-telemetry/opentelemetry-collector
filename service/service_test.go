@@ -481,8 +481,8 @@ func TestServiceTelemetryCreateProvidersError(t *testing.T) {
 		},
 	)
 	resourceOpt := telemetry.WithCreateResource(
-		func(context.Context, telemetry.Settings, component.Config) (pcommon.Resource, error) {
-			return pcommon.Resource{}, errors.New("something went wrong")
+		func(context.Context, telemetry.Settings, component.Config) (pcommon.Resource, string, error) {
+			return pcommon.Resource{}, "", errors.New("something went wrong")
 		},
 	)
 
