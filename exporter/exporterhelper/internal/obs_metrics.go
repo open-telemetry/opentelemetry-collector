@@ -62,7 +62,10 @@ func (f ShutdownObsMetricsFunc) Shutdown() {
 }
 
 type exporterObsMetrics struct {
-	queue.Metrics
+	queue.RecordEnqueueFailureFunc
+	queue.RecordBatchSendSizeFunc
+	queue.RegisterQueueSizeFunc
+	queue.RegisterQueueCapacityFunc
 	RecordInFlightFunc
 	RecordSentFunc
 	RecordSendFailureFunc
@@ -81,38 +84,65 @@ func newExporterObsMetrics(
 	}
 
 	exporterAttr := attribute.String(ExporterKey, id.String())
-	metricAttr := metric.WithAttributeSet(attribute.NewSet(append(extraAttrs, exporterAttr)...))
+	queueAttr := metric.WithAttributeSet(attribute.NewSet(exporterAttr))
+	senderAttr := metric.WithAttributeSet(attribute.NewSet(append(extraAttrs, exporterAttr)...))
 	asyncAttr := metric.WithAttributeSet(attribute.NewSet(exporterAttr, attribute.String(DataTypeKey, signal.String())))
-	var itemsSentInst, itemsFailedInst metric.Int64Counter
+	var itemsSentInst, itemsFailedInst, enqueueFailedInst metric.Int64Counter
 	switch signal {
 	case pipeline.SignalTraces:
 		itemsSentInst = tb.ExporterSentSpans
 		itemsFailedInst = tb.ExporterSendFailedSpans
+		enqueueFailedInst = tb.ExporterEnqueueFailedSpans
 	case pipeline.SignalMetrics:
 		itemsSentInst = tb.ExporterSentMetricPoints
 		itemsFailedInst = tb.ExporterSendFailedMetricPoints
+		enqueueFailedInst = tb.ExporterEnqueueFailedMetricPoints
 	case pipeline.SignalLogs:
 		itemsSentInst = tb.ExporterSentLogRecords
 		itemsFailedInst = tb.ExporterSendFailedLogRecords
+		enqueueFailedInst = tb.ExporterEnqueueFailedLogRecords
 	case xpipeline.SignalProfiles:
 		itemsSentInst = tb.ExporterSentProfileSamples
 		itemsFailedInst = tb.ExporterSendFailedProfileSamples
+		enqueueFailedInst = tb.ExporterEnqueueFailedProfileSamples
 	}
 	om := &exporterObsMetrics{
-		Metrics: queue.NewExporterMetrics(tb, id, signal),
+		RecordBatchSendSizeFunc: func(ctx context.Context, items, bytes int64) {
+			tb.ExporterQueueBatchSendSize.Record(ctx, items, queueAttr)
+			tb.ExporterQueueBatchSendSizeBytes.Record(ctx, bytes, queueAttr)
+		},
+		RegisterQueueSizeFunc: func(observe queue.QueueObserver) error {
+			return tb.RegisterExporterQueueSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
+				o.Observe(observe.Observe(), asyncAttr)
+				return nil
+			})
+		},
+		RegisterQueueCapacityFunc: func(observe queue.QueueObserver) error {
+			return tb.RegisterExporterQueueCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
+				o.Observe(observe.Observe(), asyncAttr)
+				return nil
+			})
+		},
 		RecordInFlightFunc: func(ctx context.Context, delta int64) {
 			tb.ExporterInFlightRequests.Add(ctx, delta, asyncAttr)
 		},
 		ShutdownObsMetricsFunc: tb.Shutdown,
 	}
+	// The instruments below are nil only when the signal is not one of the
+	// known signals, in which case those events go unreported.
+	if enqueueFailedInst != nil {
+		om.RecordEnqueueFailureFunc = func(ctx context.Context, items int64) {
+			enqueueFailedInst.Add(ctx, items, queueAttr)
+		}
+	}
 	if itemsSentInst != nil {
 		om.RecordSentFunc = func(ctx context.Context, items int64) {
-			itemsSentInst.Add(ctx, items, metricAttr)
+			itemsSentInst.Add(ctx, items, senderAttr)
 		}
 	}
 	if itemsFailedInst != nil {
 		om.RecordSendFailureFunc = func(ctx context.Context, items int64, options ...metric.AddOption) {
-			itemsFailedInst.Add(ctx, items, append([]metric.AddOption{metricAttr}, options...)...)
+			itemsFailedInst.Add(ctx, items, append([]metric.AddOption{senderAttr}, options...)...)
 		}
 	}
 
