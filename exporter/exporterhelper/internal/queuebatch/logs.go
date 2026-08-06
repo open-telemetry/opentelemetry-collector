@@ -59,6 +59,9 @@ func (logsEncoding) Unmarshal(bytes []byte) (context.Context, request.Request, e
 		// fall back to unmarshaling without context
 		logs, err = logsUnmarshaler.UnmarshalLogs(bytes)
 	}
+	if err == nil {
+		pref.MarkPipelineOwnedLogs(logs)
+	}
 	return ctx, newLogsRequest(logs), err
 }
 

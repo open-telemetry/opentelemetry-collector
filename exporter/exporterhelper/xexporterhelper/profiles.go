@@ -68,6 +68,9 @@ func (profilesEncoding) Unmarshal(bytes []byte) (context.Context, request.Reques
 		// fall back to unmarshaling without context
 		profiles, err = profilesUnmarshaler.UnmarshalProfiles(bytes)
 	}
+	if err == nil {
+		pref.MarkPipelineOwnedProfiles(profiles)
+	}
 	return ctx, newProfilesRequest(profiles), err
 }
 

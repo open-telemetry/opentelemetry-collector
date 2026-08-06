@@ -59,6 +59,9 @@ func (tracesEncoding) Unmarshal(bytes []byte) (context.Context, request.Request,
 		// fall back to unmarshaling without context
 		traces, err = tracesUnmarshaler.UnmarshalTraces(bytes)
 	}
+	if err == nil {
+		pref.MarkPipelineOwnedTraces(traces)
+	}
 	return ctx, newTracesRequest(traces), err
 }
 

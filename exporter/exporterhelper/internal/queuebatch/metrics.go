@@ -56,6 +56,9 @@ func (metricsEncoding) Unmarshal(bytes []byte) (context.Context, request.Request
 		// fall back to unmarshaling without context
 		metrics, err = metricsUnmarshaler.UnmarshalMetrics(bytes)
 	}
+	if err == nil {
+		pref.MarkPipelineOwnedMetrics(metrics)
+	}
 	return ctx, newMetricsRequest(metrics), err
 }
 
