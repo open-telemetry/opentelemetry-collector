@@ -4,11 +4,16 @@
 package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"net"
 	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/client"
 )
 
 var _ http.Handler = (*clientInfoHandler)(nil)
@@ -49,4 +54,22 @@ func TestParseIP(t *testing.T) {
 			assert.Equal(t, tt.expected, parseIP(tt.input))
 		})
 	}
+}
+
+func TestContextWithClientIncludesTLSInfo(t *testing.T) {
+	req, err := http.NewRequest(http.MethodPost, "https://localhost/v1/traces", http.NoBody)
+	require.NoError(t, err)
+	req.RemoteAddr = "1.2.3.4:33455"
+	peerCert := &x509.Certificate{DNSNames: []string{"client.example.com"}}
+	req.TLS = &tls.ConnectionState{
+		ServerName:       "service.example.com",
+		PeerCertificates: []*x509.Certificate{peerCert},
+	}
+
+	got := client.FromContext(contextWithClient(req, false))
+
+	assert.Equal(t, &tls.ConnectionState{
+		ServerName:       "service.example.com",
+		PeerCertificates: []*x509.Certificate{peerCert},
+	}, got.TLS)
 }
