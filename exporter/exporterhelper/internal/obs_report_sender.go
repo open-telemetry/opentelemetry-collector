@@ -52,11 +52,11 @@ type obsReportSender[K request.Request] struct {
 	spanName   string
 	tracer     trace.Tracer
 	spanAttrs  trace.SpanStartEventOption
-	obsMetrics ObsMetrics
+	obsMetrics *ObsMetrics
 	next       sender.Sender[K]
 }
 
-func newObsReportSender[K request.Request](set exporter.Settings, signal pipeline.Signal, obsMetrics ObsMetrics, next sender.Sender[K]) (sender.Sender[K], error) {
+func newObsReportSender[K request.Request](set exporter.Settings, signal pipeline.Signal, obsMetrics *ObsMetrics, next sender.Sender[K]) (sender.Sender[K], error) {
 	if obsMetrics == nil {
 		return nil, errors.New("ObsMetrics must not be nil")
 	}

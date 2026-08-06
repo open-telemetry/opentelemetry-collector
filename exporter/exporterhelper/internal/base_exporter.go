@@ -46,7 +46,7 @@ type BaseExporter struct {
 	ConsumerOptions []consumer.Option
 
 	ExtraAttrs []attribute.KeyValue
-	ObsMetrics ObsMetrics
+	ObsMetrics *ObsMetrics
 
 	timeoutCfg TimeoutConfig
 	retryCfg   configretry.BackOffConfig
@@ -272,7 +272,7 @@ func WithAttributes(attrs ...attribute.KeyValue) Option {
 }
 
 // WithObsMetrics overrides the metrics emitted by exporterhelper.
-func WithObsMetrics(obsMetrics ObsMetrics) Option {
+func WithObsMetrics(obsMetrics *ObsMetrics) Option {
 	return func(o *BaseExporter) error {
 		if obsMetrics == nil {
 			return errors.New("ObsMetrics must not be nil")

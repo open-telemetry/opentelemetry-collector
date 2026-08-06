@@ -51,30 +51,30 @@ type batchSendSize struct {
 
 // recordingMetrics records the observation events reported by the queue.
 type recordingMetrics struct {
-	FuncQueueBatchMetrics
 	enqueueFailures []int64
 	batchSendSizes  []batchSendSize
 	sizeObserver    QueueObserver
 	capacityObserve QueueObserver
+	sizeErr         error
+	capacityErr     error
 }
 
-func newRecordingMetrics() *recordingMetrics {
-	rm := &recordingMetrics{}
-	rm.RecordEnqueueFailureFunc = func(_ context.Context, items int64) {
-		rm.enqueueFailures = append(rm.enqueueFailures, items)
-	}
-	rm.RecordBatchSendSizeFunc = func(_ context.Context, items, bytes int64) {
-		rm.batchSendSizes = append(rm.batchSendSizes, batchSendSize{items: items, bytes: bytes})
-	}
-	rm.RegisterQueueSizeFunc = func(observe QueueObserver) error {
-		rm.sizeObserver = observe
-		return nil
-	}
-	rm.RegisterQueueCapacityFunc = func(observe QueueObserver) error {
-		rm.capacityObserve = observe
-		return nil
-	}
-	return rm
+func (rm *recordingMetrics) RecordEnqueueFailure(_ context.Context, items int64) {
+	rm.enqueueFailures = append(rm.enqueueFailures, items)
+}
+
+func (rm *recordingMetrics) RecordBatchSendSize(_ context.Context, items, bytes int64) {
+	rm.batchSendSizes = append(rm.batchSendSizes, batchSendSize{items: items, bytes: bytes})
+}
+
+func (rm *recordingMetrics) RegisterQueueSize(observe QueueObserver) error {
+	rm.sizeObserver = observe
+	return rm.sizeErr
+}
+
+func (rm *recordingMetrics) RegisterQueueCapacity(observe QueueObserver) error {
+	rm.capacityObserve = observe
+	return rm.capacityErr
 }
 
 func newTestSettings() Settings[request.Request] {
@@ -86,7 +86,7 @@ func newTestSettings() Settings[request.Request] {
 }
 
 func TestObsQueueRegistersSizeAndCapacityObservers(t *testing.T) {
-	om := newRecordingMetrics()
+	om := &recordingMetrics{}
 	set := newTestSettings()
 	set.ObsMetrics = om
 
@@ -100,7 +100,7 @@ func TestObsQueueRegistersSizeAndCapacityObservers(t *testing.T) {
 }
 
 func TestObsQueueRecordsBatchSendSize(t *testing.T) {
-	om := newRecordingMetrics()
+	om := &recordingMetrics{}
 	set := newTestSettings()
 	set.ObsMetrics = om
 
@@ -113,7 +113,7 @@ func TestObsQueueRecordsBatchSendSize(t *testing.T) {
 }
 
 func TestObsQueueRecordsEnqueueFailure(t *testing.T) {
-	om := newRecordingMetrics()
+	om := &recordingMetrics{}
 	set := newTestSettings()
 	set.ObsMetrics = om
 
@@ -143,20 +143,10 @@ func TestObsQueueRegistrationFailure(t *testing.T) {
 
 	for _, tt := range []struct {
 		name string
-		om   QueueBatchMetrics
+		om   *recordingMetrics
 	}{
-		{
-			name: "size",
-			om: FuncQueueBatchMetrics{
-				RegisterQueueSizeFunc: func(QueueObserver) error { return errRegister },
-			},
-		},
-		{
-			name: "capacity",
-			om: FuncQueueBatchMetrics{
-				RegisterQueueCapacityFunc: func(QueueObserver) error { return errRegister },
-			},
-		},
+		{name: "size", om: &recordingMetrics{sizeErr: errRegister}},
+		{name: "capacity", om: &recordingMetrics{capacityErr: errRegister}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			set := newTestSettings()

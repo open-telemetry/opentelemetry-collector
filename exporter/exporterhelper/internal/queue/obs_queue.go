@@ -27,48 +27,13 @@ type QueueBatchMetrics interface {
 	RegisterQueueCapacity(QueueObserver) error
 }
 
-type RecordEnqueueFailureFunc func(context.Context, int64)
+// nopMetrics is used when no QueueBatchMetrics is supplied.
+type nopMetrics struct{}
 
-func (f RecordEnqueueFailureFunc) RecordEnqueueFailure(ctx context.Context, items int64) {
-	if f != nil {
-		f(ctx, items)
-	}
-}
-
-type RecordBatchSendSizeFunc func(context.Context, int64, int64)
-
-func (f RecordBatchSendSizeFunc) RecordBatchSendSize(ctx context.Context, items, bytes int64) {
-	if f != nil {
-		f(ctx, items, bytes)
-	}
-}
-
-type RegisterQueueSizeFunc func(QueueObserver) error
-
-func (f RegisterQueueSizeFunc) RegisterQueueSize(observe QueueObserver) error {
-	if f == nil {
-		return nil
-	}
-	return f(observe)
-}
-
-type RegisterQueueCapacityFunc func(QueueObserver) error
-
-func (f RegisterQueueCapacityFunc) RegisterQueueCapacity(observe QueueObserver) error {
-	if f == nil {
-		return nil
-	}
-	return f(observe)
-}
-
-// FuncQueueBatchMetrics implements QueueBatchMetrics from a set of operations.
-// Unset operations are no-ops, so a caller only supplies the events it reports.
-type FuncQueueBatchMetrics struct {
-	RecordEnqueueFailureFunc
-	RecordBatchSendSizeFunc
-	RegisterQueueSizeFunc
-	RegisterQueueCapacityFunc
-}
+func (nopMetrics) RecordEnqueueFailure(context.Context, int64)       {}
+func (nopMetrics) RecordBatchSendSize(context.Context, int64, int64) {}
+func (nopMetrics) RegisterQueueSize(QueueObserver) error             { return nil }
+func (nopMetrics) RegisterQueueCapacity(QueueObserver) error         { return nil }
 
 // obsQueue is a helper to add observability to a queue.
 type obsQueue[T request.Request] struct {
@@ -81,7 +46,7 @@ func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T
 	// Settings.ObsMetrics is optional: a queue created without it reports no
 	// metrics. The caller owns the instruments and their lifecycle, so the
 	// queue never creates or shuts down telemetry of its own.
-	obsMetrics := QueueBatchMetrics(FuncQueueBatchMetrics{})
+	obsMetrics := QueueBatchMetrics(nopMetrics{})
 	if set.ObsMetrics != nil {
 		obsMetrics = set.ObsMetrics
 	}

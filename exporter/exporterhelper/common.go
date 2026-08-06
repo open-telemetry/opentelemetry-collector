@@ -67,10 +67,5 @@ func WithAttrs(attrs ...attribute.KeyValue) Option {
 // Note that only metrics are redirected: spans and log messages emitted by
 // exporterhelper remain exporter-oriented.
 func WithObsMetrics(obsMetrics *ObsMetrics) Option {
-	if obsMetrics == nil {
-		// Pass an untyped nil so the option reports an error instead of
-		// storing a non-nil interface holding a nil *ObsMetrics.
-		return internal.WithObsMetrics(nil)
-	}
 	return internal.WithObsMetrics(obsMetrics)
 }
