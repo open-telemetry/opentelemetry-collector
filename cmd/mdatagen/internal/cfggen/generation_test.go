@@ -3149,3 +3149,250 @@ func TestInvalidTestValue(t *testing.T) {
 	require.Equal(t, "-1.0", invalidTestValue("number"))
 	require.Equal(t, `"__invalid__"`, invalidTestValue("object"))
 }
+
+func TestExtractValidators_ArrayValidators(t *testing.T) {
+	minItems := 1
+	maxItems := 10
+
+	tests := []struct {
+		name     string
+		metadata *ConfigMetadata
+		expected []Validator
+	}{
+		{
+			name: "minItems only",
+			metadata: &ConfigMetadata{
+				Type: ObjectType,
+				Properties: map[string]*ConfigMetadata{
+					"tags": {Type: SliceType, Values: &ConfigMetadata{Type: StringType}, MinItems: &minItems},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "tags",
+					FieldType: "slice",
+					Rules:     ValidationRules{MinItems: &minItems},
+				},
+			},
+		},
+		{
+			name: "maxItems only",
+			metadata: &ConfigMetadata{
+				Type: ObjectType,
+				Properties: map[string]*ConfigMetadata{
+					"tags": {Type: SliceType, Values: &ConfigMetadata{Type: StringType}, MaxItems: &maxItems},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "tags",
+					FieldType: "slice",
+					Rules:     ValidationRules{MaxItems: &maxItems},
+				},
+			},
+		},
+		{
+			name: "uniqueItems only",
+			metadata: &ConfigMetadata{
+				Type: ObjectType,
+				Properties: map[string]*ConfigMetadata{
+					"tags": {Type: SliceType, Values: &ConfigMetadata{Type: StringType}, UniqueItems: true},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "tags",
+					FieldType: "slice",
+					Rules:     ValidationRules{UniqueItems: true, ItemGoType: "string"},
+				},
+			},
+		},
+		{
+			name: "uniqueItems with integer items",
+			metadata: &ConfigMetadata{
+				Type: ObjectType,
+				Properties: map[string]*ConfigMetadata{
+					"ids": {Type: SliceType, Values: &ConfigMetadata{Type: IntType}, UniqueItems: true},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "ids",
+					FieldType: "slice",
+					Rules:     ValidationRules{UniqueItems: true, ItemGoType: "int"},
+				},
+			},
+		},
+		{
+			name: "uniqueItems without values schema falls back to any",
+			metadata: &ConfigMetadata{
+				Type: ObjectType,
+				Properties: map[string]*ConfigMetadata{
+					"tags": {Type: SliceType, UniqueItems: true},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "tags",
+					FieldType: "slice",
+					Rules:     ValidationRules{UniqueItems: true},
+				},
+			},
+		},
+		{
+			name: "contains with enum",
+			metadata: &ConfigMetadata{
+				Type: ObjectType,
+				Properties: map[string]*ConfigMetadata{
+					"tags": {
+						Type:     SliceType,
+						Values:   &ConfigMetadata{Type: StringType},
+						Contains: &ConfigMetadata{Type: StringType, Enum: []any{"production", "staging"}},
+					},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "tags",
+					FieldType: "slice",
+					Rules:     ValidationRules{ContainsEnum: []any{"production", "staging"}, ItemFieldType: "string"},
+				},
+			},
+		},
+		{
+			name: "all array validators combined",
+			metadata: &ConfigMetadata{
+				Type: ObjectType,
+				Properties: map[string]*ConfigMetadata{
+					"tags": {
+						Type:        SliceType,
+						Values:      &ConfigMetadata{Type: StringType},
+						MinItems:    &minItems,
+						MaxItems:    &maxItems,
+						UniqueItems: true,
+						Contains:    &ConfigMetadata{Type: StringType, Enum: []any{"production"}},
+					},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "tags",
+					FieldType: "slice",
+					Rules: ValidationRules{
+						MinItems:      &minItems,
+						MaxItems:      &maxItems,
+						UniqueItems:   true,
+						ItemGoType:    "string",
+						ContainsEnum:  []any{"production"},
+						ItemFieldType: "string",
+					},
+				},
+			},
+		},
+		{
+			name: "no array validators produces no validator",
+			metadata: &ConfigMetadata{
+				Type: ObjectType,
+				Properties: map[string]*ConfigMetadata{
+					"tags": {Type: SliceType, Values: &ConfigMetadata{Type: StringType}},
+				},
+			},
+			expected: []Validator{},
+		},
+		{
+			name: "required combined with array validators",
+			metadata: &ConfigMetadata{
+				Type:     ObjectType,
+				Required: []string{"tags"},
+				Properties: map[string]*ConfigMetadata{
+					"tags": {Type: SliceType, Values: &ConfigMetadata{Type: StringType}, MinItems: &minItems},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "tags",
+					FieldType: "slice",
+					Rules:     ValidationRules{Required: true, MinItems: &minItems},
+				},
+			},
+		},
+		{
+			name: "array validators on pointer array",
+			metadata: &ConfigMetadata{
+				Type: ObjectType,
+				Properties: map[string]*ConfigMetadata{
+					"targets": {Type: SliceType, Values: &ConfigMetadata{Type: StringType}, IsPointer: true, MinItems: &minItems, MaxItems: &maxItems},
+				},
+			},
+			expected: []Validator{
+				{
+					FieldName: "targets",
+					FieldType: "slice",
+					IsPointer: true,
+					Rules:     ValidationRules{MinItems: &minItems, MaxItems: &maxItems},
+				},
+			},
+		},
+		{
+			name: "contains without enum produces no containsEnum rule",
+			metadata: &ConfigMetadata{
+				Type: ObjectType,
+				Properties: map[string]*ConfigMetadata{
+					"tags": {
+						Type:     SliceType,
+						Values:   &ConfigMetadata{Type: StringType},
+						Contains: &ConfigMetadata{Type: StringType},
+					},
+				},
+			},
+			expected: []Validator{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ExtractValidators(tt.metadata)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestValidationRules_HasValueRule_ArrayValidators(t *testing.T) {
+	tests := []struct {
+		name     string
+		rules    ValidationRules
+		expected bool
+	}{
+		{
+			name:     "minItems",
+			rules:    ValidationRules{MinItems: Ptr(1)},
+			expected: true,
+		},
+		{
+			name:     "maxItems",
+			rules:    ValidationRules{MaxItems: Ptr(10)},
+			expected: true,
+		},
+		{
+			name:     "uniqueItems",
+			rules:    ValidationRules{UniqueItems: true},
+			expected: true,
+		},
+		{
+			name:     "containsEnum",
+			rules:    ValidationRules{ContainsEnum: []any{"a"}},
+			expected: true,
+		},
+		{
+			name:     "all array validators",
+			rules:    ValidationRules{MinItems: Ptr(1), MaxItems: Ptr(10), UniqueItems: true, ContainsEnum: []any{"a"}},
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, tt.rules.HasValueRule())
+		})
+	}
+}

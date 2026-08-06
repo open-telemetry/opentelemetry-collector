@@ -24,6 +24,24 @@
         "error"
       ]
     },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags for the scraper instance.",
+      "default": [
+        "production"
+      ],
+      "uniqueItems": true,
+      "contains": {
+        "type": "string",
+        "enum": [
+          "production",
+          "staging"
+        ]
+      }
+    },
     "targets": {
       "type": "array",
       "items": {
@@ -67,7 +85,9 @@
       "description": "List of targets to scrape metrics from.",
       "default": [
         {}
-      ]
+      ],
+      "minItems": 1,
+      "maxItems": 100
     }
   },
   "$id": "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper",
