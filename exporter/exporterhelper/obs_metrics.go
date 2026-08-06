@@ -5,14 +5,7 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 
 import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 )
-
-// QueueObserver returns the current size or capacity of a queue.
-// Exporterhelper passes an observer to the RegisterQueueSize and
-// RegisterQueueCapacity operations, which are expected to install it as an
-// asynchronous callback.
-type QueueObserver = queue.QueueObserver
 
 // ObsMetricsConfig defines the operations invoked by exporterhelper to report
 // its observation events. Exporterhelper owns the meaning and timing of each

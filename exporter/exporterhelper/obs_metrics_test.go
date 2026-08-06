@@ -36,16 +36,16 @@ func TestObsMetricsUnsetOperationsAreNoOps(t *testing.T) {
 
 func TestObsMetricsOperationsAreForwarded(t *testing.T) {
 	var calls []string
-	observers := map[string]QueueObserver{}
+	observers := map[string]func() int64{}
 	metrics := NewObsMetrics(ObsMetricsConfig{
 		RecordEnqueueFailure: func(context.Context, int64) { calls = append(calls, "enqueue_failure") },
 		RecordBatchSendSize:  func(context.Context, int64, int64) { calls = append(calls, "batch_send_size") },
-		RegisterQueueSize: func(observe QueueObserver) error {
-			observers["size"] = observe
+		RegisterQueueSize: func(observeSize func() int64) error {
+			observers["size"] = observeSize
 			return nil
 		},
-		RegisterQueueCapacity: func(observe QueueObserver) error {
-			observers["capacity"] = observe
+		RegisterQueueCapacity: func(observeCapacity func() int64) error {
+			observers["capacity"] = observeCapacity
 			return nil
 		},
 		RecordInFlight:    func(context.Context, int64) { calls = append(calls, "in_flight") },

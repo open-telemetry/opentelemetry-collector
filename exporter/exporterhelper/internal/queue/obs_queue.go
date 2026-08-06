@@ -12,19 +12,14 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
-// QueueObserver returns the current size or capacity of a queue. The queue
-// supplies one to the Register operations, which install it as an
-// asynchronous callback.
-type QueueObserver func() int64
-
 // QueueBatchMetrics reports the metrics produced by a Queue. The queue only
 // reports observation events; the caller supplies the instruments and owns
 // their lifecycle, because the same instruments may also serve other senders.
 type QueueBatchMetrics interface {
 	RecordEnqueueFailure(context.Context, int64)
 	RecordBatchSendSize(context.Context, int64, int64)
-	RegisterQueueSize(QueueObserver) error
-	RegisterQueueCapacity(QueueObserver) error
+	RegisterQueueSize(observeSize func() int64) error
+	RegisterQueueCapacity(observeCapacity func() int64) error
 }
 
 // nopMetrics is used when no QueueBatchMetrics is supplied.
@@ -32,8 +27,8 @@ type nopMetrics struct{}
 
 func (nopMetrics) RecordEnqueueFailure(context.Context, int64)       {}
 func (nopMetrics) RecordBatchSendSize(context.Context, int64, int64) {}
-func (nopMetrics) RegisterQueueSize(QueueObserver) error             { return nil }
-func (nopMetrics) RegisterQueueCapacity(QueueObserver) error         { return nil }
+func (nopMetrics) RegisterQueueSize(func() int64) error              { return nil }
+func (nopMetrics) RegisterQueueCapacity(func() int64) error          { return nil }
 
 // obsQueue is a helper to add observability to a queue.
 type obsQueue[T request.Request] struct {

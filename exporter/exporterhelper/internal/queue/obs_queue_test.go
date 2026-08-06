@@ -53,8 +53,8 @@ type batchSendSize struct {
 type recordingMetrics struct {
 	enqueueFailures []int64
 	batchSendSizes  []batchSendSize
-	sizeObserver    QueueObserver
-	capacityObserve QueueObserver
+	sizeObserver    func() int64
+	capacityObserve func() int64
 	sizeErr         error
 	capacityErr     error
 }
@@ -67,12 +67,12 @@ func (rm *recordingMetrics) RecordBatchSendSize(_ context.Context, items, bytes 
 	rm.batchSendSizes = append(rm.batchSendSizes, batchSendSize{items: items, bytes: bytes})
 }
 
-func (rm *recordingMetrics) RegisterQueueSize(observe QueueObserver) error {
+func (rm *recordingMetrics) RegisterQueueSize(observe func() int64) error {
 	rm.sizeObserver = observe
 	return rm.sizeErr
 }
 
-func (rm *recordingMetrics) RegisterQueueCapacity(observe QueueObserver) error {
+func (rm *recordingMetrics) RegisterQueueCapacity(observe func() int64) error {
 	rm.capacityObserve = observe
 	return rm.capacityErr
 }

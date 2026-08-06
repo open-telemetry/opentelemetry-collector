@@ -12,7 +12,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
@@ -31,10 +30,10 @@ type ObsMetricsConfig struct {
 	RecordBatchSendSize func(ctx context.Context, items, bytes int64)
 
 	// RegisterQueueSize installs an observer for the current queue size.
-	RegisterQueueSize func(observe queue.QueueObserver) error
+	RegisterQueueSize func(observeSize func() int64) error
 
 	// RegisterQueueCapacity installs an observer for the fixed queue capacity.
-	RegisterQueueCapacity func(observe queue.QueueObserver) error
+	RegisterQueueCapacity func(observeCapacity func() int64) error
 
 	// RecordInFlight reports a change in the number of requests currently
 	// being sent. Delta is +1 when a send starts and -1 when it ends.
@@ -83,18 +82,18 @@ func (m *ObsMetrics) RecordBatchSendSize(ctx context.Context, items, bytes int64
 	}
 }
 
-func (m *ObsMetrics) RegisterQueueSize(observe queue.QueueObserver) error {
+func (m *ObsMetrics) RegisterQueueSize(observeSize func() int64) error {
 	if m.config.RegisterQueueSize == nil {
 		return nil
 	}
-	return m.config.RegisterQueueSize(observe)
+	return m.config.RegisterQueueSize(observeSize)
 }
 
-func (m *ObsMetrics) RegisterQueueCapacity(observe queue.QueueObserver) error {
+func (m *ObsMetrics) RegisterQueueCapacity(observeCapacity func() int64) error {
 	if m.config.RegisterQueueCapacity == nil {
 		return nil
 	}
-	return m.config.RegisterQueueCapacity(observe)
+	return m.config.RegisterQueueCapacity(observeCapacity)
 }
 
 func (m *ObsMetrics) RecordInFlight(ctx context.Context, delta int64) {
@@ -149,15 +148,15 @@ func newExporterObsMetrics(
 			tb.ExporterQueueBatchSendSize.Record(ctx, items, queueAttr)
 			tb.ExporterQueueBatchSendSizeBytes.Record(ctx, bytes, queueAttr)
 		},
-		RegisterQueueSize: func(observe queue.QueueObserver) error {
+		RegisterQueueSize: func(observeSize func() int64) error {
 			return tb.RegisterExporterQueueSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
-				o.Observe(observe(), asyncAttr)
+				o.Observe(observeSize(), asyncAttr)
 				return nil
 			})
 		},
-		RegisterQueueCapacity: func(observe queue.QueueObserver) error {
+		RegisterQueueCapacity: func(observeCapacity func() int64) error {
 			return tb.RegisterExporterQueueCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
-				o.Observe(observe(), asyncAttr)
+				o.Observe(observeCapacity(), asyncAttr)
 				return nil
 			})
 		},
