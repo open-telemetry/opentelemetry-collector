@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/internal/schemagen"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -1133,4 +1134,26 @@ func TestValidateConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAttributeTestValueEnum(t *testing.T) {
+	strAttr := Attribute{FullName: "mode", Type: ValueType{ValueType: pcommon.ValueTypeStr}}
+	emptyEnum := Attribute{FullName: "mode", Enum: []string{}, Type: ValueType{ValueType: pcommon.ValueTypeStr}}
+	singleEnum := Attribute{FullName: "mode", Enum: []string{"default"}, Type: ValueType{ValueType: pcommon.ValueTypeStr}}
+	doubleEnum := Attribute{FullName: "mode", Enum: []string{"default", "custom"}, Type: ValueType{ValueType: pcommon.ValueTypeStr}}
+
+	// TestValue returns the first enum value, or the type-based value when the
+	// enum is empty.
+	assert.Equal(t, `"mode-val"`, strAttr.TestValue())
+	assert.Equal(t, `"mode-val"`, emptyEnum.TestValue(), "empty enum should fall back to the type-based value")
+	assert.Equal(t, `"default"`, singleEnum.TestValue())
+	assert.Equal(t, `"default"`, doubleEnum.TestValue())
+
+	// TestValueTwo returns the second enum value when available, the only
+	// value for a single-element enum, or the type-based value when the enum
+	// is empty.
+	assert.Equal(t, `"mode-val-2"`, strAttr.TestValueTwo())
+	assert.Equal(t, `"mode-val-2"`, emptyEnum.TestValueTwo(), "empty enum should fall back to the type-based value")
+	assert.Equal(t, `"default"`, singleEnum.TestValueTwo(), "single-element enum uses its only value as the second value")
+	assert.Equal(t, `"custom"`, doubleEnum.TestValueTwo())
 }
