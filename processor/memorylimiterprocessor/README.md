@@ -150,6 +150,9 @@ of `min_gc_interval_when_soft_limited` (which is every check interval if min
 is also `0`).
 - `max_gc_interval_when_hard_limited` (default = `30s`): Same as above but for
 hard-limited mode. Set to `0` to disable.
+- `garbage_collector` (optional section, enabled by default): Controls forced
+GC calls. Set `enabled: false` to disable forced garbage collection. The
+processor will still refuse data when memory limits are exceeded.
 
 Examples:
 

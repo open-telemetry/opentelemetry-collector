@@ -44,6 +44,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.158.0 // indirect
+	go.opentelemetry.io/collector/config/configoptional v1.64.0
 	go.opentelemetry.io/collector/featuregate v1.64.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.158.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.64.0 // indirect
@@ -88,3 +89,5 @@ replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
 replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
+
+replace go.opentelemetry.io/collector/config/configoptional => ../../config/configoptional
