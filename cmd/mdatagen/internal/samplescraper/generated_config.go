@@ -71,10 +71,10 @@ func NewDefaultTargetsItem() TargetsItem {
 
 // Configuration for the Sample Scraper.
 type Config struct {
-	// Defines common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed.
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	// Defines common settings for a scraper controller configuration. Scraper controller receivers should include this struct as a named field with a mapstructure squash tag, instead of receiver.Settings, and extend it with more fields if needed.
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
 	// MetricsBuilderConfig is a configuration for sample metrics builder.
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	// Identifies the scraper, used for telemetry and logging.
 	ComponentID component.ID `mapstructure:"component,omitempty"`
 	// Name of the scrape job, used to identify the source in telemetry.
