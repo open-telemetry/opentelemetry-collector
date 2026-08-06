@@ -1,0 +1,7 @@
+enabled: true
+sizer: bytes
+queue_size: 2000
+batch:
+  # explicit batch sizer (items) must NOT be overridden by the queue sizer (bytes)
+  sizer: items
+  min_size: 100
