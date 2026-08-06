@@ -33,6 +33,9 @@ func GlobalRegistry() *Registry {
 
 type Registry struct {
 	gates sync.Map
+
+	warningsMu sync.Mutex
+	warnings   []string
 }
 
 // NewRegistry returns a new empty Registry.
@@ -183,16 +186,37 @@ func (r *Registry) Set(id string, enabled bool) error {
 		if !enabled {
 			return fmt.Errorf("feature gate %q is stable, can not be disabled", id)
 		}
-		fmt.Printf("Feature gate %q is stable and already enabled. It will be removed in version %v and continued use of the gate after version %v will result in an error.\n", id, g.toVersion, g.toVersion)
+		r.warn(fmt.Sprintf("Feature gate %q is stable and already enabled. It will be removed in version %v and continued use of the gate after version %v will result in an error.", id, g.toVersion, g.toVersion))
 	case StageDeprecated:
 		if enabled {
 			return fmt.Errorf("feature gate %q is deprecated, can not be enabled", id)
 		}
-		fmt.Printf("Feature gate %q is deprecated and already disabled. It will be removed in version %v and continued use of the gate after version %v will result in an error.\n", id, g.toVersion, g.toVersion)
+		r.warn(fmt.Sprintf("Feature gate %q is deprecated and already disabled. It will be removed in version %v and continued use of the gate after version %v will result in an error.", id, g.toVersion, g.toVersion))
 	default:
 		g.enabled.Store(enabled)
 	}
 	return nil
+}
+
+// warn buffers a warning for later emission through the configured logger
+// (see Warnings). Feature gate statuses are typically applied while the
+// --feature-gates flag is parsed, before any logger exists, so warnings
+// cannot be written synchronously.
+func (r *Registry) warn(message string) {
+	r.warningsMu.Lock()
+	defer r.warningsMu.Unlock()
+	r.warnings = append(r.warnings, message)
+}
+
+// Warnings returns and clears the warnings buffered since the last call.
+// The Collector flushes these through its configured logger once telemetry
+// is initialized.
+func (r *Registry) Warnings() []string {
+	r.warningsMu.Lock()
+	defer r.warningsMu.Unlock()
+	warnings := r.warnings
+	r.warnings = nil
+	return warnings
 }
 
 // VisitAll visits all the gates in lexicographical order, calling fn for each.

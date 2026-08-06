@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensioncapabilities"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/otelcol/internal/grpclog"
 	"go.opentelemetry.io/collector/service"
 )
@@ -258,6 +259,12 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}, cfg.Service)
 	if err != nil {
 		return err
+	}
+	// Feature gate warnings are buffered while the --feature-gates flag is
+	// parsed, before any logger exists. Emit them through the configured
+	// logger now that telemetry is initialized.
+	for _, warning := range featuregate.GlobalRegistry().Warnings() {
+		col.service.Logger().Warn(warning)
 	}
 	if col.updateConfigProviderLogger != nil {
 		col.updateConfigProviderLogger(col.service.Logger().Core())

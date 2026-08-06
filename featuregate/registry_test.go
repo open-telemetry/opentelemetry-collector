@@ -207,3 +207,26 @@ func TestRegisterGateLifecycle(t *testing.T) {
 		})
 	}
 }
+
+func TestRegistryWarnings(t *testing.T) {
+	r := NewRegistry()
+	require.Empty(t, r.Warnings())
+
+	// Enabling a stable gate and disabling a deprecated gate record warnings.
+	r.MustRegister("stable.gate", StageStable, WithRegisterToVersion("v1.0.0"))
+	require.NoError(t, r.Set("stable.gate", true))
+	r.MustRegister("deprecated.gate", StageDeprecated, WithRegisterToVersion("v1.0.0"))
+	require.NoError(t, r.Set("deprecated.gate", false))
+
+	// A regular gate produces no warning.
+	r.MustRegister("beta.gate", StageBeta)
+	require.NoError(t, r.Set("beta.gate", true))
+
+	warnings := r.Warnings()
+	require.Len(t, warnings, 2)
+	assert.Contains(t, warnings[0], "stable.gate")
+	assert.Contains(t, warnings[1], "deprecated.gate")
+
+	// Warnings drains on read.
+	require.Empty(t, r.Warnings())
+}

@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: featuregate
+note: Emit stable/deprecated feature gate warnings through the configured logger instead of writing them directly to stdout.
+issues: [15586]
