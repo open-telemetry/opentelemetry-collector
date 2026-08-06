@@ -5,6 +5,7 @@ package memorylimiter
 
 import (
 	"context"
+	"errors"
 	"runtime"
 	"testing"
 	"time"
@@ -105,6 +106,43 @@ func TestGetDecision(t *testing.T) {
 			memSpikeLimit: 10 * mibBytes,
 		}, d)
 	})
+}
+
+func TestRefreshPercentageMemoryLimit(t *testing.T) {
+	var totalMemory uint64 = 100 * mibBytes
+	getMemory := func() (uint64, error) {
+		return totalMemory, nil
+	}
+	originalGetMemory := GetMemoryFn
+	GetMemoryFn = getMemory
+	t.Cleanup(func() { GetMemoryFn = originalGetMemory })
+
+	ml, err := NewMemoryLimiter(&Config{
+		CheckInterval:         time.Minute,
+		MemoryLimitPercentage: 80,
+		MemorySpikePercentage: 20,
+	}, zap.NewNop())
+	require.NoError(t, err)
+	assert.Equal(t, uint64(80*mibBytes), ml.usageChecker.memAllocLimit)
+	assert.Equal(t, uint64(20*mibBytes), ml.usageChecker.memSpikeLimit)
+
+	totalMemory = 200 * mibBytes
+	ml.refreshPercentageMemoryLimit()
+	assert.Equal(t, uint64(160*mibBytes), ml.usageChecker.memAllocLimit)
+	assert.Equal(t, uint64(40*mibBytes), ml.usageChecker.memSpikeLimit)
+}
+
+func TestRefreshPercentageMemoryLimitRetainsPreviousLimitOnError(t *testing.T) {
+	ml, err := NewMemoryLimiter(&Config{
+		CheckInterval:         time.Minute,
+		MemoryLimitPercentage: 80,
+		MemorySpikePercentage: 20,
+	}, zap.NewNop())
+	require.NoError(t, err)
+	previous := ml.usageChecker
+	ml.getMemoryFn = func() (uint64, error) { return 0, errors.New("cgroup unavailable") }
+	ml.refreshPercentageMemoryLimit()
+	assert.Equal(t, previous, ml.usageChecker)
 }
 
 func TestRefuseDecision(t *testing.T) {

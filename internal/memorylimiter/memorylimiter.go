@@ -43,6 +43,13 @@ var (
 type MemoryLimiter struct {
 	usageChecker memUsageChecker
 
+	// Percentage-based limits are refreshed on each memory check so that
+	// in-place container resizes are reflected without changing fixed limits.
+	percentageBased       bool
+	memoryLimitPercentage uint64
+	memorySpikePercentage uint64
+	getMemoryFn           func() (uint64, error)
+
 	memCheckWait time.Duration
 
 	// mustRefuse is used to indicate when data should be refused.
@@ -113,6 +120,10 @@ func NewMemoryLimiter(cfg *Config, logger *zap.Logger) (*MemoryLimiter, error) {
 
 	return &MemoryLimiter{
 		usageChecker:                 *usageChecker,
+		percentageBased:              cfg.MemoryLimitMiB == 0,
+		memoryLimitPercentage:        uint64(cfg.MemoryLimitPercentage),
+		memorySpikePercentage:        uint64(cfg.MemorySpikePercentage),
+		getMemoryFn:                  GetMemoryFn,
 		memCheckWait:                 cfg.CheckInterval,
 		ticker:                       time.NewTicker(cfg.CheckInterval),
 		minGCIntervalWhenSoftLimited: cfg.MinGCIntervalWhenSoftLimited,
@@ -255,6 +266,7 @@ func (ml *MemoryLimiter) nextBackoffInterval(current, configMin, configMax time.
 
 // CheckMemLimits inspects current memory usage against threshold and toggles mustRefuse when threshold is exceeded
 func (ml *MemoryLimiter) CheckMemLimits() {
+	ml.refreshPercentageMemoryLimit()
 	ms := ml.readMemStats()
 
 	ml.logger.Debug("Currently used memory.", memstatToZapField(ms))
@@ -307,6 +319,20 @@ func (ml *MemoryLimiter) CheckMemLimits() {
 	}
 
 	ml.mustRefuse.Store(aboveSoftLimit)
+}
+
+func (ml *MemoryLimiter) refreshPercentageMemoryLimit() {
+	if !ml.percentageBased {
+		return
+	}
+
+	totalMemory, err := ml.getMemoryFn()
+	if err != nil {
+		ml.logger.Warn("Unable to refresh percentage memory limiter; retaining previous limits.", zap.Error(err))
+		return
+	}
+
+	ml.usageChecker = *newPercentageMemUsageChecker(totalMemory, ml.memoryLimitPercentage, ml.memorySpikePercentage)
 }
 
 type memUsageChecker struct {
