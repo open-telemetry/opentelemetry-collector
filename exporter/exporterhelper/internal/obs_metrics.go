@@ -113,13 +113,13 @@ func newExporterObsMetrics(
 		},
 		RegisterQueueSizeFunc: func(observe queue.QueueObserver) error {
 			return tb.RegisterExporterQueueSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
-				o.Observe(observe.Observe(), asyncAttr)
+				o.Observe(observe(), asyncAttr)
 				return nil
 			})
 		},
 		RegisterQueueCapacityFunc: func(observe queue.QueueObserver) error {
 			return tb.RegisterExporterQueueCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
-				o.Observe(observe.Observe(), asyncAttr)
+				o.Observe(observe(), asyncAttr)
 				return nil
 			})
 		},

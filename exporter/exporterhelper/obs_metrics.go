@@ -12,9 +12,10 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 )
 
-// QueueObserver observes the current size or capacity of a queue. Exporterhelper
-// passes an observer to the RegisterQueueSize and RegisterQueueCapacity
-// operations, which are expected to install it as an asynchronous callback.
+// QueueObserver returns the current size or capacity of a queue.
+// Exporterhelper passes an observer to the RegisterQueueSize and
+// RegisterQueueCapacity operations, which are expected to install it as an
+// asynchronous callback.
 //
 // Experimental: This API is at the early stage of development and may change
 // without backward compatibility until

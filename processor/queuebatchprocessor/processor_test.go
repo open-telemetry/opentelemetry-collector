@@ -277,8 +277,8 @@ func TestObsMetricsShutdownOnConstructionFailure(t *testing.T) {
 	set, _ := testSettings(tt)
 	_, err := newSignalProcessor(set, pipeline.SignalTraces,
 		func(om *exporterhelper.ObsMetrics) (processor.Traces, error) {
-			require.NoError(t, om.RegisterQueueSize(constantQueueObserver(7)))
-			require.NoError(t, om.RegisterQueueCapacity(constantQueueObserver(9)))
+			require.NoError(t, om.RegisterQueueSize(func() int64 { return 7 }))
+			require.NoError(t, om.RegisterQueueCapacity(func() int64 { return 9 }))
 			return nil, errors.New("construction failed")
 		})
 	require.Error(t, err)
@@ -288,10 +288,6 @@ func TestObsMetricsShutdownOnConstructionFailure(t *testing.T) {
 	_, err = tt.GetMetric("otelcol_processor_queuebatch_queue_capacity")
 	require.Error(t, err, "queue capacity callback must be unregistered")
 }
-
-type constantQueueObserver int64
-
-func (o constantQueueObserver) Observe() int64 { return int64(o) }
 
 func TestMetrics(t *testing.T) {
 	tt := componenttest.NewTelemetry()

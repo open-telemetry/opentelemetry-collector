@@ -12,20 +12,10 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
-// QueueObserver observes the current size or capacity of a queue.
-type QueueObserver interface {
-	Observe() int64
-}
-
-// ObserveQueueFunc returns the current size or capacity of a queue.
-type ObserveQueueFunc func() int64
-
-func (f ObserveQueueFunc) Observe() int64 {
-	if f == nil {
-		return 0
-	}
-	return f()
-}
+// QueueObserver returns the current size or capacity of a queue. The queue
+// supplies one to the Register operations, which install it as an
+// asynchronous callback.
+type QueueObserver func() int64
 
 // QueueBatchMetrics reports the metrics produced by a Queue. The queue only
 // reports observation events; the caller supplies the instruments and owns
@@ -96,11 +86,11 @@ func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T
 		obsMetrics = set.ObsMetrics
 	}
 
-	if err := obsMetrics.RegisterQueueSize(ObserveQueueFunc(delegate.Size)); err != nil {
+	if err := obsMetrics.RegisterQueueSize(delegate.Size); err != nil {
 		return nil, err
 	}
 
-	if err := obsMetrics.RegisterQueueCapacity(ObserveQueueFunc(delegate.Capacity)); err != nil {
+	if err := obsMetrics.RegisterQueueCapacity(delegate.Capacity); err != nil {
 		return nil, err
 	}
 

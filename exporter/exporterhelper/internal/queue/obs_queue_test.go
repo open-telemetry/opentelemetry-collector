@@ -95,8 +95,8 @@ func TestObsQueueRegistersSizeAndCapacityObservers(t *testing.T) {
 
 	require.NotNil(t, om.sizeObserver)
 	require.NotNil(t, om.capacityObserve)
-	assert.Equal(t, int64(7), om.sizeObserver.Observe())
-	assert.Equal(t, int64(9), om.capacityObserve.Observe())
+	assert.Equal(t, int64(7), om.sizeObserver())
+	assert.Equal(t, int64(9), om.capacityObserve())
 }
 
 func TestObsQueueRecordsBatchSendSize(t *testing.T) {

@@ -71,14 +71,14 @@ func (om *obsMetrics) RecordBatchSendSize(ctx context.Context, items, bytes int6
 
 func (om *obsMetrics) RegisterQueueSize(observe exporterhelper.QueueObserver) error {
 	return om.tb.RegisterProcessorQueuebatchQueueSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
-		o.Observe(observe.Observe(), om.metricAttr)
+		o.Observe(observe(), om.metricAttr)
 		return nil
 	})
 }
 
 func (om *obsMetrics) RegisterQueueCapacity(observe exporterhelper.QueueObserver) error {
 	return om.tb.RegisterProcessorQueuebatchQueueCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
-		o.Observe(observe.Observe(), om.metricAttr)
+		o.Observe(observe(), om.metricAttr)
 		return nil
 	})
 }

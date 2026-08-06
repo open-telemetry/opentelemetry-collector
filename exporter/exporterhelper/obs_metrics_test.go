@@ -61,10 +61,10 @@ func TestObsMetricsOperationsAreForwarded(t *testing.T) {
 	metrics.RecordSendFailure(ctx, 1)
 	require.Equal(t, []string{"enqueue_failure", "batch_send_size", "in_flight", "sent", "send_failure"}, calls)
 
-	require.NoError(t, metrics.RegisterQueueSize(queueObserverFunc(func() int64 { return 3 })))
-	require.NoError(t, metrics.RegisterQueueCapacity(queueObserverFunc(func() int64 { return 9 })))
-	require.Equal(t, int64(3), observers["size"].Observe())
-	require.Equal(t, int64(9), observers["capacity"].Observe())
+	require.NoError(t, metrics.RegisterQueueSize(func() int64 { return 3 }))
+	require.NoError(t, metrics.RegisterQueueCapacity(func() int64 { return 9 }))
+	require.Equal(t, int64(3), observers["size"]())
+	require.Equal(t, int64(9), observers["capacity"]())
 }
 
 // TestObsMetricsShutdownIsIdempotent covers the contract relied on by
@@ -86,7 +86,3 @@ func TestWithObsMetricsNil(t *testing.T) {
 	err := WithObsMetrics(nil)(&internal.BaseExporter{})
 	require.ErrorContains(t, err, "must not be nil")
 }
-
-type queueObserverFunc func() int64
-
-func (f queueObserverFunc) Observe() int64 { return f() }

@@ -84,8 +84,8 @@ func TestExporterObsMetricsQueueInstruments(t *testing.T) {
 			require.NoError(t, err)
 			t.Cleanup(om.Shutdown)
 
-			require.NoError(t, om.RegisterQueueSize(queue.ObserveQueueFunc(func() int64 { return 7 })))
-			require.NoError(t, om.RegisterQueueCapacity(queue.ObserveQueueFunc(func() int64 { return 9 })))
+			require.NoError(t, om.RegisterQueueSize(func() int64 { return 7 }))
+			require.NoError(t, om.RegisterQueueCapacity(func() int64 { return 9 }))
 			om.RecordEnqueueFailure(context.Background(), 12)
 
 			exporterAttrs := attribute.NewSet(attribute.String(ExporterKey, id.String()))
