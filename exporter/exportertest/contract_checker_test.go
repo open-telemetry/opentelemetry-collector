@@ -45,7 +45,7 @@ func (mef *mockFactory) createMockTraces(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
-	return exporterhelper.NewTraces(ctx, set, cfg,
+	return exporterhelper.NewTraces(ctx, set,
 		mef.mr.ConsumeTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(retryConfig),
@@ -57,7 +57,7 @@ func (mef *mockFactory) createMockMetrics(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
-	return exporterhelper.NewMetrics(ctx, set, cfg,
+	return exporterhelper.NewMetrics(ctx, set,
 		mef.mr.ConsumeMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(retryConfig),
@@ -69,7 +69,7 @@ func (mef *mockFactory) createMockLogs(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	return exporterhelper.NewLogs(ctx, set, cfg,
+	return exporterhelper.NewLogs(ctx, set,
 		mef.mr.ConsumeLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(retryConfig),

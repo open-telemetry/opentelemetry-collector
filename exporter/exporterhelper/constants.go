@@ -8,8 +8,6 @@ import (
 )
 
 var (
-	// errNilConfig is returned when an empty name is given.
-	errNilConfig = errors.New("nil config")
 	// errNilLogger is returned when a logger is nil
 	errNilLogger = errors.New("nil logger")
 	// errNilPushTraces is returned when a nil PushTraces is given.

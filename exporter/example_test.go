@@ -75,7 +75,6 @@ func createExampleExporter(ctx context.Context, params exporter.Settings, baseCf
 	return exporterhelper.NewMetrics(
 		ctx,
 		params,
-		cfg,
 		xptr.consumeMetrics,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
