@@ -23,7 +23,7 @@ type Settings[T any] struct {
 }
 
 // Metrics reports the metrics produced by a QueueBatch.
-type Metrics = queue.Metrics
+type Metrics = queue.QueueBatchMetrics
 
 // AllSettings defines settings for creating a QueueBatch.
 type AllSettings[T any] struct {

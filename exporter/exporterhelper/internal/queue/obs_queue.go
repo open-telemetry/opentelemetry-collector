@@ -27,10 +27,10 @@ func (f ObserveQueueFunc) Observe() int64 {
 	return f()
 }
 
-// Metrics reports the metrics produced by a Queue. The queue only reports
-// observation events; the caller supplies the instruments and owns their
-// lifecycle, because the same instruments may also serve other senders.
-type Metrics interface {
+// QueueBatchMetrics reports the metrics produced by a Queue. The queue only
+// reports observation events; the caller supplies the instruments and owns
+// their lifecycle, because the same instruments may also serve other senders.
+type QueueBatchMetrics interface {
 	RecordEnqueueFailure(context.Context, int64)
 	RecordBatchSendSize(context.Context, int64, int64)
 	RegisterQueueSize(QueueObserver) error
@@ -71,9 +71,9 @@ func (f RegisterQueueCapacityFunc) RegisterQueueCapacity(observe QueueObserver) 
 	return f(observe)
 }
 
-// FuncMetrics implements Metrics from a set of operations. Unset operations
-// are no-ops, so a caller only supplies the events it reports.
-type FuncMetrics struct {
+// FuncQueueBatchMetrics implements QueueBatchMetrics from a set of operations.
+// Unset operations are no-ops, so a caller only supplies the events it reports.
+type FuncQueueBatchMetrics struct {
 	RecordEnqueueFailureFunc
 	RecordBatchSendSizeFunc
 	RegisterQueueSizeFunc
@@ -83,7 +83,7 @@ type FuncMetrics struct {
 // obsQueue is a helper to add observability to a queue.
 type obsQueue[T request.Request] struct {
 	Queue[T]
-	obsMetrics Metrics
+	obsMetrics QueueBatchMetrics
 	tracer     trace.Tracer
 }
 
@@ -91,7 +91,7 @@ func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T
 	// Settings.ObsMetrics is optional: a queue created without it reports no
 	// metrics. The caller owns the instruments and their lifecycle, so the
 	// queue never creates or shuts down telemetry of its own.
-	obsMetrics := Metrics(FuncMetrics{})
+	obsMetrics := QueueBatchMetrics(FuncQueueBatchMetrics{})
 	if set.ObsMetrics != nil {
 		obsMetrics = set.ObsMetrics
 	}

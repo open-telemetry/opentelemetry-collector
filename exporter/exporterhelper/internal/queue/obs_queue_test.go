@@ -51,7 +51,7 @@ type batchSendSize struct {
 
 // recordingMetrics records the observation events reported by the queue.
 type recordingMetrics struct {
-	FuncMetrics
+	FuncQueueBatchMetrics
 	enqueueFailures []int64
 	batchSendSizes  []batchSendSize
 	sizeObserver    QueueObserver
@@ -143,17 +143,17 @@ func TestObsQueueRegistrationFailure(t *testing.T) {
 
 	for _, tt := range []struct {
 		name string
-		om   Metrics
+		om   QueueBatchMetrics
 	}{
 		{
 			name: "size",
-			om: FuncMetrics{
+			om: FuncQueueBatchMetrics{
 				RegisterQueueSizeFunc: func(QueueObserver) error { return errRegister },
 			},
 		},
 		{
 			name: "capacity",
-			om: FuncMetrics{
+			om: FuncQueueBatchMetrics{
 				RegisterQueueCapacityFunc: func(QueueObserver) error { return errRegister },
 			},
 		},
