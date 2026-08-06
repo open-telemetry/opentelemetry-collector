@@ -57,7 +57,7 @@ func (om *obsMetrics) RecordEnqueueFailure(ctx context.Context, items int64) {
 	om.enqueueFailedInst.Add(ctx, items, om.metricAttr)
 }
 
-func (om *obsMetrics) RecordBatchSendSize(ctx context.Context, items, bytes int64) {
+func (om *obsMetrics) RecordEnqueueItems(ctx context.Context, items, bytes int64) {
 	om.queueBatchSizeInst.Record(ctx, items, om.metricAttr)
 	om.queueBatchSizeByteInst.Record(ctx, bytes, om.metricAttr)
 }

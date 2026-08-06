@@ -24,9 +24,9 @@ type FuncObsMetrics = internal.FuncObsMetrics
 // could not be added to the queue.
 type RecordEnqueueFailureFunc = queue.RecordEnqueueFailureFunc
 
-// RecordBatchSendSizeFunc records the number of items and bytes in a request
+// RecordEnqueueItemsFunc records the number of items and bytes in a request
 // as it is offered to the queue.
-type RecordBatchSendSizeFunc = queue.RecordBatchSendSizeFunc
+type RecordEnqueueItemsFunc = queue.RecordEnqueueItemsFunc
 
 // RegisterQueueSizeFunc installs an observer for the current queue size.
 type RegisterQueueSizeFunc = queue.RegisterQueueSizeFunc

@@ -40,7 +40,7 @@ func TestExporterObsMetricsAttributes(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(om.Shutdown)
 
-	om.RecordBatchSendSize(context.Background(), 5, 100)
+	om.RecordEnqueueItems(context.Background(), 5, 100)
 	om.RecordSent(context.Background(), 5)
 
 	batchMetric, err := tt.GetMetric("otelcol_exporter_queue_batch_send_size")
@@ -105,7 +105,7 @@ func TestExporterObsMetricsQueueInstruments(t *testing.T) {
 
 // countingObsMetrics reports nothing but counts how often it is shut down.
 func countingObsMetrics(shutdowns *int) ObsMetrics {
-	return &FuncObsMetrics{ShutdownObsMetricsFunc: func() { *shutdowns++ }}
+	return &obsMetrics{ShutdownObsMetricsFunc: func() { *shutdowns++ }}
 }
 
 // TestBaseExporterLeavesInjectedObsMetricsOnConstructionFailure covers the

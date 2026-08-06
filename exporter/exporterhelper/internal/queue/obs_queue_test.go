@@ -63,7 +63,7 @@ func (rm *recordingMetrics) RecordEnqueueFailure(_ context.Context, items int64)
 	rm.enqueueFailures = append(rm.enqueueFailures, items)
 }
 
-func (rm *recordingMetrics) RecordBatchSendSize(_ context.Context, items, bytes int64) {
+func (rm *recordingMetrics) RecordEnqueueItems(_ context.Context, items, bytes int64) {
 	rm.batchSendSizes = append(rm.batchSendSizes, batchSendSize{items: items, bytes: bytes})
 }
 

@@ -28,7 +28,7 @@ func TestFuncObsMetricsZeroValueIsNoOp(t *testing.T) {
 	require.NoError(t, metrics.RegisterQueueSize(nil))
 	require.NoError(t, metrics.RegisterQueueCapacity(nil))
 	metrics.RecordEnqueueFailure(context.Background(), 1)
-	metrics.RecordBatchSendSize(context.Background(), 1, 2)
+	metrics.RecordEnqueueItems(context.Background(), 1, 2)
 	metrics.RecordInFlight(context.Background(), 1)
 	metrics.RecordSendFailure(context.Background(), 1)
 	metrics.Shutdown()
@@ -39,7 +39,7 @@ func TestFuncObsMetricsOperationsAreForwarded(t *testing.T) {
 	observers := map[string]func() int64{}
 	metrics := FuncObsMetrics{
 		RecordEnqueueFailureFunc: func(context.Context, int64) { calls = append(calls, "enqueue_failure") },
-		RecordBatchSendSizeFunc:  func(context.Context, int64, int64) { calls = append(calls, "batch_send_size") },
+		RecordEnqueueItemsFunc:  func(context.Context, int64, int64) { calls = append(calls, "batch_send_size") },
 		RegisterQueueSizeFunc: func(observeSize func() int64) error {
 			observers["size"] = observeSize
 			return nil
@@ -56,7 +56,7 @@ func TestFuncObsMetricsOperationsAreForwarded(t *testing.T) {
 
 	ctx := context.Background()
 	metrics.RecordEnqueueFailure(ctx, 1)
-	metrics.RecordBatchSendSize(ctx, 1, 2)
+	metrics.RecordEnqueueItems(ctx, 1, 2)
 	metrics.RecordInFlight(ctx, 1)
 	metrics.RecordSent(ctx, 1)
 	metrics.RecordSendFailure(ctx, 1)

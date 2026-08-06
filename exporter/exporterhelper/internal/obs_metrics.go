@@ -22,7 +22,7 @@ import (
 // exporterhelper implement this to report metrics using names and attributes
 // appropriate for that component, most easily by setting the operations of a
 // FuncObsMetrics.
-type ObsMetrics interface {
+type QueueBatchMetrics interface {
 	queue.QueueBatchMetrics
 
 	RecordInFlight(ctx context.Context, delta int64)
@@ -77,13 +77,10 @@ func (f ShutdownObsMetricsFunc) Shutdown() {
 	f()
 }
 
-// FuncObsMetrics implements ObsMetrics from a set of operations. The zero
+// obsMetrics implements ObsMetrics from a set of operations. The zero
 // value reports nothing, so a component only sets the events it reports.
 type FuncObsMetrics struct {
-	queue.RecordEnqueueFailureFunc
-	queue.RecordBatchSendSizeFunc
-	queue.RegisterQueueSizeFunc
-	queue.RegisterQueueCapacityFunc
+	queue.QueueBatchMetrics
 	RecordInFlightFunc
 	RecordSentFunc
 	RecordSendFailureFunc
@@ -108,8 +105,8 @@ func newExporterObsMetrics(
 	senderAttr := metric.WithAttributeSet(attribute.NewSet(append(extraAttrs, exporterAttr)...))
 	asyncAttr := metric.WithAttributeSet(attribute.NewSet(exporterAttr, attribute.String(DataTypeKey, signal.String())))
 
-	om := &FuncObsMetrics{
-		RecordBatchSendSizeFunc: func(ctx context.Context, items, bytes int64) {
+	om := &obsMetrics{
+		RecordEnqueueItemsFunc: func(ctx context.Context, items, bytes int64) {
 			tb.ExporterQueueBatchSendSize.Record(ctx, items, queueAttr)
 			tb.ExporterQueueBatchSendSizeBytes.Record(ctx, bytes, queueAttr)
 		},
