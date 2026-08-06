@@ -9,6 +9,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -1726,4 +1727,67 @@ func TestCollectorLoggingOptions(t *testing.T) {
 	// which proves that LoggingOptions were applied.
 	entries := observedLogs.All()
 	require.NotEmpty(t, entries, "Logger should have logged messages")
+}
+
+func TestCollectorFlushesFeatureGateWarnings(t *testing.T) {
+	reg := featuregate.GlobalRegistry()
+	gateID := "otelcoltest.stableGate"
+	_, err := reg.Register(gateID, featuregate.StageStable, featuregate.WithRegisterToVersion("v1.0.0"))
+	require.NoError(t, err)
+	require.NoError(t, reg.Set(gateID, true))
+
+	observerCore, observedLogs := observer.New(zapcore.InfoLevel)
+
+	factories, err := nopFactories()
+	require.NoError(t, err)
+
+	// Use a custom telemetry factory that builds the logger through
+	// BuildZapLogger, so LoggingOptions (and therefore our observer core)
+	// are applied to the logger returned by col.service.Logger().
+	factories.Telemetry = telemetry.NewFactory(
+		func() component.Config { return fakeTelemetryConfig{} },
+		telemetry.WithCreateLogger(
+			func(_ context.Context, set telemetry.LoggerSettings, _ component.Config) (
+				*zap.Logger, component.ShutdownFunc, error,
+			) {
+				logger, buildErr := set.BuildZapLogger(zap.NewDevelopmentConfig())
+				return logger, nil, buildErr
+			},
+		),
+	)
+
+	set := CollectorSettings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: newDefaultConfigProviderSettings(t,
+			[]string{filepath.Join("testdata", "otelcol-nop.yaml")},
+		),
+		LoggingOptions: []zap.Option{
+			zap.WrapCore(func(zapcore.Core) zapcore.Core {
+				return observerCore
+			}),
+		},
+	}
+
+	col, err := NewCollector(set)
+	require.NoError(t, err)
+
+	wg := startCollector(context.Background(), t, col)
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState() && col.service != nil
+	}, 2*time.Second, 200*time.Millisecond)
+	col.Shutdown()
+	wg.Wait()
+
+	var found bool
+	for _, entry := range observedLogs.All() {
+		if entry.Level == zapcore.WarnLevel && strings.Contains(entry.Message, gateID) {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "expected feature gate warning to be logged through the configured logger")
+
+	// Warnings should be drained; a subsequent flush would produce nothing new.
+	assert.Empty(t, reg.Warnings())
 }
