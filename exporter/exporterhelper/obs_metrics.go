@@ -16,22 +16,12 @@ import (
 // Exporterhelper passes an observer to the RegisterQueueSize and
 // RegisterQueueCapacity operations, which are expected to install it as an
 // asynchronous callback.
-//
-// Experimental: This API is at the early stage of development and may change
-// without backward compatibility until
-// https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is
-// resolved.
 type QueueObserver = queue.QueueObserver
 
 // ObsMetricsConfig defines the operations invoked by exporterhelper to report
 // its observation events. Exporterhelper owns the meaning and timing of each
 // operation; a component supplies the instruments. Nil operations are no-ops,
 // so a component only implements the events it reports.
-//
-// Experimental: This API is at the early stage of development and may change
-// without backward compatibility until
-// https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is
-// resolved.
 type ObsMetricsConfig struct {
 	// RecordEnqueueFailure reports the number of items dropped because they
 	// could not be added to the queue.
@@ -68,11 +58,6 @@ type ObsMetricsConfig struct {
 }
 
 // ObsMetrics reports the metrics produced by exporterhelper for one signal.
-//
-// Experimental: This API is at the early stage of development and may change
-// without backward compatibility until
-// https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is
-// resolved.
 type ObsMetrics struct {
 	config       ObsMetricsConfig
 	shutdownOnce sync.Once

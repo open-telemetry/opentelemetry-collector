@@ -66,11 +66,6 @@ func WithAttrs(attrs ...attribute.KeyValue) Option {
 //
 // Note that only metrics are redirected: spans and log messages emitted by
 // exporterhelper remain exporter-oriented.
-//
-// Experimental: This API is at the early stage of development and may change
-// without backward compatibility until
-// https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is
-// resolved.
 func WithObsMetrics(obsMetrics *ObsMetrics) Option {
 	if obsMetrics == nil {
 		// Pass an untyped nil so the option reports an error instead of
