@@ -12,13 +12,16 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
-// QueueBatchMetrics reports the metrics produced by a Queue. The queue only
-// reports observation events; the caller supplies the instruments and owns
-// their lifecycle, because the same instruments may also serve other senders.
+// QueueBatchMetrics reports the metrics produced by a Queue made up
+// of two synchronous and two asynchronous instruments.
 type QueueBatchMetrics interface {
+	// RecordEnqueueFailure counts failures.
 	RecordEnqueueFailure(ctx context.Context, items int64)
+	// RecordBatchSendSize counts success and bytes.
 	RecordBatchSendSize(ctx context.Context, items, bytes int64)
+	// RegisterQueueSize is asynchronous.
 	RegisterQueueSize(observeSize func() int64) error
+	// RegisterQueueCapacity is asynchronous.
 	RegisterQueueCapacity(observeCapacity func() int64) error
 }
 
@@ -64,9 +67,8 @@ func (f RegisterQueueCapacityFunc) RegisterQueueCapacity(observeCapacity func() 
 	return f(observeCapacity)
 }
 
-// FuncQueueBatchMetrics implements QueueBatchMetrics from a set of operations.
-// The zero value reports nothing, so a caller only sets the events it reports.
-type FuncQueueBatchMetrics struct {
+// queueBatchMetrics implements QueueBatchMetrics from a set of operations.
+type queueBatchMetrics struct {
 	RecordEnqueueFailureFunc
 	RecordBatchSendSizeFunc
 	RegisterQueueSizeFunc
@@ -81,10 +83,7 @@ type obsQueue[T request.Request] struct {
 }
 
 func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T], error) {
-	// Settings.ObsMetrics is optional: a queue created without it reports no
-	// metrics. The caller owns the instruments and their lifecycle, so the
-	// queue never creates or shuts down telemetry of its own.
-	obsMetrics := QueueBatchMetrics(FuncQueueBatchMetrics{})
+	var obsMetrics QueueBatchMetrics = queueBatchMetrics{}
 	if set.ObsMetrics != nil {
 		obsMetrics = set.ObsMetrics
 	}
