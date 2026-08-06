@@ -198,3 +198,38 @@ func Test_TransportType_UnmarshalText(t *testing.T) {
 	err = tt.UnmarshalText([]byte("invalid"))
 	require.Error(t, err)
 }
+
+func Test_isAbstractSocket(t *testing.T) {
+	t.Parallel()
+	assert.True(t, isAbstractSocket("@abstract"))
+	assert.False(t, isAbstractSocket("/var/run/test.sock"))
+	assert.False(t, isAbstractSocket(""))
+}
+
+func Test_AddrConfig_isUnixTransport(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		transport TransportType
+		expected  bool
+	}{
+		{TransportTypeTCP, false},
+		{TransportTypeTCP4, false},
+		{TransportTypeTCP6, false},
+		{TransportTypeUDP, false},
+		{TransportTypeUDP4, false},
+		{TransportTypeUDP6, false},
+		{TransportTypeIP, false},
+		{TransportTypeIP4, false},
+		{TransportTypeIP6, false},
+		{TransportTypeUnix, true},
+		{TransportTypeUnixgram, true},
+		{TransportTypeUnixPacket, true},
+	}
+	for _, tt := range tests {
+		t.Run(string(tt.transport), func(t *testing.T) {
+			t.Parallel()
+			na := &AddrConfig{Transport: tt.transport}
+			assert.Equal(t, tt.expected, na.isUnixTransport())
+		})
+	}
+}
