@@ -31,7 +31,9 @@ type obsMetrics struct {
 	queueBatchSizeByteInst metric.Int64Histogram
 }
 
-func newObsMetrics(set component.TelemetrySettings, id component.ID, signal pipeline.Signal) (*exporterhelper.ObsMetrics, error) {
+// newObsMetrics reports the exporterhelper observation events through
+// processor-oriented instruments.
+func newObsMetrics(set component.TelemetrySettings, id component.ID, signal pipeline.Signal) (exporterhelper.ObsMetrics, error) {
 	tb, err := metadata.NewTelemetryBuilder(set)
 	if err != nil {
 		return nil, err
@@ -48,16 +50,7 @@ func newObsMetrics(set component.TelemetrySettings, id component.ID, signal pipe
 		queueBatchSizeInst:     tb.ProcessorQueuebatchBatchSendSize,
 		queueBatchSizeByteInst: tb.ProcessorQueuebatchBatchSendSizeBytes,
 	}
-	return exporterhelper.NewObsMetrics(exporterhelper.ObsMetricsConfig{
-		RecordEnqueueFailure:  om.RecordEnqueueFailure,
-		RecordBatchSendSize:   om.RecordBatchSendSize,
-		RegisterQueueSize:     om.RegisterQueueSize,
-		RegisterQueueCapacity: om.RegisterQueueCapacity,
-		RecordInFlight:        om.RecordInFlight,
-		RecordSent:            om.RecordSent,
-		RecordSendFailure:     om.RecordSendFailure,
-		Shutdown:              om.Shutdown,
-	}), nil
+	return om, nil
 }
 
 func (om *obsMetrics) RecordEnqueueFailure(ctx context.Context, items int64) {

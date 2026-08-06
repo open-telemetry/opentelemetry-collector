@@ -16,19 +16,62 @@ import (
 // reports observation events; the caller supplies the instruments and owns
 // their lifecycle, because the same instruments may also serve other senders.
 type QueueBatchMetrics interface {
-	RecordEnqueueFailure(context.Context, int64)
-	RecordBatchSendSize(context.Context, int64, int64)
+	RecordEnqueueFailure(ctx context.Context, items int64)
+	RecordBatchSendSize(ctx context.Context, items, bytes int64)
 	RegisterQueueSize(observeSize func() int64) error
 	RegisterQueueCapacity(observeCapacity func() int64) error
 }
 
-// nopMetrics is used when no QueueBatchMetrics is supplied.
-type nopMetrics struct{}
+// RecordEnqueueFailureFunc records the number of items dropped because they
+// could not be added to the queue.
+type RecordEnqueueFailureFunc func(ctx context.Context, items int64)
 
-func (nopMetrics) RecordEnqueueFailure(context.Context, int64)       {}
-func (nopMetrics) RecordBatchSendSize(context.Context, int64, int64) {}
-func (nopMetrics) RegisterQueueSize(func() int64) error              { return nil }
-func (nopMetrics) RegisterQueueCapacity(func() int64) error          { return nil }
+func (f RecordEnqueueFailureFunc) RecordEnqueueFailure(ctx context.Context, items int64) {
+	if f == nil {
+		return
+	}
+	f(ctx, items)
+}
+
+// RecordBatchSendSizeFunc records the number of items and bytes in a request
+// as it is offered to the queue.
+type RecordBatchSendSizeFunc func(ctx context.Context, items, bytes int64)
+
+func (f RecordBatchSendSizeFunc) RecordBatchSendSize(ctx context.Context, items, bytes int64) {
+	if f == nil {
+		return
+	}
+	f(ctx, items, bytes)
+}
+
+// RegisterQueueSizeFunc installs an observer for the current queue size.
+type RegisterQueueSizeFunc func(observeSize func() int64) error
+
+func (f RegisterQueueSizeFunc) RegisterQueueSize(observeSize func() int64) error {
+	if f == nil {
+		return nil
+	}
+	return f(observeSize)
+}
+
+// RegisterQueueCapacityFunc installs an observer for the fixed queue capacity.
+type RegisterQueueCapacityFunc func(observeCapacity func() int64) error
+
+func (f RegisterQueueCapacityFunc) RegisterQueueCapacity(observeCapacity func() int64) error {
+	if f == nil {
+		return nil
+	}
+	return f(observeCapacity)
+}
+
+// FuncQueueBatchMetrics implements QueueBatchMetrics from a set of operations.
+// The zero value reports nothing, so a caller only sets the events it reports.
+type FuncQueueBatchMetrics struct {
+	RecordEnqueueFailureFunc
+	RecordBatchSendSizeFunc
+	RegisterQueueSizeFunc
+	RegisterQueueCapacityFunc
+}
 
 // obsQueue is a helper to add observability to a queue.
 type obsQueue[T request.Request] struct {
@@ -41,7 +84,7 @@ func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T
 	// Settings.ObsMetrics is optional: a queue created without it reports no
 	// metrics. The caller owns the instruments and their lifecycle, so the
 	// queue never creates or shuts down telemetry of its own.
-	obsMetrics := QueueBatchMetrics(nopMetrics{})
+	obsMetrics := QueueBatchMetrics(FuncQueueBatchMetrics{})
 	if set.ObsMetrics != nil {
 		obsMetrics = set.ObsMetrics
 	}

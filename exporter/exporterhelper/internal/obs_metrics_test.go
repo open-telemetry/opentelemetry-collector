@@ -104,14 +104,15 @@ func TestExporterObsMetricsQueueInstruments(t *testing.T) {
 }
 
 // countingObsMetrics reports nothing but counts how often it is shut down.
-func countingObsMetrics(shutdowns *int) *ObsMetrics {
-	return NewObsMetrics(ObsMetricsConfig{Shutdown: func() { *shutdowns++ }})
+func countingObsMetrics(shutdowns *int) ObsMetrics {
+	return &FuncObsMetrics{ShutdownObsMetricsFunc: func() { *shutdowns++ }}
 }
 
-// TestBaseExporterShutsDownObsMetricsOnConstructionFailure covers the ownership
-// contract documented on WithObsMetrics: exporterhelper releases an injected
-// ObsMetrics when construction fails after the options are applied.
-func TestBaseExporterShutsDownObsMetricsOnConstructionFailure(t *testing.T) {
+// TestBaseExporterLeavesInjectedObsMetricsOnConstructionFailure covers the
+// ownership contract documented on WithObsMetrics: exporterhelper takes over
+// shutting an injected ObsMetrics down only once construction succeeds, so a
+// failed construction leaves it to the caller.
+func TestBaseExporterLeavesInjectedObsMetricsOnConstructionFailure(t *testing.T) {
 	shutdowns := 0
 
 	// WithQueue without WithQueueBatchSettings fails after options are applied.
@@ -119,7 +120,7 @@ func TestBaseExporterShutsDownObsMetricsOnConstructionFailure(t *testing.T) {
 		WithObsMetrics(countingObsMetrics(&shutdowns)),
 		WithQueue(configoptional.Some(NewDefaultQueueConfig())))
 	require.Error(t, err)
-	require.Equal(t, 1, shutdowns)
+	require.Equal(t, 0, shutdowns)
 }
 
 func TestBaseExporterShutsDownObsMetricsOnShutdown(t *testing.T) {

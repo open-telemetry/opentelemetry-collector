@@ -7,9 +7,11 @@ note: Add `WithObsMetrics` to let components reusing exporterhelper report its o
 issues: [14038]
 
 subtext: |
-  `NewObsMetrics` builds an `ObsMetrics` from an `ObsMetricsConfig` of
-  operations. Exporterhelper defines the meaning and timing of each operation,
-  calls `Shutdown` once it takes ownership, and falls back to its own
-  `otelcol_exporter_*` instruments when the option is not used.
+  `ObsMetrics` is an interface with a corresponding function type per
+  operation; the zero value of `FuncObsMetrics` implements all of them as
+  no-ops. Exporterhelper defines the meaning and timing of each operation,
+  takes ownership of the metrics once its constructor returns successfully,
+  and falls back to its own `otelcol_exporter_*` instruments when the option
+  is not used.
 
 change_logs: [api]

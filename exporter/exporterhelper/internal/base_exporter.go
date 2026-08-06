@@ -46,7 +46,7 @@ type BaseExporter struct {
 	ConsumerOptions []consumer.Option
 
 	ExtraAttrs []attribute.KeyValue
-	ObsMetrics *ObsMetrics
+	ObsMetrics ObsMetrics
 
 	timeoutCfg TimeoutConfig
 	retryCfg   configretry.BackOffConfig
@@ -60,10 +60,14 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 		Set:        set,
 		timeoutCfg: NewDefaultTimeoutConfig(),
 	}
+	// ownedObsMetrics is set only when exporterhelper creates the metrics
+	// itself. Metrics supplied through WithObsMetrics stay owned by the
+	// caller until this constructor returns successfully.
+	var ownedObsMetrics ObsMetrics
 	constructed := false
 	defer func() {
-		if !constructed && be.ObsMetrics != nil {
-			be.ObsMetrics.Shutdown()
+		if !constructed && ownedObsMetrics != nil {
+			ownedObsMetrics.Shutdown()
 		}
 	}()
 
@@ -75,10 +79,10 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 
 	if be.ObsMetrics == nil {
 		var err error
-		be.ObsMetrics, err = newExporterObsMetrics(set.TelemetrySettings, set.ID, signal, be.ExtraAttrs)
-		if err != nil {
+		if ownedObsMetrics, err = newExporterObsMetrics(set.TelemetrySettings, set.ID, signal, be.ExtraAttrs); err != nil {
 			return nil, err
 		}
+		be.ObsMetrics = ownedObsMetrics
 	}
 
 	// Consumer Sender is always initialized.
@@ -272,7 +276,7 @@ func WithAttributes(attrs ...attribute.KeyValue) Option {
 }
 
 // WithObsMetrics overrides the metrics emitted by exporterhelper.
-func WithObsMetrics(obsMetrics *ObsMetrics) Option {
+func WithObsMetrics(obsMetrics ObsMetrics) Option {
 	return func(o *BaseExporter) error {
 		if obsMetrics == nil {
 			return errors.New("ObsMetrics must not be nil")

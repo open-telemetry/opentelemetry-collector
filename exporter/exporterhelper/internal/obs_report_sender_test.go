@@ -633,7 +633,7 @@ type testParams struct {
 	err   error
 }
 
-func newTestObsMetrics(t *testing.T, tel component.TelemetrySettings, id component.ID, signal pipeline.Signal) *ObsMetrics {
+func newTestObsMetrics(t *testing.T, tel component.TelemetrySettings, id component.ID, signal pipeline.Signal) ObsMetrics {
 	t.Helper()
 	om, err := newExporterObsMetrics(tel, id, signal, nil)
 	require.NoError(t, err)

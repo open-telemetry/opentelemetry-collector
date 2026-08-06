@@ -276,7 +276,7 @@ func TestObsMetricsShutdownOnConstructionFailure(t *testing.T) {
 
 	set, _ := testSettings(tt)
 	_, err := newSignalProcessor(set, pipeline.SignalTraces,
-		func(om *exporterhelper.ObsMetrics) (processor.Traces, error) {
+		func(om exporterhelper.ObsMetrics) (processor.Traces, error) {
 			require.NoError(t, om.RegisterQueueSize(func() int64 { return 7 }))
 			require.NoError(t, om.RegisterQueueCapacity(func() int64 { return 9 }))
 			return nil, errors.New("construction failed")

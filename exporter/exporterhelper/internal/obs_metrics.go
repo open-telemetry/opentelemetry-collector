@@ -5,124 +5,89 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 
 import (
 	"context"
-	"sync"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
 
-// ObsMetricsConfig defines the operations invoked by exporterhelper to report
-// its observation events. Exporterhelper owns the meaning and timing of each
-// operation; a component supplies the instruments. Nil operations are no-ops,
-// so a component only implements the events it reports.
-type ObsMetricsConfig struct {
-	// RecordEnqueueFailure reports the number of items dropped because they
-	// could not be added to the queue.
-	RecordEnqueueFailure func(ctx context.Context, items int64)
-
-	// RecordBatchSendSize reports the number of items and bytes in a request
-	// as it is offered to the queue.
-	RecordBatchSendSize func(ctx context.Context, items, bytes int64)
-
-	// RegisterQueueSize installs an observer for the current queue size.
-	RegisterQueueSize func(observeSize func() int64) error
-
-	// RegisterQueueCapacity installs an observer for the fixed queue capacity.
-	RegisterQueueCapacity func(observeCapacity func() int64) error
-
-	// RecordInFlight reports a change in the number of requests currently
-	// being sent. Delta is +1 when a send starts and -1 when it ends.
-	RecordInFlight func(ctx context.Context, delta int64)
-
-	// RecordSent reports the number of items successfully sent.
-	RecordSent func(ctx context.Context, items int64)
-
-	// RecordSendFailure reports the number of items that failed to send. The
-	// options carry the failure attributes derived from the error.
-	RecordSendFailure func(ctx context.Context, items int64, options ...metric.AddOption)
-
-	// Shutdown releases the resources backing the instruments above.
-	// ObsMetrics.Shutdown deduplicates calls, so this runs at most once even
-	// though both exporterhelper and the component may request it.
-	Shutdown func()
-
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
 // ObsMetrics reports the metrics produced by exporterhelper for one signal.
-// Components that reuse exporterhelper can supply their own operations to
-// report metrics using names and attributes appropriate for that component.
-// Exporterhelper owns the instance after WithObsMetrics applies successfully
-// and calls Shutdown when construction fails or the component shuts down.
-type ObsMetrics struct {
-	config       ObsMetricsConfig
-	shutdownOnce sync.Once
+// Exporterhelper owns the meaning and timing of each operation; the
+// implementation supplies the instruments. Components that reuse
+// exporterhelper implement this to report metrics using names and attributes
+// appropriate for that component, most easily by setting the operations of a
+// FuncObsMetrics.
+type ObsMetrics interface {
+	queue.QueueBatchMetrics
+
+	RecordInFlight(ctx context.Context, delta int64)
+	RecordSent(ctx context.Context, items int64)
+	RecordSendFailure(ctx context.Context, items int64, options ...metric.AddOption)
+
+	// Shutdown releases the resources backing the instruments. Exporterhelper
+	// calls it when the component shuts down, and only takes on that
+	// responsibility once its constructor returns successfully.
+	Shutdown()
 }
 
-// NewObsMetrics creates ObsMetrics that report through the operations in cfg.
-func NewObsMetrics(cfg ObsMetricsConfig) *ObsMetrics {
-	return &ObsMetrics{config: cfg}
-}
+// RecordInFlightFunc records a change in the number of requests currently
+// being sent. Delta is +1 when a send starts and -1 when it ends.
+type RecordInFlightFunc func(ctx context.Context, delta int64)
 
-func (m *ObsMetrics) RecordEnqueueFailure(ctx context.Context, items int64) {
-	if m.config.RecordEnqueueFailure != nil {
-		m.config.RecordEnqueueFailure(ctx, items)
+func (f RecordInFlightFunc) RecordInFlight(ctx context.Context, delta int64) {
+	if f == nil {
+		return
 	}
+	f(ctx, delta)
 }
 
-func (m *ObsMetrics) RecordBatchSendSize(ctx context.Context, items, bytes int64) {
-	if m.config.RecordBatchSendSize != nil {
-		m.config.RecordBatchSendSize(ctx, items, bytes)
+// RecordSentFunc records the number of items successfully sent.
+type RecordSentFunc func(ctx context.Context, items int64)
+
+func (f RecordSentFunc) RecordSent(ctx context.Context, items int64) {
+	if f == nil {
+		return
 	}
+	f(ctx, items)
 }
 
-func (m *ObsMetrics) RegisterQueueSize(observeSize func() int64) error {
-	if m.config.RegisterQueueSize == nil {
-		return nil
+// RecordSendFailureFunc records the number of items that failed to send. The
+// options carry the failure attributes derived from the error.
+type RecordSendFailureFunc func(ctx context.Context, items int64, options ...metric.AddOption)
+
+func (f RecordSendFailureFunc) RecordSendFailure(ctx context.Context, items int64, options ...metric.AddOption) {
+	if f == nil {
+		return
 	}
-	return m.config.RegisterQueueSize(observeSize)
+	f(ctx, items, options...)
 }
 
-func (m *ObsMetrics) RegisterQueueCapacity(observeCapacity func() int64) error {
-	if m.config.RegisterQueueCapacity == nil {
-		return nil
+// ShutdownObsMetricsFunc releases the resources backing the instruments.
+type ShutdownObsMetricsFunc func()
+
+func (f ShutdownObsMetricsFunc) Shutdown() {
+	if f == nil {
+		return
 	}
-	return m.config.RegisterQueueCapacity(observeCapacity)
+	f()
 }
 
-func (m *ObsMetrics) RecordInFlight(ctx context.Context, delta int64) {
-	if m.config.RecordInFlight != nil {
-		m.config.RecordInFlight(ctx, delta)
-	}
-}
-
-func (m *ObsMetrics) RecordSent(ctx context.Context, items int64) {
-	if m.config.RecordSent != nil {
-		m.config.RecordSent(ctx, items)
-	}
-}
-
-func (m *ObsMetrics) RecordSendFailure(ctx context.Context, items int64, options ...metric.AddOption) {
-	if m.config.RecordSendFailure != nil {
-		m.config.RecordSendFailure(ctx, items, options...)
-	}
-}
-
-// Shutdown releases the underlying instruments. It is idempotent, so a caller
-// that shuts down after a failed exporter construction cannot double-release
-// resources that exporterhelper already released.
-func (m *ObsMetrics) Shutdown() {
-	m.shutdownOnce.Do(func() {
-		if m.config.Shutdown != nil {
-			m.config.Shutdown()
-		}
-	})
+// FuncObsMetrics implements ObsMetrics from a set of operations. The zero
+// value reports nothing, so a component only sets the events it reports.
+type FuncObsMetrics struct {
+	queue.RecordEnqueueFailureFunc
+	queue.RecordBatchSendSizeFunc
+	queue.RegisterQueueSizeFunc
+	queue.RegisterQueueCapacityFunc
+	RecordInFlightFunc
+	RecordSentFunc
+	RecordSendFailureFunc
+	ShutdownObsMetricsFunc
 }
 
 // newExporterObsMetrics reports through the exporter-oriented instruments,
@@ -132,7 +97,7 @@ func newExporterObsMetrics(
 	id component.ID,
 	signal pipeline.Signal,
 	extraAttrs []attribute.KeyValue,
-) (*ObsMetrics, error) {
+) (ObsMetrics, error) {
 	tb, err := metadata.NewTelemetryBuilder(tel)
 	if err != nil {
 		return nil, err
@@ -143,27 +108,27 @@ func newExporterObsMetrics(
 	senderAttr := metric.WithAttributeSet(attribute.NewSet(append(extraAttrs, exporterAttr)...))
 	asyncAttr := metric.WithAttributeSet(attribute.NewSet(exporterAttr, attribute.String(DataTypeKey, signal.String())))
 
-	cfg := ObsMetricsConfig{
-		RecordBatchSendSize: func(ctx context.Context, items, bytes int64) {
+	om := &FuncObsMetrics{
+		RecordBatchSendSizeFunc: func(ctx context.Context, items, bytes int64) {
 			tb.ExporterQueueBatchSendSize.Record(ctx, items, queueAttr)
 			tb.ExporterQueueBatchSendSizeBytes.Record(ctx, bytes, queueAttr)
 		},
-		RegisterQueueSize: func(observeSize func() int64) error {
+		RegisterQueueSizeFunc: func(observeSize func() int64) error {
 			return tb.RegisterExporterQueueSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
 				o.Observe(observeSize(), asyncAttr)
 				return nil
 			})
 		},
-		RegisterQueueCapacity: func(observeCapacity func() int64) error {
+		RegisterQueueCapacityFunc: func(observeCapacity func() int64) error {
 			return tb.RegisterExporterQueueCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
 				o.Observe(observeCapacity(), asyncAttr)
 				return nil
 			})
 		},
-		RecordInFlight: func(ctx context.Context, delta int64) {
+		RecordInFlightFunc: func(ctx context.Context, delta int64) {
 			tb.ExporterInFlightRequests.Add(ctx, delta, asyncAttr)
 		},
-		Shutdown: tb.Shutdown,
+		ShutdownObsMetricsFunc: tb.Shutdown,
 	}
 
 	var itemsSentInst, itemsFailedInst, enqueueFailedInst metric.Int64Counter
@@ -188,20 +153,20 @@ func newExporterObsMetrics(
 	// The instruments below are nil only when the signal is not one of the
 	// known signals, in which case those events go unreported.
 	if enqueueFailedInst != nil {
-		cfg.RecordEnqueueFailure = func(ctx context.Context, items int64) {
+		om.RecordEnqueueFailureFunc = func(ctx context.Context, items int64) {
 			enqueueFailedInst.Add(ctx, items, queueAttr)
 		}
 	}
 	if itemsSentInst != nil {
-		cfg.RecordSent = func(ctx context.Context, items int64) {
+		om.RecordSentFunc = func(ctx context.Context, items int64) {
 			itemsSentInst.Add(ctx, items, senderAttr)
 		}
 	}
 	if itemsFailedInst != nil {
-		cfg.RecordSendFailure = func(ctx context.Context, items int64, options ...metric.AddOption) {
+		om.RecordSendFailureFunc = func(ctx context.Context, items int64, options ...metric.AddOption) {
 			itemsFailedInst.Add(ctx, items, append([]metric.AddOption{senderAttr}, options...)...)
 		}
 	}
 
-	return NewObsMetrics(cfg), nil
+	return om, nil
 }

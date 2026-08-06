@@ -56,16 +56,13 @@ func WithAttrs(attrs ...attribute.KeyValue) Option {
 // that reuse exporterhelper can use this option to report component-oriented
 // instruments for exporterhelper-defined observation events.
 //
-// Exporterhelper controls when each operation is called. Once it has applied
-// this option it takes over shutting obsMetrics down, either when a later
-// stage of construction fails or when the component shuts down. Because
-// options are applied in order, an error raised before this one is applied
-// leaves the caller responsible; ObsMetrics.Shutdown is idempotent, so the
-// caller should simply shut obsMetrics down whenever the constructor returns
-// an error. Callers must not share one instance between components.
+// Exporterhelper controls when each operation is called. It takes over
+// shutting obsMetrics down once the constructor returns successfully; if the
+// constructor returns an error, the caller remains responsible for shutting
+// obsMetrics down. Callers must not share one instance between components.
 //
 // Note that only metrics are redirected: spans and log messages emitted by
 // exporterhelper remain exporter-oriented.
-func WithObsMetrics(obsMetrics *ObsMetrics) Option {
+func WithObsMetrics(obsMetrics ObsMetrics) Option {
 	return internal.WithObsMetrics(obsMetrics)
 }

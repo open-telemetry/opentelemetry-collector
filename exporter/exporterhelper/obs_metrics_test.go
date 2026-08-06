@@ -13,15 +13,15 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 )
 
-// TestObsMetricsUnsetOperationsAreNoOps verifies that a config that implements
-// only some operations does not panic on the others.
-func TestObsMetricsUnsetOperationsAreNoOps(t *testing.T) {
+// TestFuncObsMetricsZeroValueIsNoOp verifies that the zero value implements
+// every operation, so a component only sets the events it reports.
+func TestFuncObsMetricsZeroValueIsNoOp(t *testing.T) {
 	var recorded int64
-	metrics := NewObsMetrics(ObsMetricsConfig{
-		RecordSent: func(_ context.Context, items int64) {
+	metrics := FuncObsMetrics{
+		RecordSentFunc: func(_ context.Context, items int64) {
 			recorded = items
 		},
-	})
+	}
 
 	metrics.RecordSent(context.Background(), 7)
 	require.Equal(t, int64(7), recorded)
@@ -34,24 +34,25 @@ func TestObsMetricsUnsetOperationsAreNoOps(t *testing.T) {
 	metrics.Shutdown()
 }
 
-func TestObsMetricsOperationsAreForwarded(t *testing.T) {
+func TestFuncObsMetricsOperationsAreForwarded(t *testing.T) {
 	var calls []string
 	observers := map[string]func() int64{}
-	metrics := NewObsMetrics(ObsMetricsConfig{
-		RecordEnqueueFailure: func(context.Context, int64) { calls = append(calls, "enqueue_failure") },
-		RecordBatchSendSize:  func(context.Context, int64, int64) { calls = append(calls, "batch_send_size") },
-		RegisterQueueSize: func(observeSize func() int64) error {
+	metrics := FuncObsMetrics{
+		RecordEnqueueFailureFunc: func(context.Context, int64) { calls = append(calls, "enqueue_failure") },
+		RecordBatchSendSizeFunc:  func(context.Context, int64, int64) { calls = append(calls, "batch_send_size") },
+		RegisterQueueSizeFunc: func(observeSize func() int64) error {
 			observers["size"] = observeSize
 			return nil
 		},
-		RegisterQueueCapacity: func(observeCapacity func() int64) error {
+		RegisterQueueCapacityFunc: func(observeCapacity func() int64) error {
 			observers["capacity"] = observeCapacity
 			return nil
 		},
-		RecordInFlight:    func(context.Context, int64) { calls = append(calls, "in_flight") },
-		RecordSent:        func(context.Context, int64) { calls = append(calls, "sent") },
-		RecordSendFailure: func(context.Context, int64, ...metric.AddOption) { calls = append(calls, "send_failure") },
-	})
+		RecordInFlightFunc:     func(context.Context, int64) { calls = append(calls, "in_flight") },
+		RecordSentFunc:         func(context.Context, int64) { calls = append(calls, "sent") },
+		RecordSendFailureFunc:  func(context.Context, int64, ...metric.AddOption) { calls = append(calls, "send_failure") },
+		ShutdownObsMetricsFunc: func() { calls = append(calls, "shutdown") },
+	}
 
 	ctx := context.Background()
 	metrics.RecordEnqueueFailure(ctx, 1)
@@ -59,7 +60,8 @@ func TestObsMetricsOperationsAreForwarded(t *testing.T) {
 	metrics.RecordInFlight(ctx, 1)
 	metrics.RecordSent(ctx, 1)
 	metrics.RecordSendFailure(ctx, 1)
-	require.Equal(t, []string{"enqueue_failure", "batch_send_size", "in_flight", "sent", "send_failure"}, calls)
+	metrics.Shutdown()
+	require.Equal(t, []string{"enqueue_failure", "batch_send_size", "in_flight", "sent", "send_failure", "shutdown"}, calls)
 
 	require.NoError(t, metrics.RegisterQueueSize(func() int64 { return 3 }))
 	require.NoError(t, metrics.RegisterQueueCapacity(func() int64 { return 9 }))
@@ -67,22 +69,7 @@ func TestObsMetricsOperationsAreForwarded(t *testing.T) {
 	require.Equal(t, int64(9), observers["capacity"]())
 }
 
-// TestObsMetricsShutdownIsIdempotent covers the contract relied on by
-// components that shut down their own metrics when exporter construction fails
-// after exporterhelper already took ownership.
-func TestObsMetricsShutdownIsIdempotent(t *testing.T) {
-	shutdowns := 0
-	metrics := NewObsMetrics(ObsMetricsConfig{Shutdown: func() { shutdowns++ }})
-
-	metrics.Shutdown()
-	metrics.Shutdown()
-	metrics.Shutdown()
-	require.Equal(t, 1, shutdowns)
-}
-
 func TestWithObsMetricsNil(t *testing.T) {
-	// A nil *ObsMetrics must be rejected rather than stored as a non-nil
-	// interface value holding a nil pointer.
 	err := WithObsMetrics(nil)(&internal.BaseExporter{})
 	require.ErrorContains(t, err, "must not be nil")
 }
