@@ -195,6 +195,46 @@ func Test_TransportType_UnmarshalText(t *testing.T) {
 	err = tt.UnmarshalText([]byte("npipe"))
 	require.NoError(t, err)
 	assert.Equal(t, TransportTypeNpipe, tt)
+	err = tt.UnmarshalText([]byte("vsock"))
+	require.NoError(t, err)
+	assert.Equal(t, TransportTypeVsock, tt)
 	err = tt.UnmarshalText([]byte("invalid"))
 	require.Error(t, err)
+}
+
+func Test_NetAddr_Validate_Vsock(t *testing.T) {
+	tests := []struct {
+		name     string
+		endpoint string
+		wantErr  bool
+	}{
+		{name: "host CID", endpoint: "2:8080", wantErr: false},
+		{name: "hypervisor CID", endpoint: "0:1234", wantErr: false},
+		{name: "local CID", endpoint: "1:5000", wantErr: false},
+		{name: "any CID", endpoint: "4294967295:8080", wantErr: false},
+		{name: "port zero", endpoint: "2:0", wantErr: false},
+		{name: "max port", endpoint: "2:4294967295", wantErr: false},
+		{name: "empty", endpoint: "", wantErr: true},
+		{name: "missing port", endpoint: "2", wantErr: true},
+		{name: "missing cid", endpoint: ":8080", wantErr: true},
+		{name: "non-numeric cid", endpoint: "host:8080", wantErr: true},
+		{name: "non-numeric port", endpoint: "2:http", wantErr: true},
+		{name: "cid overflow", endpoint: "4294967296:8080", wantErr: true},
+		{name: "port overflow", endpoint: "2:4294967296", wantErr: true},
+		{name: "negative cid", endpoint: "-1:8080", wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			na := &AddrConfig{
+				Transport: TransportTypeVsock,
+				Endpoint:  tt.endpoint,
+			}
+			err := na.Validate()
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
