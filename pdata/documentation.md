@@ -8,6 +8,6 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `pdata.useProtoPooling` | alpha | When enabled, enable using local memory pools for underlying data that the pdata messages are pushed to. | v0.133.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/13631) |
+| `pdata.useProtoPooling` | beta | When enabled, enable using local memory pools for underlying data that the pdata messages are pushed to. | v0.133.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/13631) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
