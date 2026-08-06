@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: pkg/confighttp
+note: Preserve the IPv6 zone identifier when parsing the client address, so link-local IPv6 clients no longer get a nil client.Info.Addr.
+issues: [14545]
+subtext:
+change_logs: [user]

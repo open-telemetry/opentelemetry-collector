@@ -34,6 +34,29 @@ func TestParseIP(t *testing.T) {
 			},
 		},
 		{
+			name:  "ipv6 addr:port",
+			input: "[fe80::1]:33455",
+			expected: &net.IPAddr{
+				IP: net.ParseIP("fe80::1"),
+			},
+		},
+		{
+			name:  "ipv6 zoned addr:port",
+			input: "[fe80::1%eth0]:33455",
+			expected: &net.IPAddr{
+				IP:   net.ParseIP("fe80::1"),
+				Zone: "eth0",
+			},
+		},
+		{
+			name:  "ipv6 zoned addr",
+			input: "fe80::1%eth0",
+			expected: &net.IPAddr{
+				IP:   net.ParseIP("fe80::1"),
+				Zone: "eth0",
+			},
+		},
+		{
 			name:     "protocol://addr:port",
 			input:    "http://1.2.3.4:33455",
 			expected: nil,

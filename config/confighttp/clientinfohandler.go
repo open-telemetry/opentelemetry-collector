@@ -7,6 +7,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"strings"
 
 	"go.opentelemetry.io/collector/client"
 )
@@ -56,10 +57,19 @@ func parseIP(source string) *net.IPAddr {
 	if err == nil {
 		source = ipstr
 	}
+	// net.ParseIP does not accept an IPv6 zone identifier (e.g. "fe80::1%eth0"),
+	// so split off the zone before parsing and carry it on the result. Without
+	// this, link-local IPv6 clients end up with a nil Addr in client.Info.
+	var zone string
+	if i := strings.IndexByte(source, '%'); i >= 0 {
+		zone = source[i+1:]
+		source = source[:i]
+	}
 	ip := net.ParseIP(source)
 	if ip != nil {
 		return &net.IPAddr{
-			IP: ip,
+			IP:   ip,
+			Zone: zone,
 		}
 	}
 	return nil
