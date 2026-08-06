@@ -1039,6 +1039,82 @@ func TestCollectorReportError(t *testing.T) {
 	assert.Equal(t, StateClosed, col.GetState())
 }
 
+// slowShutdownExtension signals shutdownStarted as soon as its Shutdown method is called, then
+// blocks until releaseShutdown is closed. It is used to widen the window during which the
+// collector is shutting down but its control loop is no longer selecting on asyncErrorChannel.
+type slowShutdownExtension struct {
+	component.StartFunc
+	shutdownStarted chan struct{}
+	releaseShutdown chan struct{}
+}
+
+func (e *slowShutdownExtension) Shutdown(context.Context) error {
+	close(e.shutdownStarted)
+	<-e.releaseShutdown
+	return nil
+}
+
+// TestCollectorReportErrorDuringShutdown verifies that a fatal error reported asynchronously
+// while the collector is shutting down (i.e. after the control loop has already stopped
+// selecting on asyncErrorChannel) does not block the reporting goroutine indefinitely.
+func TestCollectorReportErrorDuringShutdown(t *testing.T) {
+	shutdownStarted := make(chan struct{})
+	releaseShutdown := make(chan struct{})
+
+	factory := extension.NewFactory(
+		component.MustNewType("slowshutdown"),
+		func() component.Config { return &struct{}{} },
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
+			return &slowShutdownExtension{shutdownStarted: shutdownStarted, releaseShutdown: releaseShutdown}, nil
+		},
+		component.StabilityLevelStable,
+	)
+
+	factories, err := nopFactories()
+	require.NoError(t, err)
+	factories.Extensions[factory.Type()] = factory
+
+	col, err := NewCollector(CollectorSettings{
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-slowshutdown.yaml")}),
+	})
+	require.NoError(t, err)
+
+	wg := startCollector(context.Background(), t, col)
+
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	go col.Shutdown()
+
+	select {
+	case <-shutdownStarted:
+	case <-time.After(2 * time.Second):
+		t.Fatal("extension shutdown did not start in time")
+	}
+
+	// The control loop has already broken out of its select statement at this point, since
+	// shutdown() calls service.Shutdown synchronously and blocks on the extension above.
+	// Reporting an async error here must not block.
+	reported := make(chan struct{})
+	go func() {
+		col.asyncErrorChannel <- errors.New("fatal error during shutdown")
+		close(reported)
+	}()
+
+	select {
+	case <-reported:
+	case <-time.After(2 * time.Second):
+		t.Fatal("reporting an async error during shutdown blocked indefinitely")
+	}
+
+	close(releaseShutdown)
+	wg.Wait()
+	assert.Equal(t, StateClosed, col.GetState())
+}
+
 // NewStatusWatcherExtensionFactory returns a component.ExtensionFactory to construct a status watcher extension.
 func NewStatusWatcherExtensionFactory(
 	onStatusChanged func(source *componentstatus.InstanceID, event *componentstatus.Event),

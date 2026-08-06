@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: pkg/otelcol
+
+note: Fix a deadlock when a component reports a fatal error asynchronously while the collector is starting up, reloading its configuration, or shutting down
+
+issues: [9824]
+
+subtext:
+
+change_logs: [user]
