@@ -23,6 +23,18 @@ func TestNpipeDialUnsupported(t *testing.T) {
 	assert.Contains(t, err.Error(), "npipe transport is only supported on Windows")
 }
 
+func TestNpipeValidateSecurityDescriptorNotChecked(t *testing.T) {
+	// SDDL strings cannot be parsed without the Windows API, so any value is accepted here.
+	nas := &AddrConfig{
+		Endpoint:  `\\.\pipe\test`,
+		Transport: TransportTypeNpipe,
+		NpipeConfig: NpipeConfig{
+			SecurityDescriptor: "not-a-valid-sddl",
+		},
+	}
+	require.NoError(t, nas.Validate())
+}
+
 func TestNpipeListenUnsupported(t *testing.T) {
 	nas := &AddrConfig{
 		Endpoint:  `\\.\pipe\test`,
