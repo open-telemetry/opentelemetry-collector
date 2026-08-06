@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: cmd/mdatagen
+note: Fix panic in Attribute.TestValue() and TestValueTwo() when handling single-element or empty enum attributes.
+issues: [15644]
