@@ -339,6 +339,45 @@ func newPushProfilesData(retError error) xconsumer.ConsumeProfilesFunc {
 	}
 }
 
+func profilesByteQueueBatchConfig() configoptional.Optional[exporterhelper.QueueBatchConfig] {
+	cfg := exporterhelper.NewDefaultQueueConfig()
+	cfg.WaitForResult = true
+	cfg.Sizer = exporterhelper.RequestSizerTypeBytes
+	cfg.QueueSize = 1 << 30
+	cfg.NumConsumers = 1
+	cfg.Batch = configoptional.Some(exporterhelper.BatchConfig{
+		FlushTimeout: time.Hour,
+		Sizer:        exporterhelper.RequestSizerTypeBytes,
+		MinSize:      1,
+	})
+	return configoptional.Some(cfg)
+}
+
+func BenchmarkProfilesBytesQueueBatchPipeline(b *testing.B) {
+	pd := testdata.GenerateProfiles(1000)
+	exp, err := NewProfiles(context.Background(), exportertest.NewNopSettings(exportertest.NopType), struct{}{}, xconsumer.ConsumeProfilesFunc(func(context.Context, pprofile.Profiles) error {
+		return nil
+	}), exporterhelper.WithQueue(profilesByteQueueBatchConfig()))
+	if err != nil {
+		b.Fatal(err)
+	}
+	if err := exp.Start(context.Background(), componenttest.NewNopHost()); err != nil {
+		b.Fatal(err)
+	}
+	b.Cleanup(func() {
+		if err := exp.Shutdown(context.Background()); err != nil {
+			b.Fatal(err)
+		}
+	})
+
+	b.ReportAllocs()
+	for b.Loop() {
+		if err := exp.ConsumeProfiles(context.Background(), pd); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 func generateProfilesTraffic(t *testing.T, tracer trace.Tracer, le xexporter.Profiles, numRequests int, wantError error) {
 	ld := testdata.GenerateProfiles(1)
 	ctx, span := tracer.Start(context.Background(), fakeProfilesParentSpanName)
