@@ -47,8 +47,7 @@ func newMultiBatcher(
 	}
 
 	// Create LRU cache with eviction callback
-	// TODO: make maxActivePartitionsCount configurable
-	cache, err := lru.NewLRU[string, *partitionBatcher](10000, func(_ string, pb *partitionBatcher) {
+	cache, err := lru.NewLRU[string, *partitionBatcher](bCfg.Partition.maxActivePartitions(), func(_ string, pb *partitionBatcher) {
 		// Flush the partition when evicted
 		mb.wp.execute(pb.shutdownInternal)
 	})

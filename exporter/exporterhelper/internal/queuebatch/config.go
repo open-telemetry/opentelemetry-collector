@@ -108,6 +108,11 @@ type BatchConfig struct {
 	Partition PartitionConfig `mapstructure:"partition"`
 }
 
+const (
+	defaultPartitionIdleCycles = 10
+	defaultMaxActivePartitions = 10000
+)
+
 // PartitionConfig defines a configuration for partitioning requests based on metadata keys.
 type PartitionConfig struct {
 	// MetadataKeys is a list of client.Metadata keys that will be used to partition
@@ -119,6 +124,29 @@ type PartitionConfig struct {
 	//
 	// Entries are case-insensitive. Duplicated entries will trigger a validation error.
 	MetadataKeys []string `mapstructure:"metadata_keys"`
+
+	// IdleCycles is the number of FlushTimeout periods an empty partition may remain
+	// idle before it is removed. Zero means the default (10).
+	IdleCycles int `mapstructure:"idle_cycles"`
+
+	// MaxActivePartitions is the maximum number of concurrent partition batchers.
+	// When the limit is reached, the least recently used partition is flushed and removed.
+	// Zero means the default (10000).
+	MaxActivePartitions int `mapstructure:"max_active_partitions"`
+}
+
+func (cfg PartitionConfig) idleCycles() int {
+	if cfg.IdleCycles <= 0 {
+		return defaultPartitionIdleCycles
+	}
+	return cfg.IdleCycles
+}
+
+func (cfg PartitionConfig) maxActivePartitions() int {
+	if cfg.MaxActivePartitions <= 0 {
+		return defaultMaxActivePartitions
+	}
+	return cfg.MaxActivePartitions
 }
 
 func (cfg *BatchConfig) Validate() error {
@@ -153,6 +181,14 @@ func (cfg *BatchConfig) Validate() error {
 func (cfg *PartitionConfig) Validate() error {
 	if cfg == nil {
 		return nil
+	}
+
+	if cfg.IdleCycles < 0 {
+		return fmt.Errorf("`idle_cycles` must be non-negative, found %d", cfg.IdleCycles)
+	}
+
+	if cfg.MaxActivePartitions < 0 {
+		return fmt.Errorf("`max_active_partitions` must be non-negative, found %d", cfg.MaxActivePartitions)
 	}
 
 	// Validate metadata_keys for duplicates (case-insensitive)

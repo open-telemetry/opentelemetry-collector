@@ -560,11 +560,14 @@ func TestPartitionBatcher_ContextMerging(t *testing.T) {
 }
 
 func TestPartitionBatcher_OnEmptyCallbackTriggered(t *testing.T) {
-	// Use a very short FlushTimeout so the idle threshold (partitionIdleCycles*FlushTimeout) is reached quickly.
+	// Use a short FlushTimeout so the idle threshold (idle_cycles*FlushTimeout) is reached quickly.
 	cfg := BatchConfig{
 		FlushTimeout: 10 * time.Millisecond,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      100, // High min size to ensure data doesn't flush immediately
+		Partition: PartitionConfig{
+			IdleCycles: 2,
+		},
 	}
 
 	sink := requesttest.NewSink()
@@ -588,7 +591,7 @@ func TestPartitionBatcher_OnEmptyCallbackTriggered(t *testing.T) {
 		return sink.RequestsCount() == 1
 	}, 500*time.Millisecond, 10*time.Millisecond)
 
-	// Now wait for idle timeout (partitionIdleCycles * FlushTimeout = 10 * 10ms = 100ms)
+	// Now wait for idle timeout (idle_cycles * FlushTimeout = 2 * 10ms = 20ms)
 	// The onEmpty callback should be called after the partition is idle for this duration.
 	assert.Eventually(t, func() bool {
 		return onEmptyCalled.Load() >= 1

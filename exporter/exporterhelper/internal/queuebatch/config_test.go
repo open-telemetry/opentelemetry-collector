@@ -91,6 +91,30 @@ func TestBatchConfig_Validate_MetadataKeys(t *testing.T) {
 	})
 }
 
+func TestPartitionConfig_Validate_Limits(t *testing.T) {
+	cfg := newTestBatchConfig()
+	cfg.Partition.IdleCycles = -1
+	require.EqualError(t, confmap.Validate(cfg), "partition: `idle_cycles` must be non-negative, found -1")
+
+	cfg = newTestBatchConfig()
+	cfg.Partition.MaxActivePartitions = -1
+	require.EqualError(t, confmap.Validate(cfg), "partition: `max_active_partitions` must be non-negative, found -1")
+
+	cfg = newTestBatchConfig()
+	cfg.Partition.IdleCycles = 0
+	cfg.Partition.MaxActivePartitions = 0
+	require.NoError(t, confmap.Validate(cfg))
+	assert.Equal(t, defaultPartitionIdleCycles, cfg.Partition.idleCycles())
+	assert.Equal(t, defaultMaxActivePartitions, cfg.Partition.maxActivePartitions())
+
+	cfg = newTestBatchConfig()
+	cfg.Partition.IdleCycles = 3
+	cfg.Partition.MaxActivePartitions = 5
+	require.NoError(t, confmap.Validate(cfg))
+	assert.Equal(t, 3, cfg.Partition.idleCycles())
+	assert.Equal(t, 5, cfg.Partition.maxActivePartitions())
+}
+
 func TestBatchConfig_Validate(t *testing.T) {
 	cfg := newTestBatchConfig()
 	require.NoError(t, confmap.Validate(cfg))
