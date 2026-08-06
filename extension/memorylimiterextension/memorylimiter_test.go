@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/extension/memorylimiterextension/internal/metadata"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
 	"go.opentelemetry.io/collector/internal/memorylimiter/iruntime"
 )
@@ -80,7 +81,11 @@ func TestMemoryPressureResponse(t *testing.T) {
 				memorylimiter.GetMemoryFn = iruntime.TotalMemory
 				memorylimiter.ReadMemStatsFn = runtime.ReadMemStats
 			})
-			ml, err := newMemoryLimiter(tt.mlCfg, zap.NewNop())
+
+			tb, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+
+			ml, err := newMemoryLimiter(tt.mlCfg, zap.NewNop(), tb)
 			assert.NoError(t, err)
 
 			assert.NoError(t, ml.Start(ctx, componenttest.NewNopHost()))
