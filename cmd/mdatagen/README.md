@@ -64,7 +64,6 @@ You can run `cd cmd/mdatagen && $(GOCMD) install .` to install the `mdatagen` to
 
 This is used for skipping validation and configuring project-level hooks.
 
-Currently it is opt-in, it will become mandatory in a future minor release.
 
 ### Component Config Documentation
 
