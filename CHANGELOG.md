@@ -7,6 +7,129 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.64.0/v0.158.0
+
+### 🚀 New components 🚀
+
+- `processor/queuebatch`: New `queuebatchprocessor` to replace the legacy `batchprocessor`. (#15047, #13582, #12022, #11308, #8272, #6046)
+  New implementation is based exporterhelper, uses same configuration as `sending_queue`.
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Add first-class extended type aliases (int64, duration, opaque_string, id, opaque_map, etc.) to config schemas in metadata.yaml (#15513)
+  Authors can now write `type: int64`, `type: duration`, `type: opaque_string`, `type: id`, or
+  `type: opaque_map` directly as a property type in the `config:` section of `metadata.yaml`.
+  Each alias expands to the correct JSON Schema representation and Go type automatically.
+  Existing uses of standard JSON Schema types, `format:`, and `x-customType:` remain supported
+  without migration.
+  
+- `extension/memory_limiter`: Promote the memory limiter extension to beta stability. (#14533)
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Removes the extra line in the documentation.md around description (#15664)
+- `cmd/mdatagen`: Auto-enable v1 metrics when legacy metric is enabled and v1 feature gate is on (#15650)
+  When the v1 feature gate is enabled and a legacy metric is enabled, the corresponding
+  v1 metric is now programmatically enabled so users don't need to add the v1 metric
+  to their config.
+  
+- `cmd/mdatagen`: Fix incorrect collision warning for versioned metrics with different emitted names (#15648)
+  Same name collision detection (type/attribute checks) was being used for versioned metrics
+  with different names. This caused the legacy metric to be disabled which was incorrect and also
+  a warning msg was being incorrectly logged that stated the metrics had the same name when in
+  fact they had different names.
+  
+- `cmd/mdatagen`: Versioned metrics don't handle renamed attributes with same type (#15595)
+  Versioned metrics need to support emitting legacy and latest attributes when the metric name is the same but the
+  attributes names differ. This was not working when the attributes name changed but the type remained the same.
+  Here we add support to versioned metrics with renamed attributes where those attributes have the same type.
+  
+- `exporter/debug`: Fix profile sample attribute formatting for non-string values (#15647)
+  Previously, non-string values produced malformed output such as `%!s(int64=42)`.
+  Profile sample attributes now use the debug exporter's typed attribute format, such as `Int(42)`.
+  This will also change strings from `hello-world` to `Str(hello-world)`.
+  
+- `pkg/config/configtls`: Fix goroutine and file descriptor leak when `client_ca_file_reload` is enabled (#9221)
+  Every call to `ServerConfig.LoadTLSConfig` with `client_ca_file_reload` enabled started a
+  file watcher goroutine that could never be stopped, since the reloader was not reachable
+  from the returned `*tls.Config`. The client CA file is now checked for changes while TLS
+  handshakes are served, at most once per second, matching how `reload_interval` already
+  reloads the server certificate. No background goroutine is started, so nothing is left
+  behind when a server is torn down and recreated.
+  
+
+<!-- previous-version -->
+
+## v1.63.0/v0.157.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/exporterhelper`: Replace histogram bucket boundaries for `otelcol_exporter_queue_batch_send_size_bytes` and `otelcol_processor_batch_batch_send_size_bytes` with a power-of-2 byte-scale set spanning 128 B to 16 MiB. (#15535)
+  The previous boundaries included many small sub-kilobyte buckets that were not useful for byte-scale
+  payloads, and `otelcol_exporter_queue_batch_send_size_bytes` topped out at 6000 bytes so nearly all
+  observations fell into the `+Inf` overflow bucket. The new boundaries are powers of two from 128 B
+  to 16777216 (16 MiB), giving a meaningful distribution for real batch payload sizes (including small
+  timeout-flushed batches) and keeping the two
+  metrics directly comparable on the same dashboards. Dashboards or alerts that hard-code specific `le`
+  values for these histograms will need to be updated.
+  
+- `processor/batch`: Replace histogram bucket boundaries for `otelcol_processor_batch_batch_send_size_bytes` with a power-of-2 byte-scale set spanning 128 B to 16 MiB. (#15535)
+  The previous boundaries included many small sub-kilobyte buckets that were not useful for byte-scale
+  payloads. The new boundaries are powers of two from 128 B to 16777216 (16 MiB), giving a meaningful
+  distribution for real batch payload sizes (including small timeout-flushed batches) and keeping the
+  metric directly comparable with
+  `otelcol_exporter_queue_batch_send_size_bytes` on the same dashboards. Dashboards or alerts that
+  hard-code specific `le` values for this histogram will need to be updated.
+  
+
+### 💡 Enhancements 💡
+
+- `all`: Bootstrap `config.schema.yaml` for core components (debug/otlp/otlphttp exporters, otlp receiver, batch/memory_limiter processors, memory_limiter/zpages extensions). Implements Phase 1 of the component configuration schema roadmap RFC. (#14543)
+  Schemas are generated using the `schemagen` tool from opentelemetry-collector-contrib and hand-tuned to capture
+  validation rules and references to shared library schemas (confighttp, configgrpc, configretry, exporterhelper,
+  etc.). A `.schemagen.yaml` settings file and a `generate-schemas` Makefile target are added so the schemas can
+  be regenerated reproducibly.
+  
+- `pkg/service`: Apply experimental `service::telemetry::resource::detection/development` resource detection to the Collector's internal telemetry resource. (#14311)
+  This follows the OpenTelemetry configuration schema by treating
+  `service::telemetry::resource::detection/development::detectors` as detector selection.
+  Currently supported detector entries are `container`, `host`, `process`, and `service`.
+  See the OpenTelemetry Configuration Go support table and search for
+  `ExperimentalResourceDetector` for current detector support:
+  https://github.com/open-telemetry/opentelemetry-configuration/blob/main/language-support-status.md#go
+  
+  Example:
+  ```yaml
+  service:
+    telemetry:
+      resource:
+        attributes:
+          - name: foo
+            value: bar
+        detection/development:
+          detectors:
+            - host: {}
+  ```
+  
+- `pkg/service`: Add `service.partialReload` feature gate (Alpha) and `service.partialReloadReceivers` feature gate (Beta) that together restart only receivers on config reload when non-receiver config sections are unchanged, avoiding unnecessary disruption to processors, exporters, and extensions. Enable with `--feature-gates=service.partialReload`. (#5966)
+
+### 🧰 Bug fixes 🧰
+
+- `exporter/debug`: Fix the scope index printed by the `normal` verbosity marshaler; each scope was labelled with its parent resource's index instead of its own position (#15541)
+  Affected all four signals (logs, traces, metrics, profiles) — e.g. the second scope under a resource printed `#0` instead of `#1`.
+- `pkg/config/configgrpc`: Fix `WaitForReady` option not being applied to gRPC client connections. (#15615)
+- `pkg/featuregate`: Fix panic when a `--feature-gates` value contains an empty comma-separated element (e.g. `--feature-gates=alpha,`) (#15536)
+  An empty identifier now produces a returned error instead of an index-out-of-range panic during flag parsing.
+- `pkg/service`: Fix collector startup panic when a resource detector emits a slice-valued attribute (e.g. the `process` detector's `process.command_args`) (#15571)
+  `createResource` passed the OTel SDK attribute value straight into `pcommon.Value.FromRaw`, which
+  only accepts `[]any` for slices, so any string, int, float, or bool slice resource attribute produced
+  an `<Invalid value type>` error and aborted `service.New`. Slice-typed attributes are now converted
+  element-wise.
+  
+- `pkg/service`: Record status events reported by extensions (#15557)
+
+<!-- previous-version -->
+
 ## v1.62.0/v0.156.0
 
 ### 💡 Enhancements 💡

@@ -163,6 +163,8 @@ jobs:
         run: |
           make generate-chloggen-components
           git diff --exit-code || (echo '.chloggen/config.yaml is out of date, please run "make generate-chloggen-components" and commit the changes.' && exit 1)
+      - name: Check config schemas
+        run: make check-schemas
 
   unittest-matrix:
     strategy:

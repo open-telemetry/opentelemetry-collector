@@ -8,6 +8,7 @@ import (
 	"errors"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requestmiddleware"
@@ -37,7 +39,8 @@ func TestNewQueueSenderFailedRequestDropped(t *testing.T) {
 	qSet.Telemetry.Logger = zap.New(logger)
 	qCfg := NewDefaultQueueConfig()
 	be, err := NewQueueSender(
-		qSet, qCfg, "", sender.NewSender(func(context.Context, request.Request) error { return errors.New("some error") }))
+		qSet, qCfg, "", sender.NewSender(func(context.Context, request.Request) error { return errors.New("some error") }),
+	)
 	require.NoError(t, err)
 
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -45,6 +48,24 @@ func TestNewQueueSenderFailedRequestDropped(t *testing.T) {
 	require.NoError(t, be.Shutdown(context.Background()))
 	assert.Len(t, observed.All(), 1)
 	assert.Equal(t, "Exporting failed. Dropping data.", observed.All()[0].Message)
+}
+
+func TestNewDefaultQueueConfigBatchFeatureGate(t *testing.T) {
+	// The batch config is present but not enabled by default.
+	qCfg := NewDefaultQueueConfig()
+	require.False(t, qCfg.Batch.HasValue())
+	require.Equal(t, int64(8192), qCfg.Batch.GetOrInsertDefault().MinSize)
+
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgExporterhelperQueueBatchEnabledFeatureGate.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgExporterhelperQueueBatchEnabledFeatureGate.ID(), false))
+	}()
+
+	qCfg = NewDefaultQueueConfig()
+	require.True(t, qCfg.Batch.HasValue())
+	require.Equal(t, int64(8192), qCfg.Batch.Get().MinSize)
+	require.Equal(t, 200*time.Millisecond, qCfg.Batch.Get().FlushTimeout)
+	require.Equal(t, request.SizerTypeItems, qCfg.Batch.Get().Sizer)
 }
 
 func TestQueueConfig_Validate(t *testing.T) {

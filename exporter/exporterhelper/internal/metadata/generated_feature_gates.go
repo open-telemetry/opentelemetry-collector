@@ -6,10 +6,10 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-var PkgExporterhelperRequestMiddlewareFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"pkg.exporterhelper.RequestMiddleware",
+var PkgExporterhelperQueueBatchEnabledFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"pkg.exporterhelper.queueBatchEnabled",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("enables the request middleware extension point in exporterhelper for intercepting and modifying exporter requests (e.g., adaptive concurrency control, circuit breaking, rate limiting)"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/14080"),
-	featuregate.WithRegisterFromVersion("v0.155.0"),
+	featuregate.WithRegisterDescription("Enables exporterhelper batching by default in NewDefaultQueueConfig, as described in the batching migration RFC."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/15047"),
+	featuregate.WithRegisterFromVersion("v0.158.0"),
 )

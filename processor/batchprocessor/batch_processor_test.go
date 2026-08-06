@@ -210,14 +210,10 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 	metadatatest.AssertEqualProcessorBatchBatchSendSizeBytes(t, tel,
 		[]metricdata.HistogramDataPoint[int64]{
 			{
-				Attributes: attribute.NewSet(attribute.String("processor", "batch")),
-				Count:      uint64(expectedBatchesNum),
-				Bounds: []float64{
-					10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
-					100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
-					1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000,
-				},
-				BucketCounts: []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+				Attributes:   attribute.NewSet(attribute.String("processor", "batch")),
+				Count:        uint64(expectedBatchesNum),
+				Bounds:       []float64{128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576, 2097152, 4194304, 8388608, 16777216},
+				BucketCounts: []uint64{0, 0, 0, 0, 0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 				Sum:          int64(sizeSum),
 				Min:          metricdata.NewExtrema(int64(sizeSum / expectedBatchesNum)),
 				Max:          metricdata.NewExtrema(int64(sizeSum / expectedBatchesNum)),
@@ -309,14 +305,10 @@ func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
 	metadatatest.AssertEqualProcessorBatchBatchSendSizeBytes(t, tel,
 		[]metricdata.HistogramDataPoint[int64]{
 			{
-				Attributes: attribute.NewSet(attribute.String("processor", "batch")),
-				Count:      uint64(expectedBatchesNum),
-				Bounds: []float64{
-					10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
-					100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
-					1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000,
-				},
-				BucketCounts: []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, uint64(expectedBatchesNum - 1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+				Attributes:   attribute.NewSet(attribute.String("processor", "batch")),
+				Count:        uint64(expectedBatchesNum),
+				Bounds:       []float64{128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576, 2097152, 4194304, 8388608, 16777216},
+				BucketCounts: []uint64{0, 0, 0, 0, 0, 1, uint64(expectedBatchesNum - 1), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 				Sum:          int64(sizeSum),
 				Min:          metricdata.NewExtrema(int64(minSize)),
 				Max:          metricdata.NewExtrema(int64(maxSize)),
@@ -523,14 +515,10 @@ func TestBatchMetricProcessorBatchSize(t *testing.T) {
 	metadatatest.AssertEqualProcessorBatchBatchSendSizeBytes(t, tel,
 		[]metricdata.HistogramDataPoint[int64]{
 			{
-				Attributes: attribute.NewSet(attribute.String("processor", "batch")),
-				Count:      uint64(expectedBatchesNum),
-				Bounds: []float64{
-					10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
-					100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
-					1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000,
-				},
-				BucketCounts: []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+				Attributes:   attribute.NewSet(attribute.String("processor", "batch")),
+				Count:        uint64(expectedBatchesNum),
+				Bounds:       []float64{128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576, 2097152, 4194304, 8388608, 16777216},
+				BucketCounts: []uint64{0, 0, 0, 0, 0, 0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 				Sum:          int64(size),
 				Min:          metricdata.NewExtrema(int64(size / int(expectedBatchesNum))),
 				Max:          metricdata.NewExtrema(int64(size / int(expectedBatchesNum))),
@@ -868,14 +856,10 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	metadatatest.AssertEqualProcessorBatchBatchSendSizeBytes(t, tel,
 		[]metricdata.HistogramDataPoint[int64]{
 			{
-				Attributes: attribute.NewSet(attribute.String("processor", "batch")),
-				Count:      uint64(expectedBatchesNum),
-				Bounds: []float64{
-					10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
-					100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
-					1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000,
-				},
-				BucketCounts: []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+				Attributes:   attribute.NewSet(attribute.String("processor", "batch")),
+				Count:        uint64(expectedBatchesNum),
+				Bounds:       []float64{128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576, 2097152, 4194304, 8388608, 16777216},
+				BucketCounts: []uint64{0, 0, 0, 0, 0, 0, uint64(expectedBatchesNum), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 				Sum:          int64(size),
 				Min:          metricdata.NewExtrema(int64(size / int(expectedBatchesNum))),
 				Max:          metricdata.NewExtrema(int64(size / int(expectedBatchesNum))),

@@ -14,9 +14,6 @@
   <a href="https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/build-and-test.yml?query=branch%3Amain">
     <img alt="Build Status" src="https://img.shields.io/github/actions/workflow/status/open-telemetry/opentelemetry-collector/build-and-test.yml?branch=main&style=for-the-badge">
   </a>
-  <a href="https://goreportcard.com/report/github.com/open-telemetry/opentelemetry-collector">
-    <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/open-telemetry/opentelemetry-collector?style=for-the-badge">
-  </a>
   <a href="https://codecov.io/gh/open-telemetry/opentelemetry-collector/branch/main/">
     <img alt="Codecov Status" src="https://img.shields.io/codecov/c/github/open-telemetry/opentelemetry-collector?style=for-the-badge">
   </a>
@@ -166,7 +163,7 @@ Here is a list of community roles with current and previous members:
 
 ### Maintainers
 
-- [Alex Boten](https://github.com/codeboten), Honeycomb
+- [Alex Boten](https://github.com/codeboten), Grafana Labs
 - [Bogdan Drutu](https://github.com/bogdandrutu), Snowflake
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
@@ -176,7 +173,6 @@ For more information about the maintainer role, see the [community repository](h
 
 ### Approvers
 
-- [Andrew Wilkins](https://github.com/axw), Elastic
 - [Antoine Toulme](https://github.com/atoulme), Splunk
 - [Damien Mathieu](https://github.com/dmathieu), Elastic
 - [Jade Guiton](https://github.com/jade-guiton-dd), Datadog
@@ -202,6 +198,7 @@ For more information about the triager role, see the [community repository](http
 
 - [Alolita Sharma](https://github.com/alolita), Triager
 - [Andrew Hsu](https://github.com/andrewhsu), Triager
+- [Andrew Wilkins](https://github.com/axw), Approver
 - [Anthony Mirabella](https://github.com/Aneurysm9), Approver
 - [Chao Weng](https://github.com/sincejune), Triager
 - [Daniel Jaglowski](https://github.com/djaglowski), Approver
