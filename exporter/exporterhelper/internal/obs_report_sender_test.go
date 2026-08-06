@@ -260,19 +260,25 @@ func TestExportTraceDataOp(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
-	var expectedDataPoints []metricdata.DataPoint[int64]
+	// Successful sends record a zero value with the base attributes, so the
+	// metric is always present.
+	expectedDataPoints := []metricdata.DataPoint[int64]{
+		{
+			Attributes: attribute.NewSet(
+				attribute.String("exporter", exporterID.String())),
+			Value: 0,
+		},
+	}
 	if failedToSendSpans > 0 {
 		wantAttrs := attribute.NewSet(
 			attribute.String("exporter", exporterID.String()),
 			attribute.String(string(semconv.ErrorTypeKey), "_OTHER"),
 			attribute.Bool(ErrorPermanentKey, false),
 		)
-		expectedDataPoints = []metricdata.DataPoint[int64]{
-			{
-				Attributes: wantAttrs,
-				Value:      int64(failedToSendSpans),
-			},
-		}
+		expectedDataPoints = append(expectedDataPoints, metricdata.DataPoint[int64]{
+			Attributes: wantAttrs,
+			Value:      int64(failedToSendSpans),
+		})
 	}
 	metadatatest.AssertEqualExporterSendFailedSpans(t, tt, expectedDataPoints,
 		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -336,19 +342,25 @@ func TestExportMetricsOp(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
-	var expectedDataPoints []metricdata.DataPoint[int64]
+	// Successful sends record a zero value with the base attributes, so the
+	// metric is always present.
+	expectedDataPoints := []metricdata.DataPoint[int64]{
+		{
+			Attributes: attribute.NewSet(
+				attribute.String("exporter", exporterID.String())),
+			Value: 0,
+		},
+	}
 	if failedToSendMetricPoints > 0 {
 		wantAttrs := attribute.NewSet(
 			attribute.String("exporter", exporterID.String()),
 			attribute.String(string(semconv.ErrorTypeKey), "_OTHER"),
 			attribute.Bool(ErrorPermanentKey, false),
 		)
-		expectedDataPoints = []metricdata.DataPoint[int64]{
-			{
-				Attributes: wantAttrs,
-				Value:      int64(failedToSendMetricPoints),
-			},
-		}
+		expectedDataPoints = append(expectedDataPoints, metricdata.DataPoint[int64]{
+			Attributes: wantAttrs,
+			Value:      int64(failedToSendMetricPoints),
+		})
 	}
 	metadatatest.AssertEqualExporterSendFailedMetricPoints(t, tt, expectedDataPoints,
 		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -412,19 +424,25 @@ func TestExportLogsOp(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
-	var expectedDataPoints []metricdata.DataPoint[int64]
+	// Successful sends record a zero value with the base attributes, so the
+	// metric is always present.
+	expectedDataPoints := []metricdata.DataPoint[int64]{
+		{
+			Attributes: attribute.NewSet(
+				attribute.String("exporter", exporterID.String())),
+			Value: 0,
+		},
+	}
 	if failedToSendLogRecords > 0 {
 		wantAttrs := attribute.NewSet(
 			attribute.String("exporter", exporterID.String()),
 			attribute.String(string(semconv.ErrorTypeKey), "_OTHER"),
 			attribute.Bool(ErrorPermanentKey, false),
 		)
-		expectedDataPoints = []metricdata.DataPoint[int64]{
-			{
-				Attributes: wantAttrs,
-				Value:      int64(failedToSendLogRecords),
-			},
-		}
+		expectedDataPoints = append(expectedDataPoints, metricdata.DataPoint[int64]{
+			Attributes: wantAttrs,
+			Value:      int64(failedToSendLogRecords),
+		})
 	}
 	metadatatest.AssertEqualExporterSendFailedLogRecords(t, tt, expectedDataPoints,
 		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -610,19 +628,25 @@ func TestExportProfilesOp(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
-	var expectedDataPoints []metricdata.DataPoint[int64]
+	// Successful sends record a zero value with the base attributes, so the
+	// metric is always present.
+	expectedDataPoints := []metricdata.DataPoint[int64]{
+		{
+			Attributes: attribute.NewSet(
+				attribute.String("exporter", exporterID.String())),
+			Value: 0,
+		},
+	}
 	if failedToSendProfileRecords > 0 {
 		wantAttrs := attribute.NewSet(
 			attribute.String("exporter", exporterID.String()),
 			attribute.String(string(semconv.ErrorTypeKey), "_OTHER"),
 			attribute.Bool(ErrorPermanentKey, false),
 		)
-		expectedDataPoints = []metricdata.DataPoint[int64]{
-			{
-				Attributes: wantAttrs,
-				Value:      int64(failedToSendProfileRecords),
-			},
-		}
+		expectedDataPoints = append(expectedDataPoints, metricdata.DataPoint[int64]{
+			Attributes: wantAttrs,
+			Value:      int64(failedToSendProfileRecords),
+		})
 	}
 	metadatatest.AssertEqualExporterSendFailedProfileSamples(t, tt, expectedDataPoints,
 		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())

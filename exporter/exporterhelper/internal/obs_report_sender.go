@@ -139,9 +139,14 @@ func (ors *obsReportSender[K]) endOp(ctx context.Context, numRecords int, err er
 		ors.itemsSentInst.Add(ctx, numSent, ors.metricAttr)
 	}
 
-	if ors.itemsFailedInst != nil && numFailedToSend > 0 {
-		withFailedAttrs := metric.WithAttributeSet(extractFailureAttributes(err))
-		ors.itemsFailedInst.Add(ctx, numFailedToSend, ors.metricAttr, withFailedAttrs)
+	if ors.itemsFailedInst != nil {
+		// Record the counter even when the value is zero, so the metric is always
+		// present and does not disappear for exporters that have no failures.
+		opts := []metric.AddOption{ors.metricAttr}
+		if err != nil {
+			opts = append(opts, metric.WithAttributeSet(extractFailureAttributes(err)))
+		}
+		ors.itemsFailedInst.Add(ctx, numFailedToSend, opts...)
 	}
 
 	span := trace.SpanFromContext(ctx)
