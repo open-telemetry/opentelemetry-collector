@@ -34,12 +34,14 @@ func TestMergeProfilesInvalidInput(t *testing.T) {
 
 func TestMergeSplitProfiles(t *testing.T) {
 	tests := []struct {
-		name     string
-		szt      exporterhelper.RequestSizerType
-		maxSize  int
-		pr1      Request
-		pr2      Request
-		expected []Request
+		name               string
+		szt                exporterhelper.RequestSizerType
+		maxSize            int
+		pr1                Request
+		pr2                Request
+		expected           []Request
+		expectPartialError bool
+		validate           func(*testing.T, []Request)
 	}{
 		{
 			name:     "both_requests_empty",
@@ -139,12 +141,14 @@ func TestMergeSplitProfiles(t *testing.T) {
 
 func TestMergeSplitProfilesBasedOnByteSize(t *testing.T) {
 	tests := []struct {
-		name     string
-		szt      exporterhelper.RequestSizerType
-		maxSize  int
-		pr1      Request
-		pr2      Request
-		expected []Request
+		name               string
+		szt                exporterhelper.RequestSizerType
+		maxSize            int
+		pr1                Request
+		pr2                Request
+		expected           []Request
+		expectPartialError bool
+		validate           func(*testing.T, []Request)
 	}{
 		{
 			name:     "both_requests_empty",
@@ -289,11 +293,55 @@ func TestMergeSplitProfilesBasedOnByteSize(t *testing.T) {
 				newProfilesRequest(testdata.GenerateProfiles(7)),
 			},
 		},
+		{
+			name:    "unsplittable_large_profile",
+			szt:     exporterhelper.RequestSizerTypeBytes,
+			maxSize: 10,
+			pr1: newProfilesRequest(func() pprofile.Profiles {
+				pd := testdata.GenerateProfiles(1)
+				pd.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).OriginalPayload().FromRaw(make([]byte, 100))
+				return pd
+			}()),
+			pr2:                nil,
+			expected:           []Request{},
+			expectPartialError: true,
+			validate: func(t *testing.T, res []Request) {
+				require.Empty(t, res)
+			},
+		},
+		{
+			name:    "unsplittable_then_splittable_profile",
+			szt:     exporterhelper.RequestSizerTypeBytes,
+			maxSize: 1000,
+			pr1: newProfilesRequest(func() pprofile.Profiles {
+				pd := testdata.GenerateProfiles(2)
+				pd.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).OriginalPayload().FromRaw(make([]byte, 1001))
+				pd.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(1).OriginalPayload().FromRaw(make([]byte, 10))
+				return pd
+			}()),
+			pr2:                nil,
+			expected:           nil,
+			expectPartialError: true,
+			validate: func(t *testing.T, res []Request) {
+				require.Len(t, res, 1)
+				profiles := res[0].(*profilesRequest).pd
+				require.LessOrEqual(t, profilesMarshaler.ProfilesSize(profiles), 1000)
+				assert.Len(t, profiles.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).OriginalPayload().AsRaw(), 10)
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.pr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.pr2)
-			require.NoError(t, err)
+			if tt.expectPartialError {
+				require.ErrorContains(t, err, "one sample size is greater than max size, dropping items:")
+			} else {
+				require.NoError(t, err)
+			}
+			if tt.validate != nil {
+				tt.validate(t, res)
+				return
+			}
 			require.Len(t, res, len(tt.expected))
 			for i, r := range res {
 				assert.Equal(t, tt.expected[i].(*profilesRequest).pd.SampleCount(), r.(*profilesRequest).pd.SampleCount(), i)
@@ -309,6 +357,21 @@ func TestExtractProfiles(t *testing.T) {
 		assert.Equal(t, i, extractedProfiles.SampleCount())
 		assert.Equal(t, 10-i, ld.SampleCount())
 	}
+}
+
+func TestDropFirstRemainingProfile(t *testing.T) {
+	t.Run("drops_first_profile", func(t *testing.T) {
+		pd := testdata.GenerateProfiles(2)
+		require.Equal(t, 1, dropFirstRemainingProfile(pd))
+		assert.Equal(t, 1, pd.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().Len())
+	})
+
+	t.Run("zero_sample_profile_counts_as_one_drop", func(t *testing.T) {
+		pd := pprofile.NewProfiles()
+		pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+		require.Equal(t, 1, dropFirstRemainingProfile(pd))
+		assert.Equal(t, 0, pd.ResourceProfiles().Len())
+	})
 }
 
 func TestMergeSplitManySmallProfiles(t *testing.T) {
@@ -375,5 +438,19 @@ func BenchmarkSplittingBasedOnByteSizeHugeProfiles(b *testing.B) {
 		)
 		merged = append(merged[0:len(merged)-1], res...)
 		assert.Len(b, merged, 10)
+	}
+}
+
+func BenchmarkSplittingBasedOnByteSizeProfilesWithOversizedSample(b *testing.B) {
+	b.ReportAllocs()
+	for b.Loop() {
+		req := newProfilesRequest(func() pprofile.Profiles {
+			pd := testdata.GenerateProfiles(10)
+			pd.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).OriginalPayload().FromRaw(make([]byte, 1001))
+			return pd
+		}())
+		res, err := req.MergeSplit(context.Background(), 1000, exporterhelper.RequestSizerTypeBytes, nil)
+		require.ErrorContains(b, err, "one sample size is greater than max size, dropping items:")
+		require.Len(b, res, 1)
 	}
 }

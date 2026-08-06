@@ -51,15 +51,30 @@ func (req *logsRequest) mergeTo(dst *logsRequest, sz sizer.LogsSizer) {
 
 func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer) ([]request.Request, error) {
 	var res []request.Request
-	for req.size(sz) > maxSize {
+	droppedItems := 0
+	for req.ld.LogRecordCount() > 0 && req.size(sz) > maxSize {
 		ld, removedSize := extractLogs(req.ld, maxSize, sz)
 		if ld.LogRecordCount() == 0 {
-			return res, fmt.Errorf("one log record size is greater than max size, dropping items: %d", req.ld.LogRecordCount())
+			// Nothing fit into an empty destination batch, so the next remaining log record is
+			// individually larger than maxSize. Drop that single offending record and continue
+			// splitting the rest so one bad item does not block the whole request.
+			dropped := dropFirstRemainingLogRecord(req.ld)
+			if dropped == 0 {
+				return res, errors.New("failed to drop oversized log record")
+			}
+			droppedItems += dropped
+			req.setCachedSize(-1)
+			continue
 		}
 		req.setCachedSize(req.size(sz) - removedSize)
 		res = append(res, newLogsRequest(ld))
 	}
-	res = append(res, req)
+	if req.ld.LogRecordCount() > 0 || (len(res) == 0 && droppedItems == 0) {
+		res = append(res, req)
+	}
+	if droppedItems > 0 {
+		return res, fmt.Errorf("one log record size is greater than max size, dropping items: %d", droppedItems)
+	}
 	return res, nil
 }
 
@@ -162,4 +177,22 @@ func extractScopeLogs(srcSL plog.ScopeLogs, capacity int, sz sizer.LogsSizer) (p
 		return true
 	})
 	return destSL, removedSize
+}
+
+func dropFirstRemainingLogRecord(ld plog.Logs) int {
+	dropped := 0
+	ld.ResourceLogs().RemoveIf(func(srcRL plog.ResourceLogs) bool {
+		srcRL.ScopeLogs().RemoveIf(func(srcSL plog.ScopeLogs) bool {
+			srcSL.LogRecords().RemoveIf(func(_ plog.LogRecord) bool {
+				if dropped > 0 {
+					return false
+				}
+				dropped = 1
+				return true
+			})
+			return srcSL.LogRecords().Len() == 0
+		})
+		return srcRL.ScopeLogs().Len() == 0
+	})
+	return dropped
 }
