@@ -23,7 +23,7 @@ import (
 // appropriate for that component, most easily by setting the operations of a
 // FuncObsMetrics.
 type QueueBatchMetrics interface {
-	queue.QueueBatchMetrics
+	queue.QueueMetrics
 
 	RecordInFlight(ctx context.Context, delta int64)
 	RecordSent(ctx context.Context, items int64)

@@ -52,17 +52,7 @@ func WithAttrs(attrs ...attribute.KeyValue) Option {
 	return internal.WithAttributes(attrs...)
 }
 
-// WithObsMetrics overrides the metrics emitted by exporterhelper. Components
-// that reuse exporterhelper can use this option to report component-oriented
-// instruments for exporterhelper-defined observation events.
-//
-// Exporterhelper controls when each operation is called. It takes over
-// shutting obsMetrics down once the constructor returns successfully; if the
-// constructor returns an error, the caller remains responsible for shutting
-// obsMetrics down. Callers must not share one instance between components.
-//
-// Note that only metrics are redirected: spans and log messages emitted by
-// exporterhelper remain exporter-oriented.
-func WithObsMetrics(obsMetrics ObsMetrics) Option {
-	return internal.WithObsMetrics(obsMetrics)
+// WithQueueBatchMetrics overrides the metrics emitted by exporterhelper.
+func WithQueueBatchMetrics(obsMetrics ObsMetrics) Option {
+	return internal.WithQueueBatchMetrics(obsMetrics)
 }
