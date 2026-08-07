@@ -1,0 +1,15 @@
+change_type: bug_fix
+
+component: processor/batch
+
+note: Preserve metric metadata when a metric is split across a `send_batch_max_size` boundary
+
+issues: [15744]
+
+subtext: |
+  `splitMetric` rebuilt the destination metric from its name, description and unit only, dropping
+  `Metric.Metadata()`. A metric whose data point count exceeded the space left in the batch lost its
+  metadata on every chunk except the trailing remainder, which is moved rather than rebuilt. This
+  silently discarded the `prometheus.type` metadata set by the Prometheus receiver.
+
+change_logs: [user]

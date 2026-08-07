@@ -329,3 +329,21 @@ func TestSplitMetricsPreserveSchemaURLOnPartialSplit(t *testing.T) {
 	assert.Equal(t, resourceSchemaURL, split.ResourceMetrics().At(0).SchemaUrl())
 	assert.Equal(t, scopeSchemaURL, split.ResourceMetrics().At(0).ScopeMetrics().At(0).SchemaUrl())
 }
+
+func TestSplitMetricsPreserveMetadataOnPartialSplit(t *testing.T) {
+	md := testdata.GenerateMetrics(1)
+	metric := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+	metric.Metadata().PutStr("prometheus.type", "gauge")
+
+	// splitSize is below the metric's data point count, so the metric is split
+	// into a new one instead of being moved as a whole.
+	splitSize := 1
+	assert.Greater(t, metricDPC(metric), splitSize)
+
+	split := splitMetrics(splitSize, md)
+
+	splitMetric := split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+	assert.Equal(t, map[string]any{"prometheus.type": "gauge"}, splitMetric.Metadata().AsRaw())
+	// The data points left behind in the source keep their metadata too.
+	assert.Equal(t, map[string]any{"prometheus.type": "gauge"}, metric.Metadata().AsRaw())
+}

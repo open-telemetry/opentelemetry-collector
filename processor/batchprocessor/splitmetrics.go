@@ -120,6 +120,7 @@ func splitMetric(ms, dest pmetric.Metric, size int) (int, bool) {
 	dest.SetName(ms.Name())
 	dest.SetDescription(ms.Description())
 	dest.SetUnit(ms.Unit())
+	ms.Metadata().CopyTo(dest.Metadata())
 
 	switch ms.Type() {
 	case pmetric.MetricTypeGauge:
