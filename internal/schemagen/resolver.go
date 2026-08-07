@@ -7,11 +7,6 @@ import (
 	"fmt"
 )
 
-const (
-	// goDurationPattern matches Go duration strings (e.g., "30s", "1h30m", "500ms")
-	goDurationPattern = `^([0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$`
-)
-
 type Resolver struct {
 	loader Loader
 }
@@ -51,7 +46,7 @@ func (r *Resolver) ResolveSchema(src *ConfigsMetadata) (*ConfigsMetadata, error)
 
 func (r *Resolver) resolveSchema(root *ConfigsMetadata, target *ConfigMetadata, origin *Ref) error {
 	if len(target.Properties) > 0 {
-		target.Type = "object"
+		target.Type = ObjectType
 	}
 
 	if target.Ref != "" {
@@ -76,21 +71,13 @@ func (r *Resolver) resolveSchema(root *ConfigsMetadata, target *ConfigMetadata, 
 		}
 	}
 
-	if target.AdditionalProperties != nil {
-		if err := r.resolveSchema(root, target.AdditionalProperties, origin); err != nil {
+	if target.Values != nil {
+		if err := r.resolveSchema(root, target.Values, origin); err != nil {
 			return err
 		}
 	}
 
-	if target.Items != nil {
-		if err := r.resolveSchema(root, target.Items, origin); err != nil {
-			return err
-		}
-	}
-
-	enhanceTimeTypes(target)
-
-	return nil
+	return expandExtendedType(target)
 }
 
 // resolveRef resolves a JSON Schema $ref, handling both internal and external references.
@@ -157,17 +144,4 @@ func (r *Resolver) loadExternalRef(ref *Ref) (*ConfigMetadata, error) {
 	}
 
 	return nil, fmt.Errorf("type %q not found in loaded schema for reference %s", ref.ConfigName(), ref)
-}
-
-func enhanceTimeTypes(md *ConfigMetadata) {
-	if md.Type == "string" {
-		switch md.Format {
-		case "duration":
-			md.Format = ""
-			md.GoType = "time.Duration"
-			md.Pattern = goDurationPattern
-		case "date-time":
-			md.GoType = "time.Time"
-		}
-	}
 }
