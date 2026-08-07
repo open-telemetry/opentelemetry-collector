@@ -60,6 +60,8 @@ func (tracesEncoding) Unmarshal(bytes []byte) (context.Context, request.Request,
 		traces, err = tracesUnmarshaler.UnmarshalTraces(bytes)
 	}
 	if err == nil {
+		// Rehydrated data from Unmarshal has no upstream ownership claim yet.
+		// This marks the bit so a downstream refconsumer boundary won't also claim/release this object's ref.
 		pref.MarkPipelineOwnedTraces(traces)
 	}
 	return ctx, newTracesRequest(traces), err
