@@ -4,7 +4,7 @@ component: processor/batch
 
 note: Preserve metric metadata when a metric is split across a `send_batch_max_size` boundary
 
-issues: []
+issues: [15744]
 
 subtext: |
   `splitMetric` rebuilt the destination metric from its name, description and unit only, dropping
