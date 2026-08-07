@@ -64,7 +64,6 @@ You can run `cd cmd/mdatagen && $(GOCMD) install .` to install the `mdatagen` to
 
 This is used for skipping validation and configuring project-level hooks.
 
-
 ### Component Config Documentation
 
 The metadata generator supports automatic generation of configuration schemas for components.
