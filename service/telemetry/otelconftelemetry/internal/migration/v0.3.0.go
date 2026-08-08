@@ -14,7 +14,6 @@ import (
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 type TracesConfigV030 struct {
@@ -267,7 +266,7 @@ type ResourceConfigV030 struct {
 	LegacyAttributes     map[string]any                           `mapstructure:",remain"`
 }
 
-var _ xconfmap.Validator = (*ResourceConfigV030)(nil)
+var _ confmap.Validator = (*ResourceConfigV030)(nil)
 
 func (cfg *ResourceConfigV030) Validate() error {
 	// resource::attributes_list isn't currently supported by otelconf, so we have to put the default values under resource::attributes.

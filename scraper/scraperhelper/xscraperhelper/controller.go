@@ -109,7 +109,8 @@ func NewProfilesController(cfg *scraperhelper.ControllerConfig,
 	return controller.NewController[xscraper.Profiles](
 		cfg, rSet, scrapers, func(ctx context.Context, c *controller.Controller[xscraper.Profiles]) error {
 			return scrapeProfiles(ctx, c, nextConsumer)
-		}, co.tickerCh)
+		}, co.tickerCh,
+	)
 }
 
 func getOptions(options []ControllerOption) controllerOptions {
