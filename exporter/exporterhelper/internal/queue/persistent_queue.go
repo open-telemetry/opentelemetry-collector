@@ -250,7 +250,7 @@ func (pq *persistentQueue[T]) Shutdown(ctx context.Context) error {
 
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
-	// Mark this queue as stopped, so consumer don't start any more work.
+	// Mark this queue as stopped, so consumers don't start any more work.
 	pq.stopped = true
 	pq.hasMoreElements.Broadcast()
 	return pq.unrefClient(ctx)
@@ -345,7 +345,7 @@ func (pq *persistentQueue[T]) Read(ctx context.Context) (context.Context, T, Don
 			pq.hasMoreSpace.Signal()
 		}
 
-		// TODO: Need to change the Queue interface to return an error to allow distinguish between shutdown and context canceled.
+		// TODO: Need to change the Queue interface to return an error to allow distinguishing between shutdown and context canceled.
 		//  Until then use the sync.Cond.
 		pq.hasMoreElements.Wait()
 	}

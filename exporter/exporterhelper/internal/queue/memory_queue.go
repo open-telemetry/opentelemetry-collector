@@ -152,7 +152,7 @@ func (mq *memoryQueue[T]) Read(context.Context) (context.Context, T, Done, bool)
 			return context.Background(), el, nil, false
 		}
 
-		// TODO: Need to change the Queue interface to return an error to allow distinguish between shutdown and context canceled.
+		// TODO: Need to change the Queue interface to return an error to allow distinguishing between shutdown and context canceled.
 		//  Until then use the sync.Cond.
 		mq.hasMoreElements.Wait()
 	}

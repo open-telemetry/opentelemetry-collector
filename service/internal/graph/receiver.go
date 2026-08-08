@@ -92,7 +92,7 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 		n.Component, err = builder.CreateProfiles(ctx, set,
 			obsconsumer.NewProfiles(fanoutconsumer.NewProfiles(consumers), producedSettings))
 	default:
-		return fmt.Errorf("error creating receiver %q for data type %q is not supported", set.ID, n.pipelineType)
+		return fmt.Errorf("failed to create receiver %q: data type %q is not supported", set.ID, n.pipelineType)
 	}
 	if err != nil {
 		return fmt.Errorf("failed to create %q receiver for data type %q: %w", set.ID, n.pipelineType, err)

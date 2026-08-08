@@ -98,7 +98,7 @@ func (n *exporterNode) buildComponent(
 		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), consumedSettings)
 		n.consumer = refconsumer.NewProfiles(n.consumer.(xconsumer.Profiles))
 	default:
-		return fmt.Errorf("error creating exporter %q for data type %q is not supported", set.ID, n.pipelineType)
+		return fmt.Errorf("failed to create exporter %q: data type %q is not supported", set.ID, n.pipelineType)
 	}
 	return nil
 }
