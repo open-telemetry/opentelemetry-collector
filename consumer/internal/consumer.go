@@ -11,6 +11,18 @@ type Capabilities struct {
 	// does not modify the data it MUST set this flag to false. If the processor creates
 	// a copy of the data before modifying then this flag can be safely set to false.
 	MutatesData bool
+
+	// HasReceivedData is set to true if the component has received the data from the upstream
+	// and has taken over the responsibility to move them forward without blocking the upstream.
+	// Components that process data asynchronously (e.g. batch processor, queue-backed exporters)
+	// MUST set this flag to true, as they accept data immediately but process it asynchronously.
+	// Synchronous components that block the upstream until processing is complete MUST NOT set
+	// this flag (or set it to false).
+	//
+	// This flag is used to validate expectations about the pipeline behavior:
+	// - Ensure a collector is running synchronously end-to-end (for error back-propagation).
+	// - Identify components which may be adding substantial latency or burying errors.
+	HasReceivedData bool
 }
 
 type BaseConsumer interface {
