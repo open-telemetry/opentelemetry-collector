@@ -256,7 +256,8 @@ func TestExportTraceDataOp(t *testing.T) {
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String("exporter", exporterID.String())),
+					attribute.String("exporter", exporterID.String()),
+				),
 				Value: int64(sentSpans),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -331,7 +332,8 @@ func TestExportMetricsOp(t *testing.T) {
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String("exporter", exporterID.String())),
+					attribute.String("exporter", exporterID.String()),
+				),
 				Value: int64(sentMetricPoints),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -406,7 +408,8 @@ func TestExportLogsOp(t *testing.T) {
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String("exporter", exporterID.String())),
+					attribute.String("exporter", exporterID.String()),
+				),
 				Value: int64(sentLogRecords),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -603,7 +606,8 @@ func TestExportProfilesOp(t *testing.T) {
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String("exporter", exporterID.String())),
+					attribute.String("exporter", exporterID.String()),
+				),
 				Value: int64(sentProfileRecords),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())

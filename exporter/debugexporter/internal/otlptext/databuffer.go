@@ -106,7 +106,8 @@ func (b *dataBuffer) logInstrumentationScope(il pcommon.InstrumentationScope) {
 	b.logEntry(
 		"InstrumentationScope %s %s",
 		il.Name(),
-		il.Version())
+		il.Version(),
+	)
 	b.logAttributes("InstrumentationScope attributes", il.Attributes())
 }
 
@@ -361,7 +362,7 @@ func (b *dataBuffer) logProfileSamples(ss pprofile.SampleSlice, dic pprofile.Pro
 				if keyIdx < dic.StringTable().Len() {
 					key = dic.StringTable().At(keyIdx)
 				}
-				b.logEntry("             -> %s: %s", key, attr.Value().AsRaw())
+				b.logEntry("             -> %s: %s", key, valueToString(attr.Value()))
 			}
 		}
 	}

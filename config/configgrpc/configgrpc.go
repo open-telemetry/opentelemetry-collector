@@ -32,6 +32,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/snappy"
+	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/zstd"
 	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -39,8 +41,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
-	"go.opentelemetry.io/collector/internal/grpccompression/snappy"
-	"go.opentelemetry.io/collector/internal/grpccompression/zstd"
 )
 
 var errMetadataNotFound = errors.New("no request metadata found")
@@ -65,13 +65,6 @@ func NewDefaultKeepaliveClientConfig() KeepaliveClientConfig {
 		Time:    time.Second * 10,
 		Timeout: time.Second * 10,
 	}
-}
-
-// BalancerName returns a string with default load balancer value
-//
-// Deprecated[v0.151.0]: Use the DefaultBalancerName constant instead.
-func BalancerName() string {
-	return DefaultBalancerName
 }
 
 var _ confmap.Validator = (*ClientConfig)(nil)
@@ -386,13 +379,16 @@ func (cc *ClientConfig) getGrpcDialOptions(
 	extraOpts []ToClientConnOption,
 ) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
+	var callOpts []grpc.CallOption
+	callOpts = append(callOpts, grpc.WaitForReady(cc.WaitForReady))
 	if cc.Compression.IsCompressed() {
 		cp, err := getGRPCCompressionName(cc.Compression)
 		if err != nil {
 			return nil, err
 		}
-		opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor(cp)))
+		callOpts = append(callOpts, grpc.UseCompressor(cp))
 	}
+	opts = append(opts, grpc.WithDefaultCallOptions(callOpts...))
 
 	tlsCfg, err := cc.TLS.LoadTLSConfig(ctx)
 	if err != nil {

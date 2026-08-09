@@ -32,7 +32,7 @@ import (
         {{- if $prop.Description }}
             // {{ $prop.Description }}
         {{- end }}
-        {{ $prop.GoStruct.FieldName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}"`
+        {{ $prop.GoStruct.FieldName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}{{ if shouldOmitEmpty . $propName $prop }},omitempty{{ end }}"`
     {{- end }}
     // prevent unkeyed literal initialization
     _ struct{}
@@ -108,7 +108,7 @@ import (
 {{ define "requiredValidator" -}}
     {{ $name := .FieldName | publicVar -}}
     {{- if .IsPointer }}
-        {{- if or (eq .FieldType "array") (eq .FieldType "map") }}
+        {{- if or (eq .FieldType "slice") (eq .FieldType "map") }}
         if c.{{ $name }} == nil || len(*c.{{ $name }}) == 0 {
             err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
         }
@@ -121,7 +121,7 @@ import (
         if c.{{ $name }} == "" {
             err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
         }
-    {{- else if eq .FieldType "array" }}
+    {{- else if eq .FieldType "slice" }}
         if len(c.{{ $name }}) == 0 {
             err = errors.Join(err, errors.New("{{ .FieldName }} is required"))
         }

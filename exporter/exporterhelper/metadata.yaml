@@ -11,6 +11,13 @@ status:
   stability:
     beta: [traces, metrics, logs]
 
+feature_gates:
+  - id: pkg.exporterhelper.queueBatchEnabled
+    description: "Enables exporterhelper batching by default in NewDefaultQueueConfig, as described in the batching migration RFC."
+    stage: alpha
+    from_version: 'v0.158.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/issues/15047'
+
 telemetry:
   metrics:
     exporter_dropped_log_records:
