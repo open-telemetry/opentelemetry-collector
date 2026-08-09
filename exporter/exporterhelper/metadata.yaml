@@ -56,6 +56,68 @@ telemetry:
         value_type: int
         monotonic: true
 
+    exporter_enqueue_size:
+      enabled: true
+      description: Number of units in the request added to the sending queue. Only available on detailed level.
+      stability: development
+      unit: "{unit}"
+      histogram:
+        value_type: int
+        bucket_boundaries:
+          [
+            10,
+            25,
+            50,
+            75,
+            100,
+            250,
+            500,
+            750,
+            1000,
+            2000,
+            3000,
+            4000,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            10000,
+            20000,
+            30000,
+            50000,
+            100000,
+          ]
+
+    exporter_enqueue_size_bytes:
+      enabled: true
+      description: Number of bytes in the request added to the sending queue. Only available on detailed level.
+      stability: development
+      unit: By
+      histogram:
+        value_type: int
+        bucket_boundaries:
+          [
+            128,
+            256,
+            512,
+            1024,
+            2048,
+            4096,
+            8192,
+            16384,
+            32768,
+            65536,
+            131072,
+            262144,
+            524288,
+            1048576,
+            2097152,
+            4194304,
+            8388608,
+            16777216,
+          ]
+
     exporter_in_flight_requests:
       enabled: true
       stability: development
@@ -67,7 +129,7 @@ telemetry:
 
     exporter_queue_batch_send_size:
       enabled: true
-      description: Number of units in the batch
+      description: Number of units in the batch. Only recorded when batching is enabled.
       stability: development
       unit: "{unit}"
       histogram:
@@ -100,7 +162,7 @@ telemetry:
 
     exporter_queue_batch_send_size_bytes:
       enabled: true
-      description: Number of bytes in batch that was sent. Only available on detailed level.
+      description: Number of bytes in batch that was sent. Only recorded when batching is enabled. Only available on detailed level.
       stability: development
       unit: By
       histogram:
