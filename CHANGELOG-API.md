@@ -7,6 +7,26 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.64.0/v0.158.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/xconfmap`: Remove `Validator` and `Validate` (#15613)
+  Use the equivalent symbols in `confmap` instead.
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Add first-class extended type aliases (int64, duration, opaque_string, id, opaque_map, etc.) to config schemas in metadata.yaml (#15513)
+  Authors can now write `type: int64`, `type: duration`, `type: opaque_string`, `type: id`, or
+  `type: opaque_map` directly as a property type in the `config:` section of `metadata.yaml`.
+  Each alias expands to the correct JSON Schema representation and Go type automatically.
+  Existing uses of standard JSON Schema types, `format:`, and `x-customType:` remain supported
+  without migration.
+  
+- `pkg/config/configgrpc`: Mark configgrpc as stable (#9477)
+
+<!-- previous-version -->
+
 ## v1.63.0/v0.157.0
 
 ### 🛑 Breaking changes 🛑
