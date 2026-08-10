@@ -4,6 +4,7 @@
 package otelcol
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,10 +13,14 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver"
@@ -131,3 +136,17 @@ func TestMakeFactoryMap(t *testing.T) {
 		})
 	}
 }
+
+// nopComponent is a minimal component that does nothing.
+type nopComponent struct {
+	component.StartFunc
+	component.ShutdownFunc
+}
+
+func (n *nopComponent) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{}
+}
+
+func (n *nopComponent) ConsumeTraces(context.Context, ptrace.Traces) error    { return nil }
+func (n *nopComponent) ConsumeMetrics(context.Context, pmetric.Metrics) error { return nil }
+func (n *nopComponent) ConsumeLogs(context.Context, plog.Logs) error          { return nil }
