@@ -115,7 +115,9 @@ func (ors *obsReportSender[K]) Send(ctx context.Context, req K) error {
 	items := req.ItemsCount()
 	if ors.batchEnabled {
 		ors.sendSizeInst.Record(c, int64(items), ors.metricAttr)
-		ors.sendSizeBytesInst.Record(c, int64(req.BytesSize()), ors.metricAttr)
+		if ors.sendSizeBytesInst.Enabled(c) {
+			ors.sendSizeBytesInst.Record(c, int64(req.BytesSize()), ors.metricAttr)
+		}
 	}
 	// Forward the data to the next consumer (this pusher is the next).
 	err := ors.next.Send(c, req)

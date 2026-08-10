@@ -64,7 +64,7 @@ Number of export requests currently in-flight (including retry backoff).
 
 ### otelcol_exporter_queue_batch_send_size
 
-Number of units in the batch. Only recorded when batching is enabled.
+Number of units in the batch. Only recorded when batching is enabled. Only available on detailed level.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |

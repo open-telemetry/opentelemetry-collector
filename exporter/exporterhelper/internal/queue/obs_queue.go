@@ -96,7 +96,9 @@ func (or *obsQueue[T]) Offer(ctx context.Context, req T) error {
 	numItems := req.ItemsCount()
 
 	or.enqueueSizeInst.Record(ctx, int64(numItems), or.metricAttr)
-	or.enqueueSizeBytesInst.Record(ctx, int64(req.BytesSize()), or.metricAttr)
+	if or.enqueueSizeBytesInst.Enabled(ctx) {
+		or.enqueueSizeBytesInst.Record(ctx, int64(req.BytesSize()), or.metricAttr)
+	}
 
 	ctx, span := or.tracer.Start(ctx, "exporter/enqueue")
 	err := or.Queue.Offer(ctx, req)

@@ -125,7 +125,7 @@ func AssertEqualExporterInFlightRequests(t *testing.T, tt *componenttest.Telemet
 func AssertEqualExporterQueueBatchSendSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_queue_batch_send_size",
-		Description: "Number of units in the batch. Only recorded when batching is enabled. [Development]",
+		Description: "Number of units in the batch. Only recorded when batching is enabled. Only available on detailed level. [Development]",
 		Unit:        "{unit}",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,
