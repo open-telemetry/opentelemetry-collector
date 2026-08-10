@@ -31,7 +31,8 @@ func TestNewFactory(t *testing.T) {
 	defaultCfg := struct{}{}
 	f := NewFactory(
 		testType,
-		func() component.Config { return &defaultCfg })
+		func() component.Config { return &defaultCfg },
+	)
 	assert.Equal(t, testType, f.Type())
 	assert.EqualValues(t, &defaultCfg, f.CreateDefaultConfig())
 	_, err := f.CreateProfiles(context.Background(), nopSettings(), &defaultCfg)
@@ -46,7 +47,8 @@ func TestNewFactoryWithOptions(t *testing.T) {
 		func() component.Config { return &defaultCfg },
 		WithLogs(createLogs, component.StabilityLevelAlpha),
 		WithMetrics(createMetrics, component.StabilityLevelAlpha),
-		WithProfiles(createProfiles, component.StabilityLevelDevelopment))
+		WithProfiles(createProfiles, component.StabilityLevelDevelopment),
+	)
 	assert.Equal(t, testType, f.Type())
 	assert.EqualValues(t, &defaultCfg, f.CreateDefaultConfig())
 

@@ -51,6 +51,8 @@ jobs:
           - processor
           - exporter-0
           - exporter-1
+          - exporter-2
+          - exporter-3
           - extension
           - connector
           - internal

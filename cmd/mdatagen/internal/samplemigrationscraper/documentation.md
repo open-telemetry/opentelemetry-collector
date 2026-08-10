@@ -55,7 +55,7 @@ Legacy Linux available memory estimate.
 
 #### Migration
 
-- Target Metric: `system.memory.linux.available`
+- Target Metric: `system.memory.linux.available@v1`
 - Disable Old Gate: `scraper.samplemigration.DontEmitV0SystemConventions`
 - Enable New Gate: `scraper.samplemigration.EmitV1SystemConventions`
 
@@ -86,13 +86,15 @@ Emitted Name: `system.cpu.utilization`
 | cpu.logical_number | The logical CPU number [0, n-1]. | Any Int | Recommended | - |
 | cpu.mode | The CPU mode for this data point. | Str: ``system``, ``user``, ``iowait`` | Recommended | - |
 
-### system.memory.linux.available
+### system.memory.linux.available@v1
 
 An estimate of how much memory is available without swapping. (Linux only)
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | false | Beta |
+
+Emitted Name: `system.memory.linux.available`
 
 ## Feature Gates
 

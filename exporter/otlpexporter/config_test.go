@@ -145,7 +145,7 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 		},
 		{
 			name:     "invalid_retry",
-			errorMsg: `'randomization_factor' must be within [0, 1]`,
+			errorMsg: `randomization_factor value must be greater than or equal to 0`,
 		},
 		{
 			name:     "invalid_tls",
