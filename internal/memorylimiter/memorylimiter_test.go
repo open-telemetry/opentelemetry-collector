@@ -170,9 +170,9 @@ func TestCheckMemLimitsHealthEvents(t *testing.T) {
 		expectRefusing bool
 	}{
 		{
-			name:           "below soft limit reports StatusOK",
+			name:           "below soft limit emits no event when already healthy",
 			memAllocMiB:    []uint64{30},
-			expectedEvents: []componentstatus.Status{componentstatus.StatusOK},
+			expectedEvents: []componentstatus.Status{},
 			expectRefusing: false,
 		},
 		{
