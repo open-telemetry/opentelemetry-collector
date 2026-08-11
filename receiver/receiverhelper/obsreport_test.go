@@ -109,7 +109,8 @@ func TestReceiveTraceDataOp(t *testing.T) {
 						{
 							Attributes: attribute.NewSet(
 								attribute.String(internal.ReceiverKey, receiverID.String()),
-								attribute.String(internal.TransportKey, transport)),
+								attribute.String(internal.TransportKey, transport),
+							),
 							Value: int64(acceptedSpans),
 						},
 					}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -118,7 +119,8 @@ func TestReceiveTraceDataOp(t *testing.T) {
 						{
 							Attributes: attribute.NewSet(
 								attribute.String(internal.ReceiverKey, receiverID.String()),
-								attribute.String(internal.TransportKey, transport)),
+								attribute.String(internal.TransportKey, transport),
+							),
 							Value: int64(refusedSpans),
 						},
 					}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -127,7 +129,8 @@ func TestReceiveTraceDataOp(t *testing.T) {
 						{
 							Attributes: attribute.NewSet(
 								attribute.String(internal.ReceiverKey, receiverID.String()),
-								attribute.String(internal.TransportKey, transport)),
+								attribute.String(internal.TransportKey, transport),
+							),
 							Value: int64(failedSpans),
 						},
 					}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -153,7 +156,8 @@ func TestReceiveTraceDataOp(t *testing.T) {
 							Attributes: attribute.NewSet(
 								attribute.String(internal.ReceiverKey, receiverID.String()),
 								attribute.String(internal.TransportKey, transport),
-								attribute.String("outcome", outcome)),
+								attribute.String("outcome", outcome),
+							),
 							Value: count,
 						})
 					}
@@ -231,7 +235,8 @@ func TestReceiveLogsOp(t *testing.T) {
 						{
 							Attributes: attribute.NewSet(
 								attribute.String(internal.ReceiverKey, receiverID.String()),
-								attribute.String(internal.TransportKey, transport)),
+								attribute.String(internal.TransportKey, transport),
+							),
 							Value: int64(acceptedLogRecords),
 						},
 					}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -240,7 +245,8 @@ func TestReceiveLogsOp(t *testing.T) {
 						{
 							Attributes: attribute.NewSet(
 								attribute.String(internal.ReceiverKey, receiverID.String()),
-								attribute.String(internal.TransportKey, transport)),
+								attribute.String(internal.TransportKey, transport),
+							),
 							Value: int64(refusedLogRecords),
 						},
 					}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -249,7 +255,8 @@ func TestReceiveLogsOp(t *testing.T) {
 						{
 							Attributes: attribute.NewSet(
 								attribute.String(internal.ReceiverKey, receiverID.String()),
-								attribute.String(internal.TransportKey, transport)),
+								attribute.String(internal.TransportKey, transport),
+							),
 							Value: int64(failedLogRecords),
 						},
 					}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -275,7 +282,8 @@ func TestReceiveLogsOp(t *testing.T) {
 							Attributes: attribute.NewSet(
 								attribute.String(internal.ReceiverKey, receiverID.String()),
 								attribute.String(internal.TransportKey, transport),
-								attribute.String("outcome", outcome)),
+								attribute.String("outcome", outcome),
+							),
 							Value: count,
 						})
 					}
@@ -355,7 +363,8 @@ func TestReceiveMetricsOp(t *testing.T) {
 						{
 							Attributes: attribute.NewSet(
 								attribute.String(internal.ReceiverKey, receiverID.String()),
-								attribute.String(internal.TransportKey, transport)),
+								attribute.String(internal.TransportKey, transport),
+							),
 							Value: int64(acceptedMetricPoints),
 						},
 					}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -364,7 +373,8 @@ func TestReceiveMetricsOp(t *testing.T) {
 						{
 							Attributes: attribute.NewSet(
 								attribute.String(internal.ReceiverKey, receiverID.String()),
-								attribute.String(internal.TransportKey, transport)),
+								attribute.String(internal.TransportKey, transport),
+							),
 							Value: int64(refusedMetricPoints),
 						},
 					}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -373,7 +383,8 @@ func TestReceiveMetricsOp(t *testing.T) {
 						{
 							Attributes: attribute.NewSet(
 								attribute.String(internal.ReceiverKey, receiverID.String()),
-								attribute.String(internal.TransportKey, transport)),
+								attribute.String(internal.TransportKey, transport),
+							),
 							Value: int64(failedMetricPoints),
 						},
 					}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -399,7 +410,8 @@ func TestReceiveMetricsOp(t *testing.T) {
 							Attributes: attribute.NewSet(
 								attribute.String(internal.ReceiverKey, receiverID.String()),
 								attribute.String(internal.TransportKey, transport),
-								attribute.String("outcome", outcome)),
+								attribute.String("outcome", outcome),
+							),
 							Value: count,
 						})
 					}
@@ -477,7 +489,8 @@ func TestReceiveProfilesOp(t *testing.T) {
 						{
 							Attributes: attribute.NewSet(
 								attribute.String(internal.ReceiverKey, receiverID.String()),
-								attribute.String(internal.TransportKey, transport)),
+								attribute.String(internal.TransportKey, transport),
+							),
 							Value: int64(acceptedSamples),
 						},
 					}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -486,7 +499,8 @@ func TestReceiveProfilesOp(t *testing.T) {
 						{
 							Attributes: attribute.NewSet(
 								attribute.String(internal.ReceiverKey, receiverID.String()),
-								attribute.String(internal.TransportKey, transport)),
+								attribute.String(internal.TransportKey, transport),
+							),
 							Value: int64(refusedSamples),
 						},
 					}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -495,7 +509,8 @@ func TestReceiveProfilesOp(t *testing.T) {
 						{
 							Attributes: attribute.NewSet(
 								attribute.String(internal.ReceiverKey, receiverID.String()),
-								attribute.String(internal.TransportKey, transport)),
+								attribute.String(internal.TransportKey, transport),
+							),
 							Value: int64(failedSamples),
 						},
 					}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -521,7 +536,8 @@ func TestReceiveProfilesOp(t *testing.T) {
 							Attributes: attribute.NewSet(
 								attribute.String(internal.ReceiverKey, receiverID.String()),
 								attribute.String(internal.TransportKey, transport),
-								attribute.String("outcome", outcome)),
+								attribute.String("outcome", outcome),
+							),
 							Value: count,
 						})
 					}
@@ -620,7 +636,8 @@ func TestCheckReceiverTracesViews(t *testing.T) {
 			{
 				Attributes: attribute.NewSet(
 					attribute.String(internal.ReceiverKey, receiverID.String()),
-					attribute.String(internal.TransportKey, transport)),
+					attribute.String(internal.TransportKey, transport),
+				),
 				Value: int64(7),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -629,7 +646,8 @@ func TestCheckReceiverTracesViews(t *testing.T) {
 			{
 				Attributes: attribute.NewSet(
 					attribute.String(internal.ReceiverKey, receiverID.String()),
-					attribute.String(internal.TransportKey, transport)),
+					attribute.String(internal.TransportKey, transport),
+				),
 				Value: int64(0),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -638,7 +656,8 @@ func TestCheckReceiverTracesViews(t *testing.T) {
 			{
 				Attributes: attribute.NewSet(
 					attribute.String(internal.ReceiverKey, receiverID.String()),
-					attribute.String(internal.TransportKey, transport)),
+					attribute.String(internal.TransportKey, transport),
+				),
 				Value: int64(0),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -663,7 +682,8 @@ func TestCheckReceiverMetricsViews(t *testing.T) {
 			{
 				Attributes: attribute.NewSet(
 					attribute.String(internal.ReceiverKey, receiverID.String()),
-					attribute.String(internal.TransportKey, transport)),
+					attribute.String(internal.TransportKey, transport),
+				),
 				Value: int64(7),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -672,7 +692,8 @@ func TestCheckReceiverMetricsViews(t *testing.T) {
 			{
 				Attributes: attribute.NewSet(
 					attribute.String(internal.ReceiverKey, receiverID.String()),
-					attribute.String(internal.TransportKey, transport)),
+					attribute.String(internal.TransportKey, transport),
+				),
 				Value: int64(0),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -681,7 +702,8 @@ func TestCheckReceiverMetricsViews(t *testing.T) {
 			{
 				Attributes: attribute.NewSet(
 					attribute.String(internal.ReceiverKey, receiverID.String()),
-					attribute.String(internal.TransportKey, transport)),
+					attribute.String(internal.TransportKey, transport),
+				),
 				Value: int64(0),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -706,7 +728,8 @@ func TestCheckReceiverLogsViews(t *testing.T) {
 			{
 				Attributes: attribute.NewSet(
 					attribute.String(internal.ReceiverKey, receiverID.String()),
-					attribute.String(internal.TransportKey, transport)),
+					attribute.String(internal.TransportKey, transport),
+				),
 				Value: int64(7),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -715,7 +738,8 @@ func TestCheckReceiverLogsViews(t *testing.T) {
 			{
 				Attributes: attribute.NewSet(
 					attribute.String(internal.ReceiverKey, receiverID.String()),
-					attribute.String(internal.TransportKey, transport)),
+					attribute.String(internal.TransportKey, transport),
+				),
 				Value: int64(0),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -724,7 +748,8 @@ func TestCheckReceiverLogsViews(t *testing.T) {
 			{
 				Attributes: attribute.NewSet(
 					attribute.String(internal.ReceiverKey, receiverID.String()),
-					attribute.String(internal.TransportKey, transport)),
+					attribute.String(internal.TransportKey, transport),
+				),
 				Value: int64(0),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -749,7 +774,8 @@ func TestCheckReceiverProfilesViews(t *testing.T) {
 			{
 				Attributes: attribute.NewSet(
 					attribute.String(internal.ReceiverKey, receiverID.String()),
-					attribute.String(internal.TransportKey, transport)),
+					attribute.String(internal.TransportKey, transport),
+				),
 				Value: int64(7),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -758,7 +784,8 @@ func TestCheckReceiverProfilesViews(t *testing.T) {
 			{
 				Attributes: attribute.NewSet(
 					attribute.String(internal.ReceiverKey, receiverID.String()),
-					attribute.String(internal.TransportKey, transport)),
+					attribute.String(internal.TransportKey, transport),
+				),
 				Value: int64(0),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -767,7 +794,8 @@ func TestCheckReceiverProfilesViews(t *testing.T) {
 			{
 				Attributes: attribute.NewSet(
 					attribute.String(internal.ReceiverKey, receiverID.String()),
-					attribute.String(internal.TransportKey, transport)),
+					attribute.String(internal.TransportKey, transport),
+				),
 				Value: int64(0),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())

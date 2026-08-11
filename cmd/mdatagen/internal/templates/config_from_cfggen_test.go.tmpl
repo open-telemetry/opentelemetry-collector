@@ -40,7 +40,7 @@ require.NotNil(t, cfg)
                 cfg.{{ $validator.FieldName | publicVar }} = nil
             {{- else if eq $validator.FieldType "map" }}
                 clear(cfg.{{ $validator.FieldName | publicVar }})
-            {{- else if eq $validator.FieldType "array" }}
+            {{- else if eq $validator.FieldType "slice" }}
                 cfg.{{ $validator.FieldName | publicVar }} = cfg.{{ $validator.FieldName | publicVar }}[:0]
             {{- else if eq $validator.FieldType "string" }}
                 cfg.{{ $validator.FieldName | publicVar }} = ""
