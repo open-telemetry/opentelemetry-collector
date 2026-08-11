@@ -8,7 +8,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/confmap v1.64.0
 	go.yaml.in/yaml/v3 v3.0.5
-	golang.org/x/mod v0.38.0
+	golang.org/x/mod v0.39.0
 	golang.org/x/tools v0.48.0
 )
 
