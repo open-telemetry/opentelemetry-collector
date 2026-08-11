@@ -8,9 +8,8 @@ status:
 
 exported_configs:
   port_number:
-    type: integer
+    type: int
     description: A port number to connect to.
-    x-customType: int32
     minimum: 1
     maximum: 65535
   sample_config:

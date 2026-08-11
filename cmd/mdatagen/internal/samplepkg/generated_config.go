@@ -7,7 +7,7 @@ import (
 )
 
 // PortNumber a port number to connect to.
-type PortNumber int32
+type PortNumber int
 
 type SampleConfig struct {
 	// The host name to connect to.

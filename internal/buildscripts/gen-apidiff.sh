@@ -42,7 +42,7 @@ if [ -z "$package" ]; then
   usage
 fi
 
-set -ex
+set -e
 
 # Create temp dir for generated files.
 # Source: https://unix.stackexchange.com/a/84980
@@ -67,4 +67,5 @@ if [ $dry_run = false ]; then
   mkdir -p "$output_dir/$package" && \
   cp "$tmp_dir/$package/apidiff.state" \
      "$output_dir/$package"
+  echo "Wrote snapshot to $output_dir/$package"
 fi
