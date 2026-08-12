@@ -128,17 +128,17 @@ var MetricsInfo = metricsInfo{
 		Name:       "system.cpu.utilization",
 		Attributes: []string{"cpu.logical_number", "cpu.mode"},
 	},
-	SystemMemoryLinuxAvailable: metricInfo{
+	SystemMemoryLinuxAvailableV1: metricInfo{
 		Name: "system.memory.linux.available",
 	},
 }
 
 type metricsInfo struct {
-	LinuxMemoryAvailable       metricInfo
-	SystemCPUFoo               metricInfo
-	SystemCPUUtilization       metricInfo
-	SystemCPUUtilizationV1     metricInfo
-	SystemMemoryLinuxAvailable metricInfo
+	LinuxMemoryAvailable         metricInfo
+	SystemCPUFoo                 metricInfo
+	SystemCPUUtilization         metricInfo
+	SystemCPUUtilizationV1       metricInfo
+	SystemMemoryLinuxAvailableV1 metricInfo
 }
 
 type metricInfo struct {
@@ -438,14 +438,14 @@ func newMetricSystemCPUUtilizationV1(cfg SystemCPUUtilizationV1MetricConfig) met
 	return m
 }
 
-type metricSystemMemoryLinuxAvailable struct {
-	data     pmetric.Metric                         // data buffer for generated metric.
-	config   SystemMemoryLinuxAvailableMetricConfig // metric config provided by user.
-	capacity int                                    // max observed number of data points added to the metric.
+type metricSystemMemoryLinuxAvailableV1 struct {
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   SystemMemoryLinuxAvailableV1MetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
 }
 
-// init fills system.memory.linux.available metric with initial data.
-func (m *metricSystemMemoryLinuxAvailable) init() {
+// init fills system.memory.linux.available@v1 metric with initial data.
+func (m *metricSystemMemoryLinuxAvailableV1) init() {
 	m.data.SetName("system.memory.linux.available")
 	m.data.SetDescription("An estimate of how much memory is available without swapping. (Linux only)")
 	m.data.SetUnit("By")
@@ -454,7 +454,7 @@ func (m *metricSystemMemoryLinuxAvailable) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
-func (m *metricSystemMemoryLinuxAvailable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricSystemMemoryLinuxAvailableV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -465,14 +465,14 @@ func (m *metricSystemMemoryLinuxAvailable) recordDataPoint(start pcommon.Timesta
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSystemMemoryLinuxAvailable) updateCapacity() {
+func (m *metricSystemMemoryLinuxAvailableV1) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSystemMemoryLinuxAvailable) emit(metrics pmetric.MetricSlice) {
+func (m *metricSystemMemoryLinuxAvailableV1) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -480,8 +480,8 @@ func (m *metricSystemMemoryLinuxAvailable) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemMemoryLinuxAvailable(cfg SystemMemoryLinuxAvailableMetricConfig) metricSystemMemoryLinuxAvailable {
-	m := metricSystemMemoryLinuxAvailable{config: cfg}
+func newMetricSystemMemoryLinuxAvailableV1(cfg SystemMemoryLinuxAvailableV1MetricConfig) metricSystemMemoryLinuxAvailableV1 {
+	m := metricSystemMemoryLinuxAvailableV1{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -493,16 +493,16 @@ func newMetricSystemMemoryLinuxAvailable(cfg SystemMemoryLinuxAvailableMetricCon
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                           MetricsBuilderConfig // config of the metrics builder.
-	startTime                        pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                  int                  // maximum observed number of metrics per resource.
-	metricsBuffer                    pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                        component.BuildInfo  // contains version information.
-	metricLinuxMemoryAvailable       metricLinuxMemoryAvailable
-	metricSystemCPUFoo               metricSystemCPUFoo
-	metricSystemCPUUtilization       metricSystemCPUUtilization
-	metricSystemCPUUtilizationV1     metricSystemCPUUtilizationV1
-	metricSystemMemoryLinuxAvailable metricSystemMemoryLinuxAvailable
+	config                             MetricsBuilderConfig // config of the metrics builder.
+	startTime                          pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                    int                  // maximum observed number of metrics per resource.
+	metricsBuffer                      pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                          component.BuildInfo  // contains version information.
+	metricLinuxMemoryAvailable         metricLinuxMemoryAvailable
+	metricSystemCPUFoo                 metricSystemCPUFoo
+	metricSystemCPUUtilization         metricSystemCPUUtilization
+	metricSystemCPUUtilizationV1       metricSystemCPUUtilizationV1
+	metricSystemMemoryLinuxAvailableV1 metricSystemMemoryLinuxAvailableV1
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -524,40 +524,32 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                           mbc,
-		startTime:                        pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                    pmetric.NewMetrics(),
-		buildInfo:                        settings.BuildInfo,
-		metricLinuxMemoryAvailable:       newMetricLinuxMemoryAvailable(mbc.Metrics.LinuxMemoryAvailable),
-		metricSystemCPUFoo:               newMetricSystemCPUFoo(mbc.Metrics.SystemCPUFoo),
-		metricSystemCPUUtilization:       newMetricSystemCPUUtilization(mbc.Metrics.SystemCPUUtilization),
-		metricSystemCPUUtilizationV1:     newMetricSystemCPUUtilizationV1(mbc.Metrics.SystemCPUUtilizationV1),
-		metricSystemMemoryLinuxAvailable: newMetricSystemMemoryLinuxAvailable(mbc.Metrics.SystemMemoryLinuxAvailable),
+		config:                             mbc,
+		startTime:                          pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                      pmetric.NewMetrics(),
+		buildInfo:                          settings.BuildInfo,
+		metricLinuxMemoryAvailable:         newMetricLinuxMemoryAvailable(mbc.Metrics.LinuxMemoryAvailable),
+		metricSystemCPUFoo:                 newMetricSystemCPUFoo(mbc.Metrics.SystemCPUFoo),
+		metricSystemCPUUtilization:         newMetricSystemCPUUtilization(mbc.Metrics.SystemCPUUtilization),
+		metricSystemCPUUtilizationV1:       newMetricSystemCPUUtilizationV1(mbc.Metrics.SystemCPUUtilizationV1),
+		metricSystemMemoryLinuxAvailableV1: newMetricSystemMemoryLinuxAvailableV1(mbc.Metrics.SystemMemoryLinuxAvailableV1),
 	}
 	if ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() {
-		if mb.metricLinuxMemoryAvailable.config.Enabled && mb.metricSystemMemoryLinuxAvailable.config.Enabled {
-			var disable bool
-			if mb.metricLinuxMemoryAvailable.data.Type() != mb.metricSystemMemoryLinuxAvailable.data.Type() {
-				// Disable legacy metric if legacy and latest have same name but different types
-				disable = true
-				settings.Logger.Warn("[WARNING] Legacy metric `linux.memory.available` disabled: same emitted name as `system.memory.linux.available` with different type; only latest will be emitted")
-			}
-			if !slices.Equal(MetricsInfo.LinuxMemoryAvailable.Attributes, MetricsInfo.SystemMemoryLinuxAvailable.Attributes) {
-				// Disable legacy metric if legacy and latest have same name but different attributes
-				// The latest metric will emit both attribute sets during migration
-				disable = true
-				settings.Logger.Warn("[WARNING] Legacy metric `linux.memory.available` disabled: same emitted name as `system.memory.linux.available` with different attributes; only latest will be emitted with combined attributes",
-					zap.Strings("legacy_attributes", MetricsInfo.LinuxMemoryAvailable.Attributes),
-					zap.Strings("latest_attributes", MetricsInfo.SystemMemoryLinuxAvailable.Attributes))
-			}
-			if disable {
-				mb.metricLinuxMemoryAvailable.config.Enabled = false
-			}
+		if mb.metricLinuxMemoryAvailable.config.Enabled && !mb.metricSystemMemoryLinuxAvailableV1.config.enabledSetByUser {
+			mb.metricSystemMemoryLinuxAvailableV1.config.Enabled = true
+			mb.metricSystemMemoryLinuxAvailableV1.data = pmetric.NewMetric()
+			mb.metricSystemMemoryLinuxAvailableV1.init()
 		}
-	} else {
-		if !ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() && mb.metricSystemMemoryLinuxAvailable.config.Enabled {
-			mb.metricSystemMemoryLinuxAvailable.config.Enabled = false
-			settings.Logger.Warn("[WARNING] metric `system.memory.linux.available` requires feature gate `scraper.samplemigration.EmitV1SystemConventions` to be enabled, metric has been disabled")
+	}
+	if !ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() && mb.metricSystemMemoryLinuxAvailableV1.config.Enabled {
+		mb.metricSystemMemoryLinuxAvailableV1.config.Enabled = false
+		settings.Logger.Warn("[WARNING] metric `system.memory.linux.available@v1` requires feature gate `scraper.samplemigration.EmitV1SystemConventions` to be enabled, metric has been disabled")
+	}
+	if ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		if mb.metricSystemCPUUtilization.config.Enabled && !mb.metricSystemCPUUtilizationV1.config.enabledSetByUser {
+			mb.metricSystemCPUUtilizationV1.config.Enabled = true
+			mb.metricSystemCPUUtilizationV1.data = pmetric.NewMetric()
+			mb.metricSystemCPUUtilizationV1.init()
 		}
 	}
 	if ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() {
@@ -581,7 +573,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 			}
 		}
 	} else {
-		if !ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() && mb.metricSystemCPUUtilizationV1.config.Enabled {
+		if mb.metricSystemCPUUtilizationV1.config.Enabled {
 			mb.metricSystemCPUUtilizationV1.config.Enabled = false
 			settings.Logger.Warn("[WARNING] metric `system.cpu.utilization@v1` requires feature gate `scraper.samplemigration.EmitV1SystemConventions` to be enabled, metric has been disabled")
 		}
@@ -654,7 +646,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSystemCPUFoo.emit(ils.Metrics())
 	mb.metricSystemCPUUtilization.emit(ils.Metrics())
 	mb.metricSystemCPUUtilizationV1.emit(ils.Metrics())
-	mb.metricSystemMemoryLinuxAvailable.emit(ils.Metrics())
+	mb.metricSystemMemoryLinuxAvailableV1.emit(ils.Metrics())
 
 	for _, op := range options {
 		op.apply(rm)
@@ -683,7 +675,7 @@ func (mb *MetricsBuilder) RecordLinuxMemoryAvailableDataPoint(ts pcommon.Timesta
 		mb.metricLinuxMemoryAvailable.recordDataPoint(mb.startTime, ts, val)
 	}
 	if ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() {
-		mb.metricSystemMemoryLinuxAvailable.recordDataPoint(mb.startTime, ts, val)
+		mb.metricSystemMemoryLinuxAvailableV1.recordDataPoint(mb.startTime, ts, val)
 	}
 }
 
@@ -701,11 +693,6 @@ func (mb *MetricsBuilder) RecordSystemCPUUtilizationDataPoint(ts pcommon.Timesta
 	if ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() {
 		mb.metricSystemCPUUtilizationV1.recordDataPoint(mb.startTime, ts, val, cpuLogicalNumberAttributeValue, cpuModeAttributeValue.String(), cpuAttributeValue, stateAttributeValue.String(), true)
 	}
-}
-
-// RecordSystemMemoryLinuxAvailableDataPoint adds a data point to system.memory.linux.available metric.
-func (mb *MetricsBuilder) RecordSystemMemoryLinuxAvailableDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSystemMemoryLinuxAvailable.recordDataPoint(mb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
