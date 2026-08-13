@@ -97,9 +97,25 @@ func TestLoadMetadata(t *testing.T) {
 							},
 							"timeout": {
 								Description: "Timeout for scraping metrics.",
-								Type:        "string",
-								Format:      "duration",
+								Type:        "duration",
 								Default:     "10s",
+							},
+							"max_results": {
+								Description: "Maximum number of results to return per scrape.",
+								Type:        "int64",
+								Default:     100,
+							},
+							"api_token": {
+								Description: "API token used to authenticate with the endpoint.",
+								Type:        "opaque_string",
+							},
+							"component_id": {
+								Description: "Component ID used to identify this receiver instance.",
+								Type:        "component_id",
+							},
+							"headers": {
+								Description: "Extra HTTP headers to attach to each request.",
+								Type:        "opaque_map",
 							},
 						},
 						Required: []string{"endpoint"},
@@ -450,7 +466,7 @@ func TestLoadMetadata(t *testing.T) {
 					"default.metric.to_be_removed": {
 						Signal: Signal{
 							Enabled:               true,
-							Description:           "[DEPRECATED] Non-monotonic delta sum double metric enabled by default.",
+							Description:           "[DEPRECATED] Non-monotonic delta sum double metric enabled by default.\n",
 							ExtendedDocumentation: "The metric will be removed soon.\n",
 							Stability:             component.StabilityLevelDeprecated,
 							Warnings: Warnings{
@@ -498,7 +514,7 @@ func TestLoadMetadata(t *testing.T) {
 					"default.event.to_be_renamed": {
 						Signal: Signal{
 							Enabled:               false,
-							Description:           "[DEPRECATED] Example event disabled by default.",
+							Description:           "[DEPRECATED] Example event disabled by default.\n",
 							ExtendedDocumentation: "The event will be renamed soon.\n",
 							Warnings: Warnings{
 								IfConfigured: "This event is deprecated and will be renamed soon.",

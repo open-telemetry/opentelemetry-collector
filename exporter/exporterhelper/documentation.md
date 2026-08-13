@@ -141,3 +141,13 @@ Number of spans successfully sent to destination.
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | {span} | Sum | Int | true | Alpha |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `pkg.exporterhelper.queueBatchEnabled` | alpha | Enables exporterhelper batching by default in NewDefaultQueueConfig, as described in the batching migration RFC. | v0.158.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/15047) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

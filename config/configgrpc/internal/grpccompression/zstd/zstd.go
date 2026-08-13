@@ -4,7 +4,7 @@
 
 // Package zstd registers a gRPC zstd compressor compatible with the
 // collector's configgrpc package.
-package zstd // import "go.opentelemetry.io/collector/internal/grpccompression/zstd"
+package zstd // import "go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/zstd"
 
 import (
 	"io"
