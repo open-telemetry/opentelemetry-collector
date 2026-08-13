@@ -52,7 +52,7 @@ func TestMemoryPressureResponse(t *testing.T) {
 	// Below memAllocLimit while already healthy: no event
 	currentMemAlloc = 800
 	ml.CheckMemLimits()
-	assert.Len(t, host.events, 0)
+	assert.Empty(t, host.events)
 	assert.False(t, ml.MustRefuse())
 
 	// Above memAllocLimit.
