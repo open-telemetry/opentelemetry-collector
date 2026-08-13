@@ -49,17 +49,16 @@ func TestMemoryPressureResponse(t *testing.T) {
 	host := &mockHost{}
 	ml.host = host
 
-	// Below memAllocLimit.
+	// Below memAllocLimit while already healthy: no event
 	currentMemAlloc = 800
 	ml.CheckMemLimits()
-	assert.Len(t, host.events, 1)
-	assert.Equal(t, componentstatus.StatusOK, host.events[len(host.events)-1].Status())
+	assert.Len(t, host.events, 0)
 	assert.False(t, ml.MustRefuse())
 
 	// Above memAllocLimit.
 	currentMemAlloc = 1800
 	ml.CheckMemLimits()
-	assert.Len(t, host.events, 2)
+	assert.Len(t, host.events, 1)
 	assert.Equal(t, componentstatus.StatusRecoverableError, host.events[len(host.events)-1].Status())
 	assert.True(t, ml.MustRefuse())
 
@@ -69,14 +68,14 @@ func TestMemoryPressureResponse(t *testing.T) {
 	// Below memSpikeLimit.
 	currentMemAlloc = 500
 	ml.CheckMemLimits()
-	assert.Len(t, host.events, 3)
+	assert.Len(t, host.events, 2)
 	assert.Equal(t, componentstatus.StatusOK, host.events[len(host.events)-1].Status())
 	assert.False(t, ml.MustRefuse())
 
 	// Above memSpikeLimit.
 	currentMemAlloc = 550
 	ml.CheckMemLimits()
-	assert.Len(t, host.events, 4)
+	assert.Len(t, host.events, 3)
 	assert.Equal(t, componentstatus.StatusRecoverableError, host.events[len(host.events)-1].Status())
 	assert.True(t, ml.MustRefuse())
 }
