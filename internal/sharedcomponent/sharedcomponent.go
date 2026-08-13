@@ -84,14 +84,7 @@ func (c *Component[V]) Start(ctx context.Context, host component.Host) error {
 				c.hostWrapper.addSource(statusReporter)
 			}
 
-			// It's important that status for a shared component is reported through its
-			// telemetry settings to keep status in sync and avoid race conditions. This logic duplicates
-			// and takes priority over the automated status reporting that happens in graph, making the
-			// status reporting in graph a no-op.
-			c.hostWrapper.Report(componentstatus.NewEvent(componentstatus.StatusStarting))
-			if err = c.component.Start(ctx, c.hostWrapper); err != nil {
-				c.hostWrapper.Report(componentstatus.NewPermanentErrorEvent(err))
-			}
+			err = c.component.Start(ctx, c.hostWrapper)
 		})
 		return err
 	}
@@ -146,21 +139,7 @@ func (h *hostWrapper) addSource(s componentstatus.Reporter) {
 func (c *Component[V]) Shutdown(ctx context.Context) error {
 	var err error
 	c.stopOnce.Do(func() {
-		// It's important that status for a shared component is reported through its
-		// telemetry settings to keep status in sync and avoid race conditions. This logic duplicates
-		// and takes priority over the automated status reporting that happens in graph, making the
-		// status reporting in graph a no-op.
-		if c.hostWrapper != nil {
-			c.hostWrapper.Report(componentstatus.NewEvent(componentstatus.StatusStopping))
-		}
 		err = c.component.Shutdown(ctx)
-		if c.hostWrapper != nil {
-			if err != nil {
-				c.hostWrapper.Report(componentstatus.NewPermanentErrorEvent(err))
-			} else {
-				c.hostWrapper.Report(componentstatus.NewEvent(componentstatus.StatusStopped))
-			}
-		}
 		c.removeFunc()
 	})
 	return err
