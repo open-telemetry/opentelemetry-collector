@@ -58,6 +58,7 @@ type Component[V component.Component] struct {
 	component V
 
 	startOnce  sync.Once
+	startErr   error
 	stopOnce   sync.Once
 	removeFunc func()
 
@@ -72,7 +73,6 @@ func (c *Component[V]) Unwrap() V {
 // Start starts the underlying component if it never started before.
 func (c *Component[V]) Start(ctx context.Context, host component.Host) error {
 	if c.hostWrapper == nil {
-		var err error
 		c.startOnce.Do(func() {
 			c.hostWrapper = &hostWrapper{
 				host:           host,
@@ -84,15 +84,17 @@ func (c *Component[V]) Start(ctx context.Context, host component.Host) error {
 				c.hostWrapper.addSource(statusReporter)
 			}
 
-			err = c.component.Start(ctx, c.hostWrapper)
+			// Cache the start error so it is returned to every pipeline that shares
+			// this component, not only the one that triggered the actual Start.
+			c.startErr = c.component.Start(ctx, c.hostWrapper)
 		})
-		return err
+		return c.startErr
 	}
 	statusReporter, isStatusReporter := host.(componentstatus.Reporter)
 	if isStatusReporter {
 		c.hostWrapper.addSource(statusReporter)
 	}
-	return nil
+	return c.startErr
 }
 
 var (

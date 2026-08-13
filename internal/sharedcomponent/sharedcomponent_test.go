@@ -93,8 +93,8 @@ func TestSharedComponent(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, wantErr, got.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Equal(t, 1, calledStart)
-	// Second time is not called anymore.
-	require.NoError(t, got.Start(context.Background(), componenttest.NewNopHost()))
+	// Cached error is returned on subsequent calls to start.
+	assert.Equal(t, wantErr, got.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Equal(t, 1, calledStart)
 	// first time, shutdown is called.
 	assert.Equal(t, wantErr, got.Shutdown(context.Background()))
