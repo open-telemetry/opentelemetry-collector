@@ -729,6 +729,65 @@ func TestMetricsMergeSplitUnknownSizerType(t *testing.T) {
 	require.EqualError(t, err, "unknown sizer type")
 }
 
+func TestMergeSplitMetricsRequestsSizer(t *testing.T) {
+	tests := []struct {
+		name          string
+		mr1           request.Request
+		mr2           request.Request // may be nil
+		maxSize       int             // passed to MergeSplit; irrelevant for requests sizer
+		wantItemCount int
+		wantLen       int // expected number of returned requests (always 1)
+	}{
+		{
+			// Two non-empty requests: their data points must be combined into one.
+			// testdata.GenerateMetrics(N) creates N metrics each with 2 data points,
+			// so ItemsCount() == N*2.
+			name:          "merge_two_requests",
+			mr1:           newMetricsRequest(testdata.GenerateMetrics(5)),
+			mr2:           newMetricsRequest(testdata.GenerateMetrics(3)),
+			maxSize:       0,
+			wantItemCount: 16, // (5+3) metrics × 2 data points each
+			wantLen:       1,
+		},
+		{
+			// A non-zero maxSize must be ignored — no splitting occurs.
+			name:          "maxSize_is_ignored",
+			mr1:           newMetricsRequest(testdata.GenerateMetrics(10)),
+			mr2:           newMetricsRequest(testdata.GenerateMetrics(10)),
+			maxSize:       1,  // would split with items/bytes sizer, must not here
+			wantItemCount: 40, // (10+10) metrics × 2 data points each
+			wantLen:       1,
+		},
+		{
+			// When there is no second request the first is returned unchanged.
+			name:          "nil_second_request",
+			mr1:           newMetricsRequest(testdata.GenerateMetrics(7)),
+			mr2:           nil,
+			maxSize:       0,
+			wantItemCount: 14, // 7 metrics × 2 data points each
+			wantLen:       1,
+		},
+		{
+			// Empty first request + non-empty second: data points still end up in the result.
+			name:          "empty_first_request",
+			mr1:           newMetricsRequest(pmetric.NewMetrics()),
+			mr2:           newMetricsRequest(testdata.GenerateMetrics(4)),
+			maxSize:       0,
+			wantItemCount: 8, // 4 metrics × 2 data points each
+			wantLen:       1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res, err := tt.mr1.MergeSplit(context.Background(), tt.maxSize, request.SizerTypeRequests, tt.mr2)
+			require.NoError(t, err)
+			require.Len(t, res, tt.wantLen)
+			assert.Equal(t, tt.wantItemCount, res[0].ItemsCount())
+		})
+	}
+}
+
 // mockMetricsSizer implements sizer.MetricsSizer interface for testing
 type mockMetricsSizer struct {
 	dpSize int
