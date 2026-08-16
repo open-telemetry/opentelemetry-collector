@@ -32,8 +32,7 @@ import (
         {{- if $prop.Description }}
             // {{ $prop.Description }}
         {{- end }}
-        {{- $omitempty := and (not (isRequired . $propName)) (not (hasDefaultValue $prop)) }}
-        {{ $prop.GoStruct.FieldName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}{{ if $omitempty }},omitempty{{ end }}"`
+        {{ $prop.GoStruct.FieldName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}{{ if shouldOmitEmpty . $propName $prop }},omitempty{{ end }}"`
     {{- end }}
     // prevent unkeyed literal initialization
     _ struct{}

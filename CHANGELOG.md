@@ -7,6 +7,59 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.64.0/v0.158.0
+
+### 🚀 New components 🚀
+
+- `processor/queuebatch`: New `queuebatchprocessor` to replace the legacy `batchprocessor`. (#15047, #13582, #12022, #11308, #8272, #6046)
+  New implementation is based exporterhelper, uses same configuration as `sending_queue`.
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Add first-class extended type aliases (int64, duration, opaque_string, id, opaque_map, etc.) to config schemas in metadata.yaml (#15513)
+  Authors can now write `type: int64`, `type: duration`, `type: opaque_string`, `type: id`, or
+  `type: opaque_map` directly as a property type in the `config:` section of `metadata.yaml`.
+  Each alias expands to the correct JSON Schema representation and Go type automatically.
+  Existing uses of standard JSON Schema types, `format:`, and `x-customType:` remain supported
+  without migration.
+  
+- `extension/memory_limiter`: Promote the memory limiter extension to beta stability. (#14533)
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Removes the extra line in the documentation.md around description (#15664)
+- `cmd/mdatagen`: Auto-enable v1 metrics when legacy metric is enabled and v1 feature gate is on (#15650)
+  When the v1 feature gate is enabled and a legacy metric is enabled, the corresponding
+  v1 metric is now programmatically enabled so users don't need to add the v1 metric
+  to their config.
+  
+- `cmd/mdatagen`: Fix incorrect collision warning for versioned metrics with different emitted names (#15648)
+  Same name collision detection (type/attribute checks) was being used for versioned metrics
+  with different names. This caused the legacy metric to be disabled which was incorrect and also
+  a warning msg was being incorrectly logged that stated the metrics had the same name when in
+  fact they had different names.
+  
+- `cmd/mdatagen`: Versioned metrics don't handle renamed attributes with same type (#15595)
+  Versioned metrics need to support emitting legacy and latest attributes when the metric name is the same but the
+  attributes names differ. This was not working when the attributes name changed but the type remained the same.
+  Here we add support to versioned metrics with renamed attributes where those attributes have the same type.
+  
+- `exporter/debug`: Fix profile sample attribute formatting for non-string values (#15647)
+  Previously, non-string values produced malformed output such as `%!s(int64=42)`.
+  Profile sample attributes now use the debug exporter's typed attribute format, such as `Int(42)`.
+  This will also change strings from `hello-world` to `Str(hello-world)`.
+  
+- `pkg/config/configtls`: Fix goroutine and file descriptor leak when `client_ca_file_reload` is enabled (#9221)
+  Every call to `ServerConfig.LoadTLSConfig` with `client_ca_file_reload` enabled started a
+  file watcher goroutine that could never be stopped, since the reloader was not reachable
+  from the returned `*tls.Config`. The client CA file is now checked for changes while TLS
+  handshakes are served, at most once per second, matching how `reload_interval` already
+  reloads the server certificate. No background goroutine is started, so nothing is left
+  behind when a server is torn down and recreated.
+  
+
+<!-- previous-version -->
+
 ## v1.63.0/v0.157.0
 
 ### 🛑 Breaking changes 🛑
