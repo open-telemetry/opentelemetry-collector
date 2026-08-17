@@ -51,3 +51,8 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 func WithAttrs(attrs ...attribute.KeyValue) Option {
 	return internal.WithAttributes(attrs...)
 }
+
+// WithObsMetrics reports exporterhelper's metrics through obsMetrics, owned by it once constructed.
+func WithObsMetrics(obsMetrics ObsMetrics) Option {
+	return internal.WithObsMetrics(obsMetrics)
+}

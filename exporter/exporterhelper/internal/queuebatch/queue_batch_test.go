@@ -613,3 +613,75 @@ func newTestConfig() Config {
 		}),
 	}
 }
+
+// batchSize is one RecordBatchSendSize observation.
+type batchSize struct {
+	items int64
+	bytes int64
+}
+
+// recordBatchSizes returns metrics that append every observation to sizes.
+func recordBatchSizes(mu *sync.Mutex, sizes *[]batchSize) QueueBatchMetrics {
+	return NewQueueBatchMetrics(nil, func(_ context.Context, items int64, bytesSize func() int64) {
+		mu.Lock()
+		defer mu.Unlock()
+		*sizes = append(*sizes, batchSize{items: items, bytes: bytesSize()})
+	})
+}
+
+// The batch is measured once after merging, not once per request offered.
+func TestQueueBatchRecordsBatchSendSize(t *testing.T) {
+	var mu sync.Mutex
+	var sizes []batchSize
+
+	set := newFakeRequestSettings()
+	set.QueueBatchMetrics = recordBatchSizes(&mu, &sizes)
+
+	cfg := newTestConfig()
+	cfg.Batch = configoptional.Some(BatchConfig{
+		FlushTimeout: 200 * time.Millisecond,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      10,
+	})
+
+	sink := requesttest.NewSink()
+	qb, err := NewQueueBatch(set, cfg, sink.Export)
+	require.NoError(t, err)
+	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 4, Bytes: 40}))
+	require.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 6, Bytes: 60}))
+	assert.Eventually(t, func() bool {
+		return sink.ItemsCount() == 10
+	}, 1*time.Second, 10*time.Millisecond)
+	require.NoError(t, qb.Shutdown(context.Background()))
+
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Equal(t, []batchSize{{items: 10, bytes: 100}}, sizes)
+}
+
+// Nothing is measured when batching is disabled, because there is no batch.
+func TestQueueBatchWithoutBatchingRecordsNoBatchSendSize(t *testing.T) {
+	var mu sync.Mutex
+	var sizes []batchSize
+
+	set := newFakeRequestSettings()
+	set.QueueBatchMetrics = recordBatchSizes(&mu, &sizes)
+
+	cfg := newTestConfig()
+	cfg.Batch = configoptional.None[BatchConfig]()
+
+	sink := requesttest.NewSink()
+	qb, err := NewQueueBatch(set, cfg, sink.Export)
+	require.NoError(t, err)
+	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 4, Bytes: 40}))
+	assert.Eventually(t, func() bool {
+		return sink.ItemsCount() == 4
+	}, 1*time.Second, 10*time.Millisecond)
+	require.NoError(t, qb.Shutdown(context.Background()))
+
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Empty(t, sizes)
+}

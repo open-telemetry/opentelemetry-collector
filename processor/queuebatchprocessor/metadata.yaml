@@ -10,3 +10,86 @@ status:
   distributions: []
   codeowners:
     active: [jmacd, iblancasa]
+
+telemetry:
+  metrics:
+    processor_queuebatch_batch_send_size:
+      enabled: true
+      stability: development
+      description: Number of units in the batch. Only recorded when batching is enabled. Only available on detailed level.
+      unit: "{unit}"
+      histogram:
+        value_type: int
+        bucket_boundaries: [10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000]
+    processor_queuebatch_batch_send_size_bytes:
+      enabled: true
+      stability: development
+      description: Number of bytes in the batch. Only recorded when batching is enabled. Only available on detailed level.
+      unit: By
+      histogram:
+        value_type: int
+        bucket_boundaries: [128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576, 2097152, 4194304, 8388608, 16777216]
+    processor_queuebatch_enqueue_failed_items:
+      enabled: true
+      stability: development
+      description: Number of items failed to be added to the queue.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+    processor_queuebatch_enqueue_size:
+      enabled: true
+      stability: development
+      description: Number of units in the request added to the queue. Only available on detailed level.
+      unit: "{unit}"
+      histogram:
+        value_type: int
+        bucket_boundaries: [10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000]
+    processor_queuebatch_enqueue_size_bytes:
+      enabled: true
+      stability: development
+      description: Number of bytes in the request added to the queue. Only available on detailed level.
+      unit: By
+      histogram:
+        value_type: int
+        bucket_boundaries: [128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576, 2097152, 4194304, 8388608, 16777216]
+    processor_queuebatch_in_flight_requests:
+      enabled: true
+      stability: development
+      description: Number of requests currently being processed.
+      unit: "{request}"
+      sum:
+        value_type: int
+        monotonic: false
+    processor_queuebatch_queue_capacity:
+      enabled: true
+      stability: development
+      description: Fixed capacity of the queue.
+      unit: "{batch}"
+      gauge:
+        value_type: int
+        async: true
+    processor_queuebatch_queue_size:
+      enabled: true
+      stability: development
+      description: Current size of the queue.
+      unit: "{batch}"
+      gauge:
+        value_type: int
+        async: true
+    processor_queuebatch_send_failed_items:
+      enabled: true
+      stability: development
+      description: "Number of items that failed to be sent to the next consumer. At detailed telemetry level, includes attributes: error.type (semantic convention), error.permanent."
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+    processor_queuebatch_sent_items:
+      enabled: true
+      stability: development
+      description: Number of items successfully sent to the next consumer.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
