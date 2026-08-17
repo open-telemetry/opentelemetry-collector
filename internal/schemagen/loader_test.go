@@ -36,7 +36,7 @@ func TestLoader_LoadFromFile_Success(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, result.Config)
 	require.Equal(t, "A test schema", result.Config.Description)
-	require.Equal(t, "object", result.Config.Type)
+	require.Equal(t, SchemaType("object"), result.Config.Type)
 }
 
 func TestLoader_LoadFromFile_ExportedConfigsOnly(t *testing.T) {
@@ -58,7 +58,7 @@ func TestLoader_LoadFromFile_ExportedConfigsOnly(t *testing.T) {
 	require.NotNil(t, result)
 	require.NotNil(t, result.ExportedConfigs)
 	require.Contains(t, result.ExportedConfigs, "sample_config")
-	require.Equal(t, "object", result.ExportedConfigs["sample_config"].Type)
+	require.Equal(t, SchemaType("object"), result.ExportedConfigs["sample_config"].Type)
 	require.Contains(t, result.ExportedConfigs["sample_config"].Properties, "endpoint")
 }
 
@@ -112,7 +112,7 @@ func TestLoader_LoadFromHTTP_Success(t *testing.T) {
 
 	result, err := loader.loadFromHTTP(ref, filepath.Join(tempDir, ".schemas"))
 	require.NoError(t, err)
-	require.Equal(t, "string", result.Config.Type)
+	require.Equal(t, SchemaType("string"), result.Config.Type)
 }
 
 func TestLoader_LoadFromHTTP_NotFound(t *testing.T) {
@@ -204,7 +204,7 @@ func TestLoader_TryLoad_ExportedConfigsOnly(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	require.Contains(t, result.ExportedConfigs, "sample_config")
-	require.Equal(t, "object", result.ExportedConfigs["sample_config"].Type)
+	require.Equal(t, SchemaType("object"), result.ExportedConfigs["sample_config"].Type)
 	require.Contains(t, result.ExportedConfigs["sample_config"].Properties, "endpoint")
 }
 
