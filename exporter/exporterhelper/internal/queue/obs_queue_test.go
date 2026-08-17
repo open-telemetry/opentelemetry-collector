@@ -279,7 +279,7 @@ func TestObsQueueLogsBatchSize(t *testing.T) {
 	}, newFakeQueue[request.Request](nil, 7, 9))
 	require.NoError(t, err)
 	require.NoError(t, te.Offer(context.Background(), &requesttest.FakeRequest{Items: 2, Bytes: 100}))
-	metadatatest.AssertEqualExporterQueueBatchSendSize(t, tt,
+	metadatatest.AssertEqualExporterEnqueueSize(t, tt,
 		[]metricdata.HistogramDataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
@@ -306,7 +306,7 @@ func TestObsQueueTracesBatchSize(t *testing.T) {
 	}, newFakeQueue[request.Request](nil, 17, 19))
 	require.NoError(t, err)
 	require.NoError(t, te.Offer(context.Background(), &requesttest.FakeRequest{Items: 12, Bytes: 200}))
-	metadatatest.AssertEqualExporterQueueBatchSendSize(t, tt,
+	metadatatest.AssertEqualExporterEnqueueSize(t, tt,
 		[]metricdata.HistogramDataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
@@ -333,7 +333,7 @@ func TestObsQueueMetricsBatchSize(t *testing.T) {
 	}, newFakeQueue[request.Request](nil, 27, 29))
 	require.NoError(t, err)
 	require.NoError(t, te.Offer(context.Background(), &requesttest.FakeRequest{Items: 22, Bytes: 300}))
-	metadatatest.AssertEqualExporterQueueBatchSendSize(t, tt,
+	metadatatest.AssertEqualExporterEnqueueSize(t, tt,
 		[]metricdata.HistogramDataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
@@ -360,7 +360,7 @@ func TestObsQueueProfilesBatchSize(t *testing.T) {
 	}, newFakeQueue[request.Request](nil, 27, 29))
 	require.NoError(t, err)
 	require.NoError(t, te.Offer(context.Background(), &requesttest.FakeRequest{Items: 22, Bytes: 300}))
-	metadatatest.AssertEqualExporterQueueBatchSendSize(t, tt,
+	metadatatest.AssertEqualExporterEnqueueSize(t, tt,
 		[]metricdata.HistogramDataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(

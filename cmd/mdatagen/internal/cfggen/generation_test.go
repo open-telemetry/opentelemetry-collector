@@ -1273,6 +1273,8 @@ func TestWithCfgFns(t *testing.T) {
 	require.Contains(t, result, "hasDefaultValue")
 	require.Contains(t, result, "publicType")
 	require.Contains(t, result, "camelVar")
+	require.Contains(t, result, "isRequired")
+	require.Contains(t, result, "shouldOmitEmpty")
 }
 
 func TestResolveGoType_CustomTypeFormatError(t *testing.T) {
@@ -2703,6 +2705,55 @@ func TestHasDefaultValue(t *testing.T) {
 		Type: "object",
 		Ref:  "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
 	}))
+}
+
+func TestHasNonZeroDefault(t *testing.T) {
+	require.False(t, hasNonZeroDefault(&ConfigMetadata{Type: "object"}))
+	require.True(t, hasNonZeroDefault(&ConfigMetadata{Type: "string", Default: defaultValue("value")}))
+	// A default of the Go zero value should not count as a non-zero default.
+	require.False(t, hasNonZeroDefault(&ConfigMetadata{Type: "object", Default: defaultValue(map[string]any{})}))
+	require.True(t, hasNonZeroDefault(&ConfigMetadata{Type: "object", Default: defaultValue(map[string]any{"enabled": true})}))
+	// GoStruct.IgnoreDefault means the default is not surfaced, but nested properties are still checked.
+	require.False(t, hasNonZeroDefault(&ConfigMetadata{
+		Type:     "string",
+		Default:  defaultValue("value"),
+		GoStruct: GoStructConfig{IgnoreDefault: true},
+	}))
+	require.True(t, hasNonZeroDefault(&ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"timeout": {Type: "string", GoType: "time.Duration", Default: defaultValue("30s")},
+		},
+	}))
+	require.False(t, hasNonZeroDefault(&ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"base": {Type: "object", Default: defaultValue(map[string]any{})},
+		},
+	}))
+}
+
+func TestIsRequired(t *testing.T) {
+	md := &ConfigMetadata{Required: []string{"endpoint", "timeout"}}
+
+	require.True(t, isRequired(md, "endpoint"))
+	require.True(t, isRequired(md, "timeout"))
+	require.False(t, isRequired(md, "optional_field"))
+	require.False(t, isRequired(&ConfigMetadata{}, "endpoint"))
+}
+
+func TestNewCfgFns_ShouldOmitEmpty(t *testing.T) {
+	fns := NewCfgFns("", "")
+	shouldOmitEmpty := fns["shouldOmitEmpty"].(func(*ConfigMetadata, string, *ConfigMetadata) bool)
+
+	md := &ConfigMetadata{Required: []string{"endpoint"}}
+
+	// Required fields never get omitempty, even with a non-zero default.
+	require.False(t, shouldOmitEmpty(md, "endpoint", &ConfigMetadata{Type: "string", Default: defaultValue("localhost")}))
+	// Optional fields with a non-zero default don't need omitempty either.
+	require.False(t, shouldOmitEmpty(md, "timeout", &ConfigMetadata{Type: "string", Default: defaultValue("30s")}))
+	// Optional fields without a non-zero default get omitempty.
+	require.True(t, shouldOmitEmpty(md, "timeout", &ConfigMetadata{Type: "string"}))
 }
 
 func TestMapCustomDefaults_NestedObjectOverrides(t *testing.T) {

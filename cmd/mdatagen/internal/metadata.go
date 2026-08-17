@@ -854,7 +854,7 @@ type FeatureGate struct {
 	// GitHub issue URL (https://github.com/<owner>/<repo>/issues/<number>)
 	// unless SkipStrictValidation is set.
 	ReferenceURL string `mapstructure:"reference_url"`
-	// SkipStrictValidation opts this gate out of strict validation. New gates should leave this unset.
+	// Deprecated: set the exemption in the central .mdatagen.yaml instead.
 	SkipStrictValidation bool `mapstructure:"skip_strict_validation"`
 }
 

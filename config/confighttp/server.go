@@ -126,7 +126,7 @@ func NewDefaultServerConfig() ServerConfig {
 
 type AuthConfig struct {
 	// Auth for this receiver.
-	configauth.Config `mapstructure:",squash"`
+	Config configauth.Config `mapstructure:",squash"`
 
 	// RequestParameters is a list of parameters that should be extracted from the request and added to the context.
 	// When a parameter is found in both the query string and the header, the value from the query string will be used.
@@ -236,7 +236,7 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 		}
 
 		auth := sc.Auth.Get()
-		server, err := auth.GetServerAuthenticator(ctx, extensions)
+		server, err := auth.Config.GetServerAuthenticator(ctx, extensions)
 		if err != nil {
 			return nil, err
 		}
