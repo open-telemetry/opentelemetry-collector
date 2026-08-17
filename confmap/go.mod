@@ -10,7 +10,7 @@ require (
 	github.com/knadh/koanf/v2 v2.3.6
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/featuregate v1.65.0
-	go.opentelemetry.io/collector/internal/testutil v0.158.0
+	go.opentelemetry.io/collector/internal/testutil v0.159.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.28.0

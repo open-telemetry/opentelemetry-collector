@@ -8,7 +8,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.65.0
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.65.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.65.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.158.0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.159.0
 )
 
 require (
