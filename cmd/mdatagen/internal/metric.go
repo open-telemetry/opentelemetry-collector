@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/iimos/ucum"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -96,6 +97,10 @@ func (m *Metric) validate(metricName MetricName, semConvVersion string) error {
 	}
 	if m.Unit == nil {
 		errs = errors.Join(errs, errors.New(`missing metric unit`))
+	} else if *m.Unit != "" {
+		if _, err := ucum.Parse([]byte(*m.Unit)); err != nil {
+			errs = errors.Join(errs, fmt.Errorf("invalid metric unit %q: %w", *m.Unit, err))
+		}
 	}
 	if m.Sum != nil {
 		errs = errors.Join(errs, m.Sum.Validate())
@@ -141,7 +146,8 @@ func validateSemConvMetricURL(rawURL, semConvVersion, metricName string) error {
 	if !re.MatchString(rawURL) {
 		return fmt.Errorf(
 			"invalid semantic-conventions URL: want https://github.com/open-telemetry/semantic-conventions/blob/%s/*#%s, got %q",
-			semConvVersion, anchor, rawURL)
+			semConvVersion, anchor, rawURL,
+		)
 	}
 	return nil
 }

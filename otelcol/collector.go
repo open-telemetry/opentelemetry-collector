@@ -119,6 +119,10 @@ type Collector struct {
 	asyncErrorChannel          chan error
 	bc                         *bufferedCore
 	updateConfigProviderLogger func(core zapcore.Core)
+
+	// currentFingerprint holds a fingerprint of the last successfully applied
+	// configuration, derived from the raw (pre-decode) configuration map.
+	currentFingerprint *configFingerprint
 }
 
 // NewCollector creates and returns a new instance of Collector.
@@ -184,13 +188,24 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return fmt.Errorf("failed to initialize factories: %w", err)
 	}
 
-	cfg, err := col.configProvider.Get(ctx, factories)
+	cfg, rawConf, err := col.configProvider.getWithConf(ctx, factories)
 	if err != nil {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
 
 	if err = confmap.Validate(cfg); err != nil {
 		return fmt.Errorf("invalid configuration: %w", err)
+	}
+
+	// Fingerprint the configuration to compare configuration changes. This
+	// must happen here before any component can mutate the configuration.
+	var fingerprint *configFingerprint
+	if service.ReceiverPartialReloadEnabled() {
+		fp, fpErr := fingerprintForPartialReload(rawConf, cfg)
+		if fpErr != nil {
+			return fpErr
+		}
+		fingerprint = &fp
 	}
 
 	conf := confmap.New()
@@ -264,12 +279,35 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	if err = col.service.Start(ctx); err != nil {
 		return multierr.Combine(err, col.service.Shutdown(ctx))
 	}
+	if service.ReceiverPartialReloadEnabled() {
+		col.currentFingerprint = fingerprint
+	}
 	col.setCollectorState(StateRunning)
 
 	return nil
 }
 
 func (col *Collector) reloadConfiguration(ctx context.Context) error {
+	if service.ReceiverPartialReloadEnabled() && col.currentFingerprint != nil {
+		reloaded, err := col.tryPartialReceiverReload(ctx)
+		if reloaded && err == nil {
+			// Partial reload succeeded; the service keeps running.
+			return nil
+		}
+		if reloaded {
+			// Partial reload was attempted but failed mid-way. The graph may
+			// be in a partially modified state (some receivers shut down,
+			// nodes removed, new nodes without components), so it cannot be
+			// resumed or repaired incrementally. Fall back to a full reload
+			// below, which discards the existing service and graph entirely
+			// and rebuilds from scratch, consistent with how a non-receiver
+			// config change is handled.
+			col.service.Logger().Warn("Partial receiver reload failed, falling back to full reload", zap.Error(err))
+		}
+		// Otherwise, the config change was not receiver-only; fall through to
+		// a full reload.
+	}
+
 	col.service.Logger().Warn("Config updated, restart service")
 	col.setCollectorState(StateClosing)
 
@@ -282,6 +320,48 @@ func (col *Collector) reloadConfiguration(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// tryPartialReceiverReload attempts to reload only the receiver components if
+// the configuration change is limited to receivers. The bool return indicates
+// whether a partial reload was attempted (true) or the change requires a full
+// reload (false). When true, the error indicates whether the reload succeeded.
+func (col *Collector) tryPartialReceiverReload(ctx context.Context) (bool, error) {
+	factories, err := col.set.Factories()
+	if err != nil {
+		return false, err
+	}
+
+	newCfg, rawConf, err := col.configProvider.getWithConf(ctx, factories)
+	if err != nil {
+		return false, err
+	}
+
+	if validateErr := confmap.Validate(newCfg); validateErr != nil {
+		return false, validateErr
+	}
+
+	newFingerprint, err := fingerprintForPartialReload(rawConf, newCfg)
+	if err != nil {
+		return false, err
+	}
+
+	if !receiversOnlyChanged(*col.currentFingerprint, newFingerprint, isConnectorID(newCfg.Connectors)) {
+		return false, nil
+	}
+
+	col.service.Logger().Info("Config updated, performing partial receiver reload")
+	if err = col.service.UpdateReceivers(ctx,
+		changedReceivers(*col.currentFingerprint, newFingerprint),
+		newCfg.Receivers,
+		factories.Receivers,
+		newCfg.Service.Pipelines,
+	); err != nil {
+		return true, fmt.Errorf("partial receiver reload failed: %w", err)
+	}
+
+	col.currentFingerprint = &newFingerprint
+	return true, nil
 }
 
 func (col *Collector) DryRun(ctx context.Context) error {

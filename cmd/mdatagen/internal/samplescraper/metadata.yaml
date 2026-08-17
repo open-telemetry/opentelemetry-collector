@@ -40,9 +40,8 @@ config:
       go_struct:
         anonymous: true
     component:
-      type: string
+      type: component_id
       description: Identifies the scraper, used for telemetry and logging.
-      x-customType: go.opentelemetry.io/collector/component.ID
       go_struct:
         field_name: ComponentID
     job_name:
@@ -57,32 +56,31 @@ config:
     targets:
       description: List of targets to scrape metrics from.
       x-pointer: true
-      type: array
-      items:
+      type: slice
+      values:
         type: object
         properties:
           interval:
-            type: string
-            format: duration
+            type: duration
             x-optional: true
             default: 10s
           labels:
             description: Static key-value labels attached to all metrics from this target.
-            type: object
-            additionalProperties:
+            type: map
+            values:
               type: string
             default:
               option1: value1
               option2: value2
           retry_count:
             description: Number of retry attempts for failed scrapes.
-            type: integer
+            type: int
             default: 3
             minimum: 0
             maximum: 10
           timeout_seconds:
             description: Timeout in seconds for each scrape request.
-            type: number
+            type: double
             default: 5.0
             exclusiveMinimum: 0
             exclusiveMaximum: 30

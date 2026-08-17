@@ -2,4 +2,14 @@
 
 package scraperhelper
 
-// No supported validation rules found in the schema, no tests generated.
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+func TestControllerConfigValidate_DefaultValid(t *testing.T) {
+	cfg := NewDefaultControllerConfig()
+
+	require.NoError(t, cfg.Validate())
+}
