@@ -32,6 +32,17 @@ func TestComponentConfigStruct(t *testing.T) {
 	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
 }
 
+type mdatagenLifecycleContextKey struct{}
+
+const mdatagenLifecycleContextValue = "mdatagen-lifecycle-test"
+
+func requireLifecycleContext(t *testing.T, contexts []context.Context) {
+	t.Helper()
+	for _, ctx := range contexts {
+		require.Equal(t, mdatagenLifecycleContextValue, ctx.Value(mdatagenLifecycleContextKey{}))
+	}
+}
+
 func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
@@ -68,6 +79,79 @@ func TestComponentLifecycle(t *testing.T) {
 			},
 		},
 	}
+	type processorLifecycleTest struct {
+		name      string
+		createFn  func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error)
+		consumeFn func(t *testing.T, c component.Component, consumeCtx context.Context) error
+		contextFn func() []context.Context
+	}
+
+	lifecycleTests := []processorLifecycleTest{
+
+		func() processorLifecycleTest {
+			sink := new(consumertest.LogsSink)
+			return processorLifecycleTest{
+				name: "logs",
+				createFn: func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error) {
+					return factory.CreateLogs(ctx, set, cfg, sink)
+				},
+				consumeFn: func(t *testing.T, c component.Component, consumeCtx context.Context) error {
+					e, ok := c.(processor.Logs)
+					require.True(t, ok)
+					logs := generateLifecycleTestLogs()
+					if !e.Capabilities().MutatesData {
+						logs.MarkReadOnly()
+					}
+					return e.ConsumeLogs(consumeCtx, logs)
+				},
+				contextFn: sink.Contexts,
+			}
+		}(),
+
+		func() processorLifecycleTest {
+			sink := new(consumertest.MetricsSink)
+			return processorLifecycleTest{
+				name: "metrics",
+				createFn: func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error) {
+					return factory.CreateMetrics(ctx, set, cfg, sink)
+				},
+				consumeFn: func(t *testing.T, c component.Component, consumeCtx context.Context) error {
+					e, ok := c.(processor.Metrics)
+					require.True(t, ok)
+					metrics := generateLifecycleTestMetrics()
+					if !e.Capabilities().MutatesData {
+						metrics.MarkReadOnly()
+					}
+					return e.ConsumeMetrics(consumeCtx, metrics)
+				},
+				contextFn: sink.Contexts,
+			}
+		}(),
+
+		func() processorLifecycleTest {
+			sink := new(consumertest.TracesSink)
+			return processorLifecycleTest{
+				name: "traces",
+				createFn: func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error) {
+					return factory.CreateTraces(ctx, set, cfg, sink)
+				},
+				consumeFn: func(t *testing.T, c component.Component, consumeCtx context.Context) error {
+					e, ok := c.(processor.Traces)
+					require.True(t, ok)
+					traces := generateLifecycleTestTraces()
+					if !e.Capabilities().MutatesData {
+						traces.MarkReadOnly()
+					}
+					return e.ConsumeTraces(consumeCtx, traces)
+				},
+				contextFn: sink.Contexts,
+			}
+		}(),
+	}
+	lifecycleTestsByName := make(map[string]processorLifecycleTest, len(lifecycleTests))
+	for _, lt := range lifecycleTests {
+		lifecycleTestsByName[lt.name] = lt
+	}
 
 	cm, err := confmaptest.LoadConf("metadata.yaml")
 	require.NoError(t, err)
@@ -83,7 +167,26 @@ func TestComponentLifecycle(t *testing.T) {
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
 		})
+	}
+	for _, tt := range tests {
 		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
+			if lt, ok := lifecycleTestsByName[tt.name]; ok {
+				consumeCtx := context.WithValue(context.Background(), mdatagenLifecycleContextKey{}, mdatagenLifecycleContextValue)
+				c, err := lt.createFn(context.Background(), processortest.NewNopSettings(typ), cfg)
+				require.NoError(t, err)
+				host := newMdatagenNopHost()
+				err = c.Start(context.Background(), host)
+				require.NoError(t, err)
+				require.NotPanics(t, func() {
+					err = lt.consumeFn(t, c, consumeCtx)
+				})
+				require.NoError(t, err)
+				requireLifecycleContext(t, lt.contextFn())
+				err = c.Shutdown(context.Background())
+				require.NoError(t, err)
+				return
+			}
+
 			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			host := newMdatagenNopHost()
