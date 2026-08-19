@@ -82,7 +82,14 @@ func (host *Host) GetExporters() map[pipeline.Signal]map[component.ID]component.
 func (host *Host) NotifyComponentStatusChange(source *componentstatus.InstanceID, event *componentstatus.Event) {
 	host.ServiceExtensions.NotifyComponentStatusChange(source, event)
 	if event.Status() == componentstatus.StatusFatalError {
-		host.AsyncErrorChannel <- event.Err()
+		select {
+		case host.AsyncErrorChannel <- event.Err():
+		default:
+			// No reader is ready (startup, reload, or shutdown in progress).
+			// Drop the error instead of blocking the reporting goroutine.
+			// During normal operation the drain goroutine in Collector.Run
+			// keeps the first fatal error queued for the control loop.
+		}
 	}
 }
 

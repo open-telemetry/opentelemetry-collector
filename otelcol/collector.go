@@ -412,6 +412,26 @@ func newFallbackLogger(options []zap.Option) (*zap.Logger, error) {
 // Consecutive calls to Run are not allowed, Run shouldn't be called once a collector is shut down.
 // Sets up the control logic for config reloading and shutdown.
 // If Shutdown was called before Run, Run returns nil after cleaning up resources.
+
+// drainAsyncErrors continuously services the async error channel and
+// forwards the first fatal error to the control loop. The collector
+// terminates on the first fatal error, so later errors coalesce (drop)
+// rather than block the reporting goroutines. The goroutine exits when
+// stop is closed.
+func drainAsyncErrors(src <-chan error, dst chan<- error, stop <-chan struct{}) {
+	for {
+		select {
+		case err := <-src:
+			select {
+			case dst <- err:
+			default:
+			}
+		case <-stop:
+			return
+		}
+	}
+}
+
 func (col *Collector) Run(ctx context.Context) error {
 	col.wg.Add(1)
 	defer col.wg.Done()
@@ -426,6 +446,24 @@ func (col *Collector) Run(ctx context.Context) error {
 		return nil
 	default:
 	}
+
+	// Service the async error channel for the entire lifetime of Run. The
+	// control loop only reads errors while it is selecting below, so without
+	// a dedicated drain a component reporting a fatal error during startup,
+	// config reload, or shutdown would block forever on the channel send.
+	// The first fatal error is forwarded to the control loop; any further
+	// errors coalesce because the collector terminates on the first one.
+	asyncErrCh := make(chan error, 1)
+	drainStop := make(chan struct{})
+	drainDone := make(chan struct{})
+	go func() {
+		defer close(drainDone)
+		drainAsyncErrors(col.asyncErrorChannel, asyncErrCh, drainStop)
+	}()
+	defer func() {
+		close(drainStop)
+		<-drainDone
+	}()
 
 	// setupConfigurationComponents is the "main" function responsible for startup
 	if err := col.setupConfigurationComponents(ctx); err != nil {
@@ -470,7 +508,7 @@ LOOP:
 			if err := col.reloadConfiguration(ctx); err != nil {
 				return err
 			}
-		case err := <-col.asyncErrorChannel:
+		case err := <-asyncErrCh:
 			col.service.Logger().Error("Asynchronous error received, terminating process", zap.Error(err))
 			break LOOP
 		case s := <-col.signalsChannel:
