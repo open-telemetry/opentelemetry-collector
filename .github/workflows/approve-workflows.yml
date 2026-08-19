@@ -22,6 +22,7 @@ jobs:
         with:
           client-id: ${{ vars.OTELBOT_CLIENT_ID }}
           private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
+          permission-members: read
       - name: Run approve-workflows.sh
         run: ./.github/workflows/scripts/approve-workflows.sh
         env:
