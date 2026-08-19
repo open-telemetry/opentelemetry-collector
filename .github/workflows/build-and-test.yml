@@ -282,6 +282,8 @@ jobs:
             goarch: amd64
           - goos: darwin
             goarch: arm64
+          - goos: freebsd
+            goarch: amd64
           - goos: js
             goarch: wasm
           - goos: linux
@@ -299,6 +301,8 @@ jobs:
             goarm: 7
           - goos: linux
             goarch: s390x
+          - goos: solaris
+            goarch: amd64
           - goos: windows
             goarch: 386
           - goos: windows
