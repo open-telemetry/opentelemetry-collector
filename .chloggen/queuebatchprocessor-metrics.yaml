@@ -1,6 +1,6 @@
 change_type: enhancement
 
-component: all
+component: processor/queuebatch
 
 note: Align exporterhelper metric attributes and add processor-oriented queuebatch metrics
 
