@@ -126,7 +126,7 @@ type CookiesConfig struct {
 
 // KeepaliveClientConfig describes the keepalive configuration.
 type KeepaliveClientConfig struct {
-	// IdleConnTimeout is the maximum amount of time an iddle (keep-alive) connection will remain open before closing itself.
+	// IdleConnTimeout is the maximum amount of time an idle (keep-alive) connection will remain open before closing itself.
 	// By default, it is set to 90 seconds.
 	IdleConnTimeout time.Duration `mapstructure:"idle_conn_timeout"`
 
