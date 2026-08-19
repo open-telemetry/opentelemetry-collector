@@ -19,7 +19,10 @@ on:
         required: true
         description: Current version (beta, like 0.95.1). Don't include `v`.
 
-permissions: read-all
+permissions:
+  contents: read
+  issues: read
+  actions: read
 
 jobs:
   validate-versions-format:
