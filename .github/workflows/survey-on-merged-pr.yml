@@ -1,8 +1,7 @@
 name: Survey on Merged PR by Non-Member
 
 on:
-  # zizmor: ignore[dangerous-triggers] — this workflow only calls the reusable shared workflow; no PR code is checked out or executed.
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] — this workflow only calls the reusable shared workflow; no PR code is checked out or executed.
     types: [closed]
     branches: [main]
 

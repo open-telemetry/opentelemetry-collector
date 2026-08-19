@@ -7,7 +7,7 @@ on:
       - "**/metadata.yaml"
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+*"
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] — intentional see NOTE below
     paths:
       - ".github/CODEOWNERS"
       - "**/metadata.yaml"
