@@ -46,7 +46,7 @@ To keep naming patterns consistent across the project, naming patterns are enfor
     slice and return a new slice with values that `match` returns true. It may not do more work than what the method name implies, ie, it
     must not key a global history of all the slices that have been filtered.
 - Methods that get the value of a field i.e. a getterMethod MUST use an uppercase first letter and NOT a `get` prefix. For example:
-  - `func (p *Person) Name() string {return p.name} ` Name (with an uppercase N, exported) method is used here to get the value of the name field and not `getName`.The use of upper-case names for export provides the hook to discriminate the field from the method.
+  - `func (p *Person) Name() string {return p.name} ` Name (with an uppercase N, exported) method is used here to get the value of the name field and not `getName`. The use of upper-case names for export provides the hook to discriminate the field from the method.
 - Methods that set the value of a field i.e. a setterMethod MUST use a `set` prefix. For example:
   - `func (p *Person) SetName(newName string) {p.name = newName}` SetName method here sets the value of the name field.
 - Variable assigned in a package's global scope that is preconfigured with a default set of values MUST use `Default` as the prefix. For example:
@@ -68,7 +68,7 @@ When naming configuration structs, use the following guidelines:
 - Separate the configuration set by end users in their YAML configuration from the configuration set by developers in the code into different structs.
 - Use the `Config` suffix for configuration structs that have end user configuration (i.e. that set in their YAML configuration). For example, `configgrpc.ClientConfig` ends in `Config` since it contains end user configuration.
 - Use the `Settings` suffix for configuration structs that are set by developers in the code. For example, `component.TelemetrySettings` ends in `Settings` since it is set by developers in the code.
-- Avoid redundant prefixes that are already implied by the package name. For example, use`configgrpc.ClientConfig` instead of `configgrpc.GRPCClientConfig`.
+- Avoid redundant prefixes that are already implied by the package name. For example, use `configgrpc.ClientConfig` instead of `configgrpc.GRPCClientConfig`.
 
 #### Avoid Embedded Structs
 
@@ -386,12 +386,19 @@ that is exposed to users.
 
 ## Graceful Shutdown
 
-Collector does not yet support graceful shutdown but we plan to add it. All components
-must be ready to shutdown gracefully via `Shutdown()` function that all component
-interfaces require. If components contain any temporary data they need to process
-and export it out of the Collector before shutdown is completed. The shutdown process
-will have a maximum allowed duration so put a limit on how long your shutdown
-operation can take.
+All components must be ready to shutdown gracefully in the `Shutdown()` function defined as part of the `component.Component` interface. As part of shutting down, any in-flight data held by the component must be processed and forwarded or exported as soon as possible to avoid data loss.
+
+The `Shutdown()` method must be safe to call even if `Start()` was never invoked or if the component has already been shut down.
+
+When `Shutdown()` is called, components must:
+- Stop accepting new data immediately (e.g., close listeners, reject new requests).
+- Cancel or stop any background operations that were started in `Start()`.
+- Flush any buffered data to the next component in the pipeline before returning.
+- Release all held resources (connections, goroutines, file handles).
+
+`Shutdown()` receives a `context.Context` that may carry a deadline. Components must honor the context and return when it is cancelled or its deadline is exceeded rather than blocking indefinitely.
+
+The component's lifecycle ends once `Shutdown()` returns; no other component methods are called afterward. A new instance with the same or different configuration may be created and started afterward (e.g., during a live reload).
 
 ## Unit Tests
 
