@@ -9,9 +9,9 @@ import (
 // Config config configures the matching behavior of a Filter.
 type Config struct {
 	// Filter using a Go regexp.
-	Regexp string `mapstructure:"regexp"`
+	Regexp string `mapstructure:"regexp,omitempty"`
 	// Filter using a string literal.
-	Strict string `mapstructure:"strict"`
+	Strict string `mapstructure:"strict,omitempty"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
