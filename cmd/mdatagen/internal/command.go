@@ -142,7 +142,8 @@ func run(ymlPath string) error {
 			err = inlineReplaceWithFns(
 				filepath.Join(tmplDir, "readme.md.tmpl"),
 				filepath.Join(ymlDir, "README.md"),
-				md, statusStart, statusEnd, md.GeneratedPackageName, importRootPath, nil)
+				md, statusStart, statusEnd, md.GeneratedPackageName, importRootPath, nil,
+			)
 			if err != nil {
 				return err
 			}
@@ -501,7 +502,8 @@ func templatize(tmplFile string, funcMap template.FuncMap) *template.Template {
 			New(filepath.Base(tmplFile)).
 			Option("missingkey=error").
 			Funcs(funcMap).
-			ParseFS(TemplateFS, "templates/helper.tmpl", strings.ReplaceAll(tmplFile, "\\", "/")))
+			ParseFS(TemplateFS, "templates/helper.tmpl", strings.ReplaceAll(tmplFile, "\\", "/")),
+	)
 }
 
 func executeTemplate(tmplFile string, md Metadata, goPackage, importRootPath string, fns template.FuncMap) ([]byte, error) {
@@ -713,7 +715,10 @@ func generateConfigFiles(md Metadata, mdDir, importRootPath string) error {
 
 func generateJSONSchema(dir string, md Metadata) error {
 	id := md.PackageName
-	title := fmt.Sprintf("%s/%s", md.Status.Class, md.Type)
+	title := md.Type
+	if md.Status != nil {
+		title = fmt.Sprintf("%s/%s", md.Status.Class, md.Type)
+	}
 	return cfggen.WriteJSONSchema(dir, id, title, md.ConfigsMetadata)
 }
 
