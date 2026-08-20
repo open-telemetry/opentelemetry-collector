@@ -5,6 +5,7 @@ package otlphttpexporter
 
 import (
 	"context"
+	"net/http"
 	"net/url"
 	"path/filepath"
 	"testing"
@@ -41,6 +42,16 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.True(t, ocfg.QueueConfig.HasValue(), "default sending queue is enabled")
 	assert.Equal(t, EncodingProto, ocfg.Encoding)
 	assert.Equal(t, configcompression.TypeGzip, ocfg.ClientConfig.Compression)
+	// Defaults must match the OTLP spec retryable status codes. Regression
+	// guard for issue #15382: a future refactor that silently dropped a code
+	// (or nilled the slice) would otherwise turn every server error into a
+	// permanent error and drop data.
+	assert.Equal(t, []int{
+		http.StatusTooManyRequests,
+		http.StatusBadGateway,
+		http.StatusServiceUnavailable,
+		http.StatusGatewayTimeout,
+	}, ocfg.RetryConfig.RetryableStatuses)
 }
 
 func TestCreateMetrics(t *testing.T) {

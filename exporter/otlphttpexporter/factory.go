@@ -6,6 +6,7 @@ package otlphttpexporter // import "go.opentelemetry.io/collector/exporter/otlph
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -49,7 +50,15 @@ func createDefaultConfig() component.Config {
 	clientConfig.WriteBufferSize = 512 * 1024
 
 	return &Config{
-		RetryConfig:  configretry.NewDefaultBackOffConfig(),
+		RetryConfig: RetryConfig{
+			BackOffConfig: configretry.NewDefaultBackOffConfig(),
+			RetryableStatuses: []int{
+				http.StatusTooManyRequests,
+				http.StatusBadGateway,
+				http.StatusServiceUnavailable,
+				http.StatusGatewayTimeout,
+			},
+		},
 		QueueConfig:  configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		Encoding:     EncodingProto,
 		ClientConfig: clientConfig,
@@ -115,7 +124,7 @@ func createTraces(
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
-		exporterhelper.WithRetry(oCfg.RetryConfig),
+		exporterhelper.WithRetry(oCfg.RetryConfig.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig),
 		exporterhelper.WithAttrs(endpointAttributes(endpointURL)...),
 	)
@@ -144,7 +153,7 @@ func createMetrics(
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
-		exporterhelper.WithRetry(oCfg.RetryConfig),
+		exporterhelper.WithRetry(oCfg.RetryConfig.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig),
 		exporterhelper.WithAttrs(endpointAttributes(endpointURL)...),
 	)
@@ -173,7 +182,7 @@ func createLogs(
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
-		exporterhelper.WithRetry(oCfg.RetryConfig),
+		exporterhelper.WithRetry(oCfg.RetryConfig.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig),
 		exporterhelper.WithAttrs(endpointAttributes(endpointURL)...),
 	)
@@ -202,7 +211,7 @@ func createProfiles(
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
-		exporterhelper.WithRetry(oCfg.RetryConfig),
+		exporterhelper.WithRetry(oCfg.RetryConfig.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig),
 		exporterhelper.WithAttrs(endpointAttributes(endpointURL)...),
 	)
