@@ -21,6 +21,29 @@ func TestResolveProfilesReferencesEmpty(t *testing.T) {
 	assert.Equal(t, 0, profiles.ResourceProfiles().Len())
 }
 
+func TestResolveProfilesReferencesInlineKey(t *testing.T) {
+	profiles := NewProfiles()
+	dict := profiles.Dictionary()
+	dict.StringTable().Append("") // index 0
+
+	rp := profiles.ResourceProfiles().AppendEmpty()
+	attrs := rp.Resource().Attributes()
+	attrs.PutStr("service.name", "checkout")
+
+	// Verify key is inline (KeyStrindex == 0 means not set)
+	mapOrig := internal.GetMapOrig(internal.MapWrapper(attrs))
+	kv := &(*mapOrig)[0]
+	assert.Equal(t, "service.name", kv.Key)
+	assert.Equal(t, int32(0), kv.KeyStrindex, "inline key should have KeyStrindex==0")
+
+	// Resolve references — should NOT replace inline key with empty string
+	resolveProfilesReferences(profiles)
+
+	// Verify key is still intact
+	assert.Equal(t, "service.name", kv.Key)
+	assert.Equal(t, "checkout", attrs.Get("service.name").AsString())
+}
+
 func TestResolveProfilesReferencesWithKeyRef(t *testing.T) {
 	profiles := NewProfiles()
 	dict := profiles.Dictionary()
