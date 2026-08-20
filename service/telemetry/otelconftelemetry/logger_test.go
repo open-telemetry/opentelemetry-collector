@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -455,6 +456,43 @@ func TestCreateLogger_NoMigrationWarning(t *testing.T) {
 	}()
 
 	assert.Zero(t, observedLogs.Len())
+}
+
+func TestCreateLoggerSetsOpenTelemetryErrorHandler(t *testing.T) {
+	core, observedLogs := observer.New(zapcore.DebugLevel)
+
+	cfg := &Config{
+		Logs: LogsConfig{
+			Level:    zapcore.InfoLevel,
+			Encoding: "json",
+		},
+	}
+
+	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	require.NoError(t, err)
+
+	set := telemetry.LoggerSettings{
+		Settings: telemetry.Settings{Resource: &resource},
+		BuildZapLogger: func(zap.Config, ...zap.Option) (*zap.Logger, error) {
+			return zap.New(core), nil
+		},
+	}
+
+	_, shutdown, err := createLogger(t.Context(), set, cfg)
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, shutdown.Shutdown(t.Context()))
+	}()
+
+	// Simulate an OTel SDK-internal error, e.g. a failed metric export,
+	// the same way the SDK itself reports one.
+	otel.Handle(errors.New("failed to upload metrics: connection refused"))
+
+	entries := observedLogs.All()
+	require.Len(t, entries, 1)
+	assert.Equal(t, zapcore.ErrorLevel, entries[0].Level)
+	assert.Equal(t, "OpenTelemetry internal telemetry error", entries[0].Message)
+	assert.Contains(t, entries[0].ContextMap()["error"], "failed to upload metrics")
 }
 
 func TestCreateLoggerZapOptions(t *testing.T) {

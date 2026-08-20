@@ -406,19 +406,3 @@ func castTo(exp ExpandedValue, useOriginal bool) any {
 	// Otherwise, use the parsed value (previous behavior).
 	return exp.Value
 }
-
-// Check if a reflect.Type is of the form T, where:
-// X is any type or interface
-// T = string | map[X]T | []T | [n]T
-func isStringyStructure(t reflect.Type) bool {
-	if t.Kind() == reflect.String {
-		return true
-	}
-	if t.Kind() == reflect.Map {
-		return isStringyStructure(t.Elem())
-	}
-	if t.Kind() == reflect.Slice || t.Kind() == reflect.Array {
-		return isStringyStructure(t.Elem())
-	}
-	return false
-}
