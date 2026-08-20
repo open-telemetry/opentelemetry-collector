@@ -38,7 +38,8 @@ func resolveKeyValueReferences(dict ProfilesDictionary, kvs []internal.KeyValue)
 	for i := range kvs {
 		kv := &kvs[i]
 		// Resolve key_ref if set
-		if kv.KeyStrindex >= 0 {
+		// Note: 0 is the proto3 default (not set) sentinel, so valid refs start at 1.
+		if kv.KeyStrindex > 0 {
 			idx := int(kv.KeyStrindex)
 			if idx < dict.StringTable().Len() {
 				kv.Key = dict.StringTable().At(idx)
