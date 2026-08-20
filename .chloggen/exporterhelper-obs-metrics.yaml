@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: pkg/exporterhelper
+
+note: Add `WithObsMetrics` and constructors for supplying queue, batch, and sender metrics
+
+issues: [14038]
+
+change_logs: [api]

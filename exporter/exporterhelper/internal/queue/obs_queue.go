@@ -6,88 +6,119 @@ package queue // import "go.opentelemetry.io/collector/exporter/exporterhelper/i
 import (
 	"context"
 
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
-	"go.opentelemetry.io/collector/pipeline"
-	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
 
-const (
-	// ExporterKey used to identify exporters in metrics and traces.
-	exporterKey = "exporter"
+// QueueMetrics reports the metrics produced by a Queue; use NewQueueMetrics.
+type QueueMetrics interface {
+	// RecordEnqueueFailure counts items the queue rejected.
+	RecordEnqueueFailure(ctx context.Context, items int64)
+	// RecordEnqueueSize counts the items and bytes offered to the queue.
+	RecordEnqueueSize(ctx context.Context, items int64, bytesSize func() int64)
+	// RegisterQueueSize installs an observer for the current queue size.
+	RegisterQueueSize(observeSize func() int64) error
+	// RegisterQueueCapacity installs an observer for the fixed queue capacity.
+	RegisterQueueCapacity(observeCapacity func() int64) error
 
-	// DataTypeKey used to identify the data type in the queue size metric.
-	dataTypeKey = "data_type"
-)
+	private()
+}
+
+// RecordEnqueueFailureFunc records the items dropped because the queue rejected them.
+type RecordEnqueueFailureFunc func(ctx context.Context, items int64)
+
+func (f RecordEnqueueFailureFunc) RecordEnqueueFailure(ctx context.Context, items int64) {
+	if f == nil {
+		return
+	}
+	f(ctx, items)
+}
+
+// RecordEnqueueSizeFunc records a request offered to the queue, calling bytesSize only if reported.
+type RecordEnqueueSizeFunc func(ctx context.Context, items int64, bytesSize func() int64)
+
+func (f RecordEnqueueSizeFunc) RecordEnqueueSize(ctx context.Context, items int64, bytesSize func() int64) {
+	if f == nil {
+		return
+	}
+	f(ctx, items, bytesSize)
+}
+
+// RegisterQueueSizeFunc installs an observer for the current queue size.
+type RegisterQueueSizeFunc func(observeSize func() int64) error
+
+func (f RegisterQueueSizeFunc) RegisterQueueSize(observeSize func() int64) error {
+	if f == nil {
+		return nil
+	}
+	return f(observeSize)
+}
+
+// RegisterQueueCapacityFunc installs an observer for the fixed queue capacity.
+type RegisterQueueCapacityFunc func(observeCapacity func() int64) error
+
+func (f RegisterQueueCapacityFunc) RegisterQueueCapacity(observeCapacity func() int64) error {
+	if f == nil {
+		return nil
+	}
+	return f(observeCapacity)
+}
+
+// NewQueueMetrics returns a QueueMetrics whose nil operations report nothing.
+func NewQueueMetrics(
+	recordEnqueueFailure RecordEnqueueFailureFunc,
+	recordEnqueueSize RecordEnqueueSizeFunc,
+	registerQueueSize RegisterQueueSizeFunc,
+	registerQueueCapacity RegisterQueueCapacityFunc,
+) QueueMetrics {
+	return queueMetrics{
+		RecordEnqueueFailureFunc:  recordEnqueueFailure,
+		RecordEnqueueSizeFunc:     recordEnqueueSize,
+		RegisterQueueSizeFunc:     registerQueueSize,
+		RegisterQueueCapacityFunc: registerQueueCapacity,
+	}
+}
+
+// queueMetrics implements QueueMetrics from a set of operations.
+type queueMetrics struct {
+	RecordEnqueueFailureFunc
+	RecordEnqueueSizeFunc
+	RegisterQueueSizeFunc
+	RegisterQueueCapacityFunc
+}
+
+func (queueMetrics) private() {}
+
+var _ QueueMetrics = queueMetrics{}
 
 // obsQueue is a helper to add observability to a queue.
 type obsQueue[T request.Request] struct {
 	Queue[T]
-	tb                   *metadata.TelemetryBuilder
-	metricAttr           metric.MeasurementOption
-	enqueueFailedInst    metric.Int64Counter
-	enqueueSizeInst      metric.Int64Histogram
-	enqueueSizeBytesInst metric.Int64Histogram
-	tracer               trace.Tracer
+	queueMetrics QueueMetrics
+	tracer       trace.Tracer
 }
 
 func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T], error) {
-	tb, err := metadata.NewTelemetryBuilder(set.Telemetry)
-	if err != nil {
+	qm := set.QueueMetrics
+	if qm == nil {
+		qm = NewQueueMetrics(nil, nil, nil, nil)
+	}
+
+	if err := qm.RegisterQueueSize(delegate.Size); err != nil {
 		return nil, err
 	}
 
-	exporterAttr := attribute.String(exporterKey, set.ID.String())
-	asyncAttr := metric.WithAttributeSet(attribute.NewSet(exporterAttr, attribute.String(dataTypeKey, set.Signal.String())))
-	err = tb.RegisterExporterQueueSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
-		o.Observe(delegate.Size(), asyncAttr)
-		return nil
-	})
-	if err != nil {
+	if err := qm.RegisterQueueCapacity(delegate.Capacity); err != nil {
 		return nil, err
 	}
 
-	err = tb.RegisterExporterQueueCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
-		o.Observe(delegate.Capacity(), asyncAttr)
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	tracer := metadata.Tracer(set.Telemetry)
-
-	or := &obsQueue[T]{
-		Queue:      delegate,
-		tb:         tb,
-		metricAttr: metric.WithAttributeSet(attribute.NewSet(exporterAttr)),
-		tracer:     tracer,
-	}
-
-	switch set.Signal {
-	case pipeline.SignalTraces:
-		or.enqueueFailedInst = tb.ExporterEnqueueFailedSpans
-	case pipeline.SignalMetrics:
-		or.enqueueFailedInst = tb.ExporterEnqueueFailedMetricPoints
-	case pipeline.SignalLogs:
-		or.enqueueFailedInst = tb.ExporterEnqueueFailedLogRecords
-	case xpipeline.SignalProfiles:
-		or.enqueueFailedInst = tb.ExporterEnqueueFailedProfileSamples
-	}
-
-	or.enqueueSizeInst = tb.ExporterEnqueueSize
-	or.enqueueSizeBytesInst = tb.ExporterEnqueueSizeBytes
-
-	return or, nil
-}
-
-func (or *obsQueue[T]) Shutdown(ctx context.Context) error {
-	defer or.tb.Shutdown()
-	return or.Queue.Shutdown(ctx)
+	return &obsQueue[T]{
+		Queue:        delegate,
+		queueMetrics: qm,
+		tracer:       metadata.Tracer(set.Telemetry),
+	}, nil
 }
 
 func (or *obsQueue[T]) Offer(ctx context.Context, req T) error {
@@ -95,18 +126,14 @@ func (or *obsQueue[T]) Offer(ctx context.Context, req T) error {
 	// be modified by the downstream components like the batcher.
 	numItems := req.ItemsCount()
 
-	or.enqueueSizeInst.Record(ctx, int64(numItems), or.metricAttr)
-	if or.enqueueSizeBytesInst.Enabled(ctx) {
-		or.enqueueSizeBytesInst.Record(ctx, int64(req.BytesSize()), or.metricAttr)
-	}
+	or.queueMetrics.RecordEnqueueSize(ctx, int64(numItems), func() int64 { return int64(req.BytesSize()) })
 
 	ctx, span := or.tracer.Start(ctx, "exporter/enqueue")
 	err := or.Queue.Offer(ctx, req)
 	span.End()
 
-	// No metrics recorded for profiles, remove enqueueFailedInst check with nil when profiles metrics available.
-	if err != nil && or.enqueueFailedInst != nil {
-		or.enqueueFailedInst.Add(ctx, int64(numItems), or.metricAttr)
+	if err != nil {
+		or.queueMetrics.RecordEnqueueFailure(ctx, int64(numItems))
 	}
 	return err
 }
