@@ -131,7 +131,10 @@ func newExporterObsMetrics(
 	// Instruments measuring the exchange with the destination also carry the
 	// exporter's extra attributes, which describe that destination.
 	destAttrs := func(kvs ...attribute.KeyValue) metric.MeasurementOption {
-		return metric.WithAttributeSet(attribute.NewSet(append(kvs, extraAttrs...)...))
+		allAttrs := make([]attribute.KeyValue, 0, len(extraAttrs)+len(kvs))
+		allAttrs = append(allAttrs, extraAttrs...)
+		allAttrs = append(allAttrs, kvs...)
+		return metric.WithAttributeSet(attribute.NewSet(allAttrs...))
 	}
 
 	exporterAttr := attribute.String(ExporterKey, id.String())
@@ -142,7 +145,7 @@ func newExporterObsMetrics(
 	queueAttrs := attrs(exporterAttr, signalAttr)
 	batchAttrs := destAttrs(exporterAttr, signalAttr)
 	sentAttrs := destAttrs(exporterAttr)
-	inFlightAttrs := destAttrs(exporterAttr, signalAttr)
+	inFlightAttrs := attrs(exporterAttr, signalAttr)
 
 	var itemsSentInst, itemsFailedInst, enqueueFailedInst metric.Int64Counter
 	switch signal {

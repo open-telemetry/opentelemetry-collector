@@ -64,12 +64,47 @@ func TestExporterObsMetricsAttributes(t *testing.T) {
 		"otelcol_exporter_queue_batch_send_size_bytes": attribute.NewSet(exporterAttr, signalAttr, extraAttr),
 		"otelcol_exporter_queue_size":                  attribute.NewSet(exporterAttr, signalAttr),
 		"otelcol_exporter_queue_capacity":              attribute.NewSet(exporterAttr, signalAttr),
-		"otelcol_exporter_in_flight_requests":          attribute.NewSet(exporterAttr, signalAttr, extraAttr),
+		"otelcol_exporter_in_flight_requests":          attribute.NewSet(exporterAttr, signalAttr),
 		"otelcol_exporter_sent_spans":                  attribute.NewSet(exporterAttr, extraAttr),
 		"otelcol_exporter_send_failed_spans":           attribute.NewSet(exporterAttr, extraAttr),
 	} {
 		require.Equal(t, want, dataPointAttributes(t, tt, name), name)
 	}
+}
+
+func TestExporterObsMetricsMandatoryAttributesTakePrecedence(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	id := component.NewID(component.MustNewType("test"))
+	om, err := newExporterObsMetrics(
+		tt.NewTelemetrySettings(),
+		id,
+		pipeline.SignalTraces,
+		[]attribute.KeyValue{
+			attribute.String(ExporterKey, "other"),
+			attribute.String(DataTypeKey, pipeline.SignalMetrics.String()),
+		},
+	)
+	require.NoError(t, err)
+	t.Cleanup(om.Shutdown)
+
+	ctx := context.Background()
+	om.RecordBatchSendSize(ctx, 5, func() int64 { return 100 })
+	om.RecordSent(ctx, 5)
+
+	exporterAttr := attribute.String(ExporterKey, id.String())
+	signalAttr := attribute.String(DataTypeKey, pipeline.SignalTraces.String())
+	require.Equal(
+		t,
+		attribute.NewSet(exporterAttr, signalAttr),
+		dataPointAttributes(t, tt, "otelcol_exporter_queue_batch_send_size"),
+	)
+	require.Equal(
+		t,
+		attribute.NewSet(exporterAttr, attribute.String(DataTypeKey, pipeline.SignalMetrics.String())),
+		dataPointAttributes(t, tt, "otelcol_exporter_sent_spans"),
+	)
 }
 
 // dataPointAttributes returns the attributes of the metric's first data point.
