@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: processor/queuebatch
+
+note: Align exporterhelper metric attributes and add processor-oriented queuebatch metrics
+
+issues: [14038, 9943, 14674, 14998]
+
+change_logs: [user]
