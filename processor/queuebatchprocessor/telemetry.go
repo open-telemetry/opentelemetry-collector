@@ -17,7 +17,7 @@ import (
 
 const (
 	processorKey = "processor"
-	signalKey    = "otel.signal"
+	dataTypeKey  = "data_type"
 )
 
 // recordSize records the item count, and the byte size when bytesInst is enabled.
@@ -39,7 +39,7 @@ func newObsMetrics(set component.TelemetrySettings, id component.ID, signal pipe
 
 	attrs := metric.WithAttributeSet(attribute.NewSet(
 		attribute.String(processorKey, id.String()),
-		attribute.String(signalKey, signal.String()),
+		attribute.String(dataTypeKey, signal.String()),
 	))
 
 	return exporterhelper.NewObsMetrics(

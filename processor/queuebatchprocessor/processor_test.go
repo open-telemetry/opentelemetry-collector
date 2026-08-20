@@ -110,7 +110,7 @@ func TestTraces(t *testing.T) {
 func processorAttrs(set processor.Settings, signal pipeline.Signal) attribute.Set {
 	return attribute.NewSet(
 		attribute.String(processorKey, set.ID.String()),
-		attribute.String(signalKey, signal.String()),
+		attribute.String(dataTypeKey, signal.String()),
 	)
 }
 
@@ -210,7 +210,7 @@ func TestTracesProcessorSendFailureMetrics(t *testing.T) {
 	require.Equal(t, int64(5), sum.DataPoints[0].Value)
 	require.Equal(t, attribute.NewSet(
 		attribute.String(processorKey, set.ID.String()),
-		attribute.String(signalKey, pipeline.SignalTraces.String()),
+		attribute.String(dataTypeKey, pipeline.SignalTraces.String()),
 		attribute.String("error.type", "_OTHER"),
 		attribute.Bool("error.permanent", false),
 	), sum.DataPoints[0].Attributes)
