@@ -3,7 +3,7 @@
 
 module go.opentelemetry.io/collector/cmd/builder
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/knadh/koanf/parsers/yaml v1.1.1
