@@ -63,6 +63,30 @@ func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer) ([]request.
 	return res, nil
 }
 
+// SplitOne implements the splitOne interface by splitting off at most maxSize
+// items/bytes from this request into a new request, leaving the remainder in the
+// receiver. Returns nil when the receiver already contains at most maxSize items.
+func (req *metricsRequest) SplitOne(_ context.Context, maxSize int, szt request.SizerType) (request.Request, error) {
+	var sz sizer.MetricsSizer
+	switch szt {
+	case request.SizerTypeItems:
+		sz = &sizer.MetricsCountSizer{}
+	case request.SizerTypeBytes:
+		sz = &sizer.MetricsBytesSizer{}
+	default:
+		return nil, errors.New("unknown sizer type")
+	}
+	if req.size(sz) <= maxSize {
+		return nil, nil
+	}
+	md, rmSize := extractMetrics(req.md, maxSize, sz)
+	if md.DataPointCount() == 0 {
+		return nil, fmt.Errorf("one datapoint size is greater than max size, dropping items: %d", req.md.DataPointCount())
+	}
+	req.setCachedSize(req.size(sz) - rmSize)
+	return newMetricsRequest(md), nil
+}
+
 // extractMetrics extracts metrics from srcMetrics until capacity is reached.
 func extractMetrics(srcMetrics pmetric.Metrics, capacity int, sz sizer.MetricsSizer) (pmetric.Metrics, int) {
 	destMetrics := pmetric.NewMetrics()
