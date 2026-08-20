@@ -21,6 +21,23 @@ func TestResolveProfilesReferencesEmpty(t *testing.T) {
 	assert.Equal(t, 0, profiles.ResourceProfiles().Len())
 }
 
+func TestResolveProfilesReferencesWithInlineKey(t *testing.T) {
+	profiles := NewProfiles()
+	profiles.Dictionary().StringTable().Append("") // index 0 is the required sentinel, not a key reference
+
+	attrs := profiles.ResourceProfiles().AppendEmpty().Resource().Attributes()
+	attrs.PutStr("service.name", "checkout")
+
+	kvs := internal.GetMapOrig(internal.MapWrapper(attrs))
+	require.Len(t, *kvs, 1)
+	require.Zero(t, (*kvs)[0].KeyStrindex)
+
+	resolveProfilesReferences(profiles)
+
+	assert.Equal(t, "service.name", (*kvs)[0].Key,
+		"an unset key_strindex must not replace an inline key with string_table[0]")
+}
+
 func TestResolveProfilesReferencesWithKeyRef(t *testing.T) {
 	profiles := NewProfiles()
 	dict := profiles.Dictionary()
@@ -202,7 +219,7 @@ func TestConvertProfilesToReferencesEmpty(t *testing.T) {
 func TestConvertProfilesToReferencesDeduplication(t *testing.T) {
 	profiles := NewProfiles()
 	dict := profiles.Dictionary()
-	dict.StringTable().Append("")
+	// No sentinel appended: interning must seed index 0 itself.
 
 	rp := profiles.ResourceProfiles().AppendEmpty()
 	rp.Resource().Attributes().PutStr("key1", "duplicated-value")
