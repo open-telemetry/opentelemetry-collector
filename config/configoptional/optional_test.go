@@ -78,10 +78,6 @@ var subDefault = Sub{
 	Foo: "foobar",
 }
 
-func ptr[T any](v T) *T {
-	return &v
-}
-
 func TestDefaultPanics(t *testing.T) {
 	assert.Panics(t, func() {
 		_ = Default(WithEnabled{})
@@ -122,7 +118,7 @@ func TestDefaultPanics(t *testing.T) {
 	})
 
 	assert.NotPanics(t, func() {
-		_ = Default(ptr(subDefault))
+		_ = Default(new(subDefault))
 	})
 }
 
