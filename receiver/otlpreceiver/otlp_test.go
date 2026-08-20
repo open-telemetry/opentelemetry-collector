@@ -1063,6 +1063,8 @@ func generateProfilesRequest(t *testing.T) dataRequest {
 	jsonMarshaler := &pprofile.JSONMarshaler{}
 
 	md := testdata.GenerateProfiles(2)
+	md.MarkReadOnly()
+
 	profileProto, err := protoMarshaler.MarshalProfiles(md)
 	require.NoError(t, err)
 
@@ -1384,9 +1386,22 @@ func (esc *errOrSinkConsumer) checkData(t *testing.T, data any, dataLen int) {
 		allProfiles := esc.AllProfiles()
 		require.Len(t, allProfiles, dataLen)
 		if dataLen > 0 {
-			require.Equal(t, allProfiles[0], data)
+			requireProfilesEqualIgnoringAppendedStrings(t, data.(pprofile.Profiles), allProfiles[0])
 		}
 	}
+}
+
+// Marshaling appends attribute strings to the dictionary and the receiver inlines
+// them again without pruning, so got's string table is want's plus an unused tail.
+func requireProfilesEqualIgnoringAppendedStrings(t *testing.T, want, got pprofile.Profiles) {
+	t.Helper()
+	w, g := pprofile.NewProfiles(), pprofile.NewProfiles()
+	want.CopyTo(w)
+	got.CopyTo(g)
+	wantStrings, gotStrings := w.Dictionary().StringTable(), g.Dictionary().StringTable()
+	require.GreaterOrEqual(t, gotStrings.Len(), wantStrings.Len())
+	gotStrings.FromRaw(gotStrings.AsRaw()[:wantStrings.Len()])
+	require.Equal(t, w, g)
 }
 
 func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id component.ID, transport string, accepted, rejected int64) {
