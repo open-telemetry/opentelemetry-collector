@@ -51,15 +51,30 @@ func (req *tracesRequest) mergeTo(dst *tracesRequest, sz sizer.TracesSizer) {
 
 func (req *tracesRequest) split(maxSize int, sz sizer.TracesSizer) ([]request.Request, error) {
 	var res []request.Request
-	for req.size(sz) > maxSize {
+	droppedItems := 0
+	for req.td.SpanCount() > 0 && req.size(sz) > maxSize {
 		td, rmSize := extractTraces(req.td, maxSize, sz)
 		if td.SpanCount() == 0 {
-			return res, fmt.Errorf("one span size is greater than max size, dropping items: %d", req.td.SpanCount())
+			// Nothing fit into an empty destination batch, so the next remaining span is
+			// individually larger than maxSize. Drop that single offending span and continue
+			// splitting the rest so one bad item does not block the whole request.
+			dropped := dropFirstRemainingSpan(req.td)
+			if dropped == 0 {
+				return res, errors.New("failed to drop oversized span")
+			}
+			droppedItems += dropped
+			req.setCachedSize(-1)
+			continue
 		}
 		req.setCachedSize(req.size(sz) - rmSize)
 		res = append(res, newTracesRequest(td))
 	}
-	res = append(res, req)
+	if req.td.SpanCount() > 0 || (len(res) == 0 && droppedItems == 0) {
+		res = append(res, req)
+	}
+	if droppedItems > 0 {
+		return res, fmt.Errorf("one span size is greater than max size, dropping items: %d", droppedItems)
+	}
 	return res, nil
 }
 
@@ -167,4 +182,22 @@ func extractScopeSpans(srcSS ptrace.ScopeSpans, capacity int, sz sizer.TracesSiz
 		return true
 	})
 	return destSS, removedSize
+}
+
+func dropFirstRemainingSpan(td ptrace.Traces) int {
+	dropped := 0
+	td.ResourceSpans().RemoveIf(func(srcRS ptrace.ResourceSpans) bool {
+		srcRS.ScopeSpans().RemoveIf(func(srcSS ptrace.ScopeSpans) bool {
+			srcSS.Spans().RemoveIf(func(_ ptrace.Span) bool {
+				if dropped > 0 {
+					return false
+				}
+				dropped = 1
+				return true
+			})
+			return srcSS.Spans().Len() == 0
+		})
+		return srcRS.ScopeSpans().Len() == 0
+	})
+	return dropped
 }
