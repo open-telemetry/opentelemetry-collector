@@ -105,7 +105,15 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 				return !prop.Embed
 			})
 		},
+		"isRequired": isRequired,
+		"shouldOmitEmpty": func(md *ConfigMetadata, propName string, prop *ConfigMetadata) bool {
+			return !isRequired(md, propName) && !hasNonZeroDefault(prop)
+		},
 	}
+}
+
+func isRequired(md *ConfigMetadata, propName string) bool {
+	return slices.Contains(md.Required, propName)
 }
 
 // ExternalDefaultCall returns the Go expression that delegates to the upstream package's
@@ -694,6 +702,22 @@ func hasDefaultValue(md *ConfigMetadata) bool {
 	}
 	for _, prop := range md.Properties {
 		if hasDefaultValue(prop) {
+			return true
+		}
+	}
+	return false
+}
+
+func hasNonZeroDefault(md *ConfigMetadata) bool {
+	if !md.GoStruct.IgnoreDefault && md.Default != nil {
+		m, isMap := md.Default.(map[string]any)
+		// empty map {} is the zero value
+		if !isMap || len(m) > 0 {
+			return true
+		}
+	}
+	for _, prop := range md.Properties {
+		if hasNonZeroDefault(prop) {
 			return true
 		}
 	}

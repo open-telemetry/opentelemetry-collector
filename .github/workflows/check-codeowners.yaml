@@ -7,7 +7,7 @@ on:
       - "**/metadata.yaml"
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+*"
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] — intentional see NOTE below
     paths:
       - ".github/CODEOWNERS"
       - "**/metadata.yaml"
@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-24.04
     if: ${{ github.event.pull_request.user.login != 'dependabot[bot]' && github.repository == 'open-telemetry/opentelemetry-collector' }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 
@@ -45,7 +45,7 @@ jobs:
           cache-dependency-path: "**/*.sum"
           cache: false
 
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{github.event.pull_request.head.ref}}
           repository: ${{github.event.pull_request.head.repo.full_name}}
@@ -58,6 +58,7 @@ jobs:
         with:
           client-id: ${{ vars.OTELBOT_CLIENT_ID }}
           private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
+          permission-members: read
 
       # NOTE: the make command below intentionally uses the Makefile from the
       # target branch, and not the PR checkout, since it runs with the

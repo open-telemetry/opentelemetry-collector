@@ -210,15 +210,16 @@ func testMetricStability(t *testing.T, configFile string, expectedMetrics map[st
 	})
 	require.NoError(t, err)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
+	runErr := make(chan error, 1)
 	go func() {
-		err := collector.Run(ctx)
-		if err != nil {
-			t.Logf("Collector stopped with error: %v", err)
-		}
+		runErr <- collector.Run(context.Background())
 	}()
+	t.Cleanup(func() {
+		collector.Shutdown()
+		require.NoError(t, <-runErr, "collector stopped with an error")
+	})
+
+	waitCollectorRunning(t, collector)
 	waitMetricsReady(t, metricsPort)
 
 	for range 5 {
@@ -347,6 +348,15 @@ func getFreePort(t *testing.T) string {
 	}
 	defer l.Close()
 	return strconv.Itoa(l.Addr().(*net.TCPAddr).Port)
+}
+
+// waitCollectorRunning waits until the collector has started every component. The
+// telemetry metrics endpoint is up before that happens, so waiting on it is not enough
+// to know that the OTLP receiver is already listening.
+func waitCollectorRunning(t *testing.T, collector *otelcol.Collector) {
+	require.Eventually(t, func() bool {
+		return collector.GetState() == otelcol.StateRunning
+	}, 30*time.Second, 10*time.Millisecond, "collector did not reach the running state")
 }
 
 func waitMetricsReady(t *testing.T, metricsPort string) {
