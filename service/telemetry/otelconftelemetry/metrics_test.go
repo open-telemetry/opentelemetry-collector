@@ -205,6 +205,9 @@ func TestCreateMeterProvider_020MigrationWarning(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.Metrics.MigratedFromV02 = true
+	cfg.Metrics.Readers = []config.MetricReader{{
+		Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: promtest.GetAvailableLocalAddressPrometheus(t)}},
+	}}
 
 	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
@@ -229,6 +232,9 @@ func TestCreateMeterProvider_NoMigrationWarning(t *testing.T) {
 	core, observedLogs := observer.New(zapcore.DebugLevel)
 
 	cfg := createDefaultConfig().(*Config)
+	cfg.Metrics.Readers = []config.MetricReader{{
+		Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: promtest.GetAvailableLocalAddressPrometheus(t)}},
+	}}
 
 	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)

@@ -1,6 +1,6 @@
 name: 'Add labels and code owners to PR'
 on:
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] — guarding on line 16
     types:
       - opened
       - synchronize

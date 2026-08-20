@@ -1,0 +1,17 @@
+{
+  "$id": "go.opentelemetry.io/collector/config/configauth",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "config": {
+      "type": "object",
+      "properties": {
+        "authenticator": {
+          "type": "string",
+          "description": "Specifies the name of the extension to use in order to authenticate the incoming data point."
+        }
+      },
+      "description": "Defines the auth settings for the receiver."
+    }
+  },
+  "title": "pkg/config/configauth"
+}
