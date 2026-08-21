@@ -18,6 +18,8 @@ import (
 // ValueType specifies the type of Value.
 type ValueType int32
 
+type Strindex int32
+
 const (
 	ValueTypeEmpty ValueType = iota
 	ValueTypeStr
@@ -27,6 +29,7 @@ const (
 	ValueTypeMap
 	ValueTypeSlice
 	ValueTypeBytes
+	ValueTypeStrindex
 )
 
 // String returns the string representation of the ValueType.
@@ -48,6 +51,8 @@ func (avt ValueType) String() string {
 		return "Slice"
 	case ValueTypeBytes:
 		return "Bytes"
+	case ValueTypeStrindex:
+		return "Strindex"
 	}
 	return ""
 }
@@ -137,6 +142,17 @@ func NewValueBytes() Value {
 	return newValue(orig, internal.NewState())
 }
 
+// NewValueStrindex creates a new Value of strindex type.
+// Note: This is currently used exclusively in the Profiling signal.
+// Status: [Alpha]
+func NewValueStrindex(i int32) Value {
+	ov := internal.NewAnyValueStringValueStrindex()
+	ov.StringValueStrindex = i
+	orig := internal.NewAnyValue()
+	orig.Value = ov
+	return newValue(orig, internal.NewState())
+}
+
 func newValue(orig *internal.AnyValue, state *internal.State) Value {
 	return Value(internal.NewValueWrapper(orig, state))
 }
@@ -189,6 +205,8 @@ func (v Value) FromRaw(iv any) error {
 		return v.SetEmptyMap().FromRaw(tv)
 	case []any:
 		return v.SetEmptySlice().FromRaw(tv)
+	case Strindex:
+		v.SetStrindex(int32(tv))
 	default:
 		return fmt.Errorf("<Invalid value type %T>", tv)
 	}
@@ -213,6 +231,8 @@ func (v Value) Type() ValueType {
 		return ValueTypeSlice
 	case *internal.AnyValue_BytesValue:
 		return ValueTypeBytes
+	case *internal.AnyValue_StringValueStrindex:
+		return ValueTypeStrindex
 	}
 	return ValueTypeEmpty
 }
@@ -273,6 +293,14 @@ func (v Value) Bytes() ByteSlice {
 		return ByteSlice{}
 	}
 	return ByteSlice(internal.NewByteSliceWrapper(&bv.BytesValue, internal.GetValueState(internal.ValueWrapper(v))))
+}
+
+// Strindex returns the strindex value associated with this Value.
+// If the Type() is not ValueTypeStrindex then returns zero value.
+// Note: This is currently used exclusively in the Profiling signal.
+// Status: [Alpha]
+func (v Value) Strindex() int32 {
+	return v.getOrig().GetStringValueStrindex()
 }
 
 // SetStr replaces the string value associated with this Value,
@@ -360,6 +388,19 @@ func (v Value) SetEmptySlice() Slice {
 	return newSlice(&ov.ArrayValue.Values, v.getState())
 }
 
+// SetStrindex replaces the strindex associated with this Value,
+// it also changes the type to be ValueTypeStrindex.
+// Note: This is currently used exclusively in the Profiling signal.
+// Status: [Alpha]
+func (v Value) SetStrindex(i int32) {
+	v.getState().AssertMutable()
+	// Delete everything but the AnyValue object itself.
+	internal.DeleteAnyValue(v.getOrig(), false)
+	ov := internal.NewAnyValueStringValueStrindex()
+	ov.StringValueStrindex = i
+	v.getOrig().Value = ov
+}
+
 // MoveTo moves the Value from current overriding the destination and
 // resetting the current instance to empty value.
 // Calling this function on zero-initialized Value will cause a panic.
@@ -410,6 +451,9 @@ func (v Value) AsString() string {
 
 	case ValueTypeSlice:
 		return marshalJSONNoHTMLEscape(v.Slice().AsRaw())
+
+	case ValueTypeStrindex:
+		return fmt.Sprintf("<strindex>%d", v.Strindex())
 
 	default:
 		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", v.Type())
@@ -488,6 +532,8 @@ func (v Value) AsRaw() any {
 		return v.Map().AsRaw()
 	case ValueTypeSlice:
 		return v.Slice().AsRaw()
+	case ValueTypeStrindex:
+		return Strindex(v.Strindex())
 	}
 	return fmt.Sprintf("<Unknown OpenTelemetry value type %q>", v.Type())
 }
@@ -514,6 +560,8 @@ func (v Value) Equal(c Value) bool {
 		return v.Map().Equal(c.Map())
 	case ValueTypeSlice:
 		return v.Slice().Equal(c.Slice())
+	case ValueTypeStrindex:
+		return v.Strindex() == c.Strindex()
 	}
 
 	return false
