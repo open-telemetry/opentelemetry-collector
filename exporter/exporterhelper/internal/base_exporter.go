@@ -46,6 +46,7 @@ type BaseExporter struct {
 	ConsumerOptions []consumer.Option
 
 	ExtraAttrs []attribute.KeyValue
+	ObsMetrics ObsMetrics
 
 	timeoutCfg TimeoutConfig
 	retryCfg   configretry.BackOffConfig
@@ -54,16 +55,31 @@ type BaseExporter struct {
 	queueCfg           configoptional.Optional[queuebatch.Config]
 }
 
-func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sender.SendFunc[request.Request], options ...Option) (*BaseExporter, error) {
+func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sender.SendFunc[request.Request], options ...Option) (_ *BaseExporter, err error) {
 	be := &BaseExporter{
 		Set:        set,
 		timeoutCfg: NewDefaultTimeoutConfig(),
 	}
+	// Metrics created here, rather than injected, are released when construction fails.
+	var ownedObsMetrics ObsMetrics
+	defer func() {
+		if err != nil && ownedObsMetrics != nil {
+			ownedObsMetrics.Shutdown()
+		}
+	}()
 
 	for _, op := range options {
-		if err := op(be); err != nil {
+		err = op(be)
+		if err != nil {
 			return nil, err
 		}
+	}
+
+	if be.ObsMetrics == nil {
+		if ownedObsMetrics, err = newExporterObsMetrics(set.TelemetrySettings, set.ID, signal, be.ExtraAttrs); err != nil {
+			return nil, err
+		}
+		be.ObsMetrics = ownedObsMetrics
 	}
 
 	// Consumer Sender is always initialized.
@@ -80,24 +96,24 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 		be.firstSender = be.RetrySender
 	}
 
-	var err error
 	batchEnabled := be.queueCfg.HasValue() && be.queueCfg.Get().Batch.HasValue()
-	be.firstSender, err = newObsReportSender(set, signal, be.ExtraAttrs, batchEnabled, be.firstSender)
+	be.firstSender, err = newObsReportSender(set, signal, be.ObsMetrics, batchEnabled, be.firstSender)
 	if err != nil {
 		return nil, err
 	}
 
-	if batchEnabled {
+	if be.queueCfg.HasValue() && be.queueCfg.Get().Batch.HasValue() {
 		// Batcher mutates the data.
 		be.ConsumerOptions = append(be.ConsumerOptions, consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 	}
 
 	if be.queueCfg.HasValue() {
 		qSet := queuebatch.AllSettings[request.Request]{
-			Settings:  be.queueBatchSettings,
-			Signal:    signal,
-			ID:        set.ID,
-			Telemetry: set.TelemetrySettings,
+			Settings:          be.queueBatchSettings,
+			Signal:            signal,
+			ID:                set.ID,
+			Telemetry:         set.TelemetrySettings,
+			QueueBatchMetrics: be.ObsMetrics,
 		}
 		be.QueueSender, err = NewQueueSender(qSet, *be.queueCfg.Get(), be.ExportFailureMessage, be.firstSender)
 		if err != nil {
@@ -137,6 +153,7 @@ func (be *BaseExporter) Start(ctx context.Context, host component.Host) error {
 }
 
 func (be *BaseExporter) Shutdown(ctx context.Context) error {
+	defer be.ObsMetrics.Shutdown()
 	var err error
 
 	// First shutdown the retry sender, so the queue sender can flush the queue without retries.
@@ -250,6 +267,17 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 func WithAttributes(attrs ...attribute.KeyValue) Option {
 	return func(o *BaseExporter) error {
 		o.ExtraAttrs = attrs
+		return nil
+	}
+}
+
+// WithObsMetrics overrides the metrics emitted by exporterhelper.
+func WithObsMetrics(obsMetrics ObsMetrics) Option {
+	return func(o *BaseExporter) error {
+		if obsMetrics == nil {
+			return errors.New("ObsMetrics must not be nil")
+		}
+		o.ObsMetrics = obsMetrics
 		return nil
 	}
 }

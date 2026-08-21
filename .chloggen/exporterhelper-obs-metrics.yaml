@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: pkg/exporterhelper
+
+note: Add `WithObsMetrics`, evolvable metrics constructors, and `exporterhelpertest` helpers
+
+issues: [14038]
+
+change_logs: [api]
