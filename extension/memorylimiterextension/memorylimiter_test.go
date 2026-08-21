@@ -17,6 +17,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/memorylimiterextension/internal/metadata"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
 	"go.opentelemetry.io/collector/internal/memorylimiter/iruntime"
@@ -66,16 +67,16 @@ func TestGetGRPCServerOptions_Normal(t *testing.T) {
 		return handler(srv, ss)
 	}
 
-	dummyUnaryHandler := func(ctx context.Context, req any) (any, error) {
+	dummyUnaryHandler := func(_ context.Context, req any) (any, error) {
 		return "success", nil
 	}
-	dummyStreamHandler := func(srv any, stream grpc.ServerStream) error {
+	dummyStreamHandler := func(_ any, stream grpc.ServerStream) error {
 		return nil
 	}
 	mockStream := &mockServerStream{ctx: ctx}
 
 	resp, err := unaryInterceptor(ctx, "req", nil, dummyUnaryHandler)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "success", resp)
 
 	err = streamInterceptor(nil, mockStream, nil, dummyStreamHandler)
@@ -119,21 +120,21 @@ func TestGetGRPCServerOptions_Refusal(t *testing.T) {
 		return handler(srv, ss)
 	}
 
-	dummyUnaryHandler := func(ctx context.Context, req any) (any, error) {
+	dummyUnaryHandler := func(_ context.Context, req any) (any, error) {
 		return "success", nil
 	}
-	dummyStreamHandler := func(srv any, stream grpc.ServerStream) error {
+	dummyStreamHandler := func(_ any, stream grpc.ServerStream) error {
 		return nil
 	}
 	mockStream := &mockServerStream{ctx: ctx}
 
 	resp, err := unaryInterceptor(ctx, "req", nil, dummyUnaryHandler)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, resp)
 	assert.Contains(t, err.Error(), "RESOURCE_EXHAUSTED")
 
 	err = streamInterceptor(nil, mockStream, nil, dummyStreamHandler)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "RESOURCE_EXHAUSTED")
 }
 
@@ -217,4 +218,16 @@ func TestMemoryPressureResponse(t *testing.T) {
 			assert.NoError(t, ml.Shutdown(ctx))
 		})
 	}
+}
+
+func TestCreateExtension_TelemetryBuilderError(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	invalidSettings := extension.Settings{}
+
+	ext, err := factory.Create(context.Background(), invalidSettings, cfg)
+
+	require.Error(t, err)
+	require.Nil(t, ext)
 }
