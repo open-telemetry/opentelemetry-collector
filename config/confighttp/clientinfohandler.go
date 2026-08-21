@@ -7,6 +7,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"net/netip"
 
 	"go.opentelemetry.io/collector/client"
 )
@@ -51,16 +52,14 @@ func contextWithClient(req *http.Request, includeMetadata bool) context.Context 
 
 // parseIP parses the given string for an IP address. The input string might contain the port,
 // but must not contain a protocol or path. Suitable for getting the IP part of a client connection.
+// It supports IPv6 addresses with a zone identifier (e.g. "fe80::1%eth0"), which net.ParseIP does
+// not.
 func parseIP(source string) *net.IPAddr {
-	ipstr, _, err := net.SplitHostPort(source)
-	if err == nil {
-		source = ipstr
+	if addrPort, err := netip.ParseAddrPort(source); err == nil {
+		return &net.IPAddr{IP: addrPort.Addr().AsSlice(), Zone: addrPort.Addr().Zone()}
 	}
-	ip := net.ParseIP(source)
-	if ip != nil {
-		return &net.IPAddr{
-			IP: ip,
-		}
+	if addr, err := netip.ParseAddr(source); err == nil {
+		return &net.IPAddr{IP: addr.AsSlice(), Zone: addr.Zone()}
 	}
 	return nil
 }
