@@ -302,9 +302,9 @@ func newOTLPSimpleSpanProcessor(srv *httptest.Server) config.SpanProcessor {
 		Simple: &config.SimpleSpanProcessor{
 			Exporter: config.SpanExporter{
 				OTLP: &config.OTLP{
-					Endpoint: ptr(srv.URL),
-					Protocol: ptr("http/protobuf"),
-					Insecure: ptr(true),
+					Endpoint: new(srv.URL),
+					Protocol: new("http/protobuf"),
+					Insecure: new(true),
 				},
 			},
 		},
