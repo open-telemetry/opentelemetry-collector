@@ -16,6 +16,10 @@ import (
 // MergeSplit splits and/or merges the provided traces request and the current request into one or more requests
 // conforming with the MaxSizeConfig.
 func (req *tracesRequest) MergeSplit(_ context.Context, maxSize int, szt request.SizerType, r2 request.Request) ([]request.Request, error) {
+	if szt == request.SizerTypeRequests {
+		return mergeSplitTracesRequests(req, maxSize, r2)
+	}
+
 	var sz sizer.TracesSizer
 	switch szt {
 	case request.SizerTypeItems:
@@ -39,6 +43,22 @@ func (req *tracesRequest) MergeSplit(_ context.Context, maxSize int, szt request
 		return []request.Request{req}, nil
 	}
 	return req.split(maxSize, sz)
+}
+
+func mergeSplitTracesRequests(req *tracesRequest, maxSize int, r2 request.Request) ([]request.Request, error) {
+	if r2 != nil {
+		req2, ok := r2.(*tracesRequest)
+		if !ok {
+			return nil, errors.New("invalid input type")
+		}
+		mergedCount := req.RequestsCount() + req2.RequestsCount()
+		if maxSize > 0 && mergedCount > maxSize {
+			return []request.Request{req, req2}, nil
+		}
+		req2.mergeTo(req, nil)
+		req.requestCount = mergedCount
+	}
+	return []request.Request{req}, nil
 }
 
 func (req *tracesRequest) mergeTo(dst *tracesRequest, sz sizer.TracesSizer) {

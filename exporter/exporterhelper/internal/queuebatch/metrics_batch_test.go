@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -727,6 +728,91 @@ func TestMetricsMergeSplitUnknownSizerType(t *testing.T) {
 	// Call MergeSplit with invalid sizer
 	_, err := req.MergeSplit(context.Background(), 0, request.SizerType{}, nil)
 	require.EqualError(t, err, "unknown sizer type")
+}
+
+func TestMergeSplitMetricsRequestsSizer(t *testing.T) {
+	tests := []struct {
+		name           string
+		mr1            request.Request
+		mr2            request.Request
+		maxSize        int
+		wantLen        int
+		wantItemCounts []int
+		wantReqCounts  []int64
+		wantErr        string
+	}{
+		{
+			// testdata.GenerateMetrics(N) creates N metrics each with 2 data points,
+			// so ItemsCount() == N*2.
+			name:           "merge_two_requests",
+			mr1:            newMetricsRequest(testdata.GenerateMetrics(5)),
+			mr2:            newMetricsRequest(testdata.GenerateMetrics(3)),
+			maxSize:        0,
+			wantLen:        1,
+			wantItemCounts: []int{16},
+			wantReqCounts:  []int64{2},
+		},
+		{
+			name:           "merge_when_under_max_size",
+			mr1:            newMetricsRequest(testdata.GenerateMetrics(5)),
+			mr2:            newMetricsRequest(testdata.GenerateMetrics(3)),
+			maxSize:        2,
+			wantLen:        1,
+			wantItemCounts: []int{16},
+			wantReqCounts:  []int64{2},
+		},
+		{
+			name:           "do_not_merge_when_over_max_size",
+			mr1:            newMetricsRequest(testdata.GenerateMetrics(5)),
+			mr2:            newMetricsRequest(testdata.GenerateMetrics(3)),
+			maxSize:        1,
+			wantLen:        2,
+			wantItemCounts: []int{10, 6},
+			wantReqCounts:  []int64{1, 1},
+		},
+		{
+			name:           "nil_second_request",
+			mr1:            newMetricsRequest(testdata.GenerateMetrics(7)),
+			mr2:            nil,
+			maxSize:        0,
+			wantLen:        1,
+			wantItemCounts: []int{14},
+			wantReqCounts:  []int64{1},
+		},
+		{
+			name:           "empty_first_request",
+			mr1:            newMetricsRequest(pmetric.NewMetrics()),
+			mr2:            newMetricsRequest(testdata.GenerateMetrics(4)),
+			maxSize:        0,
+			wantLen:        1,
+			wantItemCounts: []int{8},
+			wantReqCounts:  []int64{2},
+		},
+		{
+			name:    "invalid_input_type",
+			mr1:     newMetricsRequest(testdata.GenerateMetrics(1)),
+			mr2:     &requesttest.FakeRequest{Items: 1},
+			maxSize: 0,
+			wantErr: "invalid input type",
+		},
+	}
+
+	sz := request.RequestsSizer{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res, err := tt.mr1.MergeSplit(context.Background(), tt.maxSize, request.SizerTypeRequests, tt.mr2)
+			if tt.wantErr != "" {
+				require.EqualError(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			require.Len(t, res, tt.wantLen)
+			for i, r := range res {
+				assert.Equal(t, tt.wantItemCounts[i], r.ItemsCount())
+				assert.Equal(t, tt.wantReqCounts[i], sz.Sizeof(r))
+			}
+		})
+	}
 }
 
 // mockMetricsSizer implements sizer.MetricsSizer interface for testing

@@ -23,9 +23,15 @@ func (e errorPartial) Error() string {
 	return fmt.Sprintf("items: %d", e.fr.Items)
 }
 
+var (
+	_ request.Request         = (*FakeRequest)(nil)
+	_ request.RequestsCounter = (*FakeRequest)(nil)
+)
+
 type FakeRequest struct {
 	Items          int
 	Bytes          int
+	Requests       int
 	Partial        int
 	MergeErr       error
 	MergeErrResult []request.Request
@@ -47,9 +53,20 @@ func (r *FakeRequest) BytesSize() int {
 	return r.Bytes
 }
 
+func (r *FakeRequest) RequestsCount() int {
+	if r.Requests <= 0 {
+		return 1
+	}
+	return r.Requests
+}
+
 func (r *FakeRequest) MergeSplit(_ context.Context, maxSize int, szt request.SizerType, r2 request.Request) ([]request.Request, error) {
 	if r.MergeErr != nil {
 		return r.MergeErrResult, r.MergeErr
+	}
+
+	if szt == request.SizerTypeRequests {
+		return r.mergeSplitRequests(maxSize, r2)
 	}
 
 	if r2 != nil {
@@ -89,6 +106,23 @@ func (r *FakeRequest) MergeSplit(_ context.Context, maxSize int, szt request.Siz
 	}
 
 	return res, nil
+}
+
+func (r *FakeRequest) mergeSplitRequests(maxSize int, r2 request.Request) ([]request.Request, error) {
+	if r2 == nil {
+		return []request.Request{r}, nil
+	}
+	fr2 := r2.(*FakeRequest)
+	if fr2.MergeErr != nil {
+		return fr2.MergeErrResult, fr2.MergeErr
+	}
+	mergedCount := r.RequestsCount() + fr2.RequestsCount()
+	if maxSize > 0 && mergedCount > maxSize {
+		return []request.Request{r, fr2}, nil
+	}
+	fr2.mergeTo(r)
+	r.Requests = mergedCount
+	return []request.Request{r}, nil
 }
 
 func (r *FakeRequest) mergeTo(dst *FakeRequest) {

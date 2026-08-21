@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -323,6 +324,101 @@ func TestLogsMergeSplitUnknownSizerType(t *testing.T) {
 	// Call MergeSplit with invalid sizer
 	_, err := req.MergeSplit(context.Background(), 0, request.SizerType{}, nil)
 	require.EqualError(t, err, "unknown sizer type")
+}
+
+func TestMergeSplitLogsRequestsSizer(t *testing.T) {
+	tests := []struct {
+		name           string
+		lr1            request.Request
+		lr2            request.Request
+		maxSize        int
+		wantLen        int
+		wantItemCounts []int
+		wantReqCounts  []int64
+		wantErr        string
+	}{
+		{
+			name:           "merge_two_requests",
+			lr1:            newLogsRequest(testdata.GenerateLogs(5)),
+			lr2:            newLogsRequest(testdata.GenerateLogs(3)),
+			maxSize:        0,
+			wantLen:        1,
+			wantItemCounts: []int{8},
+			wantReqCounts:  []int64{2},
+		},
+		{
+			name:           "merge_when_under_max_size",
+			lr1:            newLogsRequest(testdata.GenerateLogs(5)),
+			lr2:            newLogsRequest(testdata.GenerateLogs(3)),
+			maxSize:        2,
+			wantLen:        1,
+			wantItemCounts: []int{8},
+			wantReqCounts:  []int64{2},
+		},
+		{
+			name:           "do_not_merge_when_over_max_size",
+			lr1:            newLogsRequest(testdata.GenerateLogs(5)),
+			lr2:            newLogsRequest(testdata.GenerateLogs(3)),
+			maxSize:        1,
+			wantLen:        2,
+			wantItemCounts: []int{5, 3},
+			wantReqCounts:  []int64{1, 1},
+		},
+		{
+			name:           "nil_second_request",
+			lr1:            newLogsRequest(testdata.GenerateLogs(7)),
+			lr2:            nil,
+			maxSize:        0,
+			wantLen:        1,
+			wantItemCounts: []int{7},
+			wantReqCounts:  []int64{1},
+		},
+		{
+			name:           "empty_first_request",
+			lr1:            newLogsRequest(plog.NewLogs()),
+			lr2:            newLogsRequest(testdata.GenerateLogs(4)),
+			maxSize:        0,
+			wantLen:        1,
+			wantItemCounts: []int{4},
+			wantReqCounts:  []int64{2},
+		},
+		{
+			name:    "invalid_input_type",
+			lr1:     newLogsRequest(testdata.GenerateLogs(1)),
+			lr2:     &requesttest.FakeRequest{Items: 1},
+			maxSize: 0,
+			wantErr: "invalid input type",
+		},
+	}
+
+	sz := request.RequestsSizer{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res, err := tt.lr1.MergeSplit(context.Background(), tt.maxSize, request.SizerTypeRequests, tt.lr2)
+			if tt.wantErr != "" {
+				require.EqualError(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			require.Len(t, res, tt.wantLen)
+			for i, r := range res {
+				assert.Equal(t, tt.wantItemCounts[i], r.ItemsCount())
+				assert.Equal(t, tt.wantReqCounts[i], sz.Sizeof(r))
+			}
+		})
+	}
+}
+
+func TestMergeSplitLogsRequestsSizerAccumulates(t *testing.T) {
+	r := newLogsRequest(testdata.GenerateLogs(1))
+	for range 4 {
+		res, err := r.MergeSplit(context.Background(), 0, request.SizerTypeRequests, newLogsRequest(testdata.GenerateLogs(1)))
+		require.NoError(t, err)
+		require.Len(t, res, 1)
+		r = res[0]
+	}
+	assert.Equal(t, 5, r.ItemsCount())
+	assert.EqualValues(t, 5, request.RequestsSizer{}.Sizeof(r))
 }
 
 func BenchmarkSplittingBasedOnItemCountManySmallLogs(b *testing.B) {

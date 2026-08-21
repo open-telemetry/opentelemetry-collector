@@ -16,6 +16,10 @@ import (
 // MergeSplit splits and/or merges the provided logs request and the current request into one or more requests
 // conforming with the MaxSizeConfig.
 func (req *logsRequest) MergeSplit(_ context.Context, maxSize int, szt request.SizerType, r2 request.Request) ([]request.Request, error) {
+	if szt == request.SizerTypeRequests {
+		return mergeSplitLogsRequests(req, maxSize, r2)
+	}
+
 	var sz sizer.LogsSizer
 	switch szt {
 	case request.SizerTypeItems:
@@ -39,6 +43,22 @@ func (req *logsRequest) MergeSplit(_ context.Context, maxSize int, szt request.S
 	}
 
 	return req.split(maxSize, sz)
+}
+
+func mergeSplitLogsRequests(req *logsRequest, maxSize int, r2 request.Request) ([]request.Request, error) {
+	if r2 != nil {
+		req2, ok := r2.(*logsRequest)
+		if !ok {
+			return nil, errors.New("invalid input type")
+		}
+		mergedCount := req.RequestsCount() + req2.RequestsCount()
+		if maxSize > 0 && mergedCount > maxSize {
+			return []request.Request{req, req2}, nil
+		}
+		req2.mergeTo(req, nil)
+		req.requestCount = mergedCount
+	}
+	return []request.Request{req}, nil
 }
 
 func (req *logsRequest) mergeTo(dst *logsRequest, sz sizer.LogsSizer) {

@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -336,6 +337,89 @@ func TestTracesMergeSplitUnknownSizerType(t *testing.T) {
 	// Call MergeSplit with invalid sizer
 	_, err := req.MergeSplit(context.Background(), 0, request.SizerType{}, nil)
 	require.EqualError(t, err, "unknown sizer type")
+}
+
+func TestMergeSplitTracesRequestsSizer(t *testing.T) {
+	tests := []struct {
+		name           string
+		tr1            request.Request
+		tr2            request.Request
+		maxSize        int
+		wantLen        int
+		wantItemCounts []int
+		wantReqCounts  []int64
+		wantErr        string
+	}{
+		{
+			name:           "merge_two_requests",
+			tr1:            newTracesRequest(testdata.GenerateTraces(5)),
+			tr2:            newTracesRequest(testdata.GenerateTraces(3)),
+			maxSize:        0,
+			wantLen:        1,
+			wantItemCounts: []int{8},
+			wantReqCounts:  []int64{2},
+		},
+		{
+			name:           "merge_when_under_max_size",
+			tr1:            newTracesRequest(testdata.GenerateTraces(5)),
+			tr2:            newTracesRequest(testdata.GenerateTraces(3)),
+			maxSize:        2,
+			wantLen:        1,
+			wantItemCounts: []int{8},
+			wantReqCounts:  []int64{2},
+		},
+		{
+			name:           "do_not_merge_when_over_max_size",
+			tr1:            newTracesRequest(testdata.GenerateTraces(5)),
+			tr2:            newTracesRequest(testdata.GenerateTraces(3)),
+			maxSize:        1,
+			wantLen:        2,
+			wantItemCounts: []int{5, 3},
+			wantReqCounts:  []int64{1, 1},
+		},
+		{
+			name:           "nil_second_request",
+			tr1:            newTracesRequest(testdata.GenerateTraces(7)),
+			tr2:            nil,
+			maxSize:        0,
+			wantLen:        1,
+			wantItemCounts: []int{7},
+			wantReqCounts:  []int64{1},
+		},
+		{
+			name:           "empty_first_request",
+			tr1:            newTracesRequest(ptrace.NewTraces()),
+			tr2:            newTracesRequest(testdata.GenerateTraces(4)),
+			maxSize:        0,
+			wantLen:        1,
+			wantItemCounts: []int{4},
+			wantReqCounts:  []int64{2},
+		},
+		{
+			name:    "invalid_input_type",
+			tr1:     newTracesRequest(testdata.GenerateTraces(1)),
+			tr2:     &requesttest.FakeRequest{Items: 1},
+			maxSize: 0,
+			wantErr: "invalid input type",
+		},
+	}
+
+	sz := request.RequestsSizer{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res, err := tt.tr1.MergeSplit(context.Background(), tt.maxSize, request.SizerTypeRequests, tt.tr2)
+			if tt.wantErr != "" {
+				require.EqualError(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			require.Len(t, res, tt.wantLen)
+			for i, r := range res {
+				assert.Equal(t, tt.wantItemCounts[i], r.ItemsCount())
+				assert.Equal(t, tt.wantReqCounts[i], sz.Sizeof(r))
+			}
+		})
+	}
 }
 
 func BenchmarkSplittingBasedOnItemCountManySmallTraces(b *testing.B) {
