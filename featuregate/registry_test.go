@@ -59,6 +59,27 @@ func TestRegistryApplyError(t *testing.T) {
 	assert.Error(t, r.Set("deprecated", true))
 }
 
+func TestRegistrySetWarnings(t *testing.T) {
+	r := NewRegistry()
+	assert.Empty(t, r.Warnings())
+
+	r.MustRegister("foo", StageStable, WithRegisterToVersion("v1.0.0"))
+	require.NoError(t, r.Set("foo", true))
+
+	r.MustRegister("bar", StageDeprecated, WithRegisterToVersion("v1.0.0"))
+	require.NoError(t, r.Set("bar", false))
+
+	warnings := r.Warnings()
+	require.Len(t, warnings, 2)
+	assert.Contains(t, warnings[0], `"foo"`)
+	assert.Contains(t, warnings[0], "stable")
+	assert.Contains(t, warnings[1], `"bar"`)
+	assert.Contains(t, warnings[1], "deprecated")
+
+	// Warnings should be drained after being read.
+	assert.Empty(t, r.Warnings())
+}
+
 func TestRegistryApply(t *testing.T) {
 	r := NewRegistry()
 	fooGate := r.MustRegister("foo", StageAlpha, WithRegisterDescription("Test Gate"))
