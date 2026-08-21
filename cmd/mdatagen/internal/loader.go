@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -126,13 +127,43 @@ var componentTypes = []string{
 }
 
 func shortFolderName(filePath string) string {
-	parentFolder := filepath.Base(filepath.Dir(filePath))
-	for _, cType := range componentTypes {
-		if before, ok := strings.CutSuffix(parentFolder, cType); ok {
-			return before
+	// Get the directory containing metadata.yaml
+	componentDir := filepath.Dir(filePath)
+
+	// Split the path into parts to find the component type folder
+	parts := strings.Split(filepath.ToSlash(componentDir), "/")
+
+	// Find the component type in the path (e.g., "extension", "receiver")
+	componentTypeIndex := -1
+	for i, part := range parts {
+		if slices.Contains(componentTypes, part) {
+			componentTypeIndex = i
+		} else {
+			break
 		}
 	}
-	return parentFolder
+
+	// If we found a component type folder, get everything after it
+	var pathAfterComponentType string
+	if componentTypeIndex != -1 && componentTypeIndex < len(parts)-1 {
+		pathAfterComponentType = strings.Join(parts[componentTypeIndex+1:], "/")
+	} else {
+		// Fallback to just the parent folder name
+		pathAfterComponentType = filepath.Base(componentDir)
+	}
+
+	// Strip component type suffix from the final directory name only
+	pathParts := strings.Split(pathAfterComponentType, "/")
+	lastPart := pathParts[len(pathParts)-1]
+
+	for _, cType := range componentTypes {
+		if before, ok := strings.CutSuffix(lastPart, cType); ok {
+			pathParts[len(pathParts)-1] = before
+			return strings.Join(pathParts, "/")
+		}
+	}
+
+	return pathAfterComponentType
 }
 
 func packageName(filePath string) (string, error) {
