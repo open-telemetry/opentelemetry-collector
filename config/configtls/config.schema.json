@@ -1,0 +1,317 @@
+{
+  "$id": "go.opentelemetry.io/collector/config/configtls",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "client_config": {
+      "type": "object",
+      "properties": {
+        "insecure": {
+          "type": "boolean",
+          "description": "In gRPC and HTTP when set to true, this is used to disable the client transport security. See https://godoc.org/google.golang.org/grpc#WithInsecure for gRPC. Please refer to https://godoc.org/crypto/tls#Config for more information. (optional, default false)"
+        },
+        "insecure_skip_verify": {
+          "type": "boolean",
+          "description": "Enables TLS but not verify the certificate."
+        },
+        "server_name_override": {
+          "type": "string",
+          "description": "Server name requested by client for virtual hosting. This sets the ServerName in the TLSConfig. Please refer to https://godoc.org/crypto/tls#Config for more information. (optional)"
+        }
+      },
+      "description": "Contains TLS configurations that are specific to client connections in addition to the common configurations. This should be used by components configuring TLS client connections.",
+      "allOf": [
+        {
+          "type": "object",
+          "properties": {
+            "ca_file": {
+              "type": "string",
+              "description": "Path to the CA cert. For a client this verifies the server certificate. For a server this verifies client certificates. If empty uses system root CA. (optional)"
+            },
+            "ca_pem": {
+              "type": "string",
+              "description": "In memory PEM encoded cert. (optional)"
+            },
+            "cert_file": {
+              "type": "string",
+              "description": "Path to the TLS cert to use for TLS required connections. (optional)"
+            },
+            "cert_pem": {
+              "type": "string",
+              "description": "In memory PEM encoded TLS cert to use for TLS required connections. (optional)"
+            },
+            "cipher_suites": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "A list of TLS cipher suites that the TLS transport can use. If left blank, a safe default list is used. See https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites."
+            },
+            "curve_preferences": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Contains the elliptic curves that will be used in an ECDHE handshake, in preference order Defaults to empty list and \"crypto/tls\" defaults are used, internally."
+            },
+            "include_insecure_cipher_suites": {
+              "type": "boolean",
+              "description": "Enables support for insecure cipher suites. When set to true, cipher suites returned by tls.InsecureCipherSuites() will be available for selection in addition to the secure ones. This should only be used when working with legacy systems that require insecure cipher suites. (optional, default false)"
+            },
+            "include_system_ca_certs_pool": {
+              "type": "boolean",
+              "description": "If true, load system CA certificates pool in addition to the certificates configured in this struct."
+            },
+            "key_file": {
+              "type": "string",
+              "description": "Path to the TLS key to use for TLS required connections. (optional)"
+            },
+            "key_pem": {
+              "type": "string",
+              "description": "In memory PEM encoded TLS key to use for TLS required connections. (optional)"
+            },
+            "max_version": {
+              "type": "string",
+              "description": "Sets the maximum TLS version that is acceptable. If not set, refer to crypto/tls for defaults. (optional)"
+            },
+            "min_version": {
+              "type": "string",
+              "description": "Sets the minimum TLS version that is acceptable. If not set, TLS 1.2 will be used. (optional)"
+            },
+            "reload_interval": {
+              "type": "string",
+              "description": "Specifies the duration after which the certificate will be reloaded If not set, it will never be reloaded (optional)",
+              "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+            },
+            "tpm": {
+              "type": "object",
+              "properties": {
+                "auth": {
+                  "type": "string"
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "owner_auth": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string",
+                  "description": "The path to the TPM device or Unix domain socket. For instance /dev/tpm0 or /dev/tpmrm0."
+                }
+              },
+              "description": "Trusted platform module configuration"
+            }
+          },
+          "description": "Exposes the common client and server TLS configurations. Note: Since there isn't anything specific to a server connection. Components with server connections should use Config.",
+          "default": {}
+        }
+      ]
+    },
+    "config": {
+      "type": "object",
+      "properties": {
+        "ca_file": {
+          "type": "string",
+          "description": "Path to the CA cert. For a client this verifies the server certificate. For a server this verifies client certificates. If empty uses system root CA. (optional)"
+        },
+        "ca_pem": {
+          "type": "string",
+          "description": "In memory PEM encoded cert. (optional)"
+        },
+        "cert_file": {
+          "type": "string",
+          "description": "Path to the TLS cert to use for TLS required connections. (optional)"
+        },
+        "cert_pem": {
+          "type": "string",
+          "description": "In memory PEM encoded TLS cert to use for TLS required connections. (optional)"
+        },
+        "cipher_suites": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "A list of TLS cipher suites that the TLS transport can use. If left blank, a safe default list is used. See https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites."
+        },
+        "curve_preferences": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Contains the elliptic curves that will be used in an ECDHE handshake, in preference order Defaults to empty list and \"crypto/tls\" defaults are used, internally."
+        },
+        "include_insecure_cipher_suites": {
+          "type": "boolean",
+          "description": "Enables support for insecure cipher suites. When set to true, cipher suites returned by tls.InsecureCipherSuites() will be available for selection in addition to the secure ones. This should only be used when working with legacy systems that require insecure cipher suites. (optional, default false)"
+        },
+        "include_system_ca_certs_pool": {
+          "type": "boolean",
+          "description": "If true, load system CA certificates pool in addition to the certificates configured in this struct."
+        },
+        "key_file": {
+          "type": "string",
+          "description": "Path to the TLS key to use for TLS required connections. (optional)"
+        },
+        "key_pem": {
+          "type": "string",
+          "description": "In memory PEM encoded TLS key to use for TLS required connections. (optional)"
+        },
+        "max_version": {
+          "type": "string",
+          "description": "Sets the maximum TLS version that is acceptable. If not set, refer to crypto/tls for defaults. (optional)"
+        },
+        "min_version": {
+          "type": "string",
+          "description": "Sets the minimum TLS version that is acceptable. If not set, TLS 1.2 will be used. (optional)"
+        },
+        "reload_interval": {
+          "type": "string",
+          "description": "Specifies the duration after which the certificate will be reloaded If not set, it will never be reloaded (optional)",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        },
+        "tpm": {
+          "type": "object",
+          "properties": {
+            "auth": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "owner_auth": {
+              "type": "string"
+            },
+            "path": {
+              "type": "string",
+              "description": "The path to the TPM device or Unix domain socket. For instance /dev/tpm0 or /dev/tpmrm0."
+            }
+          },
+          "description": "Trusted platform module configuration"
+        }
+      },
+      "description": "Exposes the common client and server TLS configurations. Note: Since there isn't anything specific to a server connection. Components with server connections should use Config.",
+      "default": {}
+    },
+    "server_config": {
+      "type": "object",
+      "properties": {
+        "client_ca_file": {
+          "type": "string",
+          "description": "Path to the TLS cert to use by the server to verify a client certificate. (optional) This sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. Please refer to https://godoc.org/crypto/tls#Config for more information. (optional)"
+        },
+        "client_ca_file_reload": {
+          "type": "boolean",
+          "description": "Reload the ClientCAs file when it is modified (optional, default false)"
+        }
+      },
+      "description": "Contains TLS configurations that are specific to server connections in addition to the common configurations. This should be used by components configuring TLS server connections.",
+      "allOf": [
+        {
+          "type": "object",
+          "properties": {
+            "ca_file": {
+              "type": "string",
+              "description": "Path to the CA cert. For a client this verifies the server certificate. For a server this verifies client certificates. If empty uses system root CA. (optional)"
+            },
+            "ca_pem": {
+              "type": "string",
+              "description": "In memory PEM encoded cert. (optional)"
+            },
+            "cert_file": {
+              "type": "string",
+              "description": "Path to the TLS cert to use for TLS required connections. (optional)"
+            },
+            "cert_pem": {
+              "type": "string",
+              "description": "In memory PEM encoded TLS cert to use for TLS required connections. (optional)"
+            },
+            "cipher_suites": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "A list of TLS cipher suites that the TLS transport can use. If left blank, a safe default list is used. See https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites."
+            },
+            "curve_preferences": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Contains the elliptic curves that will be used in an ECDHE handshake, in preference order Defaults to empty list and \"crypto/tls\" defaults are used, internally."
+            },
+            "include_insecure_cipher_suites": {
+              "type": "boolean",
+              "description": "Enables support for insecure cipher suites. When set to true, cipher suites returned by tls.InsecureCipherSuites() will be available for selection in addition to the secure ones. This should only be used when working with legacy systems that require insecure cipher suites. (optional, default false)"
+            },
+            "include_system_ca_certs_pool": {
+              "type": "boolean",
+              "description": "If true, load system CA certificates pool in addition to the certificates configured in this struct."
+            },
+            "key_file": {
+              "type": "string",
+              "description": "Path to the TLS key to use for TLS required connections. (optional)"
+            },
+            "key_pem": {
+              "type": "string",
+              "description": "In memory PEM encoded TLS key to use for TLS required connections. (optional)"
+            },
+            "max_version": {
+              "type": "string",
+              "description": "Sets the maximum TLS version that is acceptable. If not set, refer to crypto/tls for defaults. (optional)"
+            },
+            "min_version": {
+              "type": "string",
+              "description": "Sets the minimum TLS version that is acceptable. If not set, TLS 1.2 will be used. (optional)"
+            },
+            "reload_interval": {
+              "type": "string",
+              "description": "Specifies the duration after which the certificate will be reloaded If not set, it will never be reloaded (optional)",
+              "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+            },
+            "tpm": {
+              "type": "object",
+              "properties": {
+                "auth": {
+                  "type": "string"
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "owner_auth": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string",
+                  "description": "The path to the TPM device or Unix domain socket. For instance /dev/tpm0 or /dev/tpmrm0."
+                }
+              },
+              "description": "Trusted platform module configuration"
+            }
+          },
+          "description": "Exposes the common client and server TLS configurations. Note: Since there isn't anything specific to a server connection. Components with server connections should use Config.",
+          "default": {}
+        }
+      ]
+    },
+    "tpm_config": {
+      "type": "object",
+      "properties": {
+        "auth": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "owner_auth": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string",
+          "description": "The path to the TPM device or Unix domain socket. For instance /dev/tpm0 or /dev/tpmrm0."
+        }
+      },
+      "description": "Defines trusted platform module configuration for storing TLS keys."
+    }
+  },
+  "title": "pkg/config/configtls"
+}

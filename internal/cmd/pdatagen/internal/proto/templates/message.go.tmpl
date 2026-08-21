@@ -153,7 +153,7 @@ func (orig *{{ .messageName }}) UnmarshalJSON(iter *json.Iterator) {
 		{{ .GenUnmarshalJSON }}
 		{{ end -}}
 		default:
-			iter.Skip()
+			iter.HandleUnknownField(f)
 		}
 	}
 }

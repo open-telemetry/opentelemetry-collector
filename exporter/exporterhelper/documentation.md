@@ -38,9 +38,33 @@ Number of spans failed to be added to the sending queue.
 | ---- | ----------- | ---------- | --------- | --------- |
 | {span} | Sum | Int | true | Alpha |
 
+### otelcol_exporter_enqueue_size
+
+Number of units in the request added to the sending queue. Only available on detailed level.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {unit} | Histogram | Int | Development |
+
+### otelcol_exporter_enqueue_size_bytes
+
+Number of bytes in the request added to the sending queue. Only available on detailed level.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Histogram | Int | Development |
+
+### otelcol_exporter_in_flight_requests
+
+Number of export requests currently in-flight (including retry backoff).
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {request} | Sum | Int | false | Development |
+
 ### otelcol_exporter_queue_batch_send_size
 
-Number of units in the batch
+Number of units in the batch. Only recorded when batching is enabled. Only available on detailed level.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -48,7 +72,7 @@ Number of units in the batch
 
 ### otelcol_exporter_queue_batch_send_size_bytes
 
-Number of bytes in batch that was sent. Only available on detailed level.
+Number of bytes in batch that was sent. Only recorded when batching is enabled. Only available on detailed level.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -140,6 +164,6 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `exporter.PersistRequestContext` | beta | controls whether context should be stored alongside requests in the persistent queue | v0.128.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/pull/13188) |
+| `pkg.exporterhelper.queueBatchEnabled` | alpha | Enables exporterhelper batching by default in NewDefaultQueueConfig, as described in the batching migration RFC. | v0.158.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/15047) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

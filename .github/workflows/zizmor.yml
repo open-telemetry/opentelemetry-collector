@@ -1,0 +1,18 @@
+name: Zizmor
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '44 17 * * 1' # weekly at 17:44 UTC on Monday
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  zizmor:
+    permissions:
+      contents: read # for actions/checkout
+      security-events: write # for zizmor to upload SARIF results
+    uses: open-telemetry/shared-workflows/.github/workflows/zizmor.yml@8079110d7e793bd38b1a5219ef8f8280dab9139e # v0.7.0

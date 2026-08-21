@@ -21,6 +21,13 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
+// SetHostArch sets provided value as "host.arch" attribute.
+func (rb *ResourceBuilder) SetHostArch(val string) {
+	if rb.config.HostArch.Enabled {
+		rb.res.Attributes().PutStr("host.arch", val)
+	}
+}
+
 // SetMapResourceAttr sets provided value as "map.resource.attr" attribute.
 func (rb *ResourceBuilder) SetMapResourceAttr(val map[string]any) {
 	if rb.config.MapResourceAttr.Enabled {
@@ -93,6 +100,7 @@ func (rb *ResourceBuilder) SetStringResourceDisabledAttrToBeRemoved(val string) 
 
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
+	rb.config.applyOverrideValues(rb.res)
 	r := rb.res
 	rb.res = pcommon.NewResource()
 	return r

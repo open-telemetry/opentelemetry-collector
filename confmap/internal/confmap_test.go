@@ -9,16 +9,12 @@ import (
 	"math"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yaml.in/yaml/v3"
-
-	"go.opentelemetry.io/collector/confmap/internal/metadata"
-	"go.opentelemetry.io/collector/featuregate"
 )
 
 func TestToStringMapFlatten(t *testing.T) {
@@ -1016,10 +1012,7 @@ func TestRecursiveUnmarshaling(t *testing.T) {
 	require.Equal(t, "something", r.Foo)
 }
 
-func testExpandedValue(t *testing.T, newSanitizer bool) {
-	err := featuregate.GlobalRegistry().Set(metadata.ConfmapNewExpandedValueSanitizerFeatureGate.ID(), newSanitizer)
-	require.NoError(t, err)
-
+func TestExpandedValue(t *testing.T) {
 	cm := NewFromStringMap(map[string]any{
 		"key": ExpandedValue{
 			Value:    0xdeadbeef,
@@ -1042,23 +1035,15 @@ func testExpandedValue(t *testing.T, newSanitizer bool) {
 	}
 
 	cfgStrPtr := ConfigStrPtr{}
-	if newSanitizer {
-		require.NoError(t, cm.Unmarshal(&cfgStrPtr))
-		if assert.NotNil(t, cfgStrPtr.Key) {
-			assert.Equal(t, "original", *cfgStrPtr.Key)
-		}
-	} else {
-		require.Error(t, cm.Unmarshal(&cfgStrPtr))
+	require.NoError(t, cm.Unmarshal(&cfgStrPtr))
+	if assert.NotNil(t, cfgStrPtr.Key) {
+		assert.Equal(t, "original", *cfgStrPtr.Key)
 	}
 
 	cfgMapStrPtr := map[string]*string{}
-	if newSanitizer {
-		require.NoError(t, cm.Unmarshal(&cfgMapStrPtr))
-		if assert.NotNil(t, cfgMapStrPtr["key"]) {
-			assert.Equal(t, "original", *cfgMapStrPtr["key"])
-		}
-	} else {
-		require.Error(t, cm.Unmarshal(&cfgMapStrPtr))
+	require.NoError(t, cm.Unmarshal(&cfgMapStrPtr))
+	if assert.NotNil(t, cfgMapStrPtr["key"]) {
+		assert.Equal(t, "original", *cfgMapStrPtr["key"])
 	}
 
 	type ConfigInt struct {
@@ -1073,18 +1058,6 @@ func testExpandedValue(t *testing.T, newSanitizer bool) {
 	}
 	cfgBool := ConfigBool{}
 	assert.Error(t, cm.Unmarshal(&cfgBool))
-}
-
-func TestExpandedValue(t *testing.T) {
-	before := metadata.ConfmapNewExpandedValueSanitizerFeatureGate.IsEnabled()
-	t.Run("old sanitizer", func(t *testing.T) {
-		testExpandedValue(t, false)
-	})
-	t.Run("new sanitizer", func(t *testing.T) {
-		testExpandedValue(t, true)
-	})
-	err := featuregate.GlobalRegistry().Set(metadata.ConfmapNewExpandedValueSanitizerFeatureGate.ID(), before)
-	require.NoError(t, err)
 }
 
 func TestExpandedValueNil(t *testing.T) {
@@ -1130,58 +1103,35 @@ func TestSubExpandedValue(t *testing.T) {
 	assert.Nil(t, cm.Get("key::subkey::subsubkey"))
 }
 
-func TestStringyTypes(t *testing.T) {
-	tests := []struct {
-		valueOfType any
-		isStringy   bool
-	}{
-		{
-			valueOfType: "string",
-			isStringy:   true,
-		},
-		{
-			valueOfType: 1,
-			isStringy:   false,
-		},
-		{
-			valueOfType: map[string]any{},
-			isStringy:   false,
-		},
-		{
-			valueOfType: []any{},
-			isStringy:   false,
-		},
-		{
-			valueOfType: map[string]string{},
-			isStringy:   true,
-		},
-		{
-			valueOfType: []string{},
-			isStringy:   true,
-		},
-		{
-			valueOfType: map[string][]string{},
-			isStringy:   true,
-		},
-		{
-			valueOfType: map[string]map[string]string{},
-			isStringy:   true,
-		},
-		{
-			valueOfType: []map[string]any{},
-			isStringy:   false,
-		},
-		{
-			valueOfType: []map[string]string{},
-			isStringy:   true,
-		},
+// TestExpandedValueInStructSlice reproduces
+// https://github.com/open-telemetry/opentelemetry-collector/issues/12793,
+// where a numerically-valued environment variable expanded into a string field
+// nested inside a slice of structs failed to decode.
+func TestExpandedValueInStructSlice(t *testing.T) {
+	type Header struct {
+		Key          string `mapstructure:"key"`
+		DefaultValue string `mapstructure:"default_value"`
+	}
+	type Config struct {
+		Headers []Header `mapstructure:"headers"`
 	}
 
-	for _, tt := range tests {
-		// Create a reflect.Type from the value
-		to := reflect.TypeOf(tt.valueOfType)
-		assert.Equal(t, tt.isStringy, isStringyStructure(to))
-	}
+	cm := NewFromStringMap(map[string]any{
+		"headers": []any{
+			map[string]any{
+				"key": "X-SF-TOKEN",
+				"default_value": ExpandedValue{
+					Value:    12345,
+					Original: "12345",
+				},
+			},
+		},
+	})
+
+	cfg := Config{}
+	require.NoError(t, cm.Unmarshal(&cfg))
+	require.Len(t, cfg.Headers, 1)
+	assert.Equal(t, "12345", cfg.Headers[0].DefaultValue)
 }
 
 func TestConfDelete(t *testing.T) {

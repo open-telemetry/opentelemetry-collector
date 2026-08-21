@@ -7,11 +7,11 @@ import (
 	"time"
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/service/internal/metadata"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -28,11 +28,6 @@ func NewFactory() telemetry.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	metricsHost := "localhost"
-	if !metadata.TelemetryUseLocalHostAsDefaultMetricsAddressFeatureGate.IsEnabled() {
-		metricsHost = ""
-	}
-
 	return &Config{
 		Logs: LogsConfig{
 			Level:       zapcore.InfoLevel,
@@ -57,19 +52,25 @@ func createDefaultConfig() component.Config {
 				Readers: []config.MetricReader{
 					{
 						Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
-							WithoutScopeInfo:  ptr(true),
-							WithoutUnits:      ptr(true),
-							WithoutTypeSuffix: ptr(true),
-							Host:              &metricsHost,
-							Port:              ptr(8888),
+							WithoutScopeInfo:  new(true),
+							WithoutUnits:      new(true),
+							WithoutTypeSuffix: new(true),
+							Host:              new("localhost"),
+							Port:              new(8888),
 						}}},
 					},
 				},
 			},
 		},
+		Resource: ResourceConfig{
+			Resource: config.Resource{
+				SchemaUrl: ptr(semconv.SchemaURL),
+			},
+		},
 	}
 }
 
+//go:fix inline
 func ptr[T any](v T) *T {
-	return &v
+	return new(v)
 }

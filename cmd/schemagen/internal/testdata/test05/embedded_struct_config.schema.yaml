@@ -1,0 +1,21 @@
+type: object
+$defs:
+  db_config:
+    properties:
+      host:
+        type: string
+      password:
+        type: string
+      port:
+        type: integer
+      username:
+        type: string
+    type: object
+allOf:
+  - $ref: 'db_config'
+properties:
+  app_name:
+    type: string
+  version:
+    type: string
+

@@ -122,6 +122,7 @@ The following general labels are supported:
 | `arm64`                  | `arm64`                  |
 | `good first issue`       | `good-first-issue`       |
 | `help wanted`            | `help-wanted`            |
+| `needs triage`           | `needs-triage`           |
 | `discussion needed`      | `discussion-needed`      |
 | `os:macos`               | `os:macos`               |
 | `os:windows`             | `os:windows`             |
@@ -227,9 +228,10 @@ section of the general project contributing guide.
 Working with the project sources requires the following tools:
 
 1. [Git](https://git-scm.com/)
-2. [Go](https://go.dev/) (version 1.25 and up)
+2. [Go](https://go.dev/) (the version declared in the relevant `go.mod` file, or newer)
 3. [GNU Make](https://www.gnu.org/software/make/)
 4. [Docker](https://www.docker.com/)
+5. [OpenSSL Library](https://openssl-library.org/) (for the  `config/configtls` component)
 
 ## Repository Setup
 
@@ -284,9 +286,18 @@ In some cases, if the commit messages are lacking the easiest approach to have a
 least something useful is copy/pasting the PR description into the commit message box
 before merging (but see the above paragraph about writing good commit messages in the first place).
 
+### AI-assisted contributions
+
+If you use an AI tool to help author a pull request, you (the human) are still responsible for
+writing the PR description and any comments posted on the issue or PR. AI agents must prompt you
+for the content of each section in the PR template and use your answers verbatim rather than
+generating description content on their own. The PR template includes an authorship checkbox that
+you must check yourself before the PR is ready for review. See [AGENTS.md](./AGENTS.md) for the
+full set of rules that apply to AI-assisted contributions.
+
 ## General Notes
 
-This project uses Go 1.25.* and [Github Actions.](https://github.com/features/actions)
+This project uses Go 1.25.x and [Github Actions.](https://github.com/features/actions) The exact minimum supported patch version is defined by the repository's `go.mod` files and may increase over time within a supported Go minor version.
 
 It is recommended to run `make gofmt all` before submitting your PR.
 

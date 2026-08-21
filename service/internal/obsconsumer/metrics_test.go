@@ -94,7 +94,7 @@ func TestMetricsItemsOnly(t *testing.T) {
 	require.Equal(t, 1, attrs.Len())
 	val, ok := attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
-	require.Equal(t, "success", val.Emit())
+	require.Equal(t, "success", val.String())
 
 	// Check that the logger was not called
 	assert.Empty(t, logs.All())
@@ -154,7 +154,7 @@ func TestMetricsConsumeSuccess(t *testing.T) {
 	require.Equal(t, 1, itemAttrs.Len())
 	val, ok := itemAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
-	require.Equal(t, "success", val.Emit())
+	require.Equal(t, "success", val.String())
 
 	sizeData := sizeMetric.Data.(metricdata.Sum[int64])
 	require.Len(t, sizeData.DataPoints, 1)
@@ -164,7 +164,7 @@ func TestMetricsConsumeSuccess(t *testing.T) {
 	require.Equal(t, 1, attrs.Len())
 	val, ok = attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
-	require.Equal(t, "success", val.Emit())
+	require.Equal(t, "success", val.String())
 
 	// Check that the logger was not called
 	assert.Empty(t, logs.All())
@@ -227,7 +227,7 @@ func TestMetricsConsumeFailure(t *testing.T) {
 	require.Equal(t, 1, itemAttrs.Len())
 	val, ok := itemAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
-	require.Equal(t, "failure", val.Emit())
+	require.Equal(t, "failure", val.String())
 
 	sizeData := sizeMetric.Data.(metricdata.Sum[int64])
 	require.Len(t, sizeData.DataPoints, 1)
@@ -237,7 +237,7 @@ func TestMetricsConsumeFailure(t *testing.T) {
 	require.Equal(t, 1, sizeAttrs.Len())
 	val, ok = sizeAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
-	require.Equal(t, "failure", val.Emit())
+	require.Equal(t, "failure", val.String())
 
 	// Check that the logger was called with an error
 	require.Len(t, logs.All(), 1)
@@ -301,10 +301,10 @@ func TestMetricsWithStaticAttributes(t *testing.T) {
 	require.Equal(t, 2, itemAttrs.Len())
 	val, ok := itemAttrs.Value(attribute.Key("test"))
 	require.True(t, ok)
-	require.Equal(t, "value", val.Emit())
+	require.Equal(t, "value", val.String())
 	val, ok = itemAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
-	require.Equal(t, "success", val.Emit())
+	require.Equal(t, "success", val.String())
 
 	sizeData := sizeMetric.Data.(metricdata.Sum[int64])
 	require.Len(t, sizeData.DataPoints, 1)
@@ -314,10 +314,10 @@ func TestMetricsWithStaticAttributes(t *testing.T) {
 	require.Equal(t, 2, sizeAttrs.Len())
 	val, ok = sizeAttrs.Value(attribute.Key("test"))
 	require.True(t, ok)
-	require.Equal(t, "value", val.Emit())
+	require.Equal(t, "value", val.String())
 	val, ok = sizeAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
-	require.Equal(t, "success", val.Emit())
+	require.Equal(t, "success", val.String())
 
 	// Check that the logger was not called
 	assert.Empty(t, logs.All())
@@ -414,7 +414,7 @@ func TestMetricsMultipleItemsMixedOutcomes(t *testing.T) {
 	var successDP, failureDP metricdata.DataPoint[int64]
 	for _, dp := range itemData.DataPoints {
 		val, ok := dp.Attributes.Value(attribute.Key(obsconsumer.ComponentOutcome))
-		if ok && val.Emit() == "success" {
+		if ok && val.String() == "success" {
 			successDP = dp
 		} else {
 			failureDP = dp
@@ -425,7 +425,7 @@ func TestMetricsMultipleItemsMixedOutcomes(t *testing.T) {
 
 	for _, dp := range sizeData.DataPoints {
 		val, ok := dp.Attributes.Value(attribute.Key(obsconsumer.ComponentOutcome))
-		if ok && val.Emit() == "success" {
+		if ok && val.String() == "success" {
 			successDP = dp
 		} else {
 			failureDP = dp

@@ -11,6 +11,13 @@ status:
   stability:
     beta: [traces, metrics, logs]
 
+feature_gates:
+  - id: pkg.exporterhelper.queueBatchEnabled
+    description: "Enables exporterhelper batching by default in NewDefaultQueueConfig, as described in the batching migration RFC."
+    stage: alpha
+    from_version: 'v0.158.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/issues/15047'
+
 telemetry:
   metrics:
     exporter_enqueue_failed_log_records:
@@ -49,9 +56,80 @@ telemetry:
         value_type: int
         monotonic: true
 
+    exporter_enqueue_size:
+      enabled: true
+      description: Number of units in the request added to the sending queue. Only available on detailed level.
+      stability: development
+      unit: "{unit}"
+      histogram:
+        value_type: int
+        bucket_boundaries:
+          [
+            10,
+            25,
+            50,
+            75,
+            100,
+            250,
+            500,
+            750,
+            1000,
+            2000,
+            3000,
+            4000,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            10000,
+            20000,
+            30000,
+            50000,
+            100000,
+          ]
+
+    exporter_enqueue_size_bytes:
+      enabled: true
+      description: Number of bytes in the request added to the sending queue. Only available on detailed level.
+      stability: development
+      unit: By
+      histogram:
+        value_type: int
+        bucket_boundaries:
+          [
+            128,
+            256,
+            512,
+            1024,
+            2048,
+            4096,
+            8192,
+            16384,
+            32768,
+            65536,
+            131072,
+            262144,
+            524288,
+            1048576,
+            2097152,
+            4194304,
+            8388608,
+            16777216,
+          ]
+
+    exporter_in_flight_requests:
+      enabled: true
+      stability: development
+      description: Number of export requests currently in-flight (including retry backoff).
+      unit: "{request}"
+      sum:
+        value_type: int
+        monotonic: false
+
     exporter_queue_batch_send_size:
       enabled: true
-      description: Number of units in the batch
+      description: Number of units in the batch. Only recorded when batching is enabled. Only available on detailed level.
       stability: development
       unit: "{unit}"
       histogram:
@@ -84,27 +162,31 @@ telemetry:
 
     exporter_queue_batch_send_size_bytes:
       enabled: true
-      description: Number of bytes in batch that was sent. Only available on detailed level.
+      description: Number of bytes in batch that was sent. Only recorded when batching is enabled. Only available on detailed level.
       stability: development
       unit: By
       histogram:
         value_type: int
         bucket_boundaries:
           [
-            10,
-            25,
-            50,
-            75,
-            100,
-            250,
-            500,
-            750,
-            1000,
-            2000,
-            3000,
-            4000,
-            5000,
-            6000,
+            128,
+            256,
+            512,
+            1024,
+            2048,
+            4096,
+            8192,
+            16384,
+            32768,
+            65536,
+            131072,
+            262144,
+            524288,
+            1048576,
+            2097152,
+            4194304,
+            8388608,
+            16777216,
           ]
 
     exporter_queue_capacity:
@@ -196,10 +278,3 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-
-feature_gates:
-  - id: exporter.PersistRequestContext
-    description: 'controls whether context should be stored alongside requests in the persistent queue'
-    stage: beta
-    from_version: 'v0.128.0'
-    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/pull/13188'

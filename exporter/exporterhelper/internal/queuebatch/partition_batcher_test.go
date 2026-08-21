@@ -82,11 +82,9 @@ func TestPartitionBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T)
 			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 35, Bytes: 35}, done)
 			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 2, Bytes: 2}, done)
 			assert.Eventually(t, func() bool {
-				return sink.RequestsCount() == 5 && (sink.ItemsCount() == 75 || sink.BytesCount() == 75)
+				return sink.RequestsCount() == 5 && (sink.ItemsCount() == 75 || sink.BytesCount() == 75) &&
+					done.errors.Load() == 1 && done.success.Load() == 5
 			}, 1*time.Second, 10*time.Millisecond)
-			// Check that done callback is called for the right number of times.
-			assert.EqualValues(t, 1, done.errors.Load())
-			assert.EqualValues(t, 5, done.success.Load())
 		})
 	}
 }

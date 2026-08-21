@@ -10,6 +10,7 @@ components:
     - all
     - cmd/builder
     - cmd/mdatagen
+    - cmd/schemagen
     - connector/forward
     - connector/sample
     - docs/rfcs
@@ -31,6 +32,7 @@ components:
     - pkg/config/confignet
     - pkg/config/configopaque
     - pkg/config/configretry
+    - pkg/config/configstorage
     - pkg/config/configtelemetry
     - pkg/config/configtls
     - pkg/confighttp
@@ -67,9 +69,11 @@ components:
     - pkg/receiver
     - pkg/receiver/receivertest
     - pkg/receiverhelper
+    - pkg/samplepkg
     - pkg/scraper
     - pkg/scraper/scrapertest
     - pkg/scraperhelper
+    - pkg/scraperhelper/controller
     - pkg/service
     - pkg/service/hostcapabilities
     - pkg/service/telemetry/telemetrytest
@@ -89,6 +93,7 @@ components:
     - pkg/xscraperhelper
     - processor/batch
     - processor/memory_limiter
+    - processor/queuebatch
     - processor/sample
     - provider/env
     - provider/file
@@ -101,3 +106,4 @@ components:
     - receiver/sample
     - receiver/sampleentity
     - scraper/sample
+    - scraper/samplemigration

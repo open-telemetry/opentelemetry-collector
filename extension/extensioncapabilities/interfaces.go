@@ -40,10 +40,67 @@ type PipelineWatcher interface {
 
 // ConfigWatcher is an interface that should be implemented by an extension that
 // wishes to be notified of the Collector's effective configuration.
+//
+// Deprecated [v0.155.0]: use ConfigSnapshotWatcher instead.
 type ConfigWatcher interface {
 	// NotifyConfig notifies the extension of the Collector's current effective configuration.
 	// The extension owns the `confmap.Conf`. Callers must ensure that it's safe for
 	// extensions to store the `conf` pointer and use it concurrently with any other
 	// instances of `conf`.
 	NotifyConfig(ctx context.Context, conf *confmap.Conf) error
+}
+
+// ConfigSnapshot provides access to different representations of the Collector's
+// configuration.
+type ConfigSnapshot interface {
+	// Effective returns the Collector's current effective configuration.
+	// The returned configuration is owned by the caller.
+	Effective() *confmap.Conf
+
+	// Unexpanded returns the Collector's configuration before provider
+	// references are expanded and with sensitive fields redacted.
+	// The returned configuration is owned by the caller.
+	Unexpanded() *confmap.Conf
+
+	unexportedConfigSnapshot()
+}
+
+type configSnapshot struct {
+	effective  *confmap.Conf
+	unexpanded *confmap.Conf
+}
+
+// NewConfigSnapshot creates a ConfigSnapshot from the given configuration
+// representations.
+func NewConfigSnapshot(effective, unexpanded *confmap.Conf) ConfigSnapshot {
+	return configSnapshot{
+		effective:  cloneConf(effective),
+		unexpanded: cloneConf(unexpanded),
+	}
+}
+
+func (cs configSnapshot) unexportedConfigSnapshot() {}
+
+func (cs configSnapshot) Effective() *confmap.Conf {
+	return cloneConf(cs.effective)
+}
+
+func (cs configSnapshot) Unexpanded() *confmap.Conf {
+	return cloneConf(cs.unexpanded)
+}
+
+func cloneConf(conf *confmap.Conf) *confmap.Conf {
+	if conf == nil {
+		return nil
+	}
+	return confmap.NewFromStringMap(conf.ToStringMap())
+}
+
+// ConfigSnapshotWatcher is an interface that should be implemented by an
+// extension that wishes to be notified of the Collector's configuration.
+type ConfigSnapshotWatcher interface {
+	// NotifyConfigSnapshot notifies the extension of the Collector's current
+	// configuration. The provided ConfigSnapshot returns configuration instances
+	// owned by the extension.
+	NotifyConfigSnapshot(ctx context.Context, configSnapshot ConfigSnapshot) error
 }

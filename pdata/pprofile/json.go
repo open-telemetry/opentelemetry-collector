@@ -38,12 +38,24 @@ func (*JSONMarshaler) MarshalProfiles(pd Profiles) ([]byte, error) {
 }
 
 // JSONUnmarshaler unmarshals OTLP/JSON formatted-bytes to pprofile.Profiles.
-type JSONUnmarshaler struct{}
+type JSONUnmarshaler struct {
+	// DisallowUnknownFields causes UnmarshalProfiles to return an error when the
+	// input contains JSON object fields that are not defined by the OTLP
+	// schema. When false (the default), unknown fields are silently ignored.
+	//
+	// Warning: enabling this option breaks forwards compatibility with future
+	// evolutions of the OTLP format, as fields added to the format in newer
+	// versions will be rejected as unknown.
+	DisallowUnknownFields bool
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
 
 // UnmarshalProfiles from OTLP/JSON format into pprofile.Profiles.
-func (*JSONUnmarshaler) UnmarshalProfiles(buf []byte) (Profiles, error) {
+func (u *JSONUnmarshaler) UnmarshalProfiles(buf []byte) (Profiles, error) {
 	iter := json.BorrowIterator(buf)
 	defer json.ReturnIterator(iter)
+	iter.SetDisallowUnknownFields(u.DisallowUnknownFields)
 	pd := NewProfiles()
 	pd.getOrig().UnmarshalJSON(iter)
 	if iter.Error() != nil {

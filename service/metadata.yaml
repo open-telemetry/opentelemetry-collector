@@ -194,16 +194,21 @@ feature_gates:
     stage: alpha
     from_version: 'v0.122.0'
     reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/pull/12613'
+  - id: service.partialReload
+    description: 'Controls whether configuration changes trigger a partial reload that rebuilds only the affected components.'
+    stage: alpha
+    from_version: 'v0.157.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/partial-reload.md'
+  - id: service.partialReloadReceivers
+    description: 'Controls whether receiver-only configuration changes restart only the receivers.'
+    stage: beta
+    from_version: 'v0.157.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/partial-reload.md'
   - id: service.profilesSupport
     description: 'Controls whether profiles support can be enabled'
     stage: alpha
     from_version: 'v0.112.0'
     reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/pull/11477'
-  - id: telemetry.UseLocalHostAsDefaultMetricsAddress
-    description: 'Controls whether default Prometheus metrics server use localhost as the default host for their endpoints'
-    stage: beta
-    from_version: 'v0.111.0'
-    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/pull/11251'
   - id: telemetry.newPipelineTelemetry
     description: 'Injects component-identifying scope attributes in internal Collector metrics'
     stage: alpha

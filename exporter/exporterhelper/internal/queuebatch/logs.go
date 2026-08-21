@@ -54,29 +54,16 @@ type logsEncoding struct{}
 var _ encoding[request.Request] = logsEncoding{}
 
 func (logsEncoding) Unmarshal(bytes []byte) (context.Context, request.Request, error) {
-	if queue.PersistRequestContextOnRead() {
-		ctx, logs, err := pdatareq.UnmarshalLogs(bytes)
-		if errors.Is(err, pdatareq.ErrInvalidFormat) {
-			// fall back to unmarshaling without context
-			logs, err = logsUnmarshaler.UnmarshalLogs(bytes)
-		}
-		return ctx, newLogsRequest(logs), err
+	ctx, logs, err := pdatareq.UnmarshalLogs(bytes)
+	if errors.Is(err, pdatareq.ErrInvalidFormat) {
+		// fall back to unmarshaling without context
+		logs, err = logsUnmarshaler.UnmarshalLogs(bytes)
 	}
-
-	logs, err := logsUnmarshaler.UnmarshalLogs(bytes)
-	if err != nil {
-		var req request.Request
-		return context.Background(), req, err
-	}
-	return context.Background(), newLogsRequest(logs), nil
+	return ctx, newLogsRequest(logs), err
 }
 
 func (logsEncoding) Marshal(ctx context.Context, req request.Request) ([]byte, error) {
-	logs := req.(*logsRequest).ld
-	if queue.PersistRequestContextOnWrite() {
-		return pdatareq.MarshalLogs(ctx, logs)
-	}
-	return logsMarshaler.MarshalLogs(logs)
+	return pdatareq.MarshalLogs(ctx, req.(*logsRequest).ld)
 }
 
 var _ queue.ReferenceCounter[request.Request] = logsReferenceCounter{}
@@ -92,8 +79,7 @@ func (logsReferenceCounter) Unref(req request.Request) {
 }
 
 func (req *logsRequest) OnError(err error) request.Request {
-	var logError consumererror.Logs
-	if errors.As(err, &logError) {
+	if logError, ok := errors.AsType[consumererror.Logs](err); ok {
 		// TODO: Add logic to unref the new request created here.
 		return newLogsRequest(logError.Data())
 	}

@@ -76,6 +76,12 @@ func TestCheckConfigStruct(t *testing.T) {
 			}{},
 		},
 		{
+			name: "slash_separated_mapstructure_tag",
+			config: struct {
+				MyPublicString string `mapstructure:"my_public/string,omitempty"`
+			}{},
+		},
+		{
 			name: "not_struct_nor_pointer",
 			config: func(x int) int {
 				return x * x
@@ -101,7 +107,14 @@ func TestCheckConfigStruct(t *testing.T) {
 			config: struct {
 				AdditionalProperties any `mapstructure:"Additional_Properties"`
 			}{},
-			wantErrMsgSubStr: `field "AdditionalProperties" has config tag "Additional_Properties" which doesn't satisfy "^[a-z0-9][a-z0-9_]*$"`,
+			wantErrMsgSubStr: `field "AdditionalProperties" has config tag "Additional_Properties" which doesn't satisfy "^[a-z0-9][a-z0-9_]*(/[a-z0-9][a-z0-9_]*)*$"`,
+		},
+		{
+			name: "bad_slash_separated_field_name",
+			config: struct {
+				AdditionalProperties any `mapstructure:"additional//properties"`
+			}{},
+			wantErrMsgSubStr: `field "AdditionalProperties" has config tag "additional//properties" which doesn't satisfy`,
 		},
 		{
 			name:             "invalid_tag_detected",

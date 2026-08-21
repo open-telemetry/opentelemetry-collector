@@ -352,6 +352,26 @@ func TestValueAsString(t *testing.T) {
 			input:    generateTestValueBytes(),
 			expected: base64.StdEncoding.EncodeToString([]byte("String bytes")),
 		},
+		{
+			name: "map_with_html_characters",
+			input: func() Value {
+				v := NewValueMap()
+				v.Map().PutStr("key", "<a href=\"x\">&y</a>")
+				return v
+			}(),
+			expected: `{"key":"<a href=\"x\">&y</a>"}`,
+		},
+		{
+			name: "slice_with_html_characters",
+			input: func() Value {
+				v := NewValueSlice()
+				v.Slice().AppendEmpty().SetStr("<")
+				v.Slice().AppendEmpty().SetStr(">")
+				v.Slice().AppendEmpty().SetStr("&")
+				return v
+			}(),
+			expected: `["<",">","&"]`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -532,20 +552,20 @@ func TestNewValueFromRaw(t *testing.T) {
 		{
 			name:  "slice",
 			input: []any{"v1", "v2"},
-			expected: (func() Value {
+			expected: func() Value {
 				s := NewValueSlice()
 				assert.NoError(t, s.Slice().FromRaw([]any{"v1", "v2"}))
 				return s
-			})(),
+			}(),
 		},
 		{
 			name:  "empty slice",
 			input: []any{},
-			expected: (func() Value {
+			expected: func() Value {
 				s := NewValueSlice()
 				assert.NoError(t, s.Slice().FromRaw([]any{}))
 				return s
-			})(),
+			}(),
 		},
 	}
 	for _, tt := range tests {

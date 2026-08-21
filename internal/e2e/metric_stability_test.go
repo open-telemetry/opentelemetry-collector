@@ -121,47 +121,47 @@ func TestMetricStability(t *testing.T) {
 			configFile: "metric_stability_test_readers.yaml",
 			expectedMetrics: map[string]bool{
 				// Process metrics
-				"otelcol_process_uptime_seconds_total":            false,
-				"otelcol_process_cpu_seconds_total":               false,
-				"otelcol_process_memory_rss_bytes":                false,
-				"otelcol_process_runtime_heap_alloc_bytes":        false,
-				"otelcol_process_runtime_total_alloc_bytes_total": false,
-				"otelcol_process_runtime_total_sys_memory_bytes":  false,
+				"otelcol_process_uptime":                         false,
+				"otelcol_process_cpu_seconds":                    false,
+				"otelcol_process_memory_rss":                     false,
+				"otelcol_process_runtime_heap_alloc_bytes":       false,
+				"otelcol_process_runtime_total_alloc_bytes":      false,
+				"otelcol_process_runtime_total_sys_memory_bytes": false,
 
 				// Batch processor metrics
-				"otelcol_processor_batch_batch_send_size":            false,
-				"otelcol_processor_batch_batch_send_size_bytes":      false,
-				"otelcol_processor_batch_metadata_cardinality":       false,
-				"otelcol_processor_batch_timeout_trigger_send_total": false,
+				"otelcol_processor_batch_batch_send_size":       false,
+				"otelcol_processor_batch_batch_send_size_bytes": false,
+				"otelcol_processor_batch_metadata_cardinality":  false,
+				"otelcol_processor_batch_timeout_trigger_send":  false,
 
 				// HTTP server metrics
-				"http_server_request_body_size_bytes":  false,
-				"http_server_request_duration_seconds": false,
-				"http_server_response_body_size_bytes": false,
+				"http_server_request_body_size":  false,
+				"http_server_request_duration":   false,
+				"http_server_response_body_size": false,
 
 				// Exporter metrics - Metrics
-				"otelcol_exporter_sent_metric_points_total":        false,
-				"otelcol_exporter_send_failed_metric_points_total": false,
+				"otelcol_exporter_sent_metric_points":        false,
+				"otelcol_exporter_send_failed_metric_points": false,
 
 				// Exporter metrics - Traces
-				"otelcol_exporter_sent_spans_total":        false,
-				"otelcol_exporter_send_failed_spans_total": false,
+				"otelcol_exporter_sent_spans":        false,
+				"otelcol_exporter_send_failed_spans": false,
 
 				// Exporter metrics - Logs
-				"otelcol_exporter_sent_log_records_total":        false,
-				"otelcol_exporter_send_failed_log_records_total": false,
+				"otelcol_exporter_sent_log_records":        false,
+				"otelcol_exporter_send_failed_log_records": false,
 
 				// Receiver metrics
-				"otelcol_receiver_accepted_metric_points_total": false,
-				"otelcol_receiver_refused_metric_points_total":  false,
+				"otelcol_receiver_accepted_metric_points": false,
+				"otelcol_receiver_refused_metric_points":  false,
 
 				// Receiver metrics - Traces
-				"otelcol_receiver_accepted_spans_total": false,
-				"otelcol_receiver_refused_spans_total":  false,
+				"otelcol_receiver_accepted_spans": false,
+				"otelcol_receiver_refused_spans":  false,
 
 				// Receiver metrics - Logs
-				"otelcol_receiver_accepted_log_records_total": false,
-				"otelcol_receiver_refused_log_records_total":  false,
+				"otelcol_receiver_accepted_log_records": false,
+				"otelcol_receiver_refused_log_records":  false,
 
 				// Other metrics
 				"promhttp_metric_handler_errors_total": false,
@@ -210,15 +210,16 @@ func testMetricStability(t *testing.T, configFile string, expectedMetrics map[st
 	})
 	require.NoError(t, err)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
+	runErr := make(chan error, 1)
 	go func() {
-		err := collector.Run(ctx)
-		if err != nil {
-			t.Logf("Collector stopped with error: %v", err)
-		}
+		runErr <- collector.Run(context.Background())
 	}()
+	t.Cleanup(func() {
+		collector.Shutdown()
+		require.NoError(t, <-runErr, "collector stopped with an error")
+	})
+
+	waitCollectorRunning(t, collector)
 	waitMetricsReady(t, metricsPort)
 
 	for range 5 {
@@ -347,6 +348,15 @@ func getFreePort(t *testing.T) string {
 	}
 	defer l.Close()
 	return strconv.Itoa(l.Addr().(*net.TCPAddr).Port)
+}
+
+// waitCollectorRunning waits until the collector has started every component. The
+// telemetry metrics endpoint is up before that happens, so waiting on it is not enough
+// to know that the OTLP receiver is already listening.
+func waitCollectorRunning(t *testing.T, collector *otelcol.Collector) {
+	require.Eventually(t, func() bool {
+		return collector.GetState() == otelcol.StateRunning
+	}, 30*time.Second, 10*time.Millisecond, "collector did not reach the running state")
 }
 
 func waitMetricsReady(t *testing.T, metricsPort string) {

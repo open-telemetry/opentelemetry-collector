@@ -1,11 +1,12 @@
-{{- $reag := .ReaggregationEnabled -}}
+{{- $hasReagMetrics := false }}
+{{- range $name, $metric := .Metrics }}{{- if hasAggregatableAttributes $metric.Attributes }}{{- $hasReagMetrics = true }}{{- end }}{{- end -}}
+
 default:
 all_set:
-{{- if $reag }}
   {{- if .Metrics }}
   metrics:
     {{- range $name, $metric := .Metrics }}
-    {{- $metricReag := and $reag (hasAggregatableAttributes $metric.Attributes) }}
+    {{- $metricReag := hasAggregatableAttributes $metric.Attributes }}
     {{ $name }}:
       enabled: true
       {{- if $metricReag }}
@@ -27,12 +28,12 @@ all_set:
       enabled: true
     {{- end }}
   {{- end }}
+{{- if $hasReagMetrics }}
 reaggregate_set:
-{{- end }}
   {{- if .Metrics }}
   metrics:
     {{- range $name, $metric := .Metrics }}
-    {{- $metricReag := and $reag (hasAggregatableAttributes $metric.Attributes) }}
+    {{- $metricReag := hasAggregatableAttributes $metric.Attributes }}
     {{ $name }}:
       enabled: true
       {{- if $metricReag }}
@@ -54,11 +55,12 @@ reaggregate_set:
       enabled: true
     {{- end }}
   {{- end }}
+{{- end }}
 none_set:
   {{- if .Metrics }}
   metrics:
     {{- range $name, $metric := .Metrics }}
-    {{- $metricReag := and $reag (hasAggregatableAttributes $metric.Attributes) }}
+    {{- $metricReag := hasAggregatableAttributes $metric.Attributes }}
     {{ $name }}:
       enabled: false
       {{- if $metricReag }}
@@ -80,6 +82,30 @@ none_set:
       enabled: false
     {{- end }}
   {{- end }}
+{{- if and .OverrideValueEnabled .ResourceAttributes }}
+override_set:
+  resource_attributes:
+    {{- range $name, $attr := .ResourceAttributes }}
+    {{ $name }}:
+      enabled: true
+      {{- if $attr.Enum }}
+      override_value: "{{ index $attr.Enum 0 }}"
+      {{- else if eq $attr.Type.String "Str" }}
+      override_value: "override-{{ $name }}"
+      {{- else if eq $attr.Type.String "Int" }}
+      override_value: 123
+      {{- else if eq $attr.Type.String "Double" }}
+      override_value: 123.456
+      {{- else if eq $attr.Type.String "Bool" }}
+      override_value: true
+      {{- else if eq $attr.Type.String "Slice" }}
+      override_value: ["override-item1", "override-item2"]
+      {{- else if eq $attr.Type.String "Map" }}
+      override_value:
+        override_key: "override-val"
+      {{- end }}
+    {{- end }}
+{{- end }}
 {{- if and (or .Metrics .Events) .ResourceAttributes }}
 filter_set_include:
   resource_attributes:

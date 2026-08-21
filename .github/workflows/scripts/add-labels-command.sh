@@ -25,6 +25,7 @@ declare -A COMMON_LABELS
 COMMON_LABELS["arm64"]="arm64"
 COMMON_LABELS["good-first-issue"]="good first issue"
 COMMON_LABELS["help-wanted"]="help wanted"
+COMMON_LABELS["needs-triage"]="needs triage"
 COMMON_LABELS["discussion-needed"]="discussion-needed"
 COMMON_LABELS["os:macos"]="os:macos"
 COMMON_LABELS["os:windows"]="os:windows"

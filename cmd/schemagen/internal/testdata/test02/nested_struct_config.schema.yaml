@@ -1,0 +1,9 @@
+type: object
+properties:
+  connection:
+    properties:
+      host:
+        type: string
+      port:
+        type: integer
+    type: object

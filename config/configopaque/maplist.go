@@ -10,7 +10,6 @@ import (
 	"slices"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 // Pair is an element of a MapList, and consists of a name and an opaque value.
@@ -51,7 +50,7 @@ func (ml *MapList) Unmarshal(conf *confmap.Conf) error {
 	return nil
 }
 
-var _ xconfmap.Validator = MapList(nil)
+var _ confmap.Validator = MapList(nil)
 
 func (ml MapList) Validate() error {
 	// Check for duplicate keys

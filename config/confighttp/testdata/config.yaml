@@ -79,6 +79,9 @@ server:
     allowed_headers:
       - "Content-Type"
       - "Accept"
+    exposed_headers:
+      - "X-Request-Id"
+      - "X-Trace-Id"
     max_age: 7200
 
   # Authentication configuration

@@ -7,6 +7,405 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.65.0/v0.159.0
+
+### 💡 Enhancements 💡
+
+- `pkg/exporterhelper`: Add the `pkg.exporterhelper.queueBatchEnabled` feature gate (#14038, #13582, #12022)
+  When enabled, the batch settings returned by `NewDefaultQueueConfig()` have
+  `batch::enabled` true. See [migration RFC](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/batching-migration.md#phase-1).
+  
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/exporterhelper`: Record `otelcol_exporter_queue_batch_send_size` and `otelcol_exporter_queue_batch_send_size_bytes` after batching, and add `otelcol_exporter_enqueue_size` and `otelcol_exporter_enqueue_size_bytes` for enqueue-time sizes. (#14674)
+  Previously the batch send size histograms were recorded at enqueue time (`Offer`), so they
+  measured incoming request sizes rather than the post-batching request handed to the
+  downstream sender. Those histograms are now recorded in the obs report sender.
+  The previous enqueue-time measurements are preserved under the new
+  `otelcol_exporter_enqueue_size` and `otelcol_exporter_enqueue_size_bytes` metrics for
+  queue sizing. Users with the exporter batcher enabled will observe different values for
+  `otelcol_exporter_queue_batch_send_size*`.
+  `otelcol_exporter_queue_batch_send_size` and `otelcol_exporter_queue_batch_send_size_bytes`
+  are now only recorded when `sending_queue::batch` is configured; they will not appear at all
+  for exporters that do not enable batching.
+  
+- `pkg/scraperhelper`: Use `{record}` instead of `{datapoint}` as the unit of the log record and profile record scraper metrics (#15730)
+  Affects `otelcol_scraper_scraped_log_records`, `otelcol_scraper_errored_log_records`,
+  `otelcol_scraper_scraped_profile_records` and `otelcol_scraper_errored_profile_records`.
+  
+
+<!-- previous-version -->
+
+## v1.64.0/v0.158.0
+
+### 🚀 New components 🚀
+
+- `processor/queuebatch`: New `queuebatchprocessor` to replace the legacy `batchprocessor`. (#15047, #13582, #12022, #11308, #8272, #6046)
+  New implementation is based exporterhelper, uses same configuration as `sending_queue`.
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Add first-class extended type aliases (int64, duration, opaque_string, id, opaque_map, etc.) to config schemas in metadata.yaml (#15513)
+  Authors can now write `type: int64`, `type: duration`, `type: opaque_string`, `type: id`, or
+  `type: opaque_map` directly as a property type in the `config:` section of `metadata.yaml`.
+  Each alias expands to the correct JSON Schema representation and Go type automatically.
+  Existing uses of standard JSON Schema types, `format:`, and `x-customType:` remain supported
+  without migration.
+  
+- `extension/memory_limiter`: Promote the memory limiter extension to beta stability. (#14533)
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Removes the extra line in the documentation.md around description (#15664)
+- `cmd/mdatagen`: Auto-enable v1 metrics when legacy metric is enabled and v1 feature gate is on (#15650)
+  When the v1 feature gate is enabled and a legacy metric is enabled, the corresponding
+  v1 metric is now programmatically enabled so users don't need to add the v1 metric
+  to their config.
+  
+- `cmd/mdatagen`: Fix incorrect collision warning for versioned metrics with different emitted names (#15648)
+  Same name collision detection (type/attribute checks) was being used for versioned metrics
+  with different names. This caused the legacy metric to be disabled which was incorrect and also
+  a warning msg was being incorrectly logged that stated the metrics had the same name when in
+  fact they had different names.
+  
+- `cmd/mdatagen`: Versioned metrics don't handle renamed attributes with same type (#15595)
+  Versioned metrics need to support emitting legacy and latest attributes when the metric name is the same but the
+  attributes names differ. This was not working when the attributes name changed but the type remained the same.
+  Here we add support to versioned metrics with renamed attributes where those attributes have the same type.
+  
+- `exporter/debug`: Fix profile sample attribute formatting for non-string values (#15647)
+  Previously, non-string values produced malformed output such as `%!s(int64=42)`.
+  Profile sample attributes now use the debug exporter's typed attribute format, such as `Int(42)`.
+  This will also change strings from `hello-world` to `Str(hello-world)`.
+  
+- `pkg/config/configtls`: Fix goroutine and file descriptor leak when `client_ca_file_reload` is enabled (#9221)
+  Every call to `ServerConfig.LoadTLSConfig` with `client_ca_file_reload` enabled started a
+  file watcher goroutine that could never be stopped, since the reloader was not reachable
+  from the returned `*tls.Config`. The client CA file is now checked for changes while TLS
+  handshakes are served, at most once per second, matching how `reload_interval` already
+  reloads the server certificate. No background goroutine is started, so nothing is left
+  behind when a server is torn down and recreated.
+  
+
+<!-- previous-version -->
+
+## v1.63.0/v0.157.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/exporterhelper`: Replace histogram bucket boundaries for `otelcol_exporter_queue_batch_send_size_bytes` and `otelcol_processor_batch_batch_send_size_bytes` with a power-of-2 byte-scale set spanning 128 B to 16 MiB. (#15535)
+  The previous boundaries included many small sub-kilobyte buckets that were not useful for byte-scale
+  payloads, and `otelcol_exporter_queue_batch_send_size_bytes` topped out at 6000 bytes so nearly all
+  observations fell into the `+Inf` overflow bucket. The new boundaries are powers of two from 128 B
+  to 16777216 (16 MiB), giving a meaningful distribution for real batch payload sizes (including small
+  timeout-flushed batches) and keeping the two
+  metrics directly comparable on the same dashboards. Dashboards or alerts that hard-code specific `le`
+  values for these histograms will need to be updated.
+  
+- `processor/batch`: Replace histogram bucket boundaries for `otelcol_processor_batch_batch_send_size_bytes` with a power-of-2 byte-scale set spanning 128 B to 16 MiB. (#15535)
+  The previous boundaries included many small sub-kilobyte buckets that were not useful for byte-scale
+  payloads. The new boundaries are powers of two from 128 B to 16777216 (16 MiB), giving a meaningful
+  distribution for real batch payload sizes (including small timeout-flushed batches) and keeping the
+  metric directly comparable with
+  `otelcol_exporter_queue_batch_send_size_bytes` on the same dashboards. Dashboards or alerts that
+  hard-code specific `le` values for this histogram will need to be updated.
+  
+
+### 💡 Enhancements 💡
+
+- `all`: Bootstrap `config.schema.yaml` for core components (debug/otlp/otlphttp exporters, otlp receiver, batch/memory_limiter processors, memory_limiter/zpages extensions). Implements Phase 1 of the component configuration schema roadmap RFC. (#14543)
+  Schemas are generated using the `schemagen` tool from opentelemetry-collector-contrib and hand-tuned to capture
+  validation rules and references to shared library schemas (confighttp, configgrpc, configretry, exporterhelper,
+  etc.). A `.schemagen.yaml` settings file and a `generate-schemas` Makefile target are added so the schemas can
+  be regenerated reproducibly.
+  
+- `pkg/service`: Apply experimental `service::telemetry::resource::detection/development` resource detection to the Collector's internal telemetry resource. (#14311)
+  This follows the OpenTelemetry configuration schema by treating
+  `service::telemetry::resource::detection/development::detectors` as detector selection.
+  Currently supported detector entries are `container`, `host`, `process`, and `service`.
+  See the OpenTelemetry Configuration Go support table and search for
+  `ExperimentalResourceDetector` for current detector support:
+  https://github.com/open-telemetry/opentelemetry-configuration/blob/main/language-support-status.md#go
+  
+  Example:
+  ```yaml
+  service:
+    telemetry:
+      resource:
+        attributes:
+          - name: foo
+            value: bar
+        detection/development:
+          detectors:
+            - host: {}
+  ```
+  
+- `pkg/service`: Add `service.partialReload` feature gate (Alpha) and `service.partialReloadReceivers` feature gate (Beta) that together restart only receivers on config reload when non-receiver config sections are unchanged, avoiding unnecessary disruption to processors, exporters, and extensions. Enable with `--feature-gates=service.partialReload`. (#5966)
+
+### 🧰 Bug fixes 🧰
+
+- `exporter/debug`: Fix the scope index printed by the `normal` verbosity marshaler; each scope was labelled with its parent resource's index instead of its own position (#15541)
+  Affected all four signals (logs, traces, metrics, profiles) — e.g. the second scope under a resource printed `#0` instead of `#1`.
+- `pkg/config/configgrpc`: Fix `WaitForReady` option not being applied to gRPC client connections. (#15615)
+- `pkg/featuregate`: Fix panic when a `--feature-gates` value contains an empty comma-separated element (e.g. `--feature-gates=alpha,`) (#15536)
+  An empty identifier now produces a returned error instead of an index-out-of-range panic during flag parsing.
+- `pkg/service`: Fix collector startup panic when a resource detector emits a slice-valued attribute (e.g. the `process` detector's `process.command_args`) (#15571)
+  `createResource` passed the OTel SDK attribute value straight into `pcommon.Value.FromRaw`, which
+  only accepts `[]any` for slices, so any string, int, float, or bool slice resource attribute produced
+  an `<Invalid value type>` error and aborted `service.New`. Slice-typed attributes are now converted
+  element-wise.
+  
+- `pkg/service`: Record status events reported by extensions (#15557)
+
+<!-- previous-version -->
+
+## v1.62.0/v0.156.0
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Add support for defining stability levels for resource attributes (#15312)
+- `cmd/mdatagen`: Add semantic convention reference to resource attributes (#15313)
+- `processor/memory_limiter`: Adding health events for the memorylimiter (#14700)
+  Publish health event from memorylimiter using componentstatus.ReportStatus
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Removes the extra line in the documentation.md between extended description and table (#15458)
+- `exporter/otlp_http`: Treat errors parsing successful (2xx) HTTP response bodies as permanent errors to prevent retrying already-accepted data. (#15386)
+  When a server returns a 2xx status but the response body exceeds the 64kB read limit,
+  the body is truncated and proto unmarshaling fails. Previously this was treated as a
+  retryable error, causing duplicate data to be exported. Now it is marked as a permanent
+  error so the retry logic will not re-send data that was already accepted by the server.
+  
+- `pkg/config/configretry`: Always validate BackOffConfig fields regardless of the Enabled flag. (#15437)
+- `pkg/service`: Ensure receivers always start after all other components (#15495)
+  There was previously a race condition where multiple receivers using a shared internal implementation,
+  such as the OTLP receiver, could start sending telemetry into a pipeline before all its components had fully started.
+  
+- `processor/memory_limiter`: Fix degenerate collector performance when exporter has problems causing permanent CPU-burning GC loop (#4981)
+  Forced GC runs now use exponential backoff when deemed ineffective
+  (still above soft limit and less than 5% reclaimed) to avoid preventing
+  recovery by overloading CPU with excessive GC runs. The cap on the
+  backoff interval is exposed via `max_gc_interval_when_soft_limited` and
+  `max_gc_interval_when_hard_limited` (both default `30s`); set either to
+  `0` to disable backoff on that path.
+  
+- `provider/env`: Fix empty env var default resolving to nil instead of empty string (#14587)
+  When using ${env:VAR:-} with an unset variable, the empty default now correctly
+  resolves to an empty string instead of nil.
+  
+
+<!-- previous-version -->
+
+## v1.61.0/v0.155.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/confighttp`: Remove stabilized gate `confighttp.framedSnappy` (#15420)
+- `pkg/configoptional`: Remove stabilized gate `configoptional.AddEnabledField`. (#15421)
+- `pkg/confmap`: Remove stabilized featuregate `confmap.newExpandedValueSanitizer` (#15418)
+- `pkg/exporterhelper`: Remove stable gate `exporter.PersistRequestContext`. (#15424)
+- `pkg/otelcol`: Remove stable gate `otelcol.printInitialConfig` (#15425)
+- `pkg/service`: Remove stable featuregate `telemetry.UseLocalHostAsDefaultMetricsAddress` (#15419)
+- `pkg/xpdata`: Remove stable gate `pdata.enableRefCounting`. (#15426)
+- `processor/memory_limiter`: Rename deprecated memory limiter metrics to include the `memory_limiter` prefix (e.g. `otelcol_processor_memory_limiter_*`) to clarify they are specific to this processor. (#11203)
+
+### 🚀 New components 🚀
+
+- `cmd/schemagen`: Move the `schemagen` CLI from opentelemetry-collector-contrib to this repository as `cmd/schemagen`. (#14543)
+  The tool's source is identical to the upstream contrib version
+  (github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen) except for the module path and
+  the test fixtures' namespace, which now reflect the collector module
+  (go.opentelemetry.io/collector/cmd/schemagen). A contrib-only integration test that pointed at three
+  contrib components is removed; contrib's existing `make generate-schemas` + git-diff CI continues to
+  exercise the FactoryMaps feature against real-world components.
+  
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Add support for versioned metrics (#15309)
+  Allows metadata to specify versioned metrics for migrating to new semantic conventions.
+  There are two scenarios catered for when the metric name stays the same during migration.
+  When a metric name stays the same but its type differs, just the latest metric is
+  emitted with the new type.
+  When a metric name stays the same but its attributes differ, the latest version
+  is emitted with combined attributes during the migration period.
+  
+- `cmd/schemagen`: Add `overlayFile` support to deep-merge hand-curated schema fragments into generated schemas. (#14543)
+  Components can declare an `overlayFile` in `.schemagen.yaml` pointing to a YAML file
+  whose keys are recursively merged into the auto-generated schema after generation.
+  This allows injecting descriptions, constraints, or additional properties that cannot
+  be derived from Go types.
+  Originally added to the contrib copy of `cmd/schemagen` in
+  open-telemetry/opentelemetry-collector-contrib#48917 and brought over with the tool
+  in this move.
+  
+- `cmd/schemagen`: Add `-p` flag to specify a custom Go package pattern for the config struct. (#14543)
+  The new `-p` flag lets callers override the default `.` package pattern with an arbitrary
+  Go package selector (e.g. a sub-package whose `Config` type schemagen should walk).
+  Originally added to the contrib copy of `cmd/schemagen` in
+  open-telemetry/opentelemetry-collector-contrib#48966 and brought over with the tool
+  in this move.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Fix an issue when the last feature gate is removed, stale files are left. (#15423)
+- `cmd/mdatagen`: Fix known acronyms at the end of generated Go identifiers to be all-caps, same as in any other position (#15438)
+- `cmd/schemagen`: Fix mode detection when using `-p` to target a package outside the current directory. (#15453)
+  A new `-m component|package` flag is available as a manual override when auto-detection is not possible.
+  
+
+<!-- previous-version -->
+
+## v1.60.0/v0.154.0
+
+### 🛑 Breaking changes 🛑
+
+- `cmd/builder`: The `--skip-get-modules` flag will no longer regenerate your `go.mod` file. (#15390)
+  This is mostly a bug fix, as it led to adverse behaviour that was unintended in the described flow in the README.
+  Now when you run `--skip-get-modules`, your `go.mod` file will truly be untouched by `ocb` as the info log claims.
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/config/configtls`: Add `include_insecure_cipher_suites` to configtls to enable insecure cipher suites. Insecure cipher suites are disabled by default for security. (#13829)
+- `pkg/confighttp`: Add `ExposedHeaders` field to `CORSConfig` to allow setting the `Access-Control-Expose-Headers` response header. (#15119)
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Removes the extra line in the README.md between status and description (#15306)
+- `pkg/exporterhelper`: Fix nil-pointer panic in `sending_queue::batch` Unmarshal when `sending_queue::sizer` is set and `sending_queue::batch::enabled` is false. (#14687)
+  When `sending_queue::sizer` was set and `sending_queue::batch::enabled: false`
+  cleared the batch Optional to None, the sizer-inheritance branch in
+  `queuebatch.Config.Unmarshal` dereferenced a nil Optional and crashed the
+  collector at startup. The branch now also requires `Batch.HasValue()`.
+  
+
+<!-- previous-version -->
+
+## v1.59.0/v0.153.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/configoptional`: Stabilize feature gate configoptional.AddEnabledField (#15333)
+- `pkg/confmap`: Stabilize confmap.newExpandedValueSanitizer feature gate (#15339)
+- `pkg/exporterhelper`: mark exporter.PersistRequestContext as stable (#15330)
+- `pkg/otelcol`: Stabilize otelcol.printInitialConfig gate (#15340)
+- `pkg/pdata`: Remove pdata.useCustomProtoEncoding feature gate (#15332)
+- `pkg/service`: Stabilize telemetry.UseLocalHostAsDefaultMetricsAddress gate (#15342)
+- `pkg/xpdata`: Stabilize pdata.enableRefCounting feature gate (#15331)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/config/configgrpc`: Fix memory corruption and fatal error in Snappy (#15237, #15320)
+
+<!-- previous-version -->
+
+## v1.58.0/v0.152.0
+
+### 💡 Enhancements 💡
+
+- `pkg/exporterhelper`: Add `otelcol_exporter_in_flight_requests` metric to track the number of export requests currently in-flight per exporter. (#15009)
+  This UpDownCounter increments in startOp and decrements in endOp, allowing operators to monitor
+  concurrent export activity and detect when an exporter is saturating its worker pool.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/confighttp`: Close the original request body after reading block-format `Content-Encoding: snappy` requests. (#15262)
+- `pkg/confighttp`: Recover from panics in decompression libraries, return HTTP 400 instead of 500. (#13228)
+- `pkg/confighttp`: Enforce `max_request_body_size` on `Content-Encoding: snappy` requests before the decoded buffer is allocated. (#15252)
+- `pkg/otelcol`: Stop emitting verbose gRPC transport messages at WARN during normal client disconnect. (#5169)
+  grpc-go gates chatty per-RPC notices (e.g. "HandleStreams failed to read frame:
+  connection reset by peer") behind `LoggerV2.V(2)`. zapgrpc.Logger.V conflates
+  grpclog verbosity with zap severity, so V(2) returns true whenever WARN is
+  enabled and these messages emit at WARN. Wrap the installed grpclog.LoggerV2
+  with a corrected V() that compares against a fixed verbosity threshold,
+  matching grpclog's intended semantics. See uber-go/zap#1544.
+  
+- `pkg/pdata`: `pcommon.Value.AsString` no longer HTML-escapes `<`, `>`, and `&` inside `ValueTypeMap` and `ValueTypeSlice` values, matching the behavior already used for `ValueTypeStr`. (#14662)
+- `pkg/service`: Fix Prometheus config defaults mismatch when host is explicitly set in telemetry configuration. (#13867)
+  When users explicitly configured the telemetry metrics section (e.g. to change the host),
+  the Prometheus exporter boolean fields (WithoutScopeInfo, WithoutUnits, WithoutTypeSuffix)
+  defaulted to nil/false instead of true, causing metric name format changes compared to the
+  implicit default configuration. This fix applies the correct defaults during config unmarshaling.
+  
+- `pkg/service`: Return noop tracer provider when no trace processors are defined (#15135)
+
+<!-- previous-version -->
+
+## v1.57.0/v0.151.0
+
+### 🛑 Breaking changes 🛑
+
+- `cmd/builder`: In the generated Collector source, the `replace` statements in the Go module will now use relative paths by default. (#15097)
+  We expect that this will not break existing use-cases where the generated collector is only used in an interim manner for builds. It enables the possibility of tracking the generated Collector code as a longer living artifact, allowing it to be run on any machine (whereas absolute paths will be different depending on the machine the Collector source is generated on.) We have added `dist::use_absolute_replace_paths` to go back to the absolute path behaviour in the case where there is an unforeseen use-case that requires absolute paths.
+  
+- `pkg/confighttp`: Stabilize framedSnappy feature gate. (#15096)
+
+### 💡 Enhancements 💡
+
+- `all`: Add declarative schema support for service telemetry resource configuration. (#14411)
+  The `service::telemetry::resource` configuration now accepts the declarative schema with explicit name/value pairs:
+  ```yaml
+  service:
+    telemetry:
+      resource:
+        schema_url: https://opentelemetry.io/schemas/1.38.0
+        attributes:
+          - name: service.name
+            value: my-collector
+          - name: host.name
+            value: collector-host
+  ```
+  
+  The legacy inline attribute map format is still supported for backward compatibility:
+  ```yaml
+  service:
+    telemetry:
+      resource:
+        service.name: my-collector
+        host.name: collector-host
+  ```
+  
+  Note: `resource.detectors` is accepted for forward compatibility but is not yet applied by the collector.
+  
+- `exporter/otlp_grpc`: Added the `server.address` and `url.path` attributes to metrics generated by the otlp exporter. (#14998)
+- `exporter/otlp_http`: Added the `server.address` and `url.path` attributes to metrics generated by the otlp_http exporter. (#14998)
+- `pkg/config/configgrpc`: Add `UserAgent` field to `ClientConfig` to allow overriding the default gRPC user-agent string. (#14686)
+  The otlp gRPC exporter was unconditionally setting the User-Agent via
+  grpc.WithUserAgent() at dial time, which takes precedence over per-call
+  metadata, causing any user-configured User-Agent to be silently discarded.
+  A dedicated `UserAgent` field has been added to `ClientConfig` which, when
+  set, is used in the dial option directly instead of the default BuildInfo-derived string.
+  
+- `pkg/config/configgrpc`: Accept gRPC resolver scheme URIs in client endpoint (e.g. passthrough:///host:port) to allow control over name resolution (#14990)
+  After the migration to grpc.NewClient, some gRPC client components such as the OTLP
+  exporter experienced connection issues in dual-stack DNS environments. This can now be
+  fixed by using the passthrough:/// gRPC resolver scheme in the endpoint field.
+  
+- `pkg/config/confignet`: Add support for Windows Named Pipe (npipe) transport (#15085)
+- `pkg/service`: Emit a warning when using the old v0.2.0 declarative config format (#15088)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/otelcol`: Print components exactly once in the `otelcol components` command (#14682)
+  This resolves an issue where aliased components were skipped.
+- `pkg/otelcol`: Synchronize Collector Run and Shutdown lifecycles so that Shutdown blocks until Run completes all cleanup. (#4947)
+  Shutdown now blocks until Run finishes cleanup, matching http.Server semantics.
+  If Shutdown is called before Run, the next Run call returns nil after cleaning up
+  the config provider.
+  
+- `pkg/pdata`: Use spec-compliant string representation for NaN, Infinity, and -Infinity in Value.AsString(). (#14487)
+- `pkg/pprofile`: Fix data corruption of resource and scope attributes after marshal-unmarshal-merge round-trip. (#15084)
+- `pkg/service`: Non-string resource attributes in telemetry configuration now return an error instead of panicking (#15171)
+- `pkg/xscraperhelper`: fix the merge of profiles in the profiling scraper helpers (#14790)
+- `receiver/otlp`: Fix profiles receiver reporting its samples as spans (#15089)
+
+<!-- previous-version -->
+
 ## v1.56.0/v0.150.0
 
 ### 💡 Enhancements 💡

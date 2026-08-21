@@ -74,3 +74,64 @@ func TestCompressReadCloser(t *testing.T) {
 		})
 	}
 }
+
+func TestPanicRecoverReadCloser(t *testing.T) {
+	t.Parallel()
+
+	t.Run("read_panic_recovered", func(t *testing.T) {
+		t.Parallel()
+
+		pr := &panicRecoverReadCloser{
+			inner: &panickingReadCloser{panicOnRead: true},
+		}
+		buf := make([]byte, 10)
+		n, err := pr.Read(buf)
+		require.Equal(t, 0, n)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "decompression panic")
+	})
+
+	t.Run("close_panic_recovered", func(t *testing.T) {
+		t.Parallel()
+
+		pr := &panicRecoverReadCloser{
+			inner: &panickingReadCloser{panicOnClose: true},
+		}
+		err := pr.Close()
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "decompression close panic")
+	})
+
+	t.Run("normal_operation", func(t *testing.T) {
+		t.Parallel()
+
+		data := []byte("hello world")
+		pr := &panicRecoverReadCloser{
+			inner: io.NopCloser(bytes.NewReader(data)),
+		}
+		got, err := io.ReadAll(pr)
+		require.NoError(t, err)
+		require.Equal(t, data, got)
+		require.NoError(t, pr.Close())
+	})
+}
+
+// panickingReadCloser is a test helper that panics on Read and/or Close.
+type panickingReadCloser struct {
+	panicOnRead  bool
+	panicOnClose bool
+}
+
+func (p *panickingReadCloser) Read([]byte) (int, error) {
+	if p.panicOnRead {
+		panic("bad decompression data")
+	}
+	return 0, io.EOF
+}
+
+func (p *panickingReadCloser) Close() error {
+	if p.panicOnClose {
+		panic("bad close")
+	}
+	return nil
+}

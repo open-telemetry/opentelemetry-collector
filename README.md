@@ -14,9 +14,6 @@
   <a href="https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/build-and-test.yml?query=branch%3Amain">
     <img alt="Build Status" src="https://img.shields.io/github/actions/workflow/status/open-telemetry/opentelemetry-collector/build-and-test.yml?branch=main&style=for-the-badge">
   </a>
-  <a href="https://goreportcard.com/report/github.com/open-telemetry/opentelemetry-collector">
-    <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/open-telemetry/opentelemetry-collector?style=for-the-badge">
-  </a>
   <a href="https://codecov.io/gh/open-telemetry/opentelemetry-collector/branch/main/">
     <img alt="Codecov Status" src="https://img.shields.io/codecov/c/github/open-telemetry/opentelemetry-collector?style=for-the-badge">
   </a>
@@ -67,7 +64,8 @@ Objectives:
 
 The OpenTelemetry Collector SIG is present at the [#otel-collector](https://cloud-native.slack.com/archives/C01N6P7KR6W)
 channel on the CNCF Slack and [meets once a week](https://github.com/open-telemetry/community#implementation-sigs) via
-video calls. Everyone is invited to join those calls, which typically serves the following purposes:
+video calls. If you are new to the CNCF Slack community, you can
+[create an account](https://slack.cncf.io/). Everyone is invited to join those calls, which typically serves the following purposes:
 
 - meet the humans behind the project
 - get an opinion about specific proposals
@@ -109,13 +107,15 @@ See [Stability Levels and versioning](docs/component-stability.md) for more deta
 
 ## Compatibility
 
-When used as a library, the OpenTelemetry Collector attempts to track the currently supported versions of Go, as [defined by the Go team](https://go.dev/doc/devel/release#policy).
+When used as a library, the OpenTelemetry Collector attempts to track the currently supported Go minor versions, as [defined by the Go team](https://go.dev/doc/devel/release#policy).
 Removing support for an unsupported Go version is not considered a breaking change.
 
 Support for Go versions on the OpenTelemetry Collector is updated as follows:
 
 1. The first release after the release of a new Go minor version `N` will add build and tests steps for the new Go minor version.
 2. The first release after the release of a new Go minor version `N` will remove support for Go version `N-2`.
+
+Within supported Go minor versions, the minimum supported patch version may increase over time, for example to accommodate dependency updates. Increasing the minimum supported patch version within a supported Go minor version is not considered a breaking change.
 
 Official OpenTelemetry Collector distro binaries will be built with a release in the latest Go minor version series.
 
@@ -163,34 +163,32 @@ Here is a list of community roles with current and previous members:
 
 ### Maintainers
 
-- [Alex Boten](https://github.com/codeboten), Honeycomb
+- [Alex Boten](https://github.com/codeboten), Grafana Labs
 - [Bogdan Drutu](https://github.com/bogdandrutu), Snowflake
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
+- [Evan Bradley](https://github.com/evan-bradley), Dynatrace
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
 
 For more information about the maintainer role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#maintainer).
 
 ### Approvers
 
-- [Andrew Wilkins](https://github.com/axw), Elastic
 - [Antoine Toulme](https://github.com/atoulme), Splunk
 - [Damien Mathieu](https://github.com/dmathieu), Elastic
-- [Evan Bradley](https://github.com/evan-bradley), Dynatrace
 - [Jade Guiton](https://github.com/jade-guiton-dd), Datadog
 - [Joshua MacDonald](https://github.com/jmacd), Microsoft
-- [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
+- [Tyler Helmuth](https://github.com/TylerHelmuth), Grafana Labs
 - [Yang Song](https://github.com/songy23), Datadog
 
 For more information about the approver role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#approver).
 
 In addition to what is described at the organization-level, the SIG Collector requires all core approvers to take part in rotating
-the role of the [release manager](./docs/release.md#release-manager).
+the role of the [release manager](./docs/release.md#release-managers).
 
 ### Triagers
 
 - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
 - [Arthur Silva Sens](https://github.com/ArthurSens), Grafana Labs
-- [Chao Weng](https://github.com/sincejune), AppDynamics
 - [Vihas Makwana](https://github.com/VihasMakwana), Elastic
 - Actively seeking contributors to triage issues
 
@@ -200,7 +198,9 @@ For more information about the triager role, see the [community repository](http
 
 - [Alolita Sharma](https://github.com/alolita), Triager
 - [Andrew Hsu](https://github.com/andrewhsu), Triager
+- [Andrew Wilkins](https://github.com/axw), Approver
 - [Anthony Mirabella](https://github.com/Aneurysm9), Approver
+- [Chao Weng](https://github.com/sincejune), Triager
 - [Daniel Jaglowski](https://github.com/djaglowski), Approver
 - [James Bebbington](https://github.com/james-bebbington), Approver
 - [Jay Camp](https://github.com/jrcamp), Approver

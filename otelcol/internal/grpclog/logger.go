@@ -10,6 +10,26 @@ import (
 	"google.golang.org/grpc/grpclog"
 )
 
+// fixedVerbosityLogger wraps a grpclog.LoggerV2 and reports verbosity against a
+// fixed threshold instead of zap's severity enabler.
+//
+// zapgrpc.Logger.V(level) is implemented as levelEnabler.Enabled(zapcore.Level(level-1)),
+// which conflates grpclog's supplemental verbosity with zap's severity. With WARN
+// enabled, V(2) returns true, so grpc-go emits chatty per-RPC messages — including
+// transport-layer notices logged on normal client disconnect — at WARN. See
+// uber-go/zap#1544.
+//
+// Comparing against a fixed threshold restores grpclog's intended semantics.
+// The default of 0 matches grpclog when GRPC_GO_LOG_VERBOSITY_LEVEL is unset.
+type fixedVerbosityLogger struct {
+	grpclog.LoggerV2
+	verbosity int
+}
+
+func (l *fixedVerbosityLogger) V(level int) bool {
+	return level <= l.verbosity
+}
+
 // SetLogger constructs a zapgrpc.Logger instance, and installs it as grpc logger, cloned from baseLogger with
 // exact configuration. The minimum level of gRPC logs is set to WARN should the loglevel of the collector is set to
 // INFO to avoid copious logging from grpc framework.
@@ -30,6 +50,6 @@ func SetLogger(baseLogger *zap.Logger) *zapgrpc.Logger {
 		return c.With([]zapcore.Field{zap.Bool("grpc_log", true)})
 	}), zap.AddCallerSkip(5)))
 
-	grpclog.SetLoggerV2(logger)
+	grpclog.SetLoggerV2(&fixedVerbosityLogger{LoggerV2: logger})
 	return logger
 }

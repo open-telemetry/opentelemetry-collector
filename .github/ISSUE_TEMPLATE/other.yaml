@@ -1,5 +1,6 @@
 name: Other issue
 description: Create a new issue to help us improve the collector
+labels: ["needs triage"]
 body:
   - type: dropdown
     id: component
