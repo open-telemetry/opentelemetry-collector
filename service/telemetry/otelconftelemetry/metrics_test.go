@@ -88,31 +88,31 @@ func TestCreateMeterProvider(t *testing.T) {
 			},
 		},
 	} {
-		prom := promtest.GetAvailableLocalAddressPrometheus(t)
-		endpoint := fmt.Sprintf("http://%s:%d/metrics", *prom.Host, *prom.Port)
-
-		cfg := createDefaultConfig().(*Config)
-		cfg.Metrics = MetricsConfig{
-			Level: configtelemetry.LevelDetailed,
-			MeterProvider: config.MeterProvider{
-				Readers: []config.MetricReader{{
-					Pull: &config.PullMetricReader{
-						Exporter: config.PullMetricExporter{Prometheus: prom},
-					},
-				}},
-			},
-		}
-		cfg.Resource = migration.ResourceConfigV030{
-			Resource: config.Resource{
-				Attributes: []config.AttributeNameValue{
-					{Name: "service.name", Value: "otelcol"},
-					{Name: "service.version", Value: "latest"},
-					{Name: "service.instance.id", Value: testInstanceID},
-				},
-			},
-		}
-
 		t.Run(tt.name, func(t *testing.T) {
+			prom := promtest.GetAvailableLocalAddressPrometheus(t)
+			endpoint := fmt.Sprintf("http://%s:%d/metrics", *prom.Host, *prom.Port)
+
+			cfg := createDefaultConfig().(*Config)
+			cfg.Metrics = MetricsConfig{
+				Level: configtelemetry.LevelDetailed,
+				MeterProvider: config.MeterProvider{
+					Readers: []config.MetricReader{{
+						Pull: &config.PullMetricReader{
+							Exporter: config.PullMetricExporter{Prometheus: prom},
+						},
+					}},
+				},
+			}
+			cfg.Resource = migration.ResourceConfigV030{
+				Resource: config.Resource{
+					Attributes: []config.AttributeNameValue{
+						{Name: "service.name", Value: "otelcol"},
+						{Name: "service.version", Value: "latest"},
+						{Name: "service.instance.id", Value: testInstanceID},
+					},
+				},
+			}
+
 			resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 			require.NoError(t, err)
 
