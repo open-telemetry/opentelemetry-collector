@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
-component: memorylimiterextension
+component: extension/memory_limiter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Add otelcol_memorylimiter_refused_requests metric to record network request refusals in extension mode.

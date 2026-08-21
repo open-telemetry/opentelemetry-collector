@@ -94,9 +94,10 @@ func (ml *memoryLimiterExtension) GetGRPCServerOptions(_ context.Context) ([]grp
 		),
 		grpc.ChainStreamInterceptor(
 			func(srv any, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+				ctx := ss.Context()
 				if ml.MustRefuse() {
 					ml.telemetryBuilder.MemorylimiterRefusedRequests.Add(
-						ss.Context(),
+						ctx,
 						1,
 						metric.WithAttributes(attribute.String("transport", "grpc")),
 					)
