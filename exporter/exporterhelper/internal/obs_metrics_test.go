@@ -73,6 +73,16 @@ func TestExporterObsMetricsAttributes(t *testing.T) {
 	}
 }
 
+func TestObsMetricsWithoutOperations(_ *testing.T) {
+	metrics := NewObsMetrics()
+	ctx := context.Background()
+
+	metrics.RecordInFlight(ctx, 1)
+	metrics.RecordSent(ctx, 1)
+	metrics.RecordSendFailure(ctx, 1)
+	metrics.Shutdown()
+}
+
 func TestExporterObsMetricsMandatoryAttributesTakePrecedence(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })

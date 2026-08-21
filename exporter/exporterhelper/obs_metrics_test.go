@@ -138,4 +138,10 @@ func TestObsMetricsAdapterForwardsValues(t *testing.T) {
 	require.NoError(t, adapted.RegisterQueueCapacity(value))
 	adapted.RecordBatchSendSize(context.Background(), 1, value)
 	require.Equal(t, []int64{7, 7, 7, 7}, values)
+
+	noOpAdapted := adaptObsMetrics(NewObsMetrics())
+	noOpAdapted.RecordEnqueueSize(context.Background(), 1, nil)
+	require.NoError(t, noOpAdapted.RegisterQueueSize(nil))
+	require.NoError(t, noOpAdapted.RegisterQueueCapacity(nil))
+	noOpAdapted.RecordBatchSendSize(context.Background(), 1, nil)
 }
