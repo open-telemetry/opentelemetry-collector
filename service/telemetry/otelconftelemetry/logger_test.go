@@ -576,9 +576,9 @@ func newOTLPLogger(t *testing.T, level zapcore.Level, handler func(plogotlp.Expo
 		Simple: &config.SimpleLogRecordProcessor{
 			Exporter: config.LogRecordExporter{
 				OTLP: &config.OTLP{
-					Endpoint: ptr(srv.URL),
-					Protocol: ptr("http/protobuf"),
-					Insecure: ptr(true),
+					Endpoint: new(srv.URL),
+					Protocol: new("http/protobuf"),
+					Insecure: new(true),
 				},
 			},
 		},
@@ -658,9 +658,9 @@ func TestLogAttributeInjection(t *testing.T) {
 					Exporter: config.LogRecordExporter{
 						OTLP: &config.OTLP{
 							// Send OTLP logs to the mock backend
-							Endpoint: ptr(srv.URL),
-							Protocol: ptr("http/protobuf"),
-							Insecure: ptr(true),
+							Endpoint: new(srv.URL),
+							Protocol: new("http/protobuf"),
+							Insecure: new(true),
 						},
 					},
 				},
