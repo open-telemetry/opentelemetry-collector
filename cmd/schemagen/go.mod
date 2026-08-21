@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/cmd/schemagen
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/iancoleman/strcase v0.3.0
