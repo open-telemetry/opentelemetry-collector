@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
@@ -40,12 +41,12 @@ func TestExporterObsMetricsAttributes(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(om.Shutdown)
 
-	require.NoError(t, om.RegisterQueueSize(func() int64 { return 7 }))
-	require.NoError(t, om.RegisterQueueCapacity(func() int64 { return 9 }))
+	require.NoError(t, om.RegisterQueueSize(queue.NewInt64Value(func() int64 { return 7 })))
+	require.NoError(t, om.RegisterQueueCapacity(queue.NewInt64Value(func() int64 { return 9 })))
 	ctx := context.Background()
 	om.RecordEnqueueFailure(ctx, 5)
-	om.RecordEnqueueSize(ctx, 5, func() int64 { return 100 })
-	om.RecordBatchSendSize(ctx, 5, func() int64 { return 100 })
+	om.RecordEnqueueSize(ctx, 5, queue.NewInt64Value(func() int64 { return 100 }))
+	om.RecordBatchSendSize(ctx, 5, queue.NewInt64Value(func() int64 { return 100 }))
 	om.RecordInFlight(ctx, 1)
 	om.RecordSent(ctx, 5)
 	om.RecordSendFailure(ctx, 5)
@@ -90,7 +91,7 @@ func TestExporterObsMetricsMandatoryAttributesTakePrecedence(t *testing.T) {
 	t.Cleanup(om.Shutdown)
 
 	ctx := context.Background()
-	om.RecordBatchSendSize(ctx, 5, func() int64 { return 100 })
+	om.RecordBatchSendSize(ctx, 5, queue.NewInt64Value(func() int64 { return 100 }))
 	om.RecordSent(ctx, 5)
 
 	exporterAttr := attribute.String(ExporterKey, id.String())
@@ -146,8 +147,8 @@ func TestExporterObsMetricsQueueInstruments(t *testing.T) {
 			require.NoError(t, err)
 			t.Cleanup(om.Shutdown)
 
-			require.NoError(t, om.RegisterQueueSize(func() int64 { return 7 }))
-			require.NoError(t, om.RegisterQueueCapacity(func() int64 { return 9 }))
+			require.NoError(t, om.RegisterQueueSize(queue.NewInt64Value(func() int64 { return 7 })))
+			require.NoError(t, om.RegisterQueueCapacity(queue.NewInt64Value(func() int64 { return 9 })))
 			om.RecordEnqueueFailure(context.Background(), 12)
 
 			exporterAttrs := attribute.NewSet(attribute.String(ExporterKey, id.String()))
@@ -168,7 +169,7 @@ func TestExporterObsMetricsQueueInstruments(t *testing.T) {
 
 // countingObsMetrics reports nothing but counts how often it is shut down.
 func countingObsMetrics(shutdowns *int) ObsMetrics {
-	return NewObsMetrics(nil, nil, nil, nil, func() { *shutdowns++ })
+	return NewObsMetrics(WithMetricsShutdown(func() { *shutdowns++ }))
 }
 
 // A failed construction leaves an injected ObsMetrics for the caller to shut down.

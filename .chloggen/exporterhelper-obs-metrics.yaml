@@ -2,7 +2,7 @@ change_type: enhancement
 
 component: pkg/exporterhelper
 
-note: Add `WithObsMetrics` and constructors for supplying queue, batch, and sender metrics
+note: Add `WithObsMetrics`, evolvable metrics constructors, and `exporterhelpertest` helpers
 
 issues: [14038]
 

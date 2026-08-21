@@ -43,7 +43,7 @@ func NewQueueBatch(
 ) (*QueueBatch, error) {
 	qbm := set.QueueBatchMetrics
 	if qbm == nil {
-		qbm = NewQueueBatchMetrics(nil, nil)
+		qbm = NewQueueBatchMetrics()
 	}
 
 	b, err := NewBatcher(cfg.Batch, batcherSettings[request.Request]{

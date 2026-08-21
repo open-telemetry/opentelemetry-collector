@@ -17,13 +17,37 @@ type QueueMetrics interface {
 	// RecordEnqueueFailure counts items the queue rejected.
 	RecordEnqueueFailure(ctx context.Context, items int64)
 	// RecordEnqueueSize counts the items and bytes offered to the queue.
-	RecordEnqueueSize(ctx context.Context, items int64, bytesSize func() int64)
+	RecordEnqueueSize(ctx context.Context, items int64, bytesSize Int64Value)
 	// RegisterQueueSize installs an observer for the current queue size.
-	RegisterQueueSize(observeSize func() int64) error
+	RegisterQueueSize(observeSize Int64Value) error
 	// RegisterQueueCapacity installs an observer for the fixed queue capacity.
-	RegisterQueueCapacity(observeCapacity func() int64) error
+	RegisterQueueCapacity(observeCapacity Int64Value) error
 
 	private()
+}
+
+// Int64Value supplies an int64 value; use NewInt64Value.
+type Int64Value interface {
+	Value() int64
+
+	private()
+}
+
+// ValueFunc supplies an int64 value.
+type ValueFunc func() int64
+
+func (f ValueFunc) Value() int64 {
+	if f == nil {
+		return 0
+	}
+	return f()
+}
+
+func (ValueFunc) private() {}
+
+// NewInt64Value returns an Int64Value backed by value.
+func NewInt64Value(value ValueFunc) Int64Value {
+	return value
 }
 
 // RecordEnqueueFailureFunc records the items dropped because the queue rejected them.
@@ -37,9 +61,9 @@ func (f RecordEnqueueFailureFunc) RecordEnqueueFailure(ctx context.Context, item
 }
 
 // RecordEnqueueSizeFunc records a request offered to the queue, calling bytesSize only if reported.
-type RecordEnqueueSizeFunc func(ctx context.Context, items int64, bytesSize func() int64)
+type RecordEnqueueSizeFunc func(ctx context.Context, items int64, bytesSize Int64Value)
 
-func (f RecordEnqueueSizeFunc) RecordEnqueueSize(ctx context.Context, items int64, bytesSize func() int64) {
+func (f RecordEnqueueSizeFunc) RecordEnqueueSize(ctx context.Context, items int64, bytesSize Int64Value) {
 	if f == nil {
 		return
 	}
@@ -47,9 +71,9 @@ func (f RecordEnqueueSizeFunc) RecordEnqueueSize(ctx context.Context, items int6
 }
 
 // RegisterQueueSizeFunc installs an observer for the current queue size.
-type RegisterQueueSizeFunc func(observeSize func() int64) error
+type RegisterQueueSizeFunc func(observeSize Int64Value) error
 
-func (f RegisterQueueSizeFunc) RegisterQueueSize(observeSize func() int64) error {
+func (f RegisterQueueSizeFunc) RegisterQueueSize(observeSize Int64Value) error {
 	if f == nil {
 		return nil
 	}
@@ -57,28 +81,61 @@ func (f RegisterQueueSizeFunc) RegisterQueueSize(observeSize func() int64) error
 }
 
 // RegisterQueueCapacityFunc installs an observer for the fixed queue capacity.
-type RegisterQueueCapacityFunc func(observeCapacity func() int64) error
+type RegisterQueueCapacityFunc func(observeCapacity Int64Value) error
 
-func (f RegisterQueueCapacityFunc) RegisterQueueCapacity(observeCapacity func() int64) error {
+func (f RegisterQueueCapacityFunc) RegisterQueueCapacity(observeCapacity Int64Value) error {
 	if f == nil {
 		return nil
 	}
 	return f(observeCapacity)
 }
 
-// NewQueueMetrics returns a QueueMetrics whose nil operations report nothing.
-func NewQueueMetrics(
-	recordEnqueueFailure RecordEnqueueFailureFunc,
-	recordEnqueueSize RecordEnqueueSizeFunc,
-	registerQueueSize RegisterQueueSizeFunc,
-	registerQueueCapacity RegisterQueueCapacityFunc,
-) QueueMetrics {
-	return queueMetrics{
-		RecordEnqueueFailureFunc:  recordEnqueueFailure,
-		RecordEnqueueSizeFunc:     recordEnqueueSize,
-		RegisterQueueSizeFunc:     registerQueueSize,
-		RegisterQueueCapacityFunc: registerQueueCapacity,
+// QueueMetricsOption configures QueueMetrics.
+type QueueMetricsOption interface {
+	applyQueueMetrics(*queueMetrics)
+}
+
+type queueMetricsOptionFunc func(*queueMetrics)
+
+func (f queueMetricsOptionFunc) applyQueueMetrics(metrics *queueMetrics) {
+	f(metrics)
+}
+
+// WithRecordEnqueueFailure configures how enqueue failures are recorded.
+func WithRecordEnqueueFailure(record RecordEnqueueFailureFunc) QueueMetricsOption {
+	return queueMetricsOptionFunc(func(metrics *queueMetrics) {
+		metrics.RecordEnqueueFailureFunc = record
+	})
+}
+
+// WithRecordEnqueueSize configures how enqueue sizes are recorded.
+func WithRecordEnqueueSize(record RecordEnqueueSizeFunc) QueueMetricsOption {
+	return queueMetricsOptionFunc(func(metrics *queueMetrics) {
+		metrics.RecordEnqueueSizeFunc = record
+	})
+}
+
+// WithRegisterQueueSize configures how the queue-size observer is registered.
+func WithRegisterQueueSize(register RegisterQueueSizeFunc) QueueMetricsOption {
+	return queueMetricsOptionFunc(func(metrics *queueMetrics) {
+		metrics.RegisterQueueSizeFunc = register
+	})
+}
+
+// WithRegisterQueueCapacity configures how the queue-capacity observer is registered.
+func WithRegisterQueueCapacity(register RegisterQueueCapacityFunc) QueueMetricsOption {
+	return queueMetricsOptionFunc(func(metrics *queueMetrics) {
+		metrics.RegisterQueueCapacityFunc = register
+	})
+}
+
+// NewQueueMetrics returns QueueMetrics whose unspecified operations report nothing.
+func NewQueueMetrics(options ...QueueMetricsOption) QueueMetrics {
+	metrics := queueMetrics{}
+	for _, option := range options {
+		option.applyQueueMetrics(&metrics)
 	}
+	return metrics
 }
 
 // queueMetrics implements QueueMetrics from a set of operations.
@@ -103,14 +160,14 @@ type obsQueue[T request.Request] struct {
 func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T], error) {
 	qm := set.QueueMetrics
 	if qm == nil {
-		qm = NewQueueMetrics(nil, nil, nil, nil)
+		qm = NewQueueMetrics()
 	}
 
-	if err := qm.RegisterQueueSize(delegate.Size); err != nil {
+	if err := qm.RegisterQueueSize(NewInt64Value(delegate.Size)); err != nil {
 		return nil, err
 	}
 
-	if err := qm.RegisterQueueCapacity(delegate.Capacity); err != nil {
+	if err := qm.RegisterQueueCapacity(NewInt64Value(delegate.Capacity)); err != nil {
 		return nil, err
 	}
 
@@ -126,7 +183,9 @@ func (or *obsQueue[T]) Offer(ctx context.Context, req T) error {
 	// be modified by the downstream components like the batcher.
 	numItems := req.ItemsCount()
 
-	or.queueMetrics.RecordEnqueueSize(ctx, int64(numItems), func() int64 { return int64(req.BytesSize()) })
+	or.queueMetrics.RecordEnqueueSize(ctx, int64(numItems), NewInt64Value(func() int64 {
+		return int64(req.BytesSize())
+	}))
 
 	ctx, span := or.tracer.Start(ctx, "exporter/enqueue")
 	err := or.Queue.Offer(ctx, req)

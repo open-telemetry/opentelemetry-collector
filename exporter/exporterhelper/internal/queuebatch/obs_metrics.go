@@ -14,31 +14,55 @@ type QueueBatchMetrics interface {
 	queue.QueueMetrics
 
 	// RecordBatchSendSize counts the items and bytes in a batch that is sent.
-	RecordBatchSendSize(ctx context.Context, items int64, bytesSize func() int64)
+	RecordBatchSendSize(ctx context.Context, items int64, bytesSize queue.Int64Value)
 }
 
 // RecordBatchSendSizeFunc records a batch as it is sent, calling bytesSize only if reported.
-type RecordBatchSendSizeFunc func(ctx context.Context, items int64, bytesSize func() int64)
+type RecordBatchSendSizeFunc func(ctx context.Context, items int64, bytesSize queue.Int64Value)
 
-func (f RecordBatchSendSizeFunc) RecordBatchSendSize(ctx context.Context, items int64, bytesSize func() int64) {
+func (f RecordBatchSendSizeFunc) RecordBatchSendSize(ctx context.Context, items int64, bytesSize queue.Int64Value) {
 	if f == nil {
 		return
 	}
 	f(ctx, items, bytesSize)
 }
 
-// NewQueueBatchMetrics returns a QueueBatchMetrics whose nil arguments report nothing.
-func NewQueueBatchMetrics(
-	queueMetrics queue.QueueMetrics,
-	recordBatchSendSize RecordBatchSendSizeFunc,
-) QueueBatchMetrics {
-	if queueMetrics == nil {
-		queueMetrics = queue.NewQueueMetrics(nil, nil, nil, nil)
+// QueueBatchMetricsOption configures QueueBatchMetrics.
+type QueueBatchMetricsOption interface {
+	applyQueueBatchMetrics(*queueBatchMetrics)
+}
+
+type queueBatchMetricsOptionFunc func(*queueBatchMetrics)
+
+func (f queueBatchMetricsOptionFunc) applyQueueBatchMetrics(metrics *queueBatchMetrics) {
+	f(metrics)
+}
+
+// WithQueueMetrics configures the queue-level metrics.
+func WithQueueMetrics(metrics queue.QueueMetrics) QueueBatchMetricsOption {
+	return queueBatchMetricsOptionFunc(func(batchMetrics *queueBatchMetrics) {
+		if metrics != nil {
+			batchMetrics.QueueMetrics = metrics
+		}
+	})
+}
+
+// WithRecordBatchSendSize configures how batch send sizes are recorded.
+func WithRecordBatchSendSize(record RecordBatchSendSizeFunc) QueueBatchMetricsOption {
+	return queueBatchMetricsOptionFunc(func(metrics *queueBatchMetrics) {
+		metrics.RecordBatchSendSizeFunc = record
+	})
+}
+
+// NewQueueBatchMetrics returns QueueBatchMetrics whose unspecified operations report nothing.
+func NewQueueBatchMetrics(options ...QueueBatchMetricsOption) QueueBatchMetrics {
+	metrics := queueBatchMetrics{
+		QueueMetrics: queue.NewQueueMetrics(),
 	}
-	return queueBatchMetrics{
-		QueueMetrics:            queueMetrics,
-		RecordBatchSendSizeFunc: recordBatchSendSize,
+	for _, option := range options {
+		option.applyQueueBatchMetrics(&metrics)
 	}
+	return metrics
 }
 
 // queueBatchMetrics implements QueueBatchMetrics by extending a QueueMetrics.

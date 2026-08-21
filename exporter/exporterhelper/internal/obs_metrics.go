@@ -62,34 +62,73 @@ func (f RecordSendFailureFunc) RecordSendFailure(ctx context.Context, items int6
 	f(ctx, items, options...)
 }
 
-// ShutdownObsMetricsFunc releases the resources backing the instruments.
-type ShutdownObsMetricsFunc func()
+// ShutdownFunc releases the resources backing the instruments.
+type ShutdownFunc func()
 
-func (f ShutdownObsMetricsFunc) Shutdown() {
+func (f ShutdownFunc) Shutdown() {
 	if f == nil {
 		return
 	}
 	f()
 }
 
-// NewObsMetrics returns an ObsMetrics whose nil arguments report nothing.
-func NewObsMetrics(
-	queueBatchMetrics queuebatch.QueueBatchMetrics,
-	recordInFlight RecordInFlightFunc,
-	recordSent RecordSentFunc,
-	recordSendFailure RecordSendFailureFunc,
-	shutdown ShutdownObsMetricsFunc,
-) ObsMetrics {
-	if queueBatchMetrics == nil {
-		queueBatchMetrics = queuebatch.NewQueueBatchMetrics(nil, nil)
+// ObsMetricsOption configures ObsMetrics.
+type ObsMetricsOption interface {
+	applyObsMetrics(*obsMetrics)
+}
+
+type obsMetricsOptionFunc func(*obsMetrics)
+
+func (f obsMetricsOptionFunc) applyObsMetrics(metrics *obsMetrics) {
+	f(metrics)
+}
+
+// WithQueueBatchMetrics configures the queue and batch metrics.
+func WithQueueBatchMetrics(metrics queuebatch.QueueBatchMetrics) ObsMetricsOption {
+	return obsMetricsOptionFunc(func(obs *obsMetrics) {
+		if metrics != nil {
+			obs.QueueBatchMetrics = metrics
+		}
+	})
+}
+
+// WithRecordInFlight configures how in-flight request changes are recorded.
+func WithRecordInFlight(record RecordInFlightFunc) ObsMetricsOption {
+	return obsMetricsOptionFunc(func(metrics *obsMetrics) {
+		metrics.RecordInFlightFunc = record
+	})
+}
+
+// WithRecordSent configures how successfully sent items are recorded.
+func WithRecordSent(record RecordSentFunc) ObsMetricsOption {
+	return obsMetricsOptionFunc(func(metrics *obsMetrics) {
+		metrics.RecordSentFunc = record
+	})
+}
+
+// WithRecordSendFailure configures how send failures are recorded.
+func WithRecordSendFailure(record RecordSendFailureFunc) ObsMetricsOption {
+	return obsMetricsOptionFunc(func(metrics *obsMetrics) {
+		metrics.RecordSendFailureFunc = record
+	})
+}
+
+// WithMetricsShutdown configures how metric resources are released.
+func WithMetricsShutdown(shutdown ShutdownFunc) ObsMetricsOption {
+	return obsMetricsOptionFunc(func(metrics *obsMetrics) {
+		metrics.ShutdownFunc = shutdown
+	})
+}
+
+// NewObsMetrics returns ObsMetrics whose unspecified operations report nothing.
+func NewObsMetrics(options ...ObsMetricsOption) ObsMetrics {
+	metrics := obsMetrics{
+		QueueBatchMetrics: queuebatch.NewQueueBatchMetrics(),
 	}
-	return obsMetrics{
-		QueueBatchMetrics:      queueBatchMetrics,
-		RecordInFlightFunc:     recordInFlight,
-		RecordSentFunc:         recordSent,
-		RecordSendFailureFunc:  recordSendFailure,
-		ShutdownObsMetricsFunc: shutdown,
+	for _, option := range options {
+		option.applyObsMetrics(&metrics)
 	}
+	return metrics
 }
 
 // obsMetrics implements ObsMetrics by extending a QueueBatchMetrics.
@@ -98,17 +137,17 @@ type obsMetrics struct {
 	RecordInFlightFunc
 	RecordSentFunc
 	RecordSendFailureFunc
-	ShutdownObsMetricsFunc
+	ShutdownFunc
 }
 
 var _ ObsMetrics = obsMetrics{}
 
 // recordSize records the item count, and the byte size when bytesInst is enabled.
-func recordSize(inst, bytesInst metric.Int64Histogram, attrs metric.MeasurementOption) func(context.Context, int64, func() int64) {
-	return func(ctx context.Context, items int64, bytesSize func() int64) {
+func recordSize(inst, bytesInst metric.Int64Histogram, attrs metric.MeasurementOption) func(context.Context, int64, queue.Int64Value) {
+	return func(ctx context.Context, items int64, bytesSize queue.Int64Value) {
 		inst.Record(ctx, items, attrs)
 		if bytesInst.Enabled(ctx) {
-			bytesInst.Record(ctx, bytesSize(), attrs)
+			bytesInst.Record(ctx, bytesSize.Value(), attrs)
 		}
 	}
 }
@@ -188,30 +227,34 @@ func newExporterObsMetrics(
 	}
 
 	return NewObsMetrics(
-		queuebatch.NewQueueBatchMetrics(
-			queue.NewQueueMetrics(
-				recordEnqueueFailure,
-				recordSize(tb.ExporterEnqueueSize, tb.ExporterEnqueueSizeBytes, queueAttrs),
-				func(observeSize func() int64) error {
+		WithQueueBatchMetrics(queuebatch.NewQueueBatchMetrics(
+			queuebatch.WithQueueMetrics(queue.NewQueueMetrics(
+				queue.WithRecordEnqueueFailure(recordEnqueueFailure),
+				queue.WithRecordEnqueueSize(recordSize(tb.ExporterEnqueueSize, tb.ExporterEnqueueSizeBytes, queueAttrs)),
+				queue.WithRegisterQueueSize(func(observeSize queue.Int64Value) error {
 					return tb.RegisterExporterQueueSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
-						o.Observe(observeSize(), queueAttrs)
+						o.Observe(observeSize.Value(), queueAttrs)
 						return nil
 					})
-				},
-				func(observeCapacity func() int64) error {
+				}),
+				queue.WithRegisterQueueCapacity(func(observeCapacity queue.Int64Value) error {
 					return tb.RegisterExporterQueueCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
-						o.Observe(observeCapacity(), queueAttrs)
+						o.Observe(observeCapacity.Value(), queueAttrs)
 						return nil
 					})
-				},
-			),
-			recordSize(tb.ExporterQueueBatchSendSize, tb.ExporterQueueBatchSendSizeBytes, batchAttrs),
-		),
-		func(ctx context.Context, delta int64) {
+				}),
+			)),
+			queuebatch.WithRecordBatchSendSize(recordSize(
+				tb.ExporterQueueBatchSendSize,
+				tb.ExporterQueueBatchSendSizeBytes,
+				batchAttrs,
+			)),
+		)),
+		WithRecordInFlight(func(ctx context.Context, delta int64) {
 			tb.ExporterInFlightRequests.Add(ctx, delta, inFlightAttrs)
-		},
-		recordSent,
-		recordSendFailure,
-		tb.Shutdown,
+		}),
+		WithRecordSent(recordSent),
+		WithRecordSendFailure(recordSendFailure),
+		WithMetricsShutdown(tb.Shutdown),
 	), nil
 }

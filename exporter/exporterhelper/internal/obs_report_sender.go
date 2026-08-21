@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
@@ -86,7 +87,9 @@ func (ors *obsReportSender[K]) Send(ctx context.Context, req K) error {
 	c := ors.startOp(ctx)
 	items := req.ItemsCount()
 	if ors.batch {
-		ors.obsMetrics.RecordBatchSendSize(c, int64(items), func() int64 { return int64(req.BytesSize()) })
+		ors.obsMetrics.RecordBatchSendSize(c, int64(items), queue.NewInt64Value(func() int64 {
+			return int64(req.BytesSize())
+		}))
 	}
 	// Forward the data to the next consumer (this pusher is the next).
 	err := ors.next.Send(c, req)

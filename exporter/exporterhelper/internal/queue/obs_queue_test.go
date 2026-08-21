@@ -53,8 +53,8 @@ type enqueueSize struct {
 type recordingMetrics struct {
 	enqueueFailures []int64
 	enqueueSizes    []enqueueSize
-	sizeObserver    func() int64
-	capacityObserve func() int64
+	sizeObserver    Int64Value
+	capacityObserve Int64Value
 	sizeErr         error
 	capacityErr     error
 }
@@ -62,20 +62,20 @@ type recordingMetrics struct {
 // metrics returns the QueueMetrics that feeds the recorder.
 func (rm *recordingMetrics) metrics() QueueMetrics {
 	return NewQueueMetrics(
-		func(_ context.Context, items int64) {
+		WithRecordEnqueueFailure(func(_ context.Context, items int64) {
 			rm.enqueueFailures = append(rm.enqueueFailures, items)
-		},
-		func(_ context.Context, items int64, bytesSize func() int64) {
-			rm.enqueueSizes = append(rm.enqueueSizes, enqueueSize{items: items, bytes: bytesSize()})
-		},
-		func(observe func() int64) error {
+		}),
+		WithRecordEnqueueSize(func(_ context.Context, items int64, bytesSize Int64Value) {
+			rm.enqueueSizes = append(rm.enqueueSizes, enqueueSize{items: items, bytes: bytesSize.Value()})
+		}),
+		WithRegisterQueueSize(func(observe Int64Value) error {
 			rm.sizeObserver = observe
 			return rm.sizeErr
-		},
-		func(observe func() int64) error {
+		}),
+		WithRegisterQueueCapacity(func(observe Int64Value) error {
 			rm.capacityObserve = observe
 			return rm.capacityErr
-		},
+		}),
 	)
 }
 
@@ -97,8 +97,8 @@ func TestObsQueueRegistersSizeAndCapacityObservers(t *testing.T) {
 
 	require.NotNil(t, om.sizeObserver)
 	require.NotNil(t, om.capacityObserve)
-	assert.Equal(t, int64(7), om.sizeObserver())
-	assert.Equal(t, int64(9), om.capacityObserve())
+	assert.Equal(t, int64(7), om.sizeObserver.Value())
+	assert.Equal(t, int64(9), om.capacityObserve.Value())
 }
 
 func TestObsQueueRecordsEnqueueSize(t *testing.T) {

@@ -13,9 +13,13 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 )
 
+func TestNilValueFuncReturnsZero(t *testing.T) {
+	require.Zero(t, NewInt64Value(nil).Value())
+}
+
 // Every operation is optional, so a component supplies only the ones it reports.
 func TestObsMetricsNilOperationsAreNoOps(t *testing.T) {
-	metrics := NewObsMetrics(nil, nil, nil, nil, nil)
+	metrics := NewObsMetrics()
 
 	ctx := context.Background()
 	require.NoError(t, metrics.RegisterQueueSize(nil))
@@ -31,28 +35,36 @@ func TestObsMetricsNilOperationsAreNoOps(t *testing.T) {
 
 func TestObsMetricsOperationsAreForwarded(t *testing.T) {
 	var calls []string
-	observers := map[string]func() int64{}
+	observers := map[string]Int64Value{}
 
 	metrics := NewObsMetrics(
-		NewQueueBatchMetrics(
-			NewQueueMetrics(
-				func(context.Context, int64) { calls = append(calls, "enqueue_failure") },
-				func(context.Context, int64, func() int64) { calls = append(calls, "enqueue_size") },
-				func(observeSize func() int64) error {
+		WithQueueBatchMetrics(NewQueueBatchMetrics(
+			WithQueueMetrics(NewQueueMetrics(
+				WithRecordEnqueueFailure(func(context.Context, int64) {
+					calls = append(calls, "enqueue_failure")
+				}),
+				WithRecordEnqueueSize(func(context.Context, int64, Int64Value) {
+					calls = append(calls, "enqueue_size")
+				}),
+				WithRegisterQueueSize(func(observeSize Int64Value) error {
 					observers["size"] = observeSize
 					return nil
-				},
-				func(observeCapacity func() int64) error {
+				}),
+				WithRegisterQueueCapacity(func(observeCapacity Int64Value) error {
 					observers["capacity"] = observeCapacity
 					return nil
-				},
-			),
-			func(context.Context, int64, func() int64) { calls = append(calls, "batch_send_size") },
-		),
-		func(context.Context, int64) { calls = append(calls, "in_flight") },
-		func(context.Context, int64) { calls = append(calls, "sent") },
-		func(context.Context, int64, ...metric.AddOption) { calls = append(calls, "send_failure") },
-		func() { calls = append(calls, "shutdown") },
+				}),
+			)),
+			WithRecordBatchSendSize(func(context.Context, int64, Int64Value) {
+				calls = append(calls, "batch_send_size")
+			}),
+		)),
+		WithRecordInFlight(func(context.Context, int64) { calls = append(calls, "in_flight") }),
+		WithRecordSent(func(context.Context, int64) { calls = append(calls, "sent") }),
+		WithRecordSendFailure(func(context.Context, int64, ...metric.AddOption) {
+			calls = append(calls, "send_failure")
+		}),
+		WithMetricsShutdown(func() { calls = append(calls, "shutdown") }),
 	)
 
 	ctx := context.Background()
@@ -67,16 +79,16 @@ func TestObsMetricsOperationsAreForwarded(t *testing.T) {
 		"enqueue_failure", "enqueue_size", "batch_send_size", "in_flight", "sent", "send_failure", "shutdown",
 	}, calls)
 
-	require.NoError(t, metrics.RegisterQueueSize(func() int64 { return 3 }))
-	require.NoError(t, metrics.RegisterQueueCapacity(func() int64 { return 9 }))
-	require.Equal(t, int64(3), observers["size"]())
-	require.Equal(t, int64(9), observers["capacity"]())
+	require.NoError(t, metrics.RegisterQueueSize(NewInt64Value(func() int64 { return 3 })))
+	require.NoError(t, metrics.RegisterQueueCapacity(NewInt64Value(func() int64 { return 9 })))
+	require.Equal(t, int64(3), observers["size"].Value())
+	require.Equal(t, int64(9), observers["capacity"].Value())
 }
 
 // The queue and batch operations are optional as a group.
 func TestObsMetricsWithoutQueueBatchMetrics(t *testing.T) {
 	var sent int64
-	metrics := NewObsMetrics(nil, nil, func(_ context.Context, items int64) { sent = items }, nil, nil)
+	metrics := NewObsMetrics(WithRecordSent(func(_ context.Context, items int64) { sent = items }))
 
 	metrics.RecordEnqueueFailure(context.Background(), 1)
 	metrics.RecordSent(context.Background(), 7)
@@ -84,11 +96,11 @@ func TestObsMetricsWithoutQueueBatchMetrics(t *testing.T) {
 }
 
 // failBytesSize fails the test when a no-op operation measures the request.
-func failBytesSize(t *testing.T) func() int64 {
-	return func() int64 {
+func failBytesSize(t *testing.T) Int64Value {
+	return NewInt64Value(func() int64 {
 		t.Error("bytes size must not be measured when the operation reports nothing")
 		return 0
-	}
+	})
 }
 
 func TestWithObsMetricsNil(t *testing.T) {
