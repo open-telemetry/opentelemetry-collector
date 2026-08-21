@@ -92,6 +92,7 @@ func (ml *memoryLimiterExtension) GetGRPCServerOptions(_ context.Context) ([]grp
 				return handler(ctx, req)
 			},
 		),
+		//nolint:contextcheck // ss.Context() provides the stream context; false positive due to gRPC interceptor signature
 		grpc.ChainStreamInterceptor(
 			func(srv any, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 				ctx := ss.Context()
