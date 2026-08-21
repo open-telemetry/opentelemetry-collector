@@ -1,6 +1,6 @@
 name: 'Ping code owners on PRs'
 on:
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] — guarding on line 15
     types:
       - labeled
       - ready_for_review

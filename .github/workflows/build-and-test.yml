@@ -8,7 +8,8 @@ on:
     types: [checks_requested]
   pull_request:
 
-permissions: read-all
+permissions:
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -119,6 +120,7 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "24"
+          package-manager-cache: false
       - name: checklicense
         run: make checklicense
       - name: misspell
@@ -280,6 +282,8 @@ jobs:
             goarch: amd64
           - goos: darwin
             goarch: arm64
+          - goos: freebsd
+            goarch: amd64
           - goos: js
             goarch: wasm
           - goos: linux
@@ -297,6 +301,8 @@ jobs:
             goarm: 7
           - goos: linux
             goarch: s390x
+          - goos: solaris
+            goarch: amd64
           - goos: windows
             goarch: 386
           - goos: windows
