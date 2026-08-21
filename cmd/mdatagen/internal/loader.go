@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -93,15 +94,11 @@ func shortFolderName(filePath string) string {
 	parts := strings.Split(filepath.ToSlash(componentDir), "/")
 
 	// Find the component type in the path (e.g., "extension", "receiver")
-	var componentTypeIndex = -1
+	componentTypeIndex := -1
 	for i, part := range parts {
-		for _, cType := range componentTypes {
-			if part == cType {
-				componentTypeIndex = i
-				break
-			}
-		}
-		if componentTypeIndex != -1 {
+		if slices.Contains(componentTypes, part) {
+			componentTypeIndex = i
+		} else {
 			break
 		}
 	}
