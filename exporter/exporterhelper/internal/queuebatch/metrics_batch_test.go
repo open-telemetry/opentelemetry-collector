@@ -130,10 +130,33 @@ func TestMergeSplitMetrics(t *testing.T) {
 			for i := range res {
 				expected := tt.expected[i].(*metricsRequest)
 				actual := res[i].(*metricsRequest)
-				assert.Equal(t, expected.size(&s), actual.size(&s))
+				assert.Equal(t, expected.size(&s, request.SizerTypeItems), actual.size(&s, request.SizerTypeItems))
 			}
 		})
 	}
+}
+
+func TestMetricsRequestBytesSizeUsesByteCacheAfterItemSizing(t *testing.T) {
+	req := newMetricsRequest(testdata.GenerateMetrics(7)).(*metricsRequest)
+
+	assert.Equal(t, req.ItemsCount(), req.size(&sizer.MetricsCountSizer{}, request.SizerTypeItems))
+
+	expected := metricsMarshaler.MetricsSize(req.md)
+	assert.Equal(t, expected, req.BytesSize())
+	assert.Equal(t, expected, req.BytesSize())
+}
+
+func TestMetricsRequestBytesSizeInvalidatedAfterItemMerge(t *testing.T) {
+	req := newMetricsRequest(testdata.GenerateMetrics(3)).(*metricsRequest)
+	original := req.BytesSize()
+
+	res, err := req.MergeSplit(context.Background(), 0, request.SizerTypeItems, newMetricsRequest(testdata.GenerateMetrics(2)))
+	require.NoError(t, err)
+
+	merged := res[0].(*metricsRequest)
+	expected := metricsMarshaler.MetricsSize(merged.md)
+	assert.NotEqual(t, expected, original)
+	assert.Equal(t, expected, merged.BytesSize())
 }
 
 func TestSplitMetricsWithDataPointSplit(t *testing.T) {
@@ -302,6 +325,47 @@ func BenchmarkSplittingBasedOnItemCountHugeMetrics(b *testing.B) {
 		merged := []request.Request{newMetricsRequest(testdata.GenerateMetrics(0))}
 		lr2 := newMetricsRequest(testdata.GenerateMetrics(100000))
 		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 20000, request.SizerTypeItems, lr2)
+		merged = append(merged[0:len(merged)-1], res...)
+		assert.Len(b, merged, 10)
+	}
+}
+
+func BenchmarkSplittingBasedOnByteSizeManySmallMetrics(b *testing.B) {
+	testutil.SkipGCHeavyBench(b)
+	b.ReportAllocs()
+	for b.Loop() {
+		merged := []request.Request{newMetricsRequest(testdata.GenerateMetrics(10))}
+		for range 1000 {
+			lr2 := newMetricsRequest(testdata.GenerateMetrics(10))
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), metricsMarshaler.MetricsSize(testdata.GenerateMetrics(10010)), request.SizerTypeBytes, lr2)
+			merged = append(merged[0:len(merged)-1], res...)
+		}
+		assert.Len(b, merged, 1)
+	}
+}
+
+func BenchmarkSplittingBasedOnByteSizeManyMetricsSlightlyAboveLimit(b *testing.B) {
+	testutil.SkipGCHeavyBench(b)
+	b.ReportAllocs()
+	for b.Loop() {
+		merged := []request.Request{newMetricsRequest(testdata.GenerateMetrics(0))}
+		for range 10 {
+			lr2 := newMetricsRequest(testdata.GenerateMetrics(10001))
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), metricsMarshaler.MetricsSize(testdata.GenerateMetrics(10000)), request.SizerTypeBytes, lr2)
+			assert.Len(b, res, 2)
+			merged = append(merged[0:len(merged)-1], res...)
+		}
+		assert.Len(b, merged, 11)
+	}
+}
+
+func BenchmarkSplittingBasedOnByteSizeHugeMetrics(b *testing.B) {
+	testutil.SkipGCHeavyBench(b)
+	b.ReportAllocs()
+	for b.Loop() {
+		merged := []request.Request{newMetricsRequest(testdata.GenerateMetrics(0))}
+		lr2 := newMetricsRequest(testdata.GenerateMetrics(100000))
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), metricsMarshaler.MetricsSize(testdata.GenerateMetrics(10010)), request.SizerTypeBytes, lr2)
 		merged = append(merged[0:len(merged)-1], res...)
 		assert.Len(b, merged, 10)
 	}
