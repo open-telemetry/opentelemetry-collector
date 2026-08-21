@@ -70,10 +70,21 @@ func NewSizer(sizerType SizerType) Sizer {
 	}
 }
 
+// RequestsCounter may be implemented by a Request so that RequestsSizer reports how many
+// original requests were merged into it. If a Request does not implement RequestsCounter,
+// RequestsSizer treats it as size 1.
+type RequestsCounter interface {
+	RequestsCount() int
+}
+
 // RequestsSizer is a Sizer implementation that returns the size of a queue element as one request.
+// If the request implements RequestsCounter, that count is used so merged batches can be measured.
 type RequestsSizer struct{}
 
-func (rs RequestsSizer) Sizeof(Request) int64 {
+func (rs RequestsSizer) Sizeof(req Request) int64 {
+	if rc, ok := req.(RequestsCounter); ok {
+		return int64(rc.RequestsCount())
+	}
 	return 1
 }
 

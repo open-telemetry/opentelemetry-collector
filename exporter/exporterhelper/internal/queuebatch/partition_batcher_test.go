@@ -627,3 +627,86 @@ func TestPartitionBatcher_OnEmptyNotCalledWithActiveData(t *testing.T) {
 	// But data should have been flushed
 	assert.GreaterOrEqual(t, sink.RequestsCount(), 1)
 }
+
+func TestPartitionBatcher_RequestsSizer_MinSize(t *testing.T) {
+	cfg := BatchConfig{
+		FlushTimeout: 100 * time.Second,
+		Sizer:        request.SizerTypeRequests,
+		MinSize:      3,
+	}
+
+	sink := requesttest.NewSink()
+	ba := newPartitionBatcher(cfg, request.RequestsSizer{}, nil, newWorkerPool(1), sink.Export, zap.NewNop(), nil)
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+
+	done := newFakeDone()
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 4}, done)
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 5}, done)
+	assert.Equal(t, 0, sink.RequestsCount())
+
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 6}, done)
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() == 1 && sink.ItemsCount() == 15
+	}, time.Second, 10*time.Millisecond)
+
+	require.NoError(t, ba.Shutdown(context.Background()))
+	assert.Equal(t, 1, sink.RequestsCount())
+	assert.Equal(t, 15, sink.ItemsCount())
+	assert.EqualValues(t, 3, done.success.Load())
+	assert.EqualValues(t, 0, done.errors.Load())
+}
+
+func TestPartitionBatcher_RequestsSizer_MaxSize(t *testing.T) {
+	cfg := BatchConfig{
+		FlushTimeout: 100 * time.Second,
+		Sizer:        request.SizerTypeRequests,
+		MinSize:      2,
+		MaxSize:      2,
+	}
+
+	sink := requesttest.NewSink()
+	ba := newPartitionBatcher(cfg, request.RequestsSizer{}, nil, newWorkerPool(1), sink.Export, zap.NewNop(), nil)
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+
+	done := newFakeDone()
+	for range 5 {
+		ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 1}, done)
+	}
+
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() == 2 && sink.ItemsCount() == 4
+	}, time.Second, 10*time.Millisecond)
+
+	require.NoError(t, ba.Shutdown(context.Background()))
+	assert.Equal(t, 3, sink.RequestsCount())
+	assert.Equal(t, 5, sink.ItemsCount())
+	assert.EqualValues(t, 5, done.success.Load())
+	assert.EqualValues(t, 0, done.errors.Load())
+}
+
+func TestPartitionBatcher_RequestsSizer_DoesNotMergeOverMaxSize(t *testing.T) {
+	cfg := BatchConfig{
+		FlushTimeout: 100 * time.Second,
+		Sizer:        request.SizerTypeRequests,
+		MinSize:      2,
+		MaxSize:      2,
+	}
+
+	sink := requesttest.NewSink()
+	ba := newPartitionBatcher(cfg, request.RequestsSizer{}, nil, newWorkerPool(1), sink.Export, zap.NewNop(), nil)
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+
+	done := newFakeDone()
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 1}, done)
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 10, Requests: 2}, done)
+
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() == 2 && sink.ItemsCount() == 11
+	}, time.Second, 10*time.Millisecond)
+
+	require.NoError(t, ba.Shutdown(context.Background()))
+	assert.Equal(t, 2, sink.RequestsCount())
+	assert.Equal(t, 11, sink.ItemsCount())
+	assert.EqualValues(t, 2, done.success.Load())
+	assert.EqualValues(t, 0, done.errors.Load())
+}

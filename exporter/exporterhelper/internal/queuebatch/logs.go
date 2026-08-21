@@ -33,19 +33,22 @@ func NewLogsQueueBatchSettings() Settings[request.Request] {
 }
 
 var (
-	_ request.Request      = (*logsRequest)(nil)
-	_ request.ErrorHandler = (*logsRequest)(nil)
+	_ request.Request         = (*logsRequest)(nil)
+	_ request.ErrorHandler    = (*logsRequest)(nil)
+	_ request.RequestsCounter = (*logsRequest)(nil)
 )
 
 type logsRequest struct {
-	ld         plog.Logs
-	cachedSize int
+	ld           plog.Logs
+	cachedSize   int
+	requestCount int
 }
 
 func newLogsRequest(ld plog.Logs) request.Request {
 	return &logsRequest{
-		ld:         ld,
-		cachedSize: -1,
+		ld:           ld,
+		cachedSize:   -1,
+		requestCount: 1,
 	}
 }
 
@@ -88,6 +91,13 @@ func (req *logsRequest) OnError(err error) request.Request {
 
 func (req *logsRequest) ItemsCount() int {
 	return req.ld.LogRecordCount()
+}
+
+func (req *logsRequest) RequestsCount() int {
+	if req.requestCount <= 0 {
+		return 1
+	}
+	return req.requestCount
 }
 
 func (req *logsRequest) size(sizer sizer.LogsSizer) int {

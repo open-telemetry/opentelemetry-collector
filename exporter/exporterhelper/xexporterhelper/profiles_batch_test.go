@@ -32,6 +32,88 @@ func TestMergeProfilesInvalidInput(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestMergeSplitProfilesRequestsSizer(t *testing.T) {
+	tests := []struct {
+		name           string
+		pr1            Request
+		pr2            Request
+		maxSize        int
+		wantLen        int
+		wantItemCounts []int
+		wantReqCounts  []int
+		wantErr        string
+	}{
+		{
+			name:           "merge_two_requests",
+			pr1:            newProfilesRequest(testdata.GenerateProfiles(5)),
+			pr2:            newProfilesRequest(testdata.GenerateProfiles(3)),
+			maxSize:        0,
+			wantLen:        1,
+			wantItemCounts: []int{8},
+			wantReqCounts:  []int{2},
+		},
+		{
+			name:           "merge_when_under_max_size",
+			pr1:            newProfilesRequest(testdata.GenerateProfiles(5)),
+			pr2:            newProfilesRequest(testdata.GenerateProfiles(3)),
+			maxSize:        2,
+			wantLen:        1,
+			wantItemCounts: []int{8},
+			wantReqCounts:  []int{2},
+		},
+		{
+			name:           "do_not_merge_when_over_max_size",
+			pr1:            newProfilesRequest(testdata.GenerateProfiles(5)),
+			pr2:            newProfilesRequest(testdata.GenerateProfiles(3)),
+			maxSize:        1,
+			wantLen:        2,
+			wantItemCounts: []int{5, 3},
+			wantReqCounts:  []int{1, 1},
+		},
+		{
+			name:           "nil_second_request",
+			pr1:            newProfilesRequest(testdata.GenerateProfiles(7)),
+			pr2:            nil,
+			maxSize:        0,
+			wantLen:        1,
+			wantItemCounts: []int{7},
+			wantReqCounts:  []int{1},
+		},
+		{
+			name:           "empty_first_request",
+			pr1:            newProfilesRequest(pprofile.NewProfiles()),
+			pr2:            newProfilesRequest(testdata.GenerateProfiles(4)),
+			maxSize:        0,
+			wantLen:        1,
+			wantItemCounts: []int{4},
+			wantReqCounts:  []int{2},
+		},
+		{
+			name:    "invalid_input_type",
+			pr1:     newProfilesRequest(testdata.GenerateProfiles(1)),
+			pr2:     &requesttest.FakeRequest{Items: 1},
+			maxSize: 0,
+			wantErr: "invalid input type",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res, err := tt.pr1.MergeSplit(context.Background(), tt.maxSize, exporterhelper.RequestSizerTypeRequests, tt.pr2)
+			if tt.wantErr != "" {
+				require.EqualError(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			require.Len(t, res, tt.wantLen)
+			for i, r := range res {
+				assert.Equal(t, tt.wantItemCounts[i], r.ItemsCount())
+				assert.Equal(t, tt.wantReqCounts[i], r.(*profilesRequest).RequestsCount())
+			}
+		})
+	}
+}
+
 func TestMergeSplitProfiles(t *testing.T) {
 	tests := []struct {
 		name     string

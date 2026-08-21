@@ -42,19 +42,22 @@ func NewProfilesQueueBatchSettings() QueueBatchSettings {
 }
 
 var (
-	_ request.Request      = (*profilesRequest)(nil)
-	_ request.ErrorHandler = (*profilesRequest)(nil)
+	_ request.Request         = (*profilesRequest)(nil)
+	_ request.ErrorHandler    = (*profilesRequest)(nil)
+	_ request.RequestsCounter = (*profilesRequest)(nil)
 )
 
 type profilesRequest struct {
-	pd         pprofile.Profiles
-	cachedSize int
+	pd           pprofile.Profiles
+	cachedSize   int
+	requestCount int
 }
 
 func newProfilesRequest(pd pprofile.Profiles) Request {
 	return &profilesRequest{
-		pd:         pd,
-		cachedSize: -1,
+		pd:           pd,
+		cachedSize:   -1,
+		requestCount: 1,
 	}
 }
 
@@ -97,6 +100,13 @@ func (req *profilesRequest) OnError(err error) Request {
 
 func (req *profilesRequest) ItemsCount() int {
 	return req.pd.SampleCount()
+}
+
+func (req *profilesRequest) RequestsCount() int {
+	if req.requestCount <= 0 {
+		return 1
+	}
+	return req.requestCount
 }
 
 func (req *profilesRequest) size(sizer sizer.ProfilesSizer) int {

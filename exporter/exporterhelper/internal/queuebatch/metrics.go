@@ -30,19 +30,22 @@ func NewMetricsQueueBatchSettings() Settings[request.Request] {
 }
 
 var (
-	_ request.Request      = (*metricsRequest)(nil)
-	_ request.ErrorHandler = (*metricsRequest)(nil)
+	_ request.Request         = (*metricsRequest)(nil)
+	_ request.ErrorHandler    = (*metricsRequest)(nil)
+	_ request.RequestsCounter = (*metricsRequest)(nil)
 )
 
 type metricsRequest struct {
-	md         pmetric.Metrics
-	cachedSize int
+	md           pmetric.Metrics
+	cachedSize   int
+	requestCount int
 }
 
 func newMetricsRequest(md pmetric.Metrics) request.Request {
 	return &metricsRequest{
-		md:         md,
-		cachedSize: -1,
+		md:           md,
+		cachedSize:   -1,
+		requestCount: 1,
 	}
 }
 
@@ -85,6 +88,13 @@ func (req *metricsRequest) OnError(err error) request.Request {
 
 func (req *metricsRequest) ItemsCount() int {
 	return req.md.DataPointCount()
+}
+
+func (req *metricsRequest) RequestsCount() int {
+	if req.requestCount <= 0 {
+		return 1
+	}
+	return req.requestCount
 }
 
 func (req *metricsRequest) size(sizer sizer.MetricsSizer) int {

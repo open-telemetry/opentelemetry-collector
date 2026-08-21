@@ -33,19 +33,22 @@ func NewTracesQueueBatchSettings() Settings[request.Request] {
 }
 
 var (
-	_ request.Request      = (*tracesRequest)(nil)
-	_ request.ErrorHandler = (*tracesRequest)(nil)
+	_ request.Request         = (*tracesRequest)(nil)
+	_ request.ErrorHandler    = (*tracesRequest)(nil)
+	_ request.RequestsCounter = (*tracesRequest)(nil)
 )
 
 type tracesRequest struct {
-	td         ptrace.Traces
-	cachedSize int
+	td           ptrace.Traces
+	cachedSize   int
+	requestCount int
 }
 
 func newTracesRequest(td ptrace.Traces) request.Request {
 	return &tracesRequest{
-		td:         td,
-		cachedSize: -1,
+		td:           td,
+		cachedSize:   -1,
+		requestCount: 1,
 	}
 }
 
@@ -88,6 +91,13 @@ func (req *tracesRequest) OnError(err error) request.Request {
 
 func (req *tracesRequest) ItemsCount() int {
 	return req.td.SpanCount()
+}
+
+func (req *tracesRequest) RequestsCount() int {
+	if req.requestCount <= 0 {
+		return 1
+	}
+	return req.requestCount
 }
 
 func (req *tracesRequest) size(sizer sizer.TracesSizer) int {
