@@ -22,8 +22,6 @@ type QueueMetrics interface {
 	RegisterQueueSize(observeSize Int64Value) error
 	// RegisterQueueCapacity installs an observer for the fixed queue capacity.
 	RegisterQueueCapacity(observeCapacity Int64Value) error
-
-	private()
 }
 
 // Int64Value supplies an int64 value; use NewInt64Value.
@@ -145,8 +143,6 @@ type queueMetrics struct {
 	RegisterQueueSizeFunc
 	RegisterQueueCapacityFunc
 }
-
-func (queueMetrics) private() {}
 
 var _ QueueMetrics = queueMetrics{}
 

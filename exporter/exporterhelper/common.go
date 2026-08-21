@@ -54,5 +54,5 @@ func WithAttrs(attrs ...attribute.KeyValue) Option {
 
 // WithObsMetrics reports exporterhelper's metrics through obsMetrics, owned by it once constructed.
 func WithObsMetrics(obsMetrics ObsMetrics) Option {
-	return internal.WithObsMetrics(obsMetrics)
+	return internal.WithObsMetrics(adaptObsMetrics(obsMetrics))
 }

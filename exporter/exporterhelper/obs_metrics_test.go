@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 )
 
 func TestNilValueFuncReturnsZero(t *testing.T) {
@@ -106,4 +107,35 @@ func failBytesSize(t *testing.T) Int64Value {
 func TestWithObsMetricsNil(t *testing.T) {
 	err := WithObsMetrics(nil)(&internal.BaseExporter{})
 	require.ErrorContains(t, err, "must not be nil")
+}
+
+func TestObsMetricsAdapterForwardsValues(t *testing.T) {
+	var values []int64
+	recordValue := func(_ context.Context, _ int64, value Int64Value) {
+		values = append(values, value.Value())
+	}
+	metrics := NewObsMetrics(
+		WithQueueBatchMetrics(NewQueueBatchMetrics(
+			WithQueueMetrics(NewQueueMetrics(
+				WithRecordEnqueueSize(recordValue),
+				WithRegisterQueueSize(func(value Int64Value) error {
+					values = append(values, value.Value())
+					return nil
+				}),
+				WithRegisterQueueCapacity(func(value Int64Value) error {
+					values = append(values, value.Value())
+					return nil
+				}),
+			)),
+			WithRecordBatchSendSize(recordValue),
+		)),
+	)
+	adapted := adaptObsMetrics(metrics)
+	value := queue.NewInt64Value(func() int64 { return 7 })
+
+	adapted.RecordEnqueueSize(context.Background(), 1, value)
+	require.NoError(t, adapted.RegisterQueueSize(value))
+	require.NoError(t, adapted.RegisterQueueCapacity(value))
+	adapted.RecordBatchSendSize(context.Background(), 1, value)
+	require.Equal(t, []int64{7, 7, 7, 7}, values)
 }
