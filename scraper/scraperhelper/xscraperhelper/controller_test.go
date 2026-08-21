@@ -379,8 +379,7 @@ func assertProfilesScraperObsMetrics(t *testing.T, tel *componenttest.Telemetry,
 	expectedScraped := int64(sink.SampleCount())
 	expectedErrored := int64(0)
 	if expectedErr != nil {
-		var partialError scrapererror.PartialScrapeError
-		if errors.As(expectedErr, &partialError) {
+		if partialError, ok := errors.AsType[scrapererror.PartialScrapeError](expectedErr); ok {
 			expectedErrored = int64(partialError.Failed)
 		} else {
 			expectedScraped = int64(0)
