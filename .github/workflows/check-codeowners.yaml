@@ -7,7 +7,7 @@ on:
       - "**/metadata.yaml"
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+*"
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] — intentional see NOTE below
     paths:
       - ".github/CODEOWNERS"
       - "**/metadata.yaml"
@@ -38,7 +38,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         id: go-setup
         with:
           go-version: oldstable
@@ -58,6 +58,7 @@ jobs:
         with:
           client-id: ${{ vars.OTELBOT_CLIENT_ID }}
           private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
+          permission-members: read
 
       # NOTE: the make command below intentionally uses the Makefile from the
       # target branch, and not the PR checkout, since it runs with the

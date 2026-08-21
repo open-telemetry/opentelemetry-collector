@@ -19,7 +19,10 @@ on:
         required: true
         description: Current version (beta, like 0.95.1). Don't include `v`.
 
-permissions: read-all
+permissions:
+  contents: read
+  issues: read
+  actions: read
 
 jobs:
   validate-versions-format:
@@ -136,7 +139,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
       - name: Setup Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: stable
           cache: false
@@ -155,6 +158,7 @@ jobs:
         with:
           client-id: ${{ vars.OTELBOT_CLIENT_ID }}
           private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
+          permission-pull-requests: write
       # Prepare Core for release.
       #   - Update CHANGELOG.md file, this is done via chloggen
       #   - Run make prepare-release PREVIOUS_VERSION=1.0.0 RELEASE_CANDIDATE=1.1.0 MODSET=stable

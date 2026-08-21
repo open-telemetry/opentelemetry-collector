@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 560" width="720" height="560" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-labelledby="title desc">
+  <title id="title">Component status lifecycle state machine</title>
+  <desc id="desc">Starting transitions to OK or RecoverableError. OK and RecoverableError transition to each other and to themselves, and each transitions to PermanentError. PermanentError and Stopping transition to each other. Stopping transitions to Stopped. Any active state (Starting, OK, RecoverableError, Stopping) may transition to the final FatalError state.</desc>
+
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f2328"/>
+    </marker>
+    <marker id="ahr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#cf2f2f"/>
+    </marker>
+  </defs>
+
+  <rect x="0.5" y="0.5" width="719" height="559" rx="10" fill="#fcfcfd" stroke="#e3e6e9"/>
+
+  <!-- start dot -->
+  <circle cx="360" cy="14" r="5" fill="#1f2328"/>
+  <line x1="360" y1="19" x2="360" y2="30" stroke="#1f2328" stroke-width="1.5" marker-end="url(#ah)"/>
+
+  <!-- edges -->
+  <g stroke-width="1.5" fill="none" stroke="#1f2328">
+    <line x1="325" y1="70" x2="235" y2="128" marker-end="url(#ah)"/>
+    <line x1="395" y1="70" x2="500" y2="128" marker-end="url(#ah)"/>
+    <line x1="262" y1="158" x2="425" y2="158" marker-end="url(#ah)"/>
+    <line x1="425" y1="174" x2="262" y2="174" marker-end="url(#ah)"/>
+    <path d="M120,150 C92,140 92,120 120,132" marker-end="url(#ah)"/>
+    <path d="M600,150 C628,140 628,120 600,132" marker-end="url(#ah)"/>
+    <line x1="205" y1="188" x2="305" y2="266" marker-end="url(#ah)"/>
+    <line x1="515" y1="188" x2="415" y2="266" marker-end="url(#ah)"/>
+    <line x1="160" y1="170" x2="286" y2="390" marker-end="url(#ah)"/>
+    <line x1="540" y1="170" x2="434" y2="390" marker-end="url(#ah)"/>
+    <line x1="348" y1="316" x2="348" y2="372" marker-end="url(#ah)"/>
+    <line x1="372" y1="372" x2="372" y2="316" marker-end="url(#ah)"/>
+    <line x1="360" y1="418" x2="360" y2="474" marker-end="url(#ah)"/>
+    <line x1="600" y1="300" x2="600" y2="372" stroke="#cf2f2f" stroke-dasharray="5 4" marker-end="url(#ahr)"/>
+  </g>
+
+  <!-- nodes -->
+  <g font-size="13" text-anchor="middle">
+    <rect x="290" y="30" width="140" height="40" rx="6" fill="#1971c2" fill-opacity="0.14" stroke="#1971c2" stroke-width="1.5"/>
+    <text x="360" y="55" fill="#1f2328">Starting</text>
+
+    <rect x="120" y="130" width="142" height="40" rx="6" fill="#12855f" fill-opacity="0.14" stroke="#12855f" stroke-width="1.5"/>
+    <text x="191" y="155" fill="#1f2328">OK</text>
+
+    <rect x="425" y="130" width="175" height="40" rx="6" fill="#a26a00" fill-opacity="0.14" stroke="#a26a00" stroke-width="1.5"/>
+    <text x="512" y="155" fill="#1f2328">RecoverableError</text>
+
+    <rect x="272" y="266" width="176" height="40" rx="6" fill="#d9480f" fill-opacity="0.14" stroke="#d9480f" stroke-width="1.5"/>
+    <text x="360" y="291" fill="#1f2328">PermanentError</text>
+
+    <rect x="290" y="372" width="140" height="40" rx="6" fill="#1971c2" fill-opacity="0.14" stroke="#1971c2" stroke-width="1.5"/>
+    <text x="360" y="397" fill="#1f2328">Stopping</text>
+
+    <rect x="290" y="474" width="140" height="40" rx="6" fill="#1971c2" fill-opacity="0.14" stroke="#1971c2" stroke-width="1.5"/>
+    <text x="360" y="499" fill="#1f2328">Stopped</text>
+
+    <rect x="512" y="262" width="176" height="40" rx="6" fill="none" stroke="#cf2f2f" stroke-width="1.4" stroke-dasharray="5 4"/>
+    <text x="600" y="280" fill="#cf2f2f" font-size="11">any active state</text>
+    <text x="600" y="295" fill="#5b636b" font-size="10">Starting·OK·Recoverable·Stopping</text>
+
+    <rect x="530" y="372" width="140" height="40" rx="6" fill="#cf2f2f" fill-opacity="0.14" stroke="#cf2f2f" stroke-width="1.5"/>
+    <text x="600" y="397" fill="#1f2328">FatalError</text>
+  </g>
+</svg>
