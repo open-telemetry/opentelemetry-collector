@@ -108,7 +108,7 @@ func (n *processorNode) buildComponent(ctx context.Context,
 		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), consumedSettings)
 		n.consumer = refconsumer.NewProfiles(n.consumer.(xconsumer.Profiles))
 	default:
-		return fmt.Errorf("error creating processor %q in pipeline %q, data type %q is not supported", set.ID, n.pipelineID.String(), n.pipelineID.Signal())
+		return fmt.Errorf("failed to create processor %q in pipeline %q: data type %q is not supported", set.ID, n.pipelineID.String(), n.pipelineID.Signal())
 	}
 	return nil
 }
