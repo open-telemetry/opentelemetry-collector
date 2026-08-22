@@ -100,6 +100,7 @@ replaces:
   - go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
   - go.opentelemetry.io/collector/internal/sharedcomponent => ../../internal/sharedcomponent
   - go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
+  - go.opentelemetry.io/collector/internal/statusutil => ../../internal/statusutil
   - go.opentelemetry.io/collector/otelcol => ../../otelcol
   - go.opentelemetry.io/collector/pdata => ../../pdata
   - go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
