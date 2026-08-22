@@ -116,14 +116,25 @@ func (sc *Controller[T]) startScraping(ctx context.Context) {
 
 			sc.tickerCh = ticker.C
 		}
-		// Call scrape method during initialization to ensure
-		// that scrapers start from when the component starts
-		// instead of waiting for the full duration to start.
-		_ = sc.scrapeFunc(ctx, sc)
+
 		for {
+			// Scrape then wait sc.tickerCh, not the reverse, to
+			// ensure that scrapers start from when the component
+			// starts instead of waiting for the full duration to
+			// start.
+			_ = sc.scrapeFunc(ctx, sc)
+
+			// If sc.scrapeFunc is delayed, sc.tickerCh and sc.done
+			// can both be ready and, without this, we aren't
+			// guaranteed to shutdown.
+			select {
+			case <-sc.done:
+				return
+			default:
+			}
+
 			select {
 			case <-sc.tickerCh:
-				_ = sc.scrapeFunc(ctx, sc)
 			case <-sc.done:
 				return
 			}
