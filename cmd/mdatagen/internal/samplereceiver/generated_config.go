@@ -15,7 +15,7 @@ import (
 // Config defines the configuration for Sample Receiver component.
 type Config struct {
 	// MetricsBuilderConfig is a configuration for sample metrics builder.
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	// API token used to authenticate with the endpoint.
 	APIToken configopaque.String `mapstructure:"api_token,omitempty"`
 	// Component ID used to identify this receiver instance.
