@@ -22,6 +22,7 @@ The following configuration options can be modified:
   - `enabled` (default = true)
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
   - `wait_for_result` (default = false): determines if incoming requests are blocked until the request is processed or not.
+  - `wait_for_result_metadata_key` (default = ""): optional `client.Metadata` key used to wait for the result on a per-request basis when `wait_for_result` is false. A request waits only if the metadata value parses as true (for example `true` or `1`). When `wait_for_result` is true, all requests wait and this key is ignored. The receiver must enable `include_metadata` so request headers are available. Not supported with a persistent queue (`storage`).
   - `block_on_overflow` (default = false): If true, blocks the request until the queue has space otherwise rejects the data immediately; ignored if `enabled` is `false`
   - `sizer` (default = requests): How the queue and batching is measured. Available options:
     - `requests`: number of incoming batches of metrics, logs, traces (the most performant option);
