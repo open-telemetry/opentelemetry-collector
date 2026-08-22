@@ -63,13 +63,43 @@ type DialerConfig struct {
 	// Timeout is the maximum amount of time a dial will wait for
 	// a connect to complete. The default is no timeout.
 	Timeout time.Duration `mapstructure:"timeout,omitempty"`
+
+	// DSCP sets the Differentiated Services Code Point (DSCP) value
+	// on outgoing connections. This value is used to set the DS field
+	// in the IP header, enabling QoS classification by network devices.
+	// Valid values are 0 to 63. Common values:
+	//   - 0: Default/Best Effort (CS0)
+	//   - 46: Expedited Forwarding (EF) - for low-latency traffic
+	//   - 34: Assured Forwarding AF41
+	// Default is 0 (disabled, no marking applied).
+	DSCP int `mapstructure:"dscp,omitempty"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
+}
+
+// Validate checks that the DialerConfig is valid.
+func (dc *DialerConfig) Validate() error {
+	if dc.DSCP < 0 || dc.DSCP > 63 {
+		return fmt.Errorf("invalid DSCP value %d: must be between 0 and 63", dc.DSCP)
+	}
+	return nil
 }
 
 // NewDefaultDialerConfig creates a new DialerConfig with any default values set
 func NewDefaultDialerConfig() DialerConfig {
 	return DialerConfig{}
+}
+
+// Dialer returns a net.Dialer configured according to this DialerConfig.
+// If DSCP is set (non-zero), the dialer's Control function will apply the
+// DSCP value to the socket before the connection is established.
+func (dc *DialerConfig) Dialer() net.Dialer {
+	d := net.Dialer{Timeout: dc.Timeout}
+	if dc.DSCP > 0 {
+		d.Control = DSCPDialControl(dc.DSCP)
+	}
+	return d
 }
 
 // AddrConfig represents a network endpoint address.
@@ -104,7 +134,7 @@ func (na *AddrConfig) Dial(ctx context.Context) (net.Conn, error) {
 	if na.Transport == TransportTypeNpipe {
 		return dialNpipe(ctx, na.Endpoint, na.DialerConfig.Timeout)
 	}
-	d := net.Dialer{Timeout: na.DialerConfig.Timeout}
+	d := na.DialerConfig.Dialer()
 	return d.DialContext(ctx, string(na.Transport), na.Endpoint)
 }
 
@@ -118,6 +148,9 @@ func (na *AddrConfig) Listen(ctx context.Context) (net.Listener, error) {
 }
 
 func (na *AddrConfig) Validate() error {
+	if err := na.DialerConfig.Validate(); err != nil {
+		return err
+	}
 	switch na.Transport {
 	case TransportTypeTCP,
 		TransportTypeTCP4,
@@ -193,7 +226,7 @@ func NewDefaultTCPAddrConfig() TCPAddrConfig {
 
 // Dial equivalent with net.Dialer's DialContext for this address.
 func (na *TCPAddrConfig) Dial(ctx context.Context) (net.Conn, error) {
-	d := net.Dialer{Timeout: na.DialerConfig.Timeout}
+	d := na.DialerConfig.Dialer()
 	return d.DialContext(ctx, string(TransportTypeTCP), na.Endpoint)
 }
 
