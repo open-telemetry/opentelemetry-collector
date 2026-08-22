@@ -387,10 +387,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -403,10 +405,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -419,10 +423,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -435,10 +441,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -461,10 +469,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -477,10 +487,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -493,10 +505,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -509,10 +523,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -535,10 +551,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -551,10 +569,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -567,10 +587,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -583,10 +605,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -609,10 +633,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -625,10 +651,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -641,10 +669,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -657,10 +687,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -683,10 +715,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -699,10 +733,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -715,10 +751,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -731,10 +769,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -757,10 +797,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -773,10 +815,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -789,10 +833,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -805,10 +851,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -831,10 +879,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -847,10 +897,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -863,10 +915,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -879,10 +933,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -905,10 +961,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -921,10 +979,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -937,10 +997,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -953,10 +1015,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -979,10 +1043,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -995,10 +1061,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -1011,10 +1079,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -1027,10 +1097,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -1053,10 +1125,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -1069,10 +1143,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -1085,10 +1161,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."
@@ -1101,10 +1179,12 @@
                     "type": "object",
                     "properties": {
                       "regexp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a Go regexp."
                       },
                       "strict": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Filter using a string literal."
                       }
                     },
                     "description": "Config configures the matching behavior of a Filter."

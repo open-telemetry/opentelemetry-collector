@@ -5,6 +5,7 @@ go 1.26.0
 require (
 	github.com/stretchr/testify v1.12.0
 	go.opentelemetry.io/collector/confmap v1.65.0
+	go.uber.org/goleak v1.3.0
 )
 
 require (
