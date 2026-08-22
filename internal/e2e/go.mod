@@ -35,6 +35,7 @@ require (
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.159.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.159.0
 	go.opentelemetry.io/collector/extension v1.65.0
+	go.opentelemetry.io/collector/extension/xextension v0.159.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.159.0
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.159.0
 	go.opentelemetry.io/collector/internal/testutil v0.159.0
@@ -120,7 +121,6 @@ require (
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.159.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.159.0 // indirect
 	go.opentelemetry.io/collector/extension/extensiontest v0.159.0 // indirect
-	go.opentelemetry.io/collector/extension/xextension v0.159.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.65.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.159.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.159.0 // indirect
