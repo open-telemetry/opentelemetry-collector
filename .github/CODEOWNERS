@@ -66,6 +66,7 @@ docs/rfcs/                                             @open-telemetry/collector
 exporter/                                              @open-telemetry/collector-approvers
 exporter/debugexporter/                                @open-telemetry/collector-approvers @andrzej-stencel
 exporter/exporterhelper/                               @open-telemetry/collector-approvers @bogdandrutu @dmitryax
+exporter/exporterhelper/internal/                      @open-telemetry/collector-approvers
 exporter/exporterhelper/internal/queuebatch/           @open-telemetry/collector-approvers
 exporter/exporterhelper/xexporterhelper/               @open-telemetry/collector-approvers @mx-psi @dmathieu
 exporter/exportertest/                                 @open-telemetry/collector-approvers
