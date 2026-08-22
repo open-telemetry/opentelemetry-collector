@@ -29,6 +29,7 @@ This scraper is used for testing purposes to check the output of mdatagen.
 | `log_level` | string (one of: debug, info, warn, error) | info | no | Logging level for the scraper. |
 | `metrics` | object (see [metrics](#metrics)) |  | no | MetricsConfig provides config for sample metrics. |
 | `resource_attributes` | object (see [resource_attributes](#resource_attributes)) |  | no | ResourceAttributesConfig provides config for sample resource attributes. |
+| `tags` | []string | [production] | no | Tags for the scraper instance. |
 | `targets` | []object | [{}] | **yes** | List of targets to scrape metrics from. |
 | `timeout` | duration | 0 | no | An optional value used to set scraper's context deadline. |
 
