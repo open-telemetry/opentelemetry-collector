@@ -39,9 +39,25 @@ func NewExportRequestFromProfiles(td pprofile.Profiles) ExportRequest {
 
 // MarshalProto marshals ExportRequest into proto bytes.
 func (ms ExportRequest) MarshalProto() ([]byte, error) {
-	size := ms.orig.SizeProto()
+	req := ms.orig
+	pd := ms.Profiles()
+	if pd.IsReadOnly() {
+		// Only copy if data is shared/read-only to avoid unnecessary allocation
+		pdCopy := pprofile.NewProfiles()
+		pd.CopyTo(pdCopy)
+		req = internal.GetProfilesOrig(internal.ProfilesWrapper(pdCopy))
+		if otlp.PProfileConvertProfilesToReferences != nil {
+			otlp.PProfileConvertProfilesToReferences(pdCopy)
+		}
+	} else {
+		if otlp.PProfileConvertProfilesToReferences != nil {
+			otlp.PProfileConvertProfilesToReferences(pd)
+		}
+	}
+
+	size := req.SizeProto()
 	buf := make([]byte, size)
-	_ = ms.orig.MarshalProto(buf)
+	_ = req.MarshalProto(buf)
 	return buf, nil
 }
 
@@ -52,14 +68,32 @@ func (ms ExportRequest) UnmarshalProto(data []byte) error {
 		return err
 	}
 	otlp.MigrateProfiles(ms.orig.ResourceProfiles)
+	if otlp.PProfileResolveProfilesReferences != nil {
+		otlp.PProfileResolveProfilesReferences(ms.Profiles())
+	}
 	return nil
 }
 
 // MarshalJSON marshals ExportRequest into JSON bytes.
 func (ms ExportRequest) MarshalJSON() ([]byte, error) {
+	req := ms.orig
+	pd := ms.Profiles()
+	if pd.IsReadOnly() {
+		pdCopy := pprofile.NewProfiles()
+		pd.CopyTo(pdCopy)
+		req = internal.GetProfilesOrig(internal.ProfilesWrapper(pdCopy))
+		if otlp.PProfileConvertProfilesToReferences != nil {
+			otlp.PProfileConvertProfilesToReferences(pdCopy)
+		}
+	} else {
+		if otlp.PProfileConvertProfilesToReferences != nil {
+			otlp.PProfileConvertProfilesToReferences(pd)
+		}
+	}
+
 	dest := json.BorrowStream(nil)
 	defer json.ReturnStream(dest)
-	ms.orig.MarshalJSON(dest)
+	req.MarshalJSON(dest)
 	if dest.Error() != nil {
 		return nil, dest.Error()
 	}
@@ -71,7 +105,14 @@ func (ms ExportRequest) UnmarshalJSON(data []byte) error {
 	iter := json.BorrowIterator(data)
 	defer json.ReturnIterator(iter)
 	ms.orig.UnmarshalJSON(iter)
-	return iter.Error()
+	err := iter.Error()
+	if err != nil {
+		return err
+	}
+	if otlp.PProfileResolveProfilesReferences != nil {
+		otlp.PProfileResolveProfilesReferences(ms.Profiles())
+	}
+	return nil
 }
 
 func (ms ExportRequest) Profiles() pprofile.Profiles {

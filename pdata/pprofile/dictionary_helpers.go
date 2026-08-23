@@ -6,6 +6,7 @@ package pprofile // import "go.opentelemetry.io/collector/pdata/pprofile"
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
+	"go.opentelemetry.io/collector/pdata/internal/otlp"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -156,5 +157,14 @@ func convertAnyValueToReference(getStringIndex func(string) int32, anyValue *int
 		for i := 0; i < len(arrVal.ArrayValue.Values); i++ {
 			convertAnyValueToReference(getStringIndex, &arrVal.ArrayValue.Values[i])
 		}
+	}
+}
+
+func init() {
+	otlp.PProfileConvertProfilesToReferences = func(profiles any) {
+		convertProfilesToReferences(profiles.(Profiles))
+	}
+	otlp.PProfileResolveProfilesReferences = func(profiles any) {
+		resolveProfilesReferences(profiles.(Profiles))
 	}
 }

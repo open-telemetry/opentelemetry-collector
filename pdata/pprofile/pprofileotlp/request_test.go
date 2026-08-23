@@ -14,7 +14,6 @@ import (
 	goproto "google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/internal/otlp"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
 
@@ -94,9 +93,14 @@ func TestProfilesProtoWireCompatibility(t *testing.T) {
 	err = pd2.UnmarshalProto(wire2)
 	require.NoError(t, err)
 
-	// Now compare that the original and final ProtoBuf messages are the same.
-	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
-	// Migration logic will run, so run it on the original message as well.
-	otlp.MigrateProfiles(pd.orig.ResourceProfiles)
-	assert.Equal(t, pd, pd2)
+	// After unmarshal, pd2 will have resolved references while pd may have references.
+	// Marshal pd2 again to verify wire compatibility.
+	wire3, err := pd2.MarshalProto()
+	require.NoError(t, err)
+
+	// Verify full round-trip fidelity: unmarshal both wire1 and wire3 into goproto
+	var check1, check2 gootlpcollectorprofiles.ExportProfilesServiceRequest
+	require.NoError(t, goproto.Unmarshal(wire1, &check1))
+	require.NoError(t, goproto.Unmarshal(wire3, &check2))
+	assert.True(t, goproto.Equal(&check1, &check2), "round-trip through goproto did not preserve profile data")
 }

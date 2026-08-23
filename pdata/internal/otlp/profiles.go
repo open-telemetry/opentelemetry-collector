@@ -10,3 +10,11 @@ import (
 // MigrateProfiles implements any translation needed due to deprecation in OTLP profiles protocol.
 // Any pprofile.Unmarshaler implementation from OTLP (proto/json) MUST call this, and the gRPC Server implementation.
 func MigrateProfiles(_ []*internal.ResourceProfiles) {}
+
+// PProfileConvertProfilesToReferences is a function pointer that allows pprofileotlp to call
+// convertProfilesToReferences from pprofile without creating a cyclic dependency.
+var PProfileConvertProfilesToReferences func(any)
+
+// PProfileResolveProfilesReferences is a function pointer that allows pprofileotlp to call
+// resolveProfilesReferences from pprofile without creating a cyclic dependency.
+var PProfileResolveProfilesReferences func(any)
