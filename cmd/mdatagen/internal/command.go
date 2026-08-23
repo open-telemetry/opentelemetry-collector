@@ -715,7 +715,10 @@ func generateConfigFiles(md Metadata, mdDir, importRootPath string) error {
 
 func generateJSONSchema(dir string, md Metadata) error {
 	id := md.PackageName
-	title := fmt.Sprintf("%s/%s", md.Status.Class, md.Type)
+	title := md.Type
+	if md.Status != nil {
+		title = fmt.Sprintf("%s/%s", md.Status.Class, md.Type)
+	}
 	return cfggen.WriteJSONSchema(dir, id, title, md.ConfigsMetadata)
 }
 

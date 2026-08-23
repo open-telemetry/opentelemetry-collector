@@ -380,7 +380,7 @@ func TestTelemetryMetrics_DefaultViews(t *testing.T) {
 		assert.Equal(t, configtelemetry.LevelDetailed, level)
 		return []config.View{{
 			Selector: &config.ViewSelector{
-				MeterName: ptr("a"),
+				MeterName: new("a"),
 			},
 			Stream: &config.ViewStream{
 				Aggregation: &config.ViewStreamAggregation{
@@ -397,7 +397,7 @@ func TestTelemetryMetrics_DefaultViews(t *testing.T) {
 		"configured_views": {
 			configuredViews: []config.View{{
 				Selector: &config.ViewSelector{
-					MeterName: ptr("b"),
+					MeterName: new("b"),
 				},
 				Stream: &config.ViewStream{
 					Aggregation: &config.ViewStreamAggregation{
@@ -427,9 +427,9 @@ func TestTelemetryMetrics_DefaultViews(t *testing.T) {
 				Periodic: &config.PeriodicMetricReader{
 					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Endpoint: ptr(srv.URL),
-							Protocol: ptr("http/protobuf"),
-							Insecure: ptr(true),
+							Endpoint: new(srv.URL),
+							Protocol: new("http/protobuf"),
+							Insecure: new(true),
 						},
 					},
 				},
