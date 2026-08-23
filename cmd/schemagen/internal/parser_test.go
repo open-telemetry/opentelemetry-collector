@@ -142,6 +142,7 @@ func TestPackageParser(t *testing.T) {
 		Mode:     Package,
 		DirPath:  dir,
 		Mappings: testMappings(),
+		Pattern:  ".",
 	}
 
 	parser := NewParser(cfg)
