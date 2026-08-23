@@ -38,15 +38,14 @@ func resolveKeyValueReferences(dict ProfilesDictionary, kvs []internal.KeyValue)
 	for i := range kvs {
 		kv := &kvs[i]
 		// Resolve key_ref if set
-		if kv.KeyStrindex >= 0 {
+		if kv.KeyStrindex > 0 {
 			idx := int(kv.KeyStrindex)
 			if idx < dict.StringTable().Len() {
 				kv.Key = dict.StringTable().At(idx)
-				// N.b. keep KeyStrindex set to optimize re-marshaling. This is
-				// technically a violation of the proto spec, but acceptable
-				// for the in-memory pdata API since keys are immutable.
 			}
 		}
+		// Clear KeyStrindex to avoid emitting it if re-marshaled without conversion.
+		kv.KeyStrindex = 0
 		// Resolve string_value_ref if set
 		resolveAnyValueReference(dict, &kv.Value)
 	}
