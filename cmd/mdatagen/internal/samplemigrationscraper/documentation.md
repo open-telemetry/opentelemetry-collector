@@ -26,7 +26,14 @@ CPU utilization as a ratio.
 - Disable Old Gate: `scraper.samplemigration.DontEmitV0SystemConventions`
 - Enable New Gate: `scraper.samplemigration.EmitV1SystemConventions`
 
-When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+Emission depends on the state of the two migration feature gates:
+
+| `scraper.samplemigration.EmitV1SystemConventions` | `scraper.samplemigration.DontEmitV0SystemConventions` | Emitted metric(s) |
+| --- | --- | --- |
+| disabled | disabled | `system.cpu.utilization` only |
+| enabled | disabled | `system.cpu.utilization` and `system.cpu.utilization@v1` |
+| enabled | enabled | `system.cpu.utilization@v1` only |
+| disabled | enabled | Migrated metrics: none (v0 suppressed, v1 gated off — warnings logged). Non-migrated metrics still emit. No startup error. |
 
 #### Attributes
 
@@ -59,7 +66,14 @@ Legacy Linux available memory estimate.
 - Disable Old Gate: `scraper.samplemigration.DontEmitV0SystemConventions`
 - Enable New Gate: `scraper.samplemigration.EmitV1SystemConventions`
 
-When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+Emission depends on the state of the two migration feature gates:
+
+| `scraper.samplemigration.EmitV1SystemConventions` | `scraper.samplemigration.DontEmitV0SystemConventions` | Emitted metric(s) |
+| --- | --- | --- |
+| disabled | disabled | `linux.memory.available` only |
+| enabled | disabled | `linux.memory.available` and `system.memory.linux.available@v1` |
+| enabled | enabled | `system.memory.linux.available@v1` only |
+| disabled | enabled | Migrated metrics: none (v0 suppressed, v1 gated off — warnings logged). Non-migrated metrics still emit. No startup error. |
 
 ### system.cpu.foo
 
