@@ -115,3 +115,11 @@ Features that make it to the `beta` stage are intended to reach general availabi
 If, after wider use, it is determined that the gate should be discontinued it will be reverted to the `alpha` stage
 for 2 releases and then proceed to the `deprecated` stage. If instead it is ready for general availability it will
 proceed to the `stable` stage.
+
+## Best Practices for Upgrading and Deprecated Features
+
+When upgrading the Collector to a version that changes the default state of a feature gate (e.g. promoting a feature to `beta` / enabled by default) or introduces a breaking change or deprecation:
+
+1. **Upgrade with the feature gate explicitly set**: First perform the Collector binary upgrade while explicitly setting the feature gate (e.g. `--feature-gates=-my.feature.gate`) to preserve the previous behavior and ensure that the upgrade itself is stable without compounding configuration changes.
+2. **Update configuration and verify**: Once the new Collector version is running stably in your environment, update your configuration files to adopt the new syntax or behavior, testing in a staging or canary environment.
+3. **Remove the explicit feature gate flag**: Finally, revert/remove the explicit `--feature-gates` command line flag to rely on the default behavior before the gate transitions to `stable` and is permanently removed.
