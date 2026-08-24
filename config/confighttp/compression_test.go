@@ -243,6 +243,15 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			respCode: http.StatusOK,
 		},
 		{
+			// RFC 9110 section 8.4.1: "identity" means no transformation was applied,
+			// so it must be accepted exactly like an absent Content-Encoding. It was
+			// previously rejected as an unknown algorithm.
+			name:     "ValidIdentity",
+			encoding: "identity",
+			reqBody:  bytes.NewBuffer(testBody),
+			respCode: http.StatusOK,
+		},
+		{
 			name:     "ValidDeflate",
 			encoding: "deflate",
 			reqBody:  compressZlib(t, testBody),
@@ -420,6 +429,16 @@ func TestEmptyCompressionAlgorithmsAllowsUncompressed(t *testing.T) {
 			expectedError:         "unsupported Content-Encoding",
 		},
 		{
+			// "identity" is normalised to the empty encoding, so removing "" from the
+			// allowed list rejects it too. If it were registered as its own decoder it
+			// would survive here and become a way to bypass the restriction.
+			name:                  "OnlyZstd_Identity_Rejected",
+			compressionAlgorithms: []string{"zstd"},
+			contentEncoding:       "identity",
+			expectedStatus:        http.StatusBadRequest,
+			expectedError:         "unsupported Content-Encoding",
+		},
+		{
 			name:                  "OnlyZstd_Zstd_Accepted",
 			compressionAlgorithms: []string{"zstd"},
 			contentEncoding:       "zstd",
@@ -433,6 +452,12 @@ func TestEmptyCompressionAlgorithmsAllowsUncompressed(t *testing.T) {
 			expectedError:         "unsupported Content-Encoding",
 		},
 		// Case 3: Explicit list including empty string should accept uncompressed
+		{
+			name:                  "WithEmptyString_Identity_Accepted",
+			compressionAlgorithms: []string{"", "gzip", "zstd"},
+			contentEncoding:       "identity",
+			expectedStatus:        http.StatusOK,
+		},
 		{
 			name:                  "WithEmptyString_NoContentEncoding_Accepted",
 			compressionAlgorithms: []string{"", "gzip", "zstd"},

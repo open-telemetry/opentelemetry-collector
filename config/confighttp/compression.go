@@ -25,6 +25,11 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 )
 
+// encodingIdentity is the Content-Encoding token for "no transformation applied"
+// (RFC 9110 section 8.4.1). It is deliberately not a configurable algorithm; see
+// newBodyReader.
+const encodingIdentity = "identity"
+
 func defaultCompressionAlgorithms() []string {
 	return []string{"", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4", "x-snappy-framed"}
 }
@@ -294,6 +299,15 @@ func (d *decompressor) newBodyReader(r *http.Request) (io.ReadCloser, error) {
 		return nil, nil // Signal: don't replace r.Body
 	}
 	encoding := r.Header.Get(headerContentEncoding)
+	if encoding == encodingIdentity {
+		// RFC 9110 section 8.4.1 defines "identity" as "no transformation", which is
+		// exactly what an absent Content-Encoding conveys. Normalise it here rather
+		// than registering it as its own decoder so it is accepted precisely when an
+		// uncompressed body is accepted: an operator who drops "" from
+		// compression_algorithms to reject uncompressed payloads rejects "identity"
+		// too, instead of leaving it as a bypass.
+		encoding = ""
+	}
 
 	decoder, ok := d.decoders[encoding]
 	if !ok {
