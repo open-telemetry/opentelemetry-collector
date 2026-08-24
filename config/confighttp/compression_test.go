@@ -453,12 +453,6 @@ func TestEmptyCompressionAlgorithmsAllowsUncompressed(t *testing.T) {
 		},
 		// Case 3: Explicit list including empty string should accept uncompressed
 		{
-			name:                  "WithEmptyString_Identity_Accepted",
-			compressionAlgorithms: []string{"", "gzip", "zstd"},
-			contentEncoding:       "identity",
-			expectedStatus:        http.StatusOK,
-		},
-		{
 			name:                  "WithEmptyString_NoContentEncoding_Accepted",
 			compressionAlgorithms: []string{"", "gzip", "zstd"},
 			contentEncoding:       "",
@@ -656,14 +650,14 @@ func TestCompressionAlgorithmsEdgeCases(t *testing.T) {
 			wantBodyEcho:          true,
 		},
 		{
-			// BUG: "identity" means no encoding per RFC 7231 §3.1.2.2, but
-			// the decompressor rejects it because "identity" is not registered
-			// in availableDecoders. This should be treated the same as "".
+			// "identity" means no encoding per RFC 9110 §8.4.1, so it is handled
+			// the same as "". It used to be rejected because it was not registered
+			// in availableDecoders.
 			name:                  "Mixed_Identity_ShouldAccept",
 			compressionAlgorithms: []string{"", "gzip", "zstd"},
 			contentEncoding:       "identity",
 			body:                  testBody,
-			wantStatus:            http.StatusBadRequest, // BUG: should be http.StatusOK
+			wantStatus:            http.StatusOK,
 		},
 		{
 			name:                  "Mixed_Snappy_Rejected",
