@@ -954,6 +954,39 @@ func TestValidateFeatureGates(t *testing.T) {
 			},
 			wantErr: `ID contains invalid characters`,
 		},
+		{
+			name: "invalid leading dot in ID",
+			featureGate: FeatureGate{
+				ID:           ".component.feature",
+				Description:  "Test feature",
+				Stage:        FeatureGateStageAlpha,
+				FromVersion:  "v0.100.0",
+				ReferenceURL: "https://github.com/open-telemetry/opentelemetry-collector/issues/12345",
+			},
+			wantErr: `ID contains invalid characters`,
+		},
+		{
+			name: "invalid trailing dot in ID",
+			featureGate: FeatureGate{
+				ID:           "component.feature.",
+				Description:  "Test feature",
+				Stage:        FeatureGateStageAlpha,
+				FromVersion:  "v0.100.0",
+				ReferenceURL: "https://github.com/open-telemetry/opentelemetry-collector/issues/12345",
+			},
+			wantErr: `ID contains invalid characters`,
+		},
+		{
+			name: "invalid consecutive dots in ID",
+			featureGate: FeatureGate{
+				ID:           "component..feature",
+				Description:  "Test feature",
+				Stage:        FeatureGateStageAlpha,
+				FromVersion:  "v0.100.0",
+				ReferenceURL: "https://github.com/open-telemetry/opentelemetry-collector/issues/12345",
+			},
+			wantErr: `ID contains invalid characters`,
+		},
 	}
 
 	for _, tt := range tests {

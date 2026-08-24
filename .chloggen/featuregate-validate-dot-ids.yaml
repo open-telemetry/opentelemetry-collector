@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: featuregate
+note: "Disallow leading, trailing, or consecutive dots in feature gate ID validation."
+issues: [15676]
+subtext:
+change_logs: [user]

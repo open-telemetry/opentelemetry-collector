@@ -19,8 +19,8 @@ var (
 	globalRegistry = NewRegistry()
 
 	// idRegexp is used to validate the ID of a Gate.
-	// IDs' characters must be alphanumeric or dots.
-	idRegexp = regexp.MustCompile(`^[0-9a-zA-Z.]*$`)
+	// IDs must be dot-separated alphanumeric segments with no leading, trailing, or consecutive dots.
+	idRegexp = regexp.MustCompile(`^[0-9a-zA-Z]+(\.[0-9a-zA-Z]+)*$`)
 )
 
 // ErrAlreadyRegistered is returned when adding a Gate that is already registered.
