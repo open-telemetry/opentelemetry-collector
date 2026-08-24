@@ -339,7 +339,27 @@ The most common scenario for this would be making major changes to a receiver's 
 package main
 ```
 
-With two different packages generated, the behaviour for which metadata is used can be easily controlled via featuregate or a similar mechanism.
+### Controlling Config Artifact Generation
+
+By default, when configuration schemas are defined in `metadata.yaml`, `mdatagen` produces three artifacts:
+- JSON schema file (`config.schema.json`)
+- Go config structs and tests (`generated_config.go`, `generated_config_test.go`)
+- Config documentation injected into `README.md`
+
+You can use the `generate_config` section to independently enable or disable any of these artifacts:
+
+```yaml
+generate_config:
+  schema: false # Skip writing config.schema.json
+  code: true    # Generate Go config structs (default: true)
+  docs: false   # Skip injecting config section into README.md
+```
+
+| Field | Default | Description |
+| --- | --- | --- |
+| `schema` | `true` | When `true`, generates `config.schema.json`. When `false`, skips schema generation. |
+| `code` | `true` | When `true`, generates `generated_config.go` and `generated_config_test.go`. When `false`, skips Go codegen. |
+| `docs` | `true` | When `true`, renders config documentation into `README.md`. When `false`, skips config docs. |
 
 ## Contributing to the Metadata Generator
 

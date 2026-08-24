@@ -585,6 +585,101 @@ func TestGenerateConfigFiles(t *testing.T) {
 	}
 }
 
+func TestGenerateConfigFiles_GenerateConfigFlags(t *testing.T) {
+	fa := false
+	tr := true
+
+	setupDir := func(t *testing.T) string {
+		root := t.TempDir()
+		tmpdir := filepath.Join(root, "shortname")
+		require.NoError(t, os.MkdirAll(tmpdir, 0o700))
+		require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+		readmeContent := fmt.Sprintf("# Test\n\n%s\n%s\n", configDocStart, configDocEnd)
+		require.NoError(t, os.WriteFile(filepath.Join(tmpdir, "README.md"), []byte(readmeContent), 0o600))
+		return tmpdir
+	}
+
+	baseMD := func() Metadata {
+		return Metadata{
+			Type:        "test",
+			PackageName: "testmodule/shortname",
+			Status:      &Status{Class: "receiver"},
+			ConfigsMetadata: &cfggen.ConfigsMetadata{
+				Config: &cfggen.ConfigMetadata{
+					Type: "object",
+					Properties: map[string]*cfggen.ConfigMetadata{
+						"endpoint": {Type: "string", Description: "Endpoint address"},
+					},
+				},
+			},
+		}
+	}
+
+	t.Run("default generates all artifacts", func(t *testing.T) {
+		tmpdir := setupDir(t)
+		md := baseMD()
+		require.NoError(t, generateConfigFiles(md, tmpdir, "testmodule"))
+		require.FileExists(t, filepath.Join(tmpdir, "config.schema.json"))
+		require.FileExists(t, filepath.Join(tmpdir, "generated_config.go"))
+		require.FileExists(t, filepath.Join(tmpdir, "generated_config_test.go"))
+		readme, err := os.ReadFile(filepath.Join(tmpdir, "README.md"))
+		require.NoError(t, err)
+		require.Contains(t, string(readme), "Endpoint address")
+	})
+
+	t.Run("skip schema only", func(t *testing.T) {
+		tmpdir := setupDir(t)
+		md := baseMD()
+		md.GenerateConfig = GenerateConfig{Schema: &fa, Code: &tr, Docs: &tr}
+		require.NoError(t, generateConfigFiles(md, tmpdir, "testmodule"))
+		require.NoFileExists(t, filepath.Join(tmpdir, "config.schema.json"))
+		require.FileExists(t, filepath.Join(tmpdir, "generated_config.go"))
+		require.FileExists(t, filepath.Join(tmpdir, "generated_config_test.go"))
+		readme, err := os.ReadFile(filepath.Join(tmpdir, "README.md"))
+		require.NoError(t, err)
+		require.Contains(t, string(readme), "Endpoint address")
+	})
+
+	t.Run("skip code only", func(t *testing.T) {
+		tmpdir := setupDir(t)
+		md := baseMD()
+		md.GenerateConfig = GenerateConfig{Schema: &tr, Code: &fa, Docs: &tr}
+		require.NoError(t, generateConfigFiles(md, tmpdir, "testmodule"))
+		require.FileExists(t, filepath.Join(tmpdir, "config.schema.json"))
+		require.NoFileExists(t, filepath.Join(tmpdir, "generated_config.go"))
+		require.NoFileExists(t, filepath.Join(tmpdir, "generated_config_test.go"))
+		readme, err := os.ReadFile(filepath.Join(tmpdir, "README.md"))
+		require.NoError(t, err)
+		require.Contains(t, string(readme), "Endpoint address")
+	})
+
+	t.Run("skip docs only", func(t *testing.T) {
+		tmpdir := setupDir(t)
+		md := baseMD()
+		md.GenerateConfig = GenerateConfig{Schema: &tr, Code: &tr, Docs: &fa}
+		require.NoError(t, generateConfigFiles(md, tmpdir, "testmodule"))
+		require.FileExists(t, filepath.Join(tmpdir, "config.schema.json"))
+		require.FileExists(t, filepath.Join(tmpdir, "generated_config.go"))
+		require.FileExists(t, filepath.Join(tmpdir, "generated_config_test.go"))
+		readme, err := os.ReadFile(filepath.Join(tmpdir, "README.md"))
+		require.NoError(t, err)
+		require.NotContains(t, string(readme), "Endpoint address")
+	})
+
+	t.Run("skip all", func(t *testing.T) {
+		tmpdir := setupDir(t)
+		md := baseMD()
+		md.GenerateConfig = GenerateConfig{Schema: &fa, Code: &fa, Docs: &fa}
+		require.NoError(t, generateConfigFiles(md, tmpdir, "testmodule"))
+		require.NoFileExists(t, filepath.Join(tmpdir, "config.schema.json"))
+		require.NoFileExists(t, filepath.Join(tmpdir, "generated_config.go"))
+		require.NoFileExists(t, filepath.Join(tmpdir, "generated_config_test.go"))
+		readme, err := os.ReadFile(filepath.Join(tmpdir, "README.md"))
+		require.NoError(t, err)
+		require.NotContains(t, string(readme), "Endpoint address")
+	})
+}
+
 func TestGenerateConfigFiles_ExportedConfigsWithoutConfig(t *testing.T) {
 	root := t.TempDir()
 	tmpdir := filepath.Join(root, "shortname")

@@ -1,0 +1,6 @@
+change_type: enhancement
+component: mdatagen
+note: "Add `generate_config` block with independent flags (`schema`, `code`, `docs`) to control config artifact generation."
+issues: [15260]
+subtext:
+change_logs: [user]

@@ -698,16 +698,22 @@ func generateConfigFiles(md Metadata, mdDir, importRootPath string) error {
 	mdWithConfig := md
 	mdWithConfig.ConfigsMetadata = resolvedSchema
 
-	if err := generateJSONSchema(mdDir, mdWithConfig); err != nil {
-		return fmt.Errorf("failed to write config schema: %w", err)
+	if md.GenerateConfig.ShouldGenerateSchema() {
+		if err := generateJSONSchema(mdDir, mdWithConfig); err != nil {
+			return fmt.Errorf("failed to write config schema: %w", err)
+		}
 	}
 
-	if err := generateConfigGoStruct(mdWithConfig, mdDir); err != nil {
-		return fmt.Errorf("failed to generate config Go struct: %w", err)
+	if md.GenerateConfig.ShouldGenerateCode() {
+		if err := generateConfigGoStruct(mdWithConfig, mdDir); err != nil {
+			return fmt.Errorf("failed to generate config Go struct: %w", err)
+		}
 	}
 
-	if err := injectConfigDocsToReadme(mdWithConfig, mdDir, importRootPath); err != nil {
-		return err
+	if md.GenerateConfig.ShouldGenerateDocs() {
+		if err := injectConfigDocsToReadme(mdWithConfig, mdDir, importRootPath); err != nil {
+			return err
+		}
 	}
 
 	return nil

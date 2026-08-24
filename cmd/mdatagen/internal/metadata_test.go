@@ -1134,3 +1134,36 @@ func TestValidateConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateConfig(t *testing.T) {
+	t.Run("default (all nil)", func(t *testing.T) {
+		gc := GenerateConfig{}
+		assert.True(t, gc.ShouldGenerateSchema())
+		assert.True(t, gc.ShouldGenerateCode())
+		assert.True(t, gc.ShouldGenerateDocs())
+	})
+
+	t.Run("explicitly true", func(t *testing.T) {
+		tr := true
+		gc := GenerateConfig{
+			Schema: &tr,
+			Code:   &tr,
+			Docs:   &tr,
+		}
+		assert.True(t, gc.ShouldGenerateSchema())
+		assert.True(t, gc.ShouldGenerateCode())
+		assert.True(t, gc.ShouldGenerateDocs())
+	})
+
+	t.Run("explicitly false", func(t *testing.T) {
+		fa := false
+		gc := GenerateConfig{
+			Schema: &fa,
+			Code:   &fa,
+			Docs:   &fa,
+		}
+		assert.False(t, gc.ShouldGenerateSchema())
+		assert.False(t, gc.ShouldGenerateCode())
+		assert.False(t, gc.ShouldGenerateDocs())
+	})
+}
