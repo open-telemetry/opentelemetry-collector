@@ -718,3 +718,35 @@ func attrMapToStrings(m pcommon.Map) map[string]string {
 	})
 	return result
 }
+
+func TestProfilesMergeTo_DestinationZeroValueReserved(t *testing.T) {
+	src := NewProfiles()
+	dic := src.Dictionary()
+	dic.StringTable().Append("")
+	dic.AttributeTable().AppendEmpty()
+	dic.StackTable().AppendEmpty()
+	dic.LocationTable().AppendEmpty()
+	dic.FunctionTable().AppendEmpty()
+	dic.MappingTable().AppendEmpty()
+	dic.LinkTable().AppendEmpty()
+	dic.StringTable().Append("inuse_space")
+
+	prof := src.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	prof.SampleType().SetTypeStrindex(1)
+
+	dest := NewProfiles()
+	require.NoError(t, src.MergeTo(dest))
+
+	// string_table[0] MUST be "" and not the merged string
+	assert.GreaterOrEqual(t, dest.Dictionary().StringTable().Len(), 2)
+	assert.Equal(t, "", dest.Dictionary().StringTable().At(0))
+	assert.Equal(t, "inuse_space", dest.Dictionary().StringTable().At(1))
+
+	// Zero values should be preserved across all tables
+	assert.GreaterOrEqual(t, dest.Dictionary().AttributeTable().Len(), 1)
+	assert.GreaterOrEqual(t, dest.Dictionary().StackTable().Len(), 1)
+	assert.GreaterOrEqual(t, dest.Dictionary().LocationTable().Len(), 1)
+	assert.GreaterOrEqual(t, dest.Dictionary().FunctionTable().Len(), 1)
+	assert.GreaterOrEqual(t, dest.Dictionary().MappingTable().Len(), 1)
+	assert.GreaterOrEqual(t, dest.Dictionary().LinkTable().Len(), 1)
+}

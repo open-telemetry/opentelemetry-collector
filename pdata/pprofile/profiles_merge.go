@@ -13,6 +13,8 @@ func (ms Profiles) MergeTo(dest Profiles) error {
 		return nil
 	}
 
+	reserveDictionaryZeroValues(dest.Dictionary())
+
 	if err := ms.switchDictionary(ms.Dictionary(), dest.Dictionary()); err != nil {
 		return err
 	}
@@ -21,4 +23,30 @@ func (ms Profiles) MergeTo(dest Profiles) error {
 	ms.MarkReadOnly()
 
 	return nil
+}
+
+// reserveDictionaryZeroValues ensures that index 0 of every table in the destination
+// dictionary is reserved for that table's zero value, seeding only tables that are still empty.
+func reserveDictionaryZeroValues(dict ProfilesDictionary) {
+	if dict.StringTable().Len() == 0 {
+		dict.StringTable().Append("")
+	}
+	if dict.MappingTable().Len() == 0 {
+		dict.MappingTable().AppendEmpty()
+	}
+	if dict.LocationTable().Len() == 0 {
+		dict.LocationTable().AppendEmpty()
+	}
+	if dict.FunctionTable().Len() == 0 {
+		dict.FunctionTable().AppendEmpty()
+	}
+	if dict.LinkTable().Len() == 0 {
+		dict.LinkTable().AppendEmpty()
+	}
+	if dict.AttributeTable().Len() == 0 {
+		dict.AttributeTable().AppendEmpty()
+	}
+	if dict.StackTable().Len() == 0 {
+		dict.StackTable().AppendEmpty()
+	}
 }

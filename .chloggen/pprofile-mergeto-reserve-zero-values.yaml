@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: pdata/pprofile
+note: "Ensure `Profiles.MergeTo` reserves index 0 for table zero values in destination dictionary."
+issues: [15661]
+subtext:
+change_logs: [user]
