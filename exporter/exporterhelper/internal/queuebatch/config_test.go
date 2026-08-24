@@ -89,6 +89,29 @@ func TestBatchConfig_Validate_MetadataKeys(t *testing.T) {
 		assert.Contains(t, err.Error(), "duplicate entry in metadata_keys")
 		assert.Contains(t, err.Error(), "key1")
 	})
+
+	t.Run("negative idle_cycles - invalid", func(t *testing.T) {
+		cfg := newTestBatchConfig()
+		cfg.Partition.IdleCycles = -1
+		err := confmap.Validate(cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "`idle_cycles` must be non-negative")
+	})
+
+	t.Run("negative max_active_partitions - invalid", func(t *testing.T) {
+		cfg := newTestBatchConfig()
+		cfg.Partition.MaxActivePartitions = -1
+		err := confmap.Validate(cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "`max_active_partitions` must be non-negative")
+	})
+
+	t.Run("valid limits", func(t *testing.T) {
+		cfg := newTestBatchConfig()
+		cfg.Partition.IdleCycles = 5
+		cfg.Partition.MaxActivePartitions = 500
+		require.NoError(t, confmap.Validate(cfg))
+	})
 }
 
 func TestBatchConfig_Validate(t *testing.T) {

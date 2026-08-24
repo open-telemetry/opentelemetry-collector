@@ -1,0 +1,6 @@
+change_type: enhancement
+component: exporterhelper
+note: "Make partition `idle_cycles` and `max_active_partitions` configurable under `sending_queue::batch::partition`."
+issues: [15606]
+subtext:
+change_logs: [user]

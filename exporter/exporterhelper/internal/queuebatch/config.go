@@ -119,6 +119,16 @@ type PartitionConfig struct {
 	//
 	// Entries are case-insensitive. Duplicated entries will trigger a validation error.
 	MetadataKeys []string `mapstructure:"metadata_keys"`
+
+	// IdleCycles defines the number of `flush_timeout` periods an empty partition
+	// may remain idle before removal.
+	// If unset (0), defaults to 10.
+	IdleCycles int `mapstructure:"idle_cycles"`
+
+	// MaxActivePartitions defines the maximum number of concurrent partition batchers
+	// kept in memory. When exceeded, least recently used partitions are evicted.
+	// If unset (0), defaults to 10000.
+	MaxActivePartitions int `mapstructure:"max_active_partitions"`
 }
 
 func (cfg *BatchConfig) Validate() error {
@@ -153,6 +163,14 @@ func (cfg *BatchConfig) Validate() error {
 func (cfg *PartitionConfig) Validate() error {
 	if cfg == nil {
 		return nil
+	}
+
+	if cfg.IdleCycles < 0 {
+		return fmt.Errorf("`idle_cycles` must be non-negative, found %d", cfg.IdleCycles)
+	}
+
+	if cfg.MaxActivePartitions < 0 {
+		return fmt.Errorf("`max_active_partitions` must be non-negative, found %d", cfg.MaxActivePartitions)
 	}
 
 	// Validate metadata_keys for duplicates (case-insensitive)

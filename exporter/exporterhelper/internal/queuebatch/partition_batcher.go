@@ -17,9 +17,8 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
 
-// partitionIdleCycles*FlushTimeout is the duration after which an empty partition is removed.
-// TODO make this configurable.
-const partitionIdleCycles = 10
+// defaultPartitionIdleCycles*FlushTimeout is the default duration after which an empty partition is removed.
+const defaultPartitionIdleCycles = 10
 
 var _ Batcher[request.Request] = (*partitionBatcher)(nil)
 
@@ -259,10 +258,12 @@ func (qb *partitionBatcher) Shutdown(context.Context) error {
 func (qb *partitionBatcher) flushCurrentBatchOrRemovePartition() {
 	qb.currentBatchMu.Lock()
 	if qb.currentBatch == nil {
-		// No data to flush - check if idle for too long AND no one holding a reference
 		idleDuration := time.Since(qb.lastDataTime)
-
-		if idleDuration >= (partitionIdleCycles*qb.cfg.FlushTimeout) && qb.onEmpty != nil {
+		idleCycles := defaultPartitionIdleCycles
+		if qb.cfg.Partition.IdleCycles > 0 {
+			idleCycles = qb.cfg.Partition.IdleCycles
+		}
+		if idleDuration >= (time.Duration(idleCycles)*qb.cfg.FlushTimeout) && qb.onEmpty != nil {
 			qb.currentBatchMu.Unlock()
 			qb.onEmpty()
 			return

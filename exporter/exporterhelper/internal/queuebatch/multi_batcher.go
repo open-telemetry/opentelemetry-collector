@@ -27,6 +27,8 @@ type multiBatcher struct {
 	lock        sync.Mutex
 }
 
+const defaultMaxActivePartitions = 10000
+
 func newMultiBatcher(
 	bCfg BatchConfig,
 	sizer request.Sizer,
@@ -46,11 +48,15 @@ func newMultiBatcher(
 		logger:      logger,
 	}
 
+	maxActive := defaultMaxActivePartitions
+	if bCfg.Partition.MaxActivePartitions > 0 {
+		maxActive = bCfg.Partition.MaxActivePartitions
+	}
+
 	// Create LRU cache with eviction callback
-	// TODO: make maxActivePartitionsCount configurable
-	cache, err := lru.NewLRU[string, *partitionBatcher](10000, func(_ string, pb *partitionBatcher) {
+	cache, err := lru.NewLRU[string, *partitionBatcher](maxActive, func(_ string, pb *partitionBatcher) {
 		// Flush the partition when evicted
-		mb.wp.execute(pb.shutdownInternal)
+		go pb.shutdownInternal()
 	})
 	if err != nil {
 		return nil, err

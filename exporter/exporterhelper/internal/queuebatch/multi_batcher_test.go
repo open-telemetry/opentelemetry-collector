@@ -167,3 +167,92 @@ func TestMultiBatcher_PartitionRemovedAfterIdleTimeout(t *testing.T) {
 		return ba.getActivePartitionsCount() == 0
 	}, 500*time.Millisecond, 10*time.Millisecond)
 }
+
+func TestMultiBatcher_CustomIdleCycles(t *testing.T) {
+	cfg := BatchConfig{
+		FlushTimeout: 10 * time.Millisecond,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      100,
+		Partition: PartitionConfig{
+			IdleCycles: 2,
+		},
+	}
+	sink := requesttest.NewSink()
+
+	type partitionKey struct{}
+
+	ba, err := newMultiBatcher(cfg,
+		request.NewItemsSizer(),
+		newWorkerPool(1),
+		NewPartitioner(func(ctx context.Context, _ request.Request) string {
+			return ctx.Value(partitionKey{}).(string)
+		}),
+		nil,
+		sink.Export,
+		zap.NewNop(),
+	)
+
+	require.NoError(t, err)
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, ba.Shutdown(context.Background()))
+	})
+
+	done := newFakeDone()
+	ba.Consume(context.WithValue(context.Background(), partitionKey{}, "p1"), &requesttest.FakeRequest{Items: 5}, done)
+	assert.Equal(t, int64(1), ba.getActivePartitionsCount())
+
+	// Wait for batch to flush
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() == 1
+	}, 500*time.Millisecond, 10*time.Millisecond)
+
+	// Wait for custom idle timeout (2 * 10ms = 20ms)
+	assert.Eventually(t, func() bool {
+		return ba.getActivePartitionsCount() == 0
+	}, 500*time.Millisecond, 10*time.Millisecond)
+}
+
+func TestMultiBatcher_MaxActivePartitionsEvictsLRU(t *testing.T) {
+	cfg := BatchConfig{
+		FlushTimeout: 0,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      100,
+		Partition: PartitionConfig{
+			MaxActivePartitions: 2,
+		},
+	}
+	sink := requesttest.NewSink()
+
+	type partitionKey struct{}
+
+	ba, err := newMultiBatcher(cfg,
+		request.NewItemsSizer(),
+		newWorkerPool(1),
+		NewPartitioner(func(ctx context.Context, _ request.Request) string {
+			return ctx.Value(partitionKey{}).(string)
+		}),
+		nil,
+		sink.Export,
+		zap.NewNop(),
+	)
+
+	require.NoError(t, err)
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, ba.Shutdown(context.Background()))
+	})
+
+	done := newFakeDone()
+	ba.Consume(context.WithValue(context.Background(), partitionKey{}, "p1"), &requesttest.FakeRequest{Items: 5}, done)
+	ba.Consume(context.WithValue(context.Background(), partitionKey{}, "p2"), &requesttest.FakeRequest{Items: 5}, done)
+	assert.Equal(t, int64(2), ba.getActivePartitionsCount())
+
+	// Adding a third partition should evict the LRU partition (p1) and flush it
+	ba.Consume(context.WithValue(context.Background(), partitionKey{}, "p3"), &requesttest.FakeRequest{Items: 5}, done)
+	assert.Equal(t, int64(2), ba.getActivePartitionsCount())
+
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() == 1 && sink.ItemsCount() == 5
+	}, 500*time.Millisecond, 10*time.Millisecond)
+}

@@ -27,6 +27,12 @@ $defs:
     description: PartitionConfig defines a configuration for partitioning requests based on metadata keys.
     type: object
     properties:
+      idle_cycles:
+        description: IdleCycles defines the number of `flush_timeout` periods an empty partition may remain idle before removal. If unset (0), defaults to 10.
+        type: integer
+      max_active_partitions:
+        description: MaxActivePartitions defines the maximum number of concurrent partition batchers kept in memory. When exceeded, least recently used partitions are evicted. If unset (0), defaults to 10000.
+        type: integer
       metadata_keys:
         description: MetadataKeys is a list of client.Metadata keys that will be used to partition the data into batches. If this setting is empty, a single batcher instance will be used. When this setting is not empty, one batcher will be used per distinct combination of values for the listed metadata keys. Empty value and unset metadata are treated as distinct cases. Entries are case-insensitive. Duplicated entries will trigger a validation error.
         type: array
