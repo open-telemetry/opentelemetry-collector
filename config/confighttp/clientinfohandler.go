@@ -36,6 +36,12 @@ func contextWithClient(req *http.Request, includeMetadata bool) context.Context 
 		cl.Addr = ip
 	}
 
+	if req.TLS != nil {
+		cl.TLS = &client.TLSInfo{
+			ServerName: req.TLS.ServerName,
+		}
+	}
+
 	if includeMetadata {
 		md := req.Header.Clone()
 		if md.Get(client.MetadataHostName) == "" && req.Host != "" {

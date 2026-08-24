@@ -102,8 +102,17 @@ type Info struct {
 	// Metadata is the request metadata from the client connecting to this connector.
 	Metadata Metadata
 
+	// TLS information from the incoming TLS connection, if available.
+	TLS *TLSInfo
+
 	// prevent unkeyed literal initialization
 	_ struct{}
+}
+
+// TLSInfo contains TLS connection details for the client.
+type TLSInfo struct {
+	// ServerName is the SNI server name requested by the client during TLS handshake.
+	ServerName string
 }
 
 // AuthData represents the authentication data as seen by authenticators tied to

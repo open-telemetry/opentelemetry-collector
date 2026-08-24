@@ -25,6 +25,9 @@ func TestNewContext(t *testing.T) {
 				Addr: &net.IPAddr{
 					IP: net.IPv4(1, 2, 3, 4),
 				},
+				TLS: &TLSInfo{
+					ServerName: "example.com",
+				},
 			},
 		},
 		{

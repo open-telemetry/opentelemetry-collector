@@ -4,11 +4,14 @@
 package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 
 import (
+	"crypto/tls"
 	"net"
 	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"go.opentelemetry.io/collector/client"
 )
 
 var _ http.Handler = (*clientInfoHandler)(nil)
@@ -49,4 +52,18 @@ func TestParseIP(t *testing.T) {
 			assert.Equal(t, tt.expected, parseIP(tt.input))
 		})
 	}
+}
+
+func TestContextWithClient_TLS(t *testing.T) {
+	req, err := http.NewRequest(http.MethodGet, "https://example.com/test", nil)
+	assert.NoError(t, err)
+	req.RemoteAddr = "1.2.3.4:1234"
+	req.TLS = &tls.ConnectionState{
+		ServerName: "example.com",
+	}
+
+	ctx := contextWithClient(req, false)
+	cl := client.FromContext(ctx)
+	assert.NotNil(t, cl.TLS)
+	assert.Equal(t, "example.com", cl.TLS.ServerName)
 }

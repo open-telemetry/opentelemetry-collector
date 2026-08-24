@@ -1,0 +1,6 @@
+change_type: enhancement
+component: client
+note: "Add `TLS` field to `client.Info` and populate TLS SNI server name in `confighttp` and `configgrpc`."
+issues: [15494]
+subtext:
+change_logs: [user, api]

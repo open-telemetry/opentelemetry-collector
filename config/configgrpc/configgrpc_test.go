@@ -5,6 +5,7 @@ package configgrpc
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"net"
 	"os"
@@ -17,6 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
@@ -927,6 +929,27 @@ func TestContextWithClient(t *testing.T) {
 			expected: client.Info{
 				Addr: &net.IPAddr{
 					IP: net.IPv4(1, 2, 3, 5),
+				},
+			},
+		},
+		{
+			desc: "peer with TLS information",
+			input: peer.NewContext(context.Background(), &peer.Peer{
+				Addr: &net.IPAddr{
+					IP: net.IPv4(1, 2, 3, 4),
+				},
+				AuthInfo: credentials.TLSInfo{
+					State: tls.ConnectionState{
+						ServerName: "grpc.example.com",
+					},
+				},
+			}),
+			expected: client.Info{
+				Addr: &net.IPAddr{
+					IP: net.IPv4(1, 2, 3, 4),
+				},
+				TLS: &client.TLSInfo{
+					ServerName: "grpc.example.com",
 				},
 			},
 		},
