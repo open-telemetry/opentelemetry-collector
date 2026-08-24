@@ -93,8 +93,8 @@ func TestSharedComponent(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, wantErr, got.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Equal(t, 1, calledStart)
-	// Second time is not called anymore.
-	require.NoError(t, got.Start(context.Background(), componenttest.NewNopHost()))
+	// Cached error is returned on subsequent calls to start.
+	assert.Equal(t, wantErr, got.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Equal(t, 1, calledStart)
 	// first time, shutdown is called.
 	assert.Equal(t, wantErr, got.Shutdown(context.Background()))
@@ -104,98 +104,47 @@ func TestSharedComponent(t *testing.T) {
 	assert.Equal(t, 1, calledStop)
 }
 
-func TestReportStatusOnStartShutdown(t *testing.T) {
-	for _, tc := range []struct {
-		name                         string
-		startErr                     error
-		shutdownErr                  error
-		expectedStatuses             []componentstatus.Status
-		expectedNumReporterInstances int
-	}{
-		{
-			name:        "successful start/stop",
-			startErr:    nil,
-			shutdownErr: nil,
-			expectedStatuses: []componentstatus.Status{
-				componentstatus.StatusStarting,
-				componentstatus.StatusOK,
-				componentstatus.StatusStopping,
-				componentstatus.StatusStopped,
-			},
-			expectedNumReporterInstances: 3,
+func TestReportStatusRoutedToAllInstances(t *testing.T) {
+	// The wrapper reports no lifecycle status of its own. It routes the wrapped
+	// component's own status reports to every instance and replays them to instances
+	// that register after the component has started.
+	reportedStatuses := make(map[*componentstatus.InstanceID][]componentstatus.Status)
+	newStatusFunc := func(id *componentstatus.InstanceID, ev *componentstatus.Event) {
+		reportedStatuses[id] = append(reportedStatuses[id], ev.Status())
+	}
+
+	// The wrapped component reports a runtime status during Start.
+	base := &baseComponent{
+		StartFunc: func(_ context.Context, host component.Host) error {
+			componentstatus.ReportStatus(host, componentstatus.NewEvent(componentstatus.StatusRecoverableError))
+			return nil
 		},
-		{
-			name:        "start error",
-			startErr:    assert.AnError,
-			shutdownErr: nil,
-			expectedStatuses: []componentstatus.Status{
-				componentstatus.StatusStarting,
-				componentstatus.StatusPermanentError,
-			},
-			expectedNumReporterInstances: 1,
-		},
-		{
-			name:        "shutdown error",
-			shutdownErr: assert.AnError,
-			expectedStatuses: []componentstatus.Status{
-				componentstatus.StatusStarting,
-				componentstatus.StatusOK,
-				componentstatus.StatusStopping,
-				componentstatus.StatusPermanentError,
-			},
-			expectedNumReporterInstances: 3,
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			reportedStatuses := make(map[*componentstatus.InstanceID][]componentstatus.Status)
-			newStatusFunc := func(id *componentstatus.InstanceID, ev *componentstatus.Event) {
-				reportedStatuses[id] = append(reportedStatuses[id], ev.Status())
-			}
-			base := &baseComponent{}
-			if tc.startErr != nil {
-				base.StartFunc = func(context.Context, component.Host) error {
-					return tc.startErr
-				}
-			}
-			if tc.shutdownErr != nil {
-				base.ShutdownFunc = func(context.Context) error {
-					return tc.shutdownErr
-				}
-			}
-			comps := NewMap[component.ID, *baseComponent]()
-			var comp *Component[*baseComponent]
-			var err error
-			for range 3 {
-				comp, err = comps.LoadOrStore(
-					id,
-					func() (*baseComponent, error) { return base, nil },
-				)
-				require.NoError(t, err)
-			}
+	}
 
-			baseHost := componenttest.NewNopHost()
-			for range 3 {
-				err = comp.Start(context.Background(), &testHost{Host: baseHost, InstanceID: &componentstatus.InstanceID{}, newStatusFunc: newStatusFunc})
-				if err != nil {
-					break
-				}
-			}
+	comps := NewMap[component.ID, *baseComponent]()
+	baseHost := componenttest.NewNopHost()
 
-			require.Equal(t, tc.startErr, err)
+	// Three pipeline instances share the component. The first Start actually starts it;
+	// the other two register afterwards and must still observe the reported status.
+	var comp *Component[*baseComponent]
+	for range 3 {
+		var err error
+		comp, err = comps.LoadOrStore(id, func() (*baseComponent, error) { return base, nil })
+		require.NoError(t, err)
+		require.NoError(t, comp.Start(context.Background(), &testHost{Host: baseHost, InstanceID: &componentstatus.InstanceID{}, newStatusFunc: newStatusFunc}))
+	}
 
-			if tc.startErr == nil {
-				comp.hostWrapper.Report(componentstatus.NewEvent(componentstatus.StatusOK))
+	// Every instance observed the RecoverableError and no wrapper-emitted lifecycle events.
+	require.Len(t, reportedStatuses, 3)
+	for _, statuses := range reportedStatuses {
+		assert.Equal(t, []componentstatus.Status{componentstatus.StatusRecoverableError}, statuses)
+	}
 
-				err = comp.Shutdown(context.Background())
-				require.Equal(t, tc.shutdownErr, err)
-			}
-
-			require.Len(t, reportedStatuses, tc.expectedNumReporterInstances)
-
-			for _, actualStatuses := range reportedStatuses {
-				require.Equal(t, tc.expectedStatuses, actualStatuses)
-			}
-		})
+	// Shutdown does not emit any status from the wrapper either.
+	require.NoError(t, comp.Shutdown(context.Background()))
+	require.Len(t, reportedStatuses, 3)
+	for _, statuses := range reportedStatuses {
+		assert.Equal(t, []componentstatus.Status{componentstatus.StatusRecoverableError}, statuses)
 	}
 }
 
