@@ -1,0 +1,6 @@
+change_type: enhancement
+component: cmd/builder
+note: "Add `Makefile.Common` with development targets (`test`, `test-with-cover`, `fmt`, `tidy`, `check-links`, `generate`) to `ocb init` template."
+issues: [14704]
+subtext:
+change_logs: [user]

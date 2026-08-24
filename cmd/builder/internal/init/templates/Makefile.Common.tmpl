@@ -1,0 +1,27 @@
+GOCMD ?= go
+GOTEST_TIMEOUT ?= 240s
+GOTEST_OPT ?= -timeout $(GOTEST_TIMEOUT) -race
+
+.PHONY: test
+test:
+	$(GOCMD) test $(GOTEST_OPT) ./...
+
+.PHONY: test-with-cover
+test-with-cover:
+	$(GOCMD) test $(GOTEST_OPT) -cover ./...
+
+.PHONY: fmt
+fmt:
+	gofmt -w -s ./
+
+.PHONY: tidy
+tidy:
+	$(GOCMD) mod tidy
+
+.PHONY: check-links
+check-links:
+	$(GOCMD) tool go.opentelemetry.io/collector/cmd/builder --help > /dev/null
+
+.PHONY: generate
+generate:
+	$(GOCMD) generate ./...

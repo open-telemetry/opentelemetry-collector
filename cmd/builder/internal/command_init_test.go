@@ -98,5 +98,6 @@ func validateCollector(t *testing.T, path string) {
 	require.FileExists(t, filepath.Join(path, "go.mod"))
 	require.FileExists(t, filepath.Join(path, "go.sum"))
 	require.FileExists(t, filepath.Join(path, "Makefile"))
+	require.FileExists(t, filepath.Join(path, "Makefile.Common"))
 	require.FileExists(t, filepath.Join(path, "config.yaml"))
 }

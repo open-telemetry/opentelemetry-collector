@@ -95,6 +95,11 @@ func run(path string) error {
 		return fmt.Errorf("failed writing Makefile: %w", err)
 	}
 
+	err = writeTemplate(path, "Makefile.Common", meta)
+	if err != nil {
+		return fmt.Errorf("failed writing Makefile.Common: %w", err)
+	}
+
 	err = writeTemplate(path, "config.yaml", meta)
 	if err != nil {
 		return fmt.Errorf("failed writing config.yaml: %w", err)
