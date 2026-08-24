@@ -1,0 +1,364 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package confighttp
+
+import (
+	"fmt"
+	"net/http"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
+
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/confmap"
+)
+
+// This file encodes compatibility requirements for the keepalive config
+// migration, derived from how opentelemetry-collector-contrib components use
+// the deprecated fields today. Each test asserts the behavior the pre-migration
+// code (main) produces for the same inputs; a failure here means a real,
+// user-visible behavior change in the named downstream components.
+
+func compatClientTransport(t *testing.T, cc ClientConfig) *http.Transport {
+	t.Helper()
+	settings := componenttest.NewNopTelemetrySettings()
+	settings.MeterProvider = nil
+	settings.TracerProvider = nil
+	client, err := cc.ToClient(t.Context(), nil, settings)
+	require.NoError(t, err)
+	transport, ok := client.Transport.(*http.Transport)
+	require.True(t, ok, "transport is %T", client.Transport)
+	return transport
+}
+
+// compatServeAndGet builds the server from sc, serves a single request against
+// it, and returns the response so callers can observe connection handling.
+func compatServeAndGet(t *testing.T, sc ServerConfig) *http.Response {
+	t.Helper()
+	srv, err := sc.ToServer(t.Context(), nil, componenttest.NewNopTelemetrySettings(),
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+	require.NoError(t, err)
+
+	ln, err := sc.ToListener(t.Context())
+	require.NoError(t, err)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		_ = srv.Serve(ln)
+	}()
+	t.Cleanup(func() {
+		assert.NoError(t, srv.Close())
+		<-done
+	})
+
+	resp, err := http.Get(fmt.Sprintf("http://%s/", ln.Addr()))
+	require.NoError(t, err)
+	require.NoError(t, resp.Body.Close())
+	return resp
+}
+
+// A user setting a subset of the deprecated fields must keep the defaults for
+// the settings they did not mention. On main, `idle_conn_timeout: 30s` alone
+// leaves MaxIdleConns at its default of 100.
+func TestKeepaliveCompatPartialDeprecatedFields(t *testing.T) {
+	cfg := NewDefaultClientConfig()
+	conf := confmap.NewFromStringMap(map[string]any{"idle_conn_timeout": "30s"})
+	require.NoError(t, conf.Unmarshal(&cfg))
+
+	transport := compatClientTransport(t, cfg)
+	assert.Equal(t, 30*time.Second, transport.IdleConnTimeout)
+	assert.Equal(t, 100, transport.MaxIdleConns)
+}
+
+// Factories zero the deprecated fields to mean "unlimited idle connections, no
+// idle timeout": prometheusreceiver, nsxtreceiver, httpcheckreceiver,
+// huaweicloudcesreceiver, haproxyreceiver, awsecscontainermetricsreceiver, and
+// awscontainerinsightreceiver in contrib. Zero must remain meaningful.
+func TestKeepaliveCompatFactoryZeroedDeprecatedFields(t *testing.T) {
+	cfg := NewDefaultClientConfig()
+	cfg.MaxIdleConns = 0
+	cfg.IdleConnTimeout = 0
+	require.NoError(t, confmap.NewFromStringMap(map[string]any{}).Unmarshal(&cfg))
+
+	transport := compatClientTransport(t, cfg)
+	assert.Equal(t, 0, transport.MaxIdleConns)
+	assert.Equal(t, time.Duration(0), transport.IdleConnTimeout)
+}
+
+// Factories also set non-zero values on the deprecated fields, e.g.
+// signalfxexporter sets MaxIdleConns and MaxIdleConnsPerHost to 30000.
+func TestKeepaliveCompatFactoryCustomDeprecatedFields(t *testing.T) {
+	cfg := NewDefaultClientConfig()
+	cfg.MaxIdleConns = 30000
+	cfg.MaxIdleConnsPerHost = 30000
+	require.NoError(t, confmap.NewFromStringMap(map[string]any{}).Unmarshal(&cfg))
+
+	transport := compatClientTransport(t, cfg)
+	assert.Equal(t, 30000, transport.MaxIdleConns)
+	assert.Equal(t, 30000, transport.MaxIdleConnsPerHost)
+}
+
+// Deprecated-field values set programmatically by a factory are not "the user
+// set both": a user must be able to adopt the keepalive section on a component
+// whose factory customizes the deprecated fields without hitting the
+// mixed-config error, and the factory's values must survive for the settings
+// the keepalive section does not mention.
+func TestKeepaliveCompatFactoryFieldsDoNotConflictWithNewSection(t *testing.T) {
+	cfg := NewDefaultClientConfig()
+	cfg.MaxIdleConns = 30000
+	cfg.MaxIdleConnsPerHost = 30000
+	conf := confmap.NewFromStringMap(map[string]any{
+		"keepalive": map[string]any{"idle_conn_timeout": "5m"},
+	})
+	require.NoError(t, conf.Unmarshal(&cfg))
+
+	transport := compatClientTransport(t, cfg)
+	assert.Equal(t, 5*time.Minute, transport.IdleConnTimeout)
+	assert.Equal(t, 30000, transport.MaxIdleConns)
+	assert.Equal(t, 30000, transport.MaxIdleConnsPerHost)
+}
+
+// Deprecation warnings must be triggered only by configuration the user wrote,
+// never by factory-set values: users of a component whose factory customizes
+// the deprecated fields (signalfxexporter) can't act on the warning.
+func TestKeepaliveCompatNoWarningsForFactoryFields(t *testing.T) {
+	cfg := NewDefaultClientConfig()
+	cfg.MaxIdleConns = 30000
+	require.NoError(t, confmap.NewFromStringMap(map[string]any{}).Unmarshal(&cfg))
+
+	core, observed := observer.New(zapcore.WarnLevel)
+	settings := componenttest.NewNopTelemetrySettings()
+	settings.MeterProvider = nil
+	settings.TracerProvider = nil
+	settings.Logger = zap.New(core)
+	_, err := cfg.ToClient(t.Context(), nil, settings)
+	require.NoError(t, err)
+	assert.Empty(t, observed.All())
+}
+
+// A zero-value ClientConfig used programmatically (without NewDefaultClientConfig)
+// has keep-alives enabled on main. Test helpers downstream construct bare
+// ClientConfig literals and must not silently switch to one-connection-per-request.
+func TestKeepaliveCompatZeroValueClientConfig(t *testing.T) {
+	cfg := ClientConfig{Endpoint: "http://localhost"}
+	transport := compatClientTransport(t, cfg)
+	assert.False(t, transport.DisableKeepAlives)
+}
+
+// Factories disable server keep-alives programmatically: splunkhecreceiver,
+// remotetapprocessor, githubreceiver, gitlabreceiver, libhoneyreceiver,
+// collectdreceiver, azurefunctionsreceiver, and prometheusremotewritereceiver
+// in contrib all set KeepAlivesEnabled = false in createDefaultConfig. The
+// built server must send `Connection: close`.
+func TestKeepaliveCompatServerFactoryDisabledKeepAlives(t *testing.T) {
+	cfg := NewDefaultServerConfig()
+	cfg.KeepAlivesEnabled = false
+	conf := confmap.NewFromStringMap(map[string]any{"endpoint": "localhost:0"})
+	require.NoError(t, conf.Unmarshal(&cfg))
+
+	resp := compatServeAndGet(t, cfg)
+	assert.True(t, resp.Close, "server must disable keep-alives")
+}
+
+// The same via user configuration: `keep_alives_enabled: false` in yaml.
+func TestKeepaliveCompatServerDeprecatedDisableViaConfig(t *testing.T) {
+	cfg := NewDefaultServerConfig()
+	conf := confmap.NewFromStringMap(map[string]any{
+		"endpoint":            "localhost:0",
+		"keep_alives_enabled": false,
+	})
+	require.NoError(t, conf.Unmarshal(&cfg))
+
+	resp := compatServeAndGet(t, cfg)
+	assert.True(t, resp.Close, "server must disable keep-alives")
+}
+
+// A config loaded from deprecated fields must survive a marshal/unmarshal
+// roundtrip: `print-initial-config` output is valid collector configuration,
+// and tooling (e.g. the OpAMP supervisor) re-marshals effective configs.
+func TestKeepaliveCompatClientMarshalRoundtrip(t *testing.T) {
+	cfg := NewDefaultClientConfig()
+	require.NoError(t, confmap.NewFromStringMap(map[string]any{"idle_conn_timeout": "60s"}).Unmarshal(&cfg))
+
+	marshaled := confmap.New()
+	require.NoError(t, marshaled.Marshal(cfg))
+
+	cfg2 := NewDefaultClientConfig()
+	require.NoError(t, marshaled.Unmarshal(&cfg2), "marshaled output must load without a mixed-config error")
+
+	transport := compatClientTransport(t, cfg2)
+	assert.Equal(t, 60*time.Second, transport.IdleConnTimeout)
+	assert.Equal(t, 100, transport.MaxIdleConns)
+}
+
+func TestKeepaliveCompatServerMarshalRoundtrip(t *testing.T) {
+	cfg := NewDefaultServerConfig()
+	require.NoError(t, confmap.NewFromStringMap(map[string]any{"idle_timeout": "2m"}).Unmarshal(&cfg))
+
+	marshaled := confmap.New()
+	require.NoError(t, marshaled.Marshal(cfg))
+
+	cfg2 := NewDefaultServerConfig()
+	require.NoError(t, marshaled.Unmarshal(&cfg2), "marshaled output must load without a mixed-config error")
+}
+
+// The same for a config loaded from the new keepalive section: Unmarshal folds
+// the section into the deprecated fields, so the marshaled form is legacy-style
+// and must reload to the same effective settings.
+func TestKeepaliveCompatNewSyntaxMarshalRoundtrip(t *testing.T) {
+	cfg := NewDefaultClientConfig()
+	require.NoError(t, confmap.NewFromStringMap(map[string]any{
+		"keepalive": map[string]any{"idle_conn_timeout": "60s"},
+	}).Unmarshal(&cfg))
+
+	marshaled := confmap.New()
+	require.NoError(t, marshaled.Marshal(cfg))
+
+	cfg2 := NewDefaultClientConfig()
+	require.NoError(t, marshaled.Unmarshal(&cfg2), "marshaled output must load without a mixed-config error")
+
+	transport := compatClientTransport(t, cfg2)
+	assert.Equal(t, 60*time.Second, transport.IdleConnTimeout)
+	assert.Equal(t, 100, transport.MaxIdleConns)
+	assert.False(t, transport.DisableKeepAlives)
+}
+
+// Strict unmarshaling rejects unknown keys on main, but implementing
+// confmap.Unmarshaler on ClientConfig/ServerConfig forfeits this for every
+// embedding component: for squash embedding, confmap's embedded-structs hook
+// decodes sibling fields with unused keys ignored, and for named sections the
+// Unmarshal implementation must use WithIgnoreUnused to support the squash
+// case. These tests document that accepted trade-off. If they start failing,
+// strict checking has been restored (e.g. the Unmarshaler was removed or
+// confmap learned to track unused keys across the hook) and they should be
+// flipped back to asserting an error.
+func TestKeepaliveCompatUnknownKeyIgnoredSquash(t *testing.T) {
+	cfg := namedSquashClientConfig{ClientConfig: NewDefaultClientConfig()}
+	conf := confmap.NewFromStringMap(map[string]any{
+		"endpoint":  "http://localhost:4318",
+		"bogus_key": 1,
+	})
+	assert.NoError(t, conf.Unmarshal(&cfg), "unknown keys are ignored for configs embedding ClientConfig")
+}
+
+func TestKeepaliveCompatUnknownKeyIgnoredNamedSection(t *testing.T) {
+	type outerConfig struct {
+		Egress ClientConfig `mapstructure:"egress"`
+	}
+	cfg := outerConfig{Egress: NewDefaultClientConfig()}
+	conf := confmap.NewFromStringMap(map[string]any{
+		"egress": map[string]any{
+			"endpoint":  "http://localhost:4318",
+			"bogus_key": 1,
+		},
+	})
+	assert.NoError(t, conf.Unmarshal(&cfg), "unknown keys are ignored inside a ClientConfig section")
+}
+
+// ---- known limitations ----
+// Like the unknown-key tests above, the tests below document accepted gaps of
+// the migration design by asserting the degraded behavior, so that any change
+// to it is flagged. Each comment explains the limitation and, where one
+// exists, the workaround.
+
+// Setting Keepalive to None programmatically after unmarshaling cannot disable
+// keep-alives: None is the normal post-unmarshal state, so ToClient falls back
+// to the deprecated fields. Set DisableKeepAlives instead.
+func TestKeepaliveCompatProgrammaticNoneDoesNotDisable(t *testing.T) {
+	cfg := NewDefaultClientConfig()
+	require.NoError(t, confmap.NewFromStringMap(map[string]any{}).Unmarshal(&cfg))
+	cfg.Keepalive = configoptional.None[KeepaliveClientConfig]()
+
+	transport := compatClientTransport(t, cfg)
+	assert.False(t, transport.DisableKeepAlives, "None is indistinguishable from unset; keep-alives stay enabled")
+}
+
+// A disabled client survives a marshal/unmarshal roundtrip, because the
+// carrier for the disable intent is 'disable_keep_alives: true', which
+// marshals. Contrast with the server case below.
+func TestKeepaliveCompatClientDisabledMarshalRoundtrip(t *testing.T) {
+	cfg := NewDefaultClientConfig()
+	require.NoError(t, confmap.NewFromStringMap(map[string]any{
+		"keepalive": map[string]any{"enabled": false},
+	}).Unmarshal(&cfg))
+
+	marshaled := confmap.New()
+	require.NoError(t, marshaled.Marshal(cfg))
+
+	cfg2 := NewDefaultClientConfig()
+	require.NoError(t, marshaled.Unmarshal(&cfg2))
+	transport := compatClientTransport(t, cfg2)
+	assert.True(t, transport.DisableKeepAlives)
+}
+
+// A disabled server does NOT survive a marshal/unmarshal roundtrip: both
+// spellings of disabling fold into 'keep_alives_enabled: false', whose
+// omitempty tag drops the false value from marshaled output, so the reloaded
+// config has keep-alives enabled again. This is inherited from the field's
+// omitempty tag on main; fixing it requires a change in how the field
+// marshals.
+func TestKeepaliveCompatServerDisabledLostOnMarshalRoundtrip(t *testing.T) {
+	cfg := NewDefaultServerConfig()
+	require.NoError(t, confmap.NewFromStringMap(map[string]any{
+		"keepalive": map[string]any{"enabled": false},
+	}).Unmarshal(&cfg))
+	require.False(t, cfg.KeepAlivesEnabled)
+
+	marshaled := confmap.New()
+	require.NoError(t, marshaled.Marshal(cfg))
+	_, hasKey := marshaled.ToStringMap()["keep_alives_enabled"]
+	assert.False(t, hasKey, "the false value is dropped by omitempty")
+
+	cfg2 := NewDefaultServerConfig()
+	require.NoError(t, marshaled.Unmarshal(&cfg2))
+	assert.True(t, cfg2.KeepAlivesEnabled, "the disable intent is lost on reload")
+}
+
+// A config loaded from the 'keepalive' section marshals in the deprecated
+// shape: Unmarshal folds the section into the deprecated fields, and the
+// marshaled output contains only those, so reloading it records deprecation
+// warnings the user never earned. Emitting the new shape instead would require
+// a custom confmap.Marshaler.
+func TestKeepaliveCompatNewSyntaxMarshalsAsDeprecated(t *testing.T) {
+	cfg := NewDefaultClientConfig()
+	require.NoError(t, confmap.NewFromStringMap(map[string]any{
+		"keepalive": map[string]any{"idle_conn_timeout": "60s"},
+	}).Unmarshal(&cfg))
+
+	marshaled := confmap.New()
+	require.NoError(t, marshaled.Marshal(cfg))
+	out := marshaled.ToStringMap()
+	_, hasSection := out["keepalive"]
+	assert.False(t, hasSection, "the marshaled output has no keepalive section")
+	assert.Equal(t, 60*time.Second, out["idle_conn_timeout"])
+
+	cfg2 := NewDefaultClientConfig()
+	require.NoError(t, marshaled.Unmarshal(&cfg2))
+	assert.NotEmpty(t, cfg2.deprecationWarnings, "the roundtripped config reads as deprecated usage")
+}
+
+// Configs loaded from deprecated keys are not comparable to programmatically
+// built ones with the same settings: the recorded warnings live in a private
+// field which reflect.DeepEqual still sees. This is what downstream tests
+// comparing full decoded configs against expected literals trip over; such
+// tests must migrate their fixtures off the deprecated keys.
+func TestKeepaliveCompatDeprecatedConfigBreaksStructCompare(t *testing.T) {
+	decoded := NewDefaultClientConfig()
+	require.NoError(t, confmap.NewFromStringMap(map[string]any{"idle_conn_timeout": "60s"}).Unmarshal(&decoded))
+
+	built := NewDefaultClientConfig()
+	built.IdleConnTimeout = 60 * time.Second
+
+	assert.NotEqual(t, built, decoded, "the private warnings field differs")
+	decoded.deprecationWarnings = nil
+	assert.Equal(t, built, decoded, "everything else is identical")
+}
