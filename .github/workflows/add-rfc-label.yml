@@ -1,6 +1,6 @@
 name: 'Add rfc:approvals-needed label to RFC PRs'
 on:
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] — no PR code is checked out or executed.
     types:
       - opened
       - reopened
