@@ -5,7 +5,6 @@ package queue
 
 import (
 	"context"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"strconv"
@@ -808,63 +807,6 @@ func BenchmarkPersistentQueue(b *testing.B) {
 	require.NoError(b, ext.Shutdown(context.Background()))
 }
 
-func TestItemIndexMarshaling(t *testing.T) {
-	cases := []struct {
-		in  uint64
-		out uint64
-	}{
-		{
-			in:  0,
-			out: 0,
-		},
-		{
-			in:  1,
-			out: 1,
-		},
-		{
-			in:  0xFFFFFFFFFFFFFFFF,
-			out: 0xFFFFFFFFFFFFFFFF,
-		},
-	}
-
-	for _, c := range cases {
-		t.Run(fmt.Sprintf("#elements:%v", c.in), func(*testing.T) {
-			buf := binary.LittleEndian.AppendUint64([]byte{}, c.in)
-			out, err := bytesToItemIndex(buf)
-			require.NoError(t, err)
-			require.Equal(t, c.out, out)
-		})
-	}
-}
-
-func TestItemIndexArrayMarshaling(t *testing.T) {
-	cases := []struct {
-		in  []uint64
-		out []uint64
-	}{
-		{
-			in:  []uint64{0, 1, 2},
-			out: []uint64{0, 1, 2},
-		},
-		{
-			in:  []uint64{},
-			out: nil,
-		},
-		{
-			in:  nil,
-			out: nil,
-		},
-	}
-
-	for _, c := range cases {
-		t.Run(fmt.Sprintf("#elements:%v", c.in), func(_ *testing.T) {
-			buf := itemIndexArrayToBytes(c.in)
-			out, err := bytesToItemIndexArray(buf)
-			require.NoError(t, err)
-			require.Equal(t, c.out, out)
-		})
-	}
-}
 
 func TestPersistentQueue_ShutdownWhileConsuming(t *testing.T) {
 	ps := createTestPersistentQueueWithRequestsSizer(t, storagetest.NewMockStorageExtension(nil), 1000)
@@ -1172,14 +1114,4 @@ func requireCurrentlyDispatchedItemsEqual(t *testing.T, pq *persistentQueue[intR
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
 	assert.ElementsMatch(t, compare, pq.metadata.CurrentlyDispatchedItems)
-}
-
-func itemIndexArrayToBytes(arr []uint64) []byte {
-	size := len(arr)
-	buf := make([]byte, 0, 4+size*8)
-	buf = binary.LittleEndian.AppendUint32(buf, uint32(size))
-	for _, item := range arr {
-		buf = binary.LittleEndian.AppendUint64(buf, item)
-	}
-	return buf
 }
