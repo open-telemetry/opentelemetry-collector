@@ -54,6 +54,20 @@ details on this configuration structure. Other than changing the
 default configuration, the entire `queuebatch` functionality is
 available through this processor, including partitioning and storage.
 
+## Internal telemetry
+
+See [documentation.md](documentation.md) for the generated metric reference.
+
+### Migrating from `batchprocessor` metrics
+
+| `batchprocessor`                                  | `queuebatch`                                         |
+| ------------------------------------------------- | ---------------------------------------------------- |
+| `otelcol_processor_batch_batch_send_size`         | `otelcol_processor_queuebatch_batch_send_size`       |
+| `otelcol_processor_batch_batch_send_size_bytes`   | `otelcol_processor_queuebatch_batch_send_size_bytes` |
+| `otelcol_processor_batch_batch_size_trigger_send` | no equivalent                                        |
+| `otelcol_processor_batch_timeout_trigger_send`    | no equivalent                                        |
+| `otelcol_processor_batch_metadata_cardinality`    | no equivalent                                        |
+
 ## Examples
 
 The following examples show two capabilities that Collector users

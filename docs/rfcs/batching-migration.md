@@ -292,8 +292,8 @@ These are loosely dependent,
    exporters) must declare the opt-out in their `metadata.yaml`.
 2. Introduce the `pkg.exporterhelper.queueBatchEnabled` feature
    gate at Alpha stability. [#15690](https://github.com/open-telemetry/opentelemetry-collector/pull/15690)
-3. Support a configurable metrics prefix to distinguish processor
-   batching from exporter batching
+3. Support injected queue/batch metric operations so processors and exporters
+   connect their generated metrics without rewriting telemetry
    ([#14038](https://github.com/open-telemetry/opentelemetry-collector/issues/14038)).
 4. Implement `queuebatchprocessor`. [#15500](https://github.com/open-telemetry/opentelemetry-collector/pull/15500)
 5. Detect pipelines that combine `batchprocessor` with an
@@ -392,6 +392,10 @@ accomplished during Phase 1:
 - Reject `wait_for_result: true` combined with a configured storage
   extension at configuration validation time (see "Recommendation: no
   error propagation by default" above).
+- Extend the injected telemetry of step 3 to spans and log messages.
+  Injection currently covers metrics only, so `queuebatchprocessor`
+  still emits `exporter/...` spans and `Exporting failed.` log
+  messages produced by exporterhelper.
 
 ## Conclusion
 
