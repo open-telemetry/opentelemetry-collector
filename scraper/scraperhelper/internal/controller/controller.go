@@ -123,6 +123,14 @@ func (sc *Controller[T]) startScraping(ctx context.Context) {
 		for {
 			select {
 			case <-sc.tickerCh:
+				// If sc.scrapeFunc is delayed, sc.tickerCh and sc.done can
+				// both be ready and, without this, we aren't guaranteed to
+				// shutdown.
+				select {
+				case <-sc.done:
+					return
+				default:
+				}
 				_ = sc.scrapeFunc(ctx, sc)
 			case <-sc.done:
 				return
