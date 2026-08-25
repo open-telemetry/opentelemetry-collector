@@ -9,7 +9,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.159.0
 	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.159.0
 	go.uber.org/goleak v1.3.0
-	google.golang.org/grpc v1.83.0
+	google.golang.org/grpc v1.83.1
 )
 
 require (
