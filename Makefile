@@ -81,6 +81,10 @@ for-all:
 	 	$${CMD} ); \
 	done
 
+.PHONY: gobuild
+gobuild:
+	@$(MAKE) for-all-target TARGET="build"
+
 .PHONY: golint
 golint:
 	@$(MAKE) for-all-target TARGET="lint"

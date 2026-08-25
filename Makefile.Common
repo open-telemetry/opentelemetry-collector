@@ -131,3 +131,7 @@ apidiff-check-mod:
 	@for pkg in $(EXTERNAL_PKGS); do \
 		$(SRC_ROOT)/internal/buildscripts/compare-apidiff.sh -p $$pkg -d $(SRC_ROOT)/$(APIDIFF_DATA_DIR) -c || exit 1; \
 	done
+
+.PHONY: build
+build:
+	$(GOCMD) build ./...
