@@ -52,7 +52,8 @@ jobs:
       # each module explicitly instead so CodeQL only compiles.
       - name: Build
         run: |
-          make -j4 gobuild
+          make otelcorecol
+          make ocb
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4.37.8
