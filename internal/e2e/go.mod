@@ -7,7 +7,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/prometheus/client_model v0.6.2
 	github.com/prometheus/common v0.70.1
-	github.com/stretchr/testify v1.12.0
+	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.65.0
 	go.opentelemetry.io/collector/component/componentstatus v0.159.0
 	go.opentelemetry.io/collector/component/componenttest v0.159.0
@@ -51,7 +51,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.11.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
-	google.golang.org/grpc v1.83.0
+	google.golang.org/grpc v1.83.1
 	google.golang.org/protobuf v1.36.12
 )
 
@@ -105,7 +105,6 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector v0.159.0 // indirect
 	go.opentelemetry.io/collector/client v1.65.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.65.0 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v1.65.0 // indirect
@@ -124,6 +123,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.65.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.159.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.159.0 // indirect
+	go.opentelemetry.io/collector/internal/statusutil v0.159.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.159.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.159.0 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.159.0 // indirect
@@ -178,9 +178,8 @@ require (
 	golang.org/x/time v0.15.0 // indirect
 	gonum.org/v1/gonum v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260803160001-6ac0973c030d // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260803160001-6ac0973c030d // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260819154853-08b0e4226688 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apimachinery v0.35.4 // indirect
 	k8s.io/client-go v0.35.4 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
@@ -191,8 +190,6 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.4.2 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
-
-replace go.opentelemetry.io/collector => ../..
 
 replace go.opentelemetry.io/collector/config/configopaque => ../../config/configopaque
 
@@ -333,3 +330,5 @@ replace go.opentelemetry.io/collector/exporter/exporterhelper => ../../exporter/
 replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
 
 replace go.opentelemetry.io/collector/internal/componentalias => ../componentalias
+
+replace go.opentelemetry.io/collector/internal/statusutil => ../statusutil
