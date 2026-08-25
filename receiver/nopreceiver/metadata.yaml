@@ -1,0 +1,14 @@
+display_name: No-op Receiver
+type: nop
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  codeowners:
+    active:
+      - evan-bradley
+  class: receiver
+  stability:
+    beta: [traces, metrics, logs]
+    alpha: [profiles]
+  distributions: [core, contrib]

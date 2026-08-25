@@ -1,0 +1,7 @@
+service:
+    extensions: [nop2]
+    pipelines:
+        traces:
+            receivers: [nop2]
+            processors: [nop]
+            exporters: [nop2]

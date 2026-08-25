@@ -1,0 +1,216 @@
+display_name: Service
+type: service
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  class: pkg
+  stability:
+    development: [traces, metrics, logs, profiles]
+  distributions: [core, contrib]
+
+telemetry:
+  metrics:
+    connector.consumed.items:
+      prefix: otelcol.
+      enabled: true
+      stability: development
+      description: Number of items passed to the connector.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    connector.consumed.size:
+      prefix: otelcol.
+      enabled: false
+      stability: development
+      description: Size of items passed to the connector, based on ProtoMarshaler.Sizer.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    connector.produced.items:
+      prefix: otelcol.
+      enabled: true
+      stability: development
+      description: Number of items emitted from the connector.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    connector.produced.size:
+      prefix: otelcol.
+      enabled: false
+      stability: development
+      description: Size of items emitted from the connector, based on ProtoMarshaler.Sizer.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    exporter.consumed.items:
+      prefix: otelcol.
+      enabled: true
+      stability: development
+      description: Number of items passed to the exporter.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    exporter.consumed.size:
+      prefix: otelcol.
+      enabled: false
+      stability: development
+      description: Size of items passed to the exporter, based on ProtoMarshaler.Sizer.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    process_cpu_seconds:
+      enabled: true
+      stability: alpha
+      description: Total CPU user and system time in seconds
+      unit: s
+      sum:
+        async: true
+        value_type: double
+        monotonic: true
+
+    process_memory_rss:
+      enabled: true
+      stability: alpha
+      description: Total physical memory (resident set size)
+      unit: By
+      gauge:
+        async: true
+        value_type: int
+
+    process_runtime_heap_alloc_bytes:
+      enabled: true
+      stability: alpha
+      description: Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc')
+      unit: By
+      gauge:
+        async: true
+        value_type: int
+
+    process_runtime_total_alloc_bytes:
+      enabled: true
+      stability: alpha
+      description: Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')
+      unit: By
+      sum:
+        async: true
+        value_type: int
+        monotonic: true
+
+    process_runtime_total_sys_memory_bytes:
+      enabled: true
+      stability: alpha
+      description: Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys')
+      unit: By
+      gauge:
+        async: true
+        value_type: int
+
+    process_uptime:
+      enabled: true
+      stability: alpha
+      description: Uptime of the process
+      unit: s
+      sum:
+        async: true
+        value_type: double
+        monotonic: true
+
+    processor.consumed.items:
+      prefix: otelcol.
+      enabled: true
+      stability: development
+      description: Number of items passed to the processor.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    processor.consumed.size:
+      prefix: otelcol.
+      enabled: false
+      stability: development
+      description: Size of items passed to the processor, based on ProtoMarshaler.Sizer.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    processor.produced.items:
+      prefix: otelcol.
+      enabled: true
+      stability: development
+      description: Number of items emitted from the processor.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    processor.produced.size:
+      prefix: otelcol.
+      enabled: false
+      stability: development
+      description: Size of items emitted from the processor, based on ProtoMarshaler.Sizer.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    receiver.produced.items:
+      prefix: otelcol.
+      enabled: true
+      stability: development
+      description: Number of items emitted from the receiver.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    receiver.produced.size:
+      prefix: otelcol.
+      enabled: false
+      stability: development
+      description: Size of items emitted from the receiver, based on ProtoMarshaler.Sizer.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+
+feature_gates:
+  - id: service.AllowNoPipelines
+    description: 'Allow starting the Collector without starting any pipelines.'
+    stage: alpha
+    from_version: 'v0.122.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/pull/12613'
+  - id: service.partialReload
+    description: 'Controls whether configuration changes trigger a partial reload that rebuilds only the affected components.'
+    stage: alpha
+    from_version: 'v0.157.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/partial-reload.md'
+  - id: service.partialReloadReceivers
+    description: 'Controls whether receiver-only configuration changes restart only the receivers.'
+    stage: beta
+    from_version: 'v0.157.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/partial-reload.md'
+  - id: service.profilesSupport
+    description: 'Controls whether profiles support can be enabled'
+    stage: alpha
+    from_version: 'v0.112.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/pull/11477'
+  - id: telemetry.newPipelineTelemetry
+    description: 'Injects component-identifying scope attributes in internal Collector metrics'
+    stage: alpha
+    from_version: 'v0.123.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/component-universal-telemetry.md'

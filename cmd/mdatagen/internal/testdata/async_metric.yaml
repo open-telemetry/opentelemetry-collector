@@ -1,0 +1,24 @@
+type: metricreceiver
+
+status:
+  class: receiver
+  stability:
+    beta: [traces]
+    stable: [metrics]
+  distributions: [contrib]
+  warnings:
+    - Any additional information that should be brought to the consumer's attention
+
+metrics:
+  metric:
+    enabled: true
+    description: Description.
+    stability: development
+    unit: s
+    gauge:
+      value_type: double
+      async: true
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

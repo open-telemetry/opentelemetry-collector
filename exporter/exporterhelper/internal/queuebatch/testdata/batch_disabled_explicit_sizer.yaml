@@ -1,0 +1,5 @@
+enabled: true
+sizer: requests
+# batch is explicitly disabled
+batch:
+  enabled: false

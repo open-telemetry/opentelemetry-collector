@@ -1,0 +1,71 @@
+name: codeowners
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/CODEOWNERS"
+      - "**/metadata.yaml"
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+*"
+  pull_request_target: # zizmor: ignore[dangerous-triggers] — intentional see NOTE below
+    paths:
+      - ".github/CODEOWNERS"
+      - "**/metadata.yaml"
+    types:
+      - opened
+      - synchronize
+      - edited
+      - reopened
+env:
+  # Make sure to exit early if cache segment download times out after 2 minutes.
+  # We limit cache download as a whole to 5 minutes.
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
+
+# Do not cancel this workflow on main. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/16616
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions: read-all
+
+jobs:
+  check-codeowners:
+    timeout-minutes: 30
+    runs-on: ubuntu-24.04
+    if: ${{ github.event.pull_request.user.login != 'dependabot[bot]' && github.repository == 'open-telemetry/opentelemetry-collector' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        id: go-setup
+        with:
+          go-version: oldstable
+          cache-dependency-path: "**/*.sum"
+          cache: false
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{github.event.pull_request.head.ref}}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
+          path: pr
+          persist-credentials: false
+          allow-unsafe-pr-checkout: true
+
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: otelbot-token
+        with:
+          client-id: ${{ vars.OTELBOT_CLIENT_ID }}
+          private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
+          permission-members: read
+
+      # NOTE: the make command below intentionally uses the Makefile from the
+      # target branch, and not the PR checkout, since it runs with the
+      # pull_request_target event and has elevated permissions.
+      - name: Gen CODEOWNERS
+        run: |
+          GITHUB_TOKEN=${STEPS_OTELBOT_TOKEN_OUTPUTS_TOKEN} GITHUBGEN_ARGS="-folder=pr" make generate-codeowners
+          git -C pr diff -s --exit-code || (echo 'Generated code is out of date, please run "make generate-codeowners" or apply this diff and commit the changes in this PR.' && git -C pr diff && exit 1)
+        env:
+          STEPS_OTELBOT_TOKEN_OUTPUTS_TOKEN: ${{ steps.otelbot-token.outputs.token }}

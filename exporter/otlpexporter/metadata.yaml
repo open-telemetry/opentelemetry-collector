@@ -1,0 +1,16 @@
+display_name: OTLP gRPC Exporter
+type: otlp_grpc
+deprecated_type: otlp
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  class: exporter
+  stability:
+    stable: [traces, metrics, logs]
+    alpha: [profiles]
+  distributions: [core, contrib, k8s, otlp]
+
+tests:
+  config:
+    endpoint: otelcol:4317

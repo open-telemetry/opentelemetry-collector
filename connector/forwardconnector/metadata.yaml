@@ -1,0 +1,11 @@
+display_name: Forward Connector
+type: forward
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  class: connector
+  stability:
+    alpha: [profiles_to_profiles]
+    beta: [traces_to_traces, metrics_to_metrics, logs_to_logs]
+  distributions: [core, contrib, k8s]

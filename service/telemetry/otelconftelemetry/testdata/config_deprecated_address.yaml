@@ -1,0 +1,5 @@
+logs:
+  level: "info"
+metrics:
+  level: "basic"
+  address: "localhost:6666"

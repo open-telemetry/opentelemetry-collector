@@ -1,0 +1,27 @@
+type: sample
+status:
+  class: receiver
+  stability:
+    stable: [metrics]
+
+resource_attributes:
+  host.id:
+    description: The host identifier
+    type: string
+    enabled: true
+  host.name:
+    description: The hostname
+    type: string
+    enabled: true
+
+entities:
+  - type: host
+    brief: A host instance.
+    stability: stable
+    identity:
+      - ref: host.id
+  - type: host
+    brief: Another host instance.
+    stability: stable
+    identity:
+      - ref: host.name

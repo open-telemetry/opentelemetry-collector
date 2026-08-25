@@ -1,0 +1,3 @@
+protocols:
+  http:
+    traces_url_path: ":invalid"

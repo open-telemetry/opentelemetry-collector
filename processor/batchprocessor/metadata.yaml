@@ -1,0 +1,99 @@
+display_name: Batch Processor
+type: batch
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  class: processor
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [core, contrib, k8s]
+
+tests:
+
+telemetry:
+  metrics:
+    processor_batch_batch_send_size:
+      enabled: true
+      stability: development
+      description: Number of units in the batch
+      unit: "{unit}"
+      histogram:
+        value_type: int
+        bucket_boundaries:
+          [
+            10,
+            25,
+            50,
+            75,
+            100,
+            250,
+            500,
+            750,
+            1000,
+            2000,
+            3000,
+            4000,
+            5000,
+            6000,
+            7000,
+            8000,
+            9000,
+            10000,
+            20000,
+            30000,
+            50000,
+            100000,
+          ]
+    processor_batch_batch_send_size_bytes:
+      enabled: true
+      stability: development
+      description: Number of bytes in batch that was sent. Only available on detailed level.
+      unit: By
+      histogram:
+        value_type: int
+        bucket_boundaries:
+          [
+            128,
+            256,
+            512,
+            1024,
+            2048,
+            4096,
+            8192,
+            16384,
+            32768,
+            65536,
+            131072,
+            262144,
+            524288,
+            1048576,
+            2097152,
+            4194304,
+            8388608,
+            16777216,
+          ]
+    processor_batch_batch_size_trigger_send:
+      enabled: true
+      stability: development
+      description: Number of times the batch was sent due to a size trigger
+      unit: "{time}"
+      sum:
+        value_type: int
+        monotonic: true
+    processor_batch_metadata_cardinality:
+      enabled: true
+      stability: development
+      description: Number of distinct metadata value combinations being processed
+      unit: "{combination}"
+      sum:
+        value_type: int
+        async: true
+    processor_batch_timeout_trigger_send:
+      enabled: true
+      stability: development
+      description: Number of times the batch was sent due to a timeout trigger
+      unit: "{time}"
+      sum:
+        value_type: int
+        monotonic: true

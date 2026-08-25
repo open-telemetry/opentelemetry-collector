@@ -1,0 +1,7 @@
+type: foobar
+
+status:
+  disable_codecov_badge: true
+  class: connector
+  stability:
+    beta: [traces_to_profiles, metrics_to_profiles, logs_to_profiles, profiles_to_traces, profiles_to_metrics, profiles_to_logs, profiles_to_profiles]

@@ -1,0 +1,317 @@
+{{- define "metric-documentation" -}}
+{{- $metricName := . }}
+{{- $metric := $metricName | metricInfo -}}
+
+### {{ $metricName }}
+
+{{ trimRight $metric.Description "\n" }}
+
+{{- if $metric.ExtendedDocumentation }}
+
+{{ trimRight $metric.ExtendedDocumentation "\n" }}
+
+{{- end }}
+
+| Unit | Metric Type | Value Type |{{ if $metric.Data.HasAggregated }} Aggregation Temporality |{{ end }}{{ if $metric.Data.HasMonotonic }} Monotonic |{{ end }}{{ if $metric.Stability }} Stability |{{ end }}{{ if $metric.SemanticConvention }} Semantic Convention |{{ end }}
+| ---- | ----------- | ---------- |{{ if $metric.Data.HasAggregated }} ----------------------- |{{ end }}{{ if $metric.Data.HasMonotonic }} --------- |{{ end }}{{ if $metric.Stability }} --------- |{{ end }}{{ if $metric.SemanticConvention }} ------------------- |{{ end }}
+| {{ $metric.Unit }} | {{ $metric.Data.Type }} | {{ $metric.Data.MetricValueType }} |
+{{- if $metric.Data.HasAggregated }} {{ $metric.Data.AggregationTemporality }} |{{ end }}
+{{- if $metric.Data.HasMonotonic }} {{ $metric.Data.Monotonic }} |{{ end }}
+{{- if $metric.Stability }} {{ $metric.Stability }}{{ if $metric.Deprecated }} since {{ $metric.Deprecated.Since }}{{ end }} |{{ end }}
+{{- if $metric.SemanticConvention }} [{{ $metricName }}]({{ $metric.SemanticConvention.SemanticConventionRef }}) |{{ end }}
+{{- if $metric.Deprecated }}{{ if $metric.Deprecated.Note }}
+
+**Deprecation note**: {{ $metric.Deprecated.Note }}
+{{- end }}{{ end }}
+
+{{- if $metric.Versioned }}
+
+Emitted Name: `{{ $metricName.EmittedName }}`
+
+{{- end }}
+
+{{- if $metric.Migration }}
+
+#### Migration
+
+- Target Metric: `{{ $metric.Migration.To }}`
+- Disable Old Gate: `{{ $metric.Migration.ThroughGates.DisableOld }}`
+- Enable New Gate: `{{ $metric.Migration.ThroughGates.EnableNew }}`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+
+{{- end }}
+
+{{- if $metric.Attributes }}
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+{{- range $metric.Attributes }}
+{{- $attribute := . | attributeInfo }}
+| {{ $attribute.Name }} | {{ $attribute.Description }} |
+{{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} | {{ $attribute.RequirementLevel }} |{{ if $attribute.SemanticConvention }} [{{ $attribute.Name }}]({{ $attribute.SemanticConvention.SemanticConventionRef }}) |{{ else }} - |{{ end }}
+{{- end }}
+
+{{- end }}
+
+{{- end -}}
+
+{{- define "event-documentation" -}}
+{{- $eventName := . }}
+{{- $event := $eventName | eventInfo -}}
+
+### {{ $eventName }}
+
+{{ trimRight $event.Description "\n" }}
+
+{{- if $event.ExtendedDocumentation }}
+
+{{ trimRight $event.ExtendedDocumentation "\n" }}
+
+{{- end }}
+
+{{- if $event.Attributes }}
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+{{- range $event.Attributes }}
+{{- $attribute := . | attributeInfo }}
+| {{ $attribute.Name }} | {{ $attribute.Description }} |
+{{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} |{{ if $attribute.SemanticConvention }} [{{ $attribute.Name }}]({{ $attribute.SemanticConvention.SemanticConventionRef }}) |{{ else }} - |{{ end }}
+{{- end }}
+
+{{- end }}
+
+{{- end -}}
+
+{{- define "telemetry-documentation" -}}
+{{- $metricName := . }}
+{{- $metric := $metricName | telemetryInfo -}}
+
+### {{ if $metric.Prefix -}}{{ $metric.Prefix }}{{- else -}}otelcol_{{- end -}}{{ $metricName }}
+
+{{ $metric.Description }}
+{{- if $metric.Deprecated }}
+
+> **Deprecated since {{ $metric.Deprecated.Since}}**
+{{- if $metric.Deprecated.Note }}
+> {{ $metric.Deprecated.Note }}
+{{- end }}
+{{- end }}
+
+{{- if $metric.ExtendedDocumentation }}
+
+{{ trimRight $metric.ExtendedDocumentation "\n" }}
+
+{{- end }}
+
+| Unit | Metric Type | Value Type |{{ if $metric.Data.HasMonotonic }} Monotonic |{{ end }}{{ if $metric.Stability }} Stability |{{ end }}{{ if $metric.SemanticConvention }} Semantic Convention |{{ end }}
+| ---- | ----------- | ---------- |{{ if $metric.Data.HasMonotonic }} --------- |{{ end }}{{ if $metric.Stability }} --------- |{{ end }}{{ if $metric.SemanticConvention }} ------------------- |{{ end }}
+| {{ $metric.Unit }} | {{ $metric.Data.Type }} | {{ $metric.Data.MetricValueType }} |
+{{- if $metric.Data.HasMonotonic }} {{ $metric.Data.Monotonic }} |{{ end }}
+{{- if $metric.Stability }} {{ $metric.Stability }}{{ if $metric.Deprecated }} since {{ $metric.Deprecated.Since }}{{ end }} |{{ end }}
+{{- if $metric.SemanticConvention }} [{{ $metricName }}]({{ $metric.SemanticConvention.SemanticConventionRef }}) |{{ end }}
+{{- if $metric.Deprecated }}{{ if $metric.Deprecated.Note }}
+
+**Deprecation note**: {{ $metric.Deprecated.Note }}
+{{- end }}{{ end }}
+
+{{- if $metric.Attributes }}
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+{{- range $metric.Attributes }}
+{{- $attribute := . | attributeInfo }}
+| {{ $attribute.Name }} | {{ $attribute.Description }} |
+{{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} |{{ if $attribute.SemanticConvention }} [{{ $attribute.Name }}]({{ $attribute.SemanticConvention.SemanticConventionRef }}) |{{ else }} - |{{ end }}
+{{- end }}
+
+{{- end }}
+
+{{- end -}}
+
+[comment]: <> (Code generated by mdatagen. DO NOT EDIT.)
+
+# {{ .Type }}
+
+{{- if .Parent }}
+
+**Parent Component:** {{ .Parent }}
+{{- end }}
+
+{{- if .Metrics }}
+
+## Default Metrics
+
+The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: false
+```
+
+{{- end }}
+
+{{- range $metricName, $metric := .Metrics }}
+{{- if $metric.Enabled }}
+
+{{ template "metric-documentation" $metricName }}
+
+{{- end }}
+{{- end }}
+
+{{- $optionalMetricSeen := false }}
+{{- range $metricName, $metric := .Metrics }}
+{{- if not $metric.Enabled }}
+{{- if not $optionalMetricSeen }}
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+{{- end }}
+{{- $optionalMetricSeen = true }}
+
+{{ template "metric-documentation" $metricName }}
+
+{{- end }}
+{{- end }}
+
+{{- if .Events }}
+
+## Default Events
+
+The following events are emitted by default. Each of them can be disabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: false
+```
+
+{{- range $eventName, $event := .Events }}
+{{- if $event.Enabled }}
+
+{{ template "event-documentation" $eventName }}
+
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- $optionalEventSeen := false }}
+{{- range $eventName, $event := .Events }}
+{{- if not $event.Enabled }}
+{{- if not $optionalEventSeen }}
+
+## Optional Events
+
+The following events are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: true
+```
+
+{{- end }}
+{{- $optionalEventSeen = true }}
+
+{{ template "event-documentation" $eventName }}
+
+{{- end }}
+{{- end }}
+
+{{- if .ResourceAttributes }}
+
+## Resource Attributes
+
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+{{- range $attributeName, $attribute := .ResourceAttributes }}
+| {{ $attributeName }} | {{ $attribute.Description }} |
+{{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} | {{ $attribute.Enabled }} |{{ if $attribute.SemanticConvention }} [{{ $attributeName }}]({{ $attribute.SemanticConvention.SemanticConventionRef }}) |{{ else }} - |{{ end }}{{ if $attribute.Stability }} {{ $attribute.Stability }} |{{ else }} - |{{ end }}
+{{- end }}
+
+{{- end }}
+
+{{- if .Entities }}
+
+## Entities
+
+The following entities are defined for this component:
+
+{{- range $entity := .Entities }}
+
+### {{ $entity.Type }}
+
+{{ $entity.Brief }}
+
+{{- if $entity.Stability }}
+
+**Stability:** {{ $entity.Stability }}
+{{- end }}
+
+{{- if $entity.Identity }}
+
+**Identifying Attributes:**
+{{- range $entity.Identity }}
+- `{{ .Ref }}`
+{{- end }}
+{{- end }}
+
+{{- if $entity.Description }}
+
+**Descriptive Attributes:**
+{{- range $entity.Description }}
+- `{{ .Ref }}`
+{{- end }}
+{{- end }}
+
+{{- end }}
+
+{{- end }}
+
+{{- if .Telemetry.Metrics }}
+
+## Internal Telemetry
+
+The following telemetry is emitted by this component.
+
+{{- range $metricName, $metric := .Telemetry.Metrics }}
+{{- if $metric.Enabled }}
+
+{{ template "telemetry-documentation" $metricName }}
+
+{{- end }}
+{{- end }}
+
+{{- end }}
+
+{{- if .FeatureGates }}
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+{{- range .FeatureGates }}
+| `{{ .ID }}` | {{ .Stage }} | {{ .Description }} | {{ if .FromVersion }}{{ .FromVersion }}{{ else }}N/A{{ end }} | {{ if .ToVersion }}{{ .ToVersion }}{{ else }}N/A{{ end }} | {{ if .ReferenceURL }}[Link]({{ .ReferenceURL }}){{ else }}N/A{{ end }} |
+{{- end }}
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
+
+{{- end }}

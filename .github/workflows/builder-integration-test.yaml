@@ -1,0 +1,53 @@
+name: Builder - Integration tests
+
+on:
+  # on changes to the main branch touching the builder
+  push:
+    branches: [main]
+
+  # on PRs touching the builder
+  pull_request:
+    branches: [main]
+
+  # once a day at 6:17 AM UTC
+  schedule:
+    - cron: "17 6 * * *"
+
+  # manual execution
+  workflow_dispatch:
+
+  merge_group:
+    types: [checks_requested]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+permissions: read-all
+
+jobs:
+  integration-test:
+    name: Integration test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: oldstable
+          cache: false
+
+      - name: Cache Go
+        id: go-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
+
+      - name: Test
+        run: make builder-integration-test

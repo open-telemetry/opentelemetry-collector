@@ -1,0 +1,26 @@
+name: 'Ping code owners on a new issue'
+on:
+  issues:
+    types: [opened]
+
+permissions: read-all
+
+jobs:
+  ping-owners-on-new-issue:
+    permissions:
+      issues: write
+    runs-on: ubuntu-24.04
+    if: ${{ github.repository_owner == 'open-telemetry' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run ping-codeowners-on-new-issue.sh
+        run: ./.github/workflows/scripts/ping-codeowners-on-new-issue.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ github.event.issue.number }}
+          TITLE: ${{ github.event.issue.title }}
+          BODY: ${{ github.event.issue.body }}
+          OPENER: ${{ github.event.issue.user.login }}

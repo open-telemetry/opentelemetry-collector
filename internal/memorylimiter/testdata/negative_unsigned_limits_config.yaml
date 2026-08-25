@@ -1,0 +1,13 @@
+# check_interval is the time between measurements of memory usage for the
+# purposes of avoiding going over the limits. Defaults to zero, so no
+# checks will be performed. Values below 1 second are not recommended since
+# it can result in unnecessary CPU consumption.
+check_interval: 5s
+
+# Maximum amount of memory, in MiB, targeted to be allocated by the process heap.
+# Note that typically the total memory usage of process will be about 50MiB higher
+# than this value.
+limit_mib: -2000
+
+# The maximum, in MiB, spike expected between the measurements of memory usage.
+spike_limit_mib: -2300

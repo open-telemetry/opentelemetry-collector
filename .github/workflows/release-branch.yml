@@ -1,0 +1,53 @@
+name: Automation - Release Branch
+
+on:
+  push:
+    tags:
+      # Trigger on beta version tags (0.x.x series) to create release branch
+      # This pattern matches: v0.{minor}.{patch} for new releases and bugfix releases
+      - 'v0.[0-9]+.[0-9]+'
+      - 'v0.[0-9]+.[0-9]+-*' # Also support release candidates if needed
+
+permissions:
+  contents: read
+
+jobs:
+  release-branch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: oldstable
+          cache: false
+
+      - name: Cache Go
+        id: go-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
+          lookup-only: true
+
+      - name: Setup Git config
+        run: |
+          git config --global user.name "otelbot"
+          git config --global user.email "197425009+otelbot@users.noreply.github.com"
+
+      - name: Run release-branch.sh
+        run: |
+          ./.github/workflows/scripts/release-branch.sh
+        env:
+          UPSTREAM_REMOTE_NAME: "origin"
+          MAIN_BRANCH_NAME: "main"
+          GITHUB_REF: ${{ github.ref }}

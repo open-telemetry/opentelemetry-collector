@@ -1,0 +1,10 @@
+test_map:
+  extra: "some string"
+  extra_map:
+    recv.1: "some map value_1"
+    recv.2: "some map value_2"
+  extra_list_map:
+    - { recv.1: "some list map value_1",recv.2: "some list map value_2" }
+  extra_list:
+    - "some list value_1"
+    - "some list value_2"

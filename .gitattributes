@@ -1,0 +1,9 @@
+# This file is documented at https://git-scm.com/docs/gitattributes.
+# Linguist-specific attributes are documented at
+# https://github.com/github/linguist.
+
+go.sum linguist-generated=true
+
+# Avoid git status and other tools (lint, fmt) reporting whitespace differences
+# on Windows machines by ensuring that `lf` on text files are not converted to `crlf`.
+* text=auto eol=lf

@@ -1,0 +1,12 @@
+# Yaml form of the configuration for Filters
+# This configuration can be embedded into other component's yamls
+# The top level here are just test names and do not represent part of the actual configuration.
+
+invalid/regexp:
+  - regexp: "(.*["
+invalid/config_empty:
+  - regexp: ""
+    strict: ""
+invalid/config_both_set:
+  - regexp: "1"
+    strict: "1"

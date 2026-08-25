@@ -1,0 +1,5 @@
+enabled: true
+queue_size: 2000 
+batch:
+  # sizer is NOT overridden here by parent sizer, since parent sizer is not set
+  min_size: 100 

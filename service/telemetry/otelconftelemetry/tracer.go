@@ -1,0 +1,104 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package otelconftelemetry // import "go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.opentelemetry.io/contrib/propagators/b3"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/embedded"
+	"go.opentelemetry.io/otel/trace/noop"
+	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/service/telemetry"
+)
+
+const (
+	// supported trace propagators
+	traceContextPropagator = "tracecontext"
+	b3Propagator           = "b3"
+)
+
+func createTracerProvider(
+	ctx context.Context,
+	set telemetry.TracerSettings,
+	componentConfig component.Config,
+) (telemetry.TracerProvider, error) {
+	cfg := componentConfig.(*Config)
+	if cfg.Traces.MigratedFromV02 {
+		set.Logger.Warn("Telemetry traces configuration is using the deprecated v0.2.0 Declarative Configuration format, please migrate to the v0.3.0 format",
+			zap.String("url", "https://opentelemetry.io/docs/specs/otel/configuration/#declarative-configuration"))
+	}
+	resourceConfig, err := createFixedResourceConfig(&cfg.Resource, set.Resource)
+	if err != nil {
+		return nil, err
+	}
+
+	if cfg.Traces.Level == configtelemetry.LevelNone || len(cfg.Traces.Processors) == 0 {
+		set.Logger.Info("Internal trace telemetry disabled")
+		return &noopNoContextTracerProvider{}, nil
+	}
+
+	propagator, err := textMapPropagatorFromConfig(cfg.Traces.Propagators)
+	if err != nil {
+		return nil, fmt.Errorf("error creating propagator: %w", err)
+	}
+	otel.SetTextMapPropagator(propagator)
+
+	sdk, err := otelconf.NewSDK(otelconf.WithContext(ctx), otelconf.WithOpenTelemetryConfiguration(otelconf.OpenTelemetryConfiguration{
+		Resource:       resourceConfig,
+		TracerProvider: &cfg.Traces.TracerProvider,
+	}))
+	if err != nil {
+		return nil, err
+	}
+	return sdk.TracerProvider().(telemetry.TracerProvider), nil
+}
+
+var errUnsupportedPropagator = errors.New("unsupported trace propagator")
+
+type noopNoContextTracer struct {
+	embedded.Tracer
+}
+
+var noopSpan = noop.Span{}
+
+func (n *noopNoContextTracer) Start(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
+	return ctx, noopSpan
+}
+
+type noopNoContextTracerProvider struct {
+	embedded.TracerProvider
+}
+
+func (n *noopNoContextTracerProvider) Shutdown(_ context.Context) error {
+	return nil
+}
+
+func (n *noopNoContextTracerProvider) Tracer(_ string, _ ...trace.TracerOption) trace.Tracer {
+	return &noopNoContextTracer{}
+}
+
+func textMapPropagatorFromConfig(props []string) (propagation.TextMapPropagator, error) {
+	var textMapPropagators []propagation.TextMapPropagator
+	for _, prop := range props {
+		switch prop {
+		case traceContextPropagator:
+			textMapPropagators = append(textMapPropagators, propagation.TraceContext{})
+		case b3Propagator:
+			textMapPropagators = append(textMapPropagators, b3.New())
+		default:
+			return nil, errUnsupportedPropagator
+		}
+	}
+	return propagation.NewCompositeTextMapPropagator(textMapPropagators...), nil
+}

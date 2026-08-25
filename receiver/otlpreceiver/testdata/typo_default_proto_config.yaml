@@ -1,0 +1,4 @@
+# cspell:ignore htttp
+protocols:
+  grpc:
+  htttp:

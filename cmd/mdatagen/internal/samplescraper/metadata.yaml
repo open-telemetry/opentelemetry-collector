@@ -1,0 +1,271 @@
+# Sample metadata file with all available configurations for a scraper.
+
+type: sample
+display_name: Sample Scraper
+description: This scraper is used for testing purposes to check the output of mdatagen.
+override_value_enabled: true
+github_project: open-telemetry/opentelemetry-collector
+
+sem_conv_version: 1.40.0
+
+status:
+  disable_codecov_badge: true
+  class: scraper
+  stability:
+    stable: [metrics]
+    development: [logs, profiles]
+  distributions: []
+  unsupported_platforms: [freebsd, illumos]
+  codeowners:
+    active: [dmitryax]
+  warnings:
+    - Any additional information that should be brought to the consumer's attention
+
+exported_configs:
+  sample_pkg:
+    $ref: ../samplepkg.sample_config
+
+config:
+  type: object
+  description: Configuration for the Sample Scraper.
+  properties:
+    controller_config:
+      $ref: /scraper/scraperhelper.controller_config
+      embed: true
+      go_struct:
+        anonymous: true
+    metrics_builder_config:
+      $ref: ./internal/metadata.metrics_builder_config
+      embed: true
+      go_struct:
+        anonymous: true
+    component:
+      type: component_id
+      description: Identifies the scraper, used for telemetry and logging.
+      go_struct:
+        field_name: ComponentID
+    job_name:
+      description: Name of the scrape job, used to identify the source in telemetry.
+      type: string
+      minLength: 1
+      maxLength: 255
+      pattern: "^[a-zA-Z0-9_.-]+$"
+      default: "test_job"
+      go_struct:
+        custom_validator:
+    targets:
+      description: List of targets to scrape metrics from.
+      x-pointer: true
+      type: slice
+      values:
+        type: object
+        properties:
+          interval:
+            type: duration
+            x-optional: true
+            default: 10s
+          labels:
+            description: Static key-value labels attached to all metrics from this target.
+            type: map
+            values:
+              type: string
+            default:
+              option1: value1
+              option2: value2
+          retry_count:
+            description: Number of retry attempts for failed scrapes.
+            type: int
+            default: 3
+            minimum: 0
+            maximum: 10
+          timeout_seconds:
+            description: Timeout in seconds for each scrape request.
+            type: double
+            default: 5.0
+            exclusiveMinimum: 0
+            exclusiveMaximum: 30
+        required: [labels]
+      default:
+        - {} # one item with default values
+    log_level:
+      description: Logging level for the scraper.
+      type: string
+      enum: [debug, info, warn, error]
+      default: info
+  required: [job_name, targets]
+
+resource_attributes:
+  map.resource.attr:
+    description: Resource attribute with a map value.
+    type: map
+    enabled: true
+
+  optional.resource.attr:
+    description: Explicitly disabled ResourceAttribute.
+    type: string
+    enabled: false
+
+  slice.resource.attr:
+    description: Resource attribute with a slice value.
+    type: slice
+    enabled: true
+
+  string.enum.resource.attr:
+    description: Resource attribute with a known set of string values.
+    type: string
+    enum: [one, two]
+    enabled: true
+
+  string.resource.attr:
+    description: Resource attribute with any string value.
+    type: string
+    enabled: true
+
+  string.resource.attr_disable_warning:
+    description: Resource attribute with any string value.
+    type: string
+    enabled: true
+    warnings:
+      if_enabled_not_set: This resource_attribute will be disabled by default soon.
+
+  string.resource.attr_remove_warning:
+    description: Resource attribute with any string value.
+    type: string
+    enabled: false
+    warnings:
+      if_configured: This resource_attribute is deprecated and will be removed soon.
+
+  string.resource.attr_to_be_removed:
+    description: Resource attribute with any string value.
+    type: string
+    enabled: true
+    warnings:
+      if_enabled: This resource_attribute is deprecated and will be removed soon.
+
+attributes:
+  boolean_attr:
+    description: Attribute with a boolean value.
+    type: bool
+
+  # This 2nd boolean attribute allows us to test both values for boolean attributes,
+  # as test values are based on the parity of the attribute name length.
+  boolean_attr2:
+    description: Another attribute with a boolean value.
+    type: bool
+
+  enum_attr:
+    description: Attribute with a known set of string values.
+    type: string
+    enum: [red, green, blue]
+
+  map_attr:
+    description: Attribute with a map value.
+    type: map
+
+  overridden_int_attr:
+    name_override: state
+    description: Integer attribute with overridden name.
+    type: int
+
+  slice_attr:
+    description: Attribute with a slice value.
+    type: slice
+
+  string_attr:
+    description: Attribute with any string value.
+    type: string
+
+metrics:
+  default.metric:
+    enabled: true
+    description: Monotonic cumulative sum int metric enabled by default.
+    extended_documentation: The metric will be become optional soon.
+    stability: development
+    unit: s
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes:
+      [string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr]
+    warnings:
+      if_enabled_not_set: This metric will be disabled by default soon.
+
+  default.metric.to_be_removed:
+    enabled: true
+    description: "[DEPRECATED] Non-monotonic delta sum double metric enabled by default."
+    extended_documentation: The metric will be removed soon.
+    stability: deprecated
+    deprecated:
+      since: "1.0.0"
+      note: "This metric will be removed"
+    unit: s
+    sum:
+      value_type: double
+      monotonic: false
+      aggregation_temporality: delta
+    warnings:
+      if_enabled: This metric is deprecated and will be removed soon.
+
+  metric.input_type:
+    enabled: true
+    stability: development
+    description: Monotonic cumulative sum int metric with string input_type enabled by default.
+    unit: s
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes:
+      [string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr]
+
+  optional.metric:
+    enabled: false
+    description: "[DEPRECATED] Gauge double metric disabled by default."
+    stability: deprecated
+    deprecated:
+      since: "1.0.0"
+      note: "This metric will be removed"
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [string_attr, boolean_attr, boolean_attr2]
+    warnings:
+      if_configured: This metric is deprecated and will be removed soon.
+
+  optional.metric.empty_unit:
+    enabled: false
+    description: "[DEPRECATED] Gauge double metric disabled by default."
+    stability: deprecated
+    deprecated:
+      since: "1.0.0"
+      note: "This metric will be removed"
+    unit: ""
+    gauge:
+      value_type: double
+    attributes: [string_attr, boolean_attr]
+    warnings:
+      if_configured: This metric is deprecated and will be removed soon.
+
+  reaggregate.metric:
+    enabled: true
+    description: Metric for testing spatial reaggregation
+    unit: "1"
+    stability: beta
+    gauge:
+      value_type: double
+    attributes: [string_attr, boolean_attr]
+
+  system.cpu.time:
+    enabled: true
+    stability: beta
+    description: Monotonic cumulative sum int metric enabled by default.
+    extended_documentation: The metric will be become optional soon.
+    unit: s
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    semantic_convention:
+      ref: system/system-metrics.md#metric-systemcputime

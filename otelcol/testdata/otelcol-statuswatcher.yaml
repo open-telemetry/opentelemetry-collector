@@ -1,0 +1,28 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+  unhealthy:
+
+exporters:
+  nop:
+
+extensions:
+  statuswatcher:
+
+service:
+  extensions: [statuswatcher]
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop,unhealthy]
+      exporters: [nop]
+    metrics:
+      receivers: [nop]
+      processors: [nop,unhealthy]
+      exporters: [nop]
+    logs:
+      receivers: [nop]
+      processors: [nop,unhealthy]
+      exporters: [nop]

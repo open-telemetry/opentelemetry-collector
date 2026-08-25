@@ -1,0 +1,13 @@
+type: receiver
+
+status:
+  class: receiver
+  stability:
+    beta: [logs]
+  distributions: [contrib]
+
+config:
+  type: string
+  properties:
+    endpoint:
+      type: string

@@ -1,0 +1,58 @@
+ResourceSpans #0
+Resource SchemaURL: 
+Resource attributes:
+     -> resource-attr: Str(resource-attr-val-1)
+ScopeSpans #0
+ScopeSpans SchemaURL: 
+InstrumentationScope  
+Span #0
+    Trace ID       : 0102030405060708090a0b0c0d0e0f10
+    Parent ID      : 
+    ID             : 1112131415161718
+    Name           : operationA
+    Kind           : Unspecified
+    TraceState     : ot=th:0
+    Start time     : 2020-02-11 20:26:12.000000321 +0000 UTC
+    End time       : 2020-02-11 20:26:13.000000789 +0000 UTC
+    Status code    : Error
+    Status message : status-cancelled
+    DroppedAttributesCount: 1
+    DroppedEventsCount: 1
+    DroppedLinksCount: 0
+Events:
+SpanEvent #0
+     -> Name: event-with-attr
+     -> Timestamp: 2020-02-11 20:26:13.000000123 +0000 UTC
+     -> DroppedAttributesCount: 2
+     -> Attributes::
+          -> span-event-attr: Str(span-event-attr-val)
+SpanEvent #1
+     -> Name: event
+     -> Timestamp: 2020-02-11 20:26:13.000000123 +0000 UTC
+     -> DroppedAttributesCount: 2
+Span #1
+    Trace ID       : 
+    Parent ID      : 
+    ID             : 
+    Name           : operationB
+    Kind           : Unspecified
+    Start time     : 2020-02-11 20:26:12.000000321 +0000 UTC
+    End time       : 2020-02-11 20:26:13.000000789 +0000 UTC
+    Status code    : Unset
+    Status message : 
+    DroppedAttributesCount: 0
+    DroppedEventsCount: 0
+    DroppedLinksCount: 3
+Links:
+SpanLink #0
+     -> Trace ID: 
+     -> ID: 
+     -> TraceState: 
+     -> DroppedAttributesCount: 4
+     -> Attributes::
+          -> span-link-attr: Str(span-link-attr-val)
+SpanLink #1
+     -> Trace ID: 
+     -> ID: 
+     -> TraceState: 
+     -> DroppedAttributesCount: 4

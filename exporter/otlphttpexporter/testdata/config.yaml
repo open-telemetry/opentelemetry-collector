@@ -1,0 +1,26 @@
+endpoint: "https://1.2.3.4:1234"
+tls:
+  ca_file: /var/lib/mycert.pem
+  cert_file: certfile
+  key_file: keyfile
+  insecure: true
+timeout: 10s
+read_buffer_size: 123
+write_buffer_size: 345
+sending_queue:
+  enabled: true
+  num_consumers: 2
+  queue_size: 10
+retry_on_failure:
+  enabled: true
+  initial_interval: 10s
+  randomization_factor: 0.7
+  multiplier: 1.3
+  max_interval: 60s
+  max_elapsed_time: 10m
+headers:
+  "can you have a . here?": "F0000000-0000-0000-0000-000000000000"
+  header1: "234"
+  another: "somevalue"
+compression: gzip
+profiles_endpoint: "https://custom.profiles.endpoint:8080/v1development/profiles"

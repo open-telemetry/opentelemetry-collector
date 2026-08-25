@@ -1,0 +1,51 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: localhost:${env:OTEL_PORT}
+
+processors:
+  batch:
+    timeout: 100ms
+    send_batch_size: 100
+
+exporters:
+  debug:
+    verbosity: detailed
+  otlp_http/fail:
+    endpoint: http://127.0.0.1:65535
+    timeout: 100ms
+    retry_on_failure:
+      enabled: false
+    sending_queue:
+      enabled: false
+
+service:
+  telemetry:
+    logs:
+      level: info
+    metrics:
+      level: detailed
+
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
+    traces/fail:
+      receivers: [otlp]
+      exporters: [otlp_http/fail]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
+    metrics/fail:
+      receivers: [otlp]
+      exporters: [otlp_http/fail]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
+    logs/fail:
+      receivers: [otlp]
+      exporters: [otlp_http/fail]

@@ -1,0 +1,43 @@
+name: 'Check PR links to an issue'
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - ready_for_review
+      - synchronize
+    branches:
+      - main
+
+permissions: read-all
+
+jobs:
+  check-pr-issue-link:
+    runs-on: ubuntu-latest
+    if: >-
+      ${{ github.repository_owner == 'open-telemetry'
+        && github.event.pull_request.user.type != 'Bot'
+        && github.event.pull_request.author_association != 'MEMBER'
+        && !contains(github.event.pull_request.title, '[chore]') }}
+    steps:
+      - name: Check for linked issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          ADDITIONS: ${{ github.event.pull_request.additions }}
+          DELETIONS: ${{ github.event.pull_request.deletions }}
+        run: |
+          # Skip trivial PRs, e.g. typo fixes.
+          if (( ${ADDITIONS:-0} + ${DELETIONS:-0} <= 20 )); then
+            echo "PR changes $(( ADDITIONS + DELETIONS )) line(s), trivial, skipping check."
+            exit 0
+          fi
+          COUNT=$(gh pr view "$PR" --repo "$REPO" --json closingIssuesReferences --jq '.closingIssuesReferences | length')
+          if (( COUNT > 0 )); then
+            echo "Found a linked issue."
+            exit 0
+          fi
+          echo '::error::Pull requests from non-members must have a linked issue. Link one in the description, for example "Fixes #1234". If you are an OpenTelemetry org member, make your membership public to skip this check: https://docs.github.com/en/account-and-profile/how-tos/organization-membership/publicizing-or-hiding-organization-membership'
+          exit 1

@@ -1,0 +1,7 @@
+type: file
+status:
+  class: receiver
+  stability:
+    incorrectstability: [logs]
+    beta: [traces]
+    stable: [metrics]

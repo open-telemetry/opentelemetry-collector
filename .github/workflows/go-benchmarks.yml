@@ -1,0 +1,92 @@
+name: CodSpeed Benchmarks
+
+on:
+  push:
+    branches:
+      - "main"
+    paths:
+      - "**.go"
+      - "go.mod"
+      - "go.sum"
+      - "**/go.mod"
+      - "**/go.sum"
+      - "Makefile"
+      - "Makefile.Common"
+      - ".github/workflows/go-benchmarks.yml"
+  pull_request:
+    paths:
+      - "**.go"
+      - "go.mod"
+      - "go.sum"
+      - "**/go.mod"
+      - "**/go.sum"
+      - "Makefile"
+      - "Makefile.Common"
+      - ".github/workflows/go-benchmarks.yml"
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  benchmarks:
+    name: Run benchmarks
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        group:
+          - receiver
+          - processor
+          - exporter
+          - pkg
+    steps:
+      # Hosted runners mix CPU models with results that differ by up to
+      # 50% on identical code. Only benchmark on the models with stable
+      # results. See https://github.com/open-telemetry/opentelemetry-collector/pull/15436 for the data.
+      - name: Check runner CPU model
+        run: |
+          MODEL=$(grep -m1 "model name" /proc/cpuinfo | cut -d: -f2- | xargs)
+          echo "Runner CPU: $MODEL"
+          case "$MODEL" in
+            "AMD EPYC 7763"*|"Intel(R) Xeon(R) Platinum 8370C"*) ;;
+            *)
+              echo "SKIP_BENCH=true" >> "$GITHUB_ENV"
+              echo "::warning::Runner CPU '$MODEL' gives unstable benchmark results; skipping benchmarks for this job."
+              ;;
+          esac
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: env.SKIP_BENCH != 'true'
+        with:
+          persist-credentials: false
+      - run: ./.github/workflows/scripts/free-disk-space.sh
+        if: env.SKIP_BENCH != 'true'
+      - name: Setup Go
+        if: env.SKIP_BENCH != 'true'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+          cache: true
+          
+      - name: Calculate Modules
+        id: calc
+        if: env.SKIP_BENCH != 'true'
+        run: |
+          if [ "${{ matrix.group }}" == "root" ]; then
+            echo "TARGET_MODULES=$(pwd)" >> $GITHUB_ENV
+          else
+            MODULES=$(find ./${{ matrix.group }} -mindepth 1 -maxdepth 2 -type f -name "go.mod" -exec dirname {} \; 2>/dev/null | sort | xargs echo -n || true)
+            if [ -z "$MODULES" ]; then
+              echo "SKIP_BENCH=true" >> $GITHUB_ENV
+              echo "No Go modules found in ${{ matrix.group }}, skipping this job."
+            else
+              echo "TARGET_MODULES=$MODULES" >> $GITHUB_ENV
+            fi
+          fi
+
+      - name: Run the benchmarks
+        if: env.SKIP_BENCH != 'true'
+        uses: CodSpeedHQ/action@4296e51e7041e24dadb86d1d6e8b9320d223dbe8 # v5.0.3
+        with:
+          mode: walltime
+          run: make for-all-target TARGET="timebenchmark" GOMODULES="${{ env.TARGET_MODULES }}"
+          cache-instruments: true

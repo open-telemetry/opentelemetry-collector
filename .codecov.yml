@@ -1,0 +1,23 @@
+codecov:
+  branch: main
+  # only use the latest copy on main branch
+  strict_yaml_branch: main
+
+coverage:
+  precision: 2
+  round: down
+  range: "80...100"
+  status:
+    project:
+      default:
+        enabled: yes
+        target: 90%
+    patch:
+      default:
+        enabled: yes
+        target: 95%
+
+ignore:
+  - "pdata/internal/data/protogen/**/*"
+  - "**/*.pb.go"
+  - "cmd/mdatagen/third_party/**/*"

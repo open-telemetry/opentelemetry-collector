@@ -1,0 +1,16 @@
+type: filter
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  class: pkg
+
+exported_configs:
+  config:
+    description: Config configures the matching behavior of a Filter.
+    type: object
+    properties:
+      regexp:
+        type: string
+      strict:
+        type: string

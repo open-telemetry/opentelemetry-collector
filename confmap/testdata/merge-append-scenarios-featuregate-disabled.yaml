@@ -1,0 +1,209 @@
+- name: merge-mode-default
+  configs:
+    -
+        receivers:
+            nop:
+            nop/myreceiver:
+
+        processors:
+            nop:
+            nop/myprocessor:
+
+        exporters:
+            nop:
+            nop/myexporter:
+
+        extensions:
+            nop:
+            nop/myextension:
+
+        service:
+            extensions: [nop]
+            pipelines:
+                traces:
+                    receivers: [nop]
+                    processors: [nop]
+                    exporters: [nop]
+    -
+        receivers:
+            nop2:
+
+        exporters:
+            nop2:
+
+        extensions:
+            nop2:
+
+        service:
+            extensions: [nop2]
+            pipelines:
+                traces:
+                    receivers: [nop2]
+                    processors: [nop2]
+                    exporters: [nop2]
+  expected: 
+    receivers:
+        nop2:
+        nop:
+        nop/myreceiver:
+
+    exporters:
+        nop2:
+        nop:
+        nop/myexporter:
+
+    processors:
+        nop:
+        nop/myprocessor:
+
+    extensions:
+        nop2:
+        nop:
+        nop/myextension:
+
+    service:
+        extensions: [nop2]
+        pipelines:
+            traces:
+                receivers: [nop2]
+                processors: [nop2]
+                exporters: [nop2]
+- name: merge-mode-append
+  append_paths: ["service"]
+  configs:
+    -
+        receivers:
+            nop:
+                key: val
+
+        processors:
+            nop:
+
+        exporters:
+            nop:
+                key: 2
+
+        extensions:
+            nop:
+
+        service:
+            extensions: [nop]
+            pipelines:
+                traces:
+                    receivers: [nop]
+                    processors: [nop]
+                    exporters: [nop]
+    -
+        receivers:
+            nop2:
+
+        exporters:
+            nop2:
+            nop:
+                key: updated_value
+
+        extensions:
+            nop2:
+
+        service:
+            extensions: [nop2]
+            pipelines:
+                traces:
+                    receivers: [nop2]
+                    processors: [nop2]
+                    exporters: [nop2]
+  expected: 
+    receivers:
+        nop2:
+        nop:
+            key: val
+
+    exporters:
+        nop2:
+        nop:
+            key: updated_value
+
+    processors:
+        nop:
+
+    extensions:
+        nop2:
+        nop:
+
+    service:
+        extensions: [nop2]
+        pipelines:
+            traces:
+                receivers: [nop2]
+                processors: [nop2]
+                exporters: [nop2]
+- name: merge-mode-append-override-old-values
+  append_paths: ["service"]
+  configs:
+    -
+        receivers:
+            nop:
+                key1: "value"
+                key2: 1
+
+        processors:
+            nop:
+
+        exporters:
+            nop:
+
+        extensions:
+            nop:
+            ext:
+                key: 1
+
+        service:
+            extensions: [nop, ext]
+            pipelines:
+                traces:
+                    receivers: [nop]
+                    processors: [nop]
+                    exporters: [nop]
+    -
+        receivers:
+            nop2:
+
+        exporters:
+            nop2:
+
+        extensions:
+            ext:
+                key: 2
+
+        service:
+            extensions: [ext]
+            pipelines:
+                traces:
+                    receivers: [nop2]
+                    exporters: [nop2]
+  expected: 
+    receivers:
+        nop:
+            key1: "value"
+            key2: 1
+        nop2:
+
+    exporters:
+        nop2:
+        nop:
+
+    processors:
+        nop:
+
+    extensions:
+        nop:
+        ext:
+            key: 2
+
+    service:
+        extensions: [ext]
+        pipelines:
+            traces:
+                receivers: [nop2]
+                processors: [nop]
+                exporters: [nop2]

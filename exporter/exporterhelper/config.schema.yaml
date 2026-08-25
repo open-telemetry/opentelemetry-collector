@@ -1,0 +1,14 @@
+$defs:
+  batch_config:
+    description: BatchConfig defines a configuration for batching requests based on a timeout and a minimum number of items.
+    $ref: ./internal/queuebatch.batch_config
+  option:
+    description: Option apply changes to BaseExporter.
+    $ref: ./internal.option
+  queue_batch_config:
+    description: QueueBatchConfig defines configuration for queueing and batching for the exporter.
+    $ref: ./internal/queuebatch.config
+  request_sizer_type:
+    $ref: ./internal/request.sizer_type
+  timeout_config:
+    $ref: ./internal.timeout_config

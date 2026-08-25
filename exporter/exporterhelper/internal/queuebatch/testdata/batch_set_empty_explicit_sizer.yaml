@@ -1,0 +1,3 @@
+sizer: bytes
+# Batch is set but empty, do not override sizer
+batch:

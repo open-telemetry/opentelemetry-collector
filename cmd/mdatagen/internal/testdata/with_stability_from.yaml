@@ -1,0 +1,18 @@
+type: test
+status:
+  class: receiver
+  stability:
+    Beta: [metrics]
+metrics:
+  test.metric:
+    enabled: true
+    description: Test metric with stability from field
+    unit: "1"
+    stability:
+      level: beta
+      from: "1.0.0"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+

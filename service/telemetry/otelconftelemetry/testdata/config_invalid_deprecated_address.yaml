@@ -1,0 +1,5 @@
+logs:
+  level: "info"
+metrics:
+  level: "basic"
+  address: "1212:212121:2121"

@@ -1,0 +1,11 @@
+receivers:
+    nop:
+
+exporters:
+    nop:
+
+service:
+    pipelines:
+        traces:
+            receivers: ${env:RECEIVERS}
+            exporters: [nop]

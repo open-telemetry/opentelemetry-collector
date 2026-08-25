@@ -1,0 +1,19 @@
+type: pdata
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  class: pkg
+  codeowners:
+    active:
+      - bogdandrutu
+      - dmitryax
+  stability:
+    stable: [traces, metrics, logs]
+
+feature_gates:
+  - id: pdata.useProtoPooling
+    description: 'When enabled, enable using local memory pools for underlying data that the pdata messages are pushed to.'
+    stage: alpha
+    from_version: 'v0.133.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/issues/13631'

@@ -1,0 +1,310 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package extensions // import "go.opentelemetry.io/collector/service/extensions"
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+	"slices"
+	"sort"
+
+	"go.uber.org/multierr"
+	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
+	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/service/hostcapabilities"
+	"go.opentelemetry.io/collector/service/internal/attribute"
+	"go.opentelemetry.io/collector/service/internal/builders"
+	"go.opentelemetry.io/collector/service/internal/componentattribute"
+	"go.opentelemetry.io/collector/service/internal/moduleinfo"
+	"go.opentelemetry.io/collector/service/internal/status"
+	"go.opentelemetry.io/collector/service/internal/zpages"
+)
+
+const zExtensionName = "zextensionname"
+
+// Extensions is a map of extensions created from extension configs.
+type Extensions struct {
+	telemetry    component.TelemetrySettings
+	extMap       map[component.ID]extension.Extension
+	instanceIDs  map[component.ID]*componentstatus.InstanceID
+	extensionIDs []component.ID // start order (and reverse stop order)
+	reporter     status.Reporter
+}
+
+// Start starts all extensions.
+func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
+	bes.telemetry.Logger.Info("Starting extensions...")
+	for _, extID := range bes.extensionIDs {
+		extLogger := componentattribute.LoggerWithAttributes(bes.telemetry.Logger,
+			attribute.Extension(extID).Set().ToSlice())
+		extLogger.Info("Extension is starting...")
+		instanceID := bes.instanceIDs[extID]
+		ext := bes.extMap[extID]
+		bes.reporter.ReportStatus(
+			instanceID,
+			componentstatus.NewEvent(componentstatus.StatusStarting),
+		)
+		extHost := &hostWrapper{Host: host, reporter: bes.reporter, instanceID: instanceID}
+		if err := ext.Start(ctx, extHost); err != nil {
+			bes.reporter.ReportStatus(
+				instanceID,
+				componentstatus.NewPermanentErrorEvent(err),
+			)
+			// We log with zap.AddStacktrace(zap.DPanicLevel) to avoid adding the stack trace to the error log
+			extLogger.WithOptions(zap.AddStacktrace(zap.DPanicLevel)).Error("Failed to start extension", zap.Error(err))
+			return err
+		}
+		bes.reporter.ReportOKIfStarting(instanceID)
+		extLogger.Info("Extension started.")
+	}
+	return nil
+}
+
+// Shutdown stops all extensions.
+func (bes *Extensions) Shutdown(ctx context.Context) error {
+	bes.telemetry.Logger.Info("Stopping extensions...")
+	var errs error
+	for _, extID := range slices.Backward(bes.extensionIDs) {
+		instanceID := bes.instanceIDs[extID]
+		ext := bes.extMap[extID]
+		bes.reporter.ReportStatus(
+			instanceID,
+			componentstatus.NewEvent(componentstatus.StatusStopping),
+		)
+		if err := ext.Shutdown(ctx); err != nil {
+			bes.reporter.ReportStatus(
+				instanceID,
+				componentstatus.NewPermanentErrorEvent(err),
+			)
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		bes.reporter.ReportStatus(
+			instanceID,
+			componentstatus.NewEvent(componentstatus.StatusStopped),
+		)
+	}
+
+	return errs
+}
+
+func (bes *Extensions) NotifyPipelineReady() error {
+	for _, extID := range bes.extensionIDs {
+		ext := bes.extMap[extID]
+		if pw, ok := ext.(extensioncapabilities.PipelineWatcher); ok {
+			if err := pw.Ready(); err != nil {
+				return fmt.Errorf("failed to notify extension %q: %w", extID, err)
+			}
+		}
+	}
+	return nil
+}
+
+func (bes *Extensions) NotifyPipelineNotReady() error {
+	var errs error
+	for _, extID := range bes.extensionIDs {
+		ext := bes.extMap[extID]
+		if pw, ok := ext.(extensioncapabilities.PipelineWatcher); ok {
+			errs = multierr.Append(errs, pw.NotReady())
+		}
+	}
+	return errs
+}
+
+// NotifyConfig notifies extensions of the Collector's current effective
+// configuration.
+//
+// Deprecated [v0.155.0]: use NotifyConfigSnapshot instead.
+func (bes *Extensions) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {
+	if conf == nil {
+		return nil
+	}
+	return bes.NotifyConfigSnapshot(ctx, extensioncapabilities.NewConfigSnapshot(conf, nil))
+}
+
+func (bes *Extensions) NotifyConfigSnapshot(ctx context.Context, configSnapshot extensioncapabilities.ConfigSnapshot) error {
+	if configSnapshot == nil {
+		return nil
+	}
+	var errs error
+	for _, extID := range bes.extensionIDs {
+		ext := bes.extMap[extID]
+		if cw, ok := ext.(extensioncapabilities.ConfigSnapshotWatcher); ok {
+			errs = multierr.Append(errs, cw.NotifyConfigSnapshot(ctx, configSnapshot))
+			continue
+		}
+		if cw, ok := ext.(extensioncapabilities.ConfigWatcher); ok {
+			if effectiveConf := configSnapshot.Effective(); effectiveConf != nil {
+				errs = multierr.Append(errs, cw.NotifyConfig(ctx, effectiveConf))
+			}
+		}
+	}
+	return errs
+}
+
+func (bes *Extensions) NotifyComponentStatusChange(source *componentstatus.InstanceID, event *componentstatus.Event) {
+	for _, extID := range bes.extensionIDs {
+		ext := bes.extMap[extID]
+		if sw, ok := ext.(componentstatus.Watcher); ok {
+			sw.ComponentStatusChanged(source, event)
+		}
+	}
+}
+
+func (bes *Extensions) GetExtensions() map[component.ID]component.Component {
+	result := make(map[component.ID]component.Component, len(bes.extMap))
+	for extID, v := range bes.extMap {
+		result[extID] = v
+	}
+	return result
+}
+
+func (bes *Extensions) HandleZPages(w http.ResponseWriter, r *http.Request) {
+	extensionName := r.URL.Query().Get(zExtensionName)
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "Extensions"})
+	data := zpages.SummaryExtensionsTableData{}
+
+	data.Rows = make([]zpages.SummaryExtensionsTableRowData, 0, len(bes.extMap))
+	for _, id := range bes.extensionIDs {
+		row := zpages.SummaryExtensionsTableRowData{FullName: id.String()}
+		data.Rows = append(data.Rows, row)
+	}
+
+	sort.Slice(data.Rows, func(i, j int) bool {
+		return data.Rows[i].FullName < data.Rows[j].FullName
+	})
+	zpages.WriteHTMLExtensionsSummaryTable(w, data)
+	if extensionName != "" {
+		zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
+			Name: extensionName,
+		})
+		// TODO: Add config + status info.
+	}
+	zpages.WriteHTMLPageFooter(w)
+}
+
+// Settings holds configuration for building Extensions.
+type Settings struct {
+	Telemetry component.TelemetrySettings
+	BuildInfo component.BuildInfo
+
+	// Extensions builder for extensions.
+	Extensions builders.Extension
+}
+
+type Option interface {
+	apply(*Extensions)
+}
+
+type optionFunc func(*Extensions)
+
+func (of optionFunc) apply(e *Extensions) {
+	of(e)
+}
+
+func WithReporter(reporter status.Reporter) Option {
+	return optionFunc(func(e *Extensions) {
+		e.reporter = reporter
+	})
+}
+
+// New creates a new Extensions from Config.
+func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Extensions, error) {
+	exts := &Extensions{
+		telemetry:    set.Telemetry,
+		extMap:       make(map[component.ID]extension.Extension),
+		instanceIDs:  make(map[component.ID]*componentstatus.InstanceID),
+		extensionIDs: make([]component.ID, 0, len(cfg)),
+		reporter:     status.NewNopStatusReporter(),
+	}
+
+	for _, opt := range options {
+		opt.apply(exts)
+	}
+
+	for _, extID := range cfg {
+		instanceID := componentstatus.NewInstanceID(extID, component.KindExtension)
+		extSet := extension.Settings{
+			ID:                extID,
+			TelemetrySettings: componentattribute.TelemetrySettingsWithAttributes(set.Telemetry, *attribute.Extension(extID).Set()),
+			BuildInfo:         set.BuildInfo,
+		}
+
+		ext, err := set.Extensions.Create(ctx, extSet)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create extension %q: %w", extID, err)
+		}
+
+		// Check if the factory really created the extension.
+		if ext == nil {
+			return nil, fmt.Errorf("factory for %q produced a nil extension", extID)
+		}
+
+		exts.extMap[extID] = ext
+		exts.instanceIDs[extID] = instanceID
+	}
+	order, err := computeOrder(exts)
+	if err != nil {
+		return nil, err
+	}
+	exts.extensionIDs = order
+	return exts, nil
+}
+
+var (
+	_ componentstatus.Reporter          = (*hostWrapper)(nil)
+	_ component.Host                    = (*hostWrapper)(nil)
+	_ hostcapabilities.ModuleInfo       = (*hostWrapper)(nil)
+	_ hostcapabilities.ExposeExporters  = (*hostWrapper)(nil) //nolint:staticcheck // SA1019
+	_ hostcapabilities.ComponentFactory = (*hostWrapper)(nil)
+)
+
+type hostWrapper struct {
+	component.Host
+	reporter   status.Reporter
+	instanceID *componentstatus.InstanceID
+}
+
+func (host *hostWrapper) Report(event *componentstatus.Event) {
+	host.reporter.ReportStatus(host.instanceID, event)
+}
+
+func (host *hostWrapper) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
+	if hostZPages, ok := host.Host.(interface {
+		RegisterZPages(mux *http.ServeMux, pathPrefix string)
+	}); ok {
+		hostZPages.RegisterZPages(mux, pathPrefix)
+	}
+}
+
+func (host *hostWrapper) GetModuleInfos() moduleinfo.ModuleInfos {
+	if mi, ok := host.Host.(hostcapabilities.ModuleInfo); ok {
+		return mi.GetModuleInfos()
+	}
+	return moduleinfo.ModuleInfos{}
+}
+
+//nolint:staticcheck // SA1019 forwards the deprecated hostcapabilities.ExposeExporters capability.
+func (host *hostWrapper) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
+	if ee, ok := host.Host.(hostcapabilities.ExposeExporters); ok {
+		return ee.GetExporters()
+	}
+	return nil
+}
+
+func (host *hostWrapper) GetFactory(kind component.Kind, componentType component.Type) component.Factory {
+	if cf, ok := host.Host.(hostcapabilities.ComponentFactory); ok {
+		return cf.GetFactory(kind, componentType)
+	}
+	return nil
+}

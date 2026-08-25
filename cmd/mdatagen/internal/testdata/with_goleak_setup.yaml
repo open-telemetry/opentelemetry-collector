@@ -1,0 +1,11 @@
+type: foobar
+
+status:
+  disable_codecov_badge: true
+  class: connector
+  stability:
+    beta: [traces_to_metrics, traces_to_traces, traces_to_logs, metrics_to_logs, metrics_to_metrics, metrics_to_traces, logs_to_logs, logs_to_metrics, logs_to_traces]
+
+tests:
+  goleak:
+    setup: "setupFunc()"

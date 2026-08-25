@@ -1,0 +1,18 @@
+type: file
+
+sem_conv_version: 1.9.0
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+    beta: [traces]
+    stable: [metrics]
+  distributions: [contrib]
+  warnings:
+    - Any additional information that should be brought to the consumer's attention
+
+resource_attributes:
+  string.resource.attr:
+    description: Resource attribute with any string value.
+    enabled: true

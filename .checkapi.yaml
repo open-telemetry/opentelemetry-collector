@@ -1,0 +1,8 @@
+ignored_paths:
+  - confmap/doc_test.go
+excluded_files:
+  - example_*.go
+  - "*_test.go"
+unkeyed_literal_initialization:
+  enabled: true
+  limit: 6

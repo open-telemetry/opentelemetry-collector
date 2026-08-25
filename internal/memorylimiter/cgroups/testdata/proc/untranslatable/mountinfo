@@ -1,0 +1,2 @@
+31 23 0:24 / /sys/fs/cgroup/cpu rw,nosuid,nodev,noexec,relatime shared:1 - cgroup cgroup rw,cpu
+32 23 0:25 /docker/0123456789abcdef /sys/fs/cgroup/cpuacct rw,nosuid,nodev,noexec,relatime shared:2 - cgroup cgroup rw,cpuacct

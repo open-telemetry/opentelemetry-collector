@@ -1,0 +1,15 @@
+receivers:
+  nop_logs:
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop_logs]
+      processors: [nop]
+      exporters: [nop]

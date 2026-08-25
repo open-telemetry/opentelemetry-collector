@@ -1,0 +1,79 @@
+Mapping #0
+    Memory start: 0
+    Memory limit: 0
+    File offset: 0
+    File name: 0
+    Attributes: []
+Mapping #1
+    Memory start: 2
+    Memory limit: 3
+    File offset: 4
+    File name: 5
+    Attributes: [7 8]
+Location #0
+    Mapping index: 0
+    Address: 0
+    Attributes: []
+Location #1
+    Mapping index: 0
+    Address: 1
+    Attributes: []
+Location #2
+    Mapping index: 0
+    Address: 2
+    Attributes: []
+Location #3
+    Mapping index: 3
+    Address: 4
+    Line #0
+        Function index: 1
+        Line: 2
+        Column: 3
+    Attributes: [6 7]
+Function #0
+    Name: 0
+    System name: 0
+    Filename: 0
+    Start line: 0
+Function #1
+    Name: 2
+    System name: 3
+    Filename: 4
+    Start line: 5
+Attribute table:
+     -> Key: Int(2)
+     -> Value: Str()
+     -> unit: Int(5)
+Link table:
+     -> Trace ID: Str(0302030405060708090a0b0c0d0e0f10)
+     -> Span ID: Str(1112131415161718)
+String table:
+    
+    key
+    intValue
+    foobar
+ResourceProfiles #0
+Resource SchemaURL: 
+Resource attributes:
+     -> resource-attr: Str(resource-attr-val-1)
+ScopeProfiles #0
+ScopeProfiles SchemaURL: 
+InstrumentationScope  
+Profile #0
+    Profile ID     : 0102030405060708090a0b0c0d0e0f10
+    Start time     : 2020-02-11 20:26:12.000000321 +0000 UTC
+    DurationNano   : 1000000000
+    Dropped attributes count: 1
+    Sample #0
+        Values: [4]
+        Attributes:
+             -> key: Str(value-1)
+Profile #1
+    Profile ID     : 0202030405060708090a0b0c0d0e0f10
+    Start time     : 2020-02-11 20:26:12.000000321 +0000 UTC
+    DurationNano   : 1000000000
+    Dropped attributes count: 0
+    Sample #0
+        Values: [9]
+        Attributes:
+             -> key: Str(value-2)

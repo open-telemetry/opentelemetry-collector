@@ -1,0 +1,1 @@
+field: "inline field with ${env:ENV} expansion"

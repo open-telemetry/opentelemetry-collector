@@ -1,0 +1,30 @@
+extensions:
+  zpages:
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+exporters:
+  debug:
+    verbosity: detailed
+
+service:
+  telemetry:
+    logs:
+      level: info
+      output_paths:
+        # The folder need to be created prior to starting the collector
+        - ${ProgramData}\OpenTelemetry\Collector\Logs\otelcol.log
+
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [debug]
+    metrics:
+      receivers: [otlp]
+      exporters: [debug]
+
+  extensions: [zpages]

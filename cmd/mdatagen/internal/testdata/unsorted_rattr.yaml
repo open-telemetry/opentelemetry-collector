@@ -1,0 +1,16 @@
+type: sample
+
+status:
+  class: receiver
+  stability:
+    beta: [logs]
+
+resource_attributes:
+  cloud.region:
+    description: region
+    enabled: true
+    type: string
+  cloud.availability_zone:
+    description: az
+    enabled: true
+    type: string

@@ -1,0 +1,11 @@
+receivers:
+  r:
+    opaque: "OOO"
+exporters:
+  e:
+    timeout: 5s
+service:
+  pipelines:
+    logs:
+      receivers: [r]
+      exporters: [e]

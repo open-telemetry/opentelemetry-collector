@@ -1,0 +1,49 @@
+name: "Project: Tidy"
+on:
+  pull_request:
+    types: [opened, ready_for_review, synchronize, reopened, labeled, unlabeled]
+    branches:
+      - main
+
+permissions: read-all
+
+jobs:
+  setup-environment:
+    permissions:
+      contents: write # for Git to git push
+      pull-requests: write # for gh pr edit --remove-label
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependency-major-update') && (github.event.pull_request.user.login == 'renovate[bot]' || contains(github.event.pull_request.labels.*.name, 'renovatebot')) && github.event.pull_request.head.repo.fork == false }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.head_ref }}
+          # Keep token so the `go mod tidy` step can push.
+          persist-credentials: true # zizmor: ignore[artipacked]
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: oldstable
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: go mod tidy
+        run: |
+          make gotidy
+          git config user.name otelbot
+          git config user.email 197425009+otelbot@users.noreply.github.com
+          echo "git diff --exit-code || (git add . && git commit -m \"go mod tidy\" && git push)"
+          git diff --exit-code || (git add . && git commit -m "go mod tidy" && git push)
+      - name: Remove renovatebot label
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr edit "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}" --remove-label renovatebot

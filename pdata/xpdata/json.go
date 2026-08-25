@@ -1,0 +1,50 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package xpdata // import "go.opentelemetry.io/collector/pdata/xpdata"
+
+import (
+	"slices"
+
+	"go.opentelemetry.io/collector/pdata/internal"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+)
+
+type JSONMarshaler struct{}
+
+func (*JSONMarshaler) MarshalValue(value pcommon.Value) ([]byte, error) {
+	av := internal.GetValueOrig(internal.ValueWrapper(value))
+	dest := json.BorrowStream(nil)
+	defer json.ReturnStream(dest)
+	av.MarshalJSON(dest)
+	if dest.Error() != nil {
+		return nil, dest.Error()
+	}
+	return slices.Clone(dest.Buffer()), nil
+}
+
+type JSONUnmarshaler struct {
+	// DisallowUnknownFields causes UnmarshalValue to return an error when the
+	// input contains JSON object fields that are not defined by the OTLP
+	// schema. When false (the default), unknown fields are silently ignored.
+	//
+	// Warning: enabling this option breaks forwards compatibility with future
+	// evolutions of the OTLP format, as fields added to the format in newer
+	// versions will be rejected as unknown.
+	DisallowUnknownFields bool
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+func (u *JSONUnmarshaler) UnmarshalValue(buf []byte) (pcommon.Value, error) {
+	iter := json.BorrowIterator(buf)
+	defer json.ReturnIterator(iter)
+	iter.SetDisallowUnknownFields(u.DisallowUnknownFields)
+	value := &internal.AnyValue{}
+	value.UnmarshalJSON(iter)
+	if iter.Error() != nil {
+		return pcommon.NewValueEmpty(), iter.Error()
+	}
+	return pcommon.Value(internal.NewValueWrapper(value, internal.NewState())), nil
+}

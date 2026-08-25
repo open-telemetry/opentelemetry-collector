@@ -1,0 +1,115 @@
+no_endpoint:
+  timeout: 10s
+  sending_queue:
+    enabled: true
+    num_consumers: 2
+    queue_size: 10
+  retry_on_failure:
+    enabled: true
+    initial_interval: 10s
+    randomization_factor: 0.7
+    multiplier: 1.3
+    max_interval: 60s
+    max_elapsed_time: 10m
+https_endpoint:
+  endpoint: https://
+http_endpoint:
+  endpoint: http://
+  timeout: 10s
+  sending_queue:
+    enabled: true
+    num_consumers: 2
+    queue_size: 10
+  retry_on_failure:
+    enabled: true
+    initial_interval: 10s
+    randomization_factor: 0.7
+    multiplier: 1.3
+    max_interval: 60s
+    max_elapsed_time: 10m
+invalid_timeout:
+  endpoint: example.com:443
+  timeout: -5s
+  sending_queue:
+    enabled: true
+    num_consumers: 2
+    queue_size: 10
+  retry_on_failure:
+    enabled: true
+    initial_interval: 10s
+    randomization_factor: 0.7
+    multiplier: 1.3
+    max_interval: 60s
+    max_elapsed_time: 10m
+invalid_retry:
+  endpoint: example.com:443
+  timeout: 30s
+  sending_queue:
+    enabled: true
+    num_consumers: 2
+    queue_size: 10
+  retry_on_failure:
+    enabled: true
+    initial_interval: 10s
+    randomization_factor: -5
+    multiplier: 1.3
+    max_interval: 60s
+    max_elapsed_time: 10m
+invalid_tls:
+  tls:
+    min_version: asd
+  endpoint: example.com:443
+  timeout: 10s
+  sending_queue:
+    enabled: true
+    num_consumers: 2
+    queue_size: 10
+  retry_on_failure:
+    enabled: true
+    initial_interval: 10s
+    randomization_factor: 0.7
+    multiplier: 1.3
+    max_interval: 60s
+    max_elapsed_time: 10m
+missing_port:
+  endpoint: example.com
+  timeout: 10s
+  sending_queue:
+    enabled: true
+    num_consumers: 2
+    queue_size: 10
+  retry_on_failure:
+    enabled: true
+    initial_interval: 10s
+    randomization_factor: 0.7
+    multiplier: 1.3
+    max_interval: 60s
+    max_elapsed_time: 10m
+invalid_port:
+  endpoint: example.com:port
+  timeout: 10s
+  sending_queue:
+    enabled: true
+    num_consumers: 2
+    queue_size: 10
+  retry_on_failure:
+    enabled: true
+    initial_interval: 10s
+    randomization_factor: 0.7
+    multiplier: 1.3
+    max_interval: 60s
+    max_elapsed_time: 10m
+invalid_unix_socket:
+  endpoint: unix://
+  timeout: 10s
+  sending_queue:
+    enabled: true
+    num_consumers: 2
+    queue_size: 10
+  retry_on_failure:
+    enabled: true
+    initial_interval: 10s
+    randomization_factor: 0.7
+    multiplier: 1.3
+    max_interval: 60s
+    max_elapsed_time: 10m

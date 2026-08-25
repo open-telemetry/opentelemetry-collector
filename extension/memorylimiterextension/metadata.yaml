@@ -1,0 +1,16 @@
+display_name: Memory Limiter Extension
+type: memory_limiter
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  class: extension
+  stability:
+    beta: [extension]
+  distributions: []
+
+tests:
+  config:
+    check_interval: 5s
+    limit_mib: 400
+    spike_limit_mib: 50

@@ -1,0 +1,98 @@
+name: build-and-test-windows
+on:
+  push:
+    branches: [main]
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+*"
+  merge_group:
+    types: [checks_requested]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  windows-unittest:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, windows-2025, windows-11-arm]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: oldstable
+          cache: false
+      - name: Cache Go
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        env:
+          cache-name: cache-go-modules
+        with:
+          path: |
+            ~\go\pkg\mod
+            ~\AppData\Local\go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          lookup-only: true
+      - name: Ensure required ports in the dynamic range are available
+        run: |
+          & ${{ github.workspace }}\.github\workflows\scripts\win-required-ports.ps1
+      - name: Run Unit Tests
+        run: make gotest
+
+  windows-service-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, windows-2025, windows-11-arm]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: oldstable
+          cache: false
+      - name: Cache Go
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        env:
+          cache-name: cache-go-modules
+        with:
+          path: |
+            ~\go\pkg\mod
+            ~\AppData\Local\go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          lookup-only: true
+      - name: Ensure required ports in the dynamic range are available
+        run: |
+          & ${{ github.workspace }}\.github\workflows\scripts\win-required-ports.ps1
+
+      - name: Make otelcorecol
+        run: make otelcorecol
+
+      - name: Install otelcorecol as a service
+        run: |
+          New-Service -Name "otelcorecol" -StartupType "Manual" -BinaryPathName "${PWD}\bin\otelcorecol_windows_$(go env GOARCH) --config ${PWD}\examples\local\otel-config.yaml"
+          eventcreate.exe /t information /id 1 /l application /d "Creating event provider for 'otelcorecol'" /so otelcorecol
+
+      - name: Test otelcorecol service
+        working-directory: ${{ github.workspace }}/otelcol
+        run: |
+          go test -timeout 90s -run ^TestCollectorAsService$  -v -tags=win32service
+
+      - name: Remove otelcorecol service
+        if: always()
+        run: |
+          Remove-Service otelcorecol
+          Remove-Item HKLM:\SYSTEM\CurrentControlSet\Services\EventLog\Application\otelcorecol
