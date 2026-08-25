@@ -40,7 +40,7 @@ type Optional[T any] struct {
 
 // deref a reflect.Type to its underlying type.
 func deref(t reflect.Type) reflect.Type {
-	for t.Kind() == reflect.Ptr {
+	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 	return t
