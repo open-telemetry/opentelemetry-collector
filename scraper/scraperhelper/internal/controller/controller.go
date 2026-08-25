@@ -118,10 +118,9 @@ func (sc *Controller[T]) startScraping(ctx context.Context) {
 		}
 
 		for {
-			// Scrape then wait sc.tickerCh, not the reverse, to
-			// ensure that scrapers start from when the component
-			// starts instead of waiting for the full duration to
-			// start.
+			// Call scrape method immediately to ensure
+			// that scrapers start from when the component starts
+			// instead of waiting for the full duration to start.
 			_ = sc.scrapeFunc(ctx, sc)
 
 			// If sc.scrapeFunc is delayed, sc.tickerCh and sc.done
