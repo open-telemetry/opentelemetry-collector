@@ -291,8 +291,8 @@ func TestStartScrapingShutdownDuringInitialDelay(t *testing.T) {
 func TestShutdownDuringHang(t *testing.T) {
 	t.Parallel()
 
-	// This tests a bug caused by select's randomness, so
-	// we need a few trials for it to be deterministic-ish.
+	// This test is a bug caused by select's randomness, so
+	// we need more than one run for it to be nearly deterministic.
 	for range 10 {
 		synctest.Test(t, func(t *testing.T) {
 			var hang atomic.Bool
