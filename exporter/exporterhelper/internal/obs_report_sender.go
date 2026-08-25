@@ -58,10 +58,13 @@ type obsReportSender[K request.Request] struct {
 	itemsSentInst      metric.Int64Counter
 	itemsFailedInst    metric.Int64Counter
 	inFlightInst       metric.Int64UpDownCounter
+	sendSizeInst       metric.Int64Histogram
+	sendSizeBytesInst  metric.Int64Histogram
+	batchEnabled       bool
 	next               sender.Sender[K]
 }
 
-func newObsReportSender[K request.Request](set exporter.Settings, signal pipeline.Signal, extraAttrs []attribute.KeyValue, next sender.Sender[K]) (sender.Sender[K], error) {
+func newObsReportSender[K request.Request](set exporter.Settings, signal pipeline.Signal, extraAttrs []attribute.KeyValue, batchEnabled bool, next sender.Sender[K]) (sender.Sender[K], error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
@@ -76,10 +79,13 @@ func newObsReportSender[K request.Request](set exporter.Settings, signal pipelin
 		spanAttrs:          trace.WithAttributes(expAttr, attribute.String(DataTypeKey, signal.String())),
 		metricAttr:         metric.WithAttributeSet(attribute.NewSet(append(extraAttrs, expAttr)...)),
 		inFlightMetricAttr: metric.WithAttributeSet(attribute.NewSet(expAttr, attribute.String(DataTypeKey, signal.String()))),
+		batchEnabled:       batchEnabled,
 		next:               next,
 	}
 
 	or.inFlightInst = telemetryBuilder.ExporterInFlightRequests
+	or.sendSizeInst = telemetryBuilder.ExporterQueueBatchSendSize
+	or.sendSizeBytesInst = telemetryBuilder.ExporterQueueBatchSendSizeBytes
 
 	switch signal {
 	case pipeline.SignalTraces:
@@ -107,6 +113,12 @@ func (ors *obsReportSender[K]) Send(ctx context.Context, req K) error {
 	// be modified by the downstream components like the batcher.
 	c := ors.startOp(ctx)
 	items := req.ItemsCount()
+	if ors.batchEnabled {
+		ors.sendSizeInst.Record(c, int64(items), ors.metricAttr)
+		if ors.sendSizeBytesInst.Enabled(c) {
+			ors.sendSizeBytesInst.Record(c, int64(req.BytesSize()), ors.metricAttr)
+		}
+	}
 	// Forward the data to the next consumer (this pusher is the next).
 	err := ors.next.Send(c, req)
 	ors.endOp(c, items, err)
