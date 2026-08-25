@@ -39,13 +39,29 @@ HEAD_SHA=$(gh pr view "${PR_NUMBER}" --json headRefOid --jq '.headRefOid')
 
 echo "Finding workflows pending approval for commit: ${HEAD_SHA}"
 
-WAITING_RUNS=$(gh run list \
-    --commit "${HEAD_SHA}" \
-    --json databaseId,status,conclusion \
-    --jq '.[] | select(.conclusion == "action_required") | .databaseId')
+# Runs do not become queryable as action_required the instant they are created,
+# so a comment posted right after a push can find nothing and give up. Poll with
+# the same backoff the approval loop below uses.
+DELAY=5
+WAITING_RUNS=""
+while :; do
+    WAITING_RUNS=$(gh run list \
+        --commit "${HEAD_SHA}" \
+        --status action_required \
+        --limit 100 \
+        --json databaseId \
+        --jq '.[].databaseId')
+
+    [[ -n "${WAITING_RUNS}" ]] && break
+    [[ ${DELAY} -gt 60 ]] && break
+
+    echo "No runs pending approval yet for ${HEAD_SHA}; retrying in ${DELAY}s..."
+    sleep "${DELAY}"
+    DELAY=$(( DELAY * 2 ))
+done
 
 if [[ -z "${WAITING_RUNS}" ]]; then
-    echo "No workflows with action_required conclusion found"
+    echo "No workflows pending approval for ${HEAD_SHA} after waiting"
     exit 0
 fi
 
