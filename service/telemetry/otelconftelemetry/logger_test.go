@@ -489,7 +489,7 @@ func TestCreateLoggerSetsOpenTelemetryErrorHandler(t *testing.T) {
 		},
 	}
 
-	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	resource, _, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
 
 	set := telemetry.LoggerSettings{
