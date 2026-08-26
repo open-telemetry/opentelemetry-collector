@@ -359,7 +359,7 @@ func encodeValue(rv reflect.Value) any {
 	switch rv.Kind() {
 	case reflect.Struct:
 		return structToMap(rv.Interface())
-	case reflect.Ptr:
+	case reflect.Pointer:
 		if rv.IsNil() {
 			return nil
 		}
