@@ -17,7 +17,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
@@ -52,13 +51,6 @@ type Settings struct {
 	// representations. It is passed to extensions implementing
 	// extensioncapabilities.ConfigSnapshotWatcher.
 	ConfigSnapshot extensioncapabilities.ConfigSnapshot
-
-	// CollectorConf contains the Collector's current effective configuration.
-	// It is passed to extensions implementing extensioncapabilities.ConfigWatcher
-	// via NotifyConfig.
-	//
-	// Deprecated [v0.155.0]: use ConfigSnapshot instead.
-	CollectorConf *confmap.Conf
 
 	// Receivers configuration to its builder.
 	ReceiversConfigs   map[component.ID]component.Config

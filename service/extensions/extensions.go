@@ -15,7 +15,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.opentelemetry.io/collector/pipeline"
@@ -117,17 +116,6 @@ func (bes *Extensions) NotifyPipelineNotReady() error {
 		}
 	}
 	return errs
-}
-
-// NotifyConfig notifies extensions of the Collector's current effective
-// configuration.
-//
-// Deprecated [v0.155.0]: use NotifyConfigSnapshot instead.
-func (bes *Extensions) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {
-	if conf == nil {
-		return nil
-	}
-	return bes.NotifyConfigSnapshot(ctx, extensioncapabilities.NewConfigSnapshot(conf, nil))
 }
 
 func (bes *Extensions) NotifyConfigSnapshot(ctx context.Context, configSnapshot extensioncapabilities.ConfigSnapshot) error {
