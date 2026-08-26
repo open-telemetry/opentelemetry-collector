@@ -15,7 +15,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service/telemetry"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry/internal/migration"
@@ -361,7 +360,7 @@ func TestResourceConfigValidateAttributesListUnsupported(t *testing.T) {
 		"attributes_list": "service.name=override",
 	})
 	require.NoError(t, conf.Unmarshal(&cfg))
-	err := xconfmap.Validate(&cfg)
+	err := confmap.Validate(&cfg)
 	require.ErrorContains(t, err, "resource::attributes_list is not currently supported")
 }
 

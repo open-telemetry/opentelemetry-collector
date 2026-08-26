@@ -205,6 +205,9 @@ func TestCreateMeterProvider_020MigrationWarning(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.Metrics.MigratedFromV02 = true
+	cfg.Metrics.Readers = []config.MetricReader{{
+		Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: promtest.GetAvailableLocalAddressPrometheus(t)}},
+	}}
 
 	resource, _, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
@@ -229,6 +232,9 @@ func TestCreateMeterProvider_NoMigrationWarning(t *testing.T) {
 	core, observedLogs := observer.New(zapcore.DebugLevel)
 
 	cfg := createDefaultConfig().(*Config)
+	cfg.Metrics.Readers = []config.MetricReader{{
+		Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: promtest.GetAvailableLocalAddressPrometheus(t)}},
+	}}
 
 	resource, _, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
@@ -374,7 +380,7 @@ func TestTelemetryMetrics_DefaultViews(t *testing.T) {
 		assert.Equal(t, configtelemetry.LevelDetailed, level)
 		return []config.View{{
 			Selector: &config.ViewSelector{
-				MeterName: ptr("a"),
+				MeterName: new("a"),
 			},
 			Stream: &config.ViewStream{
 				Aggregation: &config.ViewStreamAggregation{
@@ -391,7 +397,7 @@ func TestTelemetryMetrics_DefaultViews(t *testing.T) {
 		"configured_views": {
 			configuredViews: []config.View{{
 				Selector: &config.ViewSelector{
-					MeterName: ptr("b"),
+					MeterName: new("b"),
 				},
 				Stream: &config.ViewStream{
 					Aggregation: &config.ViewStreamAggregation{
@@ -421,9 +427,9 @@ func TestTelemetryMetrics_DefaultViews(t *testing.T) {
 				Periodic: &config.PeriodicMetricReader{
 					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Endpoint: ptr(srv.URL),
-							Protocol: ptr("http/protobuf"),
-							Insecure: ptr(true),
+							Endpoint: new(srv.URL),
+							Protocol: new("http/protobuf"),
+							Insecure: new(true),
 						},
 					},
 				},

@@ -193,8 +193,7 @@ func (e *baseExporter) export(ctx context.Context, requestURL string, request []
 
 	resp, err := e.client.Do(req)
 	if err != nil {
-		var urlErr *url.Error
-		if errors.As(err, &urlErr) {
+		if urlErr, ok := errors.AsType[*url.Error](err); ok {
 			urlErr.URL = req.URL.String()
 		}
 		return fmt.Errorf("failed to make an HTTP request: %w", err)
@@ -221,11 +220,13 @@ func (e *baseExporter) export(ctx context.Context, requestURL string, request []
 	if respStatus != nil {
 		errString = fmt.Sprintf(
 			"error exporting items, request to %s responded with HTTP Status Code %d, Message=%s, Details=%v",
-			requestURL, resp.StatusCode, respStatus.Message, respStatus.Details)
+			requestURL, resp.StatusCode, respStatus.Message, respStatus.Details,
+		)
 	} else {
 		errString = fmt.Sprintf(
 			"error exporting items, request to %s responded with HTTP Status Code %d",
-			requestURL, resp.StatusCode)
+			requestURL, resp.StatusCode,
+		)
 	}
 	formattedErr = statusutil.NewStatusFromMsgAndHTTPCode(errString, resp.StatusCode).Err()
 

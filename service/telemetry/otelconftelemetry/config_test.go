@@ -105,11 +105,11 @@ func TestConfig(t *testing.T) {
 				cfg.Metrics.Readers = []config.MetricReader{
 					{
 						Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
-							WithoutScopeInfo:  ptr(true),
-							WithoutUnits:      ptr(true),
-							WithoutTypeSuffix: ptr(true),
+							WithoutScopeInfo:  new(true),
+							WithoutUnits:      new(true),
+							WithoutTypeSuffix: new(true),
 							Host:              &host,
-							Port:              ptr(8888),
+							Port:              new(8888),
 						}}},
 					},
 				}
