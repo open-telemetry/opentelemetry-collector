@@ -127,12 +127,6 @@ func (bes *Extensions) NotifyConfigSnapshot(ctx context.Context, configSnapshot 
 		ext := bes.extMap[extID]
 		if cw, ok := ext.(extensioncapabilities.ConfigSnapshotWatcher); ok {
 			errs = multierr.Append(errs, cw.NotifyConfigSnapshot(ctx, configSnapshot))
-			continue
-		}
-		if cw, ok := ext.(extensioncapabilities.ConfigWatcher); ok {
-			if effectiveConf := configSnapshot.Effective(); effectiveConf != nil {
-				errs = multierr.Append(errs, cw.NotifyConfig(ctx, effectiveConf))
-			}
 		}
 	}
 	return errs

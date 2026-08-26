@@ -208,114 +208,6 @@ func (tc testOrderCase) testOrdering(t *testing.T) {
 	}
 }
 
-func TestNotifyConfig(t *testing.T) {
-	notificationError := errors.New("Error processing config")
-	nopExtensionFactory := extensiontest.NewNopFactory()
-	nopExtensionConfig := nopExtensionFactory.CreateDefaultConfig()
-	n1ExtensionFactory := newConfigWatcherExtensionFactory(component.MustNewType("notifiable1"), func() error { return nil })
-	n1ExtensionConfig := n1ExtensionFactory.CreateDefaultConfig()
-	n2ExtensionFactory := newConfigWatcherExtensionFactory(component.MustNewType("notifiable2"), func() error { return nil })
-	n2ExtensionConfig := n1ExtensionFactory.CreateDefaultConfig()
-	nErrExtensionFactory := newConfigWatcherExtensionFactory(component.MustNewType("notifiableErr"), func() error { return notificationError })
-	nErrExtensionConfig := nErrExtensionFactory.CreateDefaultConfig()
-
-	tests := []struct {
-		name              string
-		factories         map[component.Type]extension.Factory
-		extensionsConfigs map[component.ID]component.Config
-		serviceExtensions []component.ID
-		wantErrMsg        string
-		want              error
-	}{
-		{
-			name: "No notifiable extensions",
-			factories: map[component.Type]extension.Factory{
-				component.MustNewType("nop"): nopExtensionFactory,
-			},
-			extensionsConfigs: map[component.ID]component.Config{
-				component.MustNewID("nop"): nopExtensionConfig,
-			},
-			serviceExtensions: []component.ID{
-				component.MustNewID("nop"),
-			},
-		},
-		{
-			name: "One notifiable extension",
-			factories: map[component.Type]extension.Factory{
-				component.MustNewType("notifiable1"): n1ExtensionFactory,
-			},
-			extensionsConfigs: map[component.ID]component.Config{
-				component.MustNewID("notifiable1"): n1ExtensionConfig,
-			},
-			serviceExtensions: []component.ID{
-				component.MustNewID("notifiable1"),
-			},
-		},
-		{
-			name: "Multiple notifiable extensions",
-			factories: map[component.Type]extension.Factory{
-				component.MustNewType("notifiable1"): n1ExtensionFactory,
-				component.MustNewType("notifiable2"): n2ExtensionFactory,
-			},
-			extensionsConfigs: map[component.ID]component.Config{
-				component.MustNewID("notifiable1"): n1ExtensionConfig,
-				component.MustNewID("notifiable2"): n2ExtensionConfig,
-			},
-			serviceExtensions: []component.ID{
-				component.MustNewID("notifiable1"),
-				component.MustNewID("notifiable2"),
-			},
-		},
-		{
-			name: "Errors in extension notification",
-			factories: map[component.Type]extension.Factory{
-				component.MustNewType("notifiableErr"): nErrExtensionFactory,
-			},
-			extensionsConfigs: map[component.ID]component.Config{
-				component.MustNewID("notifiableErr"): nErrExtensionConfig,
-			},
-			serviceExtensions: []component.ID{
-				component.MustNewID("notifiableErr"),
-			},
-			want: notificationError,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			extensions, err := New(context.Background(), Settings{
-				Telemetry:  componenttest.NewNopTelemetrySettings(),
-				BuildInfo:  component.NewDefaultBuildInfo(),
-				Extensions: builders.NewExtension(tt.extensionsConfigs, tt.factories),
-			}, tt.serviceExtensions)
-			require.NoError(t, err)
-			errs := extensions.NotifyConfig(context.Background(), confmap.NewFromStringMap(map[string]any{}))
-			assert.Equal(t, tt.want, errs)
-		})
-	}
-}
-
-func TestNotifyConfigWithNilConfig(t *testing.T) {
-	called := false
-	extensionFactory := newConfigWatcherExtensionFactory(component.MustNewType("notifiable"), func() error {
-		called = true
-		return errors.New("unexpected notification")
-	})
-
-	extensions, err := New(context.Background(), Settings{
-		Telemetry: componenttest.NewNopTelemetrySettings(),
-		BuildInfo: component.NewDefaultBuildInfo(),
-		Extensions: builders.NewExtension(
-			map[component.ID]component.Config{component.MustNewID("notifiable"): extensionFactory.CreateDefaultConfig()},
-			map[component.Type]extension.Factory{component.MustNewType("notifiable"): extensionFactory},
-		),
-	}, []component.ID{component.MustNewID("notifiable")})
-	require.NoError(t, err)
-
-	require.NoError(t, extensions.NotifyConfig(context.Background(), nil))
-	assert.False(t, called)
-}
-
 type configWatcherExtension struct {
 	fn func() error
 }
@@ -325,10 +217,6 @@ func (comp *configWatcherExtension) Start(context.Context, component.Host) error
 }
 
 func (comp *configWatcherExtension) Shutdown(context.Context) error {
-	return comp.fn()
-}
-
-func (comp *configWatcherExtension) NotifyConfig(context.Context, *confmap.Conf) error {
 	return comp.fn()
 }
 
@@ -900,7 +788,6 @@ func newConfigSnapshotWatcherExtensionFactory(name component.Type, fn func(exten
 
 type configSnapshotAndConfigWatcherExtension struct {
 	notifyConfigSnapshot func()
-	notifyConfig         func()
 }
 
 func (comp *configSnapshotAndConfigWatcherExtension) Start(context.Context, component.Host) error {
@@ -916,11 +803,6 @@ func (comp *configSnapshotAndConfigWatcherExtension) NotifyConfigSnapshot(contex
 	return nil
 }
 
-func (comp *configSnapshotAndConfigWatcherExtension) NotifyConfig(context.Context, *confmap.Conf) error {
-	comp.notifyConfig()
-	return nil
-}
-
 func newConfigSnapshotAndConfigWatcherExtensionFactory(name component.Type, notifyConfigSnapshot, notifyConfig func()) extension.Factory {
 	return extension.NewFactory(
 		name,
@@ -928,7 +810,6 @@ func newConfigSnapshotAndConfigWatcherExtensionFactory(name component.Type, noti
 		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
 			return &configSnapshotAndConfigWatcherExtension{
 				notifyConfigSnapshot: notifyConfigSnapshot,
-				notifyConfig:         notifyConfig,
 			}, nil
 		},
 		component.StabilityLevelDevelopment,

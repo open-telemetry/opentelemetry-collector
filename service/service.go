@@ -114,11 +114,6 @@ type Service struct {
 
 // New creates a new Service, its telemetry, and Components.
 func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr error) {
-	configSnapshot := set.ConfigSnapshot
-	if configSnapshot == nil && set.CollectorConf != nil {
-		configSnapshot = extensioncapabilities.NewConfigSnapshot(set.CollectorConf, nil)
-	}
-
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &graph.Host{
@@ -132,7 +127,7 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 			BuildInfo:         set.BuildInfo,
 			AsyncErrorChannel: set.AsyncErrorChannel,
 		},
-		configSnapshot: configSnapshot,
+		configSnapshot: set.ConfigSnapshot,
 	}
 
 	if set.TelemetryFactory == nil {

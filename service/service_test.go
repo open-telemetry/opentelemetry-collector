@@ -390,7 +390,6 @@ func TestExtensionNotificationFailure(t *testing.T) {
 
 func TestNilCollectorEffectiveConfig(t *testing.T) {
 	set := newNopSettings()
-	set.CollectorConf = nil
 	cfg := newNopConfig()
 
 	extName := component.MustNewType("configWatcher")
@@ -412,7 +411,6 @@ func TestNilCollectorEffectiveConfig(t *testing.T) {
 
 func TestConfigSnapshotNotification(t *testing.T) {
 	set := newNopSettings()
-	set.CollectorConf = nil
 	set.ConfigSnapshot = extensioncapabilities.NewConfigSnapshot(
 		confmap.NewFromStringMap(map[string]any{"effective": "value"}),
 		confmap.NewFromStringMap(map[string]any{"unexpanded": "${env:VALUE}"}),
@@ -435,7 +433,6 @@ func TestConfigSnapshotNotification(t *testing.T) {
 
 func TestConfigSnapshotNotSetSkipsHook(t *testing.T) {
 	set := newNopSettings()
-	set.CollectorConf = nil
 	set.ConfigSnapshot = nil
 	cfg := newNopConfig()
 
@@ -534,7 +531,6 @@ func newNopSettings() Settings {
 
 	return Settings{
 		BuildInfo:           component.NewDefaultBuildInfo(),
-		CollectorConf:       confmap.New(),
 		ReceiversConfigs:    receiversConfigs,
 		ReceiversFactories:  receiversFactories,
 		ProcessorsConfigs:   processorsConfigs,
