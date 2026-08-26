@@ -52,11 +52,11 @@ func createDefaultConfig() component.Config {
 				Readers: []config.MetricReader{
 					{
 						Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
-							WithoutScopeInfo:  ptr(true),
-							WithoutUnits:      ptr(true),
-							WithoutTypeSuffix: ptr(true),
-							Host:              ptr("localhost"),
-							Port:              ptr(8888),
+							WithoutScopeInfo:  new(true),
+							WithoutUnits:      new(true),
+							WithoutTypeSuffix: new(true),
+							Host:              new("localhost"),
+							Port:              new(8888),
 						}}},
 					},
 				},
@@ -70,6 +70,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
+//go:fix inline
 func ptr[T any](v T) *T {
-	return &v
+	return new(v)
 }
