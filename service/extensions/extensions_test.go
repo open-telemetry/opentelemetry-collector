@@ -734,10 +734,9 @@ func TestNotifyConfigSnapshotWithNilEffectiveConfig(t *testing.T) {
 
 func TestNotifyConfigSnapshotPrefersSnapshotWatcher(t *testing.T) {
 	var configSnapshotNotifications, configNotifications int
-	extensionFactory := newConfigSnapshotAndConfigWatcherExtensionFactory(
+	extensionFactory := newConfigSnapshotExtensionFactory(
 		component.MustNewType("bothwatchers"),
 		func() { configSnapshotNotifications++ },
-		func() { configNotifications++ },
 	)
 
 	exts, err := New(context.Background(), Settings{
@@ -803,7 +802,7 @@ func (comp *configSnapshotAndConfigWatcherExtension) NotifyConfigSnapshot(contex
 	return nil
 }
 
-func newConfigSnapshotAndConfigWatcherExtensionFactory(name component.Type, notifyConfigSnapshot, notifyConfig func()) extension.Factory {
+func newConfigSnapshotExtensionFactory(name component.Type, notifyConfigSnapshot func()) extension.Factory {
 	return extension.NewFactory(
 		name,
 		func() component.Config { return &struct{}{} },
