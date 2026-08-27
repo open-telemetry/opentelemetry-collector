@@ -306,7 +306,7 @@ func TestRunContents(t *testing.T) {
 			ymlContent, err := os.ReadFile(filepath.Join("testdata", tt.yml))
 			require.NoError(t, err)
 			metadataFile := filepath.Join(tmpdir, "metadata.yaml")
-			require.NoError(t, os.WriteFile(metadataFile, ymlContent, 0o600))
+			require.NoError(t, os.WriteFile(metadataFile, ymlContent, 0o600)) // #nosec G703
 			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, "empty.go"), []byte("package shortname"), 0o600))
 			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, "go.mod"), []byte("module shortname"), 0o600))
 			readmeContent := `

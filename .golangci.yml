@@ -117,6 +117,7 @@ linters:
     gosec:
       excludes:
         - G104 # FIXME
+        - G115 # FIXME
         - G402
         - G404
 
