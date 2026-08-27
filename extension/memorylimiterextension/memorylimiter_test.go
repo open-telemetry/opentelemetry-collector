@@ -5,6 +5,7 @@ package memorylimiterextension
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"runtime"
@@ -18,12 +19,33 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/memorylimiterextension/internal/metadata"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
 	"go.opentelemetry.io/collector/internal/memorylimiter/iruntime"
+
+	"go.opentelemetry.io/otel/metric"
+	embeddedmetric "go.opentelemetry.io/otel/metric/embedded"
+	noopmetric "go.opentelemetry.io/otel/metric/noop"
 )
+
+type errorMeter struct {
+	noopmetric.Meter
+}
+
+type errorMeterProvider struct {
+	embeddedmetric.MeterProvider
+}
+
+func (errorMeterProvider) Meter(string, ...metric.MeterOption) metric.Meter {
+	return errorMeter{}
+}
+
+func (errorMeter) Int64Counter(string, ...metric.Int64CounterOption) (metric.Int64Counter, error) {
+	return nil, errors.New("failed to create counter")
+}
 
 type mockServerStream struct {
 	grpc.ServerStream
@@ -32,6 +54,23 @@ type mockServerStream struct {
 
 func (m *mockServerStream) Context() context.Context {
 	return m.ctx
+}
+
+func TestCreateExtension(t *testing.T) {
+	factory := NewFactory()
+	cfg := &Config{
+		CheckInterval:         time.Second,
+		MemoryLimitPercentage: 99,
+		MemorySpikePercentage: 99,
+	}
+
+	set := extensiontest.NewNopSettings(extensiontest.NopType)
+	set.ID = component.NewID(component.MustNewType("memory_limiter"))
+
+	ext, err := factory.Create(context.Background(), set, cfg)
+
+	require.NoError(t, err)
+	require.NotNil(t, ext)
 }
 
 func newRefusingMemoryLimiter(t *testing.T, tb *metadata.TelemetryBuilder) *memoryLimiterExtension {
@@ -256,9 +295,11 @@ func TestCreateExtension_TelemetryBuilderError(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	invalidSettings := extension.Settings{}
+	settings := extensiontest.NewNopSettings(extensiontest.NopType)
+	settings.ID = component.NewID(component.MustNewType("memory_limiter"))
+	settings.MeterProvider = errorMeterProvider{}
 
-	ext, err := factory.Create(context.Background(), invalidSettings, cfg)
+	ext, err := factory.Create(context.Background(), settings, cfg)
 
 	require.Error(t, err)
 	require.Nil(t, ext)
