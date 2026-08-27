@@ -1363,30 +1363,30 @@ func (esc *errOrSinkConsumer) Reset() {
 
 // Reset deletes any stored in the sinks, resets error to nil.
 func (esc *errOrSinkConsumer) checkData(t *testing.T, data any, dataLen int) {
-	switch data.(type) {
+	switch d := data.(type) {
 	case ptrace.Traces:
 		allTraces := esc.AllTraces()
 		require.Len(t, allTraces, dataLen)
 		if dataLen > 0 {
-			require.Equal(t, allTraces[0], data)
+			require.Equal(t, allTraces[0], d)
 		}
 	case pmetric.Metrics:
 		allMetrics := esc.AllMetrics()
 		require.Len(t, allMetrics, dataLen)
 		if dataLen > 0 {
-			require.Equal(t, allMetrics[0], data)
+			require.Equal(t, allMetrics[0], d)
 		}
 	case plog.Logs:
 		allLogs := esc.AllLogs()
 		require.Len(t, allLogs, dataLen)
 		if dataLen > 0 {
-			require.Equal(t, allLogs[0], data)
+			require.Equal(t, allLogs[0], d)
 		}
 	case pprofile.Profiles:
 		allProfiles := esc.AllProfiles()
 		require.Len(t, allProfiles, dataLen)
 		if dataLen > 0 {
-			requireProfilesEqualIgnoringAppendedStrings(t, data.(pprofile.Profiles), allProfiles[0])
+			requireProfilesEqualIgnoringAppendedStrings(t, d, allProfiles[0])
 		}
 	}
 }
