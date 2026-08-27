@@ -79,32 +79,35 @@ func (ml *memoryLimiterExtension) wrapHTTPHandler(_ context.Context, base http.H
 
 func (ml *memoryLimiterExtension) GetGRPCServerOptions(_ context.Context) ([]grpc.ServerOption, error) {
 	return []grpc.ServerOption{
-		grpc.ChainUnaryInterceptor(
-			func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
-				if ml.MustRefuse() {
-					ml.telemetryBuilder.MemorylimiterRefusedRequests.Add(
-						ctx,
-						1,
-						metric.WithAttributes(attribute.String("transport", "grpc")),
-					)
-					return nil, status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
-				}
-				return handler(ctx, req)
-			},
-		),
-		grpc.ChainStreamInterceptor(
-			func(srv any, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-				ctx := ss.Context()
-				if ml.MustRefuse() {
-					ml.telemetryBuilder.MemorylimiterRefusedRequests.Add(
-						ctx,
-						1,
-						metric.WithAttributes(attribute.String("transport", "grpc")),
-					)
-					return status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
-				}
-				return handler(srv, ss)
-			},
-		),
+		grpc.ChainUnaryInterceptor(ml.grpcUnaryInterceptor),
+		grpc.ChainStreamInterceptor(ml.grpcStreamInterceptor),
 	}, nil
+}
+
+func (ml *memoryLimiterExtension) grpcUnaryInterceptor(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+	if ml.MustRefuse() {
+		ml.telemetryBuilder.MemorylimiterRefusedRequests.Add(
+			ctx,
+			1,
+			metric.WithAttributes(attribute.String("transport", "grpc")),
+		)
+		return nil, status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
+	}
+
+	return handler(ctx, req)
+}
+
+func (ml *memoryLimiterExtension) grpcStreamInterceptor(srv any, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	ctx := ss.Context()
+
+	if ml.MustRefuse() {
+		ml.telemetryBuilder.MemorylimiterRefusedRequests.Add(
+			ctx,
+			1,
+			metric.WithAttributes(attribute.String("transport", "grpc")),
+		)
+		return status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
+	}
+
+	return handler(srv, ss)
 }
