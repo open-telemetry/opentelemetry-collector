@@ -51,7 +51,9 @@ func createDefaultConfig() component.Config {
 	httpCfg.TLS = configoptional.None[configtls.ServerConfig]()
 	httpCfg.WriteTimeout = 0
 	httpCfg.ReadHeaderTimeout = 0
-	httpCfg.IdleTimeout = 0
+	// The deprecated field keeps priority over the keepalive section when set by
+	// the user, so the default must live there for user config to compose with it.
+	httpCfg.IdleTimeout = 0 //nolint:staticcheck // SA1019
 
 	return &Config{
 		Protocols: Protocols{
