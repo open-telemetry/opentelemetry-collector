@@ -270,22 +270,26 @@ checkapi:
 checkdoc:
 	$(GO_TOOL) checkfile --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "README.md"
 
+# Extract the relative path of every module listed between "stable:" and "beta:" in versions.yaml
+STABLE_MODULES := $(shell sed -n -e '/stable:/,/beta:/ s/.*- go.opentelemetry.io\/collector/./p' versions.yaml)
+
+.PHONY: for-all-stable-target
+for-all-stable-target: $(STABLE_MODULES)
+
 # Construct new API state snapshots
 .PHONY: apidiff-build
 apidiff-build:
-	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/gen-apidiff.sh -p $(pkg)))
+	@$(MAKE) --silent for-all-stable-target TARGET="apidiff-build-mod"
 
-# If we are running in CI, change input directory
-ifeq ($(CI), true)
-APICOMPARE_OPTS=$(COMPARE_OPTS)
-else
-APICOMPARE_OPTS=-d "./internal/data/apidiff"
-endif
-
-# Compare API state snapshots
+# Compare API state snapshots and log differences
 .PHONY: apidiff-compare
 apidiff-compare:
-	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/compare-apidiff.sh -p $(pkg)))
+	@$(MAKE) --silent for-all-stable-target TARGET="apidiff-compare-mod"
+
+# Compare API state snapshots and fail if there are differences
+.PHONY: apidiff-check
+apidiff-check:
+	@$(MAKE) --silent for-all-stable-target TARGET="apidiff-check-mod"
 
 .PHONY: multimod-verify
 multimod-verify:
@@ -303,10 +307,11 @@ REMOTE?=git@github.com:open-telemetry/opentelemetry-collector.git
 .PHONY: push-tags
 push-tags:
 	$(GO_TOOL) multimod verify
-	set -e; for tag in `$(GO_TOOL) multimod tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
-		echo "pushing tag $${tag}"; \
-		git push ${REMOTE} $${tag}; \
-	done;
+	set -e; \
+	tags=`$(GO_TOOL) multimod tag -m ${MODSET} -c ${COMMIT} --print-tags 2>&1 | grep 'v[0-9]'`; \
+	if [ -n "$$tags" ]; then \
+		git push ${REMOTE} $$tags; \
+	fi
 
 .PHONY: check-changes
 check-changes:

@@ -29,9 +29,10 @@ func TestNewFactory_Defaults(t *testing.T) {
 	factory := NewFactory(nil)
 	require.NotNil(t, factory)
 
-	res, err := factory.CreateResource(context.Background(), Settings{}, nil)
+	res, schemaURL, err := factory.CreateResource(context.Background(), Settings{}, nil)
 	require.NoError(t, err)
 	assert.Equal(t, pcommon.NewResource(), res)
+	assert.Empty(t, schemaURL)
 
 	logger, loggerShutdownFunc, err := factory.CreateLogger(context.Background(), LoggerSettings{}, nil)
 	require.NoError(t, err)
@@ -69,18 +70,19 @@ func TestNewFactory_CreateResource(t *testing.T) {
 	dummyResource := pcommon.NewResource()
 	dummyResource.Attributes().PutStr("what", "ever")
 	factory := NewFactory(nil, WithCreateResource(
-		func(ctx context.Context, set Settings, cfg component.Config) (pcommon.Resource, error) {
+		func(ctx context.Context, set Settings, cfg component.Config) (pcommon.Resource, string, error) {
 			assert.Equal(t, 123, ctx.Value(contextKey{}))
 			assert.Equal(t, settings, set)
 			assert.Equal(t, config, cfg)
-			return dummyResource, errors.New("not implemented")
+			return dummyResource, "https://opentelemetry.io/schemas/1.40.0", errors.New("not implemented")
 		},
 	))
 	require.NotNil(t, factory)
 
-	resource, err := factory.CreateResource(ctx, settings, config)
+	resource, schemaURL, err := factory.CreateResource(ctx, settings, config)
 	require.EqualError(t, err, "not implemented")
 	assert.Equal(t, dummyResource, resource)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.40.0", schemaURL)
 }
 
 func TestNewFactory_CreateLogger(t *testing.T) {

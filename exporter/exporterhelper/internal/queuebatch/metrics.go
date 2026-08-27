@@ -81,8 +81,7 @@ func (metricsReferenceCounter) Unref(req request.Request) {
 }
 
 func (req *metricsRequest) OnError(err error) request.Request {
-	var metricsError consumererror.Metrics
-	if errors.As(err, &metricsError) {
+	if metricsError, ok := errors.AsType[consumererror.Metrics](err); ok {
 		// TODO: Add logic to unref the new request created here.
 		return newMetricsRequest(metricsError.Data())
 	}

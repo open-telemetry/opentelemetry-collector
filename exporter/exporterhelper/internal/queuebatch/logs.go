@@ -84,8 +84,7 @@ func (logsReferenceCounter) Unref(req request.Request) {
 }
 
 func (req *logsRequest) OnError(err error) request.Request {
-	var logError consumererror.Logs
-	if errors.As(err, &logError) {
+	if logError, ok := errors.AsType[consumererror.Logs](err); ok {
 		// TODO: Add logic to unref the new request created here.
 		return newLogsRequest(logError.Data())
 	}

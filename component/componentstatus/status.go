@@ -88,10 +88,8 @@ type Event struct {
 	// attributes provides additional context or metadata for the event.
 	attributes pcommon.Map
 
-	status Status
-	err    error
-	// TODO: consider if a timestamp is necessary in the default Event struct or is needed only for the healthcheckv2 extension
-	// https://github.com/open-telemetry/opentelemetry-collector/issues/10763
+	status    Status
+	err       error
 	timestamp time.Time
 }
 

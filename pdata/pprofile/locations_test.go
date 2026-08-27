@@ -18,12 +18,14 @@ func TestFromLocationIndices(t *testing.T) {
 	table.AppendEmpty().SetAddress(2)
 
 	stack := NewStack()
-	locs := FromLocationIndices(table, stack)
+	locs, err := FromLocationIndices(table, stack)
+	require.NoError(t, err)
 	assert.Equal(t, locs, NewLocationSlice())
 
 	// Add a location
 	stack.LocationIndices().Append(0)
-	locs = FromLocationIndices(table, stack)
+	locs, err = FromLocationIndices(table, stack)
+	require.NoError(t, err)
 
 	tLoc := NewLocationSlice()
 	tLoc.AppendEmpty().SetAddress(1)
@@ -32,8 +34,21 @@ func TestFromLocationIndices(t *testing.T) {
 	// Add another location
 	stack.LocationIndices().Append(1)
 
-	locs = FromLocationIndices(table, stack)
+	locs, err = FromLocationIndices(table, stack)
+	require.NoError(t, err)
 	assert.Equal(t, table, locs)
+
+	// Out-of-bounds location index
+	oob := NewStack()
+	oob.LocationIndices().Append(int32(table.Len()))
+	_, err = FromLocationIndices(table, oob)
+	require.ErrorContains(t, err, "out of bounds")
+
+	// Negative location index
+	neg := NewStack()
+	neg.LocationIndices().Append(-1)
+	_, err = FromLocationIndices(table, neg)
+	assert.ErrorContains(t, err, "out of bounds")
 }
 
 func TestSetLocation(t *testing.T) {
@@ -90,7 +105,7 @@ func BenchmarkFromLocationIndices(b *testing.B) {
 	b.ReportAllocs()
 
 	for b.Loop() {
-		_ = FromLocationIndices(table, obj)
+		_, _ = FromLocationIndices(table, obj)
 	}
 }
 
