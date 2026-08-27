@@ -102,6 +102,29 @@ func TestResolveProfilesReferencesInvalidIndices(t *testing.T) {
 	assert.True(t, ok)
 }
 
+func TestResolveProfilesReferencesWithBothKeyAndKeyStrindex(t *testing.T) {
+	profiles := NewProfiles()
+	dict := profiles.Dictionary()
+	dict.StringTable().Append("") // index 0
+	dict.StringTable().Append("other-key")
+
+	rp := profiles.ResourceProfiles().AppendEmpty()
+	attrs := rp.Resource().Attributes()
+
+	// key and key_strindex are mutually exclusive per the proto spec: this is
+	// illegal input, but must not silently clobber the already-set inline key.
+	mapOrig := internal.GetMapOrig(internal.MapWrapper(attrs))
+	*mapOrig = append(*mapOrig, internal.KeyValue{
+		Key:         "inline-key",
+		KeyStrindex: 1, // references "other-key"
+	})
+
+	resolveProfilesReferences(profiles)
+
+	kv := &(*mapOrig)[0]
+	assert.Equal(t, "inline-key", kv.Key, "inline key must not be overwritten by key_strindex")
+}
+
 func TestResolveAnyValueReferenceWithPooling(t *testing.T) {
 	// Test with pooling enabled
 	prevPooling := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
