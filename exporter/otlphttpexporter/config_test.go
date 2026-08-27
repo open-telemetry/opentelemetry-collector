@@ -78,17 +78,15 @@ func TestUnmarshalConfig(t *testing.T) {
 					},
 					Insecure: true,
 				},
-				ReadBufferSize:  123,
-				WriteBufferSize: 345,
-				Timeout:         time.Second * 10,
-				Compression:     "gzip",
-				Keepalive: configoptional.Some(confighttp.KeepaliveClientConfig{
-					MaxIdleConns:        defaultMaxIdleConns,
-					MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
-					IdleConnTimeout:     defaultIdleConnTimeout,
-				}),
-				MaxConnsPerHost:   defaultMaxConnsPerHost,
-				ForceAttemptHTTP2: true,
+				ReadBufferSize:      123,
+				WriteBufferSize:     345,
+				Timeout:             time.Second * 10,
+				Compression:         "gzip",
+				MaxIdleConns:        defaultMaxIdleConns,        //nolint:staticcheck // SA1019
+				MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost, //nolint:staticcheck // SA1019
+				MaxConnsPerHost:     defaultMaxConnsPerHost,
+				IdleConnTimeout:     defaultIdleConnTimeout, //nolint:staticcheck // SA1019
+				ForceAttemptHTTP2:   true,
 			},
 			ProfilesEndpoint: "https://custom.profiles.endpoint:8080/v1development/profiles",
 		}, cfg)
