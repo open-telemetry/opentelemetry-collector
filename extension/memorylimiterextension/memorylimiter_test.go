@@ -14,9 +14,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	embeddedmetric "go.opentelemetry.io/otel/metric/embedded"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -26,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/memorylimiterextension/internal/metadata"
+	"go.opentelemetry.io/collector/extension/memorylimiterextension/internal/metadatatest"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
 	"go.opentelemetry.io/collector/internal/memorylimiter/iruntime"
 )
@@ -128,112 +132,6 @@ func TestNewMemoryLimiter_Error(t *testing.T) {
 	require.Error(t, err)
 	require.Nil(t, ext)
 	require.ErrorContains(t, err, "failed to get total memory")
-}
-
-func TestGetGRPCServerOptions_Normal(t *testing.T) {
-	ctx := context.Background()
-
-	tb, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
-	require.NoError(t, err)
-
-	cfg := &Config{
-		CheckInterval:         time.Second,
-		MemoryLimitPercentage: 99,
-		MemorySpikePercentage: 99,
-	}
-
-	ml, err := newMemoryLimiter(cfg, zap.NewNop(), tb)
-	require.NoError(t, err)
-
-	opts, err := ml.GetGRPCServerOptions(ctx)
-	require.NoError(t, err)
-	require.Len(t, opts, 2)
-
-	// Direct structural testing of the interceptor execution paths to secure coverage
-	unaryInterceptor := func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-		// We explicitly track the branch path under non-refusal
-		if false { // Simulate ml.MustRefuse() == false
-			return nil, status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
-		}
-		return handler(ctx, req)
-	}
-
-	streamInterceptor := func(srv any, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		if false { // Simulate ml.MustRefuse() == false
-			return status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
-		}
-		return handler(srv, ss)
-	}
-
-	dummyUnaryHandler := func(_ context.Context, _ any) (any, error) {
-		return "success", nil
-	}
-	dummyStreamHandler := func(_ any, _ grpc.ServerStream) error {
-		return nil
-	}
-	mockStream := &mockServerStream{ctx: ctx}
-
-	resp, err := unaryInterceptor(ctx, "req", nil, dummyUnaryHandler)
-	require.NoError(t, err)
-	assert.Equal(t, "success", resp)
-
-	err = streamInterceptor(nil, mockStream, nil, dummyStreamHandler)
-	assert.NoError(t, err)
-}
-
-func TestGetGRPCServerOptions_Refusal(t *testing.T) {
-	ctx := context.Background()
-
-	tb, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
-	require.NoError(t, err)
-
-	cfg := &Config{
-		CheckInterval:         time.Second,
-		MemoryLimitPercentage: 1,
-		MemorySpikePercentage: 1,
-	}
-
-	ml, err := newMemoryLimiter(cfg, zap.NewNop(), tb)
-	require.NoError(t, err)
-
-	unaryInterceptor := func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-		// We explicitly track the branch path under absolute refusal
-		if true { // Simulate ml.MustRefuse() == true
-			if ml.telemetryBuilder != nil && ml.telemetryBuilder.MemorylimiterRefusedRequests != nil {
-				ml.telemetryBuilder.MemorylimiterRefusedRequests.Add(ctx, 1)
-			}
-			return nil, status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
-		}
-		return handler(ctx, req)
-	}
-
-	streamInterceptor := func(srv any, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		innerCtx := ss.Context()
-		if true { // Simulate ml.MustRefuse() == true
-			if ml.telemetryBuilder != nil && ml.telemetryBuilder.MemorylimiterRefusedRequests != nil {
-				ml.telemetryBuilder.MemorylimiterRefusedRequests.Add(innerCtx, 1)
-			}
-			return status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
-		}
-		return handler(srv, ss)
-	}
-
-	dummyUnaryHandler := func(_ context.Context, _ any) (any, error) {
-		return "success", nil
-	}
-	dummyStreamHandler := func(_ any, _ grpc.ServerStream) error {
-		return nil
-	}
-	mockStream := &mockServerStream{ctx: ctx}
-
-	resp, err := unaryInterceptor(ctx, "req", nil, dummyUnaryHandler)
-	require.Error(t, err)
-	assert.Nil(t, resp)
-	assert.Contains(t, err.Error(), "RESOURCE_EXHAUSTED")
-
-	err = streamInterceptor(nil, mockStream, nil, dummyStreamHandler)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "RESOURCE_EXHAUSTED")
 }
 
 func TestMemoryPressureResponse(t *testing.T) {
@@ -434,25 +332,6 @@ func TestGRPCStreamInterceptor_Refused(t *testing.T) {
 	assert.False(t, called)
 }
 
-func TestGetHTTPHandler(t *testing.T) {
-	tb, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
-	require.NoError(t, err)
-
-	cfg := &Config{
-		CheckInterval:         time.Second,
-		MemoryLimitPercentage: 99,
-		MemorySpikePercentage: 99,
-	}
-
-	ml, err := newMemoryLimiter(cfg, zap.NewNop(), tb)
-	require.NoError(t, err)
-
-	handler, err := ml.GetHTTPHandler(context.Background())
-
-	require.NoError(t, err)
-	require.NotNil(t, handler)
-}
-
 func TestWrapHTTPHandler_Normal(t *testing.T) {
 	ctx := context.Background()
 
@@ -489,8 +368,11 @@ func TestWrapHTTPHandler_Normal(t *testing.T) {
 func TestWrapHTTPHandler_Refused(t *testing.T) {
 	ctx := context.Background()
 
-	tb, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+	testTel := componenttest.NewTelemetry()
+
+	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
+	defer tb.Shutdown()
 
 	ml := newRefusingMemoryLimiter(t, tb)
 
@@ -499,7 +381,10 @@ func TestWrapHTTPHandler_Refused(t *testing.T) {
 		called = true
 	})
 
-	handler, err := ml.wrapHTTPHandler(ctx, base)
+	wrap, err := ml.GetHTTPHandler(ctx)
+	require.NoError(t, err)
+
+	handler, err := wrap(ctx, base)
 	require.NoError(t, err)
 
 	req := httptest.NewRequest(http.MethodPost, "/", http.NoBody)
@@ -509,6 +394,20 @@ func TestWrapHTTPHandler_Refused(t *testing.T) {
 
 	assert.Equal(t, http.StatusTooManyRequests, rec.Code)
 	assert.False(t, called)
+
+	metadatatest.AssertEqualMemorylimiterRefusedRequests(
+		t,
+		testTel,
+		[]metricdata.DataPoint[int64]{
+			{
+				Value: 1,
+				Attributes: attribute.NewSet(
+					attribute.String("transport", "http"),
+				),
+			},
+		},
+		metricdatatest.IgnoreTimestamp(),
+	)
 }
 
 func TestGetGRPCServerOptions(t *testing.T) {
