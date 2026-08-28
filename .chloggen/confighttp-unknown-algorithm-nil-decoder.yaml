@@ -7,7 +7,7 @@ change_type: bug_fix
 component: pkg/confighttp
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Skip unrecognised entries in `compression_algorithms` instead of registering them as nil decoders, which panicked the server."
+note: "Skip unrecognized entries in `compression_algorithms` instead of registering them as nil decoders, which panicked the server."
 
 # One or more tracking issues or pull requests related to the change
 issues: [15836]
@@ -16,7 +16,7 @@ issues: [15836]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  An unrecognised name was stored in the enabled-decoder map with a nil value, so a request
+  An unrecognized name was stored in the enabled-decoder map with a nil value, so a request
   whose `Content-Encoding` matched it was treated as supported and the nil decoder was called,
   panicking the handler. Unknown names are now skipped, so such a request falls through to the
   existing `unsupported Content-Encoding` path and returns 400.

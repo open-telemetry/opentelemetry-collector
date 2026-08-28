@@ -420,7 +420,7 @@ func TestEmptyCompressionAlgorithmsAllowsUncompressed(t *testing.T) {
 			expectedError:         "unsupported Content-Encoding",
 		},
 		{
-			// An unrecognised algorithm name used to be stored as a nil decoder, so
+			// An unrecognized algorithm name used to be stored as a nil decoder, so
 			// newBodyReader found the key present, treated the encoding as supported,
 			// and panicked calling it. It must be skipped instead, leaving the request
 			// to fall through to the unsupported-encoding path.
@@ -431,7 +431,7 @@ func TestEmptyCompressionAlgorithmsAllowsUncompressed(t *testing.T) {
 			expectedError:         "unsupported Content-Encoding",
 		},
 		{
-			// A list of only unrecognised names leaves nothing enabled, which takes the
+			// A list of only unrecognized names leaves nothing enabled, which takes the
 			// same path as an explicitly empty list: decompression is bypassed rather
 			// than rejected. Pinned so the difference from the mixed case above is
 			// deliberate rather than accidental.
