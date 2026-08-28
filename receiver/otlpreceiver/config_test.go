@@ -141,6 +141,7 @@ func TestUnmarshalConfig(t *testing.T) {
 							AllowedOrigins: []string{"https://*.test.com", "https://test.com"},
 							MaxAge:         7200,
 						}),
+						KeepAlivesEnabled: true, //nolint:staticcheck // SA1019
 					},
 					TracesURLPath:  "/traces",
 					MetricsURLPath: "/v2/metrics",
@@ -173,6 +174,7 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 							Endpoint:  "/tmp/http_otlp.sock",
 							Transport: confignet.TransportTypeUnix,
 						},
+						KeepAlivesEnabled: true, //nolint:staticcheck // SA1019
 					},
 					TracesURLPath:  defaultTracesURLPath,
 					MetricsURLPath: defaultMetricsURLPath,
