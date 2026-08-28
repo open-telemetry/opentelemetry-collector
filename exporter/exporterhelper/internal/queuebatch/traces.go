@@ -38,19 +38,14 @@ var (
 )
 
 type tracesRequest struct {
-	td ptrace.Traces
-	// Sizes are cached per sizer type: the batcher and the queue may ask for
-	// bytes and items on the same request, and a single cache would return a
-	// value computed for the wrong sizer. -1 means "not yet computed".
-	cachedItemsSize int
-	cachedBytesSize int
+	td    ptrace.Traces
+	sizes request.SizeCache
 }
 
 func newTracesRequest(td ptrace.Traces) request.Request {
 	return &tracesRequest{
-		td:              td,
-		cachedItemsSize: -1,
-		cachedBytesSize: -1,
+		td:    td,
+		sizes: request.NewSizeCache(),
 	}
 }
 
@@ -92,49 +87,15 @@ func (req *tracesRequest) OnError(err error) request.Request {
 }
 
 func (req *tracesRequest) ItemsCount() int {
-	if req.cachedItemsSize < 0 {
-		req.cachedItemsSize = req.td.SpanCount()
-	}
-	return req.cachedItemsSize
+	return req.sizes.SizeOf(request.SizerTypeItems, func() int { return req.td.SpanCount() })
 }
 
-func (req *tracesRequest) size(sz sizer.TracesSizer) int {
-	switch sz.(type) {
-	case *sizer.TracesCountSizer:
-		if req.cachedItemsSize < 0 {
-			req.cachedItemsSize = sz.TracesSize(req.td)
-		}
-		return req.cachedItemsSize
-	case *sizer.TracesBytesSizer:
-		if req.cachedBytesSize < 0 {
-			req.cachedBytesSize = sz.TracesSize(req.td)
-		}
-		return req.cachedBytesSize
-	default:
-		return sz.TracesSize(req.td)
-	}
-}
-
-// setCachedSize records the size for sz's dimension and invalidates the other,
-// which the caller (mergeTo/split) did not maintain. This keeps the dimension
-// used by the batcher (a single configured sizer) O(1) across merges while
-// never returning a stale value for the other dimension.
-func (req *tracesRequest) setCachedSize(sz sizer.TracesSizer, size int) {
-	switch sz.(type) {
-	case *sizer.TracesCountSizer:
-		req.cachedItemsSize = size
-		req.cachedBytesSize = -1
-	case *sizer.TracesBytesSizer:
-		req.cachedBytesSize = size
-		req.cachedItemsSize = -1
-	}
+func (req *tracesRequest) size(sz sizer.TracesSizer, szt request.SizerType) int {
+	return req.sizes.SizeOf(szt, func() int { return sz.TracesSize(req.td) })
 }
 
 func (req *tracesRequest) BytesSize() int {
-	if req.cachedBytesSize < 0 {
-		req.cachedBytesSize = tracesMarshaler.TracesSize(req.td)
-	}
-	return req.cachedBytesSize
+	return req.sizes.SizeOf(request.SizerTypeBytes, func() int { return tracesMarshaler.TracesSize(req.td) })
 }
 
 // RequestConsumeFromTraces returns a RequestConsumeFunc that consumes ptrace.Traces.

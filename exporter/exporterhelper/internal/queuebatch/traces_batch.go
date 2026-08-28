@@ -31,32 +31,32 @@ func (req *tracesRequest) MergeSplit(_ context.Context, maxSize int, szt request
 		if !ok {
 			return nil, errors.New("invalid input type")
 		}
-		req2.mergeTo(req, sz)
+		req2.mergeTo(req, sz, szt)
 	}
 
 	// If no limit we can simply merge the new request into the current and return.
 	if maxSize == 0 {
 		return []request.Request{req}, nil
 	}
-	return req.split(maxSize, sz)
+	return req.split(maxSize, sz, szt)
 }
 
-func (req *tracesRequest) mergeTo(dst *tracesRequest, sz sizer.TracesSizer) {
+func (req *tracesRequest) mergeTo(dst *tracesRequest, sz sizer.TracesSizer, szt request.SizerType) {
 	if sz != nil {
-		dst.setCachedSize(sz, dst.size(sz)+req.size(sz))
-		req.setCachedSize(sz, 0)
+		dst.sizes.Update(szt, dst.size(sz, szt)+req.size(sz, szt))
+		req.sizes.Update(szt, 0)
 	}
 	req.td.ResourceSpans().MoveAndAppendTo(dst.td.ResourceSpans())
 }
 
-func (req *tracesRequest) split(maxSize int, sz sizer.TracesSizer) ([]request.Request, error) {
+func (req *tracesRequest) split(maxSize int, sz sizer.TracesSizer, szt request.SizerType) ([]request.Request, error) {
 	var res []request.Request
-	for req.size(sz) > maxSize {
+	for req.size(sz, szt) > maxSize {
 		td, rmSize := extractTraces(req.td, maxSize, sz)
 		if td.SpanCount() == 0 {
 			return res, fmt.Errorf("one span size is greater than max size, dropping items: %d", req.td.SpanCount())
 		}
-		req.setCachedSize(sz, req.size(sz)-rmSize)
+		req.sizes.Update(szt, req.size(sz, szt)-rmSize)
 		res = append(res, newTracesRequest(td))
 	}
 	res = append(res, req)

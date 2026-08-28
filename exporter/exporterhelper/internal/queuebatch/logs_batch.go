@@ -30,7 +30,7 @@ func (req *logsRequest) MergeSplit(_ context.Context, maxSize int, szt request.S
 		if !ok {
 			return nil, errors.New("invalid input type")
 		}
-		req2.mergeTo(req, sz)
+		req2.mergeTo(req, sz, szt)
 	}
 
 	// If no limit we can simply merge the new request into the current and return.
@@ -38,25 +38,25 @@ func (req *logsRequest) MergeSplit(_ context.Context, maxSize int, szt request.S
 		return []request.Request{req}, nil
 	}
 
-	return req.split(maxSize, sz)
+	return req.split(maxSize, sz, szt)
 }
 
-func (req *logsRequest) mergeTo(dst *logsRequest, sz sizer.LogsSizer) {
+func (req *logsRequest) mergeTo(dst *logsRequest, sz sizer.LogsSizer, szt request.SizerType) {
 	if sz != nil {
-		dst.setCachedSize(sz, dst.size(sz)+req.size(sz))
-		req.setCachedSize(sz, 0)
+		dst.sizes.Update(szt, dst.size(sz, szt)+req.size(sz, szt))
+		req.sizes.Update(szt, 0)
 	}
 	req.ld.ResourceLogs().MoveAndAppendTo(dst.ld.ResourceLogs())
 }
 
-func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer) ([]request.Request, error) {
+func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer, szt request.SizerType) ([]request.Request, error) {
 	var res []request.Request
-	for req.size(sz) > maxSize {
+	for req.size(sz, szt) > maxSize {
 		ld, removedSize := extractLogs(req.ld, maxSize, sz)
 		if ld.LogRecordCount() == 0 {
 			return res, fmt.Errorf("one log record size is greater than max size, dropping items: %d", req.ld.LogRecordCount())
 		}
-		req.setCachedSize(sz, req.size(sz)-removedSize)
+		req.sizes.Update(szt, req.size(sz, szt)-removedSize)
 		res = append(res, newLogsRequest(ld))
 	}
 	res = append(res, req)
