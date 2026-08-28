@@ -247,14 +247,27 @@ func httpContentDecompressor(h http.Handler, maxRequestBodySize int64, eh func(w
 
 	enabled := map[string]func(body io.ReadCloser) (io.ReadCloser, error){}
 	for _, dec := range enableDecoders {
-		enabled[dec] = availableDecoders[dec]
+		var decoder func(body io.ReadCloser) (io.ReadCloser, error)
+		switch dec {
+		case "deflate":
+			// "deflate" has no entry of its own; it is served by the zlib reader.
+			decoder = availableDecoders["zlib"]
+		case "snappy":
+			// snappy needs the request-body limit, so it is constructed per server.
+			decoder = newSnappyHandler(maxRequestBodySize)
+		default:
+			decoder = availableDecoders[dec]
+		}
 
-		if dec == "deflate" {
-			enabled["deflate"] = availableDecoders["zlib"]
+		// An unrecognised name would otherwise be stored as a nil decoder. The key
+		// would then be present in the map, so newBodyReader would take it as
+		// supported and call it, panicking on the nil func. Skipping it instead
+		// lets the encoding fall through to the "unsupported Content-Encoding"
+		// path and return 400, which is what an unconfigured algorithm should do.
+		if decoder == nil {
+			continue
 		}
-		if dec == "snappy" {
-			enabled["snappy"] = newSnappyHandler(maxRequestBodySize)
-		}
+		enabled[dec] = decoder
 	}
 
 	d := &decompressor{

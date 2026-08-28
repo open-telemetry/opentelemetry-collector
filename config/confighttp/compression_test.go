@@ -420,6 +420,37 @@ func TestEmptyCompressionAlgorithmsAllowsUncompressed(t *testing.T) {
 			expectedError:         "unsupported Content-Encoding",
 		},
 		{
+			// An unrecognised algorithm name used to be stored as a nil decoder, so
+			// newBodyReader found the key present, treated the encoding as supported,
+			// and panicked calling it. It must be skipped instead, leaving the request
+			// to fall through to the unsupported-encoding path.
+			name:                  "UnknownAlgorithm_MatchingEncoding_Rejected",
+			compressionAlgorithms: []string{"", "gzip", "bogus"},
+			contentEncoding:       "bogus",
+			expectedStatus:        http.StatusBadRequest,
+			expectedError:         "unsupported Content-Encoding",
+		},
+		{
+			// A list of only unrecognised names leaves nothing enabled, which takes the
+			// same path as an explicitly empty list: decompression is bypassed rather
+			// than rejected. Pinned so the difference from the mixed case above is
+			// deliberate rather than accidental.
+			name:                  "OnlyUnknownAlgorithms_BypassesDecompression",
+			compressionAlgorithms: []string{"bogus"},
+			contentEncoding:       "bogus",
+			expectedStatus:        http.StatusOK,
+			compressionBypassed:   true,
+		},
+		{
+			// Guards the two names that have no direct availableDecoders entry:
+			// "deflate" is served by the zlib reader and "snappy" is constructed per
+			// server. A naive skip-unknown-names change would drop both.
+			name:                  "Deflate_StillServedByZlib",
+			compressionAlgorithms: []string{"deflate"},
+			contentEncoding:       "deflate",
+			expectedStatus:        http.StatusOK,
+		},
+		{
 			name:                  "OnlyZstd_Zstd_Accepted",
 			compressionAlgorithms: []string{"zstd"},
 			contentEncoding:       "zstd",
@@ -490,6 +521,10 @@ func TestEmptyCompressionAlgorithmsAllowsUncompressed(t *testing.T) {
 					requestBody = compressGzip(t, testBody).Bytes()
 				case "zstd":
 					requestBody = compressZstd(t, testBody).Bytes()
+				case "deflate":
+					// "deflate" is served by the zlib reader, so the body must be
+					// zlib-compressed for the accept case to be meaningful.
+					requestBody = compressZlib(t, testBody).Bytes()
 				}
 			}
 
