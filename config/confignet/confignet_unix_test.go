@@ -136,7 +136,7 @@ func TestAddrConfig_Listen_UnixSocketPermissions(t *testing.T) {
 		socketPermissions os.FileMode
 		want              os.FileMode
 	}{
-		{name: "default", want: socketFileMode},
+		{name: "default", want: defaultSocketPermissions},
 		{name: "custom", socketPermissions: 0o700, want: 0o700},
 	}
 	for _, tt := range tests {

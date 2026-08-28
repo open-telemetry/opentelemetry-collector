@@ -160,7 +160,7 @@ func (na *AddrConfig) listenUnix(ctx context.Context) (net.Listener, error) {
 	// socket controls connect access.
 	mode := na.SocketPermissions
 	if mode == 0 {
-		mode = socketFileMode
+		mode = defaultSocketPermissions
 	}
 	if err := os.Chmod(na.Endpoint, mode); err != nil {
 		_ = ln.Close()
@@ -201,12 +201,12 @@ func (na *AddrConfig) isUnixTransport() bool {
 	}
 }
 
-// socketFileMode is the default permission set applied to Unix domain socket
-// files, used when AddrConfig.SocketPermissions is unset.
+// defaultSocketPermissions is the default permission set applied to Unix
+// domain socket files, used when AddrConfig.SocketPermissions is unset.
 // Owner rwx (7), group write (2), other write (2). The write bit on a
 // Unix socket controls connect access, so 0o722 allows any local process
 // to connect while only the owner can manage the socket.
-const socketFileMode os.FileMode = 0o722
+const defaultSocketPermissions os.FileMode = 0o722
 
 // isAbstractSocket reports whether path refers to a Linux abstract Unix socket.
 // Abstract sockets live in kernel memory and have no filesystem representation.
