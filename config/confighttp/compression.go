@@ -259,7 +259,7 @@ func httpContentDecompressor(h http.Handler, maxRequestBodySize int64, eh func(w
 			decoder = availableDecoders[dec]
 		}
 
-		// An unrecognised name would otherwise be stored as a nil decoder. The key
+		// An unrecognized name would otherwise be stored as a nil decoder. The key
 		// would then be present in the map, so newBodyReader would take it as
 		// supported and call it, panicking on the nil func. Skipping it instead
 		// lets the encoding fall through to the "unsupported Content-Encoding"
