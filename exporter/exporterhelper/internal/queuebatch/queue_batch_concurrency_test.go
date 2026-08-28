@@ -115,10 +115,10 @@ func TestQueueBatchConcurrentRequests(t *testing.T) {
 			require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
 
 			var wg sync.WaitGroup
-			for p := 0; p < producers; p++ {
+			for p := range producers {
 				wg.Go(func() {
 					ctx := context.WithValue(context.Background(), partitionKeyType{}, strconv.Itoa(p%partitions))
-					for i := 0; i < requestsPerProd; i++ {
+					for range requestsPerProd {
 						require.NoError(t, qb.Send(ctx, tt.newRequest(itemsPerReq)))
 					}
 				})
