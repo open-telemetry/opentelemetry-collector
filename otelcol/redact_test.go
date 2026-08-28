@@ -50,7 +50,7 @@ func TestRedactWithPreExpansion(t *testing.T) {
 			name: "preserve provider reference at opaque leaf",
 			pre: map[string]any{
 				"exporters": map[string]any{
-					"foo": map[string]any{
+					"foo": map[string]any{ // #nosec G101
 						"token": "${env:TOKEN}",
 					},
 				},
@@ -64,7 +64,7 @@ func TestRedactWithPreExpansion(t *testing.T) {
 			},
 			want: map[string]any{
 				"exporters": map[string]any{
-					"foo": map[string]any{
+					"foo": map[string]any{ // #nosec G101
 						"token": "${env:TOKEN}",
 					},
 				},
@@ -74,7 +74,7 @@ func TestRedactWithPreExpansion(t *testing.T) {
 			name: "redact embedded provider reference at opaque leaf",
 			pre: map[string]any{
 				"exporters": map[string]any{
-					"foo": map[string]any{
+					"foo": map[string]any{ // #nosec G101
 						"token": "Bearer ${env:TOKEN}",
 					},
 				},
@@ -98,7 +98,7 @@ func TestRedactWithPreExpansion(t *testing.T) {
 			name: "redact provider reference with hardcoded suffix at opaque leaf",
 			pre: map[string]any{
 				"exporters": map[string]any{
-					"foo": map[string]any{
+					"foo": map[string]any{ // #nosec G101
 						"token": "${env:TOKEN} hardcoded-secret",
 					},
 				},
