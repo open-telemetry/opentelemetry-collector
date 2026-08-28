@@ -131,7 +131,7 @@ Partial reload support for connectors, including adding, removing, and modifying
 
 ### Error Handling
 
-- If partial reload fails mid-way (e.g., a new receiver fails to start), the graph may be in a partially modified state. In this case, the error is propagated and the collector exits, consistent with how full reload failures are handled today.
+- If partial reload fails mid-way (e.g., a new receiver fails to start), the graph may be in a partially modified state. In this case, the collector cannot resume or repair the graph incrementally, so it falls back to a full reload: the existing service is shut down and rebuilt from scratch, discarding the partially modified graph entirely. If that full reload also fails, the error is propagated and the collector exits, consistent with how full reload failures are handled today.
 - If the configuration diff determines that the change cannot be handled by the currently implemented phase, the collector falls back to a full reload transparently.
 
 ### Corner Cases

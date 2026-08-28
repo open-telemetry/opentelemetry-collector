@@ -29,12 +29,12 @@ func (normalProfilesMarshaler) MarshalProfiles(pd pprofile.Profiles) ([]byte, er
 	for i := 0; i < pd.ResourceProfiles().Len(); i++ {
 		resourceProfiles := pd.ResourceProfiles().At(i)
 
-		buffer.WriteString(fmt.Sprintf("ResourceProfiles #%d%s%s\n", i, writeResourceDetails(resourceProfiles.SchemaUrl()), writeAttributesString(resourceProfiles.Resource().Attributes())))
+		fmt.Fprintf(&buffer, "ResourceProfiles #%d%s%s\n", i, writeResourceDetails(resourceProfiles.SchemaUrl()), writeAttributesString(resourceProfiles.Resource().Attributes()))
 
 		for j := 0; j < resourceProfiles.ScopeProfiles().Len(); j++ {
 			scopeProfiles := resourceProfiles.ScopeProfiles().At(j)
 
-			buffer.WriteString(fmt.Sprintf("ScopeProfiles #%d%s%s\n", j, writeScopeDetails(scopeProfiles.Scope().Name(), scopeProfiles.Scope().Version(), scopeProfiles.SchemaUrl()), writeAttributesString(scopeProfiles.Scope().Attributes())))
+			fmt.Fprintf(&buffer, "ScopeProfiles #%d%s%s\n", j, writeScopeDetails(scopeProfiles.Scope().Name(), scopeProfiles.Scope().Version(), scopeProfiles.SchemaUrl()), writeAttributesString(scopeProfiles.Scope().Attributes()))
 
 			for k := 0; k < scopeProfiles.Profiles().Len(); k++ {
 				profile := scopeProfiles.Profiles().At(k)

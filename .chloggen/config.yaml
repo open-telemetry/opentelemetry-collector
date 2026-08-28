@@ -32,6 +32,7 @@ components:
     - pkg/config/confignet
     - pkg/config/configopaque
     - pkg/config/configretry
+    - pkg/config/configstorage
     - pkg/config/configtelemetry
     - pkg/config/configtls
     - pkg/confighttp
@@ -92,6 +93,7 @@ components:
     - pkg/xscraperhelper
     - processor/batch
     - processor/memory_limiter
+    - processor/queuebatch
     - processor/sample
     - provider/env
     - provider/file

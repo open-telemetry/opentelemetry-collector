@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/internal/schemagen"
 )
 
 func TestNewCommand(t *testing.T) {
@@ -60,9 +61,9 @@ func TestCommandErrorOutputOnce(t *testing.T) {
 
 func TestRunContents(t *testing.T) {
 	tests := []struct {
-		yml                  string
-		wantMetricsGenerated bool
-		// TODO: we should add one more flag for logs builder
+		yml                             string
+		wantMetricsGenerated            bool
+		wantLogsBuilderGenerated        bool
 		wantEventsGenerated             bool
 		wantMetricsContext              bool
 		wantLogsGenerated               bool
@@ -102,6 +103,7 @@ func TestRunContents(t *testing.T) {
 		},
 		{
 			yml:                        "basic_receiver.yaml",
+			wantLogsBuilderGenerated:   true,
 			wantErr:                    false,
 			wantStatusGenerated:        true,
 			wantReadmeGenerated:        true,
@@ -124,6 +126,7 @@ func TestRunContents(t *testing.T) {
 		},
 		{
 			yml:                             "resource_attributes_only.yaml",
+			wantLogsBuilderGenerated:        true,
 			wantConfigGenerated:             true,
 			wantStatusGenerated:             true,
 			wantResourceAttributesGenerated: true,
@@ -139,6 +142,7 @@ func TestRunContents(t *testing.T) {
 		},
 		{
 			yml:                        "with_tests_receiver.yaml",
+			wantLogsBuilderGenerated:   true,
 			wantStatusGenerated:        true,
 			wantReadmeGenerated:        true,
 			wantComponentTestGenerated: true,
@@ -204,6 +208,7 @@ func TestRunContents(t *testing.T) {
 		},
 		{
 			yml:                        "with_telemetry.yaml",
+			wantLogsBuilderGenerated:   true,
 			wantStatusGenerated:        true,
 			wantTelemetryGenerated:     true,
 			wantReadmeGenerated:        true,
@@ -227,6 +232,7 @@ func TestRunContents(t *testing.T) {
 		},
 		{
 			yml:                        "custom_generated_package_name.yaml",
+			wantLogsBuilderGenerated:   true,
 			wantStatusGenerated:        true,
 			wantReadmeGenerated:        true,
 			wantComponentTestGenerated: true,
@@ -241,6 +247,7 @@ func TestRunContents(t *testing.T) {
 		},
 		{
 			yml:                        "with_conditional_attribute.yaml",
+			wantLogsBuilderGenerated:   true,
 			wantStatusGenerated:        true,
 			wantReadmeGenerated:        true,
 			wantMetricsGenerated:       true,
@@ -250,6 +257,7 @@ func TestRunContents(t *testing.T) {
 		},
 		{
 			yml:                        "events/basic_event.yaml",
+			wantLogsBuilderGenerated:   true,
 			wantStatusGenerated:        true,
 			wantReadmeGenerated:        true,
 			wantComponentTestGenerated: true,
@@ -259,6 +267,7 @@ func TestRunContents(t *testing.T) {
 		},
 		{
 			yml:                        "with_config.yaml",
+			wantLogsBuilderGenerated:   true,
 			wantStatusGenerated:        true,
 			wantReadmeGenerated:        true,
 			wantLogsGenerated:          true,
@@ -366,8 +375,15 @@ foo
 			}
 
 			if tt.wantLogsGenerated {
-				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_logs.go"))
+				logsPath := filepath.Join(tmpdir, generatedPackageDir, "generated_logs.go")
+				require.FileExists(t, logsPath)
 				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_logs_test.go"))
+				if tt.wantLogsBuilderGenerated {
+					contents, err = os.ReadFile(filepath.Clean(logsPath))
+					require.NoError(t, err)
+					require.Contains(t, string(contents), "type LogsBuilder struct")
+					require.Contains(t, string(contents), "func NewLogsBuilder(")
+				}
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_logs.go"))
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_logs_test.go"))
@@ -523,7 +539,7 @@ func TestGenerateConfigFiles(t *testing.T) {
 				Status: &Status{
 					Class: "receiver",
 				},
-				Config: nil,
+				ConfigsMetadata: nil,
 			},
 			wantGen: false,
 		},
@@ -535,8 +551,10 @@ func TestGenerateConfigFiles(t *testing.T) {
 				Status: &Status{
 					Class: "receiver",
 				},
-				Config: &cfggen.ConfigMetadata{
-					Type: "object",
+				ConfigsMetadata: &cfggen.ConfigsMetadata{
+					Config: &cfggen.ConfigMetadata{
+						Type: "object",
+					},
 				},
 			},
 			wantGen: true,
@@ -550,8 +568,10 @@ func TestGenerateConfigFiles(t *testing.T) {
 					Class: "receiver",
 				},
 				// A local ref without a definition name fails Validate() inside ResolveSchema
-				Config: &cfggen.ConfigMetadata{
-					Ref: "/config/configauth",
+				ConfigsMetadata: &cfggen.ConfigsMetadata{
+					Config: &cfggen.ConfigMetadata{
+						Ref: "/config/configauth",
+					},
 				},
 			},
 			wantErr: true,
@@ -590,11 +610,13 @@ func TestGenerateConfigFiles_ExportedConfigsWithoutConfig(t *testing.T) {
 		Type:        "test",
 		PackageName: "testmodule/shortname",
 		Status:      &Status{Class: "pkg"},
-		ExportedConfigs: map[string]*cfggen.ConfigMetadata{
-			"sample_config": {
-				Type: "object",
-				Properties: map[string]*cfggen.ConfigMetadata{
-					"endpoint": {Type: "string"},
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			ExportedConfigs: map[string]*cfggen.ConfigMetadata{
+				"sample_config": {
+					Type: "object",
+					Properties: map[string]*cfggen.ConfigMetadata{
+						"endpoint": {Type: "string"},
+					},
 				},
 			},
 		},
@@ -624,17 +646,19 @@ func TestGenerateConfigFiles_ExportedConfigsWithConfig(t *testing.T) {
 		Type:        "test",
 		PackageName: "testmodule/shortname",
 		Status:      &Status{Class: "receiver"},
-		Config: &cfggen.ConfigMetadata{
-			Type: "object",
-			Properties: map[string]*cfggen.ConfigMetadata{
-				"endpoint": {Type: "string"},
-			},
-		},
-		ExportedConfigs: map[string]*cfggen.ConfigMetadata{
-			"sample_config": {
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			Config: &cfggen.ConfigMetadata{
 				Type: "object",
 				Properties: map[string]*cfggen.ConfigMetadata{
-					"host_name": {Type: "string"},
+					"endpoint": {Type: "string"},
+				},
+			},
+			ExportedConfigs: map[string]*cfggen.ConfigMetadata{
+				"sample_config": {
+					Type: "object",
+					Properties: map[string]*cfggen.ConfigMetadata{
+						"host_name": {Type: "string"},
+					},
 				},
 			},
 		},
@@ -657,17 +681,17 @@ func TestGenerateConfigFiles_ExportedConfigsWithConfig(t *testing.T) {
 
 func TestInjectInternalMetadataDefs(t *testing.T) {
 	t.Run("skips when metadata has no internal definitions", func(t *testing.T) {
-		src := &cfggen.ConfigMetadata{}
+		src := &cfggen.ConfigsMetadata{}
 
 		err := injectInternalMetadataDefs(Metadata{}, t.TempDir(), src)
 		require.NoError(t, err)
-		require.Nil(t, src.Defs)
+		require.Nil(t, src.ExportedConfigs)
 	})
 
 	t.Run("initializes source defs and injects resource attributes config", func(t *testing.T) {
 		mdDir := newTestModuleDir(t)
 		enabled := true
-		src := &cfggen.ConfigMetadata{}
+		src := &cfggen.ConfigsMetadata{}
 		md := Metadata{
 			Type: "sample",
 			ResourceAttributes: map[AttributeName]Attribute{
@@ -680,15 +704,15 @@ func TestInjectInternalMetadataDefs(t *testing.T) {
 		err := injectInternalMetadataDefs(md, mdDir, src)
 		require.NoError(t, err)
 
-		require.Contains(t, src.Defs, "resource_attributes_config")
-		resourceAttributes := src.Defs["resource_attributes_config"]
-		require.Equal(t, "object", resourceAttributes.Type)
+		require.Contains(t, src.ExportedConfigs, "resource_attributes_config")
+		resourceAttributes := src.ExportedConfigs["resource_attributes_config"]
+		require.Equal(t, schemagen.ObjectType, resourceAttributes.Type)
 		require.True(t, resourceAttributes.InternalOnly)
 		require.Contains(t, resourceAttributes.Properties, "service.name")
 
 		resourceAttribute := resourceAttributes.Properties["service.name"]
 		require.Contains(t, resourceAttribute.Properties, "enabled")
-		require.Equal(t, "boolean", resourceAttribute.Properties["enabled"].Type)
+		require.Equal(t, schemagen.BoolType, resourceAttribute.Properties["enabled"].Type)
 		require.Equal(t, true, resourceAttribute.Properties["enabled"].Default)
 	})
 
@@ -698,8 +722,8 @@ func TestInjectInternalMetadataDefs(t *testing.T) {
 			Type:        "object",
 			Description: "user-provided definition",
 		}
-		src := &cfggen.ConfigMetadata{
-			Defs: map[string]*cfggen.ConfigMetadata{
+		src := &cfggen.ConfigsMetadata{
+			ExportedConfigs: map[string]*cfggen.ConfigMetadata{
 				"user_config": existingDef,
 			},
 		}
@@ -717,21 +741,21 @@ func TestInjectInternalMetadataDefs(t *testing.T) {
 		err := injectInternalMetadataDefs(md, mdDir, src)
 		require.NoError(t, err)
 
-		require.Equal(t, existingDef, src.Defs["user_config"])
-		require.False(t, src.Defs["user_config"].InternalOnly)
-		require.Contains(t, src.Defs, "events_config")
-		require.Contains(t, src.Defs, "logs_builder_config")
-		require.True(t, src.Defs["events_config"].InternalOnly)
-		require.True(t, src.Defs["logs_builder_config"].InternalOnly)
+		require.Equal(t, existingDef, src.ExportedConfigs["user_config"])
+		require.False(t, src.ExportedConfigs["user_config"].InternalOnly)
+		require.Contains(t, src.ExportedConfigs, "events_config")
+		require.Contains(t, src.ExportedConfigs, "logs_builder_config")
+		require.True(t, src.ExportedConfigs["events_config"].InternalOnly)
+		require.True(t, src.ExportedConfigs["logs_builder_config"].InternalOnly)
 
-		events := src.Defs["events_config"]
+		events := src.ExportedConfigs["events_config"]
 		require.Contains(t, events.Properties, "sample.event")
 		require.Equal(t, true, events.Properties["sample.event"].Properties["enabled"].Default)
 	})
 
 	t.Run("returns root package error", func(t *testing.T) {
 		enabled := true
-		src := &cfggen.ConfigMetadata{}
+		src := &cfggen.ConfigsMetadata{}
 		md := Metadata{
 			Type: "sample",
 			ResourceAttributes: map[AttributeName]Attribute{
@@ -748,7 +772,7 @@ func TestInjectInternalMetadataDefs(t *testing.T) {
 
 	t.Run("returns template rendering error", func(t *testing.T) {
 		mdDir := newTestModuleDir(t)
-		src := &cfggen.ConfigMetadata{}
+		src := &cfggen.ConfigsMetadata{}
 		md := Metadata{
 			Type: "sample",
 			Metrics: map[MetricName]Metric{
@@ -764,7 +788,7 @@ func TestInjectInternalMetadataDefs(t *testing.T) {
 
 	t.Run("returns generated YAML parse error", func(t *testing.T) {
 		mdDir := newTestModuleDir(t)
-		src := &cfggen.ConfigMetadata{}
+		src := &cfggen.ConfigsMetadata{}
 		md := Metadata{
 			Type: "sample",
 			Events: map[EventName]Event{
@@ -778,11 +802,11 @@ func TestInjectInternalMetadataDefs(t *testing.T) {
 	})
 
 	t.Run("skips when generated YAML has no internal defs", func(t *testing.T) {
-		src := &cfggen.ConfigMetadata{}
+		src := &cfggen.ConfigsMetadata{}
 
 		err := mergeInternalMetadataDefs(nil, src)
 		require.NoError(t, err)
-		require.Nil(t, src.Defs)
+		require.Nil(t, src.ExportedConfigs)
 	})
 }
 
@@ -802,7 +826,9 @@ func TestGenerateConfigGoStruct_RootPackageError(t *testing.T) {
 		Type:        "test",
 		PackageName: "shortname",
 		Status:      &Status{Class: "receiver"},
-		Config:      &cfggen.ConfigMetadata{Type: "object"},
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			Config: &cfggen.ConfigMetadata{Type: "object"},
+		},
 	}
 	err := generateConfigGoStruct(md, t.TempDir())
 	require.Error(t, err)
@@ -819,19 +845,25 @@ func TestGenerateConfigGoStruct_ResolvedImports(t *testing.T) {
 		Type:        "test",
 		PackageName: "testmodule/shortname",
 		Status:      &Status{Class: "receiver"},
-		Config: &cfggen.ConfigMetadata{
-			Type: "object",
-			AllOf: []*cfggen.ConfigMetadata{
-				{
-					Type:         "object",
-					ResolvedFrom: "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
-					Properties: map[string]*cfggen.ConfigMetadata{
-						"timeout": {
-							Type:   "string",
-							GoType: "time.Duration",
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			Config: &cfggen.ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*schemagen.ConfigMetadata{
+					"AllOf": {
+						Type:  "object",
+						Embed: true,
+						Ref:   "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
+						Properties: map[string]*cfggen.ConfigMetadata{
+							"timeout": {
+								Type:   "string",
+								GoType: "time.Duration",
+							},
+						},
+						Default: map[string]any{"timeout": "30s"},
+						GoStruct: cfggen.GoStructConfig{
+							FieldName: "AllOf",
 						},
 					},
-					Default: map[string]any{"timeout": "30s"},
 				},
 			},
 		},
@@ -859,18 +891,23 @@ func TestGenerateConfigGoStruct_NamedEmbeddedStruct(t *testing.T) {
 		Type:        "test",
 		PackageName: "testmodule/shortname",
 		Status:      &Status{Class: "receiver"},
-		Config: &cfggen.ConfigMetadata{
-			Type: "object",
-			AllOf: []*cfggen.ConfigMetadata{
-				{
-					Type:         "object",
-					ResolvedFrom: "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
-					EmbeddedName: "controller_config",
-					Default:      map[string]any{"timeout": "30s"},
-					Properties: map[string]*cfggen.ConfigMetadata{
-						"timeout": {
-							Type:   "string",
-							GoType: "time.Duration",
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			Config: &cfggen.ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*schemagen.ConfigMetadata{
+					"controller_config": {
+						Type:    "object",
+						Embed:   true,
+						Ref:     "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
+						Default: map[string]any{"timeout": "30s"},
+						Properties: map[string]*cfggen.ConfigMetadata{
+							"timeout": {
+								Type:   "string",
+								GoType: "time.Duration",
+							},
+						},
+						GoStruct: cfggen.GoStructConfig{
+							FieldName: "ControllerConfig",
 						},
 					},
 				},
@@ -902,14 +939,16 @@ func TestGenerateConfigGoStruct_PropertyDefaultsAndImports(t *testing.T) {
 		Type:        "test",
 		PackageName: "testmodule/shortname",
 		Status:      &Status{Class: "receiver"},
-		Config: &cfggen.ConfigMetadata{
-			Type: "object",
-			Properties: map[string]*cfggen.ConfigMetadata{
-				"timeout": {
-					Type:     "string",
-					GoType:   "time.Duration",
-					Default:  "30s",
-					GoStruct: cfggen.GoStructConfig{FieldName: "timeout"},
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			Config: &cfggen.ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*cfggen.ConfigMetadata{
+					"timeout": {
+						Type:     "string",
+						GoType:   "time.Duration",
+						Default:  "30s",
+						GoStruct: cfggen.GoStructConfig{FieldName: "timeout"},
+					},
 				},
 			},
 		},
@@ -937,20 +976,22 @@ func TestGenerateConfigGoStruct_InternalResolvedRefGeneratesLocalType(t *testing
 		Type:        "test",
 		PackageName: "testmodule/shortname",
 		Status:      &Status{Class: "receiver"},
-		Config: &cfggen.ConfigMetadata{
-			Type: "object",
-			Properties: map[string]*cfggen.ConfigMetadata{
-				"config": {
-					Type:         "object",
-					ResolvedFrom: "plain_config",
-					Default:      map[string]any{"timeout": "30s"},
-					GoStruct:     cfggen.GoStructConfig{FieldName: "config"},
-					Properties: map[string]*cfggen.ConfigMetadata{
-						"timeout": {
-							Type:     "string",
-							GoType:   "time.Duration",
-							Default:  "30s",
-							GoStruct: cfggen.GoStructConfig{FieldName: "timeout"},
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			Config: &cfggen.ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*cfggen.ConfigMetadata{
+					"config": {
+						Type:     "object",
+						Ref:      "plain_config",
+						Default:  map[string]any{"timeout": "30s"},
+						GoStruct: cfggen.GoStructConfig{FieldName: "config"},
+						Properties: map[string]*cfggen.ConfigMetadata{
+							"timeout": {
+								Type:     "string",
+								GoType:   "time.Duration",
+								Default:  "30s",
+								GoStruct: cfggen.GoStructConfig{FieldName: "timeout"},
+							},
 						},
 					},
 				},
@@ -985,13 +1026,15 @@ func TestGenerateConfigGoStruct_ComponentIDFieldUsesGoName(t *testing.T) {
 		Type:        "test",
 		PackageName: "testmodule/shortname",
 		Status:      &Status{Class: "receiver"},
-		Config: &cfggen.ConfigMetadata{
-			Type: "object",
-			Properties: map[string]*cfggen.ConfigMetadata{
-				"storage": {
-					Type:     "string",
-					GoType:   "go.opentelemetry.io/collector/component.ID",
-					GoStruct: cfggen.GoStructConfig{FieldName: "storage_id"},
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			Config: &cfggen.ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*cfggen.ConfigMetadata{
+					"storage": {
+						Type:     "string",
+						GoType:   "go.opentelemetry.io/collector/component.ID",
+						GoStruct: cfggen.GoStructConfig{FieldName: "storage_id"},
+					},
 				},
 			},
 		},
@@ -1005,7 +1048,7 @@ func TestGenerateConfigGoStruct_ComponentIDFieldUsesGoName(t *testing.T) {
 
 	generated := string(content)
 	require.Contains(t, generated, `StorageID component.ID`)
-	require.Contains(t, generated, "`mapstructure:\"storage\"`")
+	require.Contains(t, generated, "`mapstructure:\"storage,omitempty\"`")
 }
 
 func TestGenerateConfigFiles_GoStructError(t *testing.T) {
@@ -1014,7 +1057,9 @@ func TestGenerateConfigFiles_GoStructError(t *testing.T) {
 		Type:        "test",
 		PackageName: "shortname",
 		Status:      &Status{Class: "receiver"},
-		Config:      &cfggen.ConfigMetadata{Type: "object"},
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			Config: &cfggen.ConfigMetadata{Type: "object"},
+		},
 	}
 	err := generateConfigFiles(md, t.TempDir(), "testmodule")
 	require.Error(t, err)
@@ -1027,7 +1072,9 @@ func TestGenerateConfigFiles_InternalMetadataDefsError(t *testing.T) {
 		Type:        "test",
 		PackageName: "shortname",
 		Status:      &Status{Class: "receiver"},
-		Config:      &cfggen.ConfigMetadata{Type: "object"},
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			Config: &cfggen.ConfigMetadata{Type: "object"},
+		},
 		ResourceAttributes: map[AttributeName]Attribute{
 			"service.name": {
 				EnabledPtr: &enabled,
@@ -1047,8 +1094,10 @@ func TestGenerateConfigFiles_WriteError(t *testing.T) {
 		Status: &Status{
 			Class: "receiver",
 		},
-		Config: &cfggen.ConfigMetadata{
-			Type: "object",
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			Config: &cfggen.ConfigMetadata{
+				Type: "object",
+			},
 		},
 	}
 	err := generateConfigFiles(md, "/nonexistent/path/that/does/not/exist", "testmodule")
@@ -1069,7 +1118,9 @@ func TestGenerateConfigFiles_EmptyImportRootPathFallsBackToRootPackage(t *testin
 		Type:        "test",
 		PackageName: "shortname",
 		Status:      &Status{Class: "receiver"},
-		Config:      &cfggen.ConfigMetadata{Type: "object"},
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			Config: &cfggen.ConfigMetadata{Type: "object"},
+		},
 	}
 
 	// importRootPath="" exercises the rootPkg=="" branch (lines 608-612) which falls back to
@@ -1099,7 +1150,9 @@ func TestGenerateConfigFiles_InlineReplaceError(t *testing.T) {
 		Type:        "test",
 		PackageName: "shortname",
 		Status:      &Status{Class: "receiver"},
-		Config:      &cfggen.ConfigMetadata{Type: "object"},
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			Config: &cfggen.ConfigMetadata{Type: "object"},
+		},
 	}
 
 	err := generateConfigFiles(md, tmpdir, "testmodule")
@@ -1151,6 +1204,8 @@ func TestInlineReplace(t *testing.T) {
 		distros        []string
 		codeowners     *Codeowners
 		githubProject  string
+		semConvVersion string
+		semConvURL     string
 	}{
 		{
 			name: "readme with empty status",
@@ -1309,7 +1364,26 @@ Some info about a component
 				component.StabilityLevelBeta:  {"metrics"},
 				component.StabilityLevelAlpha: {"logs"},
 			},
-			distros: []string{"contrib"},
+			distros:        []string{"contrib"},
+			semConvVersion: "1.40.0",
+		},
+		{
+			name: "readme with semantic conventions version url",
+			markdown: `# Some component
+
+<!-- status autogenerated section -->
+<!-- end autogenerated section -->
+
+Some info about a component
+`,
+			outputFile: "readme_with_semconv_version_url.md",
+			stability: map[component.StabilityLevel][]string{
+				component.StabilityLevelBeta:  {"metrics"},
+				component.StabilityLevelAlpha: {"logs"},
+			},
+			distros:        []string{"contrib"},
+			semConvVersion: "1.40.0",
+			semConvURL:     "https://github.com/open-telemetry/semantic-conventions/releases/tag/v1.40.0",
 		},
 		{
 			name: "readme with multiple signals and deprecation",
@@ -1332,7 +1406,8 @@ Some info about a component
 					Migration: "no migration needed",
 				},
 			},
-			distros: []string{"contrib"},
+			distros:        []string{"contrib"},
+			semConvVersion: "1.40.0",
 		},
 		{
 			name: "readme with cmd class",
@@ -1362,6 +1437,8 @@ Some info about a component
 				GithubProject:   tt.githubProject,
 				Type:            "foo",
 				ShortFolderName: "foo",
+				SemConvVersion:  tt.semConvVersion,
+				SemConvURL:      tt.semConvURL,
 				Status: &Status{
 					DisableCodeCov: true,
 					Stability:      stability,
@@ -1610,7 +1687,9 @@ func TestGenerateConfigGoStruct_GeneratesTestFile(t *testing.T) {
 		Type:        "test",
 		PackageName: "testmodule/shortname",
 		Status:      &Status{Class: "receiver"},
-		Config:      &cfggen.ConfigMetadata{Type: "object"},
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			Config: &cfggen.ConfigMetadata{Type: "object"},
+		},
 	}
 
 	require.NoError(t, generateConfigGoStruct(md, outputDir))
@@ -1633,13 +1712,15 @@ func TestGenerateConfigGoStruct_TestFileContainsValidateTestWhenValidatorsPresen
 		Type:        "test",
 		PackageName: "testmodule/shortname",
 		Status:      &Status{Class: "receiver"},
-		Config: &cfggen.ConfigMetadata{
-			Type: "object",
-			Properties: map[string]*cfggen.ConfigMetadata{
-				"name": {
-					Type:      "string",
-					MinLength: func() *int { v := 1; return &v }(),
-					GoStruct:  cfggen.GoStructConfig{FieldName: "name"},
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			Config: &cfggen.ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*cfggen.ConfigMetadata{
+					"name": {
+						Type:      "string",
+						MinLength: func() *int { v := 1; return &v }(),
+						GoStruct:  cfggen.GoStructConfig{FieldName: "name"},
+					},
 				},
 			},
 		},
@@ -1663,13 +1744,15 @@ func TestGenerateConfigGoStruct_TestFileNoValidateTestWhenNoValidators(t *testin
 		Type:        "test",
 		PackageName: "testmodule/shortname",
 		Status:      &Status{Class: "receiver"},
-		Config: &cfggen.ConfigMetadata{
-			Type: "object",
-			Properties: map[string]*cfggen.ConfigMetadata{
-				"timeout": {
-					Type:     "string",
-					GoType:   "time.Duration",
-					GoStruct: cfggen.GoStructConfig{FieldName: "timeout"},
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			Config: &cfggen.ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*cfggen.ConfigMetadata{
+					"timeout": {
+						Type:     "string",
+						GoType:   "time.Duration",
+						GoStruct: cfggen.GoStructConfig{FieldName: "timeout"},
+					},
 				},
 			},
 		},
@@ -1694,8 +1777,8 @@ func TestGenerateConfigGoStruct_DefsOnlyConfigGeneratesLibraryTypes(t *testing.T
 		Type:        "test",
 		PackageName: "testmodule/shortname",
 		Status:      &Status{Class: "pkg"},
-		Config: &cfggen.ConfigMetadata{
-			Defs: map[string]*cfggen.ConfigMetadata{
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			ExportedConfigs: map[string]*cfggen.ConfigMetadata{
 				"sample_config": {
 					Type: "object",
 					Properties: map[string]*cfggen.ConfigMetadata{
@@ -1756,7 +1839,9 @@ func TestGenerateConfigGoStruct_BothFileErrorsAccumulated(t *testing.T) {
 		Type:        "test",
 		PackageName: "testmodule/nonexistent/shortname",
 		Status:      &Status{Class: "receiver"},
-		Config:      &cfggen.ConfigMetadata{Type: "object"},
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			Config: &cfggen.ConfigMetadata{Type: "object"},
+		},
 	}
 
 	err := generateConfigGoStruct(md, outputDir)

@@ -31,10 +31,10 @@ const (
 )
 
 type Ref struct {
-	namespace string
-	schemaID  string
-	defName   string
-	kind      RefKind
+	namespace  string
+	schemaID   string
+	configName string
+	kind       RefKind
 }
 
 var localRefPattern = regexp.MustCompile(`^((?:/|\.\.?/).*?)(?:\.([^./]+))?$`)
@@ -61,10 +61,10 @@ func NewRef(refPath string) *Ref {
 	}
 
 	return &Ref{
-		namespace: namespace,
-		schemaID:  schemaID,
-		defName:   defName,
-		kind:      kind,
+		namespace:  namespace,
+		schemaID:   schemaID,
+		configName: defName,
+		kind:       kind,
 	}
 }
 
@@ -127,8 +127,8 @@ func (r *Ref) SchemaID() string {
 	return r.schemaID
 }
 
-func (r *Ref) DefName() string {
-	return r.defName
+func (r *Ref) ConfigName() string {
+	return r.configName
 }
 
 func (r *Ref) URL(version string) (string, error) {
@@ -172,8 +172,8 @@ func (r *Ref) Validate() error {
 		return errors.New("empty path")
 	}
 
-	if r.defName == "" {
-		return errors.New("missing definition name")
+	if r.configName == "" {
+		return errors.New("missing config name")
 	}
 	if r.IsLocal() && r.schemaID == "" {
 		return errors.New("missing schema ID in local reference")
@@ -193,11 +193,11 @@ func (r *Ref) String() string {
 		}
 		sb.WriteString(r.schemaID)
 	}
-	if r.defName != "" {
+	if r.configName != "" {
 		if sb.Len() > 0 {
 			sb.WriteRune('.')
 		}
-		sb.WriteString(r.defName)
+		sb.WriteString(r.configName)
 	}
 
 	return sb.String()

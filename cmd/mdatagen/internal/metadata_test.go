@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/internal/schemagen"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -442,7 +443,7 @@ func TestValidateMigrations(t *testing.T) {
 						},
 						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
 					},
-					Unit: strPtr("s"),
+					Unit: new("s"),
 					Sum: &Sum{
 						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -481,7 +482,7 @@ func TestValidateMigrations(t *testing.T) {
 						},
 						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
 					},
-					Unit: strPtr("s"),
+					Unit: new("s"),
 					Sum: &Sum{
 						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -506,7 +507,7 @@ func TestValidateMigrations(t *testing.T) {
 						},
 						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
 					},
-					Unit: strPtr("s"),
+					Unit: new("s"),
 					Sum: &Sum{
 						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -545,7 +546,7 @@ func TestValidateMigrations(t *testing.T) {
 						},
 						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
 					},
-					Unit: strPtr("s"),
+					Unit: new("s"),
 					Sum: &Sum{
 						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -576,7 +577,7 @@ func TestValidateMigrations(t *testing.T) {
 						},
 						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
 					},
-					Unit: strPtr("s"),
+					Unit: new("s"),
 					Sum: &Sum{
 						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -601,7 +602,7 @@ func TestValidateMigrations(t *testing.T) {
 						},
 						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
 					},
-					Unit: strPtr("s"),
+					Unit: new("s"),
 					Sum: &Sum{
 						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -634,7 +635,7 @@ func TestValidateMigrations(t *testing.T) {
 						},
 						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
 					},
-					Unit: strPtr("s"),
+					Unit: new("s"),
 					Sum: &Sum{
 						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -659,7 +660,7 @@ func TestValidateMigrations(t *testing.T) {
 						},
 						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
 					},
-					Unit: strPtr("s"),
+					Unit: new("s"),
 					Sum: &Sum{
 						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -692,7 +693,7 @@ func TestValidateMigrations(t *testing.T) {
 						},
 						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
 					},
-					Unit: strPtr("s"),
+					Unit: new("s"),
 					Sum: &Sum{
 						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -717,7 +718,7 @@ func TestValidateMigrations(t *testing.T) {
 						},
 						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
 					},
-					Unit: strPtr("s"),
+					Unit: new("s"),
 					Sum: &Sum{
 						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -757,7 +758,7 @@ func TestValidateMigrations(t *testing.T) {
 						},
 						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
 					},
-					Unit: strPtr("s"),
+					Unit: new("s"),
 					Sum: &Sum{
 						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -1106,8 +1107,8 @@ func TestValidateConfig(t *testing.T) {
 			name: "valid config",
 			config: &cfggen.ConfigMetadata{
 				Type: "object",
-				AllOf: []*cfggen.ConfigMetadata{
-					{
+				Properties: map[string]*schemagen.ConfigMetadata{
+					"embedded": {
 						Ref: "component.config",
 					},
 				},
@@ -1130,7 +1131,9 @@ func TestValidateConfig(t *testing.T) {
 						6: {"traces"},
 					},
 				},
-				Config: tt.config,
+				ConfigsMetadata: &cfggen.ConfigsMetadata{
+					Config: tt.config,
+				},
 			}
 			err := md.Validate()
 			if tt.wantErr {

@@ -36,9 +36,6 @@ func NewBatcher(cfg configoptional.Optional[BatchConfig], set batcherSettings[re
 	}
 
 	sizer := request.NewSizer(cfg.Get().Sizer)
-	if sizer == nil {
-		return nil, fmt.Errorf("queue_batch: unsupported sizer %q", cfg.Get().Sizer)
-	}
 
 	if set.partitioner == nil {
 		return newPartitionBatcher(*cfg.Get(), sizer, set.mergeCtx, newWorkerPool(set.maxWorkers), set.next, set.logger, nil), nil

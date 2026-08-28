@@ -16,10 +16,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func boolPtr(b bool) *bool {
-	return &b
-}
-
 func TestTwoPackagesInDirectory(t *testing.T) {
 	contents, err := os.ReadFile("testdata/twopackages.yaml")
 	require.NoError(t, err)
@@ -75,38 +71,56 @@ func TestLoadMetadata(t *testing.T) {
 					Warnings:             []string{"Any additional information that should be brought to the consumer's attention"},
 					UnsupportedPlatforms: []string{"freebsd", "illumos"},
 				},
-				Config: &cfggen.ConfigMetadata{
-					Type: "object",
-					Properties: map[string]*cfggen.ConfigMetadata{
-						"metrics_builder_config": {
-							Ref:   "./internal/metadata.metrics_builder_config",
-							Embed: true,
-							GoStruct: cfggen.GoStructConfig{
-								Anonymous:     true,
-								IgnoreDefault: true,
+				ConfigsMetadata: &cfggen.ConfigsMetadata{
+					Config: &cfggen.ConfigMetadata{
+						Type: "object",
+						Properties: map[string]*cfggen.ConfigMetadata{
+							"metrics_builder_config": {
+								Ref:   "./internal/metadata.metrics_builder_config",
+								Embed: true,
+								GoStruct: cfggen.GoStructConfig{
+									Anonymous:     true,
+									IgnoreDefault: true,
+								},
+							},
+							"endpoint": {
+								Description: "The endpoint to scrape metrics from.",
+								Type:        "string",
+								Default:     "localhost:12345",
+							},
+							"sample_pkg": {
+								Ref: "../samplepkg.sample_config",
+							},
+							"timeout": {
+								Description: "Timeout for scraping metrics.",
+								Type:        "duration",
+								Default:     "10s",
+							},
+							"max_results": {
+								Description: "Maximum number of results to return per scrape.",
+								Type:        "int64",
+								Default:     100,
+							},
+							"api_token": {
+								Description: "API token used to authenticate with the endpoint.",
+								Type:        "opaque_string",
+							},
+							"component_id": {
+								Description: "Component ID used to identify this receiver instance.",
+								Type:        "component_id",
+							},
+							"headers": {
+								Description: "Extra HTTP headers to attach to each request.",
+								Type:        "opaque_map",
 							},
 						},
-						"endpoint": {
-							Description: "The endpoint to scrape metrics from.",
-							Type:        "string",
-							Default:     "localhost:12345",
-						},
-						"sample_pkg": {
-							Ref: "../samplepkg.sample_config",
-						},
-						"timeout": {
-							Description: "Timeout for scraping metrics.",
-							Type:        "string",
-							Format:      "duration",
-							Default:     "10s",
-						},
+						Required: []string{"endpoint"},
 					},
-					Required: []string{"endpoint"},
 				},
 				ResourceAttributes: map[AttributeName]Attribute{
 					"host.arch": {
 						Description: "The CPU architecture the host system is running on.",
-						EnabledPtr:  boolPtr(false),
+						EnabledPtr:  new(false),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
@@ -118,7 +132,7 @@ func TestLoadMetadata(t *testing.T) {
 					},
 					"string.resource.attr": {
 						Description: "Resource attribute with any string value.",
-						EnabledPtr:  boolPtr(true),
+						EnabledPtr:  new(true),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
@@ -127,7 +141,7 @@ func TestLoadMetadata(t *testing.T) {
 					},
 					"string.enum.resource.attr": {
 						Description: "Resource attribute with a known set of string values.",
-						EnabledPtr:  boolPtr(true),
+						EnabledPtr:  new(true),
 						Enum:        []string{"one", "two"},
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
@@ -137,7 +151,7 @@ func TestLoadMetadata(t *testing.T) {
 					},
 					"optional.resource.attr": {
 						Description: "Explicitly disabled ResourceAttribute.",
-						EnabledPtr:  boolPtr(false),
+						EnabledPtr:  new(false),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
@@ -147,7 +161,7 @@ func TestLoadMetadata(t *testing.T) {
 					},
 					"slice.resource.attr": {
 						Description: "Resource attribute with a slice value.",
-						EnabledPtr:  boolPtr(true),
+						EnabledPtr:  new(true),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeSlice,
 						},
@@ -157,7 +171,7 @@ func TestLoadMetadata(t *testing.T) {
 					},
 					"map.resource.attr": {
 						Description: "Resource attribute with a map value.",
-						EnabledPtr:  boolPtr(true),
+						EnabledPtr:  new(true),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeMap,
 						},
@@ -170,7 +184,7 @@ func TestLoadMetadata(t *testing.T) {
 						Warnings: Warnings{
 							IfEnabledNotSet: "This resource_attribute will be disabled by default soon.",
 						},
-						EnabledPtr: boolPtr(true),
+						EnabledPtr: new(true),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
@@ -182,7 +196,7 @@ func TestLoadMetadata(t *testing.T) {
 						Warnings: Warnings{
 							IfConfigured: "This resource_attribute is deprecated and will be removed soon.",
 						},
-						EnabledPtr: boolPtr(false),
+						EnabledPtr: new(false),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
@@ -194,7 +208,7 @@ func TestLoadMetadata(t *testing.T) {
 						Warnings: Warnings{
 							IfEnabled: "This resource_attribute is deprecated and will be removed soon.",
 						},
-						EnabledPtr: boolPtr(true),
+						EnabledPtr: new(true),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
@@ -206,7 +220,7 @@ func TestLoadMetadata(t *testing.T) {
 						Warnings: Warnings{
 							IfEnabled: "This resource_attribute is deprecated and will be removed soon.",
 						},
-						EnabledPtr: boolPtr(false),
+						EnabledPtr: new(false),
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
@@ -341,7 +355,7 @@ func TestLoadMetadata(t *testing.T) {
 							},
 							Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "conditional_int_attr", "conditional_string_attr", "opt_in_bool_attr"},
 						},
-						Unit: strPtr("s"),
+						Unit: new("s"),
 						Sum: &Sum{
 							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -359,7 +373,7 @@ func TestLoadMetadata(t *testing.T) {
 							Stability:   component.StabilityLevelBeta,
 							Attributes:  []AttributeName{"string_attr", "boolean_attr"},
 						},
-						Unit: strPtr("1"),
+						Unit: new("1"),
 						Gauge: &Gauge{
 							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 						},
@@ -371,7 +385,7 @@ func TestLoadMetadata(t *testing.T) {
 							Stability:   component.StabilityLevelBeta,
 							Attributes:  []AttributeName{"required_string_attr", "string_attr", "boolean_attr"},
 						},
-						Unit: strPtr("1"),
+						Unit: new("1"),
 						Gauge: &Gauge{
 							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 						},
@@ -385,7 +399,7 @@ func TestLoadMetadata(t *testing.T) {
 							ExtendedDocumentation: "The metric will be become optional soon.",
 							Attributes:            []AttributeName{"cpu"},
 						},
-						Unit: strPtr("s"),
+						Unit: new("s"),
 						Sum: &Sum{
 							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -399,7 +413,7 @@ func TestLoadMetadata(t *testing.T) {
 							Description: "Bytes of memory in use.",
 							Attributes:  []AttributeName{"state"},
 						},
-						Unit: strPtr("By"),
+						Unit: new("By"),
 						Sum: &Sum{
 							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -420,7 +434,7 @@ func TestLoadMetadata(t *testing.T) {
 							Since: "1.0.0",
 							Note:  "This metric will be removed",
 						},
-						Unit: strPtr("1"),
+						Unit: new("1"),
 						Gauge: &Gauge{
 							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 						},
@@ -439,7 +453,7 @@ func TestLoadMetadata(t *testing.T) {
 							Since: "1.0.0",
 							Note:  "This metric will be removed",
 						},
-						Unit: strPtr(""),
+						Unit: new(""),
 						Gauge: &Gauge{
 							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 						},
@@ -448,7 +462,7 @@ func TestLoadMetadata(t *testing.T) {
 					"default.metric.to_be_removed": {
 						Signal: Signal{
 							Enabled:               true,
-							Description:           "[DEPRECATED] Non-monotonic delta sum double metric enabled by default.",
+							Description:           "[DEPRECATED] Non-monotonic delta sum double metric enabled by default.\n",
 							ExtendedDocumentation: "The metric will be removed soon.\n",
 							Stability:             component.StabilityLevelDeprecated,
 							Warnings: Warnings{
@@ -459,7 +473,7 @@ func TestLoadMetadata(t *testing.T) {
 							Since: "1.0.0",
 							Note:  "This metric will be removed",
 						},
-						Unit: strPtr("s"),
+						Unit: new("s"),
 						Sum: &Sum{
 							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityDelta},
@@ -473,7 +487,7 @@ func TestLoadMetadata(t *testing.T) {
 							Stability:   component.StabilityLevelDevelopment,
 							Attributes:  []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
 						},
-						Unit: strPtr("s"),
+						Unit: new("s"),
 						Sum: &Sum{
 							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 							MetricInputType:        MetricInputType{InputType: "string"},
@@ -496,7 +510,7 @@ func TestLoadMetadata(t *testing.T) {
 					"default.event.to_be_renamed": {
 						Signal: Signal{
 							Enabled:               false,
-							Description:           "[DEPRECATED] Example event disabled by default.",
+							Description:           "[DEPRECATED] Example event disabled by default.\n",
 							ExtendedDocumentation: "The event will be renamed soon.\n",
 							Warnings: Warnings{
 								IfConfigured: "This event is deprecated and will be renamed soon.",
@@ -528,7 +542,7 @@ func TestLoadMetadata(t *testing.T) {
 								Since: "1.5.0",
 								Note:  "This metric will be removed in favor of batch_send_trigger_size",
 							},
-							Unit: strPtr("{time}"),
+							Unit: new("{time}"),
 							Sum: &Sum{
 								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeInt},
 								Mono:            Mono{Monotonic: true},
@@ -540,7 +554,7 @@ func TestLoadMetadata(t *testing.T) {
 								Stability:   component.StabilityLevelAlpha,
 								Description: "Duration of request",
 							},
-							Unit: strPtr("s"),
+							Unit: new("s"),
 							Histogram: &Histogram{
 								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 								Boundaries:      []float64{1, 10, 100},
@@ -552,7 +566,7 @@ func TestLoadMetadata(t *testing.T) {
 								Stability:   component.StabilityLevelStable,
 								Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')",
 							},
-							Unit: strPtr("By"),
+							Unit: new("By"),
 							Sum: &Sum{
 								Mono: Mono{true},
 								MetricValueType: MetricValueType{
@@ -568,7 +582,7 @@ func TestLoadMetadata(t *testing.T) {
 								Description:           "This metric is optional and therefore not initialized in NewTelemetryBuilder.",
 								ExtendedDocumentation: "For example this metric only exists if feature A is enabled.",
 							},
-							Unit:     strPtr("{item}"),
+							Unit:     new("{item}"),
 							Optional: true,
 							Gauge: &Gauge{
 								MetricValueType: MetricValueType{
@@ -583,7 +597,7 @@ func TestLoadMetadata(t *testing.T) {
 								Description: "Queue capacity - sync gauge example.",
 								Stability:   component.StabilityLevelDevelopment,
 							},
-							Unit: strPtr("{item}"),
+							Unit: new("{item}"),
 							Gauge: &Gauge{
 								MetricValueType: MetricValueType{
 									ValueType: pmetric.NumberDataPointValueTypeInt,
@@ -616,6 +630,7 @@ func TestLoadMetadata(t *testing.T) {
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
+				ConfigsMetadata:      &cfggen.ConfigsMetadata{},
 			},
 		},
 		{
@@ -635,6 +650,7 @@ func TestLoadMetadata(t *testing.T) {
 						component.StabilityLevelStable:      {"metrics"},
 					},
 				},
+				ConfigsMetadata: &cfggen.ConfigsMetadata{},
 			},
 		},
 		{
@@ -652,6 +668,7 @@ func TestLoadMetadata(t *testing.T) {
 						component.StabilityLevelBeta: {"logs"},
 					},
 				},
+				ConfigsMetadata: &cfggen.ConfigsMetadata{},
 			},
 		},
 		{
@@ -669,6 +686,7 @@ func TestLoadMetadata(t *testing.T) {
 						component.StabilityLevelBeta: {"logs"},
 					},
 				},
+				ConfigsMetadata: &cfggen.ConfigsMetadata{},
 			},
 		},
 		{
@@ -761,6 +779,7 @@ func TestLoadMetadata(t *testing.T) {
 						component.StabilityLevelBeta: {"logs"},
 					},
 				},
+				ConfigsMetadata: &cfggen.ConfigsMetadata{},
 			},
 		},
 		{
@@ -779,6 +798,7 @@ func TestLoadMetadata(t *testing.T) {
 						component.StabilityLevelBeta: {"logs"},
 					},
 				},
+				ConfigsMetadata: &cfggen.ConfigsMetadata{},
 			},
 		},
 		{
@@ -798,6 +818,7 @@ func TestLoadMetadata(t *testing.T) {
 						component.StabilityLevelBeta: {"logs"},
 					},
 				},
+				ConfigsMetadata: &cfggen.ConfigsMetadata{},
 			},
 		},
 		{
@@ -817,6 +838,7 @@ func TestLoadMetadata(t *testing.T) {
 						component.StabilityLevelBeta: {"logs"},
 					},
 				},
+				ConfigsMetadata: &cfggen.ConfigsMetadata{},
 			},
 		},
 		{
@@ -849,7 +871,7 @@ func TestLoadMetadata(t *testing.T) {
 								SemanticConventionRef: "https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/system/system-metrics.md#metric-systemdiskio_time",
 							},
 						},
-						Unit: strPtr("s"),
+						Unit: new("s"),
 						Sum: &Sum{
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
 							Mono:                   Mono{Monotonic: true},
@@ -857,6 +879,7 @@ func TestLoadMetadata(t *testing.T) {
 						},
 					},
 				},
+				ConfigsMetadata: &cfggen.ConfigsMetadata{},
 			},
 		},
 	}
@@ -927,8 +950,4 @@ func TestVersionedMetricName(t *testing.T) {
 	// Versioned metric - Name should be auto-populated from key
 	versioned := md.Metrics["system.cpu.time@v1"]
 	require.True(t, versioned.Versioned)
-}
-
-func strPtr(s string) *string {
-	return &s
 }

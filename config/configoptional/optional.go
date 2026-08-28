@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 type flavor int
@@ -41,7 +40,7 @@ type Optional[T any] struct {
 
 // deref a reflect.Type to its underlying type.
 func deref(t reflect.Type) reflect.Type {
-	for t.Kind() == reflect.Ptr {
+	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 	return t
@@ -64,8 +63,7 @@ func assertNoEnabledField[T any]() error {
 	}
 
 	// Check if the struct has a field with the name "enabled".
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
+	for field := range t.Fields() {
 		mapstructureTags := strings.SplitN(field.Tag.Get("mapstructure"), ",", 2)
 		if len(mapstructureTags) > 0 && mapstructureTags[0] == "enabled" {
 			return errors.New("configoptional: underlying type cannot have a field with mapstructure tag 'enabled'")
@@ -191,7 +189,7 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 		}
 	}
 
-	if err := conf.Unmarshal(&o.value, xconfmap.WithForceUnmarshaler()); err != nil {
+	if err := conf.Unmarshal(&o.value, confmap.WithForceUnmarshaler()); err != nil {
 		return err
 	}
 

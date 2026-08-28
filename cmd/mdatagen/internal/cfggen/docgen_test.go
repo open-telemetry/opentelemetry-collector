@@ -32,17 +32,19 @@ func TestCfgPropDocs_DirectProperties(t *testing.T) {
 func TestCfgPropDocs_FlattensAllOf(t *testing.T) {
 	t.Parallel()
 	embedded := &ConfigMetadata{
-		Type: "object",
+		Type:  "object",
+		Embed: true,
 		Properties: map[string]*ConfigMetadata{
 			"retry_on_failure": {Type: "boolean", Description: "retry on failure"},
 		},
+		GoStruct: GoStructConfig{Anonymous: true},
 	}
 	cfg := &ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"endpoint": {Type: "string", Description: "endpoint URL"},
+			"embedded": embedded,
 		},
-		AllOf: []*ConfigMetadata{embedded},
 	}
 
 	docs := CfgPropDocs(cfg)
@@ -59,21 +61,27 @@ func TestCfgPropDocs_FlattensNestedAllOf(t *testing.T) {
 	t.Parallel()
 	// An embed that itself contains an AllOf
 	inner := &ConfigMetadata{
-		Type: "object",
+		Type:  "object",
+		Embed: true,
 		Properties: map[string]*ConfigMetadata{
 			"level2": {Type: "string"},
 		},
+		GoStruct: GoStructConfig{Anonymous: true},
 	}
 	outer := &ConfigMetadata{
 		Type:  "object",
-		AllOf: []*ConfigMetadata{inner},
+		Embed: true,
+		Properties: map[string]*ConfigMetadata{
+			"inner": inner,
+		},
+		GoStruct: GoStructConfig{Anonymous: true},
 	}
 	cfg := &ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
-			"top": {Type: "string"},
+			"top":   {Type: "string"},
+			"outer": outer,
 		},
-		AllOf: []*ConfigMetadata{outer},
 	}
 
 	docs := CfgPropDocs(cfg)
@@ -99,10 +107,10 @@ func TestCfgIsObject(t *testing.T) {
 	}{
 		{"nil", nil, false},
 		{"primitive string", &ConfigMetadata{Type: "string"}, false},
-		{"array of strings", &ConfigMetadata{Type: "array", Items: &ConfigMetadata{Type: "string"}}, false},
+		{"slice of strings", &ConfigMetadata{Type: "slice", Values: &ConfigMetadata{Type: "string"}}, false},
 		{"inline object", &ConfigMetadata{Type: "object", Properties: map[string]*ConfigMetadata{"x": {Type: "string"}}}, true},
-		{"ref-resolved object", &ConfigMetadata{Type: "object", ResolvedFrom: "confighttp.ServerConfig", Properties: map[string]*ConfigMetadata{"port": {Type: "integer"}}}, true},
-		{"map without properties", &ConfigMetadata{Type: "object", AdditionalProperties: &ConfigMetadata{Type: "string"}}, false},
+		{"ref-resolved object", &ConfigMetadata{Type: "object", Ref: "confighttp.ServerConfig", Properties: map[string]*ConfigMetadata{"port": {Type: "integer"}}}, true},
+		{"map without properties", &ConfigMetadata{Type: "map", Values: &ConfigMetadata{Type: "string"}}, false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -132,15 +140,15 @@ func TestCfgDocType(t *testing.T) {
 		{"datetime via GoType", &ConfigMetadata{Type: "string", GoType: "time.Time"}, "datetime"},
 		{"datetime via Format", &ConfigMetadata{Type: "string", Format: "date-time"}, "datetime"},
 		{"enum string", &ConfigMetadata{Type: "string", Enum: []any{"a", "b"}}, "string (one of: a, b)"},
-		{"integer", &ConfigMetadata{Type: "integer"}, "int"},
-		{"number", &ConfigMetadata{Type: "number"}, "float"},
-		{"boolean", &ConfigMetadata{Type: "boolean"}, "bool"},
-		{"array of string", &ConfigMetadata{Type: "array", Items: &ConfigMetadata{Type: "string"}}, "[]string"},
-		{"array of any", &ConfigMetadata{Type: "array"}, "[]any"},
-		{"map of string", &ConfigMetadata{Type: "object", AdditionalProperties: &ConfigMetadata{Type: "string"}}, "map[string]string"},
+		{"int", &ConfigMetadata{Type: "int"}, "int"},
+		{"float64", &ConfigMetadata{Type: "float64"}, "float64"},
+		{"bool", &ConfigMetadata{Type: "bool"}, "bool"},
+		{"array of string", &ConfigMetadata{Type: "slice", Values: &ConfigMetadata{Type: "string"}}, "[]string"},
+		{"array of any", &ConfigMetadata{Type: "slice"}, "[]any"},
+		{"map of string", &ConfigMetadata{Type: "map", Values: &ConfigMetadata{Type: "string"}}, "map[string]string"},
 		{"inline object", &ConfigMetadata{Type: "object", Properties: map[string]*ConfigMetadata{"x": {Type: "string"}}}, "object"},
 		{"plain object no props", &ConfigMetadata{Type: "object"}, "object"},
-		{"unknown type", &ConfigMetadata{Type: "unknown"}, "any"},
+		{"unknown type", &ConfigMetadata{Type: "unknown"}, "unknown"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
