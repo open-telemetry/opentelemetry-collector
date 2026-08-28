@@ -57,7 +57,11 @@ linters:
       - std-error-handling
 
     # Excluding configuration per-path, per-linter, per-text and per-source
-    rules: []
+    rules:
+      - path: _test\.go
+        linters:
+          - gosec
+        text: "^G104:"
 
     # Log a warning if an exclusion rule is unused.
     warn-unused: true
@@ -116,7 +120,6 @@ linters:
 
     gosec:
       excludes:
-        - G104 # FIXME
         - G115 # FIXME
         - G402
         - G404
