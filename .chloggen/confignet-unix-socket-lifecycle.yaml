@@ -18,9 +18,11 @@ issues: [15189]
 subtext: |
   For filesystem-based Unix domain sockets, Listen() now automatically:
   - Removes stale socket files before binding (refuses to remove non-socket files)
-  - Sets socket permissions to 0722 so any local process can connect
+  - Sets socket permissions to 0722 by default so any local process can connect,
+    configurable via the new `socket_permissions` field on AddrConfig
   - Cleans up socket files on Close()
-  Abstract sockets (@ prefix) are unaffected. No configuration is needed.
+  Abstract sockets (@ prefix) are unaffected. No configuration is needed beyond the
+  optional `socket_permissions` override.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'

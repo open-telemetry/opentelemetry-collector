@@ -91,6 +91,14 @@ type AddrConfig struct {
 	// DialerConfig contains options for connecting to an address.
 	DialerConfig DialerConfig `mapstructure:"dialer,omitempty"`
 
+	// SocketPermissions sets the file permissions applied to a filesystem-based
+	// Unix domain socket file after binding. Only applies to filesystem-based
+	// Unix transports ("unix", "unixgram", "unixpacket"); ignored for abstract
+	// sockets (endpoints starting with "@") and all other transports.
+	// If unset, defaults to 0722, which allows any local process to connect
+	// to the socket while only the owner can otherwise manage it.
+	SocketPermissions os.FileMode `mapstructure:"socket_permissions,omitempty"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -98,7 +106,8 @@ type AddrConfig struct {
 // NewDefaultAddrConfig creates a new AddrConfig with any default values set
 func NewDefaultAddrConfig() AddrConfig {
 	return AddrConfig{
-		DialerConfig: NewDefaultDialerConfig(),
+		DialerConfig:      NewDefaultDialerConfig(),
+		SocketPermissions: socketFileMode,
 	}
 }
 
@@ -135,9 +144,14 @@ func (na *AddrConfig) Listen(ctx context.Context) (net.Listener, error) {
 	}
 
 	if isFsSocket {
-		// Allow any local process to connect to the socket (owner rwx, group/other write).
-		// The write bit on a Unix socket controls connect access.
-		if err := os.Chmod(na.Endpoint, socketFileMode); err != nil {
+		// Apply the configured socket permissions, falling back to the default
+		// (owner rwx, group/other write) when unset. The write bit on a Unix
+		// socket controls connect access.
+		mode := na.SocketPermissions
+		if mode == 0 {
+			mode = socketFileMode
+		}
+		if err := os.Chmod(na.Endpoint, mode); err != nil {
 			_ = ln.Close()
 			_ = os.Remove(na.Endpoint)
 			return nil, fmt.Errorf("failed to set socket permissions on %q: %w", na.Endpoint, err)
@@ -179,7 +193,8 @@ func (na *AddrConfig) isUnixTransport() bool {
 	}
 }
 
-// socketFileMode is the permission set on Unix domain socket files.
+// socketFileMode is the default permission set applied to Unix domain socket
+// files, used when AddrConfig.SocketPermissions is unset.
 // Owner rwx (7), group write (2), other write (2). The write bit on a
 // Unix socket controls connect access, so 0o722 allows any local process
 // to connect while only the owner can manage the socket.

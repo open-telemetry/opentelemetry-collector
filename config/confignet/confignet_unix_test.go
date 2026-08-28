@@ -151,6 +151,28 @@ func TestAddrConfig_Listen_UnixSocketPermissions(t *testing.T) {
 	assert.Equal(t, socketFileMode|os.ModeSocket, fi.Mode())
 }
 
+func TestAddrConfig_Listen_UnixSocketPermissions_Custom(t *testing.T) {
+	t.Parallel()
+	//nolint:usetesting // short path needed for Unix socket limit
+	dir, err := os.MkdirTemp("", "confignet-test")
+	require.NoError(t, err)
+	t.Cleanup(func() { os.RemoveAll(dir) })
+	path := filepath.Join(dir, "perms.sock")
+
+	na := &AddrConfig{
+		Endpoint:          path,
+		Transport:         TransportTypeUnix,
+		SocketPermissions: 0o700,
+	}
+	ln, err := na.Listen(context.Background())
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, ln.Close()) })
+
+	fi, err := os.Stat(path)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o700)|os.ModeSocket, fi.Mode())
+}
+
 func TestAddrConfig_Listen_UnixInvalidEndpoint(t *testing.T) {
 	t.Parallel()
 	na := &AddrConfig{
