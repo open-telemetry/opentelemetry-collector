@@ -17,6 +17,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// tempSocketDir creates a temp directory short enough to stay under the
+// Unix socket path length limit and registers cleanup.
+func tempSocketDir(t *testing.T) string {
+	t.Helper()
+	//nolint:usetesting // short path needed for Unix socket limit
+	dir, err := os.MkdirTemp("", "confignet-test")
+	require.NoError(t, err)
+	t.Cleanup(func() { os.RemoveAll(dir) })
+	return dir
+}
+
 func Test_removeStaleSocket(t *testing.T) {
 	t.Parallel()
 	t.Run("path does not exist", func(t *testing.T) {
@@ -40,10 +51,7 @@ func Test_removeStaleSocket(t *testing.T) {
 
 	t.Run("path is a stale socket", func(t *testing.T) {
 		t.Parallel()
-		//nolint:usetesting // short path needed for Unix socket limit
-		dir, err := os.MkdirTemp("", "confignet-sock-test-*")
-		require.NoError(t, err)
-		t.Cleanup(func() { os.RemoveAll(dir) })
+		dir := tempSocketDir(t)
 		path := filepath.Join(dir, "stale.sock")
 		// Create a socket file directly via syscall so it is not auto-removed
 		// when closed (Go's net.Listener.Close removes socket files on some OSes).
@@ -66,10 +74,7 @@ func Test_removeStaleSocket(t *testing.T) {
 
 func Test_unixListener_Close(t *testing.T) {
 	t.Parallel()
-	//nolint:usetesting // short path needed for Unix socket limit
-	dir, err := os.MkdirTemp("", "confignet-test")
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(dir) })
+	dir := tempSocketDir(t)
 	path := filepath.Join(dir, "listener.sock")
 
 	ln, err := net.Listen("unix", path)
@@ -89,10 +94,7 @@ func Test_unixListener_Close(t *testing.T) {
 
 func TestAddrConfig_Listen_UnixRemovesStaleSocket(t *testing.T) {
 	t.Parallel()
-	//nolint:usetesting // short path needed for Unix socket limit
-	dir, err := os.MkdirTemp("", "confignet-test")
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(dir) })
+	dir := tempSocketDir(t)
 	path := filepath.Join(dir, "stale.sock")
 
 	// Create a stale socket using syscall (macOS removes socket on net.Listener.Close).
@@ -115,10 +117,7 @@ func TestAddrConfig_Listen_UnixRemovesStaleSocket(t *testing.T) {
 
 func TestAddrConfig_Listen_UnixRefusesToRemoveNonSocket(t *testing.T) {
 	t.Parallel()
-	//nolint:usetesting // short path needed for Unix socket limit
-	dir, err := os.MkdirTemp("", "confignet-test")
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(dir) })
+	dir := tempSocketDir(t)
 	path := filepath.Join(dir, "regular.txt")
 	require.NoError(t, os.WriteFile(path, []byte("data"), 0o600))
 
@@ -126,51 +125,40 @@ func TestAddrConfig_Listen_UnixRefusesToRemoveNonSocket(t *testing.T) {
 		Endpoint:  path,
 		Transport: TransportTypeUnix,
 	}
-	_, err = na.Listen(context.Background())
+	_, err := na.Listen(context.Background())
 	assert.ErrorContains(t, err, "not a socket")
 }
 
 func TestAddrConfig_Listen_UnixSocketPermissions(t *testing.T) {
 	t.Parallel()
-	//nolint:usetesting // short path needed for Unix socket limit
-	dir, err := os.MkdirTemp("", "confignet-test")
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(dir) })
-	path := filepath.Join(dir, "perms.sock")
-
-	na := &AddrConfig{
-		Endpoint:  path,
-		Transport: TransportTypeUnix,
+	tests := []struct {
+		name              string
+		socketPermissions os.FileMode
+		want              os.FileMode
+	}{
+		{name: "default", want: socketFileMode},
+		{name: "custom", socketPermissions: 0o700, want: 0o700},
 	}
-	ln, err := na.Listen(context.Background())
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, ln.Close()) })
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			dir := tempSocketDir(t)
+			path := filepath.Join(dir, "perms.sock")
 
-	fi, err := os.Stat(path)
-	require.NoError(t, err)
-	assert.Equal(t, socketFileMode|os.ModeSocket, fi.Mode())
-}
+			na := &AddrConfig{
+				Endpoint:          path,
+				Transport:         TransportTypeUnix,
+				SocketPermissions: tt.socketPermissions,
+			}
+			ln, err := na.Listen(context.Background())
+			require.NoError(t, err)
+			t.Cleanup(func() { require.NoError(t, ln.Close()) })
 
-func TestAddrConfig_Listen_UnixSocketPermissions_Custom(t *testing.T) {
-	t.Parallel()
-	//nolint:usetesting // short path needed for Unix socket limit
-	dir, err := os.MkdirTemp("", "confignet-test")
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(dir) })
-	path := filepath.Join(dir, "perms.sock")
-
-	na := &AddrConfig{
-		Endpoint:          path,
-		Transport:         TransportTypeUnix,
-		SocketPermissions: 0o700,
+			fi, err := os.Stat(path)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want|os.ModeSocket, fi.Mode())
+		})
 	}
-	ln, err := na.Listen(context.Background())
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, ln.Close()) })
-
-	fi, err := os.Stat(path)
-	require.NoError(t, err)
-	assert.Equal(t, os.FileMode(0o700)|os.ModeSocket, fi.Mode())
 }
 
 func TestAddrConfig_Listen_UnixInvalidEndpoint(t *testing.T) {
@@ -185,41 +173,25 @@ func TestAddrConfig_Listen_UnixInvalidEndpoint(t *testing.T) {
 
 func TestAddrConfig_Listen_UnixChmodFailure(t *testing.T) {
 	t.Parallel()
-	//nolint:usetesting // short path needed for Unix socket limit
-	dir, err := os.MkdirTemp("", "confignet-test")
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(dir) })
-	path := filepath.Join(dir, "chmod.sock")
+	dir := tempSocketDir(t)
 
+	// Make the directory read-only so Listen succeeds at binding but Chmod
+	// fails due to permission denied.
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "sub"), 0o700))
+	subPath := filepath.Join(dir, "sub", "chmod.sock")
 	na := &AddrConfig{
-		Endpoint:  path,
+		Endpoint:  subPath,
 		Transport: TransportTypeUnix,
 	}
 	ln, err := na.Listen(context.Background())
 	require.NoError(t, err)
-
-	// Remove the socket file behind the listener's back so that the
-	// Chmod in a second Listen call fails (socket won't exist to chmod).
 	require.NoError(t, ln.Close())
-
-	// Now make the directory read-only so Listen succeeds at binding
-	// but Chmod fails due to permission denied.
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, "sub"), 0o700))
-	subPath := filepath.Join(dir, "sub", "chmod.sock")
-	na2 := &AddrConfig{
-		Endpoint:  subPath,
-		Transport: TransportTypeUnix,
-	}
-	ln2, err := na2.Listen(context.Background())
-	require.NoError(t, err)
-	// Verify listener works, then close
-	require.NoError(t, ln2.Close())
 
 	// Make dir read-only to cause Chmod failure
 	require.NoError(t, os.Chmod(filepath.Join(dir, "sub"), 0o444))       //nolint:gosec // intentional for test
 	t.Cleanup(func() { _ = os.Chmod(filepath.Join(dir, "sub"), 0o700) }) //nolint:gosec // restore perms for cleanup
 
-	_, err = na2.Listen(context.Background())
+	_, err = na.Listen(context.Background())
 	// On some systems this fails at Listen (can't bind), on others at Chmod.
 	// Either way it should error.
 	assert.Error(t, err)
@@ -227,10 +199,8 @@ func TestAddrConfig_Listen_UnixChmodFailure(t *testing.T) {
 
 func Test_removeStaleSocket_StatError(t *testing.T) {
 	t.Parallel()
-	//nolint:usetesting // short path needed for Unix socket limit
-	dir, err := os.MkdirTemp("", "confignet-test")
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = os.Chmod(dir, 0o700); os.RemoveAll(dir) }) //nolint:gosec // restore perms for cleanup
+	dir := tempSocketDir(t)
+	t.Cleanup(func() { _ = os.Chmod(dir, 0o700) }) //nolint:gosec // restore perms for cleanup
 	path := filepath.Join(dir, "socket.sock")
 
 	// Create a file so the path exists.
@@ -238,16 +208,13 @@ func Test_removeStaleSocket_StatError(t *testing.T) {
 	// Remove permission on the directory so Stat fails with permission denied.
 	require.NoError(t, os.Chmod(dir, 0o000))
 
-	err = removeStaleSocket(path)
+	err := removeStaleSocket(path)
 	assert.Error(t, err)
 }
 
 func TestAddrConfig_Listen_UnixSocketCloseRemovesFile(t *testing.T) {
 	t.Parallel()
-	//nolint:usetesting // short path needed for Unix socket limit
-	dir, err := os.MkdirTemp("", "confignet-test")
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(dir) })
+	dir := tempSocketDir(t)
 	path := filepath.Join(dir, "cleanup.sock")
 
 	na := &AddrConfig{

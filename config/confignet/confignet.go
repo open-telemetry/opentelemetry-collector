@@ -106,8 +106,7 @@ type AddrConfig struct {
 // NewDefaultAddrConfig creates a new AddrConfig with any default values set
 func NewDefaultAddrConfig() AddrConfig {
 	return AddrConfig{
-		DialerConfig:      NewDefaultDialerConfig(),
-		SocketPermissions: socketFileMode,
+		DialerConfig: NewDefaultDialerConfig(),
 	}
 }
 
@@ -125,11 +124,20 @@ func (na *AddrConfig) Listen(ctx context.Context) (net.Listener, error) {
 	if na.Transport == TransportTypeNpipe {
 		return listenNpipe(na.Endpoint)
 	}
+	if na.isUnixTransport() {
+		return na.listenUnix(ctx)
+	}
 
-	// Filesystem-based Unix sockets need lifecycle handling:
-	// remove any stale socket before binding and clean up on close.
-	// Abstract sockets (@ prefix) live in kernel memory and need none of this.
-	isFsSocket := na.isUnixTransport() && !isAbstractSocket(na.Endpoint)
+	lc := net.ListenConfig{}
+	return lc.Listen(ctx, string(na.Transport), na.Endpoint)
+}
+
+// listenUnix binds a Unix domain socket, handling the filesystem lifecycle
+// of the socket file: removing any stale socket before binding, setting the
+// configured permissions, and cleaning up on close. Abstract sockets
+// (@ prefix) live in kernel memory and need none of this.
+func (na *AddrConfig) listenUnix(ctx context.Context) (net.Listener, error) {
+	isFsSocket := !isAbstractSocket(na.Endpoint)
 
 	if isFsSocket {
 		if err := removeStaleSocket(na.Endpoint); err != nil {
@@ -143,23 +151,23 @@ func (na *AddrConfig) Listen(ctx context.Context) (net.Listener, error) {
 		return nil, err
 	}
 
-	if isFsSocket {
-		// Apply the configured socket permissions, falling back to the default
-		// (owner rwx, group/other write) when unset. The write bit on a Unix
-		// socket controls connect access.
-		mode := na.SocketPermissions
-		if mode == 0 {
-			mode = socketFileMode
-		}
-		if err := os.Chmod(na.Endpoint, mode); err != nil {
-			_ = ln.Close()
-			_ = os.Remove(na.Endpoint)
-			return nil, fmt.Errorf("failed to set socket permissions on %q: %w", na.Endpoint, err)
-		}
-		ln = &unixListener{Listener: ln, path: na.Endpoint}
+	if !isFsSocket {
+		return ln, nil
 	}
 
-	return ln, nil
+	// Apply the configured socket permissions, falling back to the default
+	// (owner rwx, group/other write) when unset. The write bit on a Unix
+	// socket controls connect access.
+	mode := na.SocketPermissions
+	if mode == 0 {
+		mode = socketFileMode
+	}
+	if err := os.Chmod(na.Endpoint, mode); err != nil {
+		_ = ln.Close()
+		_ = os.Remove(na.Endpoint)
+		return nil, fmt.Errorf("failed to set socket permissions on %q: %w", na.Endpoint, err)
+	}
+	return &unixListener{Listener: ln, path: na.Endpoint}, nil
 }
 
 func (na *AddrConfig) Validate() error {
