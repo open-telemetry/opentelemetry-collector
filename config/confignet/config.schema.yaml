@@ -9,6 +9,9 @@ $defs:
       endpoint:
         description: Endpoint configures the address for this network connection. For TCP and UDP networks, the address has the form "host:port". The host must be a literal IP address, or a host name that can be resolved to IP addresses. The port must be a literal port number or a service name. If the host is a literal IPv6 address it must be enclosed in square brackets, as in "[2001:db8::1]:80" or "[fe80::1%zone]:80". The zone specifies the scope of the literal IPv6 address as defined in RFC 4007.
         type: string
+      socket_management_disabled:
+        description: 'SocketManagementDisabled disables all automatic lifecycle management of filesystem-based Unix domain socket files: no stale-socket removal before binding, no permission changes after binding (SocketPermissions is ignored), and no cleanup on Close(). Only applies to filesystem-based Unix transports ("unix", "unixgram", "unixpacket"); ignored for abstract sockets and all other transports. Use this if the socket file''s lifecycle is managed externally (e.g. systemd socket activation, an init container, custom ACLs/SELinux labels).'
+        type: boolean
       socket_permissions:
         description: SocketPermissions sets the file permissions applied to a filesystem-based Unix domain socket file after binding. Only applies to filesystem-based Unix transports ("unix", "unixgram", "unixpacket"); ignored for abstract sockets (endpoints starting with "@") and all other transports. If unset, defaults to 0722, which allows any local process to connect to the socket while only the owner can otherwise manage it.
         x-customType: os.file_mode

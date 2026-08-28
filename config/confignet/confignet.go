@@ -99,6 +99,16 @@ type AddrConfig struct {
 	// to the socket while only the owner can otherwise manage it.
 	SocketPermissions os.FileMode `mapstructure:"socket_permissions,omitempty"`
 
+	// SocketManagementDisabled disables all automatic lifecycle management of
+	// filesystem-based Unix domain socket files: no stale-socket removal
+	// before binding, no permission changes after binding (SocketPermissions
+	// is ignored), and no cleanup on Close(). Only applies to filesystem-based
+	// Unix transports ("unix", "unixgram", "unixpacket"); ignored for abstract
+	// sockets and all other transports. Use this if the socket file's
+	// lifecycle is managed externally (e.g. systemd socket activation, an
+	// init container, custom ACLs/SELinux labels).
+	SocketManagementDisabled bool `mapstructure:"socket_management_disabled,omitempty"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -125,11 +135,36 @@ func (na *AddrConfig) Listen(ctx context.Context) (net.Listener, error) {
 		return listenNpipe(na.Endpoint)
 	}
 	if na.isUnixTransport() {
+		if na.SocketManagementDisabled {
+			return na.listenUnixUnmanaged(ctx)
+		}
 		return na.listenUnix(ctx)
 	}
 
 	lc := net.ListenConfig{}
 	return lc.Listen(ctx, string(na.Transport), na.Endpoint)
+}
+
+// bindUnix binds a Unix domain socket at the configured endpoint.
+func (na *AddrConfig) bindUnix(ctx context.Context) (net.Listener, error) {
+	lc := net.ListenConfig{}
+	return lc.Listen(ctx, string(na.Transport), na.Endpoint)
+}
+
+// listenUnixUnmanaged binds a Unix domain socket without any automatic
+// lifecycle management. It disables Go's default behavior of removing the
+// socket file on Close (net.UnixListener.SetUnlinkOnClose), since that
+// default would otherwise silently delete a file the caller intends to
+// manage themselves, contradicting SocketManagementDisabled.
+func (na *AddrConfig) listenUnixUnmanaged(ctx context.Context) (net.Listener, error) {
+	ln, err := na.bindUnix(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if ul, ok := ln.(*net.UnixListener); ok {
+		ul.SetUnlinkOnClose(false)
+	}
+	return ln, nil
 }
 
 // listenUnix binds a Unix domain socket, handling the filesystem lifecycle
@@ -145,8 +180,7 @@ func (na *AddrConfig) listenUnix(ctx context.Context) (net.Listener, error) {
 		}
 	}
 
-	lc := net.ListenConfig{}
-	ln, err := lc.Listen(ctx, string(na.Transport), na.Endpoint)
+	ln, err := na.bindUnix(ctx)
 	if err != nil {
 		return nil, err
 	}
