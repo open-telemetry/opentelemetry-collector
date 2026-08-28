@@ -37,7 +37,9 @@ func TestCreate(t *testing.T) {
 	pCfg.CheckInterval = 100 * time.Millisecond
 
 	testTel := componenttest.NewTelemetry()
-	defer testTel.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, testTel.Shutdown(context.Background()))
+	}()
 
 	set := metadatatest.NewSettings(testTel)
 
