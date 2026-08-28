@@ -16,9 +16,12 @@ import (
 
 func TestSetupTelemetry(t *testing.T) {
 	testTel := componenttest.NewTelemetry()
-	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
+	settings := NewSettings(testTel)
+
+	tb, err := metadata.NewTelemetryBuilder(settings.TelemetrySettings)
 	require.NoError(t, err)
 	defer tb.Shutdown()
+
 	tb.MemorylimiterRefusedRequests.Add(context.Background(), 1)
 	AssertEqualMemorylimiterRefusedRequests(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},

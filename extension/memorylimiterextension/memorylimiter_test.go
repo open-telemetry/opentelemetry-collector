@@ -14,6 +14,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/metric"
+	embeddedmetric "go.opentelemetry.io/otel/metric/embedded"
+	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -25,10 +28,6 @@ import (
 	"go.opentelemetry.io/collector/extension/memorylimiterextension/internal/metadata"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
 	"go.opentelemetry.io/collector/internal/memorylimiter/iruntime"
-
-	"go.opentelemetry.io/otel/metric"
-	embeddedmetric "go.opentelemetry.io/otel/metric/embedded"
-	noopmetric "go.opentelemetry.io/otel/metric/noop"
 )
 
 type errorMeter struct {
@@ -101,6 +100,34 @@ func newRefusingMemoryLimiter(t *testing.T, tb *metadata.TelemetryBuilder) *memo
 	require.True(t, ml.MustRefuse())
 
 	return ml
+}
+
+func TestNewMemoryLimiter_Error(t *testing.T) {
+	originalGetMemoryFn := memorylimiter.GetMemoryFn
+	t.Cleanup(func() {
+		memorylimiter.GetMemoryFn = originalGetMemoryFn
+	})
+
+	memorylimiter.GetMemoryFn = func() (uint64, error) {
+		return 0, errors.New("failed to get total memory")
+	}
+
+	cfg := &Config{
+		CheckInterval:         time.Second,
+		MemoryLimitPercentage: 80,
+		MemorySpikePercentage: 10,
+	}
+
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(
+		componenttest.NewNopTelemetrySettings(),
+	)
+	require.NoError(t, err)
+
+	ext, err := newMemoryLimiter(cfg, zap.NewNop(), telemetryBuilder)
+
+	require.Error(t, err)
+	require.Nil(t, ext)
+	require.ErrorContains(t, err, "failed to get total memory")
 }
 
 func TestGetGRPCServerOptions_Normal(t *testing.T) {
