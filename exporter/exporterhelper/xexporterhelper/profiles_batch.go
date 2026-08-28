@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
@@ -33,7 +34,7 @@ func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt expor
 		if !ok {
 			return nil, errors.New("invalid input type")
 		}
-		err := req2.mergeTo(req, sz)
+		err := req2.mergeTo(req, sz, szt)
 		if err != nil {
 			return nil, fmt.Errorf("failed merging profiles; %w", err)
 		}
@@ -43,25 +44,34 @@ func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt expor
 	if maxSize == 0 {
 		return []Request{req}, nil
 	}
-	return req.split(maxSize, sz)
+	return req.split(maxSize, sz, szt)
 }
 
-func (req *profilesRequest) mergeTo(dst *profilesRequest, sz sizer.ProfilesSizer) error {
+func (req *profilesRequest) mergeTo(dst *profilesRequest, sz sizer.ProfilesSizer, szt request.SizerType) error {
 	if sz != nil {
-		dst.setCachedSize(dst.size(sz) + req.size(sz))
-		req.setCachedSize(0)
+		// MergeTo deduplicates the profiles dictionary, so the merged request is
+		// smaller than the sum of the two parts. Only the sample count is additive;
+		// every other dimension has to be recomputed after the merge.
+		if szt == request.SizerTypeItems {
+			dst.sizes.Update(szt, dst.size(sz, szt)+req.size(sz, szt))
+			req.sizes.Update(szt, 0)
+		} else {
+			dst.sizes = request.NewSizeCache()
+			// Not zero: the source keeps its dictionary after the move.
+			req.sizes = request.NewSizeCache()
+		}
 	}
 	return req.pd.MergeTo(dst.pd)
 }
 
-func (req *profilesRequest) split(maxSize int, sz sizer.ProfilesSizer) ([]Request, error) {
+func (req *profilesRequest) split(maxSize int, sz sizer.ProfilesSizer, szt request.SizerType) ([]Request, error) {
 	var res []Request
-	for req.size(sz) > maxSize {
+	for req.size(sz, szt) > maxSize {
 		pd, rmSize := extractProfiles(req.pd, maxSize, sz)
 		if pd.SampleCount() == 0 {
 			return res, fmt.Errorf("one sample size is greater than max size, dropping items: %d", req.pd.SampleCount())
 		}
-		req.setCachedSize(req.size(sz) - rmSize)
+		req.sizes.Update(szt, req.size(sz, szt)-rmSize)
 		res = append(res, newProfilesRequest(pd))
 	}
 
