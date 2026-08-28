@@ -305,7 +305,7 @@ func TestCreateLoggerWithResource(t *testing.T) {
 			},
 			resourceConfig: migration.ResourceConfigV030{
 				Resource: config.Resource{
-					SchemaUrl: ptr(semconv.SchemaURL),
+					SchemaUrl: new(semconv.SchemaURL),
 				},
 			},
 			wantFields: map[string]string{
