@@ -28,6 +28,17 @@ func tempSocketDir(t *testing.T) string {
 	return dir
 }
 
+// createStaleSocket creates a socket file directly via syscall, bypassing
+// net.Listen, so it is not auto-removed when closed (Go's net.Listener.Close
+// removes socket files on some OSes) and remains on disk as a "stale" socket.
+func createStaleSocket(t *testing.T, path string) {
+	t.Helper()
+	fd, err := syscall.Socket(syscall.AF_UNIX, syscall.SOCK_STREAM, 0)
+	require.NoError(t, err)
+	require.NoError(t, syscall.Bind(fd, &syscall.SockaddrUnix{Name: path}))
+	require.NoError(t, syscall.Close(fd))
+}
+
 func Test_removeStaleSocket(t *testing.T) {
 	t.Parallel()
 	t.Run("path does not exist", func(t *testing.T) {
@@ -53,15 +64,9 @@ func Test_removeStaleSocket(t *testing.T) {
 		t.Parallel()
 		dir := tempSocketDir(t)
 		path := filepath.Join(dir, "stale.sock")
-		// Create a socket file directly via syscall so it is not auto-removed
-		// when closed (Go's net.Listener.Close removes socket files on some OSes).
-		fd, err := syscall.Socket(syscall.AF_UNIX, syscall.SOCK_STREAM, 0)
-		require.NoError(t, err)
-		err = syscall.Bind(fd, &syscall.SockaddrUnix{Name: path})
-		require.NoError(t, err)
-		require.NoError(t, syscall.Close(fd))
+		createStaleSocket(t, path)
 		// Socket file should still exist after closing the fd.
-		_, err = os.Stat(path)
+		_, err := os.Stat(path)
 		require.NoError(t, err)
 
 		err = removeStaleSocket(path)
@@ -96,14 +101,7 @@ func TestAddrConfig_Listen_UnixRemovesStaleSocket(t *testing.T) {
 	t.Parallel()
 	dir := tempSocketDir(t)
 	path := filepath.Join(dir, "stale.sock")
-
-	// Create a stale socket using syscall (macOS removes socket on net.Listener.Close).
-	fd, sysErr := syscall.Socket(syscall.AF_UNIX, syscall.SOCK_STREAM, 0)
-	require.NoError(t, sysErr)
-	require.NoError(t, syscall.Bind(fd, &syscall.SockaddrUnix{Name: path}))
-	require.NoError(t, syscall.Close(fd))
-	_, sysErr = os.Stat(path)
-	require.NoError(t, sysErr)
+	createStaleSocket(t, path)
 
 	// Listen should succeed despite stale socket.
 	na := &AddrConfig{
@@ -161,6 +159,21 @@ func TestAddrConfig_Listen_UnixSocketPermissions(t *testing.T) {
 	}
 }
 
+func TestAddrConfig_Listen_UnixSocketManagementDisabled_StaleSocketNotRemoved(t *testing.T) {
+	t.Parallel()
+	dir := tempSocketDir(t)
+	path := filepath.Join(dir, "stale.sock")
+	createStaleSocket(t, path)
+
+	na := &AddrConfig{
+		Endpoint:                 path,
+		Transport:                TransportTypeUnix,
+		SocketManagementDisabled: true,
+	}
+	_, err := na.Listen(context.Background())
+	assert.Error(t, err)
+}
+
 func TestAddrConfig_Listen_UnixInvalidEndpoint(t *testing.T) {
 	t.Parallel()
 	na := &AddrConfig{
@@ -214,22 +227,40 @@ func Test_removeStaleSocket_StatError(t *testing.T) {
 
 func TestAddrConfig_Listen_UnixSocketCloseRemovesFile(t *testing.T) {
 	t.Parallel()
-	dir := tempSocketDir(t)
-	path := filepath.Join(dir, "cleanup.sock")
-
-	na := &AddrConfig{
-		Endpoint:  path,
-		Transport: TransportTypeUnix,
+	tests := []struct {
+		name                     string
+		socketManagementDisabled bool
+		wantRemoved              bool
+	}{
+		{name: "managed: file removed on close", wantRemoved: true},
+		{name: "unmanaged: file kept on close", socketManagementDisabled: true},
 	}
-	ln, err := na.Listen(context.Background())
-	require.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			dir := tempSocketDir(t)
+			path := filepath.Join(dir, "cleanup.sock")
 
-	_, err = os.Stat(path)
-	require.NoError(t, err)
+			na := &AddrConfig{
+				Endpoint:                 path,
+				Transport:                TransportTypeUnix,
+				SocketManagementDisabled: tt.socketManagementDisabled,
+			}
+			ln, err := na.Listen(context.Background())
+			require.NoError(t, err)
+			t.Cleanup(func() { _ = os.Remove(path) })
 
-	require.NoError(t, ln.Close())
+			_, err = os.Stat(path)
+			require.NoError(t, err)
 
-	// Socket file should be removed after close.
-	_, err = os.Stat(path)
-	assert.True(t, os.IsNotExist(err))
+			require.NoError(t, ln.Close())
+
+			_, err = os.Stat(path)
+			if tt.wantRemoved {
+				assert.True(t, os.IsNotExist(err))
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }

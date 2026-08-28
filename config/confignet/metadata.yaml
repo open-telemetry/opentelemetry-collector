@@ -23,6 +23,16 @@ exported_configs:
           it must be enclosed in square brackets, as in "[2001:db8::1]:80" or "[fe80::1%zone]:80".
           The zone specifies the scope of the literal IPv6 address as defined in RFC 4007.
         type: string
+      socket_management_disabled:
+        description: |
+          Disables all automatic lifecycle management of filesystem-based Unix domain
+          socket files: no stale-socket removal before binding, no permission changes
+          after binding (socket_permissions is ignored), and no cleanup on Close(). Only
+          applies to filesystem-based Unix transports ("unix", "unixgram", "unixpacket");
+          ignored for abstract sockets and all other transports. Use this if the socket
+          file's lifecycle is managed externally (e.g. systemd socket activation, an init
+          container, custom ACLs/SELinux labels).
+        type: bool
       socket_permissions:
         description: |
           Sets the file permissions applied to a filesystem-based Unix domain socket file

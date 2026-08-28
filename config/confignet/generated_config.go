@@ -20,6 +20,15 @@ type AddrConfig struct {
 	// The zone specifies the scope of the literal IPv6 address as defined in RFC 4007.
 	Endpoint string `mapstructure:"endpoint,omitempty"`
 
+	// SocketManagementDisabled disables all automatic lifecycle management of filesystem-based Unix domain
+	// socket files: no stale-socket removal before binding, no permission changes
+	// after binding (socket_permissions is ignored), and no cleanup on Close(). Only
+	// applies to filesystem-based Unix transports ("unix", "unixgram", "unixpacket");
+	// ignored for abstract sockets and all other transports. Use this if the socket
+	// file's lifecycle is managed externally (e.g. systemd socket activation, an init
+	// container, custom ACLs/SELinux labels).
+	SocketManagementDisabled bool `mapstructure:"socket_management_disabled,omitempty"`
+
 	// SocketPermissions sets the file permissions applied to a filesystem-based Unix domain socket file
 	// after binding. Only applies to filesystem-based Unix transports ("unix", "unixgram",
 	// "unixpacket"); ignored for abstract sockets (endpoints starting with "@") and all

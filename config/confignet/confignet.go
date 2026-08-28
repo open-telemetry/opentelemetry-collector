@@ -71,11 +71,36 @@ func (na *AddrConfig) Listen(ctx context.Context) (net.Listener, error) {
 		return listenNpipe(na.Endpoint)
 	}
 	if na.isUnixTransport() {
+		if na.SocketManagementDisabled {
+			return na.listenUnixUnmanaged(ctx)
+		}
 		return na.listenUnix(ctx)
 	}
 
 	lc := net.ListenConfig{}
 	return lc.Listen(ctx, string(na.Transport), na.Endpoint)
+}
+
+// bindUnix binds a Unix domain socket at the configured endpoint.
+func (na *AddrConfig) bindUnix(ctx context.Context) (net.Listener, error) {
+	lc := net.ListenConfig{}
+	return lc.Listen(ctx, string(na.Transport), na.Endpoint)
+}
+
+// listenUnixUnmanaged binds a Unix domain socket without any automatic
+// lifecycle management. It disables Go's default behavior of removing the
+// socket file on Close (net.UnixListener.SetUnlinkOnClose), since that
+// default would otherwise silently delete a file the caller intends to
+// manage themselves, contradicting SocketManagementDisabled.
+func (na *AddrConfig) listenUnixUnmanaged(ctx context.Context) (net.Listener, error) {
+	ln, err := na.bindUnix(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if ul, ok := ln.(*net.UnixListener); ok {
+		ul.SetUnlinkOnClose(false)
+	}
+	return ln, nil
 }
 
 // listenUnix binds a Unix domain socket, handling the filesystem lifecycle
@@ -91,8 +116,7 @@ func (na *AddrConfig) listenUnix(ctx context.Context) (net.Listener, error) {
 		}
 	}
 
-	lc := net.ListenConfig{}
-	ln, err := lc.Listen(ctx, string(na.Transport), na.Endpoint)
+	ln, err := na.bindUnix(ctx)
 	if err != nil {
 		return nil, err
 	}

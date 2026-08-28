@@ -22,6 +22,13 @@ leverage network configuration to set connection and transport information.
   starting with `@`) and all other transports. Defaults to `0722`, which
   allows any local process to connect to the socket while only the owner
   can otherwise manage it.
+- `socket_management_disabled`: Disables all automatic lifecycle management
+  of a filesystem-based Unix domain socket file: no stale-socket removal
+  before binding, no permission changes after binding (`socket_permissions`
+  is ignored), and no cleanup on close. Only applies to the `unix`,
+  `unixgram` and `unixpacket` transports. Use this if the socket file's
+  lifecycle is managed externally (e.g. systemd socket activation, an init
+  container, custom ACLs/SELinux labels). Defaults to `false`.
 
 Note that for TCP receivers only the `endpoint` configuration setting is
 required.

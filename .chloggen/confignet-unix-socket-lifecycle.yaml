@@ -22,7 +22,9 @@ subtext: |
     configurable via the new `socket_permissions` field on AddrConfig
   - Cleans up socket files on Close()
   Abstract sockets (@ prefix) are unaffected. No configuration is needed beyond the
-  optional `socket_permissions` override.
+  optional `socket_permissions` override. The new `socket_management_disabled` field
+  fully opts out of this lifecycle management, for sockets whose file is managed
+  externally.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
