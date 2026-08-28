@@ -22,7 +22,7 @@ func TestNewDefaultDialerConfig(t *testing.T) {
 }
 
 func TestNewDefaultAddrConfig(t *testing.T) {
-	expectedAddrConfig := AddrConfig{}
+	expectedAddrConfig := AddrConfig{SocketPermissions: socketFileMode}
 	addrConfig := NewDefaultAddrConfig()
 	require.Equal(t, expectedAddrConfig, addrConfig)
 }
