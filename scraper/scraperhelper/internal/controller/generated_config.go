@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// ControllerConfig defines common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed.
+// ControllerConfig defines common settings for a scraper controller configuration. Scraper controller receivers should include this struct as a named field with a mapstructure squash tag, instead of receiver.Settings, and extend it with more fields if needed.
 type ControllerConfig struct {
 	// Sets how frequently the scraper is scheduled.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`

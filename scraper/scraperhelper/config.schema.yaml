@@ -1,6 +1,6 @@
 $defs:
   controller_config:
-    description: ControllerConfig defines common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed.
+    description: ControllerConfig defines common settings for a scraper controller configuration. Scraper controller receivers should include this struct as a named field with a mapstructure squash tag, instead of receiver.Settings, and extend it with more fields if needed.
     type: object
     properties:
       collection_interval:
