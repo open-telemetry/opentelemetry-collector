@@ -47,14 +47,14 @@ var (
 )
 
 type profilesRequest struct {
-	pd    pprofile.Profiles
-	sizes request.SizeCache
+	pd         pprofile.Profiles
+	cachedSize int
 }
 
 func newProfilesRequest(pd pprofile.Profiles) Request {
 	return &profilesRequest{
-		pd:    pd,
-		sizes: request.NewSizeCache(),
+		pd:         pd,
+		cachedSize: -1,
 	}
 }
 
@@ -96,15 +96,22 @@ func (req *profilesRequest) OnError(err error) Request {
 }
 
 func (req *profilesRequest) ItemsCount() int {
-	return req.sizes.SizeOf(request.SizerTypeItems, func() int { return req.pd.SampleCount() })
+	return req.pd.SampleCount()
 }
 
-func (req *profilesRequest) size(sz sizer.ProfilesSizer, szt request.SizerType) int {
-	return req.sizes.SizeOf(szt, func() int { return sz.ProfilesSize(req.pd) })
+func (req *profilesRequest) size(sizer sizer.ProfilesSizer) int {
+	if req.cachedSize == -1 {
+		req.cachedSize = sizer.ProfilesSize(req.pd)
+	}
+	return req.cachedSize
+}
+
+func (req *profilesRequest) setCachedSize(size int) {
+	req.cachedSize = size
 }
 
 func (req *profilesRequest) BytesSize() int {
-	return req.sizes.SizeOf(request.SizerTypeBytes, func() int { return profilesMarshaler.ProfilesSize(req.pd) })
+	return profilesMarshaler.ProfilesSize(req.pd)
 }
 
 type profileExporter struct {
