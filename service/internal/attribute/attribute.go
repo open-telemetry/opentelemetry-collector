@@ -27,7 +27,7 @@ type Attributes struct {
 func newAttributes(attrs ...attribute.KeyValue) Attributes {
 	h := fnv.New64a()
 	for _, kv := range attrs {
-		h.Write([]byte("(" + string(kv.Key) + "|" + kv.Value.AsString() + ")"))
+		_, _ = h.Write([]byte("(" + string(kv.Key) + "|" + kv.Value.AsString() + ")"))
 	}
 	return Attributes{
 		set: attribute.NewSet(attrs...),
