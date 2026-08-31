@@ -9,11 +9,11 @@ import (
 
 // ControllerConfig defines common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed.
 type ControllerConfig struct {
-	// Sets how frequently the scraper is scheduled.
+	// CollectionInterval sets how frequently the scraper is scheduled.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
-	// Sets the initial start delay for the scraper, any non positive value is assumed to be immediately.
+	// InitialDelay sets the initial start delay for the scraper, any non positive value is assumed to be immediately.
 	InitialDelay time.Duration `mapstructure:"initial_delay"`
-	// An optional value used to set scraper's context deadline.
+	// Timeout an optional value used to set scraper's context deadline.
 	Timeout time.Duration `mapstructure:"timeout"`
 	// prevent unkeyed literal initialization
 	_ struct{}

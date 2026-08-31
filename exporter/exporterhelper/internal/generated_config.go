@@ -9,7 +9,7 @@ import (
 
 // TimeoutConfig a timeout configuration. The timeout applies to individual attempts to send data to the backend.
 type TimeoutConfig struct {
-	// Defines the timeout for every attempt to send data to the backend. A zero timeout means no timeout.
+	// Timeout defines the timeout for every attempt to send data to the backend. A zero timeout means no timeout.
 	Timeout time.Duration `mapstructure:"timeout"`
 	// prevent unkeyed literal initialization
 	_ struct{}
