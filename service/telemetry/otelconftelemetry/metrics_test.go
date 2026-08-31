@@ -113,7 +113,7 @@ func TestCreateMeterProvider(t *testing.T) {
 		}
 
 		t.Run(tt.name, func(t *testing.T) {
-			resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+			resource, _, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 			require.NoError(t, err)
 
 			mp, err := createMeterProvider(t.Context(), telemetry.MeterSettings{
@@ -209,7 +209,7 @@ func TestCreateMeterProvider_020MigrationWarning(t *testing.T) {
 		Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: promtest.GetAvailableLocalAddressPrometheus(t)}},
 	}}
 
-	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	resource, _, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
 
 	mp, err := createMeterProvider(t.Context(), telemetry.MeterSettings{
@@ -236,7 +236,7 @@ func TestCreateMeterProvider_NoMigrationWarning(t *testing.T) {
 		Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: promtest.GetAvailableLocalAddressPrometheus(t)}},
 	}}
 
-	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	resource, _, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
 
 	mp, err := createMeterProvider(t.Context(), telemetry.MeterSettings{
@@ -259,7 +259,7 @@ func TestCreateMeterProvider_Invalid(t *testing.T) {
 		// Invalid -- no OTLP protocol defined
 		Periodic: &config.PeriodicMetricReader{Exporter: config.PushMetricExporter{OTLP: &config.OTLPMetric{}}},
 	}}
-	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	resource, _, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
 
 	_, err = createMeterProvider(t.Context(), telemetry.MeterSettings{
@@ -286,7 +286,7 @@ func TestCreateMeterProvider_Disabled(t *testing.T) {
 	core, observedLogs := observer.New(zapcore.DebugLevel)
 
 	factory := NewFactory()
-	resource, err := factory.CreateResource(context.Background(), telemetry.Settings{}, cfg)
+	resource, _, err := factory.CreateResource(context.Background(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
 
 	settings := telemetry.MeterSettings{
@@ -301,7 +301,7 @@ func TestCreateMeterProvider_Disabled(t *testing.T) {
 	// Setting Metrics.Level to LevelNone disables metrics,
 	// so the invalid configuration should not cause an error.
 	cfg.Metrics.Level = configtelemetry.LevelNone
-	resource2, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	resource2, _, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
 	settings.Resource = &resource2
 
@@ -322,7 +322,7 @@ func TestInstrumentEnabled(t *testing.T) {
 		Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: prom}},
 	}}
 
-	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	resource, _, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
 
 	meterProvider, err := createMeterProvider(t.Context(), telemetry.MeterSettings{
@@ -380,7 +380,7 @@ func TestTelemetryMetrics_DefaultViews(t *testing.T) {
 		assert.Equal(t, configtelemetry.LevelDetailed, level)
 		return []config.View{{
 			Selector: &config.ViewSelector{
-				MeterName: ptr("a"),
+				MeterName: new("a"),
 			},
 			Stream: &config.ViewStream{
 				Aggregation: &config.ViewStreamAggregation{
@@ -397,7 +397,7 @@ func TestTelemetryMetrics_DefaultViews(t *testing.T) {
 		"configured_views": {
 			configuredViews: []config.View{{
 				Selector: &config.ViewSelector{
-					MeterName: ptr("b"),
+					MeterName: new("b"),
 				},
 				Stream: &config.ViewStream{
 					Aggregation: &config.ViewStreamAggregation{
@@ -427,16 +427,16 @@ func TestTelemetryMetrics_DefaultViews(t *testing.T) {
 				Periodic: &config.PeriodicMetricReader{
 					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Endpoint: ptr(srv.URL),
-							Protocol: ptr("http/protobuf"),
-							Insecure: ptr(true),
+							Endpoint: new(srv.URL),
+							Protocol: new("http/protobuf"),
+							Insecure: new(true),
 						},
 					},
 				},
 			}}
 
 			factory := NewFactory()
-			resource, err := factory.CreateResource(t.Context(), telemetry.Settings{}, cfg)
+			resource, _, err := factory.CreateResource(t.Context(), telemetry.Settings{}, cfg)
 			require.NoError(t, err)
 
 			settings := telemetry.MeterSettings{
