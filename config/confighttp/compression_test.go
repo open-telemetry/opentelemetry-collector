@@ -205,7 +205,7 @@ func TestHTTPCustomDecompression(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 	decoders := map[string]func(io.ReadCloser) (io.ReadCloser, error){
-		"custom-encoding": func(io.ReadCloser) (io.ReadCloser, error) { //nolint:unparam
+		"custom-encoding": func(io.ReadCloser) (io.ReadCloser, error) {
 			return io.NopCloser(strings.NewReader("decompressed body")), nil
 		},
 	}
@@ -728,7 +728,7 @@ func TestDecompressionPanicRecovery(t *testing.T) {
 
 	// Register a custom decoder that panics on Read.
 	panickingDecoders := map[string]func(io.ReadCloser) (io.ReadCloser, error){
-		"panic-codec": func(_ io.ReadCloser) (io.ReadCloser, error) { //nolint:unparam
+		"panic-codec": func(_ io.ReadCloser) (io.ReadCloser, error) {
 			return &panickingReadCloser{panicOnRead: true}, nil
 		},
 	}
