@@ -7,6 +7,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -14,6 +16,19 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 )
+
+// warnWriter receives mdatagen's non-fatal warnings; overridable in tests.
+var warnWriter io.Writer = os.Stderr
+
+// warnDeprecatedFeatureGateFlags runs before the central config is applied,
+// so it reports deprecated flags the metadata.yaml set.
+func warnDeprecatedFeatureGateFlags(md Metadata) {
+	for _, g := range md.FeatureGates {
+		if g.SkipStrictValidation {
+			fmt.Fprintf(warnWriter, "WARNING: feature gate %q sets deprecated 'skip_strict_validation'; move it to the central .mdatagen.yaml (see cmd/mdatagen/README.md, \"Central configuration file\").\n", g.ID)
+		}
+	}
+}
 
 func setAttributeDefaultFields(attrs map[AttributeName]Attribute) {
 	for k, v := range attrs {
@@ -76,6 +91,15 @@ func LoadMetadata(filePath string) (Metadata, error) {
 		md.GeneratedPackageName = "metadata"
 	}
 
+	warnDeprecatedFeatureGateFlags(md)
+
+	// Fold in the central config before validation so we keep supporting the metadata.yaml ones.
+	central, err := loadCentralConfig(filepath.Dir(filePath))
+	if err != nil {
+		return md, fmt.Errorf("unable to load central mdatagen config: %w", err)
+	}
+	central.applyTo(&md)
+
 	if err := md.expandSemConvRefs(); err != nil {
 		return md, err
 	}
@@ -116,8 +140,7 @@ func packageName(filePath string) (string, error) {
 	cmd.Dir = filePath
 	output, err := cmd.Output()
 	if err != nil {
-		var ee *exec.ExitError
-		if errors.As(err, &ee) {
+		if ee, ok := errors.AsType[*exec.ExitError](err); ok {
 			return "", fmt.Errorf("unable to determine package name: %v failed: (stderr) %v", cmd.Args, string(ee.Stderr))
 		}
 
