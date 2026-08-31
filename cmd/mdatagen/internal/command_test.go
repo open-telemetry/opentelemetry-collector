@@ -61,9 +61,9 @@ func TestCommandErrorOutputOnce(t *testing.T) {
 
 func TestRunContents(t *testing.T) {
 	tests := []struct {
-		yml                  string
-		wantMetricsGenerated bool
-		// TODO: we should add one more flag for logs builder
+		yml                             string
+		wantMetricsGenerated            bool
+		wantLogsBuilderGenerated        bool
 		wantEventsGenerated             bool
 		wantMetricsContext              bool
 		wantLogsGenerated               bool
@@ -103,6 +103,7 @@ func TestRunContents(t *testing.T) {
 		},
 		{
 			yml:                        "basic_receiver.yaml",
+			wantLogsBuilderGenerated:   true,
 			wantErr:                    false,
 			wantStatusGenerated:        true,
 			wantReadmeGenerated:        true,
@@ -125,6 +126,7 @@ func TestRunContents(t *testing.T) {
 		},
 		{
 			yml:                             "resource_attributes_only.yaml",
+			wantLogsBuilderGenerated:        true,
 			wantConfigGenerated:             true,
 			wantStatusGenerated:             true,
 			wantResourceAttributesGenerated: true,
@@ -140,6 +142,7 @@ func TestRunContents(t *testing.T) {
 		},
 		{
 			yml:                        "with_tests_receiver.yaml",
+			wantLogsBuilderGenerated:   true,
 			wantStatusGenerated:        true,
 			wantReadmeGenerated:        true,
 			wantComponentTestGenerated: true,
@@ -205,6 +208,7 @@ func TestRunContents(t *testing.T) {
 		},
 		{
 			yml:                        "with_telemetry.yaml",
+			wantLogsBuilderGenerated:   true,
 			wantStatusGenerated:        true,
 			wantTelemetryGenerated:     true,
 			wantReadmeGenerated:        true,
@@ -228,6 +232,7 @@ func TestRunContents(t *testing.T) {
 		},
 		{
 			yml:                        "custom_generated_package_name.yaml",
+			wantLogsBuilderGenerated:   true,
 			wantStatusGenerated:        true,
 			wantReadmeGenerated:        true,
 			wantComponentTestGenerated: true,
@@ -242,6 +247,7 @@ func TestRunContents(t *testing.T) {
 		},
 		{
 			yml:                        "with_conditional_attribute.yaml",
+			wantLogsBuilderGenerated:   true,
 			wantStatusGenerated:        true,
 			wantReadmeGenerated:        true,
 			wantMetricsGenerated:       true,
@@ -251,6 +257,7 @@ func TestRunContents(t *testing.T) {
 		},
 		{
 			yml:                        "events/basic_event.yaml",
+			wantLogsBuilderGenerated:   true,
 			wantStatusGenerated:        true,
 			wantReadmeGenerated:        true,
 			wantComponentTestGenerated: true,
@@ -260,6 +267,7 @@ func TestRunContents(t *testing.T) {
 		},
 		{
 			yml:                        "with_config.yaml",
+			wantLogsBuilderGenerated:   true,
 			wantStatusGenerated:        true,
 			wantReadmeGenerated:        true,
 			wantLogsGenerated:          true,
@@ -298,7 +306,7 @@ func TestRunContents(t *testing.T) {
 			ymlContent, err := os.ReadFile(filepath.Join("testdata", tt.yml))
 			require.NoError(t, err)
 			metadataFile := filepath.Join(tmpdir, "metadata.yaml")
-			require.NoError(t, os.WriteFile(metadataFile, ymlContent, 0o600))
+			require.NoError(t, os.WriteFile(metadataFile, ymlContent, 0o600)) // #nosec G703
 			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, "empty.go"), []byte("package shortname"), 0o600))
 			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, "go.mod"), []byte("module shortname"), 0o600))
 			readmeContent := `
@@ -367,8 +375,15 @@ foo
 			}
 
 			if tt.wantLogsGenerated {
-				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_logs.go"))
+				logsPath := filepath.Join(tmpdir, generatedPackageDir, "generated_logs.go")
+				require.FileExists(t, logsPath)
 				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_logs_test.go"))
+				if tt.wantLogsBuilderGenerated {
+					contents, err = os.ReadFile(filepath.Clean(logsPath))
+					require.NoError(t, err)
+					require.Contains(t, string(contents), "type LogsBuilder struct")
+					require.Contains(t, string(contents), "func NewLogsBuilder(")
+				}
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_logs.go"))
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_logs_test.go"))
