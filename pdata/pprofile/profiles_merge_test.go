@@ -718,3 +718,137 @@ func attrMapToStrings(m pcommon.Map) map[string]string {
 	})
 	return result
 }
+
+// TestProfilesMergeToEmptyDestination covers
+// https://github.com/open-telemetry/opentelemetry-collector/issues/15661:
+// merging into a fresh destination used to drop the reserved zero-value
+// entries of the source dictionary and let real data take index 0, so unset
+// references silently resolved to real data afterwards.
+func TestProfilesMergeToEmptyDestination(t *testing.T) {
+	src := NewProfiles()
+	dic := src.Dictionary()
+	dic.StringTable().Append("")
+	dic.AttributeTable().AppendEmpty()
+	dic.StackTable().AppendEmpty()
+	dic.LocationTable().AppendEmpty()
+	dic.FunctionTable().AppendEmpty()
+	dic.MappingTable().AppendEmpty()
+	dic.LinkTable().AppendEmpty()
+
+	dic.StringTable().Append("inuse_space")                     // 1
+	dic.StringTable().Append("bytes")                           // 2
+	dic.StringTable().Append("std::rt::lang_start")             // 3
+	dic.StringTable().Append("process.executable.build_id.gnu") // 4
+
+	// A function with an unset filename: only the name is set.
+	fn := dic.FunctionTable().AppendEmpty() // index 1
+	fn.SetNameStrindex(3)
+
+	loc := dic.LocationTable().AppendEmpty() // index 1
+	ln := loc.Lines().AppendEmpty()
+	ln.SetFunctionIndex(1)
+
+	st := dic.StackTable().AppendEmpty() // index 1
+	st.LocationIndices().Append(1)
+
+	// A resource attribute carrying the string that must not end up at
+	// string_table[0] in the destination.
+	attr := dic.AttributeTable().AppendEmpty() // index 1
+	attr.SetKeyStrindex(4)
+	attr.Value().SetStr("abc123")
+
+	prof := src.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	prof.SampleType().SetTypeStrindex(1)
+	prof.SampleType().SetUnitStrindex(2)
+	sample := prof.Samples().AppendEmpty()
+	sample.SetStackIndex(1)
+	sample.AttributeIndices().Append(1)
+
+	dest := NewProfiles()
+	require.NoError(t, src.MergeTo(dest))
+
+	dd := dest.Dictionary()
+
+	// Every table holds its zero value at index 0.
+	require.Equal(t, "", dd.StringTable().At(0), "string_table[0] must be the empty string")
+	require.GreaterOrEqual(t, dd.AttributeTable().Len(), 1)
+	require.GreaterOrEqual(t, dd.StackTable().Len(), 1)
+	require.GreaterOrEqual(t, dd.LocationTable().Len(), 1)
+	require.GreaterOrEqual(t, dd.FunctionTable().Len(), 1)
+	require.GreaterOrEqual(t, dd.MappingTable().Len(), 1)
+	require.GreaterOrEqual(t, dd.LinkTable().Len(), 1)
+
+	// The merged function kept its name and still has no filename.
+	mergedFn := dd.FunctionTable().At(1)
+	require.Equal(t, "std::rt::lang_start", dd.StringTable().At(int(mergedFn.NameStrindex())))
+	require.Equal(t, int32(0), mergedFn.FilenameStrindex())
+	require.Equal(t, "", dd.StringTable().At(int(mergedFn.FilenameStrindex())),
+		"unset filename must still resolve to the empty string")
+
+	// The attribute key landed at some index > 0.
+	mergedAttr := dd.AttributeTable().At(1)
+	require.Equal(t, "process.executable.build_id.gnu", dd.StringTable().At(int(mergedAttr.KeyStrindex())))
+	require.Greater(t, mergedAttr.KeyStrindex(), int32(0))
+}
+
+// TestProfilesMergeToPartlyPrepopulatedDestination makes sure seeding only
+// happens on tables that are still empty: a destination table that already
+// holds entries must not be shifted, or every existing reference into it
+// would be invalidated.
+func TestProfilesMergeToPartlyPrepopulatedDestination(t *testing.T) {
+	dest := NewProfiles()
+	// Only the string table is populated; everything else is empty.
+	dest.Dictionary().StringTable().Append("")       // 0
+	dest.Dictionary().StringTable().Append("stored") // 1
+
+	src := NewProfiles()
+	src.Dictionary().StringTable().Append("")
+	src.Dictionary().StringTable().Append("nanoseconds") // 1
+	prof := src.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	prof.PeriodType().SetUnitStrindex(1)
+
+	require.NoError(t, src.MergeTo(dest))
+
+	dd := dest.Dictionary()
+	// Pre-existing entries stay put.
+	require.Equal(t, "", dd.StringTable().At(0))
+	require.Equal(t, "stored", dd.StringTable().At(1))
+	require.Equal(t, "nanoseconds", dd.StringTable().At(2))
+	// All other tables got their zero value reserved.
+	require.Equal(t, 1, dd.AttributeTable().Len())
+	require.Equal(t, 1, dd.StackTable().Len())
+	require.Equal(t, 1, dd.LocationTable().Len())
+	require.Equal(t, 1, dd.FunctionTable().Len())
+	require.Equal(t, 1, dd.MappingTable().Len())
+	require.Equal(t, 1, dd.LinkTable().Len())
+}
+
+// TestProfilesMergeToSequentialMergesStayConformant merges two profiles into
+// the same fresh destination one after another and checks the dictionary
+// contract after each step.
+func TestProfilesMergeToSequentialMergesStayConformant(t *testing.T) {
+	build := func(sampleType string) Profiles {
+		p := NewProfiles()
+		p.Dictionary().StringTable().Append("")
+		p.Dictionary().StringTable().Append(sampleType) // 1
+		prof := p.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+		prof.SampleType().SetTypeStrindex(1)
+		return p
+	}
+
+	dest := NewProfiles()
+	require.NoError(t, build("cpu").MergeTo(dest))
+	require.Equal(t, "", dest.Dictionary().StringTable().At(0))
+	require.NoError(t, build("memory").MergeTo(dest))
+
+	dd := dest.Dictionary()
+	require.Equal(t, "", dd.StringTable().At(0), "string_table[0] clobbered by second merge")
+	require.Equal(t, 3, dd.StringTable().Len())
+	require.Equal(t, 2, dest.ResourceProfiles().Len())
+
+	// Both merged profiles still resolve their sample type correctly.
+	for i, want := range []string{"cpu", "memory"} {
+		prof := dest.ResourceProfiles().At(i).ScopeProfiles().At(0).Profiles().At(0)
+		require.Equal(t, want, dd.StringTable().At(int(prof.SampleType().TypeStrindex())))
+	}
+}
