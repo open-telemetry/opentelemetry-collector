@@ -18,6 +18,10 @@ feature_gates:
     from_version: 'v0.158.0'
     reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/issues/15047'
 
+exported_configs:
+  timeout_config:
+    $ref: ./internal.timeout_config
+
 telemetry:
   metrics:
     exporter_enqueue_failed_log_records:
