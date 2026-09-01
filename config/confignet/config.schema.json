@@ -23,7 +23,7 @@
         },
         "transport": {
           "type": "string",
-          "description": "Transport to use. Allowed protocols are \"tcp\", \"tcp4\" (IPv4-only), \"tcp6\" (IPv6-only), \"udp\", \"udp4\" (IPv4-only), \"udp6\" (IPv6-only), \"ip\", \"ip4\" (IPv4-only), \"ip6\" (IPv6-only), \"unix\", \"unixgram\", \"unixpacket\" and \"npipe\" (Windows named pipes, Windows-only)."
+          "description": "Defines the type of transport protocol used. Allowed protocols are \"tcp\", \"tcp4\" (IPv4-only), \"tcp6\" (IPv6-only), \"udp\", \"udp4\" (IPv4-only), \"udp6\" (IPv6-only), \"ip\", \"ip4\" (IPv4-only), \"ip6\" (IPv6-only), \"unix\", \"unixgram\", \"unixpacket\" and \"npipe\" (Windows named pipes, Windows-only)."
         }
       },
       "description": "Represents a network endpoint address."
