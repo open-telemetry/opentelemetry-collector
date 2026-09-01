@@ -6,8 +6,8 @@ require (
 	github.com/shirou/gopsutil/v4 v4.26.8
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.66.0
-	go.opentelemetry.io/collector/component/componentstatus v0.159.0
-	go.opentelemetry.io/collector/component/componenttest v0.159.0
+	go.opentelemetry.io/collector/component/componentstatus v0.160.0
+	go.opentelemetry.io/collector/component/componenttest v0.160.0
 	go.opentelemetry.io/collector/confmap v1.66.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0

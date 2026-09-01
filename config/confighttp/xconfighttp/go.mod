@@ -4,8 +4,8 @@ go 1.26.0
 
 require (
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/component/componenttest v0.159.0
-	go.opentelemetry.io/collector/config/confighttp v0.159.0
+	go.opentelemetry.io/collector/component/componenttest v0.160.0
+	go.opentelemetry.io/collector/config/confighttp v0.160.0
 	go.opentelemetry.io/collector/config/confignet v1.66.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.70.0
 	go.opentelemetry.io/otel/sdk v1.46.0
@@ -47,7 +47,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.66.0 // indirect
 	go.opentelemetry.io/collector/confmap v1.66.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.66.0 // indirect
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.159.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.160.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.66.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.66.0 // indirect
 	go.opentelemetry.io/otel v1.46.0 // indirect

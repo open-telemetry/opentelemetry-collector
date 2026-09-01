@@ -10,7 +10,7 @@ require (
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/client v1.66.0
 	go.opentelemetry.io/collector/component v1.66.0
-	go.opentelemetry.io/collector/component/componenttest v0.159.0
+	go.opentelemetry.io/collector/component/componenttest v0.160.0
 	go.opentelemetry.io/collector/config/configauth v1.66.0
 	go.opentelemetry.io/collector/config/configcompression v1.66.0
 	go.opentelemetry.io/collector/config/configmiddleware v1.66.0
@@ -20,10 +20,10 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.66.0
 	go.opentelemetry.io/collector/extension v1.66.0
 	go.opentelemetry.io/collector/extension/extensionauth v1.66.0
-	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.159.0
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.159.0
-	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.159.0
-	go.opentelemetry.io/collector/internal/testutil v0.159.0
+	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.160.0
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.160.0
+	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.160.0
+	go.opentelemetry.io/collector/internal/testutil v0.160.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.70.0
 	go.opentelemetry.io/otel v1.46.0
 	go.uber.org/goleak v1.3.0
@@ -35,7 +35,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.66.0 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.159.0 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.160.0 // indirect
 )
 
 require (
