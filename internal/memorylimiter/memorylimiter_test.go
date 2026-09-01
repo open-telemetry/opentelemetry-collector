@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/internal/memorylimiter/iruntime"
 )
 
@@ -39,6 +40,7 @@ func TestMemoryPressureResponse(t *testing.T) {
 		CheckInterval:       1 * time.Minute,
 		MemoryLimitMiB:      1024,
 		MemorySpikeLimitMiB: 0,
+		GarbageCollector:    configoptional.Some(GarbageCollectorConfig{}),
 	}
 	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
 	require.NoError(t, err)
@@ -199,6 +201,7 @@ func TestCheckMemLimitsHealthEvents(t *testing.T) {
 				CheckInterval:       1 * time.Minute,
 				MemoryLimitMiB:      50,
 				MemorySpikeLimitMiB: 10,
+				GarbageCollector:    configoptional.Some(GarbageCollectorConfig{}),
 			}, zap.NewNop())
 			require.NoError(t, err)
 			host := &mockHost{}
@@ -237,6 +240,7 @@ func TestCallGCWhenSoftLimit(t *testing.T) {
 				MaxGCIntervalWhenHardLimited: 30 * time.Second,
 				MemoryLimitMiB:               50,
 				MemorySpikeLimitMiB:          10,
+				GarbageCollector:             configoptional.Some(GarbageCollectorConfig{}),
 			},
 			memAllocMiB: [2]uint64{45, 45},
 			numGCs:      1,
@@ -250,6 +254,7 @@ func TestCallGCWhenSoftLimit(t *testing.T) {
 				MaxGCIntervalWhenHardLimited: 30 * time.Second,
 				MemoryLimitMiB:               50,
 				MemorySpikeLimitMiB:          10,
+				GarbageCollector:             configoptional.Some(GarbageCollectorConfig{}),
 			},
 			memAllocMiB: [2]uint64{45, 45},
 			numGCs:      2,
@@ -263,6 +268,7 @@ func TestCallGCWhenSoftLimit(t *testing.T) {
 				MaxGCIntervalWhenHardLimited: 30 * time.Second,
 				MemoryLimitMiB:               50,
 				MemorySpikeLimitMiB:          10,
+				GarbageCollector:             configoptional.Some(GarbageCollectorConfig{}),
 			},
 			memAllocMiB: [2]uint64{55, 55},
 			numGCs:      1,
@@ -276,6 +282,7 @@ func TestCallGCWhenSoftLimit(t *testing.T) {
 				MaxGCIntervalWhenHardLimited: 30 * time.Second,
 				MemoryLimitMiB:               50,
 				MemorySpikeLimitMiB:          10,
+				GarbageCollector:             configoptional.Some(GarbageCollectorConfig{}),
 			},
 			memAllocMiB: [2]uint64{55, 55},
 			numGCs:      2,
@@ -290,9 +297,38 @@ func TestCallGCWhenSoftLimit(t *testing.T) {
 				MaxGCIntervalWhenHardLimited: 30 * time.Second,
 				MemoryLimitMiB:               50,
 				MemorySpikeLimitMiB:          10,
+				GarbageCollector:             configoptional.Some(GarbageCollectorConfig{}),
 			},
 			memAllocMiB: [2]uint64{45, 55},
 			numGCs:      2,
+		},
+		{
+			name: "GC disabled when above soft limit",
+			mlCfg: &Config{
+				CheckInterval:                1 * time.Minute,
+				MinGCIntervalWhenSoftLimited: 0,
+				MaxGCIntervalWhenSoftLimited: 30 * time.Second,
+				MaxGCIntervalWhenHardLimited: 30 * time.Second,
+				MemoryLimitMiB:               50,
+				MemorySpikeLimitMiB:          10,
+				GarbageCollector:             configoptional.None[GarbageCollectorConfig](),
+			},
+			memAllocMiB: [2]uint64{45, 45},
+			numGCs:      0,
+		},
+		{
+			name: "GC disabled when above hard limit",
+			mlCfg: &Config{
+				CheckInterval:                1 * time.Minute,
+				MinGCIntervalWhenHardLimited: 0,
+				MaxGCIntervalWhenSoftLimited: 30 * time.Second,
+				MaxGCIntervalWhenHardLimited: 30 * time.Second,
+				MemoryLimitMiB:               50,
+				MemorySpikeLimitMiB:          10,
+				GarbageCollector:             configoptional.None[GarbageCollectorConfig](),
+			},
+			memAllocMiB: [2]uint64{55, 55},
+			numGCs:      0,
 		},
 	}
 	for _, tt := range tests {
@@ -353,6 +389,7 @@ func TestGCBackoffWhenIneffective(t *testing.T) {
 		MaxGCIntervalWhenHardLimited: 30 * time.Second,
 		MemoryLimitMiB:               50,
 		MemorySpikeLimitMiB:          10,
+		GarbageCollector:             configoptional.Some(GarbageCollectorConfig{}),
 	}
 	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
 	require.NoError(t, err)
@@ -405,6 +442,7 @@ func TestGCBackoffResetOnRecovery(t *testing.T) {
 		MaxGCIntervalWhenHardLimited: 30 * time.Second,
 		MemoryLimitMiB:               50,
 		MemorySpikeLimitMiB:          10,
+		GarbageCollector:             configoptional.Some(GarbageCollectorConfig{}),
 	}
 	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
 	require.NoError(t, err)
@@ -457,6 +495,7 @@ func TestGCBackoffEarlyResetWhenMemoryBecomesReclaimable(t *testing.T) {
 		MaxGCIntervalWhenHardLimited: 30 * time.Second,
 		MemoryLimitMiB:               50,
 		MemorySpikeLimitMiB:          10,
+		GarbageCollector:             configoptional.Some(GarbageCollectorConfig{}),
 	}
 	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
 	require.NoError(t, err)
@@ -508,6 +547,7 @@ func TestGCBackoffEarlyResetAboveHardLimit(t *testing.T) {
 		MaxGCIntervalWhenHardLimited: 30 * time.Second,
 		MemoryLimitMiB:               50,
 		MemorySpikeLimitMiB:          10,
+		GarbageCollector:             configoptional.Some(GarbageCollectorConfig{}),
 	}
 	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
 	require.NoError(t, err)
@@ -554,6 +594,7 @@ func TestNextBackoffInterval(t *testing.T) {
 			MaxGCIntervalWhenHardLimited: 30 * time.Second,
 			MemoryLimitMiB:               100,
 			MemorySpikeLimitMiB:          5,
+			GarbageCollector:             configoptional.Some(GarbageCollectorConfig{}),
 		}
 		ml, err := NewMemoryLimiter(cfg, zap.NewNop())
 		require.NoError(t, err)
@@ -612,6 +653,7 @@ func TestCheckLimitAndBackoff(t *testing.T) {
 			MaxGCIntervalWhenHardLimited: 30 * time.Second,
 			MemoryLimitMiB:               100,
 			MemorySpikeLimitMiB:          5,
+			GarbageCollector:             configoptional.Some(GarbageCollectorConfig{}),
 		}
 		ml, err := NewMemoryLimiter(cfg, zap.NewNop())
 		require.NoError(t, err)
@@ -678,6 +720,7 @@ func TestCheckLimitAndBackoff(t *testing.T) {
 			MaxGCIntervalWhenHardLimited: 0,
 			MemoryLimitMiB:               100,
 			MemorySpikeLimitMiB:          5,
+			GarbageCollector:             configoptional.Some(GarbageCollectorConfig{}),
 		}
 		ml, err := NewMemoryLimiter(cfg, zap.NewNop())
 		require.NoError(t, err)
@@ -700,6 +743,7 @@ func TestBackoffDisabledOptOut(t *testing.T) {
 		MaxGCIntervalWhenHardLimited: 0,
 		MemoryLimitMiB:               50,
 		MemorySpikeLimitMiB:          10,
+		GarbageCollector:             configoptional.Some(GarbageCollectorConfig{}),
 	}
 	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
 	require.NoError(t, err)
@@ -735,6 +779,7 @@ func TestPerPathBackoffIsIndependent(t *testing.T) {
 		MaxGCIntervalWhenHardLimited: 0,
 		MemoryLimitMiB:               50,
 		MemorySpikeLimitMiB:          10,
+		GarbageCollector:             configoptional.Some(GarbageCollectorConfig{}),
 	}
 	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
 	require.NoError(t, err)
@@ -773,6 +818,7 @@ func TestNewDefaultConfigEnablesBackoffCap(t *testing.T) {
 	cfg := NewDefaultConfig()
 	assert.Equal(t, 30*time.Second, cfg.MaxGCIntervalWhenSoftLimited, "soft backoff cap should default to 30s")
 	assert.Equal(t, 30*time.Second, cfg.MaxGCIntervalWhenHardLimited, "hard backoff cap should default to 30s")
+	assert.True(t, cfg.GarbageCollector.HasValue(), "garbage collector should be enabled by default")
 }
 
 func TestBackoffGrowsBothPathsInLockstep(t *testing.T) {
@@ -797,6 +843,7 @@ func TestBackoffGrowsBothPathsInLockstep(t *testing.T) {
 		MaxGCIntervalWhenHardLimited: 30 * time.Second,
 		MemoryLimitMiB:               50,
 		MemorySpikeLimitMiB:          10,
+		GarbageCollector:             configoptional.Some(GarbageCollectorConfig{}),
 	}
 	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
 	require.NoError(t, err)
@@ -841,6 +888,7 @@ func TestGCEffectivenessWhenPressureResolved(t *testing.T) {
 		MaxGCIntervalWhenHardLimited: 30 * time.Second,
 		MemoryLimitMiB:               100,
 		MemorySpikeLimitMiB:          5,
+		GarbageCollector:             configoptional.Some(GarbageCollectorConfig{}),
 	}
 	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
 	require.NoError(t, err)
@@ -899,6 +947,7 @@ func TestGCRecovery(t *testing.T) {
 				CheckInterval:       1 * time.Minute,
 				MemoryLimitMiB:      50,
 				MemorySpikeLimitMiB: 10,
+				GarbageCollector:    configoptional.Some(GarbageCollectorConfig{}),
 			}, zap.NewNop())
 			require.NoError(t, err)
 
@@ -932,6 +981,7 @@ func TestStart(t *testing.T) {
 		MinGCIntervalWhenSoftLimited: 10 * time.Second,
 		MemoryLimitMiB:               50,
 		MemorySpikeLimitMiB:          10,
+		GarbageCollector:             configoptional.Some(GarbageCollectorConfig{}),
 	}
 	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
 	require.NoError(t, err)
