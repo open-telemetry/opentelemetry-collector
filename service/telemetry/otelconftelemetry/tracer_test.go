@@ -44,7 +44,7 @@ func TestCreateTracerProvider(t *testing.T) {
 	cfg.Traces.Propagators = []string{"b3", "tracecontext"}
 	cfg.Traces.Processors = []config.SpanProcessor{newOTLPSimpleSpanProcessor(srv)}
 
-	resource, err := createResource(t.Context(), telemetry.Settings{
+	resource, schemaURL, err := createResource(t.Context(), telemetry.Settings{
 		BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"},
 	}, cfg)
 	require.NoError(t, err)
@@ -53,6 +53,7 @@ func TestCreateTracerProvider(t *testing.T) {
 		Settings: telemetry.Settings{
 			BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"},
 			Resource:  &resource,
+			SchemaURL: schemaURL,
 		},
 	}, cfg)
 	require.NoError(t, err)
@@ -68,6 +69,7 @@ func TestCreateTracerProvider(t *testing.T) {
 	traces := received[0]
 	require.Equal(t, 1, traces.SpanCount())
 	assert.Equal(t, "test_span", traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
+	assert.Equal(t, schemaURL, traces.ResourceSpans().At(0).SchemaUrl())
 }
 
 func TestCreateTracerProvider_Invalid(t *testing.T) {
@@ -81,7 +83,7 @@ func TestCreateTracerProvider_Invalid(t *testing.T) {
 			},
 		},
 	}}
-	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	resource, _, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
 
 	_, err = createTracerProvider(t.Context(), telemetry.TracerSettings{
@@ -108,7 +110,7 @@ func TestCreateTracerProvider_Propagators(t *testing.T) {
 	cfg.Traces.Propagators = []string{"b3", "tracecontext"}
 	cfg.Traces.Processors = []config.SpanProcessor{newOTLPSimpleSpanProcessor(srv)}
 
-	resource, err := createResource(t.Context(), telemetry.Settings{
+	resource, _, err := createResource(t.Context(), telemetry.Settings{
 		BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"},
 	}, cfg)
 	require.NoError(t, err)
@@ -147,7 +149,7 @@ func TestCreateTracerProvider_InvalidPropagator(t *testing.T) {
 	cfg.Traces.Propagators = []string{"invalid"}
 	cfg.Traces.Processors = []config.SpanProcessor{newOTLPSimpleSpanProcessor(srv)}
 
-	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	resource, _, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
 
 	_, err = createTracerProvider(t.Context(), telemetry.TracerSettings{
@@ -168,7 +170,7 @@ func TestCreateTracerProvider_020MigrationWarning(t *testing.T) {
 	cfg.Traces.MigratedFromV02 = true
 	cfg.Traces.Processors = []config.SpanProcessor{newOTLPSimpleSpanProcessor(srv)}
 
-	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	resource, _, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
 
 	provider, err := createTracerProvider(t.Context(), telemetry.TracerSettings{
@@ -198,7 +200,7 @@ func TestCreateTracerProvider_NoMigrationWarning(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Traces.Processors = []config.SpanProcessor{newOTLPSimpleSpanProcessor(srv)}
 
-	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	resource, _, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
 
 	provider, err := createTracerProvider(t.Context(), telemetry.TracerSettings{
@@ -228,7 +230,7 @@ func TestCreateTracerProvider_NoProcessors(t *testing.T) {
 	assert.Equal(t, configtelemetry.LevelBasic, cfg.Traces.Level)
 	assert.Empty(t, cfg.Traces.Processors)
 
-	resource, err := createResource(t.Context(), telemetry.Settings{
+	resource, _, err := createResource(t.Context(), telemetry.Settings{
 		BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"},
 	}, cfg)
 	require.NoError(t, err)
@@ -269,7 +271,7 @@ func TestCreateTracerProvider_Disabled(t *testing.T) {
 
 	core, observedLogs := observer.New(zapcore.DebugLevel)
 
-	resource, err := createResource(t.Context(), telemetry.Settings{
+	resource, _, err := createResource(t.Context(), telemetry.Settings{
 		BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"},
 	}, cfg)
 	require.NoError(t, err)
@@ -302,9 +304,9 @@ func newOTLPSimpleSpanProcessor(srv *httptest.Server) config.SpanProcessor {
 		Simple: &config.SimpleSpanProcessor{
 			Exporter: config.SpanExporter{
 				OTLP: &config.OTLP{
-					Endpoint: ptr(srv.URL),
-					Protocol: ptr("http/protobuf"),
-					Insecure: ptr(true),
+					Endpoint: new(srv.URL),
+					Protocol: new("http/protobuf"),
+					Insecure: new(true),
 				},
 			},
 		},
