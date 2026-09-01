@@ -769,8 +769,6 @@ func TestPersistentQueue_PutCloseReadClose(t *testing.T) {
 	require.NoError(t, ps.Offer(context.Background(), req))
 	require.NoError(t, ps.Offer(context.Background(), req))
 	assert.Equal(t, int64(2), ps.Size())
-	// TODO: Remove this, after the initialization writes the readIndex.
-	_, _, _, _ = ps.Read(context.Background())
 	require.NoError(t, ps.Shutdown(context.Background()))
 
 	newPs := createTestPersistentQueueWithRequestsSizer(t, ext, 1000)

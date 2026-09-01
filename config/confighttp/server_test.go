@@ -994,11 +994,11 @@ func TestDefaultHTTPServerSettings(t *testing.T) {
 	httpServerSettings := NewDefaultServerConfig()
 	assert.NotNil(t, httpServerSettings.CORS)
 	assert.NotNil(t, httpServerSettings.TLS)
-	assert.Equal(t, 1*time.Minute, httpServerSettings.IdleTimeout)
 	assert.Equal(t, 30*time.Second, httpServerSettings.WriteTimeout)
 	assert.Equal(t, time.Duration(0), httpServerSettings.ReadTimeout)
 	assert.Equal(t, 1*time.Minute, httpServerSettings.ReadHeaderTimeout)
-	assert.True(t, httpServerSettings.KeepAlivesEnabled) // Default should be true (keep-alives enabled by default)
+	assert.Equal(t, 1*time.Minute, httpServerSettings.IdleTimeout)
+	assert.False(t, httpServerSettings.Keepalive.HasValue())
 }
 
 func TestHTTPServerKeepAlives(t *testing.T) {
@@ -1151,7 +1151,7 @@ func TestServerUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test server configuration
-	var serverConfig ServerConfig
+	serverConfig := NewDefaultServerConfig()
 	serverSub, err := cm.Sub("server")
 	require.NoError(t, err)
 	require.NoError(t, serverSub.Unmarshal(&serverConfig))
@@ -1164,8 +1164,8 @@ func TestServerUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 	assert.Equal(t, 30*time.Second, serverConfig.ReadTimeout)
 	assert.Equal(t, 10*time.Second, serverConfig.ReadHeaderTimeout)
 	assert.Equal(t, 30*time.Second, serverConfig.WriteTimeout)
+	assert.Equal(t, configoptional.None[KeepaliveServerConfig](), serverConfig.Keepalive)
 	assert.Equal(t, 120*time.Second, serverConfig.IdleTimeout)
-	assert.True(t, serverConfig.KeepAlivesEnabled) // Should be true as configured in config.yaml
 	assert.Equal(t, int64(33554432), serverConfig.MaxRequestBodySize)
 	assert.True(t, serverConfig.IncludeMetadata)
 
