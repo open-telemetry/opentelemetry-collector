@@ -64,13 +64,8 @@ func createDefaultConfig() component.Config {
 		},
 		Resource: ResourceConfig{
 			Resource: config.Resource{
-				SchemaUrl: ptr(semconv.SchemaURL),
+				SchemaUrl: new(semconv.SchemaURL),
 			},
 		},
 	}
-}
-
-//go:fix inline
-func ptr[T any](v T) *T {
-	return new(v)
 }
