@@ -2,6 +2,8 @@
 
 Author: @braydonk
 
+Collaborators: @jade-guiton-dd
+
 AI USAGE DISCLOSURE: Some parts of the POC development leveraged Google Antigravity. The RFC contents are written entirely by me.
 
 ## Abstract
@@ -27,20 +29,18 @@ exporters:
   - gomod: go.opentelemetry.io/collector/exporter/nopexporter v0.156.0
 hooks:
   pre_generate:
-    - gomod: ./scriptplugin
+    - plugin: ./scriptplugin
       path: ./scripts/pre_generate.sh
       args:
         - "--verbose"
   pre_build:
-    - gomod: ./scriptplugin
+    - plugin: ./scriptplugin
       path: ./scripts/pre_build.sh
       env:
         BUILD_ENV: "staging"
 ```
 
-A plugin can be referenced via a Go module URL. This can be a fully formed Go module URL (i.e. `github.com/me/my-plugin@v1.1.1`) or a local path.
-
-(NOTE: This might cause config confusion, because `gomod` in the plugin source config can just be a full URL, vs the same field name in component configs needing to be a specific format. But I can't think of a nicer name for this. Maybe `plugingomod`?)
+A plugin can be referenced via a Go module URL in the `plugin` field. This can be a fully formed Go module URL (i.e. `github.com/me/my-plugin@v1.1.1`), an OCB-internal representation of a Go module string (i.e. `github.com/me/my-plugin v1.1.1`), or a local path.
 
 ## Defining a Plugin
 
@@ -48,17 +48,24 @@ An `ocbplugin` package will be provided for plugin authors. It will feature an i
 
 See [the example implementation of a bash script execution plugin in the POC](https://github.com/braydonk/opentelemetry-collector/tree/ocb_plugin_experiment/cmd/builder/scriptplugin).
 
-OPEN QUESTION: Should this package live under `cmd/builder`? It is a bit odd for a library module to live under a `cmd` directory, but there is no `pkg` directory in `opentelemetry-collector`.
+QUESTION: Should this package live under `cmd/builder`? It is a bit odd for a library module to live under a `cmd` directory, but there is no `pkg` directory in `opentelemetry-collector`.  
+ANSWER: For at least the first iteration, due to it being directly related with the OCB binary we believe it makes sense for it to live in the binary's directory.
 
 ## Plugin Management
 
 The procedure in OCB for one plugin is as follows:
 
 1. `go install` the plugin using a configurable `GOPATH`; by default this will be `$HOME/.ocb` (or `$(pwd)/.ocb` if the user's home directory can't be resolved), and a different directory can be provided via `OCB_PLUGIN_DIR`.
-1. After installing, run the plugin using `cmd/exec`, passing the plugin's config via the process's stdin.
+1. After installing, run the plugin using `cmd/exec`, passing the plugin's config via a temporary file (stored in OS-respective `tmp` dir via `os.CreateTemp`). See [here](#why-pass-the-config-in-a-temporary-file) for an explanation about why a temporary file was chosen as the communication mechanism.
 1. If the plugin fails (exits with code 1) fail the entire OCB process.
 
 This procedure is repeated for every plugin discovered at every step. Due to the way `go install` is used, if a plugin is used repeatedly in a single OCB run it should be fetched from the Go build cache. If using a local Go plugin and iterating on the code, the build cache will miss and rebuild the plugin.
+
+### Why pass the config in a temporary file?
+
+It seems pretty logical to use `stdin` to pass this data along to the subprocess. We opted not to go this route to enable `stdin` to be used by OCB plugins to prompt for information; the OCB process's `stdin` is passed along to each plugin when they are executed to allow them to prompt specific additional information.
+
+An example of this `stdin` prompting is [in the `scriptplugin` in the POC](https://github.com/braydonk/opentelemetry-collector/blob/a3f3b72045525424f1b9b4fdd595ac1ce0bee59a/cmd/builder/scriptplugin/script.go#L82-L94).
 
 ## OBI Plugin Example
 
