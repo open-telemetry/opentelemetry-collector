@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/internal/memorylimiter
 go 1.26.0
 
 require (
-	github.com/shirou/gopsutil/v4 v4.26.7
+	github.com/shirou/gopsutil/v4 v4.26.8
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.65.0
 	go.opentelemetry.io/collector/component/componentstatus v0.159.0
