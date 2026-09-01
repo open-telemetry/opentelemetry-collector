@@ -144,8 +144,6 @@ func startFailureAttributeCollector(t *testing.T, exporterEndpoint string) (stri
 		}
 	}()
 
-	// Waiting on the telemetry /metrics endpoint alone is not enough: it comes up before
-	// the OTLP receiver is listening, which races sendTestMetrics into a connection refused.
 	waitCollectorRunning(t, collector)
 	waitMetricsReady(t, metricsPort)
 
