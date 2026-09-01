@@ -5,8 +5,10 @@ package confignet // import "go.opentelemetry.io/collector/config/confignet"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
+	"os"
 	"strings"
 	"time"
 )
@@ -88,6 +90,25 @@ type AddrConfig struct {
 
 	// DialerConfig contains options for connecting to an address.
 	DialerConfig DialerConfig `mapstructure:"dialer,omitempty"`
+
+	// SocketPermissions sets the file permissions applied to a filesystem-based
+	// Unix domain socket file after binding. Only applies to filesystem-based
+	// Unix transports ("unix", "unixgram", "unixpacket"); ignored for abstract
+	// sockets (endpoints starting with "@") and all other transports.
+	// If unset, defaults to 0722, which allows any local process to connect
+	// to the socket while only the owner can otherwise manage it.
+	SocketPermissions os.FileMode `mapstructure:"socket_permissions,omitempty"`
+
+	// SocketManagementDisabled disables all automatic lifecycle management of
+	// filesystem-based Unix domain socket files: no stale-socket removal
+	// before binding, no permission changes after binding (SocketPermissions
+	// is ignored), and no cleanup on Close(). Only applies to filesystem-based
+	// Unix transports ("unix", "unixgram", "unixpacket"); ignored for abstract
+	// sockets and all other transports. Use this if the socket file's
+	// lifecycle is managed externally (e.g. systemd socket activation, an
+	// init container, custom ACLs/SELinux labels).
+	SocketManagementDisabled bool `mapstructure:"socket_management_disabled,omitempty"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -113,8 +134,74 @@ func (na *AddrConfig) Listen(ctx context.Context) (net.Listener, error) {
 	if na.Transport == TransportTypeNpipe {
 		return listenNpipe(na.Endpoint)
 	}
+	if na.isUnixTransport() {
+		if na.SocketManagementDisabled {
+			return na.listenUnixUnmanaged(ctx)
+		}
+		return na.listenUnix(ctx)
+	}
+
 	lc := net.ListenConfig{}
 	return lc.Listen(ctx, string(na.Transport), na.Endpoint)
+}
+
+// bindUnix binds a Unix domain socket at the configured endpoint.
+func (na *AddrConfig) bindUnix(ctx context.Context) (net.Listener, error) {
+	lc := net.ListenConfig{}
+	return lc.Listen(ctx, string(na.Transport), na.Endpoint)
+}
+
+// listenUnixUnmanaged binds a Unix domain socket without any automatic
+// lifecycle management. It disables Go's default behavior of removing the
+// socket file on Close (net.UnixListener.SetUnlinkOnClose), since that
+// default would otherwise silently delete a file the caller intends to
+// manage themselves, contradicting SocketManagementDisabled.
+func (na *AddrConfig) listenUnixUnmanaged(ctx context.Context) (net.Listener, error) {
+	ln, err := na.bindUnix(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if ul, ok := ln.(*net.UnixListener); ok {
+		ul.SetUnlinkOnClose(false)
+	}
+	return ln, nil
+}
+
+// listenUnix binds a Unix domain socket, handling the filesystem lifecycle
+// of the socket file: removing any stale socket before binding, setting the
+// configured permissions, and cleaning up on close. Abstract sockets
+// (@ prefix) live in kernel memory and need none of this.
+func (na *AddrConfig) listenUnix(ctx context.Context) (net.Listener, error) {
+	isFsSocket := !isAbstractSocket(na.Endpoint)
+
+	if isFsSocket {
+		if err := removeStaleSocket(na.Endpoint); err != nil {
+			return nil, fmt.Errorf("failed to clean up stale socket %q: %w", na.Endpoint, err)
+		}
+	}
+
+	ln, err := na.bindUnix(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isFsSocket {
+		return ln, nil
+	}
+
+	// Apply the configured socket permissions, falling back to the default
+	// (owner rwx, group/other write) when unset. The write bit on a Unix
+	// socket controls connect access.
+	mode := na.SocketPermissions
+	if mode == 0 {
+		mode = defaultSocketPermissions
+	}
+	if err := os.Chmod(na.Endpoint, mode); err != nil {
+		_ = ln.Close()
+		_ = os.Remove(na.Endpoint)
+		return nil, fmt.Errorf("failed to set socket permissions on %q: %w", na.Endpoint, err)
+	}
+	return &unixListener{Listener: ln, path: na.Endpoint}, nil
 }
 
 func (na *AddrConfig) Validate() error {
@@ -137,6 +224,62 @@ func (na *AddrConfig) Validate() error {
 	default:
 		return fmt.Errorf("invalid transport type %q", na.Transport)
 	}
+}
+
+func (na *AddrConfig) isUnixTransport() bool {
+	switch na.Transport {
+	case TransportTypeUnix, TransportTypeUnixgram, TransportTypeUnixPacket:
+		return true
+	default:
+		return false
+	}
+}
+
+// defaultSocketPermissions is the default permission set applied to Unix
+// domain socket files, used when AddrConfig.SocketPermissions is unset.
+// Owner rwx (7), group write (2), other write (2). The write bit on a
+// Unix socket controls connect access, so 0o722 allows any local process
+// to connect while only the owner can manage the socket.
+const defaultSocketPermissions os.FileMode = 0o722
+
+// isAbstractSocket reports whether path refers to a Linux abstract Unix socket.
+// Abstract sockets live in kernel memory and have no filesystem representation.
+func isAbstractSocket(path string) bool {
+	return strings.HasPrefix(path, "@")
+}
+
+// removeStaleSocket removes a leftover socket file at path so a new
+// listener can bind. It refuses to remove non-socket files.
+// Note: there is an inherent TOCTOU race between the Stat and Remove
+// calls; this is acceptable for a startup-time code path.
+func removeStaleSocket(path string) error {
+	fi, err := os.Stat(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	if fi.Mode().Type()&os.ModeSocket == 0 {
+		return fmt.Errorf("path %q exists but is not a socket (mode: %s)", path, fi.Mode())
+	}
+
+	return os.Remove(path)
+}
+
+// unixListener wraps a net.Listener for Unix domain sockets and removes
+// the socket file on Close.
+type unixListener struct {
+	net.Listener
+	path string
+}
+
+func (u *unixListener) Close() error {
+	err := u.Listener.Close()
+	// Best-effort cleanup of the socket file.
+	_ = os.Remove(u.path)
+	return err
 }
 
 // validateNpipePath validates a Windows named pipe path.
