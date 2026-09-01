@@ -144,14 +144,10 @@ func startFailureAttributeCollector(t *testing.T, exporterEndpoint string) (stri
 		}
 	}()
 
-	require.Eventually(t, func() bool {
-		resp, err := http.Get(fmt.Sprintf("http://localhost:%s/metrics", metricsPort))
-		if err != nil {
-			return false
-		}
-		resp.Body.Close()
-		return resp.StatusCode == http.StatusOK
-	}, 5*time.Second, 100*time.Millisecond, "collector failed to start")
+	// Waiting on the telemetry /metrics endpoint alone is not enough: it comes up before
+	// the OTLP receiver is listening, which races sendTestMetrics into a connection refused.
+	waitCollectorRunning(t, collector)
+	waitMetricsReady(t, metricsPort)
 
 	return otelPort, metricsPort
 }
