@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/internal/tools
 
-go 1.26.0
+go 1.27
 
 tool (
 	github.com/a8m/envsubst/cmd/envsubst
@@ -302,4 +302,4 @@ retract (
 // actionlint v1.7.12 doesn't compile against go.yaml.in/yaml/v4 v4.0.0-rc.6, which other
 // tools pull in transitively. Pin to rc.3 until a compatible actionlint release exists.
 // See https://github.com/open-telemetry/opentelemetry-collector/issues/15882.
-replace go.yaml.in/yaml/v4 => go.yaml.in/yaml/v4 v4.0.0-rc.3
+replace go.yaml.in/yaml/v4 => go.yaml.in/yaml/v4 v4.0.0-rc.6
