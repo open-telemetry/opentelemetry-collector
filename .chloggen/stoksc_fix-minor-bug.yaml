@@ -8,7 +8,7 @@ component: pkg/scraperhelper
 note: Fix shutdown being delayed by extra scrapes when a scrape runs longer than the collection interval
 
 # One or more tracking issues or pull requests related to the change
-issues: []
+issues: [15736]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 subtext: |
