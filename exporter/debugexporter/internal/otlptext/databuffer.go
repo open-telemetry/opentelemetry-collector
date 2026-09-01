@@ -21,7 +21,7 @@ type dataBuffer struct {
 }
 
 func (b *dataBuffer) logEntry(format string, a ...any) {
-	b.buf.WriteString(fmt.Sprintf(format, a...))
+	fmt.Fprintf(&b.buf, format, a...)
 	b.buf.WriteString("\n")
 }
 

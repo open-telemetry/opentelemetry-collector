@@ -1,6 +1,6 @@
 name: 'Add rfc:approvals-needed label to RFC PRs'
 on:
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] — no PR code is checked out or executed.
     types:
       - opened
       - reopened
@@ -14,7 +14,7 @@ jobs:
   add-rfc-label:
     permissions:
       pull-requests: write
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     if: >-
       ${{ github.repository_owner == 'open-telemetry'
           && github.event.pull_request.draft == false

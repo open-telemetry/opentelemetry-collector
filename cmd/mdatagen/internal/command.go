@@ -545,7 +545,7 @@ func inlineReplaceWithFns(tmplFile, outputFile string, md Metadata, start, end, 
 	}
 
 	s := re.ReplaceAllString(string(readmeContents), string(buf))
-	if err := os.WriteFile(outputFile, []byte(s), 0o600); err != nil {
+	if err := os.WriteFile(outputFile, []byte(s), 0o600); err != nil { // #nosec G703
 		return fmt.Errorf("failed writing %q: %w", outputFile, err)
 	}
 
@@ -715,7 +715,10 @@ func generateConfigFiles(md Metadata, mdDir, importRootPath string) error {
 
 func generateJSONSchema(dir string, md Metadata) error {
 	id := md.PackageName
-	title := fmt.Sprintf("%s/%s", md.Status.Class, md.Type)
+	title := md.Type
+	if md.Status != nil {
+		title = fmt.Sprintf("%s/%s", md.Status.Class, md.Type)
+	}
 	return cfggen.WriteJSONSchema(dir, id, title, md.ConfigsMetadata)
 }
 
