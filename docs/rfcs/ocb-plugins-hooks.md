@@ -57,7 +57,8 @@ The procedure in OCB for one plugin is as follows:
 
 1. `go install` the plugin using a configurable `GOPATH`; by default this will be `$HOME/.ocb` (or `$(pwd)/.ocb` if the user's home directory can't be resolved), and a different directory can be provided via `OCB_PLUGIN_DIR`.
 1. After installing, run the plugin using `cmd/exec`, passing the plugin's config via a temporary file (stored in OS-respective `tmp` dir via `os.CreateTemp`). See [here](#why-pass-the-config-in-a-temporary-file) for an explanation about why a temporary file was chosen as the communication mechanism.
-1. If the plugin fails (exits with code 1) fail the entire OCB process.
+1. The plugin's `MinOCBVersion` support declaration is checked against the version of the `ocbplugin` package being used. If the `ocbplugin` package being used is a lower version, plugin execution fails.
+1. Execute the plugin based on the requested hook (`pre-generate`, `post-generate`, etc). If the plugin fails (exits with code 1) fail the entire OCB process.
 
 This procedure is repeated for every plugin discovered at every step. Due to the way `go install` is used, if a plugin is used repeatedly in a single OCB run it should be fetched from the Go build cache. If using a local Go plugin and iterating on the code, the build cache will miss and rebuild the plugin.
 
