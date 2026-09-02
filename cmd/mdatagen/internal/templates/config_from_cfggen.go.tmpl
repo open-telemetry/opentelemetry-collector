@@ -30,7 +30,7 @@ import (
     {{- end }}
     {{- range $propName, $prop := .Properties | namedProps }}
         {{- if $prop.Description }}
-            // {{ $prop.Description }}
+            // {{ $prop.GoStruct.FieldName | publicVar }} {{ $prop.Description | uncapitalize }}
         {{- end }}
         {{ $prop.GoStruct.FieldName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}{{ if shouldOmitEmpty . $propName $prop }},omitempty{{ end }}"`
     {{- end }}
