@@ -127,6 +127,9 @@ type ClientConfig struct {
 	// unmarshaling; ToClient logs them, as no logger is available here.
 	deprecationWarnings []string
 
+	// prevent unkeyed literal initialization
+	_ struct{}
+
 }
 
 // CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.
@@ -348,8 +351,6 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 		}
 		transport.Proxy = http.ProxyURL(proxyURL)
 	}
-
-	transport.DisableKeepAlives = cc.DisableKeepAlives
 
 	// Set DSCP marking on outgoing connections if configured.
 	if cc.DSCP > 0 {
