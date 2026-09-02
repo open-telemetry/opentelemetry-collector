@@ -12,11 +12,11 @@ import (
 type ClientConfig struct {
 	// Exposes the common client and server TLS configurations. Note: Since there isn't anything specific to a server connection. Components with server connections should use Config.
 	Config `mapstructure:",squash"`
-	// In gRPC and HTTP when set to true, this is used to disable the client transport security. See https://godoc.org/google.golang.org/grpc#WithInsecure for gRPC. Please refer to https://godoc.org/crypto/tls#Config for more information. (optional, default false)
+	// Insecure in gRPC and HTTP when set to true, this is used to disable the client transport security. See https://godoc.org/google.golang.org/grpc#WithInsecure for gRPC. Please refer to https://godoc.org/crypto/tls#Config for more information. (optional, default false)
 	Insecure bool `mapstructure:"insecure,omitempty"`
-	// Enables TLS but not verify the certificate.
+	// InsecureSkipVerify enables TLS but not verify the certificate.
 	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify,omitempty"`
-	// Server name requested by client for virtual hosting. This sets the ServerName in the TLSConfig. Please refer to https://godoc.org/crypto/tls#Config for more information. (optional)
+	// ServerName server name requested by client for virtual hosting. This sets the ServerName in the TLSConfig. Please refer to https://godoc.org/crypto/tls#Config for more information. (optional)
 	ServerName string `mapstructure:"server_name_override,omitempty"`
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -31,33 +31,33 @@ func NewDefaultClientConfig() ClientConfig {
 
 // Config exposes the common client and server TLS configurations. Note: Since there isn't anything specific to a server connection. Components with server connections should use Config.
 type Config struct {
-	// Path to the CA cert. For a client this verifies the server certificate. For a server this verifies client certificates. If empty uses system root CA. (optional)
+	// CAFile path to the CA cert. For a client this verifies the server certificate. For a server this verifies client certificates. If empty uses system root CA. (optional)
 	CAFile string `mapstructure:"ca_file,omitempty"`
-	// In memory PEM encoded cert. (optional)
+	// CAPem in memory PEM encoded cert. (optional)
 	CAPem configopaque.String `mapstructure:"ca_pem,omitempty"`
-	// Path to the TLS cert to use for TLS required connections. (optional)
+	// CertFile path to the TLS cert to use for TLS required connections. (optional)
 	CertFile string `mapstructure:"cert_file,omitempty"`
-	// In memory PEM encoded TLS cert to use for TLS required connections. (optional)
+	// CertPem in memory PEM encoded TLS cert to use for TLS required connections. (optional)
 	CertPem configopaque.String `mapstructure:"cert_pem,omitempty"`
-	// A list of TLS cipher suites that the TLS transport can use. If left blank, a safe default list is used. See https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites.
+	// CipherSuites a list of TLS cipher suites that the TLS transport can use. If left blank, a safe default list is used. See https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites.
 	CipherSuites []string `mapstructure:"cipher_suites,omitempty"`
-	// Contains the elliptic curves that will be used in an ECDHE handshake, in preference order Defaults to empty list and "crypto/tls" defaults are used, internally.
+	// CurvePreferences contains the elliptic curves that will be used in an ECDHE handshake, in preference order Defaults to empty list and "crypto/tls" defaults are used, internally.
 	CurvePreferences []string `mapstructure:"curve_preferences,omitempty"`
-	// Enables support for insecure cipher suites. When set to true, cipher suites returned by tls.InsecureCipherSuites() will be available for selection in addition to the secure ones. This should only be used when working with legacy systems that require insecure cipher suites. (optional, default false)
+	// IncludeInsecureCipherSuites enables support for insecure cipher suites. When set to true, cipher suites returned by tls.InsecureCipherSuites() will be available for selection in addition to the secure ones. This should only be used when working with legacy systems that require insecure cipher suites. (optional, default false)
 	IncludeInsecureCipherSuites bool `mapstructure:"include_insecure_cipher_suites,omitempty"`
-	// If true, load system CA certificates pool in addition to the certificates configured in this struct.
+	// IncludeSystemCACertsPool if true, load system CA certificates pool in addition to the certificates configured in this struct.
 	IncludeSystemCACertsPool bool `mapstructure:"include_system_ca_certs_pool,omitempty"`
-	// Path to the TLS key to use for TLS required connections. (optional)
+	// KeyFile path to the TLS key to use for TLS required connections. (optional)
 	KeyFile string `mapstructure:"key_file,omitempty"`
-	// In memory PEM encoded TLS key to use for TLS required connections. (optional)
+	// KeyPem in memory PEM encoded TLS key to use for TLS required connections. (optional)
 	KeyPem configopaque.String `mapstructure:"key_pem,omitempty"`
-	// Sets the maximum TLS version that is acceptable. If not set, refer to crypto/tls for defaults. (optional)
+	// MaxVersion sets the maximum TLS version that is acceptable. If not set, refer to crypto/tls for defaults. (optional)
 	MaxVersion string `mapstructure:"max_version,omitempty"`
-	// Sets the minimum TLS version that is acceptable. If not set, TLS 1.2 will be used. (optional)
+	// MinVersion sets the minimum TLS version that is acceptable. If not set, TLS 1.2 will be used. (optional)
 	MinVersion string `mapstructure:"min_version,omitempty"`
-	// Specifies the duration after which the certificate will be reloaded If not set, it will never be reloaded (optional)
+	// ReloadInterval specifies the duration after which the certificate will be reloaded If not set, it will never be reloaded (optional)
 	ReloadInterval time.Duration `mapstructure:"reload_interval,omitempty"`
-	// Trusted platform module configuration
+	// TPMConfig trusted platform module configuration
 	TPMConfig TPMConfig `mapstructure:"tpm,omitempty"`
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -72,9 +72,9 @@ func NewDefaultConfig() Config {
 type ServerConfig struct {
 	// Exposes the common client and server TLS configurations. Note: Since there isn't anything specific to a server connection. Components with server connections should use Config.
 	Config `mapstructure:",squash"`
-	// Path to the TLS cert to use by the server to verify a client certificate. (optional) This sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. Please refer to https://godoc.org/crypto/tls#Config for more information. (optional)
+	// ClientCAFile path to the TLS cert to use by the server to verify a client certificate. (optional) This sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. Please refer to https://godoc.org/crypto/tls#Config for more information. (optional)
 	ClientCAFile string `mapstructure:"client_ca_file,omitempty"`
-	// Reload the ClientCAs file when it is modified (optional, default false)
+	// ReloadClientCAFile reload the ClientCAs file when it is modified (optional, default false)
 	ReloadClientCAFile bool `mapstructure:"client_ca_file_reload,omitempty"`
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -92,7 +92,7 @@ type TPMConfig struct {
 	Auth      string `mapstructure:"auth,omitempty"`
 	Enabled   bool   `mapstructure:"enabled,omitempty"`
 	OwnerAuth string `mapstructure:"owner_auth,omitempty"`
-	// The path to the TPM device or Unix domain socket. For instance /dev/tpm0 or /dev/tpmrm0.
+	// Path the path to the TPM device or Unix domain socket. For instance /dev/tpm0 or /dev/tpmrm0.
 	Path string `mapstructure:"path,omitempty"`
 	// prevent unkeyed literal initialization
 	_ struct{}

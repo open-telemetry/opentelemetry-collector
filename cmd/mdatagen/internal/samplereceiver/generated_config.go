@@ -16,18 +16,18 @@ import (
 type Config struct {
 	// MetricsBuilderConfig is a configuration for sample metrics builder.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
-	// API token used to authenticate with the endpoint.
+	// APIToken aPI token used to authenticate with the endpoint.
 	APIToken configopaque.String `mapstructure:"api_token,omitempty"`
-	// Component ID used to identify this receiver instance.
+	// ComponentID component ID used to identify this receiver instance.
 	ComponentID component.ID `mapstructure:"component_id,omitempty"`
-	// The endpoint to scrape metrics from.
+	// Endpoint the endpoint to scrape metrics from.
 	Endpoint string `mapstructure:"endpoint"`
-	// Extra HTTP headers to attach to each request.
+	// Headers extra HTTP headers to attach to each request.
 	Headers configopaque.MapList `mapstructure:"headers,omitempty"`
-	// Maximum number of results to return per scrape.
+	// MaxResults maximum number of results to return per scrape.
 	MaxResults int64                  `mapstructure:"max_results"`
 	SamplePkg  samplepkg.SampleConfig `mapstructure:"sample_pkg"`
-	// Timeout for scraping metrics.
+	// Timeout timeout for scraping metrics.
 	Timeout time.Duration `mapstructure:"timeout"`
 	// prevent unkeyed literal initialization
 	_ struct{}

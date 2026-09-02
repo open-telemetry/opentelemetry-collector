@@ -1273,6 +1273,8 @@ func TestWithCfgFns(t *testing.T) {
 	require.Contains(t, result, "hasDefaultValue")
 	require.Contains(t, result, "publicType")
 	require.Contains(t, result, "camelVar")
+	require.Contains(t, result, "isRequired")
+	require.Contains(t, result, "shouldOmitEmpty")
 }
 
 func TestResolveGoType_CustomTypeFormatError(t *testing.T) {
@@ -1571,7 +1573,7 @@ func TestExtractImports_ErrorsImportForValidators(t *testing.T) {
 			metadata: &ConfigMetadata{
 				Type: "object",
 				Properties: map[string]*ConfigMetadata{
-					"name": {Type: "string", MinLength: Ptr(1)},
+					"name": {Type: "string", MinLength: new(1)},
 				},
 			},
 		},
@@ -1580,7 +1582,7 @@ func TestExtractImports_ErrorsImportForValidators(t *testing.T) {
 			metadata: &ConfigMetadata{
 				Type: "object",
 				Properties: map[string]*ConfigMetadata{
-					"name": {Type: "string", MaxLength: Ptr(64)},
+					"name": {Type: "string", MaxLength: new(64)},
 				},
 			},
 		},
@@ -1599,7 +1601,7 @@ func TestExtractImports_ErrorsImportForValidators(t *testing.T) {
 			metadata: &ConfigMetadata{
 				Type: "object",
 				Properties: map[string]*ConfigMetadata{
-					"count": {Type: "integer", Maximum: Ptr(100.0)},
+					"count": {Type: "integer", Maximum: new(100.0)},
 				},
 			},
 		},
@@ -1644,17 +1646,17 @@ func TestValidationRules_Enabled(t *testing.T) {
 		},
 		{
 			name:     "maxLength only",
-			rules:    ValidationRules{MaxLength: Ptr(64)},
+			rules:    ValidationRules{MaxLength: new(64)},
 			expected: true,
 		},
 		{
 			name:     "minLength only",
-			rules:    ValidationRules{MinLength: Ptr(1)},
+			rules:    ValidationRules{MinLength: new(1)},
 			expected: true,
 		},
 		{
 			name:     "pattern only",
-			rules:    ValidationRules{Pattern: Ptr(`^[a-z]+$`)},
+			rules:    ValidationRules{Pattern: new(`^[a-z]+$`)},
 			expected: true,
 		},
 		{
@@ -1664,7 +1666,7 @@ func TestValidationRules_Enabled(t *testing.T) {
 		},
 		{
 			name:     "required with value rule",
-			rules:    ValidationRules{Required: true, MaxLength: Ptr(64)},
+			rules:    ValidationRules{Required: true, MaxLength: new(64)},
 			expected: true,
 		},
 	}
@@ -1843,7 +1845,7 @@ func TestExtractValidators_StringValidators(t *testing.T) {
 				{
 					FieldName: "name",
 					FieldType: "string",
-					Rules:     ValidationRules{Pattern: Ptr(`^[a-z]+$`)},
+					Rules:     ValidationRules{Pattern: new(`^[a-z]+$`)},
 				},
 			},
 		},
@@ -1859,7 +1861,7 @@ func TestExtractValidators_StringValidators(t *testing.T) {
 				{
 					FieldName: "name",
 					FieldType: "string",
-					Rules:     ValidationRules{MinLength: &minLen, MaxLength: &maxLen, Pattern: Ptr(`^[a-z]+$`)},
+					Rules:     ValidationRules{MinLength: &minLen, MaxLength: &maxLen, Pattern: new(`^[a-z]+$`)},
 				},
 			},
 		},
@@ -1876,7 +1878,7 @@ func TestExtractValidators_StringValidators(t *testing.T) {
 				{
 					FieldName: "name",
 					FieldType: "string",
-					Rules:     ValidationRules{Required: true, MinLength: &minLen, MaxLength: &maxLen, Pattern: Ptr(`^[a-z]+$`)},
+					Rules:     ValidationRules{Required: true, MinLength: &minLen, MaxLength: &maxLen, Pattern: new(`^[a-z]+$`)},
 				},
 			},
 		},
@@ -2196,22 +2198,22 @@ func TestValidationRules_HasValueRule(t *testing.T) {
 		},
 		{
 			name:     "maxLength",
-			rules:    ValidationRules{MaxLength: Ptr(64)},
+			rules:    ValidationRules{MaxLength: new(64)},
 			expected: true,
 		},
 		{
 			name:     "minLength",
-			rules:    ValidationRules{MinLength: Ptr(1)},
+			rules:    ValidationRules{MinLength: new(1)},
 			expected: true,
 		},
 		{
 			name:     "pattern",
-			rules:    ValidationRules{Pattern: Ptr(`^[a-z]+$`)},
+			rules:    ValidationRules{Pattern: new(`^[a-z]+$`)},
 			expected: true,
 		},
 		{
 			name:     "required and pattern",
-			rules:    ValidationRules{Required: true, Pattern: Ptr(`^[a-z]+$`)},
+			rules:    ValidationRules{Required: true, Pattern: new(`^[a-z]+$`)},
 			expected: true,
 		},
 		{
@@ -2221,27 +2223,27 @@ func TestValidationRules_HasValueRule(t *testing.T) {
 		},
 		{
 			name:     "minimum",
-			rules:    ValidationRules{Minimum: Ptr(0.0)},
+			rules:    ValidationRules{Minimum: new(0.0)},
 			expected: true,
 		},
 		{
 			name:     "maximum",
-			rules:    ValidationRules{Maximum: Ptr(100.0)},
+			rules:    ValidationRules{Maximum: new(100.0)},
 			expected: true,
 		},
 		{
 			name:     "exclusiveMinimum",
-			rules:    ValidationRules{ExclusiveMinimum: Ptr(5.0)},
+			rules:    ValidationRules{ExclusiveMinimum: new(5.0)},
 			expected: true,
 		},
 		{
 			name:     "exclusiveMaximum",
-			rules:    ValidationRules{ExclusiveMaximum: Ptr(10.0)},
+			rules:    ValidationRules{ExclusiveMaximum: new(10.0)},
 			expected: true,
 		},
 		{
 			name:     "all numeric validators",
-			rules:    ValidationRules{Minimum: Ptr(0.0), Maximum: Ptr(100.0), ExclusiveMinimum: Ptr(5.0), ExclusiveMaximum: Ptr(10.0)},
+			rules:    ValidationRules{Minimum: new(0.0), Maximum: new(100.0), ExclusiveMinimum: new(5.0), ExclusiveMaximum: new(10.0)},
 			expected: true,
 		},
 		{
@@ -2321,8 +2323,9 @@ func TestNewCfgFns_ExtractValidators(t *testing.T) {
 	require.True(t, result[0].Rules.Required)
 }
 
+//go:fix inline
 func Ptr[T any](v T) *T {
-	return &v
+	return new(v)
 }
 
 func TestExternalDefaultCall(t *testing.T) {
@@ -2703,6 +2706,55 @@ func TestHasDefaultValue(t *testing.T) {
 		Type: "object",
 		Ref:  "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
 	}))
+}
+
+func TestHasNonZeroDefault(t *testing.T) {
+	require.False(t, hasNonZeroDefault(&ConfigMetadata{Type: "object"}))
+	require.True(t, hasNonZeroDefault(&ConfigMetadata{Type: "string", Default: defaultValue("value")}))
+	// A default of the Go zero value should not count as a non-zero default.
+	require.False(t, hasNonZeroDefault(&ConfigMetadata{Type: "object", Default: defaultValue(map[string]any{})}))
+	require.True(t, hasNonZeroDefault(&ConfigMetadata{Type: "object", Default: defaultValue(map[string]any{"enabled": true})}))
+	// GoStruct.IgnoreDefault means the default is not surfaced, but nested properties are still checked.
+	require.False(t, hasNonZeroDefault(&ConfigMetadata{
+		Type:     "string",
+		Default:  defaultValue("value"),
+		GoStruct: GoStructConfig{IgnoreDefault: true},
+	}))
+	require.True(t, hasNonZeroDefault(&ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"timeout": {Type: "string", GoType: "time.Duration", Default: defaultValue("30s")},
+		},
+	}))
+	require.False(t, hasNonZeroDefault(&ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"base": {Type: "object", Default: defaultValue(map[string]any{})},
+		},
+	}))
+}
+
+func TestIsRequired(t *testing.T) {
+	md := &ConfigMetadata{Required: []string{"endpoint", "timeout"}}
+
+	require.True(t, isRequired(md, "endpoint"))
+	require.True(t, isRequired(md, "timeout"))
+	require.False(t, isRequired(md, "optional_field"))
+	require.False(t, isRequired(&ConfigMetadata{}, "endpoint"))
+}
+
+func TestNewCfgFns_ShouldOmitEmpty(t *testing.T) {
+	fns := NewCfgFns("", "")
+	shouldOmitEmpty := fns["shouldOmitEmpty"].(func(*ConfigMetadata, string, *ConfigMetadata) bool)
+
+	md := &ConfigMetadata{Required: []string{"endpoint"}}
+
+	// Required fields never get omitempty, even with a non-zero default.
+	require.False(t, shouldOmitEmpty(md, "endpoint", &ConfigMetadata{Type: "string", Default: defaultValue("localhost")}))
+	// Optional fields with a non-zero default don't need omitempty either.
+	require.False(t, shouldOmitEmpty(md, "timeout", &ConfigMetadata{Type: "string", Default: defaultValue("30s")}))
+	// Optional fields without a non-zero default get omitempty.
+	require.True(t, shouldOmitEmpty(md, "timeout", &ConfigMetadata{Type: "string"}))
 }
 
 func TestMapCustomDefaults_NestedObjectOverrides(t *testing.T) {
