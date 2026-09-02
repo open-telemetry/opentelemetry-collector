@@ -25,9 +25,6 @@ type QueueBatchConfig = queuebatch.Config
 // BatchConfig defines a configuration for batching requests based on a timeout and a minimum number of items.
 type BatchConfig = queuebatch.BatchConfig
 
-// PartitionConfig defines a configuration for partitioning requests based on metadata keys.
-type PartitionConfig = queuebatch.PartitionConfig
-
 // DefaultPartitionCacheSize is the default maximum number of active partition
 // batchers kept in the multi-batcher LRU cache.
 const DefaultPartitionCacheSize = queuebatch.DefaultPartitionCacheSize
