@@ -14,7 +14,7 @@ permissions: read-all
 
 jobs:
   check-pr-issue-link:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     if: >-
       ${{ github.repository_owner == 'open-telemetry'
         && github.event.pull_request.user.type != 'Bot'
