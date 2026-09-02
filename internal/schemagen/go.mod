@@ -6,7 +6,7 @@ require (
 	github.com/google/jsonschema-go v0.4.3
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/confmap v1.65.0
+	go.opentelemetry.io/collector/confmap v1.66.0
 	go.yaml.in/yaml/v3 v3.0.5
 	golang.org/x/mod v0.40.0
 	golang.org/x/tools v0.49.0
@@ -21,7 +21,7 @@ require (
 	github.com/knadh/koanf/v2 v2.3.6 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	go.opentelemetry.io/collector/featuregate v1.65.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.66.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.28.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
