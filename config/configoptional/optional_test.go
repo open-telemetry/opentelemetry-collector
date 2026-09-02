@@ -143,7 +143,7 @@ func TestMarshalScalarTextMarshalerStruct(t *testing.T) {
 	}
 }
 
-func TestUnmarshalScalarTextMarshalerStruct(t *testing.T) {
+func TestUnmarshalScalarTextUnmarshalerStruct(t *testing.T) {
 	type Cfg struct {
 		Storage Optional[textID] `mapstructure:"storage"`
 	}
@@ -181,6 +181,12 @@ func TestUnmarshalScalarTextMarshalerStruct(t *testing.T) {
 			initial:      Cfg{Storage: Default(textID{typ: "memory"})},
 			expectHasVal: true,
 			expectVal:    textID{typ: "file_storage", name: "mystore"},
+		},
+		{
+			name:         "default_with_null",
+			config:       map[string]any{"storage": map[string]any(nil)},
+			initial:      Cfg{Storage: Default(textID{typ: "memory"})},
+			expectHasVal: false,
 		},
 	}
 
