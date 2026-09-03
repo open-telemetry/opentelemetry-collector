@@ -15,6 +15,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 	"go.opentelemetry.io/collector/pdata/pprofile"
+	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 var (
@@ -81,7 +82,7 @@ func TestProfilesProtoWireCompatibility(t *testing.T) {
 	// This test verifies that OTLP ProtoBufs generated using goproto lib in
 	// opentelemetry-proto repository OTLP ProtoBufs generated using gogoproto lib in
 	// this repository are wire compatible.
-	pd := NewExportRequestFromProfiles(generateProfiles())
+	pd := NewExportRequestFromProfiles(testdata.GenerateProfiles(2))
 	pd.Profiles().MarkReadOnly()
 
 	// Marshal its underlying ProtoBuf to wire.
@@ -109,18 +110,6 @@ func TestProfilesProtoWireCompatibility(t *testing.T) {
 	// Migration logic will run, so run it on the original message as well.
 	otlp.MigrateProfiles(pd.orig.ResourceProfiles)
 	requireProfilesEqualIgnoringAppendedStrings(t, pd.Profiles(), pd2.Profiles())
-}
-
-func generateProfiles() pprofile.Profiles {
-	profiles := pprofile.NewProfiles()
-	profiles.Dictionary().StringTable().Append("") // index 0 is the required empty sentinel
-	rp := profiles.ResourceProfiles().AppendEmpty()
-	rp.Resource().Attributes().PutStr("service.name", "checkout")
-	sp := rp.ScopeProfiles().AppendEmpty()
-	sp.Scope().SetName("test-scope")
-	sp.Scope().Attributes().PutStr("scope.attr", "scope-value")
-	sp.Profiles().AppendEmpty().Samples().AppendEmpty().SetStackIndex(1)
-	return profiles
 }
 
 // Marshaling appends attribute strings to the dictionary and unmarshaling inlines
