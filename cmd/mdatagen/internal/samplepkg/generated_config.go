@@ -12,8 +12,10 @@ type PortNumber int
 type SampleConfig struct {
 	// HostName the host name to connect to.
 	HostName string `mapstructure:"host_name"`
+
 	// Port the port to connect to.
 	Port PortNumber `mapstructure:"port"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }

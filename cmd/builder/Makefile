@@ -1,5 +1,10 @@
 include ../../Makefile.Common
 
+# TestGenerateAndCompile runs the builder end-to-end, compiling a full collector
+# distribution once per subtest. This can be slow on shared CI runners (macOS
+# arm, Windows), so give this module a larger budget.
+GOTEST_TIMEOUT = 420s
+
 .PHONY: ocb
 ocb:
 	CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/ocb_$(GOOS)_$(GOARCH) .
