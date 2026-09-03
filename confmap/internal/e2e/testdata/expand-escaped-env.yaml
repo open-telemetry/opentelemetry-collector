@@ -43,3 +43,5 @@ test_map:
   key21: "${env:UNDEFINED_KEY:-default_value}"
   # escaped default value
   key22: "${env:UNDEFINED_KEY:-$${env:UNDEFINED_KEY}}"
+  # escaped uri followed by expanded env var
+  key23: "$${env:ESCAPED}_${env:ENV_VALUE}"
