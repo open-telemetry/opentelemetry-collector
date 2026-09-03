@@ -242,7 +242,7 @@ func TestConvertProfilesToReferencesEmpty(t *testing.T) {
 func TestConvertProfilesToReferencesDeduplication(t *testing.T) {
 	profiles := NewProfiles()
 	dict := profiles.Dictionary()
-	// No sentinel appended: interning must seed index 0 itself.
+	dict.StringTable().Append("")
 
 	rp := profiles.ResourceProfiles().AppendEmpty()
 	rp.Resource().Attributes().PutStr("key1", "duplicated-value")

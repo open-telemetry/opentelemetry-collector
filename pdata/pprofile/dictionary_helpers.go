@@ -86,10 +86,6 @@ func convertProfilesToReferences(profiles Profiles) {
 	var stringIndex map[string]int32
 	getStringIndex := func(s string) int32 {
 		if stringIndex == nil {
-			// Ensure that the sentinel string is present.
-			if stringTable.Len() == 0 {
-				stringTable.Append("")
-			}
 			stringIndex = make(map[string]int32, stringTable.Len())
 			for i := 0; i < stringTable.Len(); i++ {
 				stringIndex[stringTable.At(i)] = int32(i)
