@@ -72,7 +72,7 @@ func createExampleExporter(ctx context.Context, params exporter.Settings, baseCf
 	xptr := newExampleExporter(ctx, cfg, params)
 
 	// Wrap the exporter with the helper utilities.
-	return exporterhelper.NewMetrics(
+	return exporterhelper.NewMetricsWithConfig(
 		ctx,
 		params,
 		cfg,
