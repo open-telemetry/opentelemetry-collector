@@ -9,11 +9,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
-	"time"
 )
-
-// TransportType represents a type of network transport protocol
-type TransportType string
 
 const (
 	TransportTypeTCP        TransportType = "tcp"

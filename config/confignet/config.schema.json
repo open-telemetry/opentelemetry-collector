@@ -1,0 +1,71 @@
+{
+  "$id": "go.opentelemetry.io/collector/config/confignet",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "addr_config": {
+      "type": "object",
+      "properties": {
+        "dialer": {
+          "type": "object",
+          "properties": {
+            "timeout": {
+              "type": "string",
+              "description": "The maximum amount of time a dial will wait for a connect to complete. The default is no timeout.",
+              "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+            }
+          },
+          "description": "Contains options for connecting to an address.",
+          "default": {}
+        },
+        "endpoint": {
+          "type": "string",
+          "description": "Configures the address for this network connection. For TCP and UDP networks, \nthe address has the form \"host:port\". The host must be a literal IP address, \nor a host name that can be resolved to IP addresses. The port must \nbe a literal port number or a service name. If the host is a literal IPv6 address \nit must be enclosed in square brackets, as in \"[2001:db8::1]:80\" or \"[fe80::1%zone]:80\". \nThe zone specifies the scope of the literal IPv6 address as defined in RFC 4007.\n"
+        },
+        "transport": {
+          "type": "string",
+          "description": "Defines the type of transport protocol used. Allowed protocols are \"tcp\", \"tcp4\" (IPv4-only), \n\"tcp6\" (IPv6-only), \"udp\", \"udp4\" (IPv4-only), \"udp6\" (IPv6-only), \"ip\", \"ip4\" (IPv4-only), \n\"ip6\" (IPv6-only), \"unix\", \"unixgram\", \"unixpacket\" and \"npipe\" (Windows named pipes, Windows-only).\n"
+        }
+      },
+      "description": "Represents a network endpoint address."
+    },
+    "dialer_config": {
+      "type": "object",
+      "properties": {
+        "timeout": {
+          "type": "string",
+          "description": "The maximum amount of time a dial will wait for a connect to complete. The default is no timeout.",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        }
+      },
+      "description": "Contains options for connecting to an address.",
+      "default": {}
+    },
+    "tcp_addr_config": {
+      "type": "object",
+      "properties": {
+        "dialer": {
+          "type": "object",
+          "properties": {
+            "timeout": {
+              "type": "string",
+              "description": "The maximum amount of time a dial will wait for a connect to complete. The default is no timeout.",
+              "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+            }
+          },
+          "description": "Contains options for connecting to an address.",
+          "default": {}
+        },
+        "endpoint": {
+          "type": "string",
+          "description": "Configures the address for this network connection. The address has the form \"host:port\". \nThe host must be a literal IP address, or a host name that can be resolved to IP addresses. \nThe port must be a literal port number or a service name. If the host is a literal IPv6 address \nit must be enclosed in square brackets, as in \"[2001:db8::1]:80\" or \"[fe80::1%zone]:80\". \nThe zone specifies the scope of the literal IPv6 address as defined in RFC 4007.\n"
+        }
+      },
+      "description": "Represents a TCP endpoint address."
+    },
+    "transport_type": {
+      "type": "string",
+      "description": "Represents a type of network transport protocol"
+    }
+  },
+  "title": "pkg/config/confignet"
+}
