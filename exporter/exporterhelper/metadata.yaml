@@ -131,6 +131,24 @@ telemetry:
         value_type: int
         monotonic: false
 
+    exporter_queue_batch_partition_cache_capacity:
+      enabled: true
+      stability: development
+      description: Maximum number of active partition batchers in the LRU cache. Only recorded when batch partitioning is enabled.
+      unit: "{partition}"
+      gauge:
+        value_type: int
+        async: true
+
+    exporter_queue_batch_partition_cache_size:
+      enabled: true
+      stability: development
+      description: Current number of active partition batchers in the LRU cache. Only recorded when batch partitioning is enabled.
+      unit: "{partition}"
+      gauge:
+        value_type: int
+        async: true
+
     exporter_queue_batch_send_size:
       enabled: true
       description: Number of units in the batch. Only recorded when batching is enabled. Only available on detailed level.

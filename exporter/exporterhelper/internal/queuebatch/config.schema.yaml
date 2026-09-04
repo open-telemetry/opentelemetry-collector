@@ -3,6 +3,9 @@ $defs:
     description: BatchConfig defines a configuration for batching requests based on a timeout and a minimum number of items.
     type: object
     properties:
+      cache_size:
+        description: CacheSize is the maximum number of active partition batchers kept in the LRU cache when partitioning is enabled. When the limit is reached, the least recently used partition is flushed and removed. If unset or 0, DefaultPartitionCacheSize (10000) is used.
+        type: integer
       flush_timeout:
         description: FlushTimeout sets the time after which a batch will be sent regardless of its size.
         type: string

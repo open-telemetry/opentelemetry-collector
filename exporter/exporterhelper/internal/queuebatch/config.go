@@ -104,9 +104,19 @@ type BatchConfig struct {
 	// MaxSize defines the configuration for the maximum size of a batch.
 	MaxSize int64 `mapstructure:"max_size"`
 
+	// CacheSize is the maximum number of active partition batchers kept in the LRU
+	// cache when partitioning is enabled. When the limit is reached, the least
+	// recently used partition is flushed and removed. If unset or 0,
+	// DefaultPartitionCacheSize (10000) is used.
+	CacheSize int `mapstructure:"cache_size"`
+
 	// Partition defines the partitioning of the batches configuration.
 	Partition PartitionConfig `mapstructure:"partition"`
 }
+
+// DefaultPartitionCacheSize is the default maximum number of active partition
+// batchers kept in the multi-batcher LRU cache.
+const DefaultPartitionCacheSize = 10000
 
 // PartitionConfig defines a configuration for partitioning requests based on metadata keys.
 type PartitionConfig struct {
@@ -147,6 +157,10 @@ func (cfg *BatchConfig) Validate() error {
 		return fmt.Errorf("`max_size` (%d) must be greater or equal to `min_size` (%d)", cfg.MaxSize, cfg.MinSize)
 	}
 
+	if cfg.CacheSize < 0 {
+		return fmt.Errorf("`cache_size` must be non-negative, found %d", cfg.CacheSize)
+	}
+
 	return nil
 }
 
@@ -166,4 +180,11 @@ func (cfg *PartitionConfig) Validate() error {
 	}
 
 	return nil
+}
+
+func (cfg *BatchConfig) cacheSize() int {
+	if cfg == nil || cfg.CacheSize <= 0 {
+		return DefaultPartitionCacheSize
+	}
+	return cfg.CacheSize
 }
