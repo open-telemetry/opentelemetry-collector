@@ -27,6 +27,11 @@ $defs:
     description: PartitionConfig defines a configuration for partitioning requests based on metadata keys.
     type: object
     properties:
+      idle_timeout:
+        description: IdleTimeout is the duration a partition may stay empty before it is removed. Keeping it above the data arrival interval avoids churning partitions on every scrape for low-frequency workloads such as metrics pipelines.
+        type: string
+        x-customType: time.Duration
+        format: duration
       metadata_keys:
         description: MetadataKeys is a list of client.Metadata keys that will be used to partition the data into batches. If this setting is empty, a single batcher instance will be used. When this setting is not empty, one batcher will be used per distinct combination of values for the listed metadata keys. Empty value and unset metadata are treated as distinct cases. Entries are case-insensitive. Duplicated entries will trigger a validation error.
         type: array

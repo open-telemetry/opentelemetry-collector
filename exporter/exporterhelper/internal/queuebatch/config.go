@@ -119,6 +119,11 @@ type PartitionConfig struct {
 	//
 	// Entries are case-insensitive. Duplicated entries will trigger a validation error.
 	MetadataKeys []string `mapstructure:"metadata_keys"`
+
+	// IdleTimeout is the duration a partition may stay empty before it is removed.
+	// Keeping it above the data arrival interval avoids churning partitions on every
+	// scrape for low-frequency workloads such as metrics pipelines.
+	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
 }
 
 func (cfg *BatchConfig) Validate() error {
@@ -153,6 +158,10 @@ func (cfg *BatchConfig) Validate() error {
 func (cfg *PartitionConfig) Validate() error {
 	if cfg == nil {
 		return nil
+	}
+
+	if cfg.IdleTimeout < 0 {
+		return fmt.Errorf("`idle_timeout` must be non-negative, found %d", cfg.IdleTimeout)
 	}
 
 	// Validate metadata_keys for duplicates (case-insensitive)
