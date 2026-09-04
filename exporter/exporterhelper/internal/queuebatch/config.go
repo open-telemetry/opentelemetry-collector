@@ -121,8 +121,7 @@ type PartitionConfig struct {
 	MetadataKeys []string `mapstructure:"metadata_keys"`
 
 	// IdleTimeout is the duration a partition may stay empty before it is removed.
-	// Keeping it above the data arrival interval avoids churning partitions on every
-	// scrape for low-frequency workloads such as metrics pipelines.
+	// Keep it above the data arrival interval to avoid churning partitions.
 	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
 }
 
