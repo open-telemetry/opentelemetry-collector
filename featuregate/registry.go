@@ -33,6 +33,9 @@ func GlobalRegistry() *Registry {
 
 type Registry struct {
 	gates sync.Map
+
+	warningsMu sync.Mutex
+	warnings   []string
 }
 
 // NewRegistry returns a new empty Registry.
@@ -183,16 +186,35 @@ func (r *Registry) Set(id string, enabled bool) error {
 		if !enabled {
 			return fmt.Errorf("feature gate %q is stable, can not be disabled", id)
 		}
-		fmt.Printf("Feature gate %q is stable and already enabled. It will be removed in version %v and continued use of the gate after version %v will result in an error.\n", id, g.toVersion, g.toVersion)
+		r.addWarning(fmt.Sprintf("Feature gate %q is stable and already enabled. It will be removed in version %v and continued use of the gate after version %v will result in an error.", id, g.toVersion, g.toVersion))
 	case StageDeprecated:
 		if enabled {
 			return fmt.Errorf("feature gate %q is deprecated, can not be enabled", id)
 		}
-		fmt.Printf("Feature gate %q is deprecated and already disabled. It will be removed in version %v and continued use of the gate after version %v will result in an error.\n", id, g.toVersion, g.toVersion)
+		r.addWarning(fmt.Sprintf("Feature gate %q is deprecated and already disabled. It will be removed in version %v and continued use of the gate after version %v will result in an error.", id, g.toVersion, g.toVersion))
 	default:
 		g.enabled.Store(enabled)
 	}
 	return nil
+}
+
+func (r *Registry) addWarning(warning string) {
+	r.warningsMu.Lock()
+	defer r.warningsMu.Unlock()
+	r.warnings = append(r.warnings, warning)
+}
+
+// Warnings returns and clears any warnings accumulated from calls to Set,
+// such as those produced when setting a stable or deprecated Gate.
+// Set is typically called before a logger is available (for example, during
+// CLI flag parsing), so callers should drain Warnings once a logger is ready
+// and emit them through it.
+func (r *Registry) Warnings() []string {
+	r.warningsMu.Lock()
+	defer r.warningsMu.Unlock()
+	warnings := r.warnings
+	r.warnings = nil
+	return warnings
 }
 
 // VisitAll visits all the gates in lexicographical order, calling fn for each.
