@@ -25,9 +25,10 @@ type Settings[T any] struct {
 // AllSettings defines settings for creating a QueueBatch.
 type AllSettings[T any] struct {
 	Settings[T]
-	Signal    pipeline.Signal
-	ID        component.ID
-	Telemetry component.TelemetrySettings
+	Signal            pipeline.Signal
+	ID                component.ID
+	Telemetry         component.TelemetrySettings
+	QueueBatchMetrics QueueBatchMetrics
 }
 
 type QueueBatch struct {
@@ -40,6 +41,11 @@ func NewQueueBatch(
 	cfg Config,
 	next sender.SendFunc[request.Request],
 ) (*QueueBatch, error) {
+	qbm := set.QueueBatchMetrics
+	if qbm == nil {
+		qbm = NewQueueBatchMetrics()
+	}
+
 	b, err := NewBatcher(cfg.Batch, batcherSettings[request.Request]{
 		partitioner: set.Partitioner,
 		mergeCtx:    set.MergeCtx,
@@ -68,6 +74,7 @@ func NewQueueBatch(
 		Encoding:         set.Encoding,
 		ID:               set.ID,
 		Telemetry:        set.Telemetry,
+		QueueMetrics:     qbm,
 	}, b.Consume)
 	if err != nil {
 		return nil, err
