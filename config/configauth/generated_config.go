@@ -8,8 +8,9 @@ import (
 
 // Config defines the auth settings for the receiver.
 type Config struct {
-	// Specifies the name of the extension to use in order to authenticate the incoming data point.
+	// AuthenticatorID specifies the name of the extension to use in order to authenticate the incoming data point.
 	AuthenticatorID component.ID `mapstructure:"authenticator,omitempty"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
