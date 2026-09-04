@@ -65,3 +65,6 @@ $defs:
       wait_for_result:
         description: WaitForResult determines if incoming requests are blocked until the request is processed or not. Currently, this option is not available when persistent queue is configured using the storage configuration.
         type: boolean
+      wait_for_result_metadata_key:
+        description: WaitForResultMetadataKey is a client.Metadata key used to decide per request whether to wait for the result. When wait_for_result is false and this key is set, a request waits only if the metadata value parses as true (e.g. "true" or "1"). When wait_for_result is true, all requests wait and this key is ignored. Requires the receiver to enable include_metadata. Not available with a persistent queue configured using storage.
+        type: string

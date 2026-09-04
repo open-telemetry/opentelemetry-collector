@@ -40,6 +40,15 @@ func TestConfig_Validate(t *testing.T) {
 	require.EqualError(t, confmap.Validate(cfg), "`wait_for_result` is not supported with a persistent queue configured with `storage`")
 
 	cfg = newTestConfig()
+	cfg.WaitForResultMetadataKey = "x-wait-for-result"
+	cfg.StorageID = &storageID
+	require.EqualError(t, confmap.Validate(cfg), "`wait_for_result_metadata_key` is not supported with a persistent queue configured with `storage`")
+
+	cfg = newTestConfig()
+	cfg.WaitForResultMetadataKey = "x-wait-for-result"
+	require.NoError(t, confmap.Validate(cfg))
+
+	cfg = newTestConfig()
 	cfg.QueueSize = cfg.Batch.Get().MinSize - 1
 	require.EqualError(t, confmap.Validate(cfg), "`min_size` must be less than or equal to `queue_size`")
 
