@@ -659,7 +659,7 @@ func TestQueueBatch_FastTrack_ConsumerBusy(t *testing.T) {
 	time.Sleep(20 * time.Millisecond)
 
 	require.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 7}))
-	assert.Greater(t, qb.queue.Size(), int64(0))
+	assert.Positive(t, qb.queue.Size())
 
 	wg.Wait()
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
