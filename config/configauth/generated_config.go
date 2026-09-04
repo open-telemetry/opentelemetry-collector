@@ -10,6 +10,7 @@ import (
 type Config struct {
 	// AuthenticatorID specifies the name of the extension to use in order to authenticate the incoming data point.
 	AuthenticatorID component.ID `mapstructure:"authenticator,omitempty"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }

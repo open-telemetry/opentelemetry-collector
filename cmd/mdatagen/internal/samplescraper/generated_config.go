@@ -24,12 +24,16 @@ func NewDefaultSamplePkg() SamplePkg {
 
 type TargetsItem struct {
 	Interval configoptional.Optional[time.Duration] `mapstructure:"interval"`
+
 	// Labels static key-value labels attached to all metrics from this target.
 	Labels map[string]string `mapstructure:"labels"`
+
 	// RetryCount number of retry attempts for failed scrapes.
 	RetryCount int `mapstructure:"retry_count"`
+
 	// TimeoutSeconds timeout in seconds for each scrape request.
 	TimeoutSeconds float64 `mapstructure:"timeout_seconds"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -73,16 +77,22 @@ func NewDefaultTargetsItem() TargetsItem {
 type Config struct {
 	// Defines common settings for a scraper controller configuration. Scraper controller receivers can embed this struct, instead of receiver.Settings, and extend it with more fields if needed.
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
+
 	// MetricsBuilderConfig is a configuration for sample metrics builder.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+
 	// ComponentID identifies the scraper, used for telemetry and logging.
 	ComponentID component.ID `mapstructure:"component,omitempty"`
+
 	// JobName name of the scrape job, used to identify the source in telemetry.
 	JobName string `mapstructure:"job_name"`
+
 	// LogLevel logging level for the scraper.
 	LogLevel string `mapstructure:"log_level"`
+
 	// Targets list of targets to scrape metrics from.
 	Targets *[]TargetsItem `mapstructure:"targets"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }

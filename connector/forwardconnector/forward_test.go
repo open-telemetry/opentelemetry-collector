@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector/connectortest"
+	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -43,7 +44,7 @@ func TestForward(t *testing.T) {
 	assert.NotNil(t, logsToLogs)
 
 	profilesSink := new(consumertest.ProfilesSink)
-	profilesToProfiles, err := f.CreateProfilesToProfiles(ctx, set, cfg, profilesSink)
+	profilesToProfiles, err := f.(xconnector.Factory).CreateProfilesToProfiles(ctx, set, cfg, profilesSink)
 	require.NoError(t, err)
 	assert.NotNil(t, profilesToProfiles)
 
