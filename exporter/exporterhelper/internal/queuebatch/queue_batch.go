@@ -31,8 +31,11 @@ type AllSettings[T any] struct {
 }
 
 type QueueBatch struct {
-	queue   queue.Queue[request.Request]
-	batcher Batcher[request.Request]
+	queue      queue.Queue[request.Request]
+	batcher    Batcher[request.Request]
+	fastTrack  bool
+	directSem  chan struct{}
+	exportFunc sender.SendFunc[request.Request]
 }
 
 func NewQueueBatch(
@@ -73,7 +76,13 @@ func NewQueueBatch(
 		return nil, err
 	}
 
-	return &QueueBatch{queue: q, batcher: b}, nil
+	qb := &QueueBatch{queue: q, batcher: b}
+	if cfg.FastTrack {
+		qb.fastTrack = true
+		qb.directSem = make(chan struct{}, cfg.NumConsumers)
+		qb.exportFunc = next
+	}
+	return qb, nil
 }
 
 // Start is invoked during service startup.
@@ -95,6 +104,18 @@ func (qs *QueueBatch) Shutdown(ctx context.Context) error {
 }
 
 // Send implements the requestSender interface. It puts the request in the queue.
+// When FastTrack is enabled, it first attempts to export directly if a consumer slot
+// is available, bypassing the persistent queue. If all slots are busy, it falls back
+// to the queue.
 func (qs *QueueBatch) Send(ctx context.Context, req request.Request) error {
+	if qs.fastTrack {
+		select {
+		case qs.directSem <- struct{}{}:
+			defer func() { <-qs.directSem }()
+			return qs.exportFunc(ctx, req)
+		default:
+			// all consumer slots busy, fall through to queue.
+		}
+	}
 	return qs.queue.Offer(ctx, req)
 }

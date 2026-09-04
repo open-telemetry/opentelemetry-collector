@@ -599,6 +599,77 @@ func TestQueueBatchTimerFlush(t *testing.T) {
 	require.NoError(t, qb.Shutdown(context.Background()))
 }
 
+func TestQueueBatch_FastTrack_ConsumerAvailable(t *testing.T) {
+	sink := requesttest.NewSink()
+	storageID := component.MustNewIDWithName("file_storage", "storage")
+	cfg := newTestConfig()
+	cfg.StorageID = &storageID
+	cfg.FastTrack = true
+	cfg.NumConsumers = 4
+	cfg.Batch = configoptional.Optional[BatchConfig]{}
+	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
+	require.NoError(t, err)
+
+	host := hosttest.NewHost(map[component.ID]component.Component{
+		storageID: storagetest.NewMockStorageExtension(nil),
+	})
+	require.NoError(t, qb.Start(context.Background(), host))
+
+	// send requests when consumers are available and must go the direct path.
+	for range 4 {
+		require.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 10}))
+	}
+
+	// Direct path is synchronous, so all requests should be exported immediately.
+	assert.Equal(t, 4, sink.RequestsCount())
+	assert.Equal(t, 40, sink.ItemsCount())
+	// nothing should have been enqueued to the persistent queue.
+	assert.Zero(t, qb.queue.Size())
+
+	require.NoError(t, qb.Shutdown(context.Background()))
+}
+
+func TestQueueBatch_FastTrack_ConsumerBusy(t *testing.T) {
+	sink := requesttest.NewSink()
+	storageID := component.MustNewIDWithName("file_storage", "storage")
+	cfg := newTestConfig()
+	cfg.StorageID = &storageID
+	cfg.FastTrack = true
+	cfg.NumConsumers = 2
+	cfg.Batch = configoptional.Optional[BatchConfig]{}
+
+	// set up encoding to deserialize requests with 7 items, matching the queued request.
+	queuedReq := &requesttest.FakeRequest{Items: 7}
+	qSet := newFakeRequestSettings()
+	qSet.Encoding = newFakeEncoding(queuedReq)
+	qb, err := NewQueueBatch(qSet, cfg, sink.Export)
+	require.NoError(t, err)
+
+	host := hosttest.NewHost(map[component.ID]component.Component{
+		storageID: storagetest.NewMockStorageExtension(nil),
+	})
+	require.NoError(t, qb.Start(context.Background(), host))
+
+	wg := sync.WaitGroup{}
+	for range 2 {
+		wg.Go(func() {
+			assert.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 5, Delay: 200 * time.Millisecond}))
+		})
+	}
+	time.Sleep(20 * time.Millisecond)
+
+	require.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 7}))
+	assert.Greater(t, qb.queue.Size(), int64(0))
+
+	wg.Wait()
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.Equal(c, 3, sink.RequestsCount())
+		assert.Equal(c, 17, sink.ItemsCount())
+	}, 1*time.Second, 10*time.Millisecond)
+
+	require.NoError(t, qb.Shutdown(context.Background()))
+}
+
 func newTestConfig() Config {
 	return Config{
 		WaitForResult:   false,

@@ -42,6 +42,13 @@ type Config struct {
 	// This applies across all different optional configurations from above (e.g. wait_for_result, block_on_overflow, storage, etc.).
 	NumConsumers int `mapstructure:"num_consumers"`
 
+	// FastTrack determines whether the component tries to export data directly before falling back to
+	// the queue. When a consumer slot is immediately available, the request is exported in-memory on
+	// the caller's goroutine, bypassing the persistent queue entirely. When all consumer slots are busy,
+	// the request is enqueued normally via the persistent queue.
+	// This option is only supported when a persistent queue is configured with storage.
+	FastTrack bool `mapstructure:"fast_track"`
+
 	// BatchConfig it configures how the requests are consumed from the queue and batch together during consumption.
 	Batch configoptional.Optional[BatchConfig] `mapstructure:"batch"`
 }
@@ -76,6 +83,14 @@ func (cfg *Config) Validate() error {
 	// Only support request sizer for persistent queue at this moment.
 	if cfg.StorageID != nil && cfg.WaitForResult {
 		return errors.New("`wait_for_result` is not supported with a persistent queue configured with `storage`")
+	}
+
+	if cfg.FastTrack && cfg.StorageID == nil {
+		return errors.New("`fast_track` is only supported with a persistent queue configured with `storage`")
+	}
+
+	if cfg.FastTrack && cfg.WaitForResult {
+		return errors.New("`fast_track` and `wait_for_result` are mutually exclusive")
 	}
 
 	if cfg.Batch.HasValue() && cfg.Batch.Get().Sizer == cfg.Sizer {
