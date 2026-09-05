@@ -30,7 +30,7 @@ return set
 
 {{ range $name, $metric := .Telemetry.Metrics }}
 
-func AssertEqual{{ $name.Render }}(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.{{- if eq $metric.Data.Type "Histogram" }} {{$metric.Data.Type}} {{- end }}DataPoint[{{ $metric.Data.BasicType }}], opts ...metricdatatest.Option) {
+func AssertEqual{{ $name.Render }}(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.{{- if or (eq $metric.Data.Type "Histogram") (eq $metric.Data.Type "ExponentialHistogram") }} {{$metric.Data.Type}} {{- end }}DataPoint[{{ $metric.Data.BasicType }}], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		{{ if $metric.Prefix -}}
 		Name:        "{{ $metric.Prefix }}{{ $name }}",

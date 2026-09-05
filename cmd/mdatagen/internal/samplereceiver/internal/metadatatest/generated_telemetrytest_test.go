@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/metric"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
@@ -16,7 +17,9 @@ import (
 )
 
 func TestSetupTelemetry(t *testing.T) {
-	testTel := componenttest.NewTelemetry()
+	testTel := componenttest.NewTelemetry(
+		componenttest.WithMetricOptions(sdkmetric.WithView(metadata.Views()...)),
+	)
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
@@ -31,6 +34,7 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.BatchSizeTriggerSend.Add(context.Background(), 1)
 	tb.QueueCapacity.Record(context.Background(), 1)
 	tb.RequestDuration.Record(context.Background(), 1)
+	tb.RequestDurationExponential.Record(context.Background(), 1)
 	AssertEqualBatchSizeTriggerSend(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
@@ -45,6 +49,9 @@ func TestSetupTelemetry(t *testing.T) {
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualRequestDuration(t, testTel,
 		[]metricdata.HistogramDataPoint[float64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualRequestDurationExponential(t, testTel,
+		[]metricdata.ExponentialHistogramDataPoint[float64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
 
 	require.NoError(t, testTel.Shutdown(context.Background()))
