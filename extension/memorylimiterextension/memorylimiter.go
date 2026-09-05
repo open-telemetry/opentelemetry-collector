@@ -7,6 +7,8 @@ import (
 	"context"
 	"net/http"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -14,6 +16,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
+	"go.opentelemetry.io/collector/extension/memorylimiterextension/internal/metadata"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
 )
 
@@ -23,17 +26,21 @@ var (
 )
 
 type memoryLimiterExtension struct {
-	memLimiter *memorylimiter.MemoryLimiter
+	memLimiter       *memorylimiter.MemoryLimiter
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 // newMemoryLimiter returns a new memorylimiter extension.
-func newMemoryLimiter(cfg *Config, logger *zap.Logger) (*memoryLimiterExtension, error) {
+func newMemoryLimiter(cfg *Config, logger *zap.Logger, telemetryBuilder *metadata.TelemetryBuilder) (*memoryLimiterExtension, error) {
 	ml, err := memorylimiter.NewMemoryLimiter(cfg, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return &memoryLimiterExtension{memLimiter: ml}, nil
+	return &memoryLimiterExtension{
+		memLimiter:       ml,
+		telemetryBuilder: telemetryBuilder,
+	}, nil
 }
 
 func (ml *memoryLimiterExtension) Start(ctx context.Context, host component.Host) error {
@@ -57,6 +64,11 @@ func (ml *memoryLimiterExtension) GetHTTPHandler(_ context.Context) (extensionmi
 func (ml *memoryLimiterExtension) wrapHTTPHandler(_ context.Context, base http.Handler) (http.Handler, error) {
 	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
 		if ml.MustRefuse() {
+			ml.telemetryBuilder.MemorylimiterRefusedRequests.Add(
+				req.Context(),
+				1,
+				metric.WithAttributes(attribute.String("transport", "http")),
+			)
 			http.Error(resp, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
 			return
 		}
@@ -66,21 +78,35 @@ func (ml *memoryLimiterExtension) wrapHTTPHandler(_ context.Context, base http.H
 
 func (ml *memoryLimiterExtension) GetGRPCServerOptions(_ context.Context) ([]grpc.ServerOption, error) {
 	return []grpc.ServerOption{
-		grpc.ChainUnaryInterceptor(
-			func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
-				if ml.MustRefuse() {
-					return nil, status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
-				}
-				return handler(ctx, req)
-			},
-		),
-		grpc.ChainStreamInterceptor(
-			func(srv any, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-				if ml.MustRefuse() {
-					return status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
-				}
-				return handler(srv, ss)
-			},
-		),
+		grpc.ChainUnaryInterceptor(ml.grpcUnaryInterceptor),
+		grpc.ChainStreamInterceptor(ml.grpcStreamInterceptor),
 	}, nil
+}
+
+func (ml *memoryLimiterExtension) grpcUnaryInterceptor(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+	if ml.MustRefuse() {
+		ml.telemetryBuilder.MemorylimiterRefusedRequests.Add(
+			ctx,
+			1,
+			metric.WithAttributes(attribute.String("transport", "grpc")),
+		)
+		return nil, status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
+	}
+
+	return handler(ctx, req)
+}
+
+func (ml *memoryLimiterExtension) grpcStreamInterceptor(srv any, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	ctx := ss.Context()
+
+	if ml.MustRefuse() {
+		ml.telemetryBuilder.MemorylimiterRefusedRequests.Add(
+			ctx,
+			1,
+			metric.WithAttributes(attribute.String("transport", "grpc")),
+		)
+		return status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
+	}
+
+	return handler(srv, ss)
 }
