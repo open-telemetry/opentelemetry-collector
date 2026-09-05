@@ -17,7 +17,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
@@ -52,13 +51,6 @@ type Settings struct {
 	// representations. It is passed to extensions implementing
 	// extensioncapabilities.ConfigSnapshotWatcher.
 	ConfigSnapshot extensioncapabilities.ConfigSnapshot
-
-	// CollectorConf contains the Collector's current effective configuration.
-	// It is passed to extensions implementing extensioncapabilities.ConfigWatcher
-	// via NotifyConfig.
-	//
-	// Deprecated [v0.155.0]: use ConfigSnapshot instead.
-	CollectorConf *confmap.Conf
 
 	// Receivers configuration to its builder.
 	ReceiversConfigs   map[component.ID]component.Config
@@ -122,11 +114,6 @@ type Service struct {
 
 // New creates a new Service, its telemetry, and Components.
 func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr error) {
-	configSnapshot := set.ConfigSnapshot
-	if configSnapshot == nil && set.CollectorConf != nil {
-		configSnapshot = extensioncapabilities.NewConfigSnapshot(set.CollectorConf, nil)
-	}
-
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &graph.Host{
@@ -140,7 +127,7 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 			BuildInfo:         set.BuildInfo,
 			AsyncErrorChannel: set.AsyncErrorChannel,
 		},
-		configSnapshot: configSnapshot,
+		configSnapshot: set.ConfigSnapshot,
 	}
 
 	if set.TelemetryFactory == nil {

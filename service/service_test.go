@@ -367,34 +367,12 @@ func TestServiceTelemetryShutdownError(t *testing.T) {
 	)
 }
 
-func TestExtensionNotificationFailure(t *testing.T) {
-	set := newNopSettings()
-	cfg := newNopConfig()
-
-	extName := component.MustNewType("configWatcher")
-	configWatcherExtensionFactory := newConfigWatcherExtensionFactory(extName)
-	set.ExtensionsConfigs = map[component.ID]component.Config{component.NewID(extName): configWatcherExtensionFactory.CreateDefaultConfig()}
-	set.ExtensionsFactories = map[component.Type]extension.Factory{extName: configWatcherExtensionFactory}
-	cfg.Extensions = []component.ID{component.NewID(extName)}
-
-	// Create a service
-	srv, err := New(context.Background(), set, cfg)
-	require.NoError(t, err)
-
-	// Start the service
-	require.Error(t, srv.Start(context.Background()))
-
-	// Shut down the service
-	require.NoError(t, srv.Shutdown(context.Background()))
-}
-
 func TestNilCollectorEffectiveConfig(t *testing.T) {
 	set := newNopSettings()
-	set.CollectorConf = nil
 	cfg := newNopConfig()
 
 	extName := component.MustNewType("configWatcher")
-	configWatcherExtensionFactory := newConfigWatcherExtensionFactory(extName)
+	configWatcherExtensionFactory := newConfigSnapshotWatcherExtensionFactory(extName)
 	set.ExtensionsConfigs = map[component.ID]component.Config{component.NewID(extName): configWatcherExtensionFactory.CreateDefaultConfig()}
 	set.ExtensionsFactories = map[component.Type]extension.Factory{extName: configWatcherExtensionFactory}
 	cfg.Extensions = []component.ID{component.NewID(extName)}
@@ -412,7 +390,6 @@ func TestNilCollectorEffectiveConfig(t *testing.T) {
 
 func TestConfigSnapshotNotification(t *testing.T) {
 	set := newNopSettings()
-	set.CollectorConf = nil
 	set.ConfigSnapshot = extensioncapabilities.NewConfigSnapshot(
 		confmap.NewFromStringMap(map[string]any{"effective": "value"}),
 		confmap.NewFromStringMap(map[string]any{"unexpanded": "${env:VALUE}"}),
@@ -435,7 +412,6 @@ func TestConfigSnapshotNotification(t *testing.T) {
 
 func TestConfigSnapshotNotSetSkipsHook(t *testing.T) {
 	set := newNopSettings()
-	set.CollectorConf = nil
 	set.ConfigSnapshot = nil
 	cfg := newNopConfig()
 
@@ -534,7 +510,6 @@ func newNopSettings() Settings {
 
 	return Settings{
 		BuildInfo:           component.NewDefaultBuildInfo(),
-		CollectorConf:       confmap.New(),
 		ReceiversConfigs:    receiversConfigs,
 		ReceiversFactories:  receiversFactories,
 		ProcessorsConfigs:   processorsConfigs,
@@ -580,33 +555,6 @@ func newNopConfigPipelineConfigs(pipelineCfgs pipelines.Config) Config {
 		Extensions: extensions.Config{component.NewID(nopType)},
 		Pipelines:  pipelineCfgs,
 	}
-}
-
-type configWatcherExtension struct{}
-
-func (comp *configWatcherExtension) Start(context.Context, component.Host) error {
-	return nil
-}
-
-func (comp *configWatcherExtension) Shutdown(context.Context) error {
-	return nil
-}
-
-func (comp *configWatcherExtension) NotifyConfig(context.Context, *confmap.Conf) error {
-	return errors.New("Failed to resolve config")
-}
-
-func newConfigWatcherExtensionFactory(name component.Type) extension.Factory {
-	return extension.NewFactory(
-		name,
-		func() component.Config {
-			return &struct{}{}
-		},
-		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
-			return &configWatcherExtension{}, nil
-		},
-		component.StabilityLevelDevelopment,
-	)
 }
 
 type configSnapshotWatcherExtension struct{}
