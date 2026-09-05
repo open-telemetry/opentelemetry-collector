@@ -23,6 +23,17 @@ const partitionIdleCycles = 10
 
 var _ Batcher[request.Request] = (*partitionBatcher)(nil)
 
+// splitOne is an optional interface implemented by request types that can be split
+// incrementally, one chunk at a time, so the batcher can bound memory usage when
+// exporting a very large request through a limited worker pool (see #15747).
+type splitOne interface {
+	// SplitOne splits off and returns a new Request that contains at most maxSize
+	// items/bytes from this Request, leaving the remainder in the receiver. Returns
+	// nil when the receiver already contains at most maxSize items. Returns a non-nil
+	// error when the request cannot be split (e.g. a single item exceeds maxSize).
+	SplitOne(ctx context.Context, maxSize int, sizerType request.SizerType) (request.Request, error)
+}
+
 type batch struct {
 	ctx  context.Context
 	req  request.Request
@@ -81,6 +92,15 @@ func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Req
 	isActive := qb.active
 	qb.lastDataTime = time.Now()
 	if qb.currentBatch == nil {
+		// Lazy splitting: if the request supports it, split off one chunk at a time
+		// and flush immediately, bounding the number of live split chunks to one
+		// (plus the worker pool's in-flight chunks). This avoids the unbounded memory
+		// growth in the eager path where the entire chunk list is materialized upfront
+		// while flush workers are starved by a slow exporter (see #15747).
+		if sp, ok := req.(splitOne); ok && qb.cfg.MaxSize > 0 {
+			qb.currentBatchMu.Unlock()
+			return qb.consumeSplitLoop(ctx, sp, req, done, isActive)
+		}
 		reqList, mergeSplitErr := req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.cfg.Sizer, nil)
 		if mergeSplitErr != nil {
 			// Do not return in case of error if there are data, try to export as much as possible.
@@ -202,6 +222,69 @@ func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Req
 	for i := 0; i < len(reqList); i++ {
 		qb.flush(ctx, reqList[i], done)
 	}
+	return isActive
+}
+
+// consumeSplitLoop lazily splits the request into chunks and flushes each chunk as soon
+// as it is produced, instead of eagerly materializing the full chunk list upfront.
+// This bounds the memory held by split chunks to at most one chunk at a time (plus the
+// chunks in flight in the worker pool), avoiding the unbounded growth described in #15747.
+func (qb *partitionBatcher) consumeSplitLoop(ctx context.Context, sp splitOne, req request.Request, done queue.Done, isActive bool) bool {
+	maxSize := int(qb.cfg.MaxSize)
+	// done is called once per flushed chunk; use a ref-counted wrapper so the original
+	// done fires exactly once after all pieces complete.
+	rcd := &refCountDone{done: done}
+	var splitErr error
+
+	// Split off and flush chunks one at a time. At most one split chunk is live at a
+	// time in addition to the worker pool's in-flight flushes, bounding memory usage
+	// even when every worker is occupied by a slow exporter.
+	for {
+		chunk, err := sp.SplitOne(ctx, maxSize, qb.cfg.Sizer)
+		if err != nil {
+			splitErr = err
+		}
+		if chunk == nil {
+			break
+		}
+		rcd.AddRef()
+		qb.flush(ctx, chunk, rcd)
+		if splitErr != nil {
+			// Cannot split further; the remainder (which still contains the oversized
+			// item) is dropped, matching the eager path's "dropping items" behavior.
+			break
+		}
+	}
+
+	// Handle the remainder (req now holds at most maxSize items).
+	if splitErr != nil {
+		// Remainder dropped; report the error.
+		rcd.AddRef()
+		rcd.OnDone(splitErr)
+		return isActive
+	}
+
+	// Mirror the eager path: if the remainder is below MinSize, keep it as the
+	// current batch so it can be merged with subsequent requests; otherwise flush it.
+	// We must re-check currentBatchMu because another consumer may have set it
+	// while we were flushing (only possible with multi-partition batching).
+	qb.currentBatchMu.Lock()
+	if qb.currentBatch == nil && qb.sizer.Sizeof(req) < qb.cfg.MinSize {
+		rcd.AddRef()
+		qb.currentBatch = &batch{
+			ctx:  ctx,
+			req:  req,
+			done: multiDone{rcd},
+		}
+		qb.resetTimer()
+		qb.currentBatchMu.Unlock()
+		return isActive
+	}
+	qb.currentBatchMu.Unlock()
+
+	// Flush the remainder (either >= MinSize, or currentBatch was already claimed).
+	rcd.AddRef()
+	qb.flush(ctx, req, rcd)
 	return isActive
 }
 
@@ -337,6 +420,14 @@ func newRefCountDone(done queue.Done, refCount int64) queue.Done {
 		done:     done,
 		refCount: refCount,
 	}
+}
+
+// AddRef increments the reference count. Used when the number of chunks is not known
+// in advance (e.g. lazy splitting).
+func (rcd *refCountDone) AddRef() {
+	rcd.mu.Lock()
+	defer rcd.mu.Unlock()
+	rcd.refCount++
 }
 
 func (rcd *refCountDone) OnDone(err error) {

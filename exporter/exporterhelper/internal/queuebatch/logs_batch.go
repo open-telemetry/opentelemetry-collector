@@ -63,6 +63,30 @@ func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer, szt request.Sizer
 	return res, nil
 }
 
+// SplitOne implements the splitOne interface by splitting off at most maxSize
+// items/bytes from this request into a new request, leaving the remainder in the
+// receiver. Returns nil when the receiver already contains at most maxSize items.
+func (req *logsRequest) SplitOne(_ context.Context, maxSize int, szt request.SizerType) (request.Request, error) {
+	var sz sizer.LogsSizer
+	switch szt {
+	case request.SizerTypeItems:
+		sz = &sizer.LogsCountSizer{}
+	case request.SizerTypeBytes:
+		sz = &sizer.LogsBytesSizer{}
+	default:
+		return nil, errors.New("unknown sizer type")
+	}
+	if req.size(sz) <= maxSize {
+		return nil, nil
+	}
+	ld, removedSize := extractLogs(req.ld, maxSize, sz)
+	if ld.LogRecordCount() == 0 {
+		return nil, fmt.Errorf("one log record size is greater than max size, dropping items: %d", req.ld.LogRecordCount())
+	}
+	req.setCachedSize(req.size(sz) - removedSize)
+	return newLogsRequest(ld), nil
+}
+
 // extractLogs extracts logs from the input logs and returns a new logs with the specified number of log records.
 func extractLogs(srcLogs plog.Logs, capacity int, sz sizer.LogsSizer) (plog.Logs, int) {
 	destLogs := plog.NewLogs()
