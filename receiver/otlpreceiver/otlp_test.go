@@ -500,10 +500,9 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 	}
 }
 
-func TestOTLPReceiverNoContentType(t *testing.T) {
+func TestOTLPReceiverErrorHandlerContentType(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
-	// Set the buffer count to 1 to make it flush the test span immediately.
 	recv := newHTTPReceiver(t, componenttest.NewNopTelemetrySettings(), addr, consumertest.NewNop())
 
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
@@ -511,22 +510,43 @@ func TestOTLPReceiverNoContentType(t *testing.T) {
 
 	url := fmt.Sprintf("http://%s%s", addr, defaultTracesURLPath)
 
-	t.Run("NoContentType", func(t *testing.T) {
-		body := bytes.NewBuffer([]byte(`{"key": "value"}`))
+	// An unsupported Content-Encoding makes the confighttp decompressor invoke the
+	// receiver's error handler with StatusBadRequest. The request Content-Type must
+	// not change that status: a client error stays a client error whether or not a
+	// Status can be encoded in the requested format.
+	tests := []struct {
+		name            string
+		contentType     string
+		wantContentType string
+	}{
+		{name: "absent", contentType: "", wantContentType: jsonContentType},
+		{name: "json", contentType: jsonContentType, wantContentType: jsonContentType},
+		{name: "protobuf", contentType: pbContentType, wantContentType: pbContentType},
+		{name: "unsupported", contentType: "text/plain", wantContentType: jsonContentType},
+		{name: "malformed", contentType: "application/", wantContentType: jsonContentType},
+	}
 
-		req, err := http.NewRequest(http.MethodPost, url, body)
-		require.NoError(t, err, "Error creating trace POST request: %v", err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			body := bytes.NewBuffer([]byte(`{"key": "value"}`))
 
-		// Set invalid encoding to trigger an error
-		req.Header.Set("Content-Encoding", "invalid")
+			req, err := http.NewRequest(http.MethodPost, url, body)
+			require.NoError(t, err, "Error creating trace POST request: %v", err)
 
-		resp, err := http.DefaultClient.Do(req)
-		require.NoError(t, err, "Error posting to server: %v", err)
-		// Don't care about the response body, just check the content type
-		defer resp.Body.Close()
+			// Set invalid encoding to trigger an error
+			req.Header.Set("Content-Encoding", "invalid")
+			if tt.contentType != "" {
+				req.Header.Set("Content-Type", tt.contentType)
+			}
 
-		require.Equal(t, fallbackContentType, resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
-	})
+			resp, err := http.DefaultClient.Do(req)
+			require.NoError(t, err, "Error posting to server: %v", err)
+			defer resp.Body.Close()
+
+			require.Equal(t, http.StatusBadRequest, resp.StatusCode, "Unexpected response status code")
+			require.Equal(t, tt.wantContentType, resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
+		})
+	}
 }
 
 func TestGRPCNewPortAlreadyUsed(t *testing.T) {
