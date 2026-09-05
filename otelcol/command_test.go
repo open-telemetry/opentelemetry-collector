@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -68,12 +69,37 @@ func TestAddFlagToSettings(t *testing.T) {
 		},
 	}
 	flgs := flags(featuregate.NewRegistry())
-	err := flgs.Parse([]string{"--config=otelcol-nop.yaml"})
+	err := flgs.Parse([]string{"--config=a.yaml", "--config=b.yaml"})
 	require.NoError(t, err)
 
 	err = updateSettingsUsingFlags(&set, flgs)
 	require.NoError(t, err)
-	require.Len(t, set.ConfigProviderSettings.ResolverSettings.URIs, 1)
+	require.Equal(t, []string{"a.yaml", "b.yaml"}, set.ConfigProviderSettings.ResolverSettings.URIs)
+}
+
+func TestNewCommandMultipleConfigs(t *testing.T) {
+	fileProvider := newFakeProvider("file", func(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		path := strings.TrimPrefix(uri, "file:")
+		return confmap.NewRetrieved(newConfFromFile(t, path))
+	})
+	set := CollectorSettings{
+		Factories: nopFactories,
+		ConfigProviderSettings: ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				ProviderFactories: []confmap.ProviderFactory{fileProvider},
+				DefaultScheme:     "file",
+			},
+		},
+	}
+	cmd := NewCommand(set)
+	otelRunE := cmd.RunE
+	cmd.RunE = func(c *cobra.Command, args []string) error {
+		require.NoError(t, c.Flag("config").Value.Set(filepath.Join("testdata", "otelcol-nop.yaml")))
+		require.NoError(t, c.Flag("config").Value.Set(filepath.Join("testdata", "otelcol-invalid.yaml")))
+
+		return otelRunE(cmd, args)
+	}
+	require.ErrorContains(t, cmd.Execute(), "references processor \"invalid\" which is not configured")
 }
 
 func TestInvalidCollectorSettings(t *testing.T) {
