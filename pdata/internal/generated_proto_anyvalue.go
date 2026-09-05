@@ -636,6 +636,14 @@ func (orig *AnyValue) MarshalProto(buf []byte) int {
 }
 
 func (orig *AnyValue) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, 0)
+}
+
+func (orig *AnyValue) unmarshalProto(buf []byte, depth int) error {
+	if depth >= proto.RecursionLimit {
+		return proto.ErrRecursionDepth
+	}
+	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -740,7 +748,7 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 				ov = ProtoPoolAnyValue_ArrayValue.Get().(*AnyValue_ArrayValue)
 			}
 			ov.ArrayValue = NewArrayValue()
-			err = ov.ArrayValue.UnmarshalProto(buf[startPos:pos])
+			err = ov.ArrayValue.unmarshalProto(buf[startPos:pos], depth)
 			if err != nil {
 				return err
 			}
@@ -763,7 +771,7 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 				ov = ProtoPoolAnyValue_KvlistValue.Get().(*AnyValue_KvlistValue)
 			}
 			ov.KvlistValue = NewKeyValueList()
-			err = ov.KvlistValue.UnmarshalProto(buf[startPos:pos])
+			err = ov.KvlistValue.unmarshalProto(buf[startPos:pos], depth)
 			if err != nil {
 				return err
 			}

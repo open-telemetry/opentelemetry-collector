@@ -319,20 +319,20 @@ const unmarshalProtoMessage = `
 			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
 		}
 		ov.{{ .fieldName }} = New{{ .messageName }}()
-		err = ov.{{ .fieldName }}.UnmarshalProto(buf[startPos:pos])
+		err = ov.{{ .fieldName }}.{{ if .generatedMessage }}unmarshalProto(buf[startPos:pos], depth){{ else }}UnmarshalProto(buf[startPos:pos]){{ end }}
 		if err != nil {
 			return err
 		}
 		orig.{{ .oneOfGroup }} = ov
 {{- else if .repeated -}}
 		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, {{ if .nullable }}New{{ .messageName }}(){{ else }}{{ .defaultValue }}{{ end }})
-		err = orig.{{ .fieldName }}[len(orig.{{ .fieldName }})-1].UnmarshalProto(buf[startPos:pos])
+		err = orig.{{ .fieldName }}[len(orig.{{ .fieldName }})-1].{{ if .generatedMessage }}unmarshalProto(buf[startPos:pos], depth){{ else }}UnmarshalProto(buf[startPos:pos]){{ end }}
 		if err != nil {
 			return err
 		}
 {{- else }}
 		{{ if .nullable }}orig.{{ .fieldName }} = New{{ .messageName }}(){{ end }}
-		err = orig.{{ .fieldName }}.UnmarshalProto(buf[startPos:pos]) 
+		err = orig.{{ .fieldName }}.{{ if .generatedMessage }}unmarshalProto(buf[startPos:pos], depth){{ else }}UnmarshalProto(buf[startPos:pos]){{ end }}
 		if err != nil {
 			return err
 		}
@@ -399,6 +399,30 @@ const unmarshalProtoSignedVarint = `{{ if .repeated -}}
 
 func (pf *Field) GenUnmarshalProto() string {
 	tf := pf.getTemplateFields()
+	switch pf.Type {
+	case TypeDouble, TypeFloat:
+		return tmplutil.Execute(tmplutil.Parse("unmarshalProtoFloat", []byte(unmarshalProtoFloat)), tf)
+	case TypeFixed64, TypeSFixed64, TypeFixed32, TypeSFixed32:
+		return tmplutil.Execute(tmplutil.Parse("unmarshalProtoFixed", []byte(unmarshalProtoFixed)), tf)
+	case TypeInt32, TypeInt64, TypeUint32, TypeUint64, TypeEnum:
+		return tmplutil.Execute(tmplutil.Parse("unmarshalProtoVarint", []byte(unmarshalProtoVarint)), tf)
+	case TypeBool:
+		return tmplutil.Execute(tmplutil.Parse("unmarshalProtoBool", []byte(unmarshalProtoBool)), tf)
+	case TypeString:
+		return tmplutil.Execute(tmplutil.Parse("unmarshalProtoString", []byte(unmarshalProtoString)), tf)
+	case TypeBytes:
+		return tmplutil.Execute(tmplutil.Parse("unmarshalProtoBytes", []byte(unmarshalProtoBytes)), tf)
+	case TypeMessage:
+		return tmplutil.Execute(tmplutil.Parse("unmarshalProtoMessage", []byte(unmarshalProtoMessage)), tf)
+	case TypeSInt32, TypeSInt64:
+		return tmplutil.Execute(tmplutil.Parse("unmarshalProtoSignedVarint", []byte(unmarshalProtoSignedVarint)), tf)
+	}
+	panic(fmt.Sprintf("unhandled case %T", pf.Type))
+}
+
+func (pf *Field) GenUnmarshalProtoNoDepth() string {
+	tf := pf.getTemplateFields()
+	tf["generatedMessage"] = false
 	switch pf.Type {
 	case TypeDouble, TypeFloat:
 		return tmplutil.Execute(tmplutil.Parse("unmarshalProtoFloat", []byte(unmarshalProtoFloat)), tf)
