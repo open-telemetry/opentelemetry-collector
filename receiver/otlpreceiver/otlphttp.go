@@ -236,7 +236,7 @@ func writeResponse(w http.ResponseWriter, contentType string, statusCode int, ms
 	w.Header().Set("Content-Type", contentType)
 	w.WriteHeader(statusCode)
 	// Nothing we can do with the error if we cannot write to the response.
-	_, _ = w.Write(msg) // #nosec G705
+	_, _ = w.Write(msg) // #nosec G705 -- msg is an OTLP payload written with an explicit, non-HTML Content-Type set above
 }
 
 func getMimeTypeFromContentType(contentType string) string {
