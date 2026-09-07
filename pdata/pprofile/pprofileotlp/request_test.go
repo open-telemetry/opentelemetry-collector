@@ -113,7 +113,21 @@ func TestProfilesProtoWireCompatibility(t *testing.T) {
 
 func generateProfiles() pprofile.Profiles {
 	profiles := pprofile.NewProfiles()
-	profiles.Dictionary().StringTable().Append("") // index 0 is the required empty sentinel
+
+	// Every dictionary table must hold the zero value at index 0, so that an
+	// unset index resolves to nothing.
+	dic := profiles.Dictionary()
+	dic.StringTable().Append("")
+	dic.AttributeTable().AppendEmpty()
+	dic.MappingTable().AppendEmpty()
+	dic.LocationTable().AppendEmpty()
+	dic.FunctionTable().AppendEmpty()
+	dic.LinkTable().AppendEmpty()
+	dic.StackTable().AppendEmpty()
+
+	dic.LocationTable().AppendEmpty().SetAddress(1)
+	dic.StackTable().AppendEmpty().LocationIndices().Append(1)
+
 	rp := profiles.ResourceProfiles().AppendEmpty()
 	rp.Resource().Attributes().PutStr("service.name", "checkout")
 	sp := rp.ScopeProfiles().AppendEmpty()
