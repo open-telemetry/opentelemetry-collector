@@ -384,7 +384,7 @@ func testHookFunc() mapstructure.DecodeHookFuncValue {
 			return from.Interface(), nil
 		}
 
-		got, ok := from.Interface().(TestSimpleStruct)
+		got, ok := reflect.TypeAssert[TestSimpleStruct](from)
 		if !ok {
 			return from.Interface(), nil
 		}

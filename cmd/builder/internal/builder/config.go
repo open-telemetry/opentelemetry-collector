@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	DefaultBetaOtelColVersion   = "v0.158.0"
-	DefaultStableOtelColVersion = "v1.64.0"
+	DefaultBetaOtelColVersion   = "v0.160.0"
+	DefaultStableOtelColVersion = "v1.66.0"
 )
 
 // errMissingGoMod indicates an empty gomod field
@@ -359,7 +359,7 @@ func encodeValue(rv reflect.Value) any {
 	switch rv.Kind() {
 	case reflect.Struct:
 		return structToMap(rv.Interface())
-	case reflect.Ptr:
+	case reflect.Pointer:
 		if rv.IsNil() {
 			return nil
 		}

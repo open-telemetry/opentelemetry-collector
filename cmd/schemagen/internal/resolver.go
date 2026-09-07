@@ -24,8 +24,7 @@ func (e *NotFoundError) Error() string {
 }
 
 func isNotFound(err error) (*NotFoundError, bool) {
-	var nf *NotFoundError
-	if errors.As(err, &nf) {
+	if nf, ok := errors.AsType[*NotFoundError](err); ok {
 		return nf, true
 	}
 	return nil, false

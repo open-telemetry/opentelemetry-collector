@@ -43,8 +43,7 @@ func TestAddrConfigTimeout(t *testing.T) {
 	}
 	_, err := nac.Dial(context.Background())
 	require.Error(t, err)
-	var netErr net.Error
-	if errors.As(err, &netErr) {
+	if netErr, ok := errors.AsType[net.Error](err); ok {
 		assert.True(t, netErr.Timeout())
 	} else {
 		assert.Fail(t, "error should be a net.Error")
@@ -60,8 +59,7 @@ func TestTCPAddrConfigTimeout(t *testing.T) {
 	}
 	_, err := nac.Dial(context.Background())
 	require.Error(t, err)
-	var netErr net.Error
-	if errors.As(err, &netErr) {
+	if netErr, ok := errors.AsType[net.Error](err); ok {
 		assert.True(t, netErr.Timeout())
 	} else {
 		assert.Fail(t, "error should be a net.Error")
