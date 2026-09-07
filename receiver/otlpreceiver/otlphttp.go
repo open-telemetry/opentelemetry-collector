@@ -199,10 +199,9 @@ func errorHandler(w http.ResponseWriter, r *http.Request, errMsg string, statusC
 	case pbContentType:
 		writeStatusResponse(w, pbEncoder, statusCode, s)
 	default:
-		// The request either omitted Content-Type or used one this receiver cannot
-		// encode a Status in. Either way the client cannot parse the body, so fall
-		// back to JSON and preserve the status code rather than reporting a client
-		// error as 500.
+		// Fall back to JSON for any Content-Type that isn't protobuf.
+		// Preserve the original status code so client errors (4xx) aren't
+		// reported as server faults.
 		writeStatusResponse(w, jsEncoder, statusCode, s)
 	}
 }
