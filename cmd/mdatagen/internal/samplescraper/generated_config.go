@@ -101,6 +101,10 @@ type Config struct {
 func (c *Config) Validate() error {
 	var err error
 
+	if inner_err := validateComponentID(c.ComponentID); inner_err != nil {
+		err = errors.Join(err, inner_err)
+	}
+
 	if c.JobName == "" {
 		err = errors.Join(err, errors.New("job_name is required"))
 	}
