@@ -92,3 +92,61 @@ func TestWriteBytes(t *testing.T) {
 	s.WriteBytes([]byte("test"))
 	require.Equal(t, `"dGVzdA=="`, string(s.Buffer()))
 }
+
+func BenchmarkWriteInt64(b *testing.B) {
+	s := BorrowStream(nil)
+	defer ReturnStream(s)
+	for b.Loop() {
+		s.Reset(nil)
+		s.WriteInt64(1_000_000_000_000_000_000)
+	}
+}
+
+func BenchmarkWriteUint64(b *testing.B) {
+	s := BorrowStream(nil)
+	defer ReturnStream(s)
+	for b.Loop() {
+		s.Reset(nil)
+		s.WriteUint64(1_000_000_000_000_000_000)
+	}
+}
+
+func TestWriteInt64(t *testing.T) {
+	tests := []struct {
+		val      int64
+		expected string
+	}{
+		{0, `"0"`},
+		{1, `"1"`},
+		{-1, `"-1"`},
+		{math.MaxInt64, `"9223372036854775807"`},
+		{math.MinInt64, `"-9223372036854775808"`},
+		// typical nanosecond timestamp
+		{1_000_000_000_000_000_000, `"1000000000000000000"`},
+	}
+	for _, tt := range tests {
+		s := BorrowStream(nil)
+		s.WriteInt64(tt.val)
+		require.Equal(t, tt.expected, string(s.Buffer()))
+		ReturnStream(s)
+	}
+}
+
+func TestWriteUint64(t *testing.T) {
+	tests := []struct {
+		val      uint64
+		expected string
+	}{
+		{0, `"0"`},
+		{1, `"1"`},
+		{math.MaxUint64, `"18446744073709551615"`},
+		// typical nanosecond timestamp
+		{1_000_000_000_000_000_000, `"1000000000000000000"`},
+	}
+	for _, tt := range tests {
+		s := BorrowStream(nil)
+		s.WriteUint64(tt.val)
+		require.Equal(t, tt.expected, string(s.Buffer()))
+		ReturnStream(s)
+	}
+}

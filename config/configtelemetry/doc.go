@@ -40,3 +40,5 @@
 // The signals associated with this level may exhibit high cardinality, high data volume, or high
 // computational cost.
 package configtelemetry // import "go.opentelemetry.io/collector/config/configtelemetry"
+
+//go:generate mdatagen metadata.yaml

@@ -38,9 +38,10 @@ The following tables summarized the platform tiers of support by the verificatio
 The Tier 1 supported platforms are _guaranteed to work_. Precompiled binaries are built on the platform, fully supported for all collector add-ons (receivers, processor, exporters etc.), and continuously tested as part of the development processes to ensure any proposed change will function correctly. Build and test infrastructure is provided by the project. All tests are executed on the platform as part of automated continuous integration (CI) for each pull request and the [release cycle](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/release.md#release-schedule). Any build or test failure block the release of the collector distribution for all platforms. Defects are addressed with priority and depending on severity fixed for previous release(s) in a bug fix release.
 
 Tier 1 platforms are currently:
-| Platform    | Owner(s)                                                                                                    |
-|-------------|-------------------------------------------------------------------------------------------------------------|
-| linux/amd64 | [OpenTelemetry Collector approvers](https://github.com/open-telemetry/opentelemetry-collector#contributing) |
+| Platform      | Owner(s)                                                                                                    |
+|---------------|-------------------------------------------------------------------------------------------------------------|
+| linux/amd64   | [OpenTelemetry Collector approvers](https://github.com/open-telemetry/opentelemetry-collector#contributing) |
+| windows/amd64 | [@pjanotti](https://github.com/pjanotti)                                                                    |
 
 ### Tier 2 – Secondary Support
 
@@ -51,7 +52,7 @@ Tier 2 platforms are currently:
 |---------------|----------------------------------------------------|
 | darwin/arm64  | [@MovieStoreGuy](https://github.com/MovieStoreGuy) |
 | linux/arm64   | [@atoulme](https://github.com/atoulme)             |
-| windows/amd64 | [@pjanotti](https://github.com/pjanotti)           |
+| windows/arm64 | [@pjanotti](https://github.com/pjanotti)           |
 
 ### Tier 3 - Community Support
 
@@ -69,4 +70,3 @@ Tier 3 platforms are currently:
 | linux/riscv64 | [@shanduur](https://github.com/shanduur)                                                                                                                       |
 | linux/s390x   | [@bwalk-at-ibm](https://github.com/bwalk-at-ibm), [@rrschulze](https://github.com/rrschulze)                                                                   |
 | windows/386   | [@pjanotti](https://github.com/pjanotti)                                                                                                                       |
-| windows/arm64 | [@pjanotti](https://github.com/pjanotti)                                                                                                                       |

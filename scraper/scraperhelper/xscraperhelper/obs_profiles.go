@@ -53,8 +53,7 @@ func wrapObsProfiles(sc xscraper.Profiles, receiverID, scraperID component.ID, s
 		numErroredProfiles := 0
 		if err != nil {
 			set.Logger.Error("Error scraping profiles", zap.Error(err))
-			var partialErr scrapererror.PartialScrapeError
-			if errors.As(err, &partialErr) {
+			if partialErr, ok := errors.AsType[scrapererror.PartialScrapeError](err); ok {
 				numErroredProfiles = partialErr.Failed
 				numScrapedProfiles = md.ProfileCount()
 			}
