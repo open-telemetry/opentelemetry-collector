@@ -584,11 +584,11 @@ func collectValidators(md *ConfigMetadata, validators *[]Validator) {
 
 		if prop.GoStruct.CustomValidator != nil {
 			*validators = append(*validators, Validator{
-				FieldName:       propName,
+				FieldName:       fieldName,
 				FieldType:       resolveType(prop),
 				IsPointer:       prop.IsPointer,
 				IsOptional:      prop.IsOptional,
-				CustomValidator: generateValidatorName(propName, prop.GoStruct.CustomValidator),
+				CustomValidator: generateValidatorName(fieldName, prop.GoStruct.CustomValidator),
 			})
 		}
 	}
