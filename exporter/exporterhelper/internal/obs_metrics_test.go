@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/obsmetricstest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
@@ -41,12 +41,12 @@ func TestExporterObsMetricsAttributes(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(om.Shutdown)
 
-	require.NoError(t, om.RegisterQueueSize(queue.NewInt64Value(func() int64 { return 7 })))
-	require.NoError(t, om.RegisterQueueCapacity(queue.NewInt64Value(func() int64 { return 9 })))
+	require.NoError(t, om.RegisterQueueSize(func() int64 { return 7 }))
+	require.NoError(t, om.RegisterQueueCapacity(func() int64 { return 9 }))
 	ctx := context.Background()
 	om.RecordEnqueueFailure(ctx, 5)
-	om.RecordEnqueueSize(ctx, 5, queue.NewInt64Value(func() int64 { return 100 }))
-	om.RecordBatchSendSize(ctx, 5, queue.NewInt64Value(func() int64 { return 100 }))
+	om.RecordEnqueueSize(ctx, 5, func() int64 { return 100 })
+	om.RecordBatchSendSize(ctx, 5, func() int64 { return 100 })
 	om.RecordInFlight(ctx, 1)
 	om.RecordSent(ctx, 5)
 	om.RecordSendFailure(ctx, 5)
@@ -73,16 +73,6 @@ func TestExporterObsMetricsAttributes(t *testing.T) {
 	}
 }
 
-func TestObsMetricsWithoutOperations(_ *testing.T) {
-	metrics := NewObsMetrics()
-	ctx := context.Background()
-
-	metrics.RecordInFlight(ctx, 1)
-	metrics.RecordSent(ctx, 1)
-	metrics.RecordSendFailure(ctx, 1)
-	metrics.Shutdown()
-}
-
 func TestExporterObsMetricsMandatoryAttributesTakePrecedence(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
@@ -101,7 +91,7 @@ func TestExporterObsMetricsMandatoryAttributesTakePrecedence(t *testing.T) {
 	t.Cleanup(om.Shutdown)
 
 	ctx := context.Background()
-	om.RecordBatchSendSize(ctx, 5, queue.NewInt64Value(func() int64 { return 100 }))
+	om.RecordBatchSendSize(ctx, 5, func() int64 { return 100 })
 	om.RecordSent(ctx, 5)
 
 	exporterAttr := attribute.String(ExporterKey, id.String())
@@ -157,8 +147,8 @@ func TestExporterObsMetricsQueueInstruments(t *testing.T) {
 			require.NoError(t, err)
 			t.Cleanup(om.Shutdown)
 
-			require.NoError(t, om.RegisterQueueSize(queue.NewInt64Value(func() int64 { return 7 })))
-			require.NoError(t, om.RegisterQueueCapacity(queue.NewInt64Value(func() int64 { return 9 })))
+			require.NoError(t, om.RegisterQueueSize(func() int64 { return 7 }))
+			require.NoError(t, om.RegisterQueueCapacity(func() int64 { return 9 }))
 			om.RecordEnqueueFailure(context.Background(), 12)
 
 			exporterAttrs := attribute.NewSet(attribute.String(ExporterKey, id.String()))
@@ -177,9 +167,13 @@ func TestExporterObsMetricsQueueInstruments(t *testing.T) {
 	}
 }
 
-// countingObsMetrics reports nothing but counts how often it is shut down.
-func countingObsMetrics(shutdowns *int) ObsMetrics {
-	return NewObsMetrics(WithMetricsShutdown(func() { *shutdowns++ }))
+type countingObsMetrics struct {
+	obsmetricstest.Nop
+	shutdowns *int
+}
+
+func (m countingObsMetrics) Shutdown() {
+	*m.shutdowns++
 }
 
 // A failed construction leaves an injected ObsMetrics for the caller to shut down.
@@ -188,7 +182,7 @@ func TestBaseExporterLeavesInjectedObsMetricsOnConstructionFailure(t *testing.T)
 
 	// WithQueue without WithQueueBatchSettings fails after options are applied.
 	_, err := NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
-		WithObsMetrics(countingObsMetrics(&shutdowns)),
+		WithObsMetrics(countingObsMetrics{shutdowns: &shutdowns}),
 		WithQueue(configoptional.Some(NewDefaultQueueConfig())))
 	require.Error(t, err)
 	require.Equal(t, 0, shutdowns)
@@ -198,7 +192,7 @@ func TestBaseExporterShutsDownObsMetricsOnShutdown(t *testing.T) {
 	shutdowns := 0
 
 	be, err := NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
-		WithObsMetrics(countingObsMetrics(&shutdowns)))
+		WithObsMetrics(countingObsMetrics{shutdowns: &shutdowns}))
 	require.NoError(t, err)
 	require.Equal(t, 0, shutdowns)
 	require.NoError(t, be.Shutdown(context.Background()))

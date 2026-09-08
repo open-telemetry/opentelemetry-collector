@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/obsmetricstest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
@@ -29,9 +30,10 @@ import (
 
 func TestNewQueueSenderFailedRequestDropped(t *testing.T) {
 	qSet := queuebatch.AllSettings[request.Request]{
-		Signal:    pipeline.SignalMetrics,
-		ID:        component.NewID(exportertest.NopType),
-		Telemetry: componenttest.NewNopTelemetrySettings(),
+		Signal:     pipeline.SignalMetrics,
+		ID:         component.NewID(exportertest.NopType),
+		Telemetry:  componenttest.NewNopTelemetrySettings(),
+		ObsMetrics: obsmetricstest.Nop{},
 	}
 	logger, observed := observer.New(zap.ErrorLevel)
 	qSet.Telemetry.Logger = zap.New(logger)

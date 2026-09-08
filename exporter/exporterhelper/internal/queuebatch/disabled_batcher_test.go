@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/obsmetricstest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
@@ -51,6 +52,7 @@ func TestDisabledBatcher(t *testing.T) {
 				BlockOnOverflow: true,
 				NumConsumers:    tt.maxWorkers,
 				Telemetry:       componenttest.NewNopTelemetrySettings(),
+				ObsMetrics:      obsmetricstest.Nop{},
 			}, ba.Consume)
 			require.NoError(t, err)
 

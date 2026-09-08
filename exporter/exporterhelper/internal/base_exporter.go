@@ -102,18 +102,18 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 		return nil, err
 	}
 
-	if be.queueCfg.HasValue() && be.queueCfg.Get().Batch.HasValue() {
+	if batchEnabled {
 		// Batcher mutates the data.
 		be.ConsumerOptions = append(be.ConsumerOptions, consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 	}
 
 	if be.queueCfg.HasValue() {
 		qSet := queuebatch.AllSettings[request.Request]{
-			Settings:          be.queueBatchSettings,
-			Signal:            signal,
-			ID:                set.ID,
-			Telemetry:         set.TelemetrySettings,
-			QueueBatchMetrics: be.ObsMetrics,
+			Settings:   be.queueBatchSettings,
+			Signal:     signal,
+			ID:         set.ID,
+			Telemetry:  set.TelemetrySettings,
+			ObsMetrics: be.ObsMetrics,
 		}
 		be.QueueSender, err = NewQueueSender(qSet, *be.queueCfg.Get(), be.ExportFailureMessage, be.firstSender)
 		if err != nil {

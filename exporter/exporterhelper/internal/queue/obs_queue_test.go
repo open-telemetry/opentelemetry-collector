@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/obsmetricstest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -51,32 +52,31 @@ type enqueueSize struct {
 
 // recordingMetrics records the operations reported by the queue.
 type recordingMetrics struct {
+	obsmetricstest.Nop
 	enqueueFailures []int64
 	enqueueSizes    []enqueueSize
-	sizeObserver    Int64Value
-	capacityObserve Int64Value
+	sizeObserver    func() int64
+	capacityObserve func() int64
 	sizeErr         error
 	capacityErr     error
 }
 
-// metrics returns the QueueMetrics that feeds the recorder.
-func (rm *recordingMetrics) metrics() QueueMetrics {
-	return NewQueueMetrics(
-		WithRecordEnqueueFailure(func(_ context.Context, items int64) {
-			rm.enqueueFailures = append(rm.enqueueFailures, items)
-		}),
-		WithRecordEnqueueSize(func(_ context.Context, items int64, bytesSize Int64Value) {
-			rm.enqueueSizes = append(rm.enqueueSizes, enqueueSize{items: items, bytes: bytesSize.Value()})
-		}),
-		WithRegisterQueueSize(func(observe Int64Value) error {
-			rm.sizeObserver = observe
-			return rm.sizeErr
-		}),
-		WithRegisterQueueCapacity(func(observe Int64Value) error {
-			rm.capacityObserve = observe
-			return rm.capacityErr
-		}),
-	)
+func (rm *recordingMetrics) RecordEnqueueFailure(_ context.Context, items int64) {
+	rm.enqueueFailures = append(rm.enqueueFailures, items)
+}
+
+func (rm *recordingMetrics) RecordEnqueueSize(_ context.Context, items int64, bytesSize func() int64) {
+	rm.enqueueSizes = append(rm.enqueueSizes, enqueueSize{items: items, bytes: bytesSize()})
+}
+
+func (rm *recordingMetrics) RegisterQueueSize(observe func() int64) error {
+	rm.sizeObserver = observe
+	return rm.sizeErr
+}
+
+func (rm *recordingMetrics) RegisterQueueCapacity(observe func() int64) error {
+	rm.capacityObserve = observe
+	return rm.capacityErr
 }
 
 func newTestSettings() Settings[request.Request] {
@@ -90,21 +90,21 @@ func newTestSettings() Settings[request.Request] {
 func TestObsQueueRegistersSizeAndCapacityObservers(t *testing.T) {
 	om := &recordingMetrics{}
 	set := newTestSettings()
-	set.QueueMetrics = om.metrics()
+	set.ObsMetrics = om
 
 	_, err := newObsQueue[request.Request](set, newFakeQueue[request.Request](nil, 7, 9))
 	require.NoError(t, err)
 
 	require.NotNil(t, om.sizeObserver)
 	require.NotNil(t, om.capacityObserve)
-	assert.Equal(t, int64(7), om.sizeObserver.Value())
-	assert.Equal(t, int64(9), om.capacityObserve.Value())
+	assert.Equal(t, int64(7), om.sizeObserver())
+	assert.Equal(t, int64(9), om.capacityObserve())
 }
 
 func TestObsQueueRecordsEnqueueSize(t *testing.T) {
 	om := &recordingMetrics{}
 	set := newTestSettings()
-	set.QueueMetrics = om.metrics()
+	set.ObsMetrics = om
 
 	te, err := newObsQueue[request.Request](set, newFakeQueue[request.Request](nil, 7, 9))
 	require.NoError(t, err)
@@ -117,7 +117,7 @@ func TestObsQueueRecordsEnqueueSize(t *testing.T) {
 func TestObsQueueRecordsEnqueueFailure(t *testing.T) {
 	om := &recordingMetrics{}
 	set := newTestSettings()
-	set.QueueMetrics = om.metrics()
+	set.ObsMetrics = om
 
 	te, err := newObsQueue[request.Request](set, newFakeQueue[request.Request](errors.New("my error"), 0, 0))
 	require.NoError(t, err)
@@ -127,15 +127,9 @@ func TestObsQueueRecordsEnqueueFailure(t *testing.T) {
 	assert.Equal(t, []int64{12}, om.enqueueFailures)
 }
 
-// A queue created without QueueMetrics reports nothing.
-func TestObsQueueWithoutMetricsIsNoOp(t *testing.T) {
-	te, err := newObsQueue[request.Request](newTestSettings(), newFakeQueue[request.Request](nil, 7, 9))
-	require.NoError(t, err)
-	require.NoError(t, te.Offer(context.Background(), &requesttest.FakeRequest{Items: 2, Bytes: 100}))
-
-	te, err = newObsQueue[request.Request](newTestSettings(), newFakeQueue[request.Request](errors.New("my error"), 0, 0))
-	require.NoError(t, err)
-	require.Error(t, te.Offer(context.Background(), &requesttest.FakeRequest{Items: 2, Bytes: 100}))
+func TestObsQueueRequiresMetrics(t *testing.T) {
+	_, err := newObsQueue[request.Request](newTestSettings(), newFakeQueue[request.Request](nil, 7, 9))
+	require.ErrorContains(t, err, "ObsMetrics must not be nil")
 }
 
 func TestObsQueueRegistrationFailure(t *testing.T) {
@@ -150,7 +144,7 @@ func TestObsQueueRegistrationFailure(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			set := newTestSettings()
-			set.QueueMetrics = tt.om.metrics()
+			set.ObsMetrics = tt.om
 			_, err := newObsQueue[request.Request](set, newFakeQueue[request.Request](nil, 7, 9))
 			require.ErrorIs(t, err, errRegister)
 		})

@@ -8,6 +8,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/obsmetrics"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -76,7 +77,7 @@ type Settings[T request.Request] struct {
 	Encoding         Encoding[T]
 	ID               component.ID
 	Telemetry        component.TelemetrySettings
-	QueueMetrics     QueueMetrics
+	ObsMetrics       obsmetrics.ObsMetrics
 }
 
 func NewQueue[T request.Request](set Settings[T], next ConsumeFunc[T]) (Queue[T], error) {

@@ -8,6 +8,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/obsmetrics"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
@@ -25,10 +26,10 @@ type Settings[T any] struct {
 // AllSettings defines settings for creating a QueueBatch.
 type AllSettings[T any] struct {
 	Settings[T]
-	Signal            pipeline.Signal
-	ID                component.ID
-	Telemetry         component.TelemetrySettings
-	QueueBatchMetrics QueueBatchMetrics
+	Signal     pipeline.Signal
+	ID         component.ID
+	Telemetry  component.TelemetrySettings
+	ObsMetrics obsmetrics.ObsMetrics
 }
 
 type QueueBatch struct {
@@ -41,11 +42,6 @@ func NewQueueBatch(
 	cfg Config,
 	next sender.SendFunc[request.Request],
 ) (*QueueBatch, error) {
-	qbm := set.QueueBatchMetrics
-	if qbm == nil {
-		qbm = NewQueueBatchMetrics()
-	}
-
 	b, err := NewBatcher(cfg.Batch, batcherSettings[request.Request]{
 		partitioner: set.Partitioner,
 		mergeCtx:    set.MergeCtx,
@@ -74,7 +70,7 @@ func NewQueueBatch(
 		Encoding:         set.Encoding,
 		ID:               set.ID,
 		Telemetry:        set.Telemetry,
-		QueueMetrics:     qbm,
+		ObsMetrics:       set.ObsMetrics,
 	}, b.Consume)
 	if err != nil {
 		return nil, err

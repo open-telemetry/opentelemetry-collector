@@ -47,7 +47,6 @@ components:
     - pkg/exporter
     - pkg/exporter/exportertest
     - pkg/exporterhelper
-    - pkg/exporterhelper/exporterhelpertest
     - pkg/extension
     - pkg/extension/extensiontest
     - pkg/extensionauth
