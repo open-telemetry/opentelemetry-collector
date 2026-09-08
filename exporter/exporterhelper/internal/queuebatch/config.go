@@ -89,10 +89,6 @@ func (cfg *Config) Validate() error {
 		return errors.New("`fast_track` is only supported with a persistent queue configured with `storage`")
 	}
 
-	if cfg.FastTrack && cfg.WaitForResult {
-		return errors.New("`fast_track` and `wait_for_result` are mutually exclusive")
-	}
-
 	if cfg.Batch.HasValue() && cfg.Batch.Get().Sizer == cfg.Sizer {
 		// Avoid situations where the queue is not able to hold any data.
 		if cfg.Batch.Get().MinSize > cfg.QueueSize {

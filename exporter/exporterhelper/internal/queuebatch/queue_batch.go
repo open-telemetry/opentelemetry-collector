@@ -43,10 +43,25 @@ func NewQueueBatch(
 	cfg Config,
 	next sender.SendFunc[request.Request],
 ) (*QueueBatch, error) {
+	qb := &QueueBatch{}
+
+	exportFunc := next
+	if cfg.FastTrack {
+		qb.fastTrack = true
+		qb.directSem = make(chan struct{}, cfg.NumConsumers)
+		qb.exportFunc = next
+		// Wrap the export function so queue consumers also acquire a slot from the shared semaphore.
+		exportFunc = func(ctx context.Context, req request.Request) error {
+			qb.directSem <- struct{}{}
+			defer func() { <-qb.directSem }()
+			return next(ctx, req)
+		}
+	}
+
 	b, err := NewBatcher(cfg.Batch, batcherSettings[request.Request]{
 		partitioner: set.Partitioner,
 		mergeCtx:    set.MergeCtx,
-		next:        next,
+		next:        exportFunc,
 		maxWorkers:  cfg.NumConsumers,
 		logger:      set.Telemetry.Logger,
 	})
@@ -76,12 +91,8 @@ func NewQueueBatch(
 		return nil, err
 	}
 
-	qb := &QueueBatch{queue: q, batcher: b}
-	if cfg.FastTrack {
-		qb.fastTrack = true
-		qb.directSem = make(chan struct{}, cfg.NumConsumers)
-		qb.exportFunc = next
-	}
+	qb.queue = q
+	qb.batcher = b
 	return qb, nil
 }
 
