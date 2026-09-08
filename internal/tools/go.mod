@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/internal/tools
 
-go 1.26.0
+go 1.27
 
 tool (
 	github.com/a8m/envsubst/cmd/envsubst
@@ -290,7 +290,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/gotestsum v1.13.0 // indirect
 	honnef.co/go/tools v0.8.0 // indirect
-	mvdan.cc/gofumpt v0.11.0 // indirect
+	mvdan.cc/gofumpt v0.12.0 // indirect
 	mvdan.cc/unparam v0.0.0-20260818115549-3f964bcb5673 // indirect
 )
 
