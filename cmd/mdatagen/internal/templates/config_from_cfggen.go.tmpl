@@ -19,21 +19,20 @@ import (
 {{ define "struct" }}
     {{- range $propName, $prop := .Properties | embeddedProps }}
         {{- if $prop.Description }}
-    // {{ $prop.Description }}
+        {{ $prop.Description | goComment }}
         {{- end }}
         {{- if $prop.GoStruct.Anonymous }}
             {{ $prop.Ref | publicType }} `mapstructure:",squash"`
         {{- else }}
             {{ $prop.GoStruct.FieldName | publicVar }} {{ $prop.Ref | publicType }} `mapstructure:",squash"`
         {{- end }}
-
-    {{- end }}
+    {{ end }}
     {{- range $propName, $prop := .Properties | namedProps }}
         {{- if $prop.Description }}
-            // {{ $prop.GoStruct.FieldName | publicVar }} {{ $prop.Description | uncapitalize }}
+            {{ printf "%s %s" ($prop.GoStruct.FieldName | publicVar) ($prop.Description | uncapitalize) | goComment }}
         {{- end }}
         {{ $prop.GoStruct.FieldName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}{{ if shouldOmitEmpty . $propName $prop }},omitempty{{ end }}"`
-    {{- end }}
+    {{ end }}
     // prevent unkeyed literal initialization
     _ struct{}
 {{ end }}
@@ -41,7 +40,7 @@ import (
 {{- $defs := extractDefs .Metadata.ConfigsMetadata }}
 {{ range $defName, $def := $defs }}
     {{- if $def.Description }}
-        // {{ $defName | publicVar }} {{ $def.Description | uncapitalize }}
+        {{ printf "%s %s" ($defName | publicVar) ($def.Description | uncapitalize) | goComment }}
     {{- end }}
     {{- $typeName := $defName | publicVar }}
     {{- if isExternalRef $def.Ref }}

@@ -10,15 +10,14 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/xreceiver"
 )
 
 // NewFactory returns a receiver.Factory for sample entity receiver.
-func NewFactory() xreceiver.Factory {
-	return xreceiver.NewFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		metadata.Type,
 		func() component.Config { return &struct{}{} },
-		xreceiver.WithMetrics(createMetrics, metadata.MetricsStability),
+		receiver.WithMetrics(createMetrics, metadata.MetricsStability),
 	)
 }
 
