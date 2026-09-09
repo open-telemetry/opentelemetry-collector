@@ -21,7 +21,7 @@ import (
 const semConvURL = "https://github.com/open-telemetry/semantic-conventions/blob"
 
 var (
-	featureGateIDRegexp       = regexp.MustCompile(`^[0-9a-zA-Z.]*$`)
+	featureGateIDRegexp       = regexp.MustCompile(`^[0-9a-zA-Z._]*$`)
 	featureGateIssueURLRegexp = regexp.MustCompile(`^https://github\.com/[^/]+/[^/]+/issues/\d+$`)
 )
 
@@ -439,7 +439,7 @@ func (md *Metadata) validateFeatureGates() error {
 
 		// Validate ID follows the allowed character pattern
 		if !featureGateIDRegexp.MatchString(string(gate.ID)) {
-			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": ID contains invalid characters, must match ^[0-9a-zA-Z.]*$`, gate.ID))
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": ID contains invalid characters, must match ^[0-9a-zA-Z._]*$`, gate.ID))
 		}
 
 		// Validate ID is prefixed with "<class>.<type>." so gates are namespaced to their component.

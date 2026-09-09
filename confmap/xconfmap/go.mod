@@ -1,10 +1,10 @@
 module go.opentelemetry.io/collector/confmap/xconfmap
 
-go 1.25.0
+go 1.26.0
 
 require (
-	github.com/stretchr/testify v1.12.0
-	go.opentelemetry.io/collector/confmap v1.65.0
+	github.com/stretchr/testify v1.12.1
+	go.opentelemetry.io/collector/confmap v1.66.0
 )
 
 require (
@@ -16,11 +16,10 @@ require (
 	github.com/knadh/koanf/v2 v2.3.6 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	go.opentelemetry.io/collector/featuregate v1.65.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.66.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.28.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace go.opentelemetry.io/collector/confmap => ../

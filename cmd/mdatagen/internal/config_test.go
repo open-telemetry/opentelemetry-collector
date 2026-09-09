@@ -71,15 +71,15 @@ exclusions:
 			Exclusions: []ComponentExclusion{
 				{
 					Component:     "go.opentelemetry.io/collector/receiver/foo",
-					LifecycleTest: Toggle{Enabled: boolPtr(false)},
-					ShutdownTest:  Toggle{Enabled: boolPtr(false)},
-					Goleak:        Toggle{Enabled: boolPtr(false)},
+					LifecycleTest: Toggle{Enabled: new(false)},
+					ShutdownTest:  Toggle{Enabled: new(false)},
+					Goleak:        Toggle{Enabled: new(false)},
 				},
 				{
 					Component: "go.opentelemetry.io/collector/service",
 					FeatureGates: []FeatureGateExclusion{
-						{Name: "service.gateOne", Validation: Toggle{Enabled: boolPtr(false)}},
-						{Name: "service.gateTwo", Validation: Toggle{Enabled: boolPtr(false)}},
+						{Name: "service.gateOne", Validation: Toggle{Enabled: new(false)}},
+						{Name: "service.gateTwo", Validation: Toggle{Enabled: new(false)}},
 					},
 				},
 			},
@@ -176,11 +176,11 @@ func TestCentralConfigApplyTo(t *testing.T) {
 			Exclusions: []ComponentExclusion{
 				{
 					Component:     pkg,
-					LifecycleTest: Toggle{Enabled: boolPtr(false)},
-					ShutdownTest:  Toggle{Enabled: boolPtr(false)},
-					Goleak:        Toggle{Enabled: boolPtr(false)},
+					LifecycleTest: Toggle{Enabled: new(false)},
+					ShutdownTest:  Toggle{Enabled: new(false)},
+					Goleak:        Toggle{Enabled: new(false)},
 					FeatureGates: []FeatureGateExclusion{
-						{Name: "foo.gateA", Validation: Toggle{Enabled: boolPtr(false)}},
+						{Name: "foo.gateA", Validation: Toggle{Enabled: new(false)}},
 					},
 				},
 			},
@@ -225,7 +225,7 @@ func TestCentralConfigApplyTo(t *testing.T) {
 			Exclusions: []ComponentExclusion{
 				{Component: pkg, FeatureGates: []FeatureGateExclusion{
 					{Name: "foo.absent"}, // no enabled key
-					{Name: "foo.enabled", Validation: Toggle{Enabled: boolPtr(true)}}, // explicitly enabled
+					{Name: "foo.enabled", Validation: Toggle{Enabled: new(true)}}, // explicitly enabled
 				}},
 			},
 		}
@@ -242,8 +242,8 @@ func TestCentralConfigApplyTo(t *testing.T) {
 		}
 		cfg := &CentralConfig{
 			Exclusions: []ComponentExclusion{
-				{Component: pkg, LifecycleTest: Toggle{Enabled: boolPtr(false)}},
-				{Component: pkg, FeatureGates: []FeatureGateExclusion{{Name: "foo.gateA", Validation: Toggle{Enabled: boolPtr(false)}}}},
+				{Component: pkg, LifecycleTest: Toggle{Enabled: new(false)}},
+				{Component: pkg, FeatureGates: []FeatureGateExclusion{{Name: "foo.gateA", Validation: Toggle{Enabled: new(false)}}}},
 			},
 		}
 		cfg.applyTo(&md)
@@ -261,8 +261,8 @@ func TestCentralConfigApplyTo(t *testing.T) {
 			Exclusions: []ComponentExclusion{
 				{
 					Component:     pkg,
-					LifecycleTest: Toggle{Enabled: boolPtr(false)},
-					FeatureGates:  []FeatureGateExclusion{{Name: "foo.gateA", Validation: Toggle{Enabled: boolPtr(false)}}},
+					LifecycleTest: Toggle{Enabled: new(false)},
+					FeatureGates:  []FeatureGateExclusion{{Name: "foo.gateA", Validation: Toggle{Enabled: new(false)}}},
 				},
 			},
 		}

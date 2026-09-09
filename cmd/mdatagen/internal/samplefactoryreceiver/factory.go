@@ -19,7 +19,7 @@ import (
 )
 
 // NewFactory returns a receiver.Factory for sample receiver.
-func NewFactory() xreceiver.Factory {
+func NewFactory() receiver.Factory {
 	return xreceiver.NewFactory(
 		metadata.Type,
 		func() component.Config { return &struct{}{} },
