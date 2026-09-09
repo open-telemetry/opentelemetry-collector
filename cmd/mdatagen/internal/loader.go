@@ -96,11 +96,11 @@ func shortFolderName(filePath string) string {
 	// Find the component type in the path (e.g., "extension", "receiver")
 	componentTypeIndex := -1
 	for i, part := range parts {
-		if slices.Contains(componentTypes, part) {
-			componentTypeIndex = i
-		} else {
+		if !slices.Contains(componentTypes, part) {
 			break
 		}
+
+		componentTypeIndex = i
 	}
 
 	// If we found a component type folder, get everything after it
