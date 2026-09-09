@@ -6,6 +6,8 @@
 // exporters to add authentication on outgoing requests.
 package configauth // import "go.opentelemetry.io/collector/config/configauth"
 
+//go:generate mdatagen metadata.yaml
+
 import (
 	"context"
 	"errors"
@@ -21,14 +23,6 @@ var (
 	errNotGRPCClient         = errors.New("requested authenticator is not a gRPC client authenticator")
 	errNotServer             = errors.New("requested authenticator is not a server authenticator")
 )
-
-// Config defines the auth settings for the receiver.
-type Config struct {
-	// AuthenticatorID specifies the name of the extension to use in order to authenticate the incoming data point.
-	AuthenticatorID component.ID `mapstructure:"authenticator,omitempty"`
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
 
 // GetServerAuthenticator attempts to select the appropriate extensionauth.Server from the list of extensions,
 // based on the requested extension name. If an authenticator is not found, an error is returned.

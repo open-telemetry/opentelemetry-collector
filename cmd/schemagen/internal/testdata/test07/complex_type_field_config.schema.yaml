@@ -1,0 +1,103 @@
+type: object
+$defs:
+  certificate:
+    properties:
+      password:
+        type: string
+        x-pointer: true
+      path:
+        type: string
+    type: object
+  credentials:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  endpoint:
+    properties:
+      headers:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+      name:
+        type: string
+      url:
+        type: string
+    type: object
+  metadata_entry:
+    properties:
+      attributes:
+        additionalProperties:
+          type: string
+        type: object
+      value:
+        type: string
+    type: object
+  retry_policy:
+    properties:
+      backoff_seconds:
+        items:
+          type: integer
+        type: array
+      max_attempts:
+        type: integer
+    type: object
+  tls_config:
+    properties:
+      certificates:
+        items:
+          $ref: 'certificate'
+        type: array
+      insecure:
+        type: boolean
+    type: object
+properties:
+  credentials:
+    $ref: 'credentials'
+  enabled:
+    type: boolean
+  endpoints:
+    items:
+      $ref: 'endpoint'
+    type: array
+  inline:
+    properties:
+      labels:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+      options:
+        items:
+          properties:
+            key:
+              type: string
+            value:
+              type: string
+          type: object
+        type: array
+    type: object
+  metadata:
+    additionalProperties:
+      $ref: 'metadata_entry'
+    type: object
+  retry:
+    $ref: 'retry_policy'
+  routes:
+    items:
+      additionalProperties:
+        items:
+          type: string
+        type: array
+      type: object
+    type: array
+  service_name:
+    type: string
+  tls:
+    $ref: 'tls_config'
+    x-pointer: true

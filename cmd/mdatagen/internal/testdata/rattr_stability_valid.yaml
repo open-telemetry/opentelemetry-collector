@@ -1,0 +1,14 @@
+type: file
+status:
+  class: receiver
+  stability:
+    development: [logs]
+    beta: [traces]
+    stable: [metrics]
+
+resource_attributes:
+  string.resource.attr:
+    description: Unique host identifier
+    type: string
+    enabled: true
+    stability: beta

@@ -9,7 +9,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	pmetadata "go.opentelemetry.io/collector/pdata/internal/metadata"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/pdata/xpdata/internal/metadata"
 )
 
 // MarkPipelineOwnedMetrics marks the pmetric.Metrics data as owned by the pipeline, returns true if the data were
@@ -19,20 +18,16 @@ func MarkPipelineOwnedMetrics(md pmetric.Metrics) bool {
 }
 
 func RefMetrics(md pmetric.Metrics) {
-	if metadata.PdataEnableRefCountingFeatureGate.IsEnabled() {
-		internal.GetMetricsState(internal.MetricsWrapper(md)).Ref()
-	}
+	internal.GetMetricsState(internal.MetricsWrapper(md)).Ref()
 }
 
 func UnrefMetrics(md pmetric.Metrics) {
-	if metadata.PdataEnableRefCountingFeatureGate.IsEnabled() {
-		if !internal.GetMetricsState(internal.MetricsWrapper(md)).Unref() {
-			return
-		}
-		// Don't call DeleteExportLogsServiceRequest without the gate because we reset the data and that may still cause issues.
-		if pmetadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			internal.DeleteExportMetricsServiceRequest(internal.GetMetricsOrig(internal.MetricsWrapper(md)), true)
-		}
+	if !internal.GetMetricsState(internal.MetricsWrapper(md)).Unref() {
+		return
+	}
+	// Don't call DeleteExportLogsServiceRequest without the gate because we reset the data and that may still cause issues.
+	if pmetadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
+		internal.DeleteExportMetricsServiceRequest(internal.GetMetricsOrig(internal.MetricsWrapper(md)), true)
 	}
 }
 

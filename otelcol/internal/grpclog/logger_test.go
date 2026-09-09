@@ -83,6 +83,50 @@ func TestGRPCLogger(t *testing.T) {
 	}
 }
 
+func TestFixedVerbosity(t *testing.T) {
+	// After SetLogger, the installed grpclog.LoggerV2 must report verbosity
+	// against a fixed threshold (default 0), not against the zap severity
+	// enabler. With the default threshold, V(0) is enabled and V(1+) is not,
+	// regardless of the underlying zap level.
+	logger, err := zap.NewProduction()
+	require.NoError(t, err)
+
+	SetLogger(logger)
+
+	v2 := grpclog.V(0)
+	assert.True(t, v2, "V(0) should be enabled at the default verbosity threshold")
+
+	v2 = grpclog.V(1)
+	assert.False(t, v2, "V(1) should be disabled at the default verbosity threshold")
+
+	v2 = grpclog.V(2)
+	assert.False(t, v2, "V(2) should be disabled at the default verbosity threshold")
+}
+
+func TestSeverityLevelsUnaffected(t *testing.T) {
+	// Severity-level emission must remain unchanged: a direct Warning call
+	// still fires regardless of the verbosity threshold.
+	warnLogged := false
+	hook := zap.Hooks(func(entry zapcore.Entry) error {
+		if entry.Level == zapcore.WarnLevel {
+			warnLogged = true
+		}
+		return nil
+	})
+
+	cfg := zap.Config{
+		Level:    zap.NewAtomicLevelAt(zapcore.WarnLevel),
+		Encoding: "console",
+	}
+	logger, err := cfg.Build(hook)
+	require.NoError(t, err)
+
+	SetLogger(logger)
+	component := &mockComponent{logger: grpclog.Component("channelz")}
+	component.Warning("real warning unrelated to verbosity")
+	assert.True(t, warnLogged, "severity-level warnings must still be emitted")
+}
+
 type mockComponent struct {
 	logger grpclog.DepthLoggerV2
 }

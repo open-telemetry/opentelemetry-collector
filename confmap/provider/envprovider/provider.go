@@ -56,6 +56,13 @@ func (emp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 	val, exists := os.LookupEnv(envVarName)
 	if !exists {
 		if defaultValuePtr != nil {
+			// If the default value is an empty string, explicitly return an empty string.
+			// NewRetrievedFromYAML will translate an empty byte slice to nil instead of a string.
+			// nil is okay when no default is set, but if the user specifies an empty-string default,
+			// then we want to return that.
+			if *defaultValuePtr == "" {
+				return confmap.NewRetrieved("")
+			}
 			val = *defaultValuePtr
 		} else {
 			emp.logger.Warn("Configuration references unset environment variable", zap.String("name", envVarName))

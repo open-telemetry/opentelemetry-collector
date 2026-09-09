@@ -1,0 +1,46 @@
+$defs:
+  config:
+    description: Config defines configuration for memory memoryLimiter processor.
+    type: object
+    properties:
+      check_interval:
+        description: CheckInterval is the time between measurements of memory usage for the purposes of avoiding going over the limits. Defaults to zero, so no checks will be performed.
+        type: string
+        x-customType: time.Duration
+        format: duration
+      limit_mib:
+        description: MemoryLimitMiB is the maximum amount of memory, in MiB, targeted to be allocated by the process.
+        type: integer
+        x-customType: uint32
+      limit_percentage:
+        description: MemoryLimitPercentage is the maximum amount of memory, in %, targeted to be allocated by the process. The fixed memory settings MemoryLimitMiB has a higher precedence.
+        type: integer
+        x-customType: uint32
+      max_gc_interval_when_hard_limited:
+        description: MaxGCIntervalWhenHardLimited caps the exponential backoff between forced GC calls in hard-limited mode. Same semantics as MaxGCIntervalWhenSoftLimited but applies to the hard-limit path. Set to 0 to disable the exponential backoff on this path.
+        type: string
+        x-customType: time.Duration
+        format: duration
+      max_gc_interval_when_soft_limited:
+        description: MaxGCIntervalWhenSoftLimited caps the exponential backoff between forced GC calls in soft-limited mode. When a forced GC fails to reclaim memory (e.g., held by live references in exporter queues during a downstream outage), the interval doubles starting from min_gc_interval_when_soft_limited (or 95% of check_interval, whichever is larger) up to this cap. It resets to zero whenever a GC is effective or memory drops on its own. Set to 0 to disable the exponential backoff on this path; the interval will not grow beyond the configured min.
+        type: string
+        x-customType: time.Duration
+        format: duration
+      min_gc_interval_when_hard_limited:
+        description: MinGCIntervalWhenHardLimited minimum interval between forced GC when in hard (=limit_mib) limited mode. Zero value means no minimum interval. GCs is a CPU-heavy operation and executing it too frequently may affect the recovery capabilities of the collector.
+        type: string
+        x-customType: time.Duration
+        format: duration
+      min_gc_interval_when_soft_limited:
+        description: MinGCIntervalWhenSoftLimited minimum interval between forced GC when in soft (=limit_mib - spike_limit_mib) limited mode. Zero value means no minimum interval. GCs is a CPU-heavy operation and executing it too frequently may affect the recovery capabilities of the collector.
+        type: string
+        x-customType: time.Duration
+        format: duration
+      spike_limit_mib:
+        description: MemorySpikeLimitMiB is the maximum, in MiB, spike expected between the measurements of memory usage.
+        type: integer
+        x-customType: uint32
+      spike_limit_percentage:
+        description: MemorySpikePercentage is the maximum, in percents against the total memory, spike expected between the measurements of memory usage.
+        type: integer
+        x-customType: uint32

@@ -1,0 +1,7 @@
+resource:
+  attributes:
+    - name: foo
+      value: bar
+  detection/development:
+    detectors:
+      - host: {}

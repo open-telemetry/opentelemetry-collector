@@ -72,13 +72,15 @@ func (ml *memoryLimiterExtension) GetGRPCServerOptions(_ context.Context) ([]grp
 					return nil, status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
 				}
 				return handler(ctx, req)
-			}),
+			},
+		),
 		grpc.ChainStreamInterceptor(
 			func(srv any, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 				if ml.MustRefuse() {
 					return status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
 				}
 				return handler(srv, ss)
-			}),
+			},
+		),
 	}, nil
 }

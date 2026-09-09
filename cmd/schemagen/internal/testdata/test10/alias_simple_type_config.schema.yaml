@@ -1,0 +1,15 @@
+$defs:
+  double:
+    type: number
+    x-customType: float64
+  strings_array:
+    items:
+      type: string
+    type: array
+type: object
+properties:
+  list_of_strings:
+    $ref: 'strings_array'
+  num:
+    $ref: 'double'
+

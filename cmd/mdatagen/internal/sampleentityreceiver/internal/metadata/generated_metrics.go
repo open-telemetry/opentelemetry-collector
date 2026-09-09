@@ -3,6 +3,7 @@
 package metadata
 
 import (
+	"slices"
 	"time"
 
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
@@ -12,6 +13,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+)
+
+const (
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+	AggregationStrategyMin = "min"
+	AggregationStrategyMax = "max"
 )
 
 // AttributePhase specifies the value phase attribute.
@@ -57,7 +65,8 @@ var MetricsInfo = metricsInfo{
 		Name: "k8s.pod.cpu_time",
 	},
 	K8sPodPhase: metricInfo{
-		Name: "k8s.pod.phase",
+		Name:       "k8s.pod.phase",
+		Attributes: []string{"phase"},
 	},
 	K8sReplicasetDesired: metricInfo{
 		Name: "k8s.replicaset.desired",
@@ -71,13 +80,14 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricK8sPodCPUTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric            // data buffer for generated metric.
+	config   K8sPodCPUTimeMetricConfig // metric config provided by user.
+	capacity int                       // max observed number of data points added to the metric.
 }
 
 // init fills k8s.pod.cpu_time metric with initial data.
@@ -116,7 +126,7 @@ func (m *metricK8sPodCPUTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sPodCPUTime(cfg MetricConfig) metricK8sPodCPUTime {
+func newMetricK8sPodCPUTime(cfg K8sPodCPUTimeMetricConfig) metricK8sPodCPUTime {
 	m := metricK8sPodCPUTime{config: cfg}
 
 	if cfg.Enabled {
@@ -127,9 +137,10 @@ func newMetricK8sPodCPUTime(cfg MetricConfig) metricK8sPodCPUTime {
 }
 
 type metricK8sPodPhase struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric          // data buffer for generated metric.
+	config        K8sPodPhaseMetricConfig // metric config provided by user.
+	capacity      int                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills k8s.pod.phase metric with initial data.
@@ -139,17 +150,48 @@ func (m *metricK8sPodPhase) init() {
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricK8sPodPhase) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, phaseAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, K8sPodPhaseMetricAttributeKeyPhase) {
+		dp.Attributes().PutStr("phase", phaseAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("phase", phaseAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -162,13 +204,18 @@ func (m *metricK8sPodPhase) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricK8sPodPhase) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricK8sPodPhase(cfg MetricConfig) metricK8sPodPhase {
+func newMetricK8sPodPhase(cfg K8sPodPhaseMetricConfig) metricK8sPodPhase {
 	m := metricK8sPodPhase{config: cfg}
 
 	if cfg.Enabled {
@@ -179,9 +226,9 @@ func newMetricK8sPodPhase(cfg MetricConfig) metricK8sPodPhase {
 }
 
 type metricK8sReplicasetDesired struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   K8sReplicasetDesiredMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills k8s.replicaset.desired metric with initial data.
@@ -218,7 +265,7 @@ func (m *metricK8sReplicasetDesired) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sReplicasetDesired(cfg MetricConfig) metricK8sReplicasetDesired {
+func newMetricK8sReplicasetDesired(cfg K8sReplicasetDesiredMetricConfig) metricK8sReplicasetDesired {
 	m := metricK8sReplicasetDesired{config: cfg}
 
 	if cfg.Enabled {

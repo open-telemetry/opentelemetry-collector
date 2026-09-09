@@ -4,10 +4,12 @@
 package migration // import "go.opentelemetry.io/collector/service/telemetry/otelconftelemetry/internal/migration"
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -106,12 +108,26 @@ func (c *MetricsConfigV030) Unmarshal(conf *confmap.Conf) error {
 		c.MigratedFromV02 = true
 		return metricsConfigV02ToV03(v02, c)
 	}
-	// ensure endpoint normalization occurs
 	for _, r := range c.Readers {
+		// ensure endpoint normalization occurs
 		if r.Periodic != nil {
 			if r.Periodic.Exporter.OTLP != nil && r.Periodic.Exporter.OTLP.Endpoint != nil {
 				r.Periodic.Exporter.OTLP.Endpoint = normalizeEndpoint(*r.Periodic.Exporter.OTLP.Endpoint, r.Periodic.Exporter.OTLP.Insecure)
 			}
+		}
+		// Apply Prometheus exporter defaults for fields not explicitly set.
+		// When users explicitly configure the telemetry section (e.g. to
+		// change the host), unset *bool fields default to nil which the
+		// Prometheus exporter treats as false. This ensures the defaults
+		// match the implicit/default configuration where these are true.
+		//
+		// This is necessary because specifying any metric readers in the
+		// SDK config completely overwrites the list of readers, so the
+		// Prometheus exporter is treated as a new config without any of
+		// the defaults set in the createDefaultConfig function in
+		// otelconftelemetry. We must re-apply those defaults here.
+		if r.Pull != nil && r.Pull.Exporter.Prometheus != nil {
+			applyPrometheusDefaults(r.Pull.Exporter.Prometheus)
 		}
 	}
 	return nil
@@ -128,6 +144,20 @@ func (c MetricsConfigV030) Marshal(conf *confmap.Conf) error {
 	sm := conf.ToStringMap()
 	redactHeaders(sm, "readers.*.periodic.exporter.otlp.headers.*.value")
 	return conf.Marshal(sm)
+}
+
+// applyPrometheusDefaults sets default values for Prometheus exporter
+// fields that were not explicitly provided in the configuration.
+func applyPrometheusDefaults(p *config.Prometheus) {
+	if p.WithoutScopeInfo == nil {
+		p.WithoutScopeInfo = new(true)
+	}
+	if p.WithoutUnits == nil {
+		p.WithoutUnits = new(true)
+	}
+	if p.WithoutTypeSuffix == nil {
+		p.WithoutTypeSuffix = new(true)
+	}
 }
 
 type LogsConfigV030 struct {
@@ -181,7 +211,9 @@ type LogsConfigV030 struct {
 	// "stdout" and "stderr" are interpreted as os.Stdout and os.Stderr.
 	// see details at Open in zap/writer.go.
 	//
-	// Note that this setting only affects the zap internal logger errors.
+	// Note that this setting only affects zap's own internal errors (e.g., failures
+	// to write to the configured output). It does NOT route application error-level
+	// log messages. To control where application logs go, use output_paths instead.
 	// (default = ["stderr"])
 	ErrorOutputPaths []string `mapstructure:"error_output_paths"`
 
@@ -219,6 +251,42 @@ type LogsSamplingConfig struct {
 	// Thereafter represents the sampling rate, every Nth message will be sampled after Initial messages are logged during each Tick.
 	// If Thereafter is zero, the logger will drop all the messages after the Initial each Tick.
 	Thereafter int `mapstructure:"thereafter"`
+}
+
+// ResourceConfigV030 represents the v0.3.0 resource configuration, with
+// backward-compatible support for the legacy map format.
+type ResourceConfigV030 struct {
+	config.Resource `mapstructure:",squash"`
+
+	DetectionDevelopment *xotelconf.ExperimentalResourceDetection `mapstructure:"detection/development,omitempty"`
+	LegacyAttributes     map[string]any                           `mapstructure:",remain"`
+}
+
+var _ confmap.Validator = (*ResourceConfigV030)(nil)
+
+func (cfg *ResourceConfigV030) Validate() error {
+	// resource::attributes_list isn't currently supported by otelconf, so we have to put the default values under resource::attributes.
+	// However, resource::attributes_list theoretically has lower priority than resource::attributes,
+	// so if otelconf started supporting it, its values would be overridden by the defaults.
+	// To avoid this surprising behavior, we explicitly disallow the use of resource::attributes_list for now.
+	if cfg.AttributesList != nil {
+		return errors.New("resource::attributes_list is not currently supported, please use resource::attributes")
+	}
+
+	// mapstructure only supports map[string]any for ",remain" fields, but we need it to be equivalent to map[string]*string
+	for key, val := range cfg.LegacyAttributes {
+		switch val.(type) {
+		case nil, string:
+		default:
+			return fmt.Errorf("legacy resource attribute %q must be string or null", key)
+		}
+	}
+
+	if len(cfg.Attributes) > 0 && len(cfg.LegacyAttributes) > 0 {
+		return errors.New("resource::attributes cannot be used together with legacy inline resource attributes")
+	}
+
+	return nil
 }
 
 func (c *LogsConfigV030) Unmarshal(conf *confmap.Conf) error {

@@ -1,0 +1,8 @@
+type: object
+allOf:
+  - $ref: /scraper/scraperhelper.controller_config
+  - $ref: /cmd/schemagen/internal/testdata/external.test_config
+properties:
+  test_nested:
+    $ref: /cmd/schemagen/internal/testdata/external.test_config
+

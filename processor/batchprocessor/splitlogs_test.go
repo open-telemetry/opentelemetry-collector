@@ -36,9 +36,11 @@ func TestSplitLogs(t *testing.T) {
 	cpLogs := cp.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
 	cpLogs.EnsureCapacity(5)
 	ld.ResourceLogs().At(0).Resource().CopyTo(
-		cp.ResourceLogs().At(0).Resource())
+		cp.ResourceLogs().At(0).Resource(),
+	)
 	ld.ResourceLogs().At(0).ScopeLogs().At(0).Scope().CopyTo(
-		cp.ResourceLogs().At(0).ScopeLogs().At(0).Scope())
+		cp.ResourceLogs().At(0).ScopeLogs().At(0).Scope(),
+	)
 	logs.At(0).CopyTo(cpLogs.AppendEmpty())
 	logs.At(1).CopyTo(cpLogs.AppendEmpty())
 	logs.At(2).CopyTo(cpLogs.AppendEmpty())

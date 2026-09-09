@@ -106,6 +106,8 @@ type Reporter interface {
 	ReportOKIfStarting(id *componentstatus.InstanceID)
 }
 
+var _ Reporter = (*reporter)(nil)
+
 type reporter struct {
 	mu                  sync.Mutex
 	fsmMap              map[*componentstatus.InstanceID]*fsm

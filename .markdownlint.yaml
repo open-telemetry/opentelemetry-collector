@@ -31,5 +31,7 @@ MD053: false  # unused link definitions
 MD058: false  # blanks around tables
 MD059: false  # descriptive link text
 MD060: false  # table column style
+MD010:        # no hard tabs
+  code_blocks: false  # tabs are valid in Go/YAML code blocks
 MD028: false  # blank line inside blockquote
 MD037: false  # spaces inside emphasis

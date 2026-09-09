@@ -58,6 +58,12 @@ Below are some more examples that can be used for reference:
 
 You can run `cd cmd/mdatagen && $(GOCMD) install .` to install the `mdatagen` tool in `GOBIN` and then run `mdatagen metadata.yaml` to generate documentation for a specific component or you can run `make generate` to generate documentation for all components.
 
+### Central configuration file
+
+`mdatagen` supports a repository-level configuration file named `.mdatagen.yaml`.
+
+This is used for skipping validation and configuring project-level hooks.
+
 ### Component Config Documentation
 
 The metadata generator supports automatic generation of configuration schemas for components.
@@ -81,8 +87,7 @@ config:
       description: The endpoint to listen on
       default: "localhost:4317"
     timeout:
-      type: string
-      format: duration
+      type: duration
       description: Request timeout duration
       default: "30s"
     tls:
@@ -90,13 +95,96 @@ config:
   required: [endpoint]
 ```
 
-The `config` section is based on [JSON Schema standard](https://json-schema.org/) (draft 2020-12) and supports:
+The `config` section uses Go-centric types directly in the `type` field, and also supports:
 
-- **Standard JSON Schema types**: string, number, integer, boolean, object, array, null
 - **Validation constraints**: minLength, maxLength, pattern, minimum, maximum, enum, etc.
 - **References**: Internal (`$ref: definition_name`), external (`$ref: package.path.type`), or relative (`$ref: ./internal/config.type`)
 - **Reusable definitions**: Define common schemas in `$defs` and reference them with `$ref`
 - **Schema composition**: Use `allOf` for complex configurations
+
+#### Supported types
+
+##### Primitive types
+
+Use Go type names directly in the `type` field:
+
+| Type | Go type | JSON Schema type |
+|------|---------|-----------------|
+| `string` | `string` | `string` |
+| `bool` | `bool` | `boolean` |
+| `int` | `int` | `integer` |
+| `int8` | `int8` | `integer` |
+| `int16` | `int16` | `integer` |
+| `int32` | `int32` | `integer` |
+| `int64` | `int64` | `integer` |
+| `uint` | `uint` | `integer` |
+| `uint8` | `uint8` | `integer` |
+| `uint16` | `uint16` | `integer` |
+| `uint32` | `uint32` | `integer` |
+| `uint64` | `uint64` | `integer` |
+| `byte` | `byte` | `integer` |
+| `rune` | `rune` | `integer` |
+| `float32` | `float32` | `number` |
+| `float64` | `float64` | `number` |
+| `any` | `any` | *(no type constraint)* |
+
+##### Container types
+
+| Type | Go type | JSON Schema type | Notes |
+|------|---------|-----------------|-------|
+| `object` | struct | `object` | Requires `properties:` |
+| `slice` | `[]T` | `array` | Requires `values:` for the element type |
+| `map` | `map[string]T` | `object` | Requires `values:` for the value type |
+
+Example using container types:
+
+```yaml
+config:
+  type: object
+  properties:
+    endpoints:
+      type: slice
+      values:
+        type: string
+      description: List of endpoints to connect to.
+    headers:
+      type: map
+      values:
+        type: string
+      description: Extra HTTP headers to attach to each request.
+    tls:
+      $ref: go.opentelemetry.io/collector/config/configtls.server_config
+```
+
+##### Alias types
+
+Shorthand types that expand to a primitive or container type with additional annotations:
+
+| Alias | Go type | JSON Schema representation | Notes |
+|-------|---------|---------------------------|-------|
+| `float` | `float32` | `number` | Shorthand for `float32` |
+| `double` | `float64` | `number` | Shorthand for `float64` |
+| `duration` | `time.Duration` | `string` with Go duration pattern | e.g. `"30s"`, `"1h30m"` |
+| `time` | `time.Time` | `string` with `format: date-time` | RFC 3339 format |
+| `opaque_string` | `configopaque.String` | `string` | Masked in logs |
+| `component_id` | `component.ID` | `string` | Collector component ID |
+| `opaque_map` | `configopaque.MapList` | `object` of name/value pairs | Values masked in logs |
+
+Example using alias types:
+
+```yaml
+config:
+  type: object
+  properties:
+    max_results:
+      type: int64
+      default: 100
+    timeout:
+      type: duration
+      default: 30s
+    api_token:
+      type: opaque_string
+```
 
 ### Metrics Builder Configuration
 
@@ -128,7 +216,7 @@ metrics:
     description: Number of received requests.
     unit: "{request}"
     sum:
-      value_type: int
+      values: int
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [status_code]
@@ -142,12 +230,10 @@ This lets users:
 
 ### Metric Reaggregation Configuration
 
-Set `reaggregation_enabled: true` to let users reduce metric cardinality by dropping selected metric
-attributes and aggregating the resulting datapoints.
+`mdatagen` lets users reduce metric cardinality by dropping selected metric attributes
+and aggregating the resulting datapoints.
 
 ```yaml
-reaggregation_enabled: true
-
 attributes:
   transport:
     description: Transport used by the request.
@@ -198,13 +284,13 @@ status:
     beta: [metrics, traces]
 
 feature_gates:
-  - id: mycomponent.newFeature
+  - id: receiver.mycomponent.newFeature
     description: 'Enables new feature functionality that improves performance'
     stage: alpha
     from_version: 'v0.100.0'
     reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/issues/12345'
 
-  - id: mycomponent.stableFeature
+  - id: receiver.mycomponent.stableFeature
     description: 'A feature that has reached stability'
     stage: stable
     from_version: 'v0.90.0'
@@ -222,6 +308,13 @@ This will generate a "Feature Gates" section in the component's `documentation.m
 - **Reference**: Link to additional contextual information
 
 The feature gate definitions should correspond to actual gates registered in your component code using the [Feature Gates API](../../featuregate/README.md).
+
+By default, mdatagen applies strict validation to feature gate entries:
+
+- Every gate `id` must be prefixed with `<status.class>.<type>.` (e.g. `receiver.mycomponent.newFeature`), so gates are namespaced to the component that owns them.
+- Every `reference_url` must be a GitHub issue URL of the form `https://github.com/<owner>/<repo>/issues/<number>`. Pull requests, blog posts, and other URLs are rejected.
+
+Individual gates that predate these rules can be grandfathered in by setting `skip_strict_validation: true` on the gate entry itself. New gates should not set this flag.
 
 ### Generate multiple metadata packages
 

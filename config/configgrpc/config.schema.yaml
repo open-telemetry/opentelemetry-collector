@@ -37,6 +37,9 @@ $defs:
       tls:
         description: TLS struct exposes TLS client configuration.
         $ref: /config/configtls.client_config
+      user_agent:
+        description: UserAgent overrides the default user-agent header sent on gRPC requests. The default is derived from the build info. When empty, the caller controls the user-agent via grpc.WithUserAgent or similar options.
+        type: string
       wait_for_ready:
         description: WaitForReady parameter configures client to wait for ready state before sending data. (https://github.com/grpc/grpc/blob/master/doc/wait-for-ready.md)
         type: boolean

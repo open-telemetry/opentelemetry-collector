@@ -3,6 +3,7 @@
 type: sampleentity
 display_name: Sample Entity Receiver
 description: This receiver demonstrates entity-based metrics builder API.
+override_value_enabled: true
 scope_name: go.opentelemetry.io/collector/internal/receiver/sampleentityreceiver
 sem_conv_version: 1.40.0
 

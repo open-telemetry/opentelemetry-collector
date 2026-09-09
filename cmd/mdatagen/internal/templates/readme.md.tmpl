@@ -4,7 +4,7 @@
 {{- end }}
 {{- if .Description }}
 
-{{ .Description }}
+{{ trimRight .Description "\n" }}
 {{ end -}}
 {{- if len .Status.Stability }}
 | Status        |           |
@@ -24,6 +24,9 @@
 {{- end }}
 {{- end }}
 {{- end}}
+{{- if .SemConvVersion }}
+| Semantic Conventions Version | {{ if .SemConvURL }}[{{ .SemConvVersion }}]({{ .SemConvURL }}){{ else }}{{ .SemConvVersion }}{{ end }} |
+{{- end }}
 {{- if .Status.UnsupportedPlatforms }}
 | Unsupported Platforms | {{ stringsJoin .Status.UnsupportedPlatforms ", " }} |
 {{- end }}

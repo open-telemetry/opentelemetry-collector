@@ -22,17 +22,17 @@ func TestDefaultViews(t *testing.T) {
 		{
 			name:           "None",
 			level:          configtelemetry.LevelNone,
-			wantViewsCount: 18,
+			wantViewsCount: 20,
 		},
 		{
 			name:           "Basic",
 			level:          configtelemetry.LevelBasic,
-			wantViewsCount: 18,
+			wantViewsCount: 20,
 		},
 		{
 			name:           "Normal",
 			level:          configtelemetry.LevelNormal,
-			wantViewsCount: 15,
+			wantViewsCount: 17,
 		},
 		{
 			name:           "Detailed",
@@ -132,23 +132,19 @@ func TestDefaultViews_BatchExporterMetrics(t *testing.T) {
 			views := DefaultViews(tt.level)
 
 			exporterHelperScope := "go.opentelemetry.io/collector/exporter/exporterhelper"
-			bucketMetricName := "otelcol_exporter_queue_batch_send_size"
-			bytesMetricName := "otelcol_exporter_queue_batch_send_size_bytes"
+			droppedMetrics := map[string]bool{
+				"otelcol_exporter_queue_batch_send_size":       false,
+				"otelcol_exporter_queue_batch_send_size_bytes": false,
+				"otelcol_exporter_enqueue_size":                false,
+				"otelcol_exporter_enqueue_size_bytes":          false,
+			}
 
-			var foundBucketDrop, foundBytesDrop bool
 			for _, view := range views {
 				if view.Selector != nil {
 					if view.Selector.MeterName != nil && *view.Selector.MeterName == exporterHelperScope {
 						if view.Selector.InstrumentName != nil {
-							if *view.Selector.InstrumentName == bucketMetricName {
-								foundBucketDrop = true
-								// Verify it's a drop view
-								require.NotNil(t, view.Stream)
-								require.NotNil(t, view.Stream.Aggregation)
-								require.NotNil(t, view.Stream.Aggregation.Drop)
-							}
-							if *view.Selector.InstrumentName == bytesMetricName {
-								foundBytesDrop = true
+							if _, ok := droppedMetrics[*view.Selector.InstrumentName]; ok {
+								droppedMetrics[*view.Selector.InstrumentName] = true
 								// Verify it's a drop view
 								require.NotNil(t, view.Stream)
 								require.NotNil(t, view.Stream.Aggregation)
@@ -159,10 +155,14 @@ func TestDefaultViews_BatchExporterMetrics(t *testing.T) {
 				}
 			}
 
-			assert.Equal(t, tt.shouldDropBucket, foundBucketDrop,
+			assert.Equal(t, tt.shouldDropBucket, droppedMetrics["otelcol_exporter_queue_batch_send_size"],
 				"bucket metric drop view should be %v for level %v", tt.shouldDropBucket, tt.level)
-			assert.Equal(t, tt.shouldDropBytes, foundBytesDrop,
+			assert.Equal(t, tt.shouldDropBytes, droppedMetrics["otelcol_exporter_queue_batch_send_size_bytes"],
 				"bytes metric drop view should be %v for level %v", tt.shouldDropBytes, tt.level)
+			assert.Equal(t, tt.shouldDropBucket, droppedMetrics["otelcol_exporter_enqueue_size"],
+				"enqueue size metric drop view should be %v for level %v", tt.shouldDropBucket, tt.level)
+			assert.Equal(t, tt.shouldDropBytes, droppedMetrics["otelcol_exporter_enqueue_size_bytes"],
+				"enqueue size bytes metric drop view should be %v for level %v", tt.shouldDropBytes, tt.level)
 		})
 	}
 }

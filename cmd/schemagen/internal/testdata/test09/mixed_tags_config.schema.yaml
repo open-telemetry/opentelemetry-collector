@@ -1,0 +1,12 @@
+description: MixedTagsConfig showcases json and mapstructure tag interactions.
+type: object
+properties:
+  legacy_endpoint:
+    description: LegacyEndpoint relies on mapstructure only.
+    type: string
+  map_only:
+    description: MapOnlyCounter demonstrates mapstructure tags with modifiers.
+    type: integer
+  primary:
+    description: PrimaryEndpoint uses both json and mapstructure tags.
+    type: string

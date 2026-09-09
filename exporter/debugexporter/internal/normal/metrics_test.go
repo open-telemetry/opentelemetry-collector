@@ -26,6 +26,20 @@ func TestMarshalMetrics(t *testing.T) {
 			expected: "",
 		},
 		{
+			name: "two scopes under one resource",
+			input: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+				resourceMetrics.ScopeMetrics().AppendEmpty().Scope().SetName("scope-zero")
+				resourceMetrics.ScopeMetrics().AppendEmpty().Scope().SetName("scope-one")
+				return metrics
+			}(),
+			expected: `ResourceMetrics #0
+ScopeMetrics #0 scope-zero
+ScopeMetrics #1 scope-one
+`,
+		},
+		{
 			name: "sum data point",
 			input: func() pmetric.Metrics {
 				metrics := pmetric.NewMetrics()

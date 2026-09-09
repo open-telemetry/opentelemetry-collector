@@ -55,7 +55,8 @@ func newTestServerMiddleware(name string) extension.Extension {
 				) (any, error) {
 					ctx = context.WithValue(ctx, middlewareCallsKey, append(getMiddlewareCalls(ctx), name))
 					return handler(ctx, req)
-				})}, nil
+				},
+			)}, nil
 		},
 	}
 }

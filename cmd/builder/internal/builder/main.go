@@ -99,6 +99,9 @@ func Generate(cfg *Config) error {
 		componentsTemplate,
 		goModTemplate,
 	} {
+		if tmpl == goModTemplate && cfg.SkipGetModules {
+			continue
+		}
 		if err := processAndWrite(cfg, tmpl, tmpl.Name(), cfg); err != nil {
 			return fmt.Errorf("failed to generate source file %q: %w", tmpl.Name(), err)
 		}
@@ -197,7 +200,8 @@ func GetModules(cfg *Config) error {
 	if semver.MajorMinor(coreDepVersion) != betaVersion {
 		return fmt.Errorf(
 			"%w: core collector version calculated by component dependencies %q does not match configured version %q. %s",
-			ErrVersionMismatch, coreDepVersion, betaVersion, skipStrictMsg)
+			ErrVersionMismatch, coreDepVersion, betaVersion, skipStrictMsg,
+		)
 	}
 
 	for _, mod := range cfg.allComponents() {
@@ -215,7 +219,8 @@ func GetModules(cfg *Config) error {
 		if semver.MajorMinor(moduleDepVersion) != semver.MajorMinor(version) {
 			return fmt.Errorf(
 				"%w: component %q version calculated by dependencies %q does not match configured version %q. %s",
-				ErrVersionMismatch, module, moduleDepVersion, version, skipStrictMsg)
+				ErrVersionMismatch, module, moduleDepVersion, version, skipStrictMsg,
+			)
 		}
 	}
 

@@ -1,0 +1,21 @@
+logs:
+  level: info
+  development: false
+  encoding: console
+  sampling:
+    enabled: true
+    tick: 10s
+    initial: 10
+    thereafter: 100
+  output_paths:
+    - stderr
+  error_output_paths:
+    - stderr
+metrics:
+  level: normal
+  readers:
+    - pull:
+        exporter:
+          prometheus:
+            host: "[::0]"
+            port: 8888

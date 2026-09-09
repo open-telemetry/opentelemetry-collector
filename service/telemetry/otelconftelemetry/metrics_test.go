@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/service/internal/promtest"
 	"go.opentelemetry.io/collector/service/telemetry"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry/internal/migration"
 )
 
 const (
@@ -101,10 +102,14 @@ func TestCreateMeterProvider(t *testing.T) {
 				}},
 			},
 		}
-		cfg.Resource = map[string]*string{
-			"service.name":        ptr("otelcol"),
-			"service.version":     ptr("latest"),
-			"service.instance.id": ptr(testInstanceID),
+		cfg.Resource = migration.ResourceConfigV030{
+			Resource: config.Resource{
+				Attributes: []config.AttributeNameValue{
+					{Name: "service.name", Value: "otelcol"},
+					{Name: "service.version", Value: "latest"},
+					{Name: "service.instance.id", Value: testInstanceID},
+				},
+			},
 		}
 
 		t.Run(tt.name, func(t *testing.T) {
@@ -200,6 +205,9 @@ func TestCreateMeterProvider_020MigrationWarning(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.Metrics.MigratedFromV02 = true
+	cfg.Metrics.Readers = []config.MetricReader{{
+		Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: promtest.GetAvailableLocalAddressPrometheus(t)}},
+	}}
 
 	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
@@ -224,6 +232,9 @@ func TestCreateMeterProvider_NoMigrationWarning(t *testing.T) {
 	core, observedLogs := observer.New(zapcore.DebugLevel)
 
 	cfg := createDefaultConfig().(*Config)
+	cfg.Metrics.Readers = []config.MetricReader{{
+		Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: promtest.GetAvailableLocalAddressPrometheus(t)}},
+	}}
 
 	resource, err := createResource(t.Context(), telemetry.Settings{}, cfg)
 	require.NoError(t, err)
@@ -255,6 +266,14 @@ func TestCreateMeterProvider_Invalid(t *testing.T) {
 		Settings: telemetry.Settings{Resource: &resource},
 	}, cfg)
 	require.EqualError(t, err, "no valid metric exporter")
+}
+
+func TestCreateMeterProvider_MissingResource(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+
+	mp, err := createMeterProvider(t.Context(), telemetry.MeterSettings{}, cfg)
+	require.ErrorIs(t, err, errMissingCollectorResource)
+	assert.Nil(t, mp)
 }
 
 func TestCreateMeterProvider_Disabled(t *testing.T) {
@@ -361,7 +380,7 @@ func TestTelemetryMetrics_DefaultViews(t *testing.T) {
 		assert.Equal(t, configtelemetry.LevelDetailed, level)
 		return []config.View{{
 			Selector: &config.ViewSelector{
-				MeterName: ptr("a"),
+				MeterName: new("a"),
 			},
 			Stream: &config.ViewStream{
 				Aggregation: &config.ViewStreamAggregation{
@@ -378,7 +397,7 @@ func TestTelemetryMetrics_DefaultViews(t *testing.T) {
 		"configured_views": {
 			configuredViews: []config.View{{
 				Selector: &config.ViewSelector{
-					MeterName: ptr("b"),
+					MeterName: new("b"),
 				},
 				Stream: &config.ViewStream{
 					Aggregation: &config.ViewStreamAggregation{
@@ -408,16 +427,22 @@ func TestTelemetryMetrics_DefaultViews(t *testing.T) {
 				Periodic: &config.PeriodicMetricReader{
 					Exporter: config.PushMetricExporter{
 						OTLP: &config.OTLPMetric{
-							Endpoint: ptr(srv.URL),
-							Protocol: ptr("http/protobuf"),
-							Insecure: ptr(true),
+							Endpoint: new(srv.URL),
+							Protocol: new("http/protobuf"),
+							Insecure: new(true),
 						},
 					},
 				},
 			}}
 
 			factory := NewFactory()
-			settings := telemetry.MeterSettings{DefaultViews: defaultViews}
+			resource, err := factory.CreateResource(t.Context(), telemetry.Settings{}, cfg)
+			require.NoError(t, err)
+
+			settings := telemetry.MeterSettings{
+				Settings:     telemetry.Settings{Resource: &resource},
+				DefaultViews: defaultViews,
+			}
 			provider, err := factory.CreateMeterProvider(t.Context(), settings, cfg)
 			require.NoError(t, err)
 

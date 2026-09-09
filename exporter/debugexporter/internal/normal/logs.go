@@ -31,7 +31,7 @@ func (normalLogsMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 		for j := 0; j < resourceLog.ScopeLogs().Len(); j++ {
 			scopeLog := resourceLog.ScopeLogs().At(j)
 
-			buffer.WriteString(fmt.Sprintf("ScopeLog #%d%s%s\n", i, writeScopeDetails(scopeLog.Scope().Name(), scopeLog.Scope().Version(), scopeLog.SchemaUrl()), writeAttributesString(scopeLog.Scope().Attributes())))
+			buffer.WriteString(fmt.Sprintf("ScopeLog #%d%s%s\n", j, writeScopeDetails(scopeLog.Scope().Name(), scopeLog.Scope().Version(), scopeLog.SchemaUrl()), writeAttributesString(scopeLog.Scope().Attributes())))
 
 			for k := 0; k < scopeLog.LogRecords().Len(); k++ {
 				logRecord := scopeLog.LogRecords().At(k)

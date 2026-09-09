@@ -36,9 +36,11 @@ func TestSplitTraces(t *testing.T) {
 	cpSpans := cp.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans()
 	cpSpans.EnsureCapacity(5)
 	td.ResourceSpans().At(0).Resource().CopyTo(
-		cp.ResourceSpans().At(0).Resource())
+		cp.ResourceSpans().At(0).Resource(),
+	)
 	td.ResourceSpans().At(0).ScopeSpans().At(0).Scope().CopyTo(
-		cp.ResourceSpans().At(0).ScopeSpans().At(0).Scope())
+		cp.ResourceSpans().At(0).ScopeSpans().At(0).Scope(),
+	)
 	spans.At(0).CopyTo(cpSpans.AppendEmpty())
 	spans.At(1).CopyTo(cpSpans.AppendEmpty())
 	spans.At(2).CopyTo(cpSpans.AppendEmpty())

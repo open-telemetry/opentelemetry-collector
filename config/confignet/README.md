@@ -12,7 +12,8 @@ leverage network configuration to set connection and transport information.
   the literal IPv6 address as defined in RFC 4007.
 - `transport`: Known protocols are "tcp", "tcp4" (IPv4-only), "tcp6"
   (IPv6-only), "udp", "udp4" (IPv4-only), "udp6" (IPv6-only), "ip", "ip4"
-  (IPv4-only), "ip6" (IPv6-only), "unix", "unixgram" and "unixpacket".
+  (IPv4-only), "ip6" (IPv6-only), "unix", "unixgram", "unixpacket" and
+  "npipe" (Windows named pipes, Windows-only).
 - `dialer`: Dialer configuration
   - `timeout`: Dialer timeout is the maximum amount of time a dial will wait for a connect to complete. The default is no timeout.
 

@@ -64,6 +64,10 @@ linters:
 
   # all available settings of specific linters
   settings:
+    modernize:
+      disable:
+        - importcomment
+
     depguard:
       rules:
         denied-deps:

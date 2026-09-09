@@ -13,3 +13,6 @@ readers:
         prometheus:
           host: 127.0.0.1
           port: 8902
+          without_scope_info: true
+          without_type_suffix: true
+          without_units: true

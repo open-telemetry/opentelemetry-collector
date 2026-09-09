@@ -90,5 +90,17 @@ func TestDisabledWithInvalidValues(t *testing.T) {
 		MaxInterval:         -1,
 		MaxElapsedTime:      -1,
 	}
+	assert.Error(t, cfg.Validate())
+}
+
+func TestDisabledWithValidValues(t *testing.T) {
+	cfg := BackOffConfig{
+		Enabled:             false,
+		InitialInterval:     5 * time.Second,
+		RandomizationFactor: 0.5,
+		Multiplier:          1.5,
+		MaxInterval:         30 * time.Second,
+		MaxElapsedTime:      5 * time.Minute,
+	}
 	assert.NoError(t, cfg.Validate())
 }

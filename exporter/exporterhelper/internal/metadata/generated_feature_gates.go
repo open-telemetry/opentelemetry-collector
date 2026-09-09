@@ -6,10 +6,10 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-var ExporterPersistRequestContextFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.PersistRequestContext",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("controls whether context should be stored alongside requests in the persistent queue"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/pull/13188"),
-	featuregate.WithRegisterFromVersion("v0.128.0"),
+var PkgExporterhelperQueueBatchEnabledFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"pkg.exporterhelper.queueBatchEnabled",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Enables exporterhelper batching by default in NewDefaultQueueConfig, as described in the batching migration RFC."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/15047"),
+	featuregate.WithRegisterFromVersion("v0.158.0"),
 )

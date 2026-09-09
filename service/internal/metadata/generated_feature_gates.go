@@ -14,20 +14,28 @@ var ServiceAllowNoPipelinesFeatureGate = featuregate.GlobalRegistry().MustRegist
 	featuregate.WithRegisterFromVersion("v0.122.0"),
 )
 
+var ServicePartialReloadFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"service.partialReload",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Controls whether configuration changes trigger a partial reload that rebuilds only the affected components."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/partial-reload.md"),
+	featuregate.WithRegisterFromVersion("v0.157.0"),
+)
+
+var ServicePartialReloadReceiversFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"service.partialReloadReceivers",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("Controls whether receiver-only configuration changes restart only the receivers."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/partial-reload.md"),
+	featuregate.WithRegisterFromVersion("v0.157.0"),
+)
+
 var ServiceProfilesSupportFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"service.profilesSupport",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("Controls whether profiles support can be enabled"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/pull/11477"),
 	featuregate.WithRegisterFromVersion("v0.112.0"),
-)
-
-var TelemetryUseLocalHostAsDefaultMetricsAddressFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"telemetry.UseLocalHostAsDefaultMetricsAddress",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("Controls whether default Prometheus metrics server use localhost as the default host for their endpoints"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/pull/11251"),
-	featuregate.WithRegisterFromVersion("v0.111.0"),
 )
 
 var TelemetryNewPipelineTelemetryFeatureGate = featuregate.GlobalRegistry().MustRegister(

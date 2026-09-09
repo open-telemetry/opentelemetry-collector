@@ -29,7 +29,8 @@ func TestNilFuncMetrics(t *testing.T) {
 func TestWithCapabilitiesMetrics(t *testing.T) {
 	cp, err := NewMetrics(
 		func(context.Context, pmetric.Metrics) error { return nil },
-		WithCapabilities(Capabilities{MutatesData: true}))
+		WithCapabilities(Capabilities{MutatesData: true}),
+	)
 	assert.NoError(t, err)
 	assert.NoError(t, cp.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
 	assert.Equal(t, Capabilities{MutatesData: true}, cp.Capabilities())

@@ -15,8 +15,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mostynb/go-grpc-compression/nonclobbering/snappy"
-	"github.com/mostynb/go-grpc-compression/nonclobbering/zstd"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
@@ -34,12 +32,14 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/snappy"
+	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/zstd"
 	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 )
 
@@ -67,14 +67,7 @@ func NewDefaultKeepaliveClientConfig() KeepaliveClientConfig {
 	}
 }
 
-// BalancerName returns a string with default load balancer value
-//
-// Deprecated[v0.151.0]: Use the DefaultBalancerName constant instead.
-func BalancerName() string {
-	return DefaultBalancerName
-}
-
-var _ xconfmap.Validator = (*ClientConfig)(nil)
+var _ confmap.Validator = (*ClientConfig)(nil)
 
 // ClientConfig defines common settings for a gRPC client configuration.
 type ClientConfig struct {
@@ -107,6 +100,11 @@ type ClientConfig struct {
 
 	// The headers associated with gRPC requests.
 	Headers configopaque.MapList `mapstructure:"headers,omitempty"`
+
+	// UserAgent overrides the default user-agent header sent on gRPC requests.
+	// The default is derived from the build info. When empty, the caller controls
+	// the user-agent via grpc.WithUserAgent or similar options.
+	UserAgent string `mapstructure:"user_agent,omitempty"`
 
 	// Sets the balancer in grpclb_policy to discover the servers. Default is pick_first.
 	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
@@ -184,7 +182,7 @@ func NewDefaultKeepaliveEnforcementPolicy() KeepaliveEnforcementPolicy {
 	return KeepaliveEnforcementPolicy{}
 }
 
-var _ xconfmap.Validator = (*ServerConfig)(nil)
+var _ confmap.Validator = (*ServerConfig)(nil)
 
 // ServerConfig defines common settings for a gRPC server configuration.
 type ServerConfig struct {
@@ -200,7 +198,7 @@ type ServerConfig struct {
 
 	// MaxConcurrentStreams sets the limit on the number of concurrent streams to each ServerTransport.
 	// It has effect only for streaming RPCs.
-	MaxConcurrentStreams uint32 `mapstructure:"max_concurrent_streams,omitempty,omitempty"`
+	MaxConcurrentStreams uint32 `mapstructure:"max_concurrent_streams,omitempty"`
 
 	// ReadBufferSize for gRPC server. See grpc.ReadBufferSize.
 	// (https://godoc.org/google.golang.org/grpc#ReadBufferSize).
@@ -381,13 +379,16 @@ func (cc *ClientConfig) getGrpcDialOptions(
 	extraOpts []ToClientConnOption,
 ) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
+	var callOpts []grpc.CallOption
+	callOpts = append(callOpts, grpc.WaitForReady(cc.WaitForReady))
 	if cc.Compression.IsCompressed() {
 		cp, err := getGRPCCompressionName(cc.Compression)
 		if err != nil {
 			return nil, err
 		}
-		opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor(cp)))
+		callOpts = append(callOpts, grpc.UseCompressor(cp))
 	}
+	opts = append(opts, grpc.WithDefaultCallOptions(callOpts...))
 
 	tlsCfg, err := cc.TLS.LoadTLSConfig(ctx)
 	if err != nil {
@@ -431,7 +432,7 @@ func (cc *ClientConfig) getGrpcDialOptions(
 
 		perRPCCredentials, perr := grpcAuthenticator.PerRPCCredentials()
 		if perr != nil {
-			return nil, err
+			return nil, perr
 		}
 		opts = append(opts, grpc.WithPerRPCCredentials(perRPCCredentials))
 	}
@@ -480,6 +481,10 @@ func (cc *ClientConfig) getGrpcDialOptions(
 		if wrapper, ok := opt.(grpcDialOptionWrapper); ok {
 			opts = append(opts, wrapper.opt)
 		}
+	}
+
+	if cc.UserAgent != "" {
+		opts = append(opts, grpc.WithUserAgent(cc.UserAgent))
 	}
 
 	return opts, nil

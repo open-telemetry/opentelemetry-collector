@@ -32,7 +32,8 @@ func NewFactory() processor.Factory {
 		createDefaultConfig,
 		processor.WithTraces(createTraces, metadata.TracesStability),
 		processor.WithMetrics(createMetrics, metadata.MetricsStability),
-		processor.WithLogs(createLogs, metadata.LogsStability))
+		processor.WithLogs(createLogs, metadata.LogsStability),
+	)
 }
 
 func createDefaultConfig() component.Config {

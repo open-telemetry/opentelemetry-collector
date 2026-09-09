@@ -134,6 +134,7 @@ func (eb *K8sReplicasetMetricsBuilder) Emit() {
 	res := pcommon.NewResource()
 	cfg := eb.mb.config.ResourceAttributes
 	eb.entity.copyToResource(cfg, res)
+	cfg.applyOverrideValues(res)
 	eb.mb.EmitForResource(withResourceMoved(res))
 }
 
@@ -164,5 +165,6 @@ func (eb *K8sPodMetricsBuilder) Emit() {
 	if eb.entity.controlledByK8sReplicaset != nil {
 		eb.entity.controlledByK8sReplicaset.copyToResource(cfg, res)
 	}
+	cfg.applyOverrideValues(res)
 	eb.mb.EmitForResource(withResourceMoved(res))
 }

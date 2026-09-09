@@ -36,7 +36,8 @@ func NewFactories(_ *testing.T) func() (Factories, error) {
 					Number: 1,
 					String: "default",
 				}
-			})
+			},
+		)
 
 		return factories, nil
 	}

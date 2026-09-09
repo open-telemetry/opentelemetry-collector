@@ -103,6 +103,9 @@ type ServerConfig struct {
 	// KeepAlivesEnabled controls whether HTTP keep-alives are enabled.
 	// By default, keep-alives are always enabled. Only very resource-constrained environments should disable them.
 	KeepAlivesEnabled bool `mapstructure:"keep_alives_enabled,omitempty"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultServerConfig returns ServerConfig type object with default values.
@@ -123,7 +126,7 @@ func NewDefaultServerConfig() ServerConfig {
 
 type AuthConfig struct {
 	// Auth for this receiver.
-	configauth.Config `mapstructure:",squash"`
+	Config configauth.Config `mapstructure:",squash"`
 
 	// RequestParameters is a list of parameters that should be extracted from the request and added to the context.
 	// When a parameter is found in both the query string and the header, the value from the query string will be used.
@@ -233,7 +236,7 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 		}
 
 		auth := sc.Auth.Get()
-		server, err := auth.GetServerAuthenticator(ctx, extensions)
+		server, err := auth.Config.GetServerAuthenticator(ctx, extensions)
 		if err != nil {
 			return nil, err
 		}
@@ -247,6 +250,7 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 			AllowedOrigins:   corsConfig.AllowedOrigins,
 			AllowCredentials: true,
 			AllowedHeaders:   corsConfig.AllowedHeaders,
+			ExposedHeaders:   corsConfig.ExposedHeaders,
 			MaxAge:           corsConfig.MaxAge,
 		}
 		handler = cors.New(co).Handler(handler)
@@ -283,7 +287,8 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 			}),
 			otelhttp.WithMeterProvider(settings.MeterProvider),
 		},
-		serverOpts.OtelhttpOpts...)
+		serverOpts.OtelhttpOpts...,
+	)
 
 	// Enable OpenTelemetry observability plugin.
 	handler = otelhttp.NewHandler(handler, "", otelOpts...)
@@ -341,6 +346,10 @@ type CORSConfig struct {
 	// X-Requested-With will also be accepted by default. Include "*" to
 	// allow any request header.
 	AllowedHeaders []string `mapstructure:"allowed_headers,omitempty"`
+
+	// ExposedHeaders sets the value of the Access-Control-Expose-Headers response
+	// header, indicating which headers are safe to expose to the API of a CORS response.
+	ExposedHeaders []string `mapstructure:"exposed_headers,omitempty"`
 
 	// MaxAge sets the value of the Access-Control-Max-Age response header.
 	// Set it to the number of seconds that browsers should cache a CORS

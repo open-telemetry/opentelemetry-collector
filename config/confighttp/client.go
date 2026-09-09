@@ -113,6 +113,9 @@ type ClientConfig struct {
 	// Middleware handlers are called in the order they appear in this list,
 	// with the first middleware becoming the outermost handler.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.

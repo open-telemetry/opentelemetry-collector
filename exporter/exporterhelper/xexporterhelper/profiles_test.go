@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/oteltest"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sendertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/storagetest"
@@ -168,8 +167,6 @@ func TestProfilesRequestExporter_Default_ExportError(t *testing.T) {
 }
 
 func TestProfiles_WithPersistentQueue(t *testing.T) {
-	fgOrigReadState := queue.PersistRequestContextOnRead
-	fgOrigWriteState := queue.PersistRequestContextOnWrite
 	qCfg := exporterhelper.NewDefaultQueueConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID
@@ -211,13 +208,6 @@ func TestProfiles_WithPersistentQueue(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			queue.PersistRequestContextOnRead = func() bool { return tt.fgEnabledOnRead }
-			queue.PersistRequestContextOnWrite = func() bool { return tt.fgEnabledOnWrite }
-			t.Cleanup(func() {
-				queue.PersistRequestContextOnRead = fgOrigReadState
-				queue.PersistRequestContextOnWrite = fgOrigWriteState
-			})
-
 			ts := consumertest.ProfilesSink{}
 			te, err := NewProfiles(context.Background(), set, &fakeProfilesExporterConfig, ts.ConsumeProfiles, exporterhelper.WithQueue(configoptional.Some(qCfg)))
 			require.NoError(t, err)
