@@ -31,9 +31,5 @@ func createDefaultConfig() component.Config {
 }
 
 func create(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
-	if err != nil {
-		return nil, err
-	}
-	return newMemoryLimiter(cfg.(*Config), set.Logger, telemetryBuilder)
+	return newMemoryLimiter(cfg.(*Config), set.Logger, set.TelemetrySettings)
 }

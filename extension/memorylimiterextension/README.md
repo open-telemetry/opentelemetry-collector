@@ -39,6 +39,6 @@ extensions:
 
 otelcol_memorylimiter_refused_requests: Number of requests refused by the memory limiter extension (Attributes: transport="http" or transport="grpc").
 
-Note on Receiver Metrics: Because this extension operates as network middleware before OTLP payload unmarshaling occurs, refused requests are dropped prior to converting telemetry data. As a result, receiver-level refusal metrics (such as otelcol_receiver_refused_spans) will not increment during an extension refusal. Monitor otelcol_memorylimiter_refused_requests to track dropped traffic when using extension mode.
+Payloads refused by the extension never reach the receiver, so use `otelcol_memorylimiter_refused_requests` instead of `otelcol_receiver_refused_*` to track refused requests.
 
 see [memorylimiterprocessor](../../processor/memorylimiterprocessor/README.md) for additional details

@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
-	"go.opentelemetry.io/collector/extension/memorylimiterextension/internal/metadata"
 	"go.opentelemetry.io/collector/extension/memorylimiterextension/internal/metadatatest"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
 	"go.opentelemetry.io/collector/internal/memorylimiter/iruntime"
@@ -76,7 +75,7 @@ func TestCreateExtension(t *testing.T) {
 	require.NotNil(t, ext)
 }
 
-func newRefusingMemoryLimiter(t *testing.T, tb *metadata.TelemetryBuilder) *memoryLimiterExtension {
+func newRefusingMemoryLimiter(t *testing.T, telemetrySettings component.TelemetrySettings) *memoryLimiterExtension {
 	t.Helper()
 
 	memorylimiter.GetMemoryFn = func() (uint64, error) {
@@ -97,7 +96,7 @@ func newRefusingMemoryLimiter(t *testing.T, tb *metadata.TelemetryBuilder) *memo
 		MemorySpikePercentage: 1,
 	}
 
-	ml, err := newMemoryLimiter(cfg, zap.NewNop(), tb)
+	ml, err := newMemoryLimiter(cfg, zap.NewNop(), telemetrySettings)
 	require.NoError(t, err)
 
 	ml.memLimiter.CheckMemLimits()
@@ -122,12 +121,7 @@ func TestNewMemoryLimiter_Error(t *testing.T) {
 		MemorySpikePercentage: 10,
 	}
 
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(
-		componenttest.NewNopTelemetrySettings(),
-	)
-	require.NoError(t, err)
-
-	ext, err := newMemoryLimiter(cfg, zap.NewNop(), telemetryBuilder)
+	ext, err := newMemoryLimiter(cfg, zap.NewNop(), componenttest.NewNopTelemetrySettings())
 
 	require.Error(t, err)
 	require.Nil(t, ext)
@@ -197,10 +191,7 @@ func TestMemoryPressureResponse(t *testing.T) {
 				memorylimiter.ReadMemStatsFn = runtime.ReadMemStats
 			})
 
-			tb, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
-			require.NoError(t, err)
-
-			ml, err := newMemoryLimiter(tt.mlCfg, zap.NewNop(), tb)
+			ml, err := newMemoryLimiter(tt.mlCfg, zap.NewNop(), componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			assert.NoError(t, ml.Start(ctx, componenttest.NewNopHost()))
@@ -233,16 +224,13 @@ func TestCreateExtension_TelemetryBuilderError(t *testing.T) {
 func TestGRPCUnaryInterceptor_Normal(t *testing.T) {
 	ctx := context.Background()
 
-	tb, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
-	require.NoError(t, err)
-
 	cfg := &Config{
 		CheckInterval:         time.Second,
 		MemoryLimitPercentage: 99,
 		MemorySpikePercentage: 99,
 	}
 
-	ml, err := newMemoryLimiter(cfg, zap.NewNop(), tb)
+	ml, err := newMemoryLimiter(cfg, zap.NewNop(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
 	called := false
@@ -261,10 +249,7 @@ func TestGRPCUnaryInterceptor_Normal(t *testing.T) {
 func TestGRPCUnaryInterceptor_Refused(t *testing.T) {
 	ctx := context.Background()
 
-	tb, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
-	require.NoError(t, err)
-
-	ml := newRefusingMemoryLimiter(t, tb)
+	ml := newRefusingMemoryLimiter(t, componenttest.NewNopTelemetrySettings())
 
 	called := false
 	handler := func(_ context.Context, _ any) (any, error) {
@@ -283,16 +268,13 @@ func TestGRPCUnaryInterceptor_Refused(t *testing.T) {
 func TestGRPCStreamInterceptor_Normal(t *testing.T) {
 	ctx := context.Background()
 
-	tb, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
-	require.NoError(t, err)
-
 	cfg := &Config{
 		CheckInterval:         time.Second,
 		MemoryLimitPercentage: 99,
 		MemorySpikePercentage: 99,
 	}
 
-	ml, err := newMemoryLimiter(cfg, zap.NewNop(), tb)
+	ml, err := newMemoryLimiter(cfg, zap.NewNop(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
 	called := false
@@ -312,22 +294,18 @@ func TestGRPCStreamInterceptor_Normal(t *testing.T) {
 func TestGRPCStreamInterceptor_Refused(t *testing.T) {
 	ctx := context.Background()
 
-	tb, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
-	require.NoError(t, err)
-
-	ml := newRefusingMemoryLimiter(t, tb)
+	ml := newRefusingMemoryLimiter(t, componenttest.NewNopTelemetrySettings())
 
 	called := false
-	handler := func(_ any, _ grpc.ServerStream) error {
+	handler := func(_ context.Context, _ any) (any, error) {
 		called = true
-		return nil
+		return "success", nil
 	}
 
-	stream := &mockServerStream{ctx: ctx}
-
-	err = ml.grpcStreamInterceptor(nil, stream, nil, handler)
+	resp, err := ml.grpcUnaryInterceptor(ctx, "request", nil, handler)
 
 	require.Error(t, err)
+	assert.Nil(t, resp)
 	assert.Equal(t, codes.ResourceExhausted, status.Code(err))
 	assert.False(t, called)
 }
@@ -335,16 +313,13 @@ func TestGRPCStreamInterceptor_Refused(t *testing.T) {
 func TestWrapHTTPHandler_Normal(t *testing.T) {
 	ctx := context.Background()
 
-	tb, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
-	require.NoError(t, err)
-
 	cfg := &Config{
 		CheckInterval:         time.Second,
 		MemoryLimitPercentage: 99,
 		MemorySpikePercentage: 99,
 	}
 
-	ml, err := newMemoryLimiter(cfg, zap.NewNop(), tb)
+	ml, err := newMemoryLimiter(cfg, zap.NewNop(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
 	called := false
@@ -369,12 +344,9 @@ func TestWrapHTTPHandler_Refused(t *testing.T) {
 	ctx := context.Background()
 
 	testTel := componenttest.NewTelemetry()
+	defer testTel.Shutdown(ctx)
 
-	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
-	require.NoError(t, err)
-	defer tb.Shutdown()
-
-	ml := newRefusingMemoryLimiter(t, tb)
+	ml := newRefusingMemoryLimiter(t, testTel.NewTelemetrySettings())
 
 	called := false
 	base := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
@@ -411,8 +383,6 @@ func TestWrapHTTPHandler_Refused(t *testing.T) {
 }
 
 func TestGetGRPCServerOptions(t *testing.T) {
-	tb, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
-	require.NoError(t, err)
 
 	cfg := &Config{
 		CheckInterval:         time.Second,
@@ -420,7 +390,7 @@ func TestGetGRPCServerOptions(t *testing.T) {
 		MemorySpikePercentage: 99,
 	}
 
-	ml, err := newMemoryLimiter(cfg, zap.NewNop(), tb)
+	ml, err := newMemoryLimiter(cfg, zap.NewNop(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
 	opts, err := ml.GetGRPCServerOptions(context.Background())

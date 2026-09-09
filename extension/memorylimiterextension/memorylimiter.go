@@ -31,7 +31,12 @@ type memoryLimiterExtension struct {
 }
 
 // newMemoryLimiter returns a new memorylimiter extension.
-func newMemoryLimiter(cfg *Config, logger *zap.Logger, telemetryBuilder *metadata.TelemetryBuilder) (*memoryLimiterExtension, error) {
+func newMemoryLimiter(cfg *Config, logger *zap.Logger, telemetrySettings component.TelemetrySettings) (*memoryLimiterExtension, error) {
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(telemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+
 	ml, err := memorylimiter.NewMemoryLimiter(cfg, logger)
 	if err != nil {
 		return nil, err
@@ -48,7 +53,9 @@ func (ml *memoryLimiterExtension) Start(ctx context.Context, host component.Host
 }
 
 func (ml *memoryLimiterExtension) Shutdown(ctx context.Context) error {
-	return ml.memLimiter.Shutdown(ctx)
+	err := ml.memLimiter.Shutdown(ctx)
+	ml.telemetryBuilder.Shutdown()
+	return err
 }
 
 // MustRefuse returns if the caller should deny because memory has reached it's configured limits
