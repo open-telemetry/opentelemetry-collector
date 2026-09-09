@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/rs/cors"
@@ -103,6 +104,21 @@ type ServerConfig struct {
 	// programmatically after unmarshaling (or the config was never unmarshaled)
 	// and takes precedence over the deprecated fields.
 	Keepalive configoptional.Optional[KeepaliveServerConfig] `mapstructure:"keepalive,omitempty"`
+
+	// MaxConnectionAge sets the duration a connection may exist before the server
+	// starts marking its responses with a "Connection: close" header, so that the
+	// client establishes a new connection for subsequent requests. In-flight and
+	// already-queued requests on the connection are allowed to complete normally.
+	// A zero value means connections are never aged out. Default: 0 (disabled).
+	MaxConnectionAge time.Duration `mapstructure:"max_connection_age,omitempty"`
+
+	// MaxConnectionAgeGrace sets an additional period after MaxConnectionAge after
+	// which the connection is forcibly closed, regardless of in-flight requests.
+	// This bounds the cost of clients that do not honor the "Connection: close"
+	// header set once MaxConnectionAge elapses. Has no effect if MaxConnectionAge
+	// is not set. A zero value means the connection is never forcibly closed.
+	// Default: 0 (disabled).
+	MaxConnectionAgeGrace time.Duration `mapstructure:"max_connection_age_grace,omitempty"`
 
 	// Deprecated: use Keepalive.IdleTimeout instead.
 	IdleTimeout time.Duration `mapstructure:"idle_timeout,omitempty"`
@@ -297,6 +313,15 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 	})
 }
 
+// WithConnStateCallback registers a callback invoked on every connection state
+// transition (see http.Server.ConnState), for tracking connection lifecycle
+// events such as active connection counts.
+func WithConnStateCallback(f func(net.Conn, http.ConnState)) ToServerOption {
+	return internal.ToServerOptionFunc(func(opts *toServerOptions) {
+		opts.ConnStateCallback = f
+	})
+}
+
 // ToServer creates an http.Server from settings object.
 //
 // To allow the configuration to reference middleware or authentication extensions,
@@ -389,14 +414,14 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 			otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
 				// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#name:
 				//
-				//   "HTTP span names SHOULD be {method} {target} if there is a (low-cardinality) target available.
-				//   If there is no (low-cardinality) {target} available, HTTP span names SHOULD be {method}.
+				//	 "HTTP span names SHOULD be {method} {target} if there is a (low-cardinality) target available.
+				//	 If there is no (low-cardinality) {target} available, HTTP span names SHOULD be {method}.
 				//
-				//   The {method} MUST be {http.request.method} if the method represents the original method known
-				//   to the instrumentation. In other cases (when {http.request.method} is set to _OTHER),
-				//   {method} MUST be HTTP.
+				//	 The {method} MUST be {http.request.method} if the method represents the original method known
+				//	 to the instrumentation. In other cases (when {http.request.method} is set to _OTHER),
+				//	 {method} MUST be HTTP.
 				//
-				//   Instrumentation MUST NOT default to using URI path as a {target}."
+				//	 Instrumentation MUST NOT default to using URI path as a {target}."
 				//
 				method := standardizeHTTPMethod(r.Method, "HTTP")
 				if r.Pattern != "" {
@@ -423,6 +448,10 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 		return nil, err // If an error occurs while creating the logger, return nil and the error
 	}
 
+	if sc.MaxConnectionAge > 0 {
+		handler = maxConnectionAgeHandler(handler, sc.MaxConnectionAge, settings.Logger)
+	}
+
 	keepAlivesEnabled := true
 	var idleTimeout time.Duration
 	if kaCfg := sc.Keepalive.Get(); kaCfg != nil {
@@ -445,10 +474,100 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 		IdleTimeout:       idleTimeout,
 		ErrorLog:          errorLog,
 	}
+	if sc.MaxConnectionAge > 0 {
+		server.ConnContext = withConnStartTime
+	}
+
+	var connStateCallbacks []func(net.Conn, http.ConnState)
+	if serverOpts.ConnStateCallback != nil {
+		connStateCallbacks = append(connStateCallbacks, serverOpts.ConnStateCallback)
+	}
+	if sc.MaxConnectionAge > 0 && sc.MaxConnectionAgeGrace > 0 {
+		connStateCallbacks = append(connStateCallbacks, maxConnectionAgeConnState(sc.MaxConnectionAge, sc.MaxConnectionAgeGrace, settings.Logger))
+	}
+	if len(connStateCallbacks) > 0 {
+		server.ConnState = func(conn net.Conn, state http.ConnState) {
+			for _, f := range connStateCallbacks {
+				f(conn, state)
+			}
+		}
+	}
 
 	server.SetKeepAlivesEnabled(keepAlivesEnabled)
 
 	return server, err
+}
+
+// connStartTimeContextKey is the context key under which the connection's accept
+// time is stored by withConnStartTime.
+type connStartTimeContextKey struct{}
+
+// withConnStartTime is an http.Server.ConnContext function that records the time
+// the connection was accepted, for use by maxConnectionAgeHandler.
+func withConnStartTime(ctx context.Context, _ net.Conn) context.Context {
+	return context.WithValue(ctx, connStartTimeContextKey{}, time.Now())
+}
+
+// maxConnectionAgeHandler marks the connection for closure, via the "Connection:
+// close" response header, once it has been open for at least maxAge. The HTTP/1.x
+// and HTTP/2 server implementations both honor this header by tearing down the
+// connection once the response completes, so in-flight and already-queued requests
+// on the connection are allowed to complete normally; the client is expected to
+// establish a new connection for any subsequent requests.
+func maxConnectionAgeHandler(next http.Handler, maxAge time.Duration, logger *zap.Logger) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if start, ok := r.Context().Value(connStartTimeContextKey{}).(time.Time); ok {
+			if age := time.Since(start); age >= maxAge {
+				logger.Debug("HTTP connection reached max connection age, closing after this response",
+					zap.String("remote_addr", r.RemoteAddr),
+					zap.String("local_addr", localAddrFromContext(r.Context())),
+					zap.Duration("connection_age", age),
+					zap.Duration("max_connection_age", maxAge),
+				)
+				w.Header().Set("Connection", "close")
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// maxConnectionAgeConnState returns an http.Server.ConnState function that forcibly
+// closes connections that are still open maxAge+grace after being accepted,
+// regardless of in-flight requests. This bounds the cost of clients that ignore the
+// "Connection: close" header set by maxConnectionAgeHandler, or that keep a
+// connection open without sending further requests on it.
+func maxConnectionAgeConnState(maxAge, grace time.Duration, logger *zap.Logger) func(net.Conn, http.ConnState) {
+	var timers sync.Map // net.Conn -> *time.Timer
+
+	return func(conn net.Conn, state http.ConnState) {
+		switch state {
+		case http.StateNew:
+			start := time.Now()
+			timers.Store(conn, time.AfterFunc(maxAge+grace, func() {
+				logger.Debug("HTTP connection exceeded max connection age and grace period, forcibly closing",
+					zap.String("remote_addr", conn.RemoteAddr().String()),
+					zap.String("local_addr", conn.LocalAddr().String()),
+					zap.Duration("connection_age", time.Since(start)),
+					zap.Duration("max_connection_age", maxAge),
+					zap.Duration("max_connection_age_grace", grace),
+				)
+				_ = conn.Close()
+			}))
+		case http.StateClosed, http.StateHijacked:
+			if v, ok := timers.LoadAndDelete(conn); ok {
+				v.(*time.Timer).Stop()
+			}
+		}
+	}
+}
+
+// localAddrFromContext extracts the local address of the connection a request
+// arrived on, as recorded by net/http in the request context.
+func localAddrFromContext(ctx context.Context) string {
+	if addr, ok := ctx.Value(http.LocalAddrContextKey).(net.Addr); ok {
+		return addr.String()
+	}
+	return ""
 }
 
 func responseHeadersHandler(handler http.Handler, headers configopaque.MapList) http.Handler {
