@@ -85,10 +85,9 @@ func (host *Host) NotifyComponentStatusChange(source *componentstatus.InstanceID
 		select {
 		case host.AsyncErrorChannel <- event.Err():
 		default:
-			// No reader is ready (startup, reload, or shutdown in progress).
-			// Drop the error instead of blocking the reporting goroutine.
-			// During normal operation the drain goroutine in Collector.Run
-			// keeps the first fatal error queued for the control loop.
+			// A fatal error is already pending. The collector shuts down on the
+			// first error, so additional errors must not block reporters while
+			// the control loop is busy or has stopped reading the channel.
 		}
 	}
 }

@@ -91,7 +91,7 @@ func TestService_Host_GetExporters(t *testing.T) {
 
 func TestService_Host_FatalError(t *testing.T) {
 	set := newNopSettings()
-	set.AsyncErrorChannel = make(chan error)
+	set.AsyncErrorChannel = make(chan error, 1)
 
 	srv, err := New(context.Background(), set, newNopConfig())
 	require.NoError(t, err)
@@ -101,10 +101,8 @@ func TestService_Host_FatalError(t *testing.T) {
 		assert.NoError(t, srv.Shutdown(context.Background()))
 	})
 
-	go func() {
-		ev := componentstatus.NewFatalErrorEvent(assert.AnError)
-		srv.host.NotifyComponentStatusChange(&componentstatus.InstanceID{}, ev)
-	}()
+	ev := componentstatus.NewFatalErrorEvent(assert.AnError)
+	srv.host.NotifyComponentStatusChange(&componentstatus.InstanceID{}, ev)
 
 	err = <-srv.host.AsyncErrorChannel
 
