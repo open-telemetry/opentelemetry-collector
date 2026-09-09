@@ -54,7 +54,7 @@ jobs:
               echo "::warning::Runner CPU '$MODEL' gives unstable benchmark results; skipping benchmarks for this job."
               ;;
           esac
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: env.SKIP_BENCH != 'true'
         with:
           persist-credentials: false
@@ -85,7 +85,7 @@ jobs:
 
       - name: Run the benchmarks
         if: env.SKIP_BENCH != 'true'
-        uses: CodSpeedHQ/action@4296e51e7041e24dadb86d1d6e8b9320d223dbe8 # v5.0.3
+        uses: CodSpeedHQ/action@373d6868929f444bc08d901fd0eb0ad52a8875ea # v5.2.1
         with:
           mode: walltime
           run: make for-all-target TARGET="timebenchmark" GOMODULES="${{ env.TARGET_MODULES }}"

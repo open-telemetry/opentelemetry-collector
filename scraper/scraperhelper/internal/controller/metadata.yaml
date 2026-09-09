@@ -12,7 +12,7 @@ exported_configs:
     type: object
     properties:
       collection_interval:
-        description: Sets how frequently the scraper should be called and used as the context timeout to ensure that scrapers don't exceed the interval.
+        description: Sets how frequently the scraper is scheduled.
         type: duration
         default: 1m
       initial_delay:

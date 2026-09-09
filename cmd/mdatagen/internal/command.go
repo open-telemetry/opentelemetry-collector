@@ -545,7 +545,7 @@ func inlineReplaceWithFns(tmplFile, outputFile string, md Metadata, start, end, 
 	}
 
 	s := re.ReplaceAllString(string(readmeContents), string(buf))
-	if err := os.WriteFile(outputFile, []byte(s), 0o600); err != nil {
+	if err := os.WriteFile(outputFile, []byte(s), 0o600); err != nil { // #nosec G703
 		return fmt.Errorf("failed writing %q: %w", outputFile, err)
 	}
 
