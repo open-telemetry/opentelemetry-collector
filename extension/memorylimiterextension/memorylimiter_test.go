@@ -294,20 +294,40 @@ func TestGRPCStreamInterceptor_Normal(t *testing.T) {
 func TestGRPCStreamInterceptor_Refused(t *testing.T) {
 	ctx := context.Background()
 
-	ml := newRefusingMemoryLimiter(t, componenttest.NewNopTelemetrySettings())
+	testTel := componenttest.NewTelemetry()
+	defer func() {
+		require.NoError(t, testTel.Shutdown(ctx))
+	}()
+
+	ml := newRefusingMemoryLimiter(t, testTel.NewTelemetrySettings())
 
 	called := false
-	handler := func(_ context.Context, _ any) (any, error) {
+	handler := func(_ any, _ grpc.ServerStream) error {
 		called = true
-		return "success", nil
+		return nil
 	}
 
-	resp, err := ml.grpcUnaryInterceptor(ctx, "request", nil, handler)
+	stream := &mockServerStream{ctx: ctx}
+
+	err := ml.grpcStreamInterceptor(nil, stream, nil, handler)
 
 	require.Error(t, err)
-	assert.Nil(t, resp)
 	assert.Equal(t, codes.ResourceExhausted, status.Code(err))
 	assert.False(t, called)
+
+	metadatatest.AssertEqualMemorylimiterRefusedRequests(
+		t,
+		testTel,
+		[]metricdata.DataPoint[int64]{
+			{
+				Value: 1,
+				Attributes: attribute.NewSet(
+					attribute.String("transport", "grpc"),
+				),
+			},
+		},
+		metricdatatest.IgnoreTimestamp(),
+	)
 }
 
 func TestWrapHTTPHandler_Normal(t *testing.T) {
@@ -344,7 +364,9 @@ func TestWrapHTTPHandler_Refused(t *testing.T) {
 	ctx := context.Background()
 
 	testTel := componenttest.NewTelemetry()
-	defer testTel.Shutdown(ctx)
+	defer func() {
+		require.NoError(t, testTel.Shutdown(ctx))
+	}()
 
 	ml := newRefusingMemoryLimiter(t, testTel.NewTelemetrySettings())
 
@@ -383,7 +405,6 @@ func TestWrapHTTPHandler_Refused(t *testing.T) {
 }
 
 func TestGetGRPCServerOptions(t *testing.T) {
-
 	cfg := &Config{
 		CheckInterval:         time.Second,
 		MemoryLimitPercentage: 99,
