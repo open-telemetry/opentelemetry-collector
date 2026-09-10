@@ -469,6 +469,78 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 	}
 }
 
+var _ extensioncapabilities.Dependent = (*panicIfShutdownWithoutStartExtension)(nil)
+
+// panicIfShutdownWithoutStartExtension stands in for extensions whose
+// Shutdown assumes Start already ran and populated internal state. See
+// https://github.com/open-telemetry/opentelemetry-collector/issues/6507 and
+// https://github.com/open-telemetry/opentelemetry-collector/issues/9682.
+type panicIfShutdownWithoutStartExtension struct {
+	dependsOn []component.ID
+	started   bool
+}
+
+func (e *panicIfShutdownWithoutStartExtension) Start(context.Context, component.Host) error {
+	e.started = true
+	return nil
+}
+
+func (e *panicIfShutdownWithoutStartExtension) Shutdown(context.Context) error {
+	if !e.started {
+		panic("Shutdown called without a preceding Start")
+	}
+	return nil
+}
+
+func (e *panicIfShutdownWithoutStartExtension) Dependencies() []component.ID {
+	return e.dependsOn
+}
+
+// TestShutdownSkipsExtensionsNeverStarted reproduces the scenario from
+// issues #6507 and #9682: when an extension fails to start, Shutdown must
+// not call Shutdown on other extensions whose Start was never attempted,
+// since such extensions may not tolerate that (e.g. they panic).
+func TestShutdownSkipsExtensionsNeverStarted(t *testing.T) {
+	willFailStartType := component.MustNewType("willfailstart")
+	willFailStartID := component.NewID(willFailStartType)
+	willFailStartFactory := newStatusTestExtensionFactory(willFailStartType, assert.AnError, nil)
+
+	neverStarted := &panicIfShutdownWithoutStartExtension{dependsOn: []component.ID{willFailStartID}}
+	neverStartedType := component.MustNewType("neverstarted")
+	neverStartedID := component.NewID(neverStartedType)
+	neverStartedFactory := extension.NewFactory(
+		neverStartedType,
+		func() component.Config { return &struct{}{} },
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
+			return neverStarted, nil
+		},
+		component.StabilityLevelDevelopment,
+	)
+
+	exts, err := New(context.Background(), Settings{
+		Telemetry: componenttest.NewNopTelemetrySettings(),
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Extensions: builders.NewExtension(
+			map[component.ID]component.Config{
+				willFailStartID: willFailStartFactory.CreateDefaultConfig(),
+				neverStartedID:  neverStartedFactory.CreateDefaultConfig(),
+			},
+			map[component.Type]extension.Factory{
+				willFailStartType: willFailStartFactory,
+				neverStartedType:  neverStartedFactory,
+			},
+		),
+	}, Config{willFailStartID, neverStartedID})
+	require.NoError(t, err)
+
+	require.ErrorIs(t, exts.Start(context.Background(), componenttest.NewNopHost()), assert.AnError)
+	require.False(t, neverStarted.started, "neverStarted's Start must never have been attempted")
+
+	require.NotPanics(t, func() {
+		assert.NoError(t, exts.Shutdown(context.Background()))
+	})
+}
+
 func TestExtensionReportsOwnStatus(t *testing.T) {
 	statusType := component.MustNewType("selfreporting")
 	compID := component.NewID(statusType)

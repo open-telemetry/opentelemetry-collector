@@ -37,6 +37,12 @@ type Extensions struct {
 	instanceIDs  map[component.ID]*componentstatus.InstanceID
 	extensionIDs []component.ID // start order (and reverse stop order)
 	reporter     status.Reporter
+
+	// startedExtensions tracks the IDs of extensions whose Start has been
+	// attempted (whether or not it succeeded). Extensions are not required to
+	// tolerate a Shutdown call when Start was never even attempted on them,
+	// so Shutdown must only call Shutdown on extensions recorded here.
+	startedExtensions map[component.ID]struct{}
 }
 
 // Start starts all extensions.
@@ -53,7 +59,14 @@ func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 			componentstatus.NewEvent(componentstatus.StatusStarting),
 		)
 		extHost := &hostWrapper{Host: host, reporter: bes.reporter, instanceID: instanceID}
-		if err := ext.Start(ctx, extHost); err != nil {
+		err := ext.Start(ctx, extHost)
+		// Record that Start was attempted on this extension, regardless of
+		// outcome, so Shutdown gives it a chance to release anything it may
+		// have acquired. Extensions further down this loop, whose Start is
+		// never attempted because of this failure, are intentionally left
+		// unmarked.
+		bes.startedExtensions[extID] = struct{}{}
+		if err != nil {
 			bes.reporter.ReportStatus(
 				instanceID,
 				componentstatus.NewPermanentErrorEvent(err),
@@ -73,6 +86,14 @@ func (bes *Extensions) Shutdown(ctx context.Context) error {
 	bes.telemetry.Logger.Info("Stopping extensions...")
 	var errs error
 	for _, extID := range slices.Backward(bes.extensionIDs) {
+		if _, started := bes.startedExtensions[extID]; !started {
+			// Start was never called on this extension, or it failed, so
+			// there is no guarantee Shutdown can be safely called without
+			// panicking or operating on unset state. Skip it.
+			continue
+		}
+		delete(bes.startedExtensions, extID)
+
 		instanceID := bes.instanceIDs[extID]
 		ext := bes.extMap[extID]
 		bes.reporter.ReportStatus(
@@ -221,11 +242,12 @@ func WithReporter(reporter status.Reporter) Option {
 // New creates a new Extensions from Config.
 func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Extensions, error) {
 	exts := &Extensions{
-		telemetry:    set.Telemetry,
-		extMap:       make(map[component.ID]extension.Extension),
-		instanceIDs:  make(map[component.ID]*componentstatus.InstanceID),
-		extensionIDs: make([]component.ID, 0, len(cfg)),
-		reporter:     status.NewNopStatusReporter(),
+		telemetry:         set.Telemetry,
+		extMap:            make(map[component.ID]extension.Extension),
+		instanceIDs:       make(map[component.ID]*componentstatus.InstanceID),
+		extensionIDs:      make([]component.ID, 0, len(cfg)),
+		reporter:          status.NewNopStatusReporter(),
+		startedExtensions: make(map[component.ID]struct{}),
 	}
 
 	for _, opt := range options {

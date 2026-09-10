@@ -6,6 +6,7 @@ package graph
 import (
 	"context"
 	"errors"
+	"hash/fnv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -196,6 +197,63 @@ func testGraphStartStopComponentError(t *testing.T) {
 	})
 	require.ErrorIs(t, pg.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}), r1.startErr)
 	assert.EqualError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()), "bar")
+}
+
+var _ component.Component = (*panicIfShutdownWithoutStart)(nil)
+
+// panicIfShutdownWithoutStart stands in for components (see
+// https://github.com/open-telemetry/opentelemetry-collector/issues/6507 and
+// https://github.com/open-telemetry/opentelemetry-collector/issues/9682) whose
+// Shutdown assumes Start already ran and populated internal state, e.g. a
+// stored context.CancelFunc.
+type panicIfShutdownWithoutStart struct {
+	id      component.ID
+	started bool
+}
+
+func (n *panicIfShutdownWithoutStart) ID() int64 {
+	h := fnv.New64a()
+	h.Write([]byte(n.id.String()))
+	return int64(h.Sum64()) // #nosec G115
+}
+
+func (n *panicIfShutdownWithoutStart) Start(context.Context, component.Host) error {
+	n.started = true
+	return nil
+}
+
+func (n *panicIfShutdownWithoutStart) Shutdown(context.Context) error {
+	if !n.started {
+		panic("Shutdown called without a preceding Start")
+	}
+	return nil
+}
+
+// TestShutdownSkipsComponentsNeverStarted reproduces the scenario from
+// issues #6507 and #9682: when a component fails to start, ShutdownAll must
+// not call Shutdown on other components whose Start was never attempted,
+// since such components may not tolerate that (e.g. they panic).
+func TestShutdownSkipsComponentsNeverStarted(t *testing.T) {
+	pg := &Graph{componentGraph: simple.NewDirectedGraph()}
+	pg.telemetry = componenttest.NewNopTelemetrySettings()
+
+	// upstream is never reached by StartAll because downstream, which starts
+	// first (components are started in reverse topological order), fails.
+	upstream := &panicIfShutdownWithoutStart{id: component.MustNewIDWithName("r", "1")}
+	downstream := &testNode{id: component.MustNewIDWithName("e", "1"), startErr: assert.AnError}
+
+	pg.instanceIDs = map[int64]*componentstatus.InstanceID{
+		upstream.ID():   {},
+		downstream.ID(): {},
+	}
+	pg.componentGraph.SetEdge(simple.Edge{F: upstream, T: downstream})
+
+	require.ErrorIs(t, pg.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}), assert.AnError)
+	require.False(t, upstream.started, "upstream's Start must never have been attempted")
+
+	require.NotPanics(t, func() {
+		assert.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
+	})
 }
 
 // This includes all tests from the previous implementation, plus a new one
