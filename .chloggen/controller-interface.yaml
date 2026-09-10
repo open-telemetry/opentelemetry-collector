@@ -1,0 +1,32 @@
+change_type: enhancement
+component: pkg/exporterhelper
+note: >
+  Add `RequestMiddleware` open interface to `xexporterhelper` and wire it into the
+  queue sender, enabling extensions to intercept outbound export requests for
+  adaptive concurrency control, circuit breaking, and rate limiting.
+issues: [14080, 14318]
+subtext: |
+  The `sending_queue` config block now accepts an optional `request_middlewares` list of
+  extension component IDs. Each extension must implement the
+  `xexporterhelper.RequestMiddleware` open/optional interface per the merged
+  component-interface RFC (docs/rfcs/component-interfaces.md). Middlewares are
+  chained in the order listed; the first listed is the outermost wrapper.
+
+  The feature is behind the alpha feature gate `pkg.exporterhelper.RequestMiddleware`.
+  Enable with `--feature-gates=pkg.exporterhelper.RequestMiddleware=true`.
+  Existing users see no behaviour change.
+
+  Interface details:
+  - `WrapSender(RequestMiddlewareSettings, Sender[Request]) (Sender[Request], error)`
+    wraps the outbound sender with custom request execution logic.
+  - `WrapSenderFunc` companion function type with nil-safe no-op behaviour.
+  - Compile-time assertion `var _ RequestMiddleware = (*WrapSenderFunc)(nil)` added.
+  - `xexporterhelper/xexporterhelpertest` subpackage provides `NewNop()` / `NewErr()`
+    test helpers per RFC requirement for every public interface package.
+
+  Internal cleanup following the same RFC:
+  - Removed the duplicate `RequestMiddleware` interface from the internal
+    `requestmiddleware` package; the package now only exports `RequestMiddlewareSettings`.
+    The queue sender uses a local unexported `senderWrapper` for type assertion.
+  - `featuregate` promoted to a direct dependency in `go.mod`.
+change_logs: [user, api]

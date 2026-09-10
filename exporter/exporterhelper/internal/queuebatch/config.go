@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
@@ -38,6 +39,10 @@ type Config struct {
 	// See https://github.com/open-telemetry/opentelemetry-collector/issues/13822
 	StorageID *component.ID `mapstructure:"storage"`
 
+	// RequestMiddlewares defines a list of request middleware extensions (e.g. adaptive concurrency)
+	// that intercept export requests after they are pulled from the queue.
+	RequestMiddlewares []component.ID `mapstructure:"request_middlewares"`
+
 	// NumConsumers is the maximum number of concurrent consumers from the queue.
 	// This applies across all different optional configurations from above (e.g. wait_for_result, block_on_overflow, storage, etc.).
 	NumConsumers int `mapstructure:"num_consumers"`
@@ -63,7 +68,7 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 	return nil
 }
 
-// Validate checks if the Config is valid
+// Validate checks if the Config is valid.
 func (cfg *Config) Validate() error {
 	if cfg.NumConsumers <= 0 {
 		return errors.New("`num_consumers` must be positive")
@@ -82,6 +87,21 @@ func (cfg *Config) Validate() error {
 		// Avoid situations where the queue is not able to hold any data.
 		if cfg.Batch.Get().MinSize > cfg.QueueSize {
 			return errors.New("`min_size` must be less than or equal to `queue_size`")
+		}
+	}
+
+	// Validate request_middlewares configuration.
+	if len(cfg.RequestMiddlewares) > 0 {
+		if !metadata.PkgExporterhelperRequestMiddlewareFeatureGate.IsEnabled() {
+			return errors.New("request_middlewares is configured but the feature gate pkg.exporterhelper.RequestMiddleware is not enabled. Enable it with --feature-gates=pkg.exporterhelper.RequestMiddleware=true")
+		}
+		// Check for duplicate IDs
+		seen := make(map[component.ID]bool)
+		for _, id := range cfg.RequestMiddlewares {
+			if seen[id] {
+				return fmt.Errorf("duplicate request middleware ID: %q", id.String())
+			}
+			seen[id] = true
 		}
 	}
 
