@@ -54,12 +54,31 @@ func (tt *TransportType) UnmarshalText(in []byte) error {
 	}
 }
 
+// Validate checks that the DialerConfig is valid.
+func (dc *DialerConfig) Validate() error {
+	if dc.DSCP < 0 || dc.DSCP > 63 {
+		return fmt.Errorf("invalid DSCP value %d: must be between 0 and 63", dc.DSCP)
+	}
+	return nil
+}
+
+// Dialer returns a net.Dialer configured according to this DialerConfig.
+// If DSCP is set (non-zero), the dialer's Control function will apply the
+// DSCP value to the socket before the connection is established.
+func (dc *DialerConfig) Dialer() net.Dialer {
+	d := net.Dialer{Timeout: dc.Timeout}
+	if dc.DSCP > 0 {
+		d.Control = DSCPDialControl(dc.DSCP)
+	}
+	return d
+}
+
 // Dial equivalent with net.Dialer's DialContext for this address.
 func (na *AddrConfig) Dial(ctx context.Context) (net.Conn, error) {
 	if na.Transport == TransportTypeNpipe {
 		return dialNpipe(ctx, na.Endpoint, na.DialerConfig.Timeout)
 	}
-	d := net.Dialer{Timeout: na.DialerConfig.Timeout}
+	d := na.DialerConfig.Dialer()
 	return d.DialContext(ctx, string(na.Transport), na.Endpoint)
 }
 
@@ -73,6 +92,9 @@ func (na *AddrConfig) Listen(ctx context.Context) (net.Listener, error) {
 }
 
 func (na *AddrConfig) Validate() error {
+	if err := na.DialerConfig.Validate(); err != nil {
+		return err
+	}
 	switch na.Transport {
 	case TransportTypeTCP,
 		TransportTypeTCP4,
@@ -126,7 +148,7 @@ func validateNpipePath(endpoint string) error {
 
 // Dial equivalent with net.Dialer's DialContext for this address.
 func (na *TCPAddrConfig) Dial(ctx context.Context) (net.Conn, error) {
-	d := net.Dialer{Timeout: na.DialerConfig.Timeout}
+	d := na.DialerConfig.Dialer()
 	return d.DialContext(ctx, string(TransportTypeTCP), na.Endpoint)
 }
 

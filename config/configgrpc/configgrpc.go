@@ -120,6 +120,16 @@ type ClientConfig struct {
 	// Middlewares for the gRPC client.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
 
+	// DSCP sets the Differentiated Services Code Point (DSCP) value
+	// on outgoing gRPC connections. This value is used to set the DS field
+	// in the IP header, enabling QoS classification by network devices.
+	// Valid values are 0 to 63. Common values:
+	//   - 0: Default/Best Effort (CS0)
+	//   - 46: Expedited Forwarding (EF) - for low-latency traffic
+	//   - 34: Assured Forwarding AF41
+	// Default is 0 (disabled, no marking applied).
+	DSCP int `mapstructure:"dscp,omitempty"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -260,6 +270,10 @@ func (cc *ClientConfig) Validate() error {
 		if balancer.Get(cc.BalancerName) == nil {
 			return fmt.Errorf("invalid balancer_name: %s", cc.BalancerName)
 		}
+	}
+
+	if cc.DSCP < 0 || cc.DSCP > 63 {
+		return fmt.Errorf("invalid DSCP value %d: must be between 0 and 63", cc.DSCP)
 	}
 
 	return nil
@@ -485,6 +499,16 @@ func (cc *ClientConfig) getGrpcDialOptions(
 
 	if cc.UserAgent != "" {
 		opts = append(opts, grpc.WithUserAgent(cc.UserAgent))
+	}
+
+	// Set DSCP marking on outgoing connections if configured.
+	if cc.DSCP > 0 {
+		opts = append(opts, grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+			d := &net.Dialer{
+				Control: confignet.DSCPDialControl(cc.DSCP),
+			}
+			return d.DialContext(ctx, "tcp", addr)
+		}))
 	}
 
 	return opts, nil
