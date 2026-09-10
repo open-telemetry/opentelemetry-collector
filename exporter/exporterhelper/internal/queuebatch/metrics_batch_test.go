@@ -788,6 +788,12 @@ func TestMergeSplitMetricsRequestsSizer(t *testing.T) {
 	}
 }
 
+func TestMergeSplitMetricsRequestsSizerInvalidType(t *testing.T) {
+	mr1 := newMetricsRequest(testdata.GenerateMetrics(5))
+	_, err := mr1.MergeSplit(context.Background(), 0, request.SizerTypeRequests, newTracesRequest(testdata.GenerateTraces(5)))
+	require.EqualError(t, err, "invalid input type")
+}
+
 // mockMetricsSizer implements sizer.MetricsSizer interface for testing
 type mockMetricsSizer struct {
 	dpSize int

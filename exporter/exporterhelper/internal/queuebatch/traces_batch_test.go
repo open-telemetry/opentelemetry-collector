@@ -395,6 +395,12 @@ func TestMergeSplitTracesRequestsSizer(t *testing.T) {
 	}
 }
 
+func TestMergeSplitTracesRequestsSizerInvalidType(t *testing.T) {
+	tr1 := newTracesRequest(testdata.GenerateTraces(5))
+	_, err := tr1.MergeSplit(context.Background(), 0, request.SizerTypeRequests, newLogsRequest(testdata.GenerateLogs(5)))
+	require.EqualError(t, err, "invalid input type")
+}
+
 func BenchmarkSplittingBasedOnItemCountManySmallTraces(b *testing.B) {
 	testutil.SkipGCHeavyBench(b)
 	// All requests merge into a single batch.

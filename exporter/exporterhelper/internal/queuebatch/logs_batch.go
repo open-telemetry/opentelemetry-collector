@@ -24,7 +24,7 @@ func (req *logsRequest) MergeSplit(_ context.Context, maxSize int, szt request.S
 			}
 			// Pass nil sizer so mergeTo skips updating the cached byte/item size,
 			// which is irrelevant when the caller only cares about request count.
-			req2.mergeTo(req, nil)
+			req2.mergeTo(req, nil, szt)
 		}
 		return []request.Request{req}, nil
 	}
