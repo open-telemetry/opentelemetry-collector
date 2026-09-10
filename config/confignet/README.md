@@ -16,6 +16,19 @@ leverage network configuration to set connection and transport information.
   "npipe" (Windows named pipes, Windows-only).
 - `dialer`: Dialer configuration
   - `timeout`: Dialer timeout is the maximum amount of time a dial will wait for a connect to complete. The default is no timeout.
+- `socket_permissions`: File permissions applied to a filesystem-based Unix
+  domain socket file after binding. Only applies to the `unix`, `unixgram`
+  and `unixpacket` transports; ignored for abstract sockets (endpoints
+  starting with `@`) and all other transports. Defaults to `0722`, which
+  allows any local process to connect to the socket while only the owner
+  can otherwise manage it.
+- `socket_management_disabled`: Disables all automatic lifecycle management
+  of a filesystem-based Unix domain socket file: no stale-socket removal
+  before binding, no permission changes after binding (`socket_permissions`
+  is ignored), and no cleanup on close. Only applies to the `unix`,
+  `unixgram` and `unixpacket` transports. Use this if the socket file's
+  lifecycle is managed externally (e.g. systemd socket activation, an init
+  container, custom ACLs/SELinux labels). Defaults to `false`.
 
 Note that for TCP receivers only the `endpoint` configuration setting is
 required.
