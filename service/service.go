@@ -89,14 +89,6 @@ type Settings struct {
 	// AsyncErrorChannel is the channel that is used to report fatal errors.
 	AsyncErrorChannel chan error
 
-	// LoggingOptions provides a way to change behavior of zap logging.
-	//
-	// These options will be appended to any options passed to BuildZapLogger.
-	//
-	// Deprecated [v0.142.0]: use BuildZapLogger instead. This field will be
-	// removed in the future, and options must be injected through BuildZapLogger.
-	LoggingOptions []zap.Option
-
 	// BuildZapLogger holds an optional function for creating a Zap logger from
 	// a zap.Config and options. If this is unspecified, zap.Config.Build will
 	// be used.
@@ -162,13 +154,6 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 	buildZapLogger := set.BuildZapLogger
 	if buildZapLogger == nil {
 		buildZapLogger = zap.Config.Build
-	}
-	if len(set.LoggingOptions) > 0 {
-		origBuildZapLogger := buildZapLogger
-		buildZapLogger = func(cfg zap.Config, opts ...zap.Option) (*zap.Logger, error) {
-			opts = append(opts, set.LoggingOptions...)
-			return origBuildZapLogger(cfg, opts...)
-		}
 	}
 
 	loggerSettings := telemetry.LoggerSettings{
