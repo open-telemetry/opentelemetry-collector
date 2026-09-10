@@ -7,7 +7,7 @@
       "properties": {
         "insecure": {
           "type": "boolean",
-          "description": "In gRPC and HTTP when set to true, this is used to disable the client transport security. See https://godoc.org/google.golang.org/grpc#WithInsecure for gRPC. Please refer to https://godoc.org/crypto/tls#Config for more information. (optional, default false)"
+          "description": "In gRPC and HTTP when set to true, this is used to disable the client transport security. \nSee https://godoc.org/google.golang.org/grpc#WithInsecure for gRPC. \nPlease refer to https://godoc.org/crypto/tls#Config for more information. (optional, default false)\n"
         },
         "insecure_skip_verify": {
           "type": "boolean",
@@ -15,17 +15,17 @@
         },
         "server_name_override": {
           "type": "string",
-          "description": "Server name requested by client for virtual hosting. This sets the ServerName in the TLSConfig. Please refer to https://godoc.org/crypto/tls#Config for more information. (optional)"
+          "description": "Server name requested by client for virtual hosting. This sets the ServerName in the TLSConfig. \nPlease refer to https://godoc.org/crypto/tls#Config for more information. (optional)\n"
         }
       },
-      "description": "Contains TLS configurations that are specific to client connections in addition to the common configurations. This should be used by components configuring TLS client connections.",
+      "description": "Contains TLS configurations that are specific to client connections in addition to the common configurations. \nThis should be used by components configuring TLS client connections.\n",
       "allOf": [
         {
           "type": "object",
           "properties": {
             "ca_file": {
               "type": "string",
-              "description": "Path to the CA cert. For a client this verifies the server certificate. For a server this verifies client certificates. If empty uses system root CA. (optional)"
+              "description": "Path to the CA cert. For a client this verifies the server certificate. \nFor a server this verifies client certificates. If empty uses system root CA. (optional)\n"
             },
             "ca_pem": {
               "type": "string",
@@ -44,18 +44,18 @@
               "items": {
                 "type": "string"
               },
-              "description": "A list of TLS cipher suites that the TLS transport can use. If left blank, a safe default list is used. See https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites."
+              "description": "A list of TLS cipher suites that the TLS transport can use. If left blank, a safe default list is used. \nSee https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites.\n"
             },
             "curve_preferences": {
               "type": "array",
               "items": {
                 "type": "string"
               },
-              "description": "Contains the elliptic curves that will be used in an ECDHE handshake, in preference order Defaults to empty list and \"crypto/tls\" defaults are used, internally."
+              "description": "Contains the elliptic curves that will be used in an ECDHE handshake, \nin preference order Defaults to empty list and \"crypto/tls\" defaults are used, internally.\n"
             },
             "include_insecure_cipher_suites": {
               "type": "boolean",
-              "description": "Enables support for insecure cipher suites. When set to true, cipher suites returned by tls.InsecureCipherSuites() will be available for selection in addition to the secure ones. This should only be used when working with legacy systems that require insecure cipher suites. (optional, default false)"
+              "description": "Enables support for insecure cipher suites. When set to true, cipher suites returned by \ntls.InsecureCipherSuites() will be available for selection in addition to the secure ones. \nThis should only be used when working with legacy systems that require insecure cipher suites. \n(optional, default false)\n"
             },
             "include_system_ca_certs_pool": {
               "type": "boolean",
@@ -102,7 +102,7 @@
               "description": "Trusted platform module configuration"
             }
           },
-          "description": "Exposes the common client and server TLS configurations. Note: Since there isn't anything specific to a server connection. Components with server connections should use Config.",
+          "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn''t anything specific to a server connection. Components with server connections should use Config.\n",
           "default": {}
         }
       ]
@@ -112,7 +112,7 @@
       "properties": {
         "ca_file": {
           "type": "string",
-          "description": "Path to the CA cert. For a client this verifies the server certificate. For a server this verifies client certificates. If empty uses system root CA. (optional)"
+          "description": "Path to the CA cert. For a client this verifies the server certificate. \nFor a server this verifies client certificates. If empty uses system root CA. (optional)\n"
         },
         "ca_pem": {
           "type": "string",
@@ -131,18 +131,18 @@
           "items": {
             "type": "string"
           },
-          "description": "A list of TLS cipher suites that the TLS transport can use. If left blank, a safe default list is used. See https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites."
+          "description": "A list of TLS cipher suites that the TLS transport can use. If left blank, a safe default list is used. \nSee https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites.\n"
         },
         "curve_preferences": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "description": "Contains the elliptic curves that will be used in an ECDHE handshake, in preference order Defaults to empty list and \"crypto/tls\" defaults are used, internally."
+          "description": "Contains the elliptic curves that will be used in an ECDHE handshake, \nin preference order Defaults to empty list and \"crypto/tls\" defaults are used, internally.\n"
         },
         "include_insecure_cipher_suites": {
           "type": "boolean",
-          "description": "Enables support for insecure cipher suites. When set to true, cipher suites returned by tls.InsecureCipherSuites() will be available for selection in addition to the secure ones. This should only be used when working with legacy systems that require insecure cipher suites. (optional, default false)"
+          "description": "Enables support for insecure cipher suites. When set to true, cipher suites returned by \ntls.InsecureCipherSuites() will be available for selection in addition to the secure ones. \nThis should only be used when working with legacy systems that require insecure cipher suites. \n(optional, default false)\n"
         },
         "include_system_ca_certs_pool": {
           "type": "boolean",
@@ -189,7 +189,7 @@
           "description": "Trusted platform module configuration"
         }
       },
-      "description": "Exposes the common client and server TLS configurations. Note: Since there isn't anything specific to a server connection. Components with server connections should use Config.",
+      "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn''t anything specific to a server connection. Components with server connections should use Config.\n",
       "default": {}
     },
     "server_config": {
@@ -197,21 +197,21 @@
       "properties": {
         "client_ca_file": {
           "type": "string",
-          "description": "Path to the TLS cert to use by the server to verify a client certificate. (optional) This sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. Please refer to https://godoc.org/crypto/tls#Config for more information. (optional)"
+          "description": "Path to the TLS cert to use by the server to verify a client certificate. (optional) \nThis sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. \nPlease refer to https://godoc.org/crypto/tls#Config for more information. (optional)\n"
         },
         "client_ca_file_reload": {
           "type": "boolean",
           "description": "Reload the ClientCAs file when it is modified (optional, default false)"
         }
       },
-      "description": "Contains TLS configurations that are specific to server connections in addition to the common configurations. This should be used by components configuring TLS server connections.",
+      "description": "Contains TLS configurations that are specific to server connections in addition to the common configurations. \nThis should be used by components configuring TLS server connections.\n",
       "allOf": [
         {
           "type": "object",
           "properties": {
             "ca_file": {
               "type": "string",
-              "description": "Path to the CA cert. For a client this verifies the server certificate. For a server this verifies client certificates. If empty uses system root CA. (optional)"
+              "description": "Path to the CA cert. For a client this verifies the server certificate. \nFor a server this verifies client certificates. If empty uses system root CA. (optional)\n"
             },
             "ca_pem": {
               "type": "string",
@@ -230,18 +230,18 @@
               "items": {
                 "type": "string"
               },
-              "description": "A list of TLS cipher suites that the TLS transport can use. If left blank, a safe default list is used. See https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites."
+              "description": "A list of TLS cipher suites that the TLS transport can use. If left blank, a safe default list is used. \nSee https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites.\n"
             },
             "curve_preferences": {
               "type": "array",
               "items": {
                 "type": "string"
               },
-              "description": "Contains the elliptic curves that will be used in an ECDHE handshake, in preference order Defaults to empty list and \"crypto/tls\" defaults are used, internally."
+              "description": "Contains the elliptic curves that will be used in an ECDHE handshake, \nin preference order Defaults to empty list and \"crypto/tls\" defaults are used, internally.\n"
             },
             "include_insecure_cipher_suites": {
               "type": "boolean",
-              "description": "Enables support for insecure cipher suites. When set to true, cipher suites returned by tls.InsecureCipherSuites() will be available for selection in addition to the secure ones. This should only be used when working with legacy systems that require insecure cipher suites. (optional, default false)"
+              "description": "Enables support for insecure cipher suites. When set to true, cipher suites returned by \ntls.InsecureCipherSuites() will be available for selection in addition to the secure ones. \nThis should only be used when working with legacy systems that require insecure cipher suites. \n(optional, default false)\n"
             },
             "include_system_ca_certs_pool": {
               "type": "boolean",
@@ -288,7 +288,7 @@
               "description": "Trusted platform module configuration"
             }
           },
-          "description": "Exposes the common client and server TLS configurations. Note: Since there isn't anything specific to a server connection. Components with server connections should use Config.",
+          "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn''t anything specific to a server connection. Components with server connections should use Config.\n",
           "default": {}
         }
       ]

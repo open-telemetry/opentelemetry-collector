@@ -8,16 +8,23 @@ status:
 
 exported_configs:
   client_config:
-    description: Contains TLS configurations that are specific to client connections in addition to the common configurations. This should be used by components configuring TLS client connections.
+    description: |
+      Contains TLS configurations that are specific to client connections in addition to the common configurations. 
+      This should be used by components configuring TLS client connections.
     properties:
       insecure:
-        description: In gRPC and HTTP when set to true, this is used to disable the client transport security. See https://godoc.org/google.golang.org/grpc#WithInsecure for gRPC. Please refer to https://godoc.org/crypto/tls#Config for more information. (optional, default false)
+        description: |
+          In gRPC and HTTP when set to true, this is used to disable the client transport security. 
+          See https://godoc.org/google.golang.org/grpc#WithInsecure for gRPC. 
+          Please refer to https://godoc.org/crypto/tls#Config for more information. (optional, default false)
         type: bool
       insecure_skip_verify:
         description: Enables TLS but not verify the certificate.
         type: bool
       server_name_override:
-        description: Server name requested by client for virtual hosting. This sets the ServerName in the TLSConfig. Please refer to https://godoc.org/crypto/tls#Config for more information. (optional)
+        description: |
+          Server name requested by client for virtual hosting. This sets the ServerName in the TLSConfig. 
+          Please refer to https://godoc.org/crypto/tls#Config for more information. (optional)
         type: string
         go_struct:
           field_name: ServerName
@@ -27,10 +34,14 @@ exported_configs:
         go_struct:
           anonymous: true
   config:
-    description: 'Exposes the common client and server TLS configurations. Note: Since there isn''t anything specific to a server connection. Components with server connections should use Config.'
+    description: | 
+      Exposes the common client and server TLS configurations. 
+      Note: Since there isn''t anything specific to a server connection. Components with server connections should use Config.
     properties:
       ca_file:
-        description: Path to the CA cert. For a client this verifies the server certificate. For a server this verifies client certificates. If empty uses system root CA. (optional)
+        description: |
+          Path to the CA cert. For a client this verifies the server certificate. 
+          For a server this verifies client certificates. If empty uses system root CA. (optional)
         type: string
       ca_pem:
         description: In memory PEM encoded cert. (optional)
@@ -42,15 +53,23 @@ exported_configs:
         description: In memory PEM encoded TLS cert to use for TLS required connections. (optional)
         type: opaque_string
       cipher_suites:
-        description: A list of TLS cipher suites that the TLS transport can use. If left blank, a safe default list is used. See https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites.
+        description: |
+          A list of TLS cipher suites that the TLS transport can use. If left blank, a safe default list is used. 
+          See https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites.
         type: slice
         values:
           type: string
       include_insecure_cipher_suites:
-        description: Enables support for insecure cipher suites. When set to true, cipher suites returned by tls.InsecureCipherSuites() will be available for selection in addition to the secure ones. This should only be used when working with legacy systems that require insecure cipher suites. (optional, default false)
+        description: |
+          Enables support for insecure cipher suites. When set to true, cipher suites returned by 
+          tls.InsecureCipherSuites() will be available for selection in addition to the secure ones. 
+          This should only be used when working with legacy systems that require insecure cipher suites. 
+          (optional, default false)
         type: bool
       curve_preferences:
-        description: Contains the elliptic curves that will be used in an ECDHE handshake, in preference order Defaults to empty list and "crypto/tls" defaults are used, internally.
+        description: | 
+          Contains the elliptic curves that will be used in an ECDHE handshake, 
+          in preference order Defaults to empty list and "crypto/tls" defaults are used, internally.
         type: slice
         values:
           type: string
@@ -79,10 +98,15 @@ exported_configs:
           field_name: TPMConfig
     default: {}
   server_config:
-    description: Contains TLS configurations that are specific to server connections in addition to the common configurations. This should be used by components configuring TLS server connections.
+    description: | 
+      Contains TLS configurations that are specific to server connections in addition to the common configurations. 
+      This should be used by components configuring TLS server connections.
     properties:
       client_ca_file:
-        description: Path to the TLS cert to use by the server to verify a client certificate. (optional) This sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. Please refer to https://godoc.org/crypto/tls#Config for more information. (optional)
+        description: | 
+          Path to the TLS cert to use by the server to verify a client certificate. (optional) 
+          This sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. 
+          Please refer to https://godoc.org/crypto/tls#Config for more information. (optional)
         type: string
       client_ca_file_reload:
         description: Reload the ClientCAs file when it is modified (optional, default false)

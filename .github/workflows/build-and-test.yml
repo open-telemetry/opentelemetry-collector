@@ -64,7 +64,7 @@ jobs:
           key: go-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
           lookup-only: true
       - name: golint
-        run: make -j2 golint
+        run: make -j4 golint
       - name: goimpi
         run: make goimpi
 

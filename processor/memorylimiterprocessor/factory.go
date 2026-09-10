@@ -31,7 +31,7 @@ type factory struct {
 }
 
 // NewFactory returns a new factory for the Memory Limiter processor.
-func NewFactory() xprocessor.Factory {
+func NewFactory() processor.Factory {
 	f := &factory{
 		memoryLimiters: map[component.Config]*memoryLimiterProcessor{},
 	}
