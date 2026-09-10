@@ -53,7 +53,7 @@ func TestCheckCoverage(t *testing.T) {
 			pkg+"/foo.go:11.1,20.2 2 0\n")
 		err := checkCoverage(stableMD(), map[component.StabilityLevel]float64{component.StabilityLevelStable: 90}, profile)
 		require.Error(t, err)
-		assert.ErrorContains(t, err, "coverage 80.0% for "+pkg+" is below the 90% target for Stable")
+		assert.ErrorContains(t, err, "coverage 80.0% for "+pkg+" is below the 90.0% target for Stable")
 	})
 
 	t.Run("at target passes", func(t *testing.T) {

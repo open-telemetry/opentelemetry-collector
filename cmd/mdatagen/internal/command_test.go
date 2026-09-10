@@ -95,7 +95,7 @@ status:
 		cmd.SetArgs([]string{"check-stability", "--profile", profile, metadataFile})
 		err = cmd.Execute()
 		require.Error(t, err)
-		assert.ErrorContains(t, err, "below the 80% target")
+		assert.ErrorContains(t, err, "below the 80.0% target")
 	})
 
 	t.Run("requires --profile", func(t *testing.T) {
