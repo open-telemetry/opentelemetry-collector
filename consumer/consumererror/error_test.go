@@ -335,8 +335,7 @@ func TestError_Retryable(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			for _, httpStatus := range tt.httpStatuses {
 				err := NewOTLPHTTPError(errTest, httpStatus)
-				var httpErr *Error
-				if errors.As(err, &httpErr) {
+				if httpErr, ok := errors.AsType[*Error](err); ok {
 					require.Equal(t, tt.want, httpErr.IsRetryable(), "Expected %d to be retryable=%t", httpStatus, tt.want)
 				} else {
 					require.Fail(t, "NewOTLPHTTPError didn't return an *Error")
@@ -345,9 +344,8 @@ func TestError_Retryable(t *testing.T) {
 
 			for _, grpcStatus := range tt.grpcStatuses {
 				err := NewOTLPGRPCError(errTest, grpcStatus)
-				var grpcErr *Error
 
-				if errors.As(err, &grpcErr) {
+				if grpcErr, ok := errors.AsType[*Error](err); ok {
 					require.Equal(t, tt.want, grpcErr.IsRetryable(), "Expected %q to be retryable=%t", grpcStatus.Code().String(), tt.want)
 				} else {
 					require.Fail(t, "NewOTLPGRPCError didn't return an *Error")

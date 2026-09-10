@@ -33,8 +33,7 @@ type FakeRequest struct {
 }
 
 func (r *FakeRequest) OnError(err error) request.Request {
-	var pErr errorPartial
-	if errors.As(err, &pErr) {
+	if pErr, ok := errors.AsType[errorPartial](err); ok {
 		return pErr.fr
 	}
 	return r

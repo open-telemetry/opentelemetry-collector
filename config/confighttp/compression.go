@@ -101,14 +101,12 @@ var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, erro
 		return zr, nil
 	},
 	"snappy": newSnappyHandler(0),
-	//nolint:unparam // Ignoring the linter request to remove error return since it needs to match the method signature
 	"lz4": func(body io.ReadCloser) (io.ReadCloser, error) {
 		return &compressReadCloser{
 			Reader: lz4.NewReader(body),
 			orig:   body,
 		}, nil
 	},
-	//nolint:unparam // Ignoring the linter request to remove error return since it needs to match the method signature
 	"x-snappy-framed": func(body io.ReadCloser) (io.ReadCloser, error) {
 		return &compressReadCloser{
 			Reader: snappy.NewReader(body),
@@ -217,7 +215,7 @@ func (r *compressRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 
 	// Create a new request since the docs say that we cannot modify the "req"
 	// (see https://golang.org/pkg/net/http/#RoundTripper).
-	cReq, err := http.NewRequestWithContext(req.Context(), req.Method, req.URL.String(), buf)
+	cReq, err := http.NewRequestWithContext(req.Context(), req.Method, req.URL.String(), buf) // #nosec G704
 	if err != nil {
 		return nil, err
 	}
