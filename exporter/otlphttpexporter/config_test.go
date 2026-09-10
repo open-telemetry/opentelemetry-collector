@@ -44,13 +44,16 @@ func TestUnmarshalConfig(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 	assert.Equal(t,
 		&Config{
-			RetryConfig: configretry.BackOffConfig{
-				Enabled:             true,
-				InitialInterval:     10 * time.Second,
-				RandomizationFactor: 0.7,
-				Multiplier:          1.3,
-				MaxInterval:         1 * time.Minute,
-				MaxElapsedTime:      10 * time.Minute,
+			RetryConfig: RetryConfig{
+				BackOffConfig: configretry.BackOffConfig{
+					Enabled:             true,
+					InitialInterval:     10 * time.Second,
+					RandomizationFactor: 0.7,
+					Multiplier:          1.3,
+					MaxInterval:         1 * time.Minute,
+					MaxElapsedTime:      10 * time.Minute,
+				},
+				RetryableStatuses: []int{429, 503},
 			},
 			QueueConfig: configoptional.Some(exporterhelper.QueueBatchConfig{
 				Sizer:        exporterhelper.RequestSizerTypeRequests,
@@ -148,9 +151,10 @@ func TestUnmarshalEncoding(t *testing.T) {
 
 func TestConfigValidate(t *testing.T) {
 	tests := []struct {
-		name    string
-		cfg     *Config
-		wantErr bool
+		name        string
+		cfg         *Config
+		wantErr     bool
+		wantErrText string
 	}{
 		{
 			name: "no endpoints specified",
@@ -195,6 +199,44 @@ func TestConfigValidate(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "valid retryable_statuses list",
+			cfg: &Config{
+				ClientConfig: confighttp.ClientConfig{Endpoint: "http://localhost:4318"},
+				RetryConfig: RetryConfig{
+					RetryableStatuses: []int{429, 502, 503, 504, 530},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "empty retryable_statuses list",
+			cfg: &Config{
+				ClientConfig: confighttp.ClientConfig{Endpoint: "http://localhost:4318"},
+				RetryConfig: RetryConfig{
+					RetryableStatuses: []int{},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:        "retryable_statuses code below 100",
+			cfg:         retryStatusesCfg(99),
+			wantErr:     true,
+			wantErrText: "invalid HTTP status code 99",
+		},
+		{
+			name:        "retryable_statuses code above 599",
+			cfg:         retryStatusesCfg(600),
+			wantErr:     true,
+			wantErrText: "invalid HTTP status code 600",
+		},
+		{
+			name:        "retryable_statuses invalid in middle of list",
+			cfg:         retryStatusesCfg(429, 0, 503),
+			wantErr:     true,
+			wantErrText: "invalid HTTP status code 0",
+		},
 	}
 
 	for _, tt := range tests {
@@ -202,10 +244,26 @@ func TestConfigValidate(t *testing.T) {
 			err := tt.cfg.Validate()
 			if tt.wantErr {
 				require.Error(t, err)
-				assert.Contains(t, err.Error(), "at least one endpoint must be specified")
+				if tt.wantErrText != "" {
+					assert.Contains(t, err.Error(), tt.wantErrText)
+				} else {
+					assert.Contains(t, err.Error(), "at least one endpoint must be specified")
+				}
 			} else {
 				assert.NoError(t, err)
 			}
 		})
+	}
+}
+
+// retryStatusesCfg returns a minimal Config with a valid endpoint and the
+// supplied retryable_statuses list. Used by TestConfigValidate to keep the
+// retryable_statuses cases concise.
+func retryStatusesCfg(statuses ...int) *Config {
+	return &Config{
+		ClientConfig: confighttp.ClientConfig{Endpoint: "http://localhost:4318"},
+		RetryConfig: RetryConfig{
+			RetryableStatuses: statuses,
+		},
 	}
 }

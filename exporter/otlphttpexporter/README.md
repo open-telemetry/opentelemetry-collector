@@ -44,6 +44,7 @@ The following settings can be optionally configured:
 - `write_buffer_size` (default = 512 * 1024): WriteBufferSize for HTTP client.
 - `encoding` (default = proto): The encoding to use for the messages (valid options: `proto`, `json`)
 - `retry_on_failure`:  see [Retry on Failure](../exporterhelper/README.md#retry-on-failure) for the full set of available options.
+  - `retryable_statuses` (default = `[429, 502, 503, 504]`): HTTP response status codes that are treated as retryable. The defaults match the [OTLP specification](https://opentelemetry.io/docs/specs/otlp/#failures-1). Override this when the backend returns non-spec-compliant retryable codes — for example, an intermediary such as a proxy, load balancer, or CDN that returns a 5xx status (like HTTP 530) outside the OTLP spec set — or when running as a gateway and a code like `429` represents a non-retryable tenant limit that the gateway should surface to the client rather than retry (see #14228). Each code must be in the range 100-599. Note: `Retry-After` header handling remains scoped to HTTP 429 and 503 per the OTLP spec.
 - `sending_queue`: see [Sending Queue](../exporterhelper/README.md#sending-queue) for the full set of available options.
 
 Example:
@@ -70,6 +71,17 @@ exporters:
   otlp_http:
     ...
     encoding: json
+```
+
+To extend the set of HTTP status codes that trigger retries (only do this for backends that emit non-spec-compliant retryable codes, such as an intermediary that returns HTTP 530 on upstream errors):
+
+```yaml
+exporters:
+  otlp_http:
+    endpoint: https://backend:4318
+    retry_on_failure:
+      enabled: true
+      retryable_statuses: [429, 502, 503, 504, 530]
 ```
 
 The full list of settings exposed for this exporter are documented [here](./config.go)
