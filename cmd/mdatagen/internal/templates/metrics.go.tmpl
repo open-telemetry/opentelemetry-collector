@@ -49,11 +49,7 @@ const (
 )
 
 {{- if $hasReagMetrics }}
-// dataPointKey returns a hash of dp's attributes plus its start/end timestamps.
-// It is used as an O(1) substitute for scanning every existing data point with
-// dp.Attributes().Equal to find a merge/aggregation candidate. pcommon.Map does
-// not guarantee iteration order, so keys are sorted before hashing to keep the
-// result independent of that order.
+// dataPointKey hashes dp's attributes and timestamps for O(1) dedup lookup.
 func dataPointKey(dp pmetric.NumberDataPoint) uint64 {
 	h := fnv.New64a()
 	var buf [8]byte
@@ -68,7 +64,8 @@ func dataPointKey(dp pmetric.NumberDataPoint) uint64 {
 	return h.Sum64()
 }
 
-// hashMap writes a deterministic, order-independent representation of m into h.
+// hashMap hashes m's keys in sorted order, so the result doesn't depend on
+// pcommon.Map's iteration order.
 func hashMap(h hash.Hash64, buf *[8]byte, m pcommon.Map) {
 	keys := make([]string, 0, m.Len())
 	m.Range(func(k string, _ pcommon.Value) bool {
@@ -86,9 +83,7 @@ func hashMap(h hash.Hash64, buf *[8]byte, m pcommon.Map) {
 	}
 }
 
-// hashValue writes a type-tagged, length-prefixed representation of v into h.
-// The type tag (v.Type()) precedes the value so that, e.g., the int64 value 1
-// and the string "1" never hash the same way.
+// hashValue hashes v, tagged with its type so int 1 and string "1" differ.
 func hashValue(h hash.Hash64, buf *[8]byte, v pcommon.Value) {
 	buf[0] = byte(v.Type())
 	h.Write(buf[:1])
@@ -223,13 +218,7 @@ type metric{{ $name.Render }} struct {
 	capacity                 int // max observed number of data points added to the metric.
 	{{- if $metricReag }}
 	aggDataPoints            []{{ $metric.Data.MetricValueType.BasicType }} // slice containing number of aggregated datapoints at each index
-	// dpIndex maps a hash of (attributes + start/end timestamp) to its position
-	// in the DataPoints slice, so recordDataPoint's dedup/merge lookup is O(1)
-	// instead of an O(n) scan with a pcommon.Map.Equal comparison per existing
-	// data point. The O(n) scan is fine while a resource holds only a handful
-	// of data points, but a receiver that accumulates many data points onto one
-	// resource before flushing turns that per-call scan into an O(n^2) cost for
-	// the whole batch.
+	// dpIndex maps a data point's hash to its index, for O(1) dedup lookup.
 	dpIndex                  map[uint64]int
 	{{- end }}
 }
@@ -301,11 +290,7 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	{{- end }}
 
 	var s string
-	// Hash over exactly the fields the old O(n) scan compared
-	// (dp.Attributes().Equal + both timestamps). dataPointKey hashes the actual
-	// map contents (not a concatenated string), so map iteration order and any
-	// values the attributes happen to contain can't produce a false key
-	// collision.
+	// Same fields the old scan compared: attributes plus both timestamps.
 	key := dataPointKey(dp)
 	dps := m.data.{{ $metric.Data.Type }}().DataPoints()
 	if i, ok := m.dpIndex[key]; ok {
