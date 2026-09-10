@@ -59,7 +59,7 @@ func checkCoverage(md Metadata, targets map[component.StabilityLevel]float64, pr
 
 	pct := 100 * float64(covered) / float64(total)
 	if pct < target {
-		return fmt.Errorf("coverage %.1f%% for %v is below the %v%% target for %v", pct, md.PackageName, target, level)
+		return fmt.Errorf("coverage %.1f%% for %v is below the %.1f%% target for %v", pct, md.PackageName, target, level)
 	}
 	return nil
 }
