@@ -51,16 +51,59 @@ func (req *logsRequest) mergeTo(dst *logsRequest, sz sizer.LogsSizer, szt reques
 
 func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer, szt request.SizerType) ([]request.Request, error) {
 	var res []request.Request
+	droppedItems := 0
 	for req.size(sz, szt) > maxSize {
 		ld, removedSize := extractLogs(req.ld, maxSize, sz)
 		if ld.LogRecordCount() == 0 {
-			return res, fmt.Errorf("one log record size is greater than max size, dropping items: %d", req.ld.LogRecordCount())
+			// The next log record does not fit into maxSize even on its own, so no
+			// batch can ever hold it. Drop only that record and keep splitting the
+			// rest, otherwise every remaining record is discarded along with it.
+			if !removeFirstLogRecord(req.ld) {
+				break
+			}
+			droppedItems++
+			req.sizes.Update(szt, sz.LogsSize(req.ld))
+			continue
 		}
 		req.sizes.Update(szt, req.size(sz, szt)-removedSize)
 		res = append(res, newLogsRequest(ld))
 	}
-	res = append(res, req)
+	// Keep the remainder, unless everything left was dropped as oversized, in
+	// which case there is nothing to export.
+	if droppedItems == 0 || req.ld.LogRecordCount() > 0 {
+		res = append(res, req)
+	}
+	if droppedItems > 0 {
+		return res, fmt.Errorf("one log record size is greater than max size, dropping items: %d", droppedItems)
+	}
 	return res, nil
+}
+
+// removeFirstLogRecord removes the first log record in iteration order, together
+// with the scope and resource that it leaves empty. Reports whether a record was
+// removed, which is false only when there are none left.
+func removeFirstLogRecord(ld plog.Logs) bool {
+	removed := false
+	ld.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
+		if removed {
+			return false
+		}
+		rl.ScopeLogs().RemoveIf(func(sl plog.ScopeLogs) bool {
+			if removed {
+				return false
+			}
+			sl.LogRecords().RemoveIf(func(plog.LogRecord) bool {
+				if removed {
+					return false
+				}
+				removed = true
+				return true
+			})
+			return sl.LogRecords().Len() == 0
+		})
+		return rl.ScopeLogs().Len() == 0
+	})
+	return removed
 }
 
 // extractLogs extracts logs from the input logs and returns a new logs with the specified number of log records.

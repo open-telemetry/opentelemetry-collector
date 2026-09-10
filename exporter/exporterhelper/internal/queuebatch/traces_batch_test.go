@@ -5,6 +5,8 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -379,4 +381,74 @@ func BenchmarkSplittingBasedOnItemCountHugeTraces(b *testing.B) {
 		merged = append(merged[0:len(merged)-1], res...)
 		assert.Len(b, merged, 10)
 	}
+}
+
+// spanNames returns every span name across the given requests, in order.
+func spanNames(reqs []request.Request) []string {
+	var out []string
+	for _, r := range reqs {
+		rss := r.(*tracesRequest).td.ResourceSpans()
+		for i := 0; i < rss.Len(); i++ {
+			sss := rss.At(i).ScopeSpans()
+			for j := 0; j < sss.Len(); j++ {
+				spans := sss.At(j).Spans()
+				for k := 0; k < spans.Len(); k++ {
+					out = append(out, spans.At(k).Name())
+				}
+			}
+		}
+	}
+	return out
+}
+
+// newTracesWithSpans builds one span per name; a name of "BIG" gets an
+// attribute large enough that the span cannot fit into any batch.
+func newTracesWithSpans(names ...string) ptrace.Traces {
+	td := ptrace.NewTraces()
+	ss := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+	for _, n := range names {
+		span := ss.Spans().AppendEmpty()
+		span.SetName(n)
+		if n == "BIG" {
+			span.Attributes().PutStr("pad", strings.Repeat("x", 1000))
+		}
+	}
+	return td
+}
+
+func TestMergeSplitTracesDropsOnlyOversizedSpan(t *testing.T) {
+	tests := []struct {
+		name         string
+		spans        []string
+		wantSurvived []string
+		wantDropped  int
+	}{
+		{"oversized_first", []string{"BIG", "a", "b", "c"}, []string{"a", "b", "c"}, 1},
+		{"oversized_in_middle", []string{"a", "b", "BIG", "c", "d"}, []string{"a", "b", "c", "d"}, 1},
+		{"oversized_last", []string{"a", "b", "c", "BIG"}, []string{"a", "b", "c"}, 1},
+		{"multiple_oversized", []string{"a", "BIG", "b", "BIG", "c"}, []string{"a", "b", "c"}, 2},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := newTracesRequest(newTracesWithSpans(tt.spans...))
+			res, err := req.MergeSplit(context.Background(), 100, request.SizerTypeBytes, nil)
+
+			wantErr := fmt.Sprintf("one span size is greater than max size, dropping items: %d", tt.wantDropped)
+			require.ErrorContains(t, err, wantErr)
+			assert.Equal(t, tt.wantSurvived, spanNames(res),
+				"spans other than the oversized ones must survive")
+
+			for _, r := range res {
+				assert.LessOrEqual(t, r.BytesSize(), 100, "no returned batch may exceed max size")
+			}
+		})
+	}
+}
+
+func TestMergeSplitTracesAllSpansOversized(t *testing.T) {
+	req := newTracesRequest(newTracesWithSpans("BIG", "BIG"))
+	res, err := req.MergeSplit(context.Background(), 100, request.SizerTypeBytes, nil)
+	require.ErrorContains(t, err, "one span size is greater than max size, dropping items: 2")
+	assert.Empty(t, spanNames(res), "nothing can be exported when every span is oversized")
 }

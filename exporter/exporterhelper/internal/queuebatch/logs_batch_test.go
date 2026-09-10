@@ -5,6 +5,8 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -432,4 +434,92 @@ func BenchmarkSplittingBasedOnByteSizeHugeLogs(b *testing.B) {
 		merged = append(merged[0:len(merged)-1], res...)
 		assert.Len(b, merged, 10)
 	}
+}
+
+// logBodies returns every log record body across the given requests, in order.
+func logBodies(reqs []request.Request) []string {
+	var out []string
+	for _, r := range reqs {
+		rls := r.(*logsRequest).ld.ResourceLogs()
+		for i := 0; i < rls.Len(); i++ {
+			sls := rls.At(i).ScopeLogs()
+			for j := 0; j < sls.Len(); j++ {
+				lrs := sls.At(j).LogRecords()
+				for k := 0; k < lrs.Len(); k++ {
+					out = append(out, lrs.At(k).Body().Str())
+				}
+			}
+		}
+	}
+	return out
+}
+
+func newLogsWithBodies(bodies ...string) plog.Logs {
+	ld := plog.NewLogs()
+	sl := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
+	for _, b := range bodies {
+		sl.LogRecords().AppendEmpty().Body().SetStr(b)
+	}
+	return ld
+}
+
+func TestMergeSplitLogsDropsOnlyOversizedRecord(t *testing.T) {
+	oversized := strings.Repeat("x", 1000)
+
+	tests := []struct {
+		name         string
+		bodies       []string
+		wantSurvived []string
+		wantDropped  int
+	}{
+		{
+			name:         "oversized_first",
+			bodies:       []string{oversized, "a", "b", "c"},
+			wantSurvived: []string{"a", "b", "c"},
+			wantDropped:  1,
+		},
+		{
+			name:         "oversized_in_middle",
+			bodies:       []string{"a", "b", oversized, "c", "d"},
+			wantSurvived: []string{"a", "b", "c", "d"},
+			wantDropped:  1,
+		},
+		{
+			name:         "oversized_last",
+			bodies:       []string{"a", "b", "c", oversized},
+			wantSurvived: []string{"a", "b", "c"},
+			wantDropped:  1,
+		},
+		{
+			name:         "multiple_oversized",
+			bodies:       []string{"a", oversized, "b", oversized, "c"},
+			wantSurvived: []string{"a", "b", "c"},
+			wantDropped:  2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := newLogsRequest(newLogsWithBodies(tt.bodies...))
+			res, err := req.MergeSplit(context.Background(), 100, request.SizerTypeBytes, nil)
+
+			wantErr := fmt.Sprintf("one log record size is greater than max size, dropping items: %d", tt.wantDropped)
+			require.ErrorContains(t, err, wantErr)
+			assert.Equal(t, tt.wantSurvived, logBodies(res),
+				"records other than the oversized ones must survive")
+
+			for _, r := range res {
+				assert.LessOrEqual(t, r.BytesSize(), 100, "no returned batch may exceed max size")
+			}
+		})
+	}
+}
+
+func TestMergeSplitLogsAllRecordsOversized(t *testing.T) {
+	oversized := strings.Repeat("x", 1000)
+	req := newLogsRequest(newLogsWithBodies(oversized, oversized))
+
+	res, err := req.MergeSplit(context.Background(), 100, request.SizerTypeBytes, nil)
+	require.ErrorContains(t, err, "one log record size is greater than max size, dropping items: 2")
+	assert.Empty(t, logBodies(res), "nothing can be exported when every record is oversized")
 }
