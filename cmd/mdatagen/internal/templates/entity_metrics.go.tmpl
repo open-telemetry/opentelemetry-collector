@@ -247,7 +247,7 @@ func (eb *{{ $builderType }}) Emit() {
 	{{- if $.OverrideValueEnabled }}
 	cfg.applyOverrideValues(res)
 	{{- end }}
-	eb.mb.EmitForResource(withResourceMoved(res))
+	eb.mb.For{{ publicVar $entityType }}(eb.entity).Emit()
 }
 
 {{- end }}

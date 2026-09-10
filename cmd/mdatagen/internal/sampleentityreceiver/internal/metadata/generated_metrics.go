@@ -6,8 +6,6 @@ import (
 	"slices"
 	"time"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -425,44 +423,6 @@ func (mb *MetricsBuilder) ForK8sPod(e *K8sPodEntity) *K8sPodMetricsBuilder {
 	return &K8sPodMetricsBuilder{mb: mb, entity: e}
 }
 
-// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
-// recording another set of data points as part of another resource. This function can be helpful when one scraper
-// needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead.
-// Resource attributes should be provided as ResourceMetricsOption arguments.
-//
-// Deprecated: Use the For<EntityType> methods to get entity-scoped builders and call Emit() on them instead.
-func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
-	rm := pmetric.NewResourceMetrics()
-	rm.SetSchemaUrl(conventions.SchemaURL)
-	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName(ScopeName)
-	ils.Scope().SetVersion(mb.buildInfo.Version)
-	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricK8sPodCPUTime.emit(ils.Metrics())
-	mb.metricK8sPodPhase.emit(ils.Metrics())
-	mb.metricK8sReplicasetDesired.emit(ils.Metrics())
-
-	for _, op := range options {
-		op.apply(rm)
-	}
-	for attr, filter := range mb.resourceAttributeIncludeFilter {
-		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
-			return
-		}
-	}
-	for attr, filter := range mb.resourceAttributeExcludeFilter {
-		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
-			return
-		}
-	}
-
-	if ils.Metrics().Len() > 0 {
-		mb.updateCapacity(rm)
-		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
-	}
-}
-
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
@@ -471,27 +431,6 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 	metrics := mb.metricsBuffer
 	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
-}
-
-// RecordK8sPodCPUTimeDataPoint adds a data point to k8s.pod.cpu_time metric.
-//
-// Deprecated: Use mb.ForK8sPod(entity).RecordK8sPodCPUTimeDataPoint(...) instead.
-func (mb *MetricsBuilder) RecordK8sPodCPUTimeDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricK8sPodCPUTime.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordK8sPodPhaseDataPoint adds a data point to k8s.pod.phase metric.
-//
-// Deprecated: Use mb.ForK8sPod(entity).RecordK8sPodPhaseDataPoint(...) instead.
-func (mb *MetricsBuilder) RecordK8sPodPhaseDataPoint(ts pcommon.Timestamp, val int64, phaseAttributeValue AttributePhase) {
-	mb.metricK8sPodPhase.recordDataPoint(mb.startTime, ts, val, phaseAttributeValue.String())
-}
-
-// RecordK8sReplicasetDesiredDataPoint adds a data point to k8s.replicaset.desired metric.
-//
-// Deprecated: Use mb.ForK8sReplicaset(entity).RecordK8sReplicasetDesiredDataPoint(...) instead.
-func (mb *MetricsBuilder) RecordK8sReplicasetDesiredDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sReplicasetDesired.recordDataPoint(mb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
