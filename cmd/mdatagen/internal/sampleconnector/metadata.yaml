@@ -92,6 +92,7 @@ attributes:
     description: Attribute with a known set of string values.
     type: string
     enum: [red, green, blue]
+    requirement_level: conditionally_required
 
   map_attr:
     description: Attribute with a map value.
