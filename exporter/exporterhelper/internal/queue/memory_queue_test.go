@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
@@ -201,6 +202,88 @@ func TestMemoryQueueWaitForResultSizeAndCapacity(t *testing.T) {
 	close(stop)
 	require.NoError(t, q.Shutdown(context.Background()))
 	wg.Wait()
+}
+
+func TestMemoryQueueWaitForResultMetadataKey(t *testing.T) {
+	const metaKey = "x-wait-for-result"
+	myErr := errors.New("test error")
+
+	set := newSettings(request.SizerTypeItems, 100)
+	set.WaitForResultMetadataKey = metaKey
+	q := newMemoryQueue[intRequest](set)
+	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, q.Shutdown(context.Background()))
+	})
+
+	t.Run("metadata true waits and returns error", func(t *testing.T) {
+		wg := sync.WaitGroup{}
+		wg.Go(func() {
+			_, req, done, ok := q.Read(context.Background())
+			assert.True(t, ok)
+			assert.EqualValues(t, 1, req)
+			done.OnDone(myErr)
+		})
+		ctx := client.NewContext(context.Background(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{metaKey: {"true"}}),
+		})
+		require.ErrorIs(t, q.Offer(ctx, intRequest(1)), myErr)
+		wg.Wait()
+	})
+
+	t.Run("metadata false does not wait", func(t *testing.T) {
+		consumed := make(chan struct{})
+		wg := sync.WaitGroup{}
+		wg.Go(func() {
+			_, req, done, ok := q.Read(context.Background())
+			assert.True(t, ok)
+			assert.EqualValues(t, 2, req)
+			done.OnDone(myErr)
+			close(consumed)
+		})
+		ctx := client.NewContext(context.Background(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{metaKey: {"false"}}),
+		})
+		require.NoError(t, q.Offer(ctx, intRequest(2)))
+		<-consumed
+		wg.Wait()
+	})
+
+	t.Run("missing metadata does not wait", func(t *testing.T) {
+		consumed := make(chan struct{})
+		wg := sync.WaitGroup{}
+		wg.Go(func() {
+			_, req, done, ok := q.Read(context.Background())
+			assert.True(t, ok)
+			assert.EqualValues(t, 3, req)
+			done.OnDone(myErr)
+			close(consumed)
+		})
+		require.NoError(t, q.Offer(context.Background(), intRequest(3)))
+		<-consumed
+		wg.Wait()
+	})
+
+	t.Run("wait_for_result overrides missing metadata", func(t *testing.T) {
+		setAlways := newSettings(request.SizerTypeItems, 100)
+		setAlways.WaitForResult = true
+		setAlways.WaitForResultMetadataKey = metaKey
+		qAlways := newMemoryQueue[intRequest](setAlways)
+		require.NoError(t, qAlways.Start(context.Background(), componenttest.NewNopHost()))
+		t.Cleanup(func() {
+			require.NoError(t, qAlways.Shutdown(context.Background()))
+		})
+
+		wg := sync.WaitGroup{}
+		wg.Go(func() {
+			_, req, done, ok := qAlways.Read(context.Background())
+			assert.True(t, ok)
+			assert.EqualValues(t, 4, req)
+			done.OnDone(myErr)
+		})
+		require.ErrorIs(t, qAlways.Offer(context.Background(), intRequest(4)), myErr)
+		wg.Wait()
+	})
 }
 
 func BenchmarkMemoryQueueWaitForResult(b *testing.B) {

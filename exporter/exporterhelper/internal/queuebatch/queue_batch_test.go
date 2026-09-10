@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -472,6 +473,56 @@ func TestQueueBatch_Shutdown(t *testing.T) {
 	// shutdown should force sending the batch
 	assert.Equal(t, 1, sink.RequestsCount())
 	assert.Equal(t, 3, sink.ItemsCount())
+}
+
+func TestQueueBatch_WaitForResultMetadataKey(t *testing.T) {
+	const metaKey = "x-wait-for-result"
+	cfg := newTestConfig()
+	cfg.WaitForResult = false
+	cfg.WaitForResultMetadataKey = metaKey
+	cfg.Batch = configoptional.Optional[BatchConfig]{}
+
+	t.Run("metadata true blocks until export finishes", func(t *testing.T) {
+		sink := requesttest.NewSink()
+		qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
+		require.NoError(t, err)
+		require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
+		t.Cleanup(func() {
+			require.NoError(t, qb.Shutdown(context.Background()))
+		})
+
+		ctx := client.NewContext(context.Background(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{metaKey: {"true"}}),
+		})
+		require.NoError(t, qb.Send(ctx, &requesttest.FakeRequest{Items: 1, Delay: 20 * time.Millisecond}))
+		assert.Equal(t, 1, sink.RequestsCount())
+		assert.Equal(t, 1, sink.ItemsCount())
+	})
+
+	t.Run("metadata false returns before export finishes", func(t *testing.T) {
+		exportDone := make(chan struct{})
+		export := func(context.Context, request.Request) error {
+			time.Sleep(50 * time.Millisecond)
+			close(exportDone)
+			return nil
+		}
+		qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, export)
+		require.NoError(t, err)
+		require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
+		t.Cleanup(func() {
+			require.NoError(t, qb.Shutdown(context.Background()))
+		})
+
+		ctx := client.NewContext(context.Background(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{metaKey: {"false"}}),
+		})
+		require.NoError(t, qb.Send(ctx, &requesttest.FakeRequest{Items: 1}))
+		select {
+		case <-exportDone:
+			t.Fatal("Send should return before export completes when metadata is false")
+		default:
+		}
+	})
 }
 
 func TestQueueBatch_BatchBlocking(t *testing.T) {

@@ -6,8 +6,10 @@ package queue // import "go.opentelemetry.io/collector/exporter/exporterhelper/i
 import (
 	"context"
 	"errors"
+	"strconv"
 	"sync"
 
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
@@ -32,26 +34,28 @@ type memoryQueue[T request.Request] struct {
 	sizer      request.Sizer
 	cap        int64
 
-	mu              sync.Mutex
-	hasMoreElements *sync.Cond
-	hasMoreSpace    *cond
-	items           *linkedQueue[T]
-	size            int64
-	stopped         bool
-	waitForResult   bool
-	blockOnOverflow bool
+	mu                       sync.Mutex
+	hasMoreElements          *sync.Cond
+	hasMoreSpace             *cond
+	items                    *linkedQueue[T]
+	size                     int64
+	stopped                  bool
+	waitForResult            bool
+	waitForResultMetadataKey string
+	blockOnOverflow          bool
 }
 
 // newMemoryQueue creates a sized elements channel. Each element is assigned a size by the provided sizer.
 // capacity is the capacity of the queue.
 func newMemoryQueue[T request.Request](set Settings[T]) readableQueue[T] {
 	sq := &memoryQueue[T]{
-		refCounter:      set.ReferenceCounter,
-		sizer:           request.NewSizer(set.SizerType),
-		cap:             set.Capacity,
-		items:           &linkedQueue[T]{},
-		waitForResult:   set.WaitForResult,
-		blockOnOverflow: set.BlockOnOverflow,
+		refCounter:               set.ReferenceCounter,
+		sizer:                    request.NewSizer(set.SizerType),
+		cap:                      set.Capacity,
+		items:                    &linkedQueue[T]{},
+		waitForResult:            set.WaitForResult,
+		waitForResultMetadataKey: set.WaitForResultMetadataKey,
+		blockOnOverflow:          set.BlockOnOverflow,
 	}
 	sq.hasMoreElements = sync.NewCond(&sq.mu)
 	sq.hasMoreSpace = newCond(&sq.mu)
@@ -89,7 +93,7 @@ func (mq *memoryQueue[T]) Offer(ctx context.Context, el T) error {
 		return err
 	}
 
-	if mq.waitForResult {
+	if done.waitForResult {
 		// Only re-add the blockingDone instance back to the pool if successfully received the
 		// message from the consumer which guarantees consumer will not use that anymore,
 		// otherwise no guarantee about when the consumer will add the message to the channel so cannot reuse or close.
@@ -102,6 +106,21 @@ func (mq *memoryQueue[T]) Offer(ctx context.Context, el T) error {
 		}
 	}
 	return nil
+}
+
+func (mq *memoryQueue[T]) shouldWaitForResult(ctx context.Context) bool {
+	if mq.waitForResult {
+		return true
+	}
+	if mq.waitForResultMetadataKey == "" {
+		return false
+	}
+	vals := client.FromContext(ctx).Metadata.Get(mq.waitForResultMetadataKey)
+	if len(vals) == 0 {
+		return false
+	}
+	wait, err := strconv.ParseBool(vals[0])
+	return err == nil && wait
 }
 
 func (mq *memoryQueue[T]) add(ctx context.Context, el T, elSize int64) (*blockingDone, error) {
@@ -119,10 +138,11 @@ func (mq *memoryQueue[T]) add(ctx context.Context, el T, elSize int64) (*blockin
 	}
 
 	mq.size += elSize
+	wait := mq.shouldWaitForResult(ctx)
 	done := blockingDonePool.Get().(*blockingDone)
-	done.reset(elSize, mq)
+	done.reset(elSize, mq, wait)
 
-	if !mq.waitForResult {
+	if !wait {
 		// Prevent cancellation and deadline to propagate to the context stored in the queue.
 		// The grpc/http based receivers will cancel the request context after this function returns.
 		ctx = context.WithoutCancel(ctx)
@@ -163,7 +183,7 @@ func (mq *memoryQueue[T]) onDone(bd *blockingDone, err error) {
 	defer mq.mu.Unlock()
 	mq.size -= bd.elSize
 	mq.hasMoreSpace.Signal()
-	if mq.waitForResult {
+	if bd.waitForResult {
 		// In this case the done will be added back to the queue by the waiter.
 		bd.ch <- err
 		return
@@ -233,13 +253,15 @@ type blockingDone struct {
 	queue interface {
 		onDone(*blockingDone, error)
 	}
-	elSize int64
-	ch     chan error
+	elSize        int64
+	ch            chan error
+	waitForResult bool
 }
 
-func (bd *blockingDone) reset(elSize int64, queue interface{ onDone(*blockingDone, error) }) {
+func (bd *blockingDone) reset(elSize int64, queue interface{ onDone(*blockingDone, error) }, waitForResult bool) {
 	bd.elSize = elSize
 	bd.queue = queue
+	bd.waitForResult = waitForResult
 }
 
 func (bd *blockingDone) OnDone(err error) {

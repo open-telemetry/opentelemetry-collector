@@ -21,6 +21,13 @@ type Config struct {
 	// Currently, this option is not available when persistent queue is configured using the storage configuration.
 	WaitForResult bool `mapstructure:"wait_for_result"`
 
+	// WaitForResultMetadataKey is a client.Metadata key used to decide per request whether to wait
+	// for the result. When WaitForResult is false and this key is set, a request waits only if the
+	// metadata value parses as true (e.g. "true" or "1"). When WaitForResult is true, all requests
+	// wait and this key is ignored. Requires the receiver to enable include_metadata so headers are
+	// propagated. Not available with a persistent queue configured using storage.
+	WaitForResultMetadataKey string `mapstructure:"wait_for_result_metadata_key"`
+
 	// Sizer determines the type of size measurement used by this component.
 	// It accepts "requests", "items", or "bytes".
 	Sizer request.SizerType `mapstructure:"sizer"`
@@ -76,6 +83,9 @@ func (cfg *Config) Validate() error {
 	// Only support request sizer for persistent queue at this moment.
 	if cfg.StorageID != nil && cfg.WaitForResult {
 		return errors.New("`wait_for_result` is not supported with a persistent queue configured with `storage`")
+	}
+	if cfg.StorageID != nil && cfg.WaitForResultMetadataKey != "" {
+		return errors.New("`wait_for_result_metadata_key` is not supported with a persistent queue configured with `storage`")
 	}
 
 	if cfg.Batch.HasValue() && cfg.Batch.Get().Sizer == cfg.Sizer {

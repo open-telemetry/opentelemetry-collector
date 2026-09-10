@@ -40,6 +40,10 @@ block_on_overflow: true
 # or failure.
 wait_for_result: false
 
+# Optional: wait only when this client.Metadata key parses as true.
+# Requires the receiver to enable include_metadata.
+# wait_for_result_metadata_key: x-wait-for-result
+
 # These defaults match both batchprocessor and exporterhelper.
 batch: 
   enabled: true
@@ -126,7 +130,7 @@ service:
 
 When `storage` is set there is no in-memory queue. Each request is
 serialized as it enters the queue and read back from disk before
-export. The `wait_for_result` setting is not supported together with
-`storage`.
+export. The `wait_for_result` and `wait_for_result_metadata_key`
+settings are not supported together with `storage`.
 
 [filestorage]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage/filestorage
