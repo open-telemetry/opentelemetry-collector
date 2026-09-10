@@ -21,6 +21,23 @@ func TestResolveProfilesReferencesEmpty(t *testing.T) {
 	assert.Equal(t, 0, profiles.ResourceProfiles().Len())
 }
 
+func TestResolveProfilesReferencesWithInlineKey(t *testing.T) {
+	profiles := NewProfiles()
+	profiles.Dictionary().StringTable().Append("") // index 0 is the required sentinel, not a key reference
+
+	attrs := profiles.ResourceProfiles().AppendEmpty().Resource().Attributes()
+	attrs.PutStr("service.name", "checkout")
+
+	kvs := internal.GetMapOrig(internal.MapWrapper(attrs))
+	require.Len(t, *kvs, 1)
+	require.Zero(t, (*kvs)[0].KeyStrindex)
+
+	resolveProfilesReferences(profiles)
+
+	assert.Equal(t, "service.name", (*kvs)[0].Key,
+		"an unset key_strindex must not replace an inline key with string_table[0]")
+}
+
 func TestResolveProfilesReferencesWithKeyRef(t *testing.T) {
 	profiles := NewProfiles()
 	dict := profiles.Dictionary()
@@ -83,6 +100,29 @@ func TestResolveProfilesReferencesInvalidIndices(t *testing.T) {
 	// Value should remain as StringValueStrindex since index is invalid
 	_, ok := kv.Value.Value.(*internal.AnyValue_StringValueStrindex)
 	assert.True(t, ok)
+}
+
+func TestResolveProfilesReferencesWithBothKeyAndKeyStrindex(t *testing.T) {
+	profiles := NewProfiles()
+	dict := profiles.Dictionary()
+	dict.StringTable().Append("") // index 0
+	dict.StringTable().Append("other-key")
+
+	rp := profiles.ResourceProfiles().AppendEmpty()
+	attrs := rp.Resource().Attributes()
+
+	// key and key_strindex are mutually exclusive per the proto spec: this is
+	// illegal input, but must not silently clobber the already-set inline key.
+	mapOrig := internal.GetMapOrig(internal.MapWrapper(attrs))
+	*mapOrig = append(*mapOrig, internal.KeyValue{
+		Key:         "inline-key",
+		KeyStrindex: 1, // references "other-key"
+	})
+
+	resolveProfilesReferences(profiles)
+
+	kv := &(*mapOrig)[0]
+	assert.Equal(t, "inline-key", kv.Key, "inline key must not be overwritten by key_strindex")
 }
 
 func TestResolveAnyValueReferenceWithPooling(t *testing.T) {

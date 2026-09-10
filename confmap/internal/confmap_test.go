@@ -574,6 +574,37 @@ func TestEmbeddedMarshalerError(t *testing.T) {
 	assert.EqualError(t, cfgMap.Unmarshal(tc), "error running encode hook: marshaling error")
 }
 
+func TestUnmarshalDecodeStateMultipleCalls(t *testing.T) {
+	state := &decodeState{}
+	conf := NewFromStringMap(map[string]any{
+		"foo": "foo",
+		"bar": "bar",
+	})
+	conf.decodeState = state
+
+	var first struct {
+		Foo string `mapstructure:"foo"`
+	}
+	require.NoError(t, conf.Unmarshal(&first, WithIgnoreUnused()))
+
+	var second struct {
+		Bar string `mapstructure:"bar"`
+	}
+	require.NoError(t, conf.Unmarshal(&second, WithIgnoreUnused()))
+
+	assert.Empty(t, state.unused)
+}
+
+func TestDecodeRootError(t *testing.T) {
+	var cfg struct {
+		Foo string `mapstructure:"foo"`
+	}
+
+	_, err := decode(123, &cfg, UnmarshalOptions{}, false)
+	require.Error(t, err)
+	assert.NotContains(t, err.Error(), "error decoding ''")
+}
+
 // stringOpaque is similar to configopaque.String, in that
 // marshaling then unmarshaling it changes its value.
 type stringOpaque string
