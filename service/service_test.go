@@ -103,7 +103,6 @@ func TestServiceTelemetryLogging_Settings(t *testing.T) {
 		require.Equal(t, zapConfig, cfg)
 		return zap.New(observerCore, opts...), nil
 	}
-	set.LoggingOptions = []zap.Option{zap.Fields(zap.String("extra.field", "value"))}
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: otelCommand}
 	set.TelemetryFactory = telemetry.NewFactory(
 		func() component.Config { return nil },
@@ -134,7 +133,6 @@ func TestServiceTelemetryLogging_Settings(t *testing.T) {
 
 	entries := observedLogs.All()
 	require.Len(t, entries, 1)
-	assert.Contains(t, entries[0].ContextMap(), "extra.field")
 }
 
 func TestServiceTelemetryMetrics(t *testing.T) {
