@@ -15,8 +15,8 @@ import (
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/status"
 
-	"go.opentelemetry.io/collector/internal/grpccompression/snappy"
-	"go.opentelemetry.io/collector/internal/grpccompression/zstd"
+	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/snappy"
+	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/zstd"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"

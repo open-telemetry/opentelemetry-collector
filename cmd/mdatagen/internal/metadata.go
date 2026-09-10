@@ -21,7 +21,7 @@ import (
 const semConvURL = "https://github.com/open-telemetry/semantic-conventions/blob"
 
 var (
-	featureGateIDRegexp       = regexp.MustCompile(`^[0-9a-zA-Z.]*$`)
+	featureGateIDRegexp       = regexp.MustCompile(`^[0-9a-zA-Z._]*$`)
 	featureGateIssueURLRegexp = regexp.MustCompile(`^https://github\.com/[^/]+/[^/]+/issues/\d+$`)
 )
 
@@ -439,7 +439,7 @@ func (md *Metadata) validateFeatureGates() error {
 
 		// Validate ID follows the allowed character pattern
 		if !featureGateIDRegexp.MatchString(string(gate.ID)) {
-			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": ID contains invalid characters, must match ^[0-9a-zA-Z.]*$`, gate.ID))
+			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": ID contains invalid characters, must match ^[0-9a-zA-Z._]*$`, gate.ID))
 		}
 
 		// Validate ID is prefixed with "<class>.<type>." so gates are namespaced to their component.
@@ -537,12 +537,19 @@ func (rl AttributeRequirementLevel) String() string {
 	return ""
 }
 
-func (mn AttributeName) Render() (string, error) {
-	return helpers.FormatIdentifier(string(mn), true)
+func (an AttributeName) EmittedName() string {
+	if emittedName, _, found := strings.Cut(string(an), "@"); found {
+		return emittedName
+	}
+	return string(an)
 }
 
-func (mn AttributeName) RenderUnexported() (string, error) {
-	return helpers.FormatIdentifier(string(mn), false)
+func (an AttributeName) Render() (string, error) {
+	return helpers.FormatIdentifier(string(an), true)
+}
+
+func (an AttributeName) RenderUnexported() (string, error) {
+	return helpers.FormatIdentifier(string(an), false)
 }
 
 // ValueType defines an attribute value type.
@@ -847,7 +854,7 @@ type FeatureGate struct {
 	// GitHub issue URL (https://github.com/<owner>/<repo>/issues/<number>)
 	// unless SkipStrictValidation is set.
 	ReferenceURL string `mapstructure:"reference_url"`
-	// SkipStrictValidation opts this gate out of strict validation. New gates should leave this unset.
+	// Deprecated: set the exemption in the central .mdatagen.yaml instead.
 	SkipStrictValidation bool `mapstructure:"skip_strict_validation"`
 }
 

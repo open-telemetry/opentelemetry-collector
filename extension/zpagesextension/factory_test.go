@@ -33,7 +33,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 
 func TestFactoryCreate(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.ServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	set := extensiontest.NewNopSettings(extensiontest.NopType)
 	set.ID = component.NewID(NewFactory().Type())

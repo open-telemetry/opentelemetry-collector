@@ -15,7 +15,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service/telemetry"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry/internal/migration"
@@ -50,7 +49,7 @@ func TestCreateResource(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-		res, err := createResource(t.Context(), set, cfg)
+		res, _, err := createResource(t.Context(), set, cfg)
 		require.NoError(t, err)
 
 		raw := res.Attributes().AsRaw()
@@ -71,7 +70,7 @@ func TestCreateResource(t *testing.T) {
 		})
 		require.NoError(t, legacy.Unmarshal(&cfg.Resource))
 		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-		res, err := createResource(t.Context(), set, cfg)
+		res, _, err := createResource(t.Context(), set, cfg)
 		require.NoError(t, err)
 
 		raw := res.Attributes().AsRaw()
@@ -91,7 +90,7 @@ func TestCreateResource(t *testing.T) {
 		})
 		require.NoError(t, legacy.Unmarshal(&cfg.Resource))
 		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-		res, err := createResource(t.Context(), set, cfg)
+		res, _, err := createResource(t.Context(), set, cfg)
 		require.NoError(t, err)
 
 		raw := res.Attributes().AsRaw()
@@ -108,7 +107,7 @@ func TestCreateResource(t *testing.T) {
 			{Name: "service.instance.id", Value: nil},
 		}
 		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-		res, err := createResource(t.Context(), set, cfg)
+		res, _, err := createResource(t.Context(), set, cfg)
 		require.NoError(t, err)
 
 		raw := res.Attributes().AsRaw()
@@ -127,8 +126,9 @@ func TestCreateResource(t *testing.T) {
 			{Name: "service.name", Value: "test-service"},
 		}
 		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-		res, err := createResource(t.Context(), set, cfg)
+		res, schemaURL, err := createResource(t.Context(), set, cfg)
 		require.NoError(t, err)
+		assert.Equal(t, customSchemaURL, schemaURL)
 
 		raw := res.Attributes().AsRaw()
 		assert.Contains(t, raw, "service.name")
@@ -144,7 +144,7 @@ func TestCreateResource(t *testing.T) {
 			},
 		}
 		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-		res, err := createResource(t.Context(), set, cfg)
+		res, _, err := createResource(t.Context(), set, cfg)
 		require.NoError(t, err)
 
 		raw := res.Attributes().AsRaw()
@@ -160,7 +160,7 @@ func TestCreateResource(t *testing.T) {
 			},
 		}
 		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-		res, err := createResource(t.Context(), set, cfg)
+		res, _, err := createResource(t.Context(), set, cfg)
 		require.NoError(t, err)
 
 		raw := res.Attributes().AsRaw()
@@ -182,7 +182,7 @@ func TestCreateResource(t *testing.T) {
 			{Name: "service.name", Value: "configured-service"},
 		}
 		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-		res, err := createResource(t.Context(), set, cfg)
+		res, _, err := createResource(t.Context(), set, cfg)
 		require.NoError(t, err)
 
 		raw := res.Attributes().AsRaw()
@@ -208,7 +208,7 @@ func TestCreateResource(t *testing.T) {
 		}
 
 		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-		res, err := createResource(t.Context(), set, cfg)
+		res, _, err := createResource(t.Context(), set, cfg)
 		require.NoError(t, err)
 
 		raw := res.Attributes().AsRaw()
@@ -224,7 +224,7 @@ func TestCreateResource(t *testing.T) {
 			},
 		}
 		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-		res, err := createResource(t.Context(), set, cfg)
+		res, _, err := createResource(t.Context(), set, cfg)
 		require.NoError(t, err)
 
 		raw := res.Attributes().AsRaw()
@@ -251,7 +251,7 @@ func TestCreateResource(t *testing.T) {
 			{Name: "string.attr", Value: "test"},
 		}
 		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-		res, err := createResource(t.Context(), set, cfg)
+		res, _, err := createResource(t.Context(), set, cfg)
 		require.NoError(t, err)
 
 		raw := res.Attributes().AsRaw()
@@ -277,7 +277,7 @@ func TestCreateResource(t *testing.T) {
 			{Name: "complex.attr", Value: complex(1, 2)},
 		}
 		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-		res, err := createResource(t.Context(), set, cfg)
+		res, _, err := createResource(t.Context(), set, cfg)
 		require.NoError(t, err)
 
 		raw := res.Attributes().AsRaw()
@@ -295,7 +295,7 @@ func TestCreateResource_DefaultAttributeValuesError(t *testing.T) {
 		return nil, assert.AnError
 	}
 
-	res, err := createResource(t.Context(), set, cfg)
+	res, _, err := createResource(t.Context(), set, cfg)
 	require.ErrorIs(t, err, assert.AnError)
 	assert.Equal(t, pcommon.Resource{}, res)
 }
@@ -311,7 +311,7 @@ func TestCreateResource_ExperimentalSDKError(t *testing.T) {
 		return xotelconf.SDK{}, assert.AnError
 	}
 
-	res, err := createResource(t.Context(), set, cfg)
+	res, _, err := createResource(t.Context(), set, cfg)
 	require.ErrorIs(t, err, assert.AnError)
 	assert.Equal(t, pcommon.Resource{}, res)
 }
@@ -360,7 +360,7 @@ func TestResourceConfigValidateAttributesListUnsupported(t *testing.T) {
 		"attributes_list": "service.name=override",
 	})
 	require.NoError(t, conf.Unmarshal(&cfg))
-	err := xconfmap.Validate(&cfg)
+	err := confmap.Validate(&cfg)
 	require.ErrorContains(t, err, "resource::attributes_list is not currently supported")
 }
 
@@ -368,13 +368,13 @@ func TestCreateFixedResourceConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
 
-	res, err := createResource(t.Context(), set, cfg)
+	res, schemaURL, err := createResource(t.Context(), set, cfg)
 	require.NoError(t, err)
 
-	resourceConfig, err := createFixedResourceConfig(&cfg.Resource, &res)
+	resourceConfig, err := createFixedResourceConfig(&res, schemaURL)
 	require.NoError(t, err)
 	require.NotNil(t, resourceConfig.SchemaUrl)
-	assert.Equal(t, *cfg.Resource.SchemaUrl, *resourceConfig.SchemaUrl)
+	assert.Equal(t, schemaURL, *resourceConfig.SchemaUrl)
 
 	got := make(map[string]any, len(resourceConfig.Attributes))
 	for _, attr := range resourceConfig.Attributes {
@@ -385,7 +385,7 @@ func TestCreateFixedResourceConfig(t *testing.T) {
 	assert.Contains(t, got, "service.instance.id")
 
 	t.Run("missing resource errors", func(t *testing.T) {
-		_, err := createFixedResourceConfig(&cfg.Resource, nil)
+		_, err := createFixedResourceConfig(nil, "")
 		require.ErrorIs(t, err, errMissingCollectorResource)
 	})
 }
@@ -399,12 +399,12 @@ func TestFactoryDoesNotCacheResourceAcrossConfigs(t *testing.T) {
 	cfg2 := createDefaultConfig().(*Config)
 	cfg2.Resource.Attributes = []config.AttributeNameValue{{Name: "service.name", Value: "svc-2"}}
 
-	res1, err := factory.CreateResource(t.Context(), telemetry.Settings{
+	res1, _, err := factory.CreateResource(t.Context(), telemetry.Settings{
 		BuildInfo: component.BuildInfo{Command: "otelcol", Version: "1.0.0"},
 	}, cfg1)
 	require.NoError(t, err)
 
-	res2, err := factory.CreateResource(t.Context(), telemetry.Settings{
+	res2, _, err := factory.CreateResource(t.Context(), telemetry.Settings{
 		BuildInfo: component.BuildInfo{Command: "otelcol", Version: "2.0.0"},
 	}, cfg2)
 	require.NoError(t, err)

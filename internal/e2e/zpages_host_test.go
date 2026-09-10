@@ -4,6 +4,7 @@
 package e2e
 
 import (
+	"context"
 	"net/http"
 	"testing"
 	"time"
@@ -97,7 +98,7 @@ func TestZPagesExtensionHost(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, srv.Start(t.Context()))
 	t.Cleanup(func() {
-		require.NoError(t, srv.Shutdown(t.Context()))
+		require.NoError(t, srv.Shutdown(context.Background()))
 	})
 
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {

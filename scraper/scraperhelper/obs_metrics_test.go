@@ -150,7 +150,8 @@ func checkScraperMetrics(t *testing.T, tt *componenttest.Telemetry, receiver, sc
 			{
 				Attributes: attribute.NewSet(
 					attribute.String(receiverKey, receiver.String()),
-					attribute.String(scraperKey, scraper.String())),
+					attribute.String(scraperKey, scraper.String()),
+				),
 				Value: scrapedMetricPoints,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -159,7 +160,8 @@ func checkScraperMetrics(t *testing.T, tt *componenttest.Telemetry, receiver, sc
 			{
 				Attributes: attribute.NewSet(
 					attribute.String(receiverKey, receiver.String()),
-					attribute.String(scraperKey, scraper.String())),
+					attribute.String(scraperKey, scraper.String()),
+				),
 				Value: erroredMetricPoints,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())

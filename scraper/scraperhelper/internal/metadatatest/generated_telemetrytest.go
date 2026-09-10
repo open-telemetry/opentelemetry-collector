@@ -16,7 +16,7 @@ func AssertEqualScraperErroredLogRecords(t *testing.T, tt *componenttest.Telemet
 	want := metricdata.Metrics{
 		Name:        "otelcol_scraper_errored_log_records",
 		Description: "Number of log records that were unable to be scraped. [Alpha]",
-		Unit:        "{datapoint}",
+		Unit:        "{record}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -48,7 +48,7 @@ func AssertEqualScraperScrapedLogRecords(t *testing.T, tt *componenttest.Telemet
 	want := metricdata.Metrics{
 		Name:        "otelcol_scraper_scraped_log_records",
 		Description: "Number of log records successfully scraped. [Alpha]",
-		Unit:        "{datapoint}",
+		Unit:        "{record}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,

@@ -8,6 +8,7 @@ import (
 	"sort"
 
 	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -23,7 +24,7 @@ func createLogger(
 ) (*zap.Logger, component.ShutdownFunc, error) {
 	cfg := componentConfig.(*Config)
 
-	resourceConfig, err := createFixedResourceConfig(&cfg.Resource, set.Resource)
+	resourceConfig, err := createFixedResourceConfig(set.Resource, set.SchemaURL)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -59,6 +60,15 @@ func createLogger(
 	if err != nil {
 		return nil, nil, err
 	}
+
+	// Route OpenTelemetry SDK-internal errors (e.g. failed metric/log/trace
+	// exports) through the collector's logger, so they follow the same
+	// configured encoding and outputs instead of always going to stderr
+	// via the OTel SDK's default global error handler.
+	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
+		logger.Error("OpenTelemetry internal telemetry error", zap.Error(err))
+	}))
+
 	if cfg.Logs.MigratedFromV02 {
 		logger.Warn("Telemetry logs configuration is using the deprecated v0.2.0 Declarative Configuration format, please migrate to the v0.3.0 format",
 			zap.String("url", "https://opentelemetry.io/docs/specs/otel/configuration/#declarative-configuration"))

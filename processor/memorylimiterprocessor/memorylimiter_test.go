@@ -191,7 +191,8 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 				ml.processMetrics,
 				processorhelper.WithCapabilities(processorCapabilities),
 				processorhelper.WithStart(ml.start),
-				processorhelper.WithShutdown(ml.shutdown))
+				processorhelper.WithShutdown(ml.shutdown),
+			)
 			require.NoError(t, err)
 
 			assert.NoError(t, mp.Start(ctx, &host{}))
@@ -310,7 +311,8 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 				ml.processTraces,
 				processorhelper.WithCapabilities(processorCapabilities),
 				processorhelper.WithStart(ml.start),
-				processorhelper.WithShutdown(ml.shutdown))
+				processorhelper.WithShutdown(ml.shutdown),
+			)
 			require.NoError(t, err)
 
 			assert.NoError(t, tp.Start(ctx, &host{}))
@@ -400,7 +402,8 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 				ml.processLogs,
 				processorhelper.WithCapabilities(processorCapabilities),
 				processorhelper.WithStart(ml.start),
-				processorhelper.WithShutdown(ml.shutdown))
+				processorhelper.WithShutdown(ml.shutdown),
+			)
 			require.NoError(t, err)
 
 			assert.NoError(t, tp.Start(ctx, &host{}))
@@ -490,7 +493,8 @@ func TestProfileMemoryPressureResponse(t *testing.T) {
 				ml.processProfiles,
 				xprocessorhelper.WithCapabilities(processorCapabilities),
 				xprocessorhelper.WithStart(ml.start),
-				xprocessorhelper.WithShutdown(ml.shutdown))
+				xprocessorhelper.WithShutdown(ml.shutdown),
+			)
 			require.NoError(t, err)
 
 			assert.NoError(t, tp.Start(ctx, &host{}))

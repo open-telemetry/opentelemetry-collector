@@ -41,9 +41,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SystemCPUUtilizationV1: SystemCPUUtilizationV1MetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SystemCPUUtilizationV1MetricAttributeKey{SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber, SystemCPUUtilizationV1MetricAttributeKeyState},
+						EnabledAttributes:   []SystemCPUUtilizationV1MetricAttributeKey{SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber, SystemCPUUtilizationV1MetricAttributeKeyCPUMode},
 					},
-					SystemMemoryLinuxAvailable: SystemMemoryLinuxAvailableMetricConfig{
+					SystemMemoryLinuxAvailableV1: SystemMemoryLinuxAvailableV1MetricConfig{
 						Enabled: true,
 					},
 				},
@@ -67,9 +67,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SystemCPUUtilizationV1: SystemCPUUtilizationV1MetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SystemCPUUtilizationV1MetricAttributeKey{SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber, SystemCPUUtilizationV1MetricAttributeKeyState},
+						EnabledAttributes:   []SystemCPUUtilizationV1MetricAttributeKey{SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber, SystemCPUUtilizationV1MetricAttributeKeyCPUMode},
 					},
-					SystemMemoryLinuxAvailable: SystemMemoryLinuxAvailableMetricConfig{
+					SystemMemoryLinuxAvailableV1: SystemMemoryLinuxAvailableV1MetricConfig{
 						Enabled: false,
 					},
 				},
@@ -79,7 +79,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(LinuxMemoryAvailableMetricConfig{}, SystemCPUFooMetricConfig{}, SystemCPUUtilizationMetricConfig{}, SystemCPUUtilizationV1MetricConfig{}, SystemMemoryLinuxAvailableMetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(LinuxMemoryAvailableMetricConfig{}, SystemCPUFooMetricConfig{}, SystemCPUUtilizationMetricConfig{}, SystemCPUUtilizationV1MetricConfig{}, SystemMemoryLinuxAvailableV1MetricConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -102,7 +102,7 @@ func TestSystemCPUUtilizationV1MetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SystemCPUUtilizationV1MetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric system.cpu.utilization@v1 doesn't have an attribute invalid, valid attributes: [cpu.logical_number, state]")
+	require.ErrorContains(t, cfg.Validate(), "metric system.cpu.utilization@v1 doesn't have an attribute invalid, valid attributes: [cpu.logical_number, cpu.mode]")
 
 	cfg = DefaultMetricsConfig().SystemCPUUtilizationV1
 	cfg.AggregationStrategy = "invalid"

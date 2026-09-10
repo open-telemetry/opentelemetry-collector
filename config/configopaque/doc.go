@@ -19,3 +19,5 @@
 // or become widely used in the Go ecosystem, these will eventually be implemented
 // by configopaque.String as well. This is not considered a breaking change.
 package configopaque // import "go.opentelemetry.io/collector/config/configopaque"
+
+//go:generate mdatagen metadata.yaml

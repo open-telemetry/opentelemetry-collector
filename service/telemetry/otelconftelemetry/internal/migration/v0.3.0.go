@@ -14,7 +14,6 @@ import (
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 type TracesConfigV030 struct {
@@ -147,21 +146,17 @@ func (c MetricsConfigV030) Marshal(conf *confmap.Conf) error {
 	return conf.Marshal(sm)
 }
 
-func boolPtr(v bool) *bool {
-	return &v
-}
-
 // applyPrometheusDefaults sets default values for Prometheus exporter
 // fields that were not explicitly provided in the configuration.
 func applyPrometheusDefaults(p *config.Prometheus) {
 	if p.WithoutScopeInfo == nil {
-		p.WithoutScopeInfo = boolPtr(true)
+		p.WithoutScopeInfo = new(true)
 	}
 	if p.WithoutUnits == nil {
-		p.WithoutUnits = boolPtr(true)
+		p.WithoutUnits = new(true)
 	}
 	if p.WithoutTypeSuffix == nil {
-		p.WithoutTypeSuffix = boolPtr(true)
+		p.WithoutTypeSuffix = new(true)
 	}
 }
 
@@ -267,7 +262,7 @@ type ResourceConfigV030 struct {
 	LegacyAttributes     map[string]any                           `mapstructure:",remain"`
 }
 
-var _ xconfmap.Validator = (*ResourceConfigV030)(nil)
+var _ confmap.Validator = (*ResourceConfigV030)(nil)
 
 func (cfg *ResourceConfigV030) Validate() error {
 	// resource::attributes_list isn't currently supported by otelconf, so we have to put the default values under resource::attributes.

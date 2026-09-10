@@ -447,7 +447,7 @@ func (p *Parser) parseOptional(indexExpr *ast.IndexExpr) (SchemaElement, error) 
 		return element, err
 	}
 
-	fmt.Printf("Warning: unrecognized generic type: %s\n", wrapperTypeName)
+	// is a generic type other than Optional, silently skip
 
 	return nil, nil
 }

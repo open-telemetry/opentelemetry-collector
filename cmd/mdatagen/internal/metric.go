@@ -146,7 +146,8 @@ func validateSemConvMetricURL(rawURL, semConvVersion, metricName string) error {
 	if !re.MatchString(rawURL) {
 		return fmt.Errorf(
 			"invalid semantic-conventions URL: want https://github.com/open-telemetry/semantic-conventions/blob/%s/*#%s, got %q",
-			semConvVersion, anchor, rawURL)
+			semConvVersion, anchor, rawURL,
+		)
 	}
 	return nil
 }

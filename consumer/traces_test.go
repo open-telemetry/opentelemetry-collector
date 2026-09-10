@@ -29,7 +29,8 @@ func TestNilFuncTraces(t *testing.T) {
 func TestWithCapabilitiesTraces(t *testing.T) {
 	cp, err := NewTraces(
 		func(context.Context, ptrace.Traces) error { return nil },
-		WithCapabilities(Capabilities{MutatesData: true}))
+		WithCapabilities(Capabilities{MutatesData: true}),
+	)
 	assert.NoError(t, err)
 	assert.NoError(t, cp.ConsumeTraces(context.Background(), ptrace.NewTraces()))
 	assert.Equal(t, Capabilities{MutatesData: true}, cp.Capabilities())

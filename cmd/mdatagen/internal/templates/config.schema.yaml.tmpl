@@ -10,7 +10,7 @@
         type: object
         properties:
           enabled:
-            type: boolean
+            type: bool
             default: {{ $metric.Enabled }}
           {{- if $metricReag }}
           aggregation_strategy:
@@ -26,8 +26,8 @@
             default: "avg"
             {{- end }}
           attributes:
-            type: array
-            items:
+            type: slice
+            values:
               type: string
               enum:
               {{- range $metric.Attributes }}
@@ -53,7 +53,7 @@
         type: object
         properties:
           enabled:
-            type: boolean
+            type: bool
             default: {{ $event.Enabled }}
       {{- end }}
 {{- end }}
@@ -68,30 +68,30 @@
         type: object
         properties:
           enabled:
-            type: boolean
+            type: bool
             default: {{ $attr.Enabled }}
         {{- if $.Metrics }}
           metrics_include:
             description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
-            type: array
-            items:
+            type: slice
+            values:
               $ref: {{ schemaRef "go.opentelemetry.io/collector/filter.config" }}
           metrics_exclude:
             description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
-            type: array
-            items:
+            type: slice
+            values:
               $ref: {{ schemaRef "go.opentelemetry.io/collector/filter.config" }}
         {{- end }}
         {{- if $.Events }}
           events_include:
             description: "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
-            type: array
-            items:
+            type: slice
+            values:
               $ref: {{ schemaRef "go.opentelemetry.io/collector/filter.config" }}
           events_exclude:
             description: "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
-            type: array
-            items:
+            type: slice
+            values:
               $ref: {{ schemaRef "go.opentelemetry.io/collector/filter.config" }}
         {{- end }}
     {{- end }}

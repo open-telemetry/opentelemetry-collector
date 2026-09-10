@@ -56,7 +56,8 @@ func newTestClientMiddleware(name string) component.Component {
 						resp.ContentLength = int64(len(newBody))
 
 						return resp, nil
-					}), nil
+					},
+				), nil
 			}, nil
 		},
 	}

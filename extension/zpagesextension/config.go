@@ -12,7 +12,7 @@ import (
 
 // Config has the configuration for the extension enabling the zPages extension.
 type Config struct {
-	confighttp.ServerConfig `mapstructure:",squash"`
+	ServerConfig confighttp.ServerConfig `mapstructure:",squash"`
 
 	Expvar ExpvarConfig `mapstructure:"expvar"`
 	// prevent unkeyed literal initialization
@@ -32,7 +32,7 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.NetAddr.Endpoint == "" {
+	if cfg.ServerConfig.NetAddr.Endpoint == "" {
 		return errors.New("\"endpoint\" is required when using the \"zpages\" extension")
 	}
 	return nil

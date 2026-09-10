@@ -44,6 +44,7 @@ config:
       description: Identifies the scraper, used for telemetry and logging.
       go_struct:
         field_name: ComponentID
+        custom_validator:
     job_name:
       description: Name of the scrape job, used to identify the source in telemetry.
       type: string
@@ -56,8 +57,8 @@ config:
     targets:
       description: List of targets to scrape metrics from.
       x-pointer: true
-      type: array
-      items:
+      type: slice
+      values:
         type: object
         properties:
           interval:
@@ -66,21 +67,21 @@ config:
             default: 10s
           labels:
             description: Static key-value labels attached to all metrics from this target.
-            type: object
-            additionalProperties:
+            type: map
+            values:
               type: string
             default:
               option1: value1
               option2: value2
           retry_count:
             description: Number of retry attempts for failed scrapes.
-            type: integer
+            type: int
             default: 3
             minimum: 0
             maximum: 10
           timeout_seconds:
             description: Timeout in seconds for each scrape request.
-            type: number
+            type: double
             default: 5.0
             exclusiveMinimum: 0
             exclusiveMaximum: 30

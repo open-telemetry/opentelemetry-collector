@@ -7,13 +7,15 @@ import (
 )
 
 // PortNumber a port number to connect to.
-type PortNumber int32
+type PortNumber int
 
 type SampleConfig struct {
-	// The host name to connect to.
+	// HostName the host name to connect to.
 	HostName string `mapstructure:"host_name"`
-	// The port to connect to.
+
+	// Port the port to connect to.
 	Port PortNumber `mapstructure:"port"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }

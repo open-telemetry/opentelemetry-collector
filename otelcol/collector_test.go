@@ -1051,7 +1051,8 @@ func NewStatusWatcherExtensionFactory(
 		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
 			return &statusWatcherExtension{onStatusChanged: onStatusChanged}, nil
 		},
-		component.StabilityLevelStable)
+		component.StabilityLevelStable,
+	)
 }
 
 // statusWatcherExtension receives status events reported via component status reporting for testing

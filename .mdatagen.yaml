@@ -1,0 +1,36 @@
+exclusions:
+  - component: go.opentelemetry.io/collector/confmap
+    feature_gates:
+      - name: confmap.enableMergeAppendOption
+        validation:
+          enabled: false
+
+  - component: go.opentelemetry.io/collector/pdata
+    feature_gates:
+      - name: pdata.useProtoPooling
+        validation:
+          enabled: false
+
+  - component: go.opentelemetry.io/collector/receiver/receiverhelper
+    feature_gates:
+      - name: receiverhelper.newReceiverMetrics
+        validation:
+          enabled: false
+
+  - component: go.opentelemetry.io/collector/service
+    feature_gates:
+      - name: service.AllowNoPipelines
+        validation:
+          enabled: false
+      - name: service.partialReload
+        validation:
+          enabled: false
+      - name: service.partialReloadReceivers
+        validation:
+          enabled: false
+      - name: service.profilesSupport
+        validation:
+          enabled: false
+      - name: telemetry.newPipelineTelemetry
+        validation:
+          enabled: false

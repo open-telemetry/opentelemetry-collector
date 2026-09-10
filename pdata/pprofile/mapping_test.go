@@ -254,6 +254,29 @@ func TestMappingSwitchDictionary(t *testing.T) {
 			wantDictionary: NewProfilesDictionary(),
 			wantErr:        errors.New("invalid attribute index 2"),
 		},
+		{
+			name: "with a negative attribute index",
+			mapping: func() Mapping {
+				m := NewMapping()
+				m.AttributeIndices().Append(-1)
+				return m
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.AttributeTable().AppendEmpty()
+				return d
+			}(),
+			dst: NewProfilesDictionary(),
+
+			wantMapping: func() Mapping {
+				m := NewMapping()
+				m.AttributeIndices().Append(-1)
+				return m
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid attribute index -1"),
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			m := tt.mapping

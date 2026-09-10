@@ -202,7 +202,8 @@ func idFromMetrics(data pmetric.Metrics) (string, error) {
 	var metricID string
 	rss := data.ResourceMetrics()
 	key, exists := rss.At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes().Get(
-		uniqueIDAttrName)
+		uniqueIDAttrName,
+	)
 	if !exists {
 		return "", fmt.Errorf("invalid data element, attribute %q is missing", uniqueIDAttrName)
 	}

@@ -32,6 +32,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/snappy"
+	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/zstd"
 	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -39,8 +41,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
-	"go.opentelemetry.io/collector/internal/grpccompression/snappy"
-	"go.opentelemetry.io/collector/internal/grpccompression/zstd"
 )
 
 var errMetadataNotFound = errors.New("no request metadata found")

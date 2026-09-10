@@ -15,14 +15,15 @@ import (
 )
 
 // NewFactory returns a receiver.Factory that constructs nop receivers.
-func NewFactory() xreceiver.Factory {
+func NewFactory() receiver.Factory {
 	return xreceiver.NewFactory(
 		metadata.Type,
 		func() component.Config { return &struct{}{} },
 		xreceiver.WithTraces(createTraces, metadata.TracesStability),
 		xreceiver.WithMetrics(createMetrics, metadata.MetricsStability),
 		xreceiver.WithProfiles(createProfiles, metadata.ProfilesStability),
-		xreceiver.WithLogs(createLogs, metadata.LogsStability))
+		xreceiver.WithLogs(createLogs, metadata.LogsStability),
+	)
 }
 
 func createTraces(context.Context, receiver.Settings, component.Config, consumer.Traces) (receiver.Traces, error) {

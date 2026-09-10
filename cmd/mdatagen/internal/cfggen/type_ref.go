@@ -59,9 +59,19 @@ func ResolveGoTypeRef(ref, rootPackage, componentPackage string) (GoTypeRef, err
 		return resolveLocalRelative(cleanRef, componentPackage)
 	case strings.Contains(cleanRef, "/"):
 		return resolveExternal(cleanRef)
+	case strings.Contains(cleanRef, "."):
+		return resolveCore(cleanRef)
 	default:
 		return resolveInternal(cleanRef)
 	}
+}
+
+func resolveCore(ref string) (GoTypeRef, error) {
+	parts := strings.Split(ref, ".")
+	if len(parts) != 2 {
+		return GoTypeRef{}, fmt.Errorf("invalid reference format: %q", ref)
+	}
+	return GoTypeRef{ImportPath: parts[0], TypeName: parts[1]}, nil
 }
 
 func resolveInternal(ref string) (GoTypeRef, error) {

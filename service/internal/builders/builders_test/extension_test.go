@@ -31,7 +31,8 @@ func TestExtensionBuilder(t *testing.T) {
 			func(_ context.Context, settings extension.Settings, _ component.Config) (extension.Extension, error) {
 				return nopExtension{Settings: settings}, nil
 			},
-			component.StabilityLevelDevelopment),
+			component.StabilityLevelDevelopment,
+		),
 	}...)
 	require.NoError(t, err)
 

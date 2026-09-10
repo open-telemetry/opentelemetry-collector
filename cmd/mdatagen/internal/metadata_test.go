@@ -443,7 +443,7 @@ func TestValidateMigrations(t *testing.T) {
 						},
 						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
 					},
-					Unit: strPtr("s"),
+					Unit: new("s"),
 					Sum: &Sum{
 						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -482,7 +482,7 @@ func TestValidateMigrations(t *testing.T) {
 						},
 						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
 					},
-					Unit: strPtr("s"),
+					Unit: new("s"),
 					Sum: &Sum{
 						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -507,7 +507,7 @@ func TestValidateMigrations(t *testing.T) {
 						},
 						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
 					},
-					Unit: strPtr("s"),
+					Unit: new("s"),
 					Sum: &Sum{
 						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -546,7 +546,7 @@ func TestValidateMigrations(t *testing.T) {
 						},
 						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
 					},
-					Unit: strPtr("s"),
+					Unit: new("s"),
 					Sum: &Sum{
 						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -577,7 +577,7 @@ func TestValidateMigrations(t *testing.T) {
 						},
 						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
 					},
-					Unit: strPtr("s"),
+					Unit: new("s"),
 					Sum: &Sum{
 						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -602,7 +602,7 @@ func TestValidateMigrations(t *testing.T) {
 						},
 						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
 					},
-					Unit: strPtr("s"),
+					Unit: new("s"),
 					Sum: &Sum{
 						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -635,7 +635,7 @@ func TestValidateMigrations(t *testing.T) {
 						},
 						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
 					},
-					Unit: strPtr("s"),
+					Unit: new("s"),
 					Sum: &Sum{
 						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -660,7 +660,7 @@ func TestValidateMigrations(t *testing.T) {
 						},
 						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
 					},
-					Unit: strPtr("s"),
+					Unit: new("s"),
 					Sum: &Sum{
 						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -693,7 +693,7 @@ func TestValidateMigrations(t *testing.T) {
 						},
 						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
 					},
-					Unit: strPtr("s"),
+					Unit: new("s"),
 					Sum: &Sum{
 						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -718,7 +718,7 @@ func TestValidateMigrations(t *testing.T) {
 						},
 						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
 					},
-					Unit: strPtr("s"),
+					Unit: new("s"),
 					Sum: &Sum{
 						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -758,7 +758,7 @@ func TestValidateMigrations(t *testing.T) {
 						},
 						Attributes: []AttributeName{"string_attr", "overridden_int_attr"},
 					},
-					Unit: strPtr("s"),
+					Unit: new("s"),
 					Sum: &Sum{
 						MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 						AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -806,6 +806,16 @@ func TestValidateFeatureGates(t *testing.T) {
 				Description:  "Test feature gate",
 				Stage:        FeatureGateStageAlpha,
 				FromVersion:  "v0.100.0",
+				ReferenceURL: "https://github.com/open-telemetry/opentelemetry-collector/issues/12345",
+			},
+		},
+		{
+			name: "valid gate with underscore",
+			featureGate: FeatureGate{
+				ID:           "component_underscore.alpha",
+				Description:  "Feature gate with underscore",
+				Stage:        FeatureGateStageAlpha,
+				FromVersion:  "v0.90.0",
 				ReferenceURL: "https://github.com/open-telemetry/opentelemetry-collector/issues/12345",
 			},
 		},

@@ -4,7 +4,7 @@
 
 ### {{ $metricName }}
 
-{{ $metric.Description }}
+{{ trimRight $metric.Description "\n" }}
 
 {{- if $metric.ExtendedDocumentation }}
 
@@ -64,7 +64,7 @@ When the disable-old gate is enabled, emission of this metric is suppressed. Whe
 
 ### {{ $eventName }}
 
-{{ $event.Description }}
+{{ trimRight $event.Description "\n" }}
 
 {{- if $event.ExtendedDocumentation }}
 

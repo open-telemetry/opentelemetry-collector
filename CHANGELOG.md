@@ -7,6 +7,142 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.66.0/v0.160.0
+
+### 🚩 Deprecations 🚩
+
+- `pkg/confighttp`: Deprecate flat keepalive fields in client and server config in favor of the new `keepalive` section. (#14020)
+  The following client configuration fields are deprecated in favor of the `keepalive` section:
+    - `idle_conn_timeout` -> `keepalive::idle_conn_timeout`
+    - `max_idle_conns` -> `keepalive::max_idle_conns`
+    - `max_idle_conns_per_host` -> `keepalive::max_idle_conns_per_host`
+    - `disable_keep_alives: true` -> `keepalive::enabled: false`
+  The following server configuration fields are deprecated in favor of the `keepalive` section:
+    - `idle_timeout` -> `keepalive::idle_timeout`
+    - `keep_alives_enabled: false` -> `keepalive::enabled: false`
+  Deprecated fields set in the configuration keep working exactly as before and produce a
+  deprecation warning when the client or server is created. Setting deprecated fields together
+  with the new `keepalive` section is an error.
+  Code migrating off the deprecated fields can use the new `NewDefaultKeepaliveClientConfig`
+  and `NewDefaultKeepaliveServerConfig` functions to build a `keepalive` section with the
+  default values.
+  
+
+### 💡 Enhancements 💡
+
+- `all`: Bump go version in all go.mod to 1.26.0, drop support on 1.25.0 (#15799)
+- `all`: Declare windows/amd64 tier 1 and windows/arm64 tier 2 support (#15786)
+- `pkg/confmap`: Remove dead `isStringyStructure` helper (unused since (#12793)
+  This is an internal, unexported code path with no user-facing behavior change.
+  
+- `pkg/exporterhelper`: Cache the request size per sizer type so byte-sized batching no longer recomputes the serialized proto size of the whole accumulated batch on every consumed request. (#12636)
+  With `sizer: bytes`, the batcher's MinSize check called `BytesSize()`, which
+  ignored the cached size and re-walked the entire batch's protobuf on every
+  consumed request, making accumulation O(n^2) in the number of merged requests.
+  The size is now cached separately for the bytes and items dimensions and
+  maintained incrementally during merge/split, so the check is O(1). A single
+  untyped cache could not be reused safely because the batcher and the queue may
+  ask for different sizer types on the same request.
+  
+- `processor/memory_limiter`: Only report memory limiter component health status when the health state changes. (#15751)
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Allow underscores in feature gate IDs for compatibility with component names with underscores (#15592)
+- `pkg/pprofile`: add bounds checks to FromLocationIndices and switchDictionary (#15697)
+  FromLocationIndices now returns an error instead of panicking on an out-of-range or
+  negative location index, mirroring FromAttributeIndices.
+  The index checks used when merging profiles now also reject negative indices. These
+  were previously reachable with a negative index decoded from an OTLP payload, which
+  panicked the collector via Profiles.MergeTo.
+  
+- `pkg/service`: Route OpenTelemetry SDK-internal errors (e.g. failed metric/log/trace exports) through the collector's configured logger instead of the OTel SDK's default global error handler, which always printed to stderr via `log.Print` regardless of the configured log encoding. (#12378)
+
+<!-- previous-version -->
+
+## v1.65.0/v0.159.0
+
+### 💡 Enhancements 💡
+
+- `pkg/exporterhelper`: Add the `pkg.exporterhelper.queueBatchEnabled` feature gate (#14038, #13582, #12022)
+  When enabled, the batch settings returned by `NewDefaultQueueConfig()` have
+  `batch::enabled` true. See [migration RFC](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/batching-migration.md#phase-1).
+  
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/exporterhelper`: Record `otelcol_exporter_queue_batch_send_size` and `otelcol_exporter_queue_batch_send_size_bytes` after batching, and add `otelcol_exporter_enqueue_size` and `otelcol_exporter_enqueue_size_bytes` for enqueue-time sizes. (#14674)
+  Previously the batch send size histograms were recorded at enqueue time (`Offer`), so they
+  measured incoming request sizes rather than the post-batching request handed to the
+  downstream sender. Those histograms are now recorded in the obs report sender.
+  The previous enqueue-time measurements are preserved under the new
+  `otelcol_exporter_enqueue_size` and `otelcol_exporter_enqueue_size_bytes` metrics for
+  queue sizing. Users with the exporter batcher enabled will observe different values for
+  `otelcol_exporter_queue_batch_send_size*`.
+  `otelcol_exporter_queue_batch_send_size` and `otelcol_exporter_queue_batch_send_size_bytes`
+  are now only recorded when `sending_queue::batch` is configured; they will not appear at all
+  for exporters that do not enable batching.
+  
+- `pkg/scraperhelper`: Use `{record}` instead of `{datapoint}` as the unit of the log record and profile record scraper metrics (#15730)
+  Affects `otelcol_scraper_scraped_log_records`, `otelcol_scraper_errored_log_records`,
+  `otelcol_scraper_scraped_profile_records` and `otelcol_scraper_errored_profile_records`.
+  
+
+<!-- previous-version -->
+
+## v1.64.0/v0.158.0
+
+### 🚀 New components 🚀
+
+- `processor/queuebatch`: New `queuebatchprocessor` to replace the legacy `batchprocessor`. (#15047, #13582, #12022, #11308, #8272, #6046)
+  New implementation is based exporterhelper, uses same configuration as `sending_queue`.
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Add first-class extended type aliases (int64, duration, opaque_string, id, opaque_map, etc.) to config schemas in metadata.yaml (#15513)
+  Authors can now write `type: int64`, `type: duration`, `type: opaque_string`, `type: id`, or
+  `type: opaque_map` directly as a property type in the `config:` section of `metadata.yaml`.
+  Each alias expands to the correct JSON Schema representation and Go type automatically.
+  Existing uses of standard JSON Schema types, `format:`, and `x-customType:` remain supported
+  without migration.
+  
+- `extension/memory_limiter`: Promote the memory limiter extension to beta stability. (#14533)
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Removes the extra line in the documentation.md around description (#15664)
+- `cmd/mdatagen`: Auto-enable v1 metrics when legacy metric is enabled and v1 feature gate is on (#15650)
+  When the v1 feature gate is enabled and a legacy metric is enabled, the corresponding
+  v1 metric is now programmatically enabled so users don't need to add the v1 metric
+  to their config.
+  
+- `cmd/mdatagen`: Fix incorrect collision warning for versioned metrics with different emitted names (#15648)
+  Same name collision detection (type/attribute checks) was being used for versioned metrics
+  with different names. This caused the legacy metric to be disabled which was incorrect and also
+  a warning msg was being incorrectly logged that stated the metrics had the same name when in
+  fact they had different names.
+  
+- `cmd/mdatagen`: Versioned metrics don't handle renamed attributes with same type (#15595)
+  Versioned metrics need to support emitting legacy and latest attributes when the metric name is the same but the
+  attributes names differ. This was not working when the attributes name changed but the type remained the same.
+  Here we add support to versioned metrics with renamed attributes where those attributes have the same type.
+  
+- `exporter/debug`: Fix profile sample attribute formatting for non-string values (#15647)
+  Previously, non-string values produced malformed output such as `%!s(int64=42)`.
+  Profile sample attributes now use the debug exporter's typed attribute format, such as `Int(42)`.
+  This will also change strings from `hello-world` to `Str(hello-world)`.
+  
+- `pkg/config/configtls`: Fix goroutine and file descriptor leak when `client_ca_file_reload` is enabled (#9221)
+  Every call to `ServerConfig.LoadTLSConfig` with `client_ca_file_reload` enabled started a
+  file watcher goroutine that could never be stopped, since the reloader was not reachable
+  from the returned `*tls.Config`. The client CA file is now checked for changes while TLS
+  handshakes are served, at most once per second, matching how `reload_interval` already
+  reloads the server certificate. No background goroutine is started, so nothing is left
+  behind when a server is torn down and recreated.
+  
+
+<!-- previous-version -->
+
 ## v1.63.0/v0.157.0
 
 ### 🛑 Breaking changes 🛑
