@@ -34,3 +34,8 @@ exclusions:
       - name: telemetry.newPipelineTelemetry
         validation:
           enabled: false
+
+stability:
+  coverage:
+    beta: 35
+    stable: 80
