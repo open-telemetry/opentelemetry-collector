@@ -249,11 +249,11 @@ func TestKeepaliveCompatUnknownKeyNamedSection(t *testing.T) {
 	cfg := outerConfig{Egress: NewDefaultClientConfig()}
 	conf := confmap.NewFromStringMap(map[string]any{
 		"egress": map[string]any{
-			"endpoint":   "http://localhost:4318",
-			"compresion": "gzip",
+			"endpoint":    "http://localhost:4318",
+			"compression": "gzip",
 		},
 	})
-	assert.ErrorContains(t, conf.Unmarshal(&cfg), "compresion")
+	assert.ErrorContains(t, conf.Unmarshal(&cfg), "compression")
 }
 
 // ---- known limitations ----
