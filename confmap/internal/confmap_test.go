@@ -533,6 +533,21 @@ func TestEmbeddedUnmarshaler(t *testing.T) {
 	assert.Equal(t, "this better be also called2", tc.Some2)
 }
 
+func TestEmbeddedUnmarshalerUnknownKey(t *testing.T) {
+	cfgMap := NewFromStringMap(map[string]any{
+		"next": map[string]any{
+			"string": "make sure this",
+		},
+		"another":   "make sure this",
+		"some":      "make sure this",
+		"some_2":    "this better be",
+		"bogus_key": "this should fail",
+	})
+
+	tc := &testConfigWithoutUnmarshaler{}
+	assert.Error(t, cfgMap.Unmarshal(tc))
+}
+
 func TestEmbeddedUnmarshalerError(t *testing.T) {
 	cfgMap := NewFromStringMap(map[string]any{
 		"next": map[string]any{

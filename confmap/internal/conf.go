@@ -20,6 +20,11 @@ const (
 	KeyDelimiter = "::"
 )
 
+type decodeState struct {
+	unused []string
+	set    bool
+}
+
 // Conf represents the raw configuration map for the OpenTelemetry Collector.
 // The confmap.Conf can be unmarshalled into the Collector's config using the "service" package.
 type Conf struct {
@@ -32,6 +37,8 @@ type Conf struct {
 	// isNil is true if this Conf was created from a nil field, as opposed to an empty map.
 	// AllKeys must return an empty slice if this is true.
 	isNil bool
+
+	decodeState *decodeState
 }
 
 // New creates a new empty confmap.Conf instance.
@@ -58,7 +65,30 @@ func (l *Conf) Unmarshal(result any, opts ...UnmarshalOption) error {
 	for _, opt := range opts {
 		opt.apply(&set)
 	}
-	return Decode(l.toStringMapWithExpand(), result, set, l.skipTopLevelUnmarshaler)
+
+	metadata, err := decode(
+		l.toStringMapWithExpand(),
+		result,
+		set,
+		l.skipTopLevelUnmarshaler,
+	)
+	if err != nil {
+		return err
+	}
+
+	if l.decodeState != nil {
+		if !l.decodeState.set {
+			l.decodeState.unused = append([]string(nil), metadata.Unused...)
+			l.decodeState.set = true
+		} else {
+			l.decodeState.unused = intersect(
+				l.decodeState.unused,
+				metadata.Unused,
+			)
+		}
+	}
+
+	return nil
 }
 
 // Marshal encodes the config and merges it into the Conf.
