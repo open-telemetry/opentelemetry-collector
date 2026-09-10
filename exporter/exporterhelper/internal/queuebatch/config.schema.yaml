@@ -32,6 +32,9 @@ $defs:
         type: array
         items:
           type: string
+      cardinality_limit:
+        description: Hard limit for the number of active partitions. Defaults to 10000.
+        type: integer
   config:
     description: Config defines configuration for queueing and batching incoming requests.
     type: object
