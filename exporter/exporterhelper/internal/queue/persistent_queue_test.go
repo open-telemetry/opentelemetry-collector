@@ -20,6 +20,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configstorage"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -255,8 +257,8 @@ func newSettings(sizerType request.SizerType, capacity int64) Settings[intReques
 
 func newSettingsWithStorage(sizerType request.SizerType, capacity int64) Settings[intRequest] {
 	set := newSettings(sizerType, capacity)
-	storageID := component.ID{}
-	set.StorageID = &storageID
+	storageID := configstorage.ID(component.ID{})
+	set.StorageID = configoptional.Some(storageID)
 	return set
 }
 
@@ -468,13 +470,13 @@ func TestToStorageClient(t *testing.T) {
 			name:          "fail on not existing storage extension",
 			numStorages:   2,
 			storageIndex:  100,
-			expectedError: errNoStorageClient,
+			expectedError: errors.New("no storage client extension found"),
 		},
 		{
 			name:          "invalid extension type",
 			numStorages:   2,
 			storageIndex:  100,
-			expectedError: errNoStorageClient,
+			expectedError: errors.New("no storage client extension found"),
 		},
 		{
 			name:           "fail on error getting storage client from extension",
@@ -487,7 +489,7 @@ func TestToStorageClient(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			storageID := component.MustNewIDWithName("file_storage", strconv.Itoa(tt.storageIndex))
+			storageID := configstorage.ID(component.MustNewIDWithName("file_storage", strconv.Itoa(tt.storageIndex)))
 
 			extensions := map[component.ID]component.Component{}
 			for i := 0; i < tt.numStorages; i++ {
@@ -501,7 +503,7 @@ func TestToStorageClient(t *testing.T) {
 
 			// verify
 			if tt.expectedError != nil {
-				require.ErrorIs(t, err, tt.expectedError)
+				require.ErrorContains(t, err, tt.expectedError.Error())
 				assert.Nil(t, client)
 			} else {
 				require.NoError(t, err)
@@ -527,16 +529,17 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 	ownerID := component.MustNewID("foo_exporter")
 
 	// execute
-	client, err := toStorageClient(context.Background(), storageID, host, ownerID, pipeline.SignalTraces)
+	storeID := configstorage.ID(storageID)
+	client, err := toStorageClient(context.Background(), storeID, host, ownerID, pipeline.SignalTraces)
 
 	// we should get an error about the extension type
-	require.ErrorIs(t, err, errWrongExtensionType)
+	require.ErrorContains(t, err, "requested extension is not a storage extension")
 	assert.Nil(t, client)
 }
 
 func TestPersistentQueue_StopAfterBadStart(t *testing.T) {
-	storageID := component.ID{}
-	pq := newPersistentQueue[intRequest](Settings[intRequest]{StorageID: &storageID})
+	storageID := configstorage.ID(component.ID{})
+	pq := newPersistentQueue[intRequest](Settings[intRequest]{StorageID: configoptional.Some(storageID)})
 	// verify that stopping a un-start/started w/error queue does not panic
 	assert.NoError(t, pq.Shutdown(context.Background()))
 }

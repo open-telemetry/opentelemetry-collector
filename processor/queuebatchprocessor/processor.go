@@ -30,7 +30,7 @@ func queueOptions(cfg *Config, next consumer.Capabilities) []exporterhelper.Opti
 	switch {
 	case cfg.Batch.HasValue():
 		mutates = true
-	case cfg.StorageID != nil:
+	case cfg.StorageID.HasValue():
 		mutates = false
 	default:
 		mutates = next.MutatesData
