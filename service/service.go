@@ -87,6 +87,8 @@ type Settings struct {
 	ModuleInfos ModuleInfos
 
 	// AsyncErrorChannel is the channel that is used to report fatal errors.
+	// It should have a buffer of at least one to retain an error when no receiver
+	// is ready. Reporting is non-blocking; errors are dropped when it is full.
 	AsyncErrorChannel chan error
 
 	// BuildZapLogger holds an optional function for creating a Zap logger from

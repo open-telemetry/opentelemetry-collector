@@ -115,7 +115,8 @@ type Collector struct {
 
 	// signalsChannel is used to receive termination signals from the OS.
 	signalsChannel chan os.Signal
-	// asyncErrorChannel is used to signal a fatal error from any component.
+	// asyncErrorChannel retains the first pending fatal error from any component,
+	// including while the control loop is busy starting, reloading, or shutting down.
 	asyncErrorChannel          chan error
 	bc                         *bufferedCore
 	updateConfigProviderLogger func(core zapcore.Core)
@@ -149,7 +150,7 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 		// Per signal.Notify documentation, a size of the channel equaled with
 		// the number of signals getting notified on is recommended.
 		signalsChannel:             make(chan os.Signal, 3),
-		asyncErrorChannel:          make(chan error),
+		asyncErrorChannel:          make(chan error, 1),
 		configProvider:             configProvider,
 		bc:                         bc,
 		updateConfigProviderLogger: cc.SetCore,

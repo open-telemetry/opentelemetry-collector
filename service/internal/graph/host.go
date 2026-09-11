@@ -82,7 +82,13 @@ func (host *Host) GetExporters() map[pipeline.Signal]map[component.ID]component.
 func (host *Host) NotifyComponentStatusChange(source *componentstatus.InstanceID, event *componentstatus.Event) {
 	host.ServiceExtensions.NotifyComponentStatusChange(source, event)
 	if event.Status() == componentstatus.StatusFatalError {
-		host.AsyncErrorChannel <- event.Err()
+		select {
+		case host.AsyncErrorChannel <- event.Err():
+		default:
+			// A fatal error is already pending. The collector shuts down on the
+			// first error, so additional errors must not block reporters while
+			// the control loop is busy or has stopped reading the channel.
+		}
 	}
 }
 
