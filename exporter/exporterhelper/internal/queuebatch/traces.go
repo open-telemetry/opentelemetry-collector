@@ -38,14 +38,14 @@ var (
 )
 
 type tracesRequest struct {
-	td         ptrace.Traces
-	cachedSize int
+	td    ptrace.Traces
+	sizes request.SizeCache
 }
 
 func newTracesRequest(td ptrace.Traces) request.Request {
 	return &tracesRequest{
-		td:         td,
-		cachedSize: -1,
+		td:    td,
+		sizes: request.NewSizeCache(),
 	}
 }
 
@@ -87,22 +87,15 @@ func (req *tracesRequest) OnError(err error) request.Request {
 }
 
 func (req *tracesRequest) ItemsCount() int {
-	return req.td.SpanCount()
+	return req.sizes.SizeOf(request.SizerTypeItems, func() int { return req.td.SpanCount() })
 }
 
-func (req *tracesRequest) size(sizer sizer.TracesSizer) int {
-	if req.cachedSize == -1 {
-		req.cachedSize = sizer.TracesSize(req.td)
-	}
-	return req.cachedSize
-}
-
-func (req *tracesRequest) setCachedSize(size int) {
-	req.cachedSize = size
+func (req *tracesRequest) size(sz sizer.TracesSizer, szt request.SizerType) int {
+	return req.sizes.SizeOf(szt, func() int { return sz.TracesSize(req.td) })
 }
 
 func (req *tracesRequest) BytesSize() int {
-	return tracesMarshaler.TracesSize(req.td)
+	return req.sizes.SizeOf(request.SizerTypeBytes, func() int { return tracesMarshaler.TracesSize(req.td) })
 }
 
 // RequestConsumeFromTraces returns a RequestConsumeFunc that consumes ptrace.Traces.
