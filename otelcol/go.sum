@@ -110,8 +110,6 @@ github.com/yusufpapurcu/wmi v1.2.4 h1:zFUKzehAFReQwLys1b/iSMl+JQGSCSjtVqQn9bBrPo
 github.com/yusufpapurcu/wmi v1.2.4/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=
 go.opentelemetry.io/auto/sdk v1.2.1/go.mod h1:KRTj+aOaElaLi+wW1kO/DZRXwkF4C5xPbEe3ZiIhN7Y=
-go.opentelemetry.io/collector/config/configstorage v0.160.0 h1:8KCOGjZCwmAHCLnrZEe4NRfNMrnue46RXaGSd9XGuHk=
-go.opentelemetry.io/collector/config/configstorage v0.160.0/go.mod h1:+WnCnrGKAaiy2cKd0IYrKmI7FC8+ZgY39p6t/IYfYjs=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.70.0 h1:LMuyCAyfalSjDyjdC65nK6N0zoTT63+E/u95X0JovZI=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.70.0/go.mod h1:085m8qbm4hgc8rZWGDEa4vmyyo2c3nPxUslYUKUIU04=
 go.opentelemetry.io/contrib/otelconf v0.25.0 h1:rbVGzm5OsVQhdnjqv2hvKuJhVTVHux9Ltra+N4FKy7M=

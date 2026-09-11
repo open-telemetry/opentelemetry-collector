@@ -230,6 +230,8 @@ replace go.opentelemetry.io/collector/config/configoptional => ../../config/conf
 
 replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry
 
+replace go.opentelemetry.io/collector/config/configstorage => ../../config/configstorage
+
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
 
 replace go.opentelemetry.io/collector/config/configtls => ../../config/configtls
