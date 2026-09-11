@@ -89,7 +89,7 @@ func decode(input, result any, settings UnmarshalOptions, skipTopLevelUnmarshale
 		return nil, err
 	}
 
-	if err = decoder.Decode(input); err != nil {
+	if err := decoder.Decode(input); err != nil {
 		return nil, err
 	}
 	return metadata, nil
