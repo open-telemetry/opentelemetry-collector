@@ -515,6 +515,33 @@ func TestUnmarshaler(t *testing.T) {
 	assert.Equal(t, "this better be also called2", tc.Some2)
 }
 
+func TestUnmarshalerUnknownKey(t *testing.T) {
+	cfgMap := NewFromStringMap(map[string]any{
+		"embedded": map[string]any{
+			"some":      "make sure this",
+			"bogus_key": "this should fail",
+		},
+	})
+
+	tc := struct {
+		Embedded EmbeddedConfig `mapstructure:"embedded"`
+	}{}
+
+	assert.ErrorContains(t, cfgMap.Unmarshal(&tc), "bogus_key")
+}
+
+func TestUnmarshalerError(t *testing.T) {
+	cfgMap := NewFromStringMap(map[string]any{
+		"embedded": map[string]any{},
+	})
+
+	tc := struct {
+		Embedded EmbeddedConfigWithError `mapstructure:"embedded"`
+	}{}
+
+	assert.ErrorContains(t, cfgMap.Unmarshal(&tc), "embedded error")
+}
+
 func TestEmbeddedUnmarshaler(t *testing.T) {
 	cfgMap := NewFromStringMap(map[string]any{
 		"next": map[string]any{
@@ -593,16 +620,6 @@ func TestUnmarshalDecodeStateMultipleCalls(t *testing.T) {
 	require.NoError(t, conf.Unmarshal(&second, WithIgnoreUnused()))
 
 	assert.Empty(t, state.unused)
-}
-
-func TestDecodeRootError(t *testing.T) {
-	var cfg struct {
-		Foo string `mapstructure:"foo"`
-	}
-
-	_, err := decode(123, &cfg, UnmarshalOptions{}, false)
-	require.Error(t, err)
-	assert.NotContains(t, err.Error(), "error decoding ''")
 }
 
 // stringOpaque is similar to configopaque.String, in that

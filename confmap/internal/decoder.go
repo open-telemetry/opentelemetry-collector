@@ -5,7 +5,6 @@ package internal // import "go.opentelemetry.io/collector/confmap/internal"
 
 import (
 	"encoding"
-	"errors"
 	"fmt"
 	"reflect"
 	"slices"
@@ -91,9 +90,6 @@ func decode(input, result any, settings UnmarshalOptions, skipTopLevelUnmarshale
 	}
 
 	if err = decoder.Decode(input); err != nil {
-		if strings.HasPrefix(err.Error(), "error decoding ''") {
-			return nil, errors.Unwrap(err)
-		}
 		return nil, err
 	}
 	return metadata, nil
