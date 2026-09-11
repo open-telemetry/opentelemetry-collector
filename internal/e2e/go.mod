@@ -123,6 +123,7 @@ require (
 	go.opentelemetry.io/collector/client v1.71.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.71.0 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v1.71.0 // indirect
+	go.opentelemetry.io/collector/config/configstorage v0.165.0 // indirect
 	go.opentelemetry.io/collector/confmap/xconfmap v0.165.0 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.165.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.165.0 // indirect
@@ -349,3 +350,5 @@ replace go.opentelemetry.io/collector/internal/componentalias => ../componentali
 replace go.opentelemetry.io/collector/internal/statusutil => ../statusutil
 
 replace go.opentelemetry.io/collector/receiver/receiverhelper/xreceiverhelper => ../../receiver/receiverhelper/xreceiverhelper
+
+replace go.opentelemetry.io/collector/config/configstorage => ../../config/configstorage
