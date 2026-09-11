@@ -126,6 +126,7 @@ func attrName(i int) string {
 	return string(b)
 }
 
-func BenchmarkRecordDataPoint_N1(b *testing.B)  { benchRecordN(b, 1) }
-func BenchmarkRecordDataPoint_N2(b *testing.B)  { benchRecordN(b, 2) }
-func BenchmarkRecordDataPoint_N10(b *testing.B) { benchRecordN(b, 10) }
+func BenchmarkRecordDataPoint_N1(b *testing.B)    { benchRecordN(b, 1) }
+func BenchmarkRecordDataPoint_N2(b *testing.B)    { benchRecordN(b, 2) }
+func BenchmarkRecordDataPoint_N10(b *testing.B)   { benchRecordN(b, 10) }
+func BenchmarkRecordDataPoint_N1000(b *testing.B) { benchRecordN(b, 1000) }
