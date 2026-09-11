@@ -99,7 +99,7 @@ func TestExportTraceFailureAttributes(t *testing.T) {
 			obsrep, err := newObsReportSender(
 				exporter.Settings{ID: exporterID, TelemetrySettings: telemetry.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 				pipeline.SignalTraces,
-				nil,
+				newTestObsMetrics(t, telemetry.NewTelemetrySettings(), exporterID, pipeline.SignalTraces),
 				false,
 				sender.NewSender(func(context.Context, request.Request) error {
 					return tt.err
@@ -175,7 +175,7 @@ func TestExportTraceFailureAttributesGRPCError(t *testing.T) {
 			obsrep, err := newObsReportSender(
 				exporter.Settings{ID: exporterID, TelemetrySettings: telemetry.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 				pipeline.SignalTraces,
-				nil,
+				newTestObsMetrics(t, telemetry.NewTelemetrySettings(), exporterID, pipeline.SignalTraces),
 				false,
 				sender.NewSender(func(context.Context, request.Request) error {
 					return grpcErr
@@ -215,7 +215,7 @@ func TestExportTraceDataOp(t *testing.T) {
 	obsrep, err := newObsReportSender(
 		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		pipeline.SignalTraces,
-		nil,
+		newTestObsMetrics(t, tt.NewTelemetrySettings(), exporterID, pipeline.SignalTraces),
 		false,
 		sender.NewSender(func(context.Context, request.Request) error { return exporterErr }),
 	)
@@ -281,6 +281,36 @@ func TestExportTraceDataOp(t *testing.T) {
 		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
+func TestBatchSendSizeExemplarUsesExporterSpan(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	settings := tt.NewTelemetrySettings()
+	parentCtx, parentSpan := settings.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+	defer parentSpan.End()
+
+	obsrep, err := newObsReportSender(
+		exporter.Settings{ID: exporterID, TelemetrySettings: settings, BuildInfo: component.NewDefaultBuildInfo()},
+		pipeline.SignalTraces,
+		newTestObsMetrics(t, settings, exporterID, pipeline.SignalTraces),
+		true,
+		sender.NewSender(func(context.Context, request.Request) error { return nil }),
+	)
+	require.NoError(t, err)
+	require.NoError(t, obsrep.Send(parentCtx, &requesttest.FakeRequest{Items: 5, Bytes: 100}))
+
+	spans := tt.SpanRecorder.Ended()
+	require.Len(t, spans, 1)
+	exporterSpanID := spans[0].SpanContext().SpanID()
+
+	m, err := tt.GetMetric("otelcol_exporter_queue_batch_send_size")
+	require.NoError(t, err)
+	histogram := m.Data.(metricdata.Histogram[int64])
+	require.Len(t, histogram.DataPoints, 1)
+	require.Len(t, histogram.DataPoints[0].Exemplars, 1)
+	assert.Equal(t, exporterSpanID[:], histogram.DataPoints[0].Exemplars[0].SpanID)
+}
+
 func TestExportMetricsOp(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
@@ -292,7 +322,7 @@ func TestExportMetricsOp(t *testing.T) {
 	obsrep, err := newObsReportSender(
 		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		pipeline.SignalMetrics,
-		nil,
+		newTestObsMetrics(t, tt.NewTelemetrySettings(), exporterID, pipeline.SignalMetrics),
 		false,
 		sender.NewSender(func(context.Context, request.Request) error { return exporterErr }),
 	)
@@ -369,7 +399,7 @@ func TestExportLogsOp(t *testing.T) {
 	obsrep, err := newObsReportSender(
 		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		pipeline.SignalLogs,
-		nil,
+		newTestObsMetrics(t, tt.NewTelemetrySettings(), exporterID, pipeline.SignalLogs),
 		false,
 		sender.NewSender(func(context.Context, request.Request) error { return exporterErr }),
 	)
@@ -568,7 +598,7 @@ func TestExportProfilesOp(t *testing.T) {
 	obsrep, err := newObsReportSender(
 		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		xpipeline.SignalProfiles,
-		nil,
+		newTestObsMetrics(t, tt.NewTelemetrySettings(), exporterID, xpipeline.SignalProfiles),
 		false,
 		sender.NewSender(func(context.Context, request.Request) error { return exporterErr }),
 	)
@@ -639,97 +669,10 @@ type testParams struct {
 	err   error
 }
 
-func TestObsReportSenderBatchSizeDisabled(t *testing.T) {
-	tt := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
-
-	obsrep, err := newObsReportSender(
-		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		pipeline.SignalLogs,
-		nil,
-		false,
-		sender.NewSender(func(context.Context, request.Request) error { return nil }),
-	)
+func newTestObsMetrics(t *testing.T, tel component.TelemetrySettings, id component.ID, signal pipeline.Signal) ObsMetrics {
+	t.Helper()
+	om, err := newExporterObsMetrics(tel, id, signal, nil)
 	require.NoError(t, err)
-	require.NoError(t, obsrep.Send(context.Background(), &requesttest.FakeRequest{Items: 2, Bytes: 100}))
-
-	_, err = tt.GetMetric("otelcol_exporter_queue_batch_send_size")
-	require.Error(t, err)
-	_, err = tt.GetMetric("otelcol_exporter_queue_batch_send_size_bytes")
-	require.Error(t, err)
-}
-
-func TestObsReportSenderLogsBatchSize(t *testing.T) {
-	testBatchSize(t, pipeline.SignalLogs, &requesttest.FakeRequest{Items: 2, Bytes: 100})
-}
-
-func TestObsReportSenderTracesBatchSize(t *testing.T) {
-	testBatchSize(t, pipeline.SignalTraces, &requesttest.FakeRequest{Items: 12, Bytes: 200})
-}
-
-func TestObsReportSenderMetricsBatchSize(t *testing.T) {
-	testBatchSize(t, pipeline.SignalMetrics, &requesttest.FakeRequest{Items: 22, Bytes: 300})
-}
-
-func TestObsReportSenderProfilesBatchSize(t *testing.T) {
-	testBatchSize(t, xpipeline.SignalProfiles, &requesttest.FakeRequest{Items: 22, Bytes: 300})
-}
-
-func testBatchSize(t *testing.T, signal pipeline.Signal, req *requesttest.FakeRequest) {
-	tt := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
-
-	obsrep, err := newObsReportSender(
-		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		signal,
-		nil,
-		true,
-		sender.NewSender(func(context.Context, request.Request) error { return nil }),
-	)
-	require.NoError(t, err)
-	require.NoError(t, obsrep.Send(context.Background(), req))
-
-	attrs := attribute.NewSet(attribute.String(ExporterKey, exporterID.String()))
-	bounds := []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000}
-
-	itemsBuckets := bucketCountsFor(int64(req.Items), bounds)
-	metadatatest.AssertEqualExporterQueueBatchSendSize(t, tt,
-		[]metricdata.HistogramDataPoint[int64]{
-			{
-				Attributes:   attrs,
-				Count:        1,
-				Bounds:       bounds,
-				BucketCounts: itemsBuckets,
-				Min:          metricdata.NewExtrema[int64](int64(req.Items)),
-				Max:          metricdata.NewExtrema[int64](int64(req.Items)),
-				Sum:          int64(req.Items),
-			},
-		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
-
-	bytesBounds := []float64{128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576, 2097152, 4194304, 8388608, 16777216}
-	bytesBuckets := bucketCountsFor(int64(req.Bytes), bytesBounds)
-	metadatatest.AssertEqualExporterQueueBatchSendSizeBytes(t, tt,
-		[]metricdata.HistogramDataPoint[int64]{
-			{
-				Attributes:   attrs,
-				Count:        1,
-				Bounds:       bytesBounds,
-				BucketCounts: bytesBuckets,
-				Min:          metricdata.NewExtrema[int64](int64(req.Bytes)),
-				Max:          metricdata.NewExtrema[int64](int64(req.Bytes)),
-				Sum:          int64(req.Bytes),
-			},
-		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
-}
-
-func bucketCountsFor(v int64, bounds []float64) []uint64 {
-	counts := make([]uint64, len(bounds)+1)
-	for i, b := range bounds {
-		if float64(v) <= b {
-			counts[i] = 1
-			return counts
-		}
-	}
-	counts[len(bounds)] = 1
-	return counts
+	t.Cleanup(om.Shutdown)
+	return om
 }

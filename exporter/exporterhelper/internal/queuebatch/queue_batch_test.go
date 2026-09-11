@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/obsmetricstest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
@@ -31,9 +32,10 @@ import (
 
 func newFakeRequestSettings() AllSettings[request.Request] {
 	return AllSettings[request.Request]{
-		Signal:    pipeline.SignalMetrics,
-		ID:        component.NewID(exportertest.NopType),
-		Telemetry: componenttest.NewNopTelemetrySettings(),
+		Signal:     pipeline.SignalMetrics,
+		ID:         component.NewID(exportertest.NopType),
+		Telemetry:  componenttest.NewNopTelemetrySettings(),
+		ObsMetrics: obsmetricstest.Nop{},
 		Settings: Settings[request.Request]{
 			Encoding: newFakeEncoding(&requesttest.FakeRequest{}),
 		},

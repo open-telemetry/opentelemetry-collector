@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: pkg/exporterhelper
+
+note: Add `WithObsMetrics` to customize the metrics reported by exporterhelper
+
+issues: [14038]
+
+change_logs: [api]
