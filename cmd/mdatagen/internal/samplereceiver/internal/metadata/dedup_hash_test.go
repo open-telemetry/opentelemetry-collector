@@ -129,4 +129,10 @@ func attrName(i int) string {
 func BenchmarkRecordDataPoint_N1(b *testing.B)    { benchRecordN(b, 1) }
 func BenchmarkRecordDataPoint_N2(b *testing.B)    { benchRecordN(b, 2) }
 func BenchmarkRecordDataPoint_N10(b *testing.B)   { benchRecordN(b, 10) }
+func BenchmarkRecordDataPoint_N30(b *testing.B)   { benchRecordN(b, 30) }
+func BenchmarkRecordDataPoint_N50(b *testing.B)   { benchRecordN(b, 50) }
+func BenchmarkRecordDataPoint_N80(b *testing.B)   { benchRecordN(b, 80) }
+func BenchmarkRecordDataPoint_N100(b *testing.B)  { benchRecordN(b, 100) }
+func BenchmarkRecordDataPoint_N150(b *testing.B)  { benchRecordN(b, 150) }
+func BenchmarkRecordDataPoint_N200(b *testing.B)  { benchRecordN(b, 200) }
 func BenchmarkRecordDataPoint_N1000(b *testing.B) { benchRecordN(b, 1000) }
