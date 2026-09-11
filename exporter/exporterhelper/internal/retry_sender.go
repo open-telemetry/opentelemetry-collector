@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
@@ -145,7 +144,8 @@ func (rs *retrySender) Send(ctx context.Context, req request.Request) error {
 		case <-ctx.Done():
 			return fmt.Errorf("request is cancelled or timed out: %w", err)
 		case <-rs.stopCh:
-			return experr.NewShutdownErr(err)
+			// The shutdown sender marks this as a shutdown error, so the persistent queue retains it.
+			return fmt.Errorf("interrupted due to shutdown: %w", err)
 		case <-time.After(backoffDelay):
 		}
 	}
