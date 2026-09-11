@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: pkg/confighttp
+
+note: Fix `parseIP` to correctly populate `client.Info.Addr` for link-local IPv6 addresses that include a zone identifier (e.g. `fe80::1%eth0`), which `net.ParseIP` cannot parse.
+
+issues: [14545]
+
+subtext:
+
+change_logs: []
