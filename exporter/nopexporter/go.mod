@@ -127,3 +127,5 @@ replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/
 replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../pipeline/xpipeline
 
 replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
+
+replace go.opentelemetry.io/collector/config/configstorage => ../../config/configstorage
