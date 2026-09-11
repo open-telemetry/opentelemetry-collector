@@ -10,9 +10,6 @@ import (
 {{- range $imports }}
 	"{{ . }}"
 {{- end }}
-{{- if $hasConfig }}
-    "go.opentelemetry.io/collector/component"
-{{- end }}
 )
 {{- end }}
 
@@ -54,9 +51,13 @@ import (
     {{- end }}
 
 {{ $defValidators := extractValidators $def }}
-{{- if and $defValidators (not (isExternalRef $def.Ref)) (not (isPrimitiveSchema $def)) }}
+{{- if and $defValidators (not (isExternalRef $def.Ref)) }}
     // Validate validates the {{$typeName}} fields according to schema annotations.
+    {{- if (isPrimitiveSchema $def) }}
+    func (c {{ $typeName }}) Validate() error {
+    {{- else }}
     func (c *{{ $typeName }}) Validate() error {
+    {{- end }}
         var err error
         {{ range $validator := $defValidators -}}
             {{- template "validation" $validator }}
@@ -131,13 +132,23 @@ import (
     {{- end -}}
 {{- end }}
 
-{{- define "fieldValue" -}}
-    {{- $name := .FieldName | publicVar -}}
-    {{- if .IsPointer }}*c.{{ $name -}}
-    {{- else if .IsOptional }}*c.{{ $name }}.Get()
-    {{- else }}c.{{ $name -}}
-    {{- end -}}
-{{- end -}}
+{{- define "fieldValue" }}
+    {{- $var := "c" }}
+    {{- if not (eq .FieldName ".")}}
+        {{- $var = printf "c.%s" (.FieldName | publicVar) }}
+    {{- end }}
+    {{- if .IsPointer }}*{{ $var }}
+    {{- else if .IsOptional }}*{{ $var }}.Get()
+    {{- else }}{{ $var }}
+    {{- end }}
+{{- end }}
+
+{{ define "enumValue" -}}
+    {{- if eq .FieldName "." -}}
+        {{ .FieldType }}(c)
+    {{- else }}{{ template "fieldValue" . }}
+    {{- end }}
+{{- end }}
 
 {{ define "maxLengthValidator" -}}
     {{ $maxLength := .Rules.MaxLength -}}
@@ -189,7 +200,7 @@ import (
 {{- end }}
 
 {{ define "enumValidator" -}}
-    if !slices.Contains({{ formatEnumSlice .Rules.Enum .FieldType }}, {{ template "fieldValue" . }}) {
+    if !slices.Contains({{ formatEnumSlice .Rules.Enum .FieldType }}, {{ template "enumValue" . }}) {
         err = errors.Join(err, errors.New("{{ .FieldName }} must be one of {{ formatEnumValues .Rules.Enum }}"))
     }
 {{- end }}

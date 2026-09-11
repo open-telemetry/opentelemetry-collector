@@ -2,4 +2,14 @@
 
 package configcompression
 
-// No supported validation rules found in the schema, no tests generated.
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+func TestTypeValidate_InvalidEnum(t *testing.T) {
+	cfg := Type("__invalid__")
+
+	require.ErrorContains(t, cfg.Validate(), ". must be one of")
+}

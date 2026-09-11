@@ -273,6 +273,7 @@ func resolveGoType(md *ConfigMetadata, propName, rootPackage, componentPackage s
 func ExtractImports(md *ConfigsMetadata, rootPackage, componentPackage string) ([]string, error) {
 	imports := make(map[string]bool)
 	if md.Config != nil {
+		imports["go.opentelemetry.io/collector/component"] = true
 		collected, err := ExtractImportsFromConfig(md.Config, rootPackage, componentPackage)
 		if err != nil {
 			return nil, err
@@ -419,7 +420,8 @@ func hasValidators(md *ConfigMetadata) bool {
 	return md.GoStruct.CustomValidator != nil || // custom validation
 		len(md.Required) > 0 || // required validation
 		md.MinLength != nil || md.MaxLength != nil || md.Pattern != "" || // string validation
-		md.Minimum != nil || md.Maximum != nil || md.ExclusiveMinimum != nil || md.ExclusiveMaximum != nil // numeric validation
+		md.Minimum != nil || md.Maximum != nil || md.ExclusiveMinimum != nil || md.ExclusiveMaximum != nil || // numeric validation
+		len(md.Enum) > 0 // enum validation
 }
 
 // FormatTypeName resolves a reference string to a Go type expression using GoTypeRef.
@@ -540,79 +542,90 @@ func (vr *ValidationRules) Enabled() bool {
 
 type Validator struct {
 	FieldName       string
-	FieldType       string
+	FieldType       SchemaType
 	IsPointer       bool
 	IsOptional      bool
 	Rules           ValidationRules
 	CustomValidator string
 }
 
+func createValidator(validators *[]Validator, fieldName string, md *ConfigMetadata, required bool) {
+	rules := ValidationRules{
+		Required:         required,
+		Pattern:          &md.Pattern,
+		MaxLength:        md.MaxLength,
+		MinLength:        md.MinLength,
+		Minimum:          md.Minimum,
+		Maximum:          md.Maximum,
+		ExclusiveMinimum: md.ExclusiveMinimum,
+		ExclusiveMaximum: md.ExclusiveMaximum,
+		Enum:             md.Enum,
+	}
+	if md.Pattern == "" || md.Type == DurationType || md.Type == TimeType || strings.HasPrefix(md.GoType, "time.") {
+		rules.Pattern = nil
+	}
+	if rules.Enabled() {
+		*validators = append(*validators, Validator{
+			FieldName:  fieldName,
+			FieldType:  md.Type,
+			IsPointer:  md.IsPointer,
+			IsOptional: md.IsOptional,
+			Rules:      rules,
+		})
+	}
+	if md.GoStruct.CustomValidator != nil {
+		*validators = append(*validators, Validator{
+			FieldName:       fieldName,
+			FieldType:       md.Type,
+			IsPointer:       md.IsPointer,
+			IsOptional:      md.IsOptional,
+			CustomValidator: generateValidatorName(fieldName, md.GoStruct.CustomValidator),
+		})
+	}
+}
+
 func collectValidators(md *ConfigMetadata, validators *[]Validator) {
+	if md.Ref != "" {
+		return
+	}
+	createValidator(validators, ".", md, false)
 	for _, propName := range slices.Sorted(maps.Keys(md.Properties)) {
 		prop := md.Properties[propName]
+
 		if prop.Embed {
 			continue
-		}
-		rules := ValidationRules{
-			MaxLength:        prop.MaxLength,
-			MinLength:        prop.MinLength,
-			Minimum:          prop.Minimum,
-			Maximum:          prop.Maximum,
-			ExclusiveMinimum: prop.ExclusiveMinimum,
-			ExclusiveMaximum: prop.ExclusiveMaximum,
-			Enum:             prop.Enum,
-		}
-
-		rules.Required = slices.Contains(md.Required, propName)
-		if prop.Pattern != "" && !strings.HasPrefix(prop.GoType, "time.") {
-			rules.Pattern = &prop.Pattern
 		}
 
 		fieldName := prop.GoStruct.FieldName
 		if fieldName == "" {
 			fieldName = propName
 		}
-		if rules.Enabled() {
-			*validators = append(*validators, Validator{
-				FieldName:  fieldName,
-				FieldType:  resolveType(prop),
-				IsPointer:  prop.IsPointer,
-				IsOptional: prop.IsOptional,
-				Rules:      rules,
-			})
+		required := slices.Contains(md.Required, propName)
+
+		if prop.Ref != "" {
+			if required {
+				*validators = append(*validators, Validator{
+					FieldName:  fieldName,
+					FieldType:  prop.Type,
+					IsPointer:  prop.IsPointer,
+					IsOptional: prop.IsOptional,
+					Rules:      ValidationRules{Required: required},
+				})
+			}
+			if prop.GoStruct.CustomValidator != nil {
+				*validators = append(*validators, Validator{
+					FieldName:       fieldName,
+					FieldType:       prop.Type,
+					IsPointer:       prop.IsPointer,
+					IsOptional:      prop.IsOptional,
+					CustomValidator: generateValidatorName(fieldName, prop.GoStruct.CustomValidator),
+				})
+			}
+
+			continue
 		}
 
-		if prop.GoStruct.CustomValidator != nil {
-			*validators = append(*validators, Validator{
-				FieldName:       fieldName,
-				FieldType:       resolveType(prop),
-				IsPointer:       prop.IsPointer,
-				IsOptional:      prop.IsOptional,
-				CustomValidator: generateValidatorName(fieldName, prop.GoStruct.CustomValidator),
-			})
-		}
-	}
-
-	// root custom validation
-	if md.GoStruct.CustomValidator != nil {
-		*validators = append(*validators, Validator{
-			FieldName:       ".",
-			FieldType:       string(md.Type),
-			CustomValidator: generateValidatorName("", md.GoStruct.CustomValidator),
-		})
-	}
-}
-
-func resolveType(md *ConfigMetadata) string {
-	switch {
-	case md.Ref != "":
-		return "ref"
-	case md.GoType == "time.Time":
-		return "datetime"
-	case md.GoType == "time.Duration":
-		return "duration"
-	default:
-		return string(md.Type)
+		createValidator(validators, fieldName, prop, required)
 	}
 }
 
@@ -866,21 +879,14 @@ func formatDurationAsGoExpr(d time.Duration) string {
 	return strings.Join(parts, " + ")
 }
 
-func formatEnumSlice(values []any, fieldType string) string {
+func formatEnumSlice(values []any, fieldType SchemaType) string {
 	var goType string
 	switch fieldType {
-	case "string":
-		goType = "string"
-	case "integer":
-		goType = "int"
-	case "number":
-		goType = "float64"
-	case "boolean":
-		goType = "bool"
-	default:
+	case ObjectType, SliceType, MapType, AnyType:
 		goType = "any"
+	default:
+		goType = string(fieldType)
 	}
-
 	formatted := make([]string, 0, len(values))
 	for _, v := range values {
 		switch tv := v.(type) {
@@ -901,13 +907,13 @@ func formatEnumValues(values []any) string {
 	return "[" + strings.Join(formatted, ", ") + "]"
 }
 
-func invalidTestValue(fieldType string) string {
+func invalidTestValue(fieldType SchemaType) string {
 	switch fieldType {
-	case "string":
+	case StringType:
 		return `"__invalid__"`
-	case "integer":
+	case IntType, Int8Type, Int16Type, Int32Type, Int64Type:
 		return "-1"
-	case "number":
+	case Float32Type, Float64Type:
 		return "-1.0"
 	default:
 		return `"__invalid__"`

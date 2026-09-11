@@ -2,21 +2,4 @@
 
 package exporterhelper
 
-import (
-	"testing"
-
-	"github.com/stretchr/testify/require"
-)
-
-func TestTimeoutConfigValidate_DefaultValid(t *testing.T) {
-	cfg := NewDefaultTimeoutConfig()
-
-	require.NoError(t, cfg.Validate())
-}
-
-func TestTimeoutConfigValidate_MinimumTimeout(t *testing.T) {
-	cfg := NewDefaultTimeoutConfig()
-	cfg.Timeout = 0 - 1
-
-	require.ErrorContains(t, cfg.Validate(), "timeout value must be greater than or equal to 0")
-}
+// No supported validation rules found in the schema, no tests generated.
