@@ -37,5 +37,7 @@ exclusions:
 
 stability:
   coverage:
+    development: 50
+    alpha: 50
     beta: 35
     stable: 80
