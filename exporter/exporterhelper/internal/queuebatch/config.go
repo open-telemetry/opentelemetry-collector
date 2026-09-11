@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configstorage"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
@@ -34,9 +34,7 @@ type Config struct {
 
 	// StorageID if not empty, enables the persistent storage and uses the component specified
 	// as a storage extension for the persistent queue.
-	// TODO: This will be changed to Optional when available.
-	// See https://github.com/open-telemetry/opentelemetry-collector/issues/13822
-	StorageID *component.ID `mapstructure:"storage"`
+	StorageID configoptional.Optional[configstorage.ID] `mapstructure:"storage"`
 
 	// NumConsumers is the maximum number of concurrent consumers from the queue.
 	// This applies across all different optional configurations from above (e.g. wait_for_result, block_on_overflow, storage, etc.).
@@ -74,7 +72,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	// Only support request sizer for persistent queue at this moment.
-	if cfg.StorageID != nil && cfg.WaitForResult {
+	if cfg.StorageID.HasValue() && cfg.WaitForResult {
 		return errors.New("`wait_for_result` is not supported with a persistent queue configured with `storage`")
 	}
 
