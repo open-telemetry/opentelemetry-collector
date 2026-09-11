@@ -12,8 +12,11 @@ leverage network configuration to set connection and transport information.
   the literal IPv6 address as defined in RFC 4007.
 - `transport`: Known protocols are "tcp", "tcp4" (IPv4-only), "tcp6"
   (IPv6-only), "udp", "udp4" (IPv4-only), "udp6" (IPv6-only), "ip", "ip4"
-  (IPv4-only), "ip6" (IPv6-only), "unix", "unixgram", "unixpacket" and
-  "npipe" (Windows named pipes, Windows-only).
+  (IPv4-only), "ip6" (IPv6-only), "unix", "unixgram", "unixpacket",
+  "npipe" (Windows named pipes, Windows-only) and "vsock" (VM sockets,
+  Linux-only). For vsock, the endpoint must be in the form `cid:port` where
+  `cid` is the 32-bit VM context ID (e.g. `2` for the host) and `port` is
+  a 32-bit port number.
 - `dialer`: Dialer configuration
   - `timeout`: Dialer timeout is the maximum amount of time a dial will wait for a connect to complete. The default is no timeout.
 
