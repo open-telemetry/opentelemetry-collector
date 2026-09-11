@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configstorage"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumererror/xconsumererror"
@@ -169,7 +170,8 @@ func TestProfilesRequestExporter_Default_ExportError(t *testing.T) {
 func TestProfiles_WithPersistentQueue(t *testing.T) {
 	qCfg := exporterhelper.NewDefaultQueueConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
-	qCfg.StorageID = &storageID
+	storeID := configstorage.ID(storageID)
+	qCfg.StorageID = configoptional.Some(storeID)
 	set := exportertest.NewNopSettings(exportertest.NopType)
 	set.ID = component.MustNewIDWithName("test_logs", "with_persistent_queue")
 	host := hosttest.NewHost(map[component.ID]component.Component{
