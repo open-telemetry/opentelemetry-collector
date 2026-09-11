@@ -33,6 +33,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	go.opentelemetry.io/collector/client v1.66.0 // indirect
+	go.opentelemetry.io/collector/config/configstorage v0.160.0 // indirect
 	go.opentelemetry.io/collector/confmap v1.66.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.160.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.160.0 // indirect
@@ -110,3 +111,5 @@ replace go.opentelemetry.io/collector/internal/testutil => ../internal/testutil
 replace go.opentelemetry.io/collector/internal/componentalias => ../internal/componentalias
 
 replace go.opentelemetry.io/collector/pipeline/xpipeline => ../pipeline/xpipeline
+
+replace go.opentelemetry.io/collector/config/configstorage => ../config/configstorage

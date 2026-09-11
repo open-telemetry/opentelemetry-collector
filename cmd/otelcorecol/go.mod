@@ -101,6 +101,7 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.66.0 // indirect
 	go.opentelemetry.io/collector/config/configoptional v1.66.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.66.0 // indirect
+	go.opentelemetry.io/collector/config/configstorage v0.160.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.160.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.66.0 // indirect
 	go.opentelemetry.io/collector/confmap/xconfmap v0.160.0 // indirect
@@ -228,6 +229,8 @@ replace go.opentelemetry.io/collector/config/configopaque => ../../config/config
 replace go.opentelemetry.io/collector/config/configoptional => ../../config/configoptional
 
 replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry
+
+replace go.opentelemetry.io/collector/config/configstorage => ../../config/configstorage
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
 

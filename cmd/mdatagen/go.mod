@@ -221,3 +221,5 @@ replace go.opentelemetry.io/collector/scraper/xscraper => ../../scraper/xscraper
 replace go.opentelemetry.io/collector/receiver/receiverhelper => ../../receiver/receiverhelper
 
 replace go.opentelemetry.io/collector/scraper/scraperhelper => ../../scraper/scraperhelper
+
+replace go.opentelemetry.io/collector/config/configstorage => ../../config/configstorage

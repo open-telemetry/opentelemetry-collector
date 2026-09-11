@@ -7,6 +7,7 @@ require (
 	go.opentelemetry.io/collector/component v1.66.0
 	go.opentelemetry.io/collector/component/componenttest v0.160.0
 	go.opentelemetry.io/collector/config/configoptional v1.66.0
+	go.opentelemetry.io/collector/config/configstorage v0.160.0
 	go.opentelemetry.io/collector/consumer v1.66.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.160.0
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.160.0
@@ -126,3 +127,5 @@ replace go.opentelemetry.io/collector/exporter/exporterhelper => ../
 replace go.opentelemetry.io/collector/internal/testutil => ../../../internal/testutil
 
 replace go.opentelemetry.io/collector/internal/componentalias => ../../../internal/componentalias
+
+replace go.opentelemetry.io/collector/config/configstorage => ../../../config/configstorage
