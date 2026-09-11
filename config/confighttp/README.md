@@ -126,6 +126,8 @@ will not be enabled.
   - `idle_timeout`: maximum amount of time to wait for the next request when keep-alives are enabled. If zero, the value of `read_timeout` is used. If both are zero, there is no timeout. Default: `1m`
 - **Deprecated** — `idle_timeout`: use `keepalive::idle_timeout` instead.
 - **Deprecated** — `keep_alives_enabled: false`: use `keepalive:\n  enabled: false` instead.
+- `max_connection_age`: duration a connection may exist before the server starts marking its responses with a `Connection: close` header, prompting the client to establish a new connection for subsequent requests. In-flight and already-queued requests on the connection are allowed to complete normally. A zero value means connections are never aged out. Default: `0` (disabled)
+- `max_connection_age_grace`: additional period after `max_connection_age` after which the connection is forcibly closed, regardless of in-flight requests. Has no effect if `max_connection_age` is not set. A zero value means the connection is never forcibly closed. Default: `0` (disabled)
 - [`tls`](../configtls/README.md)
 - [`auth`](../configauth/README.md)
   - `request_params`: a list of query parameter names to add to the auth context, along with the HTTP headers

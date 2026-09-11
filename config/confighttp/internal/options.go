@@ -5,6 +5,7 @@ package internal // import "go.opentelemetry.io/collector/config/confighttp/inte
 
 import (
 	"io"
+	"net"
 	"net/http"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -13,9 +14,10 @@ import (
 // ToServerOptions has options that change the behavior of the HTTP server
 // returned by ServerConfig.ToServer().
 type ToServerOptions struct {
-	ErrHandler   func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)
-	Decoders     map[string]func(body io.ReadCloser) (io.ReadCloser, error)
-	OtelhttpOpts []otelhttp.Option
+	ErrHandler        func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)
+	Decoders          map[string]func(body io.ReadCloser) (io.ReadCloser, error)
+	OtelhttpOpts      []otelhttp.Option
+	ConnStateCallback func(net.Conn, http.ConnState)
 }
 
 func (tso *ToServerOptions) Apply(opts ...ToServerOption) {

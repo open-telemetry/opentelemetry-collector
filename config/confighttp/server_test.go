@@ -14,13 +14,17 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -999,6 +1003,8 @@ func TestDefaultHTTPServerSettings(t *testing.T) {
 	assert.Equal(t, 1*time.Minute, httpServerSettings.ReadHeaderTimeout)
 	assert.Equal(t, 1*time.Minute, httpServerSettings.IdleTimeout)
 	assert.False(t, httpServerSettings.Keepalive.HasValue())
+	assert.Equal(t, time.Duration(0), httpServerSettings.MaxConnectionAge)
+	assert.Equal(t, time.Duration(0), httpServerSettings.MaxConnectionAgeGrace)
 }
 
 func TestHTTPServerKeepAlives(t *testing.T) {
@@ -1049,6 +1055,266 @@ func TestHTTPServerKeepAlives(t *testing.T) {
 			assert.Equal(t, tt.keepAlivesEnabled, sc.KeepAlivesEnabled)
 		})
 	}
+}
+
+func TestServerMaxConnectionAge(t *testing.T) {
+	sc := &ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
+		KeepAlivesEnabled: true,
+		MaxConnectionAge:  50 * time.Millisecond,
+	}
+	ln, err := sc.ToListener(context.Background())
+	require.NoError(t, err)
+
+	startServer(t, sc, ln, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	client := &http.Client{}
+	url := "http://" + ln.Addr().String()
+
+	// The connection was just established, so it should not be marked for closure yet.
+	resp, err := client.Get(url)
+	require.NoError(t, err)
+	_ = resp.Body.Close()
+	assert.False(t, resp.Close)
+
+	// Once the connection has been open for longer than MaxConnectionAge, the next
+	// response on that same connection should be marked with "Connection: close".
+	time.Sleep(100 * time.Millisecond)
+
+	resp, err = client.Get(url)
+	require.NoError(t, err)
+	_ = resp.Body.Close()
+	assert.True(t, resp.Close)
+}
+
+func TestServerMaxConnectionAgeDisabledByDefault(t *testing.T) {
+	sc := &ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
+		KeepAlivesEnabled: true,
+	}
+	ln, err := sc.ToListener(context.Background())
+	require.NoError(t, err)
+
+	startServer(t, sc, ln, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	client := &http.Client{}
+	url := "http://" + ln.Addr().String()
+
+	for range 3 {
+		resp, err := client.Get(url)
+		require.NoError(t, err)
+		_ = resp.Body.Close()
+		assert.False(t, resp.Close)
+	}
+}
+
+func TestServerMaxConnectionAgeGrace(t *testing.T) {
+	sc := &ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
+		MaxConnectionAge:      20 * time.Millisecond,
+		MaxConnectionAgeGrace: 20 * time.Millisecond,
+	}
+	ln, err := sc.ToListener(context.Background())
+	require.NoError(t, err)
+
+	startServer(t, sc, ln, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	conn, err := net.Dial("tcp", ln.Addr().String())
+	require.NoError(t, err)
+	defer conn.Close()
+
+	// Leave the connection idle, without sending any request. Once
+	// MaxConnectionAge+MaxConnectionAgeGrace elapses the server should forcibly
+	// close it regardless of whether it ever saw a request to mark as closing.
+	require.NoError(t, conn.SetReadDeadline(time.Now().Add(2*time.Second)))
+	buf := make([]byte, 1)
+	_, err = conn.Read(buf)
+	assert.ErrorIs(t, err, io.EOF)
+}
+
+func TestServerMaxConnectionAgeLogsSoftClose(t *testing.T) {
+	sc := &ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
+		KeepAlivesEnabled: true,
+		MaxConnectionAge:  20 * time.Millisecond,
+	}
+	ln, err := sc.ToListener(context.Background())
+	require.NoError(t, err)
+
+	core, logs := observer.New(zap.DebugLevel)
+	settings := componenttest.NewNopTelemetrySettings()
+	settings.Logger = zap.New(core)
+
+	srv, err := sc.ToServer(context.Background(), nil, settings, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, srv.Close()) })
+	go func() { _ = srv.Serve(ln) }()
+
+	client := &http.Client{}
+	url := "http://" + ln.Addr().String()
+
+	resp, err := client.Get(url)
+	require.NoError(t, err)
+	_ = resp.Body.Close()
+	assert.Empty(t, logs.FilterMessage("HTTP connection reached max connection age, closing after this response").All())
+
+	time.Sleep(50 * time.Millisecond)
+
+	resp, err = client.Get(url)
+	require.NoError(t, err)
+	_ = resp.Body.Close()
+
+	entries := logs.FilterMessage("HTTP connection reached max connection age, closing after this response").All()
+	require.Len(t, entries, 1)
+	fields := entries[0].ContextMap()
+	assert.NotEmpty(t, fields["remote_addr"])
+	assert.Equal(t, 20*time.Millisecond, fields["max_connection_age"])
+	assert.GreaterOrEqual(t, fields["connection_age"], 20*time.Millisecond)
+}
+
+func TestServerMaxConnectionAgeLogsForceClose(t *testing.T) {
+	sc := &ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
+		MaxConnectionAge:      20 * time.Millisecond,
+		MaxConnectionAgeGrace: 20 * time.Millisecond,
+	}
+	ln, err := sc.ToListener(context.Background())
+	require.NoError(t, err)
+
+	core, logs := observer.New(zap.DebugLevel)
+	settings := componenttest.NewNopTelemetrySettings()
+	settings.Logger = zap.New(core)
+
+	srv, err := sc.ToServer(context.Background(), nil, settings, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, srv.Close()) })
+	go func() { _ = srv.Serve(ln) }()
+
+	conn, err := net.Dial("tcp", ln.Addr().String())
+	require.NoError(t, err)
+	defer conn.Close()
+
+	require.NoError(t, conn.SetReadDeadline(time.Now().Add(2*time.Second)))
+	buf := make([]byte, 1)
+	_, err = conn.Read(buf)
+	assert.ErrorIs(t, err, io.EOF)
+
+	entries := logs.FilterMessage("HTTP connection exceeded max connection age and grace period, forcibly closing").All()
+	require.Len(t, entries, 1)
+	fields := entries[0].ContextMap()
+	assert.NotEmpty(t, fields["remote_addr"])
+	assert.NotEmpty(t, fields["local_addr"])
+	assert.Equal(t, 20*time.Millisecond, fields["max_connection_age"])
+	assert.Equal(t, 20*time.Millisecond, fields["max_connection_age_grace"])
+}
+
+func TestServerWithConnStateCallback(t *testing.T) {
+	sc := &ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
+	}
+	ln, err := sc.ToListener(context.Background())
+	require.NoError(t, err)
+
+	var mu sync.Mutex
+	var states []http.ConnState
+	srv, err := sc.ToServer(context.Background(), nil, componenttest.NewNopTelemetrySettings(),
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }),
+		WithConnStateCallback(func(_ net.Conn, state http.ConnState) {
+			mu.Lock()
+			states = append(states, state)
+			mu.Unlock()
+		}),
+	)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, srv.Close()) })
+	go func() { _ = srv.Serve(ln) }()
+
+	client := &http.Client{Transport: &http.Transport{DisableKeepAlives: true}}
+	resp, err := client.Get("http://" + ln.Addr().String())
+	require.NoError(t, err)
+	_ = resp.Body.Close()
+
+	assert.Eventually(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return slices.Contains(states, http.StateClosed)
+	}, 2*time.Second, 10*time.Millisecond)
+
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Contains(t, states, http.StateNew)
+	assert.Contains(t, states, http.StateClosed)
+}
+
+func TestServerWithConnStateCallbackComposesWithMaxConnectionAgeGrace(t *testing.T) {
+	sc := &ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
+		MaxConnectionAge:      20 * time.Millisecond,
+		MaxConnectionAgeGrace: 20 * time.Millisecond,
+	}
+	ln, err := sc.ToListener(context.Background())
+	require.NoError(t, err)
+
+	var mu sync.Mutex
+	var states []http.ConnState
+	srv, err := sc.ToServer(context.Background(), nil, componenttest.NewNopTelemetrySettings(),
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }),
+		WithConnStateCallback(func(_ net.Conn, state http.ConnState) {
+			mu.Lock()
+			states = append(states, state)
+			mu.Unlock()
+		}),
+	)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, srv.Close()) })
+	go func() { _ = srv.Serve(ln) }()
+
+	conn, err := net.Dial("tcp", ln.Addr().String())
+	require.NoError(t, err)
+	defer conn.Close()
+
+	// The connection should still be forcibly closed by the max-connection-age-grace
+	// logic even though a user-provided ConnState callback is also registered.
+	require.NoError(t, conn.SetReadDeadline(time.Now().Add(2*time.Second)))
+	buf := make([]byte, 1)
+	_, err = conn.Read(buf)
+	assert.ErrorIs(t, err, io.EOF)
+
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Contains(t, states, http.StateNew)
+	assert.Contains(t, states, http.StateClosed)
 }
 
 func TestHTTPServerTelemetry_Tracing(t *testing.T) {
