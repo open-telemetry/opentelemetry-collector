@@ -38,6 +38,16 @@ test-with-cover:
 		--packages="./..." -- \
 		$(GOTEST_OPT) -cover -covermode=atomic -coverpkg $(COVER_PKGS) -args -test.gocoverdir="$(PWD)/coverage/unit"
 
+COVERAGE_PROFILE ?= $(SRC_ROOT)/coverage.txt
+
+.PHONY: check-stability-mod
+check-stability-mod:
+	@for dir in $$($(GOCMD) list -f '{{.Dir}}' ./... | sort -u); do \
+		f="$$dir/metadata.yaml"; \
+		[ -f "$$f" ] || continue; \
+		mdatagen check-stability --profile=$(COVERAGE_PROFILE) "$$f" || exit 1; \
+	done
+
 .PHONY: test-with-junit
 test-with-junit:
 	mkdir -p $(JUNIT_OUT_DIR)

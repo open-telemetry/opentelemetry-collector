@@ -270,6 +270,11 @@ checkapi:
 checkdoc:
 	$(GO_TOOL) checkfile --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "README.md"
 
+.PHONY: check-stability
+check-stability:
+	cd cmd/mdatagen && $(GOCMD) install .
+	@$(MAKE) for-all-target TARGET="check-stability-mod"
+
 # Extract the relative path of every module listed between "stable:" and "beta:" in versions.yaml
 STABLE_MODULES := $(shell sed -n -e '/stable:/,/beta:/ s/.*- go.opentelemetry.io\/collector/./p' versions.yaml)
 
