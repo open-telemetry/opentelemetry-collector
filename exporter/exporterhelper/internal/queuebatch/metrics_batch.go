@@ -51,16 +51,108 @@ func (req *metricsRequest) mergeTo(dst *metricsRequest, sz sizer.MetricsSizer, s
 
 func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer, szt request.SizerType) ([]request.Request, error) {
 	var res []request.Request
+	droppedItems := 0
 	for req.size(sz, szt) > maxSize {
 		md, rmSize := extractMetrics(req.md, maxSize, sz)
 		if md.DataPointCount() == 0 {
-			return res, fmt.Errorf("one datapoint size is greater than max size, dropping items: %d", req.md.DataPointCount())
+			// The next data point does not fit into maxSize even on its own, so no
+			// batch can ever hold it. Drop only that data point and keep splitting
+			// the rest, otherwise every remaining one is discarded along with it.
+			if !removeFirstDataPoint(req.md) {
+				break
+			}
+			droppedItems++
+			req.sizes.Update(szt, sz.MetricsSize(req.md))
+			continue
 		}
 		req.sizes.Update(szt, req.size(sz, szt)-rmSize)
 		res = append(res, newMetricsRequest(md))
 	}
-	res = append(res, req)
+	// Keep the remainder, unless everything left was dropped as oversized, in
+	// which case there is nothing to export.
+	if droppedItems == 0 || req.md.DataPointCount() > 0 {
+		res = append(res, req)
+	}
+	if droppedItems > 0 {
+		return res, fmt.Errorf("one datapoint size is greater than max size, dropping items: %d", droppedItems)
+	}
 	return res, nil
+}
+
+// removeFirstDataPoint removes the first data point in iteration order, together
+// with the metric, scope and resource that it leaves empty. Reports whether a
+// data point was removed, which is false only when there are none left.
+func removeFirstDataPoint(md pmetric.Metrics) bool {
+	removed := false
+	md.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
+		if removed {
+			return false
+		}
+		rm.ScopeMetrics().RemoveIf(func(sm pmetric.ScopeMetrics) bool {
+			if removed {
+				return false
+			}
+			sm.Metrics().RemoveIf(func(m pmetric.Metric) bool {
+				if removed {
+					return false
+				}
+				removed = removeFirstMetricDataPoint(m)
+				return dataPointsLen(m) == 0
+			})
+			return sm.Metrics().Len() == 0
+		})
+		return rm.ScopeMetrics().Len() == 0
+	})
+	return removed
+}
+
+// removeFirstMetricDataPoint removes the first data point of m, whichever data
+// point type it holds. Reports whether one was removed.
+func removeFirstMetricDataPoint(m pmetric.Metric) bool {
+	removed := false
+	switch m.Type() {
+	case pmetric.MetricTypeGauge:
+		m.Gauge().DataPoints().RemoveIf(func(pmetric.NumberDataPoint) bool {
+			if removed {
+				return false
+			}
+			removed = true
+			return true
+		})
+	case pmetric.MetricTypeSum:
+		m.Sum().DataPoints().RemoveIf(func(pmetric.NumberDataPoint) bool {
+			if removed {
+				return false
+			}
+			removed = true
+			return true
+		})
+	case pmetric.MetricTypeHistogram:
+		m.Histogram().DataPoints().RemoveIf(func(pmetric.HistogramDataPoint) bool {
+			if removed {
+				return false
+			}
+			removed = true
+			return true
+		})
+	case pmetric.MetricTypeExponentialHistogram:
+		m.ExponentialHistogram().DataPoints().RemoveIf(func(pmetric.ExponentialHistogramDataPoint) bool {
+			if removed {
+				return false
+			}
+			removed = true
+			return true
+		})
+	case pmetric.MetricTypeSummary:
+		m.Summary().DataPoints().RemoveIf(func(pmetric.SummaryDataPoint) bool {
+			if removed {
+				return false
+			}
+			removed = true
+			return true
+		})
+	}
+	return removed
 }
 
 // extractMetrics extracts metrics from srcMetrics until capacity is reached.

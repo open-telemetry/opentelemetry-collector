@@ -51,16 +51,59 @@ func (req *tracesRequest) mergeTo(dst *tracesRequest, sz sizer.TracesSizer, szt 
 
 func (req *tracesRequest) split(maxSize int, sz sizer.TracesSizer, szt request.SizerType) ([]request.Request, error) {
 	var res []request.Request
+	droppedItems := 0
 	for req.size(sz, szt) > maxSize {
 		td, rmSize := extractTraces(req.td, maxSize, sz)
 		if td.SpanCount() == 0 {
-			return res, fmt.Errorf("one span size is greater than max size, dropping items: %d", req.td.SpanCount())
+			// The next span does not fit into maxSize even on its own, so no batch
+			// can ever hold it. Drop only that span and keep splitting the rest,
+			// otherwise every remaining span is discarded along with it.
+			if !removeFirstSpan(req.td) {
+				break
+			}
+			droppedItems++
+			req.sizes.Update(szt, sz.TracesSize(req.td))
+			continue
 		}
 		req.sizes.Update(szt, req.size(sz, szt)-rmSize)
 		res = append(res, newTracesRequest(td))
 	}
-	res = append(res, req)
+	// Keep the remainder, unless everything left was dropped as oversized, in
+	// which case there is nothing to export.
+	if droppedItems == 0 || req.td.SpanCount() > 0 {
+		res = append(res, req)
+	}
+	if droppedItems > 0 {
+		return res, fmt.Errorf("one span size is greater than max size, dropping items: %d", droppedItems)
+	}
 	return res, nil
+}
+
+// removeFirstSpan removes the first span in iteration order, together with the
+// scope and resource that it leaves empty. Reports whether a span was removed,
+// which is false only when there are none left.
+func removeFirstSpan(td ptrace.Traces) bool {
+	removed := false
+	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
+		if removed {
+			return false
+		}
+		rs.ScopeSpans().RemoveIf(func(ss ptrace.ScopeSpans) bool {
+			if removed {
+				return false
+			}
+			ss.Spans().RemoveIf(func(ptrace.Span) bool {
+				if removed {
+					return false
+				}
+				removed = true
+				return true
+			})
+			return ss.Spans().Len() == 0
+		})
+		return rs.ScopeSpans().Len() == 0
+	})
+	return removed
 }
 
 // extractTraces extracts a new traces with a maximum number of spans.

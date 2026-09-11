@@ -5,6 +5,8 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -768,4 +770,83 @@ func (m *mockMetricsSizer) ScopeMetricsSize(_ pmetric.ScopeMetrics) int {
 
 func (m *mockMetricsSizer) DeltaSize(size int) int {
 	return size
+}
+
+// dpNames returns the "id" attribute of every gauge data point across the given
+// requests, in order.
+func dpNames(reqs []request.Request) []string {
+	var out []string
+	for _, r := range reqs {
+		rms := r.(*metricsRequest).md.ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			sms := rms.At(i).ScopeMetrics()
+			for j := 0; j < sms.Len(); j++ {
+				ms := sms.At(j).Metrics()
+				for k := 0; k < ms.Len(); k++ {
+					dps := ms.At(k).Gauge().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						v, _ := dps.At(l).Attributes().Get("id")
+						out = append(out, v.Str())
+					}
+				}
+			}
+		}
+	}
+	return out
+}
+
+// newMetricsWithDataPoints builds one gauge metric per id, each holding a single
+// data point; an id of "BIG" gets an attribute large enough that the data point
+// cannot fit into any batch.
+func newMetricsWithDataPoints(ids ...string) pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	sm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	for _, id := range ids {
+		m := sm.Metrics().AppendEmpty()
+		m.SetName(id)
+		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+		dp.SetIntValue(1)
+		dp.Attributes().PutStr("id", id)
+		if id == "BIG" {
+			dp.Attributes().PutStr("pad", strings.Repeat("x", 1000))
+		}
+	}
+	return md
+}
+
+func TestMergeSplitMetricsDropsOnlyOversizedDataPoint(t *testing.T) {
+	tests := []struct {
+		name         string
+		ids          []string
+		wantSurvived []string
+		wantDropped  int
+	}{
+		{"oversized_first", []string{"BIG", "a", "b", "c"}, []string{"a", "b", "c"}, 1},
+		{"oversized_in_middle", []string{"a", "b", "BIG", "c", "d"}, []string{"a", "b", "c", "d"}, 1},
+		{"oversized_last", []string{"a", "b", "c", "BIG"}, []string{"a", "b", "c"}, 1},
+		{"multiple_oversized", []string{"a", "BIG", "b", "BIG", "c"}, []string{"a", "b", "c"}, 2},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := newMetricsRequest(newMetricsWithDataPoints(tt.ids...))
+			res, err := req.MergeSplit(context.Background(), 150, request.SizerTypeBytes, nil)
+
+			wantErr := fmt.Sprintf("one datapoint size is greater than max size, dropping items: %d", tt.wantDropped)
+			require.ErrorContains(t, err, wantErr)
+			assert.Equal(t, tt.wantSurvived, dpNames(res),
+				"data points other than the oversized ones must survive")
+
+			for _, r := range res {
+				assert.LessOrEqual(t, r.BytesSize(), 150, "no returned batch may exceed max size")
+			}
+		})
+	}
+}
+
+func TestMergeSplitMetricsAllDataPointsOversized(t *testing.T) {
+	req := newMetricsRequest(newMetricsWithDataPoints("BIG", "BIG"))
+	res, err := req.MergeSplit(context.Background(), 150, request.SizerTypeBytes, nil)
+	require.ErrorContains(t, err, "one datapoint size is greater than max size, dropping items: 2")
+	assert.Empty(t, dpNames(res), "nothing can be exported when every data point is oversized")
 }
