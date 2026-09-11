@@ -898,6 +898,11 @@ func TestGenerateConfigGoStruct_ResolvedImports(t *testing.T) {
 			Config: &cfggen.ConfigMetadata{
 				Type: "object",
 				Properties: map[string]*schemagen.ConfigMetadata{
+					"component_id": {
+						Type:     "string",
+						GoType:   "go.opentelemetry.io/collector/component.ID",
+						GoStruct: cfggen.GoStructConfig{FieldName: "ComponentID"},
+					},
 					"AllOf": {
 						Type:  "object",
 						Embed: true,
@@ -926,6 +931,7 @@ func TestGenerateConfigGoStruct_ResolvedImports(t *testing.T) {
 
 	generated := string(content)
 	require.Contains(t, generated, `"go.opentelemetry.io/collector/component"`)
+	require.Equal(t, 1, strings.Count(generated, `"go.opentelemetry.io/collector/component"`))
 	require.Contains(t, generated, `"go.opentelemetry.io/collector/scraper/scraperhelper"`)
 	require.Contains(t, generated, "func createDefaultConfig() component.Config")
 }
@@ -1772,6 +1778,12 @@ func TestGenerateConfigGoStruct_TestFileContainsValidateTestWhenValidatorsPresen
 					},
 				},
 			},
+			ExportedConfigs: map[string]*cfggen.ConfigMetadata{
+				"port": {
+					Type:    "int",
+					Minimum: new(1.0),
+				},
+			},
 		},
 	}
 
@@ -1781,6 +1793,7 @@ func TestGenerateConfigGoStruct_TestFileContainsValidateTestWhenValidatorsPresen
 	require.NoError(t, err)
 	require.Contains(t, string(content), "func TestCreateDefaultConfig(")
 	require.Contains(t, string(content), "func TestConfigValidate_DefaultValid(")
+	require.Contains(t, string(content), "func TestPortValidate_Minimum(")
 }
 
 func TestGenerateConfigGoStruct_TestFileNoValidateTestWhenNoValidators(t *testing.T) {
