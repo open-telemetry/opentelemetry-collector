@@ -379,11 +379,3 @@ func BenchmarkProfileSwitchDictionary(b *testing.B) {
 		_ = p.switchDictionary(src, dst)
 	}
 }
-
-func TestProfile_Duration(_ *testing.T) {
-	ms := NewProfile()
-	ms.SetDuration(0)
-
-	ts := ms.Duration()
-	_ = ts
-}

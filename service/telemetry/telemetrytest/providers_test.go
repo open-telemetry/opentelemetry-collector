@@ -24,10 +24,11 @@ func TestWithResource(t *testing.T) {
 	res := pcommon.NewResource()
 	res.Attributes().PutStr("key", "value")
 
-	factory := telemetry.NewFactory(nil, WithResource(res))
-	createdResource, err := factory.CreateResource(context.Background(), telemetry.Settings{}, nil)
+	factory := telemetry.NewFactory(nil, WithResource(res, "https://opentelemetry.io/schemas/1.40.0"))
+	createdResource, schemaURL, err := factory.CreateResource(context.Background(), telemetry.Settings{}, nil)
 	require.NoError(t, err)
 	assert.Equal(t, res, createdResource)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.40.0", schemaURL)
 }
 
 func TestWithLogger(t *testing.T) {

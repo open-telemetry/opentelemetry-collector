@@ -5,6 +5,7 @@ package e2e
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -163,9 +164,16 @@ service:
 			require.NoError(t, err)
 
 			// Start collector
+			runErr := make(chan error, 1)
 			go func() {
-				assert.NoError(t, collector.Run(t.Context()))
+				runErr <- collector.Run(context.Background())
 			}()
+			t.Cleanup(func() {
+				collector.Shutdown()
+				require.NoError(t, <-runErr, "collector stopped with an error")
+			})
+
+			waitCollectorRunning(t, collector)
 			waitMetricsReady(t, metricsPort)
 
 			// Send some data through the pipeline to trigger internal telemetry

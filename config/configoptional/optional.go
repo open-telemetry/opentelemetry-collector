@@ -6,6 +6,7 @@ package configoptional // import "go.opentelemetry.io/collector/config/configopt
 //go:generate mdatagen metadata.yaml
 
 import (
+	"encoding"
 	"errors"
 	"fmt"
 	"reflect"
@@ -213,8 +214,10 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 func (o *Optional[T]) UnmarshalScalar(scalarValue confmap.ScalarValue) error {
 	if scalarValue.GetRaw() == nil {
 		if deref(reflect.TypeOf(o.value)).Kind() == reflect.Struct {
-			// Defer to Unmarshal behavior
-			return confmap.ErrValueNotApplicable
+			if _, ok := any(&o.value).(encoding.TextUnmarshaler); !ok {
+				// Defer to Unmarshal behavior
+				return confmap.ErrValueNotApplicable
+			}
 		}
 		// For scalar types, a nil map represents `null` and clears to None.
 		var zero T
@@ -260,8 +263,10 @@ func (o Optional[T]) Marshal(conf *confmap.Conf) error {
 
 func (o Optional[T]) MarshalScalar(scalarValue confmap.ScalarValue) error {
 	if deref(reflect.TypeOf(o.value)).Kind() == reflect.Struct {
-		// Defer to Marshal behavior
-		return confmap.ErrValueNotApplicable
+		if _, ok := any(o.value).(encoding.TextMarshaler); !ok {
+			// Defer to Marshal behavior
+			return confmap.ErrValueNotApplicable
+		}
 	}
 
 	if o.flavor == noneFlavor || o.flavor == defaultFlavor {

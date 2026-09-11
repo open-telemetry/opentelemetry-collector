@@ -355,6 +355,28 @@ func BenchmarkSplittingBasedOnByteSizeManySmallLogs(b *testing.B) {
 	}
 }
 
+// BenchmarkByteSizeFlushCheckManySmallLogs mirrors partitionBatcher.consumeInternal:
+// each incoming request is merged into the growing batch, then the batch's byte size
+// is read to decide whether MinSize is reached. Reading BytesSize() on the whole
+// accumulated batch every consume is O(batch) unless the size is cached, making the
+// accumulation O(n^2) overall.
+func BenchmarkByteSizeFlushCheckManySmallLogs(b *testing.B) {
+	testutil.SkipGCHeavyBench(b)
+	b.ReportAllocs()
+	for b.Loop() {
+		batch := newLogsRequest(testdata.GenerateLogs(10))
+		var total int
+		for range 1000 {
+			lr2 := newLogsRequest(testdata.GenerateLogs(10))
+			res, _ := batch.MergeSplit(context.Background(), 0, request.SizerTypeBytes, lr2)
+			batch = res[len(res)-1]
+			// The batcher's MinSize check on the accumulated batch.
+			total += batch.BytesSize()
+		}
+		_ = total
+	}
+}
+
 func BenchmarkSplittingBasedOnItemCountManyLogsSlightlyAboveLimit(b *testing.B) {
 	testutil.SkipGCHeavyBench(b)
 	// Every incoming request results in a split.
