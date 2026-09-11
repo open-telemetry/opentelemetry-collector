@@ -102,5 +102,5 @@ func (eb *TestEntityMetricsBuilder) Emit() {
 	cfg := eb.mb.config.ResourceAttributes
 	eb.entity.copyToResource(cfg, res)
 	cfg.applyOverrideValues(res)
-	eb.mb.EmitForResource(withResourceMoved(res))
+	eb.mb.ForTestEntity(eb.entity).Emit()
 }

@@ -536,15 +536,12 @@ func (mb *MetricsBuilder) For{{ publicVar $entityType }}(e *{{ $entityStructType
 }
 {{ end }}
 
+{{- if not .HasEntities }}
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
 // recording another set of data points as part of another resource. This function can be helpful when one scraper
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
 // just `Emit` function can be called instead.
 // Resource attributes should be provided as ResourceMetricsOption arguments.
-{{- if .HasEntities }}
-//
-// Deprecated: Use the For<EntityType> methods to get entity-scoped builders and call Emit() on them instead.
-{{- end }}
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	{{- if .SemConvVersion }}
@@ -579,6 +576,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
 	}
 }
+{{- end }}
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
@@ -591,12 +589,9 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 {{ range $name, $metric := .Metrics -}}
+{{- if not $metric.Entity }}
 {{ if not $metric.Versioned }}
 // Record{{ $name.Render }}DataPoint adds a data point to {{ $name }} metric.
-{{- if $metric.Entity }}
-//
-// Deprecated: Use mb.For{{ publicVar $metric.Entity }}(entity).Record{{ $name.Render }}DataPoint(...) instead.
-{{- end }}
 func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 	{{- if $metric.Data.HasMetricInputType }}, inputVal {{ $metric.Data.MetricInputType.String }}
 	{{- else }}, val {{ $metric.Data.MetricValueType.BasicType }}
@@ -703,6 +698,7 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 	return nil
 	{{- end }}
 }
+{{- end }}
 {{ end }}
 {{ end }}
 
