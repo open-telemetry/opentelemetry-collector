@@ -44,6 +44,11 @@ batch settings, use `batch: {}`. When `batch` is defined, the settings are:
 - `flush_timeout` (default = 200 ms): time after which a batch will be sent regardless of its size. Must be a non-zero value;
 - `min_size` (default = 8192): the minimum size of a batch; should be less than or equal to the `sending_queue::queue_size` if `sending_queue::batch::sizer` matches `sending_queue::sizer`.
 - `max_size` (default = 0): the maximum size of a batch, enables batch splitting. The maximum size of a batch should be greater than or equal to the minimum size of a batch. If set to zero, there is no maximum size;
+- `cache_size` (default = 10000): maximum number of active partition batchers kept in
+  the LRU cache when partitioning is enabled. When the limit is reached, the least recently used partition is flushed
+  and removed. The current size and configured capacity are exported as
+  `otelcol_exporter_queue_batch_partition_cache_size` and
+  `otelcol_exporter_queue_batch_partition_cache_capacity`.
 - `sizer`: see below.
 - `partition`: see below.
 
