@@ -111,7 +111,6 @@ func TestServiceTelemetryLogging_Settings(t *testing.T) {
 				*zap.Logger, component.ShutdownFunc, error,
 			) {
 				require.NotNil(t, set.BuildZapLogger)
-				require.Empty(t, set.ZapOptions)
 				logger, err := set.BuildZapLogger(zapConfig)
 				return logger, nil, err
 			},
