@@ -63,6 +63,30 @@ func (req *tracesRequest) split(maxSize int, sz sizer.TracesSizer, szt request.S
 	return res, nil
 }
 
+// SplitOne implements the splitOne interface by splitting off at most maxSize
+// items/bytes from this request into a new request, leaving the remainder in the
+// receiver. Returns nil when the receiver already contains at most maxSize items.
+func (req *tracesRequest) SplitOne(_ context.Context, maxSize int, szt request.SizerType) (request.Request, error) {
+	var sz sizer.TracesSizer
+	switch szt {
+	case request.SizerTypeItems:
+		sz = &sizer.TracesCountSizer{}
+	case request.SizerTypeBytes:
+		sz = &sizer.TracesBytesSizer{}
+	default:
+		return nil, errors.New("unknown sizer type")
+	}
+	if req.size(sz) <= maxSize {
+		return nil, nil
+	}
+	td, rmSize := extractTraces(req.td, maxSize, sz)
+	if td.SpanCount() == 0 {
+		return nil, fmt.Errorf("one span size is greater than max size, dropping items: %d", req.td.SpanCount())
+	}
+	req.setCachedSize(req.size(sz) - rmSize)
+	return newTracesRequest(td), nil
+}
+
 // extractTraces extracts a new traces with a maximum number of spans.
 func extractTraces(srcTraces ptrace.Traces, capacity int, sz sizer.TracesSizer) (ptrace.Traces, int) {
 	destTraces := ptrace.NewTraces()
