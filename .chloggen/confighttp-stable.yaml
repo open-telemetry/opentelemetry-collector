@@ -1,0 +1,6 @@
+change_type: enhancement
+component: pkg/confighttp
+note: Mark confighttp as stable
+issues: [9380]
+subtext:
+change_logs: [api]
