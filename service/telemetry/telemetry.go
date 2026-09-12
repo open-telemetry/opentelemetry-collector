@@ -22,13 +22,6 @@ import (
 type LoggerSettings struct {
 	Settings
 
-	// ZapOptions contains options for creating the zap logger.
-	//
-	// Deprecated [v0.142.0]: use BuildZapLogger instead.
-	// This field will be removed in the future, and options
-	// must be injected through BuildZapLogger.
-	ZapOptions []zap.Option
-
 	// BuildZapLogger holds a function for building a *zap.Logger
 	// from a zap.Config and options.
 	//
