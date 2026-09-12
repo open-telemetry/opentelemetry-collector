@@ -145,6 +145,10 @@ func (orig *KeyValue) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *KeyValue) UnmarshalJSON(iter *json.Iterator) {
+	if !iter.EnterRecursive() {
+		return
+	}
+	defer iter.ExitRecursive()
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "key":

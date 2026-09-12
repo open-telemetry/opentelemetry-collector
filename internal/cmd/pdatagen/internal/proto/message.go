@@ -41,10 +41,22 @@ func (ms *Message) GenerateMetadata() string {
 	return string(ms.metadata.Generate())
 }
 
+// recursiveMessages are the OTLP message types that can nest within themselves through the
+// AnyValue attribute model (AnyValue -> ArrayValue/KeyValueList -> KeyValue -> AnyValue). They
+// are the only messages whose UnmarshalJSON can recurse unboundedly on untrusted input, so only
+// they carry the recursion-depth guard; every other message has schema-bounded nesting.
+var recursiveMessages = map[string]bool{
+	"AnyValue":     true,
+	"ArrayValue":   true,
+	"KeyValueList": true,
+	"KeyValue":     true,
+}
+
 func (ms *Message) templateFields(imports, testImports []string) map[string]any {
 	return map[string]any{
 		"fields":          ms.Fields,
 		"messageName":     ms.Name,
+		"recursive":       recursiveMessages[ms.Name],
 		"upstreamMessage": ms.UpstreamMessage,
 		"description":     ms.Description,
 		"imports":         imports,
