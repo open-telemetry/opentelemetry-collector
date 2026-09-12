@@ -770,7 +770,7 @@ func TestProfilesMergeToEmptyDestination(t *testing.T) {
 	dd := dest.Dictionary()
 
 	// Every table holds its zero value at index 0.
-	require.Equal(t, "", dd.StringTable().At(0), "string_table[0] must be the empty string")
+	require.Empty(t, dd.StringTable().At(0), "string_table[0] must be the empty string")
 	require.GreaterOrEqual(t, dd.AttributeTable().Len(), 1)
 	require.GreaterOrEqual(t, dd.StackTable().Len(), 1)
 	require.GreaterOrEqual(t, dd.LocationTable().Len(), 1)
@@ -782,13 +782,13 @@ func TestProfilesMergeToEmptyDestination(t *testing.T) {
 	mergedFn := dd.FunctionTable().At(1)
 	require.Equal(t, "std::rt::lang_start", dd.StringTable().At(int(mergedFn.NameStrindex())))
 	require.Equal(t, int32(0), mergedFn.FilenameStrindex())
-	require.Equal(t, "", dd.StringTable().At(int(mergedFn.FilenameStrindex())),
+	require.Empty(t, dd.StringTable().At(int(mergedFn.FilenameStrindex())),
 		"unset filename must still resolve to the empty string")
 
 	// The attribute key landed at some index > 0.
 	mergedAttr := dd.AttributeTable().At(1)
 	require.Equal(t, "process.executable.build_id.gnu", dd.StringTable().At(int(mergedAttr.KeyStrindex())))
-	require.Greater(t, mergedAttr.KeyStrindex(), int32(0))
+	require.Positive(t, mergedAttr.KeyStrindex())
 }
 
 // TestProfilesMergeToPartlyPrepopulatedDestination makes sure seeding only
@@ -811,7 +811,7 @@ func TestProfilesMergeToPartlyPrepopulatedDestination(t *testing.T) {
 
 	dd := dest.Dictionary()
 	// Pre-existing entries stay put.
-	require.Equal(t, "", dd.StringTable().At(0))
+	require.Empty(t, dd.StringTable().At(0))
 	require.Equal(t, "stored", dd.StringTable().At(1))
 	require.Equal(t, "nanoseconds", dd.StringTable().At(2))
 	// All other tables got their zero value reserved.
@@ -838,11 +838,11 @@ func TestProfilesMergeToSequentialMergesStayConformant(t *testing.T) {
 
 	dest := NewProfiles()
 	require.NoError(t, build("cpu").MergeTo(dest))
-	require.Equal(t, "", dest.Dictionary().StringTable().At(0))
+	require.Empty(t, dest.Dictionary().StringTable().At(0))
 	require.NoError(t, build("memory").MergeTo(dest))
 
 	dd := dest.Dictionary()
-	require.Equal(t, "", dd.StringTable().At(0), "string_table[0] clobbered by second merge")
+	require.Empty(t, dd.StringTable().At(0), "string_table[0] clobbered by second merge")
 	require.Equal(t, 3, dd.StringTable().Len())
 	require.Equal(t, 2, dest.ResourceProfiles().Len())
 
