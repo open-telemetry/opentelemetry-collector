@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build linux || darwin
+//go:build linux || darwin || aix
 
 package otlptext // import "go.opentelemetry.io/collector/exporter/debugexporter/internal/otlptext"
 
@@ -22,7 +22,7 @@ var knownSyncErrors = []error{
 }
 
 // knownSyncError returns true if the given error is one of the known
-// non-actionable errors returned by Sync on Linux and macOS.
+// non-actionable errors returned by Sync on Linux, macOS and AIX.
 func knownSyncError(err error) bool {
 	for _, syncError := range knownSyncErrors {
 		if errors.Is(err, syncError) {
