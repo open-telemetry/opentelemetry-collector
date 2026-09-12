@@ -1,0 +1,29 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: bug_fix
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
+component: pkg/pprofile
+
+# A brief description of the change.  Surround your text with quotes (") if it needs to start with a backtick (`).
+note: "`pprofile.Profiles.MergeTo` now reserves index 0 of each destination dictionary table for the table's zero value, keeping merged dictionaries conformant with the ProfilesDictionary contract"
+
+# One or more tracking issues or pull requests related to the change
+issues: [15661]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  Previously, merging into a fresh destination dictionary let the first merged
+  entry take index 0 of each table. Since unset references resolve to index 0,
+  they silently resolved to real data after the merge (e.g. a function with no
+  filename reported the first merged string as its filename).
+
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: []

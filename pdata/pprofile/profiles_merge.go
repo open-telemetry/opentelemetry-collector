@@ -13,6 +13,8 @@ func (ms Profiles) MergeTo(dest Profiles) error {
 		return nil
 	}
 
+	ensureDictionarySentinels(dest.Dictionary())
+
 	if err := ms.switchDictionary(ms.Dictionary(), dest.Dictionary()); err != nil {
 		return err
 	}
