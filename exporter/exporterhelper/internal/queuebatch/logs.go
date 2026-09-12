@@ -59,6 +59,11 @@ func (logsEncoding) Unmarshal(bytes []byte) (context.Context, request.Request, e
 		// fall back to unmarshaling without context
 		logs, err = logsUnmarshaler.UnmarshalLogs(bytes)
 	}
+	if err == nil {
+		// Rehydrated data from Unmarshal has no upstream ownership claim yet.
+		// This marks the bit so a downstream refconsumer boundary won't also claim/release this object's ref.
+		pref.MarkPipelineOwnedLogs(logs)
+	}
 	return ctx, newLogsRequest(logs), err
 }
 
