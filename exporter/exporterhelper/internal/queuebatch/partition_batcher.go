@@ -167,7 +167,8 @@ func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Req
 	if qb.mergeCtx != nil {
 		mergedCtx = qb.mergeCtx(qb.currentBatch.ctx, ctx)
 	}
-	qb.currentBatch.ctx = contextWithMergedLinks(mergedCtx, qb.currentBatch.ctx, ctx)
+	mergedCtx = contextWithMergedLinks(mergedCtx, qb.currentBatch.ctx, ctx)
+	qb.currentBatch.ctx = contextWithMergedDeadline(mergedCtx, qb.currentBatch.ctx, ctx)
 
 	// Save the "currentBatch" if we need to flush it, because we want to execute flush without holding the lock, and
 	// cannot unlock and re-lock because we are not done processing all the responses.
@@ -291,6 +292,11 @@ func (qb *partitionBatcher) flush(ctx context.Context, req request.Request, done
 	qb.stopWG.Add(1)
 	qb.wp.execute(func() {
 		defer qb.stopWG.Done()
+		if deadline, ok := deadlineFromContext(ctx); ok {
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithDeadline(ctx, deadline)
+			defer cancel()
+		}
 		done.OnDone(qb.consumeFunc(ctx, req))
 	})
 }
