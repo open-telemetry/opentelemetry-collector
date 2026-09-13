@@ -279,6 +279,11 @@ func (orig *SpanLink) MarshalProto(buf []byte) int {
 }
 
 func (orig *SpanLink) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, 0)
+}
+
+func (orig *SpanLink) unmarshalProto(buf []byte, depth int) error {
+	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -348,7 +353,7 @@ func (orig *SpanLink) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 			orig.Attributes = append(orig.Attributes, KeyValue{})
-			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.Attributes[len(orig.Attributes)-1].unmarshalProto(buf[startPos:pos], depth)
 			if err != nil {
 				return err
 			}

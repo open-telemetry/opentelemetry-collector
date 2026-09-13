@@ -200,6 +200,11 @@ func (orig *ProfilesData) MarshalProto(buf []byte) int {
 }
 
 func (orig *ProfilesData) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, 0)
+}
+
+func (orig *ProfilesData) unmarshalProto(buf []byte, depth int) error {
+	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType

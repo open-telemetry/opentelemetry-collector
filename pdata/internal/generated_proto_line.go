@@ -198,6 +198,11 @@ func (orig *Line) MarshalProto(buf []byte) int {
 }
 
 func (orig *Line) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, 0)
+}
+
+func (orig *Line) unmarshalProto(buf []byte, depth int) error {
+	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType

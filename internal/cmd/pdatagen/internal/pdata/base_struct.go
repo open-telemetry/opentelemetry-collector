@@ -24,14 +24,15 @@ type baseStruct interface {
 // messageStruct generates a struct for a proto message. The struct can be generated both as a common struct
 // that can be used as a field in struct from other packages and as an isolated struct with depending on a package name.
 type messageStruct struct {
-	structName      string
-	packageName     string
-	description     string
-	protoName       string
-	upstreamProto   string
-	fields          []Field
-	hasWrapper      bool
-	hasOnlyInternal bool
+	structName            string
+	packageName           string
+	description           string
+	protoName             string
+	upstreamProto         string
+	fields                []Field
+	hasWrapper            bool
+	hasOnlyInternal       bool
+	requiresDepthTracking bool
 }
 
 func (ms *messageStruct) getName() string {
@@ -56,10 +57,11 @@ func (ms *messageStruct) getProtoMessage() *proto.Message {
 		fields[i] = ms.fields[i].toProtoField(ms)
 	}
 	return &proto.Message{
-		Name:            ms.protoName,
-		Description:     ms.description,
-		UpstreamMessage: ms.upstreamProto,
-		Fields:          fields,
+		Name:                  ms.protoName,
+		Description:           ms.description,
+		UpstreamMessage:       ms.upstreamProto,
+		Fields:                fields,
+		RequiresDepthTracking: ms.requiresDepthTracking,
 	}
 }
 
