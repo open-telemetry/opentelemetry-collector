@@ -287,6 +287,21 @@ The following limitations are recommended:
 Out of the box, your users should be able to observe the state of your
 component. See [observability.md](observability.md) for more details.
 
+### Component metrics and the Prometheus endpoint
+
+Collector components do not start their own Prometheus endpoint. Instead, each
+component receives `component.TelemetrySettings` from the Collector service, and
+its `MeterProvider` is wired to the Collector's internal telemetry pipeline.
+Any instrument created through that `MeterProvider` is exported to the endpoint
+configured under `service::telemetry::metrics` (default `:8888`) or to any other
+configured reader.
+
+When you use `mdatagen`, the generated `TelemetryBuilder` creates instruments
+from this shared `MeterProvider` automatically. If you are not using code
+generation, create instruments directly from
+`settings.TelemetrySettings.MeterProvider` in your factory or component
+constructor.
+
 When using the regular helpers, you should have some metrics added around key
 events automatically. For instance, exporters should have
 `otelcol_exporter_sent_spans` tracked without your exporter doing anything.
