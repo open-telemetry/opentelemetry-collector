@@ -5,7 +5,6 @@ package samplescraper
 import (
 	"errors"
 	"regexp"
-	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplepkg"
@@ -120,10 +119,6 @@ func (c *Config) Validate() error {
 
 	if inner_err := validateJobName(c.JobName); inner_err != nil {
 		err = errors.Join(err, inner_err)
-	}
-
-	if !slices.Contains([]string{"debug", "info", "warn", "error"}, c.LogLevel) {
-		err = errors.Join(err, errors.New("log_level must be one of [debug, info, warn, error]"))
 	}
 
 	if c.Targets == nil || len(*c.Targets) == 0 {

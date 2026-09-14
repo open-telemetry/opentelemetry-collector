@@ -532,8 +532,7 @@ type ValidationRules struct {
 
 func (vr *ValidationRules) HasValueRule() bool {
 	return vr.MaxLength != nil || vr.MinLength != nil || vr.Pattern != nil ||
-		vr.Minimum != nil || vr.Maximum != nil || vr.ExclusiveMinimum != nil || vr.ExclusiveMaximum != nil ||
-		len(vr.Enum) > 0
+		vr.Minimum != nil || vr.Maximum != nil || vr.ExclusiveMinimum != nil || vr.ExclusiveMaximum != nil
 }
 
 func (vr *ValidationRules) Enabled() bool {

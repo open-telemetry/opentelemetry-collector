@@ -1692,11 +1692,6 @@ func TestValidationRules_Enabled(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:     "enum only",
-			rules:    ValidationRules{Enum: []any{"a", "b"}},
-			expected: true,
-		},
-		{
 			name:     "required with value rule",
 			rules:    ValidationRules{Required: true, MaxLength: new(64)},
 			expected: true,
@@ -3019,43 +3014,11 @@ func TestExtractValidators_EnumValidators(t *testing.T) {
 		expected []Validator
 	}{
 		{
-			name: "enum on string field",
+			name: "enum produces no validator",
 			metadata: &ConfigMetadata{
 				Type: "object",
 				Properties: map[string]*ConfigMetadata{
-					"level": {Type: "string", Enum: []any{"debug", "info", "warn"}},
-				},
-			},
-			expected: []Validator{
-				{
-					FieldName: "level",
-					FieldType: "string",
-					Rules:     ValidationRules{Enum: []any{"debug", "info", "warn"}},
-				},
-			},
-		},
-		{
-			name: "enum on integer field",
-			metadata: &ConfigMetadata{
-				Type: "object",
-				Properties: map[string]*ConfigMetadata{
-					"port": {Type: "integer", Enum: []any{80, 443, 8080}},
-				},
-			},
-			expected: []Validator{
-				{
-					FieldName: "port",
-					FieldType: "integer",
-					Rules:     ValidationRules{Enum: []any{80, 443, 8080}},
-				},
-			},
-		},
-		{
-			name: "no enum produces no validator",
-			metadata: &ConfigMetadata{
-				Type: "object",
-				Properties: map[string]*ConfigMetadata{
-					"name": {Type: "string"},
+					"name": {Type: "string", Enum: []any{"foo", "bar", "baz"}},
 				},
 			},
 			expected: []Validator{},
