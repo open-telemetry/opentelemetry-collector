@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	DefaultBetaOtelColVersion   = "v0.160.0"
+	DefaultBetaOtelColVersion   = "v0.161.0"
 	DefaultStableOtelColVersion = "v1.67.0"
 )
 
