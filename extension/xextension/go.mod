@@ -5,9 +5,9 @@ go 1.26.0
 require (
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.67.0
-	go.opentelemetry.io/collector/component/componenttest v0.160.0
+	go.opentelemetry.io/collector/component/componenttest v0.161.0
 	go.opentelemetry.io/collector/extension v1.67.0
-	go.opentelemetry.io/collector/internal/componentalias v0.160.0
+	go.opentelemetry.io/collector/internal/componentalias v0.161.0
 )
 
 require (
