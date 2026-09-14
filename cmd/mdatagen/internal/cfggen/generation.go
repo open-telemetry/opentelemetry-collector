@@ -532,7 +532,8 @@ type ValidationRules struct {
 
 func (vr *ValidationRules) HasValueRule() bool {
 	return vr.MaxLength != nil || vr.MinLength != nil || vr.Pattern != nil ||
-		vr.Minimum != nil || vr.Maximum != nil || vr.ExclusiveMinimum != nil || vr.ExclusiveMaximum != nil
+		vr.Minimum != nil || vr.Maximum != nil || vr.ExclusiveMinimum != nil || vr.ExclusiveMaximum != nil ||
+		len(vr.Enum) > 0
 }
 
 func (vr *ValidationRules) Enabled() bool {
@@ -562,6 +563,9 @@ func createValidator(validators *[]Validator, fieldName string, md *ConfigMetada
 	}
 	if md.Pattern == "" || md.Type == DurationType || md.Type == TimeType || strings.HasPrefix(md.GoType, "time.") {
 		rules.Pattern = nil
+	}
+	if fieldName == "." {
+		rules.Enum = nil
 	}
 	if rules.Enabled() {
 		*validators = append(*validators, Validator{

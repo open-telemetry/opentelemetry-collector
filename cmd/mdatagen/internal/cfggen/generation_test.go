@@ -1692,6 +1692,11 @@ func TestValidationRules_Enabled(t *testing.T) {
 			expected: true,
 		},
 		{
+			name:     "enum only",
+			rules:    ValidationRules{Enum: []any{"a", "b"}},
+			expected: true,
+		},
+		{
 			name:     "required with value rule",
 			rules:    ValidationRules{Required: true, MaxLength: new(64)},
 			expected: true,
@@ -3014,14 +3019,20 @@ func TestExtractValidators_EnumValidators(t *testing.T) {
 		expected []Validator
 	}{
 		{
-			name: "enum produces no validator",
+			name: "enum on string field",
 			metadata: &ConfigMetadata{
 				Type: "object",
 				Properties: map[string]*ConfigMetadata{
 					"name": {Type: "string", Enum: []any{"foo", "bar", "baz"}},
 				},
 			},
-			expected: []Validator{},
+			expected: []Validator{
+				{
+					FieldName: "name",
+					FieldType: "string",
+					Rules:     ValidationRules{Enum: []any{"foo", "bar", "baz"}},
+				},
+			},
 		},
 	}
 
