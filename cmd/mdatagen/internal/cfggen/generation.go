@@ -109,6 +109,17 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 		"shouldOmitEmpty": func(md *ConfigMetadata, propName string, prop *ConfigMetadata) bool {
 			return !isRequired(md, propName) && !hasNonZeroDefault(prop)
 		},
+		"goComment": func(s string) string {
+			lines := strings.Split(strings.TrimRight(s, "\n"), "\n")
+			for i, l := range lines {
+				if l == "" {
+					lines[i] = "//"
+				} else {
+					lines[i] = "// " + l
+				}
+			}
+			return strings.Join(lines, "\n")
+		},
 	}
 }
 
@@ -573,11 +584,11 @@ func collectValidators(md *ConfigMetadata, validators *[]Validator) {
 
 		if prop.GoStruct.CustomValidator != nil {
 			*validators = append(*validators, Validator{
-				FieldName:       propName,
+				FieldName:       fieldName,
 				FieldType:       resolveType(prop),
 				IsPointer:       prop.IsPointer,
 				IsOptional:      prop.IsOptional,
-				CustomValidator: generateValidatorName(propName, prop.GoStruct.CustomValidator),
+				CustomValidator: generateValidatorName(fieldName, prop.GoStruct.CustomValidator),
 			})
 		}
 	}
