@@ -1183,3 +1183,67 @@ func itemIndexArrayToBytes(arr []uint64) []byte {
 	}
 	return buf
 }
+
+func TestPersistentQueue_OnFullOnlyWhenNothingUnread(t *testing.T) {
+	var calls atomic.Int32
+	set := newSettingsWithStorage(request.SizerTypeRequests, 2)
+	set.OnFull = func() { calls.Add(1) }
+	pq := newPersistentQueue[intRequest](set)
+	require.NoError(t, pq.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{
+		{}: storagetest.NewMockStorageExtension(nil),
+	})))
+	require.NoError(t, pq.Offer(context.Background(), 1))
+	require.NoError(t, pq.Offer(context.Background(), 1))
+
+	require.ErrorIs(t, pq.Offer(context.Background(), 1), ErrQueueIsFull)
+	assert.EqualValues(t, 0, calls.Load())
+
+	_, _, done1, ok := pq.Read(context.Background())
+	require.True(t, ok)
+	_, _, done2, ok := pq.Read(context.Background())
+	require.True(t, ok)
+	assert.EqualValues(t, 0, calls.Load())
+
+	require.ErrorIs(t, pq.Offer(context.Background(), 1), ErrQueueIsFull)
+	assert.EqualValues(t, 1, calls.Load())
+
+	done1.OnDone(nil)
+	done2.OnDone(nil)
+	require.NoError(t, pq.Offer(context.Background(), 1))
+	assert.EqualValues(t, 1, calls.Load())
+	require.NoError(t, pq.Shutdown(context.Background()))
+}
+
+func TestPersistentQueue_OnFullWhenBlockedProducerWaits(t *testing.T) {
+	var calls atomic.Int32
+	set := newSettingsWithStorage(request.SizerTypeRequests, 2)
+	set.BlockOnOverflow = true
+	set.OnFull = func() { calls.Add(1) }
+	pq := newPersistentQueue[intRequest](set).(*persistentQueue[intRequest])
+	require.NoError(t, pq.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{
+		{}: storagetest.NewMockStorageExtension(nil),
+	})))
+	require.NoError(t, pq.Offer(context.Background(), 1))
+	require.NoError(t, pq.Offer(context.Background(), 1))
+
+	offered := make(chan error, 1)
+	go func() { offered <- pq.Offer(context.Background(), 1) }()
+	assert.Eventually(t, func() bool {
+		pq.mu.Lock()
+		defer pq.mu.Unlock()
+		return pq.hasMoreSpace.waiting == 1
+	}, time.Second, time.Millisecond)
+	assert.EqualValues(t, 0, calls.Load())
+
+	_, _, done1, ok := pq.Read(context.Background())
+	require.True(t, ok)
+	assert.EqualValues(t, 0, calls.Load())
+	_, _, done2, ok := pq.Read(context.Background())
+	require.True(t, ok)
+	assert.EqualValues(t, 1, calls.Load())
+
+	done1.OnDone(nil)
+	require.NoError(t, <-offered)
+	done2.OnDone(nil)
+	require.NoError(t, pq.Shutdown(context.Background()))
+}
