@@ -1,8 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Don't run this test on Windows, as it requires a TPM simulator which depends on openssl headers.
-//go:build !windows && !darwin
+// Don't run this test on Windows or AIX, as it requires a TPM simulator which depends on openssl headers.
+//go:build !windows && !darwin && !aix
 
 package configtls // import "go.opentelemetry.io/collector/config/configtls"
 
