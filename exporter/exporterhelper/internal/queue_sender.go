@@ -32,7 +32,6 @@ func NewDefaultQueueConfig() queuebatch.Config {
 		FlushTimeout: 200 * time.Millisecond,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      8192,
-		CacheSize:    10000,
 	}
 	var batch configoptional.Optional[queuebatch.BatchConfig]
 	if metadata.PkgExporterhelperQueueBatchEnabledFeatureGate.IsEnabled() {

@@ -59,7 +59,6 @@ func TestUnmarshalConfig(t *testing.T) {
 					Sizer:        exporterhelper.RequestSizerTypeItems,
 					MinSize:      1000,
 					MaxSize:      10000,
-					CacheSize:    10000,
 				}),
 			}),
 			ClientConfig: configgrpc.ClientConfig{
@@ -109,7 +108,6 @@ func TestUnmarshalDefaultBatchConfig(t *testing.T) {
 					FlushTimeout: 200 * time.Millisecond,
 					Sizer:        exporterhelper.RequestSizerTypeItems,
 					MinSize:      8192,
-					CacheSize:    10000,
 				}),
 			}),
 			ClientConfig: configgrpc.ClientConfig{

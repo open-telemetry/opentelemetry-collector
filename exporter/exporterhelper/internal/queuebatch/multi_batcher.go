@@ -55,8 +55,13 @@ func newMultiBatcher(
 		logger:      set.logger,
 	}
 
+	cacheSize := defaultPartitionCacheSize
+	if size := bCfg.CacheSize.Get(); size != nil {
+		cacheSize = *size
+	}
+
 	// Create LRU cache with eviction callback
-	cache, err := lru.NewLRU[string, *partitionBatcher](bCfg.CacheSize, func(_ string, pb *partitionBatcher) {
+	cache, err := lru.NewLRU[string, *partitionBatcher](cacheSize, func(_ string, pb *partitionBatcher) {
 		// Flush the partition when evicted
 		mb.wp.execute(pb.shutdownInternal)
 	})
@@ -82,7 +87,7 @@ func newMultiBatcher(
 			return nil
 		}),
 		tb.RegisterExporterQueueBatchPartitionCacheCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
-			o.Observe(int64(mb.cfg.CacheSize), asyncAttr)
+			o.Observe(int64(cacheSize), asyncAttr)
 			return nil
 		}),
 	); err != nil {

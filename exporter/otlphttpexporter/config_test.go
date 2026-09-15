@@ -60,7 +60,6 @@ func TestUnmarshalConfig(t *testing.T) {
 					Sizer:        exporterhelper.RequestSizerTypeItems,
 					FlushTimeout: 200 * time.Millisecond,
 					MinSize:      8192,
-					CacheSize:    10000,
 				}),
 			}),
 			Encoding: EncodingProto,
