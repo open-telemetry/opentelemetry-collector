@@ -12,3 +12,6 @@ status:
     beta: [traces, metrics, logs]
     alpha: [profiles]
   distributions: [core, contrib, k8s]
+
+tests:
+  skip_queue_batch_sender: true

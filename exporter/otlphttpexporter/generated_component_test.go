@@ -4,6 +4,8 @@ package otlphttpexporter
 
 import (
 	"context"
+	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -11,8 +13,10 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -28,6 +32,25 @@ func TestComponentFactoryType(t *testing.T) {
 
 func TestComponentConfigStruct(t *testing.T) {
 	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
+}
+
+func TestComponentDefaultQueueBatchSender(t *testing.T) {
+	cfg := reflect.Indirect(reflect.ValueOf(NewFactory().CreateDefaultConfig()))
+	require.Equal(t, reflect.Struct, cfg.Kind(), "exporter default config must be a struct or pointer to a struct")
+
+	for i := 0; i < cfg.NumField(); i++ {
+		fieldType := cfg.Type().Field(i)
+		if strings.Split(fieldType.Tag.Get("mapstructure"), ",")[0] != "sending_queue" {
+			continue
+		}
+
+		queueConfig, ok := cfg.Field(i).Interface().(configoptional.Optional[exporterhelper.QueueBatchConfig])
+		require.True(t, ok, "sending_queue must have type configoptional.Optional[exporterhelper.QueueBatchConfig]")
+		require.Equal(t, configoptional.Some(exporterhelper.NewDefaultQueueConfig()), queueConfig)
+		return
+	}
+
+	require.Fail(t, "exporter default config must define sending_queue")
 }
 
 func TestComponentLifecycle(t *testing.T) {

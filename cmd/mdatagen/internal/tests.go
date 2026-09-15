@@ -16,10 +16,11 @@ type GoLeak struct {
 }
 
 type Tests struct {
-	Config              any    `mapstructure:"config"`
-	SkipLifecycle       bool   `mapstructure:"skip_lifecycle"`
-	SkipShutdown        bool   `mapstructure:"skip_shutdown"`
-	GoLeak              GoLeak `mapstructure:"goleak"`
-	ExpectConsumerError bool   `mapstructure:"expect_consumer_error"`
-	Host                string `mapstructure:"host"`
+	Config               any    `mapstructure:"config"`
+	SkipLifecycle        bool   `mapstructure:"skip_lifecycle"`
+	SkipShutdown         bool   `mapstructure:"skip_shutdown"`
+	SkipQueueBatchSender bool   `mapstructure:"skip_queue_batch_sender"`
+	GoLeak               GoLeak `mapstructure:"goleak"`
+	ExpectConsumerError  bool   `mapstructure:"expect_consumer_error"`
+	Host                 string `mapstructure:"host"`
 }

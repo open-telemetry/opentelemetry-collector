@@ -1757,6 +1757,37 @@ func TestGenerateConfigGoStruct_GeneratesTestFile(t *testing.T) {
 	require.Contains(t, string(content), "func TestCreateDefaultConfig(")
 }
 
+func TestGenerateComponentTestExporterDefaultQueueBatchSender(t *testing.T) {
+	md := Metadata{
+		Type:   "test",
+		Status: &Status{Class: "exporter"},
+	}
+
+	generated, err := executeTemplate(
+		"templates/component_test.go.tmpl",
+		md,
+		"testexporter",
+		"go.opentelemetry.io/collector",
+		getTemplateFuncMap(md, "go.opentelemetry.io/collector"),
+	)
+	require.NoError(t, err)
+	require.Contains(t, string(generated), "func TestComponentDefaultQueueBatchSender(")
+	require.Contains(t, string(generated), "configoptional.Optional[exporterhelper.QueueBatchConfig]")
+	require.Contains(t, string(generated), `Tag.Get("mapstructure")`)
+
+	md.Tests.SkipQueueBatchSender = true
+	generated, err = executeTemplate(
+		"templates/component_test.go.tmpl",
+		md,
+		"testexporter",
+		"go.opentelemetry.io/collector",
+		getTemplateFuncMap(md, "go.opentelemetry.io/collector"),
+	)
+	require.NoError(t, err)
+	require.NotContains(t, string(generated), "func TestComponentDefaultQueueBatchSender(")
+	require.NotContains(t, string(generated), `"reflect"`)
+}
+
 func TestGenerateConfigGoStruct_TestFileContainsValidateTestWhenValidatorsPresent(t *testing.T) {
 	root := t.TempDir()
 	outputDir := filepath.Join(root, "shortname")

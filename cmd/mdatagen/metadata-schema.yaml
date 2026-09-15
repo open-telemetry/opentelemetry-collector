@@ -343,6 +343,8 @@ tests:
   skip_lifecycle: false # false by default
   # Skip shutdown tests for this component. Not recommended for components that are not in development.
   skip_shutdown: false # false by default
+  # Skip the standard exporter queue/batch sender check.
+  skip_queue_batch_sender: false # false by default
   # Whether it's expected that the Consume[Logs|Metrics|Traces] method will return an error with the given configuration.
   expect_consumer_error: true # false by default
   goleak: # {} by default generates a package_test to enable check for leaks
