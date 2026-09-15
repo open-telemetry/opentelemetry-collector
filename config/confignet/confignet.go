@@ -9,11 +9,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
-	"time"
 )
-
-// TransportType represents a type of network transport protocol
-type TransportType string
 
 const (
 	TransportTypeTCP        TransportType = "tcp"
@@ -56,73 +52,6 @@ func (tt *TransportType) UnmarshalText(in []byte) error {
 		return nil
 	default:
 		return fmt.Errorf("unsupported transport type %q", typ)
-	}
-}
-
-// DialerConfig contains options for connecting to an address.
-type DialerConfig struct {
-	// Timeout is the maximum amount of time a dial will wait for
-	// a connect to complete. The default is no timeout.
-	Timeout time.Duration `mapstructure:"timeout,omitempty"`
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
-// NewDefaultDialerConfig creates a new DialerConfig with any default values set
-func NewDefaultDialerConfig() DialerConfig {
-	return DialerConfig{}
-}
-
-// NpipeConfig contains options specific to Windows named pipe transport.
-type NpipeConfig struct {
-	// SecurityDescriptor is a Security Descriptor Definition Language (SDDL)
-	// string applied to the named pipe when a listener is created. When empty,
-	// Windows applies its default named pipe DACL, which is roughly equivalent
-	// to "D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;0x12019b;;;WD)(A;;0x12019b;;;AN)"
-	// — full control for LocalSystem (SY) and Administrators (BA), and read
-	// plus limited write for Everyone (WD) and Anonymous Logon (AN).
-	// See:
-	//   - https://learn.microsoft.com/en-us/windows/win32/ipc/named-pipe-security-and-access-rights
-	//   - https://learn.microsoft.com/en-us/windows/win32/secauthz/security-descriptor-definition-language
-	SecurityDescriptor string `mapstructure:"security_descriptor,omitempty"`
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
-// NewDefaultNpipeConfig creates a new NpipeConfig with any default values set
-func NewDefaultNpipeConfig() NpipeConfig {
-	return NpipeConfig{}
-}
-
-// AddrConfig represents a network endpoint address.
-type AddrConfig struct {
-	// Endpoint configures the address for this network connection.
-	// For TCP and UDP networks, the address has the form "host:port". The host must be a literal IP address,
-	// or a host name that can be resolved to IP addresses. The port must be a literal port number or a service name.
-	// If the host is a literal IPv6 address it must be enclosed in square brackets, as in "[2001:db8::1]:80" or
-	// "[fe80::1%zone]:80". The zone specifies the scope of the literal IPv6 address as defined in RFC 4007.
-	Endpoint string `mapstructure:"endpoint,omitempty"`
-
-	// Transport to use. Allowed protocols are "tcp", "tcp4" (IPv4-only), "tcp6" (IPv6-only), "udp", "udp4" (IPv4-only),
-	// "udp6" (IPv6-only), "ip", "ip4" (IPv4-only), "ip6" (IPv6-only), "unix", "unixgram", "unixpacket" and
-	// "npipe" (Windows named pipes, Windows-only).
-	Transport TransportType `mapstructure:"transport,omitempty"`
-
-	// DialerConfig contains options for connecting to an address.
-	DialerConfig DialerConfig `mapstructure:"dialer,omitempty"`
-
-	// NpipeConfig contains options specific to the "npipe" transport (Windows named pipes).
-	// Settings in this section are ignored for all other transport types.
-	NpipeConfig NpipeConfig `mapstructure:"npipe,omitempty"`
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
-// NewDefaultAddrConfig creates a new AddrConfig with any default values set
-func NewDefaultAddrConfig() AddrConfig {
-	return AddrConfig{
-		DialerConfig: NewDefaultDialerConfig(),
-		NpipeConfig:  NewDefaultNpipeConfig(),
 	}
 }
 
@@ -197,28 +126,6 @@ func validateNpipePath(endpoint string) error {
 		return fmt.Errorf("named pipe name must not contain backslashes: %q", endpoint)
 	}
 	return nil
-}
-
-// TCPAddrConfig represents a TCP endpoint address.
-type TCPAddrConfig struct {
-	// Endpoint configures the address for this network connection.
-	// The address has the form "host:port". The host must be a literal IP address, or a host name that can be
-	// resolved to IP addresses. The port must be a literal port number or a service name.
-	// If the host is a literal IPv6 address it must be enclosed in square brackets, as in "[2001:db8::1]:80" or
-	// "[fe80::1%zone]:80". The zone specifies the scope of the literal IPv6 address as defined in RFC 4007.
-	Endpoint string `mapstructure:"endpoint,omitempty"`
-
-	// DialerConfig contains options for connecting to an address.
-	DialerConfig DialerConfig `mapstructure:"dialer,omitempty"`
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
-// NewDefaultTCPAddrConfig creates a new TCPAddrConfig with any default values set
-func NewDefaultTCPAddrConfig() TCPAddrConfig {
-	return TCPAddrConfig{
-		DialerConfig: NewDefaultDialerConfig(),
-	}
 }
 
 // Dial equivalent with net.Dialer's DialContext for this address.

@@ -72,7 +72,43 @@ func NewCommand() (*cobra.Command, error) {
 			return run(args[0])
 		},
 	}
+
+	var profile string
+	checkStabilityCmd := &cobra.Command{
+		Use:          "check-stability",
+		Short:        "Check a component fulfills stability criteria",
+		SilenceUsage: true,
+		Args:         cobra.ExactArgs(1),
+		RunE: func(_ *cobra.Command, args []string) error {
+			return runCheckStability(args[0], profile)
+		},
+	}
+	checkStabilityCmd.Flags().StringVar(&profile, "profile", "", "path to a Go coverage profile")
+	if err := checkStabilityCmd.MarkFlagRequired("profile"); err != nil {
+		return nil, err
+	}
+	rootCmd.AddCommand(checkStabilityCmd)
+
 	return rootCmd, nil
+}
+
+func runCheckStability(ymlPath, profilePath string) error {
+	ymlPath, err := filepath.Abs(ymlPath)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path for %v: %w", ymlPath, err)
+	}
+
+	md, err := LoadMetadata(ymlPath)
+	if err != nil {
+		return fmt.Errorf("failed loading %v: %w", ymlPath, err)
+	}
+
+	central, err := loadCentralConfig(filepath.Dir(ymlPath))
+	if err != nil {
+		return fmt.Errorf("unable to load central mdatagen config: %w", err)
+	}
+
+	return checkCoverage(md, central.Stability.Coverage, profilePath)
 }
 
 func run(ymlPath string) error {
@@ -545,7 +581,7 @@ func inlineReplaceWithFns(tmplFile, outputFile string, md Metadata, start, end, 
 	}
 
 	s := re.ReplaceAllString(string(readmeContents), string(buf))
-	if err := os.WriteFile(outputFile, []byte(s), 0o600); err != nil {
+	if err := os.WriteFile(outputFile, []byte(s), 0o600); err != nil { // #nosec G703
 		return fmt.Errorf("failed writing %q: %w", outputFile, err)
 	}
 

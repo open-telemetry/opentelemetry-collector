@@ -102,13 +102,13 @@ type ClientConfig struct {
 	// never unmarshaled) and takes precedence over the deprecated fields.
 	Keepalive configoptional.Optional[KeepaliveClientConfig] `mapstructure:"keepalive,omitempty"`
 
-	// Deprecated: use Keepalive.IdleConnTimeout instead.
+	// Deprecated: [v0.160.0] use Keepalive.IdleConnTimeout instead.
 	IdleConnTimeout time.Duration `mapstructure:"idle_conn_timeout,omitempty"`
-	// Deprecated: use Keepalive.MaxIdleConns instead.
+	// Deprecated: [v0.160.0] use Keepalive.MaxIdleConns instead.
 	MaxIdleConns int `mapstructure:"max_idle_conns,omitempty"`
-	// Deprecated: use Keepalive.MaxIdleConnsPerHost instead.
+	// Deprecated: [v0.160.0] use Keepalive.MaxIdleConnsPerHost instead.
 	MaxIdleConnsPerHost int `mapstructure:"max_idle_conns_per_host,omitempty"`
-	// Deprecated: set 'keepalive::enabled' to false to disable keep-alives.
+	// Deprecated: [v0.160.0] set 'keepalive::enabled' to false to disable keep-alives.
 	DisableKeepAlives bool `mapstructure:"disable_keep_alives,omitempty"`
 
 	// deprecationWarnings records use of deprecated fields observed while

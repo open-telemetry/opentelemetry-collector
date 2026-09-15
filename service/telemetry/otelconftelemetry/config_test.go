@@ -192,7 +192,7 @@ func TestConfigResourceDetectionDevelopmentE2E(t *testing.T) {
 	require.NotNil(t, cfg.Resource.DetectionDevelopment.Detectors[0].Host)
 
 	set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-	res, err := createResource(t.Context(), set, cfg)
+	res, _, err := createResource(t.Context(), set, cfg)
 	require.NoError(t, err)
 
 	raw := res.Attributes().AsRaw()

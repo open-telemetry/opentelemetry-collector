@@ -24,7 +24,7 @@ func createLogger(
 ) (*zap.Logger, component.ShutdownFunc, error) {
 	cfg := componentConfig.(*Config)
 
-	resourceConfig, err := createFixedResourceConfig(&cfg.Resource, set.Resource)
+	resourceConfig, err := createFixedResourceConfig(set.Resource, set.SchemaURL)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -56,7 +56,7 @@ func createLogger(
 		// if set.BuildZapLogger is not provided.
 		buildZapLogger = zap.Config.Build
 	}
-	logger, err := buildZapLogger(zapCfg, set.ZapOptions...)
+	logger, err := buildZapLogger(zapCfg)
 	if err != nil {
 		return nil, nil, err
 	}

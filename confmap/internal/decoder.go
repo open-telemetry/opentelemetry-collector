@@ -152,7 +152,7 @@ func expandNilStructPointersHookFunc() mapstructure.DecodeHookFuncValue {
 			toElem := to.Type().Elem()
 			// ensure that map values are pointers to a struct
 			// (that may be nil and require manual setting w/ zero value)
-			if toElem.Kind() == reflect.Ptr && toElem.Elem().Kind() == reflect.Struct {
+			if toElem.Kind() == reflect.Pointer && toElem.Elem().Kind() == reflect.Struct {
 				fromRange := from.MapRange()
 				for fromRange.Next() {
 					fromKey := fromRange.Key()

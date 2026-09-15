@@ -16,11 +16,11 @@ import (
 )
 
 // WithResource returns a telemetry.FactoryOption that configures the
-// factory's CreateResource method to return res.
-func WithResource(res pcommon.Resource) telemetry.FactoryOption {
+// factory's CreateResource method to return res with the given schema URL.
+func WithResource(res pcommon.Resource, schemaURL string) telemetry.FactoryOption {
 	return telemetry.WithCreateResource(
-		func(context.Context, telemetry.Settings, component.Config) (pcommon.Resource, error) {
-			return res, nil
+		func(context.Context, telemetry.Settings, component.Config) (pcommon.Resource, string, error) {
+			return res, schemaURL, nil
 		},
 	)
 }
