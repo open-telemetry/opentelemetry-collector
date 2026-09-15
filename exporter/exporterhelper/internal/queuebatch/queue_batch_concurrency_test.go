@@ -99,8 +99,9 @@ func TestQueueBatchConcurrentRequests(t *testing.T) {
 					// Neither bound is a multiple of perRequest, so every partition hits both
 					// mergeTo and split, the two places that mutate the payload and rewrite
 					// the size caches.
-					MinSize: int64(perRequest)*7 + 2,
-					MaxSize: int64(perRequest)*20 + 1,
+					MinSize:   int64(perRequest)*7 + 2,
+					MaxSize:   int64(perRequest)*20 + 1,
+					CacheSize: 10000,
 				}),
 			}
 

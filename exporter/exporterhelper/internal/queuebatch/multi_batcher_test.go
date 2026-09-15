@@ -5,12 +5,16 @@ package queuebatch
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/embedded"
+	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
@@ -272,4 +276,85 @@ func TestMultiBatcher_PartitionCacheMetrics(t *testing.T) {
 		[]metricdata.DataPoint[int64]{
 			{Attributes: attrs, Value: 5},
 		}, metricdatatest.IgnoreTimestamp())
+}
+
+func TestMultiBatcher_NewError(t *testing.T) {
+	tests := []struct {
+		name      string
+		cacheSize int
+		telemetry func() component.TelemetrySettings
+	}{
+		{
+			name:      "non_positive_cache_size",
+			cacheSize: 0,
+			telemetry: componenttest.NewNopTelemetrySettings,
+		},
+		{
+			name:      "instrument_creation_failure",
+			cacheSize: 5,
+			telemetry: func() component.TelemetrySettings {
+				set := componenttest.NewNopTelemetrySettings()
+				set.MeterProvider = errMeterProvider{meter: errInstrumentMeter{}}
+				return set
+			},
+		},
+		{
+			name:      "callback_registration_failure",
+			cacheSize: 5,
+			telemetry: func() component.TelemetrySettings {
+				set := componenttest.NewNopTelemetrySettings()
+				set.MeterProvider = errMeterProvider{meter: errRegisterCallbackMeter{}}
+				return set
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := newMultiBatcher(
+				BatchConfig{
+					FlushTimeout: 0,
+					Sizer:        request.SizerTypeItems,
+					MinSize:      10,
+					CacheSize:    tt.cacheSize,
+				},
+				request.NewItemsSizer(),
+				newWorkerPool(1),
+				batcherSettings[request.Request]{
+					partitioner: NewPartitioner(func(_ context.Context, _ request.Request) string {
+						return "p1"
+					}),
+					next:      requesttest.NewSink().Export,
+					telemetry: tt.telemetry(),
+					logger:    zap.NewNop(),
+				},
+			)
+			require.Error(t, err)
+		})
+	}
+}
+
+// errMeterProvider hands out a meter that fails, to exercise the telemetry error paths.
+type errMeterProvider struct {
+	embedded.MeterProvider
+	meter metric.Meter
+}
+
+func (p errMeterProvider) Meter(string, ...metric.MeterOption) metric.Meter {
+	return p.meter
+}
+
+type errInstrumentMeter struct {
+	noopmetric.Meter
+}
+
+func (errInstrumentMeter) Int64ObservableGauge(string, ...metric.Int64ObservableGaugeOption) (metric.Int64ObservableGauge, error) {
+	return nil, errors.New("failed to create instrument")
+}
+
+type errRegisterCallbackMeter struct {
+	noopmetric.Meter
+}
+
+func (errRegisterCallbackMeter) RegisterCallback(metric.Callback, ...metric.Observable) (metric.Registration, error) {
+	return nil, errors.New("failed to register callback")
 }

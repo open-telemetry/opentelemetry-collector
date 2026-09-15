@@ -4,6 +4,7 @@
 package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 import (
 	"context"
+	"errors"
 	"sync"
 
 	lru "github.com/hashicorp/golang-lru/v2/simplelru"
@@ -75,17 +76,16 @@ func newMultiBatcher(
 		attribute.String(exporterKey, set.id.String()),
 		attribute.String(dataTypeKey, set.signal.String()),
 	))
-	if err = tb.RegisterExporterQueueBatchPartitionCacheSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
-		o.Observe(mb.getActivePartitionsCount(), asyncAttr)
-		return nil
-	}); err != nil {
-		tb.Shutdown()
-		return nil, err
-	}
-	if err = tb.RegisterExporterQueueBatchPartitionCacheCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
-		o.Observe(int64(mb.cfg.CacheSize), asyncAttr)
-		return nil
-	}); err != nil {
+	if err = errors.Join(
+		tb.RegisterExporterQueueBatchPartitionCacheSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
+			o.Observe(mb.getActivePartitionsCount(), asyncAttr)
+			return nil
+		}),
+		tb.RegisterExporterQueueBatchPartitionCacheCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
+			o.Observe(int64(mb.cfg.CacheSize), asyncAttr)
+			return nil
+		}),
+	); err != nil {
 		tb.Shutdown()
 		return nil, err
 	}
