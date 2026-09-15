@@ -40,6 +40,16 @@ type DialerConfig struct {
 	// Timeout the maximum amount of time a dial will wait for a connect to complete. The default is no timeout.
 	Timeout time.Duration `mapstructure:"timeout,omitempty"`
 
+	// DSCP sets the Differentiated Services Code Point (DSCP) value
+	// on outgoing connections. This value is used to set the DS field
+	// in the IP header, enabling QoS classification by network devices.
+	// Valid values are 0 to 63. Common values:
+	//   - 0: Default/Best Effort (CS0)
+	//   - 46: Expedited Forwarding (EF) - for low-latency traffic
+	//   - 34: Assured Forwarding AF41
+	// Default is 0 (disabled, no marking applied).
+	DSCP int `mapstructure:"dscp,omitempty"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
