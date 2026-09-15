@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
+	queuebatchtelemetry "go.opentelemetry.io/collector/internal/telemetry/queuebatch"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -25,9 +26,10 @@ type Settings[T any] struct {
 // AllSettings defines settings for creating a QueueBatch.
 type AllSettings[T any] struct {
 	Settings[T]
-	Signal    pipeline.Signal
-	ID        component.ID
-	Telemetry component.TelemetrySettings
+	Signal     pipeline.Signal
+	ID         component.ID
+	Telemetry  component.TelemetrySettings
+	ObsMetrics *queuebatchtelemetry.ObsMetrics
 }
 
 type QueueBatch struct {
@@ -68,6 +70,7 @@ func NewQueueBatch(
 		Encoding:         set.Encoding,
 		ID:               set.ID,
 		Telemetry:        set.Telemetry,
+		ObsMetrics:       set.ObsMetrics,
 	}, b.Consume)
 	if err != nil {
 		return nil, err

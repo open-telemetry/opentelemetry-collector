@@ -6,6 +6,7 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 import (
 	"context"
 	"errors"
+	"sync"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/multierr"
@@ -19,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
+	queuebatchtelemetry "go.opentelemetry.io/collector/internal/telemetry/queuebatch"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -46,24 +48,36 @@ type BaseExporter struct {
 	ConsumerOptions []consumer.Option
 
 	ExtraAttrs []attribute.KeyValue
+	ObsMetrics *ObsMetrics
 
-	timeoutCfg TimeoutConfig
-	retryCfg   configretry.BackOffConfig
+	obsMetricsShutdown queuebatchtelemetry.ShutdownFunc
+	timeoutCfg         TimeoutConfig
+	retryCfg           configretry.BackOffConfig
 
 	queueBatchSettings queuebatch.Settings[request.Request]
 	queueCfg           configoptional.Optional[queuebatch.Config]
 }
 
-func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sender.SendFunc[request.Request], options ...Option) (*BaseExporter, error) {
+func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sender.SendFunc[request.Request], options ...Option) (_ *BaseExporter, err error) {
 	be := &BaseExporter{
 		Set:        set,
 		timeoutCfg: NewDefaultTimeoutConfig(),
 	}
 
 	for _, op := range options {
-		if err := op(be); err != nil {
+		err = op(be)
+		if err != nil {
 			return nil, err
 		}
+	}
+
+	if be.ObsMetrics != nil {
+		be.obsMetricsShutdown = sync.OnceFunc(be.ObsMetrics.Shutdown)
+		defer func() {
+			if err != nil {
+				be.obsMetricsShutdown.Shutdown()
+			}
+		}()
 	}
 
 	// Consumer Sender is always initialized.
@@ -80,9 +94,8 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 		be.firstSender = be.RetrySender
 	}
 
-	var err error
 	batchEnabled := be.queueCfg.HasValue() && be.queueCfg.Get().Batch.HasValue()
-	be.firstSender, err = newObsReportSender(set, signal, be.ExtraAttrs, batchEnabled, be.firstSender)
+	be.firstSender, err = newObsReportSenderWithMetrics(set, signal, be.ExtraAttrs, be.ObsMetrics, batchEnabled, be.firstSender)
 	if err != nil {
 		return nil, err
 	}
@@ -94,10 +107,11 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 
 	if be.queueCfg.HasValue() {
 		qSet := queuebatch.AllSettings[request.Request]{
-			Settings:  be.queueBatchSettings,
-			Signal:    signal,
-			ID:        set.ID,
-			Telemetry: set.TelemetrySettings,
+			Settings:   be.queueBatchSettings,
+			Signal:     signal,
+			ID:         set.ID,
+			Telemetry:  set.TelemetrySettings,
+			ObsMetrics: be.ObsMetrics,
 		}
 		be.QueueSender, err = NewQueueSender(qSet, *be.queueCfg.Get(), be.ExportFailureMessage, be.firstSender)
 		if err != nil {
@@ -137,6 +151,7 @@ func (be *BaseExporter) Start(ctx context.Context, host component.Host) error {
 }
 
 func (be *BaseExporter) Shutdown(ctx context.Context) error {
+	defer be.obsMetricsShutdown.Shutdown()
 	var err error
 
 	// First shutdown the retry sender, so the queue sender can flush the queue without retries.
@@ -250,6 +265,15 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 func WithAttributes(attrs ...attribute.KeyValue) Option {
 	return func(o *BaseExporter) error {
 		o.ExtraAttrs = attrs
+		return nil
+	}
+}
+
+// WithObsMetrics overrides the metrics emitted by exporterhelper.
+func WithObsMetrics(obsMetrics ObsMetrics) Option {
+	return func(o *BaseExporter) error {
+		metrics := obsMetrics
+		o.ObsMetrics = &metrics
 		return nil
 	}
 }

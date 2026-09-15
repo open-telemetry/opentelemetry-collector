@@ -127,6 +127,7 @@ func NewProfiles(
 	pusher xconsumer.ConsumeProfilesFunc,
 	options ...exporterhelper.Option,
 ) (xexporter.Profiles, error) {
+	cfg, options = internal.ExtractObsMetricsConfig(cfg, options)
 	if cfg == nil {
 		return nil, errNilConfig
 	}
