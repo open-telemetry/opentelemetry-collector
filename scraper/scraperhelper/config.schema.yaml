@@ -4,7 +4,7 @@ $defs:
     type: object
     properties:
       collection_interval:
-        description: CollectionInterval sets how frequently the scraper should be called and used as the context timeout to ensure that scrapers don't exceed the interval.
+        description: CollectionInterval sets how frequently the scraper is scheduled.
         type: string
         x-customType: time.Duration
         format: duration

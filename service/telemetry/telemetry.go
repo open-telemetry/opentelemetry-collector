@@ -22,13 +22,6 @@ import (
 type LoggerSettings struct {
 	Settings
 
-	// ZapOptions contains options for creating the zap logger.
-	//
-	// Deprecated [v0.142.0]: use BuildZapLogger instead.
-	// This field will be removed in the future, and options
-	// must be injected through BuildZapLogger.
-	ZapOptions []zap.Option
-
 	// BuildZapLogger holds a function for building a *zap.Logger
 	// from a zap.Config and options.
 	//
@@ -74,6 +67,9 @@ type Settings struct {
 
 	// Resource is the telemetry resource that should be used by all telemetry providers.
 	Resource *pcommon.Resource
+
+	// SchemaURL is useful for correctly interpreting the Resource.
+	SchemaURL string
 }
 
 // Factory is a factory interface for internal telemetry.
@@ -87,9 +83,10 @@ type Factory interface {
 	// CreateDefaultConfig creates the default configuration for the telemetry.
 	CreateDefaultConfig() component.Config
 
-	// CreateResource creates a pcommon.Resource representing the collector.
+	// CreateResource creates a pcommon.Resource representing the collector
+	// and returns the associated schema URL.
 	// This may be used by components in their internal telemetry.
-	CreateResource(context.Context, Settings, component.Config) (pcommon.Resource, error)
+	CreateResource(context.Context, Settings, component.Config) (pcommon.Resource, string, error)
 
 	// CreateLogger creates a zap.Logger that may be used by components to
 	// log their internal operations, along with a function that must be called
@@ -162,7 +159,7 @@ func WithCreateResource(createResource CreateResourceFunc) FactoryOption {
 }
 
 // CreateResourceFunc is the equivalent of Factory.CreateResource.
-type CreateResourceFunc func(context.Context, Settings, component.Config) (pcommon.Resource, error)
+type CreateResourceFunc func(context.Context, Settings, component.Config) (pcommon.Resource, string, error)
 
 // WithCreateLogger overrides the default CreateLogger implementation,
 // which creates a noop logger and noop logger provider.
@@ -198,9 +195,9 @@ type CreateTracerProviderFunc func(context.Context, TracerSettings, component.Co
 
 func (*factory) unexportedFactoryFunc() {}
 
-func (f *factory) CreateResource(ctx context.Context, settings Settings, cfg component.Config) (pcommon.Resource, error) {
+func (f *factory) CreateResource(ctx context.Context, settings Settings, cfg component.Config) (pcommon.Resource, string, error) {
 	if f.createResourceFunc == nil {
-		return pcommon.NewResource(), nil
+		return pcommon.NewResource(), "", nil
 	}
 	return f.createResourceFunc(ctx, settings, cfg)
 }

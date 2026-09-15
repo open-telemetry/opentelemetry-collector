@@ -11,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 // captureWarnings redirects warnings to a buffer for the test.
@@ -71,19 +73,45 @@ exclusions:
 			Exclusions: []ComponentExclusion{
 				{
 					Component:     "go.opentelemetry.io/collector/receiver/foo",
-					LifecycleTest: Toggle{Enabled: boolPtr(false)},
-					ShutdownTest:  Toggle{Enabled: boolPtr(false)},
-					Goleak:        Toggle{Enabled: boolPtr(false)},
+					LifecycleTest: Toggle{Enabled: new(false)},
+					ShutdownTest:  Toggle{Enabled: new(false)},
+					Goleak:        Toggle{Enabled: new(false)},
 				},
 				{
 					Component: "go.opentelemetry.io/collector/service",
 					FeatureGates: []FeatureGateExclusion{
-						{Name: "service.gateOne", Validation: Toggle{Enabled: boolPtr(false)}},
-						{Name: "service.gateTwo", Validation: Toggle{Enabled: boolPtr(false)}},
+						{Name: "service.gateOne", Validation: Toggle{Enabled: new(false)}},
+						{Name: "service.gateTwo", Validation: Toggle{Enabled: new(false)}},
 					},
 				},
 			},
 		}, cfg)
+	})
+
+	t.Run("coverage targets are parsed", func(t *testing.T) {
+		dir := t.TempDir()
+		contents := "stability:\n  coverage:\n    beta: 60\n    stable: 80\n"
+		require.NoError(t, os.WriteFile(filepath.Join(dir, centralConfigFileName), []byte(contents), 0o600))
+
+		cfg, err := loadCentralConfig(dir)
+		require.NoError(t, err)
+		assert.Equal(t, &CentralConfig{
+			Stability: StabilityConfig{
+				Coverage: map[component.StabilityLevel]float64{
+					component.StabilityLevelBeta:   60,
+					component.StabilityLevelStable: 80,
+				},
+			},
+		}, cfg)
+	})
+
+	t.Run("unknown stability level is rejected", func(t *testing.T) {
+		dir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(dir, centralConfigFileName), []byte("stability:\n  coverage:\n    stabel: 80\n"), 0o600))
+
+		_, err := loadCentralConfig(dir)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, `unsupported stability level: "stabel"`)
 	})
 
 	t.Run("unknown field is rejected", func(t *testing.T) {
@@ -176,11 +204,11 @@ func TestCentralConfigApplyTo(t *testing.T) {
 			Exclusions: []ComponentExclusion{
 				{
 					Component:     pkg,
-					LifecycleTest: Toggle{Enabled: boolPtr(false)},
-					ShutdownTest:  Toggle{Enabled: boolPtr(false)},
-					Goleak:        Toggle{Enabled: boolPtr(false)},
+					LifecycleTest: Toggle{Enabled: new(false)},
+					ShutdownTest:  Toggle{Enabled: new(false)},
+					Goleak:        Toggle{Enabled: new(false)},
 					FeatureGates: []FeatureGateExclusion{
-						{Name: "foo.gateA", Validation: Toggle{Enabled: boolPtr(false)}},
+						{Name: "foo.gateA", Validation: Toggle{Enabled: new(false)}},
 					},
 				},
 			},
@@ -225,7 +253,7 @@ func TestCentralConfigApplyTo(t *testing.T) {
 			Exclusions: []ComponentExclusion{
 				{Component: pkg, FeatureGates: []FeatureGateExclusion{
 					{Name: "foo.absent"}, // no enabled key
-					{Name: "foo.enabled", Validation: Toggle{Enabled: boolPtr(true)}}, // explicitly enabled
+					{Name: "foo.enabled", Validation: Toggle{Enabled: new(true)}}, // explicitly enabled
 				}},
 			},
 		}
@@ -242,8 +270,8 @@ func TestCentralConfigApplyTo(t *testing.T) {
 		}
 		cfg := &CentralConfig{
 			Exclusions: []ComponentExclusion{
-				{Component: pkg, LifecycleTest: Toggle{Enabled: boolPtr(false)}},
-				{Component: pkg, FeatureGates: []FeatureGateExclusion{{Name: "foo.gateA", Validation: Toggle{Enabled: boolPtr(false)}}}},
+				{Component: pkg, LifecycleTest: Toggle{Enabled: new(false)}},
+				{Component: pkg, FeatureGates: []FeatureGateExclusion{{Name: "foo.gateA", Validation: Toggle{Enabled: new(false)}}}},
 			},
 		}
 		cfg.applyTo(&md)
@@ -261,8 +289,8 @@ func TestCentralConfigApplyTo(t *testing.T) {
 			Exclusions: []ComponentExclusion{
 				{
 					Component:     pkg,
-					LifecycleTest: Toggle{Enabled: boolPtr(false)},
-					FeatureGates:  []FeatureGateExclusion{{Name: "foo.gateA", Validation: Toggle{Enabled: boolPtr(false)}}},
+					LifecycleTest: Toggle{Enabled: new(false)},
+					FeatureGates:  []FeatureGateExclusion{{Name: "foo.gateA", Validation: Toggle{Enabled: new(false)}}},
 				},
 			},
 		}

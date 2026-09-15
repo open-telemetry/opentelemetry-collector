@@ -212,9 +212,9 @@ ALL_MOD_PATHS := "" $(ALL_MODULES:.%=%)
 .PHONY: prepare-contrib
 prepare-contrib:
 	@echo Setting contrib at $(CONTRIB_PATH) to use this core checkout
-	@$(MAKE) -j2 -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
+	@$(MAKE) -j4 -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
 		$(addprefix -replace ,$(join $(ALL_MOD_PATHS:%=go.opentelemetry.io/collector%=),$(ALL_MOD_PATHS:%=$(CURDIR)%)))"
-	@$(MAKE) -j2 -C $(CONTRIB_PATH) gotidy
+	@$(MAKE) -j4 -C $(CONTRIB_PATH) gotidy
 
 	@$(MAKE) generate-contrib
 
@@ -232,7 +232,7 @@ check-contrib:
 .PHONY: generate-contrib
 generate-contrib:
 	@echo -e "\nGenerating files in contrib"
-	$(MAKE) -C $(CONTRIB_PATH) generate GROUP=all
+	$(MAKE) -j4 -C $(CONTRIB_PATH) generate GROUP=all
 
 # Restores contrib to its original state after running check-contrib.
 .PHONY: restore-contrib
@@ -307,10 +307,11 @@ REMOTE?=git@github.com:open-telemetry/opentelemetry-collector.git
 .PHONY: push-tags
 push-tags:
 	$(GO_TOOL) multimod verify
-	set -e; for tag in `$(GO_TOOL) multimod tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
-		echo "pushing tag $${tag}"; \
-		git push ${REMOTE} $${tag}; \
-	done;
+	set -e; \
+	tags=`$(GO_TOOL) multimod tag -m ${MODSET} -c ${COMMIT} --print-tags 2>&1 | grep 'v[0-9]'`; \
+	if [ -n "$$tags" ]; then \
+		git push ${REMOTE} $$tags; \
+	fi
 
 .PHONY: check-changes
 check-changes:

@@ -152,7 +152,7 @@ func expandNilStructPointersHookFunc() mapstructure.DecodeHookFuncValue {
 			toElem := to.Type().Elem()
 			// ensure that map values are pointers to a struct
 			// (that may be nil and require manual setting w/ zero value)
-			if toElem.Kind() == reflect.Ptr && toElem.Elem().Kind() == reflect.Struct {
+			if toElem.Kind() == reflect.Pointer && toElem.Elem().Kind() == reflect.Struct {
 				fromRange := from.MapRange()
 				for fromRange.Next() {
 					fromKey := fromRange.Key()
@@ -405,20 +405,4 @@ func castTo(exp ExpandedValue, useOriginal bool) any {
 	}
 	// Otherwise, use the parsed value (previous behavior).
 	return exp.Value
-}
-
-// Check if a reflect.Type is of the form T, where:
-// X is any type or interface
-// T = string | map[X]T | []T | [n]T
-func isStringyStructure(t reflect.Type) bool {
-	if t.Kind() == reflect.String {
-		return true
-	}
-	if t.Kind() == reflect.Map {
-		return isStringyStructure(t.Elem())
-	}
-	if t.Kind() == reflect.Slice || t.Kind() == reflect.Array {
-		return isStringyStructure(t.Elem())
-	}
-	return false
 }

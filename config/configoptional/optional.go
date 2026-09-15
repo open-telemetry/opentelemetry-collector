@@ -6,6 +6,7 @@ package configoptional // import "go.opentelemetry.io/collector/config/configopt
 //go:generate mdatagen metadata.yaml
 
 import (
+	"encoding"
 	"errors"
 	"fmt"
 	"reflect"
@@ -40,7 +41,7 @@ type Optional[T any] struct {
 
 // deref a reflect.Type to its underlying type.
 func deref(t reflect.Type) reflect.Type {
-	for t.Kind() == reflect.Ptr {
+	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 	return t
@@ -63,8 +64,7 @@ func assertNoEnabledField[T any]() error {
 	}
 
 	// Check if the struct has a field with the name "enabled".
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
+	for field := range t.Fields() {
 		mapstructureTags := strings.SplitN(field.Tag.Get("mapstructure"), ",", 2)
 		if len(mapstructureTags) > 0 && mapstructureTags[0] == "enabled" {
 			return errors.New("configoptional: underlying type cannot have a field with mapstructure tag 'enabled'")
@@ -214,8 +214,10 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 func (o *Optional[T]) UnmarshalScalar(scalarValue confmap.ScalarValue) error {
 	if scalarValue.GetRaw() == nil {
 		if deref(reflect.TypeOf(o.value)).Kind() == reflect.Struct {
-			// Defer to Unmarshal behavior
-			return confmap.ErrValueNotApplicable
+			if _, ok := any(&o.value).(encoding.TextUnmarshaler); !ok {
+				// Defer to Unmarshal behavior
+				return confmap.ErrValueNotApplicable
+			}
 		}
 		// For scalar types, a nil map represents `null` and clears to None.
 		var zero T
@@ -261,8 +263,10 @@ func (o Optional[T]) Marshal(conf *confmap.Conf) error {
 
 func (o Optional[T]) MarshalScalar(scalarValue confmap.ScalarValue) error {
 	if deref(reflect.TypeOf(o.value)).Kind() == reflect.Struct {
-		// Defer to Marshal behavior
-		return confmap.ErrValueNotApplicable
+		if _, ok := any(o.value).(encoding.TextMarshaler); !ok {
+			// Defer to Marshal behavior
+			return confmap.ErrValueNotApplicable
+		}
 	}
 
 	if o.flavor == noneFlavor || o.flavor == defaultFlavor {

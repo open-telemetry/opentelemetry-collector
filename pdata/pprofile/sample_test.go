@@ -125,6 +125,29 @@ func TestSampleSwitchDictionary(t *testing.T) {
 			wantErr:        errors.New("invalid attribute index 2"),
 		},
 		{
+			name: "with a negative attribute index",
+			sample: func() Sample {
+				s := NewSample()
+				s.AttributeIndices().Append(-1)
+				return s
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.AttributeTable().AppendEmpty()
+				return d
+			}(),
+			dst: NewProfilesDictionary(),
+
+			wantSample: func() Sample {
+				s := NewSample()
+				s.AttributeIndices().Append(-1)
+				return s
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid attribute index -1"),
+		},
+		{
 			name: "with an existing link",
 			sample: func() Sample {
 				s := NewSample()

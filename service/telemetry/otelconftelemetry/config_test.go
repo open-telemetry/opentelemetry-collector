@@ -105,11 +105,11 @@ func TestConfig(t *testing.T) {
 				cfg.Metrics.Readers = []config.MetricReader{
 					{
 						Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
-							WithoutScopeInfo:  ptr(true),
-							WithoutUnits:      ptr(true),
-							WithoutTypeSuffix: ptr(true),
+							WithoutScopeInfo:  new(true),
+							WithoutUnits:      new(true),
+							WithoutTypeSuffix: new(true),
 							Host:              &host,
-							Port:              ptr(8888),
+							Port:              new(8888),
 						}}},
 					},
 				}
@@ -192,7 +192,7 @@ func TestConfigResourceDetectionDevelopmentE2E(t *testing.T) {
 	require.NotNil(t, cfg.Resource.DetectionDevelopment.Detectors[0].Host)
 
 	set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
-	res, err := createResource(t.Context(), set, cfg)
+	res, _, err := createResource(t.Context(), set, cfg)
 	require.NoError(t, err)
 
 	raw := res.Attributes().AsRaw()
