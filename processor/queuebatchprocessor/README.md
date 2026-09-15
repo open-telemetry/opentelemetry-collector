@@ -99,11 +99,11 @@ metadata are treated as distinct cases, and entries are
 case-insensitive.
 
 `batch::cache_size` (default = 10000) limits how many
-distinct partition batchers are kept in memory at once. When the
-limit is reached, the least recently used partition is flushed and
-removed. The current cache size and configured capacity are exported
-as `otelcol_exporter_queue_batch_partition_cache_size` and
-`otelcol_exporter_queue_batch_partition_cache_capacity`.
+distinct partition batchers are kept in memory at once. The value must
+be positive. When the limit is reached, the least recently used
+partition is flushed and removed. The current cache size and configured
+capacity are exported as `otelcol_exporter_queue_batch_partition_cache_size`
+and `otelcol_exporter_queue_batch_partition_cache_capacity`.
 
 ### Persisting the queue with a storage extension
 

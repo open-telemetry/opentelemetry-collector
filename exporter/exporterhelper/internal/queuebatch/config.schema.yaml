@@ -4,7 +4,7 @@ $defs:
     type: object
     properties:
       cache_size:
-        description: CacheSize is the maximum number of active partition batchers kept in the LRU cache when partitioning is enabled. When the limit is reached, the least recently used partition is flushed and removed. If unset or 0, DefaultPartitionCacheSize (10000) is used.
+        description: CacheSize is the maximum number of active partition batchers kept in the LRU cache when partitioning is enabled. When the limit is reached, the least recently used partition is flushed and removed. Must be positive. Default is 10000.
         type: integer
       flush_timeout:
         description: FlushTimeout sets the time after which a batch will be sent regardless of its size.

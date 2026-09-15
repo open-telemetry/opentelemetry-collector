@@ -15,9 +15,9 @@ issues: [14526]
 # Use pipe (|) for multiline entries.
 subtext: |
   Adds `sending_queue::batch::cache_size` (default 10000) to cap the
-  number of active partition batchers. Current size and configured capacity are
-  exported as `otelcol_exporter_queue_batch_partition_cache_size` and
-  `otelcol_exporter_queue_batch_partition_cache_capacity`.
+  number of active partition batchers. The value must be positive. Current size
+  and configured capacity are exported as `otelcol_exporter_queue_batch_partition_cache_size`
+  and `otelcol_exporter_queue_batch_partition_cache_capacity`.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'

@@ -33,7 +33,6 @@ type multiBatcher struct {
 	mergeCtx    func(context.Context, context.Context) context.Context
 	consumeFunc sender.SendFunc[request.Request]
 	partitions  *lru.LRU[string, *partitionBatcher]
-	cacheSize   int
 	tb          *metadata.TelemetryBuilder
 	logger      *zap.Logger
 	lock        sync.Mutex
@@ -52,12 +51,11 @@ func newMultiBatcher(
 		partitioner: set.partitioner,
 		mergeCtx:    set.mergeCtx,
 		consumeFunc: set.next,
-		cacheSize:   bCfg.cacheSize(),
 		logger:      set.logger,
 	}
 
 	// Create LRU cache with eviction callback
-	cache, err := lru.NewLRU[string, *partitionBatcher](mb.cacheSize, func(_ string, pb *partitionBatcher) {
+	cache, err := lru.NewLRU[string, *partitionBatcher](bCfg.CacheSize, func(_ string, pb *partitionBatcher) {
 		// Flush the partition when evicted
 		mb.wp.execute(pb.shutdownInternal)
 	})
@@ -85,7 +83,7 @@ func newMultiBatcher(
 		return nil, err
 	}
 	if err = tb.RegisterExporterQueueBatchPartitionCacheCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
-		o.Observe(int64(mb.cacheSize), asyncAttr)
+		o.Observe(int64(mb.cfg.CacheSize), asyncAttr)
 		return nil
 	}); err != nil {
 		tb.Shutdown()

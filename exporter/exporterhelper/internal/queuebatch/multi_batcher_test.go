@@ -31,6 +31,7 @@ func TestMultiBatcher_NoTimeout(t *testing.T) {
 		FlushTimeout: 0,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      10,
+		CacheSize:    10000,
 	}
 	sink := requesttest.NewSink()
 
@@ -88,6 +89,7 @@ func TestMultiBatcher_Timeout(t *testing.T) {
 		FlushTimeout: 100 * time.Millisecond,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      100,
+		CacheSize:    10000,
 	}
 	sink := requesttest.NewSink()
 
@@ -137,6 +139,7 @@ func TestMultiBatcher_PartitionRemovedAfterIdleTimeout(t *testing.T) {
 		FlushTimeout: 10 * time.Millisecond,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      100, // High min size to prevent immediate flush
+		CacheSize:    10000,
 	}
 	sink := requesttest.NewSink()
 
@@ -177,34 +180,6 @@ func TestMultiBatcher_PartitionRemovedAfterIdleTimeout(t *testing.T) {
 	}, 500*time.Millisecond, 10*time.Millisecond)
 }
 
-func TestMultiBatcher_DefaultCacheSize(t *testing.T) {
-	cfg := BatchConfig{
-		FlushTimeout: 100 * time.Millisecond,
-		Sizer:        request.SizerTypeItems,
-		MinSize:      10,
-	}
-	sink := requesttest.NewSink()
-
-	ba, err := newMultiBatcher(cfg,
-		request.NewItemsSizer(),
-		newWorkerPool(1),
-		batcherSettings[request.Request]{
-			partitioner: NewPartitioner(func(ctx context.Context, _ request.Request) string {
-				return ctx.Value(partitionKey{}).(string)
-			}),
-			next:      sink.Export,
-			telemetry: componenttest.NewNopTelemetrySettings(),
-			logger:    zap.NewNop(),
-		},
-	)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		require.NoError(t, ba.Shutdown(context.Background()))
-	})
-
-	assert.Equal(t, DefaultPartitionCacheSize, ba.cacheSize)
-}
-
 func TestMultiBatcher_CacheSizeEviction(t *testing.T) {
 	cfg := BatchConfig{
 		FlushTimeout: 0,
@@ -234,7 +209,7 @@ func TestMultiBatcher_CacheSizeEviction(t *testing.T) {
 		require.NoError(t, ba.Shutdown(context.Background()))
 	})
 
-	assert.Equal(t, 2, ba.cacheSize)
+	assert.Equal(t, 2, ba.cfg.CacheSize)
 
 	done := newFakeDone()
 	ba.Consume(context.WithValue(context.Background(), partitionKey{}, "p1"), &requesttest.FakeRequest{Items: 5}, done)

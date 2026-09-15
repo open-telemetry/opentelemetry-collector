@@ -122,11 +122,11 @@ func TestBatchConfig_Validate(t *testing.T) {
 
 	cfg = newTestBatchConfig()
 	cfg.CacheSize = -1
-	require.EqualError(t, confmap.Validate(cfg), "`cache_size` must be non-negative, found -1")
+	require.EqualError(t, confmap.Validate(cfg), "`cache_size` must be positive, found -1")
 
 	cfg = newTestBatchConfig()
 	cfg.CacheSize = 0
-	require.NoError(t, confmap.Validate(cfg))
+	require.EqualError(t, confmap.Validate(cfg), "`cache_size` must be positive, found 0")
 }
 
 func newTestBatchConfig() BatchConfig {
@@ -135,6 +135,7 @@ func newTestBatchConfig() BatchConfig {
 		Sizer:        request.SizerTypeItems,
 		MinSize:      2048,
 		MaxSize:      0,
+		CacheSize:    10000,
 	}
 }
 
@@ -148,6 +149,7 @@ func TestUnmarshal(t *testing.T) {
 				FlushTimeout: 200 * time.Millisecond,
 				Sizer:        request.SizerTypeItems,
 				MinSize:      8192,
+				CacheSize:    10000,
 			}),
 		})
 	}
@@ -183,8 +185,9 @@ func TestUnmarshal(t *testing.T) {
 				cfg.Get().Batch = configoptional.Some(BatchConfig{
 					FlushTimeout: 200 * time.Millisecond,
 					// Sizer has been overridden by parent sizer
-					Sizer:   request.SizerTypeBytes,
-					MinSize: 100,
+					Sizer:     request.SizerTypeBytes,
+					MinSize:   100,
+					CacheSize: 10000,
 				})
 				return cfg
 			},
@@ -197,8 +200,9 @@ func TestUnmarshal(t *testing.T) {
 				cfg.Get().Batch = configoptional.Some(BatchConfig{
 					FlushTimeout: 200 * time.Millisecond,
 					// Sizer has NOT been overridden by parent sizer
-					Sizer:   request.SizerTypeItems,
-					MinSize: 100,
+					Sizer:     request.SizerTypeItems,
+					MinSize:   100,
+					CacheSize: 10000,
 				})
 				return cfg
 			},

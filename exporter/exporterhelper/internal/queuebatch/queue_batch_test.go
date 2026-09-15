@@ -420,6 +420,7 @@ func TestQueueBatch_MergeOrSplit_Multibatch(t *testing.T) {
 		FlushTimeout: 100 * time.Millisecond,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      10,
+		CacheSize:    10000,
 	})
 
 	type partitionKey struct{}
@@ -610,6 +611,7 @@ func newTestConfig() Config {
 			FlushTimeout: 200 * time.Millisecond,
 			Sizer:        request.SizerTypeItems,
 			MinSize:      2048,
+			CacheSize:    10000,
 		}),
 	}
 }
