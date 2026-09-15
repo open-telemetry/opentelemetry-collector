@@ -62,9 +62,6 @@ func (sb *shardedBatcher) Start(ctx context.Context, host component.Host) error 
 	for _, shard := range sb.shards {
 		err = multierr.Append(err, shard.Start(ctx, host))
 	}
-	if err != nil {
-		return err
-	}
 	sb.stopWG.Go(func() {
 		for {
 			select {
@@ -75,7 +72,7 @@ func (sb *shardedBatcher) Start(ctx context.Context, host component.Host) error 
 			}
 		}
 	})
-	return nil
+	return err
 }
 
 func (sb *shardedBatcher) requestFlush() {
