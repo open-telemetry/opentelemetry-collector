@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -331,6 +332,38 @@ func TestMapValueHashNotEqual(t *testing.T) {
 				"value %v and map %v must have different hashes", tt.v.AsRaw(), tt.m.AsRaw())
 		})
 	}
+}
+
+func TestHash(t *testing.T) {
+	assert.Equal(t, emptyHash, Hash())
+
+	m := pcommon.NewMap()
+	m.PutStr("k", "v")
+	v := pcommon.NewValueInt(1)
+
+	mapHashA, mapHashB := Hash(WithMap(m)), Hash(WithMap(m))
+	assert.Equal(t, mapHashA, mapHashB)
+
+	valueHashA, valueHashB := Hash(WithValue(v)), Hash(WithValue(v))
+	assert.Equal(t, valueHashA, valueHashB)
+
+	stringHashA, stringHashB := Hash(WithString("s")), Hash(WithString("s"))
+	assert.Equal(t, stringHashA, stringHashB)
+	assert.NotEqual(t, Hash(WithString("s1")), Hash(WithString("s2")))
+
+	assert.NotEqual(t, mapHashA, valueHashA)
+	assert.NotEqual(t, Hash(), Hash(WithString("")))
+
+	// Combining options in one call hashes them in order.
+	combinedA, combinedB := Hash(WithMap(m), WithValue(v)), Hash(WithMap(m), WithValue(v))
+	assert.Equal(t, combinedA, combinedB)
+	assert.NotEqual(t, Hash(WithMap(m), WithValue(v)), Hash(WithValue(v), WithMap(m)))
+}
+
+func TestHash64(t *testing.T) {
+	hashA, hashB := Hash64(WithString("s")), Hash64(WithString("s"))
+	assert.Equal(t, hashA, hashB)
+	assert.NotEqual(t, Hash64(WithString("s1")), Hash64(WithString("s2")))
 }
 
 func BenchmarkMapHashFourItems(b *testing.B) {

@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/xpdata
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `xhash.MapHash`, a reusable hash function for `pcommon.Map`.
+note: Move pdata hash APIs from the contrib repo
 
 # One or more tracking issues or pull requests related to the change
 issues: [15914]
