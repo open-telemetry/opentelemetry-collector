@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Don't run this test on platforms without CGO, Windows, Darwin, or AIX,
+// Don't run this test on platforms without CGO (Windows, Darwin, or AIX)
 // as it requires a TPM simulator which depends on openssl headers.
 //go:build cgo && !windows && !darwin && !aix
 
