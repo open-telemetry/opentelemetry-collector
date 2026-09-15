@@ -122,6 +122,11 @@ func (be *BaseExporter) Send(ctx context.Context, req request.Request) error {
 	return err
 }
 
+// ExporterHelperBatchingEnabled reports whether this exporter batches requests.
+func (be *BaseExporter) ExporterHelperBatchingEnabled() bool {
+	return be.queueCfg.HasValue() && be.queueCfg.Get().Batch.HasValue()
+}
+
 func (be *BaseExporter) Start(ctx context.Context, host component.Host) error {
 	// First start the wrapped exporter.
 	if err := be.StartFunc.Start(ctx, host); err != nil {
