@@ -58,6 +58,20 @@ Below are some more examples that can be used for reference:
 
 You can run `cd cmd/mdatagen && $(GOCMD) install .` to install the `mdatagen` tool in `GOBIN` and then run `mdatagen metadata.yaml` to generate documentation for a specific component or you can run `make generate` to generate documentation for all components.
 
+### Exporter queue/batch sender test
+
+For exporters, `mdatagen` generates a test that requires the default config to contain a
+`sending_queue` field of type
+`configoptional.Optional[exporterhelper.QueueBatchConfig]`, initialized to
+`configoptional.Some(exporterhelper.NewDefaultQueueConfig())`.
+
+Exporters that cannot use the standard queue/batch sender must opt out in `metadata.yaml`:
+
+```yaml
+tests:
+  skip_queue_batch_sender: true
+```
+
 ### Central configuration file
 
 `mdatagen` supports a repository-level configuration file named `.mdatagen.yaml`.
