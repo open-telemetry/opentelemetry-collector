@@ -9,6 +9,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -1068,6 +1069,9 @@ func (e statusWatcherExtension) ComponentStatusChanged(source *componentstatus.I
 }
 
 func TestComponentStatusWatcher(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/15959")
+	}
 	factories, err := nopFactories()
 	require.NoError(t, err)
 
