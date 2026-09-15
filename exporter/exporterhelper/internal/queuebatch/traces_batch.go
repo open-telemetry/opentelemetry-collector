@@ -52,6 +52,7 @@ func (req *tracesRequest) mergeTo(dst *tracesRequest, sz sizer.TracesSizer, szt 
 func (req *tracesRequest) split(maxSize int, sz sizer.TracesSizer, szt request.SizerType) ([]request.Request, error) {
 	var res []request.Request
 	droppedItems := 0
+	unsplittable := false
 	for req.size(sz, szt) > maxSize {
 		td, rmSize := extractTraces(req.td, maxSize, sz)
 		if td.SpanCount() == 0 {
@@ -59,6 +60,11 @@ func (req *tracesRequest) split(maxSize int, sz sizer.TracesSizer, szt request.S
 			// can ever hold it. Drop only that span and keep splitting the rest,
 			// otherwise every remaining span is discarded along with it.
 			if !removeFirstSpan(req.td) {
+				// There is no span left to drop, yet the request is still over maxSize,
+				// so its resource and scope overhead alone exceeds the limit. Stop
+				// instead of looping forever, and report it below rather than reporting
+				// success for a request that was never split.
+				unsplittable = true
 				break
 			}
 			droppedItems++
@@ -68,13 +74,21 @@ func (req *tracesRequest) split(maxSize int, sz sizer.TracesSizer, szt request.S
 		req.sizes.Update(szt, req.size(sz, szt)-rmSize)
 		res = append(res, newTracesRequest(td))
 	}
-	// Keep the remainder, unless everything left was dropped as oversized, in
-	// which case there is nothing to export.
-	if droppedItems == 0 || req.td.SpanCount() > 0 {
+	if unsplittable {
+		// removeFirstSpan prunes the scopes and resources it empties even when it finds
+		// no span to remove, so the cached size is stale by this point.
+		req.sizes.Update(szt, sz.TracesSize(req.td))
+	}
+	// Keep the remainder, unless splitting emptied it, in which case there is
+	// nothing left to export.
+	if (droppedItems == 0 && !unsplittable) || req.td.SpanCount() > 0 {
 		res = append(res, req)
 	}
-	if droppedItems > 0 {
+	switch {
+	case droppedItems > 0:
 		return res, fmt.Errorf("one span size is greater than max size, dropping items: %d", droppedItems)
+	case unsplittable:
+		return res, errors.New("request size is greater than max size and has no spans left to drop")
 	}
 	return res, nil
 }

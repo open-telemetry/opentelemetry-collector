@@ -52,6 +52,7 @@ func (req *metricsRequest) mergeTo(dst *metricsRequest, sz sizer.MetricsSizer, s
 func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer, szt request.SizerType) ([]request.Request, error) {
 	var res []request.Request
 	droppedItems := 0
+	unsplittable := false
 	for req.size(sz, szt) > maxSize {
 		md, rmSize := extractMetrics(req.md, maxSize, sz)
 		if md.DataPointCount() == 0 {
@@ -59,6 +60,11 @@ func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer, szt request
 			// batch can ever hold it. Drop only that data point and keep splitting
 			// the rest, otherwise every remaining one is discarded along with it.
 			if !removeFirstDataPoint(req.md) {
+				// There is no data point left to drop, yet the request is still over
+				// maxSize, so its resource and scope overhead alone exceeds the limit.
+				// Stop instead of looping forever, and report it below rather than
+				// reporting success for a request that was never split.
+				unsplittable = true
 				break
 			}
 			droppedItems++
@@ -68,13 +74,21 @@ func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer, szt request
 		req.sizes.Update(szt, req.size(sz, szt)-rmSize)
 		res = append(res, newMetricsRequest(md))
 	}
-	// Keep the remainder, unless everything left was dropped as oversized, in
-	// which case there is nothing to export.
-	if droppedItems == 0 || req.md.DataPointCount() > 0 {
+	if unsplittable {
+		// removeFirstDataPoint prunes the scopes and resources it empties even when it
+		// finds no data point to remove, so the cached size is stale by this point.
+		req.sizes.Update(szt, sz.MetricsSize(req.md))
+	}
+	// Keep the remainder, unless splitting emptied it, in which case there is
+	// nothing left to export.
+	if (droppedItems == 0 && !unsplittable) || req.md.DataPointCount() > 0 {
 		res = append(res, req)
 	}
-	if droppedItems > 0 {
+	switch {
+	case droppedItems > 0:
 		return res, fmt.Errorf("one datapoint size is greater than max size, dropping items: %d", droppedItems)
+	case unsplittable:
+		return res, errors.New("request size is greater than max size and has no data points left to drop")
 	}
 	return res, nil
 }
@@ -96,7 +110,13 @@ func removeFirstDataPoint(md pmetric.Metrics) bool {
 				if removed {
 					return false
 				}
-				removed = removeFirstMetricDataPoint(m)
+				if !removeFirstMetricDataPoint(m) {
+					// This metric carries no data points, so there was nothing to drop.
+					// Keep it and keep looking, rather than deleting it as collateral and
+					// losing its name, unit and description without counting it.
+					return false
+				}
+				removed = true
 				return dataPointsLen(m) == 0
 			})
 			return sm.Metrics().Len() == 0
@@ -107,10 +127,14 @@ func removeFirstDataPoint(md pmetric.Metrics) bool {
 }
 
 // removeFirstMetricDataPoint removes the first data point of m, whichever data
-// point type it holds. Reports whether one was removed.
+// point type it holds. Reports whether one was removed, which is false for a
+// metric that holds no data points at all.
 func removeFirstMetricDataPoint(m pmetric.Metric) bool {
 	removed := false
 	switch m.Type() {
+	case pmetric.MetricTypeEmpty:
+		// No data point slice exists on this metric, so there is nothing to remove.
+		return false
 	case pmetric.MetricTypeGauge:
 		m.Gauge().DataPoints().RemoveIf(func(pmetric.NumberDataPoint) bool {
 			if removed {

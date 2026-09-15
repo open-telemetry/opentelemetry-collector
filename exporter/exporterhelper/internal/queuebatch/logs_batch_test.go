@@ -523,3 +523,17 @@ func TestMergeSplitLogsAllRecordsOversized(t *testing.T) {
 	require.ErrorContains(t, err, "one log record size is greater than max size, dropping items: 2")
 	assert.Empty(t, logBodies(res), "nothing can be exported when every record is oversized")
 }
+
+func TestMergeSplitLogsUnsplittableRequest(t *testing.T) {
+	// No log records at all, but resource attributes alone exceed max size, so there
+	// is nothing left to drop and no batch can be produced.
+	ld := plog.NewLogs()
+	ld.ResourceLogs().AppendEmpty().Resource().Attributes().PutStr("big", strings.Repeat("x", 500))
+	req := newLogsRequest(ld)
+	require.Greater(t, req.BytesSize(), 100, "precondition: request must start oversized")
+
+	res, err := req.MergeSplit(context.Background(), 100, request.SizerTypeBytes, nil)
+	require.ErrorContains(t, err, "no log records left to drop",
+		"an unsplittable request must report an error rather than succeed silently")
+	assert.Empty(t, res, "an oversized request holding no records must not be returned")
+}

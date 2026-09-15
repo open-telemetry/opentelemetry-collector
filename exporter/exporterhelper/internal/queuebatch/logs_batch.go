@@ -52,6 +52,7 @@ func (req *logsRequest) mergeTo(dst *logsRequest, sz sizer.LogsSizer, szt reques
 func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer, szt request.SizerType) ([]request.Request, error) {
 	var res []request.Request
 	droppedItems := 0
+	unsplittable := false
 	for req.size(sz, szt) > maxSize {
 		ld, removedSize := extractLogs(req.ld, maxSize, sz)
 		if ld.LogRecordCount() == 0 {
@@ -59,6 +60,11 @@ func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer, szt request.Sizer
 			// batch can ever hold it. Drop only that record and keep splitting the
 			// rest, otherwise every remaining record is discarded along with it.
 			if !removeFirstLogRecord(req.ld) {
+				// There is no record left to drop, yet the request is still over
+				// maxSize, so its resource and scope overhead alone exceeds the limit.
+				// Stop instead of looping forever, and report it below rather than
+				// reporting success for a request that was never split.
+				unsplittable = true
 				break
 			}
 			droppedItems++
@@ -68,13 +74,21 @@ func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer, szt request.Sizer
 		req.sizes.Update(szt, req.size(sz, szt)-removedSize)
 		res = append(res, newLogsRequest(ld))
 	}
-	// Keep the remainder, unless everything left was dropped as oversized, in
-	// which case there is nothing to export.
-	if droppedItems == 0 || req.ld.LogRecordCount() > 0 {
+	if unsplittable {
+		// removeFirstLogRecord prunes the scopes and resources it empties even when it
+		// finds no record to remove, so the cached size is stale by this point.
+		req.sizes.Update(szt, sz.LogsSize(req.ld))
+	}
+	// Keep the remainder, unless splitting emptied it, in which case there is
+	// nothing left to export.
+	if (droppedItems == 0 && !unsplittable) || req.ld.LogRecordCount() > 0 {
 		res = append(res, req)
 	}
-	if droppedItems > 0 {
+	switch {
+	case droppedItems > 0:
 		return res, fmt.Errorf("one log record size is greater than max size, dropping items: %d", droppedItems)
+	case unsplittable:
+		return res, errors.New("request size is greater than max size and has no log records left to drop")
 	}
 	return res, nil
 }
