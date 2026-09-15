@@ -14,11 +14,18 @@ require (
 	go.opentelemetry.io/collector/exporter v1.67.0
 	go.opentelemetry.io/collector/exporter/exporterhelper v0.161.0
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.161.0
+	go.opentelemetry.io/collector/internal/telemetry v0.161.0
 	go.opentelemetry.io/collector/pdata v1.67.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.161.0
+	go.opentelemetry.io/collector/pipeline v1.67.0
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.161.0
 	go.opentelemetry.io/collector/processor v1.67.0
 	go.opentelemetry.io/collector/processor/processortest v0.161.0
 	go.opentelemetry.io/collector/processor/xprocessor v0.161.0
+	go.opentelemetry.io/otel v1.46.0
+	go.opentelemetry.io/otel/metric v1.46.0
+	go.opentelemetry.io/otel/sdk/metric v1.46.0
+	go.opentelemetry.io/otel/trace v1.46.0
 	go.uber.org/goleak v1.3.0
 )
 
@@ -53,13 +60,7 @@ require (
 	go.opentelemetry.io/collector/internal/componentalias v0.161.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.161.0 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.161.0 // indirect
-	go.opentelemetry.io/collector/pipeline v1.67.0 // indirect
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.161.0 // indirect
-	go.opentelemetry.io/otel v1.46.0 // indirect
-	go.opentelemetry.io/otel/metric v1.46.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.46.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.46.0 // indirect
-	go.opentelemetry.io/otel/trace v1.46.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.28.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
@@ -143,3 +144,5 @@ replace go.opentelemetry.io/collector/receiver => ../../receiver
 replace go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/receivertest
 
 replace go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xreceiver
+
+replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
