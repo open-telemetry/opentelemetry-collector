@@ -7,6 +7,35 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.67.0/v0.161.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/pprofile`: Remove deprecated AggregationTemporality, Duration, SetDuration (#15855)
+- `pkg/scraperhelper/controller`: Remove deprecated AddScraper func (#15934)
+- `pkg/service`: Remove deprecated ZapOptions (#15935)
+- `pkg/xconfmap`: Remove deprecated WithForceUnmarshaler func (#15932)
+
+### 💡 Enhancements 💡
+
+- `pkg/pdata`: avoid allocations in WriteInt64 and WriteUint64 (#15629)
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/schemagen`: Accept components written without a configuration body in the generated Collector configuration schema (#15728)
+- `pkg/confmap`: Fix bug where an escaped URI appearing before a valid URI prevented the subsequent URI from being expanded. (#15867)
+  URI scanning now continues after an escaped URI while preserving the escaped expression as literal text.
+  
+- `pkg/featuregate`: Reject feature gate IDs with an empty dot-separated segment (leading, trailing, or consecutive dots), e.g. `.foo`, `foo.`, `foo..bar`. (#15676)
+- `pkg/pprofile`: Stop erasing inline attribute keys when key_strindex is unset, and clear key_strindex once it is resolved. (#15793)
+- `pkg/pprofile`: Reference resource and scope attribute strings via the ProfilesDictionary string table when marshaling and unmarshaling OTLP profiles export requests. (#15792)
+- `pkg/scraperhelper`: Fix shutdown being delayed by extra scrapes when a scrape runs longer than the collection interval (#15736)
+  If a scrape was still running when the next tick fired, the pending tick and the shutdown
+  signal could both be ready when it finished and the controller chose between them at random.
+  
+
+<!-- previous-version -->
+
 ## v1.66.0/v0.160.0
 
 ### 🚩 Deprecations 🚩
