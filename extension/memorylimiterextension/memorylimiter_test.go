@@ -192,7 +192,7 @@ func TestMemoryPressureResponse(t *testing.T) {
 			})
 
 			ml, err := newMemoryLimiter(tt.mlCfg, zap.NewNop(), componenttest.NewNopTelemetrySettings())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			assert.NoError(t, ml.Start(ctx, componenttest.NewNopHost()))
 			ml.memLimiter.CheckMemLimits()

@@ -21,6 +21,15 @@ import (
 )
 
 var (
+	httpTransportAttrs = attribute.NewSet(
+		attribute.String("transport", "http"),
+	)
+	grpcTransportAttrs = attribute.NewSet(
+		attribute.String("transport", "grpc"),
+	)
+)
+
+var (
 	_ extensionmiddleware.GRPCServer = (*memoryLimiterExtension)(nil)
 	_ extensionmiddleware.HTTPServer = (*memoryLimiterExtension)(nil)
 )
@@ -39,6 +48,7 @@ func newMemoryLimiter(cfg *Config, logger *zap.Logger, telemetrySettings compone
 
 	ml, err := memorylimiter.NewMemoryLimiter(cfg, logger)
 	if err != nil {
+		telemetryBuilder.Shutdown()
 		return nil, err
 	}
 
@@ -74,7 +84,7 @@ func (ml *memoryLimiterExtension) wrapHTTPHandler(_ context.Context, base http.H
 			ml.telemetryBuilder.MemorylimiterRefusedRequests.Add(
 				req.Context(),
 				1,
-				metric.WithAttributes(attribute.String("transport", "http")),
+				metric.WithAttributeSet(httpTransportAttrs),
 			)
 			http.Error(resp, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
 			return
@@ -95,7 +105,7 @@ func (ml *memoryLimiterExtension) grpcUnaryInterceptor(ctx context.Context, req 
 		ml.telemetryBuilder.MemorylimiterRefusedRequests.Add(
 			ctx,
 			1,
-			metric.WithAttributes(attribute.String("transport", "grpc")),
+			metric.WithAttributeSet(grpcTransportAttrs),
 		)
 		return nil, status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
 	}
@@ -110,7 +120,7 @@ func (ml *memoryLimiterExtension) grpcStreamInterceptor(srv any, ss grpc.ServerS
 		ml.telemetryBuilder.MemorylimiterRefusedRequests.Add(
 			ctx,
 			1,
-			metric.WithAttributes(attribute.String("transport", "grpc")),
+			metric.WithAttributeSet(grpcTransportAttrs),
 		)
 		return status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
 	}
