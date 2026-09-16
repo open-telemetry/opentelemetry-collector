@@ -5,3 +5,182 @@ github_project: open-telemetry/opentelemetry-collector
 status:
   disable_codecov_badge: true
   class: pkg
+
+exported_configs:
+  client_config:
+    description: Defines common settings for a gRPC client configuration.
+    properties:
+      auth:
+        description: Configuration for outgoing RPCs.
+        $ref: /config/configauth.config
+        x-optional: true
+        default: null
+      authority:
+        description: |
+          Parameter that configures client to rewrite ":authority" header 
+          (godoc.org/google.golang.org/grpc#WithAuthority)
+        type: string
+      balancer_name:
+        description: |
+          Sets the balancer in grpclb_policy to discover the servers. 
+          Default is pick_first. 
+          https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
+        type: string
+        default: round_robin
+      compression:
+        description: The compression key for supported compression types within collector.
+        $ref: /config/configcompression.type
+      endpoint:
+        description: |
+          The target to which the exporter is going to send traces or metrics, using the gRPC protocol. 
+          The valid syntax is described at https://github.com/grpc/grpc/blob/master/doc/naming.md.
+        type: string
+      headers:
+        description: The headers associated with gRPC requests.
+        type: opaque_map
+      keepalive:
+        description: | 
+          The keepalive parameters for gRPC client. See grpc.WithKeepaliveParams. 
+          (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
+        x-optional: true
+        $ref: keepalive_client_config
+      middlewares:
+        description: Middlewares for the gRPC client.
+        type: slice
+        values:
+          $ref: /config/configmiddleware.config
+      read_buffer_size:
+        description: | 
+          ReadBufferSize for gRPC client. See grpc.WithReadBufferSize. 
+          (https://godoc.org/google.golang.org/grpc#WithReadBufferSize).
+        type: int
+      tls:
+        description: TLS struct exposes TLS client configuration.
+        $ref: /config/configtls.client_config
+      user_agent:
+        description: |
+          UserAgent overrides the default user-agent header sent on gRPC requests. 
+          The default is derived from the build info. When empty, the caller controls the user-agent 
+          via grpc.WithUserAgent or similar options.
+        type: string
+      wait_for_ready:
+        description: |
+          A parameter configures client to wait for ready state before sending data. 
+          (https://github.com/grpc/grpc/blob/master/doc/wait-for-ready.md)
+        type: bool
+      write_buffer_size:
+        description: | 
+          Write buffer size for gRPC gRPC. See grpc.WithWriteBufferSize. 
+          (https://godoc.org/google.golang.org/grpc#WithWriteBufferSize).
+        type: int
+    go_struct:
+      custom_validator:
+        name: validateClientConfig
+  keepalive_client_config:
+    description: |
+      Exposes the keepalive.ClientParameters to be used by the exporter. 
+      Refer to the original data-structure for the meaning of each parameter: 
+      https://godoc.org/google.golang.org/grpc/keepalive#ClientParameters'
+    properties:
+      permit_without_stream:
+        type: bool
+      time:
+        type: duration
+        default: 10s
+      timeout:
+        type: duration
+        default: 10s
+  keepalive_enforcement_policy:
+    description: |
+      Configuration of the keepalive.EnforcementPolicy. The same default values 
+      as keepalive.EnforcementPolicy are applicable and get applied by the server. 
+      See https://godoc.org/google.golang.org/grpc/keepalive#EnforcementPolicy for details.
+    default: {}
+    properties:
+      min_time:
+        type: duration
+      permit_without_stream:
+        type: bool
+  keepalive_server_config:
+    description: Configuration for keepalive.
+    default: {}
+    properties:
+      enforcement_policy:
+        x-optional: true
+        $ref: keepalive_enforcement_policy
+      server_parameters:
+        x-optional: true
+        $ref: keepalive_server_parameters
+  keepalive_server_parameters:
+    description: | 
+      Configuration of the keepalive.ServerParameters. The same default values 
+      as keepalive.ServerParameters are applicable and get applied by the server. 
+      See https://godoc.org/google.golang.org/grpc/keepalive#ServerParameters for details.
+    default: {}
+    properties:
+      max_connection_age:
+        type: duration
+      max_connection_age_grace:
+        type: duration
+      max_connection_idle:
+        type: duration
+      time:
+        type: duration
+      timeout:
+        type: duration
+  server_config:
+    description: Defines common settings for a gRPC server configuration.
+    properties:
+      auth:
+        description: Authentication for this receiver
+        x-optional: true
+        $ref: /config/configauth.config
+      include_metadata:
+        description: Propagates the incoming connection's metadata to downstream consumers.
+        type: bool
+      keepalive:
+        description: Anchor for all the settings related to keepalive.
+        x-optional: true
+        $ref: keepalive_server_config
+      max_concurrent_streams:
+        description: |
+          Sets the limit on the number of concurrent streams to each ServerTransport. 
+          It has effect only for streaming RPCs.
+        type: uint32
+      max_recv_msg_size_mib:
+        description: Sets the maximum size (in MiB) of messages accepted by the server.
+        type: int
+        go_struct:
+          field_name: MaxRecvMsgSizeMiB
+          custom_validator:
+      middlewares:
+        description: Middlewares for the gRPC server.
+        type: slice
+        values:
+          $ref: /config/configmiddleware.config
+      read_buffer_size:
+        description: |
+          ReadBufferSize for gRPC server. See grpc.ReadBufferSize. 
+          (https://godoc.org/google.golang.org/grpc#ReadBufferSize).
+        type: int
+        minimum: 0
+      tls:
+        description: Configures the protocol to use TLS. The default value is nil, which will cause the protocol to not use TLS.
+        x-optional: true
+        $ref: /config/configtls.server_config
+        go_struct:
+          ignore_default: true
+      write_buffer_size:
+        description: |
+          WriteBufferSize for gRPC server. See grpc.WriteBufferSize. 
+          (https://godoc.org/google.golang.org/grpc#WriteBufferSize).
+        type: int
+        minimum: 0
+      net_addr:
+        $ref: /config/confignet.addr_config
+        embed: true
+        default:
+          # We typically want to create a TCP server and listen over a network.
+          transport: tcp
+        go_struct:
+          anonymouse: true

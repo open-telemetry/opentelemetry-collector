@@ -13,7 +13,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
@@ -30,214 +29,21 @@ import (
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/snappy"
 	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/zstd"
-	"go.opentelemetry.io/collector/config/configmiddleware"
-	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configopaque"
-	"go.opentelemetry.io/collector/config/configoptional"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 )
 
 var errMetadataNotFound = errors.New("no request metadata found")
 
-// DefaultBalancerName is the name of the default load balancer.
-const DefaultBalancerName = "round_robin"
+var (
+	_ confmap.Validator = (*ClientConfig)(nil)
+	_ confmap.Validator = (*ServerConfig)(nil)
+)
 
-// KeepaliveClientConfig exposes the keepalive.ClientParameters to be used by the exporter.
-// Refer to the original data-structure for the meaning of each parameter:
-// https://godoc.org/google.golang.org/grpc/keepalive#ClientParameters
-type KeepaliveClientConfig struct {
-	Time                time.Duration `mapstructure:"time"`
-	Timeout             time.Duration `mapstructure:"timeout"`
-	PermitWithoutStream bool          `mapstructure:"permit_without_stream,omitempty"`
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
-// NewDefaultKeepaliveClientConfig returns a new instance of KeepaliveClientConfig with default values.
-func NewDefaultKeepaliveClientConfig() KeepaliveClientConfig {
-	return KeepaliveClientConfig{
-		Time:    time.Second * 10,
-		Timeout: time.Second * 10,
-	}
-}
-
-var _ confmap.Validator = (*ClientConfig)(nil)
-
-// ClientConfig defines common settings for a gRPC client configuration.
-type ClientConfig struct {
-	// The target to which the exporter is going to send traces or metrics,
-	// using the gRPC protocol. The valid syntax is described at
-	// https://github.com/grpc/grpc/blob/master/doc/naming.md.
-	Endpoint string `mapstructure:"endpoint,omitempty"`
-
-	// The compression key for supported compression types within collector.
-	Compression configcompression.Type `mapstructure:"compression,omitempty"`
-
-	// TLS struct exposes TLS client configuration.
-	TLS configtls.ClientConfig `mapstructure:"tls,omitempty"`
-
-	// The keepalive parameters for gRPC client. See grpc.WithKeepaliveParams.
-	// (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
-	Keepalive configoptional.Optional[KeepaliveClientConfig] `mapstructure:"keepalive,omitempty"`
-
-	// ReadBufferSize for gRPC client. See grpc.WithReadBufferSize.
-	// (https://godoc.org/google.golang.org/grpc#WithReadBufferSize).
-	ReadBufferSize int `mapstructure:"read_buffer_size,omitempty"`
-
-	// WriteBufferSize for gRPC gRPC. See grpc.WithWriteBufferSize.
-	// (https://godoc.org/google.golang.org/grpc#WithWriteBufferSize).
-	WriteBufferSize int `mapstructure:"write_buffer_size,omitempty"`
-
-	// WaitForReady parameter configures client to wait for ready state before sending data.
-	// (https://github.com/grpc/grpc/blob/master/doc/wait-for-ready.md)
-	WaitForReady bool `mapstructure:"wait_for_ready,omitempty"`
-
-	// The headers associated with gRPC requests.
-	Headers configopaque.MapList `mapstructure:"headers,omitempty"`
-
-	// UserAgent overrides the default user-agent header sent on gRPC requests.
-	// The default is derived from the build info. When empty, the caller controls
-	// the user-agent via grpc.WithUserAgent or similar options.
-	UserAgent string `mapstructure:"user_agent,omitempty"`
-
-	// Sets the balancer in grpclb_policy to discover the servers. Default is pick_first.
-	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
-	BalancerName string `mapstructure:"balancer_name"`
-
-	// WithAuthority parameter configures client to rewrite ":authority" header
-	// (godoc.org/google.golang.org/grpc#WithAuthority)
-	Authority string `mapstructure:"authority,omitempty"`
-
-	// Auth configuration for outgoing RPCs.
-	Auth configoptional.Optional[configauth.Config] `mapstructure:"auth,omitempty"`
-
-	// Middlewares for the gRPC client.
-	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
-
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
-// NewDefaultClientConfig returns a new instance of ClientConfig with default values.
-func NewDefaultClientConfig() ClientConfig {
-	return ClientConfig{
-		TLS:          configtls.NewDefaultClientConfig(),
-		Keepalive:    configoptional.Some(NewDefaultKeepaliveClientConfig()),
-		BalancerName: DefaultBalancerName,
-	}
-}
-
-// KeepaliveServerConfig is the configuration for keepalive.
-type KeepaliveServerConfig struct {
-	ServerParameters  configoptional.Optional[KeepaliveServerParameters]  `mapstructure:"server_parameters,omitempty"`
-	EnforcementPolicy configoptional.Optional[KeepaliveEnforcementPolicy] `mapstructure:"enforcement_policy,omitempty"`
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
-// NewDefaultKeepaliveServerConfig returns a new instance of KeepaliveServerConfig with default values.
-func NewDefaultKeepaliveServerConfig() KeepaliveServerConfig {
-	return KeepaliveServerConfig{
-		ServerParameters:  configoptional.Some(NewDefaultKeepaliveServerParameters()),
-		EnforcementPolicy: configoptional.Some(NewDefaultKeepaliveEnforcementPolicy()),
-	}
-}
-
-// KeepaliveServerParameters allow configuration of the keepalive.ServerParameters.
-// The same default values as keepalive.ServerParameters are applicable and get applied by the server.
-// See https://godoc.org/google.golang.org/grpc/keepalive#ServerParameters for details.
-type KeepaliveServerParameters struct {
-	MaxConnectionIdle     time.Duration `mapstructure:"max_connection_idle,omitempty"`
-	MaxConnectionAge      time.Duration `mapstructure:"max_connection_age,omitempty"`
-	MaxConnectionAgeGrace time.Duration `mapstructure:"max_connection_age_grace,omitempty"`
-	Time                  time.Duration `mapstructure:"time,omitempty"`
-	Timeout               time.Duration `mapstructure:"timeout,omitempty"`
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
-// NewDefaultKeepaliveServerParameters creates and returns a new instance of KeepaliveServerParameters with default settings.
-func NewDefaultKeepaliveServerParameters() KeepaliveServerParameters {
-	return KeepaliveServerParameters{}
-}
-
-// KeepaliveEnforcementPolicy allow configuration of the keepalive.EnforcementPolicy.
-// The same default values as keepalive.EnforcementPolicy are applicable and get applied by the server.
-// See https://godoc.org/google.golang.org/grpc/keepalive#EnforcementPolicy for details.
-type KeepaliveEnforcementPolicy struct {
-	MinTime             time.Duration `mapstructure:"min_time,omitempty"`
-	PermitWithoutStream bool          `mapstructure:"permit_without_stream,omitempty"`
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
-// NewDefaultKeepaliveEnforcementPolicy creates and returns a new instance of KeepaliveEnforcementPolicy with default settings.
-func NewDefaultKeepaliveEnforcementPolicy() KeepaliveEnforcementPolicy {
-	return KeepaliveEnforcementPolicy{}
-}
-
-var _ confmap.Validator = (*ServerConfig)(nil)
-
-// ServerConfig defines common settings for a gRPC server configuration.
-type ServerConfig struct {
-	// Server net.Addr config. For transport only "tcp" and "unix" are valid options.
-	NetAddr confignet.AddrConfig `mapstructure:",squash"`
-
-	// Configures the protocol to use TLS.
-	// The default value is nil, which will cause the protocol to not use TLS.
-	TLS configoptional.Optional[configtls.ServerConfig] `mapstructure:"tls,omitempty"`
-
-	// MaxRecvMsgSizeMiB sets the maximum size (in MiB) of messages accepted by the server.
-	MaxRecvMsgSizeMiB int `mapstructure:"max_recv_msg_size_mib,omitempty"`
-
-	// MaxConcurrentStreams sets the limit on the number of concurrent streams to each ServerTransport.
-	// It has effect only for streaming RPCs.
-	MaxConcurrentStreams uint32 `mapstructure:"max_concurrent_streams,omitempty"`
-
-	// ReadBufferSize for gRPC server. See grpc.ReadBufferSize.
-	// (https://godoc.org/google.golang.org/grpc#ReadBufferSize).
-	ReadBufferSize int `mapstructure:"read_buffer_size,omitempty"`
-
-	// WriteBufferSize for gRPC server. See grpc.WriteBufferSize.
-	// (https://godoc.org/google.golang.org/grpc#WriteBufferSize).
-	WriteBufferSize int `mapstructure:"write_buffer_size,omitempty"`
-
-	// Keepalive anchor for all the settings related to keepalive.
-	Keepalive configoptional.Optional[KeepaliveServerConfig] `mapstructure:"keepalive,omitempty"`
-
-	// Auth for this receiver
-	Auth configoptional.Optional[configauth.Config] `mapstructure:"auth,omitempty"`
-
-	// Include propagates the incoming connection's metadata to downstream consumers.
-	IncludeMetadata bool `mapstructure:"include_metadata,omitempty"`
-
-	// Middlewares for the gRPC server.
-	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
-
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
-// NewDefaultServerConfig returns a new instance of ServerConfig with default values.
-func NewDefaultServerConfig() ServerConfig {
-	netAddr := confignet.NewDefaultAddrConfig()
-
-	// We typically want to create a TCP server and listen over a network.
-	netAddr.Transport = confignet.TransportTypeTCP
-
-	return ServerConfig{
-		Keepalive: configoptional.Some(NewDefaultKeepaliveServerConfig()),
-		NetAddr:   netAddr,
-	}
-}
-
-func (cc *ClientConfig) Validate() error {
+func validateClientConfig(cc *ClientConfig) error {
 	if after, ok := strings.CutPrefix(cc.Endpoint, "unix://"); ok {
 		if after == "" {
 			return errors.New("unix socket path cannot be empty")
@@ -490,19 +296,10 @@ func (cc *ClientConfig) getGrpcDialOptions(
 	return opts, nil
 }
 
-func (sc *ServerConfig) Validate() error {
-	if sc.MaxRecvMsgSizeMiB*1024*1024 < 0 {
-		return fmt.Errorf("invalid max_recv_msg_size_mib value, must be between 1 and %d: %d", math.MaxInt/1024/1024, sc.MaxRecvMsgSizeMiB)
+func validateMaxRecvMsgSizeMiB(maxRecvMsgSizeMiB int) error {
+	if maxRecvMsgSizeMiB*1024*1024 < 0 {
+		return fmt.Errorf("invalid max_recv_msg_size_mib value, must be between 1 and %d: %d", math.MaxInt/1024/1024, maxRecvMsgSizeMiB)
 	}
-
-	if sc.ReadBufferSize < 0 {
-		return fmt.Errorf("invalid read_buffer_size value: %d", sc.ReadBufferSize)
-	}
-
-	if sc.WriteBufferSize < 0 {
-		return fmt.Errorf("invalid write_buffer_size value: %d", sc.WriteBufferSize)
-	}
-
 	return nil
 }
 
