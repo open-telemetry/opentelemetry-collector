@@ -105,6 +105,11 @@ partition is flushed and removed. The current cache size and configured
 capacity are exported as `otelcol_exporter_queue_batch_partition_cache_size`
 and `otelcol_exporter_queue_batch_partition_cache_capacity`.
 
+`batch::partition::idle_timeout` (default = 90s) controls how long a
+partition may stay empty before it is removed. Keep it above the data
+arrival interval so partitions are not churned on every scrape. The
+value must be positive.
+
 ### Persisting the queue with a storage extension
 
 By default the queue is held in memory, so any buffered data is lost

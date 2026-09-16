@@ -72,6 +72,9 @@ Available `batch::partition` options:
   and removed. The current size and configured capacity are exported as
   `otelcol_exporter_queue_batch_partition_cache_size` and
   `otelcol_exporter_queue_batch_partition_cache_capacity`.
+- `idle_timeout` (default = 90s): how long a partition may stay empty before it is removed.
+  Keep it above the data arrival interval to avoid churning partitions on every scrape. Must be
+  positive.
 
 ### Timeout
 
