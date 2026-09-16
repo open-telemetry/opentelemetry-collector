@@ -3,12 +3,7 @@
 package metadata
 
 import (
-	"encoding/binary"
-	"hash"
-	"hash/fnv"
-	"math"
 	"slices"
-	"sort"
 	"time"
 
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
@@ -17,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
 )
 
@@ -29,76 +25,11 @@ const (
 
 // dataPointKey hashes dp's attributes and timestamps for O(1) dedup lookup.
 func dataPointKey(dp pmetric.NumberDataPoint) uint64 {
-	h := fnv.New64a()
-	var buf [8]byte
-
-	hashMap(h, &buf, dp.Attributes())
-
-	binary.LittleEndian.PutUint64(buf[:], uint64(dp.StartTimestamp()))
-	h.Write(buf[:])
-	binary.LittleEndian.PutUint64(buf[:], uint64(dp.Timestamp()))
-	h.Write(buf[:])
-
-	return h.Sum64()
-}
-
-// hashMap hashes m's keys in sorted order, so the result doesn't depend on
-// pcommon.Map's iteration order.
-func hashMap(h hash.Hash64, buf *[8]byte, m pcommon.Map) {
-	keys := make([]string, 0, m.Len())
-	m.Range(func(k string, _ pcommon.Value) bool {
-		keys = append(keys, k)
-		return true
-	})
-	sort.Strings(keys)
-
-	for _, k := range keys {
-		v, _ := m.Get(k)
-		binary.LittleEndian.PutUint64(buf[:], uint64(len(k)))
-		h.Write(buf[:])
-		h.Write([]byte(k))
-		hashValue(h, buf, v)
-	}
-}
-
-// hashValue hashes v, tagged with its type so int 1 and string "1" differ.
-func hashValue(h hash.Hash64, buf *[8]byte, v pcommon.Value) {
-	buf[0] = byte(v.Type())
-	h.Write(buf[:1])
-	switch v.Type() {
-	case pcommon.ValueTypeStr:
-		s := v.Str()
-		binary.LittleEndian.PutUint64(buf[:], uint64(len(s)))
-		h.Write(buf[:])
-		h.Write([]byte(s))
-	case pcommon.ValueTypeInt:
-		binary.LittleEndian.PutUint64(buf[:], uint64(v.Int()))
-		h.Write(buf[:])
-	case pcommon.ValueTypeDouble:
-		binary.LittleEndian.PutUint64(buf[:], math.Float64bits(v.Double()))
-		h.Write(buf[:])
-	case pcommon.ValueTypeBool:
-		if v.Bool() {
-			buf[0] = 1
-		} else {
-			buf[0] = 0
-		}
-		h.Write(buf[:1])
-	case pcommon.ValueTypeBytes:
-		b := v.Bytes().AsRaw()
-		binary.LittleEndian.PutUint64(buf[:], uint64(len(b)))
-		h.Write(buf[:])
-		h.Write(b)
-	case pcommon.ValueTypeMap:
-		hashMap(h, buf, v.Map())
-	case pcommon.ValueTypeSlice:
-		s := v.Slice()
-		binary.LittleEndian.PutUint64(buf[:], uint64(s.Len()))
-		h.Write(buf[:])
-		for i := 0; i < s.Len(); i++ {
-			hashValue(h, buf, s.At(i))
-		}
-	}
+	return xhash.Hash64(
+		xhash.WithMap(dp.Attributes()),
+		xhash.WithValue(pcommon.NewValueInt(int64(dp.StartTimestamp()))),
+		xhash.WithValue(pcommon.NewValueInt(int64(dp.Timestamp()))),
+	)
 }
 
 // AttributePhase specifies the value phase attribute.
@@ -220,8 +151,7 @@ type metricK8sPodPhase struct {
 	config        K8sPodPhaseMetricConfig // metric config provided by user.
 	capacity      int                     // max observed number of data points added to the metric.
 	aggDataPoints []int64                 // slice containing number of aggregated datapoints at each index
-	// dpIndex maps a data point's hash to its index, for O(1) dedup lookup.
-	dpIndex map[uint64]int
+	dpIndex       map[uint64]int          // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills k8s.pod.phase metric with initial data.
@@ -248,7 +178,6 @@ func (m *metricK8sPodPhase) recordDataPoint(start pcommon.Timestamp, ts pcommon.
 	}
 
 	var s string
-	// Same fields the old scan compared: attributes plus both timestamps.
 	key := dataPointKey(dp)
 	dps := m.data.Gauge().DataPoints()
 	if i, ok := m.dpIndex[key]; ok {

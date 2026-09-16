@@ -664,10 +664,8 @@ func TestMetricsBuilder(t *testing.T) {
 	}
 }
 
-// TestRecordDataPointMerge checks that recording the same attributes and
+// TestRecordDataPointMerge checks that recording identical attributes and
 // timestamps twice merges into one data point instead of creating a second.
-// Entity metrics are skipped: no sample fixture combines entities with
-// aggregatable attributes, so there's nothing to test that against.
 func TestRecordDataPointMerge(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
@@ -679,12 +677,12 @@ func TestRecordDataPointMerge(t *testing.T) {
 		mb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, true, WithConditionalIntAttrMetricAttribute(20), WithConditionalStringAttrMetricAttribute("conditional_string_attr-val"))
 		require.Equal(t, 1, mb.metricDefaultMetric.data.Sum().DataPoints().Len())
 
-		// Same arguments as above: must merge, not create a new point.
+		// same args: must merge
 		mb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, true, WithConditionalIntAttrMetricAttribute(20), WithConditionalStringAttrMetricAttribute("conditional_string_attr-val"))
 		assert.Equal(t, 1, mb.metricDefaultMetric.data.Sum().DataPoints().Len(),
 			"recording default.metric twice with identical attributes and timestamps must merge, not create a 2nd data point")
 
-		// A 3rd call with different attributes (where possible) must NOT merge.
+		// different attrs: must not merge
 		mb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val-2", 20, AttributeEnumAttrGreen, []any{"slice_attr-item3", "slice_attr-item4"}, map[string]any{"key3": "map_attr-val3", "key4": "map_attr-val4"}, false, WithConditionalIntAttrMetricAttribute(20), WithConditionalStringAttrMetricAttribute("conditional_string_attr-val"))
 		assert.Equal(t, 2, mb.metricDefaultMetric.data.Sum().DataPoints().Len(),
 			"recording default.metric with different attributes must create a 2nd data point, not merge into the 1st")
@@ -697,12 +695,12 @@ func TestRecordDataPointMerge(t *testing.T) {
 		mb.RecordMetricInputTypeDataPoint(ts, "1", "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 		require.Equal(t, 1, mb.metricMetricInputType.data.Sum().DataPoints().Len())
 
-		// Same arguments as above: must merge, not create a new point.
+		// same args: must merge
 		mb.RecordMetricInputTypeDataPoint(ts, "1", "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 		assert.Equal(t, 1, mb.metricMetricInputType.data.Sum().DataPoints().Len(),
 			"recording metric.input_type twice with identical attributes and timestamps must merge, not create a 2nd data point")
 
-		// A 3rd call with different attributes (where possible) must NOT merge.
+		// different attrs: must not merge
 		mb.RecordMetricInputTypeDataPoint(ts, "1", "string_attr-val-2", 20, AttributeEnumAttrGreen, []any{"slice_attr-item3", "slice_attr-item4"}, map[string]any{"key3": "map_attr-val3", "key4": "map_attr-val4"})
 		assert.Equal(t, 2, mb.metricMetricInputType.data.Sum().DataPoints().Len(),
 			"recording metric.input_type with different attributes must create a 2nd data point, not merge into the 1st")
@@ -715,12 +713,12 @@ func TestRecordDataPointMerge(t *testing.T) {
 		mb.RecordOptionalMetricDataPoint(ts, 1, "string_attr-val", true, false, WithConditionalStringAttrMetricAttribute("conditional_string_attr-val"))
 		require.Equal(t, 1, mb.metricOptionalMetric.data.Gauge().DataPoints().Len())
 
-		// Same arguments as above: must merge, not create a new point.
+		// same args: must merge
 		mb.RecordOptionalMetricDataPoint(ts, 1, "string_attr-val", true, false, WithConditionalStringAttrMetricAttribute("conditional_string_attr-val"))
 		assert.Equal(t, 1, mb.metricOptionalMetric.data.Gauge().DataPoints().Len(),
 			"recording optional.metric twice with identical attributes and timestamps must merge, not create a 2nd data point")
 
-		// A 3rd call with different attributes (where possible) must NOT merge.
+		// different attrs: must not merge
 		mb.RecordOptionalMetricDataPoint(ts, 1, "string_attr-val-2", false, true, WithConditionalStringAttrMetricAttribute("conditional_string_attr-val"))
 		assert.Equal(t, 2, mb.metricOptionalMetric.data.Gauge().DataPoints().Len(),
 			"recording optional.metric with different attributes must create a 2nd data point, not merge into the 1st")
@@ -733,12 +731,12 @@ func TestRecordDataPointMerge(t *testing.T) {
 		mb.RecordOptionalMetricEmptyUnitDataPoint(ts, 1, "string_attr-val", true)
 		require.Equal(t, 1, mb.metricOptionalMetricEmptyUnit.data.Gauge().DataPoints().Len())
 
-		// Same arguments as above: must merge, not create a new point.
+		// same args: must merge
 		mb.RecordOptionalMetricEmptyUnitDataPoint(ts, 1, "string_attr-val", true)
 		assert.Equal(t, 1, mb.metricOptionalMetricEmptyUnit.data.Gauge().DataPoints().Len(),
 			"recording optional.metric.empty_unit twice with identical attributes and timestamps must merge, not create a 2nd data point")
 
-		// A 3rd call with different attributes (where possible) must NOT merge.
+		// different attrs: must not merge
 		mb.RecordOptionalMetricEmptyUnitDataPoint(ts, 1, "string_attr-val-2", false)
 		assert.Equal(t, 2, mb.metricOptionalMetricEmptyUnit.data.Gauge().DataPoints().Len(),
 			"recording optional.metric.empty_unit with different attributes must create a 2nd data point, not merge into the 1st")
@@ -751,12 +749,12 @@ func TestRecordDataPointMerge(t *testing.T) {
 		mb.RecordReaggregateMetricDataPoint(ts, 1, "string_attr-val", true)
 		require.Equal(t, 1, mb.metricReaggregateMetric.data.Gauge().DataPoints().Len())
 
-		// Same arguments as above: must merge, not create a new point.
+		// same args: must merge
 		mb.RecordReaggregateMetricDataPoint(ts, 1, "string_attr-val", true)
 		assert.Equal(t, 1, mb.metricReaggregateMetric.data.Gauge().DataPoints().Len(),
 			"recording reaggregate.metric twice with identical attributes and timestamps must merge, not create a 2nd data point")
 
-		// A 3rd call with different attributes (where possible) must NOT merge.
+		// different attrs: must not merge
 		mb.RecordReaggregateMetricDataPoint(ts, 1, "string_attr-val-2", false)
 		assert.Equal(t, 2, mb.metricReaggregateMetric.data.Gauge().DataPoints().Len(),
 			"recording reaggregate.metric with different attributes must create a 2nd data point, not merge into the 1st")
@@ -769,12 +767,12 @@ func TestRecordDataPointMerge(t *testing.T) {
 		mb.RecordReaggregateMetricWithRequiredDataPoint(ts, 1, "required_string_attr-val", "string_attr-val", true)
 		require.Equal(t, 1, mb.metricReaggregateMetricWithRequired.data.Gauge().DataPoints().Len())
 
-		// Same arguments as above: must merge, not create a new point.
+		// same args: must merge
 		mb.RecordReaggregateMetricWithRequiredDataPoint(ts, 1, "required_string_attr-val", "string_attr-val", true)
 		assert.Equal(t, 1, mb.metricReaggregateMetricWithRequired.data.Gauge().DataPoints().Len(),
 			"recording reaggregate.metric.with_required twice with identical attributes and timestamps must merge, not create a 2nd data point")
 
-		// A 3rd call with different attributes (where possible) must NOT merge.
+		// different attrs: must not merge
 		mb.RecordReaggregateMetricWithRequiredDataPoint(ts, 1, "required_string_attr-val-2", "string_attr-val-2", false)
 		assert.Equal(t, 2, mb.metricReaggregateMetricWithRequired.data.Gauge().DataPoints().Len(),
 			"recording reaggregate.metric.with_required with different attributes must create a 2nd data point, not merge into the 1st")
@@ -787,12 +785,12 @@ func TestRecordDataPointMerge(t *testing.T) {
 		mb.RecordSystemCPUTimeDataPoint(ts, 1, "cpu-val")
 		require.Equal(t, 1, mb.metricSystemCPUTime.data.Sum().DataPoints().Len())
 
-		// Same arguments as above: must merge, not create a new point.
+		// same args: must merge
 		mb.RecordSystemCPUTimeDataPoint(ts, 1, "cpu-val")
 		assert.Equal(t, 1, mb.metricSystemCPUTime.data.Sum().DataPoints().Len(),
 			"recording system.cpu.time twice with identical attributes and timestamps must merge, not create a 2nd data point")
 
-		// A 3rd call with different attributes (where possible) must NOT merge.
+		// different attrs: must not merge
 		mb.RecordSystemCPUTimeDataPoint(ts, 1, "cpu-val-2")
 		assert.Equal(t, 2, mb.metricSystemCPUTime.data.Sum().DataPoints().Len(),
 			"recording system.cpu.time with different attributes must create a 2nd data point, not merge into the 1st")
@@ -805,12 +803,12 @@ func TestRecordDataPointMerge(t *testing.T) {
 		mb.RecordSystemMemoryUsageDataPoint(ts, 1, AttributeStateBuffered)
 		require.Equal(t, 1, mb.metricSystemMemoryUsage.data.Sum().DataPoints().Len())
 
-		// Same arguments as above: must merge, not create a new point.
+		// same args: must merge
 		mb.RecordSystemMemoryUsageDataPoint(ts, 1, AttributeStateBuffered)
 		assert.Equal(t, 1, mb.metricSystemMemoryUsage.data.Sum().DataPoints().Len(),
 			"recording system.memory.usage twice with identical attributes and timestamps must merge, not create a 2nd data point")
 
-		// A 3rd call with different attributes (where possible) must NOT merge.
+		// different attrs: must not merge
 		mb.RecordSystemMemoryUsageDataPoint(ts, 1, AttributeStateCached)
 		assert.Equal(t, 2, mb.metricSystemMemoryUsage.data.Sum().DataPoints().Len(),
 			"recording system.memory.usage with different attributes must create a 2nd data point, not merge into the 1st")
