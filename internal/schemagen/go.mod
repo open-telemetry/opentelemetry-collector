@@ -7,6 +7,8 @@ require (
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/confmap v1.67.0
+	go.opentelemetry.io/collector/pipeline v1.67.0
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.161.0
 	go.yaml.in/yaml/v3 v3.0.5
 	golang.org/x/mod v0.41.0
 	golang.org/x/tools v0.49.0
@@ -33,3 +35,7 @@ replace (
 	go.opentelemetry.io/collector/featuregate => ../../featuregate
 	go.opentelemetry.io/collector/internal/testutil => ../testutil
 )
+
+replace go.opentelemetry.io/collector/pipeline => ../../pipeline
+
+replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../pipeline/xpipeline
