@@ -456,9 +456,9 @@ func TestMetricsBuilder(t *testing.T) {
 	}
 }
 
-{{/* entity metrics excluded: no sample fixture combines entities with aggregatable attributes */}}
+{{/* entity and migration/versioned metrics excluded: no sample fixture combines those with aggregatable attributes */}}
 {{- $hasNonEntityReagMetrics := false }}
-{{- range $name, $metric := .Metrics }}{{- if and (hasAggregatableAttributes $metric.Attributes) (not $metric.Entity) }}{{- $hasNonEntityReagMetrics = true }}{{- end }}{{- end }}
+{{- range $name, $metric := .Metrics }}{{- if and (hasAggregatableAttributes $metric.Attributes) (not $metric.Entity) (not $metric.Versioned) (not $metric.Migration) }}{{- $hasNonEntityReagMetrics = true }}{{- end }}{{- end }}
 {{- if $hasNonEntityReagMetrics }}
 
 // TestRecordDataPointMerge checks that recording identical attributes and
@@ -467,7 +467,7 @@ func TestRecordDataPointMerge(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
 	{{- range $name, $metric := .Metrics }}
-	{{- if and (hasAggregatableAttributes $metric.Attributes) (not $metric.Entity) }}
+	{{- if and (hasAggregatableAttributes $metric.Attributes) (not $metric.Entity) (not $metric.Versioned) (not $metric.Migration) }}
 	t.Run("{{ $name }}", func(t *testing.T) {
 		{{- if or isReceiver isScraper isConnector }}
 		settings := {{ $.Status.Class }}test.NewNopSettings({{ $.Status.Class }}test.NopType)

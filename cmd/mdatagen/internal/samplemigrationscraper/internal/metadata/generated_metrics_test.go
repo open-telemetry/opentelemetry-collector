@@ -151,6 +151,7 @@ func TestMetricsBuilder(t *testing.T) {
 		})
 	}
 }
+
 func TestVersionedMetrics(t *testing.T) {
 	t.Run("linux.memory.available", func(t *testing.T) {
 		tests := []struct {
