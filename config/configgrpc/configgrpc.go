@@ -36,6 +36,9 @@ import (
 	"go.opentelemetry.io/collector/extension/extensionauth"
 )
 
+// DefaultBalancerName is the name of the default load balancer.
+const DefaultBalancerName = "round_robin"
+
 var errMetadataNotFound = errors.New("no request metadata found")
 
 var (
