@@ -40,8 +40,8 @@ type CookiesConfig struct {
 }
 
 // NewDefaultKeepaliveClientConfig returns a KeepaliveClientConfig with the same
-// defaults that NewDefaultClientConfig sets on the corresponding deprecated
-// fields, taken from [http.DefaultTransport].
+// defaults that NewDefaultClientConfig used to set on the corresponding fields,
+// taken from [http.DefaultTransport].
 func NewDefaultKeepaliveClientConfig() KeepaliveClientConfig {
 	defaultTransport := http.DefaultTransport.(*http.Transport)
 
