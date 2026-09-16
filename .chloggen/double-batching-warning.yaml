@@ -1,6 +1,6 @@
 change_type: enhancement
-component: service
+component: pkg/service
 note: Warn at startup when a pipeline combines the batch processor with exporterhelper batching.
-issues: []
+issues: [15965]
 subtext:
 change_logs: [user]
