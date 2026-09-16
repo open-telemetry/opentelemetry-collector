@@ -323,6 +323,13 @@ func (col *Collector) reloadConfiguration(ctx context.Context) error {
 		return fmt.Errorf("failed to shutdown the retiring config: %w", err)
 	}
 
+	// Drain any fatal error left over from the retiring components so it
+	// doesn't immediately terminate the replacement we're about to start.
+	select {
+	case <-col.fatalErrChan:
+	default:
+	}
+
 	if err := col.setupConfigurationComponents(ctx); err != nil {
 		return fmt.Errorf("failed to setup configuration components: %w", err)
 	}
@@ -452,10 +459,25 @@ func (col *Collector) Run(ctx context.Context) error {
 				default:
 				}
 			case <-pumpDone:
-				return
+				// Drain any sender still blocked on asyncErrorChannel before
+				// returning, since select does not guarantee this case runs
+				// first even if asyncErrorChannel is also ready, which would
+				// otherwise leave that sender blocked forever.
+				for {
+					select {
+					case <-col.asyncErrorChannel:
+					default:
+						return
+					}
+				}
 			}
 		}
 	}()
+
+	select {
+	case <-col.fatalErrChan:
+	default:
+	}
 
 	// setupConfigurationComponents is the "main" function responsible for startup
 	if err := col.setupConfigurationComponents(ctx); err != nil {
@@ -498,6 +520,13 @@ LOOP:
 				break LOOP
 			}
 			if err := col.reloadConfiguration(ctx); err != nil {
+				// A component may have reported a fatal error concurrently with
+				// the reload failing; surface it instead of dropping it silently.
+				select {
+				case fatalErr := <-col.fatalErrChan:
+					err = errors.Join(err, fatalErr)
+				default:
+				}
 				return err
 			}
 		case err := <-col.fatalErrChan:
@@ -509,6 +538,13 @@ LOOP:
 				break LOOP
 			}
 			if err := col.reloadConfiguration(ctx); err != nil {
+				// A component may have reported a fatal error concurrently with
+				// the reload failing; surface it instead of dropping it silently.
+				select {
+				case fatalErr := <-col.fatalErrChan:
+					err = errors.Join(err, fatalErr)
+				default:
+				}
 				return err
 			}
 		case <-col.shutdownChan:
