@@ -2456,7 +2456,7 @@ func TestFormatDefaultValue_OptionalObjectDefault(t *testing.T) {
 		},
 	}
 
-	require.Equal(t, "configoptional.Default(NewDefaultClient())", FormatDefaultValue(md, "client", defaultValue(map[string]any{"endpoint": "localhost"}), "", ""))
+	require.Equal(t, "configoptional.Some(NewDefaultClient())", FormatDefaultValue(md, "client", defaultValue(map[string]any{"endpoint": "localhost"}), "", ""))
 }
 
 func TestFormatDefaultValue_PointerSliceOfObjects(t *testing.T) {
@@ -2622,7 +2622,7 @@ func TestWrapDefaultValue(t *testing.T) {
 					"name": {Type: "string"},
 				},
 			},
-			expected: "configoptional.Default(defaultValue)",
+			expected: "configoptional.Some(defaultValue)",
 		},
 	}
 

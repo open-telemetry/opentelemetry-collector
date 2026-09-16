@@ -693,9 +693,6 @@ func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue any, rootP
 		return "&" + exp
 	}
 	if md.IsOptional {
-		if md.Type == ObjectType && md.Properties != nil {
-			return fmt.Sprintf("configoptional.Default(%s)", exp)
-		}
 		return fmt.Sprintf("configoptional.Some(%s)", exp)
 	}
 	return exp
@@ -715,9 +712,6 @@ func WrapDefaultValue(md *ConfigMetadata, varName string) string {
 		return "&" + exp
 	}
 	if md.IsOptional {
-		if md.Type == ObjectType && md.Properties != nil {
-			return fmt.Sprintf("configoptional.Default(%s)", exp)
-		}
 		return fmt.Sprintf("configoptional.Some(%s)", exp)
 	}
 	return exp
