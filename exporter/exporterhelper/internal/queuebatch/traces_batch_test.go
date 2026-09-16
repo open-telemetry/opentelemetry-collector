@@ -465,3 +465,33 @@ func TestMergeSplitTracesUnsplittableRequest(t *testing.T) {
 		"an unsplittable request must report an error rather than succeed silently")
 	assert.Empty(t, res, "an oversized request holding no spans must not be returned")
 }
+
+func TestMergeSplitTracesDropsOnlyOversizedAcrossResourcesAndScopes(t *testing.T) {
+	// removeFirstSpan stops scanning once it has removed one span. With several
+	// resources and scopes, the untouched ones must survive intact.
+	oversized := strings.Repeat("x", 1000)
+	td := ptrace.NewTraces()
+	rs1 := td.ResourceSpans().AppendEmpty()
+	rs1.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName(oversized)
+	rs1.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("second_scope")
+	td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("second_resource")
+	require.Equal(t, 3, td.SpanCount(), "precondition: three spans")
+
+	res, err := newTracesRequest(td).MergeSplit(context.Background(), 100, request.SizerTypeBytes, nil)
+	require.ErrorContains(t, err, "one span size is greater than max size, dropping items: 1")
+
+	var names []string
+	for _, r := range res {
+		tr := r.(*tracesRequest)
+		for a := 0; a < tr.td.ResourceSpans().Len(); a++ {
+			for b := 0; b < tr.td.ResourceSpans().At(a).ScopeSpans().Len(); b++ {
+				spans := tr.td.ResourceSpans().At(a).ScopeSpans().At(b).Spans()
+				for c := 0; c < spans.Len(); c++ {
+					names = append(names, spans.At(c).Name())
+				}
+			}
+		}
+	}
+	assert.ElementsMatch(t, []string{"second_scope", "second_resource"}, names,
+		"spans in the other scope and resource must survive")
+}

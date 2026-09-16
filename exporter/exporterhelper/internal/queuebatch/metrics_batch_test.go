@@ -898,7 +898,7 @@ func TestMergeSplitMetricsDropsOversizedDataPointForEveryType(t *testing.T) {
 	// to be exercised: a gauge-only test leaves the other four branches unproven.
 	pad := strings.Repeat("y", 400)
 	addThree := func(m pmetric.Metric, typ pmetric.MetricType) {
-		put := func(i int) pcommon.Map {
+		appendDataPoint := func() pcommon.Map {
 			switch typ {
 			case pmetric.MetricTypeGauge:
 				return m.Gauge().DataPoints().AppendEmpty().Attributes()
@@ -914,9 +914,9 @@ func TestMergeSplitMetricsDropsOversizedDataPointForEveryType(t *testing.T) {
 			t.Fatalf("unhandled metric type %v", typ)
 			return pcommon.NewMap()
 		}
-		put(0).PutStr("id", "small_before")
-		put(1).PutStr("pad", pad)
-		put(2).PutStr("id", "small_after")
+		appendDataPoint().PutStr("id", "small_before")
+		appendDataPoint().PutStr("pad", pad)
+		appendDataPoint().PutStr("id", "small_after")
 	}
 
 	tests := []struct {
@@ -951,4 +951,68 @@ func TestMergeSplitMetricsDropsOversizedDataPointForEveryType(t *testing.T) {
 			assert.Equal(t, 2, got, "the well-sized data points on either side must survive")
 		})
 	}
+}
+
+func TestMergeSplitMetricsKeepsUnextractableDataLessMetric(t *testing.T) {
+	// A data-less metric small enough to extract never reaches removeFirstDataPoint,
+	// because extractMetrics moves it into the discarded batch first. Give it a
+	// description large enough that it cannot be extracted, so it is still in the
+	// source when the drop path runs. It must not be counted as a dropped item:
+	// it holds no data points, so there is nothing in it to drop.
+	md := pmetric.NewMetrics()
+	sm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	dataLess := sm.Metrics().AppendEmpty()
+	dataLess.SetName("empty.with.big.description")
+	dataLess.SetDescription(strings.Repeat("d", 400))
+	require.Equal(t, pmetric.MetricTypeEmpty, dataLess.Type(), "precondition: metric has no data point slice")
+	gauge := sm.Metrics().AppendEmpty()
+	gauge.SetName("small.gauge")
+	gauge.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(1)
+	require.Equal(t, 1, md.DataPointCount(), "precondition: exactly one data point")
+
+	_, err := newMetricsRequest(md).MergeSplit(context.Background(), 100, request.SizerTypeBytes, nil)
+	// The single data point is lost because the data-less metric's own metadata
+	// exceeds max size, the same way resource overhead alone can exceed it. What
+	// matters here is the count: one data point, not two items.
+	require.ErrorContains(t, err, "one datapoint size is greater than max size, dropping items: 1",
+		"a metric with no data points must not be counted as a dropped item")
+}
+
+func TestMergeSplitMetricsDropsOnlyOversizedAcrossResourcesAndScopes(t *testing.T) {
+	// removeFirstDataPoint stops scanning once it has removed one data point. With
+	// several resources and scopes, the untouched ones must survive intact.
+	pad := strings.Repeat("y", 400)
+	md := pmetric.NewMetrics()
+	rm1 := md.ResourceMetrics().AppendEmpty()
+	oversized := rm1.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	oversized.SetName("r1s1.oversized")
+	oversized.SetEmptyGauge().DataPoints().AppendEmpty().Attributes().PutStr("pad", pad)
+	secondScope := rm1.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	secondScope.SetName("r1s2.small")
+	secondScope.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(2)
+	secondResource := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	secondResource.SetName("r2.small")
+	secondResource.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(3)
+	require.Equal(t, 3, md.DataPointCount(), "precondition: three data points")
+
+	res, err := newMetricsRequest(md).MergeSplit(context.Background(), 100, request.SizerTypeBytes, nil)
+	require.ErrorContains(t, err, "one datapoint size is greater than max size, dropping items: 1")
+
+	var names []string
+	got := 0
+	for _, r := range res {
+		mr := r.(*metricsRequest)
+		got += mr.md.DataPointCount()
+		for a := 0; a < mr.md.ResourceMetrics().Len(); a++ {
+			for b := 0; b < mr.md.ResourceMetrics().At(a).ScopeMetrics().Len(); b++ {
+				ms := mr.md.ResourceMetrics().At(a).ScopeMetrics().At(b).Metrics()
+				for c := 0; c < ms.Len(); c++ {
+					names = append(names, ms.At(c).Name())
+				}
+			}
+		}
+	}
+	assert.Equal(t, 2, got, "the well-sized data points in the other scope and resource must survive")
+	assert.ElementsMatch(t, []string{"r1s2.small", "r2.small"}, names,
+		"only the oversized metric may be removed")
 }

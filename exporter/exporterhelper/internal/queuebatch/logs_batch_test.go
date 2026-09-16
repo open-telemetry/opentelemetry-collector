@@ -537,3 +537,20 @@ func TestMergeSplitLogsUnsplittableRequest(t *testing.T) {
 		"an unsplittable request must report an error rather than succeed silently")
 	assert.Empty(t, res, "an oversized request holding no records must not be returned")
 }
+
+func TestMergeSplitLogsDropsOnlyOversizedAcrossResourcesAndScopes(t *testing.T) {
+	// removeFirstLogRecord stops scanning once it has removed one record. With
+	// several resources and scopes, the untouched ones must survive intact.
+	oversized := strings.Repeat("x", 1000)
+	ld := plog.NewLogs()
+	rl1 := ld.ResourceLogs().AppendEmpty()
+	rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr(oversized)
+	rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("second_scope")
+	ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("second_resource")
+	require.Equal(t, 3, ld.LogRecordCount(), "precondition: three records")
+
+	res, err := newLogsRequest(ld).MergeSplit(context.Background(), 100, request.SizerTypeBytes, nil)
+	require.ErrorContains(t, err, "one log record size is greater than max size, dropping items: 1")
+	assert.ElementsMatch(t, []string{"second_scope", "second_resource"}, logBodies(res),
+		"records in the other scope and resource must survive")
+}
