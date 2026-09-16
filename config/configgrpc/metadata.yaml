@@ -182,5 +182,3 @@ exported_configs:
         default:
           # We typically want to create a TCP server and listen over a network.
           transport: tcp
-        go_struct:
-          anonymouse: true
