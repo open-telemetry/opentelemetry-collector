@@ -76,6 +76,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				WriteBufferSize:   345,
 				Timeout:           time.Second * 10,
 				Compression:       "gzip",
+				MaxConnsPerHost:   defaultMaxConnsPerHost,
 				ForceAttemptHTTP2: true,
 			},
 			ProfilesEndpoint: "https://custom.profiles.endpoint:8080/v1development/profiles",
