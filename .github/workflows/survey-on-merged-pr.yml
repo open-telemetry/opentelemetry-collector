@@ -9,7 +9,7 @@ permissions: {}
 
 jobs:
   survey:
-    uses: open-telemetry/shared-workflows/.github/workflows/survey-on-merged-pr.yml@03559ef555db0eae5d85c3c6347d1530243e7aa7 # v0.13.0
+    uses: open-telemetry/shared-workflows/.github/workflows/survey-on-merged-pr.yml@68c7b2f0ef9cd9c1e2b71d3018f63127be189578 # v0.14.0
     with:
       client_id: ${{ vars.OTELBOT_CLIENT_ID }}
     secrets:

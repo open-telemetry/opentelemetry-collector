@@ -232,7 +232,6 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	col.service, err = service.New(ctx, service.Settings{
 		BuildInfo:      col.set.BuildInfo,
 		ConfigSnapshot: extensioncapabilities.NewConfigSnapshot(conf, unexpandedConf),
-		CollectorConf:  conf,
 
 		ReceiversConfigs:    cfg.Receivers,
 		ReceiversFactories:  factories.Receivers,
