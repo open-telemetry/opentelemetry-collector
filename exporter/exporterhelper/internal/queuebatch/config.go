@@ -88,6 +88,9 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
+// defaultPartitionCacheSize is the partition cache size used when `cache_size` is unset.
+const defaultPartitionCacheSize = 10000
+
 // BatchConfig defines a configuration for batching requests based on a timeout and a minimum number of items.
 type BatchConfig struct {
 	// FlushTimeout sets the time after which a batch will be sent regardless of its size.
@@ -119,6 +122,12 @@ type PartitionConfig struct {
 	//
 	// Entries are case-insensitive. Duplicated entries will trigger a validation error.
 	MetadataKeys []string `mapstructure:"metadata_keys"`
+
+	// CacheSize is the maximum number of active partition batchers kept in the LRU
+	// cache when partitioning is enabled. When the limit is reached, the least
+	// recently used partition is flushed and removed. If unset, defaults to 10000.
+	// Must be positive.
+	CacheSize configoptional.Optional[int] `mapstructure:"cache_size"`
 }
 
 func (cfg *BatchConfig) Validate() error {
@@ -163,6 +172,10 @@ func (cfg *PartitionConfig) Validate() error {
 			return fmt.Errorf("duplicate entry in metadata_keys: %q (case-insensitive)", l)
 		}
 		uniq[l] = true
+	}
+
+	if size := cfg.CacheSize.Get(); size != nil && *size <= 0 {
+		return fmt.Errorf("`cache_size` must be positive, found %d", *size)
 	}
 
 	return nil

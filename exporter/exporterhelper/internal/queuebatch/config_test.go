@@ -119,6 +119,14 @@ func TestBatchConfig_Validate(t *testing.T) {
 	cfg.MinSize = 2048
 	cfg.MaxSize = 1024
 	require.EqualError(t, confmap.Validate(cfg), "`max_size` (1024) must be greater or equal to `min_size` (2048)")
+
+	cfg = newTestBatchConfig()
+	cfg.Partition.CacheSize = configoptional.Some(-1)
+	require.EqualError(t, confmap.Validate(cfg), "partition: `cache_size` must be positive, found -1")
+
+	cfg = newTestBatchConfig()
+	cfg.Partition.CacheSize = configoptional.Some(0)
+	require.EqualError(t, confmap.Validate(cfg), "partition: `cache_size` must be positive, found 0")
 }
 
 func newTestBatchConfig() BatchConfig {
