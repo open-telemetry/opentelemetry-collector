@@ -46,7 +46,13 @@ exported_configs:
     default: {}
     properties:
       security_descriptor:
-        description: Is a Security Descriptor Definition Language (SDDL) string applied to the named pipe when a listener is created. When empty, Windows applies its default named pipe DACL, which is roughly equivalent to "D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;0x12019b;;;WD)(A;;0x12019b;;;AN)" — full control for LocalSystem (SY) and Administrators (BA), and read plus limited write for Everyone (WD) and Anonymous Logon (AN). See https://learn.microsoft.com/en-us/windows/win32/ipc/named-pipe-security-and-access-rights and https://learn.microsoft.com/en-us/windows/win32/secauthz/security-descriptor-definition-language
+        description: |
+          Is a Security Descriptor Definition Language (SDDL) string applied to the named pipe when a listener is created. 
+          When empty, Windows applies its default named pipe DACL, which is roughly equivalent to 
+          "D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;0x12019b;;;WD)(A;;0x12019b;;;AN)" — full control for LocalSystem (SY) 
+          and Administrators (BA), and read plus limited write for Everyone (WD) and Anonymous Logon (AN). 
+          See https://learn.microsoft.com/en-us/windows/win32/ipc/named-pipe-security-and-access-rights 
+          and https://learn.microsoft.com/en-us/windows/win32/secauthz/security-descriptor-definition-language.
         type: string
   tcp_addr_config:
     description: Represents a TCP endpoint address.
