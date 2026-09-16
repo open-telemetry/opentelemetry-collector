@@ -1153,7 +1153,7 @@ func TestServerUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 	require.NoError(t, confmap.Validate(&serverConfig), "Server configuration should be valid")
 
 	keepaliveConfig := configoptional.Some(NewDefaultKeepaliveServerConfig())
-	keepaliveConfig.GetOrInsertDefault().IdleTimeout = time.Duration(120 * time.Second)
+	keepaliveConfig.Get().IdleTimeout = 120 * time.Second
 	// Verify basic fields
 	assert.Equal(t, "0.0.0.0:4318", serverConfig.NetAddr.Endpoint)
 	assert.Equal(t, 30*time.Second, serverConfig.ReadTimeout)
