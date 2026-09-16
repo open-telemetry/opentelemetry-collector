@@ -107,12 +107,6 @@ type BatchConfig struct {
 	// MaxSize defines the configuration for the maximum size of a batch.
 	MaxSize int64 `mapstructure:"max_size"`
 
-	// CacheSize is the maximum number of active partition batchers kept in the LRU
-	// cache when partitioning is enabled. When the limit is reached, the least
-	// recently used partition is flushed and removed. If unset, defaults to 10000.
-	// Must be positive.
-	CacheSize configoptional.Optional[int] `mapstructure:"cache_size"`
-
 	// Partition defines the partitioning of the batches configuration.
 	Partition PartitionConfig `mapstructure:"partition"`
 }
@@ -128,6 +122,12 @@ type PartitionConfig struct {
 	//
 	// Entries are case-insensitive. Duplicated entries will trigger a validation error.
 	MetadataKeys []string `mapstructure:"metadata_keys"`
+
+	// CacheSize is the maximum number of active partition batchers kept in the LRU
+	// cache when partitioning is enabled. When the limit is reached, the least
+	// recently used partition is flushed and removed. If unset, defaults to 10000.
+	// Must be positive.
+	CacheSize configoptional.Optional[int] `mapstructure:"cache_size"`
 }
 
 func (cfg *BatchConfig) Validate() error {
@@ -156,10 +156,6 @@ func (cfg *BatchConfig) Validate() error {
 		return fmt.Errorf("`max_size` (%d) must be greater or equal to `min_size` (%d)", cfg.MaxSize, cfg.MinSize)
 	}
 
-	if size := cfg.CacheSize.Get(); size != nil && *size <= 0 {
-		return fmt.Errorf("`cache_size` must be positive, found %d", *size)
-	}
-
 	return nil
 }
 
@@ -176,6 +172,10 @@ func (cfg *PartitionConfig) Validate() error {
 			return fmt.Errorf("duplicate entry in metadata_keys: %q (case-insensitive)", l)
 		}
 		uniq[l] = true
+	}
+
+	if size := cfg.CacheSize.Get(); size != nil && *size <= 0 {
+		return fmt.Errorf("`cache_size` must be positive, found %d", *size)
 	}
 
 	return nil

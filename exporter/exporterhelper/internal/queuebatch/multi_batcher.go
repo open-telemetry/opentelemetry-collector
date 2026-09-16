@@ -56,7 +56,7 @@ func newMultiBatcher(
 	}
 
 	cacheSize := defaultPartitionCacheSize
-	if size := bCfg.CacheSize.Get(); size != nil {
+	if size := bCfg.Partition.CacheSize.Get(); size != nil {
 		cacheSize = *size
 	}
 

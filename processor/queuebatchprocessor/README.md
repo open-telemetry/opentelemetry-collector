@@ -79,8 +79,8 @@ receivers:
 processors:
   queuebatch:
     batch:
-      cache_size: 10000
       partition:
+        cache_size: 10000
         # Produce one batch per distinct tenant_id value.
         metadata_keys:
         - tenant_id
@@ -98,9 +98,9 @@ metadata keys are available to the processor. An empty value and unset
 metadata are treated as distinct cases, and entries are
 case-insensitive.
 
-`batch::cache_size` (default = 10000) limits how many
-distinct partition batchers are kept in memory at once. The value must
-be positive. When the limit is reached, the least recently used
+`batch::partition::cache_size` (default = 10000) limits how many
+distinct partition batchers are kept in memory at once. If unset, the
+default is used. The value must be positive. When the limit is reached, the least recently used
 partition is flushed and removed. The current cache size and configured
 capacity are exported as `otelcol_exporter_queue_batch_partition_cache_size`
 and `otelcol_exporter_queue_batch_partition_cache_capacity`.

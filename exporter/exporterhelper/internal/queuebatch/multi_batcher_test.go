@@ -187,7 +187,7 @@ func TestMultiBatcher_CacheSizeEviction(t *testing.T) {
 		FlushTimeout: 0,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      100,
-		CacheSize:    configoptional.Some(2),
+		Partition:    PartitionConfig{CacheSize: configoptional.Some(2)},
 	}
 	sink := requesttest.NewSink()
 
@@ -232,7 +232,7 @@ func TestMultiBatcher_PartitionCacheMetrics(t *testing.T) {
 		FlushTimeout: 0,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      100,
-		CacheSize:    configoptional.Some(5),
+		Partition:    PartitionConfig{CacheSize: configoptional.Some(5)},
 	}
 	sink := requesttest.NewSink()
 
@@ -311,7 +311,7 @@ func TestMultiBatcher_NewError(t *testing.T) {
 					FlushTimeout: 0,
 					Sizer:        request.SizerTypeItems,
 					MinSize:      10,
-					CacheSize:    tt.cacheSize,
+					Partition:    PartitionConfig{CacheSize: tt.cacheSize},
 				},
 				request.NewItemsSizer(),
 				newWorkerPool(1),
