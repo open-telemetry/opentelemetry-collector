@@ -505,10 +505,8 @@ func TestRecordDataPointMerge(t *testing.T) {
 		assert.Equal(t, 1, mb.metric{{ $name.Render }}.data.{{ $metric.Data.Type }}().DataPoints().Len(),
 			"recording {{ $name }} twice with identical attributes and timestamps must merge, not create a 2nd data point")
 
+		{{- if hasDistinctSecondValue $metric.Attributes }}
 		// different attrs: must not merge
-		{{- $hasNonConditionalAttrs := false }}
-		{{- range $metric.Attributes }}{{- if not (attributeInfo .).IsConditional }}{{- $hasNonConditionalAttrs = true }}{{- end }}{{- end }}
-		{{- if $hasNonConditionalAttrs }}
 		mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
 		{{- range $metric.Attributes -}}
 		{{- if not (attributeInfo .).IsConditional -}}
