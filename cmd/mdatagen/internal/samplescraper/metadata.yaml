@@ -61,6 +61,13 @@ config:
       values:
         type: object
         properties:
+          endpoint:
+            $ref: /config/confignet.addr_config
+            x-optional: true
+            default:
+              transport: ip4
+            go_struct:
+              optional_mode: default
           interval:
             type: duration
             x-optional: true
