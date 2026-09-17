@@ -58,14 +58,6 @@ type obsReportSender[K request.Request] struct {
 	next         sender.Sender[K]
 }
 
-func newObsReportSender[K request.Request](set exporter.Settings, signal pipeline.Signal, extraAttrs []attribute.KeyValue, batchEnabled bool, next sender.Sender[K]) (sender.Sender[K], error) {
-	obsMetrics, err := newExporterObsMetrics(set, signal, extraAttrs)
-	if err != nil {
-		return nil, err
-	}
-	return newObsReportSenderWithMetrics(set, signal, obsMetrics.SendMetrics, batchEnabled, next), nil
-}
-
 func newObsReportSenderWithMetrics[K request.Request](
 	set exporter.Settings,
 	signal pipeline.Signal,

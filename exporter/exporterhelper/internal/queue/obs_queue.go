@@ -28,14 +28,6 @@ type obsQueue[T request.Request] struct {
 	tracer     trace.Tracer
 }
 
-func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T], error) {
-	obsMetrics, err := NewExporterObsMetrics(set.Telemetry, set.ID, set.Signal)
-	if err != nil {
-		return nil, err
-	}
-	return newObsQueueWithMetrics(set, obsMetrics, delegate)
-}
-
 func newObsQueueWithMetrics[T request.Request](
 	set Settings[T],
 	obsMetrics queuebatchtelemetry.QueueMetrics,

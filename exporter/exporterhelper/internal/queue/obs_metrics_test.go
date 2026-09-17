@@ -72,7 +72,7 @@ func TestObsQueueRegistrationRollback(t *testing.T) {
 
 	settings := tt.NewTelemetrySettings()
 	settings.MeterProvider = &failSecondRegistrationMeterProvider{MeterProvider: settings.MeterProvider}
-	_, err := newObsQueue[request.Request](Settings[request.Request]{
+	_, err := newTestObsQueue[request.Request](t, Settings[request.Request]{
 		Signal:    pipeline.SignalTraces,
 		ID:        exporterID,
 		Telemetry: settings,

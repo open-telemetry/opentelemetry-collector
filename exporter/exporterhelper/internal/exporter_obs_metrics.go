@@ -28,10 +28,31 @@ func newExporterObsMetrics(
 		return ObsMetrics{}, err
 	}
 
-	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	sendMetrics, sendMetricsShutdown, err := newExporterSendMetrics(set, signal, extraAttrs)
 	if err != nil {
 		queueMetrics.Shutdown()
 		return ObsMetrics{}, err
+	}
+
+	obsMetrics := ObsMetrics{
+		QueueMetrics: queueMetrics,
+		SendMetrics:  sendMetrics,
+	}
+	obsMetrics.ShutdownFunc = sync.OnceFunc(func() {
+		queueMetrics.Shutdown()
+		sendMetricsShutdown.Shutdown()
+	})
+	return obsMetrics, nil
+}
+
+func newExporterSendMetrics(
+	set exporter.Settings,
+	signal pipeline.Signal,
+	extraAttrs []attribute.KeyValue,
+) (queuebatchtelemetry.SendMetrics, queuebatchtelemetry.ShutdownFunc, error) {
+	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return queuebatchtelemetry.SendMetrics{}, nil, err
 	}
 
 	exporterAttr := attribute.String(ExporterKey, set.ID.String())
@@ -57,29 +78,22 @@ func newExporterObsMetrics(
 		itemsFailedInst = tb.ExporterSendFailedProfileSamples
 	}
 
-	obsMetrics := ObsMetrics{
-		QueueMetrics: queueMetrics,
-		SendMetrics: queuebatchtelemetry.SendMetrics{
-			BatchSendSizeFunc: func(ctx context.Context, items int64, bytesSize func() int64) {
-				tb.ExporterQueueBatchSendSize.Record(ctx, items, metricAttr)
-				if tb.ExporterQueueBatchSendSizeBytes.Enabled(ctx) {
-					tb.ExporterQueueBatchSendSizeBytes.Record(ctx, bytesSize(), metricAttr)
-				}
-			},
-			InFlightFunc: func(ctx context.Context, delta int64) {
-				tb.ExporterInFlightRequests.Add(ctx, delta, inFlightAttr)
-			},
-			SentFunc: func(ctx context.Context, items int64) {
-				itemsSentInst.Add(ctx, items, metricAttr)
-			},
-			SendFailureFunc: func(ctx context.Context, items int64, options ...metric.AddOption) {
-				itemsFailedInst.Add(ctx, items, append([]metric.AddOption{metricAttr}, options...)...)
-			},
+	sendMetrics := queuebatchtelemetry.SendMetrics{
+		BatchSendSizeFunc: func(ctx context.Context, items int64, bytesSize func() int64) {
+			tb.ExporterQueueBatchSendSize.Record(ctx, items, metricAttr)
+			if tb.ExporterQueueBatchSendSizeBytes.Enabled(ctx) {
+				tb.ExporterQueueBatchSendSizeBytes.Record(ctx, bytesSize(), metricAttr)
+			}
+		},
+		InFlightFunc: func(ctx context.Context, delta int64) {
+			tb.ExporterInFlightRequests.Add(ctx, delta, inFlightAttr)
+		},
+		SentFunc: func(ctx context.Context, items int64) {
+			itemsSentInst.Add(ctx, items, metricAttr)
+		},
+		SendFailureFunc: func(ctx context.Context, items int64, options ...metric.AddOption) {
+			itemsFailedInst.Add(ctx, items, append([]metric.AddOption{metricAttr}, options...)...)
 		},
 	}
-	obsMetrics.ShutdownFunc = sync.OnceFunc(func() {
-		queueMetrics.Shutdown()
-		tb.Shutdown()
-	})
-	return obsMetrics, nil
+	return sendMetrics, sync.OnceFunc(tb.Shutdown), nil
 }
