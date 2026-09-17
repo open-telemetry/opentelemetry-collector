@@ -14,7 +14,6 @@ require (
 	go.opentelemetry.io/collector/config/configoptional v1.67.0
 	go.opentelemetry.io/collector/confmap v1.67.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.67.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.161.0
 	go.opentelemetry.io/collector/connector v0.161.0
 	go.opentelemetry.io/collector/connector/connectortest v0.161.0
 	go.opentelemetry.io/collector/connector/xconnector v0.161.0
