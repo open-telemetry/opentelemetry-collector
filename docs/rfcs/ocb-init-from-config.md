@@ -35,16 +35,16 @@ extensions, connectors), resolved against official core and
 **Non-goals:**
 
 - *Never emit an unverified module path.* This is the central commitment of the
-	proposal. An unresolvable component is reported, not guessed.
+  proposal. An unresolvable component is reported, not guessed.
 - *`ocb` does not gain a component inventory to maintain.* No embedded table of
-	component types in this repository, and no obligation for contrib to publish
-	one.
+  component types in this repository, and no obligation for contrib to publish
+  one.
 - Resolving confmap providers and converters (already defaulted by `ocb`), or
-	`service::telemetry`.
+  `service::telemetry`.
 - Resolving third-party or vendor components. Their presence in the
-	configuration is expected and produces a warning.
+  configuration is expected and produces a warning.
 - Validating that the configuration is semantically correct. That is the
-	Collector's job (or possibly an `ocb lint/validate` command later on).
+  Collector's job (or possibly an `ocb lint/validate` command later on).
 
 ## Explanation
 
@@ -152,7 +152,7 @@ receivers:
 `go.yaml.in/yaml/v3`, already a direct dependency of `cmd/builder`.
 No environment variable expansion is performed: expanding `${env:FOO}` in map
 keys would require importing `confmap`, which `cmd/builder` deliberately avoids
-(see [cmd/builder module constraints](#cmdbuildertoolmodule-constraints)).
+(see [cmd/builder module constraints](#cmdbuilder-module-constraints)).
 
 A component ID is `type` or `type/name`; the type is the substring before the
 first `/`.
@@ -244,8 +244,8 @@ This filter has zero false rejections against the full set of 291 current
 component modules (250 contrib + 14 core + 27 deprecated-type aliases), and
 rejects 30 of the 33 non-component modules in the same directory trees.
 The 3 remaining are unreachable by construction: they are modules whose paths
-contain three or more segments below the class directory, which patterns #4 and
-#5 cannot produce (those patterns generate at most two segments below the class
+contain three or more segments below the class directory, which patterns #4
+and #5 cannot produce (those patterns generate at most two segments below the class
 directory for any underscore-delimited type string).
 
 ### Step 4: Verify candidates against the module proxy
@@ -307,12 +307,12 @@ Versions emitted:
 
 - Core hits: the existing `DefaultBetaOtelColVersion` constant (e.g. `v0.161.0`).
 - Contrib hits: the version of
-	`github.com/open-telemetry/opentelemetry-collector-contrib` resolved at
-	`DefaultBetaOtelColVersion`; this root module is real and tagged in lockstep.
-	During the brief skew window when the contrib tag lags the core tag, the
-	fallback is the `@latest`-resolved version returned by Step 4; that resolved
-	version (not `DefaultBetaOtelColVersion`) is what is written to the manifest
-	for those contrib entries.
+  `github.com/open-telemetry/opentelemetry-collector-contrib` resolved at
+  `DefaultBetaOtelColVersion`; this root module is real and tagged in lockstep.
+  During the brief skew window when the contrib tag lags the core tag, the
+  fallback is the `@latest`-resolved version returned by Step 4; that resolved
+  version (not `DefaultBetaOtelColVersion`) is what is written to the manifest
+  for those contrib entries.
 
 This ensures all contrib entries in the manifest are at the same version as
 each other and, in the common case, at the version matching the core entries.
@@ -487,26 +487,26 @@ This is not in scope at the moment, but may be handled later.
 ## Open questions
 
 - **Is adding the contrib module prefix to `ocb` acceptable?** This is the most
-	consequential commitment in this proposal. If it is not, the feature's scope
-	may need to be limited to core components only.
+  consequential commitment in this proposal. If it is not, the feature's scope
+  may need to be limited to core components only.
 
 - **Contrib version pinning strategy.** The proposal pins contrib modules to the
-	version of the `github.com/open-telemetry/opentelemetry-collector-contrib`
-	root module resolved at `DefaultBetaOtelColVersion`, falling back to the
-	`@latest`-resolved version during the brief release skew window (see Step 5).
-	Does the community agree with this approach, or prefer always using `@latest`
-	for contrib (simpler to implement, but not guaranteed to match core module
-	versions in the same manifest)?
+  version of the `github.com/open-telemetry/opentelemetry-collector-contrib`
+  root module resolved at `DefaultBetaOtelColVersion`, falling back to the
+  `@latest`-resolved version during the brief release skew window (see Step 5).
+  Does the community agree with this approach, or prefer always using `@latest`
+  for contrib (simpler to implement, but not guaranteed to match core module
+  versions in the same manifest)?
 
 - **Unresolved component handling.** Should an unresolved component be a hard
-	error (guaranteeing the manifest builds the whole config) or a warn-and-skip
-	(allowing partial manifests for configs that mix in third-party components)?
+  error (guaranteeing the manifest builds the whole config) or a warn-and-skip
+  (allowing partial manifests for configs that mix in third-party components)?
 
 - **`config.yaml` overwrite.** Should `--from-config` copy the configuration to
-	`config.yaml` (making the generated `make run` work with the given config) or
-	leave the static template (avoiding any implicit overwrite)? The proposal
-	says yes to copying; this could be a source of surprising behaviour if the
-	user later edits `config.yaml` independently.
+  `config.yaml` (making the generated `make run` work with the given config) or
+  leave the static template (avoiding any implicit overwrite)? The proposal
+  says yes to copying; this could be a source of surprising behaviour if the
+  user later edits `config.yaml` independently.
 
 ## Alternatives considered
 
@@ -546,6 +546,6 @@ This is listed as a future possibility rather than a blocker.
 ## Future possibilities
 
 - Contrib (or a shared build tool) publishes a machine-readable component
-	inventory; `ocb` uses it as the primary source, falling back to pattern
-	generation.
+  inventory; `ocb` uses it as the primary source, falling back to pattern
+  generation.
 - An `ocb lint` command that validates the generated manifest.
