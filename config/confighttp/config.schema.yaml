@@ -1,4 +1,34 @@
 $defs:
+  keepalive_client_config:
+    description: KeepaliveClientConfig describes the keepalive configuration for the HTTP client.
+    type: object
+    properties:
+      enabled:
+        description: Set to false to disable HTTP keep-alives. Default is true.
+        type: boolean
+      idle_conn_timeout:
+        description: IdleConnTimeout is the maximum amount of time an idle (keep-alive) connection will remain open before closing itself. Default is 90 seconds.
+        type: string
+        x-customType: time.Duration
+        format: duration
+      max_idle_conns:
+        description: MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open. Default is 100. Zero means no limit.
+        type: integer
+      max_idle_conns_per_host:
+        description: MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connections the host can keep open. If zero, net/http.DefaultMaxIdleConnsPerHost is used.
+        type: integer
+  keepalive_server_config:
+    description: KeepaliveServerConfig controls HTTP keep-alive settings for the server.
+    type: object
+    properties:
+      enabled:
+        description: Set to false to disable HTTP keep-alives. Default is true.
+        type: boolean
+      idle_timeout:
+        description: IdleTimeout is the maximum amount of time to wait for the next request when keep-alives are enabled. If IdleTimeout is zero, the value of ReadTimeout is used. If both are zero, there is no timeout.
+        type: string
+        x-customType: time.Duration
+        format: duration
   auth_config:
     type: object
     properties:
@@ -29,9 +59,6 @@ $defs:
         description: Cookies configures the cookie management of the HTTP client.
         x-optional: true
         $ref: cookies_config
-      disable_keep_alives:
-        description: 'DisableKeepAlives, if true, disables HTTP keep-alives and will only use the connection to the server for a single HTTP request. WARNING: enabling this option can result in significant overhead establishing a new HTTP(S) connection for every request. Before enabling this option please consider whether changes to idle connection settings can achieve your goal.'
-        type: boolean
       endpoint:
         description: 'The target URL to send data to (e.g.: http://some.url:9411/v1/traces).'
         type: string
@@ -51,19 +78,12 @@ $defs:
         type: string
         x-customType: time.Duration
         format: duration
-      idle_conn_timeout:
-        description: IdleConnTimeout is the maximum amount of time a connection will remain open before closing itself. By default, it is set to 90 seconds.
-        type: string
-        x-customType: time.Duration
-        format: duration
+      keepalive:
+        description: Keepalive settings for the HTTP client.
+        x-optional: true
+        $ref: keepalive_client_config
       max_conns_per_host:
         description: MaxConnsPerHost limits the total number of connections per host, including connections in the dialing, active, and idle states. Default is 0 (unlimited).
-        type: integer
-      max_idle_conns:
-        description: MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open. By default, it is set to 100. Zero means no limit.
-        type: integer
-      max_idle_conns_per_host:
-        description: MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connections the host can keep open. If zero, [net/http.DefaultMaxIdleConnsPerHost] is used.
         type: integer
       middlewares:
         description: Middlewares are used to add custom functionality to the HTTP client. Middleware handlers are called in the order they appear in this list, with the first middleware becoming the outermost handler.
@@ -129,17 +149,13 @@ $defs:
       endpoint:
         description: Endpoint configures the listening address for the server.
         type: string
-      idle_timeout:
-        description: IdleTimeout is the maximum amount of time to wait for the next request when keep-alives are enabled. If IdleTimeout is zero, the value of ReadTimeout is used. If both are zero, there is no timeout.
-        type: string
-        x-customType: time.Duration
-        format: duration
       include_metadata:
         description: IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers
         type: boolean
-      keep_alives_enabled:
-        description: KeepAlivesEnabled controls whether HTTP keep-alives are enabled. By default, keep-alives are always enabled. Only very resource-constrained environments should disable them.
-        type: boolean
+      keepalive:
+        description: Keepalive settings for the HTTP server.
+        x-optional: true
+        $ref: keepalive_server_config
       max_request_body_size:
         description: 'MaxRequestBodySize sets the maximum request body size in bytes. Default: 20MiB.'
         type: integer

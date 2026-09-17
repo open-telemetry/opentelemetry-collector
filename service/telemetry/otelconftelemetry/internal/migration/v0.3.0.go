@@ -146,21 +146,17 @@ func (c MetricsConfigV030) Marshal(conf *confmap.Conf) error {
 	return conf.Marshal(sm)
 }
 
-func boolPtr(v bool) *bool {
-	return &v
-}
-
 // applyPrometheusDefaults sets default values for Prometheus exporter
 // fields that were not explicitly provided in the configuration.
 func applyPrometheusDefaults(p *config.Prometheus) {
 	if p.WithoutScopeInfo == nil {
-		p.WithoutScopeInfo = boolPtr(true)
+		p.WithoutScopeInfo = new(true)
 	}
 	if p.WithoutUnits == nil {
-		p.WithoutUnits = boolPtr(true)
+		p.WithoutUnits = new(true)
 	}
 	if p.WithoutTypeSuffix == nil {
-		p.WithoutTypeSuffix = boolPtr(true)
+		p.WithoutTypeSuffix = new(true)
 	}
 }
 

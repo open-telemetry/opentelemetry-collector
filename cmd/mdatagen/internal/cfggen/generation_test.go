@@ -1277,6 +1277,31 @@ func TestWithCfgFns(t *testing.T) {
 	require.Contains(t, result, "shouldOmitEmpty")
 }
 
+func TestExtractValidators_DurationPattern(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:    StringType,
+		GoType:  "time.Duration",
+		Pattern: `^duration$`,
+	}
+
+	require.Empty(t, ExtractValidators(md))
+}
+
+func TestExtractValidators_RefDoesNotStopSiblingValidation(t *testing.T) {
+	minLength := 1
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"base": {Ref: "base_config"},
+			"name": {Type: StringType, MinLength: &minLength},
+		},
+	}
+
+	validators := ExtractValidators(md)
+	require.Len(t, validators, 1)
+	require.Equal(t, "name", validators[0].FieldName)
+}
+
 func TestResolveGoType_CustomTypeFormatError(t *testing.T) {
 	// GoType with invalid empty type name after dot triggers FormatTypeName error
 	md := &ConfigMetadata{GoType: "github.com/pkg."}
@@ -1573,7 +1598,7 @@ func TestExtractImports_ErrorsImportForValidators(t *testing.T) {
 			metadata: &ConfigMetadata{
 				Type: "object",
 				Properties: map[string]*ConfigMetadata{
-					"name": {Type: "string", MinLength: Ptr(1)},
+					"name": {Type: "string", MinLength: new(1)},
 				},
 			},
 		},
@@ -1582,7 +1607,7 @@ func TestExtractImports_ErrorsImportForValidators(t *testing.T) {
 			metadata: &ConfigMetadata{
 				Type: "object",
 				Properties: map[string]*ConfigMetadata{
-					"name": {Type: "string", MaxLength: Ptr(64)},
+					"name": {Type: "string", MaxLength: new(64)},
 				},
 			},
 		},
@@ -1601,8 +1626,15 @@ func TestExtractImports_ErrorsImportForValidators(t *testing.T) {
 			metadata: &ConfigMetadata{
 				Type: "object",
 				Properties: map[string]*ConfigMetadata{
-					"count": {Type: "integer", Maximum: Ptr(100.0)},
+					"count": {Type: "integer", Maximum: new(100.0)},
 				},
+			},
+		},
+		{
+			name: "enum triggers errors import",
+			metadata: &ConfigMetadata{
+				Type: "string",
+				Enum: []any{"a", "b"},
 			},
 		},
 	}
@@ -1646,17 +1678,17 @@ func TestValidationRules_Enabled(t *testing.T) {
 		},
 		{
 			name:     "maxLength only",
-			rules:    ValidationRules{MaxLength: Ptr(64)},
+			rules:    ValidationRules{MaxLength: new(64)},
 			expected: true,
 		},
 		{
 			name:     "minLength only",
-			rules:    ValidationRules{MinLength: Ptr(1)},
+			rules:    ValidationRules{MinLength: new(1)},
 			expected: true,
 		},
 		{
 			name:     "pattern only",
-			rules:    ValidationRules{Pattern: Ptr(`^[a-z]+$`)},
+			rules:    ValidationRules{Pattern: new(`^[a-z]+$`)},
 			expected: true,
 		},
 		{
@@ -1666,7 +1698,7 @@ func TestValidationRules_Enabled(t *testing.T) {
 		},
 		{
 			name:     "required with value rule",
-			rules:    ValidationRules{Required: true, MaxLength: Ptr(64)},
+			rules:    ValidationRules{Required: true, MaxLength: new(64)},
 			expected: true,
 		},
 	}
@@ -1845,7 +1877,7 @@ func TestExtractValidators_StringValidators(t *testing.T) {
 				{
 					FieldName: "name",
 					FieldType: "string",
-					Rules:     ValidationRules{Pattern: Ptr(`^[a-z]+$`)},
+					Rules:     ValidationRules{Pattern: new(`^[a-z]+$`)},
 				},
 			},
 		},
@@ -1861,7 +1893,7 @@ func TestExtractValidators_StringValidators(t *testing.T) {
 				{
 					FieldName: "name",
 					FieldType: "string",
-					Rules:     ValidationRules{MinLength: &minLen, MaxLength: &maxLen, Pattern: Ptr(`^[a-z]+$`)},
+					Rules:     ValidationRules{MinLength: &minLen, MaxLength: &maxLen, Pattern: new(`^[a-z]+$`)},
 				},
 			},
 		},
@@ -1878,7 +1910,7 @@ func TestExtractValidators_StringValidators(t *testing.T) {
 				{
 					FieldName: "name",
 					FieldType: "string",
-					Rules:     ValidationRules{Required: true, MinLength: &minLen, MaxLength: &maxLen, Pattern: Ptr(`^[a-z]+$`)},
+					Rules:     ValidationRules{Required: true, MinLength: &minLen, MaxLength: &maxLen, Pattern: new(`^[a-z]+$`)},
 				},
 			},
 		},
@@ -2198,22 +2230,22 @@ func TestValidationRules_HasValueRule(t *testing.T) {
 		},
 		{
 			name:     "maxLength",
-			rules:    ValidationRules{MaxLength: Ptr(64)},
+			rules:    ValidationRules{MaxLength: new(64)},
 			expected: true,
 		},
 		{
 			name:     "minLength",
-			rules:    ValidationRules{MinLength: Ptr(1)},
+			rules:    ValidationRules{MinLength: new(1)},
 			expected: true,
 		},
 		{
 			name:     "pattern",
-			rules:    ValidationRules{Pattern: Ptr(`^[a-z]+$`)},
+			rules:    ValidationRules{Pattern: new(`^[a-z]+$`)},
 			expected: true,
 		},
 		{
 			name:     "required and pattern",
-			rules:    ValidationRules{Required: true, Pattern: Ptr(`^[a-z]+$`)},
+			rules:    ValidationRules{Required: true, Pattern: new(`^[a-z]+$`)},
 			expected: true,
 		},
 		{
@@ -2223,27 +2255,27 @@ func TestValidationRules_HasValueRule(t *testing.T) {
 		},
 		{
 			name:     "minimum",
-			rules:    ValidationRules{Minimum: Ptr(0.0)},
+			rules:    ValidationRules{Minimum: new(0.0)},
 			expected: true,
 		},
 		{
 			name:     "maximum",
-			rules:    ValidationRules{Maximum: Ptr(100.0)},
+			rules:    ValidationRules{Maximum: new(100.0)},
 			expected: true,
 		},
 		{
 			name:     "exclusiveMinimum",
-			rules:    ValidationRules{ExclusiveMinimum: Ptr(5.0)},
+			rules:    ValidationRules{ExclusiveMinimum: new(5.0)},
 			expected: true,
 		},
 		{
 			name:     "exclusiveMaximum",
-			rules:    ValidationRules{ExclusiveMaximum: Ptr(10.0)},
+			rules:    ValidationRules{ExclusiveMaximum: new(10.0)},
 			expected: true,
 		},
 		{
 			name:     "all numeric validators",
-			rules:    ValidationRules{Minimum: Ptr(0.0), Maximum: Ptr(100.0), ExclusiveMinimum: Ptr(5.0), ExclusiveMaximum: Ptr(10.0)},
+			rules:    ValidationRules{Minimum: new(0.0), Maximum: new(100.0), ExclusiveMinimum: new(5.0), ExclusiveMaximum: new(10.0)},
 			expected: true,
 		},
 		{
@@ -2256,49 +2288,6 @@ func TestValidationRules_HasValueRule(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require.Equal(t, tt.expected, tt.rules.HasValueRule())
-		})
-	}
-}
-
-func TestResolveType(t *testing.T) {
-	tests := []struct {
-		name     string
-		metadata *ConfigMetadata
-		expected string
-	}{
-		{
-			name:     "reference",
-			metadata: &ConfigMetadata{Ref: "go.opentelemetry.io/collector/config/confighttp.ClientConfig"},
-			expected: "ref",
-		},
-		{
-			name:     "date time",
-			metadata: &ConfigMetadata{Type: "string", GoType: "time.Time"},
-			expected: "datetime",
-		},
-		{
-			name:     "duration",
-			metadata: &ConfigMetadata{Type: "string", GoType: "time.Duration"},
-			expected: "duration",
-		},
-		{
-			name: "map",
-			metadata: &ConfigMetadata{
-				Type:   "map",
-				Values: &ConfigMetadata{Type: "string"},
-			},
-			expected: "map",
-		},
-		{
-			name:     "plain type",
-			metadata: &ConfigMetadata{Type: "boolean"},
-			expected: "boolean",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.expected, resolveType(tt.metadata))
 		})
 	}
 }
@@ -2323,8 +2312,9 @@ func TestNewCfgFns_ExtractValidators(t *testing.T) {
 	require.True(t, result[0].Rules.Required)
 }
 
+//go:fix inline
 func Ptr[T any](v T) *T {
-	return &v
+	return new(v)
 }
 
 func TestExternalDefaultCall(t *testing.T) {
@@ -2466,7 +2456,7 @@ func TestFormatDefaultValue_OptionalObjectDefault(t *testing.T) {
 		},
 	}
 
-	require.Equal(t, "configoptional.Default(NewDefaultClient())", FormatDefaultValue(md, "client", defaultValue(map[string]any{"endpoint": "localhost"}), "", ""))
+	require.Equal(t, "configoptional.Some(NewDefaultClient())", FormatDefaultValue(md, "client", defaultValue(map[string]any{"endpoint": "localhost"}), "", ""))
 }
 
 func TestFormatDefaultValue_PointerSliceOfObjects(t *testing.T) {
@@ -2632,7 +2622,7 @@ func TestWrapDefaultValue(t *testing.T) {
 					"name": {Type: "string"},
 				},
 			},
-			expected: "configoptional.Default(defaultValue)",
+			expected: "configoptional.Some(defaultValue)",
 		},
 	}
 
@@ -3033,42 +3023,16 @@ func TestExtractValidators_EnumValidators(t *testing.T) {
 			metadata: &ConfigMetadata{
 				Type: "object",
 				Properties: map[string]*ConfigMetadata{
-					"level": {Type: "string", Enum: []any{"debug", "info", "warn"}},
+					"name": {Type: "string", Enum: []any{"foo", "bar", "baz"}},
 				},
 			},
 			expected: []Validator{
 				{
-					FieldName: "level",
+					FieldName: "name",
 					FieldType: "string",
-					Rules:     ValidationRules{Enum: []any{"debug", "info", "warn"}},
+					Rules:     ValidationRules{Enum: []any{"foo", "bar", "baz"}},
 				},
 			},
-		},
-		{
-			name: "enum on integer field",
-			metadata: &ConfigMetadata{
-				Type: "object",
-				Properties: map[string]*ConfigMetadata{
-					"port": {Type: "integer", Enum: []any{80, 443, 8080}},
-				},
-			},
-			expected: []Validator{
-				{
-					FieldName: "port",
-					FieldType: "integer",
-					Rules:     ValidationRules{Enum: []any{80, 443, 8080}},
-				},
-			},
-		},
-		{
-			name: "no enum produces no validator",
-			metadata: &ConfigMetadata{
-				Type: "object",
-				Properties: map[string]*ConfigMetadata{
-					"name": {Type: "string"},
-				},
-			},
-			expected: []Validator{},
 		},
 	}
 
@@ -3096,38 +3060,32 @@ func TestFormatEnumSlice(t *testing.T) {
 	tests := []struct {
 		name      string
 		values    []any
-		fieldType string
+		fieldType SchemaType
 		expected  string
 	}{
 		{
 			name:      "string values",
 			values:    []any{"a", "b", "c"},
-			fieldType: "string",
+			fieldType: StringType,
 			expected:  `[]string{"a", "b", "c"}`,
 		},
 		{
 			name:      "integer values",
 			values:    []any{1, 2, 3},
-			fieldType: "integer",
+			fieldType: IntType,
 			expected:  "[]int{1, 2, 3}",
 		},
 		{
 			name:      "number values",
 			values:    []any{1.5, 2.5},
-			fieldType: "number",
+			fieldType: Float64Type,
 			expected:  "[]float64{1.5, 2.5}",
 		},
 		{
 			name:      "boolean values",
 			values:    []any{true, false},
-			fieldType: "boolean",
+			fieldType: BoolType,
 			expected:  "[]bool{true, false}",
-		},
-		{
-			name:      "unknown type falls back to any",
-			values:    []any{"x"},
-			fieldType: "unknown",
-			expected:  `[]any{"x"}`,
 		},
 	}
 
@@ -3144,8 +3102,8 @@ func TestFormatEnumValues(t *testing.T) {
 }
 
 func TestInvalidTestValue(t *testing.T) {
-	require.Equal(t, `"__invalid__"`, invalidTestValue("string"))
-	require.Equal(t, "-1", invalidTestValue("integer"))
-	require.Equal(t, "-1.0", invalidTestValue("number"))
-	require.Equal(t, `"__invalid__"`, invalidTestValue("object"))
+	require.Equal(t, `"__invalid__"`, invalidTestValue(StringType))
+	require.Equal(t, "-1", invalidTestValue(IntType))
+	require.Equal(t, "-1.0", invalidTestValue(Float64Type))
+	require.Equal(t, `"__invalid__"`, invalidTestValue(ObjectType))
 }

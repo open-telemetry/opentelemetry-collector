@@ -141,7 +141,7 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 		},
 		{
 			name:     "invalid_timeout",
-			errorMsg: `'timeout' must be non-negative`,
+			errorMsg: `timeout value must be greater than or equal to 0`,
 		},
 		{
 			name:     "invalid_retry",

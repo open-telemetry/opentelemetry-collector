@@ -130,7 +130,7 @@ func TestMergeSplitMetrics(t *testing.T) {
 			for i := range res {
 				expected := tt.expected[i].(*metricsRequest)
 				actual := res[i].(*metricsRequest)
-				assert.Equal(t, expected.size(&s), actual.size(&s))
+				assert.Equal(t, expected.size(&s, request.SizerTypeItems), actual.size(&s, request.SizerTypeItems))
 			}
 		})
 	}

@@ -76,6 +76,36 @@ func AssertEqualExporterEnqueueFailedSpans(t *testing.T, tt *componenttest.Telem
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualExporterEnqueueSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_enqueue_size",
+		Description: "Number of units in the request added to the sending queue. Only available on detailed level. [Development]",
+		Unit:        "{unit}",
+		Data: metricdata.Histogram[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_exporter_enqueue_size")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualExporterEnqueueSizeBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_enqueue_size_bytes",
+		Description: "Number of bytes in the request added to the sending queue. Only available on detailed level. [Development]",
+		Unit:        "By",
+		Data: metricdata.Histogram[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_exporter_enqueue_size_bytes")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualExporterInFlightRequests(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_in_flight_requests",
@@ -92,10 +122,38 @@ func AssertEqualExporterInFlightRequests(t *testing.T, tt *componenttest.Telemet
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualExporterQueueBatchPartitionCacheCapacity(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_queue_batch_partition_cache_capacity",
+		Description: "Maximum number of active partition batchers in the LRU cache. Only recorded when batch partitioning is enabled. [Development]",
+		Unit:        "{partition}",
+		Data: metricdata.Gauge[int64]{
+			DataPoints: dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_exporter_queue_batch_partition_cache_capacity")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualExporterQueueBatchPartitionCacheSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_queue_batch_partition_cache_size",
+		Description: "Current number of active partition batchers in the LRU cache. Only recorded when batch partitioning is enabled. [Development]",
+		Unit:        "{partition}",
+		Data: metricdata.Gauge[int64]{
+			DataPoints: dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_exporter_queue_batch_partition_cache_size")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualExporterQueueBatchSendSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_queue_batch_send_size",
-		Description: "Number of units in the batch [Development]",
+		Description: "Number of units in the batch. Only recorded when batching is enabled. Only available on detailed level. [Development]",
 		Unit:        "{unit}",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -110,7 +168,7 @@ func AssertEqualExporterQueueBatchSendSize(t *testing.T, tt *componenttest.Telem
 func AssertEqualExporterQueueBatchSendSizeBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_queue_batch_send_size_bytes",
-		Description: "Number of bytes in batch that was sent. Only available on detailed level. [Development]",
+		Description: "Number of bytes in batch that was sent. Only recorded when batching is enabled. Only available on detailed level. [Development]",
 		Unit:        "By",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,

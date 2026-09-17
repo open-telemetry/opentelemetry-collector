@@ -103,7 +103,7 @@ func TestServerMiddleware(t *testing.T) {
 
 			// Create a test handler that responds with the request path
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				_, _ = w.Write([]byte("OK{" + r.URL.Path + "}"))
+				_, _ = w.Write([]byte("OK{" + r.URL.Path + "}")) // #nosec G705
 			})
 
 			// Create the server

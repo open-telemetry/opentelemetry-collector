@@ -38,6 +38,22 @@ Number of spans failed to be added to the sending queue.
 | ---- | ----------- | ---------- | --------- | --------- |
 | {span} | Sum | Int | true | Alpha |
 
+### otelcol_exporter_enqueue_size
+
+Number of units in the request added to the sending queue. Only available on detailed level.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {unit} | Histogram | Int | Development |
+
+### otelcol_exporter_enqueue_size_bytes
+
+Number of bytes in the request added to the sending queue. Only available on detailed level.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Histogram | Int | Development |
+
 ### otelcol_exporter_in_flight_requests
 
 Number of export requests currently in-flight (including retry backoff).
@@ -46,9 +62,25 @@ Number of export requests currently in-flight (including retry backoff).
 | ---- | ----------- | ---------- | --------- | --------- |
 | {request} | Sum | Int | false | Development |
 
+### otelcol_exporter_queue_batch_partition_cache_capacity
+
+Maximum number of active partition batchers in the LRU cache. Only recorded when batch partitioning is enabled.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {partition} | Gauge | Int | Development |
+
+### otelcol_exporter_queue_batch_partition_cache_size
+
+Current number of active partition batchers in the LRU cache. Only recorded when batch partitioning is enabled.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {partition} | Gauge | Int | Development |
+
 ### otelcol_exporter_queue_batch_send_size
 
-Number of units in the batch
+Number of units in the batch. Only recorded when batching is enabled. Only available on detailed level.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -56,7 +88,7 @@ Number of units in the batch
 
 ### otelcol_exporter_queue_batch_send_size_bytes
 
-Number of bytes in batch that was sent. Only available on detailed level.
+Number of bytes in batch that was sent. Only recorded when batching is enabled. Only available on detailed level.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |

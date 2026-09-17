@@ -28,12 +28,12 @@ func (normalMetricsMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error)
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		resourceMetrics := md.ResourceMetrics().At(i)
 
-		buffer.WriteString(fmt.Sprintf("ResourceMetrics #%d%s%s\n", i, writeResourceDetails(resourceMetrics.SchemaUrl()), writeAttributesString(resourceMetrics.Resource().Attributes())))
+		fmt.Fprintf(&buffer, "ResourceMetrics #%d%s%s\n", i, writeResourceDetails(resourceMetrics.SchemaUrl()), writeAttributesString(resourceMetrics.Resource().Attributes()))
 
 		for j := 0; j < resourceMetrics.ScopeMetrics().Len(); j++ {
 			scopeMetrics := resourceMetrics.ScopeMetrics().At(j)
 
-			buffer.WriteString(fmt.Sprintf("ScopeMetrics #%d%s%s\n", j, writeScopeDetails(scopeMetrics.Scope().Name(), scopeMetrics.Scope().Version(), scopeMetrics.SchemaUrl()), writeAttributesString(scopeMetrics.Scope().Attributes())))
+			fmt.Fprintf(&buffer, "ScopeMetrics #%d%s%s\n", j, writeScopeDetails(scopeMetrics.Scope().Name(), scopeMetrics.Scope().Version(), scopeMetrics.SchemaUrl()), writeAttributesString(scopeMetrics.Scope().Attributes()))
 
 			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
 				metric := scopeMetrics.Metrics().At(k)

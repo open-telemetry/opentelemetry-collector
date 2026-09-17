@@ -88,8 +88,7 @@ func (profilesReferenceCounter) Unref(req request.Request) {
 }
 
 func (req *profilesRequest) OnError(err error) Request {
-	var profileError xconsumererror.Profiles
-	if errors.As(err, &profileError) {
+	if profileError, ok := errors.AsType[xconsumererror.Profiles](err); ok {
 		// TODO: Add logic to unref the new request created here.
 		return newProfilesRequest(profileError.Data())
 	}
