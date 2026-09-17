@@ -5,6 +5,9 @@ status:
     beta: [traces, metrics, logs]
   distributions: [contrib]
 
+sending_queue:
+  support: default
+
 tests:
   skip_lifecycle: true
   skip_shutdown: true

@@ -145,6 +145,30 @@ When the disable-old gate is enabled, emission of this metric is suppressed. Whe
 **Parent Component:** {{ .Parent }}
 {{- end }}
 
+{{- if .SendingQueue }}
+
+## Sending Queue
+
+**Support:** `{{ .SendingQueue.Support }}`
+{{- if .SendingQueue.Rationale }}
+
+**Rationale:** {{ .SendingQueue.Rationale }}
+{{- end }}
+{{- if not .SendingQueue.IsOmitted }}
+
+The default configuration is based on `exporterhelper.NewDefaultQueueConfig()`.
+
+```yaml
+sending_queue:
+  enabled: {{ .SendingQueue.IsEnabled }}
+{{- if .SendingQueue.HasQueueOverrides }}
+{{ .SendingQueue.IndentedYAMLQueueOverrides }}
+{{- end }}
+```
+{{- end }}
+
+{{- end }}
+
 {{- if .Metrics }}
 
 ## Default Metrics

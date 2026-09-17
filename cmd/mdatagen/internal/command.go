@@ -174,6 +174,13 @@ func run(ymlPath string) error {
 			return err
 		}
 
+		queueConfigFile := filepath.Join(codeDir, "generated_sending_queue.go")
+		if md.Status.Class == "exporter" && md.SendingQueue != nil && !md.SendingQueue.IsOmitted() {
+			toGenerate[filepath.Join(tmplDir, "sending_queue.go.tmpl")] = queueConfigFile
+		} else if err = os.Remove(queueConfigFile); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return err
+		}
+
 		if _, err = os.Stat(filepath.Join(ymlDir, "README.md")); err == nil {
 			err = inlineReplaceWithFns(
 				filepath.Join(tmplDir, "readme.md.tmpl"),
@@ -222,7 +229,7 @@ func run(ymlPath string) error {
 		}
 	}
 
-	if len(md.Metrics) != 0 || len(md.Telemetry.Metrics) != 0 || len(md.ResourceAttributes) != 0 || len(md.Events) != 0 || len(md.FeatureGates) != 0 { // if there's metrics or internal metrics or events or feature gates, generate documentation for them
+	if len(md.Metrics) != 0 || len(md.Telemetry.Metrics) != 0 || len(md.ResourceAttributes) != 0 || len(md.Events) != 0 || len(md.FeatureGates) != 0 || md.SendingQueue != nil { // if there's component metadata to document
 		toGenerate[filepath.Join(tmplDir, "documentation.md.tmpl")] = filepath.Join(ymlDir, "documentation.md")
 	} else {
 		if _, err = os.Stat(filepath.Join(ymlDir, "documentation.md")); err == nil {

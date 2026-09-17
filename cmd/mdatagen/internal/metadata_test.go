@@ -1124,7 +1124,8 @@ func TestValidateConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			md := &Metadata{
-				Type: "test",
+				Type:         "test",
+				SendingQueue: &SendingQueue{Support: SendingQueueSupportDefault},
 				Status: &Status{
 					Class: "exporter",
 					Stability: StabilityMap{

@@ -11,6 +11,9 @@ status:
     alpha: [profiles]
   distributions: [core, contrib, k8s, otlp]
 
+sending_queue:
+  support: default
+
 tests:
   config:
     endpoint: otelcol:4317

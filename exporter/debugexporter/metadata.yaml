@@ -13,5 +13,8 @@ status:
   distributions: [core, contrib, k8s]
   warnings: [Unstable Output Format]
 
-tests:
-  skip_queue_batch_sender: true
+sending_queue:
+  support: has_overrides
+  rationale: Debug output remains synchronous unless queueing is explicitly enabled.
+  overrides:
+    enabled: false

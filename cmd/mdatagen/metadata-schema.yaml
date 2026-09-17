@@ -25,6 +25,30 @@ generated_package_name: string
 # Components can opt in gradually; defaults to false (shared ResourceAttributeConfig).
 override_value_enabled: bool
 
+# Required for exporters: Declares support and defaults for the exporterhelper queue/batch sender.
+sending_queue:
+  # Required: Whether sending_queue uses the standard default, has overrides, or is omitted.
+  support: <default|has_overrides|omitted>
+  # Required when sending_queue is omitted or an override sets enabled to false.
+  rationale: string
+  # Required with has_overrides: Values decoded as sending_queue on top of its standard defaults.
+  overrides:
+    enabled: bool
+    wait_for_result: bool
+    sizer: <requests|items|bytes>
+    queue_size: int64
+    block_on_overflow: bool
+    storage: string
+    num_consumers: int
+    batch:
+      enabled: bool
+      flush_timeout: duration
+      sizer: <items|bytes>
+      min_size: int64
+      max_size: int64
+      partition:
+        metadata_keys: [string]
+
 # Required for components (Optional for subcomponents): A high-level view of the development status and use of this component
 status:
   # Required: The class of the component (For example receiver)
@@ -343,8 +367,6 @@ tests:
   skip_lifecycle: false # false by default
   # Skip shutdown tests for this component. Not recommended for components that are not in development.
   skip_shutdown: false # false by default
-  # Skip the standard exporter queue/batch sender check.
-  skip_queue_batch_sender: false # false by default
   # Whether it's expected that the Consume[Logs|Metrics|Traces] method will return an error with the given configuration.
   expect_consumer_error: true # false by default
   goleak: # {} by default generates a package_test to enable check for leaks

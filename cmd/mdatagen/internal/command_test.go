@@ -121,6 +121,7 @@ func TestRunContents(t *testing.T) {
 		wantResourceAttributesGenerated bool
 		wantReadmeGenerated             bool
 		wantStatusGenerated             bool
+		wantSendingQueueGenerated       bool
 		wantComponentTestGenerated      bool
 		wantGoleakIgnore                bool
 		wantGoleakSkip                  bool
@@ -186,6 +187,7 @@ func TestRunContents(t *testing.T) {
 		{
 			yml:                        "status_only.yaml",
 			wantStatusGenerated:        true,
+			wantSendingQueueGenerated:  true,
 			wantReadmeGenerated:        true,
 			wantComponentTestGenerated: true,
 		},
@@ -200,6 +202,7 @@ func TestRunContents(t *testing.T) {
 		{
 			yml:                        "with_tests_exporter.yaml",
 			wantStatusGenerated:        true,
+			wantSendingQueueGenerated:  true,
 			wantReadmeGenerated:        true,
 			wantComponentTestGenerated: true,
 		},
@@ -397,7 +400,7 @@ foo
 			require.NoError(t, err)
 
 			// Documentation is generated when any of these features are present
-			wantDocumentationGenerated := tt.wantFeatureGatesGenerated || tt.wantMetricsGenerated || tt.wantTelemetryGenerated || tt.wantResourceAttributesGenerated || tt.wantEventsGenerated
+			wantDocumentationGenerated := tt.wantFeatureGatesGenerated || tt.wantMetricsGenerated || tt.wantTelemetryGenerated || tt.wantResourceAttributesGenerated || tt.wantEventsGenerated || md.SendingQueue != nil
 
 			var contents []byte
 			if tt.wantMetricsGenerated {
@@ -465,6 +468,12 @@ foo
 				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_feature_gates.go"))
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_feature_gates.go"))
+			}
+
+			if tt.wantSendingQueueGenerated {
+				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_sending_queue.go"))
+			} else {
+				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_sending_queue.go"))
 			}
 
 			if wantDocumentationGenerated {
@@ -1759,8 +1768,10 @@ func TestGenerateConfigGoStruct_GeneratesTestFile(t *testing.T) {
 
 func TestGenerateComponentTestExporterDefaultQueueBatchSender(t *testing.T) {
 	md := Metadata{
-		Type:   "test",
-		Status: &Status{Class: "exporter"},
+		Type:         "test",
+		PackageName:  "go.opentelemetry.io/collector/exporter/testexporter",
+		Status:       &Status{Class: "exporter"},
+		SendingQueue: &SendingQueue{Support: SendingQueueSupportDefault},
 	}
 
 	generated, err := executeTemplate(
@@ -1774,8 +1785,13 @@ func TestGenerateComponentTestExporterDefaultQueueBatchSender(t *testing.T) {
 	require.Contains(t, string(generated), "func TestComponentDefaultQueueBatchSender(")
 	require.Contains(t, string(generated), "configoptional.Optional[exporterhelper.QueueBatchConfig]")
 	require.Contains(t, string(generated), `Tag.Get("mapstructure")`)
+	require.Contains(t, string(generated), "internalmetadata.NewDefaultSendingQueueConfig()")
+	require.Contains(t, string(generated), "pkg.exporterhelper.queueBatchEnabled")
 
-	md.Tests.SkipQueueBatchSender = true
+	md.SendingQueue = &SendingQueue{
+		Support:   SendingQueueSupportOmitted,
+		Rationale: "This exporter has no sender.",
+	}
 	generated, err = executeTemplate(
 		"templates/component_test.go.tmpl",
 		md,
@@ -1784,8 +1800,10 @@ func TestGenerateComponentTestExporterDefaultQueueBatchSender(t *testing.T) {
 		getTemplateFuncMap(md, "go.opentelemetry.io/collector"),
 	)
 	require.NoError(t, err)
-	require.NotContains(t, string(generated), "func TestComponentDefaultQueueBatchSender(")
-	require.NotContains(t, string(generated), `"reflect"`)
+	require.Contains(t, string(generated), "func TestComponentDefaultQueueBatchSender(")
+	require.Contains(t, string(generated), "require.NotEqual(t, optionalQueueType, fieldType.Type")
+	require.Contains(t, string(generated), "require.NotEqual(t, queueType, fieldType.Type")
+	require.NotContains(t, string(generated), "internalmetadata.NewDefaultSendingQueueConfig()")
 }
 
 func TestGenerateConfigGoStruct_TestFileContainsValidateTestWhenValidatorsPresent(t *testing.T) {

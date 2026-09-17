@@ -13,5 +13,6 @@ status:
     alpha: [profiles]
   distributions: [core, contrib, k8s]
 
-tests:
-  skip_queue_batch_sender: true
+sending_queue:
+  support: omitted
+  rationale: The no-op exporter intentionally discards telemetry without an exporterhelper sender.
