@@ -86,7 +86,7 @@ func NewDefaultClientConfig() ClientConfig {
 	return ClientConfig{
 		Auth:         configoptional.None[configauth.Config](),
 		BalancerName: "round_robin",
-		Keepalive:    configoptional.Default(NewDefaultKeepaliveClientConfig()),
+		Keepalive:    configoptional.Some(NewDefaultKeepaliveClientConfig()),
 		TLS:          configtls.NewDefaultClientConfig(),
 	}
 }
@@ -149,8 +149,8 @@ type KeepaliveServerConfig struct {
 // NewDefaultKeepaliveServerConfig returns a new KeepaliveServerConfig with default values consistent with the annotations in the schema.
 func NewDefaultKeepaliveServerConfig() KeepaliveServerConfig {
 	return KeepaliveServerConfig{
-		EnforcementPolicy: configoptional.Default(NewDefaultKeepaliveEnforcementPolicy()),
-		ServerParameters:  configoptional.Default(NewDefaultKeepaliveServerParameters()),
+		EnforcementPolicy: configoptional.Some(NewDefaultKeepaliveEnforcementPolicy()),
+		ServerParameters:  configoptional.Some(NewDefaultKeepaliveServerParameters()),
 	}
 }
 
@@ -242,7 +242,7 @@ func NewDefaultServerConfig() ServerConfig {
 	return ServerConfig{
 		NetAddr:   addrConfig,
 		Auth:      configoptional.None[configauth.Config](),
-		Keepalive: configoptional.Default(NewDefaultKeepaliveServerConfig()),
+		Keepalive: configoptional.Some(NewDefaultKeepaliveServerConfig()),
 		TLS:       configoptional.None[configtls.ServerConfig](),
 	}
 }
