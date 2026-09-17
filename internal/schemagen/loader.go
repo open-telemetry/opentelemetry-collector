@@ -93,6 +93,9 @@ func (sl *schemaLoader) loadFromFile(filePath string) (*ConfigsMetadata, error) 
 	}
 	body, err := os.ReadFile(filePath) // #nosec G304
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, ErrNotFound
+		}
 		return nil, fmt.Errorf("failed to read schema from %s: %w", filePath, err)
 	}
 
