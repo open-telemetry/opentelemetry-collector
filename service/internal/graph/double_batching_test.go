@@ -4,6 +4,7 @@
 package graph
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -13,17 +14,58 @@ import (
 	"gonum.org/v1/gonum/graph"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
 
-type testExporterHelperBatcher struct {
-	component.Component
-	enabled bool
+type wrappedMetricsExporter struct {
+	consumer.Metrics
 }
 
-func (b testExporterHelperBatcher) ExporterHelperBatchingEnabled() bool {
-	return b.enabled
+func (*wrappedMetricsExporter) Start(context.Context, component.Host) error {
+	return nil
+}
+
+func (*wrappedMetricsExporter) Shutdown(context.Context) error {
+	return nil
+}
+
+func TestExporterNodeRecordsBatchingStatusThroughWrapper(t *testing.T) {
+	exporterType := component.MustNewType("wrapped")
+	exporterID := component.NewID(exporterType)
+	factory := exporter.NewFactory(
+		exporterType,
+		func() component.Config { return struct{}{} },
+		exporter.WithMetrics(
+			func(_ context.Context, set exporter.Settings, _ component.Config) (exporter.Metrics, error) {
+				exporter.ReportBatchingStatus(set, true)
+				metrics, err := consumer.NewMetrics(func(context.Context, pmetric.Metrics) error { return nil })
+				if err != nil {
+					return nil, err
+				}
+				return &wrappedMetricsExporter{Metrics: metrics}, nil
+			},
+			component.StabilityLevelAlpha,
+		),
+	)
+	node := newExporterNode(pipeline.SignalMetrics, exporterID)
+
+	err := node.buildComponent(
+		context.Background(),
+		componenttest.NewNopTelemetrySettings(),
+		component.NewDefaultBuildInfo(),
+		builders.NewExporter(
+			map[component.ID]component.Config{exporterID: factory.CreateDefaultConfig()},
+			map[component.Type]exporter.Factory{exporterType: factory},
+		),
+	)
+	require.NoError(t, err)
+	require.True(t, node.exporterHelperBatchingEnabled)
 }
 
 func TestWarnIfDoubleBatching(t *testing.T) {
@@ -43,28 +85,27 @@ func TestWarnIfDoubleBatching(t *testing.T) {
 			tracesID: {
 				exporters: map[int64]graph.Node{
 					1: &exporterNode{
-						componentID: enabledExporterID,
-						Component:   testExporterHelperBatcher{enabled: true},
+						componentID:                   enabledExporterID,
+						exporterHelperBatchingEnabled: true,
 					},
 					2: &exporterNode{
 						componentID: disabledExporterID,
-						Component:   testExporterHelperBatcher{enabled: false},
 					},
 				},
 			},
 			metricsID: {
 				exporters: map[int64]graph.Node{
 					1: &exporterNode{
-						componentID: enabledExporterID,
-						Component:   testExporterHelperBatcher{enabled: true},
+						componentID:                   enabledExporterID,
+						exporterHelperBatchingEnabled: true,
 					},
 				},
 			},
 			logsID: {
 				exporters: map[int64]graph.Node{
 					1: &exporterNode{
-						componentID: enabledExporterID,
-						Component:   testExporterHelperBatcher{enabled: true},
+						componentID:                   enabledExporterID,
+						exporterHelperBatchingEnabled: true,
 					},
 				},
 			},

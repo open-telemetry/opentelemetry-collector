@@ -30,7 +30,8 @@ type exporterNode struct {
 	componentID  component.ID
 	pipelineType pipeline.Signal
 	component.Component
-	consumer baseConsumer
+	consumer                      baseConsumer
+	exporterHelperBatchingEnabled bool
 }
 
 func newExporterNode(pipelineType pipeline.Signal, exprID component.ID) *exporterNode {
@@ -56,6 +57,9 @@ func (n *exporterNode) buildComponent(
 		TelemetrySettings: componentattribute.TelemetrySettingsWithAttributes(tel, *n.Set()),
 		BuildInfo:         info,
 	}
+	set = exporter.WithBatchingStatusReporter(set, func(enabled bool) {
+		n.exporterHelperBatchingEnabled = n.exporterHelperBatchingEnabled || enabled
+	})
 
 	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {

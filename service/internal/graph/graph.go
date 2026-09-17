@@ -99,10 +99,6 @@ func Build(ctx context.Context, set Settings) (*Graph, error) {
 	return pipelines, nil
 }
 
-type exporterHelperBatcher interface {
-	ExporterHelperBatchingEnabled() bool
-}
-
 func (g *Graph) warnIfDoubleBatching(pipelineConfigs pipelines.Config) {
 	batchProcessorType := component.MustNewType("batch")
 	for pipelineID, pipelineCfg := range pipelineConfigs {
@@ -114,12 +110,8 @@ func (g *Graph) warnIfDoubleBatching(pipelineConfigs pipelines.Config) {
 		}
 
 		for _, node := range g.pipelines[pipelineID].exporters {
-			exporterNode, ok := node.(*exporterNode)
-			if !ok {
-				continue
-			}
-			batcher, ok := exporterNode.Component.(exporterHelperBatcher)
-			if !ok || !batcher.ExporterHelperBatchingEnabled() {
+			exporterNode := node.(*exporterNode)
+			if !exporterNode.exporterHelperBatchingEnabled {
 				continue
 			}
 			g.telemetry.Logger.Warn(
