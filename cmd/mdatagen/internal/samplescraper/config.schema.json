@@ -292,6 +292,38 @@
               },
               "description": "OptionalMetricEmptyUnitMetricConfig provides config for the optional.metric.empty_unit metric."
             },
+            "optional.metric.to_be_removed": {
+              "type": "object",
+              "properties": {
+                "aggregation_strategy": {
+                  "type": "string",
+                  "default": "avg",
+                  "enum": [
+                    "sum",
+                    "avg",
+                    "min",
+                    "max"
+                  ]
+                },
+                "attributes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "string_attr"
+                    ]
+                  },
+                  "default": [
+                    "string_attr"
+                  ]
+                },
+                "enabled": {
+                  "type": "boolean",
+                  "default": false
+                }
+              },
+              "description": "OptionalMetricToBeRemovedMetricConfig provides config for the optional.metric.to_be_removed metric."
+            },
             "reaggregate.metric": {
               "type": "object",
               "properties": {
