@@ -28,10 +28,10 @@ $defs:
     type: object
     properties:
       cache_size:
-        description: CacheSize is the maximum number of active partition batchers kept in the LRU cache when partitioning is enabled. When the limit is reached, the least recently used partition is flushed and removed. Must be positive.
+        description: CacheSize is the maximum number of active partition batchers kept in the LRU cache when partitioning is enabled. When the limit is reached, the least recently used partition is flushed and removed. Default is 10000. Must be positive.
         type: integer
       idle_timeout:
-        description: IdleTimeout is the duration a partition may stay empty before it is removed. Keep it above the data arrival interval to avoid churning partitions. Must be positive.
+        description: IdleTimeout is the duration a partition may stay empty before it is removed. Keep it above the data arrival interval to avoid churning partitions. Default is 90s. Must be positive.
         type: string
         x-customType: time.Duration
         format: duration

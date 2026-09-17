@@ -132,11 +132,12 @@ type PartitionConfig struct {
 
 	// CacheSize is the maximum number of active partition batchers kept in the LRU
 	// cache when partitioning is enabled. When the limit is reached, the least
-	// recently used partition is flushed and removed. Must be positive.
+	// recently used partition is flushed and removed. Default is 10000. Must be positive.
 	CacheSize int `mapstructure:"cache_size"`
 
 	// IdleTimeout is the duration a partition may stay empty before it is removed.
-	// Keep it above the data arrival interval to avoid churning partitions. Must be positive.
+	// Keep it above the data arrival interval to avoid churning partitions. Default is 90s.
+	// Must be positive.
 	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
 }
 
