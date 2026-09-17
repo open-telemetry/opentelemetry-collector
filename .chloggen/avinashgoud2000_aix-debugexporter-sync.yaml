@@ -2,18 +2,17 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
-component: pkg/scraperhelper
+component: exporter/debug
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fix shutdown being delayed by extra scrapes when a scrape runs longer than the collection interval
+note: Support known sync error handling on AIX
 
 # One or more tracking issues or pull requests related to the change
-issues: [15736]
+issues: [15924]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 subtext: |
-  If a scrape was still running when the next tick fired, the pending tick and the shutdown
-  signal could both be ready when it finished and the controller chose between them at random.
+  Enable the debug exporter to handle known synchronous errors on AIX.
 
 # Optional: The change log or logs in which this entry should be included.
-change_logs: []
+change_logs: [user]
