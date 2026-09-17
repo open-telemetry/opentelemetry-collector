@@ -6,7 +6,6 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
@@ -50,47 +49,17 @@ func (req *metricsRequest) mergeTo(dst *metricsRequest, sz sizer.MetricsSizer, s
 }
 
 func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer, szt request.SizerType) ([]request.Request, error) {
-	var res []request.Request
-	droppedItems := 0
-	unsplittable := false
-	for req.size(sz, szt) > maxSize {
-		md, rmSize := extractMetrics(req.md, maxSize, sz)
-		if md.DataPointCount() == 0 {
-			// The next data point does not fit into maxSize even on its own, so no
-			// batch can ever hold it. Drop only that data point and keep splitting
-			// the rest, otherwise every remaining one is discarded along with it.
-			if !removeFirstDataPoint(req.md) {
-				// There is no data point left to drop, yet the request is still over
-				// maxSize, so its resource and scope overhead alone exceeds the limit.
-				// Stop instead of looping forever, and report it below rather than
-				// reporting success for a request that was never split.
-				unsplittable = true
-				break
-			}
-			droppedItems++
-			req.sizes.Update(szt, sz.MetricsSize(req.md))
-			continue
-		}
-		req.sizes.Update(szt, req.size(sz, szt)-rmSize)
-		res = append(res, newMetricsRequest(md))
-	}
-	if unsplittable {
-		// removeFirstDataPoint prunes the scopes and resources it empties even when it
-		// finds no data point to remove, so the cached size is stale by this point.
-		req.sizes.Update(szt, sz.MetricsSize(req.md))
-	}
-	// Keep the remainder, unless splitting emptied it, in which case there is
-	// nothing left to export.
-	if (droppedItems == 0 && !unsplittable) || req.md.DataPointCount() > 0 {
-		res = append(res, req)
-	}
-	switch {
-	case droppedItems > 0:
-		return res, fmt.Errorf("one datapoint size is greater than max size, dropping items: %d", droppedItems)
-	case unsplittable:
-		return res, errors.New("request size is greater than max size and has no data points left to drop")
-	}
-	return res, nil
+	return splitRequest(req, &req.sizes, req.md, maxSize, sz, szt,
+		func() int { return req.size(sz, szt) },
+		splitOps[pmetric.Metrics, sizer.MetricsSizer]{
+			itemCount:   pmetric.Metrics.DataPointCount,
+			extract:     extractMetrics,
+			removeFirst: removeFirstDataPoint,
+			size:        sizer.MetricsSizer.MetricsSize,
+			newRequest:  newMetricsRequest,
+			itemName:    "datapoint",
+			itemsName:   "data points",
+		})
 }
 
 // removeFirstDataPoint removes the first data point in iteration order, together
