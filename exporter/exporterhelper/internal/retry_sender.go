@@ -145,7 +145,7 @@ func (rs *retrySender) Send(ctx context.Context, req request.Request) error {
 			return fmt.Errorf("request is cancelled or timed out: %w", err)
 		case <-rs.stopCh:
 			// The shutdown sender marks this as a shutdown error, so the persistent queue retains it.
-			return fmt.Errorf("interrupted due to shutdown: %w", err)
+			return err
 		case <-time.After(backoffDelay):
 		}
 	}

@@ -21,6 +21,9 @@ subtext: |
   as shutdown errors, and only when a backoff wait was interrupted, so exporters that don't enable
   `retry_on_failure` always lost the requests that were in flight when the destination was
   unavailable. Requests that fail with a permanent error are still dropped.
+  Note: failures that occur after shutdown starts are now reported with `error.type=Shutdown` on
+  `otelcol_exporter_send_failed_*` metrics instead of the original error type (e.g. gRPC status
+  code). This applies to all queue types and exporters without a queue.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
