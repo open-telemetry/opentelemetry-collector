@@ -128,6 +128,11 @@ type PartitionConfig struct {
 	// recently used partition is flushed and removed. If unset, defaults to 10000.
 	// Must be positive.
 	CacheSize configoptional.Optional[int] `mapstructure:"cache_size"`
+
+	// IdleTimeout is the duration a partition may stay empty before it is removed.
+	// Keep it above the data arrival interval to avoid churning partitions. If unset,
+	// it defaults to 90s. Must be positive.
+	IdleTimeout configoptional.Optional[time.Duration] `mapstructure:"idle_timeout"`
 }
 
 func (cfg *BatchConfig) Validate() error {
@@ -162,6 +167,10 @@ func (cfg *BatchConfig) Validate() error {
 func (cfg *PartitionConfig) Validate() error {
 	if cfg == nil {
 		return nil
+	}
+
+	if v := cfg.IdleTimeout.Get(); v != nil && *v <= 0 {
+		return fmt.Errorf("`idle_timeout` must be positive, found %s", *v)
 	}
 
 	// Validate metadata_keys for duplicates (case-insensitive)

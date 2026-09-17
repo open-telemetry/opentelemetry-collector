@@ -89,6 +89,33 @@ func TestBatchConfig_Validate_MetadataKeys(t *testing.T) {
 		assert.Contains(t, err.Error(), "duplicate entry in metadata_keys")
 		assert.Contains(t, err.Error(), "key1")
 	})
+
+	t.Run("unset idle_timeout - valid", func(t *testing.T) {
+		cfg := newTestBatchConfig()
+		require.NoError(t, confmap.Validate(cfg))
+	})
+
+	t.Run("positive idle_timeout - valid", func(t *testing.T) {
+		cfg := newTestBatchConfig()
+		cfg.Partition.IdleTimeout = configoptional.Some(30 * time.Second)
+		require.NoError(t, confmap.Validate(cfg))
+	})
+
+	t.Run("zero idle_timeout - invalid", func(t *testing.T) {
+		cfg := newTestBatchConfig()
+		cfg.Partition.IdleTimeout = configoptional.Some(time.Duration(0))
+		err := confmap.Validate(cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "`idle_timeout` must be positive")
+	})
+
+	t.Run("negative idle_timeout - invalid", func(t *testing.T) {
+		cfg := newTestBatchConfig()
+		cfg.Partition.IdleTimeout = configoptional.Some(-1 * time.Second)
+		err := confmap.Validate(cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "`idle_timeout` must be positive")
+	})
 }
 
 func TestBatchConfig_Validate(t *testing.T) {
