@@ -375,7 +375,7 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 				if attr.IsConditional() {
 					continue
 				}
-				if attr.Enum == nil || len(attr.Enum) > 1 {
+				if attr.HasDistinctSecondValue() {
 					return true
 				}
 			}
