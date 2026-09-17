@@ -214,7 +214,6 @@ prepare-contrib:
 	@echo Setting contrib at $(CONTRIB_PATH) to use this core checkout
 	@$(MAKE) -j4 -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
 		$(addprefix -replace ,$(join $(ALL_MOD_PATHS:%=go.opentelemetry.io/collector%=),$(ALL_MOD_PATHS:%=$(CURDIR)%)))"
-	@$(MAKE) -j4 -C $(CONTRIB_PATH) gotidy
 
 	@$(MAKE) generate-contrib
 
@@ -233,6 +232,7 @@ check-contrib:
 generate-contrib:
 	@echo -e "\nGenerating files in contrib"
 	$(MAKE) -j4 -C $(CONTRIB_PATH) generate GROUP=all
+	@$(MAKE) -j4 -C $(CONTRIB_PATH) gotidy
 
 # Restores contrib to its original state after running check-contrib.
 .PHONY: restore-contrib
