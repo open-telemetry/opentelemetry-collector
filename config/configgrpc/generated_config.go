@@ -41,7 +41,7 @@ type ClientConfig struct {
 
 	// Keepalive the keepalive parameters for gRPC client. See grpc.WithKeepaliveParams.
 	// (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
-	Keepalive configoptional.Optional[KeepaliveClientConfig] `mapstructure:"keepalive"`
+	Keepalive configoptional.Optional[KeepaliveClientConfig] `mapstructure:"keepalive,omitempty"`
 
 	// Middlewares middlewares for the gRPC client.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
