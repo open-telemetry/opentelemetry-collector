@@ -43,15 +43,15 @@ func queueOptions(cfg *Config, next consumer.Capabilities) []exporterhelper.Opti
 }
 
 func newTracesProcessor(ctx context.Context, set processor.Settings, cfg *Config, next consumer.Traces) (processor.Traces, error) {
-	return exporterhelper.NewTraces(ctx, exporterSettings(set), cfg, next.ConsumeTraces, queueOptions(cfg, next.Capabilities())...)
+	return exporterhelper.NewTracesWithConfig(ctx, exporterSettings(set), cfg, next.ConsumeTraces, queueOptions(cfg, next.Capabilities())...)
 }
 
 func newMetricsProcessor(ctx context.Context, set processor.Settings, cfg *Config, next consumer.Metrics) (processor.Metrics, error) {
-	return exporterhelper.NewMetrics(ctx, exporterSettings(set), cfg, next.ConsumeMetrics, queueOptions(cfg, next.Capabilities())...)
+	return exporterhelper.NewMetricsWithConfig(ctx, exporterSettings(set), cfg, next.ConsumeMetrics, queueOptions(cfg, next.Capabilities())...)
 }
 
 func newLogsProcessor(ctx context.Context, set processor.Settings, cfg *Config, next consumer.Logs) (processor.Logs, error) {
-	return exporterhelper.NewLogs(ctx, exporterSettings(set), cfg, next.ConsumeLogs, queueOptions(cfg, next.Capabilities())...)
+	return exporterhelper.NewLogsWithConfig(ctx, exporterSettings(set), cfg, next.ConsumeLogs, queueOptions(cfg, next.Capabilities())...)
 }
 
 func newProfilesProcessor(ctx context.Context, set processor.Settings, cfg *Config, next xconsumer.Profiles) (xprocessor.Profiles, error) {
