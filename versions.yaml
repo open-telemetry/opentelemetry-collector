@@ -20,6 +20,7 @@ module-sets:
       - go.opentelemetry.io/collector/config/configopaque
       - go.opentelemetry.io/collector/config/configoptional
       - go.opentelemetry.io/collector/config/configcompression
+      - go.opentelemetry.io/collector/config/confighttp
       - go.opentelemetry.io/collector/config/configretry
       - go.opentelemetry.io/collector/config/configtls
       - go.opentelemetry.io/collector/config/confignet
@@ -48,7 +49,6 @@ module-sets:
       - go.opentelemetry.io/collector/component/componentstatus
       - go.opentelemetry.io/collector/component/componenttest
       - go.opentelemetry.io/collector/confmap/xconfmap
-      - go.opentelemetry.io/collector/config/confighttp
       - go.opentelemetry.io/collector/config/confighttp/xconfighttp
       - go.opentelemetry.io/collector/config/configstorage
       - go.opentelemetry.io/collector/config/configtelemetry
