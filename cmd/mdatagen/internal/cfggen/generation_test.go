@@ -2721,6 +2721,20 @@ func TestHasNonZeroDefault(t *testing.T) {
 			"base": {Type: "object", Default: defaultValue(map[string]any{})},
 		},
 	}))
+	require.False(t, hasNonZeroDefault(&ConfigMetadata{
+		Type:       "object",
+		IsOptional: true,
+		Properties: map[string]*ConfigMetadata{
+			"base": {Type: "object", Default: defaultValue(map[string]any{})},
+		},
+	}))
+	require.False(t, hasNonZeroDefault(&ConfigMetadata{
+		Type:      "object",
+		IsPointer: true,
+		Properties: map[string]*ConfigMetadata{
+			"base": {Type: "object", Default: defaultValue(map[string]any{})},
+		},
+	}))
 }
 
 func TestIsRequired(t *testing.T) {

@@ -132,6 +132,22 @@ metrics:
 | string_attr | Attribute with any string value. | Any Str | Recommended | - |
 | boolean_attr | Attribute with a boolean value. | Any Bool | Recommended | - |
 
+### optional.metric.to_be_removed
+
+[DEPRECATED] Gauge double metric disabled by default with if_enabled warning.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Deprecated since 1.0.0 |
+
+**Deprecation note**: This metric will be removed
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| string_attr | Attribute with any string value. | Any Str | Recommended | - |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
