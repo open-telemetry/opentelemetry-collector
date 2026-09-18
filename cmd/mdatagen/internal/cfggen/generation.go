@@ -737,6 +737,11 @@ func hasNonZeroDefault(md *ConfigMetadata) bool {
 			return true
 		}
 	}
+	// optional and pointer without default
+	// can take zero value (configoptional.None, nil)
+	if md.IsOptional || md.IsPointer {
+		return false
+	}
 	for _, prop := range md.Properties {
 		if hasNonZeroDefault(prop) {
 			return true
