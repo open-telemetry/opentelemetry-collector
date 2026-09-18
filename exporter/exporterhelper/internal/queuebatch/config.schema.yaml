@@ -68,10 +68,9 @@ $defs:
         type: string
         x-customType: go.opentelemetry.io/collector/exporter/exporterhelper/internal/request.SizerType
       storage:
-        description: 'StorageID if not empty, enables the persistent storage and uses the component specified as a storage extension for the persistent queue. TODO: This will be changed to Optional when available. See https://github.com/open-telemetry/opentelemetry-collector/issues/13822'
-        x-pointer: true
-        type: string
-        x-customType: go.opentelemetry.io/collector/component.ID
+        description: 'StorageID if not empty, enables the persistent storage and uses the component specified as a storage extension for the persistent queue.'
+        x-optional: true
+        $ref: go.opentelemetry.io/collector/config/configstorage.ID
       wait_for_result:
         description: WaitForResult determines if incoming requests are blocked until the request is processed or not. Currently, this option is not available when persistent queue is configured using the storage configuration.
         type: boolean
