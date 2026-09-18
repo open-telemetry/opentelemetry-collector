@@ -86,24 +86,24 @@ func (o *ObjectSchemaElement) clone() SchemaElement {
 	return &c
 }
 
-func (s *ObjectSchemaElement) AddProperty(name string, property SchemaElement) {
-	if s.Properties == nil {
-		s.Properties = make(map[string]SchemaElement)
+func (o *ObjectSchemaElement) AddProperty(name string, property SchemaElement) {
+	if o.Properties == nil {
+		o.Properties = make(map[string]SchemaElement)
 	}
-	s.Properties[name] = property
+	o.Properties[name] = property
 }
 
-func (s *ObjectSchemaElement) AddEmbedded(element SchemaElement) {
+func (o *ObjectSchemaElement) AddEmbedded(element SchemaElement) {
 	// prevent duplicates
 	if re, ok := element.(*RefSchemaElement); ok {
 		ref := re.Ref
-		for _, refEl := range s.AllOf {
+		for _, refEl := range o.AllOf {
 			if r, ok := refEl.(*RefSchemaElement); ok && r.Ref == ref {
 				return
 			}
 		}
 	}
-	s.AllOf = append(s.AllOf, element)
+	o.AllOf = append(o.AllOf, element)
 }
 
 type DefsSchemaElement map[string]SchemaElement
