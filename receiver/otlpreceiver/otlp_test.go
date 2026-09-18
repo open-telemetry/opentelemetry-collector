@@ -747,6 +747,32 @@ func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 	assertReceiverTraces(t, tt, otlpReceiverID, "grpc", int64(expectedReceivedBatches), int64(expectedIngestionBlockedRPCs))
 }
 
+func TestOTLPReceiverActiveConnectionsMetricGRPC(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+	td := testdata.GenerateTraces(1)
+
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
+
+	recv := newGRPCReceiver(t, tt.NewTelemetrySettings(), addr, sink)
+	require.NotNil(t, recv)
+	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
+
+	cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.NoError(t, err)
+
+	_, err = ptraceotlp.NewGRPCClient(cc).Export(context.Background(), ptraceotlp.NewExportRequestFromTraces(td))
+	require.NoError(t, err)
+
+	assertActiveConnections(t, tt, "grpc", 1)
+
+	require.NoError(t, cc.Close())
+	assertActiveConnections(t, tt, "grpc", 0)
+}
+
 // TestOTLPReceiverHTTPTracesIngestTest checks that the HTTP trace receiver
 // is returning the proper response (return and metrics) when the next consumer
 // in the pipeline reports error. The test changes the responses returned by the
@@ -832,6 +858,73 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 	require.Len(t, sink.AllTraces(), expectedReceivedBatches)
 
 	assertReceiverTraces(t, tt, otlpReceiverID, "http", int64(expectedReceivedBatches), int64(expectedIngestionBlockedRPCs))
+}
+
+func TestOTLPReceiverActiveConnectionsMetricHTTP(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+	td := testdata.GenerateTraces(1)
+
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
+
+	recv := newHTTPReceiver(t, tt.NewTelemetrySettings(), addr, sink)
+	require.NotNil(t, recv)
+	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
+
+	pbMarshaler := ptrace.ProtoMarshaler{}
+	pbBytes, err := pbMarshaler.MarshalTraces(td)
+	require.NoError(t, err)
+	req, err := http.NewRequest(http.MethodPost, "http://"+addr+defaultTracesURLPath, bytes.NewReader(pbBytes))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", pbContentType)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	require.NoError(t, err)
+	_, err = io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	require.NoError(t, resp.Body.Close())
+
+	assertActiveConnections(t, tt, "http", 1)
+
+	client.CloseIdleConnections()
+	assertActiveConnections(t, tt, "http", 0)
+}
+
+func assertActiveConnections(t *testing.T, tt *componenttest.Telemetry, transport string, want int64) {
+	assert.Eventually(t, func() bool {
+		got, err := tt.GetMetric("otelcol_receiver_otlp_active_connections")
+		if err != nil {
+			return false
+		}
+		sum, ok := got.Data.(metricdata.Sum[int64])
+		if !ok || len(sum.DataPoints) != 1 {
+			return false
+		}
+		return sum.DataPoints[0].Value == want
+	}, 2*time.Second, 10*time.Millisecond)
+
+	got, err := tt.GetMetric("otelcol_receiver_otlp_active_connections")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t,
+		metricdata.Metrics{
+			Name:        "otelcol_receiver_otlp_active_connections",
+			Description: "Number of currently open client connections to the OTLP receiver. [Development]",
+			Unit:        "{connection}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: false,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(attribute.String("transport", transport)),
+						Value:      want,
+					},
+				},
+			},
+		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestGRPCInvalidTLSCredentials(t *testing.T) {

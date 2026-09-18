@@ -156,6 +156,13 @@ $defs:
         description: Keepalive settings for the HTTP server.
         x-optional: true
         $ref: keepalive_server_config
+      max_connection_age:
+        description: MaxConnectionAge sets the duration a connection may exist before the server starts marking its responses with a "Connection: close" header, so that the client establishes a new connection for subsequent requests. In-flight and already-queued requests on the connection are allowed to complete normally. A zero value means connections are never aged out. Default: 0 (disabled).
+        type: string
+        x-customType: time.Duration
+        format: duration
+      max_connection_age_grace:
+        description: MaxConnectionAgeGrace sets an additional period after MaxConnectionAge after which the connection is forcibly closed, regardless of in-flight requests. This bounds the cost of clients that do not honor the "Connection: close" header set once MaxConnectionAge elapses. Has no effect if MaxConnectionAge is not set. A zero value means the connection is never forcibly closed. Default: 0 (disabled).
       max_request_body_size:
         description: 'MaxRequestBodySize sets the maximum request body size in bytes. Default: 20MiB.'
         type: integer
