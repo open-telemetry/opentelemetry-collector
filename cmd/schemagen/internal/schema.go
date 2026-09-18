@@ -15,6 +15,7 @@ type SchemaElement interface {
 	setIsPointer(value bool)
 	setDescription(description string)
 	setOptional(value bool)
+	clone() SchemaElement
 }
 
 type SchemaObject interface {
@@ -45,6 +46,11 @@ type RefSchemaElement struct {
 	Ref               string `json:"$ref" yaml:"$ref"`
 }
 
+func (r *RefSchemaElement) clone() SchemaElement {
+	c := *r
+	return &c
+}
+
 type FieldSchemaElement struct {
 	BaseSchemaElement `json:",inline" yaml:",inline"`
 	ElementType       SchemaType `json:"type,omitempty" yaml:"type,omitempty"`
@@ -52,16 +58,32 @@ type FieldSchemaElement struct {
 	Format            string     `json:"format,omitempty" yaml:"format,omitempty"`
 }
 
+func (f *FieldSchemaElement) clone() SchemaElement {
+	c := *f
+	return &c
+}
+
 type ArraySchemaElement struct {
 	FieldSchemaElement `json:",inline" yaml:",inline"`
 	Items              SchemaElement `json:"items" yaml:"items"`
 }
+
+func (a *ArraySchemaElement) clone() SchemaElement {
+	c := *a
+	return &c
+}
+
 type ObjectSchemaElement struct {
 	SchemaObject         `json:"-" yaml:"-"`
 	FieldSchemaElement   `json:",inline" yaml:",inline"`
 	Properties           map[string]SchemaElement `json:"properties,omitempty" yaml:"properties,omitempty"`
 	AdditionalProperties SchemaElement            `json:"additionalProperties,omitempty" yaml:"additionalProperties,omitempty"`
 	AllOf                []SchemaElement          `json:"allOf,omitempty" yaml:"allOf,omitempty"`
+}
+
+func (o *ObjectSchemaElement) clone() SchemaElement {
+	c := *o
+	return &c
 }
 
 func (s *ObjectSchemaElement) AddProperty(name string, property SchemaElement) {
