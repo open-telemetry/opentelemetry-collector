@@ -188,7 +188,7 @@ func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Req
 	// If we still have results to process, then we need to check if the last result has enough data to flush, or we add it to the currentBatch.
 	if len(reqList) > 0 {
 		lastReq := reqList[len(reqList)-1]
-		if qb.batchSize(&batch{req: lastReq,}) < qb.cfg.MinSize {
+		if qb.batchSize(&batch{req: lastReq}) < qb.cfg.MinSize {
 			// Do not flush the last item and add it to the current batch.
 			reqList = reqList[:len(reqList)-1]
 			qb.currentBatch = &batch{
