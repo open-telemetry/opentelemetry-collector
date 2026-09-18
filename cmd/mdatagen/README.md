@@ -58,6 +58,30 @@ Below are some more examples that can be used for reference:
 
 You can run `cd cmd/mdatagen && $(GOCMD) install .` to install the `mdatagen` tool in `GOBIN` and then run `mdatagen metadata.yaml` to generate documentation for a specific component or you can run `make generate` to generate documentation for all components.
 
+### Exporter queue/batch sender defaults
+
+Every exporter declares its queue/batch sender support in `metadata.yaml`:
+
+```yaml
+sending_queue:
+  support: has_overrides
+  overrides:
+    num_consumers: 1
+```
+
+`support` may be `default`, `has_overrides`, or `omitted`. Default and overridden
+queues are based on `exporterhelper.NewDefaultQueueConfig()`. An `enabled: false`
+override disables the queue while preserving the standard settings used if a user
+enables it. Disabled and omitted queues must include a `rationale`; omitted queues
+cannot specify overrides.
+
+`mdatagen` generates the declared default, its documentation, and a conformance test.
+The test verifies default and overridden configurations both with and without
+`pkg.exporterhelper.queueBatchEnabled`. For omitted queues, it verifies that the
+top-level exporter config has neither a `sending_queue` field nor a field of type
+`exporterhelper.QueueBatchConfig` or
+`configoptional.Optional[exporterhelper.QueueBatchConfig]`.
+
 ### Central configuration file
 
 `mdatagen` supports a repository-level configuration file named `.mdatagen.yaml`.

@@ -1,0 +1,6 @@
+change_type: enhancement
+component: cmd/mdatagen
+note: "Generate and enforce exporter queue/batch sender defaults declared in metadata.yaml. See the [batching migration RFC](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/batching-migration.md)."
+issues: [15963]
+subtext:
+change_logs: [user]

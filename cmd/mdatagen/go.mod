@@ -51,6 +51,16 @@ require (
 )
 
 require (
+	github.com/cenkalti/backoff/v7 v7.0.0 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
+	go.opentelemetry.io/collector/client v1.67.0 // indirect
+	go.opentelemetry.io/collector/config/configretry v1.67.0 // indirect
+	go.opentelemetry.io/collector/exporter v1.67.0 // indirect
+	go.opentelemetry.io/collector/extension v1.67.0 // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.161.0 // indirect
+)
+
+require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -72,6 +82,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.161.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.161.0 // indirect
+	go.opentelemetry.io/collector/exporter/exporterhelper v0.161.0
 	go.opentelemetry.io/collector/internal/componentalias v0.161.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.161.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.161.0 // indirect

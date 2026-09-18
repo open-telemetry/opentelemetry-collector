@@ -11,7 +11,6 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -48,7 +47,7 @@ func createDefaultConfig() component.Config {
 		SamplingInitial:    defaultSamplingInitial,
 		SamplingThereafter: defaultSamplingThereafter,
 		UseInternalLogger:  true,
-		QueueConfig:        configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+		QueueConfig:        metadata.NewDefaultSendingQueueConfig(),
 	}
 }
 

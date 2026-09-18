@@ -4,3 +4,8 @@ status:
   class: exporter
   stability:
     beta: [traces, logs, metrics]
+
+sending_queue:
+  support: has_overrides
+  overrides:
+    num_consumers: 1
