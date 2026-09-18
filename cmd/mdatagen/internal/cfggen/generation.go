@@ -693,9 +693,6 @@ func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue any, rootP
 		return "&" + exp
 	}
 	if md.IsOptional {
-		if md.Type == ObjectType && md.Properties != nil {
-			return fmt.Sprintf("configoptional.Default(%s)", exp)
-		}
 		return fmt.Sprintf("configoptional.Some(%s)", exp)
 	}
 	return exp
@@ -715,9 +712,6 @@ func WrapDefaultValue(md *ConfigMetadata, varName string) string {
 		return "&" + exp
 	}
 	if md.IsOptional {
-		if md.Type == ObjectType && md.Properties != nil {
-			return fmt.Sprintf("configoptional.Default(%s)", exp)
-		}
 		return fmt.Sprintf("configoptional.Some(%s)", exp)
 	}
 	return exp
@@ -742,6 +736,11 @@ func hasNonZeroDefault(md *ConfigMetadata) bool {
 		if !isMap || len(m) > 0 {
 			return true
 		}
+	}
+	// optional and pointer without default
+	// can take zero value (configoptional.None, nil)
+	if md.IsOptional || md.IsPointer {
+		return false
 	}
 	for _, prop := range md.Properties {
 		if hasNonZeroDefault(prop) {
