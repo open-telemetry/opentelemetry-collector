@@ -6,7 +6,6 @@ package internal
 import (
 	"context"
 	"errors"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -67,7 +66,6 @@ func TestPersistentQueueRetainsInFlightRequestsOnShutdown(t *testing.T) {
 			// export call, so all of them are in flight when the shutdown starts.
 			var inFlight atomic.Int64
 			unblock := make(chan struct{})
-			var unblockOnce sync.Once
 			failing := newPersistentTestExporter(t, tt.retryEnabled, func(context.Context, request.Request) error {
 				inFlight.Add(1)
 				<-unblock
@@ -85,7 +83,7 @@ func TestPersistentQueueRetainsInFlightRequestsOnShutdown(t *testing.T) {
 			// shutdown. Releasing them late is harmless because Shutdown blocks until they return.
 			go func() {
 				time.Sleep(100 * time.Millisecond)
-				unblockOnce.Do(func() { close(unblock) })
+				close(unblock)
 			}()
 			require.NoError(t, failing.Shutdown(context.Background()))
 
