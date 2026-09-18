@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !linux && !darwin && !windows
+//go:build !linux && !darwin && !aix && !windows
 
 package otlptext // import "go.opentelemetry.io/collector/exporter/debugexporter/internal/otlptext"
 
