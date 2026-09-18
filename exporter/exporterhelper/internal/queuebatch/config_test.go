@@ -89,6 +89,33 @@ func TestBatchConfig_Validate_MetadataKeys(t *testing.T) {
 		assert.Contains(t, err.Error(), "duplicate entry in metadata_keys")
 		assert.Contains(t, err.Error(), "key1")
 	})
+
+	t.Run("unset idle_timeout - valid", func(t *testing.T) {
+		cfg := newTestBatchConfig()
+		require.NoError(t, confmap.Validate(cfg))
+	})
+
+	t.Run("positive idle_timeout - valid", func(t *testing.T) {
+		cfg := newTestBatchConfig()
+		cfg.Partition.IdleTimeout = configoptional.Some(30 * time.Second)
+		require.NoError(t, confmap.Validate(cfg))
+	})
+
+	t.Run("zero idle_timeout - invalid", func(t *testing.T) {
+		cfg := newTestBatchConfig()
+		cfg.Partition.IdleTimeout = configoptional.Some(time.Duration(0))
+		err := confmap.Validate(cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "`idle_timeout` must be positive")
+	})
+
+	t.Run("negative idle_timeout - invalid", func(t *testing.T) {
+		cfg := newTestBatchConfig()
+		cfg.Partition.IdleTimeout = configoptional.Some(-1 * time.Second)
+		err := confmap.Validate(cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "`idle_timeout` must be positive")
+	})
 }
 
 func TestBatchConfig_Validate(t *testing.T) {
@@ -119,6 +146,14 @@ func TestBatchConfig_Validate(t *testing.T) {
 	cfg.MinSize = 2048
 	cfg.MaxSize = 1024
 	require.EqualError(t, confmap.Validate(cfg), "`max_size` (1024) must be greater or equal to `min_size` (2048)")
+
+	cfg = newTestBatchConfig()
+	cfg.Partition.CacheSize = configoptional.Some(-1)
+	require.EqualError(t, confmap.Validate(cfg), "partition: `cache_size` must be positive, found -1")
+
+	cfg = newTestBatchConfig()
+	cfg.Partition.CacheSize = configoptional.Some(0)
+	require.EqualError(t, confmap.Validate(cfg), "partition: `cache_size` must be positive, found 0")
 }
 
 func newTestBatchConfig() BatchConfig {
