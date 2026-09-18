@@ -15,7 +15,7 @@ import (
 )
 
 // NewFactory returns a receiver.Factory that constructs nop receivers.
-func NewFactory() xreceiver.Factory {
+func NewFactory() receiver.Factory {
 	return xreceiver.NewFactory(
 		metadata.Type,
 		func() component.Config { return &struct{}{} },

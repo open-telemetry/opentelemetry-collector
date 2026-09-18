@@ -129,8 +129,7 @@ func (e *Error) IsRetryable() bool {
 // If a http status code cannot be derived from these three sources then 500 is
 // returned.
 func ToHTTPStatus(err error) int {
-	var e *Error
-	if errors.As(err, &e) {
+	if e, ok := errors.AsType[*Error](err); ok {
 		if e.httpStatus != 0 {
 			return e.httpStatus
 		}

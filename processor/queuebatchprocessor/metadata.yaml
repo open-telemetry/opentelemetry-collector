@@ -1,3 +1,4 @@
+display_name: Queue Batch Processor
 type: queuebatch
 github_project: open-telemetry/opentelemetry-collector
 

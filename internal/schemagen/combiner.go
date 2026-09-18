@@ -5,6 +5,7 @@ package schemagen // import "go.opentelemetry.io/collector/internal/schemagen"
 
 import (
 	"fmt"
+	"reflect"
 	"regexp"
 )
 
@@ -99,6 +100,11 @@ func addCollectorComponentPattern(section *JSONSchema, componentType string, sch
 	}
 
 	patternSchema := cloneOrEmptySchema(schema)
+	if schema != nil && !reflect.DeepEqual(*schema, JSONSchema{}) {
+		patternSchema = &JSONSchema{
+			AnyOf: []*JSONSchema{patternSchema, {Type: "null"}},
+		}
+	}
 	if deprecated {
 		patternSchema.Deprecated = true
 	}

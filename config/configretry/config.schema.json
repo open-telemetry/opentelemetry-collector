@@ -19,14 +19,14 @@
         },
         "max_elapsed_time": {
           "type": "string",
-          "description": "The maximum amount of time (including retries) spent trying to send a request/batch. Once this value is reached, the data is discarded. If set to 0, the retries are never stopped.",
+          "description": "The maximum amount of time (including retries) spent trying to send a request/batch. \nOnce this value is reached, the data is discarded. If set to 0, the retries are never stopped.\n",
           "default": "5m",
           "minimum": 0,
           "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
         },
         "max_interval": {
           "type": "string",
-          "description": "The upper bound on backoff interval. Once this value is reached the delay between consecutive retries will always be `MaxInterval`.",
+          "description": "The upper bound on backoff interval. Once this value is reached the delay \nbetween consecutive retries will always be `MaxInterval`.\n",
           "default": "30s",
           "minimum": 0,
           "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
@@ -39,13 +39,13 @@
         },
         "randomization_factor": {
           "type": "number",
-          "description": "A random factor used to calculate next backoffs Randomized interval = RetryInterval * (1 ± RandomizationFactor)",
+          "description": "A random factor used to calculate next backoffs \nRandomized interval = RetryInterval * (1 ± RandomizationFactor)\n",
           "default": 0.5,
           "minimum": 0,
           "maximum": 1
         }
       },
-      "description": "Defines configuration for retrying batches in case of export failure. The current supported strategy is exponential backoff."
+      "description": "Defines configuration for retrying batches in case of export failure. \nThe current supported strategy is exponential backoff.\n"
     }
   },
   "title": "pkg/config/configretry"

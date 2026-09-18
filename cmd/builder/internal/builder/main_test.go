@@ -580,7 +580,7 @@ func TestBuildEmbeddedSchema(t *testing.T) {
 
 	exporters := properties["exporters"].(map[string]any)
 	exporterPatterns := exporters["patternProperties"].(map[string]any)
-	debugSchema := exporterPatterns["^debug(?:/.+)?$"].(map[string]any)
+	debugSchema := nullableComponentSchema(t, exporterPatterns["^debug(?:/.+)?$"])
 	require.Contains(t, debugSchema, "patternProperties")
 
 	processors := properties["processors"].(map[string]any)
@@ -591,6 +591,23 @@ func TestBuildEmbeddedSchema(t *testing.T) {
 
 	extensions := properties["extensions"].(map[string]any)
 	require.Contains(t, extensions["patternProperties"].(map[string]any), "^health_check(?:/.+)?$")
+}
+
+// nullableComponentSchema unwraps the `anyOf: [schema, {"type": "null"}]`
+// wrapper that schemagen adds around non-empty component schemas so that
+// components can be declared with a null body (e.g. `otlp:`).
+func nullableComponentSchema(t *testing.T, pattern any) map[string]any {
+	t.Helper()
+
+	wrapper, ok := pattern.(map[string]any)
+	require.True(t, ok, "component schema must be an object, got %T", pattern)
+	anyOf, ok := wrapper["anyOf"].([]any)
+	require.True(t, ok, "component schema must be wrapped in anyOf")
+	require.Len(t, anyOf, 2)
+	require.Equal(t, map[string]any{"type": "null"}, anyOf[1])
+	schema, ok := anyOf[0].(map[string]any)
+	require.True(t, ok, "wrapped component schema must be an object, got %T", anyOf[0])
+	return schema
 }
 
 func TestBuildEmbeddedSchemaWithoutAvailableSchemas(t *testing.T) {
@@ -654,7 +671,7 @@ func TestBuildEmbeddedSchemaJSONOnlyAndPermissiveFallback(t *testing.T) {
 	receivers := schema["properties"].(map[string]any)["receivers"].(map[string]any)
 	patterns := receivers["patternProperties"].(map[string]any)
 
-	otlpSchema := patterns["^otlp(?:/.+)?$"].(map[string]any)
+	otlpSchema := nullableComponentSchema(t, patterns["^otlp(?:/.+)?$"])
 	require.Equal(t, "object", otlpSchema["type"])
 	require.Contains(t, otlpSchema["properties"].(map[string]any), "endpoint")
 

@@ -107,7 +107,7 @@
       "properties": {
         "collection_interval": {
           "type": "string",
-          "description": "Sets how frequently the scraper should be called and used as the context timeout to ensure that scrapers don't exceed the interval.",
+          "description": "Sets how frequently the scraper is scheduled.",
           "default": "1m",
           "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
         },
@@ -291,6 +291,38 @@
                 }
               },
               "description": "OptionalMetricEmptyUnitMetricConfig provides config for the optional.metric.empty_unit metric."
+            },
+            "optional.metric.to_be_removed": {
+              "type": "object",
+              "properties": {
+                "aggregation_strategy": {
+                  "type": "string",
+                  "default": "avg",
+                  "enum": [
+                    "sum",
+                    "avg",
+                    "min",
+                    "max"
+                  ]
+                },
+                "attributes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "string_attr"
+                    ]
+                  },
+                  "default": [
+                    "string_attr"
+                  ]
+                },
+                "enabled": {
+                  "type": "boolean",
+                  "default": false
+                }
+              },
+              "description": "OptionalMetricToBeRemovedMetricConfig provides config for the optional.metric.to_be_removed metric."
             },
             "reaggregate.metric": {
               "type": "object",

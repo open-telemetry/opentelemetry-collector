@@ -81,12 +81,13 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 	}
 
 	var err error
-	be.firstSender, err = newObsReportSender(set, signal, be.ExtraAttrs, be.firstSender)
+	batchEnabled := be.queueCfg.HasValue() && be.queueCfg.Get().Batch.HasValue()
+	be.firstSender, err = newObsReportSender(set, signal, be.ExtraAttrs, batchEnabled, be.firstSender)
 	if err != nil {
 		return nil, err
 	}
 
-	if be.queueCfg.HasValue() && be.queueCfg.Get().Batch.HasValue() {
+	if batchEnabled {
 		// Batcher mutates the data.
 		be.ConsumerOptions = append(be.ConsumerOptions, consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 	}

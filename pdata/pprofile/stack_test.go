@@ -205,11 +205,35 @@ func TestStackSwitchDictionary(t *testing.T) {
 
 			wantErr: errors.New("invalid location index 2"),
 		},
+		{
+			name: "with a negative location index",
+			stack: func() Stack {
+				s := NewStack()
+				s.LocationIndices().Append(-1)
+				return s
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.LocationTable().AppendEmpty()
+				return d
+			}(),
+			dst: NewProfilesDictionary(),
+
+			wantStack: func() Stack {
+				s := NewStack()
+				s.LocationIndices().Append(-1)
+				return s
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+
+			wantErr: errors.New("invalid location index -1"),
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			stack := tt.stack
 			dst := tt.dst
-			err := stack.switchDictionary(tt.src, dst)
+			err := stack.switchDictionary(tt.src, dst, newMergeIndex(dst))
 
 			if tt.wantErr == nil {
 				require.NoError(t, err)
@@ -241,8 +265,9 @@ func BenchmarkStackSwitchDictionary(b *testing.B) {
 		dst := NewProfilesDictionary()
 		dst.LocationTable().AppendEmpty()
 		dst.LocationTable().AppendEmpty().SetAddress(43)
+		mi := newMergeIndex(dst)
 		b.StartTimer()
 
-		_ = s.switchDictionary(src, dst)
+		_ = s.switchDictionary(src, dst, mi)
 	}
 }

@@ -17,7 +17,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: Number of log records that were unable to be scraped.
-      unit: "{datapoint}"
+      unit: "{record}"
       sum:
         value_type: int
         monotonic: true
@@ -35,7 +35,7 @@ telemetry:
       enabled: true
       stability: alpha
       description: Number of log records successfully scraped.
-      unit: "{datapoint}"
+      unit: "{record}"
       sum:
         value_type: int
         monotonic: true

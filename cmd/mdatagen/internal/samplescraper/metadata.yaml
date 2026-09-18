@@ -44,6 +44,7 @@ config:
       description: Identifies the scraper, used for telemetry and logging.
       go_struct:
         field_name: ComponentID
+        custom_validator:
     job_name:
       description: Name of the scrape job, used to identify the source in telemetry.
       type: string
@@ -247,6 +248,20 @@ metrics:
     attributes: [string_attr, boolean_attr]
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
+
+  optional.metric.to_be_removed:
+    enabled: false
+    description: "[DEPRECATED] Gauge double metric disabled by default with if_enabled warning."
+    stability: deprecated
+    deprecated:
+      since: "1.0.0"
+      note: "This metric will be removed"
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [string_attr]
+    warnings:
+      if_enabled: This metric is deprecated and will be removed soon.
 
   reaggregate.metric:
     enabled: true

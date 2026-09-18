@@ -35,14 +35,14 @@ var (
 )
 
 type metricsRequest struct {
-	md         pmetric.Metrics
-	cachedSize int
+	md    pmetric.Metrics
+	sizes request.SizeCache
 }
 
 func newMetricsRequest(md pmetric.Metrics) request.Request {
 	return &metricsRequest{
-		md:         md,
-		cachedSize: -1,
+		md:    md,
+		sizes: request.NewSizeCache(),
 	}
 }
 
@@ -76,8 +76,7 @@ func (metricsReferenceCounter) Unref(req request.Request) {
 }
 
 func (req *metricsRequest) OnError(err error) request.Request {
-	var metricsError consumererror.Metrics
-	if errors.As(err, &metricsError) {
+	if metricsError, ok := errors.AsType[consumererror.Metrics](err); ok {
 		// TODO: Add logic to unref the new request created here.
 		return newMetricsRequest(metricsError.Data())
 	}
@@ -85,22 +84,15 @@ func (req *metricsRequest) OnError(err error) request.Request {
 }
 
 func (req *metricsRequest) ItemsCount() int {
-	return req.md.DataPointCount()
+	return req.sizes.SizeOf(request.SizerTypeItems, func() int { return req.md.DataPointCount() })
 }
 
-func (req *metricsRequest) size(sizer sizer.MetricsSizer) int {
-	if req.cachedSize == -1 {
-		req.cachedSize = sizer.MetricsSize(req.md)
-	}
-	return req.cachedSize
-}
-
-func (req *metricsRequest) setCachedSize(count int) {
-	req.cachedSize = count
+func (req *metricsRequest) size(sz sizer.MetricsSizer, szt request.SizerType) int {
+	return req.sizes.SizeOf(szt, func() int { return sz.MetricsSize(req.md) })
 }
 
 func (req *metricsRequest) BytesSize() int {
-	return metricsMarshaler.MetricsSize(req.md)
+	return req.sizes.SizeOf(request.SizerTypeBytes, func() int { return metricsMarshaler.MetricsSize(req.md) })
 }
 
 // RequestFromMetrics returns a RequestFromMetricsFunc that converts pdata.Metrics into a Request.

@@ -95,8 +95,7 @@ func TestScrapeErrorsCombine(t *testing.T) {
 		}
 		require.EqualError(t, scrapeErrs.Combine(), tt.expectedErr)
 		if tt.expectedScrape {
-			var partialScrapeErr PartialScrapeError
-			if !errors.As(scrapeErrs.Combine(), &partialScrapeErr) {
+			if partialScrapeErr, ok := errors.AsType[PartialScrapeError](scrapeErrs.Combine()); !ok {
 				t.Errorf("%+v.Combine() = %q. Want: PartialScrapeError", scrapeErrs, scrapeErrs.Combine())
 			} else if tt.expectedFailedCount != partialScrapeErr.Failed {
 				t.Errorf("%+v.Combine().Failed. Got %d Failed count. Want: %d", scrapeErrs, partialScrapeErr.Failed, tt.expectedFailedCount)
