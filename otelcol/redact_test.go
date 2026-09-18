@@ -185,6 +185,45 @@ func TestRedactWithPreExpansion(t *testing.T) {
 			},
 		},
 		{
+			name: "ignore malformed transformed map list entries",
+			pre: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"headers": map[string]any{ // #nosec G101
+							"non-map":       "unchanged",
+							"123":           "unchanged",
+							"missing-value": "unchanged",
+							"valid":         "secret",
+						},
+					},
+				},
+			},
+			redacted: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"headers": []any{
+							"non-map",
+							map[string]any{"name": 123, "value": redactedMask},
+							map[string]any{"name": "missing-value"},
+							map[string]any{"name": "valid", "value": redactedMask},
+						},
+					},
+				},
+			},
+			want: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"headers": map[string]any{ // #nosec G101
+							"non-map":       "unchanged",
+							"123":           "unchanged",
+							"missing-value": "unchanged",
+							"valid":         redactedMask,
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "non-opaque strings untouched",
 			pre: map[string]any{
 				"exporters": map[string]any{
