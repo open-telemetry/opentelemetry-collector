@@ -70,7 +70,21 @@ type Graph struct {
 	// Keep track of status source per node
 	instanceIDs map[int64]*componentstatus.InstanceID
 
+	// Keep track of nodes whose Start has been attempted (whether or not it
+	// succeeded). Components are not required to tolerate a Shutdown call
+	// when Start was never even attempted on them, so ShutdownAll and
+	// partial-reload teardown must only call Shutdown on nodes recorded here.
+	startedNodes map[int64]struct{}
+
 	telemetry component.TelemetrySettings
+}
+
+// markStarted records that Start was attempted on nodeID.
+func (g *Graph) markStarted(nodeID int64) {
+	if g.startedNodes == nil {
+		g.startedNodes = make(map[int64]struct{})
+	}
+	g.startedNodes[nodeID] = struct{}{}
 }
 
 // Build builds a full pipeline graph.
@@ -80,6 +94,7 @@ func Build(ctx context.Context, set Settings) (*Graph, error) {
 		componentGraph: simple.NewDirectedGraph(),
 		pipelines:      make(map[pipeline.ID]*pipelineNodes, len(set.PipelineConfigs)),
 		instanceIDs:    make(map[int64]*componentstatus.InstanceID),
+		startedNodes:   make(map[int64]struct{}),
 		telemetry:      set.Telemetry,
 	}
 	for pipelineID := range set.PipelineConfigs {
@@ -444,7 +459,13 @@ func (g *Graph) StartAll(ctx context.Context, host *Host) error {
 			componentstatus.NewEvent(componentstatus.StatusStarting),
 		)
 
-		if compErr := comp.Start(ctx, &HostWrapper{Host: host, InstanceID: instanceID}); compErr != nil {
+		compErr := comp.Start(ctx, &HostWrapper{Host: host, InstanceID: instanceID})
+		// Record that Start was attempted on this node, regardless of outcome,
+		// so ShutdownAll gives it a chance to release anything it may have
+		// acquired. Nodes further down this loop, whose Start is never
+		// attempted because of this failure, are intentionally left unmarked.
+		g.markStarted(node.ID())
+		if compErr != nil {
 			host.Reporter.ReportStatus(
 				instanceID,
 				componentstatus.NewPermanentErrorEvent(compErr),
@@ -483,6 +504,14 @@ func (g *Graph) ShutdownAll(ctx context.Context, reporter status.Reporter) error
 			// Skip capabilities/fanout nodes
 			continue
 		}
+
+		if _, started := g.startedNodes[node.ID()]; !started {
+			// Start was never called on this node, or it failed, so there is
+			// no guarantee Shutdown can be safely called without panicking or
+			// operating on unset state. Skip it.
+			continue
+		}
+		delete(g.startedNodes, node.ID())
 
 		instanceID := g.instanceIDs[node.ID()]
 		reporter.ReportStatus(
@@ -690,7 +719,9 @@ func (g *Graph) UpdateReceivers(ctx context.Context, set Settings,
 			componentstatus.NewEvent(componentstatus.StatusStarting),
 		)
 
-		if compErr := rn.Start(ctx, &HostWrapper{Host: host, InstanceID: instanceID}); compErr != nil {
+		compErr := rn.Start(ctx, &HostWrapper{Host: host, InstanceID: instanceID})
+		g.markStarted(nodeID)
+		if compErr != nil {
 			host.Reporter.ReportStatus(
 				instanceID,
 				componentstatus.NewPermanentErrorEvent(compErr),
@@ -711,6 +742,7 @@ func (g *Graph) UpdateReceivers(ctx context.Context, set Settings,
 }
 
 func (g *Graph) shutdownReceiverNode(ctx context.Context, nodeID int64, rn *receiverNode, host *Host) error {
+	delete(g.startedNodes, nodeID)
 	instanceID := g.instanceIDs[nodeID]
 	host.Reporter.ReportStatus(
 		instanceID,
