@@ -4,9 +4,11 @@
 package configtls // import "go.opentelemetry.io/collector/config/configtls"
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"maps"
@@ -15,6 +17,8 @@ import (
 	"slices"
 	"sync"
 	"time"
+
+	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 // We should avoid that users unknowingly use a vulnerable TLS version.
@@ -25,6 +29,141 @@ const defaultMinTLSVersion = tls.VersionTLS12
 const defaultMaxTLSVersion = 0
 
 var systemCertPool = x509.SystemCertPool
+
+// Config exposes the common client and server TLS configurations.
+// Note: Since there isn't anything specific to a server connection. Components
+// with server connections should use Config.
+type Config struct {
+	// Path to the CA cert. For a client this verifies the server certificate.
+	// For a server this verifies client certificates. If empty uses system root CA.
+	// (optional)
+	CAFile string `mapstructure:"ca_file,omitempty"`
+
+	// In memory PEM encoded cert. (optional)
+	CAPem configopaque.String `mapstructure:"ca_pem,omitempty"`
+
+	// If true, load system CA certificates pool in addition to the certificates
+	// configured in this struct.
+	IncludeSystemCACertsPool bool `mapstructure:"include_system_ca_certs_pool,omitempty"`
+
+	// Path to the TLS cert to use for TLS required connections. (optional)
+	CertFile string `mapstructure:"cert_file,omitempty"`
+
+	// In memory PEM encoded TLS cert to use for TLS required connections. (optional)
+	CertPem configopaque.String `mapstructure:"cert_pem,omitempty"`
+
+	// Path to the TLS key to use for TLS required connections. (optional)
+	KeyFile string `mapstructure:"key_file,omitempty"`
+
+	// In memory PEM encoded TLS key to use for TLS required connections. (optional)
+	KeyPem configopaque.String `mapstructure:"key_pem,omitempty"`
+
+	// MinVersion sets the minimum TLS version that is acceptable.
+	// If not set, TLS 1.2 will be used. (optional)
+	MinVersion string `mapstructure:"min_version,omitempty"`
+
+	// MaxVersion sets the maximum TLS version that is acceptable.
+	// If not set, refer to crypto/tls for defaults. (optional)
+	MaxVersion string `mapstructure:"max_version,omitempty"`
+
+	// CipherSuites is a list of TLS cipher suites that the TLS transport can use.
+	// If left blank, a safe default list is used.
+	// See https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites.
+	CipherSuites []string `mapstructure:"cipher_suites,omitempty"`
+
+	// IncludeInsecureCipherSuites enables support for insecure cipher suites.
+	// When set to true, cipher suites returned by tls.InsecureCipherSuites() will be
+	// available for selection in addition to the secure ones. This should only be
+	// used when working with legacy systems that require insecure cipher suites.
+	// (optional, default false)
+	IncludeInsecureCipherSuites bool `mapstructure:"include_insecure_cipher_suites,omitempty"`
+
+	// ReloadInterval specifies the duration after which the certificate will be reloaded
+	// If not set, it will never be reloaded (optional)
+	ReloadInterval time.Duration `mapstructure:"reload_interval,omitempty"`
+
+	// contains the elliptic curves that will be used in
+	// an ECDHE handshake, in preference order
+	// Defaults to empty list and "crypto/tls" defaults are used, internally.
+	CurvePreferences []string `mapstructure:"curve_preferences,omitempty"`
+
+	// Trusted platform module configuration
+	TPMConfig TPMConfig `mapstructure:"tpm,omitempty"`
+
+	// Path to the CRL (Certificate Revocation List) file in PEM format.
+	// When set, peer certificates will be checked against this CRL during
+	// the TLS handshake. If a peer certificate is found to be revoked,
+	// the handshake will be aborted. (optional)
+	CRLFile string `mapstructure:"crl_file,omitempty"`
+
+	// CRLReloadInterval specifies the duration after which the CRL file will be reloaded.
+	// If not set, the CRL is loaded once at startup and never refreshed. (optional)
+	CRLReloadInterval time.Duration `mapstructure:"crl_reload_interval,omitempty"`
+}
+
+// NewDefaultConfig creates a new Config with any default values set.
+func NewDefaultConfig() Config {
+	return Config{}
+}
+
+// ClientConfig contains TLS configurations that are specific to client
+// connections in addition to the common configurations. This should be used by
+// components configuring TLS client connections.
+type ClientConfig struct {
+	// squash ensures fields are correctly decoded in embedded struct.
+	Config `mapstructure:",squash"`
+
+	// These are config options specific to client connections.
+
+	// In gRPC and HTTP when set to true, this is used to disable the client transport security.
+	// See https://godoc.org/google.golang.org/grpc#WithInsecure for gRPC.
+	// Please refer to https://godoc.org/crypto/tls#Config for more information.
+	// (optional, default false)
+	Insecure bool `mapstructure:"insecure,omitempty"`
+	// InsecureSkipVerify will enable TLS but not verify the certificate.
+	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify,omitempty"`
+	// ServerName requested by client for virtual hosting.
+	// This sets the ServerName in the TLSConfig. Please refer to
+	// https://godoc.org/crypto/tls#Config for more information. (optional)
+	ServerName string `mapstructure:"server_name_override,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+// NewDefaultClientConfig creates a new ClientConfig with any default values set.
+func NewDefaultClientConfig() ClientConfig {
+	return ClientConfig{
+		Config: NewDefaultConfig(),
+	}
+}
+
+// ServerConfig contains TLS configurations that are specific to server
+// connections in addition to the common configurations. This should be used by
+// components configuring TLS server connections.
+type ServerConfig struct {
+	// squash ensures fields are correctly decoded in embedded struct.
+	Config `mapstructure:",squash"`
+
+	// These are config options specific to server connections.
+
+	// Path to the TLS cert to use by the server to verify a client certificate. (optional)
+	// This sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. Please refer to
+	// https://godoc.org/crypto/tls#Config for more information. (optional)
+	ClientCAFile string `mapstructure:"client_ca_file,omitempty"`
+
+	// Reload the ClientCAs file when it is modified
+	// (optional, default false)
+	ReloadClientCAFile bool `mapstructure:"client_ca_file_reload,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+// NewDefaultServerConfig creates a new ServerConfig with any default values set.
+func NewDefaultServerConfig() ServerConfig {
+	return ServerConfig{
+		Config: NewDefaultConfig(),
+	}
+}
 
 // certReloader is a wrapper object for certificate reloading
 // Its GetCertificate method will either return the current certificate or reload from disk
@@ -105,6 +244,11 @@ func (c Config) Validate() error {
 		return errors.New("invalid TLS configuration: min_version cannot be greater than max_version")
 	}
 
+	// A reload interval only makes sense when a CRL file is configured.
+	if c.CRLReloadInterval != 0 && !c.hasCRL() {
+		return errors.New("crl_reload_interval is set but crl_file is empty")
+	}
+
 	return nil
 }
 
@@ -168,14 +312,30 @@ func (c Config) loadTLSConfig() (*tls.Config, error) {
 		curvePreferences = allowedCurves
 	}
 
+	var verifyPeerCertificate func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error
+	if c.hasCRL() {
+		reloader, crlErr := newCRLReloader(c)
+		if crlErr != nil {
+			return nil, crlErr
+		}
+		verifyPeerCertificate = func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+			crl, err := reloader.getCRL()
+			if err != nil {
+				return err
+			}
+			return verifyCRL(crl, rawCerts, verifiedChains)
+		}
+	}
+
 	return &tls.Config{
-		RootCAs:              certPool,
-		GetCertificate:       getCertificate,
-		GetClientCertificate: getClientCertificate,
-		MinVersion:           minTLS,
-		MaxVersion:           maxTLS,
-		CipherSuites:         cipherSuites,
-		CurvePreferences:     curvePreferences,
+		RootCAs:               certPool,
+		GetCertificate:        getCertificate,
+		GetClientCertificate:  getClientCertificate,
+		MinVersion:            minTLS,
+		MaxVersion:            maxTLS,
+		CipherSuites:          cipherSuites,
+		CurvePreferences:      curvePreferences,
+		VerifyPeerCertificate: verifyPeerCertificate,
 	}, nil
 }
 
@@ -354,6 +514,10 @@ func (c ServerConfig) LoadTLSConfig(_ context.Context) (*tls.Config, error) {
 			return nil, err
 		}
 		if c.ReloadClientCAFile {
+			err = reloader.startWatching()
+			if err != nil {
+				return nil, err
+			}
 			tlsCfg.GetConfigForClient = func(*tls.ClientHelloInfo) (*tls.Config, error) { return reloader.getClientConfig(tlsCfg) }
 		}
 		tlsCfg.ClientCAs = reloader.certPool
@@ -369,6 +533,7 @@ func (c ServerConfig) loadClientCAFile() (*x509.CertPool, error) {
 func (c Config) hasCA() bool   { return c.hasCAFile() || c.hasCAPem() }
 func (c Config) hasCert() bool { return c.hasCertFile() || c.hasCertPem() }
 func (c Config) hasKey() bool  { return c.hasKeyFile() || c.hasKeyPem() }
+func (c Config) hasCRL() bool  { return c.hasCRLFile() }
 
 func (c Config) hasCAFile() bool { return c.CAFile != "" }
 func (c Config) hasCAPem() bool  { return len(c.CAPem) != 0 }
@@ -378,6 +543,148 @@ func (c Config) hasCertPem() bool  { return len(c.CertPem) != 0 }
 
 func (c Config) hasKeyFile() bool { return c.KeyFile != "" }
 func (c Config) hasKeyPem() bool  { return len(c.KeyPem) != 0 }
+
+func (c Config) hasCRLFile() bool { return c.CRLFile != "" }
+
+// crlReloader periodically reloads the CRL file from disk.
+type crlReloader struct {
+	crlFile    string
+	crl        *x509.RevocationList
+	nextReload time.Time
+	interval   time.Duration
+	lock       sync.RWMutex
+}
+
+func newCRLReloader(c Config) (*crlReloader, error) {
+	crl, err := loadCRLFile(c.CRLFile)
+	if err != nil {
+		return nil, err
+	}
+	return &crlReloader{
+		crlFile:    c.CRLFile,
+		crl:        crl,
+		nextReload: time.Now().Add(c.CRLReloadInterval),
+		interval:   c.CRLReloadInterval,
+	}, nil
+}
+
+func (r *crlReloader) getCRL() (*x509.RevocationList, error) {
+	now := time.Now()
+	r.lock.RLock()
+	if r.interval != 0 && r.nextReload.Before(now) {
+		r.lock.RUnlock()
+		r.lock.Lock()
+		defer r.lock.Unlock()
+		crl, err := loadCRLFile(r.crlFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to reload CRL file: %w", err)
+		}
+		r.crl = crl
+		r.nextReload = now.Add(r.interval)
+		return r.crl, nil
+	}
+	defer r.lock.RUnlock()
+	return r.crl, nil
+}
+
+// loadCRLFile reads and parses a CRL file from disk.
+func loadCRLFile(path string) (*x509.RevocationList, error) {
+	crlPem, err := os.ReadFile(filepath.Clean(path))
+	if err != nil {
+		return nil, fmt.Errorf("failed to load CRL file: %w", err)
+	}
+	return parseCRL(crlPem)
+}
+
+// parseCRL parses PEM-encoded CRL data into an x509.RevocationList.
+func parseCRL(crlPem []byte) (*x509.RevocationList, error) {
+	block, _ := pem.Decode(crlPem)
+	if block == nil {
+		return nil, errors.New("failed to decode CRL PEM block")
+	}
+	if block.Type != "X509 CRL" {
+		return nil, fmt.Errorf("unexpected PEM block type for CRL: %q, expected \"X509 CRL\"", block.Type)
+	}
+	crl, err := x509.ParseRevocationList(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse CRL: %w", err)
+	}
+	return crl, nil
+}
+
+// verifyCRL checks whether any of the peer certificates have been revoked
+// according to the provided CRL. If a revoked certificate is found, an error
+// is returned which will cause the TLS handshake to be aborted.
+//
+// When verified chains are available (i.e. the peer certificate was validated
+// against the configured CAs), the CRL is only applied to certificates issued
+// by the CRL's issuer, and the CRL signature is validated against the issuing
+// CA before it is trusted. When verified chains are not available (for example
+// when InsecureSkipVerify is set) the check falls back to matching serial
+// numbers only, since the issuing CA cannot be established.
+func verifyCRL(crl *x509.RevocationList, rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+	if crl == nil {
+		return nil
+	}
+
+	if len(verifiedChains) > 0 {
+		for _, chain := range verifiedChains {
+			if err := checkChainAgainstCRL(chain, crl); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	// No verified chain is available (e.g. InsecureSkipVerify). We cannot
+	// validate the CRL signature or issuer, so fall back to a serial match.
+	for _, rawCert := range rawCerts {
+		cert, err := x509.ParseCertificate(rawCert)
+		if err != nil {
+			return fmt.Errorf("failed to parse peer certificate for CRL check: %w", err)
+		}
+		if isRevoked(cert, crl) {
+			return fmt.Errorf("certificate with serial number %s has been revoked", cert.SerialNumber.String())
+		}
+	}
+	return nil
+}
+
+// checkChainAgainstCRL applies the CRL to every certificate in the chain that
+// was issued by the CRL's issuer, validating the CRL signature against the
+// issuing CA found in the chain before honoring any revocation entries.
+func checkChainAgainstCRL(chain []*x509.Certificate, crl *x509.RevocationList) error {
+	for i, cert := range chain {
+		// The CRL only covers certificates issued by its issuer. Skip any
+		// certificate (including intermediates/roots) issued by someone else.
+		if !bytes.Equal(cert.RawIssuer, crl.RawIssuer) {
+			continue
+		}
+		// The issuer certificate is the next one up in the chain; for a
+		// self-signed certificate it is the certificate itself.
+		issuer := cert
+		if i+1 < len(chain) {
+			issuer = chain[i+1]
+		}
+		if err := crl.CheckSignatureFrom(issuer); err != nil {
+			return fmt.Errorf("failed to verify CRL signature against issuer %q: %w", issuer.Subject, err)
+		}
+		if isRevoked(cert, crl) {
+			return fmt.Errorf("certificate with serial number %s has been revoked", cert.SerialNumber.String())
+		}
+	}
+	return nil
+}
+
+// isRevoked reports whether cert appears in the CRL's revoked entries.
+func isRevoked(cert *x509.Certificate, crl *x509.RevocationList) bool {
+	for _, revoked := range crl.RevokedCertificateEntries {
+		if cert.SerialNumber.Cmp(revoked.SerialNumber) == 0 {
+			return true
+		}
+	}
+	return false
+}
 
 func convertVersion(v string, defaultVersion uint16) (uint16, error) {
 	// Use a default that is explicitly defined
