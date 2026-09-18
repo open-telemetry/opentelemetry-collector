@@ -221,6 +221,11 @@ func (orig *Sum) MarshalProto(buf []byte) int {
 }
 
 func (orig *Sum) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, 0)
+}
+
+func (orig *Sum) unmarshalProto(buf []byte, depth int) error {
+	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType

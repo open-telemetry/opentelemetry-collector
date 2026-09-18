@@ -255,6 +255,11 @@ func (orig *ResourceSpans) MarshalProto(buf []byte) int {
 }
 
 func (orig *ResourceSpans) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, 0)
+}
+
+func (orig *ResourceSpans) unmarshalProto(buf []byte, depth int) error {
+	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType

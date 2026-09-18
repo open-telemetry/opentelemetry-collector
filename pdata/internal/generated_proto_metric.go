@@ -581,6 +581,11 @@ func (orig *Metric) MarshalProto(buf []byte) int {
 }
 
 func (orig *Metric) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, 0)
+}
+
+func (orig *Metric) unmarshalProto(buf []byte, depth int) error {
+	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -757,7 +762,7 @@ func (orig *Metric) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 			orig.Metadata = append(orig.Metadata, KeyValue{})
-			err = orig.Metadata[len(orig.Metadata)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.Metadata[len(orig.Metadata)-1].unmarshalProto(buf[startPos:pos], depth)
 			if err != nil {
 				return err
 			}

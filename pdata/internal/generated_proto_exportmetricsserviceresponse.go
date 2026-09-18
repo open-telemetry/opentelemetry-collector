@@ -165,6 +165,11 @@ func (orig *ExportMetricsServiceResponse) MarshalProto(buf []byte) int {
 }
 
 func (orig *ExportMetricsServiceResponse) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, 0)
+}
+
+func (orig *ExportMetricsServiceResponse) unmarshalProto(buf []byte, depth int) error {
+	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
