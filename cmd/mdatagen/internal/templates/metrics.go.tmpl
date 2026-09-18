@@ -23,6 +23,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	{{- if $hasReagMetrics }}
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
+	{{- end }}
 	{{- if or isReceiver isScraper isConnector }}
 	"go.opentelemetry.io/collector/{{ .Status.Class }}"
 	{{- end }}
@@ -40,6 +43,17 @@ const (
 	AggregationStrategyMin = "min"
 	AggregationStrategyMax = "max"
 )
+
+{{- if $hasReagMetrics }}
+// dataPointKey hashes dp's attributes and timestamps for O(1) dedup lookup.
+func dataPointKey(dp pmetric.NumberDataPoint) uint64 {
+	return xhash.Hash64(
+		xhash.WithMap(dp.Attributes()),
+		xhash.WithValue(pcommon.NewValueInt(int64(dp.StartTimestamp()))),
+		xhash.WithValue(pcommon.NewValueInt(int64(dp.Timestamp()))),
+	)
+}
+{{- end }}
 
 {{- if needsStrToIntConversion }}
 func mustParseInt64(s string) int64 {
@@ -135,6 +149,7 @@ type metric{{ $name.Render }} struct {
 	capacity                 int // max observed number of data points added to the metric.
 	{{- if $metricReag }}
 	aggDataPoints            []{{ $metric.Data.MetricValueType.BasicType }} // slice containing number of aggregated datapoints at each index
+	dpIndex                  map[uint64]int // maps a data point's hash to its index, for O(1) dedup lookup.
 	{{- end }}
 }
 
@@ -155,6 +170,7 @@ func (m *metric{{ $name.Render }}) init() {
 	{{- end }}
 	{{- if $metricReag }}
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 	{{- end }}
 }
 
@@ -204,31 +220,31 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	{{- end }}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.{{ $metric.Data.Type }}().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.Set{{ $metric.Data.MetricValueType }}Value(dpi.{{ $metric.Data.MetricValueType }}Value() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.{{ $metric.Data.MetricValueType }}Value() > val {
-					dpi.Set{{ $metric.Data.MetricValueType }}Value(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.{{ $metric.Data.MetricValueType }}Value() < val {
-					dpi.Set{{ $metric.Data.MetricValueType }}Value(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.Set{{ $metric.Data.MetricValueType }}Value(dpi.{{ $metric.Data.MetricValueType }}Value() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.{{ $metric.Data.MetricValueType }}Value() > val {
+				dpi.Set{{ $metric.Data.MetricValueType }}Value(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.{{ $metric.Data.MetricValueType }}Value() < val {
+				dpi.Set{{ $metric.Data.MetricValueType }}Value(val)
+			}
+			return
 		}
 	}
 
 	dp.Set{{ $metric.Data.MetricValueType }}Value(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 {{- else }}
