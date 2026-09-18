@@ -6,6 +6,9 @@ $defs:
       dialer:
         description: DialerConfig contains options for connecting to an address.
         $ref: dialer_config
+      npipe:
+        description: NpipeConfig contains options specific to the "npipe" transport (Windows named pipes). Settings in this section are ignored for all other transport types.
+        $ref: npipe_config
       endpoint:
         description: Endpoint configures the address for this network connection. For TCP and UDP networks, the address has the form "host:port". The host must be a literal IP address, or a host name that can be resolved to IP addresses. The port must be a literal port number or a service name. If the host is a literal IPv6 address it must be enclosed in square brackets, as in "[2001:db8::1]:80" or "[fe80::1%zone]:80". The zone specifies the scope of the literal IPv6 address as defined in RFC 4007.
         type: string
@@ -21,6 +24,13 @@ $defs:
         type: string
         x-customType: time.Duration
         format: duration
+  npipe_config:
+    description: NpipeConfig contains options specific to Windows named pipe transport. Settings in this section are ignored for all other transport types.
+    type: object
+    properties:
+      security_descriptor:
+        description: SecurityDescriptor is a Security Descriptor Definition Language (SDDL) string applied to the named pipe when a listener is created. When empty, Windows applies its default named pipe DACL, which is roughly equivalent to "D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;0x12019b;;;WD)(A;;0x12019b;;;AN)" — full control for LocalSystem (SY) and Administrators (BA), and read plus limited write for Everyone (WD) and Anonymous Logon (AN). See https://learn.microsoft.com/en-us/windows/win32/ipc/named-pipe-security-and-access-rights and https://learn.microsoft.com/en-us/windows/win32/secauthz/security-descriptor-definition-language
+        type: string
   tcp_addr_config:
     description: TCPAddrConfig represents a TCP endpoint address.
     type: object

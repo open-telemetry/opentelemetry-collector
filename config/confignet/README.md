@@ -16,6 +16,14 @@ leverage network configuration to set connection and transport information.
   "npipe" (Windows named pipes, Windows-only).
 - `dialer`: Dialer configuration
   - `timeout`: Dialer timeout is the maximum amount of time a dial will wait for a connect to complete. The default is no timeout.
+- `npipe`: Windows named pipe configuration (ignored for all other transport types)
+  - `security_descriptor`: A [Security Descriptor Definition Language (SDDL)](https://learn.microsoft.com/en-us/windows/win32/secauthz/security-descriptor-definition-language)
+    string applied to the named pipe when a listener is created. When empty,
+    Windows applies its [default named pipe DACL](https://learn.microsoft.com/en-us/windows/win32/ipc/named-pipe-security-and-access-rights),
+    which is roughly equivalent to
+    `D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;0x12019b;;;WD)(A;;0x12019b;;;AN)` — full
+    control for `LocalSystem` (`SY`) and `Administrators` (`BA`), and read plus
+    limited write for `Everyone` (`WD`) and `Anonymous Logon` (`AN`).
 
 Note that for TCP receivers only the `endpoint` configuration setting is
 required.
