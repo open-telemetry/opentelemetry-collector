@@ -55,7 +55,12 @@ func NewDefaultDialerConfig() DialerConfig {
 
 // NpipeConfig contains options specific to Windows named pipe transport. Settings in this section are ignored for all other transport types.
 type NpipeConfig struct {
-	// SecurityDescriptor is a Security Descriptor Definition Language (SDDL) string applied to the named pipe when a listener is created. When empty, Windows applies its default named pipe DACL, which is roughly equivalent to "D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;0x12019b;;;WD)(A;;0x12019b;;;AN)" — full control for LocalSystem (SY) and Administrators (BA), and read plus limited write for Everyone (WD) and Anonymous Logon (AN). See https://learn.microsoft.com/en-us/windows/win32/ipc/named-pipe-security-and-access-rights and https://learn.microsoft.com/en-us/windows/win32/secauthz/security-descriptor-definition-language
+	// SecurityDescriptor is a Security Descriptor Definition Language (SDDL) string applied to the named pipe when a listener is created.
+	// When empty, Windows applies its default named pipe DACL, which is roughly equivalent to
+	// "D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;0x12019b;;;WD)(A;;0x12019b;;;AN)" — full control for LocalSystem (SY)
+	// and Administrators (BA), and read plus limited write for Everyone (WD) and Anonymous Logon (AN).
+	// See https://learn.microsoft.com/en-us/windows/win32/ipc/named-pipe-security-and-access-rights
+	// and https://learn.microsoft.com/en-us/windows/win32/secauthz/security-descriptor-definition-language.
 	SecurityDescriptor string `mapstructure:"security_descriptor,omitempty"`
 
 	// prevent unkeyed literal initialization

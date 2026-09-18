@@ -26,7 +26,7 @@
           "properties": {
             "security_descriptor": {
               "type": "string",
-              "description": "Is a Security Descriptor Definition Language (SDDL) string applied to the named pipe when a listener is created. When empty, Windows applies its default named pipe DACL, which is roughly equivalent to \"D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;0x12019b;;;WD)(A;;0x12019b;;;AN)\" — full control for LocalSystem (SY) and Administrators (BA), and read plus limited write for Everyone (WD) and Anonymous Logon (AN). See https://learn.microsoft.com/en-us/windows/win32/ipc/named-pipe-security-and-access-rights and https://learn.microsoft.com/en-us/windows/win32/secauthz/security-descriptor-definition-language"
+              "description": "Is a Security Descriptor Definition Language (SDDL) string applied to the named pipe when a listener is created. \nWhen empty, Windows applies its default named pipe DACL, which is roughly equivalent to \n\"D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;0x12019b;;;WD)(A;;0x12019b;;;AN)\" — full control for LocalSystem (SY) \nand Administrators (BA), and read plus limited write for Everyone (WD) and Anonymous Logon (AN). \nSee https://learn.microsoft.com/en-us/windows/win32/ipc/named-pipe-security-and-access-rights \nand https://learn.microsoft.com/en-us/windows/win32/secauthz/security-descriptor-definition-language.\n"
             }
           },
           "description": "Contains options specific to the \"npipe\" transport (Windows named pipes). Settings in this section are ignored for all other transport types.",
@@ -56,7 +56,7 @@
       "properties": {
         "security_descriptor": {
           "type": "string",
-          "description": "Is a Security Descriptor Definition Language (SDDL) string applied to the named pipe when a listener is created. When empty, Windows applies its default named pipe DACL, which is roughly equivalent to \"D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;0x12019b;;;WD)(A;;0x12019b;;;AN)\" — full control for LocalSystem (SY) and Administrators (BA), and read plus limited write for Everyone (WD) and Anonymous Logon (AN). See https://learn.microsoft.com/en-us/windows/win32/ipc/named-pipe-security-and-access-rights and https://learn.microsoft.com/en-us/windows/win32/secauthz/security-descriptor-definition-language"
+          "description": "Is a Security Descriptor Definition Language (SDDL) string applied to the named pipe when a listener is created. \nWhen empty, Windows applies its default named pipe DACL, which is roughly equivalent to \n\"D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;0x12019b;;;WD)(A;;0x12019b;;;AN)\" — full control for LocalSystem (SY) \nand Administrators (BA), and read plus limited write for Everyone (WD) and Anonymous Logon (AN). \nSee https://learn.microsoft.com/en-us/windows/win32/ipc/named-pipe-security-and-access-rights \nand https://learn.microsoft.com/en-us/windows/win32/secauthz/security-descriptor-definition-language.\n"
         }
       },
       "description": "Contains options specific to Windows named pipe transport. Settings in this section are ignored for all other transport types.",
