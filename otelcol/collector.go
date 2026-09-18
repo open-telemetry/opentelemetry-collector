@@ -262,9 +262,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	if col.updateConfigProviderLogger != nil {
 		col.updateConfigProviderLogger(col.service.Logger().Core())
 	}
-	for _, w := range featuregate.GlobalRegistry().Warnings() {
-		col.service.Logger().Warn(w)
-	}
+	featuregate.GlobalRegistry().SetLogger(col.service.Logger())
 	if col.bc != nil {
 		x := col.bc.TakeLogs()
 		for _, log := range x {
