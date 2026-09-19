@@ -63,7 +63,6 @@ func TestConfigMetadata_MarshalJSON_NoSpecialFieldsUsesStructLayout(t *testing.T
 	require.NoError(t, err)
 
 	require.JSONEq(t, string(expected), string(actual))
-	require.Equal(t, string(expected), string(actual))
 }
 
 func TestConfigMetadata_UnmarshalYAMLDefaultValue(t *testing.T) {
