@@ -25,9 +25,9 @@ const defaultPartitionIdleTimeout = 90 * time.Second
 var _ Batcher[request.Request] = (*partitionBatcher)(nil)
 
 type batch struct {
-	ctx  context.Context
-	req  request.Request
-	done multiDone
+	ctx          context.Context
+	req          request.Request
+	done         multiDone
 }
 
 // partitionBatcher continuously batch incoming requests and flushes asynchronously if minimum size limit is met or on timeout.
@@ -83,6 +83,10 @@ func (qb *partitionBatcher) resetTimer() {
 	}
 }
 
+func (qb *partitionBatcher) batchSize(b *batch) int64 {
+	return qb.sizer.Sizeof(b.req)
+}
+
 func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Request, done queue.Done) bool {
 	qb.currentBatchMu.Lock()
 	isActive := qb.active
@@ -116,14 +120,15 @@ func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Req
 		// We have at least one result in the reqList. Last in the list may not have enough data to be flushed.
 		// Find if it has at least MinSize, and if it does then move that as the current batch.
 		lastReq := reqList[len(reqList)-1]
-		if qb.sizer.Sizeof(lastReq) < qb.cfg.MinSize {
+		lastBatch := &batch{
+			ctx:          ctx,
+			req:          lastReq,
+			done:         multiDone{done},
+		}
+		if qb.batchSize(lastBatch) < qb.cfg.MinSize {
 			// Do not flush the last item and add it to the current batch.
 			reqList = reqList[:len(reqList)-1]
-			qb.currentBatch = &batch{
-				ctx:  ctx,
-				req:  lastReq,
-				done: multiDone{done},
-			}
+			qb.currentBatch = lastBatch
 			qb.resetTimer()
 		}
 
@@ -180,7 +185,7 @@ func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Req
 	// cannot unlock and re-lock because we are not done processing all the responses.
 	var firstBatch *batch
 	// Need to check the currentBatch if more than 1 result returned or if 1 result return but larger than MinSize.
-	if len(reqList) > 1 || qb.sizer.Sizeof(qb.currentBatch.req) >= qb.cfg.MinSize {
+	if len(reqList) > 1 || qb.batchSize(qb.currentBatch) >= qb.cfg.MinSize {
 		firstBatch = qb.currentBatch
 		qb.currentBatch = nil
 	}
@@ -190,13 +195,13 @@ func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Req
 	// If we still have results to process, then we need to check if the last result has enough data to flush, or we add it to the currentBatch.
 	if len(reqList) > 0 {
 		lastReq := reqList[len(reqList)-1]
-		if qb.sizer.Sizeof(lastReq) < qb.cfg.MinSize {
+		if qb.batchSize(&batch{req: lastReq}) < qb.cfg.MinSize {
 			// Do not flush the last item and add it to the current batch.
 			reqList = reqList[:len(reqList)-1]
 			qb.currentBatch = &batch{
-				ctx:  ctx,
-				req:  lastReq,
-				done: multiDone{done},
+				ctx:          ctx,
+				req:          lastReq,
+				done:         multiDone{done},
 			}
 			qb.resetTimer()
 		}

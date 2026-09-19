@@ -167,6 +167,35 @@ func TestPartitionBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 	}
 }
 
+func TestPartitionBatcher_RequestsSizerRespectsMinSize(t *testing.T) {
+	cfg := BatchConfig{
+		FlushTimeout: 0,
+		Sizer:        request.SizerTypeRequests,
+		MinSize:      2,
+	}
+
+	sink := requesttest.NewSink()
+	ba := newPartitionBatcher(cfg, request.NewSizer(request.SizerTypeRequests), nil, newWorkerPool(1), sink.Export, zap.NewNop(), nil)
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, ba.Shutdown(context.Background()))
+	})
+
+	firstDone := newFakeDone()
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 1}, firstDone)
+	assert.Equal(t, 0, sink.RequestsCount())
+	assert.Equal(t, int64(0), firstDone.success.Load())
+
+	secondDone := newFakeDone()
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 2}, secondDone)
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() == 1 &&
+			sink.ItemsCount() == 3 &&
+			firstDone.success.Load() == 1 &&
+			secondDone.success.Load() == 1
+	}, time.Second, 10*time.Millisecond)
+}
+
 func TestPartitionBatcher_NoSplit_WithTimeout(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/11869")
