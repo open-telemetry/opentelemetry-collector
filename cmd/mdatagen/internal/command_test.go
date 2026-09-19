@@ -1833,9 +1833,28 @@ func TestGenerateSendingQueueNestedBatchOverrides(t *testing.T) {
 	require.NoError(t, err)
 	require.NotContains(t, string(generated), "confmap")
 	require.NotContains(t, string(generated), "panic(")
-	require.Contains(t, string(generated), "batchCfg.MinSize = 123")
+	require.Contains(t, string(generated), "MinSize:      123")
 	require.Contains(t, string(generated), "cfg.Batch = configoptional.Default(batchCfg)")
 	require.Contains(t, string(generated), "return configoptional.Default(cfg)")
+}
+
+func TestGenerateSendingQueueDefaultFollowsFeatureGate(t *testing.T) {
+	md := Metadata{
+		SendingQueue: &SendingQueue{Support: SendingQueueSupportDefault},
+	}
+
+	generated, err := executeTemplate(
+		"templates/sending_queue.go.tmpl",
+		md,
+		"metadata",
+		"go.opentelemetry.io/collector",
+		getTemplateFuncMap(md, "go.opentelemetry.io/collector"),
+	)
+	require.NoError(t, err)
+	require.Contains(t, string(generated), "return configoptional.Some(exporterhelper.NewDefaultQueueConfig())")
+	require.NotContains(t, string(generated), "time")
+	require.NotContains(t, string(generated), "confmap")
+	require.NotContains(t, string(generated), "panic(")
 }
 
 func TestGenerateConfigGoStruct_TestFileContainsValidateTestWhenValidatorsPresent(t *testing.T) {

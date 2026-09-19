@@ -8,9 +8,23 @@
 
 **Rationale:** Debug output remains synchronous unless queueing is explicitly enabled.
 
-The default configuration is based on `exporterhelper.NewDefaultQueueConfig()`.
+This component overrides the default QueueBatch configuration.
 
 ```yaml
 sending_queue:
-  enabled: false
+    enabled: false             # OVERRIDE
+    wait_for_result: false     # default
+    sizer: requests            # default
+    queue_size: 1000           # default
+    block_on_overflow: false   # default
+    storage: null              # default
+    num_consumers: 10          # default
+    batch:
+        enabled: true          # default
+        flush_timeout: 200ms   # default
+        sizer: items           # default
+        min_size: 8192         # default
+        max_size: 0            # default
+        partition:
+            metadata_keys: []  # default
 ```

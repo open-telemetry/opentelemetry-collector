@@ -3,37 +3,56 @@
 package {{ .Package }}
 
 import (
-	{{- if .SendingQueue.HasBatchFlushTimeoutOverride }}
+	{{ if .SendingQueue.HasOverrides -}}
 	"time"
-	{{- end }}
 
-	{{- if .SendingQueue.HasStorageOverride }}
+	{{ end -}}
+	{{ if .SendingQueue.HasOverrides -}}
+	{{- $cfg := .SendingQueue.TemplateData }}
+	{{- if $cfg.StorageConstructor }}
 	"go.opentelemetry.io/collector/component"
 	{{- end }}
+	{{ end -}}
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // NewDefaultSendingQueueConfig returns the sending queue default declared in metadata.yaml.
 func NewDefaultSendingQueueConfig() configoptional.Optional[exporterhelper.QueueBatchConfig] {
-	cfg := exporterhelper.NewDefaultQueueConfig()
-	{{- range .SendingQueue.QueueAssignments }}
-	{{ . }}
+	{{- if not .SendingQueue.HasOverrides }}
+	return configoptional.Some(exporterhelper.NewDefaultQueueConfig())
+	{{- else }}
+	{{- $cfg := .SendingQueue.TemplateData }}
+	{{- if $cfg.StorageConstructor }}
+	storageID := {{ $cfg.StorageConstructor }}
 	{{- end }}
-	{{- if .SendingQueue.HasBatchOverrides }}
-	batchCfg := *cfg.Batch.GetOrInsertDefault()
-	{{- range .SendingQueue.BatchAssignments }}
-	{{ . }}
-	{{- end }}
-	{{- if .SendingQueue.IsBatchEnabled }}
+	batchCfg := exporterhelper.BatchConfig{
+		FlushTimeout: time.Duration({{ $cfg.FlushTimeout }}),
+		Sizer:        {{ $cfg.BatchSizer }},
+		MinSize:      {{ $cfg.MinSize }},
+		MaxSize:      {{ $cfg.MaxSize }},
+	}
+	batchCfg.Partition.MetadataKeys = {{ $cfg.MetadataKeys }}
+
+	cfg := exporterhelper.QueueBatchConfig{
+		WaitForResult:   {{ $cfg.WaitForResult }},
+		Sizer:           {{ $cfg.QueueSizer }},
+		QueueSize:       {{ $cfg.QueueSize }},
+		BlockOnOverflow: {{ $cfg.BlockOnOverflow }},
+		{{- if $cfg.StorageConstructor }}
+		StorageID:       &storageID,
+		{{- end }}
+		NumConsumers:    {{ $cfg.NumConsumers }},
+	}
+	{{- if $cfg.BatchEnabled }}
 	cfg.Batch = configoptional.Some(batchCfg)
 	{{- else }}
 	cfg.Batch = configoptional.Default(batchCfg)
 	{{- end }}
-	{{- end }}
-	{{- if .SendingQueue.IsEnabled }}
+	{{- if $cfg.QueueEnabled }}
 	return configoptional.Some(cfg)
 	{{- else }}
 	return configoptional.Default(cfg)
+	{{- end }}
 	{{- end }}
 }

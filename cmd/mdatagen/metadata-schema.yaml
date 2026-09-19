@@ -31,7 +31,7 @@ sending_queue:
   support: <default|has_overrides|omitted>
   # Required when sending_queue is omitted or an override sets enabled to false.
   rationale: string
-  # Required with has_overrides: Values decoded as sending_queue on top of its standard defaults.
+  # Required with has_overrides: Values decoded on top of the post-migration standard defaults, with batching enabled.
   overrides:
     enabled: bool
     wait_for_result: bool

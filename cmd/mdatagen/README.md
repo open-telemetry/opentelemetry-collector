@@ -69,11 +69,15 @@ sending_queue:
     num_consumers: 1
 ```
 
-`support` may be `default`, `has_overrides`, or `omitted`. Default and overridden
-queues are based on `exporterhelper.NewDefaultQueueConfig()`. An `enabled: false`
-override disables the queue while preserving the standard settings used if a user
-enables it. The same behavior applies to `batch.enabled: false`: standard batch
-settings and declared batch overrides are preserved if batching is later enabled.
+`support` may be `default`, `has_overrides`, or `omitted`. `default` calls
+`exporterhelper.NewDefaultQueueConfig()` at runtime and therefore follows
+`pkg.exporterhelper.queueBatchEnabled`. `has_overrides` is resolved during generation
+against the post-migration default, where batching is enabled, and emits the complete
+effective configuration. Consequently, an exporter that requires batching to remain
+disabled must declare `batch.enabled: false`.
+
+An outer `enabled: false` override disables the queue while preserving its effective
+settings if a user enables it. The same behavior applies to `batch.enabled: false`.
 Disabled and omitted queues must include a `rationale`; omitted queues cannot specify
 overrides.
 

@@ -6,6 +6,7 @@ package internal // import "go.opentelemetry.io/collector/cmd/mdatagen/internal"
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -40,7 +41,73 @@ type parsedSendingQueueOverrides struct {
 	batchOverrides map[string]any
 }
 
+type sendingQueueTemplateData struct {
+	QueueEnabled       bool
+	WaitForResult      bool
+	QueueSizer         string
+	QueueSize          int64
+	BlockOnOverflow    bool
+	StorageConstructor string
+	NumConsumers       int
+	BatchEnabled       bool
+	FlushTimeout       int64
+	BatchSizer         string
+	MinSize            int64
+	MaxSize            int64
+	MetadataKeys       string
+}
+
+type sendingQueueDocumentation struct {
+	SendingQueue queueDocumentation `yaml:"sending_queue"`
+}
+
+type queueDocumentation struct {
+	Enabled         bool               `yaml:"enabled"`
+	WaitForResult   bool               `yaml:"wait_for_result"`
+	Sizer           string             `yaml:"sizer"`
+	QueueSize       int64              `yaml:"queue_size"`
+	BlockOnOverflow bool               `yaml:"block_on_overflow"`
+	Storage         *string            `yaml:"storage"`
+	NumConsumers    int                `yaml:"num_consumers"`
+	Batch           batchDocumentation `yaml:"batch"`
+}
+
+type batchDocumentation struct {
+	Enabled      bool                   `yaml:"enabled"`
+	FlushTimeout string                 `yaml:"flush_timeout"`
+	Sizer        string                 `yaml:"sizer"`
+	MinSize      int64                  `yaml:"min_size"`
+	MaxSize      int64                  `yaml:"max_size"`
+	Partition    partitionDocumentation `yaml:"partition"`
+}
+
+type partitionDocumentation struct {
+	MetadataKeys []string `yaml:"metadata_keys"`
+}
+
 func (sq *SendingQueue) Validate() error {
+	if err := sq.validateDeclaration(); err != nil {
+		return err
+	}
+	if sq.IsOmitted() {
+		return nil
+	}
+
+	base := exporterhelper.NewDefaultQueueConfig()
+	if sq.HasOverrides() {
+		base = newPostMigrationDefaultQueueConfig()
+	}
+	cfg, err := sq.Overrides.Apply(base)
+	if err != nil {
+		return err
+	}
+	if err := confmap.Validate(cfg); err != nil {
+		return fmt.Errorf("invalid sending_queue.overrides: %w", err)
+	}
+	return nil
+}
+
+func (sq *SendingQueue) validateDeclaration() error {
 	switch sq.Support {
 	case SendingQueueSupportDefault:
 		if len(sq.Overrides) != 0 {
@@ -70,14 +137,6 @@ func (sq *SendingQueue) Validate() error {
 	if !parsed.enabled && strings.TrimSpace(sq.Rationale) == "" {
 		return errors.New("sending_queue.rationale is required when overrides disable the queue")
 	}
-
-	cfg, err := sq.Overrides.Apply(exporterhelper.NewDefaultQueueConfig())
-	if err != nil {
-		return err
-	}
-	if err := confmap.Validate(cfg); err != nil {
-		return fmt.Errorf("invalid sending_queue.overrides: %w", err)
-	}
 	return nil
 }
 
@@ -90,163 +149,179 @@ func (sq *SendingQueue) IsEnabled() bool {
 	return err == nil && parsed.enabled
 }
 
-func (sq *SendingQueue) HasQueueOverrides() bool {
-	parsed, err := sq.Overrides.parse()
-	return err == nil && len(parsed.queue) != 0
+func (sq *SendingQueue) HasOverrides() bool {
+	return sq.Support == SendingQueueSupportHasOverrides
 }
 
-func (sq *SendingQueue) QueueAssignments() ([]string, error) {
-	parsed, err := sq.Overrides.parse()
+func (sq *SendingQueue) TemplateData() (sendingQueueTemplateData, error) {
+	optionalCfg, err := sq.Overrides.Apply(newPostMigrationDefaultQueueConfig())
 	if err != nil {
-		return nil, err
+		return sendingQueueTemplateData{}, err
 	}
-	optionalCfg, err := sq.Overrides.Apply(exporterhelper.NewDefaultQueueConfig())
-	if err != nil {
-		return nil, err
-	}
+	queueEnabled := optionalCfg.HasValue()
 	cfg := optionalCfg.GetOrInsertDefault()
+	batchEnabled := cfg.Batch.HasValue()
+	batchCfg := *cfg.Batch.GetOrInsertDefault()
 
-	assignments := make([]string, 0, len(parsed.queue)+1)
-	if _, ok := parsed.queue["wait_for_result"]; ok {
-		assignments = append(assignments, fmt.Sprintf("cfg.WaitForResult = %t", cfg.WaitForResult))
+	queueSizer, err := sizerExpression(cfg.Sizer.String())
+	if err != nil {
+		return sendingQueueTemplateData{}, err
 	}
-	if _, ok := parsed.queue["sizer"]; ok {
-		sizer, err := sizerExpression(cfg.Sizer.String())
-		if err != nil {
-			return nil, err
-		}
-		assignments = append(assignments, "cfg.Sizer = "+sizer)
+	batchSizer, err := sizerExpression(batchCfg.Sizer.String())
+	if err != nil {
+		return sendingQueueTemplateData{}, err
 	}
-	if _, ok := parsed.queue["queue_size"]; ok {
-		assignments = append(assignments, fmt.Sprintf("cfg.QueueSize = %d", cfg.QueueSize))
-	}
-	if _, ok := parsed.queue["block_on_overflow"]; ok {
-		assignments = append(assignments, fmt.Sprintf("cfg.BlockOnOverflow = %t", cfg.BlockOnOverflow))
-	}
-	if _, ok := parsed.queue["storage"]; ok {
-		if cfg.StorageID == nil {
-			return nil, errors.New("invalid sending_queue.overrides: storage must not be empty")
-		}
+
+	storageConstructor := ""
+	if cfg.StorageID != nil {
 		constructor := "component.MustNewID"
 		args := strconv.Quote(cfg.StorageID.Type().String())
 		if cfg.StorageID.Name() != "" {
 			constructor = "component.MustNewIDWithName"
 			args += ", " + strconv.Quote(cfg.StorageID.Name())
 		}
-		assignments = append(assignments,
-			"storageID := "+constructor+"("+args+")",
-			"cfg.StorageID = &storageID",
-		)
+		storageConstructor = constructor + "(" + args + ")"
 	}
-	if _, ok := parsed.queue["num_consumers"]; ok {
-		assignments = append(assignments, fmt.Sprintf("cfg.NumConsumers = %d", cfg.NumConsumers))
+
+	keys := make([]string, 0, len(batchCfg.Partition.MetadataKeys))
+	for _, key := range batchCfg.Partition.MetadataKeys {
+		keys = append(keys, strconv.Quote(key))
 	}
-	return assignments, nil
+
+	return sendingQueueTemplateData{
+		QueueEnabled:       queueEnabled,
+		WaitForResult:      cfg.WaitForResult,
+		QueueSizer:         queueSizer,
+		QueueSize:          cfg.QueueSize,
+		BlockOnOverflow:    cfg.BlockOnOverflow,
+		StorageConstructor: storageConstructor,
+		NumConsumers:       cfg.NumConsumers,
+		BatchEnabled:       batchEnabled,
+		FlushTimeout:       int64(batchCfg.FlushTimeout),
+		BatchSizer:         batchSizer,
+		MinSize:            batchCfg.MinSize,
+		MaxSize:            batchCfg.MaxSize,
+		MetadataKeys:       "[]string{" + strings.Join(keys, ", ") + "}",
+	}, nil
 }
 
-func (sq *SendingQueue) HasBatchOverrides() bool {
-	parsed, err := sq.Overrides.parse()
-	return err == nil && parsed.batchPresent
-}
-
-func (sq *SendingQueue) IsBatchEnabled() bool {
-	parsed, err := sq.Overrides.parse()
-	return err == nil && parsed.batchEnabled
-}
-
-func (sq *SendingQueue) BatchAssignments() ([]string, error) {
-	parsed, err := sq.Overrides.parse()
+func (sq *SendingQueue) YAMLConfig() (string, error) {
+	templateData, err := sq.TemplateData()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	if !parsed.batchPresent {
-		return nil, nil
-	}
-	optionalCfg, err := sq.Overrides.Apply(exporterhelper.NewDefaultQueueConfig())
-	if err != nil {
-		return nil, err
-	}
-	cfg := optionalCfg.GetOrInsertDefault()
-	batchCfg := cfg.Batch.GetOrInsertDefault()
 
-	assignments := make([]string, 0, len(parsed.batchOverrides))
-	if _, ok := parsed.batchOverrides["flush_timeout"]; ok {
-		assignments = append(assignments, fmt.Sprintf("batchCfg.FlushTimeout = time.Duration(%d)", batchCfg.FlushTimeout))
-	}
-	if _, ok := parsed.batchOverrides["sizer"]; ok {
-		sizer, err := sizerExpression(batchCfg.Sizer.String())
+	var storage *string
+	if templateData.StorageConstructor != "" {
+		cfg, err := sq.Overrides.Apply(newPostMigrationDefaultQueueConfig())
 		if err != nil {
-			return nil, err
+			return "", err
 		}
-		assignments = append(assignments, "batchCfg.Sizer = "+sizer)
+		storageValue := cfg.GetOrInsertDefault().StorageID.String()
+		storage = &storageValue
 	}
-	if _, ok := parsed.batchOverrides["min_size"]; ok {
-		assignments = append(assignments, fmt.Sprintf("batchCfg.MinSize = %d", batchCfg.MinSize))
-	}
-	if _, ok := parsed.batchOverrides["max_size"]; ok {
-		assignments = append(assignments, fmt.Sprintf("batchCfg.MaxSize = %d", batchCfg.MaxSize))
-	}
-	if _, ok := parsed.batchOverrides["partition"]; ok {
-		keys := make([]string, 0, len(batchCfg.Partition.MetadataKeys))
-		for _, key := range batchCfg.Partition.MetadataKeys {
-			keys = append(keys, strconv.Quote(key))
-		}
-		assignments = append(assignments, "batchCfg.Partition.MetadataKeys = []string{"+strings.Join(keys, ", ")+"}")
-	}
-	return assignments, nil
-}
 
-func (sq *SendingQueue) HasStorageOverride() bool {
-	parsed, err := sq.Overrides.parse()
-	if err != nil {
-		return false
-	}
-	_, ok := parsed.queue["storage"]
-	return ok
-}
-
-func (sq *SendingQueue) HasBatchFlushTimeoutOverride() bool {
-	parsed, err := sq.Overrides.parse()
-	if err != nil {
-		return false
-	}
-	_, ok := parsed.batchOverrides["flush_timeout"]
-	return ok
-}
-
-func (sq *SendingQueue) YAMLQueueOverrides() (string, error) {
-	parsed, err := sq.Overrides.parse()
+	cfg, err := sq.Overrides.Apply(newPostMigrationDefaultQueueConfig())
 	if err != nil {
 		return "", err
 	}
-	overrides := make(map[string]any, len(parsed.queue)+1)
-	for key, value := range parsed.queue {
-		overrides[key] = value
+	queueCfg := cfg.GetOrInsertDefault()
+	batchCfg := queueCfg.Batch.GetOrInsertDefault()
+	doc := sendingQueueDocumentation{
+		SendingQueue: queueDocumentation{
+			Enabled:         templateData.QueueEnabled,
+			WaitForResult:   queueCfg.WaitForResult,
+			Sizer:           queueCfg.Sizer.String(),
+			QueueSize:       queueCfg.QueueSize,
+			BlockOnOverflow: queueCfg.BlockOnOverflow,
+			Storage:         storage,
+			NumConsumers:    queueCfg.NumConsumers,
+			Batch: batchDocumentation{
+				Enabled:      templateData.BatchEnabled,
+				FlushTimeout: batchCfg.FlushTimeout.String(),
+				Sizer:        batchCfg.Sizer.String(),
+				MinSize:      batchCfg.MinSize,
+				MaxSize:      batchCfg.MaxSize,
+				Partition: partitionDocumentation{
+					MetadataKeys: batchCfg.Partition.MetadataKeys,
+				},
+			},
+		},
 	}
-	if parsed.batchPresent {
-		batch := make(map[string]any, len(parsed.batchOverrides)+1)
-		for key, value := range parsed.batchOverrides {
-			batch[key] = value
-		}
-		batch["enabled"] = parsed.batchEnabled
-		overrides["batch"] = batch
+	var node yaml.Node
+	if err := node.Encode(doc); err != nil {
+		return "", err
 	}
-	if len(overrides) == 0 {
-		return "", nil
-	}
-	encoded, err := yaml.Marshal(overrides)
+	annotateSendingQueueLeaves(&node, nil, sq)
+
+	encoded, err := yaml.Marshal(&node)
 	if err != nil {
 		return "", err
 	}
-	return strings.TrimSpace(string(encoded)), nil
+	return alignYAMLComments(strings.TrimSpace(string(encoded))), nil
 }
 
-func (sq *SendingQueue) IndentedYAMLQueueOverrides() (string, error) {
-	overrides, err := sq.YAMLQueueOverrides()
-	if err != nil || overrides == "" {
-		return overrides, err
+func annotateSendingQueueLeaves(node *yaml.Node, path []string, sq *SendingQueue) {
+	switch node.Kind {
+	case yaml.DocumentNode:
+		for _, child := range node.Content {
+			annotateSendingQueueLeaves(child, path, sq)
+		}
+	case yaml.MappingNode:
+		for i := 0; i < len(node.Content); i += 2 {
+			key, value := node.Content[i], node.Content[i+1]
+			annotateSendingQueueLeaves(value, append(path, key.Value), sq)
+		}
+	case yaml.ScalarNode, yaml.SequenceNode:
+		overridePath := path
+		if len(overridePath) > 0 && overridePath[0] == "sending_queue" {
+			overridePath = overridePath[1:]
+		}
+		if sq.Support == SendingQueueSupportDefault && slices.Equal(overridePath, []string{"batch", "enabled"}) {
+			node.LineComment = "FEATURE(pkg.exporterhelper.queueBatchEnabled)"
+		} else if hasOverride(sq.Overrides, overridePath) {
+			node.LineComment = "OVERRIDE"
+		} else {
+			node.LineComment = "default"
+		}
 	}
-	return "  " + strings.ReplaceAll(overrides, "\n", "\n  "), nil
+}
+
+func hasOverride(overrides map[string]any, path []string) bool {
+	current := overrides
+	for i, key := range path {
+		value, ok := current[key]
+		if !ok {
+			return false
+		}
+		if i == len(path)-1 {
+			return true
+		}
+		current, ok = value.(map[string]any)
+		if !ok {
+			return false
+		}
+	}
+	return false
+}
+
+func alignYAMLComments(yamlConfig string) string {
+	lines := strings.Split(yamlConfig, "\n")
+	maxContentWidth := 0
+	for _, line := range lines {
+		if content, _, ok := strings.Cut(line, " # "); ok {
+			maxContentWidth = max(maxContentWidth, len(strings.TrimRight(content, " ")))
+		}
+	}
+	for i, line := range lines {
+		content, comment, ok := strings.Cut(line, " # ")
+		if !ok {
+			continue
+		}
+		content = strings.TrimRight(content, " ")
+		lines[i] = content + strings.Repeat(" ", maxContentWidth-len(content)+2) + "# " + comment
+	}
+	return strings.Join(lines, "\n")
 }
 
 func (overrides SendingQueueOverrides) Apply(cfg exporterhelper.QueueBatchConfig) (configoptional.Optional[exporterhelper.QueueBatchConfig], error) {
@@ -254,6 +329,7 @@ func (overrides SendingQueueOverrides) Apply(cfg exporterhelper.QueueBatchConfig
 	if err != nil {
 		return configoptional.None[exporterhelper.QueueBatchConfig](), err
 	}
+
 	if err := confmap.NewFromStringMap(parsed.queue).Unmarshal(&cfg); err != nil {
 		return configoptional.None[exporterhelper.QueueBatchConfig](), fmt.Errorf("invalid sending_queue.overrides: %w", err)
 	}
@@ -272,6 +348,13 @@ func (overrides SendingQueueOverrides) Apply(cfg exporterhelper.QueueBatchConfig
 		return configoptional.Some(cfg), nil
 	}
 	return configoptional.Default(cfg), nil
+}
+
+func newPostMigrationDefaultQueueConfig() exporterhelper.QueueBatchConfig {
+	cfg := exporterhelper.NewDefaultQueueConfig()
+	batchCfg := *cfg.Batch.GetOrInsertDefault()
+	cfg.Batch = configoptional.Some(batchCfg)
+	return cfg
 }
 
 func (overrides SendingQueueOverrides) parse() (parsedSendingQueueOverrides, error) {

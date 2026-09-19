@@ -154,16 +154,17 @@ When the disable-old gate is enabled, emission of this metric is suppressed. Whe
 
 **Rationale:** {{ .SendingQueue.Rationale }}
 {{- end }}
+{{ if .SendingQueue.IsOmitted -}}
+This component omits the default QueueBatch configuration.
+{{- else if .SendingQueue.HasOverrides }}
+This component overrides the default QueueBatch configuration.
+{{- else }}
+This component uses the default QueueBatch configuration.
+{{- end }}
 {{- if not .SendingQueue.IsOmitted }}
 
-The default configuration is based on `exporterhelper.NewDefaultQueueConfig()`.
-
 ```yaml
-sending_queue:
-  enabled: {{ .SendingQueue.IsEnabled }}
-{{- if .SendingQueue.HasQueueOverrides }}
-{{ .SendingQueue.IndentedYAMLQueueOverrides }}
-{{- end }}
+{{ .SendingQueue.YAMLConfig }}
 ```
 {{- end }}
 

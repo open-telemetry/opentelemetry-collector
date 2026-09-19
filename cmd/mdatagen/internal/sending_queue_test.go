@@ -5,7 +5,9 @@ package internal
 
 import (
 	"strconv"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -152,7 +154,7 @@ func TestSendingQueueValidate(t *testing.T) {
 	}
 }
 
-func TestSendingQueueAssignments(t *testing.T) {
+func TestSendingQueueTemplateData(t *testing.T) {
 	config := SendingQueue{
 		Overrides: map[string]any{
 			"enabled":       false,
@@ -164,22 +166,66 @@ func TestSendingQueueAssignments(t *testing.T) {
 		},
 	}
 
-	actual, err := config.QueueAssignments()
+	actual, err := config.TemplateData()
 	require.NoError(t, err)
-	require.Equal(t, []string{"cfg.NumConsumers = 1"}, actual)
+	require.False(t, actual.QueueEnabled)
+	require.Equal(t, 1, actual.NumConsumers)
+	require.False(t, actual.BatchEnabled)
+	require.Equal(t, int64(12), actual.MinSize)
 
-	actualBatch, err := config.BatchAssignments()
+	actualYAML, err := config.YAMLConfig()
 	require.NoError(t, err)
-	require.Equal(t, []string{"batchCfg.MinSize = 12"}, actualBatch)
-
-	actualYAML, err := config.IndentedYAMLQueueOverrides()
-	require.NoError(t, err)
-	require.NotContains(t, actualYAML, "\n  enabled: false")
-	require.Contains(t, actualYAML, "batch:\n      enabled: false")
+	require.Contains(t, actualYAML, "sending_queue:\n    enabled: false")
+	require.Contains(t, actualYAML, "enabled: false")
 	require.Contains(t, actualYAML, "num_consumers: 1")
+	require.Contains(t, actualYAML, "queue_size: 1000")
+	require.Contains(t, actualYAML, "flush_timeout: 200ms")
+	require.Equal(t, 4, strings.Count(actualYAML, "# OVERRIDE"))
+	require.Equal(t, 9, strings.Count(actualYAML, "# default"))
+	commentColumn := -1
+	for _, line := range strings.Split(actualYAML, "\n") {
+		if column := strings.Index(line, "# "); column >= 0 {
+			if commentColumn < 0 {
+				commentColumn = column
+			}
+			require.Equal(t, commentColumn, column)
+		}
+	}
 }
 
-func TestSendingQueueAssignmentsAllFields(t *testing.T) {
+func TestSendingQueueTemplateDataUsesFutureBatchDefault(t *testing.T) {
+	config := SendingQueue{
+		Support: SendingQueueSupportHasOverrides,
+		Overrides: map[string]any{
+			"num_consumers": 1,
+		},
+	}
+
+	actual, err := config.TemplateData()
+	require.NoError(t, err)
+	require.True(t, actual.BatchEnabled)
+	require.Equal(t, int64(8192), actual.MinSize)
+	require.NotZero(t, actual.FlushTimeout)
+}
+
+func TestSendingQueueDefaultDocumentationUsesFutureBatchDefault(t *testing.T) {
+	config := SendingQueue{Support: SendingQueueSupportDefault}
+
+	actual, err := config.YAMLConfig()
+	require.NoError(t, err)
+	require.Contains(t, actual, "sending_queue:\n    enabled: true")
+	require.Contains(t, actual, "queue_size: 1000")
+	require.Contains(t, actual, "storage: null")
+	require.Contains(t, actual, "batch:\n        enabled: true")
+	require.Contains(t, actual, "min_size: 8192")
+	require.Contains(t, actual, "flush_timeout: 200ms")
+	require.Contains(t, actual, "enabled: true")
+	require.Contains(t, actual, "# FEATURE(pkg.exporterhelper.queueBatchEnabled)")
+	require.NotContains(t, actual, "# OVERRIDE")
+	require.Equal(t, 12, strings.Count(actual, "# default"))
+}
+
+func TestSendingQueueTemplateDataAllFields(t *testing.T) {
 	config := SendingQueue{
 		Overrides: map[string]any{
 			"wait_for_result":   true,
@@ -200,29 +246,23 @@ func TestSendingQueueAssignmentsAllFields(t *testing.T) {
 		},
 	}
 
-	queueAssignments, err := config.QueueAssignments()
+	actual, err := config.TemplateData()
 	require.NoError(t, err)
-	require.Equal(t, []string{
-		"cfg.WaitForResult = true",
-		"cfg.Sizer = exporterhelper.RequestSizerTypeItems",
-		"cfg.QueueSize = 2048",
-		"cfg.BlockOnOverflow = true",
-		`storageID := component.MustNewIDWithName("file_storage", "queue")`,
-		"cfg.StorageID = &storageID",
-		"cfg.NumConsumers = 2",
-	}, queueAssignments)
-
-	batchAssignments, err := config.BatchAssignments()
-	require.NoError(t, err)
-	require.Equal(t, []string{
-		"batchCfg.FlushTimeout = time.Duration(3000000000)",
-		"batchCfg.Sizer = exporterhelper.RequestSizerTypeBytes",
-		"batchCfg.MinSize = 10",
-		"batchCfg.MaxSize = 20",
-		`batchCfg.Partition.MetadataKeys = []string{"tenant", "region"}`,
-	}, batchAssignments)
-	require.True(t, config.HasStorageOverride())
-	require.True(t, config.HasBatchFlushTimeoutOverride())
+	require.Equal(t, sendingQueueTemplateData{
+		QueueEnabled:       true,
+		WaitForResult:      true,
+		QueueSizer:         "exporterhelper.RequestSizerTypeItems",
+		QueueSize:          2048,
+		BlockOnOverflow:    true,
+		StorageConstructor: `component.MustNewIDWithName("file_storage", "queue")`,
+		NumConsumers:       2,
+		BatchEnabled:       true,
+		FlushTimeout:       int64(3 * time.Second),
+		BatchSizer:         "exporterhelper.RequestSizerTypeBytes",
+		MinSize:            10,
+		MaxSize:            20,
+		MetadataKeys:       `[]string{"tenant", "region"}`,
+	}, actual)
 }
 
 func TestSendingQueueOverridesApply(t *testing.T) {

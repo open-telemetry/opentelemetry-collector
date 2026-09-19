@@ -9,6 +9,5 @@ import (
 
 // NewDefaultSendingQueueConfig returns the sending queue default declared in metadata.yaml.
 func NewDefaultSendingQueueConfig() configoptional.Optional[exporterhelper.QueueBatchConfig] {
-	cfg := exporterhelper.NewDefaultQueueConfig()
-	return configoptional.Some(cfg)
+	return configoptional.Some(exporterhelper.NewDefaultQueueConfig())
 }
