@@ -40,6 +40,7 @@ type memoryQueue[T request.Request] struct {
 	stopped         bool
 	waitForResult   bool
 	blockOnOverflow bool
+	onFull          func()
 }
 
 // newMemoryQueue creates a sized elements channel. Each element is assigned a size by the provided sizer.
@@ -52,6 +53,7 @@ func newMemoryQueue[T request.Request](set Settings[T]) readableQueue[T] {
 		items:           &linkedQueue[T]{},
 		waitForResult:   set.WaitForResult,
 		blockOnOverflow: set.BlockOnOverflow,
+		onFull:          set.OnFull,
 	}
 	sq.hasMoreElements = sync.NewCond(&sq.mu)
 	sq.hasMoreSpace = newCond(&sq.mu)
@@ -109,6 +111,9 @@ func (mq *memoryQueue[T]) add(ctx context.Context, el T, elSize int64) (*blockin
 	defer mq.mu.Unlock()
 
 	for mq.size+elSize > mq.cap {
+		if mq.onFull != nil && !mq.items.hasElements() {
+			mq.onFull()
+		}
 		if !mq.blockOnOverflow {
 			return nil, ErrQueueIsFull
 		}
@@ -144,6 +149,10 @@ func (mq *memoryQueue[T]) Read(context.Context) (context.Context, T, Done, bool)
 	for {
 		if mq.items.hasElements() {
 			elCtx, el, done := mq.items.pop()
+			if mq.onFull != nil && !mq.items.hasElements() && mq.hasMoreSpace.waiting > 0 {
+				// Last unread element taken while producers wait: only the consumer can free space now.
+				mq.onFull()
+			}
 			return elCtx, el, done, true
 		}
 

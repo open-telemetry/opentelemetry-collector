@@ -91,6 +91,7 @@ type persistentQueue[T request.Request] struct {
 	stopped         bool
 
 	blockOnOverflow bool
+	onFull          func()
 }
 
 // newPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
@@ -107,6 +108,7 @@ func newPersistentQueue[T request.Request](set Settings[T]) readableQueue[T] {
 		id:              set.ID,
 		signal:          set.Signal,
 		blockOnOverflow: set.BlockOnOverflow,
+		onFull:          set.OnFull,
 	}
 	pq.hasMoreElements = sync.NewCond(&pq.mu)
 	pq.hasMoreSpace = newCond(&pq.mu)
@@ -275,6 +277,9 @@ func (pq *persistentQueue[T]) Offer(ctx context.Context, req T) error {
 
 	size := pq.activeSizer.Sizeof(req)
 	for pq.internalSize()+size > pq.capacity {
+		if pq.onFull != nil && pq.metadata.WriteIndex == pq.metadata.ReadIndex {
+			pq.onFull()
+		}
 		if !pq.blockOnOverflow {
 			return ErrQueueIsFull
 		}
@@ -339,6 +344,10 @@ func (pq *persistentQueue[T]) Read(ctx context.Context) (context.Context, T, Don
 			if consumed {
 				id := indexDonePool.Get().(*indexDone)
 				id.reset(index, pq.itemsSizer.Sizeof(req), pq.bytesSizer.Sizeof(req), pq)
+				if pq.onFull != nil && pq.metadata.ReadIndex == pq.metadata.WriteIndex && pq.hasMoreSpace.waiting > 0 {
+					// Last unread element taken while producers wait: only the consumer can free space now.
+					pq.onFull()
+				}
 				return reqCtx, req, id, true
 			}
 			// More space available, data was dropped.
