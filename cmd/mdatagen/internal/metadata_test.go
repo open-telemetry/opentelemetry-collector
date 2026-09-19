@@ -1121,6 +1121,7 @@ func TestValidateConfig(t *testing.T) {
 			wantErr: false,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			md := &Metadata{
@@ -1144,4 +1145,11 @@ func TestValidateConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestValidateSendingQueueDefaultsForExporters(t *testing.T) {
+	md := Metadata{Status: &Status{Class: "exporter"}}
+
+	require.NoError(t, md.validateSendingQueue())
+	require.Equal(t, &SendingQueue{Support: SendingQueueSupportDefault}, md.SendingQueue)
 }

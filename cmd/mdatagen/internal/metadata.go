@@ -156,7 +156,7 @@ func (md *Metadata) validateSendingQueue() error {
 		return nil
 	}
 	if md.SendingQueue == nil {
-		return errors.New("sending_queue is required for exporters")
+		md.SendingQueue = &SendingQueue{}
 	}
 	return md.SendingQueue.Validate()
 }

@@ -86,6 +86,9 @@ type partitionDocumentation struct {
 }
 
 func (sq *SendingQueue) Validate() error {
+	if sq.Support == "" {
+		sq.Support = SendingQueueSupportDefault
+	}
 	if err := sq.validateDeclaration(); err != nil {
 		return err
 	}

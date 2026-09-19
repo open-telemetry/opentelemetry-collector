@@ -154,6 +154,13 @@ func TestSendingQueueValidate(t *testing.T) {
 	}
 }
 
+func TestSendingQueueValidateDefaultsSupport(t *testing.T) {
+	config := SendingQueue{}
+
+	require.NoError(t, config.Validate())
+	require.Equal(t, SendingQueueSupportDefault, config.Support)
+}
+
 func TestSendingQueueTemplateData(t *testing.T) {
 	config := SendingQueue{
 		Overrides: map[string]any{

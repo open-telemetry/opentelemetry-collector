@@ -25,10 +25,10 @@ generated_package_name: string
 # Components can opt in gradually; defaults to false (shared ResourceAttributeConfig).
 override_value_enabled: bool
 
-# Required for exporters: Declares support and defaults for the exporterhelper queue/batch sender.
+# Optional for exporters: Omit to use the standard exporterhelper queue/batch sender defaults.
 sending_queue:
-  # Required: Whether sending_queue uses the standard default, has overrides, or is omitted.
-  support: <default|has_overrides|omitted>
+  # Optional: Defaults to default. Specify has_overrides or omitted when a declaration is needed.
+  support: <has_overrides|omitted>
   # Required when sending_queue is omitted or an override sets enabled to false.
   rationale: string
   # Required with has_overrides: Values decoded on top of the post-migration standard defaults, with batching enabled.

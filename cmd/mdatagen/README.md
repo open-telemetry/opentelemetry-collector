@@ -60,7 +60,8 @@ You can run `cd cmd/mdatagen && $(GOCMD) install .` to install the `mdatagen` to
 
 ### Exporter queue/batch sender defaults
 
-Every exporter declares its queue/batch sender support in `metadata.yaml`:
+Exporters use the standard queue/batch sender defaults unless
+declared in `metadata.yaml` using the `sending_queue` field.
 
 ```yaml
 sending_queue:
@@ -69,24 +70,46 @@ sending_queue:
     num_consumers: 1
 ```
 
-`support` may be `default`, `has_overrides`, or `omitted`. `default` calls
-`exporterhelper.NewDefaultQueueConfig()` at runtime and therefore follows
-`pkg.exporterhelper.queueBatchEnabled`. `has_overrides` is resolved during generation
-against the post-migration default, where batching is enabled, and emits the complete
-effective configuration. Consequently, an exporter that requires batching to remain
-disabled must declare `batch.enabled: false`.
+#### default
 
-An outer `enabled: false` override disables the queue while preserving its effective
-settings if a user enables it. The same behavior applies to `batch.enabled: false`.
-Disabled and omitted queues must include a `rationale`; omitted queues cannot specify
-overrides.
+The default setting can be set explicitly:
 
-`mdatagen` generates the declared default, its documentation, and a conformance test.
-The test verifies default and overridden configurations both with and without
-`pkg.exporterhelper.queueBatchEnabled`. For omitted queues, it verifies that the
-top-level exporter config has neither a `sending_queue` field nor a field of type
-`exporterhelper.QueueBatchConfig` or
-`configoptional.Optional[exporterhelper.QueueBatchConfig]`.
+```yaml
+sending_queue:
+  support: default
+```
+
+> [!NOTE]
+> The default behavior uses the `pkg.exporterhelper.queueBatchEnabled`
+> feature flag to determine the `batch::enabled` value. This value is
+> changing to `true` as documented in the [batching migration RFC](../../docs/rfcs/batching-migration.md).
+
+#### has_overrides
+
+When set to `has_overrides`, overrides are provided in the `overrides`
+field, for example:
+
+```yaml
+sending_queue:
+  support: has_overrides
+  overrides:
+    batch:
+      enabled: false
+```
+
+Overrides are considered relative to the post-migration default.  The
+`overrides::batch::enabled` must be overrridden to false to disable
+batching before or after the [batching migration
+RFC](../../docs/rfcs/batching-migration.md).
+
+#### omitted
+
+When set to `omitted`, the sending queue is not used in the exporter.
+
+```yaml
+sending_queue:
+  support: omitted
+```
 
 ### Central configuration file
 
