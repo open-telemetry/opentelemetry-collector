@@ -384,6 +384,7 @@ foo
 			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry_test.go"), []byte("test"), 0o600))
 			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, generatedPackageDir, "generated_component_test.go"), []byte("test"), 0o600))
 			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, generatedPackageDir, "generated_feature_gates.go"), []byte("// stale"), 0o600))
+			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, generatedPackageDir, "generated_sending_queue.go"), []byte("// stale"), 0o600))
 			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, "documentation.md"), []byte("stale documentation"), 0o600))
 
 			err = run(metadataFile)
@@ -1804,6 +1805,37 @@ func TestGenerateComponentTestExporterDefaultQueueBatchSender(t *testing.T) {
 	require.Contains(t, string(generated), "require.NotEqual(t, optionalQueueType, fieldType.Type")
 	require.Contains(t, string(generated), "require.NotEqual(t, queueType, fieldType.Type")
 	require.NotContains(t, string(generated), "internalmetadata.NewDefaultSendingQueueConfig()")
+}
+
+func TestGenerateSendingQueueNestedBatchOverrides(t *testing.T) {
+	md := Metadata{
+		SendingQueue: &SendingQueue{
+			Support: SendingQueueSupportHasOverrides,
+			Overrides: SendingQueueOverrides{
+				"enabled": false,
+				"batch": map[string]any{
+					"enabled":  false,
+					"min_size": int64(123),
+				},
+			},
+		},
+	}
+
+	generated, err := executeTemplate(
+		"templates/sending_queue.go.tmpl",
+		md,
+		"metadata",
+		"go.opentelemetry.io/collector",
+		getTemplateFuncMap(md, "go.opentelemetry.io/collector"),
+	)
+	require.NoError(t, err)
+	_, err = parser.ParseFile(token.NewFileSet(), "generated_sending_queue.go", generated, parser.AllErrors)
+	require.NoError(t, err)
+	require.NotContains(t, string(generated), "confmap")
+	require.NotContains(t, string(generated), "panic(")
+	require.Contains(t, string(generated), "batchCfg.MinSize = 123")
+	require.Contains(t, string(generated), "cfg.Batch = configoptional.Default(batchCfg)")
+	require.Contains(t, string(generated), "return configoptional.Default(cfg)")
 }
 
 func TestGenerateConfigGoStruct_TestFileContainsValidateTestWhenValidatorsPresent(t *testing.T) {

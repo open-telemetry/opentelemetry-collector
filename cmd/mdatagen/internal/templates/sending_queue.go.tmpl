@@ -3,20 +3,33 @@
 package {{ .Package }}
 
 import (
-	"go.opentelemetry.io/collector/config/configoptional"
-	{{- if .SendingQueue.HasQueueOverrides }}
-	"go.opentelemetry.io/collector/confmap"
+	{{- if .SendingQueue.HasBatchFlushTimeoutOverride }}
+	"time"
 	{{- end }}
+
+	{{- if .SendingQueue.HasStorageOverride }}
+	"go.opentelemetry.io/collector/component"
+	{{- end }}
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // NewDefaultSendingQueueConfig returns the sending queue default declared in metadata.yaml.
 func NewDefaultSendingQueueConfig() configoptional.Optional[exporterhelper.QueueBatchConfig] {
 	cfg := exporterhelper.NewDefaultQueueConfig()
-	{{- if .SendingQueue.HasQueueOverrides }}
-	if err := confmap.NewFromStringMap({{ .SendingQueue.GoQueueOverrides }}).Unmarshal(&cfg); err != nil {
-		panic("invalid generated sending queue configuration: " + err.Error())
-	}
+	{{- range .SendingQueue.QueueAssignments }}
+	{{ . }}
+	{{- end }}
+	{{- if .SendingQueue.HasBatchOverrides }}
+	batchCfg := *cfg.Batch.GetOrInsertDefault()
+	{{- range .SendingQueue.BatchAssignments }}
+	{{ . }}
+	{{- end }}
+	{{- if .SendingQueue.IsBatchEnabled }}
+	cfg.Batch = configoptional.Some(batchCfg)
+	{{- else }}
+	cfg.Batch = configoptional.Default(batchCfg)
+	{{- end }}
 	{{- end }}
 	{{- if .SendingQueue.IsEnabled }}
 	return configoptional.Some(cfg)

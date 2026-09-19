@@ -9,3 +9,6 @@ sending_queue:
   support: has_overrides
   overrides:
     num_consumers: 1
+    batch:
+      enabled: false
+      min_size: 123

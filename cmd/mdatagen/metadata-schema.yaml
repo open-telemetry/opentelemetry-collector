@@ -41,6 +41,7 @@ sending_queue:
     storage: string
     num_consumers: int
     batch:
+      # Optional: Disables batching while preserving the effective batch settings for later enablement.
       enabled: bool
       flush_timeout: duration
       sizer: <items|bytes>

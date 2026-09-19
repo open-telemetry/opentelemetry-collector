@@ -72,8 +72,10 @@ sending_queue:
 `support` may be `default`, `has_overrides`, or `omitted`. Default and overridden
 queues are based on `exporterhelper.NewDefaultQueueConfig()`. An `enabled: false`
 override disables the queue while preserving the standard settings used if a user
-enables it. Disabled and omitted queues must include a `rationale`; omitted queues
-cannot specify overrides.
+enables it. The same behavior applies to `batch.enabled: false`: standard batch
+settings and declared batch overrides are preserved if batching is later enabled.
+Disabled and omitted queues must include a `rationale`; omitted queues cannot specify
+overrides.
 
 `mdatagen` generates the declared default, its documentation, and a conformance test.
 The test verifies default and overridden configurations both with and without
