@@ -515,6 +515,33 @@ func TestUnmarshaler(t *testing.T) {
 	assert.Equal(t, "this better be also called2", tc.Some2)
 }
 
+func TestUnmarshalerUnknownKey(t *testing.T) {
+	cfgMap := NewFromStringMap(map[string]any{
+		"embedded": map[string]any{
+			"some":      "make sure this",
+			"bogus_key": "this should fail",
+		},
+	})
+
+	tc := struct {
+		Embedded EmbeddedConfig `mapstructure:"embedded"`
+	}{}
+
+	assert.ErrorContains(t, cfgMap.Unmarshal(&tc), "bogus_key")
+}
+
+func TestUnmarshalerError(t *testing.T) {
+	cfgMap := NewFromStringMap(map[string]any{
+		"embedded": map[string]any{},
+	})
+
+	tc := struct {
+		Embedded EmbeddedConfigWithError `mapstructure:"embedded"`
+	}{}
+
+	assert.ErrorContains(t, cfgMap.Unmarshal(&tc), "embedded error")
+}
+
 func TestEmbeddedUnmarshaler(t *testing.T) {
 	cfgMap := NewFromStringMap(map[string]any{
 		"next": map[string]any{
@@ -531,6 +558,21 @@ func TestEmbeddedUnmarshaler(t *testing.T) {
 	assert.Equal(t, "make sure this is called", tc.Next.String)
 	assert.Equal(t, "make sure this is also called", tc.Some)
 	assert.Equal(t, "this better be also called2", tc.Some2)
+}
+
+func TestEmbeddedUnmarshalerUnknownKey(t *testing.T) {
+	cfgMap := NewFromStringMap(map[string]any{
+		"next": map[string]any{
+			"string": "make sure this",
+		},
+		"another":   "make sure this",
+		"some":      "make sure this",
+		"some_2":    "this better be",
+		"bogus_key": "this should fail",
+	})
+
+	tc := &testConfigWithoutUnmarshaler{}
+	assert.Error(t, cfgMap.Unmarshal(tc))
 }
 
 func TestEmbeddedUnmarshalerError(t *testing.T) {
@@ -557,6 +599,27 @@ func TestEmbeddedMarshalerError(t *testing.T) {
 
 	tc := &testConfigWithMarshalError{}
 	assert.EqualError(t, cfgMap.Unmarshal(tc), "error running encode hook: marshaling error")
+}
+
+func TestUnmarshalDecodeStateMultipleCalls(t *testing.T) {
+	state := &decodeState{}
+	conf := NewFromStringMap(map[string]any{
+		"foo": "foo",
+		"bar": "bar",
+	})
+	conf.decodeState = state
+
+	var first struct {
+		Foo string `mapstructure:"foo"`
+	}
+	require.NoError(t, conf.Unmarshal(&first, WithIgnoreUnused()))
+
+	var second struct {
+		Bar string `mapstructure:"bar"`
+	}
+	require.NoError(t, conf.Unmarshal(&second, WithIgnoreUnused()))
+
+	assert.Empty(t, state.unused)
 }
 
 // stringOpaque is similar to configopaque.String, in that
