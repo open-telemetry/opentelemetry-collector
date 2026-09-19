@@ -12,6 +12,9 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
+	queuebatchtelemetry "go.opentelemetry.io/collector/internal/telemetry/queuebatch"
+	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/xprocessor"
 )
@@ -42,18 +45,48 @@ func queueOptions(cfg *Config, next consumer.Capabilities) []exporterhelper.Opti
 	}
 }
 
+func newProcessor[P any](
+	set processor.Settings,
+	signal pipeline.Signal,
+	sizer exporterhelper.RequestSizerType,
+	create func(queuebatchtelemetry.ObsMetrics) (P, error),
+) (P, error) {
+	obsMetrics, err := newObsMetrics(set.TelemetrySettings, set.ID, signal, sizer)
+	if err != nil {
+		var zero P
+		return zero, err
+	}
+	p, err := create(obsMetrics)
+	if err != nil {
+		obsMetrics.Shutdown()
+	}
+	return p, err
+}
+
 func newTracesProcessor(ctx context.Context, set processor.Settings, cfg *Config, next consumer.Traces) (processor.Traces, error) {
-	return exporterhelper.NewTraces(ctx, exporterSettings(set), cfg, next.ConsumeTraces, queueOptions(cfg, next.Capabilities())...)
+	return newProcessor(set, pipeline.SignalTraces, cfg.Sizer, func(obsMetrics queuebatchtelemetry.ObsMetrics) (processor.Traces, error) {
+		wrappedCfg := queuebatchtelemetry.ConfigWithObsMetrics(cfg, obsMetrics)
+		return exporterhelper.NewTraces(ctx, exporterSettings(set), wrappedCfg, next.ConsumeTraces, queueOptions(cfg, next.Capabilities())...)
+	})
 }
 
 func newMetricsProcessor(ctx context.Context, set processor.Settings, cfg *Config, next consumer.Metrics) (processor.Metrics, error) {
-	return exporterhelper.NewMetrics(ctx, exporterSettings(set), cfg, next.ConsumeMetrics, queueOptions(cfg, next.Capabilities())...)
+	return newProcessor(set, pipeline.SignalMetrics, cfg.Sizer, func(obsMetrics queuebatchtelemetry.ObsMetrics) (processor.Metrics, error) {
+		wrappedCfg := queuebatchtelemetry.ConfigWithObsMetrics(cfg, obsMetrics)
+		return exporterhelper.NewMetrics(ctx, exporterSettings(set), wrappedCfg, next.ConsumeMetrics, queueOptions(cfg, next.Capabilities())...)
+	})
 }
 
 func newLogsProcessor(ctx context.Context, set processor.Settings, cfg *Config, next consumer.Logs) (processor.Logs, error) {
-	return exporterhelper.NewLogs(ctx, exporterSettings(set), cfg, next.ConsumeLogs, queueOptions(cfg, next.Capabilities())...)
+	return newProcessor(set, pipeline.SignalLogs, cfg.Sizer, func(obsMetrics queuebatchtelemetry.ObsMetrics) (processor.Logs, error) {
+		wrappedCfg := queuebatchtelemetry.ConfigWithObsMetrics(cfg, obsMetrics)
+		return exporterhelper.NewLogs(ctx, exporterSettings(set), wrappedCfg, next.ConsumeLogs, queueOptions(cfg, next.Capabilities())...)
+	})
 }
 
 func newProfilesProcessor(ctx context.Context, set processor.Settings, cfg *Config, next xconsumer.Profiles) (xprocessor.Profiles, error) {
-	return xexporterhelper.NewProfiles(ctx, exporterSettings(set), cfg, next.ConsumeProfiles, queueOptions(cfg, next.Capabilities())...)
+	return newProcessor(set, xpipeline.SignalProfiles, cfg.Sizer, func(obsMetrics queuebatchtelemetry.ObsMetrics) (xprocessor.Profiles, error) {
+		wrappedCfg := queuebatchtelemetry.ConfigWithObsMetrics(cfg, obsMetrics)
+		return xexporterhelper.NewProfiles(ctx, exporterSettings(set), wrappedCfg, next.ConsumeProfiles, queueOptions(cfg, next.Capabilities())...)
+	})
 }

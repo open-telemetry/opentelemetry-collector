@@ -60,6 +60,7 @@ require (
 	go.opentelemetry.io/collector/exporter/xexporter v0.161.0 // indirect
 	go.opentelemetry.io/collector/extension v1.67.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.161.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.161.0
 	go.opentelemetry.io/collector/receiver v1.67.0 // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.161.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.161.0 // indirect
@@ -123,3 +124,5 @@ replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testut
 replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/componentalias
 
 replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../pipeline/xpipeline
+
+replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry

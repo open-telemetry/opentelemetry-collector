@@ -21,6 +21,7 @@ func NewTraces(
 	pusher consumer.ConsumeTracesFunc,
 	options ...Option,
 ) (exporter.Traces, error) {
+	cfg, options = internal.ExtractObsMetricsConfig(cfg, options)
 	if cfg == nil {
 		return nil, errNilConfig
 	}
