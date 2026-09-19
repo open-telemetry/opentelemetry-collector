@@ -7,3 +7,4 @@
 **Support:** `omitted`
 
 **Rationale:** The no-op exporter intentionally discards telemetry without an exporterhelper sender.
+This component omits the default QueueBatch configuration.
