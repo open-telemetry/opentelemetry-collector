@@ -72,6 +72,29 @@ func TestLoader_LoadFromFile_NotFound(t *testing.T) {
 	require.Nil(t, result)
 }
 
+func TestLoader_LoadFromFile_StatError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("file permission test not reliable on Windows")
+	}
+
+	tempDir := t.TempDir()
+	blockedDir := filepath.Join(tempDir, "blocked")
+	require.NoError(t, os.Mkdir(blockedDir, 0o750))
+
+	t.Cleanup(func() {
+		_ = os.Chmod(blockedDir, 0o750) // #nosec G302
+	})
+	require.NoError(t, os.Chmod(blockedDir, 0o000)) // #nosec G302
+
+	loader := NewLoader(tempDir).(*schemaLoader)
+	result, err := loader.loadFromFile(filepath.Join(blockedDir, schemaFileName))
+
+	require.Error(t, err)
+	require.Nil(t, result)
+	require.NotErrorIs(t, err, ErrNotFound)
+	require.Contains(t, err.Error(), "failed to read schema")
+}
+
 func TestLoader_LoadFromFile_ParseError(t *testing.T) {
 	tempDir := t.TempDir()
 
