@@ -40,8 +40,25 @@ type Settings struct {
 	// BuildInfo can be used by components for informational purposes
 	BuildInfo component.BuildInfo
 
+	batchingStatusReporter func(bool)
+
 	// prevent unkeyed literal initialization
 	_ struct{}
+}
+
+// WithBatchingStatusReporter returns a copy of the settings that reports batching status.
+// This function is for internal Collector use.
+func WithBatchingStatusReporter(set Settings, reporter func(bool)) Settings {
+	set.batchingStatusReporter = reporter
+	return set
+}
+
+// ReportBatchingStatus reports batching status when a reporter is configured.
+// This function is for internal Collector use.
+func ReportBatchingStatus(set Settings, enabled bool) {
+	if set.batchingStatusReporter != nil {
+		set.batchingStatusReporter(enabled)
+	}
 }
 
 // Factory is factory interface for exporters.
