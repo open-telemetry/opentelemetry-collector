@@ -255,6 +255,16 @@ func (orig *ResourceSpans) MarshalProto(buf []byte) int {
 }
 
 func (orig *ResourceSpans) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *ResourceSpans) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *ResourceSpans) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -280,7 +290,7 @@ func (orig *ResourceSpans) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Resource.UnmarshalProto(buf[startPos:pos])
+			err = orig.Resource.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -295,8 +305,9 @@ func (orig *ResourceSpans) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.ScopeSpans = proto.GrowRepeated(orig.ScopeSpans, buf, pos, fieldNum)
 			orig.ScopeSpans = append(orig.ScopeSpans, NewScopeSpans())
-			err = orig.ScopeSpans[len(orig.ScopeSpans)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.ScopeSpans[len(orig.ScopeSpans)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -311,7 +322,7 @@ func (orig *ResourceSpans) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.SchemaUrl = string(buf[startPos:pos])
+			orig.SchemaUrl = proto.BytesToString(buf[startPos:pos], unsafeUnmarshal)
 
 		case 1000:
 			if wireType != proto.WireTypeLen {
@@ -323,8 +334,9 @@ func (orig *ResourceSpans) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.DeprecatedScopeSpans = proto.GrowRepeated(orig.DeprecatedScopeSpans, buf, pos, fieldNum)
 			orig.DeprecatedScopeSpans = append(orig.DeprecatedScopeSpans, NewScopeSpans())
-			err = orig.DeprecatedScopeSpans[len(orig.DeprecatedScopeSpans)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.DeprecatedScopeSpans[len(orig.DeprecatedScopeSpans)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -341,9 +353,9 @@ func (orig *ResourceSpans) UnmarshalProto(buf []byte) error {
 func GenTestResourceSpans() *ResourceSpans {
 	orig := NewResourceSpans()
 	orig.Resource = *GenTestResource()
-	orig.ScopeSpans = []*ScopeSpans{{}, GenTestScopeSpans()}
+	orig.ScopeSpans = []*ScopeSpans{&ScopeSpans{}, GenTestScopeSpans()}
 	orig.SchemaUrl = "test_schemaurl"
-	orig.DeprecatedScopeSpans = []*ScopeSpans{{}, GenTestScopeSpans()}
+	orig.DeprecatedScopeSpans = []*ScopeSpans{&ScopeSpans{}, GenTestScopeSpans()}
 	return orig
 }
 

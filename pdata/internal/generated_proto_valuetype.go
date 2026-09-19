@@ -182,6 +182,16 @@ func (orig *ValueType) MarshalProto(buf []byte) int {
 }
 
 func (orig *ValueType) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *ValueType) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *ValueType) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType

@@ -206,6 +206,16 @@ func (orig *MetricsRequest) MarshalProto(buf []byte) int {
 }
 
 func (orig *MetricsRequest) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *MetricsRequest) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *MetricsRequest) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -232,7 +242,7 @@ func (orig *MetricsRequest) UnmarshalProto(buf []byte) error {
 			startPos := pos - length
 
 			orig.RequestContext = NewRequestContext()
-			err = orig.RequestContext.UnmarshalProto(buf[startPos:pos])
+			err = orig.RequestContext.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -248,7 +258,7 @@ func (orig *MetricsRequest) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.MetricsData.UnmarshalProto(buf[startPos:pos])
+			err = orig.MetricsData.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}

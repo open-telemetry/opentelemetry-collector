@@ -187,6 +187,16 @@ func (orig *ExportMetricsPartialSuccess) MarshalProto(buf []byte) int {
 }
 
 func (orig *ExportMetricsPartialSuccess) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *ExportMetricsPartialSuccess) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *ExportMetricsPartialSuccess) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -222,7 +232,7 @@ func (orig *ExportMetricsPartialSuccess) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.ErrorMessage = string(buf[startPos:pos])
+			orig.ErrorMessage = proto.BytesToString(buf[startPos:pos], unsafeUnmarshal)
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
 			if err != nil {

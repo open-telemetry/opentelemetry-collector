@@ -148,6 +148,7 @@ func TestUnmarshalConfig(t *testing.T) {
 					LogsURLPath:    "/log/ingest",
 				}),
 			},
+			UnsafeUnmarshal: true,
 		}, cfg)
 }
 

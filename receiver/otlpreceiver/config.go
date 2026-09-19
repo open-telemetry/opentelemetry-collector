@@ -62,6 +62,11 @@ type Protocols struct {
 type Config struct {
 	// Protocols is the configuration for the supported protocols, currently gRPC and HTTP (Proto and JSON).
 	Protocols Protocols `mapstructure:"protocols"`
+
+	// UnsafeUnmarshal enables zero-copy decoding of string and byte fields for
+	// protobuf requests received over gRPC and HTTP.
+	UnsafeUnmarshal bool `mapstructure:"unsafe_unmarshal,omitempty"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }

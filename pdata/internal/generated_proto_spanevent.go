@@ -240,6 +240,16 @@ func (orig *SpanEvent) MarshalProto(buf []byte) int {
 }
 
 func (orig *SpanEvent) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *SpanEvent) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *SpanEvent) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -276,7 +286,7 @@ func (orig *SpanEvent) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Name = string(buf[startPos:pos])
+			orig.Name = proto.BytesToString(buf[startPos:pos], unsafeUnmarshal)
 
 		case 3:
 			if wireType != proto.WireTypeLen {
@@ -288,8 +298,9 @@ func (orig *SpanEvent) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.Attributes = proto.GrowRepeated(orig.Attributes, buf, pos, fieldNum)
 			orig.Attributes = append(orig.Attributes, KeyValue{})
-			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.Attributes[len(orig.Attributes)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -318,7 +329,7 @@ func GenTestSpanEvent() *SpanEvent {
 	orig := NewSpanEvent()
 	orig.TimeUnixNano = uint64(13)
 	orig.Name = "test_name"
-	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
+	orig.Attributes = []KeyValue{KeyValue{}, *GenTestKeyValue()}
 	orig.DroppedAttributesCount = uint32(13)
 	return orig
 }

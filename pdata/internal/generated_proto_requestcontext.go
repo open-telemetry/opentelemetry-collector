@@ -475,6 +475,16 @@ func (orig *RequestContext) MarshalProto(buf []byte) int {
 }
 
 func (orig *RequestContext) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *RequestContext) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *RequestContext) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -501,7 +511,7 @@ func (orig *RequestContext) UnmarshalProto(buf []byte) error {
 			startPos := pos - length
 
 			orig.SpanContext = NewSpanContext()
-			err = orig.SpanContext.UnmarshalProto(buf[startPos:pos])
+			err = orig.SpanContext.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -516,8 +526,9 @@ func (orig *RequestContext) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.ClientMetadata = proto.GrowRepeated(orig.ClientMetadata, buf, pos, fieldNum)
 			orig.ClientMetadata = append(orig.ClientMetadata, KeyValue{})
-			err = orig.ClientMetadata[len(orig.ClientMetadata)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.ClientMetadata[len(orig.ClientMetadata)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -539,7 +550,7 @@ func (orig *RequestContext) UnmarshalProto(buf []byte) error {
 				ov = ProtoPoolRequestContext_IP.Get().(*RequestContext_IP)
 			}
 			ov.IP = NewIPAddr()
-			err = ov.IP.UnmarshalProto(buf[startPos:pos])
+			err = ov.IP.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -562,7 +573,7 @@ func (orig *RequestContext) UnmarshalProto(buf []byte) error {
 				ov = ProtoPoolRequestContext_TCP.Get().(*RequestContext_TCP)
 			}
 			ov.TCP = NewTCPAddr()
-			err = ov.TCP.UnmarshalProto(buf[startPos:pos])
+			err = ov.TCP.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -585,7 +596,7 @@ func (orig *RequestContext) UnmarshalProto(buf []byte) error {
 				ov = ProtoPoolRequestContext_UDP.Get().(*RequestContext_UDP)
 			}
 			ov.UDP = NewUDPAddr()
-			err = ov.UDP.UnmarshalProto(buf[startPos:pos])
+			err = ov.UDP.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -608,7 +619,7 @@ func (orig *RequestContext) UnmarshalProto(buf []byte) error {
 				ov = ProtoPoolRequestContext_Unix.Get().(*RequestContext_Unix)
 			}
 			ov.Unix = NewUnixAddr()
-			err = ov.Unix.UnmarshalProto(buf[startPos:pos])
+			err = ov.Unix.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -627,7 +638,7 @@ func (orig *RequestContext) UnmarshalProto(buf []byte) error {
 func GenTestRequestContext() *RequestContext {
 	orig := NewRequestContext()
 	orig.SpanContext = GenTestSpanContext()
-	orig.ClientMetadata = []KeyValue{{}, *GenTestKeyValue()}
+	orig.ClientMetadata = []KeyValue{KeyValue{}, *GenTestKeyValue()}
 	orig.ClientAddress = &RequestContext_IP{IP: GenTestIPAddr()}
 	return orig
 }
