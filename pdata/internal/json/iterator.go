@@ -19,9 +19,35 @@ func ReturnIterator(s *Iterator) {
 	jsoniter.ConfigFastest.ReturnIterator(s.delegate)
 }
 
+// maxRecursionDepth bounds the nesting of messages decoded by generated UnmarshalJSON
+// methods, guarding against stack exhaustion from deeply nested untrusted JSON (an
+// AnyValue whose value is an arrayValue/kvlistValue of AnyValues, repeated). It mirrors
+// the proto unmarshal recursion limit; keep the two values in sync.
+const maxRecursionDepth = 100
+
 type Iterator struct {
 	delegate              *jsoniter.Iterator
 	disallowUnknownFields bool
+	depth                 int
+}
+
+// EnterRecursive increments the nesting counter and reports an error if the maximum
+// recursion depth is exceeded, returning false in that case. Generated UnmarshalJSON
+// methods call it on entry and, when it returns true, pair it with [Iterator.ExitRecursive]
+// on exit. When it returns false the caller must return without recursing further.
+func (iter *Iterator) EnterRecursive() bool {
+	iter.depth++
+	if iter.depth > maxRecursionDepth {
+		iter.depth--
+		iter.ReportError("UnmarshalJSON", "max recursion depth exceeded")
+		return false
+	}
+	return true
+}
+
+// ExitRecursive decrements the nesting counter set by [Iterator.EnterRecursive].
+func (iter *Iterator) ExitRecursive() {
+	iter.depth--
 }
 
 // SetDisallowUnknownFields configures whether unknown fields encountered during
