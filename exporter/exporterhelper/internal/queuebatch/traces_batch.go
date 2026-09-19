@@ -6,7 +6,6 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
@@ -50,17 +49,44 @@ func (req *tracesRequest) mergeTo(dst *tracesRequest, sz sizer.TracesSizer, szt 
 }
 
 func (req *tracesRequest) split(maxSize int, sz sizer.TracesSizer, szt request.SizerType) ([]request.Request, error) {
-	var res []request.Request
-	for req.size(sz, szt) > maxSize {
-		td, rmSize := extractTraces(req.td, maxSize, sz)
-		if td.SpanCount() == 0 {
-			return res, fmt.Errorf("one span size is greater than max size, dropping items: %d", req.td.SpanCount())
+	return splitRequest(req, &req.sizes, req.td, maxSize, sz, szt,
+		func() int { return req.size(sz, szt) },
+		splitOps[ptrace.Traces, sizer.TracesSizer]{
+			itemCount:   ptrace.Traces.SpanCount,
+			extract:     extractTraces,
+			removeFirst: removeFirstSpan,
+			size:        sizer.TracesSizer.TracesSize,
+			newRequest:  newTracesRequest,
+			itemName:    "span",
+			itemsName:   "spans",
+		})
+}
+
+// removeFirstSpan removes the first span in iteration order, together with the
+// scope and resource that it leaves empty. Reports whether a span was removed,
+// which is false only when there are none left.
+func removeFirstSpan(td ptrace.Traces) bool {
+	removed := false
+	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
+		if removed {
+			return false
 		}
-		req.sizes.Update(szt, req.size(sz, szt)-rmSize)
-		res = append(res, newTracesRequest(td))
-	}
-	res = append(res, req)
-	return res, nil
+		rs.ScopeSpans().RemoveIf(func(ss ptrace.ScopeSpans) bool {
+			if removed {
+				return false
+			}
+			ss.Spans().RemoveIf(func(ptrace.Span) bool {
+				if removed {
+					return false
+				}
+				removed = true
+				return true
+			})
+			return ss.Spans().Len() == 0
+		})
+		return rs.ScopeSpans().Len() == 0
+	})
+	return removed
 }
 
 // extractTraces extracts a new traces with a maximum number of spans.

@@ -6,7 +6,6 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
@@ -50,17 +49,44 @@ func (req *logsRequest) mergeTo(dst *logsRequest, sz sizer.LogsSizer, szt reques
 }
 
 func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer, szt request.SizerType) ([]request.Request, error) {
-	var res []request.Request
-	for req.size(sz, szt) > maxSize {
-		ld, removedSize := extractLogs(req.ld, maxSize, sz)
-		if ld.LogRecordCount() == 0 {
-			return res, fmt.Errorf("one log record size is greater than max size, dropping items: %d", req.ld.LogRecordCount())
+	return splitRequest(req, &req.sizes, req.ld, maxSize, sz, szt,
+		func() int { return req.size(sz, szt) },
+		splitOps[plog.Logs, sizer.LogsSizer]{
+			itemCount:   plog.Logs.LogRecordCount,
+			extract:     extractLogs,
+			removeFirst: removeFirstLogRecord,
+			size:        sizer.LogsSizer.LogsSize,
+			newRequest:  newLogsRequest,
+			itemName:    "log record",
+			itemsName:   "log records",
+		})
+}
+
+// removeFirstLogRecord removes the first log record in iteration order, together
+// with the scope and resource that it leaves empty. Reports whether a record was
+// removed, which is false only when there are none left.
+func removeFirstLogRecord(ld plog.Logs) bool {
+	removed := false
+	ld.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
+		if removed {
+			return false
 		}
-		req.sizes.Update(szt, req.size(sz, szt)-removedSize)
-		res = append(res, newLogsRequest(ld))
-	}
-	res = append(res, req)
-	return res, nil
+		rl.ScopeLogs().RemoveIf(func(sl plog.ScopeLogs) bool {
+			if removed {
+				return false
+			}
+			sl.LogRecords().RemoveIf(func(plog.LogRecord) bool {
+				if removed {
+					return false
+				}
+				removed = true
+				return true
+			})
+			return sl.LogRecords().Len() == 0
+		})
+		return rl.ScopeLogs().Len() == 0
+	})
+	return removed
 }
 
 // extractLogs extracts logs from the input logs and returns a new logs with the specified number of log records.

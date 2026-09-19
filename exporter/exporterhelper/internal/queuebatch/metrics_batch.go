@@ -6,7 +6,6 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
@@ -50,17 +49,103 @@ func (req *metricsRequest) mergeTo(dst *metricsRequest, sz sizer.MetricsSizer, s
 }
 
 func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer, szt request.SizerType) ([]request.Request, error) {
-	var res []request.Request
-	for req.size(sz, szt) > maxSize {
-		md, rmSize := extractMetrics(req.md, maxSize, sz)
-		if md.DataPointCount() == 0 {
-			return res, fmt.Errorf("one datapoint size is greater than max size, dropping items: %d", req.md.DataPointCount())
+	return splitRequest(req, &req.sizes, req.md, maxSize, sz, szt,
+		func() int { return req.size(sz, szt) },
+		splitOps[pmetric.Metrics, sizer.MetricsSizer]{
+			itemCount:   pmetric.Metrics.DataPointCount,
+			extract:     extractMetrics,
+			removeFirst: removeFirstDataPoint,
+			size:        sizer.MetricsSizer.MetricsSize,
+			newRequest:  newMetricsRequest,
+			itemName:    "datapoint",
+			itemsName:   "data points",
+		})
+}
+
+// removeFirstDataPoint removes the first data point in iteration order, together
+// with the metric, scope and resource that it leaves empty. Reports whether a
+// data point was removed, which is false only when there are none left.
+func removeFirstDataPoint(md pmetric.Metrics) bool {
+	removed := false
+	md.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
+		if removed {
+			return false
 		}
-		req.sizes.Update(szt, req.size(sz, szt)-rmSize)
-		res = append(res, newMetricsRequest(md))
+		rm.ScopeMetrics().RemoveIf(func(sm pmetric.ScopeMetrics) bool {
+			if removed {
+				return false
+			}
+			sm.Metrics().RemoveIf(func(m pmetric.Metric) bool {
+				if removed {
+					return false
+				}
+				if !removeFirstMetricDataPoint(m) {
+					// This metric carries no data points, so there was nothing to drop.
+					// Keep it and keep looking, rather than deleting it as collateral and
+					// losing its name, unit and description without counting it.
+					return false
+				}
+				removed = true
+				return dataPointsLen(m) == 0
+			})
+			return sm.Metrics().Len() == 0
+		})
+		return rm.ScopeMetrics().Len() == 0
+	})
+	return removed
+}
+
+// removeFirstMetricDataPoint removes the first data point of m, whichever data
+// point type it holds. Reports whether one was removed, which is false for a
+// metric that holds no data points at all.
+func removeFirstMetricDataPoint(m pmetric.Metric) bool {
+	removed := false
+	switch m.Type() {
+	case pmetric.MetricTypeEmpty:
+		// No data point slice exists on this metric, so there is nothing to remove.
+		return false
+	case pmetric.MetricTypeGauge:
+		m.Gauge().DataPoints().RemoveIf(func(pmetric.NumberDataPoint) bool {
+			if removed {
+				return false
+			}
+			removed = true
+			return true
+		})
+	case pmetric.MetricTypeSum:
+		m.Sum().DataPoints().RemoveIf(func(pmetric.NumberDataPoint) bool {
+			if removed {
+				return false
+			}
+			removed = true
+			return true
+		})
+	case pmetric.MetricTypeHistogram:
+		m.Histogram().DataPoints().RemoveIf(func(pmetric.HistogramDataPoint) bool {
+			if removed {
+				return false
+			}
+			removed = true
+			return true
+		})
+	case pmetric.MetricTypeExponentialHistogram:
+		m.ExponentialHistogram().DataPoints().RemoveIf(func(pmetric.ExponentialHistogramDataPoint) bool {
+			if removed {
+				return false
+			}
+			removed = true
+			return true
+		})
+	case pmetric.MetricTypeSummary:
+		m.Summary().DataPoints().RemoveIf(func(pmetric.SummaryDataPoint) bool {
+			if removed {
+				return false
+			}
+			removed = true
+			return true
+		})
 	}
-	res = append(res, req)
-	return res, nil
+	return removed
 }
 
 // extractMetrics extracts metrics from srcMetrics until capacity is reached.

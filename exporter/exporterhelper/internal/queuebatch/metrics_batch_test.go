@@ -5,6 +5,8 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/internal/testutil"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
@@ -768,4 +771,248 @@ func (m *mockMetricsSizer) ScopeMetricsSize(_ pmetric.ScopeMetrics) int {
 
 func (m *mockMetricsSizer) DeltaSize(size int) int {
 	return size
+}
+
+// dpNames returns the "id" attribute of every gauge data point across the given
+// requests, in order.
+func dpNames(reqs []request.Request) []string {
+	var out []string
+	for _, r := range reqs {
+		rms := r.(*metricsRequest).md.ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			sms := rms.At(i).ScopeMetrics()
+			for j := 0; j < sms.Len(); j++ {
+				ms := sms.At(j).Metrics()
+				for k := 0; k < ms.Len(); k++ {
+					dps := ms.At(k).Gauge().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						v, _ := dps.At(l).Attributes().Get("id")
+						out = append(out, v.Str())
+					}
+				}
+			}
+		}
+	}
+	return out
+}
+
+// newMetricsWithDataPoints builds one gauge metric per id, each holding a single
+// data point; an id of "BIG" gets an attribute large enough that the data point
+// cannot fit into any batch.
+func newMetricsWithDataPoints(ids ...string) pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	sm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	for _, id := range ids {
+		m := sm.Metrics().AppendEmpty()
+		m.SetName(id)
+		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+		dp.SetIntValue(1)
+		dp.Attributes().PutStr("id", id)
+		if id == "BIG" {
+			dp.Attributes().PutStr("pad", strings.Repeat("x", 1000))
+		}
+	}
+	return md
+}
+
+func TestMergeSplitMetricsDropsOnlyOversizedDataPoint(t *testing.T) {
+	tests := []struct {
+		name         string
+		ids          []string
+		wantSurvived []string
+		wantDropped  int
+	}{
+		{"oversized_first", []string{"BIG", "a", "b", "c"}, []string{"a", "b", "c"}, 1},
+		{"oversized_in_middle", []string{"a", "b", "BIG", "c", "d"}, []string{"a", "b", "c", "d"}, 1},
+		{"oversized_last", []string{"a", "b", "c", "BIG"}, []string{"a", "b", "c"}, 1},
+		{"multiple_oversized", []string{"a", "BIG", "b", "BIG", "c"}, []string{"a", "b", "c"}, 2},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := newMetricsRequest(newMetricsWithDataPoints(tt.ids...))
+			res, err := req.MergeSplit(context.Background(), 150, request.SizerTypeBytes, nil)
+
+			wantErr := fmt.Sprintf("one datapoint size is greater than max size, dropping items: %d", tt.wantDropped)
+			require.ErrorContains(t, err, wantErr)
+			assert.Equal(t, tt.wantSurvived, dpNames(res),
+				"data points other than the oversized ones must survive")
+
+			for _, r := range res {
+				assert.LessOrEqual(t, r.BytesSize(), 150, "no returned batch may exceed max size")
+			}
+		})
+	}
+}
+
+func TestMergeSplitMetricsAllDataPointsOversized(t *testing.T) {
+	req := newMetricsRequest(newMetricsWithDataPoints("BIG", "BIG"))
+	res, err := req.MergeSplit(context.Background(), 150, request.SizerTypeBytes, nil)
+	require.ErrorContains(t, err, "one datapoint size is greater than max size, dropping items: 2")
+	assert.Empty(t, dpNames(res), "nothing can be exported when every data point is oversized")
+}
+
+func TestMergeSplitMetricsUnsplittableRequest(t *testing.T) {
+	// No data points at all, but resource attributes alone exceed max size.
+	md := pmetric.NewMetrics()
+	md.ResourceMetrics().AppendEmpty().Resource().Attributes().PutStr("big", strings.Repeat("x", 500))
+	req := newMetricsRequest(md)
+	require.Greater(t, req.BytesSize(), 100, "precondition: request must start oversized")
+
+	res, err := req.MergeSplit(context.Background(), 100, request.SizerTypeBytes, nil)
+	require.ErrorContains(t, err, "no data points left to drop",
+		"an unsplittable request must report an error rather than succeed silently")
+	assert.Empty(t, res, "an oversized request holding no data points must not be returned")
+}
+
+func TestMergeSplitMetricsDataLessMetricNotCountedAsDropped(t *testing.T) {
+	// A metric carrying no data points, including MetricTypeEmpty, must not be
+	// deleted as collateral while dropping an oversized data point, and must never
+	// inflate the dropped-item count.
+	md := pmetric.NewMetrics()
+	sm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	empty := sm.Metrics().AppendEmpty()
+	empty.SetName("empty.metric")
+	require.Equal(t, pmetric.MetricTypeEmpty, empty.Type(), "precondition: metric has no data point slice")
+	oversized := sm.Metrics().AppendEmpty()
+	oversized.SetName("oversized.metric")
+	odp := oversized.SetEmptyGauge().DataPoints().AppendEmpty()
+	odp.Attributes().PutStr("pad", strings.Repeat("y", 400))
+	small := sm.Metrics().AppendEmpty()
+	small.SetName("small.metric")
+	small.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(2)
+
+	res, err := newMetricsRequest(md).MergeSplit(context.Background(), 100, request.SizerTypeBytes, nil)
+	require.ErrorContains(t, err, "one datapoint size is greater than max size, dropping items: 1",
+		"only the oversized data point counts as dropped, not the data-less metric")
+
+	got := 0
+	for _, r := range res {
+		got += r.(*metricsRequest).md.DataPointCount()
+	}
+	assert.Equal(t, 1, got, "the well-sized data point must survive")
+}
+
+func TestMergeSplitMetricsDropsOversizedDataPointForEveryType(t *testing.T) {
+	// removeFirstMetricDataPoint switches on the data point type, so every type needs
+	// to be exercised: a gauge-only test leaves the other four branches unproven.
+	pad := strings.Repeat("y", 400)
+	addThree := func(m pmetric.Metric, typ pmetric.MetricType) {
+		appendDataPoint := func() pcommon.Map {
+			switch typ {
+			case pmetric.MetricTypeGauge:
+				return m.Gauge().DataPoints().AppendEmpty().Attributes()
+			case pmetric.MetricTypeSum:
+				return m.Sum().DataPoints().AppendEmpty().Attributes()
+			case pmetric.MetricTypeHistogram:
+				return m.Histogram().DataPoints().AppendEmpty().Attributes()
+			case pmetric.MetricTypeExponentialHistogram:
+				return m.ExponentialHistogram().DataPoints().AppendEmpty().Attributes()
+			case pmetric.MetricTypeSummary:
+				return m.Summary().DataPoints().AppendEmpty().Attributes()
+			}
+			t.Fatalf("unhandled metric type %v", typ)
+			return pcommon.NewMap()
+		}
+		appendDataPoint().PutStr("id", "small_before")
+		appendDataPoint().PutStr("pad", pad)
+		appendDataPoint().PutStr("id", "small_after")
+	}
+
+	tests := []struct {
+		name  string
+		typ   pmetric.MetricType
+		setup func(pmetric.Metric)
+	}{
+		{"gauge", pmetric.MetricTypeGauge, func(m pmetric.Metric) { m.SetEmptyGauge() }},
+		{"sum", pmetric.MetricTypeSum, func(m pmetric.Metric) { m.SetEmptySum() }},
+		{"histogram", pmetric.MetricTypeHistogram, func(m pmetric.Metric) { m.SetEmptyHistogram() }},
+		{"exponential_histogram", pmetric.MetricTypeExponentialHistogram, func(m pmetric.Metric) { m.SetEmptyExponentialHistogram() }},
+		{"summary", pmetric.MetricTypeSummary, func(m pmetric.Metric) { m.SetEmptySummary() }},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			md := pmetric.NewMetrics()
+			m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+			m.SetName("test." + tt.name)
+			tt.setup(m)
+			addThree(m, tt.typ)
+			require.Equal(t, 3, md.DataPointCount(), "precondition: three data points")
+
+			res, err := newMetricsRequest(md).MergeSplit(context.Background(), 100, request.SizerTypeBytes, nil)
+			require.ErrorContains(t, err, "one datapoint size is greater than max size, dropping items: 1",
+				"exactly the oversized data point must be dropped")
+
+			got := 0
+			for _, r := range res {
+				got += r.(*metricsRequest).md.DataPointCount()
+			}
+			assert.Equal(t, 2, got, "the well-sized data points on either side must survive")
+		})
+	}
+}
+
+func TestMergeSplitMetricsKeepsUnextractableDataLessMetric(t *testing.T) {
+	// A data-less metric small enough to extract never reaches removeFirstDataPoint,
+	// because extractMetrics moves it into the discarded batch first. Give it a
+	// description large enough that it cannot be extracted, so it is still in the
+	// source when the drop path runs. It must not be counted as a dropped item:
+	// it holds no data points, so there is nothing in it to drop.
+	md := pmetric.NewMetrics()
+	sm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	dataLess := sm.Metrics().AppendEmpty()
+	dataLess.SetName("empty.with.big.description")
+	dataLess.SetDescription(strings.Repeat("d", 400))
+	require.Equal(t, pmetric.MetricTypeEmpty, dataLess.Type(), "precondition: metric has no data point slice")
+	gauge := sm.Metrics().AppendEmpty()
+	gauge.SetName("small.gauge")
+	gauge.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(1)
+	require.Equal(t, 1, md.DataPointCount(), "precondition: exactly one data point")
+
+	_, err := newMetricsRequest(md).MergeSplit(context.Background(), 100, request.SizerTypeBytes, nil)
+	// The single data point is lost because the data-less metric's own metadata
+	// exceeds max size, the same way resource overhead alone can exceed it. What
+	// matters here is the count: one data point, not two items.
+	require.ErrorContains(t, err, "one datapoint size is greater than max size, dropping items: 1",
+		"a metric with no data points must not be counted as a dropped item")
+}
+
+func TestMergeSplitMetricsDropsOnlyOversizedAcrossResourcesAndScopes(t *testing.T) {
+	// removeFirstDataPoint stops scanning once it has removed one data point. With
+	// several resources and scopes, the untouched ones must survive intact.
+	pad := strings.Repeat("y", 400)
+	md := pmetric.NewMetrics()
+	rm1 := md.ResourceMetrics().AppendEmpty()
+	oversized := rm1.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	oversized.SetName("r1s1.oversized")
+	oversized.SetEmptyGauge().DataPoints().AppendEmpty().Attributes().PutStr("pad", pad)
+	secondScope := rm1.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	secondScope.SetName("r1s2.small")
+	secondScope.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(2)
+	secondResource := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	secondResource.SetName("r2.small")
+	secondResource.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(3)
+	require.Equal(t, 3, md.DataPointCount(), "precondition: three data points")
+
+	res, err := newMetricsRequest(md).MergeSplit(context.Background(), 100, request.SizerTypeBytes, nil)
+	require.ErrorContains(t, err, "one datapoint size is greater than max size, dropping items: 1")
+
+	var names []string
+	got := 0
+	for _, r := range res {
+		mr := r.(*metricsRequest)
+		got += mr.md.DataPointCount()
+		for a := 0; a < mr.md.ResourceMetrics().Len(); a++ {
+			for b := 0; b < mr.md.ResourceMetrics().At(a).ScopeMetrics().Len(); b++ {
+				ms := mr.md.ResourceMetrics().At(a).ScopeMetrics().At(b).Metrics()
+				for c := 0; c < ms.Len(); c++ {
+					names = append(names, ms.At(c).Name())
+				}
+			}
+		}
+	}
+	assert.Equal(t, 2, got, "the well-sized data points in the other scope and resource must survive")
+	assert.ElementsMatch(t, []string{"r1s2.small", "r2.small"}, names,
+		"only the oversized metric may be removed")
 }
