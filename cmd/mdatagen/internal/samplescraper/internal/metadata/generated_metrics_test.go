@@ -618,6 +618,23 @@ func TestRecordDataPointMerge(t *testing.T) {
 		assert.Equal(t, 2, mb.metricOptionalMetricEmptyUnit.data.Gauge().DataPoints().Len(),
 			"recording optional.metric.empty_unit with different attributes must create a 2nd data point, not merge into the 1st")
 	})
+	t.Run("optional.metric.to_be_removed", func(t *testing.T) {
+		settings := scrapertest.NewNopSettings(scrapertest.NopType)
+		settings.Logger = zap.NewNop()
+		mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+		mb.RecordOptionalMetricToBeRemovedDataPoint(ts, 1, "string_attr-val")
+		require.Equal(t, 1, mb.metricOptionalMetricToBeRemoved.data.Gauge().DataPoints().Len())
+
+		// same args: must merge
+		mb.RecordOptionalMetricToBeRemovedDataPoint(ts, 1, "string_attr-val")
+		assert.Equal(t, 1, mb.metricOptionalMetricToBeRemoved.data.Gauge().DataPoints().Len(),
+			"recording optional.metric.to_be_removed twice with identical attributes and timestamps must merge, not create a 2nd data point")
+		// different attrs: must not merge
+		mb.RecordOptionalMetricToBeRemovedDataPoint(ts, 1, "string_attr-val-2")
+		assert.Equal(t, 2, mb.metricOptionalMetricToBeRemoved.data.Gauge().DataPoints().Len(),
+			"recording optional.metric.to_be_removed with different attributes must create a 2nd data point, not merge into the 1st")
+	})
 	t.Run("reaggregate.metric", func(t *testing.T) {
 		settings := scrapertest.NewNopSettings(scrapertest.NopType)
 		settings.Logger = zap.NewNop()
