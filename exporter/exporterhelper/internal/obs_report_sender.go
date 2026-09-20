@@ -58,7 +58,7 @@ type obsReportSender[K request.Request] struct {
 	next         sender.Sender[K]
 }
 
-func newObsReportSenderWithMetrics[K request.Request](
+func newObsReportSender[K request.Request](
 	set exporter.Settings,
 	signal pipeline.Signal,
 	obsMetrics queuebatchtelemetry.SendMetrics,

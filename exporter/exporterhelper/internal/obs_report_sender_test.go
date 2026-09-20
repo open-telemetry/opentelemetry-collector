@@ -52,7 +52,7 @@ func newTestObsReportSender[K request.Request](
 		return nil, err
 	}
 	t.Cleanup(shutdown.Shutdown)
-	return newObsReportSenderWithMetrics(set, signal, obsMetrics, batchEnabled, next), nil
+	return newObsReportSender(set, signal, obsMetrics, batchEnabled, next), nil
 }
 
 func TestExportTraceFailureAttributes(t *testing.T) {

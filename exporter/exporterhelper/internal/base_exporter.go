@@ -94,7 +94,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 	}
 
 	batchEnabled := be.queueCfg.HasValue() && be.queueCfg.Get().Batch.HasValue()
-	be.firstSender = newObsReportSenderWithMetrics(set, signal, be.obsMetrics.SendMetrics, batchEnabled, be.firstSender)
+	be.firstSender = newObsReportSender(set, signal, be.obsMetrics.SendMetrics, batchEnabled, be.firstSender)
 
 	if batchEnabled {
 		// Batcher mutates the data.
