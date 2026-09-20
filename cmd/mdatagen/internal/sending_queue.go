@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"go.yaml.in/yaml/v3"
 
@@ -46,16 +47,20 @@ type SendingQueueTemplateData struct {
 	QueueEnabled       bool
 	WaitForResult      bool
 	QueueSizer         string
+	QueueSizerValue    string
 	QueueSize          int64
 	BlockOnOverflow    bool
 	StorageConstructor string
+	StorageValue       string
 	NumConsumers       int
 	BatchEnabled       bool
 	FlushTimeout       int64
 	BatchSizer         string
+	BatchSizerValue    string
 	MinSize            int64
 	MaxSize            int64
 	MetadataKeys       string
+	MetadataKeyValues  []string
 }
 
 type sendingQueueDocumentation struct {
@@ -148,11 +153,6 @@ func (sq *SendingQueue) IsOmitted() bool {
 	return sq.Support == SendingQueueSupportOmitted
 }
 
-func (sq *SendingQueue) IsEnabled() bool {
-	parsed, err := sq.Overrides.parse()
-	return err == nil && parsed.enabled
-}
-
 func (sq *SendingQueue) HasOverrides() bool {
 	return sq.Support == SendingQueueSupportHasOverrides
 }
@@ -177,6 +177,7 @@ func (sq *SendingQueue) TemplateData() (SendingQueueTemplateData, error) {
 	}
 
 	storageConstructor := ""
+	storageValue := ""
 	if cfg.StorageID != nil {
 		constructor := "component.MustNewID"
 		args := strconv.Quote(cfg.StorageID.Type().String())
@@ -185,6 +186,7 @@ func (sq *SendingQueue) TemplateData() (SendingQueueTemplateData, error) {
 			args += ", " + strconv.Quote(cfg.StorageID.Name())
 		}
 		storageConstructor = constructor + "(" + args + ")"
+		storageValue = cfg.StorageID.String()
 	}
 
 	keys := make([]string, 0, len(batchCfg.Partition.MetadataKeys))
@@ -196,16 +198,20 @@ func (sq *SendingQueue) TemplateData() (SendingQueueTemplateData, error) {
 		QueueEnabled:       queueEnabled,
 		WaitForResult:      cfg.WaitForResult,
 		QueueSizer:         queueSizer,
+		QueueSizerValue:    cfg.Sizer.String(),
 		QueueSize:          cfg.QueueSize,
 		BlockOnOverflow:    cfg.BlockOnOverflow,
 		StorageConstructor: storageConstructor,
+		StorageValue:       storageValue,
 		NumConsumers:       cfg.NumConsumers,
 		BatchEnabled:       batchEnabled,
 		FlushTimeout:       int64(batchCfg.FlushTimeout),
 		BatchSizer:         batchSizer,
+		BatchSizerValue:    batchCfg.Sizer.String(),
 		MinSize:            batchCfg.MinSize,
 		MaxSize:            batchCfg.MaxSize,
 		MetadataKeys:       "[]string{" + strings.Join(keys, ", ") + "}",
+		MetadataKeyValues:  batchCfg.Partition.MetadataKeys,
 	}, nil
 }
 
@@ -215,34 +221,27 @@ func (sq *SendingQueue) YAMLConfig() (string, error) {
 		return "", err
 	}
 
-	cfg, err := sq.Overrides.Apply(newPostMigrationDefaultQueueConfig())
-	if err != nil {
-		return "", err
-	}
-	queueCfg := cfg.GetOrInsertDefault()
-	batchCfg := queueCfg.Batch.GetOrInsertDefault()
 	var storage *string
-	if queueCfg.StorageID != nil {
-		storageValue := queueCfg.StorageID.String()
-		storage = &storageValue
+	if templateData.StorageValue != "" {
+		storage = &templateData.StorageValue
 	}
 	doc := sendingQueueDocumentation{
 		SendingQueue: queueDocumentation{
 			Enabled:         templateData.QueueEnabled,
-			WaitForResult:   queueCfg.WaitForResult,
-			Sizer:           queueCfg.Sizer.String(),
-			QueueSize:       queueCfg.QueueSize,
-			BlockOnOverflow: queueCfg.BlockOnOverflow,
+			WaitForResult:   templateData.WaitForResult,
+			Sizer:           templateData.QueueSizerValue,
+			QueueSize:       templateData.QueueSize,
+			BlockOnOverflow: templateData.BlockOnOverflow,
 			Storage:         storage,
-			NumConsumers:    queueCfg.NumConsumers,
+			NumConsumers:    templateData.NumConsumers,
 			Batch: batchDocumentation{
 				Enabled:      templateData.BatchEnabled,
-				FlushTimeout: batchCfg.FlushTimeout.String(),
-				Sizer:        batchCfg.Sizer.String(),
-				MinSize:      batchCfg.MinSize,
-				MaxSize:      batchCfg.MaxSize,
+				FlushTimeout: time.Duration(templateData.FlushTimeout).String(),
+				Sizer:        templateData.BatchSizerValue,
+				MinSize:      templateData.MinSize,
+				MaxSize:      templateData.MaxSize,
 				Partition: partitionDocumentation{
-					MetadataKeys: batchCfg.Partition.MetadataKeys,
+					MetadataKeys: templateData.MetadataKeyValues,
 				},
 			},
 		},
@@ -262,10 +261,6 @@ func (sq *SendingQueue) YAMLConfig() (string, error) {
 
 func annotateSendingQueueLeaves(node *yaml.Node, path []string, sq *SendingQueue) {
 	switch node.Kind {
-	case yaml.DocumentNode:
-		for _, child := range node.Content {
-			annotateSendingQueueLeaves(child, path, sq)
-		}
 	case yaml.MappingNode:
 		for i := 0; i < len(node.Content); i += 2 {
 			key, value := node.Content[i], node.Content[i+1]

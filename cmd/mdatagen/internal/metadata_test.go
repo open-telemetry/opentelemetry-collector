@@ -1153,3 +1153,25 @@ func TestValidateSendingQueueDefaultsForExporters(t *testing.T) {
 	require.NoError(t, md.validateSendingQueue())
 	require.Equal(t, &SendingQueue{Support: SendingQueueSupportDefault}, md.SendingQueue)
 }
+
+func TestValidateSendingQueueRejectsNonExporter(t *testing.T) {
+	md := Metadata{
+		Status:       &Status{Class: "receiver"},
+		SendingQueue: &SendingQueue{},
+	}
+
+	require.EqualError(t, md.validateSendingQueue(), "sending_queue is only valid for exporters")
+}
+
+func TestValidateIncludesSendingQueueErrors(t *testing.T) {
+	md := Metadata{
+		Type: "test",
+		Status: &Status{
+			Class:     "receiver",
+			Stability: StabilityMap{component.StabilityLevelBeta: {"metrics"}},
+		},
+		SendingQueue: &SendingQueue{},
+	}
+
+	require.ErrorContains(t, md.Validate(), "sending_queue is only valid for exporters")
+}

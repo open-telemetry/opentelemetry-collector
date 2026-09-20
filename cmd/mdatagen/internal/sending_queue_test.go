@@ -259,17 +259,88 @@ func TestSendingQueueTemplateDataAllFields(t *testing.T) {
 		QueueEnabled:       true,
 		WaitForResult:      true,
 		QueueSizer:         "exporterhelper.RequestSizerTypeItems",
+		QueueSizerValue:    "items",
 		QueueSize:          2048,
 		BlockOnOverflow:    true,
 		StorageConstructor: `component.MustNewIDWithName("file_storage", "queue")`,
+		StorageValue:       "file_storage/queue",
 		NumConsumers:       2,
 		BatchEnabled:       true,
 		FlushTimeout:       int64(3 * time.Second),
 		BatchSizer:         "exporterhelper.RequestSizerTypeBytes",
+		BatchSizerValue:    "bytes",
 		MinSize:            10,
 		MaxSize:            20,
 		MetadataKeys:       `[]string{"tenant", "region"}`,
+		MetadataKeyValues:  []string{"tenant", "region"},
 	}, actual)
+
+	actualYAML, err := config.YAMLConfig()
+	require.NoError(t, err)
+	require.Contains(t, actualYAML, "storage: file_storage/queue")
+}
+
+func TestSendingQueueRenderingErrors(t *testing.T) {
+	tests := []struct {
+		name      string
+		overrides SendingQueueOverrides
+	}{
+		{
+			name:      "invalid queue override",
+			overrides: SendingQueueOverrides{"queue_size": "invalid"},
+		},
+		{
+			name:      "invalid enabled override",
+			overrides: SendingQueueOverrides{"enabled": "invalid"},
+		},
+		{
+			name:      "invalid batch value",
+			overrides: SendingQueueOverrides{"batch": "invalid"},
+		},
+		{
+			name: "invalid batch override",
+			overrides: SendingQueueOverrides{
+				"batch": map[string]any{"min_size": "invalid"},
+			},
+		},
+		{
+			name:      "invalid queue sizer",
+			overrides: SendingQueueOverrides{"sizer": "invalid"},
+		},
+		{
+			name: "invalid batch sizer",
+			overrides: SendingQueueOverrides{
+				"batch": map[string]any{"sizer": "invalid"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := SendingQueue{Overrides: tt.overrides}
+			_, err := config.TemplateData()
+			require.Error(t, err)
+			_, err = config.YAMLConfig()
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestSendingQueueOverridePaths(t *testing.T) {
+	overrides := SendingQueueOverrides{
+		"batch":  map[string]any{"min_size": 1},
+		"scalar": true,
+	}
+
+	require.True(t, hasOverride(overrides, []string{"batch", "min_size"}))
+	require.False(t, hasOverride(overrides, []string{"batch", "max_size"}))
+	require.False(t, hasOverride(overrides, []string{"scalar", "nested"}))
+	require.False(t, hasOverride(overrides, nil))
+}
+
+func TestSendingQueueSizerExpressionRejectsInvalidValue(t *testing.T) {
+	_, err := sizerExpression("invalid")
+	require.EqualError(t, err, `invalid sending_queue sizer "invalid"`)
 }
 
 func TestSendingQueueOverridesApply(t *testing.T) {
