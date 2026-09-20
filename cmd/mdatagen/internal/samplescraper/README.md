@@ -40,6 +40,7 @@ This scraper is used for testing purposes to check the output of mdatagen.
 | `metric.input_type` | object (see [metrics.metric.input_type](#metrics.metric.input_type)) |  | no | MetricInputTypeMetricConfig provides config for the metric.input_type metric. |
 | `optional.metric` | object (see [metrics.optional.metric](#metrics.optional.metric)) |  | no | OptionalMetricMetricConfig provides config for the optional.metric metric. |
 | `optional.metric.empty_unit` | object (see [metrics.optional.metric.empty_unit](#metrics.optional.metric.empty_unit)) |  | no | OptionalMetricEmptyUnitMetricConfig provides config for the optional.metric.empty_unit metric. |
+| `optional.metric.to_be_removed` | object (see [metrics.optional.metric.to_be_removed](#metrics.optional.metric.to_be_removed)) |  | no | OptionalMetricToBeRemovedMetricConfig provides config for the optional.metric.to_be_removed metric. |
 | `reaggregate.metric` | object (see [metrics.reaggregate.metric](#metrics.reaggregate.metric)) |  | no | ReaggregateMetricMetricConfig provides config for the reaggregate.metric metric. |
 | `system.cpu.time` | object (see [metrics.system.cpu.time](#metrics.system.cpu.time)) |  | no | SystemCPUTimeMetricConfig provides config for the system.cpu.time metric. |
 
@@ -74,6 +75,13 @@ This scraper is used for testing purposes to check the output of mdatagen.
 | ------- | ---- | ------- | -------- | ----------- |
 | `aggregation_strategy` | string (one of: sum, avg, min, max) | avg | no |  |
 | `attributes` | []string (one of: string_attr, boolean_attr) | [string_attr, boolean_attr] | no |  |
+| `enabled` | bool | false | no |  |
+
+### <a id="metrics.optional.metric.to_be_removed"></a>metrics.optional.metric.to_be_removed
+| Setting | Type | Default | Required | Description |
+| ------- | ---- | ------- | -------- | ----------- |
+| `aggregation_strategy` | string (one of: sum, avg, min, max) | avg | no |  |
+| `attributes` | []string (one of: string_attr) | [string_attr] | no |  |
 | `enabled` | bool | false | no |  |
 
 ### <a id="metrics.reaggregate.metric"></a>metrics.reaggregate.metric

@@ -117,8 +117,8 @@ func TestMetricsBuilder(t *testing.T) {
 
 			expectedWarnings := 0
 			{{- range $name, $metric := .Metrics }}
-			{{- if and $metric.Enabled $metric.Warnings.IfEnabled }}
-			if tt.metricsSet == testDataSetDefault || tt.metricsSet == testDataSetAll {
+			{{- if $metric.Warnings.IfEnabled }}
+			if {{- if $metric.Enabled }} tt.metricsSet == testDataSetDefault || {{- end }} tt.metricsSet == testDataSetAll {
 				assert.Equal(t, "[WARNING] `{{ $name }}` should not be enabled: {{ $metric.Warnings.IfEnabled }}", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
