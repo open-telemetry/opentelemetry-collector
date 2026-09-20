@@ -71,6 +71,25 @@ func TestNewFactoryWithOptions(t *testing.T) {
 	require.EqualError(t, err, wrongIDErrStr)
 }
 
+func TestBatchingStatusReporter(t *testing.T) {
+	set := Settings{ID: testID}
+	ReportBatchingStatus(set, true)
+
+	var enabled bool
+	withReporter := WithBatchingStatusReporter(set, func(reported bool) {
+		enabled = reported
+	})
+	ReportBatchingStatus(withReporter, true)
+	require.True(t, enabled)
+
+	enabled = true
+	ReportBatchingStatus(withReporter, false)
+	require.False(t, enabled)
+
+	ReportBatchingStatus(set, true)
+	require.False(t, enabled)
+}
+
 var nopInstance = &nop{
 	Consumer: consumertest.NewNop(),
 }
