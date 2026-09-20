@@ -28,7 +28,7 @@ type obsQueue[T request.Request] struct {
 	tracer     trace.Tracer
 }
 
-func newObsQueueWithMetrics[T request.Request](
+func newObsQueue[T request.Request](
 	set Settings[T],
 	obsMetrics queuebatchtelemetry.QueueMetrics,
 	delegate Queue[T],

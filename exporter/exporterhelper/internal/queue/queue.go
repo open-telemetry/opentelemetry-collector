@@ -82,7 +82,7 @@ type Settings[T request.Request] struct {
 
 func NewQueue[T request.Request](set Settings[T], next ConsumeFunc[T]) (Queue[T], error) {
 	q := newBaseQueue(set)
-	oq, err := newObsQueueWithMetrics(set, set.QueueMetrics, newAsyncQueue(q, set.NumConsumers, next, set.ReferenceCounter))
+	oq, err := newObsQueue(set, set.QueueMetrics, newAsyncQueue(q, set.NumConsumers, next, set.ReferenceCounter))
 	if err != nil {
 		return nil, err
 	}

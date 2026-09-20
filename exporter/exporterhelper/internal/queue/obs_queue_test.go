@@ -55,7 +55,7 @@ func newTestObsQueue[T request.Request](t *testing.T, set Settings[T], delegate 
 		return nil, err
 	}
 	t.Cleanup(obsMetrics.Shutdown)
-	return newObsQueueWithMetrics(set, obsMetrics, delegate)
+	return newObsQueue(set, obsMetrics, delegate)
 }
 
 func TestObsQueueLogsSizeCapacity(t *testing.T) {
