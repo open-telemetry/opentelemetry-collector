@@ -98,7 +98,7 @@ sending_queue:
 ```
 
 Overrides are considered relative to the post-migration default.  The
-`overrides::batch::enabled` must be overrridden to false to disable
+`overrides::batch::enabled` must be overridden to false to disable
 batching before or after the [batching migration
 RFC](../../docs/rfcs/batching-migration.md).
 

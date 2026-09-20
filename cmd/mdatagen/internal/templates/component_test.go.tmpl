@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	{{- if not .SendingQueue.IsOmitted }}
 	"go.opentelemetry.io/collector/featuregate"
-
 	internalmetadata "{{ .PackageName }}/internal/{{ .GeneratedPackageName }}"
 	{{- end }}
 	{{- end }}

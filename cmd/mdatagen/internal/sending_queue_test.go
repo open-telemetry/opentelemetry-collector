@@ -190,7 +190,7 @@ func TestSendingQueueTemplateData(t *testing.T) {
 	require.Equal(t, 4, strings.Count(actualYAML, "# OVERRIDE"))
 	require.Equal(t, 9, strings.Count(actualYAML, "# default"))
 	commentColumn := -1
-	for _, line := range strings.Split(actualYAML, "\n") {
+	for line := range strings.SplitSeq(actualYAML, "\n") {
 		if column := strings.Index(line, "# "); column >= 0 {
 			if commentColumn < 0 {
 				commentColumn = column
@@ -255,7 +255,7 @@ func TestSendingQueueTemplateDataAllFields(t *testing.T) {
 
 	actual, err := config.TemplateData()
 	require.NoError(t, err)
-	require.Equal(t, sendingQueueTemplateData{
+	require.Equal(t, SendingQueueTemplateData{
 		QueueEnabled:       true,
 		WaitForResult:      true,
 		QueueSizer:         "exporterhelper.RequestSizerTypeItems",

@@ -149,17 +149,10 @@ When the disable-old gate is enabled, emission of this metric is suppressed. Whe
 
 ## Sending Queue
 
-**Support:** `{{ .SendingQueue.Support }}`
+**Support:** {{ if .SendingQueue.IsOmitted }}This component omits the default QueueBatch configuration.{{ else if .SendingQueue.HasOverrides }}This component overrides the default QueueBatch configuration.{{ else }}This component uses the default QueueBatch configuration.{{ end }}
 {{- if .SendingQueue.Rationale }}
 
 **Rationale:** {{ .SendingQueue.Rationale }}
-{{- end }}
-{{ if .SendingQueue.IsOmitted -}}
-This component omits the default QueueBatch configuration.
-{{- else if .SendingQueue.HasOverrides }}
-This component overrides the default QueueBatch configuration.
-{{- else }}
-This component uses the default QueueBatch configuration.
 {{- end }}
 {{- if not .SendingQueue.IsOmitted }}
 

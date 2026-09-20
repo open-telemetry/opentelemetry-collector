@@ -4,11 +4,9 @@
 
 ## Sending Queue
 
-**Support:** `has_overrides`
+**Support:** This component overrides the default QueueBatch configuration.
 
 **Rationale:** Debug output remains synchronous unless queueing is explicitly enabled.
-
-This component overrides the default QueueBatch configuration.
 
 ```yaml
 sending_queue:

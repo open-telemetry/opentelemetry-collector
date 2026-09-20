@@ -4,9 +4,7 @@
 
 ## Sending Queue
 
-**Support:** `default`
-
-This component uses the default QueueBatch configuration.
+**Support:** This component uses the default QueueBatch configuration.
 
 ```yaml
 sending_queue:

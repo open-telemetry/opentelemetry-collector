@@ -41,7 +41,8 @@ type parsedSendingQueueOverrides struct {
 	batchOverrides map[string]any
 }
 
-type sendingQueueTemplateData struct {
+// SendingQueueTemplateData contains values rendered by the sending queue template.
+type SendingQueueTemplateData struct {
 	QueueEnabled       bool
 	WaitForResult      bool
 	QueueSizer         string
@@ -156,10 +157,10 @@ func (sq *SendingQueue) HasOverrides() bool {
 	return sq.Support == SendingQueueSupportHasOverrides
 }
 
-func (sq *SendingQueue) TemplateData() (sendingQueueTemplateData, error) {
+func (sq *SendingQueue) TemplateData() (SendingQueueTemplateData, error) {
 	optionalCfg, err := sq.Overrides.Apply(newPostMigrationDefaultQueueConfig())
 	if err != nil {
-		return sendingQueueTemplateData{}, err
+		return SendingQueueTemplateData{}, err
 	}
 	queueEnabled := optionalCfg.HasValue()
 	cfg := optionalCfg.GetOrInsertDefault()
@@ -168,11 +169,11 @@ func (sq *SendingQueue) TemplateData() (sendingQueueTemplateData, error) {
 
 	queueSizer, err := sizerExpression(cfg.Sizer.String())
 	if err != nil {
-		return sendingQueueTemplateData{}, err
+		return SendingQueueTemplateData{}, err
 	}
 	batchSizer, err := sizerExpression(batchCfg.Sizer.String())
 	if err != nil {
-		return sendingQueueTemplateData{}, err
+		return SendingQueueTemplateData{}, err
 	}
 
 	storageConstructor := ""
@@ -191,7 +192,7 @@ func (sq *SendingQueue) TemplateData() (sendingQueueTemplateData, error) {
 		keys = append(keys, strconv.Quote(key))
 	}
 
-	return sendingQueueTemplateData{
+	return SendingQueueTemplateData{
 		QueueEnabled:       queueEnabled,
 		WaitForResult:      cfg.WaitForResult,
 		QueueSizer:         queueSizer,
@@ -214,22 +215,17 @@ func (sq *SendingQueue) YAMLConfig() (string, error) {
 		return "", err
 	}
 
-	var storage *string
-	if templateData.StorageConstructor != "" {
-		cfg, err := sq.Overrides.Apply(newPostMigrationDefaultQueueConfig())
-		if err != nil {
-			return "", err
-		}
-		storageValue := cfg.GetOrInsertDefault().StorageID.String()
-		storage = &storageValue
-	}
-
 	cfg, err := sq.Overrides.Apply(newPostMigrationDefaultQueueConfig())
 	if err != nil {
 		return "", err
 	}
 	queueCfg := cfg.GetOrInsertDefault()
 	batchCfg := queueCfg.Batch.GetOrInsertDefault()
+	var storage *string
+	if queueCfg.StorageID != nil {
+		storageValue := queueCfg.StorageID.String()
+		storage = &storageValue
+	}
 	doc := sendingQueueDocumentation{
 		SendingQueue: queueDocumentation{
 			Enabled:         templateData.QueueEnabled,
@@ -252,8 +248,8 @@ func (sq *SendingQueue) YAMLConfig() (string, error) {
 		},
 	}
 	var node yaml.Node
-	if err := node.Encode(doc); err != nil {
-		return "", err
+	if encodeErr := node.Encode(doc); encodeErr != nil {
+		return "", encodeErr
 	}
 	annotateSendingQueueLeaves(&node, nil, sq)
 
@@ -280,11 +276,12 @@ func annotateSendingQueueLeaves(node *yaml.Node, path []string, sq *SendingQueue
 		if len(overridePath) > 0 && overridePath[0] == "sending_queue" {
 			overridePath = overridePath[1:]
 		}
-		if sq.Support == SendingQueueSupportDefault && slices.Equal(overridePath, []string{"batch", "enabled"}) {
+		switch {
+		case sq.Support == SendingQueueSupportDefault && slices.Equal(overridePath, []string{"batch", "enabled"}):
 			node.LineComment = "FEATURE(pkg.exporterhelper.queueBatchEnabled)"
-		} else if hasOverride(sq.Overrides, overridePath) {
+		case hasOverride(sq.Overrides, overridePath):
 			node.LineComment = "OVERRIDE"
-		} else {
+		default:
 			node.LineComment = "default"
 		}
 	}
