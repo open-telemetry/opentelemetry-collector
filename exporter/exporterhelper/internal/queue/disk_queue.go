@@ -10,8 +10,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue/diskaccess"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	xqueue "go.opentelemetry.io/collector/extension/xextension/queue"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -35,7 +35,7 @@ type diskQueue[T request.Request] struct {
 	storageID        component.ID
 	signalType       pipeline.Signal
 	id               component.ID
-	diskAccessClient diskaccess.Client
+	diskAccessClient xqueue.Client
 }
 
 func newDiskQueue[T request.Request](set Settings[T]) readableQueue[T] {
@@ -54,13 +54,13 @@ func newDiskQueue[T request.Request](set Settings[T]) readableQueue[T] {
 	return &d
 }
 
-func toDiskAccessClient(ctx context.Context, storageID component.ID, host component.Host, ownerID component.ID, signal pipeline.Signal) (diskaccess.Client, error) {
+func toDiskAccessClient(ctx context.Context, storageID component.ID, host component.Host, ownerID component.ID, signal pipeline.Signal) (xqueue.Client, error) {
 	ext, found := host.GetExtensions()[storageID]
 	if !found {
 		return nil, errNoDiskAccessClient
 	}
 
-	storageExt, ok := ext.(diskaccess.Extension)
+	storageExt, ok := ext.(xqueue.Extension)
 	if !ok {
 		return nil, errDiskAccessWrongExtensionType
 	}
@@ -115,7 +115,7 @@ func (d *diskQueue[T]) Offer(ctx context.Context, item T) error {
 		return err
 	}
 
-	if err := d.diskAccessClient.Write(diskaccess.WriteOp{
+	if err := d.diskAccessClient.Write(xqueue.WriteOp{
 		Payload: b,
 		Size:    size,
 	}); err != nil {

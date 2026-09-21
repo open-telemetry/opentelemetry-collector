@@ -83,6 +83,7 @@ components:
     - pkg/xexporter
     - pkg/xexporterhelper
     - pkg/xextension
+    - pkg/xextension/queue
     - pkg/xextension/storage
     - pkg/xpdata
     - pkg/xpipeline

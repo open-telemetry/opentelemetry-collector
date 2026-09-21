@@ -77,6 +77,7 @@ var replaceModules = []string{
 	"/exporter/otlpexporter",
 	"/exporter/otlphttpexporter",
 	"/extension",
+	"/extension/diskqueueextension",
 	"/extension/extensionauth",
 	"/extension/extensionauth/extensionauthtest",
 	"/extension/extensioncapabilities",

@@ -1,4 +1,7 @@
-package diskaccess
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package diskqueueextension // import "go.opentelemetry.io/collector/extension/diskqueueextension"
 
 import "time"
 
