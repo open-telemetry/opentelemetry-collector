@@ -126,3 +126,5 @@ replace go.opentelemetry.io/collector/exporter/exporterhelper => ../
 replace go.opentelemetry.io/collector/internal/testutil => ../../../internal/testutil
 
 replace go.opentelemetry.io/collector/internal/componentalias => ../../../internal/componentalias
+
+replace go.opentelemetry.io/collector/extension/diskqueueextension => ../../../extension/diskqueueextension

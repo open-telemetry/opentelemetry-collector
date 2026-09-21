@@ -16,20 +16,21 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue/diskaccess"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/extension/diskqueueextension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	xqueue "go.opentelemetry.io/collector/extension/xextension/queue"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
 // newDiskAccessExtensionForTest creates a real diskaccess extension backed by a
 // temp dir, so the disk queue can be exercised end-to-end without a fake.
 func newDiskAccessExtensionForTest(tb testing.TB, dir string) component.Component {
-	f := diskaccess.NewFactory()
-	cfg := f.CreateDefaultConfig().(*diskaccess.Config)
+	f := diskqueueextension.NewFactory()
+	cfg := f.CreateDefaultConfig().(*diskqueueextension.Config)
 	cfg.DataPath = dir
 	cfg.SyncTimeout = 10 * time.Millisecond
-	settings := extensiontest.NewNopSettings(component.MustNewType(diskaccess.TypeStr))
+	settings := extensiontest.NewNopSettings(component.MustNewType(diskqueueextension.TypeStr))
 	ext, err := f.Create(context.Background(), settings, cfg)
 	require.NoError(tb, err)
 	return ext
@@ -37,7 +38,7 @@ func newDiskAccessExtensionForTest(tb testing.TB, dir string) component.Componen
 
 func newSettingsWithDiskStorage(sizerType request.SizerType, capacity int64) (Settings[intRequest], component.ID) {
 	set := newSettings(sizerType, capacity)
-	storageID := component.MustNewID(diskaccess.TypeStr)
+	storageID := component.MustNewID(diskqueueextension.TypeStr)
 	set.StorageID = &storageID
 	return set, storageID
 }
@@ -207,7 +208,7 @@ func TestToDiskAccessClient(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			storageID := component.MustNewID(diskaccess.TypeStr)
+			storageID := component.MustNewID(diskqueueextension.TypeStr)
 			extensions := map[component.ID]component.Component{}
 			if tt.numStorages > 0 {
 				if tt.wrongType {
@@ -266,8 +267,8 @@ func TestDiskQueueOfferWriteErrorUnrefs(t *testing.T) {
 	// its backing file, without shutting down the client (which would make
 	// any further Write hang forever waiting on a writeLoop that has
 	// already exited).
-	require.NoError(t, os.Chmod(dir, 0o500))
-	t.Cleanup(func() { _ = os.Chmod(dir, 0o700) })
+	require.NoError(t, os.Chmod(dir, 0o400)) // #nosec G302
+	t.Cleanup(func() { _ = os.Chmod(dir, 0o600) })
 
 	require.Error(t, dq.Offer(context.Background(), 1))
 	assert.EqualValues(t, 0, rc.load())
@@ -284,7 +285,7 @@ func TestDiskQueueReadUnmarshalErrorDoesNotPanic(t *testing.T) {
 	require.NoError(t, dq.Start(context.Background(), host))
 	t.Cleanup(func() { _ = dq.Shutdown(context.Background()) })
 
-	require.NoError(t, dq.diskAccessClient.Write(diskaccess.WriteOp{Payload: []byte("x"), Size: 1}))
+	require.NoError(t, dq.diskAccessClient.Write(xqueue.WriteOp{Payload: []byte("x"), Size: 1}))
 	_, _, done, ok := dq.Read(context.Background())
 	assert.False(t, ok)
 	assert.Nil(t, done)
@@ -321,11 +322,11 @@ type failingEncoding struct {
 	unmarshalErr error
 }
 
-func (f failingEncoding) Marshal(_ context.Context, val intRequest) ([]byte, error) {
+func (f failingEncoding) Marshal(ctx context.Context, val intRequest) ([]byte, error) {
 	if f.marshalErr != nil {
 		return nil, f.marshalErr
 	}
-	return int64Encoding{}.Marshal(context.Background(), val)
+	return int64Encoding{}.Marshal(ctx, val)
 }
 
 func (f failingEncoding) Unmarshal(b []byte) (context.Context, intRequest, error) {

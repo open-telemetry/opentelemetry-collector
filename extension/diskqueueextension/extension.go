@@ -1,4 +1,7 @@
-package diskaccess
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package diskqueueextension // import "go.opentelemetry.io/collector/extension/diskqueueextension"
 
 import (
 	"bytes"
@@ -17,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/xextension/queue"
 )
 
 const separator = "\n"
@@ -28,7 +32,7 @@ type Extension interface {
 	// Each component can have multiple storages (e.g. one for each signal),
 	// which can be identified using storageName parameter.
 	// The component can use the client to manage state
-	GetClient(ctx context.Context, kind component.Kind, id component.ID, storageName string) (Client, error)
+	GetClient(ctx context.Context, kind component.Kind, id component.ID, storageName string) (queue.Client, error)
 }
 
 var _ Extension = (*diskAccessExtension)(nil)
@@ -46,7 +50,7 @@ func (d *diskAccessExtension) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (d *diskAccessExtension) GetClient(_ context.Context, _ component.Kind, _ component.ID, storageName string) (Client, error) {
+func (d *diskAccessExtension) GetClient(_ context.Context, _ component.Kind, _ component.ID, storageName string) (queue.Client, error) {
 	c := &diskAccessClient{
 		dataPath:              d.cfg.DataPath,
 		name:                  storageName,
@@ -58,8 +62,8 @@ func (d *diskAccessExtension) GetClient(_ context.Context, _ component.Kind, _ c
 		logger:                d.logger,
 	}
 
-	c.peekChan = make(chan PeekWithCallback)
-	c.writeChan = make(chan WriteOp)
+	c.peekChan = make(chan queue.PeekWithCallback)
+	c.writeChan = make(chan queue.WriteOp)
 	c.writeResponseChan = make(chan error)
 	c.exitChan = make(chan int)
 	c.callbackChan = make(chan callback)
@@ -80,24 +84,7 @@ func (d *diskAccessExtension) GetClient(_ context.Context, _ component.Kind, _ c
 	return c, nil
 }
 
-type Client interface {
-	Peek() chan PeekWithCallback
-	Write(op WriteOp) error
-	Shutdown(ctx context.Context) error
-	Size() int64
-}
-
-type WriteOp struct {
-	Payload []byte
-	Size    int64
-}
-
-type PeekWithCallback struct {
-	ConsumeCallback func(err error)
-	Payload         []byte
-}
-
-var _ Client = (*diskAccessClient)(nil)
+var _ queue.Client = (*diskAccessClient)(nil)
 
 type diskAccessClient struct {
 	writeFile             *os.File
@@ -109,8 +96,8 @@ type diskAccessClient struct {
 	callbackChan          chan callback
 	metadataFile          *os.File
 	peekMetadataFile      *os.File
-	peekChan              chan PeekWithCallback
-	writeChan             chan WriteOp
+	peekChan              chan queue.PeekWithCallback
+	writeChan             chan queue.WriteOp
 	writeResponseChan     chan error
 	dataPath              string
 	name                  string
@@ -164,7 +151,7 @@ func (d *diskAccessClient) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (d *diskAccessClient) Peek() chan PeekWithCallback {
+func (d *diskAccessClient) Peek() chan queue.PeekWithCallback {
 	if d.exitFlag.Load() {
 		return nil
 	}
@@ -172,7 +159,7 @@ func (d *diskAccessClient) Peek() chan PeekWithCallback {
 	return d.peekChan
 }
 
-func (d *diskAccessClient) Write(op WriteOp) error {
+func (d *diskAccessClient) Write(op queue.WriteOp) error {
 	d.writeChan <- op
 	return <-d.writeResponseChan
 }
@@ -208,7 +195,7 @@ func (d *diskAccessClient) readOne(callbacks map[int64]int) bool {
 	messagePeekFileNum := d.peekMetadata.fileNum
 	messagePeekPos := d.peekMetadata.pos
 	callbacks[messagePeekFileNum]++
-	msg := PeekWithCallback{
+	msg := queue.PeekWithCallback{
 		Payload: peekData.Payload,
 		ConsumeCallback: func(_ error) {
 			d.callbackChan <- callback{
@@ -271,13 +258,13 @@ func (d *diskAccessClient) persistMetaData() error {
 	return nil
 }
 
-func (d *diskAccessClient) peekData() (WriteOp, error) {
+func (d *diskAccessClient) peekData() (queue.WriteOp, error) {
 	var err error
 	if d.peekFile == nil {
 		curFileName := d.fileName(d.peekMetadata.fileNum)
 		d.peekFile, err = os.OpenFile(curFileName, os.O_RDONLY, 0o600) // #nosec G304
 		if err != nil {
-			return WriteOp{}, err
+			return queue.WriteOp{}, err
 		}
 		d.logger.Debug("peekData() opened", zap.String("name", d.name), zap.String("filename", curFileName))
 	}
@@ -286,22 +273,22 @@ func (d *diskAccessClient) peekData() (WriteOp, error) {
 	_, err = d.peekFile.ReadAt(readLen, d.peekMetadata.pos)
 	if err != nil {
 		if errors.Is(err, io.EOF) {
-			return WriteOp{}, nil
+			return queue.WriteOp{}, nil
 		}
 		_ = d.peekFile.Close()
 		d.peekFile = nil
-		return WriteOp{}, err
+		return queue.WriteOp{}, err
 	}
 	datalen := binary.BigEndian.Uint64(readLen)
 	readSize := make([]byte, 8)
 	_, err = d.peekFile.ReadAt(readSize, d.peekMetadata.pos+8)
 	if err != nil {
 		if errors.Is(err, io.EOF) {
-			return WriteOp{}, nil
+			return queue.WriteOp{}, nil
 		}
 		_ = d.peekFile.Close()
 		d.peekFile = nil
-		return WriteOp{}, err
+		return queue.WriteOp{}, err
 	}
 	size := binary.BigEndian.Uint64(readSize)
 	readBuf := make([]byte, datalen)
@@ -309,10 +296,10 @@ func (d *diskAccessClient) peekData() (WriteOp, error) {
 	if err != nil {
 		_ = d.peekFile.Close()
 		d.peekFile = nil
-		return WriteOp{}, err
+		return queue.WriteOp{}, err
 	}
 
-	return WriteOp{
+	return queue.WriteOp{
 		Payload: readBuf,
 		Size:    int64(size),
 	}, nil
@@ -454,7 +441,7 @@ func (d *diskAccessClient) syncPeek() error {
 	return nil
 }
 
-func (d *diskAccessClient) write(op WriteOp) error {
+func (d *diskAccessClient) write(op queue.WriteOp) error {
 	data := op.Payload
 	dataLen := int64(len(data))
 
