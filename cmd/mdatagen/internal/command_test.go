@@ -59,6 +59,55 @@ func TestCommandErrorOutputOnce(t *testing.T) {
 	assert.Equal(t, 1, strings.Count(out, msg), out)
 }
 
+func TestCheckStability(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "checkstabilitytest")
+	require.NoError(t, os.MkdirAll(dir, 0o700))
+	require.NoError(t, os.Mkdir(filepath.Join(dir, ".git"), 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module checkstabilitytest\n"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "component.go"), []byte("package checkstabilitytest\n"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "metadata.yaml"), []byte(`type: sample
+status:
+  class: receiver
+  stability:
+    stable: [metrics]
+`), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, centralConfigFileName), []byte("stability:\n  coverage:\n    stable: 80\n"), 0o600))
+	metadataFile := filepath.Join(dir, "metadata.yaml")
+
+	t.Run("passes above target", func(t *testing.T) {
+		profile := filepath.Join(dir, "cover_high.out")
+		require.NoError(t, os.WriteFile(profile, []byte("mode: atomic\ncheckstabilitytest/foo.go:1.1,10.2 8 1\n"), 0o600))
+
+		cmd, err := NewCommand()
+		require.NoError(t, err)
+		cmd.SetArgs([]string{"check-stability", "--profile", profile, metadataFile})
+		require.NoError(t, cmd.Execute())
+	})
+
+	t.Run("fails below target", func(t *testing.T) {
+		profile := filepath.Join(dir, "cover_low.out")
+		require.NoError(t, os.WriteFile(profile, []byte("mode: atomic\ncheckstabilitytest/foo.go:1.1,10.2 8 0\n"), 0o600))
+
+		cmd, err := NewCommand()
+		require.NoError(t, err)
+		cmd.SetOut(&bytes.Buffer{})
+		cmd.SetErr(&bytes.Buffer{})
+		cmd.SetArgs([]string{"check-stability", "--profile", profile, metadataFile})
+		err = cmd.Execute()
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "below the 80.0% target")
+	})
+
+	t.Run("requires --profile", func(t *testing.T) {
+		cmd, err := NewCommand()
+		require.NoError(t, err)
+		cmd.SetOut(&bytes.Buffer{})
+		cmd.SetErr(&bytes.Buffer{})
+		cmd.SetArgs([]string{"check-stability", metadataFile})
+		require.Error(t, cmd.Execute())
+	})
+}
+
 func TestRunContents(t *testing.T) {
 	tests := []struct {
 		yml                             string
@@ -849,6 +898,11 @@ func TestGenerateConfigGoStruct_ResolvedImports(t *testing.T) {
 			Config: &cfggen.ConfigMetadata{
 				Type: "object",
 				Properties: map[string]*schemagen.ConfigMetadata{
+					"component_id": {
+						Type:     "string",
+						GoType:   "go.opentelemetry.io/collector/component.ID",
+						GoStruct: cfggen.GoStructConfig{FieldName: "ComponentID"},
+					},
 					"AllOf": {
 						Type:  "object",
 						Embed: true,
@@ -877,6 +931,7 @@ func TestGenerateConfigGoStruct_ResolvedImports(t *testing.T) {
 
 	generated := string(content)
 	require.Contains(t, generated, `"go.opentelemetry.io/collector/component"`)
+	require.Equal(t, 1, strings.Count(generated, `"go.opentelemetry.io/collector/component"`))
 	require.Contains(t, generated, `"go.opentelemetry.io/collector/scraper/scraperhelper"`)
 	require.Contains(t, generated, "func createDefaultConfig() component.Config")
 }
@@ -1723,6 +1778,12 @@ func TestGenerateConfigGoStruct_TestFileContainsValidateTestWhenValidatorsPresen
 					},
 				},
 			},
+			ExportedConfigs: map[string]*cfggen.ConfigMetadata{
+				"port": {
+					Type:    "int",
+					Minimum: new(1.0),
+				},
+			},
 		},
 	}
 
@@ -1732,6 +1793,7 @@ func TestGenerateConfigGoStruct_TestFileContainsValidateTestWhenValidatorsPresen
 	require.NoError(t, err)
 	require.Contains(t, string(content), "func TestCreateDefaultConfig(")
 	require.Contains(t, string(content), "func TestConfigValidate_DefaultValid(")
+	require.Contains(t, string(content), "func TestPortValidate_Minimum(")
 }
 
 func TestGenerateConfigGoStruct_TestFileNoValidateTestWhenNoValidators(t *testing.T) {
