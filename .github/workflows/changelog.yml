@@ -15,4 +15,7 @@ concurrency:
 jobs:
   changelog:
     if: ${{ github.event_name == 'pull_request' }}
+    permissions:
+      contents: read
+      pull-requests: read
     uses:  open-telemetry/shared-workflows/.github/workflows/chloggen.yml@ad1959372f2919fcf2556d3a3d12ed5265c54209
