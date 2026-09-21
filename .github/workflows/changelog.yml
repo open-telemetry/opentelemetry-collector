@@ -15,4 +15,4 @@ concurrency:
 jobs:
   changelog:
     if: ${{ github.event_name == 'pull_request' }}
-    uses:  open-telemetry/opentelemetry-collector-contrib/.github/workflows/changelog.yml@67f7d3fa89cd5142b16a11a0c2b370f91690f820
+    uses:  open-telemetry/shared-workflows/.github/workflows/chloggen.yml@ad1959372f2919fcf2556d3a3d12ed5265c54209
