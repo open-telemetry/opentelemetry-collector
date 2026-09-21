@@ -5,6 +5,7 @@ package schemagen
 
 import (
 	"encoding/json"
+	"regexp"
 	"testing"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
@@ -337,6 +338,7 @@ service:
 		"missing receivers":         `{"service": {"pipelines": {"traces": {"exporters": ["debug"]}}}}`,
 		"missing exporters":         `{"service": {"pipelines": {"traces": {"receivers": ["otlp"]}}}}`,
 		"empty receivers":           `{"service": {"pipelines": {"traces": {"receivers": [], "exporters": ["debug"]}}}}`,
+		"empty exporters":           `{"service": {"pipelines": {"traces": {"receivers": ["otlp"], "exporters": []}}}}`,
 		"duplicate processor":       `{"service": {"pipelines": {"traces": {"receivers": ["otlp"], "processors": ["batch", "batch"], "exporters": ["debug"]}}}}`,
 		"unknown pipeline key":      `{"service": {"pipelines": {"traces": {"receivers": ["otlp"], "exporters": ["debug"], "connectors": []}}}}`,
 		"unknown service key":       `{"service": {"pipeline": {}}}`,
@@ -377,7 +379,7 @@ func TestCombineCollectorSchema_ServiceSectionLayout(t *testing.T) {
 	require.NoError(t, err)
 
 	service := schema.Properties[string(CollectorSectionService)]
-	pipeline := service.Properties["pipelines"].PatternProperties[collectorIdentifierPattern(pipelineSignals)]
+	pipeline := service.Properties["pipelines"].PatternProperties[collectorIdentifierPattern(defaultPipelineSignals)]
 	require.NotNil(t, pipeline)
 	require.Equal(t, "^(?:forward|otlp)(?:/.+)?$", pipeline.Properties["receivers"].Items.Pattern)
 	require.Equal(t, "^(?:debug|forward)(?:/.+)?$", pipeline.Properties["exporters"].Items.Pattern)
@@ -386,6 +388,31 @@ func TestCombineCollectorSchema_ServiceSectionLayout(t *testing.T) {
 	data, err := service.Properties["telemetry"].MarshalJSON()
 	require.NoError(t, err)
 	require.NotContains(t, string(data), "properties")
+}
+
+func TestCollectorIdentifierPattern(t *testing.T) {
+	t.Parallel()
+
+	t.Run("sorted and deduplicated", func(t *testing.T) {
+		t.Parallel()
+		require.Equal(t, "^(?:debug|otlp)(?:/.+)?$", collectorIdentifierPattern([]string{"otlp", "debug", "otlp"}))
+		require.Equal(t, collectorIdentifierPattern([]string{"a", "b"}), collectorIdentifierPattern([]string{"b", "a"}))
+	})
+
+	t.Run("does not mutate input", func(t *testing.T) {
+		t.Parallel()
+		types := []string{"b", "a"}
+		collectorIdentifierPattern(types)
+		require.Equal(t, []string{"b", "a"}, types)
+	})
+
+	t.Run("empty matches nothing", func(t *testing.T) {
+		t.Parallel()
+		pattern := regexp.MustCompile(collectorIdentifierPattern(nil))
+		for _, candidate := range []string{"", "/", "/name", "otlp", "otlp/name"} {
+			require.False(t, pattern.MatchString(candidate), candidate)
+		}
+	})
 }
 
 func compileSchema(t *testing.T, schema *JSONSchema) *jsonschema.Schema {

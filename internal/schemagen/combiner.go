@@ -25,9 +25,9 @@ const (
 	CollectorSectionService    CollectorSection = "service"
 )
 
-// pipelineSignals lists the signal names accepted as the first part of a
-// pipeline identifier under service.pipelines.
-var pipelineSignals = []string{
+// defaultPipelineSignals lists the signal names accepted as the first part of
+// a pipeline identifier under service.pipelines.
+var defaultPipelineSignals = []string{
 	pipeline.SignalLogs.String(),
 	pipeline.SignalMetrics.String(),
 	xpipeline.SignalProfiles.String(),
@@ -165,7 +165,7 @@ func newCollectorProperties(parts CollectorSchemaParts) map[string]*JSONSchema {
 				"pipelines": {
 					Type: "object",
 					PatternProperties: map[string]*JSONSchema{
-						collectorIdentifierPattern(pipelineSignals): pipelineSchema,
+						collectorIdentifierPattern(defaultPipelineSignals): pipelineSchema,
 					},
 					AdditionalProperties: &JSONSchema{Not: &JSONSchema{}},
 				},
@@ -187,8 +187,6 @@ func collectorComponentReferenceList(typeSets ...[]string) *JSONSchema {
 	for _, set := range typeSets {
 		types = append(types, set...)
 	}
-	slices.Sort(types)
-	types = slices.Compact(types)
 
 	items := &JSONSchema{Not: &JSONSchema{}}
 	if len(types) > 0 {
@@ -218,14 +216,24 @@ func collectorComponentTypes(components []CollectorComponentSchema) []string {
 }
 
 // collectorIdentifierPattern matches an identifier of the form type[/name]
-// where type is one of the given alternatives.
+// where type is one of the given alternatives. The alternatives are sorted and
+// deduplicated so the pattern is stable regardless of input order. With no
+// alternatives the pattern matches nothing: an empty alternation would
+// otherwise accept any identifier.
 func collectorIdentifierPattern(types []string) string {
+	if len(types) == 0 {
+		return neverMatchPattern
+	}
 	quoted := make([]string, 0, len(types))
-	for _, t := range types {
+	for _, t := range slices.Compact(slices.Sorted(slices.Values(types))) {
 		quoted = append(quoted, regexp.QuoteMeta(t))
 	}
 	return "^(?:" + strings.Join(quoted, "|") + ")(?:/.+)?$"
 }
+
+// neverMatchPattern is a regular expression that no string satisfies. A word
+// boundary and a non-word boundary cannot occur at the same position.
+const neverMatchPattern = `\b\B`
 
 func cloneOrEmptySchema(schema *JSONSchema) *JSONSchema {
 	if schema == nil {
