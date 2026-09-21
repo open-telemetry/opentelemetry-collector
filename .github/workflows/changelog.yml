@@ -1,7 +1,3 @@
-# This action requires that any PR targeting the main branch should touch at
-# least one CHANGELOG file. If a CHANGELOG entry is not required, add the "Skip
-# Changelog" label to disable this action.
-
 name: Changelog
 
 on:
@@ -19,4 +15,4 @@ concurrency:
 jobs:
   changelog:
     if: ${{ github.event_name == 'pull_request' }}
-    uses:  open-telemetry/opentelemetry-collector-contrib/.github/workflows/chloggen.yml@463c719d12aa66a4c7472f379c71a8b82a6b34dc
+    uses:  open-telemetry/opentelemetry-collector-contrib/.github/workflows/changelog.yml@67f7d3fa89cd5142b16a11a0c2b370f91690f820
