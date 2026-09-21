@@ -51,15 +51,38 @@ func (req *metricsRequest) mergeTo(dst *metricsRequest, sz sizer.MetricsSizer, s
 
 func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer, szt request.SizerType) ([]request.Request, error) {
 	var res []request.Request
+	droppedItems := 0
+	unsplittable := false
 	for req.size(sz, szt) > maxSize {
 		md, rmSize := extractMetrics(req.md, maxSize, sz)
 		if md.DataPointCount() == 0 {
-			return res, fmt.Errorf("one datapoint size is greater than max size, dropping items: %d", req.md.DataPointCount())
+			// extractMetrics always takes at least one data point when the request holds
+			// any, so an empty result means the request has no data points left and its
+			// resource/scope/metric overhead alone exceeds maxSize. Stop rather than loop.
+			unsplittable = true
+			break
 		}
 		req.sizes.Update(szt, req.size(sz, szt)-rmSize)
+		if sz.MetricsSize(md) > maxSize {
+			// The single data point extractMetrics was forced to take is larger than maxSize
+			// on its own, so no batch can ever hold it. Drop only that data point and keep
+			// splitting the rest, instead of discarding every item queued behind it.
+			droppedItems += md.DataPointCount()
+			continue
+		}
 		res = append(res, newMetricsRequest(md))
 	}
-	res = append(res, req)
+	// Keep the remainder unless splitting emptied it while dropping oversized data points,
+	// in which case there is nothing left to export.
+	if (droppedItems == 0 && !unsplittable) || req.md.DataPointCount() > 0 {
+		res = append(res, req)
+	}
+	switch {
+	case droppedItems > 0:
+		return res, fmt.Errorf("one datapoint size is greater than max size, dropping items: %d", droppedItems)
+	case unsplittable:
+		return res, errors.New("request size is greater than max size and has no data points left to drop")
+	}
 	return res, nil
 }
 
@@ -76,7 +99,7 @@ func extractMetrics(srcMetrics pmetric.Metrics, capacity int, sz sizer.MetricsSi
 		rawRlSize := sz.ResourceMetricsSize(srcRM)
 		rlSize := sz.DeltaSize(rawRlSize)
 		if rlSize > capacityLeft {
-			extSrcRM, extRmSize := extractResourceMetrics(srcRM, capacityLeft, sz)
+			extSrcRM, extRmSize := extractResourceMetrics(srcRM, capacityLeft, sz, destMetrics.DataPointCount() == 0)
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
@@ -99,7 +122,9 @@ func extractMetrics(srcMetrics pmetric.Metrics, capacity int, sz sizer.MetricsSi
 }
 
 // extractResourceMetrics extracts resource metrics and returns a new resource metrics with the specified number of data points.
-func extractResourceMetrics(srcRM pmetric.ResourceMetrics, capacity int, sz sizer.MetricsSizer) (pmetric.ResourceMetrics, int) {
+// When forceFirst is set and nothing has been extracted yet, the first data point is taken even if it exceeds
+// capacity, so the caller can drop it as an oversized item instead of stalling.
+func extractResourceMetrics(srcRM pmetric.ResourceMetrics, capacity int, sz sizer.MetricsSizer, forceFirst bool) (pmetric.ResourceMetrics, int) {
 	destRM := pmetric.NewResourceMetrics()
 	destRM.SetSchemaUrl(srcRM.SchemaUrl())
 	srcRM.Resource().CopyTo(destRM.Resource())
@@ -114,7 +139,7 @@ func extractResourceMetrics(srcRM pmetric.ResourceMetrics, capacity int, sz size
 		rawSmSize := sz.ScopeMetricsSize(srcSM)
 		smSize := sz.DeltaSize(rawSmSize)
 		if smSize > capacityLeft {
-			extSrcSM, extSmSize := extractScopeMetrics(srcSM, capacityLeft, sz)
+			extSrcSM, extSmSize := extractScopeMetrics(srcSM, capacityLeft, sz, forceFirst && resourceMetricsDataPointCount(destRM) == 0)
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
@@ -137,7 +162,9 @@ func extractResourceMetrics(srcRM pmetric.ResourceMetrics, capacity int, sz size
 }
 
 // extractScopeMetrics extracts scope metrics and returns a new scope metrics with the specified number of data points.
-func extractScopeMetrics(srcSM pmetric.ScopeMetrics, capacity int, sz sizer.MetricsSizer) (pmetric.ScopeMetrics, int) {
+// When forceFirst is set and nothing has been extracted yet, the first data point is taken even if it exceeds
+// capacity, so the caller can drop it as an oversized item instead of stalling.
+func extractScopeMetrics(srcSM pmetric.ScopeMetrics, capacity int, sz sizer.MetricsSizer, forceFirst bool) (pmetric.ScopeMetrics, int) {
 	destSM := pmetric.NewScopeMetrics()
 	destSM.SetSchemaUrl(srcSM.SchemaUrl())
 	srcSM.Scope().CopyTo(destSM.Scope())
@@ -152,7 +179,7 @@ func extractScopeMetrics(srcSM pmetric.ScopeMetrics, capacity int, sz sizer.Metr
 		rawRmSize := sz.MetricSize(srcSM)
 		rmSize := sz.DeltaSize(rawRmSize)
 		if rmSize > capacityLeft {
-			extSrcDP, extRmSize := extractMetricDataPoints(srcSM, capacityLeft, sz)
+			extSrcDP, extRmSize := extractMetricDataPoints(srcSM, capacityLeft, sz, forceFirst && scopeMetricsDataPointCount(destSM) == 0)
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
@@ -174,7 +201,7 @@ func extractScopeMetrics(srcSM pmetric.ScopeMetrics, capacity int, sz sizer.Metr
 	return destSM, removedSize
 }
 
-func extractMetricDataPoints(srcMetric pmetric.Metric, capacity int, sz sizer.MetricsSizer) (pmetric.Metric, int) {
+func extractMetricDataPoints(srcMetric pmetric.Metric, capacity int, sz sizer.MetricsSizer, forceFirst bool) (pmetric.Metric, int) {
 	destMetric := pmetric.NewMetric()
 	destMetric.SetName(srcMetric.Name())
 	destMetric.SetDescription(srcMetric.Description())
@@ -184,21 +211,42 @@ func extractMetricDataPoints(srcMetric pmetric.Metric, capacity int, sz sizer.Me
 	var removedSize int
 	switch srcMetric.Type() {
 	case pmetric.MetricTypeGauge:
-		removedSize = extractGaugeDataPoints(srcMetric.Gauge(), destMetric, capacity, sz)
+		removedSize = extractGaugeDataPoints(srcMetric.Gauge(), destMetric, capacity, sz, forceFirst)
 	case pmetric.MetricTypeSum:
-		removedSize = extractSumDataPoints(srcMetric.Sum(), destMetric, capacity, sz)
+		removedSize = extractSumDataPoints(srcMetric.Sum(), destMetric, capacity, sz, forceFirst)
 		destMetric.Sum().SetIsMonotonic(srcMetric.Sum().IsMonotonic())
 		destMetric.Sum().SetAggregationTemporality(srcMetric.Sum().AggregationTemporality())
 	case pmetric.MetricTypeHistogram:
-		removedSize = extractHistogramDataPoints(srcMetric.Histogram(), destMetric, capacity, sz)
+		removedSize = extractHistogramDataPoints(srcMetric.Histogram(), destMetric, capacity, sz, forceFirst)
 		destMetric.Histogram().SetAggregationTemporality(srcMetric.Histogram().AggregationTemporality())
 	case pmetric.MetricTypeExponentialHistogram:
-		removedSize = extractExponentialHistogramDataPoints(srcMetric.ExponentialHistogram(), destMetric, capacity, sz)
+		removedSize = extractExponentialHistogramDataPoints(srcMetric.ExponentialHistogram(), destMetric, capacity, sz, forceFirst)
 		destMetric.ExponentialHistogram().SetAggregationTemporality(srcMetric.ExponentialHistogram().AggregationTemporality())
 	case pmetric.MetricTypeSummary:
-		removedSize = extractSummaryDataPoints(srcMetric.Summary(), destMetric, capacity, sz)
+		removedSize = extractSummaryDataPoints(srcMetric.Summary(), destMetric, capacity, sz, forceFirst)
 	}
 	return destMetric, removedSize
+}
+
+// scopeMetricsDataPointCount and resourceMetricsDataPointCount count data points already
+// extracted into a destination. The force-first guard keys off data points rather than
+// container counts because extracting a metric's only data point leaves an empty metric
+// behind, and that empty metric would otherwise make Metrics().Len() non-zero and wrongly
+// disable force-first for the next oversized data point.
+func scopeMetricsDataPointCount(sm pmetric.ScopeMetrics) int {
+	count := 0
+	for i := 0; i < sm.Metrics().Len(); i++ {
+		count += dataPointsLen(sm.Metrics().At(i))
+	}
+	return count
+}
+
+func resourceMetricsDataPointCount(rm pmetric.ResourceMetrics) int {
+	count := 0
+	for i := 0; i < rm.ScopeMetrics().Len(); i++ {
+		count += scopeMetricsDataPointCount(rm.ScopeMetrics().At(i))
+	}
+	return count
 }
 
 func dataPointsLen(m pmetric.Metric) int {
@@ -217,7 +265,7 @@ func dataPointsLen(m pmetric.Metric) int {
 	return 0
 }
 
-func extractGaugeDataPoints(srcGauge pmetric.Gauge, destMetric pmetric.Metric, capacity int, sz sizer.MetricsSizer) int {
+func extractGaugeDataPoints(srcGauge pmetric.Gauge, destMetric pmetric.Metric, capacity int, sz sizer.MetricsSizer, forceFirst bool) int {
 	destGauge := destMetric.SetEmptyGauge()
 
 	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
@@ -235,6 +283,14 @@ func extractGaugeDataPoints(srcGauge pmetric.Gauge, destMetric pmetric.Metric, c
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
+			// This data point alone exceeds capacity. Take it only when it is the first item
+			// overall, so the caller ends up with a single oversized batch it can drop,
+			// instead of a request that can never be split.
+			if forceFirst && destGauge.DataPoints().Len() == 0 {
+				removedSize += rdSize
+				srcDP.MoveTo(destGauge.DataPoints().AppendEmpty())
+				return true
+			}
 			return false
 		}
 		capacityLeft -= rdSize
@@ -245,7 +301,7 @@ func extractGaugeDataPoints(srcGauge pmetric.Gauge, destMetric pmetric.Metric, c
 	return removedSize
 }
 
-func extractSumDataPoints(srcSum pmetric.Sum, destMetric pmetric.Metric, capacity int, sz sizer.MetricsSizer) int {
+func extractSumDataPoints(srcSum pmetric.Sum, destMetric pmetric.Metric, capacity int, sz sizer.MetricsSizer, forceFirst bool) int {
 	destSum := destMetric.SetEmptySum()
 	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
 	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.MetricSize(destMetric)
@@ -261,6 +317,14 @@ func extractSumDataPoints(srcSum pmetric.Sum, destMetric pmetric.Metric, capacit
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
+			// This data point alone exceeds capacity. Take it only when it is the first item
+			// overall, so the caller ends up with a single oversized batch it can drop,
+			// instead of a request that can never be split.
+			if forceFirst && destSum.DataPoints().Len() == 0 {
+				removedSize += rdSize
+				srcDP.MoveTo(destSum.DataPoints().AppendEmpty())
+				return true
+			}
 			return false
 		}
 		capacityLeft -= rdSize
@@ -271,7 +335,7 @@ func extractSumDataPoints(srcSum pmetric.Sum, destMetric pmetric.Metric, capacit
 	return removedSize
 }
 
-func extractHistogramDataPoints(srcHistogram pmetric.Histogram, destMetric pmetric.Metric, capacity int, sz sizer.MetricsSizer) int {
+func extractHistogramDataPoints(srcHistogram pmetric.Histogram, destMetric pmetric.Metric, capacity int, sz sizer.MetricsSizer, forceFirst bool) int {
 	destHistogram := destMetric.SetEmptyHistogram()
 	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
 	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.MetricSize(destMetric)
@@ -287,6 +351,14 @@ func extractHistogramDataPoints(srcHistogram pmetric.Histogram, destMetric pmetr
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
+			// This data point alone exceeds capacity. Take it only when it is the first item
+			// overall, so the caller ends up with a single oversized batch it can drop,
+			// instead of a request that can never be split.
+			if forceFirst && destHistogram.DataPoints().Len() == 0 {
+				removedSize += rdSize
+				srcDP.MoveTo(destHistogram.DataPoints().AppendEmpty())
+				return true
+			}
 			return false
 		}
 		capacityLeft -= rdSize
@@ -297,7 +369,7 @@ func extractHistogramDataPoints(srcHistogram pmetric.Histogram, destMetric pmetr
 	return removedSize
 }
 
-func extractExponentialHistogramDataPoints(srcExponentialHistogram pmetric.ExponentialHistogram, destMetric pmetric.Metric, capacity int, sz sizer.MetricsSizer) int {
+func extractExponentialHistogramDataPoints(srcExponentialHistogram pmetric.ExponentialHistogram, destMetric pmetric.Metric, capacity int, sz sizer.MetricsSizer, forceFirst bool) int {
 	destExponentialHistogram := destMetric.SetEmptyExponentialHistogram()
 	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
 	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.MetricSize(destMetric)
@@ -313,6 +385,14 @@ func extractExponentialHistogramDataPoints(srcExponentialHistogram pmetric.Expon
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
+			// This data point alone exceeds capacity. Take it only when it is the first item
+			// overall, so the caller ends up with a single oversized batch it can drop,
+			// instead of a request that can never be split.
+			if forceFirst && destExponentialHistogram.DataPoints().Len() == 0 {
+				removedSize += rdSize
+				srcDP.MoveTo(destExponentialHistogram.DataPoints().AppendEmpty())
+				return true
+			}
 			return false
 		}
 		capacityLeft -= rdSize
@@ -323,7 +403,7 @@ func extractExponentialHistogramDataPoints(srcExponentialHistogram pmetric.Expon
 	return removedSize
 }
 
-func extractSummaryDataPoints(srcSummary pmetric.Summary, destMetric pmetric.Metric, capacity int, sz sizer.MetricsSizer) int {
+func extractSummaryDataPoints(srcSummary pmetric.Summary, destMetric pmetric.Metric, capacity int, sz sizer.MetricsSizer, forceFirst bool) int {
 	destSummary := destMetric.SetEmptySummary()
 	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
 	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.MetricSize(destMetric)
@@ -339,6 +419,14 @@ func extractSummaryDataPoints(srcSummary pmetric.Summary, destMetric pmetric.Met
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
+			// This data point alone exceeds capacity. Take it only when it is the first item
+			// overall, so the caller ends up with a single oversized batch it can drop,
+			// instead of a request that can never be split.
+			if forceFirst && destSummary.DataPoints().Len() == 0 {
+				removedSize += rdSize
+				srcDP.MoveTo(destSummary.DataPoints().AppendEmpty())
+				return true
+			}
 			return false
 		}
 		capacityLeft -= rdSize

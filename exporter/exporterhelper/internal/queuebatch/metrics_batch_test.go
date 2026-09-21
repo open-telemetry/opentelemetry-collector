@@ -515,7 +515,7 @@ func TestExtractGaugeDataPoints(t *testing.T) {
 			sz := &mockMetricsSizer{dpSize: 1}
 
 			destMetric := pmetric.NewMetric()
-			removedSize := extractGaugeDataPoints(gauge, destMetric, tt.capacity, sz)
+			removedSize := extractGaugeDataPoints(gauge, destMetric, tt.capacity, sz, false)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Gauge().DataPoints().Len())
 			if tt.expectedPoints > 0 {
@@ -564,7 +564,7 @@ func TestExtractSumDataPoints(t *testing.T) {
 			sz := &mockMetricsSizer{dpSize: 1}
 
 			destMetric := pmetric.NewMetric()
-			removedSize := extractSumDataPoints(sum, destMetric, tt.capacity, sz)
+			removedSize := extractSumDataPoints(sum, destMetric, tt.capacity, sz, false)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Sum().DataPoints().Len())
 			if tt.expectedPoints > 0 {
@@ -614,7 +614,7 @@ func TestExtractHistogramDataPoints(t *testing.T) {
 			sz := &mockMetricsSizer{dpSize: 1}
 
 			destMetric := pmetric.NewMetric()
-			removedSize := extractHistogramDataPoints(histogram, destMetric, tt.capacity, sz)
+			removedSize := extractHistogramDataPoints(histogram, destMetric, tt.capacity, sz, false)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Histogram().DataPoints().Len())
 			if tt.expectedPoints > 0 {
@@ -663,7 +663,7 @@ func TestExtractExponentialHistogramDataPoints(t *testing.T) {
 			sz := &mockMetricsSizer{dpSize: 1}
 
 			destMetric := pmetric.NewMetric()
-			removedSize := extractExponentialHistogramDataPoints(expHistogram, destMetric, tt.capacity, sz)
+			removedSize := extractExponentialHistogramDataPoints(expHistogram, destMetric, tt.capacity, sz, false)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.ExponentialHistogram().DataPoints().Len())
 			if tt.expectedPoints > 0 {
@@ -712,7 +712,7 @@ func TestExtractSummaryDataPoints(t *testing.T) {
 			sz := &mockMetricsSizer{dpSize: 1}
 
 			destMetric := pmetric.NewMetric()
-			removedSize := extractSummaryDataPoints(summary, destMetric, tt.capacity, sz)
+			removedSize := extractSummaryDataPoints(summary, destMetric, tt.capacity, sz, false)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Summary().DataPoints().Len())
 			if tt.expectedPoints > 0 {

@@ -51,15 +51,38 @@ func (req *logsRequest) mergeTo(dst *logsRequest, sz sizer.LogsSizer, szt reques
 
 func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer, szt request.SizerType) ([]request.Request, error) {
 	var res []request.Request
+	droppedItems := 0
+	unsplittable := false
 	for req.size(sz, szt) > maxSize {
 		ld, removedSize := extractLogs(req.ld, maxSize, sz)
 		if ld.LogRecordCount() == 0 {
-			return res, fmt.Errorf("one log record size is greater than max size, dropping items: %d", req.ld.LogRecordCount())
+			// extractLogs always takes at least one record when the request holds any, so
+			// an empty result means the request has no records left and its resource/scope
+			// overhead alone exceeds maxSize. Stop rather than loop forever.
+			unsplittable = true
+			break
 		}
 		req.sizes.Update(szt, req.size(sz, szt)-removedSize)
+		if sz.LogsSize(ld) > maxSize {
+			// The single record extractLogs was forced to take is larger than maxSize on
+			// its own, so no batch can ever hold it. Drop only that record and keep
+			// splitting the rest, instead of discarding every record queued behind it.
+			droppedItems += ld.LogRecordCount()
+			continue
+		}
 		res = append(res, newLogsRequest(ld))
 	}
-	res = append(res, req)
+	// Keep the remainder unless splitting emptied it while dropping oversized records,
+	// in which case there is nothing left to export.
+	if (droppedItems == 0 && !unsplittable) || req.ld.LogRecordCount() > 0 {
+		res = append(res, req)
+	}
+	switch {
+	case droppedItems > 0:
+		return res, fmt.Errorf("one log record size is greater than max size, dropping items: %d", droppedItems)
+	case unsplittable:
+		return res, errors.New("request size is greater than max size and has no log records left to drop")
+	}
 	return res, nil
 }
 
@@ -76,7 +99,7 @@ func extractLogs(srcLogs plog.Logs, capacity int, sz sizer.LogsSizer) (plog.Logs
 		rawRlSize := sz.ResourceLogsSize(srcRL)
 		rlSize := sz.DeltaSize(rawRlSize)
 		if rlSize > capacityLeft {
-			extSrcRL, extRlSize := extractResourceLogs(srcRL, capacityLeft, sz)
+			extSrcRL, extRlSize := extractResourceLogs(srcRL, capacityLeft, sz, destLogs.ResourceLogs().Len() == 0)
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
@@ -99,7 +122,9 @@ func extractLogs(srcLogs plog.Logs, capacity int, sz sizer.LogsSizer) (plog.Logs
 }
 
 // extractResourceLogs extracts resource logs and returns a new resource logs with the specified number of log records.
-func extractResourceLogs(srcRL plog.ResourceLogs, capacity int, sz sizer.LogsSizer) (plog.ResourceLogs, int) {
+// When forceFirst is set and nothing has been extracted yet, the first log record is taken even if it exceeds
+// capacity, so the caller can drop it as an oversized item instead of stalling.
+func extractResourceLogs(srcRL plog.ResourceLogs, capacity int, sz sizer.LogsSizer, forceFirst bool) (plog.ResourceLogs, int) {
 	destRL := plog.NewResourceLogs()
 	destRL.SetSchemaUrl(srcRL.SchemaUrl())
 	srcRL.Resource().CopyTo(destRL.Resource())
@@ -114,7 +139,7 @@ func extractResourceLogs(srcRL plog.ResourceLogs, capacity int, sz sizer.LogsSiz
 		rawSlSize := sz.ScopeLogsSize(srcSL)
 		slSize := sz.DeltaSize(rawSlSize)
 		if slSize > capacityLeft {
-			extSrcSL, extSlSize := extractScopeLogs(srcSL, capacityLeft, sz)
+			extSrcSL, extSlSize := extractScopeLogs(srcSL, capacityLeft, sz, forceFirst && destRL.ScopeLogs().Len() == 0)
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
@@ -137,7 +162,9 @@ func extractResourceLogs(srcRL plog.ResourceLogs, capacity int, sz sizer.LogsSiz
 }
 
 // extractScopeLogs extracts scope logs and returns a new scope logs with the specified number of log records.
-func extractScopeLogs(srcSL plog.ScopeLogs, capacity int, sz sizer.LogsSizer) (plog.ScopeLogs, int) {
+// When forceFirst is set and nothing has been extracted yet, the first log record is taken even if it exceeds
+// capacity, so the caller can drop it as an oversized item instead of stalling.
+func extractScopeLogs(srcSL plog.ScopeLogs, capacity int, sz sizer.LogsSizer, forceFirst bool) (plog.ScopeLogs, int) {
 	destSL := plog.NewScopeLogs()
 	destSL.SetSchemaUrl(srcSL.SchemaUrl())
 	srcSL.Scope().CopyTo(destSL.Scope())
@@ -154,6 +181,14 @@ func extractScopeLogs(srcSL plog.ScopeLogs, capacity int, sz sizer.LogsSizer) (p
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
+			// This record alone exceeds capacity. Take it only when it is the first item
+			// overall, so the caller ends up with a single oversized batch it can drop,
+			// instead of a request that can never be split.
+			if forceFirst && destSL.LogRecords().Len() == 0 {
+				removedSize += rlSize
+				srcLR.MoveTo(destSL.LogRecords().AppendEmpty())
+				return true
+			}
 			return false
 		}
 		capacityLeft -= rlSize

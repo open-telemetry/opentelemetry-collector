@@ -51,15 +51,38 @@ func (req *tracesRequest) mergeTo(dst *tracesRequest, sz sizer.TracesSizer, szt 
 
 func (req *tracesRequest) split(maxSize int, sz sizer.TracesSizer, szt request.SizerType) ([]request.Request, error) {
 	var res []request.Request
+	droppedItems := 0
+	unsplittable := false
 	for req.size(sz, szt) > maxSize {
 		td, rmSize := extractTraces(req.td, maxSize, sz)
 		if td.SpanCount() == 0 {
-			return res, fmt.Errorf("one span size is greater than max size, dropping items: %d", req.td.SpanCount())
+			// extractTraces always takes at least one span when the request holds any, so
+			// an empty result means the request has no spans left and its resource/scope
+			// overhead alone exceeds maxSize. Stop rather than loop forever.
+			unsplittable = true
+			break
 		}
 		req.sizes.Update(szt, req.size(sz, szt)-rmSize)
+		if sz.TracesSize(td) > maxSize {
+			// The single span extractTraces was forced to take is larger than maxSize on
+			// its own, so no batch can ever hold it. Drop only that span and keep splitting
+			// the rest, instead of discarding every span queued behind it.
+			droppedItems += td.SpanCount()
+			continue
+		}
 		res = append(res, newTracesRequest(td))
 	}
-	res = append(res, req)
+	// Keep the remainder unless splitting emptied it while dropping oversized spans, in
+	// which case there is nothing left to export.
+	if (droppedItems == 0 && !unsplittable) || req.td.SpanCount() > 0 {
+		res = append(res, req)
+	}
+	switch {
+	case droppedItems > 0:
+		return res, fmt.Errorf("one span size is greater than max size, dropping items: %d", droppedItems)
+	case unsplittable:
+		return res, errors.New("request size is greater than max size and has no spans left to drop")
+	}
 	return res, nil
 }
 
@@ -77,7 +100,7 @@ func extractTraces(srcTraces ptrace.Traces, capacity int, sz sizer.TracesSizer) 
 		rsSize := sz.DeltaSize(rawRsSize)
 
 		if rsSize > capacityLeft {
-			extSrcRS, extRsSize := extractResourceSpans(srcRS, capacityLeft, sz)
+			extSrcRS, extRsSize := extractResourceSpans(srcRS, capacityLeft, sz, destTraces.ResourceSpans().Len() == 0)
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
@@ -101,7 +124,9 @@ func extractTraces(srcTraces ptrace.Traces, capacity int, sz sizer.TracesSizer) 
 }
 
 // extractResourceSpans extracts spans and returns a new resource spans with the specified number of spans.
-func extractResourceSpans(srcRS ptrace.ResourceSpans, capacity int, sz sizer.TracesSizer) (ptrace.ResourceSpans, int) {
+// When forceFirst is set and nothing has been extracted yet, the first span is taken even if it exceeds
+// capacity, so the caller can drop it as an oversized item instead of stalling.
+func extractResourceSpans(srcRS ptrace.ResourceSpans, capacity int, sz sizer.TracesSizer, forceFirst bool) (ptrace.ResourceSpans, int) {
 	destRS := ptrace.NewResourceSpans()
 	destRS.SetSchemaUrl(srcRS.SchemaUrl())
 	srcRS.Resource().CopyTo(destRS.Resource())
@@ -117,7 +142,7 @@ func extractResourceSpans(srcRS ptrace.ResourceSpans, capacity int, sz sizer.Tra
 		rawSlSize := sz.ScopeSpansSize(srcSS)
 		ssSize := sz.DeltaSize(rawSlSize)
 		if ssSize > capacityLeft {
-			extSrcSS, extSsSize := extractScopeSpans(srcSS, capacityLeft, sz)
+			extSrcSS, extSsSize := extractScopeSpans(srcSS, capacityLeft, sz, forceFirst && destRS.ScopeSpans().Len() == 0)
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
@@ -141,7 +166,9 @@ func extractResourceSpans(srcRS ptrace.ResourceSpans, capacity int, sz sizer.Tra
 }
 
 // extractScopeSpans extracts spans and returns a new scope spans with the specified number of spans.
-func extractScopeSpans(srcSS ptrace.ScopeSpans, capacity int, sz sizer.TracesSizer) (ptrace.ScopeSpans, int) {
+// When forceFirst is set and nothing has been extracted yet, the first span is taken even if it exceeds
+// capacity, so the caller can drop it as an oversized item instead of stalling.
+func extractScopeSpans(srcSS ptrace.ScopeSpans, capacity int, sz sizer.TracesSizer, forceFirst bool) (ptrace.ScopeSpans, int) {
 	destSS := ptrace.NewScopeSpans()
 	destSS.SetSchemaUrl(srcSS.SchemaUrl())
 	srcSS.Scope().CopyTo(destSS.Scope())
@@ -158,6 +185,14 @@ func extractScopeSpans(srcSS ptrace.ScopeSpans, capacity int, sz sizer.TracesSiz
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
+			// This span alone exceeds capacity. Take it only when it is the first item
+			// overall, so the caller ends up with a single oversized batch it can drop,
+			// instead of a request that can never be split.
+			if forceFirst && destSS.Spans().Len() == 0 {
+				removedSize += rsSize
+				srcSpan.MoveTo(destSS.Spans().AppendEmpty())
+				return true
+			}
 			return false
 		}
 
