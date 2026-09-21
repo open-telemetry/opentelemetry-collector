@@ -332,3 +332,5 @@ replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testut
 replace go.opentelemetry.io/collector/internal/componentalias => ../componentalias
 
 replace go.opentelemetry.io/collector/internal/statusutil => ../statusutil
+
+replace go.opentelemetry.io/collector/extension/diskqueueextension => ../../extension/diskqueueextension

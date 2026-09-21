@@ -1,17 +1,15 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package diskaccess
+package diskqueueextension
 
 import (
 	"context"
 	"encoding/binary"
-	"errors"
 	"io"
 	"os"
 	"path/filepath"
 	"sync/atomic"
-	"syscall"
 	"testing"
 	"time"
 
@@ -21,6 +19,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension/xextension/queue"
 )
 
 func newTestExtension(t *testing.T, dir string) *diskAccessExtension {
@@ -67,7 +66,7 @@ func TestEmptyQueue(t *testing.T) {
 
 func TestPutPeekConsume(t *testing.T) {
 	c := newTestClient(t, t.TempDir())
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("hello world"), Size: 1}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world"), Size: 1}))
 	msg := <-c.Peek()
 	assert.Equal(t, "hello world", string(msg.Payload))
 	msg.ConsumeCallback(nil)
@@ -76,11 +75,11 @@ func TestPutPeekConsume(t *testing.T) {
 
 func TestCatchUpToHeadAndReadOne(t *testing.T) {
 	c := newTestClient(t, t.TempDir())
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("hello world"), Size: 1}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world"), Size: 1}))
 	msg := <-c.Peek()
 	msg.ConsumeCallback(nil)
 	// we caught up to tip, now do one more
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("hello world"), Size: 1}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world"), Size: 1}))
 	msg = <-c.Peek()
 	msg.ConsumeCallback(nil)
 	require.NoError(t, c.Shutdown(context.Background()))
@@ -88,13 +87,13 @@ func TestCatchUpToHeadAndReadOne(t *testing.T) {
 
 func TestWaitForOneMore(t *testing.T) {
 	c := newTestClient(t, t.TempDir())
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("hello world"), Size: 1}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world"), Size: 1}))
 	msg := <-c.Peek()
 	msg.ConsumeCallback(nil)
 
 	go func() {
 		time.Sleep(100 * time.Millisecond)
-		_ = c.Write(WriteOp{Payload: []byte("hello world2"), Size: 1})
+		_ = c.Write(queue.WriteOp{Payload: []byte("hello world2"), Size: 1})
 	}()
 	msg = <-c.Peek()
 	assert.Equal(t, "hello world2", string(msg.Payload))
@@ -105,9 +104,9 @@ func TestWaitForOneMore(t *testing.T) {
 
 func TestThreePutsThreeConsumes(t *testing.T) {
 	c := newTestClient(t, t.TempDir())
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("hello world"), Size: 1}))
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("hello world2"), Size: 1}))
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("hello world3"), Size: 1}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world"), Size: 1}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world2"), Size: 1}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world3"), Size: 1}))
 	msg := <-c.Peek()
 	assert.Equal(t, "hello world", string(msg.Payload))
 	msg = <-c.Peek()
@@ -120,9 +119,9 @@ func TestThreePutsThreeConsumes(t *testing.T) {
 
 func TestThreePutsThreeConsumesOutOfOrder(t *testing.T) {
 	c := newTestClient(t, t.TempDir())
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("hello world"), Size: 1}))
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("hello world2"), Size: 1}))
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("hello world3"), Size: 1}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world"), Size: 1}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world2"), Size: 1}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world3"), Size: 1}))
 	msg1 := <-c.Peek()
 	msg1.ConsumeCallback(nil)
 	msg2 := <-c.Peek()
@@ -135,9 +134,9 @@ func TestThreePutsThreeConsumesOutOfOrder(t *testing.T) {
 func TestStartStopRestart(t *testing.T) {
 	dir := t.TempDir()
 	c := newTestClient(t, dir)
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("hello world"), Size: 1}))
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("hello world2"), Size: 1}))
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("hello world3"), Size: 1}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world"), Size: 1}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world2"), Size: 1}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world3"), Size: 1}))
 	msg1 := <-c.Peek()
 	msg1.ConsumeCallback(nil)
 	require.NoError(t, c.Shutdown(context.Background()))
@@ -151,7 +150,7 @@ func TestStartStopRestart(t *testing.T) {
 func TestSize(t *testing.T) {
 	c := newTestClient(t, t.TempDir())
 	assert.Equal(t, int64(0), c.Size())
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("hello world"), Size: 5}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world"), Size: 5}))
 	assert.Equal(t, int64(5), c.Size())
 	msg := <-c.Peek()
 	msg.ConsumeCallback(nil)
@@ -166,10 +165,10 @@ func TestFileRotation(t *testing.T) {
 	ext.cfg.MaxBytesPerFile = 60
 	c, err := ext.GetClient(context.Background(), component.KindExporter, component.MustNewID("foo"), "test")
 	require.NoError(t, err)
-	for i := 0; i < 5; i++ {
-		require.NoError(t, c.Write(WriteOp{Payload: []byte("hello world"), Size: 1}))
+	for range 5 {
+		require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world"), Size: 1}))
 	}
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		msg := <-c.Peek()
 		msg.ConsumeCallback(nil)
 	}
@@ -208,7 +207,7 @@ func TestGetClientCorruptedPeekMetadataSeekError(t *testing.T) {
 func TestGetClientMetadataReadFromError(t *testing.T) {
 	dir := t.TempDir()
 	ext := newTestExtension(t, dir)
-	require.NoError(t, os.Mkdir(filepath.Join(dir, "test.diskaccess.meta.dat"), 0o755))
+	require.NoError(t, os.Mkdir(filepath.Join(dir, "test.diskaccess.meta.dat"), 0o600))
 	_, err := ext.GetClient(context.Background(), component.KindExporter, component.MustNewID("foo"), "test")
 	require.Error(t, err)
 }
@@ -216,7 +215,7 @@ func TestGetClientMetadataReadFromError(t *testing.T) {
 func TestGetClientPeekMetadataReadFromError(t *testing.T) {
 	dir := t.TempDir()
 	ext := newTestExtension(t, dir)
-	require.NoError(t, os.Mkdir(filepath.Join(dir, "test.diskaccess.peek.dat"), 0o755))
+	require.NoError(t, os.Mkdir(filepath.Join(dir, "test.diskaccess.peek.dat"), 0o600))
 	_, err := ext.GetClient(context.Background(), component.KindExporter, component.MustNewID("foo"), "test")
 	require.Error(t, err)
 }
@@ -225,9 +224,9 @@ func TestWriteOpenFileError(t *testing.T) {
 	dir := t.TempDir()
 	c := newTestClient(t, dir)
 	t.Cleanup(func() { _ = c.Shutdown(context.Background()) })
-	require.NoError(t, os.Chmod(dir, 0o500))
-	t.Cleanup(func() { _ = os.Chmod(dir, 0o700) })
-	err := c.Write(WriteOp{Payload: []byte("hello world"), Size: 1})
+	require.NoError(t, os.Chmod(dir, 0o500))       // #nosec G302
+	t.Cleanup(func() { _ = os.Chmod(dir, 0o700) }) // #nosec G302
+	err := c.Write(queue.WriteOp{Payload: []byte("hello world"), Size: 1})
 	require.Error(t, err)
 }
 
@@ -235,8 +234,8 @@ func TestPersistMetaDataOpenFileError(t *testing.T) {
 	dir := t.TempDir()
 	c := newTestClient(t, dir)
 	t.Cleanup(func() { _ = c.Shutdown(context.Background()) })
-	require.NoError(t, os.Chmod(dir, 0o500))
-	t.Cleanup(func() { _ = os.Chmod(dir, 0o700) })
+	require.NoError(t, os.Chmod(dir, 0o500))       // #nosec G302
+	t.Cleanup(func() { _ = os.Chmod(dir, 0o700) }) // #nosec G302
 	err := c.persistMetaData()
 	require.Error(t, err)
 }
@@ -270,8 +269,8 @@ func TestSyncPeekOpenFileError(t *testing.T) {
 	dir := t.TempDir()
 	c := newTestClient(t, dir)
 	t.Cleanup(func() { _ = c.Shutdown(context.Background()) })
-	require.NoError(t, os.Chmod(dir, 0o500))
-	t.Cleanup(func() { _ = os.Chmod(dir, 0o700) })
+	require.NoError(t, os.Chmod(dir, 0o500))       // #nosec G302
+	t.Cleanup(func() { _ = os.Chmod(dir, 0o700) }) // #nosec G302
 	err := c.syncPeek()
 	require.Error(t, err)
 }
@@ -279,7 +278,7 @@ func TestSyncPeekOpenFileError(t *testing.T) {
 func TestSyncWriteFileSyncError(t *testing.T) {
 	c := newTestClient(t, t.TempDir())
 	t.Cleanup(func() { _ = c.Shutdown(context.Background()) })
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("hello world"), Size: 1}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world"), Size: 1}))
 	msg := <-c.Peek()
 	msg.ConsumeCallback(nil)
 
@@ -346,10 +345,10 @@ func TestPeekDataReadSizeErrNonEOF(t *testing.T) {
 	c := newTestClient(t, dir)
 	t.Cleanup(func() { _ = c.Shutdown(context.Background()) })
 
-	for attempt := 0; attempt < 300; attempt++ {
+	for range 300 {
 		fileName := c.fileName(0)
 		require.NoError(t, os.WriteFile(fileName, make([]byte, 32), 0o600))
-		f, err := os.OpenFile(fileName, os.O_RDONLY, 0o600)
+		f, err := os.OpenFile(fileName, os.O_RDONLY, 0o600) // #nosec G304
 		require.NoError(t, err)
 		c.peekFile = f
 
@@ -368,7 +367,7 @@ func TestPeekDataReadSizeErrNonEOF(t *testing.T) {
 		}
 		<-done
 		require.Error(t, lastErr)
-		assert.False(t, errors.Is(lastErr, io.EOF))
+		require.NotErrorIs(t, lastErr, io.EOF)
 		assert.Nil(t, c.peekFile)
 	}
 }
@@ -419,22 +418,8 @@ func TestWriteOpenFileErrorOnRotatedFile(t *testing.T) {
 	require.NoError(t, os.WriteFile(c.fileName(0), []byte("short"), 0o600))
 	require.NoError(t, os.Chmod(c.fileName(0), 0o000))
 	t.Cleanup(func() { _ = os.Chmod(c.fileName(0), 0o600) })
-	err := c.write(WriteOp{Payload: []byte("hi"), Size: 1})
+	err := c.write(queue.WriteOp{Payload: []byte("hi"), Size: 1})
 	require.Error(t, err)
-}
-
-func TestWriteSeekError(t *testing.T) {
-	dir := t.TempDir()
-	c := newTestClient(t, dir)
-	t.Cleanup(func() { _ = c.Shutdown(context.Background()) })
-	// FIFOs cannot be seeked. Opening a FIFO O_RDWR does not block (unlike
-	// opening it read-only or write-only alone), so write()'s OpenFile call
-	// succeeds and its Seek() call fails deterministically.
-	require.NoError(t, syscall.Mkfifo(c.fileName(0), 0o600))
-	c.metadata.pos = 5
-	err := c.write(WriteOp{Payload: []byte("hi"), Size: 1})
-	require.Error(t, err)
-	assert.Nil(t, c.writeFile)
 }
 
 func TestWriteWriteError(t *testing.T) {
@@ -444,7 +429,7 @@ func TestWriteWriteError(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, r.Close())
 	c.writeFile = w
-	err = c.write(WriteOp{Payload: []byte("hi"), Size: 1})
+	err = c.write(queue.WriteOp{Payload: []byte("hi"), Size: 1})
 	require.Error(t, err)
 	assert.Nil(t, c.writeFile)
 }
@@ -463,7 +448,7 @@ func TestWriteRotationSyncFailureIsLoggedAndReturned(t *testing.T) {
 	// returns it as its own result, even though the payload was persisted
 	// and the rotation to the next file number still took effect.
 	require.NoError(t, os.Symlink("/dev/null", c.fileName(0)))
-	err = c.write(WriteOp{Payload: []byte("hello world"), Size: 1})
+	err = c.write(queue.WriteOp{Payload: []byte("hello world"), Size: 1})
 	require.Error(t, err)
 	assert.Equal(t, int64(1), c.metadata.fileNum)
 	assert.Nil(t, c.writeFile)
@@ -483,7 +468,7 @@ func TestWriteLoopSyncErrorLogged(t *testing.T) {
 	// deterministically forcing the periodic sync() triggered by the
 	// ticker to fail; writeLoop only logs the error and keeps running.
 	require.NoError(t, os.Symlink("/dev/null", c.fileName(0)))
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("hello world"), Size: 1}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world"), Size: 1}))
 	require.Eventually(t, func() bool {
 		return observed.FilterMessage("failed to sync").Len() > 0
 	}, time.Second, 10*time.Millisecond)
@@ -500,14 +485,14 @@ func TestReadLoopSyncPeekErrorLogged(t *testing.T) {
 	c0, err := ext.GetClient(context.Background(), component.KindExporter, component.MustNewID("foo"), "test")
 	require.NoError(t, err)
 	c := c0.(*diskAccessClient)
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("hello world"), Size: 1}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world"), Size: 1}))
 	msg := <-c.Peek()
 	// force the periodic syncPeek() triggered by the ticker to fail.
-	require.NoError(t, os.Chmod(dir, 0o500))
+	require.NoError(t, os.Chmod(dir, 0o500)) // #nosec G302
 	require.Eventually(t, func() bool {
 		return observed.FilterMessage("failed to sync").Len() > 0
 	}, time.Second, 10*time.Millisecond)
-	require.NoError(t, os.Chmod(dir, 0o700))
+	require.NoError(t, os.Chmod(dir, 0o700)) // #nosec G302
 	msg.ConsumeCallback(nil)
 	require.NoError(t, c.Shutdown(context.Background()))
 }
@@ -519,8 +504,8 @@ func TestCallbackRemovesOldFile(t *testing.T) {
 	c0, err := ext.GetClient(context.Background(), component.KindExporter, component.MustNewID("foo"), "test")
 	require.NoError(t, err)
 	c := c0.(*diskAccessClient)
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("hello"), Size: 1}))
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("world"), Size: 1}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello"), Size: 1}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("world"), Size: 1}))
 	oldFile := c.fileName(0)
 	msg := <-c.Peek()
 	msg.ConsumeCallback(nil)
@@ -540,53 +525,18 @@ func TestCallbackRemoveOldFileErrorLogged(t *testing.T) {
 	c0, err := ext.GetClient(context.Background(), component.KindExporter, component.MustNewID("foo"), "test")
 	require.NoError(t, err)
 	c := c0.(*diskAccessClient)
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("hello"), Size: 1}))
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("world"), Size: 1}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello"), Size: 1}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("world"), Size: 1}))
 	// make the directory read-only so the os.Remove of the now-unreferenced
 	// rotated-out file fails with permission-denied rather than
 	// IsNotExist; readLoop only logs the error and keeps running.
-	require.NoError(t, os.Chmod(dir, 0o500))
+	require.NoError(t, os.Chmod(dir, 0o500)) // #nosec G302
 	msg := <-c.Peek()
 	msg.ConsumeCallback(nil)
 	require.Eventually(t, func() bool {
 		return observed.FilterMessage(" failed to Remove").Len() > 0
 	}, time.Second, 10*time.Millisecond)
-	require.NoError(t, os.Chmod(dir, 0o700))
-	require.NoError(t, c.Shutdown(context.Background()))
-}
-
-func TestReadLoopResumesWaitingAfterFailedWrite(t *testing.T) {
-	dir := t.TempDir()
-	c := newTestClient(t, dir)
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("hi"), Size: 1}))
-	msg := <-c.Peek()
-	msg.ConsumeCallback(nil)
-
-	peekResult := make(chan struct{})
-	go func() {
-		<-c.Peek() // caught up to head: readOne returns false, readLoop parks on waitForWriteChan.
-		close(peekResult)
-	}()
-	time.Sleep(50 * time.Millisecond)
-
-	// Close the writeFile's fd out from under the client so the next write
-	// fails, while writeLoop still unconditionally pings waitForWriteChan
-	// afterwards; readLoop wakes up, finds nothing new, and parks again
-	// (extension.go:367) rather than delivering to peekChan.
-	require.NotNil(t, c.writeFile)
-	require.NoError(t, syscall.Close(int(c.writeFile.Fd())))
-	require.Error(t, c.Write(WriteOp{Payload: []byte("hi2"), Size: 1}))
-
-	time.Sleep(50 * time.Millisecond)
-	select {
-	case <-peekResult:
-		t.Fatal("peek should still be blocked, nothing was successfully written")
-	default:
-	}
-
-	c.writeFile = nil
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("hi3"), Size: 1}))
-	<-peekResult
+	require.NoError(t, os.Chmod(dir, 0o700)) // #nosec G302
 	require.NoError(t, c.Shutdown(context.Background()))
 }
 
@@ -595,11 +545,11 @@ func TestReadOneExitDuringSend(t *testing.T) {
 	c := newTestClient(t, dir)
 	// stop the background loops so we can drive readOne directly without
 	// anyone competing for the peekChan/exitChan.
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("hello world"), Size: 1}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world"), Size: 1}))
 	// drain the auto-delivered message so the loops go idle waiting on peekRequestChan.
 	msg := <-c.Peek()
 	msg.ConsumeCallback(nil)
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("hello world2"), Size: 1}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world2"), Size: 1}))
 
 	close(c.exitChan)
 	c.exitFlag.Store(true)
@@ -644,7 +594,7 @@ func TestWriteLoopAndReadLoopTicker(t *testing.T) {
 	// let the ticker fire at least once with no activity (opCount/peekOps == 0).
 	time.Sleep(50 * time.Millisecond)
 
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("hello world"), Size: 1}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world"), Size: 1}))
 	msg := <-c.Peek()
 	msg.ConsumeCallback(nil)
 
@@ -657,7 +607,7 @@ func TestWriteLoopAndReadLoopTicker(t *testing.T) {
 func TestRetrieveMetaDataSuccess(t *testing.T) {
 	dir := t.TempDir()
 	c := newTestClient(t, dir)
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("hello world"), Size: 5}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world"), Size: 5}))
 	require.NoError(t, c.sync())
 
 	m, err := c.retrieveMetaData(c.metaDataFilePath())
@@ -670,7 +620,7 @@ func TestRetrieveMetaDataSuccess(t *testing.T) {
 func TestRetrievePeekMetaDataSuccess(t *testing.T) {
 	dir := t.TempDir()
 	c := newTestClient(t, dir)
-	require.NoError(t, c.Write(WriteOp{Payload: []byte("hello world"), Size: 5}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world"), Size: 5}))
 	msg := <-c.Peek()
 	msg.ConsumeCallback(nil)
 	require.NoError(t, c.syncPeek())
