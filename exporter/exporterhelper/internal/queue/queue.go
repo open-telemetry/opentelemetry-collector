@@ -8,6 +8,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue/diskaccess"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -92,6 +93,9 @@ func newBaseQueue[T request.Request](set Settings[T]) readableQueue[T] {
 	// Configure memory queue or persistent based on the config.
 	if set.StorageID == nil {
 		return newMemoryQueue[T](set)
+	}
+	if set.StorageID.Type() == component.MustNewType(diskaccess.TypeStr) {
+		return newDiskQueue[T](set)
 	}
 
 	return newPersistentQueue[T](set)
