@@ -21,5 +21,6 @@ type Tests struct {
 	SkipShutdown        bool   `mapstructure:"skip_shutdown"`
 	GoLeak              GoLeak `mapstructure:"goleak"`
 	ExpectConsumerError bool   `mapstructure:"expect_consumer_error"`
+	ContextPropagation  bool   `mapstructure:"context_propagation"`
 	Host                string `mapstructure:"host"`
 }

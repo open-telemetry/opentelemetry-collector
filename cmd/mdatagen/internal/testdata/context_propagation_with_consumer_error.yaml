@@ -2,6 +2,7 @@ type: metric
 
 tests:
   context_propagation: true
+  expect_consumer_error: true
 
 status:
   class: processor

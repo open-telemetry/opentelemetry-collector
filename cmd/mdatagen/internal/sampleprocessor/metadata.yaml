@@ -9,6 +9,9 @@ github_project: open-telemetry/opentelemetry-collector
 
 sem_conv_version: 1.9.0
 
+tests:
+  context_propagation: true
+
 status:
   disable_codecov_badge: true
   class: processor

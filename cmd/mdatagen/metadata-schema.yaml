@@ -359,6 +359,9 @@ tests:
   skip_shutdown: false # false by default
   # Whether it's expected that the Consume[Logs|Metrics|Traces] method will return an error with the given configuration.
   expect_consumer_error: true # false by default
+  # Whether the processor is expected to propagate the incoming context unchanged to the next consumer.
+  # Only valid for processors and cannot be combined with expect_consumer_error. false by default.
+  context_propagation: true # false by default
   goleak: # {} by default generates a package_test to enable check for leaks
     skip: false # set to true if goleak tests should be skipped
     setup: string # Optional: supports configuring a setup function that runs before goleak checks

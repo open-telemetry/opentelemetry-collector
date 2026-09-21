@@ -4,6 +4,6 @@ tests:
   context_propagation: true
 
 status:
-  class: processor
+  class: receiver
   stability:
     beta: [traces, logs, metrics]

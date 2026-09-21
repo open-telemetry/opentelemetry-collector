@@ -139,7 +139,24 @@ func (md *Metadata) Validate() error {
 		errs = errors.Join(errs, err)
 	}
 
+	if err := md.validateTests(); err != nil {
+		errs = errors.Join(errs, err)
+	}
+
 	return errs
+}
+
+func (md *Metadata) validateTests() error {
+	if !md.Tests.ContextPropagation {
+		return nil
+	}
+	if md.Status == nil || md.Status.Class != "processor" {
+		return errors.New("tests::context_propagation is only supported for processors")
+	}
+	if md.Tests.ExpectConsumerError {
+		return errors.New("tests::context_propagation cannot be combined with tests::expect_consumer_error")
+	}
+	return nil
 }
 
 // typeRegexp is used to validate the type of a component.

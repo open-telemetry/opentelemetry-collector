@@ -210,6 +210,18 @@ func TestValidate(t *testing.T) {
 			name:    "testdata/feature_gates_not_sorted.yaml",
 			wantErr: "feature gates must be sorted by ID",
 		},
+		{
+			name:    "testdata/context_propagation_not_processor.yaml",
+			wantErr: "tests::context_propagation is only supported for processors",
+		},
+		{
+			name:    "testdata/context_propagation_with_consumer_error.yaml",
+			wantErr: "tests::context_propagation cannot be combined with tests::expect_consumer_error",
+		},
+		{
+			name:    "testdata/with_tests_processor.yaml",
+			wantErr: "",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -222,6 +234,12 @@ func TestValidate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLoadMetadataContextPropagation(t *testing.T) {
+	md, err := LoadMetadata("testdata/with_tests_processor.yaml")
+	require.NoError(t, err)
+	require.True(t, md.Tests.ContextPropagation)
 }
 
 func TestDeprecatedValidate(t *testing.T) {
