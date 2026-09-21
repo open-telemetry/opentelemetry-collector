@@ -61,6 +61,13 @@ config:
       values:
         type: object
         properties:
+          endpoint:
+            $ref: /config/confignet.addr_config
+            x-optional: true
+            default:
+              transport: ip4
+            go_struct:
+              optional_mode: default
           interval:
             type: duration
             x-optional: true
@@ -248,6 +255,20 @@ metrics:
     attributes: [string_attr, boolean_attr]
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
+
+  optional.metric.to_be_removed:
+    enabled: false
+    description: "[DEPRECATED] Gauge double metric disabled by default with if_enabled warning."
+    stability: deprecated
+    deprecated:
+      since: "1.0.0"
+      note: "This metric will be removed"
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [string_attr]
+    warnings:
+      if_enabled: This metric is deprecated and will be removed soon.
 
   reaggregate.metric:
     enabled: true

@@ -79,7 +79,13 @@ type GoStructConfig struct {
 	Anonymous       bool                   `mapstructure:"anonymous" json:"-" yaml:"anonymous,omitempty"`
 	IgnoreDefault   bool                   `mapstructure:"ignore_default" json:"-" yaml:"ignore_default,omitempty"`
 	FieldName       string                 `mapstructure:"field_name" json:"-" yaml:"field_name,omitempty"`
+	OptionalMode    string                 `mapstructure:"optional_mode" json:"-" yaml:"optional_mode,omitempty"`
 }
+
+const (
+	OptionalModeSome    = "some"
+	OptionalModeDefault = "default"
+)
 
 type CustomValidatorConfig struct {
 	Name string `mapstructure:"name,omitempty" json:"-" yaml:"name,omitempty"`
@@ -251,6 +257,9 @@ func (md *ConfigMetadata) MergeFrom(other *ConfigMetadata) {
 	if md.GoStruct.FieldName == "" {
 		md.GoStruct.FieldName = other.GoStruct.FieldName
 	}
+	if md.GoStruct.OptionalMode == "" {
+		md.GoStruct.OptionalMode = other.GoStruct.OptionalMode
+	}
 }
 
 func (md *ConfigMetadata) Clone() *ConfigMetadata {
@@ -307,6 +316,27 @@ func cloneAny(v any) any {
 
 func (md *ConfigMetadata) Validate() error {
 	var errs error
+
+	switch md.GoStruct.OptionalMode {
+	case "":
+		// The empty value preserves the existing Some behavior.
+	case OptionalModeSome:
+		if !md.IsOptional {
+			errs = errors.Join(errs, errors.New("go_struct.optional_mode requires x-optional: true"))
+		}
+	case OptionalModeDefault:
+		if !md.IsOptional {
+			errs = errors.Join(errs, errors.New("go_struct.optional_mode requires x-optional: true"))
+		}
+		if md.IsPointer {
+			errs = errors.Join(errs, errors.New("go_struct.optional_mode cannot be used with x-pointer: true"))
+		}
+		if md.Type != "" && md.Type != ObjectType {
+			errs = errors.Join(errs, fmt.Errorf("go_struct.optional_mode %q requires an object type, got %q", OptionalModeDefault, md.Type))
+		}
+	default:
+		errs = errors.Join(errs, fmt.Errorf("go_struct.optional_mode must be %q or %q, got %q", OptionalModeSome, OptionalModeDefault, md.GoStruct.OptionalMode))
+	}
 
 	if md.Type == "" || md.Type == ObjectType {
 		if len(md.Properties) == 0 && md.Ref == "" {

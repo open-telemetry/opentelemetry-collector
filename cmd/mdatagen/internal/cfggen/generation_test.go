@@ -2456,7 +2456,31 @@ func TestFormatDefaultValue_OptionalObjectDefault(t *testing.T) {
 		},
 	}
 
+	require.Equal(t, "configoptional.Some(NewDefaultClient())", FormatDefaultValue(md, "client", defaultValue(map[string]any{"endpoint": "localhost"}), "", ""))
+}
+
+func TestFormatDefaultValue_OptionalObjectDefaultMode(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:       "object",
+		IsOptional: true,
+		Properties: map[string]*ConfigMetadata{
+			"endpoint": {Type: "string", Default: defaultValue("localhost")},
+		},
+		GoStruct: GoStructConfig{OptionalMode: OptionalModeDefault},
+	}
+
 	require.Equal(t, "configoptional.Default(NewDefaultClient())", FormatDefaultValue(md, "client", defaultValue(map[string]any{"endpoint": "localhost"}), "", ""))
+}
+
+func TestFormatDefaultValue_OptionalObjectDefaultModeWithoutSchemaDefault(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:       "object",
+		IsOptional: true,
+		Properties: map[string]*ConfigMetadata{"endpoint": {Type: "string"}},
+		GoStruct:   GoStructConfig{OptionalMode: OptionalModeDefault},
+	}
+
+	require.Equal(t, "configoptional.Default(Client{})", FormatDefaultValue(md, "client", nil, "", ""))
 }
 
 func TestFormatDefaultValue_PointerSliceOfObjects(t *testing.T) {
@@ -2622,6 +2646,16 @@ func TestWrapDefaultValue(t *testing.T) {
 					"name": {Type: "string"},
 				},
 			},
+			expected: "configoptional.Some(defaultValue)",
+		},
+		{
+			name: "optional object default mode",
+			metadata: &ConfigMetadata{
+				Type:       "object",
+				IsOptional: true,
+				Properties: map[string]*ConfigMetadata{"name": {Type: "string"}},
+				GoStruct:   GoStructConfig{OptionalMode: OptionalModeDefault},
+			},
 			expected: "configoptional.Default(defaultValue)",
 		},
 	}
@@ -2717,6 +2751,20 @@ func TestHasNonZeroDefault(t *testing.T) {
 	}))
 	require.False(t, hasNonZeroDefault(&ConfigMetadata{
 		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"base": {Type: "object", Default: defaultValue(map[string]any{})},
+		},
+	}))
+	require.False(t, hasNonZeroDefault(&ConfigMetadata{
+		Type:       "object",
+		IsOptional: true,
+		Properties: map[string]*ConfigMetadata{
+			"base": {Type: "object", Default: defaultValue(map[string]any{})},
+		},
+	}))
+	require.False(t, hasNonZeroDefault(&ConfigMetadata{
+		Type:      "object",
+		IsPointer: true,
 		Properties: map[string]*ConfigMetadata{
 			"base": {Type: "object", Default: defaultValue(map[string]any{})},
 		},

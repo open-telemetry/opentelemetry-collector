@@ -88,6 +88,9 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
+// defaultPartitionCacheSize is the partition cache size used when `cache_size` is unset.
+const defaultPartitionCacheSize = 10000
+
 // BatchConfig defines a configuration for batching requests based on a timeout and a minimum number of items.
 type BatchConfig struct {
 	// FlushTimeout sets the time after which a batch will be sent regardless of its size.
@@ -119,6 +122,17 @@ type PartitionConfig struct {
 	//
 	// Entries are case-insensitive. Duplicated entries will trigger a validation error.
 	MetadataKeys []string `mapstructure:"metadata_keys"`
+
+	// CacheSize is the maximum number of active partition batchers kept in the LRU
+	// cache when partitioning is enabled. When the limit is reached, the least
+	// recently used partition is flushed and removed. If unset, defaults to 10000.
+	// Must be positive.
+	CacheSize configoptional.Optional[int] `mapstructure:"cache_size"`
+
+	// IdleTimeout is the duration a partition may stay empty before it is removed.
+	// Keep it above the data arrival interval to avoid churning partitions. If unset,
+	// it defaults to 90s. Must be positive.
+	IdleTimeout configoptional.Optional[time.Duration] `mapstructure:"idle_timeout"`
 }
 
 func (cfg *BatchConfig) Validate() error {
@@ -155,6 +169,10 @@ func (cfg *PartitionConfig) Validate() error {
 		return nil
 	}
 
+	if v := cfg.IdleTimeout.Get(); v != nil && *v <= 0 {
+		return fmt.Errorf("`idle_timeout` must be positive, found %s", *v)
+	}
+
 	// Validate metadata_keys for duplicates (case-insensitive)
 	uniq := map[string]bool{}
 	for _, k := range cfg.MetadataKeys {
@@ -163,6 +181,10 @@ func (cfg *PartitionConfig) Validate() error {
 			return fmt.Errorf("duplicate entry in metadata_keys: %q (case-insensitive)", l)
 		}
 		uniq[l] = true
+	}
+
+	if size := cfg.CacheSize.Get(); size != nil && *size <= 0 {
+		return fmt.Errorf("`cache_size` must be positive, found %d", *size)
 	}
 
 	return nil

@@ -50,6 +50,9 @@ const (
 	OpaqueStringType = schemagen.OpaqueStringType
 	ComponentIDType  = schemagen.ComponentIDType
 	OpaqueMapType    = schemagen.OpaqueMapType
+
+	OptionalModeSome    = schemagen.OptionalModeSome
+	OptionalModeDefault = schemagen.OptionalModeDefault
 )
 
 var (
