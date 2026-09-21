@@ -545,6 +545,7 @@
       "xexporter",
       "xexporterhelper",
       "xextension",
+      "xhash",
       "xpdata",
       "xpipeline",
       "xprocessor",
