@@ -18,4 +18,4 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
-    uses:  open-telemetry/shared-workflows/.github/workflows/chloggen.yml@ad1959372f2919fcf2556d3a3d12ed5265c54209
+    uses:  open-telemetry/shared-workflows/.github/workflows/chloggen.yml@0a92ab98860089055203c35516beb30ac55dce0a
