@@ -212,11 +212,11 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			name:    "testdata/context_propagation_not_processor.yaml",
-			wantErr: "tests::context_propagation is only supported for processors",
+			wantErr: "tests::skip_context_propagation is only supported for processors",
 		},
 		{
 			name:    "testdata/context_propagation_with_consumer_error.yaml",
-			wantErr: "tests::context_propagation cannot be combined with tests::expect_consumer_error",
+			wantErr: "tests::expect_consumer_error requires tests::skip_context_propagation for processors",
 		},
 		{
 			name:    "testdata/with_tests_processor.yaml",
@@ -239,7 +239,11 @@ func TestValidate(t *testing.T) {
 func TestLoadMetadataContextPropagation(t *testing.T) {
 	md, err := LoadMetadata("testdata/with_tests_processor.yaml")
 	require.NoError(t, err)
-	require.True(t, md.Tests.ContextPropagation)
+	require.False(t, md.Tests.SkipContextPropagation)
+
+	md, err = LoadMetadata("testdata/skip_context_propagation.yaml")
+	require.NoError(t, err)
+	require.True(t, md.Tests.SkipContextPropagation)
 }
 
 func TestDeprecatedValidate(t *testing.T) {

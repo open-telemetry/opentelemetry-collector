@@ -1,8 +1,5 @@
 type: metric
 
-tests:
-  context_propagation: true
-
 status:
   class: processor
   stability:

@@ -1,7 +1,7 @@
 type: metric
 
 tests:
-  expect_consumer_error: true
+  skip_context_propagation: true
 
 status:
   class: processor

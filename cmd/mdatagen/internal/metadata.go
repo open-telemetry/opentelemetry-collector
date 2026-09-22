@@ -147,14 +147,12 @@ func (md *Metadata) Validate() error {
 }
 
 func (md *Metadata) validateTests() error {
-	if !md.Tests.ContextPropagation {
-		return nil
+	isProcessor := md.Status != nil && md.Status.Class == "processor"
+	if md.Tests.SkipContextPropagation && !isProcessor {
+		return errors.New("tests::skip_context_propagation is only supported for processors")
 	}
-	if md.Status == nil || md.Status.Class != "processor" {
-		return errors.New("tests::context_propagation is only supported for processors")
-	}
-	if md.Tests.ExpectConsumerError {
-		return errors.New("tests::context_propagation cannot be combined with tests::expect_consumer_error")
+	if isProcessor && !md.Tests.SkipContextPropagation && md.Tests.ExpectConsumerError {
+		return errors.New("tests::expect_consumer_error requires tests::skip_context_propagation for processors")
 	}
 	return nil
 }

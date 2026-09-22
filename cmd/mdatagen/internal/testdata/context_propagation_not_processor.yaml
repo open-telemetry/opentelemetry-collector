@@ -1,7 +1,7 @@
 type: metric
 
 tests:
-  context_propagation: true
+  skip_context_propagation: true
 
 status:
   class: receiver

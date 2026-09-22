@@ -28,10 +28,10 @@ import (
 	{{- end }}
 	{{- end }}
 	{{- if isProcessor }}
-	{{- if .Tests.ContextPropagation }}
+	{{- if not .Tests.SkipContextPropagation }}
 	"go.opentelemetry.io/collector/consumer"
 	{{- end }}
-	{{- if or (not .Tests.ContextPropagation) supportsProfiles }}
+	{{- if or .Tests.SkipContextPropagation supportsProfiles }}
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	{{- end }}
 	"go.opentelemetry.io/collector/processor"
@@ -189,7 +189,7 @@ func TestComponentLifecycle(t *testing.T) {
 {{ end }}
 
 {{ if isProcessor }}
-{{- if .Tests.ContextPropagation }}
+{{- if not .Tests.SkipContextPropagation }}
 type contextCapturingConsumer struct{ capturedCtx context.Context }
 
 func (*contextCapturingConsumer) Capabilities() consumer.Capabilities {
