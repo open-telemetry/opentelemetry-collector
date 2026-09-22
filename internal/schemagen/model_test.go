@@ -273,6 +273,7 @@ func TestGoStructConfig_Unmarshal(t *testing.T) {
 				"anonymous":      true,
 				"ignore_default": true,
 				"optional_mode":  "default",
+				"private_fields": true,
 				"custom_validator": map[string]any{
 					"name": "validateConfig",
 				},
@@ -281,6 +282,7 @@ func TestGoStructConfig_Unmarshal(t *testing.T) {
 				Anonymous:       true,
 				IgnoreDefault:   true,
 				OptionalMode:    OptionalModeDefault,
+				PrivateFields:   true,
 				CustomValidator: &CustomValidatorConfig{Name: "validateConfig"},
 			},
 		},
@@ -722,6 +724,7 @@ func TestConfigMetadata_MergeFrom(t *testing.T) {
 				IgnoreDefault: true,
 				FieldName:     "Field",
 				OptionalMode:  OptionalModeDefault,
+				PrivateFields: true,
 			},
 		}
 
@@ -737,6 +740,7 @@ func TestConfigMetadata_MergeFrom(t *testing.T) {
 		assert.True(t, md.GoStruct.IgnoreDefault)
 		assert.Equal(t, "Field", md.GoStruct.FieldName)
 		assert.Equal(t, OptionalModeDefault, md.GoStruct.OptionalMode)
+		assert.True(t, md.GoStruct.PrivateFields)
 	})
 
 	t.Run("explicit optional mode is preserved", func(t *testing.T) {

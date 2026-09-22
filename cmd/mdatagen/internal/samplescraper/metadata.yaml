@@ -93,6 +93,8 @@ config:
             exclusiveMinimum: 0
             exclusiveMaximum: 30
         required: [labels]
+        go_struct:
+          private_fields: true
       default:
         - {} # one item with default values
     log_level:
@@ -101,6 +103,8 @@ config:
       enum: [debug, info, warn, error]
       default: info
   required: [job_name, targets]
+  go_struct:
+    private_fields: true
 
 resource_attributes:
   map.resource.attr:
