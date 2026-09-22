@@ -47,6 +47,10 @@ batch settings, use `batch: {}`. When `batch` is defined, the settings are:
 - `sizer`: see below.
 - `partition`: see below.
 
+At startup, the Collector warns when the same pipeline contains both a batch processor and an
+exporter with sending queue batching enabled. This detection is local to each pipeline and does not
+cross connectors.
+
 The `batch::sizer` field is given special treatment because the queue itself also defines a `sizer`. This field supports using different size limits for the queue and batch-related logic.
 
 If the `batch::sizer` field is not set, it takes its value from the parent structure.

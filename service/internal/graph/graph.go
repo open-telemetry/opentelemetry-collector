@@ -110,7 +110,10 @@ func (g *Graph) warnIfDoubleBatching(pipelineConfigs pipelines.Config) {
 		}
 
 		for _, node := range g.pipelines[pipelineID].exporters {
-			exporterNode := node.(*exporterNode)
+			exporterNode, ok := node.(*exporterNode)
+			if !ok {
+				continue
+			}
 			if !exporterNode.exporterHelperBatchingEnabled {
 				continue
 			}

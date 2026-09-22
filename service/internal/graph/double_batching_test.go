@@ -137,3 +137,30 @@ func TestWarnIfDoubleBatching(t *testing.T) {
 	}
 	require.ElementsMatch(t, []any{"traces", "logs"}, pipelineNames)
 }
+
+func TestWarnIfDoubleBatchingWithConnectorExporter(t *testing.T) {
+	t.Parallel()
+
+	tracesID := pipeline.NewID(pipeline.SignalTraces)
+	core, logs := observer.New(zapcore.WarnLevel)
+	g := &Graph{
+		pipelines: map[pipeline.ID]*pipelineNodes{
+			tracesID: {
+				exporters: map[int64]graph.Node{
+					1: &connectorNode{},
+				},
+			},
+		},
+		telemetry: component.TelemetrySettings{Logger: zap.New(core)},
+	}
+
+	require.NotPanics(t, func() {
+		g.warnIfDoubleBatching(pipelines.Config{
+			tracesID: {
+				Processors: []component.ID{component.MustNewID("batch")},
+				Exporters:  []component.ID{component.MustNewID("forward")},
+			},
+		})
+	})
+	require.Empty(t, logs.All())
+}
