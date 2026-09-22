@@ -860,7 +860,7 @@ func TestMergeSplitMetricsUnsplittableRequest(t *testing.T) {
 	require.Greater(t, req.BytesSize(), 100, "precondition: request must start oversized")
 
 	res, err := req.MergeSplit(context.Background(), 100, request.SizerTypeBytes, nil)
-	require.ErrorContains(t, err, "no data points left to drop",
+	require.ErrorContains(t, err, "holds no data point that fits",
 		"an unsplittable request must report an error rather than succeed silently")
 	assert.Empty(t, res, "an oversized request holding no data points must not be returned")
 }
@@ -953,12 +953,11 @@ func TestMergeSplitMetricsDropsOversizedDataPointForEveryType(t *testing.T) {
 	}
 }
 
-func TestMergeSplitMetricsKeepsUnextractableDataLessMetric(t *testing.T) {
-	// A data-less metric small enough to extract never reaches removeFirstDataPoint,
-	// because extractMetrics moves it into the discarded batch first. Give it a
-	// description large enough that it cannot be extracted, so it is still in the
-	// source when the drop path runs. It must not be counted as a dropped item:
-	// it holds no data points, so there is nothing in it to drop.
+func TestMergeSplitMetricsDataLessMetricDoesNotBlockDataPoints(t *testing.T) {
+	// A metric holding no data points but whose own metadata exceeds max size can
+	// never be exported, and it sits in front of a data point that fits. Dropping it
+	// loses no measurement, so the data point behind it must still be exported and
+	// nothing may be counted as a dropped item.
 	md := pmetric.NewMetrics()
 	sm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	dataLess := sm.Metrics().AppendEmpty()
@@ -969,13 +968,27 @@ func TestMergeSplitMetricsKeepsUnextractableDataLessMetric(t *testing.T) {
 	gauge.SetName("small.gauge")
 	gauge.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(1)
 	require.Equal(t, 1, md.DataPointCount(), "precondition: exactly one data point")
+	require.Greater(t, newMetricsRequest(md).BytesSize(), 100, "precondition: request starts oversized")
 
-	_, err := newMetricsRequest(md).MergeSplit(context.Background(), 100, request.SizerTypeBytes, nil)
-	// The single data point is lost because the data-less metric's own metadata
-	// exceeds max size, the same way resource overhead alone can exceed it. What
-	// matters here is the count: one data point, not two items.
-	require.ErrorContains(t, err, "one datapoint size is greater than max size, dropping items: 1",
-		"a metric with no data points must not be counted as a dropped item")
+	res, err := newMetricsRequest(md).MergeSplit(context.Background(), 100, request.SizerTypeBytes, nil)
+	require.NoError(t, err, "no data point was dropped, so no error is due")
+
+	got, names := 0, []string(nil)
+	for _, r := range res {
+		mr := r.(*metricsRequest)
+		got += mr.md.DataPointCount()
+		for a := 0; a < mr.md.ResourceMetrics().Len(); a++ {
+			for b := 0; b < mr.md.ResourceMetrics().At(a).ScopeMetrics().Len(); b++ {
+				ms := mr.md.ResourceMetrics().At(a).ScopeMetrics().At(b).Metrics()
+				for c := 0; c < ms.Len(); c++ {
+					names = append(names, ms.At(c).Name())
+				}
+			}
+		}
+	}
+	assert.Equal(t, 1, got, "the data point that fits must survive")
+	assert.Equal(t, []string{"small.gauge"}, names,
+		"only the unexportable data-less metric may be removed")
 }
 
 func TestMergeSplitMetricsDropsOnlyOversizedAcrossResourcesAndScopes(t *testing.T) {
@@ -1015,4 +1028,24 @@ func TestMergeSplitMetricsDropsOnlyOversizedAcrossResourcesAndScopes(t *testing.
 	assert.Equal(t, 2, got, "the well-sized data points in the other scope and resource must survive")
 	assert.ElementsMatch(t, []string{"r1s2.small", "r2.small"}, names,
 		"only the oversized metric may be removed")
+}
+
+func TestMergeSplitMetricsKeepsExportableDataLessMetric(t *testing.T) {
+	// A data-less metric whose own framing does fit carries no item to drop, so the
+	// pass must leave it alone and must not count it. Placing it behind the oversized
+	// metric keeps it in the source: extraction stops at the oversized one, so the
+	// drop pass is what sees it.
+	md := pmetric.NewMetrics()
+	sm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	oversized := sm.Metrics().AppendEmpty()
+	oversized.SetName("oversized.metric")
+	oversized.SetEmptyGauge().DataPoints().AppendEmpty().Attributes().PutStr("pad", strings.Repeat("y", 400))
+	dataLess := sm.Metrics().AppendEmpty()
+	dataLess.SetName("small.empty.metric")
+	require.Equal(t, pmetric.MetricTypeEmpty, dataLess.Type(), "precondition: metric has no data point slice")
+	require.Equal(t, 1, md.DataPointCount(), "precondition: one data point, in the oversized metric")
+
+	_, err := newMetricsRequest(md).MergeSplit(context.Background(), 100, request.SizerTypeBytes, nil)
+	require.ErrorContains(t, err, "one datapoint size is greater than max size, dropping items: 1",
+		"only the oversized data point counts; the data-less metric is not an item")
 }

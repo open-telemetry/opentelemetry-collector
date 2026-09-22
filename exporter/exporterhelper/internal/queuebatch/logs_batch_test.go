@@ -533,7 +533,7 @@ func TestMergeSplitLogsUnsplittableRequest(t *testing.T) {
 	require.Greater(t, req.BytesSize(), 100, "precondition: request must start oversized")
 
 	res, err := req.MergeSplit(context.Background(), 100, request.SizerTypeBytes, nil)
-	require.ErrorContains(t, err, "no log records left to drop",
+	require.ErrorContains(t, err, "holds no log record that fits",
 		"an unsplittable request must report an error rather than succeed silently")
 	assert.Empty(t, res, "an oversized request holding no records must not be returned")
 }

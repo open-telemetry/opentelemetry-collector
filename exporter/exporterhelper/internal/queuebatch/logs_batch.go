@@ -6,6 +6,7 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
@@ -49,44 +50,83 @@ func (req *logsRequest) mergeTo(dst *logsRequest, sz sizer.LogsSizer, szt reques
 }
 
 func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer, szt request.SizerType) ([]request.Request, error) {
-	return splitRequest(req, &req.sizes, req.ld, maxSize, sz, szt,
-		func() int { return req.size(sz, szt) },
-		splitOps[plog.Logs, sizer.LogsSizer]{
-			itemCount:   plog.Logs.LogRecordCount,
-			extract:     extractLogs,
-			removeFirst: removeFirstLogRecord,
-			size:        sizer.LogsSizer.LogsSize,
-			newRequest:  newLogsRequest,
-			itemName:    "log record",
-			itemsName:   "log records",
-		})
+	var res []request.Request
+	droppedItems := 0
+	pruned := false
+	unsplittable := false
+	for req.size(sz, szt) > maxSize {
+		ld, removedSize := extractLogs(req.ld, maxSize, sz)
+		if ld.LogRecordCount() == 0 {
+			if pruned {
+				// Nothing individually oversized is left, so the resource and scope
+				// overhead alone exceeds maxSize and no batch can be formed. Stop instead
+				// of looping forever, and report it rather than reporting success for a
+				// request that was never split.
+				unsplittable = true
+				break
+			}
+			// The next record does not fit into maxSize even on its own. Drop every
+			// record in that state in a single pass, rather than one per iteration with
+			// a full size recompute after each, then carry on splitting what is left.
+			pruned = true
+			droppedItems = dropOversizedLogRecords(req.ld, maxSize, sz)
+			if droppedItems == 0 {
+				unsplittable = true
+				break
+			}
+			req.sizes.Update(szt, sz.LogsSize(req.ld))
+			continue
+		}
+		req.sizes.Update(szt, req.size(sz, szt)-removedSize)
+		res = append(res, newLogsRequest(ld))
+	}
+	// Keep the remainder, unless splitting emptied it, in which case there is
+	// nothing left to export.
+	if (droppedItems == 0 && !unsplittable) || req.ld.LogRecordCount() > 0 {
+		res = append(res, req)
+	}
+	switch {
+	case droppedItems > 0:
+		return res, fmt.Errorf("one log record size is greater than max size, dropping items: %d", droppedItems)
+	case unsplittable:
+		return res, errors.New("request size is greater than max size and holds no log record that fits")
+	}
+	return res, nil
 }
 
-// removeFirstLogRecord removes the first log record in iteration order, together
-// with the scope and resource that it leaves empty. Reports whether a record was
-// removed, which is false only when there are none left.
-func removeFirstLogRecord(ld plog.Logs) bool {
-	removed := false
+// dropOversizedLogRecords removes every log record that cannot fit a batch of
+// maxSize even on its own, together with the scope and resource it leaves empty,
+// and reports how many it removed.
+//
+// A record shares each batch with its resource and scope, so their framing counts
+// against maxSize too. The capacity left for a record is therefore computed the same
+// way extractResourceLogs and extractScopeLogs compute it, which keeps this pass in
+// step with what extraction would accept.
+func dropOversizedLogRecords(ld plog.Logs, maxSize int, sz sizer.LogsSizer) int {
+	dropped := 0
+	batchCapacity := maxSize - sz.LogsSize(plog.NewLogs())
 	ld.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
-		if removed {
-			return false
-		}
+		bareRL := plog.NewResourceLogs()
+		bareRL.SetSchemaUrl(rl.SchemaUrl())
+		rl.Resource().CopyTo(bareRL.Resource())
+		scopeCapacity := batchCapacity - (sz.DeltaSize(batchCapacity) - batchCapacity) - sz.ResourceLogsSize(bareRL)
 		rl.ScopeLogs().RemoveIf(func(sl plog.ScopeLogs) bool {
-			if removed {
-				return false
-			}
-			sl.LogRecords().RemoveIf(func(plog.LogRecord) bool {
-				if removed {
-					return false
+			bareSL := plog.NewScopeLogs()
+			bareSL.SetSchemaUrl(sl.SchemaUrl())
+			sl.Scope().CopyTo(bareSL.Scope())
+			recordCapacity := scopeCapacity - (sz.DeltaSize(scopeCapacity) - scopeCapacity) - sz.ScopeLogsSize(bareSL)
+			sl.LogRecords().RemoveIf(func(lr plog.LogRecord) bool {
+				if sz.DeltaSize(sz.LogRecordSize(lr)) > recordCapacity {
+					dropped++
+					return true
 				}
-				removed = true
-				return true
+				return false
 			})
 			return sl.LogRecords().Len() == 0
 		})
 		return rl.ScopeLogs().Len() == 0
 	})
-	return removed
+	return dropped
 }
 
 // extractLogs extracts logs from the input logs and returns a new logs with the specified number of log records.
