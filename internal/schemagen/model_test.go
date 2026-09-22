@@ -122,6 +122,18 @@ default:
 	}
 }
 
+func TestConfigMetadata_UnmarshalYAMLPointerAndOptional(t *testing.T) {
+	var md ConfigMetadata
+	require.NoError(t, yaml.Unmarshal([]byte(`
+type: object
+pointer: true
+optional: true
+`), &md))
+
+	require.True(t, md.IsPointer)
+	require.True(t, md.IsOptional)
+}
+
 func TestConfigMetadata_ToJSONDefaultValue(t *testing.T) {
 	absent := &ConfigMetadata{Type: "string"}
 
@@ -415,7 +427,7 @@ func TestConfigMetadata_ValidateOptionalMode(t *testing.T) {
 				Properties: map[string]*ConfigMetadata{"field": {Type: StringType}},
 				GoStruct:   GoStructConfig{OptionalMode: OptionalModeDefault},
 			},
-			wantErr: "requires x-optional: true",
+			wantErr: "requires optional: true",
 		},
 		{
 			name: "default mode with pointer",
@@ -426,7 +438,7 @@ func TestConfigMetadata_ValidateOptionalMode(t *testing.T) {
 				Properties: map[string]*ConfigMetadata{"field": {Type: StringType}},
 				GoStruct:   GoStructConfig{OptionalMode: OptionalModeDefault},
 			},
-			wantErr: "cannot be used with x-pointer: true",
+			wantErr: "cannot be used with pointer: true",
 		},
 		{
 			name: "default mode with scalar",
