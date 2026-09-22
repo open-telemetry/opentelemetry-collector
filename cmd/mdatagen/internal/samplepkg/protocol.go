@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package samplepkg
+package samplepkg // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplepkg"
 
 import "errors"
 
