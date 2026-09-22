@@ -5,6 +5,7 @@ package queuebatchprocessor // import "go.opentelemetry.io/collector/processor/q
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -22,15 +23,6 @@ const (
 	dataTypeKey  = "data_type"
 	sizerKey     = "sizer"
 )
-
-func recordSize(inst, bytesInst metric.Int64Histogram, attrs metric.MeasurementOption) func(context.Context, int64, func() int64) {
-	return func(ctx context.Context, items int64, bytesSize func() int64) {
-		inst.Record(ctx, items, attrs)
-		if bytesInst.Enabled(ctx) {
-			bytesInst.Record(ctx, bytesSize(), attrs)
-		}
-	}
-}
 
 func newObsMetrics(
 	set component.TelemetrySettings,
@@ -55,41 +47,59 @@ func newObsMetrics(
 	shutdown := sync.OnceFunc(tb.Shutdown)
 
 	return queuebatchtelemetry.ObsMetrics{
-		QueueMetrics: queuebatchtelemetry.QueueMetrics{
-			EnqueueFailureFunc: func(ctx context.Context, items int64) {
-				tb.ProcessorQueuebatchEnqueueFailedItems.Add(ctx, items, attrs)
-			},
-			EnqueueSizeFunc: recordSize(tb.ProcessorQueuebatchEnqueueSize, tb.ProcessorQueuebatchEnqueueSizeBytes, attrs),
-			RegisterQueueFunc: func(size, capacity func() int64) error {
-				if err := tb.RegisterProcessorQueuebatchQueueSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
-					o.Observe(size(), queueAttrs)
-					return nil
-				}); err != nil {
-					shutdown()
-					return err
-				}
-				if err := tb.RegisterProcessorQueuebatchQueueCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
-					o.Observe(capacity(), queueAttrs)
-					return nil
-				}); err != nil {
-					shutdown()
-					return err
-				}
-				return nil
-			},
-			ShutdownFunc: shutdown,
+		ShouldRecordFunc: func(ctx context.Context, m queuebatchtelemetry.Metric) bool {
+			switch m {
+			case queuebatchtelemetry.MetricEnqueueSizeBytes:
+				return tb.ProcessorQueuebatchEnqueueSizeBytes.Enabled(ctx)
+			case queuebatchtelemetry.MetricBatchSendSizeBytes:
+				return tb.ProcessorQueuebatchBatchSendSizeBytes.Enabled(ctx)
+			default:
+				panic(fmt.Sprintf("unsupported optional queuebatch metric %q", m))
+			}
 		},
-		SendMetrics: queuebatchtelemetry.SendMetrics{
-			BatchSendSizeFunc: recordSize(tb.ProcessorQueuebatchBatchSendSize, tb.ProcessorQueuebatchBatchSendSizeBytes, attrs),
-			InFlightFunc: func(ctx context.Context, delta int64) {
-				tb.ProcessorQueuebatchInFlightRequests.Add(ctx, delta, attrs)
-			},
-			SentFunc: func(ctx context.Context, items int64) {
-				tb.ProcessorQueuebatchSentItems.Add(ctx, items, attrs)
-			},
-			SendFailureFunc: func(ctx context.Context, items int64, options ...metric.AddOption) {
-				tb.ProcessorQueuebatchSendFailedItems.Add(ctx, items, append([]metric.AddOption{attrs}, options...)...)
-			},
+		RecordIntFunc: func(ctx context.Context, m queuebatchtelemetry.Metric, value int64, options ...metric.AddOption) {
+			switch m {
+			case queuebatchtelemetry.MetricEnqueueFailure:
+				tb.ProcessorQueuebatchEnqueueFailedItems.Add(ctx, value, attrs)
+			case queuebatchtelemetry.MetricEnqueueSize:
+				tb.ProcessorQueuebatchEnqueueSize.Record(ctx, value, attrs)
+			case queuebatchtelemetry.MetricEnqueueSizeBytes:
+				tb.ProcessorQueuebatchEnqueueSizeBytes.Record(ctx, value, attrs)
+			case queuebatchtelemetry.MetricBatchSendSize:
+				tb.ProcessorQueuebatchBatchSendSize.Record(ctx, value, attrs)
+			case queuebatchtelemetry.MetricBatchSendSizeBytes:
+				tb.ProcessorQueuebatchBatchSendSizeBytes.Record(ctx, value, attrs)
+			case queuebatchtelemetry.MetricInFlight:
+				tb.ProcessorQueuebatchInFlightRequests.Add(ctx, value, attrs)
+			case queuebatchtelemetry.MetricSent:
+				tb.ProcessorQueuebatchSentItems.Add(ctx, value, attrs)
+			case queuebatchtelemetry.MetricSendFailure:
+				tb.ProcessorQueuebatchSendFailedItems.Add(ctx, value, append([]metric.AddOption{attrs}, options...)...)
+			default:
+				panic(fmt.Sprintf("unsupported queuebatch metric %q", m))
+			}
 		},
+		RegisterIntFunc: func(m queuebatchtelemetry.Metric, value func() int64) error {
+			var err error
+			switch m {
+			case queuebatchtelemetry.MetricQueueSize:
+				err = tb.RegisterProcessorQueuebatchQueueSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
+					o.Observe(value(), queueAttrs)
+					return nil
+				})
+			case queuebatchtelemetry.MetricQueueCapacity:
+				err = tb.RegisterProcessorQueuebatchQueueCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
+					o.Observe(value(), queueAttrs)
+					return nil
+				})
+			default:
+				return fmt.Errorf("unsupported observable queuebatch metric %q", m)
+			}
+			if err != nil {
+				shutdown()
+			}
+			return err
+		},
+		ShutdownFunc: shutdown,
 	}, nil
 }

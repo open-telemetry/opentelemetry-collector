@@ -13,63 +13,49 @@ import (
 
 func TestNopObsMetrics(t *testing.T) {
 	m := &ObsMetrics{}
-	m.EnqueueFailure(context.Background(), 1)
-	m.EnqueueSize(context.Background(), 1, func() int64 { return 1 })
-	require.NoError(t, m.RegisterQueue(func() int64 { return 1 }, func() int64 { return 1 }))
-	m.BatchSendSize(context.Background(), 1, func() int64 { return 1 })
-	m.InFlight(context.Background(), 1)
-	m.Sent(context.Background(), 1)
-	m.SendFailure(context.Background(), 1)
+	require.False(t, m.ShouldRecord(context.Background(), MetricEnqueueSizeBytes))
+	m.RecordInt(context.Background(), MetricSent, 1)
+	require.NoError(t, m.RegisterInt(MetricQueueSize, func() int64 { return 1 }))
 	m.Shutdown()
 }
 
 func TestObsMetrics(t *testing.T) {
 	calls := 0
-	call := func(context.Context, int64) { calls++ }
-	sizeCall := func(context.Context, int64, func() int64) { calls++ }
 	m := ObsMetrics{
-		QueueMetrics: QueueMetrics{
-			EnqueueFailureFunc: call,
-			EnqueueSizeFunc:    sizeCall,
-			RegisterQueueFunc: func(size, capacity func() int64) error {
-				require.Equal(t, int64(1), size())
-				require.Equal(t, int64(2), capacity())
-				calls++
-				return nil
-			},
-			ShutdownFunc: func() { calls++ },
+		ShouldRecordFunc: func(context.Context, Metric) bool {
+			calls++
+			return true
 		},
-		SendMetrics: SendMetrics{
-			BatchSendSizeFunc: sizeCall,
-			InFlightFunc:      call,
-			SentFunc:          call,
-			SendFailureFunc:   func(context.Context, int64, ...metric.AddOption) { calls++ },
+		RecordIntFunc: func(context.Context, Metric, int64, ...metric.AddOption) {
+			calls++
 		},
+		RegisterIntFunc: func(_ Metric, value func() int64) error {
+			require.Equal(t, int64(1), value())
+			calls++
+			return nil
+		},
+		ShutdownFunc: func() { calls++ },
 	}
 
 	ctx := context.Background()
-	m.EnqueueFailure(ctx, 1)
-	m.EnqueueSize(ctx, 1, nil)
-	require.NoError(t, m.RegisterQueue(func() int64 { return 1 }, func() int64 { return 2 }))
-	m.BatchSendSize(ctx, 1, nil)
-	m.InFlight(ctx, 1)
-	m.Sent(ctx, 1)
-	m.SendFailure(ctx, 1)
+	require.True(t, m.ShouldRecord(ctx, MetricEnqueueSizeBytes))
+	m.RecordInt(ctx, MetricSent, 1)
+	require.NoError(t, m.RegisterInt(MetricQueueSize, func() int64 { return 1 }))
 	m.Shutdown()
-	require.Equal(t, 8, calls)
+	require.Equal(t, 4, calls)
 }
 
 func TestConfigWithObsMetrics(t *testing.T) {
 	cfg := struct{}{}
 	metrics := ObsMetrics{
-		SendMetrics: SendMetrics{SentFunc: func(context.Context, int64) {}},
+		RecordIntFunc: func(context.Context, Metric, int64, ...metric.AddOption) {},
 	}
 
 	wrapped := ConfigWithObsMetrics(cfg, metrics)
 	gotCfg, gotMetrics, ok := ObsMetricsFromConfig(wrapped)
 	require.True(t, ok)
 	require.Equal(t, cfg, gotCfg)
-	require.NotNil(t, gotMetrics.SentFunc)
+	require.NotNil(t, gotMetrics.RecordIntFunc)
 
 	gotCfg, _, ok = ObsMetricsFromConfig(cfg)
 	require.False(t, ok)

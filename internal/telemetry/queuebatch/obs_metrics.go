@@ -1,14 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package queuebatch defines the internal callbacks used to report queue and
+// Package queuebatch defines the internal contract used to report queue and
 // batch telemetry.
-//
-// This package intentionally uses concrete function fields instead of the
-// public interface patterns described in docs/rfcs/component-interfaces.md.
-// Repository-internal visibility allows this simpler contract. If external
-// implementations are needed, a public interface should be designed according
-// to those guidelines instead of exposing these callbacks.
 package queuebatch // import "go.opentelemetry.io/collector/internal/telemetry/queuebatch"
 
 import (
@@ -19,94 +13,52 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-type EnqueueFailureFunc func(context.Context, int64)
+// Metric identifies a metric produced by queue or batch operations.
+type Metric string
 
-func (f EnqueueFailureFunc) EnqueueFailure(ctx context.Context, items int64) {
-	if f != nil {
-		f(ctx, items)
+const (
+	MetricEnqueueFailure     Metric = "enqueue_failure"
+	MetricEnqueueSize        Metric = "enqueue_size"
+	MetricEnqueueSizeBytes   Metric = "enqueue_size_bytes"
+	MetricQueueSize          Metric = "queue_size"
+	MetricQueueCapacity      Metric = "queue_capacity"
+	MetricBatchSendSize      Metric = "batch_send_size"
+	MetricBatchSendSizeBytes Metric = "batch_send_size_bytes"
+	MetricInFlight           Metric = "in_flight"
+	MetricSent               Metric = "sent"
+	MetricSendFailure        Metric = "send_failure"
+)
+
+// ObsMetrics reports metrics produced by queue and batch operations.
+// Nil functions disable metrics. Functions may be invoked concurrently.
+type ObsMetrics struct {
+	ShouldRecordFunc func(context.Context, Metric) bool
+	RecordIntFunc    func(context.Context, Metric, int64, ...metric.AddOption)
+	RegisterIntFunc  func(Metric, func() int64) error
+	ShutdownFunc     func()
+}
+
+func (m ObsMetrics) ShouldRecord(ctx context.Context, metric Metric) bool {
+	return m.ShouldRecordFunc != nil && m.ShouldRecordFunc(ctx, metric)
+}
+
+func (m ObsMetrics) RecordInt(ctx context.Context, metric Metric, value int64, options ...metric.AddOption) {
+	if m.RecordIntFunc != nil {
+		m.RecordIntFunc(ctx, metric, value, options...)
 	}
 }
 
-type EnqueueSizeFunc func(context.Context, int64, func() int64)
-
-func (f EnqueueSizeFunc) EnqueueSize(ctx context.Context, items int64, bytesSize func() int64) {
-	if f != nil {
-		f(ctx, items, bytesSize)
-	}
-}
-
-type RegisterQueueFunc func(size, capacity func() int64) error
-
-func (f RegisterQueueFunc) RegisterQueue(size, capacity func() int64) error {
-	if f == nil {
+func (m ObsMetrics) RegisterInt(metric Metric, value func() int64) error {
+	if m.RegisterIntFunc == nil {
 		return nil
 	}
-	return f(size, capacity)
+	return m.RegisterIntFunc(metric, value)
 }
 
-type BatchSendSizeFunc func(context.Context, int64, func() int64)
-
-func (f BatchSendSizeFunc) BatchSendSize(ctx context.Context, items int64, bytesSize func() int64) {
-	if f != nil {
-		f(ctx, items, bytesSize)
+func (m ObsMetrics) Shutdown() {
+	if m.ShutdownFunc != nil {
+		m.ShutdownFunc()
 	}
-}
-
-type InFlightFunc func(context.Context, int64)
-
-func (f InFlightFunc) InFlight(ctx context.Context, delta int64) {
-	if f != nil {
-		f(ctx, delta)
-	}
-}
-
-type SentFunc func(context.Context, int64)
-
-func (f SentFunc) Sent(ctx context.Context, items int64) {
-	if f != nil {
-		f(ctx, items)
-	}
-}
-
-type SendFailureFunc func(context.Context, int64, ...metric.AddOption)
-
-func (f SendFailureFunc) SendFailure(ctx context.Context, items int64, options ...metric.AddOption) {
-	if f != nil {
-		f(ctx, items, options...)
-	}
-}
-
-type ShutdownFunc func()
-
-func (f ShutdownFunc) Shutdown() {
-	if f != nil {
-		f()
-	}
-}
-
-// QueueMetrics reports metrics produced by queue operations.
-type QueueMetrics struct {
-	EnqueueFailureFunc
-	EnqueueSizeFunc
-	RegisterQueueFunc
-	ShutdownFunc
-}
-
-// SendMetrics reports metrics produced by batch and send operations.
-type SendMetrics struct {
-	BatchSendSizeFunc
-	InFlightFunc
-	SentFunc
-	SendFailureFunc
-}
-
-// ObsMetrics reports the metrics produced by queue/batch operations.
-// Nil callbacks disable the corresponding metrics. Callbacks may be invoked
-// concurrently. Shutdown must be safe to call more than once and must release
-// registrations even when RegisterQueue returns an error.
-type ObsMetrics struct {
-	QueueMetrics
-	SendMetrics
 }
 
 type obsMetricsConfig struct {

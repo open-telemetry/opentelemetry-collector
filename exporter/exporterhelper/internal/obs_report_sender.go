@@ -53,7 +53,7 @@ type obsReportSender[K request.Request] struct {
 	spanName     string
 	tracer       trace.Tracer
 	spanAttrs    trace.SpanStartEventOption
-	obsMetrics   queuebatchtelemetry.SendMetrics
+	obsMetrics   queuebatchtelemetry.ObsMetrics
 	batchEnabled bool
 	next         sender.Sender[K]
 }
@@ -61,7 +61,7 @@ type obsReportSender[K request.Request] struct {
 func newObsReportSender[K request.Request](
 	set exporter.Settings,
 	signal pipeline.Signal,
-	obsMetrics queuebatchtelemetry.SendMetrics,
+	obsMetrics queuebatchtelemetry.ObsMetrics,
 	batchEnabled bool,
 	next sender.Sender[K],
 ) sender.Sender[K] {
@@ -84,9 +84,10 @@ func (ors *obsReportSender[K]) Send(ctx context.Context, req K) error {
 	c := ors.startOp(ctx)
 	items := req.ItemsCount()
 	if ors.batchEnabled {
-		ors.obsMetrics.BatchSendSize(c, int64(items), func() int64 {
-			return int64(req.BytesSize())
-		})
+		ors.obsMetrics.RecordInt(c, queuebatchtelemetry.MetricBatchSendSize, int64(items))
+		if ors.obsMetrics.ShouldRecord(c, queuebatchtelemetry.MetricBatchSendSizeBytes) {
+			ors.obsMetrics.RecordInt(c, queuebatchtelemetry.MetricBatchSendSizeBytes, int64(req.BytesSize()))
+		}
 	}
 	// Forward the data to the next consumer (this pusher is the next).
 	err := ors.next.Send(c, req)
@@ -97,7 +98,7 @@ func (ors *obsReportSender[K]) Send(ctx context.Context, req K) error {
 // startOp increments the in-flight request counter and creates the span
 // used to trace the operation. Returns the updated context.
 func (ors *obsReportSender[K]) startOp(ctx context.Context) context.Context {
-	ors.obsMetrics.InFlight(ctx, 1)
+	ors.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricInFlight, 1)
 
 	ctx, _ = ors.tracer.Start(ctx,
 		ors.spanName,
@@ -108,15 +109,15 @@ func (ors *obsReportSender[K]) startOp(ctx context.Context) context.Context {
 
 // EndOp completes the export operation that was started with StartOp.
 func (ors *obsReportSender[K]) endOp(ctx context.Context, numRecords int, err error) {
-	ors.obsMetrics.InFlight(ctx, -1)
+	ors.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricInFlight, -1)
 
 	numSent, numFailedToSend := toNumItems(numRecords, err)
 
-	ors.obsMetrics.Sent(ctx, numSent)
+	ors.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricSent, numSent)
 
 	if numFailedToSend > 0 {
 		withFailedAttrs := metric.WithAttributeSet(extractFailureAttributes(err))
-		ors.obsMetrics.SendFailure(ctx, numFailedToSend, withFailedAttrs)
+		ors.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricSendFailure, numFailedToSend, withFailedAttrs)
 	}
 
 	span := trace.SpanFromContext(ctx)

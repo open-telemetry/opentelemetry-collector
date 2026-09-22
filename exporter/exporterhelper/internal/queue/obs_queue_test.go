@@ -50,7 +50,7 @@ func newFakeQueue[T request.Request](offerErr error, size, capacity int64) Queue
 
 func newTestObsQueue[T request.Request](t *testing.T, set Settings[T], delegate Queue[T]) (Queue[T], error) {
 	t.Helper()
-	obsMetrics, err := NewExporterObsMetrics(set.Telemetry, set.ID, set.Signal)
+	obsMetrics, err := NewExporterObsMetrics(set.Telemetry, set.ID, set.Signal, nil)
 	if err != nil {
 		return nil, err
 	}

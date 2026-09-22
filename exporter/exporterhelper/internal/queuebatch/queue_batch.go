@@ -26,10 +26,10 @@ type Settings[T any] struct {
 // AllSettings defines settings for creating a QueueBatch.
 type AllSettings[T any] struct {
 	Settings[T]
-	Signal       pipeline.Signal
-	ID           component.ID
-	Telemetry    component.TelemetrySettings
-	QueueMetrics queuebatchtelemetry.QueueMetrics
+	Signal     pipeline.Signal
+	ID         component.ID
+	Telemetry  component.TelemetrySettings
+	ObsMetrics queuebatchtelemetry.ObsMetrics
 }
 
 type QueueBatch struct {
@@ -70,7 +70,7 @@ func NewQueueBatch(
 		Encoding:         set.Encoding,
 		ID:               set.ID,
 		Telemetry:        set.Telemetry,
-		QueueMetrics:     set.QueueMetrics,
+		ObsMetrics:       set.ObsMetrics,
 	}, b.Consume)
 	if err != nil {
 		return nil, err

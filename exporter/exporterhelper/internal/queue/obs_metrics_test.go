@@ -87,6 +87,6 @@ func TestNewExporterObsMetricsError(t *testing.T) {
 	settings := componenttest.NewNopTelemetrySettings()
 	settings.MeterProvider = failInstrumentMeterProvider{MeterProvider: settings.MeterProvider}
 
-	_, err := NewExporterObsMetrics(settings, exporterID, pipeline.SignalTraces)
+	_, err := NewExporterObsMetrics(settings, exporterID, pipeline.SignalTraces, nil)
 	require.ErrorIs(t, err, errCreateInstrument)
 }

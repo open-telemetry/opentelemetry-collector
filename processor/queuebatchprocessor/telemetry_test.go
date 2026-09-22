@@ -94,20 +94,23 @@ func TestObsMetrics(t *testing.T) {
 
 	ctx := context.Background()
 	bytesCalls := 0
-	obsMetrics.EnqueueFailure(ctx, 2)
-	obsMetrics.EnqueueSize(ctx, 3, func() int64 {
+	obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricEnqueueFailure, 2)
+	obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricEnqueueSize, 3)
+	if obsMetrics.ShouldRecord(ctx, queuebatchtelemetry.MetricEnqueueSizeBytes) {
 		bytesCalls++
-		return 30
-	})
-	require.NoError(t, obsMetrics.RegisterQueue(func() int64 { return 7 }, func() int64 { return 9 }))
-	obsMetrics.BatchSendSize(ctx, 4, func() int64 {
+		obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricEnqueueSizeBytes, 30)
+	}
+	require.NoError(t, obsMetrics.RegisterInt(queuebatchtelemetry.MetricQueueSize, func() int64 { return 7 }))
+	require.NoError(t, obsMetrics.RegisterInt(queuebatchtelemetry.MetricQueueCapacity, func() int64 { return 9 }))
+	obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricBatchSendSize, 4)
+	if obsMetrics.ShouldRecord(ctx, queuebatchtelemetry.MetricBatchSendSizeBytes) {
 		bytesCalls++
-		return 40
-	})
-	obsMetrics.InFlight(ctx, 2)
-	obsMetrics.InFlight(ctx, -1)
-	obsMetrics.Sent(ctx, 5)
-	obsMetrics.SendFailure(ctx, 6, metric.WithAttributes(
+		obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricBatchSendSizeBytes, 40)
+	}
+	obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricInFlight, 2)
+	obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricInFlight, -1)
+	obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricSent, 5)
+	obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricSendFailure, 6, metric.WithAttributes(
 		attribute.String("error.type", "test"),
 		attribute.Bool("error.permanent", true),
 	))
@@ -152,7 +155,8 @@ func TestNewProcessorReleasesMetricsOnError(t *testing.T) {
 
 	_, err := newProcessor(set, pipeline.SignalTraces, exporterhelper.RequestSizerTypeRequests,
 		func(metrics queuebatchtelemetry.ObsMetrics) (struct{}, error) {
-			require.NoError(t, metrics.RegisterQueue(func() int64 { return 1 }, func() int64 { return 2 }))
+			require.NoError(t, metrics.RegisterInt(queuebatchtelemetry.MetricQueueSize, func() int64 { return 1 }))
+			require.NoError(t, metrics.RegisterInt(queuebatchtelemetry.MetricQueueCapacity, func() int64 { return 2 }))
 			return struct{}{}, wantErr
 		})
 	require.ErrorIs(t, err, wantErr)

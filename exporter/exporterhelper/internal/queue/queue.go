@@ -77,12 +77,12 @@ type Settings[T request.Request] struct {
 	Encoding         Encoding[T]
 	ID               component.ID
 	Telemetry        component.TelemetrySettings
-	QueueMetrics     queuebatchtelemetry.QueueMetrics
+	ObsMetrics       queuebatchtelemetry.ObsMetrics
 }
 
 func NewQueue[T request.Request](set Settings[T], next ConsumeFunc[T]) (Queue[T], error) {
 	q := newBaseQueue(set)
-	oq, err := newObsQueue(set, set.QueueMetrics, newAsyncQueue(q, set.NumConsumers, next, set.ReferenceCounter))
+	oq, err := newObsQueue(set, set.ObsMetrics, newAsyncQueue(q, set.NumConsumers, next, set.ReferenceCounter))
 	if err != nil {
 		return nil, err
 	}

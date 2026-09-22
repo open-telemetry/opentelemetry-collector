@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
@@ -47,11 +48,11 @@ func newTestObsReportSender[K request.Request](
 	next sender.Sender[K],
 ) (sender.Sender[K], error) {
 	t.Helper()
-	obsMetrics, shutdown, err := newExporterSendMetrics(set, signal, extraAttrs)
+	obsMetrics, err := queue.NewExporterObsMetrics(set.TelemetrySettings, set.ID, signal, extraAttrs)
 	if err != nil {
 		return nil, err
 	}
-	t.Cleanup(shutdown.Shutdown)
+	t.Cleanup(obsMetrics.Shutdown)
 	return newObsReportSender(set, signal, obsMetrics, batchEnabled, next), nil
 }
 

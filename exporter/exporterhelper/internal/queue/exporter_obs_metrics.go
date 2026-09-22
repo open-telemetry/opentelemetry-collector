@@ -5,6 +5,7 @@ package queue // import "go.opentelemetry.io/collector/exporter/exporterhelper/i
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -21,58 +22,94 @@ func NewExporterObsMetrics(
 	telemetry component.TelemetrySettings,
 	id component.ID,
 	signal pipeline.Signal,
-) (queuebatchtelemetry.QueueMetrics, error) {
+	extraAttrs []attribute.KeyValue,
+) (queuebatchtelemetry.ObsMetrics, error) {
 	tb, err := metadata.NewTelemetryBuilder(telemetry)
 	if err != nil {
-		return queuebatchtelemetry.QueueMetrics{}, err
+		return queuebatchtelemetry.ObsMetrics{}, err
 	}
 
 	exporterAttr := attribute.String(exporterKey, id.String())
-	metricAttr := metric.WithAttributeSet(attribute.NewSet(exporterAttr))
+	metricAttr := metric.WithAttributeSet(attribute.NewSet(append(extraAttrs, exporterAttr)...))
 	queueAttr := metric.WithAttributeSet(attribute.NewSet(
 		exporterAttr,
 		attribute.String(dataTypeKey, signal.String()),
 	))
 	shutdown := sync.OnceFunc(tb.Shutdown)
 
-	var enqueueFailedInst metric.Int64Counter
+	var enqueueFailedInst, itemsSentInst, itemsFailedInst metric.Int64Counter
 	switch signal {
 	case pipeline.SignalTraces:
 		enqueueFailedInst = tb.ExporterEnqueueFailedSpans
+		itemsSentInst = tb.ExporterSentSpans
+		itemsFailedInst = tb.ExporterSendFailedSpans
 	case pipeline.SignalMetrics:
 		enqueueFailedInst = tb.ExporterEnqueueFailedMetricPoints
+		itemsSentInst = tb.ExporterSentMetricPoints
+		itemsFailedInst = tb.ExporterSendFailedMetricPoints
 	case pipeline.SignalLogs:
 		enqueueFailedInst = tb.ExporterEnqueueFailedLogRecords
+		itemsSentInst = tb.ExporterSentLogRecords
+		itemsFailedInst = tb.ExporterSendFailedLogRecords
 	case xpipeline.SignalProfiles:
 		enqueueFailedInst = tb.ExporterEnqueueFailedProfileSamples
+		itemsSentInst = tb.ExporterSentProfileSamples
+		itemsFailedInst = tb.ExporterSendFailedProfileSamples
 	}
 
-	return queuebatchtelemetry.QueueMetrics{
-		EnqueueFailureFunc: func(ctx context.Context, items int64) {
-			enqueueFailedInst.Add(ctx, items, metricAttr)
-		},
-		EnqueueSizeFunc: func(ctx context.Context, items int64, bytesSize func() int64) {
-			tb.ExporterEnqueueSize.Record(ctx, items, metricAttr)
-			if tb.ExporterEnqueueSizeBytes.Enabled(ctx) {
-				tb.ExporterEnqueueSizeBytes.Record(ctx, bytesSize(), metricAttr)
+	return queuebatchtelemetry.ObsMetrics{
+		ShouldRecordFunc: func(ctx context.Context, m queuebatchtelemetry.Metric) bool {
+			switch m {
+			case queuebatchtelemetry.MetricEnqueueSizeBytes:
+				return tb.ExporterEnqueueSizeBytes.Enabled(ctx)
+			case queuebatchtelemetry.MetricBatchSendSizeBytes:
+				return tb.ExporterQueueBatchSendSizeBytes.Enabled(ctx)
+			default:
+				panic(fmt.Sprintf("unsupported optional queuebatch metric %q", m))
 			}
 		},
-		RegisterQueueFunc: func(size, capacity func() int64) error {
-			if err := tb.RegisterExporterQueueSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
-				o.Observe(size(), queueAttr)
-				return nil
-			}); err != nil {
-				shutdown()
-				return err
+		RecordIntFunc: func(ctx context.Context, m queuebatchtelemetry.Metric, value int64, options ...metric.AddOption) {
+			switch m {
+			case queuebatchtelemetry.MetricEnqueueFailure:
+				enqueueFailedInst.Add(ctx, value, metricAttr)
+			case queuebatchtelemetry.MetricEnqueueSize:
+				tb.ExporterEnqueueSize.Record(ctx, value, metricAttr)
+			case queuebatchtelemetry.MetricEnqueueSizeBytes:
+				tb.ExporterEnqueueSizeBytes.Record(ctx, value, metricAttr)
+			case queuebatchtelemetry.MetricBatchSendSize:
+				tb.ExporterQueueBatchSendSize.Record(ctx, value, metricAttr)
+			case queuebatchtelemetry.MetricBatchSendSizeBytes:
+				tb.ExporterQueueBatchSendSizeBytes.Record(ctx, value, metricAttr)
+			case queuebatchtelemetry.MetricInFlight:
+				tb.ExporterInFlightRequests.Add(ctx, value, queueAttr)
+			case queuebatchtelemetry.MetricSent:
+				itemsSentInst.Add(ctx, value, metricAttr)
+			case queuebatchtelemetry.MetricSendFailure:
+				itemsFailedInst.Add(ctx, value, append([]metric.AddOption{metricAttr}, options...)...)
+			default:
+				panic(fmt.Sprintf("unsupported queuebatch metric %q", m))
 			}
-			if err := tb.RegisterExporterQueueCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
-				o.Observe(capacity(), queueAttr)
-				return nil
-			}); err != nil {
-				shutdown()
-				return err
+		},
+		RegisterIntFunc: func(m queuebatchtelemetry.Metric, value func() int64) error {
+			var err error
+			switch m {
+			case queuebatchtelemetry.MetricQueueSize:
+				err = tb.RegisterExporterQueueSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
+					o.Observe(value(), queueAttr)
+					return nil
+				})
+			case queuebatchtelemetry.MetricQueueCapacity:
+				err = tb.RegisterExporterQueueCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
+					o.Observe(value(), queueAttr)
+					return nil
+				})
+			default:
+				return fmt.Errorf("unsupported observable queuebatch metric %q", m)
 			}
-			return nil
+			if err != nil {
+				shutdown()
+			}
+			return err
 		},
 		ShutdownFunc: shutdown,
 	}, nil

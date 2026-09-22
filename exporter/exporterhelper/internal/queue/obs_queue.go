@@ -24,16 +24,19 @@ const (
 // obsQueue is a helper to add observability to a queue.
 type obsQueue[T request.Request] struct {
 	Queue[T]
-	obsMetrics queuebatchtelemetry.QueueMetrics
+	obsMetrics queuebatchtelemetry.ObsMetrics
 	tracer     trace.Tracer
 }
 
 func newObsQueue[T request.Request](
 	set Settings[T],
-	obsMetrics queuebatchtelemetry.QueueMetrics,
+	obsMetrics queuebatchtelemetry.ObsMetrics,
 	delegate Queue[T],
 ) (Queue[T], error) {
-	if err := obsMetrics.RegisterQueue(delegate.Size, delegate.Capacity); err != nil {
+	if err := obsMetrics.RegisterInt(queuebatchtelemetry.MetricQueueSize, delegate.Size); err != nil {
+		return nil, err
+	}
+	if err := obsMetrics.RegisterInt(queuebatchtelemetry.MetricQueueCapacity, delegate.Capacity); err != nil {
 		return nil, err
 	}
 	return &obsQueue[T]{
@@ -48,16 +51,17 @@ func (or *obsQueue[T]) Offer(ctx context.Context, req T) error {
 	// be modified by the downstream components like the batcher.
 	numItems := req.ItemsCount()
 
-	or.obsMetrics.EnqueueSize(ctx, int64(numItems), func() int64 {
-		return int64(req.BytesSize())
-	})
+	or.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricEnqueueSize, int64(numItems))
+	if or.obsMetrics.ShouldRecord(ctx, queuebatchtelemetry.MetricEnqueueSizeBytes) {
+		or.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricEnqueueSizeBytes, int64(req.BytesSize()))
+	}
 
 	ctx, span := or.tracer.Start(ctx, "exporter/enqueue")
 	err := or.Queue.Offer(ctx, req)
 	span.End()
 
 	if err != nil {
-		or.obsMetrics.EnqueueFailure(ctx, int64(numItems))
+		or.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricEnqueueFailure, int64(numItems))
 	}
 	return err
 }
