@@ -1,8 +1,7 @@
 change_type: enhancement
 component: pkg/pprofile
 note: Implement Profiles development-version metadata in the OTLP receiver and exporters.
-# Fill in the Collector draft PR number before marking it ready for review.
-issues: []
+issues: [16009]
 subtext: |
   The receiver rejects malformed, repeated, or unsupported versions before decoding.
   OTLP exporters send the version associated with their compiled-in Profiles schema.
