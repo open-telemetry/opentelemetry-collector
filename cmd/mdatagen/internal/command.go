@@ -365,22 +365,6 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 			}
 			return false
 		},
-		// hasDistinctSecondValue reports whether at least one non-conditional
-		// attribute in ans can take a second, different value from its first
-		// test value - false for e.g. a single-value enum, where there's only
-		// one possible value to record.
-		"hasDistinctSecondValue": func(ans []AttributeName) bool {
-			for _, an := range ans {
-				attr := md.Attributes[an]
-				if attr.IsConditional() {
-					continue
-				}
-				if attr.HasDistinctSecondValue() {
-					return true
-				}
-			}
-			return false
-		},
 		"getEventConditionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
 			seen := make(map[AttributeName]bool)
 			used := make([]AttributeName, 0)

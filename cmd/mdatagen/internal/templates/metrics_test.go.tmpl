@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	{{- if or $hasVersionedMetrics $hasReagMetrics }}
+	{{- if $hasVersionedMetrics }}
 	"github.com/stretchr/testify/require"
 	{{- end }}
 	{{- if $hasVersionedMetrics }}
@@ -258,6 +258,24 @@ func TestMetricsBuilder(t *testing.T) {
 				{{- end -}}
 				{{- end -}}
 				)
+				// a different timestamp is a different key: must not merge with the above.
+				{{ if $metric.Entity }}eb{{ publicVar $metric.Entity }}{{ else }}mb{{ end }}.Record{{ $name.Render }}DataPoint(ts+1, {{ if $metric.Data.HasMetricInputType }}"3"{{ else }}3{{ end }}
+				{{- range $metric.Attributes -}}
+				{{- if not (attributeInfo .).IsConditional -}}
+					{{- if (attributeInfo .).IsRequired -}}
+					, {{- template "getAttributeValue" . -}}
+					{{- else -}}
+					, {{- template "getAttributeValueTwo" . -}}
+					{{- end -}}
+				{{- end -}}
+				{{- end -}}
+				{{- range $metric.Attributes -}}
+				{{- if (attributeInfo .).IsConditional -}}
+					, With{{ .Render }}MetricAttribute({{- template "getConditionalAttributeValue" . -}})
+				{{- end -}}
+				{{- end -}}
+				)
+				assert.Equal(t, 2, mb.metric{{ $name.Render }}.data.{{ $metric.Data.Type }}().DataPoints().Len())
 			}
 			{{- end }}
 			{{- end }}
@@ -358,7 +376,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["{{ $name }}"], "Found a duplicate in the metrics slice: {{ $name }}")
 						validatedMetrics["{{ $name }}"] = true
 						assert.Equal(t, pmetric.MetricType{{ $metric.Data.Type }}, mi.Type())
-						assert.Equal(t, 1, mi.{{ $metric.Data.Type }}().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.{{ $metric.Data.Type }}().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.{{ $metric.Data.Type }}().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "{{ trimRight $metric.Description "\n" }}", mi.Description())
 						{{- if len $metric.Unit}}
 						assert.Equal(t, "{{ $metric.Unit }}", mi.Unit())
@@ -455,78 +475,6 @@ func TestMetricsBuilder(t *testing.T) {
 		})
 	}
 }
-
-{{/* entity and migration/versioned metrics excluded: no sample fixture combines those with aggregatable attributes */}}
-{{- $hasNonEntityReagMetrics := false }}
-{{- range $name, $metric := .Metrics }}{{- if and (hasAggregatableAttributes $metric.Attributes) (not $metric.Entity) (not $metric.Versioned) (not $metric.Migration) }}{{- $hasNonEntityReagMetrics = true }}{{- end }}{{- end }}
-{{- if $hasNonEntityReagMetrics }}
-
-// TestRecordDataPointMerge checks that recording identical attributes and
-// timestamps twice merges into one data point instead of creating a second.
-func TestRecordDataPointMerge(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	{{- range $name, $metric := .Metrics }}
-	{{- if and (hasAggregatableAttributes $metric.Attributes) (not $metric.Entity) (not $metric.Versioned) (not $metric.Migration) }}
-	t.Run("{{ $name }}", func(t *testing.T) {
-		{{- if or isReceiver isScraper isConnector }}
-		settings := {{ $.Status.Class }}test.NewNopSettings({{ $.Status.Class }}test.NopType)
-		{{- end }}
-		settings.Logger = zap.NewNop()
-		mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
-
-		mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
-		{{- range $metric.Attributes -}}
-		{{- if not (attributeInfo .).IsConditional -}}
-			, {{- template "getAttributeValue" . -}}
-		{{- end -}}
-		{{- end -}}
-		{{- range $metric.Attributes -}}
-		{{- if (attributeInfo .).IsConditional -}}
-			, With{{ .Render }}MetricAttribute({{- template "getConditionalAttributeValue" . -}})
-		{{- end -}}
-		{{- end -}}
-		)
-		require.Equal(t, 1, mb.metric{{ $name.Render }}.data.{{ $metric.Data.Type }}().DataPoints().Len())
-
-		// same args: must merge
-		mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
-		{{- range $metric.Attributes -}}
-		{{- if not (attributeInfo .).IsConditional -}}
-			, {{- template "getAttributeValue" . -}}
-		{{- end -}}
-		{{- end -}}
-		{{- range $metric.Attributes -}}
-		{{- if (attributeInfo .).IsConditional -}}
-			, With{{ .Render }}MetricAttribute({{- template "getConditionalAttributeValue" . -}})
-		{{- end -}}
-		{{- end -}}
-		)
-		assert.Equal(t, 1, mb.metric{{ $name.Render }}.data.{{ $metric.Data.Type }}().DataPoints().Len(),
-			"recording {{ $name }} twice with identical attributes and timestamps must merge, not create a 2nd data point")
-
-		{{- if hasDistinctSecondValue $metric.Attributes }}
-		// different attrs: must not merge
-		mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
-		{{- range $metric.Attributes -}}
-		{{- if not (attributeInfo .).IsConditional -}}
-			, {{- template "getAttributeValueTwo" . -}}
-		{{- end -}}
-		{{- end -}}
-		{{- range $metric.Attributes -}}
-		{{- if (attributeInfo .).IsConditional -}}
-			, With{{ .Render }}MetricAttribute({{- template "getConditionalAttributeValue" . -}})
-		{{- end -}}
-		{{- end -}}
-		)
-		assert.Equal(t, 2, mb.metric{{ $name.Render }}.data.{{ $metric.Data.Type }}().DataPoints().Len(),
-			"recording {{ $name }} with different attributes must create a 2nd data point, not merge into the 1st")
-		{{- end }}
-	})
-	{{- end }}
-	{{- end }}
-}
-{{- end }}
 
 {{- $hasEntityMetrics := false }}
 {{- range $name, $metric := .Metrics }}{{- if $metric.Entity }}{{- $hasEntityMetrics = true }}{{- end }}{{- end }}
