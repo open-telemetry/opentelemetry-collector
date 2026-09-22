@@ -23,6 +23,8 @@ func (c PortNumber) Validate() error {
 	return err
 }
 
+type Protocol int
+
 type SampleConfig struct {
 	// HostName the host name to connect to.
 	HostName string `mapstructure:"host_name"`

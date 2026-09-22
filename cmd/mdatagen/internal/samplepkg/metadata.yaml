@@ -7,6 +7,14 @@ status:
   class: pkg
 
 exported_configs:
+  protocol:
+    type: string
+    x-customType: int
+    enum:
+      - http
+      - tcp
+      - smtp
+      - ftp
   port_number:
     type: int
     description: A port number to connect to.

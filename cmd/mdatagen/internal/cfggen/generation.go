@@ -361,7 +361,7 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 		imports["regexp"] = true
 	}
 
-	if len(md.Enum) > 0 {
+	if len(md.Enum) > 0 && (md.GoType == "" || md.GoType == string(md.Type)) {
 		imports["slices"] = true
 	}
 
@@ -426,6 +426,9 @@ func hasValidators(md *ConfigMetadata) bool {
 
 // FormatTypeName resolves a reference string to a Go type expression using GoTypeRef.
 func FormatTypeName(ref, rootPackage, componentPackage string) (string, error) {
+	if p, ok := primitiveSchemaGoTypes[SchemaType(ref)]; ok {
+		return p, nil
+	}
 	tr, err := ResolveGoTypeRef(ref, rootPackage, componentPackage)
 	if err != nil {
 		return "", err
@@ -564,7 +567,7 @@ func createValidator(validators *[]Validator, fieldName string, md *ConfigMetada
 	if md.Pattern == "" || md.Type == DurationType || md.Type == TimeType || strings.HasPrefix(md.GoType, "time.") {
 		rules.Pattern = nil
 	}
-	if fieldName == "." {
+	if md.GoType != "" && md.GoType != string(md.Type) {
 		rules.Enum = nil
 	}
 	if rules.Enabled() {

@@ -813,6 +813,33 @@ func TestFormatTypeName_InternalReferences(t *testing.T) {
 	}
 }
 
+func TestFormatTypeName_PrimitiveTypes(t *testing.T) {
+	tests := []struct {
+		name     string
+		ref      string
+		expected string
+	}{
+		{
+			name:     "string",
+			ref:      "string",
+			expected: "string",
+		},
+		{
+			name:     "int",
+			ref:      "int",
+			expected: "int",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := FormatTypeName(tt.ref, "", "")
+			require.NoError(t, err)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 func TestFormatTypeName_ExternalReferences(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -3092,6 +3119,22 @@ func TestExtractValidators_EnumValidators(t *testing.T) {
 	}
 }
 
+func TestExtractValidators_EnumWithDifferentCustomTypeIsOmitted(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"protocol": {
+				Type:   "string",
+				GoType: "int",
+				Enum:   []any{"http", "tcp"},
+			},
+		},
+	}
+
+	validators := ExtractValidators(md)
+	require.Empty(t, validators)
+}
+
 func TestExtractImports_EnumAddsSlices(t *testing.T) {
 	md := &ConfigMetadata{
 		Type: "object",
@@ -3102,6 +3145,28 @@ func TestExtractImports_EnumAddsSlices(t *testing.T) {
 	imports, err := ExtractImportsFromConfig(md, "example.com/root", "example.com/component")
 	require.NoError(t, err)
 	require.Contains(t, imports, "slices")
+}
+
+func TestExtractImports_EnumWithMatchingCustomTypeAddsSlices(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:   "string",
+		GoType: "string",
+		Enum:   []any{"a", "b"},
+	}
+	imports, err := ExtractImportsFromConfig(md, "example.com/root", "example.com/component")
+	require.NoError(t, err)
+	require.Contains(t, imports, "slices")
+}
+
+func TestExtractImports_EnumWithDifferentCustomTypeOmitsSlices(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:   "string",
+		GoType: "int",
+		Enum:   []any{"a", "b"},
+	}
+	imports, err := ExtractImportsFromConfig(md, "example.com/root", "example.com/component")
+	require.NoError(t, err)
+	require.NotContains(t, imports, "slices")
 }
 
 func TestFormatEnumSlice(t *testing.T) {
