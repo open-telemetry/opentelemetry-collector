@@ -60,13 +60,24 @@ func NewExporterObsMetrics(
 	return queuebatchtelemetry.ObsMetrics{
 		ShouldRecordFunc: func(ctx context.Context, m queuebatchtelemetry.Metric) bool {
 			switch m {
+			case queuebatchtelemetry.MetricEnqueueFailure:
+				return enqueueFailedInst.Enabled(ctx)
+			case queuebatchtelemetry.MetricEnqueueSize:
+				return tb.ExporterEnqueueSize.Enabled(ctx)
 			case queuebatchtelemetry.MetricEnqueueSizeBytes:
 				return tb.ExporterEnqueueSizeBytes.Enabled(ctx)
+			case queuebatchtelemetry.MetricBatchSendSize:
+				return tb.ExporterQueueBatchSendSize.Enabled(ctx)
 			case queuebatchtelemetry.MetricBatchSendSizeBytes:
 				return tb.ExporterQueueBatchSendSizeBytes.Enabled(ctx)
-			default:
-				panic(fmt.Sprintf("unsupported optional queuebatch metric %q", m))
+			case queuebatchtelemetry.MetricInFlight:
+				return tb.ExporterInFlightRequests.Enabled(ctx)
+			case queuebatchtelemetry.MetricSent:
+				return itemsSentInst.Enabled(ctx)
+			case queuebatchtelemetry.MetricSendFailure:
+				return itemsFailedInst.Enabled(ctx)
 			}
+			return false
 		},
 		RecordIntFunc: func(ctx context.Context, m queuebatchtelemetry.Metric, value int64, options ...metric.AddOption) {
 			switch m {
@@ -86,8 +97,6 @@ func NewExporterObsMetrics(
 				itemsSentInst.Add(ctx, value, metricAttr)
 			case queuebatchtelemetry.MetricSendFailure:
 				itemsFailedInst.Add(ctx, value, append([]metric.AddOption{metricAttr}, options...)...)
-			default:
-				panic(fmt.Sprintf("unsupported queuebatch metric %q", m))
 			}
 		},
 		RegisterIntFunc: func(m queuebatchtelemetry.Metric, value func() int64) error {

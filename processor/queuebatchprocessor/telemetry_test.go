@@ -94,6 +94,18 @@ func TestObsMetrics(t *testing.T) {
 
 	ctx := context.Background()
 	bytesCalls := 0
+	for _, m := range []queuebatchtelemetry.Metric{
+		queuebatchtelemetry.MetricEnqueueFailure,
+		queuebatchtelemetry.MetricEnqueueSize,
+		queuebatchtelemetry.MetricEnqueueSizeBytes,
+		queuebatchtelemetry.MetricBatchSendSize,
+		queuebatchtelemetry.MetricBatchSendSizeBytes,
+		queuebatchtelemetry.MetricInFlight,
+		queuebatchtelemetry.MetricSent,
+		queuebatchtelemetry.MetricSendFailure,
+	} {
+		require.True(t, obsMetrics.ShouldRecord(ctx, m), m)
+	}
 	obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricEnqueueFailure, 2)
 	obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricEnqueueSize, 3)
 	if obsMetrics.ShouldRecord(ctx, queuebatchtelemetry.MetricEnqueueSizeBytes) {
