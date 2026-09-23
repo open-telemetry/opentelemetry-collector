@@ -10,7 +10,7 @@ component: receiver/otlp
 note: Error handler preserves the HTTP status code when the request Content-Type is not one a Status can be encoded in
 
 # One or more tracking issues or pull requests related to the change
-issues: [13414]
+issues: [15995]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
