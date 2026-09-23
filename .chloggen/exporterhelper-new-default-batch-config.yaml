@@ -1,3 +1,5 @@
+# Use this changelog template to create an entry for release notes.
+
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
 change_type: enhancement
 
@@ -5,22 +7,19 @@ change_type: enhancement
 component: pkg/exporterhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Make the multi-batcher partition LRU cache size configurable and export cache size metrics.
+note: Add `NewDefaultBatchConfig` to build a `BatchConfig` with default values, including the partition `cache_size` and `idle_timeout` defaults.
 
 # One or more tracking issues or pull requests related to the change
-issues: [14526]
+issues: [14526, 15894]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  Adds `sending_queue::batch::partition::cache_size` (default 10000) to cap the
-  number of active partition batchers. The value
-  must be positive. Current size and configured capacity are exported as
-  `otelcol_exporter_queue_batch_partition_cache_size`
-  and `otelcol_exporter_queue_batch_partition_cache_capacity`.
+subtext:
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: [user, api]
+change_logs: [api]

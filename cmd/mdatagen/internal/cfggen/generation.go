@@ -120,6 +120,12 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return strings.Join(lines, "\n")
 		},
+		"entry": func(name string, metadata *ConfigMetadata) map[string]any {
+			return map[string]any{
+				"name": name,
+				"data": metadata,
+			}
+		},
 	}
 }
 
