@@ -77,7 +77,7 @@ receivers:
         include_metadata: true
 
 processors:
-  queuebatch:
+  queue_batch:
     batch:
       partition:
         cache_size: 10000
@@ -89,7 +89,7 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [queuebatch]
+      processors: [queue_batch]
       exporters: [otlp]
 ```
 
@@ -121,10 +121,10 @@ restart.
 ```yaml
 extensions:
   file_storage:
-    directory: /var/lib/otelcol/queuebatch
+    directory: /var/lib/otelcol/queue_batch
 
 processors:
-  queuebatch:
+  queue_batch:
     # Persist the queue using the file_storage extension.
     storage: file_storage
 
@@ -133,7 +133,7 @@ service:
   pipelines:
     logs:
       receivers: [otlp]
-      processors: [queuebatch]
+      processors: [queue_batch]
       exporters: [otlp]
 ```
 

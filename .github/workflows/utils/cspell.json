@@ -429,6 +429,7 @@
       "protogen",
       "protos",
       "ptraceotlp",
+      "queue_batch",
       "queuebatch",
       "queuebatchprocessor",
       "reaggregate",
