@@ -57,39 +57,48 @@ func (req *tracesRequest) split(maxSize int, sz sizer.TracesSizer, szt request.S
 	for req.size(sz, szt) > maxSize {
 		td, rmSize := extractTraces(req.td, maxSize, sz)
 		if td.SpanCount() == 0 {
-			if pruned {
-				// Nothing individually oversized is left, so the resource and scope
-				// overhead alone exceeds maxSize and no batch can be formed. Stop instead
-				// of looping forever, and report it rather than reporting success for a
-				// request that was never split.
-				unsplittable = true
-				break
-			}
 			// The next span does not fit into maxSize even on its own. Drop every span in
 			// that state in a single pass, rather than one per iteration with a full size
 			// recompute after each, then carry on splitting what is left.
-			pruned = true
-			droppedItems = dropOversizedSpans(req.td, maxSize, sz)
-			if droppedItems == 0 {
+			if !pruned {
+				pruned = true
+				var removedAny bool
+				droppedItems, removedAny = dropOversizedSpans(req.td, maxSize, sz)
+				// Refresh the cache whether or not a span went: the pass also prunes the
+				// scopes and resources it empties, which changes the size on its own.
+				req.sizes.Update(szt, sz.TracesSize(req.td))
+				if removedAny {
+					continue
+				}
+			}
+			// The pass found nothing to remove, yet nothing could be extracted either.
+			// Extraction can spend capacity on resources that hold no span and then
+			// discard them, which leaves a request the pass considers splittable. Give up
+			// the first span so the loop always makes progress: returning the remainder
+			// unsplit would hand back a batch larger than maxSize.
+			if !removeFirstSpan(req.td) {
 				unsplittable = true
 				break
 			}
+			droppedItems++
 			req.sizes.Update(szt, sz.TracesSize(req.td))
 			continue
 		}
 		req.sizes.Update(szt, req.size(sz, szt)-rmSize)
 		res = append(res, newTracesRequest(td))
 	}
-	// Keep the remainder, unless splitting emptied it, in which case there is
+	// Keep the remainder, unless the drop pass emptied it, in which case there is
 	// nothing left to export.
-	if (droppedItems == 0 && !unsplittable) || req.td.SpanCount() > 0 {
+	if !pruned || req.td.SpanCount() > 0 {
 		res = append(res, req)
 	}
 	switch {
 	case droppedItems > 0:
 		return res, fmt.Errorf("one span size is greater than max size, dropping items: %d", droppedItems)
-	case unsplittable:
-		return res, errors.New("request size is greater than max size and holds no span that fits")
+	case unsplittable && req.td.SpanCount() > 0:
+		// Only worth reporting when a remainder is going out unsplit. With nothing left
+		// in it there is no span to lose and nothing to tell the caller.
+		return res, errors.New("request size is greater than max size and cannot be split further")
 	}
 	return res, nil
 }
@@ -102,7 +111,11 @@ func (req *tracesRequest) split(maxSize int, sz sizer.TracesSizer, szt request.S
 // against maxSize too. The capacity left for a span is therefore computed the same
 // way extractResourceSpans and extractScopeSpans compute it, which keeps this pass
 // in step with what extraction would accept.
-func dropOversizedSpans(td ptrace.Traces, maxSize int, sz sizer.TracesSizer) int {
+//
+// Emptied scopes and resources are pruned as well, which shrinks the request without
+// dropping a span, so the caller is told separately whether anything was removed
+// rather than inferring it from the count.
+func dropOversizedSpans(td ptrace.Traces, maxSize int, sz sizer.TracesSizer) (droppedItems int, removedAny bool) {
 	dropped := 0
 	batchCapacity := maxSize - sz.TracesSize(ptrace.NewTraces())
 	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
@@ -118,15 +131,51 @@ func dropOversizedSpans(td ptrace.Traces, maxSize int, sz sizer.TracesSizer) int
 			ss.Spans().RemoveIf(func(span ptrace.Span) bool {
 				if sz.DeltaSize(sz.SpanSize(span)) > spanCapacity {
 					dropped++
+					removedAny = true
 					return true
 				}
 				return false
+			})
+			if ss.Spans().Len() == 0 {
+				removedAny = true
+				return true
+			}
+			return false
+		})
+		if rs.ScopeSpans().Len() == 0 {
+			removedAny = true
+			return true
+		}
+		return false
+	})
+	return dropped, removedAny
+}
+
+// removeFirstSpan removes the first span in iteration order, together with the
+// scope and resource that it leaves empty. Reports whether a span was removed,
+// which is false only when there are none left.
+func removeFirstSpan(td ptrace.Traces) bool {
+	removed := false
+	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
+		if removed {
+			return false
+		}
+		rs.ScopeSpans().RemoveIf(func(ss ptrace.ScopeSpans) bool {
+			if removed {
+				return false
+			}
+			ss.Spans().RemoveIf(func(ptrace.Span) bool {
+				if removed {
+					return false
+				}
+				removed = true
+				return true
 			})
 			return ss.Spans().Len() == 0
 		})
 		return rs.ScopeSpans().Len() == 0
 	})
-	return dropped
+	return removed
 }
 
 // extractTraces extracts a new traces with a maximum number of spans.

@@ -453,21 +453,22 @@ func TestMergeSplitTracesAllSpansOversized(t *testing.T) {
 	assert.Empty(t, spanNames(res), "nothing can be exported when every span is oversized")
 }
 
-func TestMergeSplitTracesUnsplittableRequest(t *testing.T) {
-	// No spans at all, but resource attributes alone exceed max size.
+func TestMergeSplitTracesItemlessOversizedRequest(t *testing.T) {
+	// Resource attributes alone exceed max size, and the request carries no
+	// span at all. The drop pass prunes that resource, which leaves nothing to
+	// export and nothing to report: no span was lost because there was none.
 	td := ptrace.NewTraces()
 	td.ResourceSpans().AppendEmpty().Resource().Attributes().PutStr("big", strings.Repeat("x", 500))
 	req := newTracesRequest(td)
 	require.Greater(t, req.BytesSize(), 100, "precondition: request must start oversized")
 
 	res, err := req.MergeSplit(context.Background(), 100, request.SizerTypeBytes, nil)
-	require.ErrorContains(t, err, "holds no span that fits",
-		"an unsplittable request must report an error rather than succeed silently")
+	require.NoError(t, err, "nothing was lost, so nothing is due to be reported")
 	assert.Empty(t, res, "an oversized request holding no spans must not be returned")
 }
 
 func TestMergeSplitTracesDropsOnlyOversizedAcrossResourcesAndScopes(t *testing.T) {
-	// removeFirstSpan stops scanning once it has removed one span. With several
+	// dropOversizedSpans keeps every span that fits. With several
 	// resources and scopes, the untouched ones must survive intact.
 	oversized := strings.Repeat("x", 1000)
 	td := ptrace.NewTraces()
@@ -494,4 +495,68 @@ func TestMergeSplitTracesDropsOnlyOversizedAcrossResourcesAndScopes(t *testing.T
 	}
 	assert.ElementsMatch(t, []string{"second_scope", "second_resource"}, names,
 		"spans in the other scope and resource must survive")
+}
+
+func TestMergeSplitTracesEmptyOversizedResourceDoesNotStopSplitting(t *testing.T) {
+	// See the logs equivalent: a resource pruned without a span being dropped still
+	// counts as progress, otherwise the remainder goes out unsplit.
+	td := ptrace.NewTraces()
+	empty := td.ResourceSpans().AppendEmpty()
+	empty.Resource().Attributes().PutStr("big", strings.Repeat("B", 400))
+	empty.ScopeSpans().AppendEmpty()
+	ss := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+	for range 12 {
+		ss.Spans().AppendEmpty().SetName(strings.Repeat("v", 40))
+	}
+	req := newTracesRequest(td).(*tracesRequest)
+	require.Equal(t, 12, req.td.SpanCount(), "precondition: twelve spans that each fit")
+	require.Greater(t, req.BytesSize(), 100, "precondition: request starts oversized")
+
+	res, err := req.MergeSplit(context.Background(), 100, request.SizerTypeBytes, nil)
+	require.NoError(t, err, "no span is oversized, so nothing should be reported")
+
+	marshaler := &ptrace.ProtoMarshaler{}
+	survived := 0
+	for _, r := range res {
+		tr := r.(*tracesRequest)
+		survived += tr.td.SpanCount()
+		assert.LessOrEqual(t, marshaler.TracesSize(tr.td), 100, "no batch may exceed max size")
+		// The cached size may differ from the marshaled size by a byte, which the
+		// existing delta accounting does on the remainder even without a drop pass.
+		// What must not happen is the stale oversized value the pass used to leave.
+		assert.LessOrEqual(t, tr.BytesSize(), 100, "a stale cached size makes the batcher over-count")
+	}
+	assert.Equal(t, 12, survived, "every span must survive")
+}
+
+func TestMergeSplitTracesGivesUpASpanRatherThanExceedMaxSize(t *testing.T) {
+	// See the logs equivalent: extraction can come back empty while the drop pass
+	// still considers every remaining span able to fit, so one span is given up to
+	// make progress rather than handing back a batch larger than max size.
+	const maxSize = 462
+	first, second := strings.Repeat("a", 350), strings.Repeat("b", 276)
+	td := ptrace.NewTraces()
+	for range 2 {
+		empty := td.ResourceSpans().AppendEmpty()
+		empty.Resource().Attributes().PutStr("e", strings.Repeat("E", 40))
+		empty.ScopeSpans().AppendEmpty()
+	}
+	rs := td.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("r", strings.Repeat("R", 56))
+	ss := rs.ScopeSpans().AppendEmpty()
+	ss.Spans().AppendEmpty().SetName(first)
+	ss.Spans().AppendEmpty().SetName(second)
+
+	res, err := newTracesRequest(td).MergeSplit(context.Background(), maxSize, request.SizerTypeBytes, nil)
+	require.ErrorContains(t, err, "one span size is greater than max size, dropping items: 1",
+		"giving up a span must be reported")
+
+	marshaler := &ptrace.ProtoMarshaler{}
+	survived := 0
+	for _, r := range res {
+		tr := r.(*tracesRequest)
+		survived += tr.td.SpanCount()
+		assert.LessOrEqual(t, marshaler.TracesSize(tr.td), maxSize, "no batch may exceed max size")
+	}
+	assert.Equal(t, 1, survived, "the other span must still be exported")
 }

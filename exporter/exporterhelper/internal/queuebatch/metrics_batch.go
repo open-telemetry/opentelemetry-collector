@@ -57,40 +57,49 @@ func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer, szt request
 	for req.size(sz, szt) > maxSize {
 		md, rmSize := extractMetrics(req.md, maxSize, sz)
 		if md.DataPointCount() == 0 {
-			if pruned {
-				// Nothing individually oversized is left, so the resource and scope
-				// overhead alone exceeds maxSize and no batch can be formed. Stop instead
-				// of looping forever, and report it rather than reporting success for a
-				// request that was never split.
-				unsplittable = true
-				break
-			}
 			// The next data point does not fit into maxSize even on its own. Drop every
 			// data point in that state in a single pass, rather than one per iteration
 			// with a full size recompute after each, then carry on splitting what is left.
-			pruned = true
-			var removedAny bool
-			droppedItems, removedAny = dropOversizedDataPoints(req.md, maxSize, sz)
-			if !removedAny {
+			if !pruned {
+				pruned = true
+				var removedAny bool
+				droppedItems, removedAny = dropOversizedDataPoints(req.md, maxSize, sz)
+				// Refresh the cache whether or not a data point went: the pass also prunes
+				// the metrics, scopes and resources it empties, which changes the size on
+				// its own.
+				req.sizes.Update(szt, sz.MetricsSize(req.md))
+				if removedAny {
+					continue
+				}
+			}
+			// The pass found nothing to remove, yet nothing could be extracted either.
+			// Extraction can spend capacity on resources that hold no data point and then
+			// discard them, which leaves a request the pass considers splittable. Give up
+			// the first data point so the loop always makes progress: returning the
+			// remainder unsplit would hand back a batch larger than maxSize.
+			if !removeFirstDataPoint(req.md) {
 				unsplittable = true
 				break
 			}
+			droppedItems++
 			req.sizes.Update(szt, sz.MetricsSize(req.md))
 			continue
 		}
 		req.sizes.Update(szt, req.size(sz, szt)-rmSize)
 		res = append(res, newMetricsRequest(md))
 	}
-	// Keep the remainder, unless splitting emptied it, in which case there is
+	// Keep the remainder, unless the drop pass emptied it, in which case there is
 	// nothing left to export.
-	if (droppedItems == 0 && !unsplittable) || req.md.DataPointCount() > 0 {
+	if !pruned || req.md.DataPointCount() > 0 {
 		res = append(res, req)
 	}
 	switch {
 	case droppedItems > 0:
 		return res, fmt.Errorf("one datapoint size is greater than max size, dropping items: %d", droppedItems)
-	case unsplittable:
-		return res, errors.New("request size is greater than max size and holds no data point that fits")
+	case unsplittable && req.md.DataPointCount() > 0:
+		// Only worth reporting when a remainder is going out unsplit. With nothing left
+		// in it there is no data point to lose and nothing to tell the caller.
+		return res, errors.New("request size is greater than max size and cannot be split further")
 	}
 	return res, nil
 }
@@ -144,9 +153,17 @@ func dropOversizedDataPoints(md pmetric.Metrics, maxSize int, sz sizer.MetricsSi
 				}
 				return false
 			})
-			return sm.Metrics().Len() == 0
+			if sm.Metrics().Len() == 0 {
+				removedAny = true
+				return true
+			}
+			return false
 		})
-		return rm.ScopeMetrics().Len() == 0
+		if rm.ScopeMetrics().Len() == 0 {
+			removedAny = true
+			return true
+		}
+		return false
 	})
 	return dropped, removedAny
 }
@@ -221,6 +238,92 @@ func dropOversizedMetricDataPoints(m pmetric.Metric, capacity int, sz sizer.Metr
 		})
 	}
 	return dropped
+}
+
+// removeFirstDataPoint removes the first data point in iteration order, together
+// with the metric, scope and resource that it leaves empty. Reports whether a
+// data point was removed, which is false only when there are none left.
+func removeFirstDataPoint(md pmetric.Metrics) bool {
+	removed := false
+	md.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
+		if removed {
+			return false
+		}
+		rm.ScopeMetrics().RemoveIf(func(sm pmetric.ScopeMetrics) bool {
+			if removed {
+				return false
+			}
+			sm.Metrics().RemoveIf(func(m pmetric.Metric) bool {
+				if removed {
+					return false
+				}
+				if !removeFirstMetricDataPoint(m) {
+					// This metric carries no data points, so there was nothing to drop.
+					// Keep it and keep looking, rather than deleting it as collateral and
+					// losing its name, unit and description without counting it.
+					return false
+				}
+				removed = true
+				return dataPointsLen(m) == 0
+			})
+			return sm.Metrics().Len() == 0
+		})
+		return rm.ScopeMetrics().Len() == 0
+	})
+	return removed
+}
+
+// removeFirstMetricDataPoint removes the first data point of m, whichever data
+// point type it holds. Reports whether one was removed, which is false for a
+// metric that holds no data points at all.
+func removeFirstMetricDataPoint(m pmetric.Metric) bool {
+	removed := false
+	switch m.Type() {
+	case pmetric.MetricTypeEmpty:
+		// No data point slice exists on this metric, so there is nothing to remove.
+		return false
+	case pmetric.MetricTypeGauge:
+		m.Gauge().DataPoints().RemoveIf(func(pmetric.NumberDataPoint) bool {
+			if removed {
+				return false
+			}
+			removed = true
+			return true
+		})
+	case pmetric.MetricTypeSum:
+		m.Sum().DataPoints().RemoveIf(func(pmetric.NumberDataPoint) bool {
+			if removed {
+				return false
+			}
+			removed = true
+			return true
+		})
+	case pmetric.MetricTypeHistogram:
+		m.Histogram().DataPoints().RemoveIf(func(pmetric.HistogramDataPoint) bool {
+			if removed {
+				return false
+			}
+			removed = true
+			return true
+		})
+	case pmetric.MetricTypeExponentialHistogram:
+		m.ExponentialHistogram().DataPoints().RemoveIf(func(pmetric.ExponentialHistogramDataPoint) bool {
+			if removed {
+				return false
+			}
+			removed = true
+			return true
+		})
+	case pmetric.MetricTypeSummary:
+		m.Summary().DataPoints().RemoveIf(func(pmetric.SummaryDataPoint) bool {
+			if removed {
+				return false
+			}
+			removed = true
+			return true
+		})
+	}
+	return removed
 }
 
 // extractMetrics extracts metrics from srcMetrics until capacity is reached.

@@ -524,22 +524,22 @@ func TestMergeSplitLogsAllRecordsOversized(t *testing.T) {
 	assert.Empty(t, logBodies(res), "nothing can be exported when every record is oversized")
 }
 
-func TestMergeSplitLogsUnsplittableRequest(t *testing.T) {
-	// No log records at all, but resource attributes alone exceed max size, so there
-	// is nothing left to drop and no batch can be produced.
+func TestMergeSplitLogsItemlessOversizedRequest(t *testing.T) {
+	// Resource attributes alone exceed max size, and the request carries no
+	// log record at all. The drop pass prunes that resource, which leaves nothing to
+	// export and nothing to report: no log record was lost because there was none.
 	ld := plog.NewLogs()
 	ld.ResourceLogs().AppendEmpty().Resource().Attributes().PutStr("big", strings.Repeat("x", 500))
 	req := newLogsRequest(ld)
 	require.Greater(t, req.BytesSize(), 100, "precondition: request must start oversized")
 
 	res, err := req.MergeSplit(context.Background(), 100, request.SizerTypeBytes, nil)
-	require.ErrorContains(t, err, "holds no log record that fits",
-		"an unsplittable request must report an error rather than succeed silently")
+	require.NoError(t, err, "nothing was lost, so nothing is due to be reported")
 	assert.Empty(t, res, "an oversized request holding no records must not be returned")
 }
 
 func TestMergeSplitLogsDropsOnlyOversizedAcrossResourcesAndScopes(t *testing.T) {
-	// removeFirstLogRecord stops scanning once it has removed one record. With
+	// dropOversizedLogRecords stops at the first record that fits in each scope. With
 	// several resources and scopes, the untouched ones must survive intact.
 	oversized := strings.Repeat("x", 1000)
 	ld := plog.NewLogs()
@@ -553,4 +553,81 @@ func TestMergeSplitLogsDropsOnlyOversizedAcrossResourcesAndScopes(t *testing.T) 
 	require.ErrorContains(t, err, "one log record size is greater than max size, dropping items: 1")
 	assert.ElementsMatch(t, []string{"second_scope", "second_resource"}, logBodies(res),
 		"records in the other scope and resource must survive")
+}
+
+func TestMergeSplitLogsEmptyOversizedResourceDoesNotStopSplitting(t *testing.T) {
+	// A resource with big attributes and no records is pruned by the drop pass without
+	// a record being dropped. Progress must not be inferred from the dropped count, or
+	// splitting stops here and the remainder goes out unsplit with a stale size.
+	ld := plog.NewLogs()
+	empty := ld.ResourceLogs().AppendEmpty()
+	empty.Resource().Attributes().PutStr("big", strings.Repeat("B", 400))
+	empty.ScopeLogs().AppendEmpty()
+	sl := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
+	for range 12 {
+		sl.LogRecords().AppendEmpty().Body().SetStr(strings.Repeat("v", 40))
+	}
+	req := newLogsRequest(ld).(*logsRequest)
+	require.Equal(t, 12, req.ld.LogRecordCount(), "precondition: twelve records that each fit")
+	require.Greater(t, req.BytesSize(), 100, "precondition: request starts oversized")
+
+	res, err := req.MergeSplit(context.Background(), 100, request.SizerTypeBytes, nil)
+	require.NoError(t, err, "no record is oversized, so nothing should be reported")
+
+	marshaler := &plog.ProtoMarshaler{}
+	survived := 0
+	for _, r := range res {
+		lr := r.(*logsRequest)
+		survived += lr.ld.LogRecordCount()
+		assert.LessOrEqual(t, marshaler.LogsSize(lr.ld), 100, "no batch may exceed max size")
+		// The cached size may differ from the marshaled size by a byte, which the
+		// existing delta accounting does on the remainder even without a drop pass.
+		// What must not happen is the stale oversized value the pass used to leave.
+		assert.LessOrEqual(t, lr.BytesSize(), 100, "a stale cached size makes the batcher over-count")
+	}
+	assert.Equal(t, 12, survived, "every record must survive")
+}
+
+func TestMergeSplitLogsGivesUpARecordRatherThanExceedMaxSize(t *testing.T) {
+	// Extraction spends capacity on resources that hold no record and then discards
+	// them, so it can come back empty while the drop pass still considers every
+	// remaining record able to fit. Progress has to come from somewhere, and handing
+	// the remainder back unsplit would mean a batch larger than max size, so one
+	// record is given up instead. It is reported, so the loss is visible.
+	const maxSize = 462
+	fitsAlone := func(body string) bool {
+		x := plog.NewLogs()
+		rl := x.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("r", strings.Repeat("R", 56))
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr(body)
+		return (&plog.ProtoMarshaler{}).LogsSize(x) <= maxSize
+	}
+	first, second := strings.Repeat("a", 350), strings.Repeat("b", 276)
+	require.True(t, fitsAlone(first), "precondition: the first record fits a batch on its own")
+	require.True(t, fitsAlone(second), "precondition: the second record fits a batch on its own")
+
+	ld := plog.NewLogs()
+	for range 2 {
+		empty := ld.ResourceLogs().AppendEmpty()
+		empty.Resource().Attributes().PutStr("e", strings.Repeat("E", 40))
+		empty.ScopeLogs().AppendEmpty()
+	}
+	rl := ld.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("r", strings.Repeat("R", 56))
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.LogRecords().AppendEmpty().Body().SetStr(first)
+	sl.LogRecords().AppendEmpty().Body().SetStr(second)
+
+	res, err := newLogsRequest(ld).MergeSplit(context.Background(), maxSize, request.SizerTypeBytes, nil)
+	require.ErrorContains(t, err, "one log record size is greater than max size, dropping items: 1",
+		"giving up a record must be reported")
+
+	marshaler := &plog.ProtoMarshaler{}
+	survived := 0
+	for _, r := range res {
+		lr := r.(*logsRequest)
+		survived += lr.ld.LogRecordCount()
+		assert.LessOrEqual(t, marshaler.LogsSize(lr.ld), maxSize, "no batch may exceed max size")
+	}
+	assert.Equal(t, 1, survived, "the other record must still be exported")
 }
