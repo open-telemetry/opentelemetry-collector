@@ -122,6 +122,9 @@ func TestUnmarshalConfig(t *testing.T) {
 				}),
 				HTTP: configoptional.Some(HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
+						Keepalive: configoptional.Some(confighttp.KeepaliveServerConfig{
+							IdleTimeout: 60 * time.Second,
+						}),
 						NetAddr: confignet.AddrConfig{
 							Endpoint:  "localhost:4318",
 							Transport: confignet.TransportTypeTCP,
@@ -169,6 +172,9 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 				}),
 				HTTP: configoptional.Some(HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
+						Keepalive: configoptional.Some(confighttp.KeepaliveServerConfig{
+							IdleTimeout: 60 * time.Second,
+						}),
 						NetAddr: confignet.AddrConfig{
 							Endpoint:  "/tmp/http_otlp.sock",
 							Transport: confignet.TransportTypeUnix,

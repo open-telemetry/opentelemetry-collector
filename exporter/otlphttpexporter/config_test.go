@@ -32,10 +32,7 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 }
 
 func TestUnmarshalConfig(t *testing.T) {
-	defaultMaxIdleConns := http.DefaultTransport.(*http.Transport).MaxIdleConns
-	defaultMaxIdleConnsPerHost := http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost
 	defaultMaxConnsPerHost := http.DefaultTransport.(*http.Transport).MaxConnsPerHost
-	defaultIdleConnTimeout := http.DefaultTransport.(*http.Transport).IdleConnTimeout
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
@@ -70,6 +67,10 @@ func TestUnmarshalConfig(t *testing.T) {
 					{Name: "header1", Value: "234"},
 				},
 				Endpoint: "https://1.2.3.4:1234",
+				Keepalive: configoptional.Some(confighttp.KeepaliveClientConfig{
+					MaxIdleConns:    100,
+					IdleConnTimeout: 90 * time.Second,
+				}),
 				TLS: configtls.ClientConfig{
 					Config: configtls.Config{
 						CAFile:   "/var/lib/mycert.pem",
