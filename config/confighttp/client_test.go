@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 var (
@@ -232,6 +233,10 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 }
 
 func TestDefaultHTTPClientSettings(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", true))
+	})
 	httpClientSettings := NewDefaultClientConfig()
 	assert.Equal(t, 100, httpClientSettings.MaxIdleConns)
 	assert.Equal(t, 90*time.Second, httpClientSettings.IdleConnTimeout)
@@ -560,6 +565,10 @@ func TestHTTPClientHostHeader(t *testing.T) {
 }
 
 func TestHTTPTransportOptions(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", true))
+	})
 	settings := componenttest.NewNopTelemetrySettings()
 	// Disable OTel instrumentation so the *http.Transport object is directly accessible
 	settings.MeterProvider = nil

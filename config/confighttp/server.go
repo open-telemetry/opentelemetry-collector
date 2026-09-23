@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp/internal"
+	"go.opentelemetry.io/collector/config/confighttp/internal/metadata"
 	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -144,6 +145,15 @@ func NewDefaultServerConfig() ServerConfig {
 	// We typically want to create a TCP server and listen over a network.
 	netAddr.Transport = confignet.TransportTypeTCP
 
+	if metadata.PkgConfighttpPrioritizeNewKeepaliveFeatureGate.IsEnabled() {
+		return ServerConfig{
+			NetAddr:           netAddr,
+			WriteTimeout:      30 * time.Second,
+			ReadHeaderTimeout: 1 * time.Minute,
+			Keepalive:         configoptional.Some(NewDefaultKeepaliveServerConfig()),
+		}
+	}
+
 	return ServerConfig{
 		NetAddr:           netAddr,
 		WriteTimeout:      30 * time.Second,
@@ -158,10 +168,17 @@ func NewDefaultServerConfig() ServerConfig {
 
 var _ confmap.Unmarshaler = (*ServerConfig)(nil)
 
-// Unmarshal implements confmap.Unmarshaler. The keepalive settings can arrive
+func (sc *ServerConfig) Unmarshal(conf *confmap.Conf) error {
+	if metadata.PkgConfighttpPrioritizeNewKeepaliveFeatureGate.IsEnabled() {
+		return sc.unmarshalPrioritizeKeepalive(conf)
+	}
+	return sc.unmarshalPrioritizeDeprecatedFields(conf)
+}
+
+// unmarshalPrioritizeKeepalive implements confmap.Unmarshaler. The keepalive settings can arrive
 // through two representations (the deprecated flat fields and the 'keepalive'
 // section) and two channels (programmatic changes to the struct and the
-// configuration). Unmarshal resolves them by folding everything into the
+// configuration). unmarshalPrioritizeKeepalive resolves them by folding everything into the
 // deprecated fields, in order of increasing precedence:
 //
 //  1. programmatic values already on the struct, in either representation;
@@ -177,7 +194,76 @@ var _ confmap.Unmarshaler = (*ServerConfig)(nil)
 // The deprecated fields end up holding the effective settings and remain the
 // sole source of truth for ToServer during their deprecation window; Keepalive
 // is always left as None.
-func (sc *ServerConfig) Unmarshal(conf *confmap.Conf) error {
+func (sc *ServerConfig) unmarshalPrioritizeKeepalive(conf *confmap.Conf) error {
+	// Step 1: decode the configuration. Deprecated keys overwrite their
+	// fields directly; the 'keepalive' section decodes into Keepalive and is
+	// folded in step 4. WithIgnoreUnused is needed because ServerConfig is
+	// commonly squash-embedded into component configs, in which case conf
+	// also holds the parent's sibling fields.
+	if err := conf.Unmarshal(sc, confmap.WithIgnoreUnused()); err != nil {
+		return err
+	}
+
+	// A null 'keepalive' key carries no settings, but decodes as an enabled
+	// section. Marshaling produces it for an unset Keepalive, so treat it as
+	// unset to keep marshaled configurations loadable.
+	keepaliveSet := conf.IsSet("keepalive") && conf.Get("keepalive") != nil
+
+	// Step 2: with the decoded values at hand, reject configurations mixing
+	// both representations, and record uses of the deprecated keys for
+	// ToServer to warn about. Values which are no-ops in the legacy logic (a
+	// zero idle_timeout, or keep_alives_enabled: true) neither conflict with
+	// the 'keepalive' section nor deserve a warning.
+	var deprecated []string
+	if conf.IsSet("idle_timeout") && sc.IdleTimeout != 0 {
+		sc.Keepalive.GetOrInsertDefault().IdleTimeout = sc.IdleTimeout
+		deprecated = append(deprecated, "'idle_timeout' is deprecated; use 'keepalive::idle_timeout' instead")
+	}
+	if conf.IsSet("keep_alives_enabled") && !sc.KeepAlivesEnabled {
+		deprecated = append(deprecated, "'keep_alives_enabled' is deprecated; set 'keepalive::enabled' to false to disable keep-alives")
+	}
+	if keepaliveSet && len(deprecated) > 0 {
+		return errors.New("confighttp.ServerConfig: cannot use deprecated keepalive fields (idle_timeout, keep_alives_enabled) alongside the 'keepalive' section; migrate to the 'keepalive' section")
+	}
+	sc.deprecationWarnings = deprecated
+
+	// Step 3: fold the decoded 'keepalive' section into the deprecated
+	// fields. Only keys present in the configuration are copied; the
+	// deprecated fields keep supplying the values for the rest. Decoding
+	// leaves Keepalive without a value only for 'keepalive::enabled: false',
+	// so a present section fully determines whether keep-alives are on.
+	if keepaliveSet {
+		if ka := sc.Keepalive.Get(); ka != nil {
+			if conf.IsSet("keepalive::idle_timeout") {
+				sc.IdleTimeout = ka.IdleTimeout
+			}
+		}
+		sc.KeepAlivesEnabled = sc.Keepalive.HasValue()
+	}
+
+	return nil
+}
+
+// unmarshalPrioritizeDeprecatedFields implements confmap.Unmarshaler. The keepalive settings can arrive
+// through two representations (the deprecated flat fields and the 'keepalive'
+// section) and two channels (programmatic changes to the struct and the
+// configuration). unmarshalPrioritizeDeprecatedFields resolves them by folding everything into the
+// deprecated fields, in order of increasing precedence:
+//
+//  1. programmatic values already on the struct, in either representation;
+//  2. deprecated keys present in the configuration;
+//  3. the 'keepalive' section present in the configuration.
+//
+// Mixing 2 and 3 is rejected, so their relative precedence never matters in
+// practice. Deprecated keys in the configuration are also recorded as warnings
+// for ToServer to log. Only keys present in the configuration count for the
+// error and the warnings: programmatic values are neither deprecated usage nor
+// a conflict.
+//
+// The deprecated fields end up holding the effective settings and remain the
+// sole source of truth for ToServer during their deprecation window; Keepalive
+// is always left as None.
+func (sc *ServerConfig) unmarshalPrioritizeDeprecatedFields(conf *confmap.Conf) error {
 	// Step 1: fold a programmatically set Keepalive into the deprecated
 	// fields. This must precede decoding so that the configuration overrides
 	// it. A present value can only mean keep-alives enabled with these

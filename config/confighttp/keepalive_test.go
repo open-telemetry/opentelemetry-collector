@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 // ---- ClientConfig ----
@@ -25,6 +26,10 @@ import (
 // Unmarshal folds the 'keepalive' section into the deprecated fields and always
 // resets the Optional to None; the section's effect shows in the flat fields.
 func TestClientConfigUnmarshalKeepalive(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", true))
+	})
 	tests := []struct {
 		name         string
 		prepare      func(*ClientConfig)
@@ -201,6 +206,10 @@ func TestClientConfigProgrammaticKeepaliveAfterUnmarshal(t *testing.T) {
 // The keepalive defaults must stay in sync with the defaults that
 // NewDefaultClientConfig sets on the corresponding deprecated fields.
 func TestNewDefaultKeepaliveClientConfig(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", true))
+	})
 	defaultCfg := NewDefaultClientConfig()
 	keepalive := NewDefaultKeepaliveClientConfig()
 	assert.Equal(t, defaultCfg.IdleConnTimeout, keepalive.IdleConnTimeout)
@@ -273,6 +282,10 @@ func TestClientConfigDisableKeepAlives(t *testing.T) {
 // ---- ServerConfig ----
 
 func TestServerConfigUnmarshalKeepalive(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", true))
+	})
 	tests := []struct {
 		name         string
 		prepare      func(*ServerConfig)
@@ -425,6 +438,10 @@ func TestServerConfigProgrammaticKeepaliveAfterUnmarshal(t *testing.T) {
 // The keepalive defaults must stay in sync with the defaults that
 // NewDefaultServerConfig sets on the corresponding deprecated fields.
 func TestNewDefaultKeepaliveServerConfig(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", true))
+	})
 	defaultCfg := NewDefaultServerConfig()
 	keepalive := NewDefaultKeepaliveServerConfig()
 	assert.Equal(t, defaultCfg.IdleTimeout, keepalive.IdleTimeout)
@@ -462,6 +479,10 @@ type namedSquashClientConfig struct {
 }
 
 func TestClientConfigSquashNamedField(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", true))
+	})
 	cfg := namedSquashClientConfig{ClientConfig: NewDefaultClientConfig()}
 	conf := confmap.NewFromStringMap(map[string]any{
 		"endpoint":          "http://localhost:4318",
@@ -485,6 +506,10 @@ type namedSquashServerConfig struct {
 }
 
 func TestServerConfigSquashNamedField(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", true))
+	})
 	cfg := namedSquashServerConfig{ServerConfig: NewDefaultServerConfig()}
 	conf := confmap.NewFromStringMap(map[string]any{
 		"endpoint":            "localhost:0",

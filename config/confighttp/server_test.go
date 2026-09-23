@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 var (
@@ -990,7 +991,11 @@ func BenchmarkHTTPRequest(b *testing.B) {
 	}
 }
 
-func TestDefaultHTTPServerSettings(t *testing.T) {
+func TestDefaultHTTPServerSettingsDeprecatedFields(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", true))
+	})
 	httpServerSettings := NewDefaultServerConfig()
 	assert.NotNil(t, httpServerSettings.CORS)
 	assert.NotNil(t, httpServerSettings.TLS)
@@ -999,6 +1004,17 @@ func TestDefaultHTTPServerSettings(t *testing.T) {
 	assert.Equal(t, 1*time.Minute, httpServerSettings.ReadHeaderTimeout)
 	assert.Equal(t, 1*time.Minute, httpServerSettings.IdleTimeout)
 	assert.False(t, httpServerSettings.Keepalive.HasValue())
+}
+
+func TestDefaultHTTPServerSettings(t *testing.T) {
+	httpServerSettings := NewDefaultServerConfig()
+	assert.NotNil(t, httpServerSettings.CORS)
+	assert.NotNil(t, httpServerSettings.TLS)
+	assert.Equal(t, 30*time.Second, httpServerSettings.WriteTimeout)
+	assert.Equal(t, time.Duration(0), httpServerSettings.ReadTimeout)
+	assert.Equal(t, 1*time.Minute, httpServerSettings.ReadHeaderTimeout)
+	assert.Equal(t, 1*time.Minute, httpServerSettings.Keepalive.Get().IdleTimeout)
+	assert.True(t, httpServerSettings.Keepalive.HasValue())
 }
 
 func TestHTTPServerKeepAlives(t *testing.T) {
@@ -1155,6 +1171,8 @@ func TestServerUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 	serverSub, err := cm.Sub("server")
 	require.NoError(t, err)
 	require.NoError(t, serverSub.Unmarshal(&serverConfig))
+	keepaliveConfig := configoptional.Some(NewDefaultKeepaliveServerConfig())
+	keepaliveConfig.Get().IdleTimeout = 120 * time.Second
 
 	// Validate the server configuration using reflection-based validation
 	require.NoError(t, confmap.Validate(&serverConfig), "Server configuration should be valid")
@@ -1164,7 +1182,7 @@ func TestServerUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 	assert.Equal(t, 30*time.Second, serverConfig.ReadTimeout)
 	assert.Equal(t, 10*time.Second, serverConfig.ReadHeaderTimeout)
 	assert.Equal(t, 30*time.Second, serverConfig.WriteTimeout)
-	assert.Equal(t, configoptional.None[KeepaliveServerConfig](), serverConfig.Keepalive)
+	assert.Equal(t, keepaliveConfig, serverConfig.Keepalive)
 	assert.Equal(t, 120*time.Second, serverConfig.IdleTimeout)
 	assert.Equal(t, int64(33554432), serverConfig.MaxRequestBodySize)
 	assert.True(t, serverConfig.IncludeMetadata)
