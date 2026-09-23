@@ -226,12 +226,12 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 	}
 
 	if cc.HTTP2ReadIdleTimeout > 0 {
-		transport2, transportErr := http2.ConfigureTransports(transport)
+		transport2, transportErr := http2.ConfigureTransports(transport) //nolint:staticcheck // SA1019
 		if transportErr != nil {
 			return nil, fmt.Errorf("failed to configure http2 transport: %w", transportErr)
 		}
-		transport2.ReadIdleTimeout = cc.HTTP2ReadIdleTimeout
-		transport2.PingTimeout = cc.HTTP2PingTimeout
+		transport2.ReadIdleTimeout = cc.HTTP2ReadIdleTimeout //nolint:staticcheck // SA1019
+		transport2.PingTimeout = cc.HTTP2PingTimeout         //nolint:staticcheck // SA1019
 	}
 
 	clientTransport := http.RoundTripper(transport)
