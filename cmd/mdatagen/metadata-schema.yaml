@@ -158,6 +158,8 @@ config:
         # Optional: Constructor used for an x-optional field with an object type.
         # Omitted and "some" use configoptional.Some; "default" uses configoptional.Default.
         optional_mode: <some|default>
+        ## Optional: Generated struct embeds a package-private `private<Type>Fields` type.
+        private_fields: bool
   # Optional: List of required property names. Properties in this list must be present in the config.
   required: [string]
   # Optional: Map of reusable schema definitions that can be referenced via $ref.

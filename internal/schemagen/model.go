@@ -80,6 +80,7 @@ type GoStructConfig struct {
 	IgnoreDefault   bool                   `mapstructure:"ignore_default" json:"-" yaml:"ignore_default,omitempty"`
 	FieldName       string                 `mapstructure:"field_name" json:"-" yaml:"field_name,omitempty"`
 	OptionalMode    string                 `mapstructure:"optional_mode" json:"-" yaml:"optional_mode,omitempty"`
+	PrivateFields   bool                   `mapstructure:"private_fields" json:"-" yaml:"private_fields,omitempty"`
 }
 
 const (
@@ -259,6 +260,9 @@ func (md *ConfigMetadata) MergeFrom(other *ConfigMetadata) {
 	}
 	if md.GoStruct.OptionalMode == "" {
 		md.GoStruct.OptionalMode = other.GoStruct.OptionalMode
+	}
+	if !md.GoStruct.PrivateFields {
+		md.GoStruct.PrivateFields = other.GoStruct.PrivateFields
 	}
 }
 
