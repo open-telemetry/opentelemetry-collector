@@ -178,6 +178,9 @@ func (md *Metadata) validateResourceAttributes() error {
 		if attr.EnabledPtr == nil {
 			errs = errors.Join(errs, fmt.Errorf("enabled field is required for resource attribute: %v", name))
 		}
+		if attr.SetterType != "" && attr.SetterType != "direct" && attr.SetterType != "callback" {
+			errs = errors.Join(errs, fmt.Errorf("invalid setter_type for resource attribute %v: %q", name, attr.SetterType))
+		}
 	}
 	return errs
 }
