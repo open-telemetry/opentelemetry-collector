@@ -9,8 +9,10 @@ formatters:
       simplify: true
 
     gofumpt:
-      # Choose whether to use the extra rules
-      extra-rules: true
+      extra:
+        group-params: true
+        clothe-returns: true
+        balance-calls: true
 
     goimports:
       # put imports beginning with prefix after 3rd-party packages;
@@ -57,10 +59,11 @@ linters:
       - std-error-handling
 
     # Excluding configuration per-path, per-linter, per-text and per-source
-    rules: []
-
-    # Log a warning if an exclusion rule is unused.
-    warn-unused: true
+    rules:
+      - path: _test\.go
+        linters:
+          - gosec
+        text: "^G104:"
 
   # all available settings of specific linters
   settings:
@@ -116,7 +119,7 @@ linters:
 
     gosec:
       excludes:
-        - G104 # FIXME
+        - G115 # FIXME
         - G402
         - G404
 

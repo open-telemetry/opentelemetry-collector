@@ -64,7 +64,7 @@ jobs:
           key: go-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
           lookup-only: true
       - name: golint
-        run: make -j2 golint
+        run: make -j4 golint
       - name: goimpi
         run: make goimpi
 
@@ -259,8 +259,10 @@ jobs:
           lookup-only: true
       - name: Run Unit Tests With Coverage
         run: make gotest-with-cover
+      - name: check-stability
+        run: make check-stability
       - name: Upload coverage report
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 

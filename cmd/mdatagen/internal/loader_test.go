@@ -25,7 +25,7 @@ func TestTwoPackagesInDirectory(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "go.mod"), []byte("module twopackages"), 0o600))
 	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "package1.go"), []byte("package package1"), 0o600))
 	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "package2.go"), []byte("package package2"), 0o600))
-	require.NoError(t, os.WriteFile(metadataPath, contents, 0o600))
+	require.NoError(t, os.WriteFile(metadataPath, contents, 0o600)) // #nosec G703
 
 	_, err = LoadMetadata(metadataPath)
 	require.Error(t, err)

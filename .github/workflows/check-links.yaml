@@ -12,42 +12,38 @@ concurrency:
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
   changedfiles:
     name: changed files
-    runs-on: ubuntu-latest
-    env:
-      PR_HEAD: ${{ github.event.pull_request.head.sha }}
+    runs-on: ubuntu-slim
     outputs:
-      files: ${{ steps.changes.outputs.files }}
+      files: ${{ steps.changes.outputs.md_files }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          fetch-depth: 1
           persist-credentials: false
       - name: Get changed files
         id: changes
-        run: |
-          files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep .md$ | xargs)
-
-          if [ -z "$files" ] && git diff --name-only $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep -q "package.json"; then
-            files="**/*.md"
-          fi
-
-          echo "files=$files" >> $GITHUB_OUTPUT
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          list-files: shell
+          filters: |
+            md:
+              - '**/*.md'
   check-links:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     needs: changedfiles
     if: ${{needs.changedfiles.outputs.files}}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          fetch-depth: 1
           persist-credentials: false
-
       - name: Link Checker
         id: lychee
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0

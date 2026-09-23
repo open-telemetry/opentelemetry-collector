@@ -1,25 +1,24 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: breaking
+change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
-component: pkg/service
+component: cmd/mdatagen
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "`telemetry.Factory.CreateResource` and `telemetry.CreateResourceFunc` now return `(pcommon.Resource, string, error)` instead of `(pcommon.Resource, error)` to expose the resource's schema URL."
+note: Allow config metadata authors to choose `configoptional.Some` or `configoptional.Default` for generated optional fields
 
 # One or more tracking issues or pull requests related to the change
-issues: [15129]
+issues: [15977]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The `telemetry.Factory` interface is experimental and cannot be implemented
-  externally (it has an unexported method). Callers using
-  `telemetry.WithCreateResource` must update the function signature to return
-  a third `string` value for the schema URL.
+  Set `go_struct.optional_mode: default` to generate an optional object configuration
+  section with a fallback default while keeping it absent until configured. Omitting
+  `optional_mode` preserves the existing `configoptional.Some` behavior.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
