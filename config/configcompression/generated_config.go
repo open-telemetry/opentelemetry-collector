@@ -24,7 +24,7 @@ func (c Type) Validate() error {
 	var err error
 
 	if !slices.Contains([]string{"gzip", "zlib", "deflate", "snappy", "x-snappy-framed", "zstd", "lz4", "none", ""}, string(c)) {
-		err = errors.Join(err, errors.New(". must be one of [gzip, zlib, deflate, snappy, x-snappy-framed, zstd, lz4, none, ]"))
+		err = errors.Join(err, errors.New("must be one of [gzip, zlib, deflate, snappy, x-snappy-framed, zstd, lz4, none, <empty>]"))
 	}
 
 	return err

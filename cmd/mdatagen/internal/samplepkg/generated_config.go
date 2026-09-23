@@ -14,10 +14,10 @@ func (c PortNumber) Validate() error {
 	var err error
 
 	if c < 1 {
-		err = errors.Join(err, errors.New(". value must be greater than or equal to 1"))
+		err = errors.Join(err, errors.New("value must be greater than or equal to 1"))
 	}
 	if c > 65535 {
-		err = errors.Join(err, errors.New(". value must be less than or equal to 65535"))
+		err = errors.Join(err, errors.New("value must be less than or equal to 65535"))
 	}
 
 	return err

@@ -11,13 +11,13 @@ import (
 func TestPortNumberValidate_Minimum(t *testing.T) {
 	cfg := PortNumber(1 - 1)
 
-	require.ErrorContains(t, cfg.Validate(), ". value must be greater than or equal to 1")
+	require.ErrorContains(t, cfg.Validate(), "value must be greater than or equal to 1")
 }
 
 func TestPortNumberValidate_Maximum(t *testing.T) {
 	cfg := PortNumber(65535 + 1)
 
-	require.ErrorContains(t, cfg.Validate(), ". value must be less than or equal to 65535")
+	require.ErrorContains(t, cfg.Validate(), "value must be less than or equal to 65535")
 }
 
 func TestSampleConfigValidate_DefaultValid(t *testing.T) {

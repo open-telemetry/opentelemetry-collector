@@ -961,7 +961,12 @@ func formatEnumSlice(values []any, fieldType SchemaType) string {
 func formatEnumValues(values []any) string {
 	formatted := make([]string, 0, len(values))
 	for _, v := range values {
-		formatted = append(formatted, fmt.Sprintf("%v", v))
+		strVal := fmt.Sprintf("%v", v)
+		if strVal == "" {
+			formatted = append(formatted, "<empty>")
+			continue
+		}
+		formatted = append(formatted, strVal)
 	}
 	return "[" + strings.Join(formatted, ", ") + "]"
 }
