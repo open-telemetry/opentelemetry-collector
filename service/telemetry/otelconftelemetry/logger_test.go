@@ -516,47 +516,6 @@ func TestCreateLoggerSetsOpenTelemetryErrorHandler(t *testing.T) {
 	assert.Contains(t, entries[0].ContextMap()["error"], "failed to upload metrics")
 }
 
-func TestCreateLoggerZapOptions(t *testing.T) {
-	buildInfo := component.BuildInfo{}
-	factory := NewFactory()
-	cfg := &Config{
-		Logs: LogsConfig{
-			Level:    zapcore.InfoLevel,
-			Encoding: "json",
-		},
-	}
-	resource, _, err := factory.CreateResource(
-		context.Background(), telemetry.Settings{BuildInfo: buildInfo}, cfg,
-	)
-	require.NoError(t, err)
-
-	core, observedLogs := observer.New(zapcore.DebugLevel)
-	set := telemetry.LoggerSettings{
-		Settings: telemetry.Settings{BuildInfo: buildInfo, Resource: &resource},
-
-		// Test deprecated behavior: no BuildZapLogger, but ZapOptions provided.
-		BuildZapLogger: nil,
-		ZapOptions: []zap.Option{
-			zap.WrapCore(func(zapcore.Core) zapcore.Core { return core }),
-		},
-	}
-
-	logger, provider, err := factory.CreateLogger(context.Background(), set, cfg)
-	require.NoError(t, err)
-	require.NotNil(t, provider)
-	defer func() {
-		assert.NoError(t, provider.Shutdown(context.Background()))
-	}()
-
-	testMessage := "Test deprecated zap options"
-	logger.Info(testMessage)
-
-	require.Len(t, observedLogs.All(), 1)
-	logEntry := observedLogs.All()[0]
-	assert.Equal(t, testMessage, logEntry.Message)
-	assert.Equal(t, zapcore.InfoLevel, logEntry.Level)
-}
-
 func TestLogger_OTLP(t *testing.T) {
 	// Create a backend to receive the logs and assert the content
 	receivedLogs := 0

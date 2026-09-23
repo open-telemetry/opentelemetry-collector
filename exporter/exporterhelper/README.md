@@ -66,6 +66,15 @@ Available `batch::partition` options:
   separate batches. When empty, a single batcher instance is used. When set, one batcher will be used
   per distinct combination of values for the listed metadata keys. Empty value and unset metadata are
   treated as distinct cases. Entries are case-insensitive. Duplicated entries will trigger a validation error. Default is empty.
+- `cache_size` (default = 10000): maximum number of active partition batchers kept in
+  the LRU cache when partitioning is enabled. If unset, defaults to 10000. Must be positive.
+  When the limit is reached, the least recently used partition is flushed
+  and removed. The current size and configured capacity are exported as
+  `otelcol_exporter_queue_batch_partition_cache_size` and
+  `otelcol_exporter_queue_batch_partition_cache_capacity`.
+- `idle_timeout` (default = 90s): how long a partition may stay empty before it is removed.
+  Keep it above the data arrival interval to avoid churning partitions on every scrape. Must be
+  positive.
 
 ### Timeout
 
