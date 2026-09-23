@@ -14,7 +14,7 @@ import (
 {{- end }}
 
 {{ define "struct" }}
-    {{- range $propName, $prop := .Properties | embeddedProps }}
+    {{- range $propName, $prop := .data.Properties | embeddedProps }}
         {{- if $prop.Description }}
         {{ $prop.Description | goComment }}
         {{- end }}
@@ -24,12 +24,18 @@ import (
             {{ $prop.GoStruct.FieldName | publicVar }} {{ $prop.Ref | publicType }} `mapstructure:",squash"`
         {{- end }}
     {{ end }}
-    {{- range $propName, $prop := .Properties | namedProps }}
+    {{- range $propName, $prop := .data.Properties | namedProps }}
         {{- if $prop.Description }}
             {{ printf "%s %s" ($prop.GoStruct.FieldName | publicVar) ($prop.Description | uncapitalize) | goComment }}
         {{- end }}
         {{ $prop.GoStruct.FieldName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}{{ if shouldOmitEmpty . $propName $prop }},omitempty{{ end }}"`
     {{ end }}
+
+    {{- if .data.GoStruct.PrivateFields }}
+    // placeholder for the private fields
+    private{{.name}}Fields
+    {{- end }}
+
     // prevent unkeyed literal initialization
     _ struct{}
 {{ end }}
@@ -46,7 +52,7 @@ import (
         type {{ $typeName }} {{ primitiveGoType $def }}
     {{- else }}
         type {{ $typeName }} struct {
-        {{- template "struct" $def }}
+        {{- template "struct" entry $typeName $def }}
         }
     {{- end }}
 
@@ -90,7 +96,7 @@ import (
         // Config defines the configuration for {{ .Metadata.DisplayName }} component.
     {{- end }}
     type Config struct {
-        {{- template "struct" .Metadata.Config }}
+        {{- template "struct" entry "Config" .Metadata.Config }}
     }
 {{- end}}
 

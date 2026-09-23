@@ -157,9 +157,14 @@ func (rec *ObsReport) startOp(receiverCtx context.Context, operationSuffix strin
 		// Since the receiverCtx is long lived do not use it to start the span.
 		// This way this trace ends when the EndTracesOp is called.
 		// Here is safe to ignore the returned context since it is not used below.
-		_, span = rec.tracer.Start(context.Background(), spanName, trace.WithLinks(trace.Link{
-			SpanContext: trace.SpanContextFromContext(receiverCtx),
-		}))
+		// Only build the link option when there is something to link to: the SDK
+		// discards a link with an invalid span context, so passing one always
+		// costs an allocation for a link that is thrown away.
+		if sc := trace.SpanContextFromContext(receiverCtx); sc.IsValid() {
+			_, span = rec.tracer.Start(context.Background(), spanName, trace.WithLinks(trace.Link{SpanContext: sc}))
+		} else {
+			_, span = rec.tracer.Start(context.Background(), spanName)
+		}
 
 		ctx = trace.ContextWithSpan(receiverCtx, span)
 	}

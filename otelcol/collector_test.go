@@ -9,7 +9,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"runtime"
+	"reflect"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -1069,9 +1069,6 @@ func (e statusWatcherExtension) ComponentStatusChanged(source *componentstatus.I
 }
 
 func TestComponentStatusWatcher(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("Skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/15959")
-	}
 	factories, err := nopFactories()
 	require.NoError(t, err)
 
@@ -1137,7 +1134,9 @@ func TestComponentStatusWatcher(t *testing.T) {
 			// All processors must report a status change with the same ID
 			assert.Equal(t, component.NewID(unhealthyProcessorFactory.Type()), k.ComponentID())
 			// And all must have a valid startup sequence
-			assert.Equal(t, startupStatuses(v), v)
+			assert.Eventually(t, func() bool {
+				return reflect.DeepEqual(startupStatuses(v), v)
+			}, 2*time.Second, 10*time.Millisecond)
 		}
 		// We have 3 processors with exactly the same ID in otelcol-statuswatcher.yaml
 		// We must have exactly 3 items in our map. This ensures that the "source" argument
@@ -1152,9 +1151,12 @@ func TestComponentStatusWatcher(t *testing.T) {
 
 	// Check for additional statuses after Shutdown.
 	for _, v := range changedComponents {
-		expectedStatuses := append([]componentstatus.Status{}, startupStatuses(v)...)
-		expectedStatuses = append(expectedStatuses, componentstatus.StatusStopping, componentstatus.StatusStopped)
-		assert.Equal(t, expectedStatuses, v)
+		assert.Eventually(t, func() bool {
+			expectedStatuses := append([]componentstatus.Status{}, startupStatuses(v)...)
+			expectedStatuses = append(expectedStatuses, componentstatus.StatusStopping, componentstatus.StatusStopped)
+
+			return reflect.DeepEqual(expectedStatuses, v)
+		}, 2*time.Second, 10*time.Millisecond)
 	}
 
 	assert.Equal(t, StateClosed, col.GetState())

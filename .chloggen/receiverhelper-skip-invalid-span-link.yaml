@@ -1,0 +1,28 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
+component: pkg/receiverhelper
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Stop allocating a span link that is always discarded when a long-lived-context receiver starts an operation without a parent span context.
+
+# One or more tracking issues or pull requests related to the change
+issues: [15998]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  Receivers created with `LongLivedCtx: true` no longer build a `trace.Link` when the
+  long-lived context carries no valid span context. The SDK already discarded such a link,
+  so behaviour is unchanged. This removes 3 of 7 allocations per receive operation.
+
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]
