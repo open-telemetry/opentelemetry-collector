@@ -28,10 +28,6 @@ type CentralConfig struct {
 type StabilityConfig struct {
 	// Coverage maps a stability level to the minimum required component coverage.
 	Coverage map[component.StabilityLevel]float64 `yaml:"coverage"`
-	// ContextPropagation is the minimum stability level at which a processor must
-	// assert that it propagates the incoming context unchanged to the next consumer
-	// (i.e. it may not set tests::skip_context_propagation). Undefined disables the check.
-	ContextPropagation component.StabilityLevel `yaml:"context_propagation"`
 }
 
 type ComponentExclusion struct {

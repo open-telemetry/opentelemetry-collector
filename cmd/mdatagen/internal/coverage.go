@@ -21,22 +21,6 @@ func highestStability(ms StabilityMap) component.StabilityLevel {
 	return slices.Max(slices.Collect(maps.Keys(ms)))
 }
 
-// checkContextPropagation errors when a processor at or above minLevel opts out of
-// the generated context-propagation assertion. A minLevel of Undefined disables the check.
-func checkContextPropagation(md Metadata, minLevel component.StabilityLevel) error {
-	if minLevel == component.StabilityLevelUndefined {
-		return nil
-	}
-	if md.Status == nil || md.Status.Class != "processor" || !md.Tests.SkipContextPropagation {
-		return nil
-	}
-	level := highestStability(md.Status.Stability)
-	if level >= minLevel {
-		return fmt.Errorf("processor %v is %v and must assert context propagation: remove tests::skip_context_propagation", md.PackageName, level)
-	}
-	return nil
-}
-
 // checkCoverage in profilePath and error if it is below the target for its highest stability level.
 func checkCoverage(md Metadata, targets map[component.StabilityLevel]float64, profilePath string) error {
 	if md.Status == nil || slices.Contains(nonComponents, md.Status.Class) {

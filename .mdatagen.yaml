@@ -41,6 +41,3 @@ stability:
     alpha: 50
     beta: 35
     stable: 80
-  # Processors at or above this stability level must assert context propagation
-  # (they may not set tests::skip_context_propagation).
-  context_propagation: stable

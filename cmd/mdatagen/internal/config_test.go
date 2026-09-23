@@ -105,20 +105,6 @@ exclusions:
 		}, cfg)
 	})
 
-	t.Run("context_propagation minimum is parsed", func(t *testing.T) {
-		dir := t.TempDir()
-		contents := "stability:\n  context_propagation: stable\n"
-		require.NoError(t, os.WriteFile(filepath.Join(dir, centralConfigFileName), []byte(contents), 0o600))
-
-		cfg, err := loadCentralConfig(dir)
-		require.NoError(t, err)
-		assert.Equal(t, &CentralConfig{
-			Stability: StabilityConfig{
-				ContextPropagation: component.StabilityLevelStable,
-			},
-		}, cfg)
-	})
-
 	t.Run("unknown stability level is rejected", func(t *testing.T) {
 		dir := t.TempDir()
 		require.NoError(t, os.WriteFile(filepath.Join(dir, centralConfigFileName), []byte("stability:\n  coverage:\n    stabel: 80\n"), 0o600))

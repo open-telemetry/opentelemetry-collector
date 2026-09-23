@@ -32,54 +32,6 @@ func TestHighestStability(t *testing.T) {
 	}))
 }
 
-func TestCheckContextPropagation(t *testing.T) {
-	const pkg = "go.opentelemetry.io/collector/processor/foo"
-
-	processorMD := func(level component.StabilityLevel, skip bool) Metadata {
-		return Metadata{
-			PackageName: pkg,
-			Status: &Status{
-				Class:     "processor",
-				Stability: StabilityMap{level: []string{"traces"}},
-			},
-			Tests: Tests{SkipContextPropagation: skip},
-		}
-	}
-
-	t.Run("undefined minimum disables the check", func(t *testing.T) {
-		err := checkContextPropagation(processorMD(component.StabilityLevelStable, true), component.StabilityLevelUndefined)
-		require.NoError(t, err)
-	})
-
-	t.Run("at or above the minimum fails when skipped", func(t *testing.T) {
-		err := checkContextPropagation(processorMD(component.StabilityLevelStable, true), component.StabilityLevelStable)
-		require.Error(t, err)
-		assert.ErrorContains(t, err, "must assert context propagation")
-	})
-
-	t.Run("below the minimum passes when skipped", func(t *testing.T) {
-		err := checkContextPropagation(processorMD(component.StabilityLevelBeta, true), component.StabilityLevelStable)
-		require.NoError(t, err)
-	})
-
-	t.Run("at or above the minimum passes when not skipped", func(t *testing.T) {
-		err := checkContextPropagation(processorMD(component.StabilityLevelStable, false), component.StabilityLevelStable)
-		require.NoError(t, err)
-	})
-
-	t.Run("non-processors are ignored", func(t *testing.T) {
-		md := Metadata{
-			PackageName: "go.opentelemetry.io/collector/receiver/foo",
-			Status: &Status{
-				Class:     "receiver",
-				Stability: StabilityMap{component.StabilityLevelStable: []string{"traces"}},
-			},
-			Tests: Tests{SkipContextPropagation: true},
-		}
-		require.NoError(t, checkContextPropagation(md, component.StabilityLevelStable))
-	})
-}
-
 // Go coverage profile format available here:
 // https://github.com/golang/tools/blob/v0.49.0/cover/profile.go#L55-L58.
 func TestCheckCoverage(t *testing.T) {

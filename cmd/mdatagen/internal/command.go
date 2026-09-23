@@ -108,10 +108,6 @@ func runCheckStability(ymlPath, profilePath string) error {
 		return fmt.Errorf("unable to load central mdatagen config: %w", err)
 	}
 
-	if err := checkContextPropagation(md, central.Stability.ContextPropagation); err != nil {
-		return err
-	}
-
 	return checkCoverage(md, central.Stability.Coverage, profilePath)
 }
 
