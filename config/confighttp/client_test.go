@@ -219,7 +219,7 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 			assert.Equal(t, 100, transport.MaxIdleConns)
 			assert.Equal(t, 0, transport.MaxIdleConnsPerHost)
 			assert.Equal(t, 0, transport.MaxConnsPerHost)
-			assert.EqualValues(t, 90*time.Second, transport.IdleConnTimeout)
+			assert.Equal(t, 90*time.Second, transport.IdleConnTimeout)
 			assert.False(t, transport.DisableKeepAlives)
 		})
 	}
