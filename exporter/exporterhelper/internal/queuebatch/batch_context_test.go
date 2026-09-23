@@ -82,8 +82,9 @@ func TestContextWithMergedDeadline_BothHaveDeadlines(t *testing.T) {
 	ctx2, cancel2 := context.WithDeadline(context.Background(), d2)
 	defer cancel2()
 
-	merged := contextWithMergedDeadline(context.Background(), ctx1, ctx2)
-	deadline, ok := deadlineFromContext(merged)
+	merged, cancelMerged := contextWithMergedDeadline(context.Background(), ctx1, ctx2)
+	defer cancelMerged()
+	deadline, ok := merged.Deadline()
 	require.True(t, ok)
 	require.Equal(t, d2, deadline) // max of the two
 }
@@ -96,8 +97,9 @@ func TestContextWithMergedDeadline_OnlyFirstHasDeadline(t *testing.T) {
 	defer cancel1()
 	ctx2 := context.Background()
 
-	merged := contextWithMergedDeadline(context.Background(), ctx1, ctx2)
-	deadline, ok := deadlineFromContext(merged)
+	merged, cancelMerged := contextWithMergedDeadline(context.Background(), ctx1, ctx2)
+	defer cancelMerged()
+	deadline, ok := merged.Deadline()
 	require.True(t, ok)
 	require.Equal(t, d1, deadline)
 }
@@ -110,8 +112,9 @@ func TestContextWithMergedDeadline_OnlySecondHasDeadline(t *testing.T) {
 	ctx2, cancel2 := context.WithDeadline(context.Background(), d2)
 	defer cancel2()
 
-	merged := contextWithMergedDeadline(context.Background(), ctx1, ctx2)
-	deadline, ok := deadlineFromContext(merged)
+	merged, cancelMerged := contextWithMergedDeadline(context.Background(), ctx1, ctx2)
+	defer cancelMerged()
+	deadline, ok := merged.Deadline()
 	require.True(t, ok)
 	require.Equal(t, d2, deadline)
 }
@@ -120,8 +123,9 @@ func TestContextWithMergedDeadline_NeitherHasDeadline(t *testing.T) {
 	ctx1 := context.Background()
 	ctx2 := context.Background()
 
-	merged := contextWithMergedDeadline(context.Background(), ctx1, ctx2)
-	_, ok := deadlineFromContext(merged)
+	merged, cancelMerged := contextWithMergedDeadline(context.Background(), ctx1, ctx2)
+	defer cancelMerged()
+	_, ok := merged.Deadline()
 	require.False(t, ok)
 }
 
@@ -139,14 +143,16 @@ func TestContextWithMergedDeadline_AccumulatedAcrossMultipleMerges(t *testing.T)
 	defer cancel3()
 
 	// First merge: ctx1 + ctx2 → max is d1 (5s > 3s)
-	merged := contextWithMergedDeadline(context.Background(), ctx1, ctx2)
-	deadline, ok := deadlineFromContext(merged)
+	merged, cancelMerged := contextWithMergedDeadline(context.Background(), ctx1, ctx2)
+	defer cancelMerged()
+	deadline, ok := merged.Deadline()
 	require.True(t, ok)
 	require.Equal(t, d1, deadline)
 
-	// Second merge: merged (stored d1) + ctx3 → max is d3 (10s > 5s)
-	merged = contextWithMergedDeadline(context.Background(), merged, ctx3)
-	deadline, ok = deadlineFromContext(merged)
+	// Second merge: merged (has deadline d1) + ctx3 → max is d3 (10s > 5s)
+	merged, cancelMerged2 := contextWithMergedDeadline(context.Background(), merged, ctx3)
+	defer cancelMerged2()
+	deadline, ok = merged.Deadline()
 	require.True(t, ok)
 	require.Equal(t, d3, deadline)
 }

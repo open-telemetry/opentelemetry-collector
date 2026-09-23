@@ -599,6 +599,103 @@ func TestQueueBatchTimerFlush(t *testing.T) {
 	require.NoError(t, qb.Shutdown(context.Background()))
 }
 
+func TestQueueBatch_DeadlinePassthrough(t *testing.T) {
+	now := time.Now()
+	d1 := now.Add(5 * time.Second)
+	d2 := now.Add(10 * time.Second)
+
+	var exportedDeadline time.Time
+	var hasDeadline bool
+	var mu sync.Mutex
+	exportFn := func(ctx context.Context, req request.Request) error {
+		mu.Lock()
+		defer mu.Unlock()
+		exportedDeadline, hasDeadline = ctx.Deadline()
+		return nil
+	}
+
+	cfg := newTestConfig()
+	cfg.WaitForResult = true
+	cfg.Batch = configoptional.Some(BatchConfig{Sizer: request.SizerTypeItems, MinSize: 2})
+	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, exportFn)
+	require.NoError(t, err)
+	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
+
+	// Send two requests with different deadlines concurrently so they get batched.
+	ctx1, cancel1 := context.WithDeadline(context.Background(), d1)
+	defer cancel1()
+	ctx2, cancel2 := context.WithDeadline(context.Background(), d2)
+	defer cancel2()
+
+	wg := sync.WaitGroup{}
+	wg.Go(func() {
+		assert.NoError(t, qb.Send(ctx1, &requesttest.FakeRequest{Items: 1}))
+	})
+	wg.Go(func() {
+		assert.NoError(t, qb.Send(ctx2, &requesttest.FakeRequest{Items: 1}))
+	})
+	wg.Wait()
+
+	mu.Lock()
+	defer mu.Unlock()
+	require.True(t, hasDeadline, "merged context should have a deadline")
+	require.Equal(t, d2, exportedDeadline, "merged deadline should be the max (latest) of the two")
+
+	require.NoError(t, qb.Shutdown(context.Background()))
+}
+
+func TestQueueBatch_DeadlineComposesWithTimeout(t *testing.T) {
+	// Simulate the timeout sender wrapping the batched context: the effective deadline
+	// should be min(merged_deadline, now + timeout_sender_timeout).
+	now := time.Now()
+	d1 := now.Add(5 * time.Second)
+	d2 := now.Add(10 * time.Second)
+	senderTimeout := 3 * time.Second
+
+	var exportedDeadline time.Time
+	var hasDeadline bool
+	var mu sync.Mutex
+	exportFn := func(ctx context.Context, req request.Request) error {
+		// Simulate what timeout_sender does: wrap ctx with its own timeout.
+		tCtx, cancel := context.WithTimeout(ctx, senderTimeout)
+		defer cancel()
+		mu.Lock()
+		defer mu.Unlock()
+		exportedDeadline, hasDeadline = tCtx.Deadline()
+		return nil
+	}
+
+	cfg := newTestConfig()
+	cfg.WaitForResult = true
+	cfg.Batch = configoptional.Some(BatchConfig{Sizer: request.SizerTypeItems, MinSize: 2})
+	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, exportFn)
+	require.NoError(t, err)
+	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
+
+	ctx1, cancel1 := context.WithDeadline(context.Background(), d1)
+	defer cancel1()
+	ctx2, cancel2 := context.WithDeadline(context.Background(), d2)
+	defer cancel2()
+
+	wg := sync.WaitGroup{}
+	wg.Go(func() {
+		assert.NoError(t, qb.Send(ctx1, &requesttest.FakeRequest{Items: 1}))
+	})
+	wg.Go(func() {
+		assert.NoError(t, qb.Send(ctx2, &requesttest.FakeRequest{Items: 1}))
+	})
+	wg.Wait()
+
+	mu.Lock()
+	defer mu.Unlock()
+	require.True(t, hasDeadline, "context should have a deadline")
+	// The timeout sender applies now+3s, which is earlier than the merged deadline (now+10s),
+	// so the effective deadline should be approximately now+3s.
+	require.True(t, exportedDeadline.Before(d1), "timeout sender deadline should win over the merged deadline")
+
+	require.NoError(t, qb.Shutdown(context.Background()))
+}
+
 func newTestConfig() Config {
 	return Config{
 		WaitForResult:   false,

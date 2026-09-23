@@ -24,9 +24,10 @@ const partitionIdleCycles = 10
 var _ Batcher[request.Request] = (*partitionBatcher)(nil)
 
 type batch struct {
-	ctx  context.Context
-	req  request.Request
-	done multiDone
+	ctx            context.Context
+	cancelDeadline context.CancelFunc
+	req            request.Request
+	done           multiDone
 }
 
 // partitionBatcher continuously batch incoming requests and flushes asynchronously if minimum size limit is met or on timeout.
@@ -122,7 +123,7 @@ func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Req
 
 		qb.currentBatchMu.Unlock()
 		for i := 0; i < len(reqList); i++ {
-			qb.flush(ctx, reqList[i], done)
+			qb.flush(ctx, nil, reqList[i], done)
 		}
 
 		return isActive
@@ -168,7 +169,11 @@ func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Req
 		mergedCtx = qb.mergeCtx(qb.currentBatch.ctx, ctx)
 	}
 	mergedCtx = contextWithMergedLinks(mergedCtx, qb.currentBatch.ctx, ctx)
-	qb.currentBatch.ctx = contextWithMergedDeadline(mergedCtx, qb.currentBatch.ctx, ctx)
+	// cancel the previous deadline context before replacing it with a new one.
+	if qb.currentBatch.cancelDeadline != nil {
+		qb.currentBatch.cancelDeadline()
+	}
+	qb.currentBatch.ctx, qb.currentBatch.cancelDeadline = contextWithMergedDeadline(mergedCtx, qb.currentBatch.ctx, ctx)
 
 	// Save the "currentBatch" if we need to flush it, because we want to execute flush without holding the lock, and
 	// cannot unlock and re-lock because we are not done processing all the responses.
@@ -198,10 +203,10 @@ func (qb *partitionBatcher) consumeInternal(ctx context.Context, req request.Req
 
 	qb.currentBatchMu.Unlock()
 	if firstBatch != nil {
-		qb.flush(firstBatch.ctx, firstBatch.req, firstBatch.done)
+		qb.flush(firstBatch.ctx, firstBatch.cancelDeadline, firstBatch.req, firstBatch.done)
 	}
 	for i := 0; i < len(reqList); i++ {
-		qb.flush(ctx, reqList[i], done)
+		qb.flush(ctx, nil, reqList[i], done)
 	}
 	return isActive
 }
@@ -284,18 +289,16 @@ func (qb *partitionBatcher) flushCurrentBatchOrRemovePartition() {
 	qb.resetTimer()
 	qb.currentBatchMu.Unlock()
 	// flush() blocks until successfully started a goroutine for flushing.
-	qb.flush(batchToFlush.ctx, batchToFlush.req, batchToFlush.done)
+	qb.flush(batchToFlush.ctx, batchToFlush.cancelDeadline, batchToFlush.req, batchToFlush.done)
 }
 
 // flush starts a goroutine that calls consumeFunc. It blocks until a worker is available if necessary.
-func (qb *partitionBatcher) flush(ctx context.Context, req request.Request, done queue.Done) {
+func (qb *partitionBatcher) flush(ctx context.Context, cancelDeadline context.CancelFunc, req request.Request, done queue.Done) {
 	qb.stopWG.Add(1)
 	qb.wp.execute(func() {
 		defer qb.stopWG.Done()
-		if deadline, ok := deadlineFromContext(ctx); ok {
-			var cancel context.CancelFunc
-			ctx, cancel = context.WithDeadline(ctx, deadline)
-			defer cancel()
+		if cancelDeadline != nil {
+			defer cancelDeadline()
 		}
 		done.OnDone(qb.consumeFunc(ctx, req))
 	})
