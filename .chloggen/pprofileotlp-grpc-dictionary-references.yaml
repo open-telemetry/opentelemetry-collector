@@ -1,0 +1,12 @@
+change_type: bug_fix
+
+component: pdata/pprofile
+
+note: Use the profiles dictionary for resource and scope attribute strings sent over OTLP/gRPC.
+
+issues: [15861]
+
+subtext: |
+  The OTLP/gRPC profiles client now interns attribute strings before transmission, matching the OTLP/HTTP path. The server resolves the references before exposing pdata to consumers.
+
+change_logs: [user]
