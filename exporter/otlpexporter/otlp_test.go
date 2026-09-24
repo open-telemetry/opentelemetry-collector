@@ -369,10 +369,11 @@ func TestSendTraces(t *testing.T) {
 
 	expectedHeader := []string{"header-value"}
 
-	// Verify received span.
+	// Verify received profiles. The gRPC transport may extend the profiles
+	// dictionary while interning resource and scope attribute strings.
 	assert.EqualValues(t, 2, rcv.totalItems.Load())
 	assert.EqualValues(t, 2, rcv.requestCount.Load())
-	assert.Equal(t, td, rcv.getLastRequest())
+	assert.Equal(t, td.ResourceProfiles(), rcv.getLastRequest().ResourceProfiles())
 
 	md := rcv.getMetadata()
 	require.Equal(t, expectedHeader, md.Get("header"))
