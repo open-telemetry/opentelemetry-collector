@@ -44,21 +44,3 @@ func TestObsMetrics(t *testing.T) {
 	m.Shutdown()
 	require.Equal(t, 4, calls)
 }
-
-func TestConfigWithObsMetrics(t *testing.T) {
-	cfg := struct{}{}
-	metrics := ObsMetrics{
-		RecordIntFunc: func(context.Context, Metric, int64, ...metric.AddOption) {},
-	}
-
-	wrapped := ConfigWithObsMetrics(cfg, metrics)
-	gotCfg, gotMetrics, ok := ObsMetricsFromConfig(wrapped)
-	require.True(t, ok)
-	require.Equal(t, cfg, gotCfg)
-	require.NotNil(t, gotMetrics.RecordIntFunc)
-
-	gotCfg, _, ok = ObsMetricsFromConfig(cfg)
-	require.False(t, ok)
-	require.Equal(t, cfg, gotCfg)
-	require.Nil(t, ConfigWithObsMetrics(nil, metrics))
-}

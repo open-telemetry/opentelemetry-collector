@@ -9,8 +9,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/otel/metric"
-
-	"go.opentelemetry.io/collector/component"
 )
 
 // Metric identifies a metric produced by queue or batch operations.
@@ -59,26 +57,4 @@ func (m ObsMetrics) Shutdown() {
 	if m.ShutdownFunc != nil {
 		m.ShutdownFunc()
 	}
-}
-
-type obsMetricsConfig struct {
-	config     component.Config
-	obsMetrics ObsMetrics
-}
-
-// ConfigWithObsMetrics attaches metrics to cfg for exporterhelper.
-func ConfigWithObsMetrics(cfg component.Config, obsMetrics ObsMetrics) component.Config {
-	if cfg == nil {
-		return nil
-	}
-	return obsMetricsConfig{config: cfg, obsMetrics: obsMetrics}
-}
-
-// ObsMetricsFromConfig removes and returns metrics attached by ConfigWithObsMetrics.
-func ObsMetricsFromConfig(cfg component.Config) (component.Config, ObsMetrics, bool) {
-	wrapped, ok := cfg.(obsMetricsConfig)
-	if !ok {
-		return cfg, ObsMetrics{}, false
-	}
-	return wrapped.config, wrapped.obsMetrics, true
 }

@@ -21,7 +21,6 @@ func NewLogs(
 	pusher consumer.ConsumeLogsFunc,
 	options ...Option,
 ) (exporter.Logs, error) {
-	cfg, options = internal.ExtractObsMetricsConfig(cfg, options)
 	if cfg == nil {
 		return nil, errNilConfig
 	}

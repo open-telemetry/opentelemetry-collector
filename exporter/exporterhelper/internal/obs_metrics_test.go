@@ -18,23 +18,6 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 )
 
-func TestExtractObsMetricsConfig(t *testing.T) {
-	cfg := struct{}{}
-	options := []Option{WithTimeout(NewDefaultTimeoutConfig())}
-
-	gotCfg, gotOptions := ExtractObsMetricsConfig(cfg, options)
-	require.Equal(t, cfg, gotCfg)
-	require.Equal(t, options, gotOptions)
-
-	metrics := ObsMetrics{}
-	gotCfg, gotOptions = ExtractObsMetricsConfig(
-		queuebatchtelemetry.ConfigWithObsMetrics(cfg, metrics),
-		options,
-	)
-	require.Equal(t, cfg, gotCfg)
-	require.Len(t, gotOptions, len(options)+1)
-}
-
 func countingObsMetrics(shutdowns *int) ObsMetrics {
 	return ObsMetrics{
 		ShutdownFunc: func() {
@@ -47,7 +30,7 @@ func TestBaseExporterLeavesInjectedObsMetricsOnOptionFailure(t *testing.T) {
 	shutdowns := 0
 
 	_, err := NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
-		withObsMetrics(countingObsMetrics(&shutdowns)),
+		WithObsMetrics(countingObsMetrics(&shutdowns)),
 		WithQueue(configoptional.Some(NewDefaultQueueConfig())))
 	require.Error(t, err)
 	require.Equal(t, 0, shutdowns)
@@ -68,7 +51,7 @@ func TestBaseExporterUsesAndShutsDownInjectedObsMetrics(t *testing.T) {
 	}
 
 	be, err := NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
-		withObsMetrics(metrics))
+		WithObsMetrics(metrics))
 	require.NoError(t, err)
 	require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 3}))
 	require.Equal(t, int64(3), sent)
@@ -88,7 +71,7 @@ func TestInjectedObsMetricsReleasedOnQueueRegistrationFailure(t *testing.T) {
 	}
 
 	_, err := NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalTraces, noopExport,
-		withObsMetrics(metrics),
+		WithObsMetrics(metrics),
 		WithQueueBatchSettings(newFakeQueueBatch()),
 		WithQueue(configoptional.Some(NewDefaultQueueConfig())))
 	require.ErrorIs(t, err, wantErr)

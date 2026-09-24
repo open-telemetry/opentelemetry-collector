@@ -21,7 +21,6 @@ func NewMetrics(
 	pusher consumer.ConsumeMetricsFunc,
 	options ...Option,
 ) (exporter.Metrics, error) {
-	cfg, options = internal.ExtractObsMetricsConfig(cfg, options)
 	if cfg == nil {
 		return nil, errNilConfig
 	}

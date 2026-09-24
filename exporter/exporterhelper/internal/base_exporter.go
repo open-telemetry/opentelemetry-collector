@@ -267,7 +267,7 @@ func WithAttributes(attrs ...attribute.KeyValue) Option {
 	}
 }
 
-func withObsMetrics(obsMetrics ObsMetrics) Option {
+func WithObsMetrics(obsMetrics ObsMetrics) Option {
 	return func(o *BaseExporter) error {
 		o.obsMetrics = &obsMetrics
 		return nil
