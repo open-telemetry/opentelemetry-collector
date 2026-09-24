@@ -4,15 +4,26 @@
 package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 import (
 	"context"
+	"errors"
 	"sync"
 
 	lru "github.com/hashicorp/golang-lru/v2/simplelru"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
+)
+
+const (
+	// exporterKey used to identify exporters in metrics.
+	exporterKey = "exporter"
+	// dataTypeKey used to identify the data type in partition cache metrics.
+	dataTypeKey = "data_type"
 )
 
 type multiBatcher struct {
@@ -23,6 +34,7 @@ type multiBatcher struct {
 	mergeCtx    func(context.Context, context.Context) context.Context
 	consumeFunc sender.SendFunc[request.Request]
 	partitions  *lru.LRU[string, *partitionBatcher]
+	tb          *metadata.TelemetryBuilder
 	logger      *zap.Logger
 	lock        sync.Mutex
 }
@@ -31,24 +43,22 @@ func newMultiBatcher(
 	bCfg BatchConfig,
 	sizer request.Sizer,
 	wp *workerPool,
-	partitioner Partitioner[request.Request],
-	mergeCtx func(context.Context, context.Context) context.Context,
-	next sender.SendFunc[request.Request],
-	logger *zap.Logger,
+	set batcherSettings[request.Request],
 ) (*multiBatcher, error) {
 	mb := &multiBatcher{
 		cfg:         bCfg,
 		wp:          wp,
 		sizer:       sizer,
-		partitioner: partitioner,
-		mergeCtx:    mergeCtx,
-		consumeFunc: next,
-		logger:      logger,
+		partitioner: set.partitioner,
+		mergeCtx:    set.mergeCtx,
+		consumeFunc: set.next,
+		logger:      set.logger,
 	}
 
+	cacheSize := bCfg.Partition.CacheSize
+
 	// Create LRU cache with eviction callback
-	// TODO: make maxActivePartitionsCount configurable
-	cache, err := lru.NewLRU[string, *partitionBatcher](10000, func(_ string, pb *partitionBatcher) {
+	cache, err := lru.NewLRU[string, *partitionBatcher](cacheSize, func(_ string, pb *partitionBatcher) {
 		// Flush the partition when evicted
 		mb.wp.execute(pb.shutdownInternal)
 	})
@@ -57,6 +67,31 @@ func newMultiBatcher(
 	}
 
 	mb.partitions = cache
+
+	tb, err := metadata.NewTelemetryBuilder(set.telemetry)
+	if err != nil {
+		return nil, err
+	}
+	mb.tb = tb
+
+	asyncAttr := metric.WithAttributeSet(attribute.NewSet(
+		attribute.String(exporterKey, set.id.String()),
+		attribute.String(dataTypeKey, set.signal.String()),
+	))
+	if err = errors.Join(
+		tb.RegisterExporterQueueBatchPartitionCacheSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
+			o.Observe(mb.getActivePartitionsCount(), asyncAttr)
+			return nil
+		}),
+		tb.RegisterExporterQueueBatchPartitionCacheCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
+			o.Observe(int64(cacheSize), asyncAttr)
+			return nil
+		}),
+	); err != nil {
+		tb.Shutdown()
+		return nil, err
+	}
+
 	return mb, nil
 }
 
@@ -91,7 +126,6 @@ func (mb *multiBatcher) Consume(ctx context.Context, req request.Request, done q
 	shard.Consume(ctx, req, done)
 }
 
-// getActivePartitionsCount is test only method
 func (mb *multiBatcher) getActivePartitionsCount() int64 {
 	mb.lock.Lock()
 	defer mb.lock.Unlock()
@@ -99,6 +133,7 @@ func (mb *multiBatcher) getActivePartitionsCount() int64 {
 }
 
 func (mb *multiBatcher) Shutdown(ctx context.Context) error {
+	defer mb.tb.Shutdown()
 	var wg sync.WaitGroup
 	mb.lock.Lock()
 	defer mb.lock.Unlock()

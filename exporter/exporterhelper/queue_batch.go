@@ -40,3 +40,6 @@ var ErrQueueIsFull = queue.ErrQueueIsFull
 // NewDefaultQueueConfig returns the default config for QueueBatchConfig.
 // By default, the queue stores 1000 requests of telemetry and is non-blocking when full.
 var NewDefaultQueueConfig = internal.NewDefaultQueueConfig
+
+// NewDefaultBatchConfig returns the default config for BatchConfig.
+var NewDefaultBatchConfig = queuebatch.NewDefaultBatchConfig

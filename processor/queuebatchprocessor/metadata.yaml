@@ -1,5 +1,5 @@
 display_name: Queue Batch Processor
-type: queuebatch
+type: queue_batch
 github_project: open-telemetry/opentelemetry-collector
 
 status:
