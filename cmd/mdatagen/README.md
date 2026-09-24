@@ -63,6 +63,11 @@ You can run `cd cmd/mdatagen && $(GOCMD) install .` to install the `mdatagen` to
 Exporters use the standard queue/batch sender defaults unless
 declared in `metadata.yaml` using the `sending_queue` field.
 
+The exporter config must declare exactly one named, top-level field with
+type `configoptional.Optional[exporterhelper.QueueBatchConfig]` and the
+`mapstructure:"sending_queue"` tag. Nested or squashed queue fields are not
+supported.
+
 ```yaml
 sending_queue:
   support: has_overrides
@@ -102,10 +107,10 @@ sending_queue:
 ```
 
 Overrides are considered relative to the post-migration default.  The
-`overrides::enabled` and `overrides::batch::enabled` fields are required
-so both queueing and batching behavior are explicit. Set
-`overrides::batch::enabled` to false to disable batching before or after
-the [batching migration RFC](../../docs/rfcs/batching-migration.md).
+`overrides::enabled` and `overrides::batch::enabled` fields are
+explicitly required. Set `overrides::batch::enabled` to false to
+disable batching before or after the [batching
+migration](../../docs/rfcs/batching-migration.md).
 
 #### omitted
 
