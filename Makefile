@@ -231,7 +231,7 @@ check-contrib:
 .PHONY: generate-contrib
 generate-contrib:
 	@echo -e "\nGenerating files in contrib"
-	$(MAKE) -j4 -C $(CONTRIB_PATH) generate GROUP=all
+	$(MAKE) -j4 -C $(CONTRIB_PATH) generate GROUP=all GOFLAGS=-mod=mod
 	@$(MAKE) -j4 -C $(CONTRIB_PATH) gotidy
 
 # Restores contrib to its original state after running check-contrib.
