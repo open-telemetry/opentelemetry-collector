@@ -87,6 +87,67 @@ func TestGrpcError(t *testing.T) {
 	assert.Equal(t, ExportResponse{}, resp)
 }
 
+func TestGRPCExportDoesNotMutateInput(t *testing.T) {
+	tests := []struct {
+		name      string
+		readOnly  bool
+		serverErr error
+	}{
+		{name: "mutable/success"},
+		{name: "mutable/error", serverErr: errors.New("my error")},
+		{name: "read-only/success", readOnly: true},
+		{name: "read-only/error", readOnly: true, serverErr: errors.New("my error")},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			lis := bufconn.Listen(1024 * 1024)
+			s := grpc.NewServer()
+			RegisterGRPCServer(s, &capturingProfilesServer{err: tc.serverErr})
+			wg := sync.WaitGroup{}
+			wg.Go(func() {
+				assert.NoError(t, s.Serve(lis))
+			})
+			t.Cleanup(func() {
+				s.Stop()
+				wg.Wait()
+			})
+
+			cc, err := grpc.NewClient("passthrough:///bufnet",
+				grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
+					return lis.Dial()
+				}),
+				grpc.WithTransportCredentials(insecure.NewCredentials()))
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				assert.NoError(t, cc.Close())
+			})
+
+			profiles := pprofile.NewProfiles()
+			resourceProfiles := profiles.ResourceProfiles().AppendEmpty()
+			resourceProfiles.Resource().Attributes().PutStr("service.name", "checkout")
+			scopeProfiles := resourceProfiles.ScopeProfiles().AppendEmpty()
+			scopeProfiles.Scope().Attributes().PutStr("scope.attr", "scope-value")
+
+			want := pprofile.NewProfiles()
+			profiles.CopyTo(want)
+			if tc.readOnly {
+				profiles.MarkReadOnly()
+				want.MarkReadOnly()
+			}
+
+			_, err = NewGRPCClient(cc).Export(context.Background(), NewExportRequestFromProfiles(profiles))
+			if tc.serverErr != nil {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			assert.Equal(t, want, profiles)
+		})
+	}
+}
+
 func TestGRPCExportUsesProfilesDictionary(t *testing.T) {
 	lis := bufconn.Listen(1024 * 1024)
 	var wireRequest *internal.ExportProfilesServiceRequest
@@ -172,11 +233,14 @@ type fakeProfilesServer struct {
 type capturingProfilesServer struct {
 	UnimplementedGRPCServer
 	received chan<- ExportRequest
+	err      error
 }
 
 func (s capturingProfilesServer) Export(_ context.Context, request ExportRequest) (ExportResponse, error) {
-	s.received <- request
-	return NewExportResponse(), nil
+	if s.received != nil {
+		s.received <- request
+	}
+	return NewExportResponse(), s.err
 }
 
 func (f fakeProfilesServer) Export(_ context.Context, request ExportRequest) (ExportResponse, error) {
