@@ -969,7 +969,6 @@ func formatEnumValues(values []any) string {
 	for _, v := range values {
 		strVal := fmt.Sprintf("%v", v)
 		if strVal == "" {
-			formatted = append(formatted, "<empty>")
 			continue
 		}
 		formatted = append(formatted, strVal)
