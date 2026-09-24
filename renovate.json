@@ -94,6 +94,15 @@
       "matchManagers": [
         "gomod"
       ],
+      "matchPackageNames": [
+        "google.golang.org/grpc"
+      ],
+      "allowedVersions": "!/^v1.84.0$/"
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
       "groupName": "All golang.org/x packages",
       "matchPackageNames": [
         "golang.org/x{/,}**"
