@@ -93,7 +93,7 @@ components:
     - pkg/xscraperhelper
     - processor/batch
     - processor/memory_limiter
-    - processor/queuebatch
+    - processor/queue_batch
     - processor/sample
     - provider/env
     - provider/file
