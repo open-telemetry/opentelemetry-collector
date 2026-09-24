@@ -23,7 +23,7 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 
 {{- range $name, $attr := .ResourceAttributes }}
 {{- range $attr.Enum }}
-// Set{{ $name.Render }}{{ . | publicVar }} sets "{{ $name }}"="{{ . }}" attribute.
+// Set{{ $name.Render }}{{ . | publicVar }} sets "{{ $name }}={{ . }}" attribute.
 func (rb *ResourceBuilder) Set{{ $name.Render }}{{ . | publicVar }}() {
 	if rb.config.{{ $name.Render }}.Enabled {
 		rb.res.Attributes().PutStr("{{ $name }}", "{{ . }}")
