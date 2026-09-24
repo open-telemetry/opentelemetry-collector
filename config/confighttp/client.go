@@ -90,6 +90,9 @@ type ClientConfig struct {
 	// NOTE: HTTP/2 does not support settings such as MaxConnsPerHost, MaxIdleConnsPerHost and MaxIdleConns.
 	ForceAttemptHTTP2 bool `mapstructure:"force_attempt_http2,omitempty"`
 
+	// Dialer is a middleware handler customizing how the client will dial connections over TCP.
+	Dialer configoptional.Optional[configmiddleware.Config] `mapstructure:"dialer,omitempty"`
+
 	// Middlewares are used to add custom functionality to the HTTP client.
 	// Middleware handlers are called in the order they appear in this list,
 	// with the first middleware becoming the outermost handler.
@@ -300,6 +303,13 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 		return nil, err
 	}
 	transport := http.DefaultTransport.(*http.Transport).Clone()
+	if cc.Dialer.HasValue() {
+		fn, rerr := cc.Dialer.Get().GetDialer(ctx, extensions)
+		if rerr != nil {
+			return nil, rerr
+		}
+		transport.DialContext = fn
+	}
 	if tlsCfg != nil {
 		transport.TLSClientConfig = tlsCfg
 	}
