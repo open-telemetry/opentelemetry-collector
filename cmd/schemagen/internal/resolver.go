@@ -24,8 +24,7 @@ func (e *NotFoundError) Error() string {
 }
 
 func isNotFound(err error) (*NotFoundError, bool) {
-	var nf *NotFoundError
-	if errors.As(err, &nf) {
+	if nf, ok := errors.AsType[*NotFoundError](err); ok {
 		return nf, true
 	}
 	return nil, false
@@ -154,7 +153,7 @@ func (r *RefResolver) resolveRef(schema *Schema, refObj *RefSchemaElement, confi
 		if !isLocal {
 			return nil, &NotFoundError{TypeName: ref.typeName, PackageName: ref.packageName}
 		}
-		typeSchema = def
+		typeSchema = def.clone()
 	} else {
 		innerSchema, cached := r.packageCache[ref.packageName]
 		if !cached {
@@ -170,11 +169,11 @@ func (r *RefResolver) resolveRef(schema *Schema, refObj *RefSchemaElement, confi
 			}
 		}
 
-		var found bool
-		typeSchema, found = innerSchema.Defs[ref.typeName]
+		cachedSchema, found := innerSchema.Defs[ref.typeName]
 		if !found {
 			return nil, &NotFoundError{TypeName: ref.typeName, PackageName: ref.packageName}
 		}
+		typeSchema = cachedSchema.clone()
 	}
 	// copy custom annotations from original element
 	base := refObj.BaseSchemaElement

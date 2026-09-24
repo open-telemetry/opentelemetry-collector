@@ -56,11 +56,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				Sizer:        exporterhelper.RequestSizerTypeRequests,
 				NumConsumers: 2,
 				QueueSize:    10,
-				Batch: configoptional.Default(exporterhelper.BatchConfig{
-					Sizer:        exporterhelper.RequestSizerTypeItems,
-					FlushTimeout: 200 * time.Millisecond,
-					MinSize:      8192,
-				}),
+				Batch:        configoptional.Default(exporterhelper.NewDefaultBatchConfig()),
 			}),
 			Encoding: EncodingProto,
 			ClientConfig: confighttp.ClientConfig{
@@ -82,10 +78,10 @@ func TestUnmarshalConfig(t *testing.T) {
 				WriteBufferSize:     345,
 				Timeout:             time.Second * 10,
 				Compression:         "gzip",
-				MaxIdleConns:        defaultMaxIdleConns,
-				MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
+				MaxIdleConns:        defaultMaxIdleConns,        //nolint:staticcheck // SA1019
+				MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost, //nolint:staticcheck // SA1019
 				MaxConnsPerHost:     defaultMaxConnsPerHost,
-				IdleConnTimeout:     defaultIdleConnTimeout,
+				IdleConnTimeout:     defaultIdleConnTimeout, //nolint:staticcheck // SA1019
 				ForceAttemptHTTP2:   true,
 			},
 			ProfilesEndpoint: "https://custom.profiles.endpoint:8080/v1development/profiles",

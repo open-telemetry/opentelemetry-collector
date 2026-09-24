@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -612,6 +613,59 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 				default:
 					t.Fatalf("unexpected error: %v", params[i].err)
 				}
+			}
+		})
+	}
+}
+
+func TestReceiveWithLongLivedCtxNoParent(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	rec, err := NewObsReport(ObsReportSettings{
+		ReceiverID:             receiverID,
+		Transport:              transport,
+		LongLivedCtx:           true,
+		ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+	})
+	require.NoError(t, err)
+
+	ctx := rec.StartTracesOp(context.Background())
+	rec.EndTracesOp(ctx, format, 7, nil)
+
+	spans := tt.SpanRecorder.Ended()
+	require.Len(t, spans, 1)
+	assert.False(t, spans[0].Parent().IsValid())
+	assert.Empty(t, spans[0].Links())
+}
+
+func BenchmarkStartTracesOpLongLivedCtx(b *testing.B) {
+	rec, err := NewObsReport(ObsReportSettings{
+		ReceiverID:             receiverID,
+		Transport:              transport,
+		LongLivedCtx:           true,
+		ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: componenttest.NewNopTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+	})
+	require.NoError(b, err)
+
+	parentCtx := trace.ContextWithSpanContext(context.Background(), trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    trace.TraceID{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+		SpanID:     trace.SpanID{1, 2, 3, 4, 5, 6, 7, 8},
+		TraceFlags: trace.FlagsSampled,
+		Remote:     true,
+	}))
+
+	for _, bc := range []struct {
+		name string
+		ctx  context.Context
+	}{
+		{"no_parent", context.Background()},
+		{"with_parent", parentCtx},
+	} {
+		b.Run(bc.name, func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				rec.StartTracesOp(bc.ctx)
 			}
 		})
 	}

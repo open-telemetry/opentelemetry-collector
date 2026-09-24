@@ -3,7 +3,7 @@
 
 name: "Project: Add PR to Milestone"
 on:
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] — no PR code is checked out or executed
     types:
       - closed
 
@@ -12,25 +12,33 @@ permissions: read-all
 jobs:
   update-pr:
     if: github.event.pull_request.merged
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       pull-requests: write
     steps:
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
-            const milestones = await github.rest.issues.listMilestones({
+            // listMilestones defaults to per_page: 30 and isn't sorted with
+            // "next release" first, so once there are more than 30 open
+            // milestones it silently drops out of an unpaginated call.
+            // github.paginate follows every page regardless of count.
+            const apiVersion = { 'X-GitHub-Api-Version': '2022-11-28' }
+            const milestones = await github.paginate(github.rest.issues.listMilestones, {
               owner: context.repo.owner,
               repo: context.repo.repo,
-              state: "open"
+              state: "open",
+              per_page: 50,
+              headers: apiVersion
             })
-            for (const milestone of milestones.data) {
+            for (const milestone of milestones) {
               if (milestone.title == "next release") {
                 await github.rest.issues.update({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   issue_number: context.issue.number,
-                  milestone: milestone.number
+                  milestone: milestone.number,
+                  headers: apiVersion
                 });
                 return
               }

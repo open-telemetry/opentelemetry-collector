@@ -268,9 +268,9 @@ func (ml *MemoryLimiter) CheckMemLimits() {
 		if ml.mustRefuse.Load() {
 			// Was previously refusing but enough memory is available now, no need to limit.
 			ml.logger.Info("Memory usage back within limits. Resuming normal operation.", memstatToZapField(ms))
+			componentstatus.ReportStatus(ml.host, componentstatus.NewEvent(componentstatus.StatusOK))
 		}
-		componentstatus.ReportStatus(ml.host, componentstatus.NewEvent(componentstatus.StatusOK))
-		ml.mustRefuse.Store(aboveSoftLimit)
+		ml.mustRefuse.Store(false)
 		return
 	}
 

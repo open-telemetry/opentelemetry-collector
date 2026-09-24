@@ -254,11 +254,34 @@ func TestMappingSwitchDictionary(t *testing.T) {
 			wantDictionary: NewProfilesDictionary(),
 			wantErr:        errors.New("invalid attribute index 2"),
 		},
+		{
+			name: "with a negative attribute index",
+			mapping: func() Mapping {
+				m := NewMapping()
+				m.AttributeIndices().Append(-1)
+				return m
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.AttributeTable().AppendEmpty()
+				return d
+			}(),
+			dst: NewProfilesDictionary(),
+
+			wantMapping: func() Mapping {
+				m := NewMapping()
+				m.AttributeIndices().Append(-1)
+				return m
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid attribute index -1"),
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			m := tt.mapping
 			dst := tt.dst
-			err := m.switchDictionary(tt.src, dst)
+			err := m.switchDictionary(tt.src, dst, newMergeIndex(dst))
 
 			if tt.wantErr == nil {
 				require.NoError(t, err)
@@ -292,9 +315,10 @@ func BenchmarkMappingSwitchDictionary(b *testing.B) {
 		dst.StringTable().Append("", "foo")
 		dst.AttributeTable().AppendEmpty()
 		dst.AttributeTable().AppendEmpty().SetKeyStrindex(1)
+		mi := newMergeIndex(dst)
 		b.StartTimer()
 
-		_ = m.switchDictionary(src, dst)
+		_ = m.switchDictionary(src, dst, mi)
 	}
 }
 

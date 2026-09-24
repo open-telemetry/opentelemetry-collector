@@ -4,6 +4,7 @@ package configcompression
 
 type CompressionParams struct {
 	Level Level `mapstructure:"level,omitempty"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }

@@ -89,6 +89,35 @@ func TestBatchConfig_Validate_MetadataKeys(t *testing.T) {
 		assert.Contains(t, err.Error(), "duplicate entry in metadata_keys")
 		assert.Contains(t, err.Error(), "key1")
 	})
+
+	t.Run("positive idle_timeout - valid", func(t *testing.T) {
+		cfg := newTestBatchConfig()
+		cfg.Partition.IdleTimeout = 30 * time.Second
+		require.NoError(t, confmap.Validate(cfg))
+	})
+
+	t.Run("zero idle_timeout - invalid", func(t *testing.T) {
+		cfg := newTestBatchConfig()
+		cfg.Partition.IdleTimeout = 0
+		err := confmap.Validate(cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "`idle_timeout` must be positive")
+	})
+
+	t.Run("negative idle_timeout - invalid", func(t *testing.T) {
+		cfg := newTestBatchConfig()
+		cfg.Partition.IdleTimeout = -1 * time.Second
+		err := confmap.Validate(cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "`idle_timeout` must be positive")
+	})
+}
+
+func TestNewDefaultBatchConfig(t *testing.T) {
+	cfg := NewDefaultBatchConfig()
+	require.NoError(t, confmap.Validate(cfg))
+	assert.Equal(t, 10000, cfg.Partition.CacheSize)
+	assert.Equal(t, 90*time.Second, cfg.Partition.IdleTimeout)
 }
 
 func TestBatchConfig_Validate(t *testing.T) {
@@ -119,6 +148,14 @@ func TestBatchConfig_Validate(t *testing.T) {
 	cfg.MinSize = 2048
 	cfg.MaxSize = 1024
 	require.EqualError(t, confmap.Validate(cfg), "`max_size` (1024) must be greater or equal to `min_size` (2048)")
+
+	cfg = newTestBatchConfig()
+	cfg.Partition.CacheSize = -1
+	require.EqualError(t, confmap.Validate(cfg), "partition: `cache_size` must be positive, found -1")
+
+	cfg = newTestBatchConfig()
+	cfg.Partition.CacheSize = 0
+	require.EqualError(t, confmap.Validate(cfg), "partition: `cache_size` must be positive, found 0")
 }
 
 func newTestBatchConfig() BatchConfig {
@@ -127,6 +164,7 @@ func newTestBatchConfig() BatchConfig {
 		Sizer:        request.SizerTypeItems,
 		MinSize:      2048,
 		MaxSize:      0,
+		Partition:    NewDefaultPartitionConfig(),
 	}
 }
 
@@ -136,11 +174,7 @@ func TestUnmarshal(t *testing.T) {
 			Sizer:        request.SizerTypeRequests,
 			NumConsumers: 10,
 			QueueSize:    1_000,
-			Batch: configoptional.Default(BatchConfig{
-				FlushTimeout: 200 * time.Millisecond,
-				Sizer:        request.SizerTypeItems,
-				MinSize:      8192,
-			}),
+			Batch:        configoptional.Default(NewDefaultBatchConfig()),
 		})
 	}
 	tests := []struct {
@@ -175,8 +209,9 @@ func TestUnmarshal(t *testing.T) {
 				cfg.Get().Batch = configoptional.Some(BatchConfig{
 					FlushTimeout: 200 * time.Millisecond,
 					// Sizer has been overridden by parent sizer
-					Sizer:   request.SizerTypeBytes,
-					MinSize: 100,
+					Sizer:     request.SizerTypeBytes,
+					MinSize:   100,
+					Partition: NewDefaultPartitionConfig(),
 				})
 				return cfg
 			},
@@ -189,8 +224,9 @@ func TestUnmarshal(t *testing.T) {
 				cfg.Get().Batch = configoptional.Some(BatchConfig{
 					FlushTimeout: 200 * time.Millisecond,
 					// Sizer has NOT been overridden by parent sizer
-					Sizer:   request.SizerTypeItems,
-					MinSize: 100,
+					Sizer:     request.SizerTypeItems,
+					MinSize:   100,
+					Partition: NewDefaultPartitionConfig(),
 				})
 				return cfg
 			},

@@ -123,6 +123,29 @@ func TestProfileSwitchDictionary(t *testing.T) {
 			wantErr:        errors.New("invalid attribute index 2"),
 		},
 		{
+			name: "with a negative attribute index",
+			profile: func() Profile {
+				p := NewProfile()
+				p.AttributeIndices().Append(-1)
+				return p
+			}(),
+
+			src: func() ProfilesDictionary {
+				d := NewProfilesDictionary()
+				d.AttributeTable().AppendEmpty()
+				return d
+			}(),
+			dst: NewProfilesDictionary(),
+
+			wantProfile: func() Profile {
+				p := NewProfile()
+				p.AttributeIndices().Append(-1)
+				return p
+			}(),
+			wantDictionary: NewProfilesDictionary(),
+			wantErr:        errors.New("invalid attribute index -1"),
+		},
+		{
 			name: "with a profile that has a sample",
 			profile: func() Profile {
 				p := NewProfile()
@@ -317,7 +340,7 @@ func TestProfileSwitchDictionary(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			profile := tt.profile
 			dst := tt.dst
-			err := profile.switchDictionary(tt.src, dst)
+			err := profile.switchDictionary(tt.src, dst, newMergeIndex(dst))
 
 			if tt.wantErr == nil {
 				require.NoError(t, err)
@@ -351,16 +374,9 @@ func BenchmarkProfileSwitchDictionary(b *testing.B) {
 		dst.StringTable().Append("", "foo")
 		dst.AttributeTable().AppendEmpty()
 		dst.AttributeTable().AppendEmpty().SetKeyStrindex(1)
+		mi := newMergeIndex(dst)
 		b.StartTimer()
 
-		_ = p.switchDictionary(src, dst)
+		_ = p.switchDictionary(src, dst, mi)
 	}
-}
-
-func TestProfile_Duration(_ *testing.T) {
-	ms := NewProfile()
-	ms.SetDuration(0)
-
-	ts := ms.Duration()
-	_ = ts
 }

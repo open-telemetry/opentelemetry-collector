@@ -54,12 +54,12 @@ func TestUnmarshalConfig(t *testing.T) {
 				Sizer:        exporterhelper.RequestSizerTypeItems,
 				NumConsumers: 2,
 				QueueSize:    100000,
-				Batch: configoptional.Some(exporterhelper.BatchConfig{
-					FlushTimeout: 200 * time.Millisecond,
-					Sizer:        exporterhelper.RequestSizerTypeItems,
-					MinSize:      1000,
-					MaxSize:      10000,
-				}),
+				Batch: configoptional.Some(func() exporterhelper.BatchConfig {
+					cfg := exporterhelper.NewDefaultBatchConfig()
+					cfg.MinSize = 1000
+					cfg.MaxSize = 10000
+					return cfg
+				}()),
 			}),
 			ClientConfig: configgrpc.ClientConfig{
 				Headers: configopaque.MapList{
@@ -104,11 +104,7 @@ func TestUnmarshalDefaultBatchConfig(t *testing.T) {
 				Sizer:        exporterhelper.RequestSizerTypeRequests,
 				QueueSize:    1000,
 				NumConsumers: 10,
-				Batch: configoptional.Some(exporterhelper.BatchConfig{
-					FlushTimeout: 200 * time.Millisecond,
-					Sizer:        exporterhelper.RequestSizerTypeItems,
-					MinSize:      8192,
-				}),
+				Batch:        configoptional.Some(exporterhelper.NewDefaultBatchConfig()),
 			}),
 			ClientConfig: configgrpc.ClientConfig{
 				Endpoint:        "1.2.3.4:1234",
@@ -141,7 +137,7 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 		},
 		{
 			name:     "invalid_timeout",
-			errorMsg: `'timeout' must be non-negative`,
+			errorMsg: `timeout value must be greater than or equal to 0`,
 		},
 		{
 			name:     "invalid_retry",

@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension"
@@ -43,8 +42,7 @@ func TestZPagesExtensionHost(t *testing.T) {
 	zpagesID := component.MustNewID("zpages")
 
 	set := service.Settings{
-		BuildInfo:     component.NewDefaultBuildInfo(),
-		CollectorConf: confmap.New(),
+		BuildInfo: component.NewDefaultBuildInfo(),
 		ReceiversConfigs: map[component.ID]component.Config{
 			component.NewID(nopType): receiverFactory.CreateDefaultConfig(),
 		},
