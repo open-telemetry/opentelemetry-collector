@@ -15,6 +15,7 @@ type SchemaElement interface {
 	setIsPointer(value bool)
 	setDescription(description string)
 	setOptional(value bool)
+	clone() SchemaElement
 }
 
 type SchemaObject interface {
@@ -45,6 +46,11 @@ type RefSchemaElement struct {
 	Ref               string `json:"$ref" yaml:"$ref"`
 }
 
+func (r *RefSchemaElement) clone() SchemaElement {
+	c := *r
+	return &c
+}
+
 type FieldSchemaElement struct {
 	BaseSchemaElement `json:",inline" yaml:",inline"`
 	ElementType       SchemaType `json:"type,omitempty" yaml:"type,omitempty"`
@@ -52,10 +58,21 @@ type FieldSchemaElement struct {
 	Format            string     `json:"format,omitempty" yaml:"format,omitempty"`
 }
 
+func (f *FieldSchemaElement) clone() SchemaElement {
+	c := *f
+	return &c
+}
+
 type ArraySchemaElement struct {
 	FieldSchemaElement `json:",inline" yaml:",inline"`
 	Items              SchemaElement `json:"items" yaml:"items"`
 }
+
+func (a *ArraySchemaElement) clone() SchemaElement {
+	c := *a
+	return &c
+}
+
 type ObjectSchemaElement struct {
 	SchemaObject         `json:"-" yaml:"-"`
 	FieldSchemaElement   `json:",inline" yaml:",inline"`
@@ -64,24 +81,29 @@ type ObjectSchemaElement struct {
 	AllOf                []SchemaElement          `json:"allOf,omitempty" yaml:"allOf,omitempty"`
 }
 
-func (s *ObjectSchemaElement) AddProperty(name string, property SchemaElement) {
-	if s.Properties == nil {
-		s.Properties = make(map[string]SchemaElement)
-	}
-	s.Properties[name] = property
+func (o *ObjectSchemaElement) clone() SchemaElement {
+	c := *o
+	return &c
 }
 
-func (s *ObjectSchemaElement) AddEmbedded(element SchemaElement) {
+func (o *ObjectSchemaElement) AddProperty(name string, property SchemaElement) {
+	if o.Properties == nil {
+		o.Properties = make(map[string]SchemaElement)
+	}
+	o.Properties[name] = property
+}
+
+func (o *ObjectSchemaElement) AddEmbedded(element SchemaElement) {
 	// prevent duplicates
 	if re, ok := element.(*RefSchemaElement); ok {
 		ref := re.Ref
-		for _, refEl := range s.AllOf {
+		for _, refEl := range o.AllOf {
 			if r, ok := refEl.(*RefSchemaElement); ok && r.Ref == ref {
 				return
 			}
 		}
 	}
-	s.AllOf = append(s.AllOf, element)
+	o.AllOf = append(o.AllOf, element)
 }
 
 type DefsSchemaElement map[string]SchemaElement
