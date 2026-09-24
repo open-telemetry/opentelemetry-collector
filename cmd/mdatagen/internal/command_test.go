@@ -995,6 +995,42 @@ func TestGenerateConfigGoStruct_NamedEmbeddedStruct(t *testing.T) {
 	require.Contains(t, generated, "ControllerConfig: controllerConfig,")
 }
 
+func TestGenerateConfigGoStruct_PrivateFields(t *testing.T) {
+	root := t.TempDir()
+	outputDir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(outputDir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	md := Metadata{
+		Type:        "test",
+		PackageName: "testmodule/shortname",
+		Status:      &Status{Class: "receiver"},
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			Config: &cfggen.ConfigMetadata{
+				Type:     "object",
+				GoStruct: cfggen.GoStructConfig{PrivateFields: true},
+			},
+			ExportedConfigs: map[string]*cfggen.ConfigMetadata{
+				"sample_config": {
+					Type:     "object",
+					GoStruct: cfggen.GoStructConfig{PrivateFields: true},
+				},
+			},
+		},
+	}
+
+	require.NoError(t, generateConfigGoStruct(md, outputDir))
+
+	content, err := os.ReadFile(filepath.Join(outputDir, "generated_config.go")) // #nosec G304
+	require.NoError(t, err)
+
+	generated := string(content)
+	require.Contains(t, generated, "type SampleConfig struct {")
+	require.Contains(t, generated, "privateSampleConfigFields")
+	require.Contains(t, generated, "type Config struct {")
+	require.Contains(t, generated, "privateConfigFields")
+}
+
 func TestGenerateConfigGoStruct_PropertyDefaultsAndImports(t *testing.T) {
 	root := t.TempDir()
 	outputDir := filepath.Join(root, "shortname")

@@ -166,9 +166,25 @@ config:
       # Optional: Custom Go type name to use instead of generated type.
       x-customType: string
       # Optional: Whether this field should be a pointer in Go code.
-      x-pointer: bool
+      pointer: bool
       # Optional: Whether this field is optional in Go code (will use pointer or optional type).
-      x-optional: bool
+      optional: bool
+      # Optional: Go-specific settings for the generated struct field.
+      go_struct:
+        # Optional: Override the generated Go field name.
+        field_name: string
+        # Optional: Make an embedded field anonymous in the generated Go struct.
+        anonymous: bool
+        # Optional: Do not surface schema defaults in the generated Go default constructor.
+        ignore_default: bool
+        # Optional: Custom validator configuration for the generated Go field.
+        custom_validator:
+          name: string
+        # Optional: Constructor used for an optional field with an object type.
+        # Omitted and "some" use configoptional.Some; "default" uses configoptional.Default.
+        optional_mode: <some|default>
+        ## Optional: Generated struct embeds a package-private `private<Type>Fields` type.
+        private_fields: bool
   # Optional: List of required property names. Properties in this list must be present in the config.
   required: [string]
   # Optional: Map of reusable schema definitions that can be referenced via $ref.
@@ -370,6 +386,10 @@ tests:
   skip_shutdown: false # false by default
   # Whether it's expected that the Consume[Logs|Metrics|Traces] method will return an error with the given configuration.
   expect_consumer_error: true # false by default
+  # Processors assert by default that they propagate the incoming context unchanged to the next consumer.
+  # Set this to true to skip that assertion for processors that intentionally detach or modify the context
+  # (for example asynchronous or buffering processors). Only valid for processors. false by default.
+  skip_context_propagation: true # false by default
   goleak: # {} by default generates a package_test to enable check for leaks
     skip: false # set to true if goleak tests should be skipped
     setup: string # Optional: supports configuring a setup function that runs before goleak checks

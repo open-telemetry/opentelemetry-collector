@@ -13,7 +13,7 @@ exported_configs:
       auth:
         description: Configuration for outgoing RPCs.
         $ref: /config/configauth.config
-        x-optional: true
+        optional: true
         default: null
       authority:
         description: |
@@ -42,7 +42,7 @@ exported_configs:
         description: | 
           The keepalive parameters for gRPC client. See grpc.WithKeepaliveParams. 
           (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
-        x-optional: true
+        optional: true
         $ref: keepalive_client_config
       middlewares:
         description: Middlewares for the gRPC client.
@@ -106,10 +106,10 @@ exported_configs:
     default: {}
     properties:
       enforcement_policy:
-        x-optional: true
+        optional: true
         $ref: keepalive_enforcement_policy
       server_parameters:
-        x-optional: true
+        optional: true
         $ref: keepalive_server_parameters
   keepalive_server_parameters:
     description: | 
@@ -133,14 +133,14 @@ exported_configs:
     properties:
       auth:
         description: Authentication for this receiver
-        x-optional: true
+        optional: true
         $ref: /config/configauth.config
       include_metadata:
         description: Propagates the incoming connection's metadata to downstream consumers.
         type: bool
       keepalive:
         description: Anchor for all the settings related to keepalive.
-        x-optional: true
+        optional: true
         $ref: keepalive_server_config
       max_concurrent_streams:
         description: |
@@ -166,7 +166,7 @@ exported_configs:
         minimum: 0
       tls:
         description: Configures the protocol to use TLS. The default value is nil, which will cause the protocol to not use TLS.
-        x-optional: true
+        optional: true
         $ref: /config/configtls.server_config
         go_struct:
           ignore_default: true
