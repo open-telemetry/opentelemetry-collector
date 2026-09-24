@@ -8,6 +8,7 @@ status:
 sending_queue:
   support: has_overrides
   overrides:
+    enabled: true
     num_consumers: 1
     batch:
       enabled: false

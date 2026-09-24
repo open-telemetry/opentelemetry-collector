@@ -15,4 +15,4 @@ status:
 
 sending_queue:
   support: omitted
-  rationale: The no-op exporter intentionally discards telemetry without an exporterhelper sender.
+  rationale: No-op drops telemetry.

@@ -6,4 +6,4 @@
 
 **Support:** This component omits the default QueueBatch configuration.
 
-**Rationale:** The no-op exporter intentionally discards telemetry without an exporterhelper sender.
+**Rationale:** No-op drops telemetry.

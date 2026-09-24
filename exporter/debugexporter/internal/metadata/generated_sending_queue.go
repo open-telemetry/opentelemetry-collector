@@ -26,6 +26,6 @@ func NewDefaultSendingQueueConfig() configoptional.Optional[exporterhelper.Queue
 		BlockOnOverflow: false,
 		NumConsumers:    10,
 	}
-	cfg.Batch = configoptional.Some(batchCfg)
+	cfg.Batch = configoptional.Default(batchCfg)
 	return configoptional.Default(cfg)
 }

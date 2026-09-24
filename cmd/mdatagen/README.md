@@ -67,7 +67,10 @@ declared in `metadata.yaml` using the `sending_queue` field.
 sending_queue:
   support: has_overrides
   overrides:
+    enabled: true
     num_consumers: 1
+    batch:
+      enabled: true
 ```
 
 #### default
@@ -93,14 +96,16 @@ field, for example:
 sending_queue:
   support: has_overrides
   overrides:
+    enabled: true
     batch:
       enabled: false
 ```
 
 Overrides are considered relative to the post-migration default.  The
-`overrides::batch::enabled` must be overridden to false to disable
-batching before or after the [batching migration
-RFC](../../docs/rfcs/batching-migration.md).
+`overrides::enabled` and `overrides::batch::enabled` fields are required
+so both queueing and batching behavior are explicit. Set
+`overrides::batch::enabled` to false to disable batching before or after
+the [batching migration RFC](../../docs/rfcs/batching-migration.md).
 
 #### omitted
 

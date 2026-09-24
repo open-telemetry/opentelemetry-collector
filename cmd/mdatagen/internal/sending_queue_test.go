@@ -40,9 +40,11 @@ func TestSendingQueueValidate(t *testing.T) {
 			config: SendingQueue{
 				Support: SendingQueueSupportHasOverrides,
 				Overrides: map[string]any{
+					"enabled":           true,
 					"num_consumers":     1,
 					"wait_for_result":   true,
 					"block_on_overflow": true,
+					"batch":             map[string]any{"enabled": true},
 				},
 			},
 		},
@@ -52,18 +54,44 @@ func TestSendingQueueValidate(t *testing.T) {
 			wantErr: "sending_queue.overrides is required when support is has_overrides",
 		},
 		{
+			name: "has overrides without queue enabled",
+			config: SendingQueue{
+				Support: SendingQueueSupportHasOverrides,
+				Overrides: map[string]any{
+					"batch": map[string]any{"enabled": true},
+				},
+			},
+			wantErr: "sending_queue.overrides.enabled is required when support is has_overrides",
+		},
+		{
+			name: "has overrides without batch enabled",
+			config: SendingQueue{
+				Support: SendingQueueSupportHasOverrides,
+				Overrides: map[string]any{
+					"enabled": true,
+				},
+			},
+			wantErr: "sending_queue.overrides.batch.enabled is required when support is has_overrides",
+		},
+		{
 			name: "disabled with rationale",
 			config: SendingQueue{
 				Support:   SendingQueueSupportHasOverrides,
 				Rationale: "Preserve existing behavior.",
-				Overrides: map[string]any{"enabled": false},
+				Overrides: map[string]any{
+					"enabled": false,
+					"batch":   map[string]any{"enabled": false},
+				},
 			},
 		},
 		{
 			name: "disabled without rationale",
 			config: SendingQueue{
-				Support:   SendingQueueSupportHasOverrides,
-				Overrides: map[string]any{"enabled": false},
+				Support: SendingQueueSupportHasOverrides,
+				Overrides: map[string]any{
+					"enabled": false,
+					"batch":   map[string]any{"enabled": false},
+				},
 			},
 			wantErr: "sending_queue.rationale is required when overrides disable the queue",
 		},
@@ -96,24 +124,35 @@ func TestSendingQueueValidate(t *testing.T) {
 		{
 			name: "unknown override",
 			config: SendingQueue{
-				Support:   SendingQueueSupportHasOverrides,
-				Overrides: map[string]any{"unknown": true},
+				Support: SendingQueueSupportHasOverrides,
+				Overrides: map[string]any{
+					"enabled": true,
+					"unknown": true,
+					"batch":   map[string]any{"enabled": true},
+				},
 			},
 			wantErr: "invalid sending_queue.overrides",
 		},
 		{
 			name: "invalid enabled override",
 			config: SendingQueue{
-				Support:   SendingQueueSupportHasOverrides,
-				Overrides: map[string]any{"enabled": "false"},
+				Support: SendingQueueSupportHasOverrides,
+				Overrides: map[string]any{
+					"enabled": "false",
+					"batch":   map[string]any{"enabled": true},
+				},
 			},
 			wantErr: "enabled must be a boolean",
 		},
 		{
 			name: "invalid override value",
 			config: SendingQueue{
-				Support:   SendingQueueSupportHasOverrides,
-				Overrides: map[string]any{"num_consumers": 0},
+				Support: SendingQueueSupportHasOverrides,
+				Overrides: map[string]any{
+					"enabled":       true,
+					"num_consumers": 0,
+					"batch":         map[string]any{"enabled": true},
+				},
 			},
 			wantErr: "`num_consumers` must be positive",
 		},
@@ -122,7 +161,9 @@ func TestSendingQueueValidate(t *testing.T) {
 			config: SendingQueue{
 				Support: SendingQueueSupportHasOverrides,
 				Overrides: map[string]any{
+					"enabled": true,
 					"batch": map[string]any{
+						"enabled":  true,
 						"min_size": 12,
 						"max_size": 10,
 					},
@@ -135,7 +176,8 @@ func TestSendingQueueValidate(t *testing.T) {
 			config: SendingQueue{
 				Support: SendingQueueSupportHasOverrides,
 				Overrides: map[string]any{
-					"batch": map[string]any{"enabled": "false"},
+					"enabled": true,
+					"batch":   map[string]any{"enabled": "false"},
 				},
 			},
 			wantErr: "sending_queue.overrides.batch: enabled must be a boolean",
@@ -204,7 +246,9 @@ func TestSendingQueueTemplateDataUsesFutureBatchDefault(t *testing.T) {
 	config := SendingQueue{
 		Support: SendingQueueSupportHasOverrides,
 		Overrides: map[string]any{
+			"enabled":       true,
 			"num_consumers": 1,
+			"batch":         map[string]any{"enabled": true},
 		},
 	}
 

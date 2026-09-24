@@ -35,11 +35,13 @@ type SendingQueue struct {
 type SendingQueueOverrides map[string]any
 
 type parsedSendingQueueOverrides struct {
-	enabled        bool
-	queue          map[string]any
-	batchPresent   bool
-	batchEnabled   bool
-	batchOverrides map[string]any
+	enabled             bool
+	enabledPresent      bool
+	queue               map[string]any
+	batchPresent        bool
+	batchEnabled        bool
+	batchEnabledPresent bool
+	batchOverrides      map[string]any
 }
 
 // SendingQueueTemplateData contains values rendered by the sending queue template.
@@ -142,6 +144,18 @@ func (sq *SendingQueue) validateDeclaration() error {
 	parsed, err := sq.Overrides.parse()
 	if err != nil {
 		return err
+	}
+	if sq.HasOverrides() {
+		var errs error
+		if !parsed.enabledPresent {
+			errs = errors.Join(errs, errors.New("sending_queue.overrides.enabled is required when support is has_overrides"))
+		}
+		if !parsed.batchEnabledPresent {
+			errs = errors.Join(errs, errors.New("sending_queue.overrides.batch.enabled is required when support is has_overrides"))
+		}
+		if errs != nil {
+			return errs
+		}
 	}
 	if !parsed.enabled && strings.TrimSpace(sq.Rationale) == "" {
 		return errors.New("sending_queue.rationale is required when overrides disable the queue")
@@ -365,6 +379,7 @@ func (overrides SendingQueueOverrides) parse() (parsedSendingQueueOverrides, err
 				return parsedSendingQueueOverrides{}, fmt.Errorf("invalid sending_queue.overrides: enabled must be a boolean, got %T", value)
 			}
 			parsed.enabled = enabled
+			parsed.enabledPresent = true
 		case "batch":
 			batchOverrides, ok := value.(map[string]any)
 			if !ok {
@@ -383,6 +398,7 @@ func (overrides SendingQueueOverrides) parse() (parsedSendingQueueOverrides, err
 					return parsedSendingQueueOverrides{}, fmt.Errorf("invalid sending_queue.overrides.batch: enabled must be a boolean, got %T", batchValue)
 				}
 				parsed.batchEnabled = batchEnabled
+				parsed.batchEnabledPresent = true
 			}
 		default:
 			parsed.queue[key] = value

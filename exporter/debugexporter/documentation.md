@@ -6,7 +6,7 @@
 
 **Support:** This component overrides the default QueueBatch configuration.
 
-**Rationale:** Debug output remains synchronous unless queueing is explicitly enabled.
+**Rationale:** Debug output is synchronous and unbatched by default.
 
 ```yaml
 sending_queue:
@@ -18,7 +18,7 @@ sending_queue:
     storage: null              # default
     num_consumers: 10          # default
     batch:
-        enabled: true          # default
+        enabled: false         # OVERRIDE
         flush_timeout: 200ms   # default
         sizer: items           # default
         min_size: 8192         # default
