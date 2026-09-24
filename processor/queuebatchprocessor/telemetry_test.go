@@ -106,6 +106,10 @@ func TestObsMetrics(t *testing.T) {
 	} {
 		require.True(t, obsMetrics.ShouldRecord(ctx, m), m)
 	}
+	unsupported := queuebatchtelemetry.Metric("unsupported")
+	require.False(t, obsMetrics.ShouldRecord(ctx, unsupported))
+	require.ErrorContains(t, obsMetrics.RegisterInt(unsupported, func() int64 { return 0 }), "unsupported observable")
+
 	obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricEnqueueFailure, 2)
 	obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricEnqueueSize, 3)
 	if obsMetrics.ShouldRecord(ctx, queuebatchtelemetry.MetricEnqueueSizeBytes) {

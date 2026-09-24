@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	queuebatchtelemetry "go.opentelemetry.io/collector/internal/telemetry/queuebatch"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -89,4 +90,33 @@ func TestNewExporterObsMetricsError(t *testing.T) {
 
 	_, err := NewExporterObsMetrics(settings, exporterID, pipeline.SignalTraces, nil)
 	require.ErrorIs(t, err, errCreateInstrument)
+}
+
+func TestExporterObsMetricsUnsupportedMetric(t *testing.T) {
+	obsMetrics, err := NewExporterObsMetrics(
+		componenttest.NewNopTelemetrySettings(),
+		exporterID,
+		pipeline.SignalLogs,
+		nil,
+	)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	for _, m := range []queuebatchtelemetry.Metric{
+		queuebatchtelemetry.MetricEnqueueFailure,
+		queuebatchtelemetry.MetricEnqueueSize,
+		queuebatchtelemetry.MetricEnqueueSizeBytes,
+		queuebatchtelemetry.MetricBatchSendSize,
+		queuebatchtelemetry.MetricBatchSendSizeBytes,
+		queuebatchtelemetry.MetricInFlight,
+		queuebatchtelemetry.MetricSent,
+		queuebatchtelemetry.MetricSendFailure,
+	} {
+		require.False(t, obsMetrics.ShouldRecord(ctx, m))
+	}
+
+	unsupported := queuebatchtelemetry.Metric("unsupported")
+	require.False(t, obsMetrics.ShouldRecord(ctx, unsupported))
+	require.ErrorContains(t, obsMetrics.RegisterInt(unsupported, func() int64 { return 0 }), "unsupported observable")
+	obsMetrics.Shutdown()
 }

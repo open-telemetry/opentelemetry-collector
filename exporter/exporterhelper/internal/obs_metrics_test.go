@@ -18,6 +18,23 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 )
 
+func TestExtractObsMetricsConfig(t *testing.T) {
+	cfg := struct{}{}
+	options := []Option{WithTimeout(NewDefaultTimeoutConfig())}
+
+	gotCfg, gotOptions := ExtractObsMetricsConfig(cfg, options)
+	require.Equal(t, cfg, gotCfg)
+	require.Equal(t, options, gotOptions)
+
+	metrics := ObsMetrics{}
+	gotCfg, gotOptions = ExtractObsMetricsConfig(
+		queuebatchtelemetry.ConfigWithObsMetrics(cfg, metrics),
+		options,
+	)
+	require.Equal(t, cfg, gotCfg)
+	require.Len(t, gotOptions, len(options)+1)
+}
+
 func countingObsMetrics(shutdowns *int) ObsMetrics {
 	return ObsMetrics{
 		ShutdownFunc: func() {
