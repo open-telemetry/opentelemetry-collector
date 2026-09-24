@@ -1,26 +1,25 @@
+# Use this changelog template to create an entry for release notes.
+
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: enhancement
+change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
-component: pkg/exporterhelper
+component: cmd/schemagen
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Make the multi-batcher partition LRU cache size configurable and export cache size metrics.
+note: Fix `RefResolver` mutating shared, cached type definitions with per-occurrence annotations, which caused generated schemas to have incorrect (and run-to-run nondeterministic) `description`/`x-optional`/`x-pointer` values whenever multiple fields referenced the same type.
 
 # One or more tracking issues or pull requests related to the change
-issues: [14526]
+issues: [15984]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  Adds `sending_queue::batch::partition::cache_size` (default 10000) to cap the
-  number of active partition batchers. The value
-  must be positive. Current size and configured capacity are exported as
-  `otelcol_exporter_queue_batch_partition_cache_size`
-  and `otelcol_exporter_queue_batch_partition_cache_capacity`.
+subtext:
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: [user, api]
+change_logs: [api]

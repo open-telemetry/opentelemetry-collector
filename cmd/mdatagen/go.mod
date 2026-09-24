@@ -9,6 +9,7 @@ require (
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.67.0
 	go.opentelemetry.io/collector/component/componenttest v0.161.0
+	go.opentelemetry.io/collector/config/confignet v1.67.0
 	go.opentelemetry.io/collector/config/configopaque v1.67.0
 	go.opentelemetry.io/collector/config/configoptional v1.67.0
 	go.opentelemetry.io/collector/confmap v1.67.0
@@ -51,6 +52,7 @@ require (
 )
 
 require (
+	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
