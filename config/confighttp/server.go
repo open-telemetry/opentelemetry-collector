@@ -232,14 +232,13 @@ func (sc *ServerConfig) unmarshalPrioritizeKeepalive(conf *confmap.Conf) error {
 	// deprecated fields keep supplying the values for the rest. Decoding
 	// leaves Keepalive without a value only for 'keepalive::enabled: false',
 	// so a present section fully determines whether keep-alives are on.
-	if keepaliveSet {
-		if ka := sc.Keepalive.Get(); ka != nil {
-			if conf.IsSet("keepalive::idle_timeout") {
-				sc.IdleTimeout = ka.IdleTimeout
-			}
+	if ka := sc.Keepalive.Get(); ka != nil {
+		if conf.IsSet("idle_timeout") {
+			ka.IdleTimeout = sc.IdleTimeout
+			sc.IdleTimeout = 0
 		}
-		sc.KeepAlivesEnabled = sc.Keepalive.HasValue()
 	}
+	sc.KeepAlivesEnabled = false
 
 	return nil
 }

@@ -252,17 +252,20 @@ func (cc *ClientConfig) unmarshalPrioritizeKeepalive(conf *confmap.Conf) error {
 	cc.deprecationWarnings = deprecated
 
 	if ka := cc.Keepalive.Get(); ka != nil {
-		if conf.IsSet("keepalive::idle_conn_timeout") {
-			cc.IdleConnTimeout = ka.IdleConnTimeout
+		if conf.IsSet("idle_conn_timeout") {
+			cc.Keepalive.Get().IdleConnTimeout = cc.IdleConnTimeout
+			cc.IdleConnTimeout = 0
 		}
-		if conf.IsSet("keepalive::max_idle_conns") {
-			cc.MaxIdleConns = ka.MaxIdleConns
+		if conf.IsSet("max_idle_conns") {
+			cc.Keepalive.Get().MaxIdleConns = cc.MaxIdleConns
+			cc.MaxIdleConns = 0
 		}
-		if conf.IsSet("keepalive::max_idle_conns_per_host") {
-			cc.MaxIdleConnsPerHost = ka.MaxIdleConnsPerHost
+		if conf.IsSet("max_idle_conns_per_host") {
+			cc.Keepalive.Get().MaxIdleConnsPerHost = cc.MaxIdleConnsPerHost
+			cc.MaxIdleConnsPerHost = 0
 		}
 	}
-	cc.DisableKeepAlives = !cc.Keepalive.HasValue()
+	cc.DisableKeepAlives = false
 
 	return nil
 }

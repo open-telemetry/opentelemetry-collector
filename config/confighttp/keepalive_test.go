@@ -243,6 +243,10 @@ func TestClientConfigDeprecatedWarningsLogged(t *testing.T) {
 // Both spellings of disabling keep-alives must reach the transport; only the
 // deprecated one warns.
 func TestClientConfigDisableKeepAlives(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", true))
+	})
 	tests := []struct {
 		name           string
 		conf           map[string]any

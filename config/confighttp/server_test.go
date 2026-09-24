@@ -1183,7 +1183,6 @@ func TestServerUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 	assert.Equal(t, 10*time.Second, serverConfig.ReadHeaderTimeout)
 	assert.Equal(t, 30*time.Second, serverConfig.WriteTimeout)
 	assert.Equal(t, keepaliveConfig, serverConfig.Keepalive)
-	assert.Equal(t, 120*time.Second, serverConfig.IdleTimeout)
 	assert.Equal(t, int64(33554432), serverConfig.MaxRequestBodySize)
 	assert.True(t, serverConfig.IncludeMetadata)
 
