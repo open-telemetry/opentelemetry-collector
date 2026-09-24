@@ -41,12 +41,9 @@ type grpcClient struct {
 
 // Export implements the Client interface.
 func (c *grpcClient) Export(ctx context.Context, request ExportRequest, opts ...grpc.CallOption) (ExportResponse, error) {
-	profiles := request.Profiles()
-	if profiles.IsReadOnly() {
-		profilesCopy := pprofile.NewProfiles()
-		profiles.CopyTo(profilesCopy)
-		request = NewExportRequestFromProfiles(profilesCopy)
-	}
+	profilesCopy := pprofile.NewProfiles()
+	request.Profiles().CopyTo(profilesCopy)
+	request = NewExportRequestFromProfiles(profilesCopy)
 	otlp.ConvertProfilesToReferences(request.orig)
 
 	rsp, err := c.rawClient.Export(ctx, request.orig, opts...)
