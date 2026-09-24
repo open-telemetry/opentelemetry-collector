@@ -1,6 +1,6 @@
 change_type: bug_fix
 
-component: pdata/pprofile
+component: pkg/pprofile
 
 note: Use the profiles dictionary for resource and scope attribute strings sent over OTLP/gRPC.
 
