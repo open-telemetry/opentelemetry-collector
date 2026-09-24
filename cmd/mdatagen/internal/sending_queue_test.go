@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 func TestSendingQueueValidate(t *testing.T) {
@@ -447,14 +447,10 @@ func TestDisabledBatchCanBeEnabledWithPreservedDefaults(t *testing.T) {
 
 func TestSendingQueueOverridesPreserveFeatureGateDefaults(t *testing.T) {
 	const queueBatchFeatureGate = "pkg.exporterhelper.queueBatchEnabled"
-	require.NoError(t, featuregate.GlobalRegistry().Set(queueBatchFeatureGate, false))
-	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(queueBatchFeatureGate, false))
-	})
 
 	for _, enabled := range []bool{false, true} {
 		t.Run(strconv.FormatBool(enabled), func(t *testing.T) {
-			require.NoError(t, featuregate.GlobalRegistry().Set(queueBatchFeatureGate, enabled))
+			testutil.SetFeatureGate(t, queueBatchFeatureGate, enabled)
 			standard := exporterhelper.NewDefaultQueueConfig()
 
 			actual, err := (SendingQueueOverrides{}).Apply(exporterhelper.NewDefaultQueueConfig())

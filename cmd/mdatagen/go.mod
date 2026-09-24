@@ -85,6 +85,7 @@ require (
 	go.opentelemetry.io/collector/exporter/exporterhelper v0.161.0
 	go.opentelemetry.io/collector/internal/componentalias v0.161.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.161.0 // indirect
+	go.opentelemetry.io/collector/internal/testutil v0.161.0
 	go.opentelemetry.io/collector/pdata/testdata v0.161.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.161.0 // indirect
 	go.opentelemetry.io/collector/service v0.161.0 // indirect

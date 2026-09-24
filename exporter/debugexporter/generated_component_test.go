@@ -20,7 +20,7 @@ import (
 	internalmetadata "go.opentelemetry.io/collector/exporter/debugexporter/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -61,14 +61,10 @@ func TestComponentDefaultQueueBatchSender(t *testing.T) {
 		return queueConfig
 	}
 	const queueBatchFeatureGate = "pkg.exporterhelper.queueBatchEnabled"
-	require.NoError(t, featuregate.GlobalRegistry().Set(queueBatchFeatureGate, false))
-	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(queueBatchFeatureGate, false))
-	})
 
 	for _, enabled := range []bool{false, true} {
 		t.Run(fmt.Sprintf("batch-feature-gate-%v", enabled), func(t *testing.T) {
-			require.NoError(t, featuregate.GlobalRegistry().Set(queueBatchFeatureGate, enabled))
+			testutil.SetFeatureGate(t, queueBatchFeatureGate, enabled)
 			require.Equal(t, internalmetadata.NewDefaultSendingQueueConfig(), checkConfig(t))
 		})
 	}
