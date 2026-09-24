@@ -216,7 +216,7 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			name:    "testdata/context_propagation_with_consumer_error.yaml",
-			wantErr: "tests::expect_consumer_error requires tests::skip_context_propagation for processors",
+			wantErr: "tests::expect_consumer_error requires tests::skip_context_propagation:true for processors",
 		},
 		{
 			name:    "testdata/with_tests_processor.yaml",

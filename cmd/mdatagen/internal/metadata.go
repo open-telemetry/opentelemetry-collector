@@ -152,7 +152,7 @@ func (md *Metadata) validateTests() error {
 		return errors.New("tests::skip_context_propagation is only supported for processors")
 	}
 	if isProcessor && !md.Tests.SkipContextPropagation && md.Tests.ExpectConsumerError {
-		return errors.New("tests::expect_consumer_error requires tests::skip_context_propagation for processors")
+		return errors.New("tests::expect_consumer_error requires tests::skip_context_propagation:true for processors")
 	}
 	return nil
 }
