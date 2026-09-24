@@ -57,6 +57,14 @@ func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer, szt request.Sizer
 	for req.size(sz, szt) > maxSize {
 		ld, removedSize := extractLogs(req.ld, maxSize, sz)
 		if ld.LogRecordCount() == 0 {
+			if ld.ResourceLogs().Len() > 0 {
+				// Extraction spent this batch on resources that hold no record and the
+				// batch is discarded with them, but they left the source as it did so. The
+				// request is smaller than when this attempt started, so try again with a
+				// fresh batch instead of dropping anything: the next record may well fit.
+				req.sizes.Update(szt, sz.LogsSize(req.ld))
+				continue
+			}
 			// The next record does not fit into maxSize even on its own. Drop every
 			// record in that state in a single pass, rather than one per iteration with
 			// a full size recompute after each, then carry on splitting what is left.
@@ -71,18 +79,10 @@ func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer, szt request.Sizer
 					continue
 				}
 			}
-			// The pass found nothing to remove, yet nothing could be extracted either.
-			// Extraction can spend capacity on resources that hold no record and then
-			// discard them, which leaves a request the pass considers splittable. Give up
-			// the first record so the loop always makes progress: returning the remainder
-			// unsplit would hand back a batch larger than maxSize.
-			if !removeFirstLogRecord(req.ld) {
-				unsplittable = true
-				break
-			}
-			droppedItems++
-			req.sizes.Update(szt, sz.LogsSize(req.ld))
-			continue
+			// Nothing was extracted, nothing left the source and the pass found nothing
+			// to remove, so no further progress is possible. Stop rather than loop.
+			unsplittable = true
+			break
 		}
 		req.sizes.Update(szt, req.size(sz, szt)-removedSize)
 		res = append(res, newLogsRequest(ld))
@@ -149,33 +149,6 @@ func dropOversizedLogRecords(ld plog.Logs, maxSize int, sz sizer.LogsSizer) (dro
 		return false
 	})
 	return dropped, removedAny
-}
-
-// removeFirstLogRecord removes the first log record in iteration order, together
-// with the scope and resource that it leaves empty. Reports whether a record was
-// removed, which is false only when there are none left.
-func removeFirstLogRecord(ld plog.Logs) bool {
-	removed := false
-	ld.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
-		if removed {
-			return false
-		}
-		rl.ScopeLogs().RemoveIf(func(sl plog.ScopeLogs) bool {
-			if removed {
-				return false
-			}
-			sl.LogRecords().RemoveIf(func(plog.LogRecord) bool {
-				if removed {
-					return false
-				}
-				removed = true
-				return true
-			})
-			return sl.LogRecords().Len() == 0
-		})
-		return rl.ScopeLogs().Len() == 0
-	})
-	return removed
 }
 
 // extractLogs extracts logs from the input logs and returns a new logs with the specified number of log records.

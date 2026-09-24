@@ -529,12 +529,10 @@ func TestMergeSplitTracesEmptyOversizedResourceDoesNotStopSplitting(t *testing.T
 	assert.Equal(t, 12, survived, "every span must survive")
 }
 
-func TestMergeSplitTracesGivesUpASpanRatherThanExceedMaxSize(t *testing.T) {
-	// See the logs equivalent: extraction can come back empty while the drop pass
-	// still considers every remaining span able to fit, so one span is given up to
-	// make progress rather than handing back a batch larger than max size.
+func TestMergeSplitTracesRetriesAfterDiscardingSpanlessResources(t *testing.T) {
+	// See the logs equivalent: the source shrinks when extraction discards resources
+	// holding no span, so a fresh attempt succeeds and no span is given up.
 	const maxSize = 462
-	first, second := strings.Repeat("a", 350), strings.Repeat("b", 276)
 	td := ptrace.NewTraces()
 	for range 2 {
 		empty := td.ResourceSpans().AppendEmpty()
@@ -544,12 +542,11 @@ func TestMergeSplitTracesGivesUpASpanRatherThanExceedMaxSize(t *testing.T) {
 	rs := td.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().PutStr("r", strings.Repeat("R", 56))
 	ss := rs.ScopeSpans().AppendEmpty()
-	ss.Spans().AppendEmpty().SetName(first)
-	ss.Spans().AppendEmpty().SetName(second)
+	ss.Spans().AppendEmpty().SetName(strings.Repeat("a", 350))
+	ss.Spans().AppendEmpty().SetName(strings.Repeat("b", 276))
 
 	res, err := newTracesRequest(td).MergeSplit(context.Background(), maxSize, request.SizerTypeBytes, nil)
-	require.ErrorContains(t, err, "one span size is greater than max size, dropping items: 1",
-		"giving up a span must be reported")
+	require.NoError(t, err, "no span is oversized, so none may be dropped")
 
 	marshaler := &ptrace.ProtoMarshaler{}
 	survived := 0
@@ -558,5 +555,5 @@ func TestMergeSplitTracesGivesUpASpanRatherThanExceedMaxSize(t *testing.T) {
 		survived += tr.td.SpanCount()
 		assert.LessOrEqual(t, marshaler.TracesSize(tr.td), maxSize, "no batch may exceed max size")
 	}
-	assert.Equal(t, 1, survived, "the other span must still be exported")
+	assert.Equal(t, 2, survived, "both spans must be exported")
 }

@@ -57,6 +57,24 @@ func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer, szt request
 	for req.size(sz, szt) > maxSize {
 		md, rmSize := extractMetrics(req.md, maxSize, sz)
 		if md.DataPointCount() == 0 {
+			if metricsCarryContent(md) {
+				// Extraction moved metrics that hold no data point out of the source. They
+				// still carry a name, unit and description, which dropOversizedDataPoints
+				// takes care to preserve, so the batch goes out rather than being discarded.
+				// The rmSize accounting assumes data points moved, so recompute exactly.
+				req.sizes.Update(szt, sz.MetricsSize(req.md))
+				res = append(res, newMetricsRequest(md))
+				continue
+			}
+			if md.ResourceMetrics().Len() > 0 {
+				// Extraction spent this batch on resources and scopes that hold no metric at
+				// all and the batch is discarded with them, but they left the source as it
+				// did so. The request is smaller than when this attempt started, so try again
+				// with a fresh batch instead of dropping anything: the next data point may
+				// well fit.
+				req.sizes.Update(szt, sz.MetricsSize(req.md))
+				continue
+			}
 			// The next data point does not fit into maxSize even on its own. Drop every
 			// data point in that state in a single pass, rather than one per iteration
 			// with a full size recompute after each, then carry on splitting what is left.
@@ -72,36 +90,49 @@ func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer, szt request
 					continue
 				}
 			}
-			// The pass found nothing to remove, yet nothing could be extracted either.
-			// Extraction can spend capacity on resources that hold no data point and then
-			// discard them, which leaves a request the pass considers splittable. Give up
-			// the first data point so the loop always makes progress: returning the
-			// remainder unsplit would hand back a batch larger than maxSize.
-			if !removeFirstDataPoint(req.md) {
-				unsplittable = true
-				break
-			}
-			droppedItems++
-			req.sizes.Update(szt, sz.MetricsSize(req.md))
-			continue
+			// Nothing was extracted, nothing left the source and the pass found nothing
+			// to remove, so no further progress is possible. Stop rather than loop.
+			unsplittable = true
+			break
 		}
 		req.sizes.Update(szt, req.size(sz, szt)-rmSize)
 		res = append(res, newMetricsRequest(md))
 	}
 	// Keep the remainder, unless the drop pass emptied it, in which case there is
-	// nothing left to export.
-	if !pruned || req.md.DataPointCount() > 0 {
+	// nothing left to export. A metric that holds no data point still counts as
+	// something to export, so the test is whether a metric is left rather than a
+	// data point.
+	if !pruned || metricsCarryContent(req.md) {
 		res = append(res, req)
 	}
 	switch {
 	case droppedItems > 0:
 		return res, fmt.Errorf("one datapoint size is greater than max size, dropping items: %d", droppedItems)
-	case unsplittable && req.md.DataPointCount() > 0:
+	case unsplittable && metricsCarryContent(req.md):
 		// Only worth reporting when a remainder is going out unsplit. With nothing left
-		// in it there is no data point to lose and nothing to tell the caller.
+		// in it there is no metric to lose and nothing to tell the caller.
 		return res, errors.New("request size is greater than max size and cannot be split further")
 	}
 	return res, nil
+}
+
+// metricsCarryContent reports whether md holds at least one metric.
+//
+// A metric that carries no data point still describes a measurement through its
+// name, unit and description, so DataPointCount alone cannot decide whether a batch
+// is worth exporting: dropOversizedDataPoints deliberately keeps such a metric, and
+// discarding the batch that holds it would undo that. Resources and scopes holding
+// no metric carry no measurement and do not count.
+func metricsCarryContent(md pmetric.Metrics) bool {
+	for i := range md.ResourceMetrics().Len() {
+		rm := md.ResourceMetrics().At(i)
+		for j := range rm.ScopeMetrics().Len() {
+			if rm.ScopeMetrics().At(j).Metrics().Len() > 0 {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // dropOversizedDataPoints removes every data point that cannot fit a batch of
@@ -238,92 +269,6 @@ func dropOversizedMetricDataPoints(m pmetric.Metric, capacity int, sz sizer.Metr
 		})
 	}
 	return dropped
-}
-
-// removeFirstDataPoint removes the first data point in iteration order, together
-// with the metric, scope and resource that it leaves empty. Reports whether a
-// data point was removed, which is false only when there are none left.
-func removeFirstDataPoint(md pmetric.Metrics) bool {
-	removed := false
-	md.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
-		if removed {
-			return false
-		}
-		rm.ScopeMetrics().RemoveIf(func(sm pmetric.ScopeMetrics) bool {
-			if removed {
-				return false
-			}
-			sm.Metrics().RemoveIf(func(m pmetric.Metric) bool {
-				if removed {
-					return false
-				}
-				if !removeFirstMetricDataPoint(m) {
-					// This metric carries no data points, so there was nothing to drop.
-					// Keep it and keep looking, rather than deleting it as collateral and
-					// losing its name, unit and description without counting it.
-					return false
-				}
-				removed = true
-				return dataPointsLen(m) == 0
-			})
-			return sm.Metrics().Len() == 0
-		})
-		return rm.ScopeMetrics().Len() == 0
-	})
-	return removed
-}
-
-// removeFirstMetricDataPoint removes the first data point of m, whichever data
-// point type it holds. Reports whether one was removed, which is false for a
-// metric that holds no data points at all.
-func removeFirstMetricDataPoint(m pmetric.Metric) bool {
-	removed := false
-	switch m.Type() {
-	case pmetric.MetricTypeEmpty:
-		// No data point slice exists on this metric, so there is nothing to remove.
-		return false
-	case pmetric.MetricTypeGauge:
-		m.Gauge().DataPoints().RemoveIf(func(pmetric.NumberDataPoint) bool {
-			if removed {
-				return false
-			}
-			removed = true
-			return true
-		})
-	case pmetric.MetricTypeSum:
-		m.Sum().DataPoints().RemoveIf(func(pmetric.NumberDataPoint) bool {
-			if removed {
-				return false
-			}
-			removed = true
-			return true
-		})
-	case pmetric.MetricTypeHistogram:
-		m.Histogram().DataPoints().RemoveIf(func(pmetric.HistogramDataPoint) bool {
-			if removed {
-				return false
-			}
-			removed = true
-			return true
-		})
-	case pmetric.MetricTypeExponentialHistogram:
-		m.ExponentialHistogram().DataPoints().RemoveIf(func(pmetric.ExponentialHistogramDataPoint) bool {
-			if removed {
-				return false
-			}
-			removed = true
-			return true
-		})
-	case pmetric.MetricTypeSummary:
-		m.Summary().DataPoints().RemoveIf(func(pmetric.SummaryDataPoint) bool {
-			if removed {
-				return false
-			}
-			removed = true
-			return true
-		})
-	}
-	return removed
 }
 
 // extractMetrics extracts metrics from srcMetrics until capacity is reached.

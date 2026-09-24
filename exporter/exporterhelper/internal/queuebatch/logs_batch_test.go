@@ -588,12 +588,11 @@ func TestMergeSplitLogsEmptyOversizedResourceDoesNotStopSplitting(t *testing.T) 
 	assert.Equal(t, 12, survived, "every record must survive")
 }
 
-func TestMergeSplitLogsGivesUpARecordRatherThanExceedMaxSize(t *testing.T) {
-	// Extraction spends capacity on resources that hold no record and then discards
-	// them, so it can come back empty while the drop pass still considers every
-	// remaining record able to fit. Progress has to come from somewhere, and handing
-	// the remainder back unsplit would mean a batch larger than max size, so one
-	// record is given up instead. It is reported, so the loss is visible.
+func TestMergeSplitLogsRetriesAfterDiscardingRecordlessResources(t *testing.T) {
+	// A small resource holding no record always fits, so extraction moves it out of the
+	// source and into a batch that is then discarded for holding no record. The source
+	// has shrunk by the time that happens, so a fresh attempt succeeds and no record
+	// needs to be given up.
 	const maxSize = 462
 	fitsAlone := func(body string) bool {
 		x := plog.NewLogs()
@@ -619,8 +618,7 @@ func TestMergeSplitLogsGivesUpARecordRatherThanExceedMaxSize(t *testing.T) {
 	sl.LogRecords().AppendEmpty().Body().SetStr(second)
 
 	res, err := newLogsRequest(ld).MergeSplit(context.Background(), maxSize, request.SizerTypeBytes, nil)
-	require.ErrorContains(t, err, "one log record size is greater than max size, dropping items: 1",
-		"giving up a record must be reported")
+	require.NoError(t, err, "no record is oversized, so none may be dropped")
 
 	marshaler := &plog.ProtoMarshaler{}
 	survived := 0
@@ -629,5 +627,5 @@ func TestMergeSplitLogsGivesUpARecordRatherThanExceedMaxSize(t *testing.T) {
 		survived += lr.ld.LogRecordCount()
 		assert.LessOrEqual(t, marshaler.LogsSize(lr.ld), maxSize, "no batch may exceed max size")
 	}
-	assert.Equal(t, 1, survived, "the other record must still be exported")
+	assert.Equal(t, 2, survived, "both records must be exported")
 }
