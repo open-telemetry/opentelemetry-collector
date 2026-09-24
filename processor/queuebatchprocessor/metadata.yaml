@@ -93,3 +93,8 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+
+tests:
+  # The queue batch processor buffers data and flushes it on a detached context, so
+  # it cannot propagate the incoming context to the next consumer.
+  skip_context_propagation: true

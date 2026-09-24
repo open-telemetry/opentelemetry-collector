@@ -6,6 +6,7 @@ package queue // import "go.opentelemetry.io/collector/exporter/exporterhelper/i
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
@@ -26,6 +27,7 @@ type obsQueue[T request.Request] struct {
 	Queue[T]
 	obsMetrics queuebatchtelemetry.ObsMetrics
 	tracer     trace.Tracer
+	spanAttrs  trace.SpanStartEventOption
 }
 
 func newObsQueue[T request.Request](
@@ -43,6 +45,10 @@ func newObsQueue[T request.Request](
 		Queue:      delegate,
 		obsMetrics: obsMetrics,
 		tracer:     metadata.Tracer(set.Telemetry),
+		spanAttrs: trace.WithAttributes(
+			attribute.String(exporterKey, set.ID.String()),
+			attribute.String(dataTypeKey, set.Signal.String()),
+		),
 	}, nil
 }
 
@@ -56,7 +62,7 @@ func (or *obsQueue[T]) Offer(ctx context.Context, req T) error {
 		or.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricEnqueueSizeBytes, int64(req.BytesSize()))
 	}
 
-	ctx, span := or.tracer.Start(ctx, "exporter/enqueue")
+	ctx, span := or.tracer.Start(ctx, "exporter/enqueue", or.spanAttrs)
 	err := or.Queue.Offer(ctx, req)
 	span.End()
 
