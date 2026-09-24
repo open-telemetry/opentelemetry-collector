@@ -110,31 +110,31 @@ status:
 
 func TestRunContents(t *testing.T) {
 	tests := []struct {
-		yml                             string
-		wantMetricsGenerated            bool
-		wantLogsBuilderGenerated        bool
-		wantEventsGenerated             bool
-		wantMetricsContext              bool
-		wantLogsGenerated               bool
-		wantConfigGenerated             bool
-		wantTelemetryGenerated          bool
-		wantResourceAttributesGenerated bool
-		wantReadmeGenerated             bool
-		wantStatusGenerated             bool
-		wantSendingQueueGenerated       bool
-		wantComponentTestGenerated      bool
-		wantGoleakIgnore                bool
-		wantGoleakSkip                  bool
-		wantGoleakSetup                 bool
-		wantGoleakTeardown              bool
-		wantFeatureGatesGenerated       bool
-		wantConfigSchemaGenerated       bool
-		wantMetricsSchemaYamlGenerated  bool
-		wantConfigDocGenerated          bool
-		wantErr                         bool
-		wantOrderErr                    bool
-		wantRunErr                      bool
-		wantAttributes                  []string
+		yml                               string
+		wantMetricsGenerated              bool
+		wantLogsBuilderGenerated          bool
+		wantEventsGenerated               bool
+		wantMetricsContext                bool
+		wantLogsGenerated                 bool
+		wantConfigGenerated               bool
+		wantTelemetryGenerated            bool
+		wantResourceAttributesGenerated   bool
+		wantReadmeGenerated               bool
+		wantStatusGenerated               bool
+		wantSendingQueueFunctionGenerated bool
+		wantComponentTestGenerated        bool
+		wantGoleakIgnore                  bool
+		wantGoleakSkip                    bool
+		wantGoleakSetup                   bool
+		wantGoleakTeardown                bool
+		wantFeatureGatesGenerated         bool
+		wantConfigSchemaGenerated         bool
+		wantMetricsSchemaYamlGenerated    bool
+		wantConfigDocGenerated            bool
+		wantErr                           bool
+		wantOrderErr                      bool
+		wantRunErr                        bool
+		wantAttributes                    []string
 	}{
 		{
 			yml:     "invalid.yaml",
@@ -185,11 +185,11 @@ func TestRunContents(t *testing.T) {
 			wantLogsGenerated:               true,
 		},
 		{
-			yml:                        "status_only.yaml",
-			wantStatusGenerated:        true,
-			wantSendingQueueGenerated:  true,
-			wantReadmeGenerated:        true,
-			wantComponentTestGenerated: true,
+			yml:                               "status_only.yaml",
+			wantStatusGenerated:               true,
+			wantSendingQueueFunctionGenerated: true,
+			wantReadmeGenerated:               true,
+			wantComponentTestGenerated:        true,
 		},
 		{
 			yml:                        "with_tests_receiver.yaml",
@@ -200,11 +200,11 @@ func TestRunContents(t *testing.T) {
 			wantLogsGenerated:          true,
 		},
 		{
-			yml:                        "with_tests_exporter.yaml",
-			wantStatusGenerated:        true,
-			wantSendingQueueGenerated:  true,
-			wantReadmeGenerated:        true,
-			wantComponentTestGenerated: true,
+			yml:                               "with_tests_exporter.yaml",
+			wantStatusGenerated:               true,
+			wantSendingQueueFunctionGenerated: true,
+			wantReadmeGenerated:               true,
+			wantComponentTestGenerated:        true,
 		},
 		{
 			yml:                        "with_tests_processor.yaml",
@@ -384,7 +384,6 @@ foo
 			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry_test.go"), []byte("test"), 0o600))
 			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, generatedPackageDir, "generated_component_test.go"), []byte("test"), 0o600))
 			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, generatedPackageDir, "generated_feature_gates.go"), []byte("// stale"), 0o600))
-			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, generatedPackageDir, "generated_sending_queue.go"), []byte("// stale"), 0o600))
 			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, "documentation.md"), []byte("stale documentation"), 0o600))
 
 			err = run(metadataFile)
@@ -471,12 +470,6 @@ foo
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_feature_gates.go"))
 			}
 
-			if tt.wantSendingQueueGenerated {
-				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_sending_queue.go"))
-			} else {
-				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_sending_queue.go"))
-			}
-
 			if wantDocumentationGenerated {
 				require.FileExists(t, filepath.Join(tmpdir, "documentation.md"))
 			} else {
@@ -484,7 +477,15 @@ foo
 			}
 
 			if tt.wantStatusGenerated {
-				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_status.go"))
+				statusPath := filepath.Join(tmpdir, generatedPackageDir, "generated_status.go")
+				require.FileExists(t, statusPath)
+				contents, err = os.ReadFile(filepath.Clean(statusPath))
+				require.NoError(t, err)
+				if tt.wantSendingQueueFunctionGenerated {
+					require.Contains(t, string(contents), "func NewDefaultSendingQueueConfig()")
+				} else {
+					require.NotContains(t, string(contents), "func NewDefaultSendingQueueConfig()")
+				}
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_status.go"))
 			}
@@ -1809,6 +1810,8 @@ func TestGenerateComponentTestExporterDefaultQueueBatchSender(t *testing.T) {
 
 func TestGenerateSendingQueueNestedBatchOverrides(t *testing.T) {
 	md := Metadata{
+		Type:   "test",
+		Status: &Status{Class: "exporter"},
 		SendingQueue: &SendingQueue{
 			Support: SendingQueueSupportHasOverrides,
 			Overrides: SendingQueueOverrides{
@@ -1822,29 +1825,33 @@ func TestGenerateSendingQueueNestedBatchOverrides(t *testing.T) {
 	}
 
 	generated, err := executeTemplate(
-		"templates/sending_queue.go.tmpl",
+		"templates/status.go.tmpl",
 		md,
 		"metadata",
 		"go.opentelemetry.io/collector",
 		getTemplateFuncMap(md, "go.opentelemetry.io/collector"),
 	)
 	require.NoError(t, err)
-	_, err = parser.ParseFile(token.NewFileSet(), "generated_sending_queue.go", generated, parser.AllErrors)
+	_, err = parser.ParseFile(token.NewFileSet(), "generated_status.go", generated, parser.AllErrors)
 	require.NoError(t, err)
 	require.NotContains(t, string(generated), "confmap")
 	require.NotContains(t, string(generated), "panic(")
-	require.Contains(t, string(generated), "MinSize:      123")
+	require.Contains(t, string(generated), "cfg := exporterhelper.NewDefaultQueueConfig()")
+	require.Contains(t, string(generated), "batchCfg.MinSize = 123")
+	require.NotContains(t, string(generated), "cfg.QueueSize =")
 	require.Contains(t, string(generated), "cfg.Batch = configoptional.Default(batchCfg)")
 	require.Contains(t, string(generated), "return configoptional.Default(cfg)")
 }
 
 func TestGenerateSendingQueueDefaultFollowsFeatureGate(t *testing.T) {
 	md := Metadata{
+		Type:         "test",
+		Status:       &Status{Class: "exporter"},
 		SendingQueue: &SendingQueue{Support: SendingQueueSupportDefault},
 	}
 
 	generated, err := executeTemplate(
-		"templates/sending_queue.go.tmpl",
+		"templates/status.go.tmpl",
 		md,
 		"metadata",
 		"go.opentelemetry.io/collector",

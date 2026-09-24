@@ -171,6 +171,10 @@ func (sq *SendingQueue) HasOverrides() bool {
 	return sq.Support == SendingQueueSupportHasOverrides
 }
 
+func (sq *SendingQueue) HasOverride(path ...string) bool {
+	return hasOverride(sq.Overrides, path)
+}
+
 func (sq *SendingQueue) TemplateData() (SendingQueueTemplateData, error) {
 	optionalCfg, err := sq.Overrides.Apply(newPostMigrationDefaultQueueConfig())
 	if err != nil {

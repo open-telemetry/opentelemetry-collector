@@ -174,13 +174,6 @@ func run(ymlPath string) error {
 			return err
 		}
 
-		queueConfigFile := filepath.Join(codeDir, "generated_sending_queue.go")
-		if md.Status.Class == "exporter" && md.SendingQueue != nil && !md.SendingQueue.IsOmitted() {
-			toGenerate[filepath.Join(tmplDir, "sending_queue.go.tmpl")] = queueConfigFile
-		} else if err = os.Remove(queueConfigFile); err != nil && !errors.Is(err, fs.ErrNotExist) {
-			return err
-		}
-
 		if _, err = os.Stat(filepath.Join(ymlDir, "README.md")); err == nil {
 			err = inlineReplaceWithFns(
 				filepath.Join(tmplDir, "readme.md.tmpl"),
