@@ -9,8 +9,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"reflect"
-	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -1070,9 +1068,6 @@ func (e statusWatcherExtension) ComponentStatusChanged(source *componentstatus.I
 }
 
 func TestComponentStatusWatcher(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("Skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/15959")
-	}
 	factories, err := nopFactories()
 	require.NoError(t, err)
 
@@ -1128,40 +1123,34 @@ func TestComponentStatusWatcher(t *testing.T) {
 		return startupStatuses2
 	}
 
-	// The "unhealthy" processors will now begin to asynchronously report StatusRecoverableError.
-	// We expect to see these reports.
-	assert.Eventually(t, func() bool {
+	// Wait until all 3 processors report a complete startup sequence. They share the same ID, so
+	// the 3 distinct map entries also prove each "source" is unique per component instance.
+	// EventuallyWithT retries until the assertions hold, so intermediate states don't fail the test.
+	require.EventuallyWithT(t, func(collect *assert.CollectT) {
 		mux.Lock()
 		defer mux.Unlock()
-
-		for k, v := range changedComponents {
-			// All processors must report a status change with the same ID
-			assert.Equal(t, component.NewID(unhealthyProcessorFactory.Type()), k.ComponentID())
-			// And all must have a valid startup sequence
-			assert.Eventually(t, func() bool {
-				return reflect.DeepEqual(startupStatuses(v), v)
-			}, 2*time.Second, 10*time.Millisecond)
+		if !assert.Len(collect, changedComponents, 3) {
+			return
 		}
-		// We have 3 processors with exactly the same ID in otelcol-statuswatcher.yaml
-		// We must have exactly 3 items in our map. This ensures that the "source" argument
-		// passed to status change func is unique per instance of source component despite
-		// components having the same IDs (having same ID for different component instances
-		// is a normal situation for processors).
-		return len(changedComponents) == 3
-	}, 2*time.Second, time.Millisecond*100)
+		for k, v := range changedComponents {
+			assert.Equal(collect, component.NewID(unhealthyProcessorFactory.Type()), k.ComponentID())
+			assert.Equal(collect, startupStatuses(v), v)
+		}
+	}, 10*time.Second, 10*time.Millisecond)
 
 	col.Shutdown()
 	wg.Wait()
 
-	// Check for additional statuses after Shutdown.
-	for _, v := range changedComponents {
-		assert.Eventually(t, func() bool {
+	// After shutdown each processor appends StatusStopping and StatusStopped.
+	require.EventuallyWithT(t, func(collect *assert.CollectT) {
+		mux.Lock()
+		defer mux.Unlock()
+		for _, v := range changedComponents {
 			expectedStatuses := append([]componentstatus.Status{}, startupStatuses(v)...)
 			expectedStatuses = append(expectedStatuses, componentstatus.StatusStopping, componentstatus.StatusStopped)
-
-			return reflect.DeepEqual(expectedStatuses, v)
-		}, 2*time.Second, 10*time.Millisecond)
-	}
+			assert.Equal(collect, expectedStatuses, v)
+		}
+	}, 10*time.Second, 10*time.Millisecond)
 
 	assert.Equal(t, StateClosed, col.GetState())
 }
