@@ -6,6 +6,7 @@ package extensionmiddleware
 import (
 	"context"
 	"errors"
+	"net"
 	"net/http"
 	"testing"
 
@@ -89,5 +90,50 @@ func TestGetGRPCClientOptionsFunc(t *testing.T) {
 		require.Error(t, err)
 		require.Equal(t, expectedErr, err)
 		require.Nil(t, options)
+	})
+}
+
+func TestDialContext(t *testing.T) {
+	type testCtx struct{}
+	var (
+		key   = testCtx{}
+		value = "testval"
+	)
+	testctx := context.WithValue(context.Background(), key, value)
+
+	t.Run("nil function", func(t *testing.T) {
+		var nilFunc GetDialerFunc
+		options, err := nilFunc.GetDialContext(testctx)
+		require.NoError(t, err)
+		require.Nil(t, options)
+	})
+
+	t.Run("options function", func(t *testing.T) {
+		dialer := func(_ context.Context, _, _ string) (net.Conn, error) {
+			return nil, errors.New("no dialing")
+		}
+
+		optionsFunc := GetDialerFunc(func(ctx context.Context) (func(ctx context.Context, network, address string) (net.Conn, error), error) {
+			require.Equal(t, ctx.Value(key), value)
+			return dialer, nil
+		})
+
+		fn, err := optionsFunc.GetDialContext(testctx)
+		require.NoError(t, err)
+		_, err = fn(testctx, "", "")
+		require.EqualError(t, err, "no dialing")
+	})
+
+	t.Run("error function", func(t *testing.T) {
+		expectedErr := errors.New("dial error")
+		errorFunc := GetDialerFunc(func(ctx context.Context) (func(ctx context.Context, network, address string) (net.Conn, error), error) {
+			require.Equal(t, ctx.Value(key), value)
+			return nil, expectedErr
+		})
+
+		fn, err := errorFunc.GetDialContext(testctx)
+		require.Error(t, err)
+		require.Equal(t, expectedErr, err)
+		require.Nil(t, fn)
 	})
 }
