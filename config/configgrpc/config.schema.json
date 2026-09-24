@@ -39,6 +39,16 @@
             ""
           ]
         },
+        "dialer": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Specifies the name of the extension to use."
+            }
+          },
+          "description": "Dialer is a middleware handler customizing how the client will dial connections over TCP."
+        },
         "endpoint": {
           "type": "string",
           "description": "The target to which the exporter is going to send traces or metrics, using the gRPC protocol. \nThe valid syntax is described at https://github.com/grpc/grpc/blob/master/doc/naming.md.\n"

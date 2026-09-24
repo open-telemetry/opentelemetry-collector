@@ -5,6 +5,7 @@ package configmiddleware
 
 import (
 	"context"
+	"net"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -244,6 +245,69 @@ func TestConfig_GetGRPCClientOptions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			value, err := tt.middleware.GetGRPCClientOptions(ctx, tt.extensions)
+
+			if tt.wantErr != nil {
+				require.ErrorIs(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, value)
+			}
+		})
+	}
+}
+
+func TestConfig_GetDialer(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name       string
+		middleware Config
+		extensions map[component.ID]component.Component
+		wantErr    error
+	}{
+		{
+			name: "found_and_valid",
+			middleware: Config{
+				ID: testID,
+			},
+			extensions: map[component.ID]component.Component{
+				testID: struct {
+					extension.Extension
+					extensionmiddleware.GetDialerFunc
+				}{
+					Extension: extensionmiddlewaretest.NewNop(),
+					GetDialerFunc: func(_ context.Context) (func(ctx context.Context, network, address string) (net.Conn, error), error) {
+						return func(_ context.Context, _, _ string) (net.Conn, error) {
+							return nil, nil
+						}, nil
+					},
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "middleware_not_found",
+			middleware: Config{
+				ID: testID,
+			},
+			extensions: map[component.ID]component.Component{},
+			wantErr:    errMiddlewareNotFound,
+		},
+		{
+			name: "middleware_wrong_type",
+			middleware: Config{
+				ID: testID,
+			},
+			extensions: map[component.ID]component.Component{
+				testID: mockWrongType{},
+			},
+			wantErr: errNotDialer,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			value, err := tt.middleware.GetDialer(ctx, tt.extensions)
 
 			if tt.wantErr != nil {
 				require.ErrorIs(t, err, tt.wantErr)
