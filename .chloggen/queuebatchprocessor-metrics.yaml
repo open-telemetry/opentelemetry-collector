@@ -1,6 +1,6 @@
 change_type: enhancement
 
-component: processor/queuebatch
+component: processor/queue_batch
 
 note: Report queue and batch metrics as processor metrics
 
