@@ -250,6 +250,7 @@ func TestNewType(t *testing.T) {
 		{name: "pulsar"},
 		{name: "purefa"},
 		{name: "purefb"},
+		{name: "queue_batch"},
 		{name: "rabbitmq"},
 		{name: "receiver_creator"},
 		{name: "redaction"},
