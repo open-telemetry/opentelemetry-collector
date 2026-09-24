@@ -141,9 +141,9 @@ config:
       # Optional: Custom Go type name to use instead of generated type.
       x-customType: string
       # Optional: Whether this field should be a pointer in Go code.
-      x-pointer: bool
+      pointer: bool
       # Optional: Whether this field is optional in Go code (will use pointer or optional type).
-      x-optional: bool
+      optional: bool
       # Optional: Go-specific settings for the generated struct field.
       go_struct:
         # Optional: Override the generated Go field name.
@@ -155,9 +155,11 @@ config:
         # Optional: Custom validator configuration for the generated Go field.
         custom_validator:
           name: string
-        # Optional: Constructor used for an x-optional field with an object type.
+        # Optional: Constructor used for an optional field with an object type.
         # Omitted and "some" use configoptional.Some; "default" uses configoptional.Default.
         optional_mode: <some|default>
+        ## Optional: Generated struct embeds a package-private `private<Type>Fields` type.
+        private_fields: bool
   # Optional: List of required property names. Properties in this list must be present in the config.
   required: [string]
   # Optional: Map of reusable schema definitions that can be referenced via $ref.

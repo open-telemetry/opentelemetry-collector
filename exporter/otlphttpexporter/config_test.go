@@ -53,11 +53,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				Sizer:        exporterhelper.RequestSizerTypeRequests,
 				NumConsumers: 2,
 				QueueSize:    10,
-				Batch: configoptional.Default(exporterhelper.BatchConfig{
-					Sizer:        exporterhelper.RequestSizerTypeItems,
-					FlushTimeout: 200 * time.Millisecond,
-					MinSize:      8192,
-				}),
+				Batch:        configoptional.Default(exporterhelper.NewDefaultBatchConfig()),
 			}),
 			Encoding: EncodingProto,
 			ClientConfig: confighttp.ClientConfig{

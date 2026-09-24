@@ -120,6 +120,12 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return strings.Join(lines, "\n")
 		},
+		"entry": func(name string, metadata *ConfigMetadata) map[string]any {
+			return map[string]any{
+				"name": name,
+				"data": metadata,
+			}
+		},
 	}
 }
 
@@ -734,14 +740,14 @@ func validateOptionalMode(md *ConfigMetadata) {
 		return
 	case OptionalModeSome:
 		if !md.IsOptional {
-			panic("go_struct.optional_mode requires x-optional: true")
+			panic("go_struct.optional_mode requires optional: true")
 		}
 	case OptionalModeDefault:
 		if !md.IsOptional {
-			panic("go_struct.optional_mode requires x-optional: true")
+			panic("go_struct.optional_mode requires optional: true")
 		}
 		if md.IsPointer {
-			panic("go_struct.optional_mode cannot be used with x-pointer: true")
+			panic("go_struct.optional_mode cannot be used with pointer: true")
 		}
 		if md.Type != "" && md.Type != ObjectType {
 			panic(fmt.Sprintf("go_struct.optional_mode %q requires an object type, got %q", OptionalModeDefault, md.Type))
