@@ -19,8 +19,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	{{- if $hasVersionedMetrics }}
 	"github.com/stretchr/testify/require"
-	{{- end }}
-	{{- if $hasVersionedMetrics }}
 	"go.opentelemetry.io/collector/featuregate"
 	{{- end }}
 	{{- if or isReceiver isScraper isConnector }}

@@ -755,13 +755,6 @@ func (a Attribute) TestValueTwo() string {
 	return ""
 }
 
-// HasDistinctSecondValue reports whether this attribute can take a second,
-// distinct test value - false only for a single-value enum, where the
-// only possible value is used for both.
-func (a Attribute) HasDistinctSecondValue() bool {
-	return a.Enum == nil || len(a.Enum) > 1
-}
-
 type Signal struct {
 	// Enabled defines whether the signal is enabled by default.
 	Enabled bool `mapstructure:"enabled"`
