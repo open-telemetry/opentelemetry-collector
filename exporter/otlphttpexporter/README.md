@@ -74,3 +74,14 @@ exporters:
 
 The full list of settings exposed for this exporter are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
+
+## Profiles Development Version
+
+The Profiles exporter sends exactly one `OTLP-Profiles-Development-Version`
+header for both Protobuf and JSON requests, using
+[`pprofileotlp.DevelopmentVersion`](../../pdata/pprofile/pprofileotlp/version.go)
+to identify its compiled-in schema. Any configured value for this header is
+overridden. The exporter does not forward incoming version metadata or negotiate
+a different version.
+See the [receiver documentation](../../receiver/otlpreceiver/README.md#profiles-development-version)
+for the proposed protocol and compatibility considerations.
