@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: processor/queue_batch
+
+note: Report queue and batch metrics as processor metrics
+
+issues: [14038]
+
+change_logs: [user]
