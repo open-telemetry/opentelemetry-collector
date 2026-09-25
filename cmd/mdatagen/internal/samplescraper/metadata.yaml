@@ -44,6 +44,7 @@ config:
       description: Identifies the scraper, used for telemetry and logging.
       go_struct:
         field_name: ComponentID
+        custom_validator:
     job_name:
       description: Name of the scrape job, used to identify the source in telemetry.
       type: string
@@ -55,14 +56,21 @@ config:
         custom_validator:
     targets:
       description: List of targets to scrape metrics from.
-      x-pointer: true
+      pointer: true
       type: slice
       values:
         type: object
         properties:
+          endpoint:
+            $ref: /config/confignet.addr_config
+            optional: true
+            default:
+              transport: ip4
+            go_struct:
+              optional_mode: default
           interval:
             type: duration
-            x-optional: true
+            optional: true
             default: 10s
           labels:
             description: Static key-value labels attached to all metrics from this target.
@@ -85,6 +93,8 @@ config:
             exclusiveMinimum: 0
             exclusiveMaximum: 30
         required: [labels]
+        go_struct:
+          private_fields: true
       default:
         - {} # one item with default values
     log_level:
@@ -93,6 +103,8 @@ config:
       enum: [debug, info, warn, error]
       default: info
   required: [job_name, targets]
+  go_struct:
+    private_fields: true
 
 resource_attributes:
   map.resource.attr:
@@ -247,6 +259,20 @@ metrics:
     attributes: [string_attr, boolean_attr]
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
+
+  optional.metric.to_be_removed:
+    enabled: false
+    description: "[DEPRECATED] Gauge double metric disabled by default with if_enabled warning."
+    stability: deprecated
+    deprecated:
+      since: "1.0.0"
+      note: "This metric will be removed"
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [string_attr]
+    warnings:
+      if_enabled: This metric is deprecated and will be removed soon.
 
   reaggregate.metric:
     enabled: true

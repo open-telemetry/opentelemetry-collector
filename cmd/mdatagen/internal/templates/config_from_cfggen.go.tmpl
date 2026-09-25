@@ -10,30 +10,32 @@ import (
 {{- range $imports }}
 	"{{ . }}"
 {{- end }}
-{{- if $hasConfig }}
-    "go.opentelemetry.io/collector/component"
-{{- end }}
 )
 {{- end }}
 
 {{ define "struct" }}
-    {{- range $propName, $prop := .Properties | embeddedProps }}
+    {{- range $propName, $prop := .data.Properties | embeddedProps }}
         {{- if $prop.Description }}
-    // {{ $prop.Description }}
+        {{ $prop.Description | goComment }}
         {{- end }}
         {{- if $prop.GoStruct.Anonymous }}
             {{ $prop.Ref | publicType }} `mapstructure:",squash"`
         {{- else }}
             {{ $prop.GoStruct.FieldName | publicVar }} {{ $prop.Ref | publicType }} `mapstructure:",squash"`
         {{- end }}
-
-    {{- end }}
-    {{- range $propName, $prop := .Properties | namedProps }}
+    {{ end }}
+    {{- range $propName, $prop := .data.Properties | namedProps }}
         {{- if $prop.Description }}
-            // {{ $prop.Description }}
+            {{ printf "%s %s" ($prop.GoStruct.FieldName | publicVar) ($prop.Description | uncapitalize) | goComment }}
         {{- end }}
         {{ $prop.GoStruct.FieldName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}{{ if shouldOmitEmpty . $propName $prop }},omitempty{{ end }}"`
+    {{ end }}
+
+    {{- if .data.GoStruct.PrivateFields }}
+    // placeholder for the private fields
+    private{{.name}}Fields
     {{- end }}
+
     // prevent unkeyed literal initialization
     _ struct{}
 {{ end }}
@@ -41,7 +43,7 @@ import (
 {{- $defs := extractDefs .Metadata.ConfigsMetadata }}
 {{ range $defName, $def := $defs }}
     {{- if $def.Description }}
-        // {{ $defName | publicVar }} {{ $def.Description | uncapitalize }}
+        {{ printf "%s %s" ($defName | publicVar) ($def.Description | uncapitalize) | goComment }}
     {{- end }}
     {{- $typeName := $defName | publicVar }}
     {{- if isExternalRef $def.Ref }}
@@ -50,14 +52,18 @@ import (
         type {{ $typeName }} {{ primitiveGoType $def }}
     {{- else }}
         type {{ $typeName }} struct {
-        {{- template "struct" $def }}
+        {{- template "struct" entry $typeName $def }}
         }
     {{- end }}
 
 {{ $defValidators := extractValidators $def }}
-{{- if and $defValidators (not (isExternalRef $def.Ref)) (not (isPrimitiveSchema $def)) }}
+{{- if and $defValidators (not (isExternalRef $def.Ref)) }}
     // Validate validates the {{$typeName}} fields according to schema annotations.
+    {{- if (isPrimitiveSchema $def) }}
+    func (c {{ $typeName }}) Validate() error {
+    {{- else }}
     func (c *{{ $typeName }}) Validate() error {
+    {{- end }}
         var err error
         {{ range $validator := $defValidators -}}
             {{- template "validation" $validator }}
@@ -90,7 +96,7 @@ import (
         // Config defines the configuration for {{ .Metadata.DisplayName }} component.
     {{- end }}
     type Config struct {
-        {{- template "struct" .Metadata.Config }}
+        {{- template "struct" entry "Config" .Metadata.Config }}
     }
 {{- end}}
 
@@ -132,13 +138,23 @@ import (
     {{- end -}}
 {{- end }}
 
-{{- define "fieldValue" -}}
-    {{- $name := .FieldName | publicVar -}}
-    {{- if .IsPointer }}*c.{{ $name -}}
-    {{- else if .IsOptional }}*c.{{ $name }}.Get()
-    {{- else }}c.{{ $name -}}
-    {{- end -}}
-{{- end -}}
+{{- define "fieldValue" }}
+    {{- $var := "c" }}
+    {{- if not (eq .FieldName ".")}}
+        {{- $var = printf "c.%s" (.FieldName | publicVar) }}
+    {{- end }}
+    {{- if .IsPointer }}*{{ $var }}
+    {{- else if .IsOptional }}*{{ $var }}.Get()
+    {{- else }}{{ $var }}
+    {{- end }}
+{{- end }}
+
+{{ define "enumValue" -}}
+    {{- if eq .FieldName "." -}}
+        {{ .FieldType }}(c)
+    {{- else }}{{ template "fieldValue" . }}
+    {{- end }}
+{{- end }}
 
 {{ define "maxLengthValidator" -}}
     {{ $maxLength := .Rules.MaxLength -}}
@@ -190,7 +206,7 @@ import (
 {{- end }}
 
 {{ define "enumValidator" -}}
-    if !slices.Contains({{ formatEnumSlice .Rules.Enum .FieldType }}, {{ template "fieldValue" . }}) {
+    if !slices.Contains({{ formatEnumSlice .Rules.Enum .FieldType }}, {{ template "enumValue" . }}) {
         err = errors.Join(err, errors.New("{{ .FieldName }} must be one of {{ formatEnumValues .Rules.Enum }}"))
     }
 {{- end }}

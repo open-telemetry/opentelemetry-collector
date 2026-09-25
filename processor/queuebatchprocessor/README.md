@@ -77,9 +77,10 @@ receivers:
         include_metadata: true
 
 processors:
-  queuebatch:
+  queue_batch:
     batch:
       partition:
+        cache_size: 10000
         # Produce one batch per distinct tenant_id value.
         metadata_keys:
         - tenant_id
@@ -88,7 +89,7 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [queuebatch]
+      processors: [queue_batch]
       exporters: [otlp]
 ```
 
@@ -96,6 +97,18 @@ Receivers must be configured with `include_metadata: true` so the
 metadata keys are available to the processor. An empty value and unset
 metadata are treated as distinct cases, and entries are
 case-insensitive.
+
+`batch::partition::cache_size` (default = 10000) limits how many
+distinct partition batchers are kept in memory at once. The value must
+be positive. When the limit is reached, the least recently used
+partition is flushed and removed. The current cache size and configured
+capacity are exported as `otelcol_exporter_queue_batch_partition_cache_size`
+and `otelcol_exporter_queue_batch_partition_cache_capacity`.
+
+`batch::partition::idle_timeout` (default = 90s) controls how long a
+partition may stay empty before it is removed. Keep it above the data
+arrival interval so partitions are not churned on every scrape. The
+value must be positive.
 
 ### Persisting the queue with a storage extension
 
@@ -108,10 +121,10 @@ restart.
 ```yaml
 extensions:
   file_storage:
-    directory: /var/lib/otelcol/queuebatch
+    directory: /var/lib/otelcol/queue_batch
 
 processors:
-  queuebatch:
+  queue_batch:
     # Persist the queue using the file_storage extension.
     storage: file_storage
 
@@ -120,7 +133,7 @@ service:
   pipelines:
     logs:
       receivers: [otlp]
-      processors: [queuebatch]
+      processors: [queue_batch]
       exporters: [otlp]
 ```
 

@@ -19,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
@@ -50,8 +49,7 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 	connID := component.NewIDWithName(nopType, "conn")
 
 	set := service.Settings{
-		BuildInfo:     component.NewDefaultBuildInfo(),
-		CollectorConf: confmap.New(),
+		BuildInfo: component.NewDefaultBuildInfo(),
 		ReceiversConfigs: map[component.ID]component.Config{
 			component.NewID(component.MustNewType("test")): &receiverConfig{},
 		},
@@ -292,11 +290,6 @@ func (t *testExtension) ComponentStatusChanged(
 	if source.ComponentID() == component.NewID(component.MustNewType("test")) {
 		t.eventsReceived[source] = append(t.eventsReceived[source], event)
 	}
-}
-
-// NotifyConfig implements the extensioncapabilities.ConfigWatcher interface.
-func (t *testExtension) NotifyConfig(_ context.Context, _ *confmap.Conf) error {
-	return nil
 }
 
 // Ready implements the extensioncapabilities.PipelineWatcher interface.

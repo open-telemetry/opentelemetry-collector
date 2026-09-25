@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: pkg/exporterhelper
+note: Add exporter and data_type attributes to exporter/enqueue spans.
+issues: [16022]
