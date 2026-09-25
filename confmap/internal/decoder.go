@@ -5,7 +5,6 @@ package internal // import "go.opentelemetry.io/collector/confmap/internal"
 
 import (
 	"encoding"
-	"errors"
 	"fmt"
 	"reflect"
 	"slices"
@@ -51,7 +50,15 @@ func WithForceUnmarshaler() UnmarshalOption {
 // Decodes time.Duration from strings. Allows custom unmarshaling for structs implementing
 // encoding.TextUnmarshaler. Allows custom unmarshaling for structs implementing confmap.Unmarshaler.
 func Decode(input, result any, settings UnmarshalOptions, skipTopLevelUnmarshaler bool) error {
+	_, err := decode(input, result, settings, skipTopLevelUnmarshaler)
+	return err
+}
+
+func decode(input, result any, settings UnmarshalOptions, skipTopLevelUnmarshaler bool) (*mapstructure.Metadata, error) {
+	metadata := new(mapstructure.Metadata)
+
 	dc := &mapstructure.DecoderConfig{
+		Metadata:         metadata,
 		ErrorUnused:      !settings.IgnoreUnused,
 		Result:           result,
 		TagName:          MapstructureTag,
@@ -76,17 +83,36 @@ func Decode(input, result any, settings UnmarshalOptions, skipTopLevelUnmarshale
 			zeroSliceAndMapHookFunc(),
 		),
 	}
+
 	decoder, err := mapstructure.NewDecoder(dc)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if err = decoder.Decode(input); err != nil {
-		if strings.HasPrefix(err.Error(), "error decoding ''") {
-			return errors.Unwrap(err)
+
+	if err := decoder.Decode(input); err != nil {
+		return nil, err
+	}
+	return metadata, nil
+}
+
+func intersect(a, b []string) []string {
+	if len(a) == 0 || len(b) == 0 {
+		return nil
+	}
+
+	bSet := make(map[string]struct{}, len(b))
+	for _, key := range b {
+		bSet[key] = struct{}{}
+	}
+
+	result := make([]string, 0, len(a))
+	for _, key := range a {
+		if _, ok := bSet[key]; ok {
+			result = append(result, key)
 		}
-		return err
 	}
-	return nil
+
+	return result
 }
 
 // When a value has been loaded from an external source via a provider, we keep both the
@@ -224,25 +250,36 @@ func unmarshalerEmbeddedStructsHookFunc(settings UnmarshalOptions) mapstructure.
 
 		// First call Unmarshaler on squashed embedded fields, if necessary.
 		var squashedUnmarshalers []int
+		var unusedSets [][]string
+
 		for i := 0; i < to.Type().NumField(); i++ {
 			f := to.Type().Field(i)
 			if !f.IsExported() {
 				continue
 			}
+
 			tagParts := strings.Split(f.Tag.Get(MapstructureTag), ",")
 			if !slices.Contains(tagParts[1:], "squash") {
 				continue
 			}
+
 			unmarshaler, ok := reflect.TypeAssert[Unmarshaler](to.Field(i).Addr())
 			if !ok {
 				continue
 			}
+
+			state := &decodeState{}
+
 			c := NewFromStringMap(fromAsMap)
 			c.skipTopLevelUnmarshaler = true
+			c.decodeState = state
+
 			if err := unmarshaler.Unmarshal(c); err != nil {
 				return nil, err
 			}
+
 			squashedUnmarshalers = append(squashedUnmarshalers, i)
+			unusedSets = append(unusedSets, state.unused)
 		}
 
 		// No squashed unmarshalers, we can let mapstructure do its job.
@@ -277,17 +314,47 @@ func unmarshalerEmbeddedStructsHookFunc(settings UnmarshalOptions) mapstructure.
 		// This performs a recursive call into this hook, which will be handled by the "no squashed unmarshalers" case above.
 		// We need to set `IgnoreUnused` to avoid errors from the map containing fields only present in the full struct.
 		settings.IgnoreUnused = true
-		if err := Decode(fromAsMap, restValue.Interface(), settings, true); err != nil {
+
+		restMetadata, err := decode(
+			fromAsMap,
+			restValue.Interface(),
+			settings,
+			true,
+		)
+		if err != nil {
 			return nil, err
+		}
+		unusedSets = append(unusedSets, restMetadata.Unused)
+
+		unknownKeys := intersectAll(unusedSets)
+		if len(unknownKeys) > 0 {
+			return nil, fmt.Errorf("has invalid keys: %s", strings.Join(unknownKeys, ", "))
 		}
 
 		// Copy decoding results back to the original struct.
+
 		for i, fieldValue := range fieldValues {
 			fieldValue.Set(restValue.Elem().Field(i))
 		}
 
 		return to, nil
 	})
+}
+
+func intersectAll(sets [][]string) []string {
+	if len(sets) == 0 {
+		return nil
+	}
+
+	result := append([]string(nil), sets[0]...)
+	for _, set := range sets[1:] {
+		result = intersect(result, set)
+		if len(result) == 0 {
+			return nil
+		}
+	}
+
+	return result
 }
 
 // Provides a mechanism for individual structs to define their own unmarshal logic,
@@ -320,10 +387,21 @@ func unmarshalerHookFunc(result any, skipTopLevelUnmarshaler bool) mapstructure.
 			unmarshaler = reflect.New(to.Type()).Interface().(Unmarshaler)
 		}
 
+		state := &decodeState{}
+
 		c := NewFromStringMap(from.Interface().(map[string]any))
 		c.skipTopLevelUnmarshaler = true
+		c.decodeState = state
+
 		if err := unmarshaler.Unmarshal(c); err != nil {
 			return nil, err
+		}
+
+		if len(state.unused) > 0 {
+			return nil, fmt.Errorf(
+				"has invalid keys: %s",
+				strings.Join(state.unused, ", "),
+			)
 		}
 
 		return unmarshaler, nil
