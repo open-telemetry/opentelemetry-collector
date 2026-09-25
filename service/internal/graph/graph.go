@@ -92,8 +92,38 @@ func Build(ctx context.Context, set Settings) (*Graph, error) {
 		return nil, err
 	}
 	pipelines.createEdges()
-	err := pipelines.buildComponents(ctx, set)
-	return pipelines, err
+	if err := pipelines.buildComponents(ctx, set); err != nil {
+		return pipelines, err
+	}
+	pipelines.warnIfDoubleBatching(set.PipelineConfigs)
+	return pipelines, nil
+}
+
+func (g *Graph) warnIfDoubleBatching(pipelineConfigs pipelines.Config) {
+	batchProcessorType := component.MustNewType("batch")
+	for pipelineID, pipelineCfg := range pipelineConfigs {
+		hasBatchProcessor := slices.ContainsFunc(pipelineCfg.Processors, func(processorID component.ID) bool {
+			return processorID.Type() == batchProcessorType
+		})
+		if !hasBatchProcessor {
+			continue
+		}
+
+		for _, node := range g.pipelines[pipelineID].exporters {
+			exporterNode, ok := node.(*exporterNode)
+			if !ok {
+				continue
+			}
+			if !exporterNode.exporterHelperBatchingEnabled {
+				continue
+			}
+			g.telemetry.Logger.Warn(
+				"Pipeline has both a batch processor and an exporter with batching enabled; this will cause double batching",
+				zap.Stringer("pipeline", pipelineID),
+				zap.Stringer("exporter", exporterNode.componentID),
+			)
+		}
+	}
 }
 
 // Creates a node for each instance of a component and adds it to the graph.

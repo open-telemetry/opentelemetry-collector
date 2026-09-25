@@ -106,6 +106,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 		be.firstSender = be.QueueSender
 	}
 
+	exporter.ReportBatchingStatus(set, batchEnabled)
 	return be, nil
 }
 
