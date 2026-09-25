@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 // This file encodes compatibility requirements for the keepalive config
@@ -84,6 +85,10 @@ func TestKeepaliveCompatPartialDeprecatedFields(t *testing.T) {
 // huaweicloudcesreceiver, haproxyreceiver, awsecscontainermetricsreceiver, and
 // awscontainerinsightreceiver in contrib. Zero must remain meaningful.
 func TestKeepaliveCompatFactoryZeroedDeprecatedFields(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", true))
+	})
 	cfg := NewDefaultClientConfig()
 	cfg.MaxIdleConns = 0
 	cfg.IdleConnTimeout = 0
@@ -97,6 +102,10 @@ func TestKeepaliveCompatFactoryZeroedDeprecatedFields(t *testing.T) {
 // Factories also set non-zero values on the deprecated fields, e.g.
 // signalfxexporter sets MaxIdleConns and MaxIdleConnsPerHost to 30000.
 func TestKeepaliveCompatFactoryCustomDeprecatedFields(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", true))
+	})
 	cfg := NewDefaultClientConfig()
 	cfg.MaxIdleConns = 30000
 	cfg.MaxIdleConnsPerHost = 30000
@@ -113,6 +122,10 @@ func TestKeepaliveCompatFactoryCustomDeprecatedFields(t *testing.T) {
 // mixed-config error, and the factory's values must survive for the settings
 // the keepalive section does not mention.
 func TestKeepaliveCompatFactoryFieldsDoNotConflictWithNewSection(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", true))
+	})
 	cfg := NewDefaultClientConfig()
 	cfg.MaxIdleConns = 30000
 	cfg.MaxIdleConnsPerHost = 30000
@@ -160,6 +173,10 @@ func TestKeepaliveCompatZeroValueClientConfig(t *testing.T) {
 // in contrib all set KeepAlivesEnabled = false in createDefaultConfig. The
 // built server must send `Connection: close`.
 func TestKeepaliveCompatServerFactoryDisabledKeepAlives(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", true))
+	})
 	cfg := NewDefaultServerConfig()
 	cfg.KeepAlivesEnabled = false
 	conf := confmap.NewFromStringMap(map[string]any{"endpoint": "localhost:0"})
@@ -171,6 +188,10 @@ func TestKeepaliveCompatServerFactoryDisabledKeepAlives(t *testing.T) {
 
 // The same via user configuration: `keep_alives_enabled: false` in yaml.
 func TestKeepaliveCompatServerDeprecatedDisableViaConfig(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", true))
+	})
 	cfg := NewDefaultServerConfig()
 	conf := confmap.NewFromStringMap(map[string]any{
 		"endpoint":            "localhost:0",
@@ -186,6 +207,10 @@ func TestKeepaliveCompatServerDeprecatedDisableViaConfig(t *testing.T) {
 // roundtrip: `print-initial-config` output is valid collector configuration,
 // and tooling (e.g. the OpAMP supervisor) re-marshals effective configs.
 func TestKeepaliveCompatClientMarshalRoundtrip(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", true))
+	})
 	cfg := NewDefaultClientConfig()
 	require.NoError(t, confmap.NewFromStringMap(map[string]any{"idle_conn_timeout": "60s"}).Unmarshal(&cfg))
 
@@ -201,6 +226,10 @@ func TestKeepaliveCompatClientMarshalRoundtrip(t *testing.T) {
 }
 
 func TestKeepaliveCompatServerMarshalRoundtrip(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", true))
+	})
 	cfg := NewDefaultServerConfig()
 	require.NoError(t, confmap.NewFromStringMap(map[string]any{"idle_timeout": "2m"}).Unmarshal(&cfg))
 
@@ -215,6 +244,10 @@ func TestKeepaliveCompatServerMarshalRoundtrip(t *testing.T) {
 // the section into the deprecated fields, so the marshaled form is legacy-style
 // and must reload to the same effective settings.
 func TestKeepaliveCompatNewSyntaxMarshalRoundtrip(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", true))
+	})
 	cfg := NewDefaultClientConfig()
 	require.NoError(t, confmap.NewFromStringMap(map[string]any{
 		"keepalive": map[string]any{"idle_conn_timeout": "60s"},
@@ -286,6 +319,10 @@ func TestKeepaliveCompatProgrammaticNoneDoesNotDisable(t *testing.T) {
 // carrier for the disable intent is 'disable_keep_alives: true', which
 // marshals. Contrast with the server case below.
 func TestKeepaliveCompatClientDisabledMarshalRoundtrip(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", true))
+	})
 	cfg := NewDefaultClientConfig()
 	require.NoError(t, confmap.NewFromStringMap(map[string]any{
 		"keepalive": map[string]any{"enabled": false},
@@ -307,6 +344,10 @@ func TestKeepaliveCompatClientDisabledMarshalRoundtrip(t *testing.T) {
 // omitempty tag on main; fixing it requires a change in how the field
 // marshals.
 func TestKeepaliveCompatServerDisabledLostOnMarshalRoundtrip(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", true))
+	})
 	cfg := NewDefaultServerConfig()
 	require.NoError(t, confmap.NewFromStringMap(map[string]any{
 		"keepalive": map[string]any{"enabled": false},
@@ -329,6 +370,10 @@ func TestKeepaliveCompatServerDisabledLostOnMarshalRoundtrip(t *testing.T) {
 // warnings the user never earned. Emitting the new shape instead would require
 // a custom confmap.Marshaler.
 func TestKeepaliveCompatNewSyntaxMarshalsAsDeprecated(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", true))
+	})
 	cfg := NewDefaultClientConfig()
 	require.NoError(t, confmap.NewFromStringMap(map[string]any{
 		"keepalive": map[string]any{"idle_conn_timeout": "60s"},
@@ -352,6 +397,10 @@ func TestKeepaliveCompatNewSyntaxMarshalsAsDeprecated(t *testing.T) {
 // comparing full decoded configs against expected literals trip over; such
 // tests must migrate their fixtures off the deprecated keys.
 func TestKeepaliveCompatDeprecatedConfigBreaksStructCompare(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", true))
+	})
 	decoded := NewDefaultClientConfig()
 	require.NoError(t, confmap.NewFromStringMap(map[string]any{"idle_conn_timeout": "60s"}).Unmarshal(&decoded))
 
