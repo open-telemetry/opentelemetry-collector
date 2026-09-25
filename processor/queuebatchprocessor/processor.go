@@ -40,7 +40,8 @@ func queueOptions(cfg *Config, next consumer.Capabilities, set processor.Setting
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: mutates}),
 		exporterhelper.WithTracer(
-			set.TracerProvider.Tracer("go.opentelemetry.io/collector/processor/queuebatchprocessor")),
+			set.TracerProvider.Tracer("go.opentelemetry.io/collector/processor/queuebatchprocessor"),
+		),
 	}
 }
 

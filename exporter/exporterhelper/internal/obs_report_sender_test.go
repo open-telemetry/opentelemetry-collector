@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
-	"go.opentelemetry.io/otel/trace"
 	grpccodes "google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -38,13 +37,6 @@ var (
 
 	errFake = errors.New("errFake")
 )
-
-func newTestTracer() trace.Tracer {
-	return componenttest.NewTelemetry().
-		NewTelemetrySettings().
-		TracerProvider.
-		Tracer("go.opentelemetry.io/collector/exporter/exporterhelper")
-}
 
 func TestExportTraceFailureAttributes(t *testing.T) {
 	tests := []struct {
@@ -816,8 +808,8 @@ func testBatchSize(t *testing.T, signal pipeline.Signal, req *requesttest.FakeRe
 				Count:        1,
 				Bounds:       bounds,
 				BucketCounts: itemsBuckets,
-				Min:          metricdata.NewExtrema[int64](int64(req.Items)),
-				Max:          metricdata.NewExtrema[int64](int64(req.Items)),
+				Min:          metricdata.NewExtrema(int64(req.Items)),
+				Max:          metricdata.NewExtrema(int64(req.Items)),
 				Sum:          int64(req.Items),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -831,8 +823,8 @@ func testBatchSize(t *testing.T, signal pipeline.Signal, req *requesttest.FakeRe
 				Count:        1,
 				Bounds:       bytesBounds,
 				BucketCounts: bytesBuckets,
-				Min:          metricdata.NewExtrema[int64](int64(req.Bytes)),
-				Max:          metricdata.NewExtrema[int64](int64(req.Bytes)),
+				Min:          metricdata.NewExtrema(int64(req.Bytes)),
+				Max:          metricdata.NewExtrema(int64(req.Bytes)),
 				Sum:          int64(req.Bytes),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
