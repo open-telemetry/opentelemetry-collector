@@ -5,6 +5,7 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 
 import (
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -50,4 +51,9 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 // The default set of extra attribute is empty
 func WithAttrs(attrs ...attribute.KeyValue) Option {
 	return internal.WithAttributes(attrs...)
+}
+
+// WithTracer overrides the tracer used by the exporter helper.
+func WithTracer(tracer trace.Tracer) Option {
+	return internal.WithTracer(tracer)
 }
