@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/processor/xprocessor"
 )
 
-var typ = component.MustNewType("queuebatch")
+var typ = component.MustNewType("queue_batch")
 
 func TestComponentFactoryType(t *testing.T) {
 	require.Equal(t, typ, NewFactory().Type())
