@@ -1143,10 +1143,12 @@ func TestValidateConfig(t *testing.T) {
 			wantErr: false,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			md := &Metadata{
-				Type: "test",
+				Type:         "test",
+				SendingQueue: &SendingQueue{Support: SendingQueueSupportDefault},
 				Status: &Status{
 					Class: "exporter",
 					Stability: StabilityMap{
@@ -1165,4 +1167,33 @@ func TestValidateConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestValidateSendingQueueDefaultsForExporters(t *testing.T) {
+	md := Metadata{Status: &Status{Class: "exporter"}}
+
+	require.NoError(t, md.validateSendingQueue())
+	require.Equal(t, &SendingQueue{Support: SendingQueueSupportDefault}, md.SendingQueue)
+}
+
+func TestValidateSendingQueueRejectsNonExporter(t *testing.T) {
+	md := Metadata{
+		Status:       &Status{Class: "receiver"},
+		SendingQueue: &SendingQueue{},
+	}
+
+	require.EqualError(t, md.validateSendingQueue(), "sending_queue is only valid for exporters")
+}
+
+func TestValidateIncludesSendingQueueErrors(t *testing.T) {
+	md := Metadata{
+		Type: "test",
+		Status: &Status{
+			Class:     "receiver",
+			Stability: StabilityMap{component.StabilityLevelBeta: {"metrics"}},
+		},
+		SendingQueue: &SendingQueue{},
+	}
+
+	require.ErrorContains(t, md.Validate(), "sending_queue is only valid for exporters")
 }

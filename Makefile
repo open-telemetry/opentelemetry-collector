@@ -214,6 +214,7 @@ prepare-contrib:
 	@echo Setting contrib at $(CONTRIB_PATH) to use this core checkout
 	@$(MAKE) -j4 -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
 		$(addprefix -replace ,$(join $(ALL_MOD_PATHS:%=go.opentelemetry.io/collector%=),$(ALL_MOD_PATHS:%=$(CURDIR)%)))"
+	@$(MAKE) -C $(CONTRIB_PATH)/internal/tools tidy
 
 	@$(MAKE) generate-contrib
 

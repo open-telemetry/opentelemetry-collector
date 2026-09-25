@@ -25,6 +25,31 @@ generated_package_name: string
 # Components can opt in gradually; defaults to false (shared ResourceAttributeConfig).
 override_value_enabled: bool
 
+# Optional for exporters: Omit to use the standard exporterhelper queue/batch sender defaults.
+sending_queue:
+  # Optional: Defaults to default. Specify has_overrides or omitted when a declaration is needed.
+  support: <has_overrides|omitted>
+  # Required when sending_queue is omitted or an override sets enabled to false.
+  rationale: string
+  overrides:
+    # Enabled must be explicit with has_overrides
+    enabled: bool
+    wait_for_result: bool
+    sizer: <requests|items|bytes>
+    queue_size: int64
+    block_on_overflow: bool
+    storage: string
+    num_consumers: int
+    batch:
+      # Enabled must be explicit with has_overrides
+      enabled: bool
+      flush_timeout: duration
+      sizer: <items|bytes>
+      min_size: int64
+      max_size: int64
+      partition:
+        metadata_keys: [string]
+
 # Required for components (Optional for subcomponents): A high-level view of the development status and use of this component
 status:
   # Required: The class of the component (For example receiver)

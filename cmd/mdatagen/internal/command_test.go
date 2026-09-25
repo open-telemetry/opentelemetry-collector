@@ -110,30 +110,31 @@ status:
 
 func TestRunContents(t *testing.T) {
 	tests := []struct {
-		yml                             string
-		wantMetricsGenerated            bool
-		wantLogsBuilderGenerated        bool
-		wantEventsGenerated             bool
-		wantMetricsContext              bool
-		wantLogsGenerated               bool
-		wantConfigGenerated             bool
-		wantTelemetryGenerated          bool
-		wantResourceAttributesGenerated bool
-		wantReadmeGenerated             bool
-		wantStatusGenerated             bool
-		wantComponentTestGenerated      bool
-		wantGoleakIgnore                bool
-		wantGoleakSkip                  bool
-		wantGoleakSetup                 bool
-		wantGoleakTeardown              bool
-		wantFeatureGatesGenerated       bool
-		wantConfigSchemaGenerated       bool
-		wantMetricsSchemaYamlGenerated  bool
-		wantConfigDocGenerated          bool
-		wantErr                         bool
-		wantOrderErr                    bool
-		wantRunErr                      bool
-		wantAttributes                  []string
+		yml                               string
+		wantMetricsGenerated              bool
+		wantLogsBuilderGenerated          bool
+		wantEventsGenerated               bool
+		wantMetricsContext                bool
+		wantLogsGenerated                 bool
+		wantConfigGenerated               bool
+		wantTelemetryGenerated            bool
+		wantResourceAttributesGenerated   bool
+		wantReadmeGenerated               bool
+		wantStatusGenerated               bool
+		wantSendingQueueFunctionGenerated bool
+		wantComponentTestGenerated        bool
+		wantGoleakIgnore                  bool
+		wantGoleakSkip                    bool
+		wantGoleakSetup                   bool
+		wantGoleakTeardown                bool
+		wantFeatureGatesGenerated         bool
+		wantConfigSchemaGenerated         bool
+		wantMetricsSchemaYamlGenerated    bool
+		wantConfigDocGenerated            bool
+		wantErr                           bool
+		wantOrderErr                      bool
+		wantRunErr                        bool
+		wantAttributes                    []string
 	}{
 		{
 			yml:     "invalid.yaml",
@@ -184,10 +185,11 @@ func TestRunContents(t *testing.T) {
 			wantLogsGenerated:               true,
 		},
 		{
-			yml:                        "status_only.yaml",
-			wantStatusGenerated:        true,
-			wantReadmeGenerated:        true,
-			wantComponentTestGenerated: true,
+			yml:                               "status_only.yaml",
+			wantStatusGenerated:               true,
+			wantSendingQueueFunctionGenerated: true,
+			wantReadmeGenerated:               true,
+			wantComponentTestGenerated:        true,
 		},
 		{
 			yml:                        "with_tests_receiver.yaml",
@@ -198,10 +200,11 @@ func TestRunContents(t *testing.T) {
 			wantLogsGenerated:          true,
 		},
 		{
-			yml:                        "with_tests_exporter.yaml",
-			wantStatusGenerated:        true,
-			wantReadmeGenerated:        true,
-			wantComponentTestGenerated: true,
+			yml:                               "with_tests_exporter.yaml",
+			wantStatusGenerated:               true,
+			wantSendingQueueFunctionGenerated: true,
+			wantReadmeGenerated:               true,
+			wantComponentTestGenerated:        true,
 		},
 		{
 			yml:                        "with_tests_processor.yaml",
@@ -397,7 +400,7 @@ foo
 			require.NoError(t, err)
 
 			// Documentation is generated when any of these features are present
-			wantDocumentationGenerated := tt.wantFeatureGatesGenerated || tt.wantMetricsGenerated || tt.wantTelemetryGenerated || tt.wantResourceAttributesGenerated || tt.wantEventsGenerated
+			wantDocumentationGenerated := tt.wantFeatureGatesGenerated || tt.wantMetricsGenerated || tt.wantTelemetryGenerated || tt.wantResourceAttributesGenerated || tt.wantEventsGenerated || md.SendingQueue != nil
 
 			var contents []byte
 			if tt.wantMetricsGenerated {
@@ -474,7 +477,15 @@ foo
 			}
 
 			if tt.wantStatusGenerated {
-				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_status.go"))
+				statusPath := filepath.Join(tmpdir, generatedPackageDir, "generated_status.go")
+				require.FileExists(t, statusPath)
+				contents, err = os.ReadFile(filepath.Clean(statusPath))
+				require.NoError(t, err)
+				if tt.wantSendingQueueFunctionGenerated {
+					require.Contains(t, string(contents), "func NewDefaultSendingQueueConfig()")
+				} else {
+					require.NotContains(t, string(contents), "func NewDefaultSendingQueueConfig()")
+				}
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_status.go"))
 			}
@@ -1791,6 +1802,102 @@ func TestGenerateConfigGoStruct_GeneratesTestFile(t *testing.T) {
 	content, err := os.ReadFile(filepath.Join(outputDir, "generated_config_test.go")) // #nosec G304
 	require.NoError(t, err)
 	require.Contains(t, string(content), "func TestCreateDefaultConfig(")
+}
+
+func TestGenerateComponentTestExporterDefaultQueueBatchSender(t *testing.T) {
+	md := Metadata{
+		Type:         "test",
+		PackageName:  "go.opentelemetry.io/collector/exporter/testexporter",
+		Status:       &Status{Class: "exporter"},
+		SendingQueue: &SendingQueue{Support: SendingQueueSupportDefault},
+	}
+
+	generated, err := executeTemplate(
+		"templates/component_test.go.tmpl",
+		md,
+		"testexporter",
+		"go.opentelemetry.io/collector",
+		getTemplateFuncMap(md, "go.opentelemetry.io/collector"),
+	)
+	require.NoError(t, err)
+	require.Contains(t, string(generated), "func TestComponentDefaultQueueBatchSender(")
+	require.Contains(t, string(generated), "configoptional.Optional[exporterhelper.QueueBatchConfig]")
+	require.Contains(t, string(generated), `Tag.Get("mapstructure")`)
+	require.Contains(t, string(generated), "internalmetadata.NewDefaultSendingQueueConfig()")
+	require.Contains(t, string(generated), "pkg.exporterhelper.queueBatchEnabled")
+
+	md.SendingQueue = &SendingQueue{
+		Support:   SendingQueueSupportOmitted,
+		Rationale: "This exporter has no sender.",
+	}
+	generated, err = executeTemplate(
+		"templates/component_test.go.tmpl",
+		md,
+		"testexporter",
+		"go.opentelemetry.io/collector",
+		getTemplateFuncMap(md, "go.opentelemetry.io/collector"),
+	)
+	require.NoError(t, err)
+	require.Contains(t, string(generated), "func TestComponentDefaultQueueBatchSender(")
+	require.Contains(t, string(generated), "require.NotEqual(t, optionalQueueType, fieldType.Type")
+	require.Contains(t, string(generated), "require.NotEqual(t, queueType, fieldType.Type")
+	require.NotContains(t, string(generated), "internalmetadata.NewDefaultSendingQueueConfig()")
+}
+
+func TestGenerateSendingQueueNestedBatchOverrides(t *testing.T) {
+	md := Metadata{
+		Type:   "test",
+		Status: &Status{Class: "exporter"},
+		SendingQueue: &SendingQueue{
+			Support: SendingQueueSupportHasOverrides,
+			Overrides: SendingQueueOverrides{
+				"enabled": false,
+				"batch": map[string]any{
+					"enabled":  false,
+					"min_size": int64(123),
+				},
+			},
+		},
+	}
+
+	generated, err := executeTemplate(
+		"templates/status.go.tmpl",
+		md,
+		"metadata",
+		"go.opentelemetry.io/collector",
+		getTemplateFuncMap(md, "go.opentelemetry.io/collector"),
+	)
+	require.NoError(t, err)
+	_, err = parser.ParseFile(token.NewFileSet(), "generated_status.go", generated, parser.AllErrors)
+	require.NoError(t, err)
+	require.NotContains(t, string(generated), "confmap")
+	require.NotContains(t, string(generated), "panic(")
+	require.Contains(t, string(generated), "cfg := exporterhelper.NewDefaultQueueConfig()")
+	require.Contains(t, string(generated), "batchCfg.MinSize = 123")
+	require.NotContains(t, string(generated), "cfg.QueueSize =")
+	require.Contains(t, string(generated), "cfg.Batch = configoptional.Default(batchCfg)")
+	require.Contains(t, string(generated), "return configoptional.Default(cfg)")
+}
+
+func TestGenerateSendingQueueDefaultFollowsFeatureGate(t *testing.T) {
+	md := Metadata{
+		Type:         "test",
+		Status:       &Status{Class: "exporter"},
+		SendingQueue: &SendingQueue{Support: SendingQueueSupportDefault},
+	}
+
+	generated, err := executeTemplate(
+		"templates/status.go.tmpl",
+		md,
+		"metadata",
+		"go.opentelemetry.io/collector",
+		getTemplateFuncMap(md, "go.opentelemetry.io/collector"),
+	)
+	require.NoError(t, err)
+	require.Contains(t, string(generated), "return configoptional.Some(exporterhelper.NewDefaultQueueConfig())")
+	require.NotContains(t, string(generated), "time")
+	require.NotContains(t, string(generated), "confmap")
+	require.NotContains(t, string(generated), "panic(")
 }
 
 func TestGenerateConfigGoStruct_TestFileContainsValidateTestWhenValidatorsPresent(t *testing.T) {

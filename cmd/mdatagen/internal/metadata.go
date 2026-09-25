@@ -66,6 +66,8 @@ type Metadata struct {
 	ShortFolderName string `mapstructure:"-"`
 	// Tests is the set of tests generated with the component
 	Tests Tests `mapstructure:"tests"`
+	// SendingQueue declares the exporter queue/batch sender defaults.
+	SendingQueue *SendingQueue `mapstructure:"sending_queue"`
 	// PackageName is the name of the package where the component is defined.
 	PackageName string `mapstructure:"package_name"`
 	// FeatureGates that are managed by the component.
@@ -139,11 +141,28 @@ func (md *Metadata) Validate() error {
 		errs = errors.Join(errs, err)
 	}
 
+	if err := md.validateSendingQueue(); err != nil {
+		errs = errors.Join(errs, err)
+	}
+
 	if err := md.validateTests(); err != nil {
 		errs = errors.Join(errs, err)
 	}
 
 	return errs
+}
+
+func (md *Metadata) validateSendingQueue() error {
+	if md.Status == nil || md.Status.Class != "exporter" {
+		if md.SendingQueue != nil {
+			return errors.New("sending_queue is only valid for exporters")
+		}
+		return nil
+	}
+	if md.SendingQueue == nil {
+		md.SendingQueue = &SendingQueue{}
+	}
+	return md.SendingQueue.Validate()
 }
 
 func (md *Metadata) validateTests() error {
@@ -598,7 +617,8 @@ func (mvt *ValueType) UnmarshalText(text []byte) error {
 
 // String returns capitalized name of the ValueType.
 func (mvt ValueType) String() string {
-	return strings.Title(strings.ToLower(mvt.ValueType.String())) //nolint:staticcheck // SA1019
+	valueType := strings.ToLower(mvt.ValueType.String())
+	return strings.ToUpper(valueType[:1]) + valueType[1:]
 }
 
 // Primitive returns name of primitive type for the ValueType.

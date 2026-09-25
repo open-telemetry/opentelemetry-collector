@@ -58,6 +58,69 @@ Below are some more examples that can be used for reference:
 
 You can run `cd cmd/mdatagen && $(GOCMD) install .` to install the `mdatagen` tool in `GOBIN` and then run `mdatagen metadata.yaml` to generate documentation for a specific component or you can run `make generate` to generate documentation for all components.
 
+### Exporter queue/batch sender defaults
+
+Exporters use the standard queue/batch sender defaults unless
+declared in `metadata.yaml` using the `sending_queue` field.
+
+The exporter config must declare exactly one named, top-level field with
+type `configoptional.Optional[exporterhelper.QueueBatchConfig]` and the
+`mapstructure:"sending_queue"` tag. Nested or squashed queue fields are not
+supported.
+
+```yaml
+sending_queue:
+  support: has_overrides
+  overrides:
+    enabled: true
+    num_consumers: 1
+    batch:
+      enabled: true
+```
+
+#### default
+
+The default setting can be set explicitly:
+
+```yaml
+sending_queue:
+  support: default
+```
+
+> [!NOTE]
+> The default behavior uses the `pkg.exporterhelper.queueBatchEnabled`
+> feature flag to determine the `batch::enabled` value. This value is
+> changing to `true` as documented in the [batching migration RFC](../../docs/rfcs/batching-migration.md).
+
+#### has_overrides
+
+When set to `has_overrides`, overrides are provided in the `overrides`
+field, for example:
+
+```yaml
+sending_queue:
+  support: has_overrides
+  overrides:
+    enabled: true
+    batch:
+      enabled: false
+```
+
+Overrides are considered relative to the post-migration default.  The
+`overrides::enabled` and `overrides::batch::enabled` fields are
+explicitly required. Set `overrides::batch::enabled` to false to
+disable batching before or after the [batching
+migration](../../docs/rfcs/batching-migration.md).
+
+#### omitted
+
+When set to `omitted`, the sending queue is not used in the exporter.
+
+```yaml
+sending_queue:
+  support: omitted
+```
+
 ### Central configuration file
 
 `mdatagen` supports a repository-level configuration file named `.mdatagen.yaml`.

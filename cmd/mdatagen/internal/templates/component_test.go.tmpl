@@ -11,21 +11,34 @@ import (
 	"context"
 	{{- end }}
 	"testing"
+	{{- if isExporter }}
+	{{- if not .SendingQueue.IsOmitted }}
+	"fmt"
+	{{- end }}
+	"reflect"
+	"strings"
+	{{- end }}
 	{{- if and (not (and .Tests.SkipLifecycle .Tests.SkipShutdown)) (or isExporter isProcessor) }}
 	"time"
 	{{- end }}
 
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	{{- if isExporter }}
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	{{- if not .SendingQueue.IsOmitted }}
+	internalmetadata "{{ .PackageName }}/internal/{{ .GeneratedPackageName }}"
+	"go.opentelemetry.io/collector/internal/testutil"
+	{{- end }}
+	{{- end }}
 	{{- if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) }}
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	{{- if isExporter }}
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	{{- if supportsProfiles }}
-	"go.opentelemetry.io/collector/exporter/xexporter"
-	{{- end }}
 	{{- end }}
 	{{- if isProcessor }}
 	{{- if not .Tests.SkipContextPropagation }}
@@ -90,6 +103,62 @@ func TestComponentConfigStruct(t *testing.T) {
 	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
 }
 
+{{ if isExporter -}}
+func TestComponentDefaultQueueBatchSender(t *testing.T) {
+	optionalQueueType := reflect.TypeOf(configoptional.None[exporterhelper.QueueBatchConfig]())
+	{{- if .SendingQueue.IsOmitted }}
+	queueType := reflect.TypeOf(exporterhelper.QueueBatchConfig{})
+	{{- end }}
+
+	checkConfig := func(t *testing.T) configoptional.Optional[exporterhelper.QueueBatchConfig] {
+		cfg := reflect.Indirect(reflect.ValueOf(NewFactory().CreateDefaultConfig()))
+		require.Equal(t, reflect.Struct, cfg.Kind(), "exporter default config must be a struct or pointer to a struct")
+
+		var queueConfig configoptional.Optional[exporterhelper.QueueBatchConfig]
+		{{- if not .SendingQueue.IsOmitted }}
+		found := false
+		{{- end }}
+		for i := 0; i < cfg.NumField(); i++ {
+			fieldType := cfg.Type().Field(i)
+			tag := strings.Split(fieldType.Tag.Get("mapstructure"), ",")[0]
+			{{- if .SendingQueue.IsOmitted }}
+			require.NotEqual(t, "sending_queue", tag, "exporter default config must not define sending_queue")
+			require.NotEqual(t, optionalQueueType, fieldType.Type, "exporter default config must not contain an optional queue config")
+			require.NotEqual(t, queueType, fieldType.Type, "exporter default config must not contain a queue config")
+			{{- else }}
+			if tag != "sending_queue" {
+				continue
+			}
+			require.False(t, found, "exporter default config must define sending_queue exactly once")
+			require.Equal(t, optionalQueueType, fieldType.Type, "sending_queue must have type configoptional.Optional[exporterhelper.QueueBatchConfig]")
+			queueConfig = cfg.Field(i).Interface().(configoptional.Optional[exporterhelper.QueueBatchConfig])
+			found = true
+			{{- end }}
+		}
+
+		{{- if .SendingQueue.IsOmitted }}
+		return queueConfig
+		{{- else }}
+		require.True(t, found, "exporter default config must define sending_queue")
+		return queueConfig
+		{{- end }}
+	}
+
+	{{- if .SendingQueue.IsOmitted }}
+	checkConfig(t)
+	{{- else }}
+	const queueBatchFeatureGate = "pkg.exporterhelper.queueBatchEnabled"
+
+	for _, enabled := range []bool{false, true} {
+		t.Run(fmt.Sprintf("batch-feature-gate-%v", enabled), func(t *testing.T) {
+			testutil.SetFeatureGate(t, queueBatchFeatureGate, enabled)
+			require.Equal(t, internalmetadata.NewDefaultSendingQueueConfig(), checkConfig(t))
+		})
+	}
+	{{- end }}
+}
+
+{{ end -}}
 {{ if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) -}}
 {{ if isExporter -}}
 func TestComponentLifecycle(t *testing.T) {
