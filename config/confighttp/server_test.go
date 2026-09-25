@@ -997,24 +997,20 @@ func TestDefaultHTTPServerSettings(t *testing.T) {
 	assert.Equal(t, 30*time.Second, httpServerSettings.WriteTimeout)
 	assert.Equal(t, time.Duration(0), httpServerSettings.ReadTimeout)
 	assert.Equal(t, 1*time.Minute, httpServerSettings.ReadHeaderTimeout)
-	assert.Equal(t, 1*time.Minute, httpServerSettings.IdleTimeout)
-	assert.False(t, httpServerSettings.Keepalive.HasValue())
+	assert.True(t, httpServerSettings.Keepalive.HasValue())
 }
 
 func TestHTTPServerKeepAlives(t *testing.T) {
 	tests := []struct {
 		name               string
-		keepAlivesEnabled  bool
 		expectedKeepAlives bool
 	}{
 		{
 			name:               "KeepAlives enabled",
-			keepAlivesEnabled:  true,
 			expectedKeepAlives: true,
 		},
 		{
 			name:               "KeepAlives disabled",
-			keepAlivesEnabled:  false,
 			expectedKeepAlives: false,
 		},
 	}
@@ -1026,7 +1022,6 @@ func TestHTTPServerKeepAlives(t *testing.T) {
 					Endpoint:  "localhost:0",
 					Transport: confignet.TransportTypeTCP,
 				},
-				KeepAlivesEnabled: tt.keepAlivesEnabled,
 			}
 
 			ln, err := sc.ToListener(context.Background())
@@ -1045,8 +1040,6 @@ func TestHTTPServerKeepAlives(t *testing.T) {
 			require.NotNil(t, resp)
 			_ = resp.Body.Close()
 			assert.Equal(t, http.StatusOK, resp.StatusCode)
-
-			assert.Equal(t, tt.keepAlivesEnabled, sc.KeepAlivesEnabled)
 		})
 	}
 }
@@ -1159,13 +1152,14 @@ func TestServerUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 	// Validate the server configuration using reflection-based validation
 	require.NoError(t, confmap.Validate(&serverConfig), "Server configuration should be valid")
 
+	keepaliveConfig := configoptional.Some(NewDefaultKeepaliveServerConfig())
+	keepaliveConfig.Get().IdleTimeout = 120 * time.Second
 	// Verify basic fields
 	assert.Equal(t, "0.0.0.0:4318", serverConfig.NetAddr.Endpoint)
 	assert.Equal(t, 30*time.Second, serverConfig.ReadTimeout)
 	assert.Equal(t, 10*time.Second, serverConfig.ReadHeaderTimeout)
 	assert.Equal(t, 30*time.Second, serverConfig.WriteTimeout)
-	assert.Equal(t, configoptional.None[KeepaliveServerConfig](), serverConfig.Keepalive)
-	assert.Equal(t, 120*time.Second, serverConfig.IdleTimeout)
+	assert.Equal(t, keepaliveConfig, serverConfig.Keepalive)
 	assert.Equal(t, int64(33554432), serverConfig.MaxRequestBodySize)
 	assert.True(t, serverConfig.IncludeMetadata)
 
