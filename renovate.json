@@ -145,13 +145,14 @@
       "enabled": false
     }
   ],
+  "gitIgnoredAuthors": [
+    "197425009+otelbot@users.noreply.github.com"
+  ],
   "ignoreDeps": [
     "github.com/mattn/go-ieproxy"
   ],
   "prConcurrentLimit": 200,
-  "suppressNotifications": [
-    "prEditedNotification"
-  ],
+  "prHourlyLimit": 5,
   "postUpdateOptions": [
     "gomodTidy"
   ]

@@ -23,6 +23,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.161.0
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.161.0
 	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.161.0
+	go.opentelemetry.io/collector/featuregate v1.67.0
 	go.opentelemetry.io/collector/internal/testutil v0.161.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.70.0
 	go.opentelemetry.io/otel v1.46.0
@@ -34,7 +35,6 @@ require (
 require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.67.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.161.0 // indirect
 )
 
