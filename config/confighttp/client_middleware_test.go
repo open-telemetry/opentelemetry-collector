@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -18,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmiddleware"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest"
@@ -241,6 +243,95 @@ func TestGRPCClientMiddlewareErrors(t *testing.T) {
 			// We'll test the middleware failure path here using the HTTP client approach,
 			// as the middleware resolution logic is the same
 			_, err := tc.config.ToClient(context.Background(), tc.extensions, componenttest.NewNopTelemetrySettings())
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.errText)
+		})
+	}
+}
+
+func TestClientCustomDialer(t *testing.T) {
+	// Create a test server that returns "OK"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("OK"))
+	}))
+	defer server.Close()
+	var dialed bool
+	dialerExtension := struct {
+		extension.Extension
+		extensionmiddleware.GetDialerFunc
+	}{
+		Extension: extensionmiddlewaretest.NewNop(),
+		GetDialerFunc: func(context.Context) (func(ctx context.Context, network, address string) (net.Conn, error), error) {
+			return func(ctx context.Context, network, address string) (net.Conn, error) {
+				dialed = true
+				return (&net.Dialer{}).DialContext(ctx, network, address)
+			}, nil
+		},
+	}
+	extensions := map[component.ID]component.Component{
+		component.MustNewID("dialer"): dialerExtension,
+	}
+
+	clientConfig := ClientConfig{
+		Endpoint: server.URL,
+		Dialer:   configoptional.Some(newTestClientConfig("dialer")),
+	}
+
+	client, err := clientConfig.ToClient(context.Background(), extensions, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	req, err := http.NewRequest(http.MethodGet, server.URL, http.NoBody)
+	require.NoError(t, err)
+
+	resp, err := client.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.Equal(t, "OK", string(body))
+	assert.True(t, dialed, "expected the custom dialer to be used")
+}
+
+func TestClientCustomDialerErrors(t *testing.T) {
+	tests := []struct {
+		name       string
+		extensions map[component.ID]component.Component
+		dialer     configmiddleware.Config
+		errText    string
+	}{
+		{
+			name:       "dialer_not_found",
+			extensions: map[component.ID]component.Component{},
+			dialer:     newTestClientConfig("nonexistent"),
+			errText:    "failed to resolve middleware \"nonexistent\": middleware not found",
+		},
+		{
+			name: "get_dialer_fails",
+			extensions: map[component.ID]component.Component{
+				component.MustNewID("errormw"): struct {
+					extension.Extension
+					extensionmiddleware.GetDialerFunc
+				}{
+					Extension: extensionmiddlewaretest.NewNop(),
+					GetDialerFunc: func(context.Context) (func(ctx context.Context, network, address string) (net.Conn, error), error) {
+						return nil, errors.New("dialer error")
+					},
+				},
+			},
+			dialer:  newTestClientConfig("errormw"),
+			errText: "dialer error",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			clientConfig := ClientConfig{
+				Endpoint: "http://localhost:1234",
+				Dialer:   configoptional.Some(tc.dialer),
+			}
+			_, err := clientConfig.ToClient(context.Background(), tc.extensions, componenttest.NewNopTelemetrySettings())
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tc.errText)
 		})
