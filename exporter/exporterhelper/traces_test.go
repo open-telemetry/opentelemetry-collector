@@ -265,6 +265,22 @@ func TestTracesRequest_WithSpan(t *testing.T) {
 	checkWrapSpanForTraces(t, sr, set.TracerProvider.Tracer("test"), te, nil)
 }
 
+func TestTraces_WithTracer(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+
+	tracer := tt.NewTelemetrySettings().TracerProvider.Tracer("test")
+
+	te, err := NewTraces(
+		context.Background(),
+		exportertest.NewNopSettings(exportertest.NopType),
+		&fakeTracesConfig,
+		newTraceDataPusher(nil),
+		WithTracer(tracer),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, te)
+}
+
 func TestTraces_WithSpan_ReturnError(t *testing.T) {
 	set := exportertest.NewNopSettings(exportertest.NopType)
 	sr := new(tracetest.SpanRecorder)
