@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
+	"go.opentelemetry.io/otel/trace"
 	grpccodes "google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -37,6 +38,13 @@ var (
 
 	errFake = errors.New("errFake")
 )
+
+func newTestTracer() trace.Tracer {
+	return componenttest.NewTelemetry().
+		NewTelemetrySettings().
+		TracerProvider.
+		Tracer("go.opentelemetry.io/collector/exporter/exporterhelper")
+}
 
 func TestExportTraceFailureAttributes(t *testing.T) {
 	tests := []struct {
@@ -94,13 +102,20 @@ func TestExportTraceFailureAttributes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			telemetry := componenttest.NewTelemetry()
-			t.Cleanup(func() { require.NoError(t, telemetry.Shutdown(context.Background())) })
+			telemetrySettings := telemetry.NewTelemetrySettings()
 
 			obsrep, err := newObsReportSender(
-				exporter.Settings{ID: exporterID, TelemetrySettings: telemetry.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+				exporter.Settings{
+					ID:                exporterID,
+					TelemetrySettings: telemetrySettings,
+					BuildInfo:         component.NewDefaultBuildInfo(),
+				},
 				pipeline.SignalTraces,
 				nil,
 				false,
+				telemetrySettings.TracerProvider.Tracer(
+					"go.opentelemetry.io/collector/exporter/exporterhelper",
+				),
 				sender.NewSender(func(context.Context, request.Request) error {
 					return tt.err
 				}),
@@ -169,14 +184,25 @@ func TestExportTraceFailureAttributesGRPCError(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			telemetry := componenttest.NewTelemetry()
-			t.Cleanup(func() { require.NoError(t, telemetry.Shutdown(context.Background())) })
+			t.Cleanup(func() {
+				require.NoError(t, telemetry.Shutdown(context.Background()))
+			})
 
+			telemetrySettings := telemetry.NewTelemetrySettings()
 			grpcErr := status.Error(tt.grpcCode, "test error")
+
 			obsrep, err := newObsReportSender(
-				exporter.Settings{ID: exporterID, TelemetrySettings: telemetry.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+				exporter.Settings{
+					ID:                exporterID,
+					TelemetrySettings: telemetrySettings,
+					BuildInfo:         component.NewDefaultBuildInfo(),
+				},
 				pipeline.SignalTraces,
 				nil,
 				false,
+				telemetrySettings.TracerProvider.Tracer(
+					"go.opentelemetry.io/collector/exporter/exporterhelper",
+				),
 				sender.NewSender(func(context.Context, request.Request) error {
 					return grpcErr
 				}),
@@ -206,18 +232,34 @@ func TestExportTraceFailureAttributesGRPCError(t *testing.T) {
 
 func TestExportTraceDataOp(t *testing.T) {
 	tt := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	t.Cleanup(func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	})
 
-	parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+	telemetrySettings := tt.NewTelemetrySettings()
+
+	parentCtx, parentSpan := telemetrySettings.TracerProvider.
+		Tracer("test").
+		Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	var exporterErr error
+
 	obsrep, err := newObsReportSender(
-		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		exporter.Settings{
+			ID:                exporterID,
+			TelemetrySettings: telemetrySettings,
+			BuildInfo:         component.NewDefaultBuildInfo(),
+		},
 		pipeline.SignalTraces,
 		nil,
 		false,
-		sender.NewSender(func(context.Context, request.Request) error { return exporterErr }),
+		telemetrySettings.TracerProvider.Tracer(
+			"go.opentelemetry.io/collector/exporter/exporterhelper",
+		),
+		sender.NewSender(func(context.Context, request.Request) error {
+			return exporterErr
+		}),
 	)
 	require.NoError(t, err)
 
@@ -283,18 +325,34 @@ func TestExportTraceDataOp(t *testing.T) {
 
 func TestExportMetricsOp(t *testing.T) {
 	tt := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	t.Cleanup(func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	})
 
-	parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+	telemetrySettings := tt.NewTelemetrySettings()
+
+	parentCtx, parentSpan := telemetrySettings.TracerProvider.
+		Tracer("test").
+		Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	var exporterErr error
+
 	obsrep, err := newObsReportSender(
-		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		exporter.Settings{
+			ID:                exporterID,
+			TelemetrySettings: telemetrySettings,
+			BuildInfo:         component.NewDefaultBuildInfo(),
+		},
 		pipeline.SignalMetrics,
 		nil,
 		false,
-		sender.NewSender(func(context.Context, request.Request) error { return exporterErr }),
+		telemetrySettings.TracerProvider.Tracer(
+			"go.opentelemetry.io/collector/exporter/exporterhelper",
+		),
+		sender.NewSender(func(context.Context, request.Request) error {
+			return exporterErr
+		}),
 	)
 	require.NoError(t, err)
 
@@ -360,18 +418,34 @@ func TestExportMetricsOp(t *testing.T) {
 
 func TestExportLogsOp(t *testing.T) {
 	tt := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	t.Cleanup(func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	})
 
-	parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+	telemetrySettings := tt.NewTelemetrySettings()
+
+	parentCtx, parentSpan := telemetrySettings.TracerProvider.
+		Tracer("test").
+		Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	var exporterErr error
+
 	obsrep, err := newObsReportSender(
-		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		exporter.Settings{
+			ID:                exporterID,
+			TelemetrySettings: telemetrySettings,
+			BuildInfo:         component.NewDefaultBuildInfo(),
+		},
 		pipeline.SignalLogs,
 		nil,
 		false,
-		sender.NewSender(func(context.Context, request.Request) error { return exporterErr }),
+		telemetrySettings.TracerProvider.Tracer(
+			"go.opentelemetry.io/collector/exporter/exporterhelper",
+		),
+		sender.NewSender(func(context.Context, request.Request) error {
+			return exporterErr
+		}),
 	)
 	require.NoError(t, err)
 
@@ -559,18 +633,34 @@ func TestExtractFailureAttributes(t *testing.T) {
 
 func TestExportProfilesOp(t *testing.T) {
 	tt := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	t.Cleanup(func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	})
 
-	parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+	telemetrySettings := tt.NewTelemetrySettings()
+
+	parentCtx, parentSpan := telemetrySettings.TracerProvider.
+		Tracer("test").
+		Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	var exporterErr error
+
 	obsrep, err := newObsReportSender(
-		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		exporter.Settings{
+			ID:                exporterID,
+			TelemetrySettings: telemetrySettings,
+			BuildInfo:         component.NewDefaultBuildInfo(),
+		},
 		xpipeline.SignalProfiles,
 		nil,
 		false,
-		sender.NewSender(func(context.Context, request.Request) error { return exporterErr }),
+		telemetrySettings.TracerProvider.Tracer(
+			"go.opentelemetry.io/collector/exporter/exporterhelper",
+		),
+		sender.NewSender(func(context.Context, request.Request) error {
+			return exporterErr
+		}),
 	)
 	require.NoError(t, err)
 
@@ -641,14 +731,27 @@ type testParams struct {
 
 func TestObsReportSenderBatchSizeDisabled(t *testing.T) {
 	tt := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	t.Cleanup(func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	})
+
+	telemetrySettings := tt.NewTelemetrySettings()
 
 	obsrep, err := newObsReportSender(
-		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		exporter.Settings{
+			ID:                exporterID,
+			TelemetrySettings: telemetrySettings,
+			BuildInfo:         component.NewDefaultBuildInfo(),
+		},
 		pipeline.SignalLogs,
 		nil,
 		false,
-		sender.NewSender(func(context.Context, request.Request) error { return nil }),
+		telemetrySettings.TracerProvider.Tracer(
+			"go.opentelemetry.io/collector/exporter/exporterhelper",
+		),
+		sender.NewSender(func(context.Context, request.Request) error {
+			return nil
+		}),
 	)
 	require.NoError(t, err)
 	require.NoError(t, obsrep.Send(context.Background(), &requesttest.FakeRequest{Items: 2, Bytes: 100}))
@@ -677,14 +780,27 @@ func TestObsReportSenderProfilesBatchSize(t *testing.T) {
 
 func testBatchSize(t *testing.T, signal pipeline.Signal, req *requesttest.FakeRequest) {
 	tt := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	t.Cleanup(func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	})
+
+	telemetrySettings := tt.NewTelemetrySettings()
 
 	obsrep, err := newObsReportSender(
-		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		exporter.Settings{
+			ID:                exporterID,
+			TelemetrySettings: telemetrySettings,
+			BuildInfo:         component.NewDefaultBuildInfo(),
+		},
 		signal,
 		nil,
 		true,
-		sender.NewSender(func(context.Context, request.Request) error { return nil }),
+		telemetrySettings.TracerProvider.Tracer(
+			"go.opentelemetry.io/collector/exporter/exporterhelper",
+		),
+		sender.NewSender(func(context.Context, request.Request) error {
+			return nil
+		}),
 	)
 	require.NoError(t, err)
 	require.NoError(t, obsrep.Send(context.Background(), req))
