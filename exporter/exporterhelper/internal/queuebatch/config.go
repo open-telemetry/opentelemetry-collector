@@ -108,6 +108,16 @@ type BatchConfig struct {
 	Partition PartitionConfig `mapstructure:"partition"`
 }
 
+// NewDefaultBatchConfig returns the default BatchConfig.
+func NewDefaultBatchConfig() BatchConfig {
+	return BatchConfig{
+		FlushTimeout: 200 * time.Millisecond,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      8192,
+		Partition:    NewDefaultPartitionConfig(),
+	}
+}
+
 // PartitionConfig defines a configuration for partitioning requests based on metadata keys.
 type PartitionConfig struct {
 	// MetadataKeys is a list of client.Metadata keys that will be used to partition
@@ -119,6 +129,25 @@ type PartitionConfig struct {
 	//
 	// Entries are case-insensitive. Duplicated entries will trigger a validation error.
 	MetadataKeys []string `mapstructure:"metadata_keys"`
+
+	// CacheSize is the maximum number of active partition batchers kept in the LRU
+	// cache when partitioning is enabled. When the limit is reached, the least
+	// recently used partition is flushed and removed. Default is 10000. Must be positive.
+	CacheSize int `mapstructure:"cache_size"`
+
+	// IdleTimeout is the duration a partition may stay empty before it is removed.
+	// Keep it above the data arrival interval to avoid churning partitions. Default is 90s.
+	// Must be positive.
+	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
+}
+
+// NewDefaultPartitionConfig returns the default PartitionConfig.
+func NewDefaultPartitionConfig() PartitionConfig {
+	return PartitionConfig{
+		CacheSize: 10000,
+		// Large enough to keep a partition alive across common metrics scrape intervals (up to 60s).
+		IdleTimeout: 90 * time.Second,
+	}
 }
 
 func (cfg *BatchConfig) Validate() error {
@@ -155,6 +184,10 @@ func (cfg *PartitionConfig) Validate() error {
 		return nil
 	}
 
+	if cfg.IdleTimeout <= 0 {
+		return fmt.Errorf("`idle_timeout` must be positive, found %s", cfg.IdleTimeout)
+	}
+
 	// Validate metadata_keys for duplicates (case-insensitive)
 	uniq := map[string]bool{}
 	for _, k := range cfg.MetadataKeys {
@@ -163,6 +196,10 @@ func (cfg *PartitionConfig) Validate() error {
 			return fmt.Errorf("duplicate entry in metadata_keys: %q (case-insensitive)", l)
 		}
 		uniq[l] = true
+	}
+
+	if cfg.CacheSize <= 0 {
+		return fmt.Errorf("`cache_size` must be positive, found %d", cfg.CacheSize)
 	}
 
 	return nil

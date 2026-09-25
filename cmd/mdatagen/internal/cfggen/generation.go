@@ -120,6 +120,12 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return strings.Join(lines, "\n")
 		},
+		"entry": func(name string, metadata *ConfigMetadata) map[string]any {
+			return map[string]any{
+				"name": name,
+				"data": metadata,
+			}
+		},
 	}
 }
 
@@ -678,6 +684,11 @@ func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, co
 }
 
 func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue any, rootPackage, componentPackage string) string {
+	validateOptionalMode(md)
+	if md.IsOptional && md.GoStruct.OptionalMode == OptionalModeDefault {
+		return wrapOptionalValue(md, formatOptionalDefaultValue(md, name, defaultValue, rootPackage, componentPackage))
+	}
+
 	if md.GoStruct.IgnoreDefault || (defaultValue == nil && !hasDefaultValue(md)) {
 		if md.IsPointer {
 			return "nil"
@@ -693,12 +704,57 @@ func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue any, rootP
 		return "&" + exp
 	}
 	if md.IsOptional {
-		if md.Type == ObjectType && md.Properties != nil {
-			return fmt.Sprintf("configoptional.Default(%s)", exp)
-		}
-		return fmt.Sprintf("configoptional.Some(%s)", exp)
+		return wrapOptionalValue(md, exp)
 	}
 	return exp
+}
+
+func formatOptionalDefaultValue(md *ConfigMetadata, name string, defaultValue any, rootPackage, componentPackage string) string {
+	if !md.GoStruct.IgnoreDefault && (defaultValue != nil || hasDefaultValue(md)) {
+		if exp := formatSimpleValue(md, name, defaultValue, rootPackage, componentPackage); exp != "" {
+			return exp
+		}
+	}
+
+	t, err := resolveGoType(md, name, rootPackage, componentPackage)
+	if err != nil {
+		panic(err)
+	}
+	return t + "{}"
+}
+
+func wrapOptionalValue(md *ConfigMetadata, exp string) string {
+	switch md.GoStruct.OptionalMode {
+	case "", OptionalModeSome:
+		return fmt.Sprintf("configoptional.Some(%s)", exp)
+	case OptionalModeDefault:
+		return fmt.Sprintf("configoptional.Default(%s)", exp)
+	default:
+		panic(fmt.Sprintf("unsupported go_struct.optional_mode %q", md.GoStruct.OptionalMode))
+	}
+}
+
+func validateOptionalMode(md *ConfigMetadata) {
+	switch md.GoStruct.OptionalMode {
+	case "":
+		return
+	case OptionalModeSome:
+		if !md.IsOptional {
+			panic("go_struct.optional_mode requires optional: true")
+		}
+	case OptionalModeDefault:
+		if !md.IsOptional {
+			panic("go_struct.optional_mode requires optional: true")
+		}
+		if md.IsPointer {
+			panic("go_struct.optional_mode cannot be used with pointer: true")
+		}
+		if md.Type != "" && md.Type != ObjectType {
+			panic(fmt.Sprintf("go_struct.optional_mode %q requires an object type, got %q", OptionalModeDefault, md.Type))
+		}
+	default:
+		panic(fmt.Sprintf("unsupported go_struct.optional_mode %q", md.GoStruct.OptionalMode))
+	}
 }
 
 // FormatBaseValue returns the default value expression without IsPointer/IsOptional wrappers.
@@ -715,10 +771,8 @@ func WrapDefaultValue(md *ConfigMetadata, varName string) string {
 		return "&" + exp
 	}
 	if md.IsOptional {
-		if md.Type == ObjectType && md.Properties != nil {
-			return fmt.Sprintf("configoptional.Default(%s)", exp)
-		}
-		return fmt.Sprintf("configoptional.Some(%s)", exp)
+		validateOptionalMode(md)
+		return wrapOptionalValue(md, exp)
 	}
 	return exp
 }
@@ -742,6 +796,11 @@ func hasNonZeroDefault(md *ConfigMetadata) bool {
 		if !isMap || len(m) > 0 {
 			return true
 		}
+	}
+	// optional and pointer without default
+	// can take zero value (configoptional.None, nil)
+	if md.IsOptional || md.IsPointer {
+		return false
 	}
 	for _, prop := range md.Properties {
 		if hasNonZeroDefault(prop) {
