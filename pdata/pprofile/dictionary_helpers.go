@@ -29,16 +29,26 @@ func resolveAnyValueReference(dict ProfilesDictionary, anyValue *internal.AnyVal
 // convertProfilesToReferences walks through all profiles data before marshaling
 // and converts string values to references for efficient transmission.
 // This builds up the string table in the dictionary and replaces strings with refs.
-func convertProfilesToReferences(profiles Profiles) {
-	otlp.ConvertProfilesToReferences(profiles.getOrig())
+func convertProfilesToReferences(profiles Profiles) error {
+	return otlp.ConvertProfilesToReferences(profiles.getOrig())
 }
 
 // convertKeyValueToReferences converts string keys and values to references in a KeyValue slice
-func convertKeyValueToReferences(getStringIndex func(string) int32, kvs []internal.KeyValue) {
-	otlp.ConvertProfilesKeyValuesToReferences(getStringIndex, kvs)
+func convertKeyValueToReferences(getStringIndex func(string) int32, kvs []internal.KeyValue) error {
+	return otlp.ConvertProfilesKeyValuesToReferences(
+		func(value string) (int32, error) {
+			return getStringIndex(value), nil
+		},
+		kvs,
+	)
 }
 
 // convertAnyValueToReference converts string values to string_value_ref
-func convertAnyValueToReference(getStringIndex func(string) int32, anyValue *internal.AnyValue) {
-	otlp.ConvertProfilesAnyValueToReference(getStringIndex, anyValue)
+func convertAnyValueToReference(getStringIndex func(string) int32, anyValue *internal.AnyValue) error {
+	return otlp.ConvertProfilesAnyValueToReference(
+		func(value string) (int32, error) {
+			return getStringIndex(value), nil
+		},
+		anyValue,
+	)
 }

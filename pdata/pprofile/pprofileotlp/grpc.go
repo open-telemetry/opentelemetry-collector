@@ -44,7 +44,9 @@ func (c *grpcClient) Export(ctx context.Context, request ExportRequest, opts ...
 	profilesCopy := pprofile.NewProfiles()
 	request.Profiles().CopyTo(profilesCopy)
 	request = NewExportRequestFromProfiles(profilesCopy)
-	otlp.ConvertProfilesToReferences(request.orig)
+	if err := otlp.ConvertProfilesToReferences(request.orig); err != nil {
+		return ExportResponse{}, err
+	}
 
 	rsp, err := c.rawClient.Export(ctx, request.orig, opts...)
 	if err != nil {

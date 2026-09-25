@@ -82,11 +82,29 @@ func TestProfilesDictionaryRoundTrip(t *testing.T) {
 					},
 				},
 			},
+			{
+				Resource: internal.Resource{
+					Attributes: []internal.KeyValue{
+						{
+							Key: "service.name",
+							Value: internal.AnyValue{
+								Value: &internal.AnyValue_StringValue{StringValue: "checkout"},
+							},
+						},
+						{
+							Key: "region",
+							Value: internal.AnyValue{
+								Value: &internal.AnyValue_StringValue{StringValue: "eu-west"},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 	expected := internal.CopyExportProfilesServiceRequest(nil, request)
 
-	ConvertProfilesToReferences(request)
+	require.NoError(t, ConvertProfilesToReferences(request))
 
 	require.Greater(t, len(request.Dictionary.StringTable), 2)
 	resourceAttrs := request.ResourceProfiles[0].Resource.Attributes
@@ -100,6 +118,28 @@ func TestProfilesDictionaryRoundTrip(t *testing.T) {
 	assert.Empty(t, scopeAttr.Key)
 	_, ok = scopeAttr.Value.Value.(*internal.AnyValue_StringValueStrindex)
 	assert.True(t, ok)
+
+	secondResourceAttrs := request.ResourceProfiles[1].Resource.Attributes
+	require.Len(t, secondResourceAttrs, 2)
+	assert.Equal(t, resourceAttrs[0].KeyStrindex, secondResourceAttrs[0].KeyStrindex)
+	secondValueRef, ok := secondResourceAttrs[0].Value.Value.(*internal.AnyValue_StringValueStrindex)
+	require.True(t, ok)
+	assert.Equal(t, valueRef.StringValueStrindex, secondValueRef.StringValueStrindex)
+	assert.Equal(t, "service.name", request.Dictionary.StringTable[secondResourceAttrs[0].KeyStrindex])
+	assert.Equal(t, "checkout", request.Dictionary.StringTable[secondValueRef.StringValueStrindex])
+
+	serviceNameCount := 0
+	checkoutCount := 0
+	for _, value := range request.Dictionary.StringTable {
+		switch value {
+		case "service.name":
+			serviceNameCount++
+		case "checkout":
+			checkoutCount++
+		}
+	}
+	assert.Equal(t, 1, serviceNameCount)
+	assert.Equal(t, 1, checkoutCount)
 
 	ResolveProfilesReferences(request)
 
@@ -124,7 +164,7 @@ func TestConvertProfilesToReferencesInitializesStringTable(t *testing.T) {
 		},
 	}
 
-	ConvertProfilesToReferences(request)
+	require.NoError(t, ConvertProfilesToReferences(request))
 
 	assert.Equal(t, []string{"", "key", "value"}, request.Dictionary.StringTable)
 
@@ -137,33 +177,34 @@ func TestConvertProfilesToReferencesInitializesStringTable(t *testing.T) {
 
 func TestProfilesDictionaryReferenceEdges(t *testing.T) {
 	calls := 0
-	getStringIndex := func(string) int32 {
+	getStringIndex := func(string) (int32, error) {
 		calls++
-		return 1
+		return 1, nil
 	}
 
 	alreadyReference := internal.AnyValue{
 		Value: &internal.AnyValue_StringValueStrindex{StringValueStrindex: 1},
 	}
-	ConvertProfilesAnyValueToReference(getStringIndex, &alreadyReference)
+	require.NoError(t, ConvertProfilesAnyValueToReference(getStringIndex, &alreadyReference))
 	assert.Zero(t, calls)
 
 	emptyString := internal.AnyValue{
 		Value: &internal.AnyValue_StringValue{StringValue: ""},
 	}
-	ConvertProfilesAnyValueToReference(getStringIndex, &emptyString)
-	_, ok := emptyString.Value.(*internal.AnyValue_StringValue)
-	assert.True(t, ok)
-	assert.Zero(t, calls)
+	require.NoError(t, ConvertProfilesAnyValueToReference(getStringIndex, &emptyString))
+	emptyRef, ok := emptyString.Value.(*internal.AnyValue_StringValueStrindex)
+	require.True(t, ok)
+	assert.Equal(t, int32(1), emptyRef.StringValueStrindex)
+	assert.Equal(t, 1, calls)
 
 	nilKVList := internal.AnyValue{Value: &internal.AnyValue_KvlistValue{}}
-	ConvertProfilesAnyValueToReference(getStringIndex, &nilKVList)
+	require.NoError(t, ConvertProfilesAnyValueToReference(getStringIndex, &nilKVList))
 
 	nilArray := internal.AnyValue{Value: &internal.AnyValue_ArrayValue{}}
-	ConvertProfilesAnyValueToReference(getStringIndex, &nilArray)
+	require.NoError(t, ConvertProfilesAnyValueToReference(getStringIndex, &nilArray))
 
 	boolValue := internal.AnyValue{Value: &internal.AnyValue_BoolValue{BoolValue: true}}
-	ConvertProfilesAnyValueToReference(getStringIndex, &boolValue)
+	require.NoError(t, ConvertProfilesAnyValueToReference(getStringIndex, &boolValue))
 	_, ok = boolValue.Value.(*internal.AnyValue_BoolValue)
 	assert.True(t, ok)
 
@@ -174,7 +215,7 @@ func TestProfilesDictionaryReferenceEdges(t *testing.T) {
 			},
 		},
 	}
-	ConvertProfilesKeyValuesToReferences(getStringIndex, keyValues)
+	require.NoError(t, ConvertProfilesKeyValuesToReferences(getStringIndex, keyValues))
 	assert.Zero(t, keyValues[0].KeyStrindex)
 	assert.Equal(t, 1, calls)
 
@@ -223,6 +264,22 @@ func TestProfilesDictionaryReferenceEdges(t *testing.T) {
 	ResolveProfilesAnyValueReference(stringTable, &boolValue)
 }
 
+func TestConvertProfilesKeyValuesToReferencesRejectsConflictingKeyRepresentations(t *testing.T) {
+	keyValues := []internal.KeyValue{{
+		Key:         "service.name",
+		KeyStrindex: 1,
+	}}
+	getStringIndex := func(string) (int32, error) {
+		return 2, nil
+	}
+
+	err := ConvertProfilesKeyValuesToReferences(getStringIndex, keyValues)
+
+	require.EqualError(t, err, "attribute 0 has both key and key_strindex set")
+	assert.Equal(t, "service.name", keyValues[0].Key)
+	assert.Equal(t, int32(1), keyValues[0].KeyStrindex)
+}
+
 func TestProfilesDictionaryReferencesWithPooling(t *testing.T) {
 	previous := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), true))
@@ -230,17 +287,17 @@ func TestProfilesDictionaryReferencesWithPooling(t *testing.T) {
 		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), previous))
 	}()
 
-	getStringIndex := func(s string) int32 {
+	getStringIndex := func(s string) (int32, error) {
 		if s == "pooled-value" {
-			return 1
+			return 1, nil
 		}
-		return 0
+		return 0, nil
 	}
 
 	value := internal.AnyValue{
 		Value: &internal.AnyValue_StringValue{StringValue: "pooled-value"},
 	}
-	ConvertProfilesAnyValueToReference(getStringIndex, &value)
+	require.NoError(t, ConvertProfilesAnyValueToReference(getStringIndex, &value))
 
 	ref, ok := value.Value.(*internal.AnyValue_StringValueStrindex)
 	require.True(t, ok)
