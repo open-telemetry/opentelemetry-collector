@@ -16,7 +16,7 @@ issues: [16026]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Introduces the feature gate `pkg.confighttp.PrioritizeNewKeepalive`. This flag
+  Introduces the feature gate `pkg.confighttp.PrioritizeNewKeepalive`. When disabled, this flag
   restores the old behaviour of removing the keepalive configuration in favour
   of the deprecated fields `IdleConnTimeout`, `MaxIdleConns`, `MaxIdleConnsPerHost`,
   `DisableKeepAlives` when the flag is disabled.
