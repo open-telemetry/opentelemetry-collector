@@ -501,7 +501,7 @@ func (bm *batchMetrics) split(sendBatchMaxSize int) (int, pmetric.Metrics) {
 	var md pmetric.Metrics
 	var sent int
 	if sendBatchMaxSize > 0 && bm.dataPointCount > sendBatchMaxSize {
-		md = splitMetrics(sendBatchMaxSize, bm.metricData)
+		md = splitMetrics(sendBatchMaxSize, bm.metricData, bm.dataPointCount)
 		bm.dataPointCount -= sendBatchMaxSize
 		sent = sendBatchMaxSize
 	} else {
