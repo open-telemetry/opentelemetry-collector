@@ -243,6 +243,45 @@ func TestClientConfigDeprecatedWarningsLogged(t *testing.T) {
 // Both spellings of disabling keep-alives must reach the transport; only the
 // deprecated one warns.
 func TestClientConfigDisableKeepAlives(t *testing.T) {
+	tests := []struct {
+		name           string
+		conf           map[string]any
+		expectWarnings int
+	}{
+		{
+			name:           "deprecated disable_keep_alives",
+			conf:           map[string]any{"disable_keep_alives": true},
+			expectWarnings: 1,
+		},
+		{
+			name:           "keepalive enabled false",
+			conf:           map[string]any{"keepalive": map[string]any{"enabled": false}},
+			expectWarnings: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := NewDefaultClientConfig()
+			require.NoError(t, confmap.NewFromStringMap(tt.conf).Unmarshal(&cfg))
+
+			core, observed := observer.New(zapcore.WarnLevel)
+			settings := componenttest.NewNopTelemetrySettings()
+			settings.MeterProvider = nil
+			settings.TracerProvider = nil
+			settings.Logger = zap.New(core)
+
+			client, err := cfg.ToClient(t.Context(), nil, settings)
+			require.NoError(t, err)
+			assert.False(t, client.Transport.(*http.Transport).DisableKeepAlives)
+			assert.Len(t, observed.All(), tt.expectWarnings)
+		})
+	}
+}
+
+// Both spellings of disabling keep-alives must reach the transport; only the
+// deprecated one warns.
+func TestClientConfigDisableKeepAlivesDeprecated(t *testing.T) {
 	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", false))
 	t.Cleanup(func() {
 		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", true))

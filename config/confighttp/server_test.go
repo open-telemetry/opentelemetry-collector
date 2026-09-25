@@ -1013,6 +1013,7 @@ func TestDefaultHTTPServerSettings(t *testing.T) {
 	assert.Equal(t, 30*time.Second, httpServerSettings.WriteTimeout)
 	assert.Equal(t, time.Duration(0), httpServerSettings.ReadTimeout)
 	assert.Equal(t, 1*time.Minute, httpServerSettings.ReadHeaderTimeout)
+	assert.Equal(t, 0*time.Minute, httpServerSettings.IdleTimeout)
 	assert.Equal(t, 1*time.Minute, httpServerSettings.Keepalive.Get().IdleTimeout)
 	assert.True(t, httpServerSettings.Keepalive.HasValue())
 }
