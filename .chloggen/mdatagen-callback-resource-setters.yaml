@@ -1,0 +1,4 @@
+change_type: enhancement
+component: cmd/mdatagen
+note: Add optional callback-based resource attribute setters via `setter_type: callback` in metadata.yaml.
+issues: [15865]

@@ -382,6 +382,17 @@ func TestAttributeRequirementLevel(t *testing.T) {
 	}
 }
 
+func TestAttributeUseCallbackSetter(t *testing.T) {
+	attr := Attribute{SetterType: "callback"}
+	assert.True(t, attr.UseCallbackSetter())
+
+	attr.SetterType = "direct"
+	assert.False(t, attr.UseCallbackSetter())
+
+	attr.SetterType = ""
+	assert.False(t, attr.UseCallbackSetter())
+}
+
 func TestAttributeRequirementLevelUnmarshalText(t *testing.T) {
 	tests := []struct {
 		name    string
