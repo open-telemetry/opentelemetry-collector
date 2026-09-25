@@ -184,6 +184,7 @@ func TestGRPCExportUsesProfilesDictionary(t *testing.T) {
 	profiles := pprofile.NewProfiles()
 	resourceProfiles := profiles.ResourceProfiles().AppendEmpty()
 	resourceProfiles.Resource().Attributes().PutStr("service.name", "checkout")
+	resourceProfiles.Resource().Attributes().PutStr("empty.attr", "")
 	scopeProfiles := resourceProfiles.ScopeProfiles().AppendEmpty()
 	scopeProfiles.Scope().Attributes().PutStr("scope.attr", "scope-value")
 
@@ -199,9 +200,10 @@ func TestGRPCExportUsesProfilesDictionary(t *testing.T) {
 	assert.Equal(t, want, profiles)
 
 	require.NotNil(t, wireRequest)
-	assert.Equal(t, []string{"", "service.name", "checkout", "scope.attr", "scope-value"}, wireRequest.Dictionary.StringTable)
+	assert.Equal(t, []string{"", "service.name", "checkout", "empty.attr", "scope.attr", "scope-value"}, wireRequest.Dictionary.StringTable)
 	assertReferencedAttribute(t, wireRequest.ResourceProfiles[0].Resource.Attributes[0], 1, 2)
-	assertReferencedAttribute(t, wireRequest.ResourceProfiles[0].ScopeProfiles[0].Scope.Attributes[0], 3, 4)
+	assertReferencedAttribute(t, wireRequest.ResourceProfiles[0].Resource.Attributes[1], 3, 0)
+	assertReferencedAttribute(t, wireRequest.ResourceProfiles[0].ScopeProfiles[0].Scope.Attributes[0], 4, 5)
 
 	// The server resolves the references before exposing pdata to consumers.
 	got := <-received
@@ -209,6 +211,9 @@ func TestGRPCExportUsesProfilesDictionary(t *testing.T) {
 	value, ok := resourceAttrs.Get("service.name")
 	require.True(t, ok)
 	assert.Equal(t, "checkout", value.Str())
+	value, ok = resourceAttrs.Get("empty.attr")
+	require.True(t, ok)
+	assert.Empty(t, value.Str())
 	scopeAttrs := got.Profiles().ResourceProfiles().At(0).ScopeProfiles().At(0).Scope().Attributes()
 	value, ok = scopeAttrs.Get("scope.attr")
 	require.True(t, ok)

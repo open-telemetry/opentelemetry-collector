@@ -175,6 +175,19 @@ func TestConvertProfilesToReferencesInitializesStringTable(t *testing.T) {
 	assert.Equal(t, "value", value.StringValue)
 }
 
+func TestConvertProfilesToReferencesRejectsInvalidStringTableSentinel(t *testing.T) {
+	request := &internal.ExportProfilesServiceRequest{
+		Dictionary: internal.ProfilesDictionary{
+			StringTable: []string{"not-empty"},
+		},
+	}
+
+	err := ConvertProfilesToReferences(request)
+
+	require.EqualError(t, err, "profiles dictionary string_table[0] must be empty")
+	assert.Equal(t, []string{"not-empty"}, request.Dictionary.StringTable)
+}
+
 func TestProfilesDictionaryReferenceEdges(t *testing.T) {
 	calls := 0
 	getStringIndex := func(string) (int32, error) {
