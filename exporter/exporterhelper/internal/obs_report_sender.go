@@ -64,7 +64,7 @@ type obsReportSender[K request.Request] struct {
 	next               sender.Sender[K]
 }
 
-func newObsReportSender[K request.Request](set exporter.Settings, signal pipeline.Signal, extraAttrs []attribute.KeyValue, batchEnabled bool, next sender.Sender[K]) (sender.Sender[K], error) {
+func newObsReportSender[K request.Request](set exporter.Settings, signal pipeline.Signal, extraAttrs []attribute.KeyValue, batchEnabled bool, tracer trace.Tracer, next sender.Sender[K]) (sender.Sender[K], error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func newObsReportSender[K request.Request](set exporter.Settings, signal pipelin
 
 	or := &obsReportSender[K]{
 		spanName:           ExporterKey + spanNameSep + idStr + spanNameSep + signal.String(),
-		tracer:             metadata.Tracer(set.TelemetrySettings),
+		tracer:             tracer,
 		spanAttrs:          trace.WithAttributes(expAttr, attribute.String(DataTypeKey, signal.String())),
 		metricAttr:         metric.WithAttributeSet(attribute.NewSet(append(extraAttrs, expAttr)...)),
 		inFlightMetricAttr: metric.WithAttributeSet(attribute.NewSet(expAttr, attribute.String(DataTypeKey, signal.String()))),
