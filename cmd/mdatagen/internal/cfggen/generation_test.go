@@ -1218,6 +1218,17 @@ func TestNewCfgFns_ExtractDefs(t *testing.T) {
 	require.Contains(t, result, "my_type")
 }
 
+func TestNewCfgFns_Entry(t *testing.T) {
+	fns := NewCfgFns("", "")
+	entry := fns["entry"].(func(string, *ConfigMetadata) map[string]any)
+	metadata := &ConfigMetadata{Type: ObjectType}
+
+	require.Equal(t, map[string]any{
+		"name": "Config",
+		"data": metadata,
+	}, entry("Config", metadata))
+}
+
 func TestNewCfgFns_MapGoType(t *testing.T) {
 	fns := NewCfgFns("", "")
 
