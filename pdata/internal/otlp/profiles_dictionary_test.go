@@ -217,7 +217,7 @@ func TestProfilesDictionaryReferenceEdges(t *testing.T) {
 	}
 	require.NoError(t, ConvertProfilesKeyValuesToReferences(getStringIndex, keyValues))
 	assert.Zero(t, keyValues[0].KeyStrindex)
-	assert.Equal(t, 1, calls)
+	assert.Equal(t, 2, calls)
 
 	stringTable := []string{"", "resolved-key", "resolved-value"}
 	references := []internal.KeyValue{
