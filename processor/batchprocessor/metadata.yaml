@@ -10,6 +10,9 @@ status:
   distributions: [core, contrib, k8s]
 
 tests:
+  # The batch processor buffers data and flushes it on a detached context, so it
+  # cannot propagate the incoming context to the next consumer.
+  skip_context_propagation: true
 
 telemetry:
   metrics:

@@ -1,0 +1,6 @@
+change_type: enhancement
+component: pkg/xpdata
+note: Reduce the time `xhash.MapHash` takes for maps with many entries.
+issues: [15990]
+subtext:
+change_logs: [user]
