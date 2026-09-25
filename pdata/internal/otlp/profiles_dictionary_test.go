@@ -88,7 +88,7 @@ func TestProfilesDictionaryRoundTrip(t *testing.T) {
 						{
 							Key: "service.name",
 							Value: internal.AnyValue{
-								Value: &internal.AnyValue_StringValue{StringValue: "checkout"},
+								Value: &internal.AnyValue_StringValue{StringValue: "recommendation"},
 							},
 						},
 						{
@@ -124,22 +124,26 @@ func TestProfilesDictionaryRoundTrip(t *testing.T) {
 	assert.Equal(t, resourceAttrs[0].KeyStrindex, secondResourceAttrs[0].KeyStrindex)
 	secondValueRef, ok := secondResourceAttrs[0].Value.Value.(*internal.AnyValue_StringValueStrindex)
 	require.True(t, ok)
-	assert.Equal(t, valueRef.StringValueStrindex, secondValueRef.StringValueStrindex)
+	assert.NotEqual(t, valueRef.StringValueStrindex, secondValueRef.StringValueStrindex)
 	assert.Equal(t, "service.name", request.Dictionary.StringTable[secondResourceAttrs[0].KeyStrindex])
-	assert.Equal(t, "checkout", request.Dictionary.StringTable[secondValueRef.StringValueStrindex])
+	assert.Equal(t, "recommendation", request.Dictionary.StringTable[secondValueRef.StringValueStrindex])
 
 	serviceNameCount := 0
 	checkoutCount := 0
+	recommendationCount := 0
 	for _, value := range request.Dictionary.StringTable {
 		switch value {
 		case "service.name":
 			serviceNameCount++
 		case "checkout":
 			checkoutCount++
+		case "recommendation":
+			recommendationCount++
 		}
 	}
 	assert.Equal(t, 1, serviceNameCount)
 	assert.Equal(t, 1, checkoutCount)
+	assert.Equal(t, 1, recommendationCount)
 
 	ResolveProfilesReferences(request)
 
