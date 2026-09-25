@@ -195,19 +195,15 @@ func writeError(w http.ResponseWriter, encoder encoder, err error, statusCode in
 // by the OTLP protocol.
 func errorHandler(w http.ResponseWriter, r *http.Request, errMsg string, statusCode int) {
 	s := statusutil.NewStatusFromMsgAndHTTPCode(errMsg, statusCode)
-	contentType := r.Header.Get("Content-Type")
-	if contentType == "" {
-		contentType = fallbackContentType
-	}
-	switch getMimeTypeFromContentType(contentType) {
+	switch getMimeTypeFromContentType(r.Header.Get("Content-Type")) {
 	case pbContentType:
 		writeStatusResponse(w, pbEncoder, statusCode, s)
-		return
-	case jsonContentType:
+	default:
+		// Fall back to JSON for any Content-Type that isn't protobuf.
+		// Preserve the original status code so client errors (4xx) aren't
+		// reported as server faults.
 		writeStatusResponse(w, jsEncoder, statusCode, s)
-		return
 	}
-	writeResponse(w, fallbackContentType, http.StatusInternalServerError, fallbackMsg)
 }
 
 func writeStatusResponse(w http.ResponseWriter, enc encoder, statusCode int, st *status.Status) {
