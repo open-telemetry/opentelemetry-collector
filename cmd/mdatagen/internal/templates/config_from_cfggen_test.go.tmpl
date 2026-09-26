@@ -62,7 +62,7 @@ require.NotNil(t, cfg)
                 cfg.{{ $fieldName }} = {{ $minimum }} - 1
             {{- end }}
 
-            require.ErrorContains(t, cfg.Validate(), "{{ $validator.FieldName }} value must be greater than or equal to {{ $minimum }}")
+            require.ErrorContains(t, cfg.Validate(), "{{ template "target" $validator.FieldName }}value must be greater than or equal to {{ $minimum }}")
             }
         {{ end }}
         {{- if $validator.Rules.Maximum }}
@@ -78,7 +78,7 @@ require.NotNil(t, cfg)
                 cfg.{{ $fieldName }} = {{ $maximum }} + 1
             {{- end }}
 
-            require.ErrorContains(t, cfg.Validate(), "{{ $validator.FieldName }} value must be less than or equal to {{ $maximum }}")
+            require.ErrorContains(t, cfg.Validate(), "{{ template "target" $validator.FieldName }}value must be less than or equal to {{ $maximum }}")
             }
         {{ end }}
         {{- if $validator.Rules.ExclusiveMinimum }}
@@ -94,7 +94,7 @@ require.NotNil(t, cfg)
                 cfg.{{ $fieldName }} = {{ $exclMin }}
             {{- end }}
 
-            require.ErrorContains(t, cfg.Validate(), "{{ $validator.FieldName }} value must be greater than {{ $exclMin }}")
+            require.ErrorContains(t, cfg.Validate(), "{{ template "target" $validator.FieldName }}value must be greater than {{ $exclMin }}")
             }
         {{ end }}
         {{- if $validator.Rules.ExclusiveMaximum }}
@@ -110,7 +110,7 @@ require.NotNil(t, cfg)
                 cfg.{{ $fieldName }} = {{ $exclMax }}
             {{- end }}
 
-            require.ErrorContains(t, cfg.Validate(), "{{ $validator.FieldName }} value must be less than {{ $exclMax }}")
+            require.ErrorContains(t, cfg.Validate(), "{{ template "target" $validator.FieldName }}value must be less than {{ $exclMax }}")
             }
         {{ end }}
         {{- if $validator.Rules.Enum }}
@@ -118,7 +118,7 @@ require.NotNil(t, cfg)
             cfg := createDefaultConfig().(*Config)
             cfg.{{ $validator.FieldName | publicVar }} = {{ invalidTestValue $validator.FieldType }}
 
-            require.ErrorContains(t, cfg.Validate(), "{{ $validator.FieldName }} must be one of")
+            require.ErrorContains(t, cfg.Validate(), "{{ template "target" $validator.FieldName }}must be one of")
             }
         {{ end }}
     {{- end }}
@@ -139,7 +139,7 @@ require.NotNil(t, cfg)
                     {{- $minimum := $validator.Rules.Minimum }}
                     cfg := {{ $defName | publicVar }}({{ $minimum }} - 1)
 
-                    require.ErrorContains(t, cfg.Validate(), "{{ $validator.FieldName }} value must be greater than or equal to {{ $minimum }}")
+                    require.ErrorContains(t, cfg.Validate(), "{{ template "target" $validator.FieldName }}value must be greater than or equal to {{ $minimum }}")
                     }
                 {{ end }}
                 {{- if $validator.Rules.Maximum }}
@@ -147,7 +147,7 @@ require.NotNil(t, cfg)
                     {{- $maximum := $validator.Rules.Maximum }}
                     cfg := {{ $defName | publicVar }}({{ $maximum }} + 1)
 
-                    require.ErrorContains(t, cfg.Validate(), "{{ $validator.FieldName }} value must be less than or equal to {{ $maximum }}")
+                    require.ErrorContains(t, cfg.Validate(), "{{ template "target" $validator.FieldName }}value must be less than or equal to {{ $maximum }}")
                     }
                 {{ end }}
                 {{- if $validator.Rules.ExclusiveMinimum }}
@@ -155,7 +155,7 @@ require.NotNil(t, cfg)
                     {{- $exclMin := $validator.Rules.ExclusiveMinimum }}
                     cfg := {{ $defName | publicVar }}({{ $exclMin }})
 
-                    require.ErrorContains(t, cfg.Validate(), "{{ $validator.FieldName }} value must be greater than {{ $exclMin }}")
+                    require.ErrorContains(t, cfg.Validate(), "{{ template "target" $validator.FieldName }}value must be greater than {{ $exclMin }}")
                     }
                 {{ end }}
                 {{- if $validator.Rules.ExclusiveMaximum }}
@@ -163,14 +163,14 @@ require.NotNil(t, cfg)
                     {{- $exclMax := $validator.Rules.ExclusiveMaximum }}
                     cfg := {{ $defName | publicVar }}({{ $exclMax }})
 
-                    require.ErrorContains(t, cfg.Validate(), "{{ $validator.FieldName }} value must be less than {{ $exclMax }}")
+                    require.ErrorContains(t, cfg.Validate(), "{{ template "target" $validator.FieldName }}value must be less than {{ $exclMax }}")
                     }
                 {{ end }}
                 {{- if $validator.Rules.Enum }}
                     func Test{{ $defName | publicVar }}Validate_InvalidEnum{{ $validator.FieldName | publicVar }}(t *testing.T) {
                     cfg := {{ $defName | publicVar }}({{ invalidTestValue $validator.FieldType }})
 
-                    require.ErrorContains(t, cfg.Validate(), "{{ $validator.FieldName }} must be one of")
+                    require.ErrorContains(t, cfg.Validate(), "{{ template "target" $validator.FieldName }}must be one of")
                     }
                 {{ end }}
             {{- end }}
@@ -281,4 +281,10 @@ require.NotNil(t, cfg)
 
 {{- if not $imports_addded }}
 // No supported validation rules found in the schema, no tests generated.
+{{- end }}
+
+{{- define "target" }}
+    {{- if not (eq . ".") }}
+        {{- printf "%s " . }}
+    {{- end }}
 {{- end }}
