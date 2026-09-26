@@ -135,7 +135,7 @@ func (eb *K8sReplicasetMetricsBuilder) Emit() {
 	cfg := eb.mb.config.ResourceAttributes
 	eb.entity.copyToResource(cfg, res)
 	cfg.applyOverrideValues(res)
-	eb.mb.EmitForResource(withResourceMoved(res))
+	eb.mb.ForK8sReplicaset(eb.entity).Emit()
 }
 
 // K8sPodMetricsBuilder records metrics for the k8s.pod entity.
@@ -166,5 +166,5 @@ func (eb *K8sPodMetricsBuilder) Emit() {
 		eb.entity.controlledByK8sReplicaset.copyToResource(cfg, res)
 	}
 	cfg.applyOverrideValues(res)
-	eb.mb.EmitForResource(withResourceMoved(res))
+	eb.mb.ForK8sPod(eb.entity).Emit()
 }

@@ -3,12 +3,8 @@
 package metadata
 
 import (
-	"fmt"
 	"slices"
-	"strconv"
 	"time"
-
-	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
@@ -836,47 +832,6 @@ func (mb *MetricsBuilder) ForTestEntity(e *TestEntityEntity) *TestEntityMetricsB
 	return &TestEntityMetricsBuilder{mb: mb, entity: e}
 }
 
-// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
-// recording another set of data points as part of another resource. This function can be helpful when one scraper
-// needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead.
-// Resource attributes should be provided as ResourceMetricsOption arguments.
-//
-// Deprecated: Use the For<EntityType> methods to get entity-scoped builders and call Emit() on them instead.
-func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
-	rm := pmetric.NewResourceMetrics()
-	rm.SetSchemaUrl(conventions.SchemaURL)
-	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName(ScopeName)
-	ils.Scope().SetVersion(mb.buildInfo.Version)
-	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricDefaultMetric.emit(ils.Metrics())
-	mb.metricDefaultMetricToBeRemoved.emit(ils.Metrics())
-	mb.metricMetricInputType.emit(ils.Metrics())
-	mb.metricOptionalMetric.emit(ils.Metrics())
-	mb.metricOptionalMetricEmptyUnit.emit(ils.Metrics())
-	mb.metricReaggregateMetric.emit(ils.Metrics())
-
-	for _, op := range options {
-		op.apply(rm)
-	}
-	for attr, filter := range mb.resourceAttributeIncludeFilter {
-		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
-			return
-		}
-	}
-	for attr, filter := range mb.resourceAttributeExcludeFilter {
-		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
-			return
-		}
-	}
-
-	if ils.Metrics().Len() > 0 {
-		mb.updateCapacity(rm)
-		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
-	}
-}
-
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
@@ -885,53 +840,6 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 	metrics := mb.metricsBuffer
 	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
-}
-
-// RecordDefaultMetricDataPoint adds a data point to default.metric metric.
-//
-// Deprecated: Use mb.ForTestEntity(entity).RecordDefaultMetricDataPoint(...) instead.
-func (mb *MetricsBuilder) RecordDefaultMetricDataPoint(ts pcommon.Timestamp, val int64, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, options ...MetricAttributeOption) {
-	mb.metricDefaultMetric.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, overriddenIntAttrAttributeValue, sliceAttrAttributeValue, mapAttrAttributeValue, options...)
-}
-
-// RecordDefaultMetricToBeRemovedDataPoint adds a data point to default.metric.to_be_removed metric.
-//
-// Deprecated: Use mb.ForTestEntity(entity).RecordDefaultMetricToBeRemovedDataPoint(...) instead.
-func (mb *MetricsBuilder) RecordDefaultMetricToBeRemovedDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricDefaultMetricToBeRemoved.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordMetricInputTypeDataPoint adds a data point to metric.input_type metric.
-//
-// Deprecated: Use mb.ForTestEntity(entity).RecordMetricInputTypeDataPoint(...) instead.
-func (mb *MetricsBuilder) RecordMetricInputTypeDataPoint(ts pcommon.Timestamp, inputVal string, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, options ...MetricAttributeOption) error {
-	val, err := strconv.ParseInt(inputVal, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse int64 for MetricInputType, value was %s: %w", inputVal, err)
-	}
-	mb.metricMetricInputType.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, overriddenIntAttrAttributeValue, sliceAttrAttributeValue, mapAttrAttributeValue, options...)
-	return nil
-}
-
-// RecordOptionalMetricDataPoint adds a data point to optional.metric metric.
-//
-// Deprecated: Use mb.ForTestEntity(entity).RecordOptionalMetricDataPoint(...) instead.
-func (mb *MetricsBuilder) RecordOptionalMetricDataPoint(ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool, booleanAttr2AttributeValue bool) {
-	mb.metricOptionalMetric.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, booleanAttrAttributeValue, booleanAttr2AttributeValue)
-}
-
-// RecordOptionalMetricEmptyUnitDataPoint adds a data point to optional.metric.empty_unit metric.
-//
-// Deprecated: Use mb.ForTestEntity(entity).RecordOptionalMetricEmptyUnitDataPoint(...) instead.
-func (mb *MetricsBuilder) RecordOptionalMetricEmptyUnitDataPoint(ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
-	mb.metricOptionalMetricEmptyUnit.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, booleanAttrAttributeValue)
-}
-
-// RecordReaggregateMetricDataPoint adds a data point to reaggregate.metric metric.
-//
-// Deprecated: Use mb.ForTestEntity(entity).RecordReaggregateMetricDataPoint(...) instead.
-func (mb *MetricsBuilder) RecordReaggregateMetricDataPoint(ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
-	mb.metricReaggregateMetric.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, booleanAttrAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
