@@ -7,6 +7,7 @@ require (
 	go.opentelemetry.io/collector/component v1.67.0
 	go.opentelemetry.io/collector/component/componenttest v0.161.0
 	go.opentelemetry.io/collector/config/configoptional v1.67.0
+	go.opentelemetry.io/collector/config/configstorage v0.161.0
 	go.opentelemetry.io/collector/confmap v1.67.0
 	go.opentelemetry.io/collector/consumer v1.67.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.161.0
@@ -143,3 +144,5 @@ replace go.opentelemetry.io/collector/receiver => ../../receiver
 replace go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/receivertest
 
 replace go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xreceiver
+
+replace go.opentelemetry.io/collector/config/configstorage => ../../config/configstorage

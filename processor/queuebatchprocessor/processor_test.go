@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configstorage"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
@@ -240,8 +241,8 @@ func capabilityConfig(batchEnabled, storage bool) *Config {
 		cfg.Batch = configoptional.None[exporterhelper.BatchConfig]()
 	}
 	if storage {
-		id := component.MustNewID("file_storage")
-		cfg.StorageID = &id
+		id := configstorage.ID(component.MustNewID("file_storage"))
+		cfg.StorageID = configoptional.Some(id)
 	}
 	return cfg
 }
