@@ -15,7 +15,7 @@ import (
 func TestSplitLogs_noop(t *testing.T) {
 	td := testdata.GenerateLogs(20)
 	splitSize := 40
-	split := splitLogs(splitSize, td)
+	split := splitLogs(splitSize, td, td.LogRecordCount())
 	assert.Equal(t, td, split)
 
 	i := 0
@@ -48,24 +48,24 @@ func TestSplitLogs(t *testing.T) {
 	logs.At(4).CopyTo(cpLogs.AppendEmpty())
 
 	splitSize := 5
-	split := splitLogs(splitSize, ld)
+	split := splitLogs(splitSize, ld, ld.LogRecordCount())
 	assert.Equal(t, splitSize, split.LogRecordCount())
 	assert.Equal(t, cp, split)
 	assert.Equal(t, 15, ld.LogRecordCount())
 	assert.Equal(t, "test-log-int-0-0", split.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).SeverityText())
 	assert.Equal(t, "test-log-int-0-4", split.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(4).SeverityText())
 
-	split = splitLogs(splitSize, ld)
+	split = splitLogs(splitSize, ld, ld.LogRecordCount())
 	assert.Equal(t, 10, ld.LogRecordCount())
 	assert.Equal(t, "test-log-int-0-5", split.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).SeverityText())
 	assert.Equal(t, "test-log-int-0-9", split.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(4).SeverityText())
 
-	split = splitLogs(splitSize, ld)
+	split = splitLogs(splitSize, ld, ld.LogRecordCount())
 	assert.Equal(t, 5, ld.LogRecordCount())
 	assert.Equal(t, "test-log-int-0-10", split.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).SeverityText())
 	assert.Equal(t, "test-log-int-0-14", split.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(4).SeverityText())
 
-	split = splitLogs(splitSize, ld)
+	split = splitLogs(splitSize, ld, ld.LogRecordCount())
 	assert.Equal(t, 5, ld.LogRecordCount())
 	assert.Equal(t, "test-log-int-0-15", split.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).SeverityText())
 	assert.Equal(t, "test-log-int-0-19", split.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(4).SeverityText())
@@ -86,7 +86,7 @@ func TestSplitLogsMultipleResourceLogs(t *testing.T) {
 	}
 
 	splitSize := 5
-	split := splitLogs(splitSize, td)
+	split := splitLogs(splitSize, td, td.LogRecordCount())
 	assert.Equal(t, splitSize, split.LogRecordCount())
 	assert.Equal(t, 35, td.LogRecordCount())
 	assert.Equal(t, "test-log-int-0-0", split.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).SeverityText())
@@ -108,7 +108,7 @@ func TestSplitLogsMultipleResourceLogs_split_size_greater_than_log_size(t *testi
 	}
 
 	splitSize := 25
-	split := splitLogs(splitSize, td)
+	split := splitLogs(splitSize, td, td.LogRecordCount())
 	assert.Equal(t, splitSize, split.LogRecordCount())
 	assert.Equal(t, 40-splitSize, td.LogRecordCount())
 	assert.Equal(t, 1, td.ResourceLogs().Len())
@@ -141,7 +141,7 @@ func TestSplitLogsMultipleILL(t *testing.T) {
 	}
 
 	splitSize := 40
-	split := splitLogs(splitSize, td)
+	split := splitLogs(splitSize, td, td.LogRecordCount())
 	assert.Equal(t, splitSize, split.LogRecordCount())
 	assert.Equal(t, 20, td.LogRecordCount())
 	assert.Equal(t, "test-log-int-0-0", split.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).SeverityText())
@@ -156,7 +156,7 @@ func TestSplitLogsPreserveSchemaURLOnPartialSplit(t *testing.T) {
 	td.ResourceLogs().At(0).ScopeLogs().At(0).SetSchemaUrl(scopeSchemaURL)
 
 	splitSize := 1
-	split := splitLogs(splitSize, td)
+	split := splitLogs(splitSize, td, td.LogRecordCount())
 	assert.Equal(t, resourceSchemaURL, split.ResourceLogs().At(0).SchemaUrl())
 	assert.Equal(t, scopeSchemaURL, split.ResourceLogs().At(0).ScopeLogs().At(0).SchemaUrl())
 }
