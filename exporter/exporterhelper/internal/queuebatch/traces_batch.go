@@ -51,104 +51,16 @@ func (req *tracesRequest) mergeTo(dst *tracesRequest, sz sizer.TracesSizer, szt 
 
 func (req *tracesRequest) split(maxSize int, sz sizer.TracesSizer, szt request.SizerType) ([]request.Request, error) {
 	var res []request.Request
-	droppedItems := 0
-	pruned := false
-	unsplittable := false
 	for req.size(sz, szt) > maxSize {
 		td, rmSize := extractTraces(req.td, maxSize, sz)
 		if td.SpanCount() == 0 {
-			if td.ResourceSpans().Len() > 0 {
-				// Extraction spent this batch on resources that hold no span and the
-				// batch is discarded with them, but they left the source as it did so. The
-				// request is smaller than when this attempt started, so try again with a
-				// fresh batch instead of dropping anything: the next span may well fit.
-				req.sizes.Update(szt, sz.TracesSize(req.td))
-				continue
-			}
-			// The next span does not fit into maxSize even on its own. Drop every span in
-			// that state in a single pass, rather than one per iteration with a full size
-			// recompute after each, then carry on splitting what is left.
-			if !pruned {
-				pruned = true
-				var removedAny bool
-				droppedItems, removedAny = dropOversizedSpans(req.td, maxSize, sz)
-				// Refresh the cache whether or not a span went: the pass also prunes the
-				// scopes and resources it empties, which changes the size on its own.
-				req.sizes.Update(szt, sz.TracesSize(req.td))
-				if removedAny {
-					continue
-				}
-			}
-			// Nothing was extracted, nothing left the source and the pass found nothing
-			// to remove, so no further progress is possible. Stop rather than loop.
-			unsplittable = true
-			break
+			return res, fmt.Errorf("one span size is greater than max size, dropping items: %d", req.td.SpanCount())
 		}
 		req.sizes.Update(szt, req.size(sz, szt)-rmSize)
 		res = append(res, newTracesRequest(td))
 	}
-	// Keep the remainder, unless the drop pass emptied it, in which case there is
-	// nothing left to export.
-	if !pruned || req.td.SpanCount() > 0 {
-		res = append(res, req)
-	}
-	switch {
-	case droppedItems > 0:
-		return res, fmt.Errorf("one span size is greater than max size, dropping items: %d", droppedItems)
-	case unsplittable && req.td.SpanCount() > 0:
-		// Only worth reporting when a remainder is going out unsplit. With nothing left
-		// in it there is no span to lose and nothing to tell the caller.
-		return res, errors.New("request size is greater than max size and cannot be split further")
-	}
+	res = append(res, req)
 	return res, nil
-}
-
-// dropOversizedSpans removes every span that cannot fit a batch of maxSize even on
-// its own, together with the scope and resource it leaves empty, and reports how
-// many it removed.
-//
-// A span shares each batch with its resource and scope, so their framing counts
-// against maxSize too. The capacity left for a span is therefore computed the same
-// way extractResourceSpans and extractScopeSpans compute it, which keeps this pass
-// in step with what extraction would accept.
-//
-// Emptied scopes and resources are pruned as well, which shrinks the request without
-// dropping a span, so the caller is told separately whether anything was removed
-// rather than inferring it from the count.
-func dropOversizedSpans(td ptrace.Traces, maxSize int, sz sizer.TracesSizer) (droppedItems int, removedAny bool) {
-	dropped := 0
-	batchCapacity := maxSize - sz.TracesSize(ptrace.NewTraces())
-	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
-		bareRS := ptrace.NewResourceSpans()
-		bareRS.SetSchemaUrl(rs.SchemaUrl())
-		rs.Resource().CopyTo(bareRS.Resource())
-		scopeCapacity := batchCapacity - (sz.DeltaSize(batchCapacity) - batchCapacity) - sz.ResourceSpansSize(bareRS)
-		rs.ScopeSpans().RemoveIf(func(ss ptrace.ScopeSpans) bool {
-			bareSS := ptrace.NewScopeSpans()
-			bareSS.SetSchemaUrl(ss.SchemaUrl())
-			ss.Scope().CopyTo(bareSS.Scope())
-			spanCapacity := scopeCapacity - (sz.DeltaSize(scopeCapacity) - scopeCapacity) - sz.ScopeSpansSize(bareSS)
-			ss.Spans().RemoveIf(func(span ptrace.Span) bool {
-				if sz.DeltaSize(sz.SpanSize(span)) > spanCapacity {
-					dropped++
-					removedAny = true
-					return true
-				}
-				return false
-			})
-			if ss.Spans().Len() == 0 {
-				removedAny = true
-				return true
-			}
-			return false
-		})
-		if rs.ScopeSpans().Len() == 0 {
-			removedAny = true
-			return true
-		}
-		return false
-	})
-	return dropped, removedAny
 }
 
 // extractTraces extracts a new traces with a maximum number of spans.
