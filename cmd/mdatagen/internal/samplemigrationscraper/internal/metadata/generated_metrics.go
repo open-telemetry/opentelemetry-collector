@@ -671,7 +671,8 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 // RecordLinuxMemoryAvailableDataPoint adds a data point to linux.memory.available metric.
 func (mb *MetricsBuilder) RecordLinuxMemoryAvailableDataPoint(ts pcommon.Timestamp, val int64) {
 	// Dual-schema emission controlled by feature gates
-	if !ScraperSamplemigrationDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
+	emitLegacy := !ScraperSamplemigrationDontEmitV0SystemConventionsFeatureGate.IsEnabled()
+	if emitLegacy {
 		mb.metricLinuxMemoryAvailable.recordDataPoint(mb.startTime, ts, val)
 	}
 	if ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() {
@@ -687,11 +688,12 @@ func (mb *MetricsBuilder) RecordSystemCPUFooDataPoint(ts pcommon.Timestamp, val 
 // RecordSystemCPUUtilizationDataPoint adds a data point to system.cpu.utilization metric.
 func (mb *MetricsBuilder) RecordSystemCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue AttributeState, cpuLogicalNumberAttributeValue int64, cpuModeAttributeValue AttributeCPUMode) {
 	// Dual-schema emission controlled by feature gates
-	if !ScraperSamplemigrationDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
+	emitLegacy := !ScraperSamplemigrationDontEmitV0SystemConventionsFeatureGate.IsEnabled()
+	if emitLegacy {
 		mb.metricSystemCPUUtilization.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue.String())
 	}
 	if ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() {
-		mb.metricSystemCPUUtilizationV1.recordDataPoint(mb.startTime, ts, val, cpuLogicalNumberAttributeValue, cpuModeAttributeValue.String(), cpuAttributeValue, stateAttributeValue.String(), true)
+		mb.metricSystemCPUUtilizationV1.recordDataPoint(mb.startTime, ts, val, cpuLogicalNumberAttributeValue, cpuModeAttributeValue.String(), cpuAttributeValue, stateAttributeValue.String(), emitLegacy)
 	}
 }
 

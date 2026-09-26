@@ -609,11 +609,16 @@ func TestVersionedMetrics(t *testing.T) {
                           if m.Type() == pmetric.MetricType{{ $targetMetric.Data.Type }} {
                               newFound = true
                               {{- if $targetLegacyAttrs }}
+                              dp := m.{{ $targetMetric.Data.Type }}().DataPoints().At(0)
                               if tt.expectLegacyAttrs {
-                                  dp := m.{{ $targetMetric.Data.Type }}().DataPoints().At(0)
                                   {{- range $targetLegacyAttrs }}
                                   _, has{{ .Render }} := dp.Attributes().Get("{{ (attributeInfo .).Name }}")
                                   assert.True(t, has{{ .Render }}, "expected legacy attr {{ . }}")
+                                  {{- end }}
+                              } else if tt.enableNew && tt.disableOld {
+                                  {{- range $targetLegacyAttrs }}
+                                  _, has{{ .Render }} := dp.Attributes().Get("{{ (attributeInfo .).Name }}")
+                                  assert.False(t, has{{ .Render }}, "didn't expect legacy attr {{ . }}")
                                   {{- end }}
                               }
                               {{- end }}
@@ -633,10 +638,16 @@ func TestVersionedMetrics(t *testing.T) {
                               // Has v1-specific attribute - this is the new metric
                               newFound = true
                               {{- if $targetLegacyAttrs }}
+                              dp := m.{{ $targetMetric.Data.Type }}().DataPoints().At(0)
                               if tt.expectLegacyAttrs {
                                   {{- range $targetLegacyAttrs }}
                                   _, has{{ .Render }} := dp.Attributes().Get("{{ (attributeInfo .).Name }}")
                                   assert.True(t, has{{ .Render }}, "expected legacy attr {{ . }}")
+                                  {{- end }}
+                              } else if tt.enableNew && tt.disableOld {
+                                  {{- range $targetLegacyAttrs }}
+                                  _, has{{ .Render }} := dp.Attributes().Get("{{ (attributeInfo .).Name }}")
+                                  assert.False(t, has{{ .Render }}, "didn't expect legacy attr {{ . }}")
                                   {{- end }}
                               }
                               {{- end }}
@@ -655,7 +666,6 @@ func TestVersionedMetrics(t *testing.T) {
                           newFound = true
                           {{- if $targetLegacyAttrs }}
                           if tt.expectLegacyAttrs {
-                              dp := m.{{ $targetMetric.Data.Type }}().DataPoints().At(0)
                               {{- range $targetLegacyAttrs }}
                               _, has{{ .Render }} := dp.Attributes().Get("{{ (attributeInfo .).Name }}")
                               assert.True(t, has{{ .Render }}, "expected legacy attr {{ . }}")

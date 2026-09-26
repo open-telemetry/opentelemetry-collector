@@ -635,7 +635,8 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 	{{- if $metric.Migration }}
 	// Dual-schema emission controlled by feature gates
 	{{- $targetLegacyAttrs := getLegacyAttributes $metric.Migration.To }}
-	if !{{ printf "%s" $metric.Migration.ThroughGates.DisableOld | publicVar }}FeatureGate.IsEnabled() {
+  emitLegacy := !{{ printf "%s" $metric.Migration.ThroughGates.DisableOld | publicVar}}FeatureGate.IsEnabled()
+	if emitLegacy {
 		mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts, val
 		{{- range $metric.Attributes -}}
 		{{- if not (attributeInfo .).IsConditional -}}
@@ -676,7 +677,7 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 		{{- end -}}
 		{{- if $targetLegacyAttrs -}}
 		{{- if hasDifferentAttributes $name -}}
-		, true
+		, emitLegacy
 		{{- else -}}
 		, false
 		{{- end -}}
