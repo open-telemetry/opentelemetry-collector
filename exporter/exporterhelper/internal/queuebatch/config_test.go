@@ -59,7 +59,6 @@ func TestConfig_Validate(t *testing.T) {
 	cfg.FastTrack = true
 	cfg.StorageID = &storageID
 	require.NoError(t, confmap.Validate(cfg))
-
 }
 
 func TestBatchConfig_Validate_MetadataKeys(t *testing.T) {

@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/exporterhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `fast_track` option to bypass persistent queue when consumers are available
+note: Add `fast_track` option to bypass persistent queue disk I/O when consumers are idle
 
 # One or more tracking issues or pull requests related to the change
 issues: [13355]
@@ -16,10 +16,11 @@ issues: [13355]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  When `fast_track` is enabled on a persistent queue, incoming requests are exported directly
-  in-memory when a consumer slot is immediately available, bypassing the disk round-trip.
-  When all consumer slots are busy, requests fall back to the persistent queue as usual.
-  Durability is maintained by blocking the caller until export completes (wait-for-result semantics).
+  When `fast_track` is enabled on a persistent queue, incoming requests are handed off
+  directly in-memory to idle consumers, skipping serialization and disk I/O. When all
+  consumers are busy, requests fall back to the persistent queue as usual. Batching is
+  preserved since the fast-track path feeds into the same consumer pipeline. Durability
+  is maintained by blocking the caller until the consumer finishes processing.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
