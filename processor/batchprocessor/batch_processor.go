@@ -462,7 +462,7 @@ func (bt *batchTraces) split(sendBatchMaxSize int) (int, ptrace.Traces) {
 	var td ptrace.Traces
 	var sent int
 	if sendBatchMaxSize > 0 && bt.itemCount() > sendBatchMaxSize {
-		td = splitTraces(sendBatchMaxSize, bt.traceData)
+		td = splitTraces(sendBatchMaxSize, bt.traceData, bt.spanCount)
 		bt.spanCount -= sendBatchMaxSize
 		sent = sendBatchMaxSize
 	} else {
@@ -552,7 +552,7 @@ func (bl *batchLogs) split(sendBatchMaxSize int) (int, plog.Logs) {
 	var sent int
 
 	if sendBatchMaxSize > 0 && bl.logCount > sendBatchMaxSize {
-		ld = splitLogs(sendBatchMaxSize, bl.logData)
+		ld = splitLogs(sendBatchMaxSize, bl.logData, bl.logCount)
 		bl.logCount -= sendBatchMaxSize
 		sent = sendBatchMaxSize
 	} else {

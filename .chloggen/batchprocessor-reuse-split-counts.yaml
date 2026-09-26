@@ -1,0 +1,9 @@
+change_type: enhancement
+component: processor/batch
+note: Reuse the cached span and log record counts when splitting oversized batches
+issues: [16031]
+subtext: |
+  batchTraces and batchLogs already track their item counts and check them
+  against send_batch_max_size before calling the split functions, which then
+  recomputed the same number by walking the whole batch. The cached count is
+  now passed in instead.
