@@ -50,6 +50,16 @@ func TestConfig_Validate(t *testing.T) {
 	cfg = newTestConfig()
 	cfg.Sizer = request.SizerTypeBytes
 	require.NoError(t, confmap.Validate(cfg))
+
+	cfg = newTestConfig()
+	cfg.FastTrack = true
+	require.EqualError(t, confmap.Validate(cfg), "`fast_track` is only supported with a persistent queue configured with `storage`")
+
+	cfg = newTestConfig()
+	cfg.FastTrack = true
+	cfg.StorageID = &storageID
+	require.NoError(t, confmap.Validate(cfg))
+
 }
 
 func TestBatchConfig_Validate_MetadataKeys(t *testing.T) {
