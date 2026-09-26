@@ -5,6 +5,7 @@ module go.opentelemetry.io/collector/cmd/otelcorecol
 go 1.26.0
 
 require (
+	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.67.0
 	go.opentelemetry.io/collector/confmap v1.67.0
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.67.0
@@ -82,7 +83,6 @@ require (
 	github.com/shirou/gopsutil/v4 v4.26.8 // indirect
 	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
-	github.com/stretchr/testify v1.12.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.16 // indirect
 	github.com/tklauser/numcpus v0.11.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
