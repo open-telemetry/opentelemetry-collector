@@ -32,6 +32,9 @@ type QueueBatchEncoding[T any] interface {
 	Marshal(context.Context, T) ([]byte, error)
 
 	// Unmarshal is a function that can unmarshal bytes into a request and its context.
+	// When using a persistent StorageID, implementations must call pref.MarkPipelineOwned*
+	// on the unmarshaled data before returning, otherwise ref-count underflow will occur
+	// when the data is forwarded through a downstream pipeline.
 	Unmarshal([]byte) (context.Context, T, error)
 }
 
