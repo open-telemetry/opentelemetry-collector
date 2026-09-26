@@ -61,6 +61,7 @@ module-sets:
       - go.opentelemetry.io/collector/consumer/consumererror/xconsumererror
       - go.opentelemetry.io/collector/consumer/consumertest
       - go.opentelemetry.io/collector/exporter/debugexporter
+      - go.opentelemetry.io/collector/extension/diskqueueextension
       - go.opentelemetry.io/collector/exporter/exporterhelper
       - go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper
       - go.opentelemetry.io/collector/exporter/exportertest

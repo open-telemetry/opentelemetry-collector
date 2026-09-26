@@ -93,6 +93,10 @@ func newBaseQueue[T request.Request](set Settings[T]) readableQueue[T] {
 	if set.StorageID == nil {
 		return newMemoryQueue[T](set)
 	}
+	// TODO better logic on which queue to pick.
+	if set.StorageID.Type() == component.MustNewType("disk_access") {
+		return newDiskQueue[T](set)
+	}
 
 	return newPersistentQueue[T](set)
 }
