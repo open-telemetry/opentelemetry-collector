@@ -233,7 +233,7 @@ func TestConvertProfilesToReferencesEmpty(t *testing.T) {
 	dict := profiles.Dictionary()
 	dict.StringTable().Append("")
 
-	convertProfilesToReferences(profiles)
+	require.NoError(t, convertProfilesToReferences(profiles))
 
 	// Should only have the initial empty string
 	assert.Equal(t, 1, dict.StringTable().Len())
@@ -249,7 +249,7 @@ func TestConvertProfilesToReferencesDeduplication(t *testing.T) {
 	rp.Resource().Attributes().PutStr("key2", "duplicated-value")
 	rp.Resource().Attributes().PutStr("key3", "unique-value")
 
-	convertProfilesToReferences(profiles)
+	require.NoError(t, convertProfilesToReferences(profiles))
 
 	// Should have: "", "key1", "duplicated-value", "key2", "key3", "unique-value"
 	// But key1, key2, key3 might share indices if they're also deduplicated
@@ -293,7 +293,7 @@ func TestConvertAnyValueToReferenceWithPooling(t *testing.T) {
 		},
 	}
 
-	convertAnyValueToReference(getStringIndex, anyVal)
+	require.NoError(t, convertAnyValueToReference(getStringIndex, anyVal))
 
 	refVal, ok := anyVal.Value.(*internal.AnyValue_StringValueStrindex)
 	assert.True(t, ok)
@@ -315,15 +315,15 @@ func TestConvertAnyValueToReferenceEmptyString(t *testing.T) {
 
 	anyVal := &internal.AnyValue{
 		Value: &internal.AnyValue_StringValue{
-			StringValue: "", // empty string should not be converted
+			StringValue: "",
 		},
 	}
 
-	convertAnyValueToReference(getStringIndex, anyVal)
+	require.NoError(t, convertAnyValueToReference(getStringIndex, anyVal))
 
-	// Empty string should remain as StringValue, not converted to ref
-	_, ok := anyVal.Value.(*internal.AnyValue_StringValue)
-	assert.True(t, ok)
+	ref, ok := anyVal.Value.(*internal.AnyValue_StringValueStrindex)
+	require.True(t, ok)
+	assert.Zero(t, ref.StringValueStrindex)
 }
 
 func TestConvertAnyValueToReferenceNestedKvList(t *testing.T) {
@@ -360,7 +360,7 @@ func TestConvertAnyValueToReferenceNestedKvList(t *testing.T) {
 		},
 	}
 
-	convertAnyValueToReference(getStringIndex, anyVal)
+	require.NoError(t, convertAnyValueToReference(getStringIndex, anyVal))
 
 	// Verify nested key was converted
 	assert.NotEqual(t, int32(0), kvList.Values[0].KeyStrindex)
@@ -400,7 +400,7 @@ func TestConvertAnyValueToReferenceNestedArray(t *testing.T) {
 		},
 	}
 
-	convertAnyValueToReference(getStringIndex, anyVal)
+	require.NoError(t, convertAnyValueToReference(getStringIndex, anyVal))
 
 	// Verify array item was converted
 	_, ok := arrVal.Values[0].Value.(*internal.AnyValue_StringValueStrindex)
@@ -427,23 +427,22 @@ func TestConvertMapToReferencesEmptyKey(t *testing.T) {
 		return 1
 	}
 
-	convertKeyValueToReferences(getStringIndex, mapKeyValues(attrs))
+	require.NoError(t, convertKeyValueToReferences(getStringIndex, mapKeyValues(attrs)))
 
 	// Empty key should not have KeyStrindex set
 	kv := &(*mapOrig)[0]
 	assert.Equal(t, int32(0), kv.KeyStrindex)
 }
 
-func TestConvertMapToReferencesExistingKeyRef(t *testing.T) {
+func TestConvertMapToReferencesRejectsKeyAndKeyRef(t *testing.T) {
 	profiles := NewProfiles()
 	rp := profiles.ResourceProfiles().AppendEmpty()
 	attrs := rp.Resource().Attributes()
 
-	// Manually add a KeyValue with existing KeyStrindex
 	mapOrig := internal.GetMapOrig(internal.MapWrapper(attrs))
 	*mapOrig = append(*mapOrig, internal.KeyValue{
 		Key:         "test-key",
-		KeyStrindex: 5, // already has a ref
+		KeyStrindex: 5,
 		Value: internal.AnyValue{
 			Value: &internal.AnyValue_StringValue{
 				StringValue: "value",
@@ -455,13 +454,12 @@ func TestConvertMapToReferencesExistingKeyRef(t *testing.T) {
 		return 99
 	}
 
-	convertKeyValueToReferences(getStringIndex, mapKeyValues(attrs))
+	err := convertKeyValueToReferences(getStringIndex, mapKeyValues(attrs))
 
-	// Key is set, so KeyStrindex must be updated to the new index
+	require.EqualError(t, err, "attribute 0 has both key and key_strindex set")
 	kv := &(*mapOrig)[0]
-	assert.Equal(t, int32(99), kv.KeyStrindex)
-	// Key must be cleared when KeyStrindex is set
-	assert.Empty(t, kv.Key)
+	assert.Equal(t, "test-key", kv.Key)
+	assert.Equal(t, int32(5), kv.KeyStrindex)
 }
 
 func TestResolveAnyValueReferenceNonStringTypes(t *testing.T) {
@@ -506,7 +504,7 @@ func TestConvertMapToReferencesClearsKey(t *testing.T) {
 		return 2
 	}
 
-	convertKeyValueToReferences(getStringIndex, mapKeyValues(attrs))
+	require.NoError(t, convertKeyValueToReferences(getStringIndex, mapKeyValues(attrs)))
 
 	kv := &(*mapOrig)[0]
 	// key_ref should be set
@@ -547,7 +545,7 @@ func TestConvertAnyValueToReferenceNestedKvListClearsKey(t *testing.T) {
 		},
 	}
 
-	convertAnyValueToReference(getStringIndex, anyVal)
+	require.NoError(t, convertAnyValueToReference(getStringIndex, anyVal))
 
 	// key_ref should be set
 	assert.NotEqual(t, int32(0), kvList.Values[0].KeyStrindex)
@@ -567,7 +565,7 @@ func TestConvertAnyValueToReferenceNonStringTypes(t *testing.T) {
 		},
 	}
 
-	convertAnyValueToReference(getStringIndex, anyVal)
+	require.NoError(t, convertAnyValueToReference(getStringIndex, anyVal))
 
 	// Should remain as BoolValue
 	boolVal, ok := anyVal.Value.(*internal.AnyValue_BoolValue)

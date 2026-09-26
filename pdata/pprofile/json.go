@@ -26,7 +26,9 @@ func (*JSONMarshaler) MarshalProfiles(pd Profiles) ([]byte, error) {
 	}
 
 	// Convert strings to references for efficient transmission
-	convertProfilesToReferences(pdToUse)
+	if err := convertProfilesToReferences(pdToUse); err != nil {
+		return nil, err
+	}
 
 	dest := json.BorrowStream(nil)
 	defer json.ReturnStream(dest)

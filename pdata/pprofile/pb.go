@@ -22,7 +22,9 @@ func (e *ProtoMarshaler) MarshalProfiles(pd Profiles) ([]byte, error) {
 	}
 
 	// Convert strings to references for efficient transmission
-	convertProfilesToReferences(pdToUse)
+	if err := convertProfilesToReferences(pdToUse); err != nil {
+		return nil, err
+	}
 
 	size := pdToUse.getOrig().SizeProto()
 	buf := make([]byte, size)
