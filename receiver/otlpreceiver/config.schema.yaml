@@ -31,3 +31,6 @@ properties:
   protocols:
     description: Protocols is the configuration for the supported protocols, currently gRPC and HTTP (Proto and JSON).
     $ref: protocols
+  unsafe_unmarshal:
+    description: UnsafeUnmarshal enables zero-copy decoding of string and byte fields for protobuf requests received over gRPC and HTTP.
+    type: boolean

@@ -231,6 +231,16 @@ func (orig *Resource) MarshalProto(buf []byte) int {
 }
 
 func (orig *Resource) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *Resource) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *Resource) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -255,8 +265,9 @@ func (orig *Resource) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.Attributes = proto.GrowRepeated(orig.Attributes, buf, pos, fieldNum)
 			orig.Attributes = append(orig.Attributes, KeyValue{})
-			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.Attributes[len(orig.Attributes)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -282,8 +293,9 @@ func (orig *Resource) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.EntityRefs = proto.GrowRepeated(orig.EntityRefs, buf, pos, fieldNum)
 			orig.EntityRefs = append(orig.EntityRefs, NewEntityRef())
-			err = orig.EntityRefs[len(orig.EntityRefs)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.EntityRefs[len(orig.EntityRefs)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -299,9 +311,9 @@ func (orig *Resource) UnmarshalProto(buf []byte) error {
 
 func GenTestResource() *Resource {
 	orig := NewResource()
-	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
+	orig.Attributes = []KeyValue{KeyValue{}, *GenTestKeyValue()}
 	orig.DroppedAttributesCount = uint32(13)
-	orig.EntityRefs = []*EntityRef{{}, GenTestEntityRef()}
+	orig.EntityRefs = []*EntityRef{&EntityRef{}, GenTestEntityRef()}
 	return orig
 }
 

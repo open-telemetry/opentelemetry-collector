@@ -182,6 +182,16 @@ func (orig *ExportTraceServiceRequest) MarshalProto(buf []byte) int {
 }
 
 func (orig *ExportTraceServiceRequest) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *ExportTraceServiceRequest) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *ExportTraceServiceRequest) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -206,8 +216,9 @@ func (orig *ExportTraceServiceRequest) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.ResourceSpans = proto.GrowRepeated(orig.ResourceSpans, buf, pos, fieldNum)
 			orig.ResourceSpans = append(orig.ResourceSpans, NewResourceSpans())
-			err = orig.ResourceSpans[len(orig.ResourceSpans)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.ResourceSpans[len(orig.ResourceSpans)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -223,7 +234,7 @@ func (orig *ExportTraceServiceRequest) UnmarshalProto(buf []byte) error {
 
 func GenTestExportTraceServiceRequest() *ExportTraceServiceRequest {
 	orig := NewExportTraceServiceRequest()
-	orig.ResourceSpans = []*ResourceSpans{{}, GenTestResourceSpans()}
+	orig.ResourceSpans = []*ResourceSpans{&ResourceSpans{}, GenTestResourceSpans()}
 	return orig
 }
 

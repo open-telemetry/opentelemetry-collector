@@ -1,3 +1,4 @@
+unsafe_unmarshal: true
 protocols:
   grpc:
     # The following entry demonstrates how to specify TLS credentials for the server.

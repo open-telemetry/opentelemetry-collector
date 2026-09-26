@@ -61,6 +61,10 @@ func (sid *SpanID) UnmarshalProto(data []byte) error {
 	return nil
 }
 
+func (sid *SpanID) unmarshalProto(data []byte, _ bool) error {
+	return sid.UnmarshalProto(data)
+}
+
 // MarshalJSON converts SpanID into a hex string.
 //
 //nolint:govet

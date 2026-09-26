@@ -303,6 +303,16 @@ func (orig *SummaryDataPoint) MarshalProto(buf []byte) int {
 }
 
 func (orig *SummaryDataPoint) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *SummaryDataPoint) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *SummaryDataPoint) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -327,8 +337,9 @@ func (orig *SummaryDataPoint) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.Attributes = proto.GrowRepeated(orig.Attributes, buf, pos, fieldNum)
 			orig.Attributes = append(orig.Attributes, KeyValue{})
-			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.Attributes[len(orig.Attributes)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -390,8 +401,9 @@ func (orig *SummaryDataPoint) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.QuantileValues = proto.GrowRepeated(orig.QuantileValues, buf, pos, fieldNum)
 			orig.QuantileValues = append(orig.QuantileValues, NewSummaryDataPointValueAtQuantile())
-			err = orig.QuantileValues[len(orig.QuantileValues)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.QuantileValues[len(orig.QuantileValues)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -418,12 +430,12 @@ func (orig *SummaryDataPoint) UnmarshalProto(buf []byte) error {
 
 func GenTestSummaryDataPoint() *SummaryDataPoint {
 	orig := NewSummaryDataPoint()
-	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
+	orig.Attributes = []KeyValue{KeyValue{}, *GenTestKeyValue()}
 	orig.StartTimeUnixNano = uint64(13)
 	orig.TimeUnixNano = uint64(13)
 	orig.Count = uint64(13)
 	orig.Sum = float64(3.1415926)
-	orig.QuantileValues = []*SummaryDataPointValueAtQuantile{{}, GenTestSummaryDataPointValueAtQuantile()}
+	orig.QuantileValues = []*SummaryDataPointValueAtQuantile{&SummaryDataPointValueAtQuantile{}, GenTestSummaryDataPointValueAtQuantile()}
 	orig.Flags = uint32(13)
 	return orig
 }
