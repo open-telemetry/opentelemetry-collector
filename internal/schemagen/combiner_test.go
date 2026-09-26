@@ -39,12 +39,6 @@ func TestCombineCollectorSchema_LayoutAndValidation(t *testing.T) {
 				},
 			},
 		},
-		Service: &JSONSchema{
-			Type: "object",
-			Properties: map[string]*JSONSchema{
-				"pipelines": {Type: "object"},
-			},
-		},
 	})
 	require.NoError(t, err)
 	require.Contains(t, schema.Properties, "receivers")
@@ -324,4 +318,125 @@ func unmarshalYAML(t *testing.T, data string) any {
 	require.NoError(t, yaml.Unmarshal([]byte(data), &value))
 
 	return value
+}
+
+func TestCombineCollectorSchema_ServiceValidation(t *testing.T) {
+	t.Parallel()
+
+	schema, err := CombineCollectorSchema(CollectorSchemaParts{
+		Receivers: []CollectorComponentSchema{
+			{Type: "otlp"},
+		},
+		Processors: []CollectorComponentSchema{
+			{Type: "batch"},
+		},
+		Exporters: []CollectorComponentSchema{
+			{Type: "debug"},
+		},
+	})
+	require.NoError(t, err)
+
+	compiled := compileSchema(t, schema)
+
+	// Valid pipeline.
+	require.NoError(t, compiled.Validate(unmarshalJSON(t, `{
+		"service": {
+			"pipelines": {
+				"traces": {
+					"receivers": ["otlp"],
+					"processors": ["batch"],
+					"exporters": ["debug"]
+				}
+			}
+		}
+	}`)))
+
+	// Custom component name is valid.
+	require.NoError(t, compiled.Validate(unmarshalJSON(t, `{
+		"service": {
+			"pipelines": {
+				"traces": {
+					"receivers": ["otlp/secondary"],
+					"exporters": ["debug/custom"]
+				}
+			}
+		}
+	}`)))
+
+	// Unknown receiver must fail.
+	err = compiled.Validate(unmarshalJSON(t, `{
+		"service": {
+			"pipelines": {
+				"traces": {
+					"receivers": ["unknown"],
+					"exporters": ["debug"]
+				}
+			}
+		}
+	}`))
+	require.Error(t, err)
+
+	// Unknown processor must fail.
+	err = compiled.Validate(unmarshalJSON(t, `{
+		"service": {
+			"pipelines": {
+				"traces": {
+					"receivers": ["otlp"],
+					"processors": ["unknown"],
+					"exporters": ["debug"]
+				}
+			}
+		}
+	}`))
+	require.Error(t, err)
+
+	// Unknown exporter must fail.
+	err = compiled.Validate(unmarshalJSON(t, `{
+		"service": {
+			"pipelines": {
+				"traces": {
+					"receivers": ["otlp"],
+					"exporters": ["unknown"]
+				}
+			}
+		}
+	}`))
+	require.Error(t, err)
+
+	// Invalid pipeline name must fail.
+	err = compiled.Validate(unmarshalJSON(t, `{
+		"service": {
+			"pipelines": {
+				"trace": {
+					"receivers": ["otlp"],
+					"exporters": ["debug"]
+				}
+			}
+		}
+	}`))
+	require.Error(t, err)
+
+	// Missing receiver must fail.
+	err = compiled.Validate(unmarshalJSON(t, `{
+		"service": {
+			"pipelines": {
+				"traces": {
+					"exporters": ["debug"]
+				}
+			}
+		}
+	}`))
+	require.Error(t, err)
+
+	// Missing exporter must fail.
+	err = compiled.Validate(unmarshalJSON(t, `{
+		"service": {
+			"pipelines": {
+				"traces": {
+					"receivers": ["otlp"]
+				}
+			}
+		}
+	}`))
+	require.Error(t, err)
 }
