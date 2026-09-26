@@ -256,6 +256,24 @@ func TestMetricsBuilder(t *testing.T) {
 				{{- end -}}
 				{{- end -}}
 				)
+				// a different timestamp is a different key: must not merge with the above.
+				{{ if $metric.Entity }}eb{{ publicVar $metric.Entity }}{{ else }}mb{{ end }}.Record{{ $name.Render }}DataPoint(ts+1, {{ if $metric.Data.HasMetricInputType }}"3"{{ else }}3{{ end }}
+				{{- range $metric.Attributes -}}
+				{{- if not (attributeInfo .).IsConditional -}}
+					{{- if (attributeInfo .).IsRequired -}}
+					, {{- template "getAttributeValue" . -}}
+					{{- else -}}
+					, {{- template "getAttributeValueTwo" . -}}
+					{{- end -}}
+				{{- end -}}
+				{{- end -}}
+				{{- range $metric.Attributes -}}
+				{{- if (attributeInfo .).IsConditional -}}
+					, With{{ .Render }}MetricAttribute({{- template "getConditionalAttributeValue" . -}})
+				{{- end -}}
+				{{- end -}}
+				)
+				assert.Equal(t, 2, mb.metric{{ $name.Render }}.data.{{ $metric.Data.Type }}().DataPoints().Len())
 			}
 			{{- end }}
 			{{- end }}
@@ -356,7 +374,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["{{ $name }}"], "Found a duplicate in the metrics slice: {{ $name }}")
 						validatedMetrics["{{ $name }}"] = true
 						assert.Equal(t, pmetric.MetricType{{ $metric.Data.Type }}, mi.Type())
-						assert.Equal(t, 1, mi.{{ $metric.Data.Type }}().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.{{ $metric.Data.Type }}().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.{{ $metric.Data.Type }}().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "{{ trimRight $metric.Description "\n" }}", mi.Description())
 						{{- if len $metric.Unit}}
 						assert.Equal(t, "{{ $metric.Unit }}", mi.Unit())
