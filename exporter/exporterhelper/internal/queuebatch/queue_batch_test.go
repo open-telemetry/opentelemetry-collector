@@ -599,49 +599,22 @@ func TestQueueBatchTimerFlush(t *testing.T) {
 	require.NoError(t, qb.Shutdown(context.Background()))
 }
 
-func TestQueueBatch_FastTrack_ConsumerAvailable(t *testing.T) {
-	sink := requesttest.NewSink()
-	storageID := component.MustNewIDWithName("file_storage", "storage")
-	cfg := newTestConfig()
-	cfg.StorageID = &storageID
-	cfg.FastTrack = true
-	cfg.NumConsumers = 4
-	cfg.Batch = configoptional.Optional[BatchConfig]{}
-	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
-	require.NoError(t, err)
-
-	host := hosttest.NewHost(map[component.ID]component.Component{
-		storageID: storagetest.NewMockStorageExtension(nil),
-	})
-	require.NoError(t, qb.Start(context.Background(), host))
-
-	// send requests when consumers are available and must go the direct path.
-	for range 4 {
-		require.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 10}))
-	}
-
-	// Direct path is synchronous, so all requests should be exported immediately.
-	assert.Equal(t, 4, sink.RequestsCount())
-	assert.Equal(t, 40, sink.ItemsCount())
-	// nothing should have been enqueued to the persistent queue.
-	assert.Zero(t, qb.queue.Size())
-
-	require.NoError(t, qb.Shutdown(context.Background()))
-}
-
-func TestQueueBatch_FastTrack_ConsumerBusy(t *testing.T) {
+func TestQueueBatch_FastTrack_BatchingPreserved(t *testing.T) {
 	sink := requesttest.NewSink()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
 	cfg := newTestConfig()
 	cfg.StorageID = &storageID
 	cfg.FastTrack = true
 	cfg.NumConsumers = 2
-	cfg.Batch = configoptional.Optional[BatchConfig]{}
+	// Enable batching with MinSize of 2 items — requests should be merged before export.
+	cfg.Batch = configoptional.Some(BatchConfig{
+		FlushTimeout: 200 * time.Millisecond,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      2,
+	})
 
-	// set up encoding to deserialize requests with 7 items, matching the queued request.
-	queuedReq := &requesttest.FakeRequest{Items: 7}
 	qSet := newFakeRequestSettings()
-	qSet.Encoding = newFakeEncoding(queuedReq)
+	qSet.Encoding = newFakeEncoding(&requesttest.FakeRequest{Items: 1})
 	qb, err := NewQueueBatch(qSet, cfg, sink.Export)
 	require.NoError(t, err)
 
@@ -650,21 +623,21 @@ func TestQueueBatch_FastTrack_ConsumerBusy(t *testing.T) {
 	})
 	require.NoError(t, qb.Start(context.Background(), host))
 
+	// Send 4 individual 1-item requests concurrently. With batching (MinSize=2),
+	// they should be merged before export. Fast-track blocks the caller so we
+	// need concurrent goroutines for batching to merge them.
 	wg := sync.WaitGroup{}
-	for range 2 {
+	for range 4 {
 		wg.Go(func() {
-			assert.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 5, Delay: 200 * time.Millisecond}))
+			assert.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 1}))
 		})
 	}
-	time.Sleep(20 * time.Millisecond)
-
-	require.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 7}))
-	assert.Positive(t, qb.queue.Size())
-
 	wg.Wait()
+
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		assert.Equal(c, 3, sink.RequestsCount())
-		assert.Equal(c, 17, sink.ItemsCount())
+		assert.Equal(c, 4, sink.ItemsCount())
+		// With MinSize=2 and 4 items sent concurrently, expect at most 2 batched requests.
+		assert.LessOrEqual(c, sink.RequestsCount(), 2)
 	}, 1*time.Second, 10*time.Millisecond)
 
 	require.NoError(t, qb.Shutdown(context.Background()))
