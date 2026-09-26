@@ -122,6 +122,9 @@ func TestUnmarshalConfig(t *testing.T) {
 				}),
 				HTTP: configoptional.Some(HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
+						Keepalive: configoptional.Some(confighttp.KeepaliveServerConfig{
+							IdleTimeout: 60 * time.Second,
+						}),
 						NetAddr: confignet.AddrConfig{
 							Endpoint:  "localhost:4318",
 							Transport: confignet.TransportTypeTCP,
@@ -141,7 +144,6 @@ func TestUnmarshalConfig(t *testing.T) {
 							AllowedOrigins: []string{"https://*.test.com", "https://test.com"},
 							MaxAge:         7200,
 						}),
-						KeepAlivesEnabled: true, //nolint:staticcheck // SA1019
 					},
 					TracesURLPath:  "/traces",
 					MetricsURLPath: "/v2/metrics",
@@ -170,11 +172,13 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 				}),
 				HTTP: configoptional.Some(HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
+						Keepalive: configoptional.Some(confighttp.KeepaliveServerConfig{
+							IdleTimeout: 60 * time.Second,
+						}),
 						NetAddr: confignet.AddrConfig{
 							Endpoint:  "/tmp/http_otlp.sock",
 							Transport: confignet.TransportTypeUnix,
 						},
-						KeepAlivesEnabled: true, //nolint:staticcheck // SA1019
 					},
 					TracesURLPath:  defaultTracesURLPath,
 					MetricsURLPath: defaultMetricsURLPath,
