@@ -1,0 +1,9 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: bug_fix
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
+component: cmd/mdatagen
+# A brief description of your change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: "Fix two misspelled words in the generated metrics test comment"
+# One or more tracking issues or pull requests related to the change
+issues: [15971]
+change_logs: []
