@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -54,8 +55,10 @@ func NewQueueSender(
 		// be modified by the downstream components like the batcher.
 		itemsCount := req.ItemsCount()
 		if errSend := next.Send(ctx, req); errSend != nil {
-			qSet.Telemetry.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
-				zap.Error(errSend), zap.Int("dropped_items", itemsCount))
+			if !experr.IsShutdownErr(errSend) {
+				qSet.Telemetry.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
+					zap.Error(errSend), zap.Int("dropped_items", itemsCount))
+			}
 			return errSend
 		}
 		return nil
