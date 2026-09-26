@@ -5,6 +5,7 @@ package schemagen
 
 import (
 	"encoding/json"
+	"regexp"
 	"testing"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
@@ -37,12 +38,6 @@ func TestCombineCollectorSchema_LayoutAndValidation(t *testing.T) {
 						"timeout": {Type: "string"},
 					},
 				},
-			},
-		},
-		Service: &JSONSchema{
-			Type: "object",
-			Properties: map[string]*JSONSchema{
-				"pipelines": {Type: "object"},
 			},
 		},
 	})
@@ -289,6 +284,135 @@ func TestCombineCollectorSchema_NilSchemaDeprecatedKeepsMarker(t *testing.T) {
 	compiled := compileSchema(t, schema)
 	require.NoError(t, compiled.Validate(unmarshalJSON(t, `{"extensions": {"healthcheck": null}}`)))
 	require.NoError(t, compiled.Validate(unmarshalJSON(t, `{"extensions": {"healthcheck/1": {"endpoint": "x"}}}`)))
+}
+
+func TestCombineCollectorSchema_ServiceSection(t *testing.T) {
+	t.Parallel()
+
+	schema, err := CombineCollectorSchema(CollectorSchemaParts{
+		Receivers:  []CollectorComponentSchema{{Type: "otlp"}},
+		Processors: []CollectorComponentSchema{{Type: "batch"}},
+		Exporters:  []CollectorComponentSchema{{Type: "debug"}},
+		Connectors: []CollectorComponentSchema{{Type: "forward"}},
+		Extensions: []CollectorComponentSchema{{Type: "health_check", DeprecatedType: "healthcheck"}},
+	})
+	require.NoError(t, err)
+
+	compiled := compileSchema(t, schema)
+
+	require.NoError(t, compiled.Validate(unmarshalYAML(t, `
+extensions:
+  health_check:
+service:
+  extensions: [health_check, healthcheck/legacy]
+  telemetry:
+    logs:
+      level: debug
+  pipelines:
+    traces:
+      receivers: [otlp, otlp/secondary]
+      processors: [batch]
+      exporters: [forward]
+    traces/downstream:
+      receivers: [forward]
+      exporters: [debug]
+    metrics:
+      receivers: [otlp]
+      exporters: [debug]
+    logs/a:
+      receivers: [otlp]
+      exporters: [debug]
+    profiles:
+      receivers: [otlp]
+      exporters: [debug]
+`)))
+
+	for name, config := range map[string]string{
+		"unknown receiver":          `{"service": {"pipelines": {"traces": {"receivers": ["jaeger"], "exporters": ["debug"]}}}}`,
+		"unknown processor":         `{"service": {"pipelines": {"traces": {"receivers": ["otlp"], "processors": ["filter"], "exporters": ["debug"]}}}}`,
+		"unknown exporter":          `{"service": {"pipelines": {"traces": {"receivers": ["otlp"], "exporters": ["otlphttp"]}}}}`,
+		"connector as processor":    `{"service": {"pipelines": {"traces": {"receivers": ["otlp"], "processors": ["forward"], "exporters": ["debug"]}}}}`,
+		"exporter as receiver":      `{"service": {"pipelines": {"traces": {"receivers": ["debug"], "exporters": ["debug"]}}}}`,
+		"unknown extension":         `{"service": {"extensions": ["zpages"]}}`,
+		"unknown signal":            `{"service": {"pipelines": {"spans": {"receivers": ["otlp"], "exporters": ["debug"]}}}}`,
+		"missing receivers":         `{"service": {"pipelines": {"traces": {"exporters": ["debug"]}}}}`,
+		"missing exporters":         `{"service": {"pipelines": {"traces": {"receivers": ["otlp"]}}}}`,
+		"empty receivers":           `{"service": {"pipelines": {"traces": {"receivers": [], "exporters": ["debug"]}}}}`,
+		"empty exporters":           `{"service": {"pipelines": {"traces": {"receivers": ["otlp"], "exporters": []}}}}`,
+		"duplicate processor":       `{"service": {"pipelines": {"traces": {"receivers": ["otlp"], "processors": ["batch", "batch"], "exporters": ["debug"]}}}}`,
+		"unknown pipeline key":      `{"service": {"pipelines": {"traces": {"receivers": ["otlp"], "exporters": ["debug"], "connectors": []}}}}`,
+		"unknown service key":       `{"service": {"pipeline": {}}}`,
+		"non-string reference":      `{"service": {"pipelines": {"traces": {"receivers": [1], "exporters": ["debug"]}}}}`,
+		"empty instance name":       `{"service": {"pipelines": {"traces": {"receivers": ["otlp/"], "exporters": ["debug"]}}}}`,
+		"type prefix without slash": `{"service": {"pipelines": {"traces": {"receivers": ["otlpx"], "exporters": ["debug"]}}}}`,
+		"extensions not an array":   `{"service": {"extensions": "health_check"}}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			require.Error(t, compiled.Validate(unmarshalJSON(t, config)))
+		})
+	}
+}
+
+func TestCombineCollectorSchema_ServiceSectionWithoutComponents(t *testing.T) {
+	t.Parallel()
+
+	schema, err := CombineCollectorSchema(CollectorSchemaParts{})
+	require.NoError(t, err)
+
+	compiled := compileSchema(t, schema)
+
+	require.NoError(t, compiled.Validate(unmarshalJSON(t, `{"service": {}}`)))
+	require.NoError(t, compiled.Validate(unmarshalJSON(t, `{"service": {"extensions": [], "pipelines": {}}}`)))
+	require.Error(t, compiled.Validate(unmarshalJSON(t, `{"service": {"extensions": ["zpages"]}}`)))
+	require.Error(t, compiled.Validate(unmarshalJSON(t, `{"service": {"pipelines": {"traces": {"receivers": ["otlp"], "exporters": ["debug"]}}}}`)))
+}
+
+func TestCombineCollectorSchema_ServiceSectionLayout(t *testing.T) {
+	t.Parallel()
+
+	schema, err := CombineCollectorSchema(CollectorSchemaParts{
+		Receivers:  []CollectorComponentSchema{{Type: "otlp"}},
+		Exporters:  []CollectorComponentSchema{{Type: "debug"}},
+		Connectors: []CollectorComponentSchema{{Type: "forward"}},
+	})
+	require.NoError(t, err)
+
+	service := schema.Properties[string(CollectorSectionService)]
+	pipeline := service.Properties["pipelines"].PatternProperties[collectorIdentifierPattern(defaultPipelineSignals)]
+	require.NotNil(t, pipeline)
+	require.Equal(t, "^(?:forward|otlp)(?:/.+)?$", pipeline.Properties["receivers"].Items.Pattern)
+	require.Equal(t, "^(?:debug|forward)(?:/.+)?$", pipeline.Properties["exporters"].Items.Pattern)
+	require.Equal(t, &JSONSchema{Not: &JSONSchema{}}, pipeline.Properties["processors"].Items)
+
+	data, err := service.Properties["telemetry"].MarshalJSON()
+	require.NoError(t, err)
+	require.NotContains(t, string(data), "properties")
+}
+
+func TestCollectorIdentifierPattern(t *testing.T) {
+	t.Parallel()
+
+	t.Run("sorted and deduplicated", func(t *testing.T) {
+		t.Parallel()
+		require.Equal(t, "^(?:debug|otlp)(?:/.+)?$", collectorIdentifierPattern([]string{"otlp", "debug", "otlp"}))
+		require.Equal(t, collectorIdentifierPattern([]string{"a", "b"}), collectorIdentifierPattern([]string{"b", "a"}))
+	})
+
+	t.Run("does not mutate input", func(t *testing.T) {
+		t.Parallel()
+		types := []string{"b", "a"}
+		collectorIdentifierPattern(types)
+		require.Equal(t, []string{"b", "a"}, types)
+	})
+
+	t.Run("empty matches nothing", func(t *testing.T) {
+		t.Parallel()
+		pattern := regexp.MustCompile(collectorIdentifierPattern(nil))
+		for _, candidate := range []string{"", "/", "/name", "otlp", "otlp/name"} {
+			require.False(t, pattern.MatchString(candidate), candidate)
+		}
+	})
 }
 
 func compileSchema(t *testing.T, schema *JSONSchema) *jsonschema.Schema {
