@@ -465,6 +465,12 @@ func newLogsWithBodies(bodies ...string) plog.Logs {
 
 func TestMergeSplitLogsDropsOnlyOversizedRecord(t *testing.T) {
 	oversized := strings.Repeat("x", 1000)
+	// More records than one batch holds, so the scope still has records after the pass
+	// that drops the oversized one.
+	many := make([]string, 30)
+	for i := range many {
+		many[i] = fmt.Sprintf("record-%02d", i)
+	}
 
 	tests := []struct {
 		name         string
@@ -496,6 +502,12 @@ func TestMergeSplitLogsDropsOnlyOversizedRecord(t *testing.T) {
 			wantSurvived: []string{"a", "b", "c"},
 			wantDropped:  2,
 		},
+		{
+			name:         "oversized_followed_by_several_batches",
+			bodies:       append([]string{oversized}, many...),
+			wantSurvived: many,
+			wantDropped:  1,
+		},
 	}
 
 	for _, tt := range tests {
@@ -508,8 +520,11 @@ func TestMergeSplitLogsDropsOnlyOversizedRecord(t *testing.T) {
 			assert.Equal(t, tt.wantSurvived, logBodies(res),
 				"records other than the oversized ones must survive")
 
+			marshaler := &plog.ProtoMarshaler{}
 			for _, r := range res {
 				assert.LessOrEqual(t, r.BytesSize(), 100, "no returned batch may exceed max size")
+				assert.Equal(t, marshaler.LogsSize(r.(*logsRequest).ld), r.BytesSize(),
+					"the cached size must stay exact after dropping records")
 			}
 		})
 	}
@@ -578,9 +593,8 @@ func TestMergeSplitLogsEmptyOversizedResourceDoesNotStopSplitting(t *testing.T) 
 		lr := r.(*logsRequest)
 		survived += lr.ld.LogRecordCount()
 		assert.LessOrEqual(t, marshaler.LogsSize(lr.ld), 100, "no batch may exceed max size")
-		// The cached size may differ from the marshaled size by a byte, but must not be
-		// a stale oversized value.
-		assert.LessOrEqual(t, lr.BytesSize(), 100, "a stale cached size makes the batcher over-count")
+		assert.Equal(t, marshaler.LogsSize(lr.ld), lr.BytesSize(),
+			"the cached size must stay exact after removing a record-less resource")
 	}
 	assert.Equal(t, 12, survived, "every record must survive")
 }

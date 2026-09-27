@@ -58,23 +58,12 @@ func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer, szt request.Sizer
 	for req.size(sz, szt) > maxSize {
 		recordsBefore := req.ld.LogRecordCount()
 		ld, removedSize := extractLogs(req.ld, maxSize, sz)
-		dropped := recordsBefore - req.ld.LogRecordCount() - ld.LogRecordCount()
-		droppedItems += dropped
-		switch {
-		case dropped > 0:
-			// removedSize does not include the dropped records, so measure what is left.
-			req.sizes.Update(szt, sz.LogsSize(req.ld))
-		case ld.LogRecordCount() == 0:
-			// Only record-less resources or scopes left the source, or nothing did.
-			remaining := sz.LogsSize(req.ld)
-			if remaining == req.size(sz, szt) {
-				// Nothing left the source, so no progress is possible. Stop rather than loop.
-				return append(res, req), errors.New("request size is greater than max size and cannot be split further")
-			}
-			req.sizes.Update(szt, remaining)
-		default:
-			req.sizes.Update(szt, req.size(sz, szt)-removedSize)
+		if removedSize == 0 {
+			// Nothing left the source, so no progress is possible. Stop rather than loop.
+			return append(res, req), errors.New("request size is greater than max size and cannot be split further")
 		}
+		req.sizes.Update(szt, req.size(sz, szt)-removedSize)
+		droppedItems += recordsBefore - req.ld.LogRecordCount() - ld.LogRecordCount()
 		if ld.LogRecordCount() > 0 {
 			res = append(res, newLogsRequest(ld))
 		}
@@ -114,8 +103,12 @@ func extractLogs(srcLogs plog.Logs, capacity int, sz sizer.LogsSizer) (plog.Logs
 			if extSrcRL.ScopeLogs().Len() > 0 {
 				extSrcRL.MoveTo(destLogs.ResourceLogs().AppendEmpty())
 			}
-			// Remove the source resource once nothing is left in it.
-			return srcRL.ScopeLogs().Len() == 0
+			if srcRL.ScopeLogs().Len() == 0 {
+				// Nothing is left in the source resource, so remove what remains of it too.
+				removedSize += sz.DeltaSize(rawRlSize - extRlSize)
+				return true
+			}
+			return false
 		}
 		capacityLeft -= rlSize
 		removedSize += rlSize
@@ -155,8 +148,12 @@ func extractResourceLogs(srcRL plog.ResourceLogs, capacity, maxSize int, sz size
 			if extSrcSL.LogRecords().Len() > 0 {
 				extSrcSL.MoveTo(destRL.ScopeLogs().AppendEmpty())
 			}
-			// Remove the source scope once nothing is left in it.
-			return srcSL.LogRecords().Len() == 0
+			if srcSL.LogRecords().Len() == 0 {
+				// Nothing is left in the source scope, so remove what remains of it too.
+				removedSize += sz.DeltaSize(rawSlSize - extSlSize)
+				return true
+			}
+			return false
 		}
 		capacityLeft -= slSize
 		removedSize += slSize
@@ -184,6 +181,7 @@ func extractScopeLogs(srcSL plog.ScopeLogs, capacity, maxScopeSize int, sz sizer
 		rlSize := sz.DeltaSize(sz.LogRecordSize(srcLR))
 		if rlSize > maxRecordSize {
 			// It can never be exported and would block every record behind it, so drop it.
+			removedSize += rlSize
 			return true
 		}
 		if rlSize > capacityLeft {
