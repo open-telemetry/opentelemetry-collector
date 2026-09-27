@@ -11,15 +11,26 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pprofile"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/processor/processorhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
+
+func newProfilesSettings(tel *componenttest.Telemetry) processor.Settings {
+	set := processortest.NewNopSettings(processortest.NopType)
+	set.TelemetrySettings = tel.NewTelemetrySettings()
+	return set
+}
 
 var testProfilesCfg = struct{}{}
 
@@ -97,4 +108,111 @@ func TestProfilesConcurrency(t *testing.T) {
 	}
 	wg.Wait()
 	assert.NoError(t, pp.Shutdown(context.Background()))
+}
+
+func TestProfiles_RecordInOut(t *testing.T) {
+	// Regardless of how many samples are ingested, emit just one
+	mockAggregate := func(_ context.Context, _ pprofile.Profiles) (pprofile.Profiles, error) {
+		pd := pprofile.NewProfiles()
+		pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Samples().AppendEmpty()
+		return pd, nil
+	}
+
+	incomingProfiles := pprofile.NewProfiles()
+	samples := incomingProfiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Samples()
+
+	// Add 4 samples to the incoming
+	samples.AppendEmpty()
+	samples.AppendEmpty()
+	samples.AppendEmpty()
+	samples.AppendEmpty()
+
+	tel := componenttest.NewTelemetry()
+	pp, err := NewProfiles(context.Background(), newProfilesSettings(tel), &testProfilesCfg, consumertest.NewNop(), mockAggregate)
+	require.NoError(t, err)
+
+	assert.NoError(t, pp.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, pp.ConsumeProfiles(context.Background(), incomingProfiles))
+	assert.NoError(t, pp.Shutdown(context.Background()))
+
+	metadatatest.AssertEqualProcessorIncomingItems(t, tel,
+		[]metricdata.DataPoint[int64]{
+			{
+				Value:      4,
+				Attributes: attribute.NewSet(attribute.String("processor", "nop"), attribute.String("otel.signal", "profiles")),
+			},
+		}, metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualProcessorOutgoingItems(t, tel,
+		[]metricdata.DataPoint[int64]{
+			{
+				Value:      1,
+				Attributes: attribute.NewSet(attribute.String("processor", "nop"), attribute.String("otel.signal", "profiles")),
+			},
+		}, metricdatatest.IgnoreTimestamp())
+}
+
+func TestProfiles_RecordIn_ErrorOut(t *testing.T) {
+	// Regardless of input, return error
+	mockErr := func(_ context.Context, _ pprofile.Profiles) (pprofile.Profiles, error) {
+		return pprofile.NewProfiles(), errors.New("fake")
+	}
+
+	incomingProfiles := pprofile.NewProfiles()
+	samples := incomingProfiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Samples()
+
+	// Add 4 samples to the incoming
+	samples.AppendEmpty()
+	samples.AppendEmpty()
+	samples.AppendEmpty()
+	samples.AppendEmpty()
+
+	tel := componenttest.NewTelemetry()
+	pp, err := NewProfiles(context.Background(), newProfilesSettings(tel), &testProfilesCfg, consumertest.NewNop(), mockErr)
+	require.NoError(t, err)
+
+	require.NoError(t, pp.Start(context.Background(), componenttest.NewNopHost()))
+	require.Error(t, pp.ConsumeProfiles(context.Background(), incomingProfiles))
+	require.NoError(t, pp.Shutdown(context.Background()))
+
+	metadatatest.AssertEqualProcessorIncomingItems(t, tel,
+		[]metricdata.DataPoint[int64]{
+			{
+				Value:      4,
+				Attributes: attribute.NewSet(attribute.String("processor", "nop"), attribute.String("otel.signal", "profiles")),
+			},
+		}, metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualProcessorOutgoingItems(t, tel,
+		[]metricdata.DataPoint[int64]{
+			{
+				Value:      0,
+				Attributes: attribute.NewSet(attribute.String("processor", "nop"), attribute.String("otel.signal", "profiles")),
+			},
+		}, metricdatatest.IgnoreTimestamp())
+}
+
+func TestProfiles_ProcessInternalDuration(t *testing.T) {
+	mockAggregate := func(_ context.Context, _ pprofile.Profiles) (pprofile.Profiles, error) {
+		pd := pprofile.NewProfiles()
+		pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Samples().AppendEmpty()
+		return pd, nil
+	}
+
+	incomingProfiles := pprofile.NewProfiles()
+
+	tel := componenttest.NewTelemetry()
+	pp, err := NewProfiles(context.Background(), newProfilesSettings(tel), &testProfilesCfg, consumertest.NewNop(), mockAggregate)
+	require.NoError(t, err)
+
+	assert.NoError(t, pp.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, pp.ConsumeProfiles(context.Background(), incomingProfiles))
+	assert.NoError(t, pp.Shutdown(context.Background()))
+
+	metadatatest.AssertEqualProcessorInternalDuration(t, tel,
+		[]metricdata.HistogramDataPoint[float64]{
+			{
+				Count:        1,
+				BucketCounts: []uint64{1},
+				Attributes:   attribute.NewSet(attribute.String("processor", "nop"), attribute.String("otel.signal", "profiles")),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 }

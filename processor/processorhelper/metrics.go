@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processorhelper/internal/obsreport"
 )
 
 // ProcessMetricsFunc is a helper function that processes the incoming data and returns the data to be sent to the next component.
@@ -40,7 +41,7 @@ func NewMetrics(
 		return nil, errors.New("nil metricsFunc")
 	}
 
-	obs, err := newObsReport(set, pipeline.SignalMetrics)
+	obs, err := obsreport.New(set, pipeline.SignalMetrics)
 	if err != nil {
 		return nil, err
 	}
@@ -57,17 +58,17 @@ func NewMetrics(
 
 		var errFunc error
 		md, errFunc = metricsFunc(ctx, md)
-		obs.recordInternalDuration(ctx, startTime)
+		obs.RecordInternalDuration(ctx, startTime)
 		span.AddEvent("End processing.", eventOptions)
 		if errFunc != nil {
-			obs.recordInOut(ctx, pointsIn, 0)
+			obs.RecordInOut(ctx, pointsIn, 0)
 			if errors.Is(errFunc, ErrSkipProcessingData) {
 				return nil
 			}
 			return errFunc
 		}
 		pointsOut := md.DataPointCount()
-		obs.recordInOut(ctx, pointsIn, pointsOut)
+		obs.RecordInOut(ctx, pointsIn, pointsOut)
 		return nextConsumer.ConsumeMetrics(ctx, md)
 	}, bs.consumerOptions...)
 	if err != nil {

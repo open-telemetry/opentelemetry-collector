@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processorhelper/internal/obsreport"
 )
 
 // ProcessLogsFunc is a helper function that processes the incoming data and returns the data to be sent to the next component.
@@ -40,7 +41,7 @@ func NewLogs(
 		return nil, errors.New("nil logsFunc")
 	}
 
-	obs, err := newObsReport(set, pipeline.SignalLogs)
+	obs, err := obsreport.New(set, pipeline.SignalLogs)
 	if err != nil {
 		return nil, err
 	}
@@ -57,17 +58,17 @@ func NewLogs(
 
 		var errFunc error
 		ld, errFunc = logsFunc(ctx, ld)
-		obs.recordInternalDuration(ctx, startTime)
+		obs.RecordInternalDuration(ctx, startTime)
 		span.AddEvent("End processing.", eventOptions)
 		if errFunc != nil {
-			obs.recordInOut(ctx, recordsIn, 0)
+			obs.RecordInOut(ctx, recordsIn, 0)
 			if errors.Is(errFunc, ErrSkipProcessingData) {
 				return nil
 			}
 			return errFunc
 		}
 		recordsOut := ld.LogRecordCount()
-		obs.recordInOut(ctx, recordsIn, recordsOut)
+		obs.RecordInOut(ctx, recordsIn, recordsOut)
 		return nextConsumer.ConsumeLogs(ctx, ld)
 	}, bs.consumerOptions...)
 	if err != nil {
