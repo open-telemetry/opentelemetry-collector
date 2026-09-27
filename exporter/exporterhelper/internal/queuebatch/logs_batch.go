@@ -60,7 +60,7 @@ func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer, szt request.Sizer
 		ld, removedSize := extractLogs(req.ld, maxSize, sz)
 		if removedSize == 0 {
 			// Nothing left the source, so no progress is possible. Stop rather than loop.
-			return append(res, req), errors.New("request size is greater than max size and cannot be split further")
+			return res, fmt.Errorf("request size is greater than max size and cannot be split further, dropping items: %d", droppedItems+req.ld.LogRecordCount())
 		}
 		req.sizes.Update(szt, req.size(sz, szt)-removedSize)
 		droppedItems += recordsBefore - req.ld.LogRecordCount() - ld.LogRecordCount()

@@ -643,7 +643,8 @@ func TestMergeSplitLogsRetriesAfterDiscardingRecordlessResources(t *testing.T) {
 
 func TestMergeSplitLogsStopsWhenNoProgressIsPossible(t *testing.T) {
 	// The resource attributes alone fill max size exactly, so no scope or record can be
-	// added to any batch. Splitting must stop instead of looping, and keep the records.
+	// added to any batch. Splitting must stop instead of looping, and must not return a
+	// batch larger than max size.
 	const maxSize = 300
 	marshaler := &plog.ProtoMarshaler{}
 	ld := plog.NewLogs()
@@ -659,6 +660,6 @@ func TestMergeSplitLogsStopsWhenNoProgressIsPossible(t *testing.T) {
 	sl.LogRecords().AppendEmpty().Body().SetStr("second")
 
 	res, err := newLogsRequest(ld).MergeSplit(context.Background(), maxSize, request.SizerTypeBytes, nil)
-	require.ErrorContains(t, err, "request size is greater than max size and cannot be split further")
-	assert.ElementsMatch(t, []string{"first", "second"}, logBodies(res), "records must be returned, not lost")
+	require.ErrorContains(t, err, "request size is greater than max size and cannot be split further, dropping items: 2")
+	assert.Empty(t, res, "records that cannot fit any batch must not be returned")
 }
