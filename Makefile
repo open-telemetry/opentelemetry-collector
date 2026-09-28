@@ -215,6 +215,7 @@ prepare-contrib:
 	@$(MAKE) -j4 -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
 		$(addprefix -replace ,$(join $(ALL_MOD_PATHS:%=go.opentelemetry.io/collector%=),$(ALL_MOD_PATHS:%=$(CURDIR)%)))"
 
+	@$(MAKE) -j4 -C $(CONTRIB_PATH) gotidy
 	@$(MAKE) generate-contrib
 
 # Checks that the HEAD of the contrib repo checked out in CONTRIB_PATH compiles
