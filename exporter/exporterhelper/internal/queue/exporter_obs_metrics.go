@@ -30,7 +30,10 @@ func NewExporterObsMetrics(
 	}
 
 	exporterAttr := attribute.String(exporterKey, id.String())
-	metricAttr := metric.WithAttributeSet(attribute.NewSet(append(extraAttrs, exporterAttr)...))
+	// These sets intentionally preserve existing metric cardinality. See
+	// https://github.com/open-telemetry/opentelemetry-collector/issues/16049.
+	enqueueAttr := metric.WithAttributeSet(attribute.NewSet(exporterAttr))
+	senderAttr := metric.WithAttributeSet(attribute.NewSet(append(extraAttrs, exporterAttr)...))
 	queueAttr := metric.WithAttributeSet(attribute.NewSet(
 		exporterAttr,
 		attribute.String(dataTypeKey, signal.String()),
@@ -82,21 +85,21 @@ func NewExporterObsMetrics(
 		RecordIntFunc: func(ctx context.Context, m queuebatchtelemetry.Metric, value int64, options ...metric.AddOption) {
 			switch m {
 			case queuebatchtelemetry.MetricEnqueueFailure:
-				enqueueFailedInst.Add(ctx, value, metricAttr)
+				enqueueFailedInst.Add(ctx, value, enqueueAttr)
 			case queuebatchtelemetry.MetricEnqueueSize:
-				tb.ExporterEnqueueSize.Record(ctx, value, metricAttr)
+				tb.ExporterEnqueueSize.Record(ctx, value, enqueueAttr)
 			case queuebatchtelemetry.MetricEnqueueSizeBytes:
-				tb.ExporterEnqueueSizeBytes.Record(ctx, value, metricAttr)
+				tb.ExporterEnqueueSizeBytes.Record(ctx, value, enqueueAttr)
 			case queuebatchtelemetry.MetricBatchSendSize:
-				tb.ExporterQueueBatchSendSize.Record(ctx, value, metricAttr)
+				tb.ExporterQueueBatchSendSize.Record(ctx, value, senderAttr)
 			case queuebatchtelemetry.MetricBatchSendSizeBytes:
-				tb.ExporterQueueBatchSendSizeBytes.Record(ctx, value, metricAttr)
+				tb.ExporterQueueBatchSendSizeBytes.Record(ctx, value, senderAttr)
 			case queuebatchtelemetry.MetricInFlight:
 				tb.ExporterInFlightRequests.Add(ctx, value, queueAttr)
 			case queuebatchtelemetry.MetricSent:
-				itemsSentInst.Add(ctx, value, metricAttr)
+				itemsSentInst.Add(ctx, value, senderAttr)
 			case queuebatchtelemetry.MetricSendFailure:
-				itemsFailedInst.Add(ctx, value, append([]metric.AddOption{metricAttr}, options...)...)
+				itemsFailedInst.Add(ctx, value, append([]metric.AddOption{senderAttr}, options...)...)
 			}
 		},
 		RegisterIntFunc: func(m queuebatchtelemetry.Metric, value func() int64) error {

@@ -9,9 +9,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	queuebatchtelemetry "go.opentelemetry.io/collector/internal/telemetry/queuebatch"
 	"go.opentelemetry.io/collector/pipeline"
@@ -119,4 +123,41 @@ func TestExporterObsMetricsUnsupportedMetric(t *testing.T) {
 	require.False(t, obsMetrics.ShouldRecord(ctx, unsupported))
 	require.ErrorContains(t, obsMetrics.RegisterInt(unsupported, func() int64 { return 0 }), "unsupported observable")
 	obsMetrics.Shutdown()
+}
+
+func TestExporterObsMetricsAttributeCompatibility(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	extraAttr := attribute.String("extra", "value")
+	obsMetrics, err := NewExporterObsMetrics(
+		tt.NewTelemetrySettings(),
+		exporterID,
+		pipeline.SignalTraces,
+		[]attribute.KeyValue{extraAttr},
+	)
+	require.NoError(t, err)
+	t.Cleanup(obsMetrics.Shutdown)
+
+	ctx := context.Background()
+	obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricEnqueueFailure, 1)
+	obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricEnqueueSize, 2)
+	obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricBatchSendSize, 3)
+	obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricSent, 4)
+
+	exporterAttr := attribute.String(exporterKey, exporterID.String())
+	enqueueAttrs := attribute.NewSet(exporterAttr)
+	senderAttrs := attribute.NewSet(exporterAttr, extraAttr)
+	metadatatest.AssertEqualExporterEnqueueFailedSpans(t, tt,
+		[]metricdata.DataPoint[int64]{{Attributes: enqueueAttrs, Value: 1}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	metadatatest.AssertEqualExporterEnqueueSize(t, tt,
+		[]metricdata.HistogramDataPoint[int64]{{Attributes: enqueueAttrs}},
+		metricdatatest.IgnoreValue(), metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	metadatatest.AssertEqualExporterQueueBatchSendSize(t, tt,
+		[]metricdata.HistogramDataPoint[int64]{{Attributes: senderAttrs}},
+		metricdatatest.IgnoreValue(), metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	metadatatest.AssertEqualExporterSentSpans(t, tt,
+		[]metricdata.DataPoint[int64]{{Attributes: senderAttrs, Value: 4}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
