@@ -313,11 +313,10 @@ REMOTE?=git@github.com:open-telemetry/opentelemetry-collector.git
 .PHONY: push-tags
 push-tags:
 	$(GO_TOOL) multimod verify
-	set -e; \
-	tags=`$(GO_TOOL) multimod tag -m ${MODSET} -c ${COMMIT} --print-tags 2>&1 | grep 'v[0-9]'`; \
-	if [ -n "$$tags" ]; then \
-		git push ${REMOTE} $$tags; \
-	fi
+	set -e; for tag in `$(GO_TOOL) multimod tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
+		echo "pushing tag $${tag}"; \
+		git push ${REMOTE} $${tag}; \
+	done;
 
 .PHONY: check-changes
 check-changes:
