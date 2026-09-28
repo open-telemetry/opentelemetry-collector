@@ -56,21 +56,21 @@ config:
         custom_validator:
     targets:
       description: List of targets to scrape metrics from.
-      x-pointer: true
+      pointer: true
       type: slice
       values:
         type: object
         properties:
           endpoint:
             $ref: /config/confignet.addr_config
-            x-optional: true
+            optional: true
             default:
               transport: ip4
             go_struct:
               optional_mode: default
           interval:
             type: duration
-            x-optional: true
+            optional: true
             default: 10s
           labels:
             description: Static key-value labels attached to all metrics from this target.
@@ -93,6 +93,8 @@ config:
             exclusiveMinimum: 0
             exclusiveMaximum: 30
         required: [labels]
+        go_struct:
+          private_fields: true
       default:
         - {} # one item with default values
     log_level:
@@ -101,6 +103,8 @@ config:
       enum: [debug, info, warn, error]
       default: info
   required: [job_name, targets]
+  go_struct:
+    private_fields: true
 
 resource_attributes:
   map.resource.attr:

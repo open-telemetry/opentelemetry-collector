@@ -20,4 +20,4 @@ jobs:
       contents: read # for actions/checkout
       id-token: write # for Scorecard to publish results
       security-events: write # for the SARIF upload to code scanning
-    uses: open-telemetry/shared-workflows/.github/workflows/scorecard.yml@68c7b2f0ef9cd9c1e2b71d3018f63127be189578 # v0.14.0
+    uses: open-telemetry/shared-workflows/.github/workflows/scorecard.yml@ad1959372f2919fcf2556d3a3d12ed5265c54209 # v0.16.0

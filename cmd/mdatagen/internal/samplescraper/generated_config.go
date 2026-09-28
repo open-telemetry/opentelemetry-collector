@@ -38,6 +38,9 @@ type TargetsItem struct {
 	// TimeoutSeconds timeout in seconds for each scrape request.
 	TimeoutSeconds float64 `mapstructure:"timeout_seconds"`
 
+	// placeholder for the private fields
+	privateTargetsItemFields
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -99,6 +102,9 @@ type Config struct {
 
 	// Targets list of targets to scrape metrics from.
 	Targets *[]TargetsItem `mapstructure:"targets"`
+
+	// placeholder for the private fields
+	privateConfigFields
 
 	// prevent unkeyed literal initialization
 	_ struct{}

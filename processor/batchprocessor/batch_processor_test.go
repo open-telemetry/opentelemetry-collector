@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/pdata/xpdata/pref"
 	"go.opentelemetry.io/collector/processor/batchprocessor/internal/metadata"
 	"go.opentelemetry.io/collector/processor/batchprocessor/internal/metadatatest"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -721,6 +722,30 @@ func BenchmarkMultiBatchMetricProcessor2k(b *testing.B) {
 		MetadataKeys:  []string{"test", "test2"},
 	}
 	runMetricsProcessorBenchmark(b, cfg)
+}
+
+func BenchmarkBatchMetricSplitMaxSize2k(b *testing.B) {
+	const (
+		splitSize         = 2000
+		metricsPerRequest = 50_000
+	)
+
+	template := testdata.GenerateMetrics(metricsPerRequest)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		b.StopTimer()
+		md := pmetric.NewMetrics()
+		template.CopyTo(md)
+		batch := newMetricsBatch(nil)
+		batch.add(md)
+		b.StartTimer()
+
+		for batch.itemCount() >= splitSize {
+			_, req := batch.split(splitSize)
+			pref.UnrefMetrics(req)
+		}
+	}
 }
 
 func runMetricsProcessorBenchmark(b *testing.B, cfg *Config) {

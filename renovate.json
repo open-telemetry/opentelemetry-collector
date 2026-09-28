@@ -94,6 +94,15 @@
       "matchManagers": [
         "gomod"
       ],
+      "matchPackageNames": [
+        "google.golang.org/grpc"
+      ],
+      "allowedVersions": "!/^v1.84.0$/"
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
       "groupName": "All golang.org/x packages",
       "matchPackageNames": [
         "golang.org/x{/,}**"
@@ -136,13 +145,14 @@
       "enabled": false
     }
   ],
+  "gitIgnoredAuthors": [
+    "197425009+otelbot@users.noreply.github.com"
+  ],
   "ignoreDeps": [
     "github.com/mattn/go-ieproxy"
   ],
   "prConcurrentLimit": 200,
-  "suppressNotifications": [
-    "prEditedNotification"
-  ],
+  "prHourlyLimit": 5,
   "postUpdateOptions": [
     "gomodTidy"
   ]

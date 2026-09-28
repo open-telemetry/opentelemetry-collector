@@ -17,11 +17,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
 
-// defaultPartitionIdleTimeout is the duration after which an empty partition is removed
-// when Partition.IdleTimeout is not configured. It is large enough to keep a partition
-// alive across common metrics scrape intervals (up to 60s).
-const defaultPartitionIdleTimeout = 90 * time.Second
-
 var _ Batcher[request.Request] = (*partitionBatcher)(nil)
 
 type batch struct {
@@ -58,10 +53,6 @@ func newPartitionBatcher(
 	logger *zap.Logger,
 	onEmpty func(),
 ) *partitionBatcher {
-	idleTimeout := defaultPartitionIdleTimeout
-	if v := cfg.Partition.IdleTimeout.Get(); v != nil {
-		idleTimeout = *v
-	}
 	return &partitionBatcher{
 		cfg:          cfg,
 		wp:           wp,
@@ -71,7 +62,7 @@ func newPartitionBatcher(
 		shutdownCh:   make(chan struct{}, 1),
 		logger:       logger,
 		onEmpty:      onEmpty,
-		idleTimeout:  idleTimeout,
+		idleTimeout:  cfg.Partition.IdleTimeout,
 		lastDataTime: time.Now(),
 		active:       true,
 	}

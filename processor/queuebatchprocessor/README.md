@@ -77,7 +77,7 @@ receivers:
         include_metadata: true
 
 processors:
-  queuebatch:
+  queue_batch:
     batch:
       partition:
         cache_size: 10000
@@ -89,7 +89,7 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [queuebatch]
+      processors: [queue_batch]
       exporters: [otlp]
 ```
 
@@ -99,8 +99,8 @@ metadata are treated as distinct cases, and entries are
 case-insensitive.
 
 `batch::partition::cache_size` (default = 10000) limits how many
-distinct partition batchers are kept in memory at once. If unset, the
-default is used. The value must be positive. When the limit is reached, the least recently used
+distinct partition batchers are kept in memory at once. The value must
+be positive. When the limit is reached, the least recently used
 partition is flushed and removed. The current cache size and configured
 capacity are exported as `otelcol_exporter_queue_batch_partition_cache_size`
 and `otelcol_exporter_queue_batch_partition_cache_capacity`.
@@ -121,10 +121,10 @@ restart.
 ```yaml
 extensions:
   file_storage:
-    directory: /var/lib/otelcol/queuebatch
+    directory: /var/lib/otelcol/queue_batch
 
 processors:
-  queuebatch:
+  queue_batch:
     # Persist the queue using the file_storage extension.
     storage: file_storage
 
@@ -133,7 +133,7 @@ service:
   pipelines:
     logs:
       receivers: [otlp]
-      processors: [queuebatch]
+      processors: [queue_batch]
       exporters: [otlp]
 ```
 
