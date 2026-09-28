@@ -118,6 +118,8 @@ func TestObsMetrics(t *testing.T) {
 	}
 	require.NoError(t, obsMetrics.RegisterInt(queuebatchtelemetry.MetricQueueSize, func() int64 { return 7 }))
 	require.NoError(t, obsMetrics.RegisterInt(queuebatchtelemetry.MetricQueueCapacity, func() int64 { return 9 }))
+	require.NoError(t, obsMetrics.RegisterInt(queuebatchtelemetry.MetricPartitionCacheSize, func() int64 { return 11 }))
+	require.NoError(t, obsMetrics.RegisterInt(queuebatchtelemetry.MetricPartitionCacheCapacity, func() int64 { return 13 }))
 	obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricBatchSendSize, 4)
 	if obsMetrics.ShouldRecord(ctx, queuebatchtelemetry.MetricBatchSendSizeBytes) {
 		bytesCalls++
@@ -153,6 +155,8 @@ func TestObsMetrics(t *testing.T) {
 	requireHistogram(t, tt, "otelcol_processor_queuebatch_enqueue_size_bytes", 30, attrs)
 	requireGauge(t, tt, "otelcol_processor_queuebatch_queue_size", 7, queueAttrs)
 	requireGauge(t, tt, "otelcol_processor_queuebatch_queue_capacity", 9, queueAttrs)
+	requireGauge(t, tt, "otelcol_processor_queuebatch_partition_cache_size", 11, attrs)
+	requireGauge(t, tt, "otelcol_processor_queuebatch_partition_cache_capacity", 13, attrs)
 	requireHistogram(t, tt, "otelcol_processor_queuebatch_batch_send_size", 4, attrs)
 	requireHistogram(t, tt, "otelcol_processor_queuebatch_batch_send_size_bytes", 40, attrs)
 	requireSum(t, tt, "otelcol_processor_queuebatch_in_flight_requests", 1, attrs)
@@ -173,6 +177,8 @@ func TestNewProcessorReleasesMetricsOnError(t *testing.T) {
 		func(metrics queuebatchtelemetry.ObsMetrics) (struct{}, error) {
 			require.NoError(t, metrics.RegisterInt(queuebatchtelemetry.MetricQueueSize, func() int64 { return 1 }))
 			require.NoError(t, metrics.RegisterInt(queuebatchtelemetry.MetricQueueCapacity, func() int64 { return 2 }))
+			require.NoError(t, metrics.RegisterInt(queuebatchtelemetry.MetricPartitionCacheSize, func() int64 { return 3 }))
+			require.NoError(t, metrics.RegisterInt(queuebatchtelemetry.MetricPartitionCacheCapacity, func() int64 { return 4 }))
 			return struct{}{}, wantErr
 		})
 	require.ErrorIs(t, err, wantErr)

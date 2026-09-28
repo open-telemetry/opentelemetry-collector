@@ -114,6 +114,34 @@ func AssertEqualProcessorQueuebatchInFlightRequests(t *testing.T, tt *componentt
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualProcessorQueuebatchPartitionCacheCapacity(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_queuebatch_partition_cache_capacity",
+		Description: "Maximum number of active partition batchers in the LRU cache. Only recorded when batch partitioning is enabled. [Development]",
+		Unit:        "{partition}",
+		Data: metricdata.Gauge[int64]{
+			DataPoints: dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_queuebatch_partition_cache_capacity")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorQueuebatchPartitionCacheSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_queuebatch_partition_cache_size",
+		Description: "Current number of active partition batchers in the LRU cache. Only recorded when batch partitioning is enabled. [Development]",
+		Unit:        "{partition}",
+		Data: metricdata.Gauge[int64]{
+			DataPoints: dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_queuebatch_partition_cache_size")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualProcessorQueuebatchQueueCapacity(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_queuebatch_queue_capacity",

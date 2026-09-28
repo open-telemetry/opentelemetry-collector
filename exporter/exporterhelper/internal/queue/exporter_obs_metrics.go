@@ -115,6 +115,16 @@ func NewExporterObsMetrics(
 					o.Observe(value(), queueAttr)
 					return nil
 				})
+			case queuebatchtelemetry.MetricPartitionCacheSize:
+				err = tb.RegisterExporterQueueBatchPartitionCacheSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
+					o.Observe(value(), queueAttr)
+					return nil
+				})
+			case queuebatchtelemetry.MetricPartitionCacheCapacity:
+				err = tb.RegisterExporterQueueBatchPartitionCacheCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
+					o.Observe(value(), queueAttr)
+					return nil
+				})
 			default:
 				return fmt.Errorf("unsupported observable queuebatch metric %q", m)
 			}

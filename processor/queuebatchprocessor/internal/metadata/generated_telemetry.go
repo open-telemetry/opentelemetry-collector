@@ -25,19 +25,21 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                                 metric.Meter
-	mu                                    sync.Mutex
-	registrations                         []metric.Registration
-	ProcessorQueuebatchBatchSendSize      metric.Int64Histogram
-	ProcessorQueuebatchBatchSendSizeBytes metric.Int64Histogram
-	ProcessorQueuebatchEnqueueFailedItems metric.Int64Counter
-	ProcessorQueuebatchEnqueueSize        metric.Int64Histogram
-	ProcessorQueuebatchEnqueueSizeBytes   metric.Int64Histogram
-	ProcessorQueuebatchInFlightRequests   metric.Int64UpDownCounter
-	ProcessorQueuebatchQueueCapacity      metric.Int64ObservableGauge
-	ProcessorQueuebatchQueueSize          metric.Int64ObservableGauge
-	ProcessorQueuebatchSendFailedItems    metric.Int64Counter
-	ProcessorQueuebatchSentItems          metric.Int64Counter
+	meter                                     metric.Meter
+	mu                                        sync.Mutex
+	registrations                             []metric.Registration
+	ProcessorQueuebatchBatchSendSize          metric.Int64Histogram
+	ProcessorQueuebatchBatchSendSizeBytes     metric.Int64Histogram
+	ProcessorQueuebatchEnqueueFailedItems     metric.Int64Counter
+	ProcessorQueuebatchEnqueueSize            metric.Int64Histogram
+	ProcessorQueuebatchEnqueueSizeBytes       metric.Int64Histogram
+	ProcessorQueuebatchInFlightRequests       metric.Int64UpDownCounter
+	ProcessorQueuebatchPartitionCacheCapacity metric.Int64ObservableGauge
+	ProcessorQueuebatchPartitionCacheSize     metric.Int64ObservableGauge
+	ProcessorQueuebatchQueueCapacity          metric.Int64ObservableGauge
+	ProcessorQueuebatchQueueSize              metric.Int64ObservableGauge
+	ProcessorQueuebatchSendFailedItems        metric.Int64Counter
+	ProcessorQueuebatchSentItems              metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -49,6 +51,36 @@ type telemetryBuilderOptionFunc func(mb *TelemetryBuilder)
 
 func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
+}
+
+// RegisterProcessorQueuebatchPartitionCacheCapacityCallback sets callback for observable ProcessorQueuebatchPartitionCacheCapacity metric.
+func (builder *TelemetryBuilder) RegisterProcessorQueuebatchPartitionCacheCapacityCallback(cb metric.Int64Callback) error {
+	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
+		cb(ctx, &observerInt64{inst: builder.ProcessorQueuebatchPartitionCacheCapacity, obs: o})
+		return nil
+	}, builder.ProcessorQueuebatchPartitionCacheCapacity)
+	if err != nil {
+		return err
+	}
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	builder.registrations = append(builder.registrations, reg)
+	return nil
+}
+
+// RegisterProcessorQueuebatchPartitionCacheSizeCallback sets callback for observable ProcessorQueuebatchPartitionCacheSize metric.
+func (builder *TelemetryBuilder) RegisterProcessorQueuebatchPartitionCacheSizeCallback(cb metric.Int64Callback) error {
+	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
+		cb(ctx, &observerInt64{inst: builder.ProcessorQueuebatchPartitionCacheSize, obs: o})
+		return nil
+	}, builder.ProcessorQueuebatchPartitionCacheSize)
+	if err != nil {
+		return err
+	}
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	builder.registrations = append(builder.registrations, reg)
+	return nil
 }
 
 // RegisterProcessorQueuebatchQueueCapacityCallback sets callback for observable ProcessorQueuebatchQueueCapacity metric.
@@ -147,6 +179,18 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_processor_queuebatch_in_flight_requests",
 		metric.WithDescription("Number of requests currently being processed. [Development]"),
 		metric.WithUnit("{request}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorQueuebatchPartitionCacheCapacity, err = builder.meter.Int64ObservableGauge(
+		"otelcol_processor_queuebatch_partition_cache_capacity",
+		metric.WithDescription("Maximum number of active partition batchers in the LRU cache. Only recorded when batch partitioning is enabled. [Development]"),
+		metric.WithUnit("{partition}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorQueuebatchPartitionCacheSize, err = builder.meter.Int64ObservableGauge(
+		"otelcol_processor_queuebatch_partition_cache_size",
+		metric.WithDescription("Current number of active partition batchers in the LRU cache. Only recorded when batch partitioning is enabled. [Development]"),
+		metric.WithUnit("{partition}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorQueuebatchQueueCapacity, err = builder.meter.Int64ObservableGauge(

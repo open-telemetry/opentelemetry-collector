@@ -61,6 +61,22 @@ telemetry:
       sum:
         value_type: int
         monotonic: false
+    processor_queuebatch_partition_cache_capacity:
+      enabled: true
+      stability: development
+      description: Maximum number of active partition batchers in the LRU cache. Only recorded when batch partitioning is enabled.
+      unit: "{partition}"
+      gauge:
+        value_type: int
+        async: true
+    processor_queuebatch_partition_cache_size:
+      enabled: true
+      stability: development
+      description: Current number of active partition batchers in the LRU cache. Only recorded when batch partitioning is enabled.
+      unit: "{partition}"
+      gauge:
+        value_type: int
+        async: true
     processor_queuebatch_queue_capacity:
       enabled: true
       stability: development

@@ -54,6 +54,22 @@ Number of requests currently being processed.
 | ---- | ----------- | ---------- | --------- | --------- |
 | {request} | Sum | Int | false | Development |
 
+### otelcol_processor_queuebatch_partition_cache_capacity
+
+Maximum number of active partition batchers in the LRU cache. Only recorded when batch partitioning is enabled.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {partition} | Gauge | Int | Development |
+
+### otelcol_processor_queuebatch_partition_cache_size
+
+Current number of active partition batchers in the LRU cache. Only recorded when batch partitioning is enabled.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {partition} | Gauge | Int | Development |
+
 ### otelcol_processor_queuebatch_queue_capacity
 
 Fixed capacity of the queue, expressed in units selected by the sizer attribute.

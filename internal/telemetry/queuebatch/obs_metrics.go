@@ -15,16 +15,18 @@ import (
 type Metric string
 
 const (
-	MetricEnqueueFailure     Metric = "enqueue_failure"
-	MetricEnqueueSize        Metric = "enqueue_size"
-	MetricEnqueueSizeBytes   Metric = "enqueue_size_bytes"
-	MetricQueueSize          Metric = "queue_size"
-	MetricQueueCapacity      Metric = "queue_capacity"
-	MetricBatchSendSize      Metric = "batch_send_size"
-	MetricBatchSendSizeBytes Metric = "batch_send_size_bytes"
-	MetricInFlight           Metric = "in_flight"
-	MetricSent               Metric = "sent"
-	MetricSendFailure        Metric = "send_failure"
+	MetricEnqueueFailure         Metric = "enqueue_failure"
+	MetricEnqueueSize            Metric = "enqueue_size"
+	MetricEnqueueSizeBytes       Metric = "enqueue_size_bytes"
+	MetricQueueSize              Metric = "queue_size"
+	MetricQueueCapacity          Metric = "queue_capacity"
+	MetricPartitionCacheSize     Metric = "partition_cache_size"
+	MetricPartitionCacheCapacity Metric = "partition_cache_capacity"
+	MetricBatchSendSize          Metric = "batch_send_size"
+	MetricBatchSendSizeBytes     Metric = "batch_send_size_bytes"
+	MetricInFlight               Metric = "in_flight"
+	MetricSent                   Metric = "sent"
+	MetricSendFailure            Metric = "send_failure"
 )
 
 // ObsMetrics reports metrics produced by queue and batch operations.
