@@ -6,19 +6,19 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.68.0
-	go.opentelemetry.io/collector/component/componenttest v0.161.0
+	go.opentelemetry.io/collector/component/componenttest v0.162.0
 	go.opentelemetry.io/collector/config/configretry v1.68.0
 	go.opentelemetry.io/collector/consumer v1.68.0
-	go.opentelemetry.io/collector/consumer/consumererror v0.161.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.161.0
+	go.opentelemetry.io/collector/consumer/consumererror v0.162.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.162.0
 	go.opentelemetry.io/collector/exporter v1.68.0
-	go.opentelemetry.io/collector/exporter/exporterhelper v0.161.0
-	go.opentelemetry.io/collector/exporter/xexporter v0.161.0
+	go.opentelemetry.io/collector/exporter/exporterhelper v0.162.0
+	go.opentelemetry.io/collector/exporter/xexporter v0.162.0
 	go.opentelemetry.io/collector/pdata v1.68.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.161.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.162.0
 	go.opentelemetry.io/collector/pipeline v1.68.0
 	go.opentelemetry.io/collector/receiver v1.68.0
-	go.opentelemetry.io/collector/receiver/receivertest v0.161.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.162.0
 	google.golang.org/grpc v1.83.2
 )
 
@@ -43,14 +43,14 @@ require (
 	go.opentelemetry.io/collector/client v1.68.0 // indirect
 	go.opentelemetry.io/collector/config/configoptional v1.68.0 // indirect
 	go.opentelemetry.io/collector/confmap v1.68.0 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.161.0 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.162.0 // indirect
 	go.opentelemetry.io/collector/extension v1.68.0 // indirect
-	go.opentelemetry.io/collector/extension/xextension v0.161.0 // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.162.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.68.0 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.161.0 // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.161.0 // indirect
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.161.0 // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.161.0 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.162.0 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.162.0 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.162.0 // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.162.0 // indirect
 	go.opentelemetry.io/otel v1.46.0 // indirect
 	go.opentelemetry.io/otel/metric v1.46.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.46.0 // indirect

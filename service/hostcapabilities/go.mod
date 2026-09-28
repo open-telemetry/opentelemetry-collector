@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	go.opentelemetry.io/collector/component v1.68.0
 	go.opentelemetry.io/collector/pipeline v1.68.0
-	go.opentelemetry.io/collector/service v0.161.0
+	go.opentelemetry.io/collector/service v0.162.0
 )
 
 require (
