@@ -172,8 +172,6 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Core Release manager  | Contrib release manager | 'Releases' release manager |
 |------------|----------|-----------------------|-------------------------|----------------------------|
-| 2026-09-14 | v0.161.0 | [@codeboten][8]       | [@codeboten][8]         | [@codeboten][8]            |
-| 2026-09-28 | v0.162.0 | [@dmathieu][12]       | [@andrzej-stencel][4]   | [@dehaansa][16]            |
 | 2026-10-12 | v0.163.0 | [@bogdandrutu][9]     | [@bogdandrutu][9]       | [@bogdandrutu][9]          |
 | 2026-10-26 | v0.164.0 | [@jade-guiton-dd][10] | [@ChrsMark][18]         | [@crobert-1][19]           |
 | 2026-11-09 | v0.165.0 | [@codeboten][8]       | [@braydonk][13]         | [@MovieStoreGuy][17]       |
@@ -184,6 +182,8 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2027-01-18 | v0.170.0 | [@TylerHelmuth][3]    | [@TylerHelmuth][3]      | [@TylerHelmuth][3]         |
 | 2027-02-01 | v0.171.0 | [@songy23][6]         | [@songy23][6]           | [@songy23][6]              |
 | 2027-02-15 | v0.172.0 | [@dmitryax][7]        | [@dmitryax][7]          | [@dmitryax][7]             |
+| 2027-03-01 | v0.173.0 | [@codeboten][8]       | [@codeboten][8]         | [@codeboten][8]            |
+| 2027-03-15 | v0.174.0 | [@dmathieu][12]       | [@andrzej-stencel][4]   | [@dehaansa][16]            |
 
 [1]: https://github.com/jmacd
 [2]: https://github.com/evan-bradley
