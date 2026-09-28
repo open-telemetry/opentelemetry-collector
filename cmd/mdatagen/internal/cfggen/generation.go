@@ -778,12 +778,14 @@ func WrapDefaultValue(md *ConfigMetadata, varName string) string {
 }
 
 func hasDefaultValue(md *ConfigMetadata) bool {
-	if !md.GoStruct.IgnoreDefault && md.Default != nil {
-		return true
-	}
-	for _, prop := range md.Properties {
-		if hasDefaultValue(prop) {
+	if !md.GoStruct.IgnoreDefault {
+		if md.Default != nil {
 			return true
+		}
+		for _, prop := range md.Properties {
+			if hasDefaultValue(prop) {
+				return true
+			}
 		}
 	}
 	return false

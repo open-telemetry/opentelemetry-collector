@@ -2735,6 +2735,25 @@ func TestHasDefaultValue(t *testing.T) {
 		Default:  defaultValue("value"),
 		GoStruct: GoStructConfig{IgnoreDefault: true},
 	}))
+	require.False(t, hasDefaultValue(&ConfigMetadata{
+		Type:     "object",
+		GoStruct: GoStructConfig{IgnoreDefault: true},
+		Properties: map[string]*ConfigMetadata{
+			"timeout": {Type: "string", Default: defaultValue("30s")},
+		},
+	}))
+	require.False(t, hasDefaultValue(&ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"ignored": {
+				Type:     "object",
+				GoStruct: GoStructConfig{IgnoreDefault: true},
+				Properties: map[string]*ConfigMetadata{
+					"timeout": {Type: "string", Default: defaultValue("30s")},
+				},
+			},
+		},
+	}))
 	// External ref without any property defaults must not be treated as having defaults.
 	require.False(t, hasDefaultValue(&ConfigMetadata{
 		Type: "object",
