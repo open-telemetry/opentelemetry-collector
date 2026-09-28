@@ -9,7 +9,8 @@
   },
   "extends": [
     "config:best-practices",
-    "helpers:pinGitHubActionDigestsToSemver"
+    "helpers:pinGitHubActionDigestsToSemver",
+    "customManagers:makefileVersions"
   ],
   "schedule": [
     "on tuesday"
