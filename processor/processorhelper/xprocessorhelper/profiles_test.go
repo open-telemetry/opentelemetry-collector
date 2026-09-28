@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -238,4 +240,30 @@ func TestProfiles_SpanEvents(t *testing.T) {
 	for _, ev := range events {
 		assert.Equal(t, []attribute.KeyValue{attribute.String("processor", "nop")}, ev.Attributes)
 	}
+}
+
+// errorMeter is a meter that returns errors when creating counters.
+type errorMeter struct {
+	noop.Meter
+}
+
+func (errorMeter) Int64Counter(string, ...metric.Int64CounterOption) (metric.Int64Counter, error) {
+	return nil, errors.New("counter creation error")
+}
+
+// errorMeterProvider provides errorMeter instances.
+type errorMeterProvider struct {
+	noop.MeterProvider
+}
+
+func (errorMeterProvider) Meter(string, ...metric.MeterOption) metric.Meter {
+	return errorMeter{}
+}
+
+func TestNewProfiles_TelemetryError(t *testing.T) {
+	set := processortest.NewNopSettings(processortest.NopType)
+	set.MeterProvider = errorMeterProvider{}
+
+	_, err := NewProfiles(context.Background(), set, &testProfilesCfg, consumertest.NewNop(), newTestPProcessor(nil))
+	require.ErrorContains(t, err, "counter creation error")
 }
