@@ -62,7 +62,7 @@ consumer/consumererror/                                @open-telemetry/collector
 consumer/consumererror/xconsumererror/                 @open-telemetry/collector-approvers
 consumer/consumertest/                                 @open-telemetry/collector-approvers
 consumer/xconsumer/                                    @open-telemetry/collector-approvers @mx-psi @dmathieu
-docs/rfcs/                                             @open-telemetry/collector-approvers @codeboten @bogdandrutu @dmitryax @mx-psi
+docs/rfcs/                                             @open-telemetry/collector-approvers @codeboten @bogdandrutu @dmitryax @mx-psi @evan-bradley
 exporter/                                              @open-telemetry/collector-approvers
 exporter/debugexporter/                                @open-telemetry/collector-approvers @andrzej-stencel
 exporter/exporterhelper/                               @open-telemetry/collector-approvers @bogdandrutu @dmitryax
