@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -215,4 +217,25 @@ func TestProfiles_ProcessInternalDuration(t *testing.T) {
 				Attributes:   attribute.NewSet(attribute.String("processor", "nop"), attribute.String("otel.signal", "profiles")),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+}
+
+func TestProfiles_SpanEvents(t *testing.T) {
+	sr := new(tracetest.SpanRecorder)
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
+	ctx, span := tp.Tracer("test").Start(context.Background(), "test")
+
+	pp, err := NewProfiles(context.Background(), processortest.NewNopSettings(processortest.NopType), &testProfilesCfg, consumertest.NewNop(), newTestPProcessor(nil))
+	require.NoError(t, err)
+	require.NoError(t, pp.ConsumeProfiles(ctx, pprofile.NewProfiles()))
+	span.End()
+
+	spans := sr.Ended()
+	require.Len(t, spans, 1)
+	events := spans[0].Events()
+	require.Len(t, events, 2)
+	assert.Equal(t, "Start processing.", events[0].Name)
+	assert.Equal(t, "End processing.", events[1].Name)
+	for _, ev := range events {
+		assert.Equal(t, []attribute.KeyValue{attribute.String("processor", "nop")}, ev.Attributes)
+	}
 }

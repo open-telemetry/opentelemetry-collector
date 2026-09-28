@@ -8,13 +8,13 @@ import (
 	"errors"
 	"time"
 
+	"go.opentelemetry.io/otel/trace"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/pprofile"
-	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.opentelemetry.io/collector/processor/processorhelper/internal/obsreport"
 	"go.opentelemetry.io/collector/processor/xprocessor"
 )
 
@@ -41,27 +41,32 @@ func NewProfiles(
 		return nil, errors.New("nil profilesFunc")
 	}
 
-	obs, err := obsreport.New(set, xpipeline.SignalProfiles)
+	obs, err := newObsReport(set)
 	if err != nil {
 		return nil, err
 	}
 
+	eventOptions := spanAttributes(set.ID)
 	bs := fromOptions(options)
 	profilesConsumer, err := xconsumer.NewProfiles(func(ctx context.Context, pd pprofile.Profiles) (err error) {
+		span := trace.SpanFromContext(ctx)
+		span.AddEvent("Start processing.", eventOptions)
+
 		startTime := time.Now()
 		samplesIn := pd.SampleCount()
 
 		pd, err = profilesFunc(ctx, pd)
-		obs.RecordInternalDuration(ctx, startTime)
+		obs.recordInternalDuration(ctx, startTime)
+		span.AddEvent("End processing.", eventOptions)
 		if err != nil {
-			obs.RecordInOut(ctx, samplesIn, 0)
+			obs.recordInOut(ctx, samplesIn, 0)
 			if errors.Is(err, processorhelper.ErrSkipProcessingData) {
 				return nil
 			}
 			return err
 		}
 		samplesOut := pd.SampleCount()
-		obs.RecordInOut(ctx, samplesIn, samplesOut)
+		obs.recordInOut(ctx, samplesIn, samplesOut)
 		return nextConsumer.ConsumeProfiles(ctx, pd)
 	}, bs.consumerOptions...)
 	if err != nil {

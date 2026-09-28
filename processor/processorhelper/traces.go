@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/processor/processorhelper/internal/obsreport"
 )
 
 // ProcessTracesFunc is a helper function that processes the incoming data and returns the data to be sent to the next component.
@@ -41,7 +40,7 @@ func NewTraces(
 		return nil, errors.New("nil tracesFunc")
 	}
 
-	obs, err := obsreport.New(set, pipeline.SignalTraces)
+	obs, err := newObsReport(set, pipeline.SignalTraces)
 	if err != nil {
 		return nil, err
 	}
@@ -58,17 +57,17 @@ func NewTraces(
 
 		var errFunc error
 		td, errFunc = tracesFunc(ctx, td)
-		obs.RecordInternalDuration(ctx, startTime)
+		obs.recordInternalDuration(ctx, startTime)
 		span.AddEvent("End processing.", eventOptions)
 		if errFunc != nil {
-			obs.RecordInOut(ctx, spansIn, 0)
+			obs.recordInOut(ctx, spansIn, 0)
 			if errors.Is(errFunc, ErrSkipProcessingData) {
 				return nil
 			}
 			return errFunc
 		}
 		spansOut := td.SpanCount()
-		obs.RecordInOut(ctx, spansIn, spansOut)
+		obs.recordInOut(ctx, spansIn, spansOut)
 		return nextConsumer.ConsumeTraces(ctx, td)
 	}, bs.consumerOptions...)
 	if err != nil {
