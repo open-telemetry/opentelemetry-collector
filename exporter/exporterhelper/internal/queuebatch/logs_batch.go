@@ -50,16 +50,31 @@ func (req *logsRequest) mergeTo(dst *logsRequest, sz sizer.LogsSizer, szt reques
 }
 
 func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer, szt request.SizerType) ([]request.Request, error) {
+	if req.size(sz, szt) <= maxSize {
+		return []request.Request{req}, nil
+	}
 	var res []request.Request
+	droppedItems := 0
 	for req.size(sz, szt) > maxSize {
+		recordsBefore := req.ld.LogRecordCount()
 		ld, removedSize := extractLogs(req.ld, maxSize, sz)
-		if ld.LogRecordCount() == 0 {
-			return res, fmt.Errorf("one log record size is greater than max size, dropping items: %d", req.ld.LogRecordCount())
+		if removedSize == 0 {
+			// Nothing left the source, so no progress is possible. Stop rather than loop.
+			return res, fmt.Errorf("request size is greater than max size and cannot be split further, dropping items: %d", droppedItems+req.ld.LogRecordCount())
 		}
 		req.sizes.Update(szt, req.size(sz, szt)-removedSize)
-		res = append(res, newLogsRequest(ld))
+		droppedItems += recordsBefore - req.ld.LogRecordCount() - ld.LogRecordCount()
+		if ld.LogRecordCount() > 0 {
+			res = append(res, newLogsRequest(ld))
+		}
 	}
-	res = append(res, req)
+	// Splitting can leave nothing to export once oversized records and record-less resources are gone.
+	if req.ld.LogRecordCount() > 0 {
+		res = append(res, req)
+	}
+	if droppedItems > 0 {
+		return res, fmt.Errorf("single log record exceeds the max size limit, dropping items: %d", droppedItems)
+	}
 	return res, nil
 }
 
@@ -76,7 +91,7 @@ func extractLogs(srcLogs plog.Logs, capacity int, sz sizer.LogsSizer) (plog.Logs
 		rawRlSize := sz.ResourceLogsSize(srcRL)
 		rlSize := sz.DeltaSize(rawRlSize)
 		if rlSize > capacityLeft {
-			extSrcRL, extRlSize := extractResourceLogs(srcRL, capacityLeft, sz)
+			extSrcRL, extRlSize := extractResourceLogs(srcRL, capacityLeft, capacity, sz)
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
@@ -88,7 +103,12 @@ func extractLogs(srcLogs plog.Logs, capacity int, sz sizer.LogsSizer) (plog.Logs
 			if extSrcRL.ScopeLogs().Len() > 0 {
 				extSrcRL.MoveTo(destLogs.ResourceLogs().AppendEmpty())
 			}
-			return extSrcRL.ScopeLogs().Len() != 0
+			if srcRL.ScopeLogs().Len() == 0 {
+				// Nothing is left in the source resource, so remove what remains of it too.
+				removedSize += sz.DeltaSize(rawRlSize - extRlSize)
+				return true
+			}
+			return false
 		}
 		capacityLeft -= rlSize
 		removedSize += rlSize
@@ -99,12 +119,14 @@ func extractLogs(srcLogs plog.Logs, capacity int, sz sizer.LogsSizer) (plog.Logs
 }
 
 // extractResourceLogs extracts resource logs and returns a new resource logs with the specified number of log records.
-func extractResourceLogs(srcRL plog.ResourceLogs, capacity int, sz sizer.LogsSizer) (plog.ResourceLogs, int) {
+func extractResourceLogs(srcRL plog.ResourceLogs, capacity, maxSize int, sz sizer.LogsSizer) (plog.ResourceLogs, int) {
 	destRL := plog.NewResourceLogs()
 	destRL.SetSchemaUrl(srcRL.SchemaUrl())
 	srcRL.Resource().CopyTo(destRL.Resource())
 	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
 	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.ResourceLogsSize(destRL)
+	// Room for a scope in an otherwise empty batch, once this resource's header and attributes are paid for.
+	maxScopeSize := maxSize - (sz.DeltaSize(maxSize) - maxSize) - sz.ResourceLogsSize(destRL)
 	removedSize := 0
 	srcRL.ScopeLogs().RemoveIf(func(srcSL plog.ScopeLogs) bool {
 		// If the no more capacity left just return.
@@ -114,7 +136,7 @@ func extractResourceLogs(srcRL plog.ResourceLogs, capacity int, sz sizer.LogsSiz
 		rawSlSize := sz.ScopeLogsSize(srcSL)
 		slSize := sz.DeltaSize(rawSlSize)
 		if slSize > capacityLeft {
-			extSrcSL, extSlSize := extractScopeLogs(srcSL, capacityLeft, sz)
+			extSrcSL, extSlSize := extractScopeLogs(srcSL, capacityLeft, maxScopeSize, sz)
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
@@ -126,7 +148,12 @@ func extractResourceLogs(srcRL plog.ResourceLogs, capacity int, sz sizer.LogsSiz
 			if extSrcSL.LogRecords().Len() > 0 {
 				extSrcSL.MoveTo(destRL.ScopeLogs().AppendEmpty())
 			}
-			return extSrcSL.LogRecords().Len() != 0
+			if srcSL.LogRecords().Len() == 0 {
+				// Nothing is left in the source scope, so remove what remains of it too.
+				removedSize += sz.DeltaSize(rawSlSize - extSlSize)
+				return true
+			}
+			return false
 		}
 		capacityLeft -= slSize
 		removedSize += slSize
@@ -137,12 +164,14 @@ func extractResourceLogs(srcRL plog.ResourceLogs, capacity int, sz sizer.LogsSiz
 }
 
 // extractScopeLogs extracts scope logs and returns a new scope logs with the specified number of log records.
-func extractScopeLogs(srcSL plog.ScopeLogs, capacity int, sz sizer.LogsSizer) (plog.ScopeLogs, int) {
+func extractScopeLogs(srcSL plog.ScopeLogs, capacity, maxScopeSize int, sz sizer.LogsSizer) (plog.ScopeLogs, int) {
 	destSL := plog.NewScopeLogs()
 	destSL.SetSchemaUrl(srcSL.SchemaUrl())
 	srcSL.Scope().CopyTo(destSL.Scope())
 	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
 	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.ScopeLogsSize(destSL)
+	// Largest log record that fits an otherwise empty batch, once the resource and scope headers and attributes are paid for.
+	maxRecordSize := maxScopeSize - (sz.DeltaSize(maxScopeSize) - maxScopeSize) - sz.ScopeLogsSize(destSL)
 	removedSize := 0
 	srcSL.LogRecords().RemoveIf(func(srcLR plog.LogRecord) bool {
 		// If the no more capacity left just return.
@@ -150,6 +179,11 @@ func extractScopeLogs(srcSL plog.ScopeLogs, capacity int, sz sizer.LogsSizer) (p
 			return false
 		}
 		rlSize := sz.DeltaSize(sz.LogRecordSize(srcLR))
+		if rlSize > maxRecordSize {
+			// It can never be exported and would block every record behind it, so drop it.
+			removedSize += rlSize
+			return true
+		}
 		if rlSize > capacityLeft {
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
