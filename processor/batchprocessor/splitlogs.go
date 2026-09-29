@@ -8,8 +8,9 @@ import (
 )
 
 // splitLogs removes logrecords from the input data and returns a new data of the specified size.
-func splitLogs(size int, src plog.Logs) plog.Logs {
-	if src.LogRecordCount() <= size {
+// logRecords must equal src.LogRecordCount(); callers pass it to avoid recounting.
+func splitLogs(size int, src plog.Logs, logRecords int) plog.Logs {
+	if logRecords <= size {
 		return src
 	}
 	totalCopiedLogRecords := 0
