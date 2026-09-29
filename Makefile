@@ -366,12 +366,15 @@ endif
 clean:
 	test -d bin && $(RM) bin/*
 
+# renovate: datasource=docker depName=lycheeverse/lychee
+LYCHEE_IMAGE=lycheeverse/lychee:0.24.2@sha256:e2d19e57cf6ab037026f20b8e449a1f30d9d7f81eef4194763aab2eab20bd28d
+
 .PHONY: checklinks
 checklinks:
 	command -v $(DOCKERCMD) >/dev/null 2>&1 || { echo >&2 "$(DOCKERCMD) not installed. Install before continuing"; exit 1; }
 	$(DOCKERCMD) run -w /home/repo --rm \
 		--mount 'type=bind,source='$(PWD)',target=/home/repo' \
-		lycheeverse/lychee:0.23 \
+		$(LYCHEE_IMAGE) \
 		--config .github/lychee.toml \
 		--root-dir /home/repo \
 		-v \
