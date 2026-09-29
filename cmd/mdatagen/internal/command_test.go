@@ -503,6 +503,7 @@ foo
 				contents, err = os.ReadFile(filepath.Clean(filepath.Join(tmpdir, "generated_component_test.go")))
 				require.NoError(t, err)
 				require.Contains(t, string(contents), "func Test")
+				require.NotContains(t, string(contents), `"go.opentelemetry.io/collector/internal/testutil"`)
 				_, err = parser.ParseFile(token.NewFileSet(), "", contents, parser.DeclarationErrors)
 				require.NoError(t, err)
 			} else {
