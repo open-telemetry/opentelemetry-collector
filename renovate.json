@@ -11,6 +11,18 @@
     "config:best-practices",
     "helpers:pinGitHubActionDigestsToSemver"
   ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update Docker images pinned by digest in the Makefile",
+      "managerFilePatterns": [
+        "/(^|/)Makefile$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>docker) depName=(?<depName>[^\\s]+?)\\s+[A-Za-z0-9_]+?_IMAGE\\s*:?=\\s*[^\\s:]+:(?<currentValue>[^\\s@]+)@(?<currentDigest>sha256:[a-f0-9]+)\\s"
+      ]
+    }
+  ],
   "schedule": [
     "on tuesday"
   ],
@@ -145,13 +157,14 @@
       "enabled": false
     }
   ],
+  "gitIgnoredAuthors": [
+    "197425009+otelbot@users.noreply.github.com"
+  ],
   "ignoreDeps": [
     "github.com/mattn/go-ieproxy"
   ],
   "prConcurrentLimit": 200,
-  "suppressNotifications": [
-    "prEditedNotification"
-  ],
+  "prHourlyLimit": 5,
   "postUpdateOptions": [
     "gomodTidy"
   ]
