@@ -1218,6 +1218,17 @@ func TestNewCfgFns_ExtractDefs(t *testing.T) {
 	require.Contains(t, result, "my_type")
 }
 
+func TestNewCfgFns_Entry(t *testing.T) {
+	fns := NewCfgFns("", "")
+	entry := fns["entry"].(func(string, *ConfigMetadata) map[string]any)
+	metadata := &ConfigMetadata{Type: ObjectType}
+
+	require.Equal(t, map[string]any{
+		"name": "Config",
+		"data": metadata,
+	}, entry("Config", metadata))
+}
+
 func TestNewCfgFns_MapGoType(t *testing.T) {
 	fns := NewCfgFns("", "")
 
@@ -2459,6 +2470,30 @@ func TestFormatDefaultValue_OptionalObjectDefault(t *testing.T) {
 	require.Equal(t, "configoptional.Some(NewDefaultClient())", FormatDefaultValue(md, "client", defaultValue(map[string]any{"endpoint": "localhost"}), "", ""))
 }
 
+func TestFormatDefaultValue_OptionalObjectDefaultMode(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:       "object",
+		IsOptional: true,
+		Properties: map[string]*ConfigMetadata{
+			"endpoint": {Type: "string", Default: defaultValue("localhost")},
+		},
+		GoStruct: GoStructConfig{OptionalMode: OptionalModeDefault},
+	}
+
+	require.Equal(t, "configoptional.Default(NewDefaultClient())", FormatDefaultValue(md, "client", defaultValue(map[string]any{"endpoint": "localhost"}), "", ""))
+}
+
+func TestFormatDefaultValue_OptionalObjectDefaultModeWithoutSchemaDefault(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:       "object",
+		IsOptional: true,
+		Properties: map[string]*ConfigMetadata{"endpoint": {Type: "string"}},
+		GoStruct:   GoStructConfig{OptionalMode: OptionalModeDefault},
+	}
+
+	require.Equal(t, "configoptional.Default(Client{})", FormatDefaultValue(md, "client", nil, "", ""))
+}
+
 func TestFormatDefaultValue_PointerSliceOfObjects(t *testing.T) {
 	md := &ConfigMetadata{
 		Type:      "slice",
@@ -2623,6 +2658,16 @@ func TestWrapDefaultValue(t *testing.T) {
 				},
 			},
 			expected: "configoptional.Some(defaultValue)",
+		},
+		{
+			name: "optional object default mode",
+			metadata: &ConfigMetadata{
+				Type:       "object",
+				IsOptional: true,
+				Properties: map[string]*ConfigMetadata{"name": {Type: "string"}},
+				GoStruct:   GoStructConfig{OptionalMode: OptionalModeDefault},
+			},
+			expected: "configoptional.Default(defaultValue)",
 		},
 	}
 

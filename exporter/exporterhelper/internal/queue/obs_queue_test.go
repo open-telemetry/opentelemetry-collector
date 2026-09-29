@@ -375,3 +375,36 @@ func TestObsQueueProfilesBatchSize(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp())
 }
+
+func TestObsQueueEnqueueSpanAttributes(t *testing.T) {
+	t.Parallel()
+	for _, signal := range []pipeline.Signal{pipeline.SignalTraces, pipeline.SignalMetrics, pipeline.SignalLogs, xpipeline.SignalProfiles} {
+		t.Run(signal.String(), func(t *testing.T) {
+			for _, offerErr := range []error{nil, errors.New("queue full")} {
+				name := "success"
+				if offerErr != nil {
+					name = "failure"
+				}
+				t.Run(name, func(t *testing.T) {
+					tt := componenttest.NewTelemetry()
+					t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+					id := component.NewIDWithName(exportertest.NopType, "named")
+					q, err := newObsQueue[request.Request](Settings[request.Request]{
+						Signal:    signal,
+						ID:        id,
+						Telemetry: tt.NewTelemetrySettings(),
+					}, newFakeQueue[request.Request](offerErr, 0, 10))
+					require.NoError(t, err)
+					require.ErrorIs(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 1}), offerErr)
+					spans := tt.SpanRecorder.Ended()
+					require.Len(t, spans, 1)
+					require.Equal(t, "exporter/enqueue", spans[0].Name())
+					require.ElementsMatch(t, []attribute.KeyValue{
+						attribute.String("exporter", "nop/named"),
+						attribute.String("data_type", signal.String()),
+					}, spans[0].Attributes())
+				})
+			}
+		})
+	}
+}
