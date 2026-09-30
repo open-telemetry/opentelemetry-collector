@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTypeValidate_InvalidEnum(t *testing.T) {
+func TestTypeValidate_InvalidEnumType(t *testing.T) {
 	cfg := Type("__invalid__")
 
-	require.ErrorContains(t, cfg.Validate(), "must be one of")
+	require.ErrorContains(t, cfg.Validate(), "type must be one of")
 }

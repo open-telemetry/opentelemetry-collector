@@ -3,7 +3,7 @@
 package {{ .Package }}
 
 {{- $hasConfig := ne .Metadata.Config nil }}
-{{- $validators := extractValidators .Metadata.Config }}
+{{- $validators := extractValidators "config" .Metadata.Config }}
 {{ $imports := extractImports .Metadata.ConfigsMetadata }}
 {{- if or $hasConfig $imports }}
 import (
@@ -56,7 +56,7 @@ import (
         }
     {{- end }}
 
-{{ $defValidators := extractValidators $def }}
+{{ $defValidators := extractValidators $defName $def }}
 {{- if and $defValidators (not (isExternalRef $def.Ref)) }}
     // Validate validates the {{$typeName}} fields according to schema annotations.
     {{- if (isPrimitiveSchema $def) }}
@@ -103,7 +103,7 @@ import (
 {{ define "customValidator" -}}
     {{ $name := .FieldName | publicVar -}}
     {{ $value := "c" }}
-    {{- if ne .FieldName "." }}
+    {{- if not .IsType }}
         {{ $value = printf "c.%s" $name -}}
     {{ end }}
     if inner_err := {{ .CustomValidator }}({{ $value }}); inner_err != nil {
@@ -138,15 +138,9 @@ import (
     {{- end -}}
 {{- end }}
 
-{{- define "target" }}
-    {{- if not (eq . ".") }}
-        {{- printf "%s " . }}
-    {{- end }}
-{{- end }}
-
 {{- define "fieldValue" }}
     {{- $var := "c" }}
-    {{- if not (eq .FieldName ".")}}
+    {{- if not .IsType}}
         {{- $var = printf "c.%s" (.FieldName | publicVar) }}
     {{- end }}
     {{- if .IsPointer }}*{{ $var }}
@@ -156,7 +150,7 @@ import (
 {{- end }}
 
 {{ define "enumValue" -}}
-    {{- if eq .FieldName "." -}}
+    {{- if .IsType -}}
         {{ .FieldType }}(c)
     {{- else }}{{ template "fieldValue" . }}
     {{- end }}
@@ -165,55 +159,55 @@ import (
 {{ define "maxLengthValidator" -}}
     {{ $maxLength := .Rules.MaxLength -}}
     if len({{ template "fieldValue" . }}) > {{ $maxLength }} {
-        err = errors.Join(err, errors.New("{{ template "target" .FieldName }}exceeds maximum length of {{ $maxLength }}"))
+        err = errors.Join(err, errors.New("{{ .FieldName }} exceeds maximum length of {{ $maxLength }}"))
     }
 {{- end }}
 
 {{ define "minLengthValidator" -}}
     {{ $minLength := .Rules.MinLength -}}
     if len({{ template "fieldValue" . }}) < {{ $minLength }} {
-        err = errors.Join(err, errors.New("{{ template "target" .FieldName }}must have minimum length of {{ $minLength }}"))
+        err = errors.Join(err, errors.New("{{ .FieldName }} must have minimum length of {{ $minLength }}"))
     }
 {{- end }}
 
 {{ define "patternValidator" -}}
     {{ $pattern := .Rules.Pattern -}}
     if matched, _ := regexp.MatchString(`{{ $pattern }}`, {{ template "fieldValue" . }}); !matched {
-        err = errors.Join(err, errors.New("{{ template "target" .FieldName }}must match pattern `{{ $pattern }}`"))
+        err = errors.Join(err, errors.New("{{ .FieldName }} must match pattern `{{ $pattern }}`"))
     }
 {{- end }}
 
 {{ define "minimumValidator" -}}
     {{ $minimum := .Rules.Minimum -}}
     if {{ template "fieldValue" . }} < {{ $minimum }} {
-        err = errors.Join(err, errors.New("{{ template "target" .FieldName }}value must be greater than or equal to {{ $minimum }}"))
+        err = errors.Join(err, errors.New("{{ .FieldName }} value must be greater than or equal to {{ $minimum }}"))
     }
 {{- end }}
 
 {{ define "maximumValidator" -}}
     {{ $maximum := .Rules.Maximum -}}
     if {{ template "fieldValue" . }} > {{ $maximum }} {
-        err = errors.Join(err, errors.New("{{ template "target" .FieldName }}value must be less than or equal to {{ $maximum }}"))
+        err = errors.Join(err, errors.New("{{ .FieldName }} value must be less than or equal to {{ $maximum }}"))
     }
 {{- end }}
 
 {{ define "exclusiveMinimumValidator" -}}
     {{ $exclMin := .Rules.ExclusiveMinimum -}}
     if {{ template "fieldValue" . }} <= {{ $exclMin }} {
-        err = errors.Join(err, errors.New("{{ template "target" .FieldName }}value must be greater than {{ $exclMin }}"))
+        err = errors.Join(err, errors.New("{{ .FieldName }} value must be greater than {{ $exclMin }}"))
     }
 {{- end }}
 
 {{ define "exclusiveMaximumValidator" -}}
     {{ $exclMax := .Rules.ExclusiveMaximum -}}
     if {{ template "fieldValue" . }} >= {{ $exclMax }} {
-        err = errors.Join(err, errors.New("{{ template "target" .FieldName }}value must be less than {{ $exclMax }}"))
+        err = errors.Join(err, errors.New("{{ .FieldName }} value must be less than {{ $exclMax }}"))
     }
 {{- end }}
 
 {{ define "enumValidator" -}}
     if !slices.Contains({{ formatEnumSlice .Rules.Enum .FieldType }}, {{ template "enumValue" . }}) {
-        err = errors.Join(err, errors.New("{{ template "target" .FieldName }}must be one of {{ formatEnumValues .Rules.Enum }}"))
+        err = errors.Join(err, errors.New("{{ .FieldName }} must be one of {{ formatEnumValues .Rules.Enum }}"))
     }
 {{- end }}
 

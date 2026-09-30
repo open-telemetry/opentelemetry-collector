@@ -35,11 +35,11 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return ExtractDefs(md)
 		},
-		"extractValidators": func(cfg *ConfigMetadata) []Validator {
+		"extractValidators": func(name string, cfg *ConfigMetadata) []Validator {
 			if cfg == nil {
 				return nil
 			}
-			return ExtractValidators(cfg)
+			return ExtractValidators(name, cfg)
 		},
 		"mapGoType": func(cfg *ConfigMetadata, propName string) string {
 			if cfg == nil {
@@ -513,13 +513,13 @@ func collectDefsForSchema(propName string, md *ConfigMetadata, defs map[string]*
 }
 
 // ExtractValidators recursively scans the ConfigMetadata and collects validators for required fields and nested schemas.
-func ExtractValidators(md *ConfigMetadata) []Validator {
+func ExtractValidators(name string, md *ConfigMetadata) []Validator {
 	validators := make([]Validator, 0)
 
 	if md == nil {
 		return validators
 	}
-	collectValidators(md, &validators)
+	collectValidators(name, md, &validators)
 	slices.SortFunc(validators, func(a, b Validator) int {
 		return cmp.Compare(a.FieldName, b.FieldName)
 	})
@@ -556,9 +556,10 @@ type Validator struct {
 	IsOptional      bool
 	Rules           ValidationRules
 	CustomValidator string
+	IsType          bool
 }
 
-func createValidator(validators *[]Validator, fieldName string, md *ConfigMetadata, required bool) {
+func createValidator(validators *[]Validator, fieldName string, md *ConfigMetadata, isType, required bool) {
 	rules := ValidationRules{
 		Required:         required,
 		Pattern:          &md.Pattern,
@@ -583,6 +584,7 @@ func createValidator(validators *[]Validator, fieldName string, md *ConfigMetada
 			IsPointer:  md.IsPointer,
 			IsOptional: md.IsOptional,
 			Rules:      rules,
+			IsType:     isType,
 		})
 	}
 	if md.GoStruct.CustomValidator != nil {
@@ -592,15 +594,16 @@ func createValidator(validators *[]Validator, fieldName string, md *ConfigMetada
 			IsPointer:       md.IsPointer,
 			IsOptional:      md.IsOptional,
 			CustomValidator: generateValidatorName(fieldName, md.GoStruct.CustomValidator),
+			IsType:          isType,
 		})
 	}
 }
 
-func collectValidators(md *ConfigMetadata, validators *[]Validator) {
+func collectValidators(name string, md *ConfigMetadata, validators *[]Validator) {
 	if md.Ref != "" {
 		return
 	}
-	createValidator(validators, ".", md, false)
+	createValidator(validators, name, md, true, false)
 	for _, propName := range slices.Sorted(maps.Keys(md.Properties)) {
 		prop := md.Properties[propName]
 
@@ -637,7 +640,7 @@ func collectValidators(md *ConfigMetadata, validators *[]Validator) {
 			continue
 		}
 
-		createValidator(validators, fieldName, prop, required)
+		createValidator(validators, fieldName, prop, false, required)
 	}
 }
 
