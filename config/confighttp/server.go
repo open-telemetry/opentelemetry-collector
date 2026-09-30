@@ -45,10 +45,10 @@ type ServerConfig struct {
 	NetAddr confignet.AddrConfig `mapstructure:",squash"`
 
 	// TLS struct exposes TLS server configuration.
-	TLS configoptional.Optional[configtls.ServerConfig] `mapstructure:"tls"`
+	TLS configoptional.Optional[configtls.ServerConfig] `mapstructure:"tls,omitempty"`
 
 	// CORS configures the server for HTTP cross-origin resource sharing (CORS).
-	CORS configoptional.Optional[CORSConfig] `mapstructure:"cors"`
+	CORS configoptional.Optional[CORSConfig] `mapstructure:"cors,omitempty"`
 
 	// Auth for this receiver
 	Auth configoptional.Optional[AuthConfig] `mapstructure:"auth,omitempty"`
@@ -106,9 +106,9 @@ type ServerConfig struct {
 	Keepalive configoptional.Optional[KeepaliveServerConfig] `mapstructure:"keepalive,omitempty"`
 
 	// Deprecated: [v0.160.0] use Keepalive.IdleTimeout instead.
-	IdleTimeout time.Duration `mapstructure:"idle_timeout,omitempty"`
+	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
 	// Deprecated: [v0.160.0] set 'keepalive::enabled' to false to disable keep-alives.
-	KeepAlivesEnabled bool `mapstructure:"keep_alives_enabled,omitempty"`
+	KeepAlivesEnabled bool `mapstructure:"keep_alives_enabled"`
 
 	// deprecationWarnings records use of deprecated fields observed while
 	// unmarshaling; ToServer logs them, as no logger is available here.
