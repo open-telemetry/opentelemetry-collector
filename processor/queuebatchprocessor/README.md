@@ -102,8 +102,8 @@ case-insensitive.
 distinct partition batchers are kept in memory at once. The value must
 be positive. When the limit is reached, the least recently used
 partition is flushed and removed. The current cache size and configured
-capacity are exported as `otelcol_exporter_queue_batch_partition_cache_size`
-and `otelcol_exporter_queue_batch_partition_cache_capacity`.
+capacity are exported as `otelcol_processor_queuebatch_partition_cache_size`
+and `otelcol_processor_queuebatch_partition_cache_capacity`.
 
 `batch::partition::idle_timeout` (default = 90s) controls how long a
 partition may stay empty before it is removed. Keep it above the data
