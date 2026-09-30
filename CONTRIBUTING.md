@@ -128,7 +128,7 @@ The following general labels are supported:
 | `os:windows`              | `os:windows`              |
 | `waiting for author`      | `waiting-for-author`      |
 | `waiting-for-codeowners`  | `waiting-for-codeowners`  |
-| `waiting-for-maintainers` | `waiting-for-maintainers` |
+| `waiting-for-approvers`   | `waiting-for-approvers`   |
 | `bug`                     | `bug`                     |
 | `priority:p0`             | `priority:p0`             |
 | `priority:p1`             | `priority:p1`             |
@@ -136,7 +136,7 @@ The following general labels are supported:
 | `priority:p3`             | `priority:p3`             |
 | `Stale`                   | `stale`                   |
 
-The `waiting-for-maintainers` label can be added (by triagers/code owners/approvers/maintainers) to a PR
+The `waiting-for-approvers` label can be added (by triagers/code owners/approvers/maintainers) to a PR
 once it has been reviewed and approved by code owners, all review comments are addressed, CI is green,
 and it is only waiting on a review from an approver or maintainer. Once an approver approves the PR,
 replace it with the `ready-to-merge` label.
