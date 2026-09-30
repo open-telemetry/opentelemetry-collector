@@ -100,6 +100,7 @@ field, for example:
 ```yaml
 sending_queue:
   support: has_overrides
+  rationale: "Batching is disabled because ..."
   overrides:
     enabled: true
     batch:
@@ -119,6 +120,7 @@ When set to `omitted`, the sending queue is not used in the exporter.
 ```yaml
 sending_queue:
   support: omitted
+  rationale: "The protocol requires special support ..."
 ```
 
 ### Central configuration file
