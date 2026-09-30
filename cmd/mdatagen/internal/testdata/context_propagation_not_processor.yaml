@@ -1,0 +1,9 @@
+type: metric
+
+tests:
+  skip_context_propagation: true
+
+status:
+  class: receiver
+  stability:
+    beta: [traces, logs, metrics]
