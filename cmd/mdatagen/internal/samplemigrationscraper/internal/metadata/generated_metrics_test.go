@@ -223,7 +223,7 @@ func TestVersionedMetrics(t *testing.T) {
 				}
 				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
 				assert.Equal(t, tt.expectNewMetric, newFound)
-				// For metrics with different emitted names, no collison warning shoulds be logged
+				// For metrics with different emitted names, no collision warning should be logged
 				// This guards against the regression where same name collision logic was
 				// incorrectly applied to renamed metrics.
 				if tt.enableNew {
