@@ -137,6 +137,40 @@ func TestMergeSplitProfiles(t *testing.T) {
 	}
 }
 
+func TestMergeSplitProfilesRespectsMaxSizeInSamples(t *testing.T) {
+	// The items sizer counts samples, while the profile tree it walks is built
+	// from profiles. With one sample per profile the two are indistinguishable,
+	// so this uses a fixture where each profile carries several samples.
+	//
+	// Before ProfilesCountSizer counted samples at every level, a single profile
+	// was worth 1 against the budget regardless of how many samples it held, so
+	// this request split into one batch of 1000 samples against a maxSize of 50.
+	// A profile is the smallest unit that can be extracted, so nothing can be
+	// emitted within the budget and the request is reported instead.
+	pd := testdata.GenerateProfilesMultiSample(1, 1000)
+	res, err := newProfilesRequest(pd).MergeSplit(context.Background(), 50, exporterhelper.RequestSizerTypeItems, nil)
+
+	require.ErrorContains(t, err, "one sample size is greater than max size")
+	require.Empty(t, res)
+}
+
+func TestMergeSplitProfilesRespectsMaxSizeAcrossProfiles(t *testing.T) {
+	// Ten profiles of twenty samples each, split against a budget of 50 samples.
+	// Every emitted batch must stay within that budget.
+	pd := testdata.GenerateProfilesMultiSample(10, 20)
+	res, err := newProfilesRequest(pd).MergeSplit(context.Background(), 50, exporterhelper.RequestSizerTypeItems, nil)
+	require.NoError(t, err)
+	require.NotEmpty(t, res)
+
+	var total int
+	for _, r := range res {
+		samples := r.(*profilesRequest).pd.SampleCount()
+		assert.LessOrEqual(t, samples, 50, "batch exceeds maxSize")
+		total += samples
+	}
+	assert.Equal(t, 200, total, "no samples may be lost or duplicated")
+}
+
 func TestMergeSplitProfilesBasedOnByteSize(t *testing.T) {
 	tests := []struct {
 		name     string

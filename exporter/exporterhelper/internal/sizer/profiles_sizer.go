@@ -23,7 +23,7 @@ type ProfilesBytesSizer struct {
 
 var _ ProfilesSizer = (*ProfilesBytesSizer)(nil)
 
-// ProfilesCountSizer returns the number of profiles in the profiles.
+// ProfilesCountSizer returns the number of samples in the profiles.
 type ProfilesCountSizer struct{}
 
 var _ ProfilesSizer = (*ProfilesCountSizer)(nil)
@@ -35,17 +35,22 @@ func (s *ProfilesCountSizer) ProfilesSize(pd pprofile.Profiles) int {
 func (s *ProfilesCountSizer) ResourceProfilesSize(rp pprofile.ResourceProfiles) int {
 	count := 0
 	for k := 0; k < rp.ScopeProfiles().Len(); k++ {
-		count += rp.ScopeProfiles().At(k).Profiles().Len()
+		count += s.ScopeProfilesSize(rp.ScopeProfiles().At(k))
 	}
 	return count
 }
 
 func (s *ProfilesCountSizer) ScopeProfilesSize(sp pprofile.ScopeProfiles) int {
-	return sp.Profiles().Len()
+	count := 0
+	ps := sp.Profiles()
+	for k := 0; k < ps.Len(); k++ {
+		count += s.ProfileSize(ps.At(k))
+	}
+	return count
 }
 
-func (s *ProfilesCountSizer) ProfileSize(_ pprofile.Profile) int {
-	return 1
+func (s *ProfilesCountSizer) ProfileSize(p pprofile.Profile) int {
+	return p.Samples().Len()
 }
 
 func (s *ProfilesCountSizer) DeltaSize(newItemSize int) int {
