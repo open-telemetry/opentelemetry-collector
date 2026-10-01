@@ -192,10 +192,10 @@ func PrimitiveGoType(md *ConfigMetadata, rootPackage, componentPackage string) (
 	if !ok {
 		return "", fmt.Errorf("unsupported primitive type: %q", md.Type)
 	}
-	if md.GoType != "" {
-		typeName, err := FormatTypeName(md.GoType, rootPackage, componentPackage)
+	if md.GoStruct.Type != "" {
+		typeName, err := FormatTypeName(md.GoStruct.Type, rootPackage, componentPackage)
 		if err != nil {
-			return "", fmt.Errorf("failed to format custom type %q: %w", md.GoType, err)
+			return "", fmt.Errorf("failed to format custom type %q: %w", md.GoStruct.Type, err)
 		}
 		return typeName, nil
 	}
@@ -228,18 +228,18 @@ func resolveGoType(md *ConfigMetadata, propName, rootPackage, componentPackage s
 		}
 		return typeName, nil
 	}
-	if md.GoType != "" {
-		typeName, err := FormatTypeName(md.GoType, rootPackage, componentPackage)
+	if md.GoStruct.Type != "" {
+		typeName, err := FormatTypeName(md.GoStruct.Type, rootPackage, componentPackage)
 		if err != nil {
-			return "", fmt.Errorf("failed to format custom type %q: %w", md.GoType, err)
+			return "", fmt.Errorf("failed to format custom type %q: %w", md.GoStruct.Type, err)
 		}
 		return typeName, nil
 	}
 
 	switch md.Type {
 	case StringType:
-		if strings.HasPrefix(md.GoType, "time.") {
-			return md.GoType, nil
+		if strings.HasPrefix(md.GoStruct.Type, "time.") {
+			return md.GoStruct.Type, nil
 		}
 		return "string", nil
 	case SliceType:
@@ -324,17 +324,17 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 		return nil
 	}
 
-	if md.GoType != "" {
-		ref, err := ResolveGoTypeRef(md.GoType, rootPackage, componentPackage)
+	if md.GoStruct.Type != "" {
+		ref, err := ResolveGoTypeRef(md.GoStruct.Type, rootPackage, componentPackage)
 		if err != nil {
-			return fmt.Errorf("failed to resolve import for custom type %q: %w", md.GoType, err)
+			return fmt.Errorf("failed to resolve import for custom type %q: %w", md.GoStruct.Type, err)
 		}
 		if ref.ImportPath != "" {
 			imports[ref.ImportPath] = true
 		}
 	}
 
-	if md.Type == StringType && strings.HasPrefix(md.GoType, "time.") {
+	if md.Type == StringType && strings.HasPrefix(md.GoStruct.Type, "time.") {
 		imports["time"] = true
 	}
 
@@ -363,7 +363,7 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 		imports["errors"] = true
 	}
 
-	if md.Pattern != "" && !strings.HasPrefix(md.GoType, "time.") {
+	if md.Pattern != "" && !strings.HasPrefix(md.GoStruct.Type, "time.") {
 		imports["regexp"] = true
 	}
 
@@ -480,7 +480,7 @@ func collectDefs(md *ConfigMetadata, defs map[string]*ConfigMetadata) {
 }
 
 func collectDefsForSchema(propName string, md *ConfigMetadata, defs map[string]*ConfigMetadata) {
-	if md == nil || md.GoType != "" {
+	if md == nil || md.GoStruct.Type != "" {
 		return
 	}
 
@@ -567,7 +567,7 @@ func createValidator(validators *[]Validator, fieldName string, md *ConfigMetada
 		ExclusiveMaximum: md.ExclusiveMaximum,
 		Enum:             md.Enum,
 	}
-	if md.Pattern == "" || md.Type == DurationType || md.Type == TimeType || strings.HasPrefix(md.GoType, "time.") {
+	if md.Pattern == "" || md.Type == DurationType || md.Type == TimeType || strings.HasPrefix(md.GoStruct.Type, "time.") {
 		rules.Pattern = nil
 	}
 	if fieldName == "." {
@@ -882,7 +882,7 @@ func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPa
 		}
 		panic(fmt.Sprintf("Could not resolve type, due to %e", err))
 	case StringType:
-		switch md.GoType {
+		switch md.GoStruct.Type {
 		case "time.Duration":
 			if durationExpr, ok := renderDurationExpr(defaultValue); ok {
 				return durationExpr

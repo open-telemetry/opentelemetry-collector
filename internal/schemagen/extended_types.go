@@ -20,25 +20,25 @@ const (
 
 // extendedTypes is the centralized registry of first-class type aliases that can be used as the "type" field
 // in a metadata.yaml config schema. Each entry maps an alias name to the standard JSON Schema fields it expands to,
-// together with any Go-specific annotations (GoType) needed for code generation.
+// together with any Go-specific annotations (go_struct.type) needed for code generation.
 //
 // To add a new alias, add a single entry here. No other switch or case needs editing.
 var extendedTypes = map[SchemaType]ConfigMetadata{
 	FloatType:  {Type: Float32Type},
 	DoubleType: {Type: Float64Type},
 
-	// String-backed aliases using full import-path GoType convention
-	OpaqueStringType: {Type: StringType, GoType: "go.opentelemetry.io/collector/config/configopaque.String"},
-	ComponentIDType:  {Type: StringType, GoType: "go.opentelemetry.io/collector/component.ID"},
+	// String-backed aliases using full import-path go_struct.type convention
+	OpaqueStringType: {Type: StringType, GoStruct: GoStructConfig{Type: "go.opentelemetry.io/collector/config/configopaque.String"}},
+	ComponentIDType:  {Type: StringType, GoStruct: GoStructConfig{Type: "go.opentelemetry.io/collector/component.ID"}},
 
 	// duration and time
-	DurationType: {Type: StringType, GoType: "time.Duration", Pattern: goDurationPattern},
-	TimeType:     {Type: StringType, GoType: "time.Time", Format: "date-time"},
+	DurationType: {Type: StringType, GoStruct: GoStructConfig{Type: "time.Duration"}, Pattern: goDurationPattern},
+	TimeType:     {Type: StringType, GoStruct: GoStructConfig{Type: "time.Time"}, Format: "date-time"},
 
 	// opaque_map: Go uses configopaque.MapList; JSON gets a map[string]string
 	OpaqueMapType: {
-		Type:   MapType,
-		GoType: "go.opentelemetry.io/collector/config/configopaque.MapList",
+		Type:     MapType,
+		GoStruct: GoStructConfig{Type: "go.opentelemetry.io/collector/config/configopaque.MapList"},
 		Values: &ConfigMetadata{
 			Type: StringType,
 		},
@@ -46,7 +46,7 @@ var extendedTypes = map[SchemaType]ConfigMetadata{
 }
 
 // expandExtendedType rewrites md.Type from an extended alias to the equivalent standard JSON Schema fields.
-// It is a no-op when md.Type is already a standard JSON Schema type. An explicit x-customType on the node
+// It is a no-op when md.Type is already a standard JSON Schema type. An explicit go_struct.type on the node
 // is never overwritten.
 func expandExtendedType(md *ConfigMetadata) error {
 	ext, ok := extendedTypes[md.Type]
@@ -56,8 +56,8 @@ func expandExtendedType(md *ConfigMetadata) error {
 
 	md.Type = ext.Type
 
-	if md.GoType == "" {
-		md.GoType = ext.GoType
+	if md.GoStruct.Type == "" {
+		md.GoStruct.Type = ext.GoStruct.Type
 	}
 
 	if md.Format == "" {
