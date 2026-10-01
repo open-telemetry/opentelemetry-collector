@@ -101,7 +101,7 @@ Every property under `properties` becomes one field on the generated `Config` st
 it's an object, its own nested struct). `required` marks the property as mandatory in the JSON
 Schema and README table. Generated `Validate()` checks required strings, slices, and maps for
 nonempty values, and required pointers for nil values. It does not generate a presence check for
-nonpointer numeric or boolean fields; use a suitable constraint or custom validator if those
+non-pointer numeric or boolean fields; use a suitable constraint or custom validator if those
 fields need runtime validation.
 
 ## Type reference
@@ -313,7 +313,7 @@ to an `object` schema). It tells `mdatagen` to splice the referenced type's fiel
 the parent's configuration namespace instead of nesting them under the property name — the Go
 equivalent of a `mapstructure:",squash"` tag, and the JSON Schema equivalent of composing the
 referenced schema into the parent's `allOf` instead of listing it as one more entry under
-`properties`. 
+`properties`.
 
 Compare an embedded reference to the same reference without `embed`:
 
