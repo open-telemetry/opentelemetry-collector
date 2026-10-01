@@ -74,6 +74,47 @@ func (ms ExportRequest) UnmarshalJSON(data []byte) error {
 	return iter.Error()
 }
 
+// ValidateUTF8 returns false when any string in the request contains invalid UTF-8.
+func (ms ExportRequest) ValidateUTF8() bool {
+	return internal.ValidateUTF8(ms.orig)
+}
+
+// RejectInvalidUTF8 removes log records containing invalid UTF-8 and returns the number removed.
+func (ms ExportRequest) RejectInvalidUTF8() int {
+	ld := ms.Logs()
+	rejected := 0
+	ld.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
+		if !internal.ValidateUTF8(rl.Resource()) {
+			rejected += countResourceLogs(rl)
+			return true
+		}
+		rl.ScopeLogs().RemoveIf(func(sl plog.ScopeLogs) bool {
+			if !internal.ValidateUTF8(sl.Scope()) {
+				rejected += sl.LogRecords().Len()
+				return true
+			}
+			sl.LogRecords().RemoveIf(func(lr plog.LogRecord) bool {
+				invalid := !internal.ValidateUTF8(lr)
+				if invalid {
+					rejected++
+				}
+				return invalid
+			})
+			return sl.LogRecords().Len() == 0
+		})
+		return rl.ScopeLogs().Len() == 0
+	})
+	return rejected
+}
+
+func countResourceLogs(rl plog.ResourceLogs) int {
+	count := 0
+	for i := 0; i < rl.ScopeLogs().Len(); i++ {
+		count += rl.ScopeLogs().At(i).LogRecords().Len()
+	}
+	return count
+}
+
 func (ms ExportRequest) Logs() plog.Logs {
 	return plog.Logs(internal.NewLogsWrapper(ms.orig, ms.state))
 }
