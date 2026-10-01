@@ -72,6 +72,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["metric.input_type"] = mb.metricMetricInputType.config.AggregationStrategy
 			aggMap["optional.metric"] = mb.metricOptionalMetric.config.AggregationStrategy
 			aggMap["optional.metric.empty_unit"] = mb.metricOptionalMetricEmptyUnit.config.AggregationStrategy
+			aggMap["optional.metric.to_be_removed"] = mb.metricOptionalMetricToBeRemoved.config.AggregationStrategy
 			aggMap["reaggregate.metric"] = mb.metricReaggregateMetric.config.AggregationStrategy
 
 			expectedWarnings := 0
@@ -89,6 +90,10 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 			if tt.metricsSet == testDataSetAll || tt.metricsSet == testDataSetNone {
 				assert.Equal(t, "[WARNING] `optional.metric.empty_unit` should not be configured: This metric is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if tt.metricsSet == testDataSetAll {
+				assert.Equal(t, "[WARNING] `optional.metric.to_be_removed` should not be enabled: This metric is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 			if tt.resAttrsSet == testDataSetDefault {
@@ -136,6 +141,12 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordOptionalMetricEmptyUnitDataPoint(ts, 3, "string_attr-val-2", false)
 			}
+
+			allMetricsCount++
+			mb.RecordOptionalMetricToBeRemovedDataPoint(ts, 1, "string_attr-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOptionalMetricToBeRemovedDataPoint(ts, 3, "string_attr-val-2")
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordReaggregateMetricDataPoint(ts, 1, "string_attr-val", true)
@@ -162,6 +173,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricMetricInputType.aggDataPoints)
 				assert.Empty(t, mb.metricOptionalMetric.aggDataPoints)
 				assert.Empty(t, mb.metricOptionalMetricEmptyUnit.aggDataPoints)
+				assert.Empty(t, mb.metricOptionalMetricToBeRemoved.aggDataPoints)
 				assert.Empty(t, mb.metricReaggregateMetric.aggDataPoints)
 			}
 
@@ -425,6 +437,46 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("string_attr")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("boolean_attr")
+						assert.False(t, ok)
+					}
+				case "optional.metric.to_be_removed":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["optional.metric.to_be_removed"], "Found a duplicate in the metrics slice: optional.metric.to_be_removed")
+						validatedMetrics["optional.metric.to_be_removed"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "[DEPRECATED] Gauge double metric disabled by default with if_enabled warning.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						stringAttrAttrVal, ok := dp.Attributes().Get("string_attr")
+						assert.True(t, ok)
+						assert.Equal(t, "string_attr-val", stringAttrAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["optional.metric.to_be_removed"], "Found a duplicate in the metrics slice: optional.metric.to_be_removed")
+						validatedMetrics["optional.metric.to_be_removed"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "[DEPRECATED] Gauge double metric disabled by default with if_enabled warning.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["optional.metric.to_be_removed"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("string_attr")
 						assert.False(t, ok)
 					}
 				case "reaggregate.metric":

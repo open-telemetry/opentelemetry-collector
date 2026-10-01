@@ -15,8 +15,9 @@ permissions: {}
 
 jobs:
   analysis:
+    cache-mode: none
     permissions:
       contents: read # for actions/checkout
       id-token: write # for Scorecard to publish results
       security-events: write # for the SARIF upload to code scanning
-    uses: open-telemetry/shared-workflows/.github/workflows/scorecard.yml@dde3047a8f219c296772c17936b9d02bb7447af5 # v0.12.0
+    uses: open-telemetry/shared-workflows/.github/workflows/scorecard.yml@6839dcd6ea227c18b59d11da34499746634728ad # v0.17.0

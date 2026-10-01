@@ -233,6 +233,54 @@ func (ms *OptionalMetricEmptyUnitMetricConfig) Validate() error {
 	return nil
 }
 
+// OptionalMetricToBeRemovedMetricAttributeKey specifies the key of an attribute for the optional.metric.to_be_removed metric.
+type OptionalMetricToBeRemovedMetricAttributeKey string
+
+const (
+	OptionalMetricToBeRemovedMetricAttributeKeyStringAttr OptionalMetricToBeRemovedMetricAttributeKey = "string_attr"
+)
+
+// OptionalMetricToBeRemovedMetricConfig provides config for the optional.metric.to_be_removed metric.
+type OptionalMetricToBeRemovedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OptionalMetricToBeRemovedMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OptionalMetricToBeRemovedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OptionalMetricToBeRemovedMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OptionalMetricToBeRemovedMetricAttributeKeyStringAttr:
+		default:
+			return fmt.Errorf("metric optional.metric.to_be_removed doesn't have an attribute %v, valid attributes: [string_attr]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // ReaggregateMetricMetricAttributeKey specifies the key of an attribute for the reaggregate.metric metric.
 type ReaggregateMetricMetricAttributeKey string
 
@@ -304,13 +352,14 @@ func (ms *SystemCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for sample metrics.
 type MetricsConfig struct {
-	DefaultMetric            DefaultMetricMetricConfig            `mapstructure:"default.metric"`
-	DefaultMetricToBeRemoved DefaultMetricToBeRemovedMetricConfig `mapstructure:"default.metric.to_be_removed"`
-	MetricInputType          MetricInputTypeMetricConfig          `mapstructure:"metric.input_type"`
-	OptionalMetric           OptionalMetricMetricConfig           `mapstructure:"optional.metric"`
-	OptionalMetricEmptyUnit  OptionalMetricEmptyUnitMetricConfig  `mapstructure:"optional.metric.empty_unit"`
-	ReaggregateMetric        ReaggregateMetricMetricConfig        `mapstructure:"reaggregate.metric"`
-	SystemCPUTime            SystemCPUTimeMetricConfig            `mapstructure:"system.cpu.time"`
+	DefaultMetric             DefaultMetricMetricConfig             `mapstructure:"default.metric"`
+	DefaultMetricToBeRemoved  DefaultMetricToBeRemovedMetricConfig  `mapstructure:"default.metric.to_be_removed"`
+	MetricInputType           MetricInputTypeMetricConfig           `mapstructure:"metric.input_type"`
+	OptionalMetric            OptionalMetricMetricConfig            `mapstructure:"optional.metric"`
+	OptionalMetricEmptyUnit   OptionalMetricEmptyUnitMetricConfig   `mapstructure:"optional.metric.empty_unit"`
+	OptionalMetricToBeRemoved OptionalMetricToBeRemovedMetricConfig `mapstructure:"optional.metric.to_be_removed"`
+	ReaggregateMetric         ReaggregateMetricMetricConfig         `mapstructure:"reaggregate.metric"`
+	SystemCPUTime             SystemCPUTimeMetricConfig             `mapstructure:"system.cpu.time"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -337,6 +386,11 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []OptionalMetricEmptyUnitMetricAttributeKey{OptionalMetricEmptyUnitMetricAttributeKeyStringAttr, OptionalMetricEmptyUnitMetricAttributeKeyBooleanAttr},
+		},
+		OptionalMetricToBeRemoved: OptionalMetricToBeRemovedMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []OptionalMetricToBeRemovedMetricAttributeKey{OptionalMetricToBeRemovedMetricAttributeKeyStringAttr},
 		},
 		ReaggregateMetric: ReaggregateMetricMetricConfig{
 			Enabled:             true,
@@ -667,9 +721,4 @@ func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 		Metrics:            DefaultMetricsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
-}
-
-// Deprecated: Use NewDefaultMetricsBuilderConfig.
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return NewDefaultMetricsBuilderConfig()
 }

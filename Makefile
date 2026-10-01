@@ -212,10 +212,10 @@ ALL_MOD_PATHS := "" $(ALL_MODULES:.%=%)
 .PHONY: prepare-contrib
 prepare-contrib:
 	@echo Setting contrib at $(CONTRIB_PATH) to use this core checkout
-	@$(MAKE) -j2 -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
+	@$(MAKE) -j4 -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
 		$(addprefix -replace ,$(join $(ALL_MOD_PATHS:%=go.opentelemetry.io/collector%=),$(ALL_MOD_PATHS:%=$(CURDIR)%)))"
-	@$(MAKE) -j2 -C $(CONTRIB_PATH) gotidy
 
+	@$(MAKE) -j4 -C $(CONTRIB_PATH) gotidy
 	@$(MAKE) generate-contrib
 
 # Checks that the HEAD of the contrib repo checked out in CONTRIB_PATH compiles
@@ -232,7 +232,8 @@ check-contrib:
 .PHONY: generate-contrib
 generate-contrib:
 	@echo -e "\nGenerating files in contrib"
-	$(MAKE) -C $(CONTRIB_PATH) generate GROUP=all
+	$(MAKE) -j4 -C $(CONTRIB_PATH) generate GROUP=all GOFLAGS="$(GOFLAGS) -mod=mod"
+	@$(MAKE) -j4 -C $(CONTRIB_PATH) gotidy
 
 # Restores contrib to its original state after running check-contrib.
 .PHONY: restore-contrib
@@ -269,6 +270,11 @@ checkapi:
 .PHONY: checkdoc
 checkdoc:
 	$(GO_TOOL) checkfile --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "README.md"
+
+.PHONY: check-stability
+check-stability:
+	cd cmd/mdatagen && $(GOCMD) install .
+	@$(MAKE) for-all-target TARGET="check-stability-mod"
 
 # Extract the relative path of every module listed between "stable:" and "beta:" in versions.yaml
 STABLE_MODULES := $(shell sed -n -e '/stable:/,/beta:/ s/.*- go.opentelemetry.io\/collector/./p' versions.yaml)
@@ -307,11 +313,10 @@ REMOTE?=git@github.com:open-telemetry/opentelemetry-collector.git
 .PHONY: push-tags
 push-tags:
 	$(GO_TOOL) multimod verify
-	set -e; \
-	tags=`$(GO_TOOL) multimod tag -m ${MODSET} -c ${COMMIT} --print-tags 2>&1 | grep 'v[0-9]'`; \
-	if [ -n "$$tags" ]; then \
-		git push ${REMOTE} $$tags; \
-	fi
+	set -e; for tag in `$(GO_TOOL) multimod tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
+		echo "pushing tag $${tag}"; \
+		git push ${REMOTE} $${tag}; \
+	done;
 
 .PHONY: check-changes
 check-changes:
@@ -361,12 +366,15 @@ endif
 clean:
 	test -d bin && $(RM) bin/*
 
+# renovate: datasource=docker depName=lycheeverse/lychee
+LYCHEE_IMAGE=lycheeverse/lychee:0.24.2@sha256:e2d19e57cf6ab037026f20b8e449a1f30d9d7f81eef4194763aab2eab20bd28d
+
 .PHONY: checklinks
 checklinks:
 	command -v $(DOCKERCMD) >/dev/null 2>&1 || { echo >&2 "$(DOCKERCMD) not installed. Install before continuing"; exit 1; }
 	$(DOCKERCMD) run -w /home/repo --rm \
 		--mount 'type=bind,source='$(PWD)',target=/home/repo' \
-		lycheeverse/lychee:0.23 \
+		$(LYCHEE_IMAGE) \
 		--config .github/lychee.toml \
 		--root-dir /home/repo \
 		-v \

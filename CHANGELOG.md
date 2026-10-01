@@ -7,6 +7,89 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.68.0/v0.162.0
+
+### 🛑 Breaking changes 🛑
+
+- `cmd/mdatagen`: Generated processor lifecycle tests now assert that the processor propagates the incoming context unchanged to the next consumer by default. (#15994)
+  Disable with `skip_context_propagation: true`
+  
+- `processor/queue_batch`: Rename `queuebatch` processor to `queue_batch` processor. (#14396)
+
+### 💡 Enhancements 💡
+
+- `extension/memory_limiter`: Add otelcol_memorylimiter_refused_requests metric to record network request refusals in extension mode. (#15561)
+- `pkg/confighttp`: Enable keepalive configuration by default. (#16026)
+  Introduces the feature gate `pkg.confighttp.PrioritizeNewKeepalive`. When disabled, this flag
+  restores the old behaviour of removing the keepalive configuration in favour
+  of the deprecated fields `IdleConnTimeout`, `MaxIdleConns`, `MaxIdleConnsPerHost`,
+  `DisableKeepAlives` when the flag is disabled.
+  
+- `pkg/exporterhelper`: Make the partition idle timeout configurable via `batch::partition::idle_timeout` and raise the default to 90s. (#15894)
+- `pkg/exporterhelper`: Make the multi-batcher partition LRU cache size configurable and export cache size metrics. (#14526)
+  Adds `sending_queue::batch::partition::cache_size` (default 10000) to cap the
+  number of active partition batchers. The value
+  must be positive. Current size and configured capacity are exported as
+  `otelcol_exporter_queue_batch_partition_cache_size`
+  and `otelcol_exporter_queue_batch_partition_cache_capacity`.
+  
+- `pkg/pprofile`: Speed up profiles dictionary merging during exporter-queue batching by replacing the linear-scan dedup in switchDictionary with an indexed lookup, reducing per-merge cost from O(N*L^2) to O(N+L). (#15544)
+  No behavior change: merged dictionary contents and remapped indices are identical to before.
+  
+- `pkg/receiverhelper`: Stop allocating a span link that is always discarded when a long-lived-context receiver starts an operation without a parent span context. (#15998)
+  Receivers created with `LongLivedCtx: true` no longer build a `trace.Link` when the
+  long-lived context carries no valid span context. The SDK already discarded such a link,
+  so behaviour is unchanged. This removes 3 of 7 allocations per receive operation.
+  
+- `pkg/xpdata`: Reduce the time `xhash.MapHash` takes for maps with many entries. (#15990)
+
+### 🧰 Bug fixes 🧰
+
+- `exporter/debug`: Support known sync error handling on AIX (#15924)
+  Enable the debug exporter to handle known synchronous errors on AIX.
+  
+- `pkg/exporterhelper`: Drop only the oversized item when splitting a batch, instead of discarding every item queued behind it (#15936)
+  Applied to logs only for now
+- `pkg/exporterhelper`: Add exporter and data_type attributes to exporter/enqueue spans. (#16022)
+- `receiver/otlp`: Error handler preserves the HTTP status code when the request Content-Type is not one a Status can be encoded in (#15995)
+  Extends the fix in #13414, which handled a missing Content-Type. A Content-Type that was
+  present but unsupported, or malformed, still fell through to
+  `500 {"code": 13, "message": "failed to marshal error message"}`, reporting client errors
+  such as 401 from a server auth extension or 400 from an unsupported Content-Encoding as
+  server faults.
+  
+
+<!-- previous-version -->
+
+## v1.67.0/v0.161.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/pprofile`: Remove deprecated AggregationTemporality, Duration, SetDuration (#15855)
+- `pkg/scraperhelper/controller`: Remove deprecated AddScraper func (#15934)
+- `pkg/service`: Remove deprecated ZapOptions (#15935)
+- `pkg/xconfmap`: Remove deprecated WithForceUnmarshaler func (#15932)
+
+### 💡 Enhancements 💡
+
+- `pkg/pdata`: avoid allocations in WriteInt64 and WriteUint64 (#15629)
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/schemagen`: Accept components written without a configuration body in the generated Collector configuration schema (#15728)
+- `pkg/confmap`: Fix bug where an escaped URI appearing before a valid URI prevented the subsequent URI from being expanded. (#15867)
+  URI scanning now continues after an escaped URI while preserving the escaped expression as literal text.
+  
+- `pkg/featuregate`: Reject feature gate IDs with an empty dot-separated segment (leading, trailing, or consecutive dots), e.g. `.foo`, `foo.`, `foo..bar`. (#15676)
+- `pkg/pprofile`: Stop erasing inline attribute keys when key_strindex is unset, and clear key_strindex once it is resolved. (#15793)
+- `pkg/pprofile`: Reference resource and scope attribute strings via the ProfilesDictionary string table when marshaling and unmarshaling OTLP profiles export requests. (#15792)
+- `pkg/scraperhelper`: Fix shutdown being delayed by extra scrapes when a scrape runs longer than the collection interval (#15736)
+  If a scrape was still running when the next tick fired, the pending tick and the shutdown
+  signal could both be ready when it finished and the controller chose between them at random.
+  
+
+<!-- previous-version -->
+
 ## v1.66.0/v0.160.0
 
 ### 🚩 Deprecations 🚩

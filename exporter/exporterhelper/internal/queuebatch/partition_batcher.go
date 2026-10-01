@@ -17,10 +17,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
 
-// partitionIdleCycles*FlushTimeout is the duration after which an empty partition is removed.
-// TODO make this configurable.
-const partitionIdleCycles = 10
-
 var _ Batcher[request.Request] = (*partitionBatcher)(nil)
 
 type batch struct {
@@ -42,9 +38,10 @@ type partitionBatcher struct {
 	timer          *time.Timer
 	shutdownCh     chan struct{}
 	logger         *zap.Logger
-	onEmpty        func()    // callback triggered when partition is idle for given time period.
-	lastDataTime   time.Time // tracks when data was last present
-	active         bool      // indicates if partition is still active i.e timer is running and shutdown is not called yet. If Consume is called on inactive partition then data is flushed sync because timer is not running.
+	onEmpty        func()        // callback triggered when partition is idle for given time period.
+	idleTimeout    time.Duration // duration after which an empty partition is removed.
+	lastDataTime   time.Time     // tracks when data was last present
+	active         bool          // indicates if partition is still active i.e timer is running and shutdown is not called yet. If Consume is called on inactive partition then data is flushed sync because timer is not running.
 }
 
 func newPartitionBatcher(
@@ -65,6 +62,7 @@ func newPartitionBatcher(
 		shutdownCh:   make(chan struct{}, 1),
 		logger:       logger,
 		onEmpty:      onEmpty,
+		idleTimeout:  cfg.Partition.IdleTimeout,
 		lastDataTime: time.Now(),
 		active:       true,
 	}
@@ -262,7 +260,7 @@ func (qb *partitionBatcher) flushCurrentBatchOrRemovePartition() {
 		// No data to flush - check if idle for too long AND no one holding a reference
 		idleDuration := time.Since(qb.lastDataTime)
 
-		if idleDuration >= (partitionIdleCycles*qb.cfg.FlushTimeout) && qb.onEmpty != nil {
+		if idleDuration >= qb.idleTimeout && qb.onEmpty != nil {
 			qb.currentBatchMu.Unlock()
 			qb.onEmpty()
 			return
