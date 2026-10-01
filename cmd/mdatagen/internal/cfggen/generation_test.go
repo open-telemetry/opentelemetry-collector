@@ -813,6 +813,33 @@ func TestFormatTypeName_InternalReferences(t *testing.T) {
 	}
 }
 
+func TestFormatTypeName_PrimitiveTypes(t *testing.T) {
+	tests := []struct {
+		name     string
+		ref      string
+		expected string
+	}{
+		{
+			name:     "string",
+			ref:      "string",
+			expected: "string",
+		},
+		{
+			name:     "int",
+			ref:      "int",
+			expected: "int",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := FormatTypeName(tt.ref, "", "")
+			require.NoError(t, err)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 func TestFormatTypeName_ExternalReferences(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -1295,7 +1322,7 @@ func TestExtractValidators_DurationPattern(t *testing.T) {
 		Pattern: `^duration$`,
 	}
 
-	require.Empty(t, ExtractValidators(md))
+	require.Empty(t, ExtractValidators("config", md))
 }
 
 func TestExtractValidators_RefDoesNotStopSiblingValidation(t *testing.T) {
@@ -1308,7 +1335,7 @@ func TestExtractValidators_RefDoesNotStopSiblingValidation(t *testing.T) {
 		},
 	}
 
-	validators := ExtractValidators(md)
+	validators := ExtractValidators("config", md)
 	require.Len(t, validators, 1)
 	require.Equal(t, "name", validators[0].FieldName)
 }
@@ -1829,7 +1856,7 @@ func TestExtractValidators(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result := ExtractValidators(test.metadata)
+			result := ExtractValidators("config", test.metadata)
 			require.Equal(t, test.expected, result)
 		})
 	}
@@ -1939,7 +1966,7 @@ func TestExtractValidators_StringValidators(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := ExtractValidators(tt.metadata)
+			result := ExtractValidators("config", tt.metadata)
 			require.Equal(t, tt.expected, result)
 		})
 	}
@@ -2083,7 +2110,7 @@ func TestExtractValidators_NumericValidators(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := ExtractValidators(tt.metadata)
+			result := ExtractValidators("config", tt.metadata)
 			require.Equal(t, tt.expected, result)
 		})
 	}
@@ -2094,7 +2121,7 @@ func TestExtractValidators_InternalRefFromDefs_NoValidators(t *testing.T) {
 		Ref: "plain_config",
 	}
 
-	result := ExtractValidators(md)
+	result := ExtractValidators("config", md)
 	require.Empty(t, result)
 }
 
@@ -2103,7 +2130,7 @@ func TestExtractValidators_InternalRefFromDefs_RefNotFound(t *testing.T) {
 		Ref: "missing_def",
 	}
 
-	result := ExtractValidators(md)
+	result := ExtractValidators("config", md)
 	require.Empty(t, result)
 }
 
@@ -2120,7 +2147,7 @@ func TestExtractValidators_AllOf_NoRef(t *testing.T) {
 		},
 	}
 
-	result := ExtractValidators(md)
+	result := ExtractValidators("config", md)
 	require.Empty(t, result)
 }
 
@@ -2132,7 +2159,7 @@ func TestExtractValidators_AllOf_RefWithNoValidators(t *testing.T) {
 		},
 	}
 
-	result := ExtractValidators(md)
+	result := ExtractValidators("config", md)
 	require.Empty(t, result)
 }
 
@@ -2149,7 +2176,7 @@ func TestExtractValidators_CustomValidator(t *testing.T) {
 		},
 	}
 
-	result := ExtractValidators(md)
+	result := ExtractValidators("config", md)
 	require.Len(t, result, 1)
 	require.Equal(t, "http_client", result[0].FieldName)
 	require.Equal(t, "validateHTTPClient", result[0].CustomValidator)
@@ -2171,7 +2198,7 @@ func TestExtractValidators_RequiredAndCustomValidator(t *testing.T) {
 		},
 	}
 
-	result := ExtractValidators(md)
+	result := ExtractValidators("config", md)
 	require.Len(t, result, 2)
 
 	// First validator is the required check
@@ -2199,12 +2226,12 @@ func TestExtractValidators_RootCustomValidatorLast(t *testing.T) {
 		},
 	}
 
-	result := ExtractValidators(md)
+	result := ExtractValidators("config", md)
 	require.Len(t, result, 2)
 	require.NotNil(t, result[1].Rules.Required)
 	require.True(t, result[1].Rules.Required)
 	require.Empty(t, result[1].CustomValidator)
-	require.Equal(t, ".", result[0].FieldName)
+	require.Equal(t, "config", result[0].FieldName)
 	require.Equal(t, "validateConfig", result[0].CustomValidator)
 }
 
@@ -2219,7 +2246,7 @@ func TestExtractValidators_NoCustomValidator(t *testing.T) {
 		},
 	}
 
-	result := ExtractValidators(md)
+	result := ExtractValidators("config", md)
 	require.Empty(t, result)
 }
 
@@ -2305,9 +2332,9 @@ func TestValidationRules_HasValueRule(t *testing.T) {
 
 func TestNewCfgFns_ExtractValidators(t *testing.T) {
 	fns := NewCfgFns("", "")
-	extractValidators := fns["extractValidators"].(func(*ConfigMetadata) []Validator)
+	extractValidators := fns["extractValidators"].(func(string, *ConfigMetadata) []Validator)
 
-	require.Nil(t, extractValidators(nil))
+	require.Nil(t, extractValidators("", nil))
 
 	md := &ConfigMetadata{
 		Type:     "object",
@@ -2316,7 +2343,7 @@ func TestNewCfgFns_ExtractValidators(t *testing.T) {
 			"name": {Type: "string"},
 		},
 	}
-	result := extractValidators(md)
+	result := extractValidators("config", md)
 	require.Len(t, result, 1)
 	require.Equal(t, "name", result[0].FieldName)
 	require.NotNil(t, result[0].Rules.Required)
@@ -3083,9 +3110,9 @@ func TestExtractValidators_DefsValidatorNotOverwrittenByRefSite(t *testing.T) {
 	defs := ExtractDefsFromConfig(md)
 	require.Contains(t, defs, "batch_config")
 
-	validators := ExtractValidators(defs["batch_config"])
+	validators := ExtractValidators("batch_config", defs["batch_config"])
 	require.Len(t, validators, 1)
-	require.Equal(t, ".", validators[0].FieldName)
+	require.Equal(t, "batch_config", validators[0].FieldName)
 	require.Equal(t, "validateBatchConfig", validators[0].CustomValidator,
 		"struct-level validator must come from the type definition, not the ref-site property")
 }
@@ -3116,10 +3143,26 @@ func TestExtractValidators_EnumValidators(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := ExtractValidators(tt.metadata)
+			result := ExtractValidators("config", tt.metadata)
 			require.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestExtractValidators_EnumWithDifferentCustomTypeIsOmitted(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"protocol": {
+				Type:   "string",
+				GoType: "int",
+				Enum:   []any{"http", "tcp"},
+			},
+		},
+	}
+
+	validators := ExtractValidators("config", md)
+	require.Empty(t, validators)
 }
 
 func TestExtractImports_EnumAddsSlices(t *testing.T) {
@@ -3132,6 +3175,28 @@ func TestExtractImports_EnumAddsSlices(t *testing.T) {
 	imports, err := ExtractImportsFromConfig(md, "example.com/root", "example.com/component")
 	require.NoError(t, err)
 	require.Contains(t, imports, "slices")
+}
+
+func TestExtractImports_EnumWithMatchingCustomTypeAddsSlices(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:   "string",
+		GoType: "string",
+		Enum:   []any{"a", "b"},
+	}
+	imports, err := ExtractImportsFromConfig(md, "example.com/root", "example.com/component")
+	require.NoError(t, err)
+	require.Contains(t, imports, "slices")
+}
+
+func TestExtractImports_EnumWithDifferentCustomTypeOmitsSlices(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:   "string",
+		GoType: "int",
+		Enum:   []any{"a", "b"},
+	}
+	imports, err := ExtractImportsFromConfig(md, "example.com/root", "example.com/component")
+	require.NoError(t, err)
+	require.NotContains(t, imports, "slices")
 }
 
 func TestFormatEnumSlice(t *testing.T) {
