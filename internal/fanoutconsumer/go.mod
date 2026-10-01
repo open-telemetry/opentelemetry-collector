@@ -7,9 +7,11 @@ require (
 	go.opentelemetry.io/collector/consumer v1.68.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.162.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.162.0
+	go.opentelemetry.io/collector/featuregate v1.68.0
 	go.opentelemetry.io/collector/pdata v1.68.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.162.0
 	go.opentelemetry.io/collector/pdata/testdata v0.162.0
+	go.opentelemetry.io/collector/pdata/xpdata v0.162.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 )
@@ -19,7 +21,6 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	go.opentelemetry.io/collector/featuregate v1.68.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 )
 
@@ -38,3 +39,7 @@ replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xcons
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/internal/testutil => ../testutil
+
+replace go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata
+
+replace go.opentelemetry.io/collector/client => ../../client
