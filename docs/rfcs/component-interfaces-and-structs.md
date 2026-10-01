@@ -254,7 +254,7 @@ interface, callers can choose the one they prefer depending on the use.
 Adding a field to an exported struct is usually compatible, but it can
 break callers that use unkeyed composite literals. For example,
 `Config{"endpoint", 10}` must provide a value for every field, so adding
-a field makes that literal fail to compile. Callers should use keyed
+a field makes that fail to compile. Callers should use keyed
 composite literals, such as `Config{Endpoint: "endpoint"}`, for public
 structs. APIs intended to evolve should favor constructors or option
 structs and document how values are constructed. If callers rely on
