@@ -1,0 +1,8 @@
+# Use this changelog template to create an entry for release notes.
+
+change_type: enhancement
+component: pkg/component
+note: Document compatibility guidelines for adding fields to public structs in the component interface RFC.
+issues: []
+subtext:
+change_logs: [api]
