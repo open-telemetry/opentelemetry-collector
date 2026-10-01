@@ -95,6 +95,7 @@ func Build(ctx context.Context, set Settings) (*Graph, error) {
 	if err := pipelines.buildComponents(ctx, set); err != nil {
 		return pipelines, err
 	}
+	// TODO: Revisit this warning after Phase 2 of the batching migration is complete.
 	pipelines.warnIfDoubleBatching(set.PipelineConfigs)
 	return pipelines, nil
 }
