@@ -117,23 +117,29 @@ In order to facilitate proper label usage and to empower Code Owners, you are ab
 
 The following general labels are supported:
 
-| Label                    | Label in Comment         |
-|--------------------------|--------------------------|
-| `arm64`                  | `arm64`                  |
-| `good first issue`       | `good-first-issue`       |
-| `help wanted`            | `help-wanted`            |
-| `needs triage`           | `needs-triage`           |
-| `discussion needed`      | `discussion-needed`      |
-| `os:macos`               | `os:macos`               |
-| `os:windows`             | `os:windows`             |
-| `waiting for author`     | `waiting-for-author`     |
-| `waiting-for-codeowners` | `waiting-for-codeowners` |
-| `bug`                    | `bug`                    |
-| `priority:p0`            | `priority:p0`            |
-| `priority:p1`            | `priority:p1`            |
-| `priority:p2`            | `priority:p2`            |
-| `priority:p3`            | `priority:p3`            |
-| `Stale`                  | `stale`                  |
+| Label                     | Label in Comment          |
+|---------------------------|---------------------------|
+| `arm64`                   | `arm64`                   |
+| `good first issue`        | `good-first-issue`        |
+| `help wanted`             | `help-wanted`             |
+| `needs triage`            | `needs-triage`            |
+| `discussion needed`       | `discussion-needed`       |
+| `os:macos`                | `os:macos`                |
+| `os:windows`              | `os:windows`              |
+| `waiting for author`      | `waiting-for-author`      |
+| `waiting-for-codeowners`  | `waiting-for-codeowners`  |
+| `waiting-for-maintainers` | `waiting-for-maintainers` |
+| `bug`                     | `bug`                     |
+| `priority:p0`             | `priority:p0`             |
+| `priority:p1`             | `priority:p1`             |
+| `priority:p2`             | `priority:p2`             |
+| `priority:p3`             | `priority:p3`             |
+| `Stale`                   | `stale`                   |
+
+The `waiting-for-maintainers` label can be added (by triagers/code owners/approvers/maintainers) to a PR
+once it has been reviewed and approved by code owners, all review comments are addressed, CI is green,
+and it is only waiting on a review from an approver or maintainer. Once an approver approves the PR,
+replace it with the `ready-to-merge` label.
 
 To delete a label, prepend the label with `-`. Note that you must make a new comment to modify labels; you cannot edit an existing comment.
 
