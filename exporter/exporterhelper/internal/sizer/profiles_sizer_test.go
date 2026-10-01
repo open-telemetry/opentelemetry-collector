@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
@@ -16,6 +17,11 @@ func TestProfilesCountSizer(t *testing.T) {
 	td := testdata.GenerateProfilesMultiSample(3, 5)
 	sizer := ProfilesCountSizer{}
 	require.Equal(t, 15, sizer.ProfilesSize(td))
+
+	// A profile-counting implementation returns 3 here, so this pins the unit.
+	require.Equal(t, 3, td.ProfileCount())
+	require.Equal(t, 15, td.SampleCount())
+	require.NotEqual(t, sizer.ProfilesSize(td), td.ProfileCount())
 
 	rp := td.ResourceProfiles().At(0)
 	require.Equal(t, 15, sizer.ResourceProfilesSize(rp))
@@ -40,6 +46,18 @@ func TestProfilesCountSizer(t *testing.T) {
 
 	require.Equal(t, prevScopeSize, sizer.ResourceProfilesSize(rp))
 	require.Equal(t, prevScopeSize, sizer.ProfilesSize(td))
+
+	// The fixture only ever produces one scope profile, so split the profiles
+	// across a second scope to cover the aggregation in ResourceProfilesSize.
+	moved := sp.Profiles().At(0)
+	sp2 := rp.ScopeProfiles().AppendEmpty()
+	moved.CopyTo(sp2.Profiles().AppendEmpty())
+	sp.Profiles().RemoveIf(func(p pprofile.Profile) bool { return p.ProfileID() == moved.ProfileID() })
+	require.Equal(t, 2, rp.ScopeProfiles().Len())
+	require.Equal(t, 5, sizer.ScopeProfilesSize(sp2))
+	require.Equal(t, prevScopeSize-5, sizer.ScopeProfilesSize(sp))
+	require.Equal(t, prevScopeSize, sizer.ResourceProfilesSize(rp))
+	require.Equal(t, prevScopeSize, sizer.ProfilesSize(td))
 }
 
 func TestProfilesCountSizerEmptyProfile(t *testing.T) {
@@ -55,33 +73,4 @@ func TestProfilesCountSizerEmptyProfile(t *testing.T) {
 	require.Equal(t, 0, sizer.ProfileSize(empty))
 	require.Equal(t, 2, sizer.ScopeProfilesSize(sp))
 	require.Equal(t, 2, sizer.ProfilesSize(td))
-}
-
-func TestProfilesCountSizerLeafEqualsCountableUnit(t *testing.T) {
-	// Each leaf must report its own contribution in samples so that summing the
-	// levels is consistent with ProfilesSize, which reports SampleCount.
-	td := testdata.GenerateProfilesMultiSample(2, 4)
-	sizer := ProfilesCountSizer{}
-
-	rp := td.ResourceProfiles().At(0)
-	for k := 0; k < rp.ScopeProfiles().Len(); k++ {
-		sp := rp.ScopeProfiles().At(k)
-		ps := sp.Profiles()
-		var leafSum int
-		for j := 0; j < ps.Len(); j++ {
-			leafSum += sizer.ProfileSize(ps.At(j))
-		}
-		require.Equal(t, sizer.ScopeProfilesSize(sp), leafSum)
-	}
-	require.Equal(t, sizer.ProfilesSize(td), sizer.ResourceProfilesSize(rp))
-}
-
-func TestProfilesCountSizerDoesNotCountProfiles(t *testing.T) {
-	// Guards against regressing to counting profiles: with five samples per
-	// profile, a profile-counting implementation returns 3 here.
-	td := testdata.GenerateProfilesMultiSample(3, 5)
-	sizer := &ProfilesCountSizer{}
-	require.Equal(t, 3, td.ProfileCount())
-	require.Equal(t, 15, td.SampleCount())
-	require.NotEqual(t, sizer.ProfilesSize(td), td.ProfileCount())
 }
