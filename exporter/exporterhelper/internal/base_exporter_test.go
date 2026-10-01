@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -51,15 +50,9 @@ func TestBaseExporterWithOptions(t *testing.T) {
 
 func TestBaseExporterBatchingEnabled(t *testing.T) {
 	qCfg := NewDefaultQueueConfig()
-	var batchingEnabled bool
-	set := exporter.WithBatchingStatusReporter(
-		exportertest.NewNopSettings(exportertest.NopType),
-		func(reported bool) {
-			batchingEnabled = reported
-		},
-	)
+	set := exportertest.NewNopSettings(exportertest.NopType)
 
-	_, err := NewBaseExporter(
+	be, err := NewBaseExporter(
 		set,
 		pipeline.SignalMetrics,
 		noopExport,
@@ -67,10 +60,10 @@ func TestBaseExporterBatchingEnabled(t *testing.T) {
 		WithQueueBatch(configoptional.Some(qCfg), newFakeQueueBatch()),
 	)
 	require.NoError(t, err)
-	require.False(t, batchingEnabled)
+	require.False(t, be.BatchingEnabled())
 
 	qCfg.Batch = configoptional.Some(queuebatch.BatchConfig{})
-	_, err = NewBaseExporter(
+	be, err = NewBaseExporter(
 		set,
 		pipeline.SignalMetrics,
 		noopExport,
@@ -78,7 +71,7 @@ func TestBaseExporterBatchingEnabled(t *testing.T) {
 		WithQueueBatch(configoptional.Some(qCfg), newFakeQueueBatch()),
 	)
 	require.NoError(t, err)
-	require.True(t, batchingEnabled)
+	require.True(t, be.BatchingEnabled())
 }
 
 func TestQueueOptionsWithRequestExporter(t *testing.T) {

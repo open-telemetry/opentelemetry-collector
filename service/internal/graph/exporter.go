@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/exporter"
+	internalexporterhelper "go.opentelemetry.io/collector/internal/exporterhelper"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/service/internal/attribute"
@@ -57,9 +58,6 @@ func (n *exporterNode) buildComponent(
 		TelemetrySettings: componentattribute.TelemetrySettingsWithAttributes(tel, *n.Set()),
 		BuildInfo:         info,
 	}
-	set = exporter.WithBatchingStatusReporter(set, func(enabled bool) {
-		n.exporterHelperBatchingEnabled = n.exporterHelperBatchingEnabled || enabled
-	})
 
 	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
@@ -103,6 +101,9 @@ func (n *exporterNode) buildComponent(
 		n.consumer = refconsumer.NewProfiles(n.consumer.(xconsumer.Profiles))
 	default:
 		return fmt.Errorf("error creating exporter %q for data type %q is not supported", set.ID, n.pipelineType)
+	}
+	if helper, ok := n.Component.(internalexporterhelper.ExporterHelper); ok {
+		n.exporterHelperBatchingEnabled = helper.BatchingEnabled()
 	}
 	return nil
 }

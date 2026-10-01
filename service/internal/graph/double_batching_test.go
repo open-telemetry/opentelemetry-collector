@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
+	internalexporterhelper "go.opentelemetry.io/collector/internal/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/internal/builders"
@@ -25,6 +26,7 @@ import (
 
 type wrappedMetricsExporter struct {
 	consumer.Metrics
+	internalexporterhelper.ExporterHelper
 }
 
 func (*wrappedMetricsExporter) Start(context.Context, component.Host) error {
@@ -35,20 +37,22 @@ func (*wrappedMetricsExporter) Shutdown(context.Context) error {
 	return nil
 }
 
-func TestExporterNodeRecordsBatchingStatusThroughWrapper(t *testing.T) {
+func TestExporterNodeReadsBatchingStatusCapability(t *testing.T) {
 	exporterType := component.MustNewType("wrapped")
 	exporterID := component.NewID(exporterType)
 	factory := exporter.NewFactory(
 		exporterType,
 		func() component.Config { return struct{}{} },
 		exporter.WithMetrics(
-			func(_ context.Context, set exporter.Settings, _ component.Config) (exporter.Metrics, error) {
-				exporter.ReportBatchingStatus(set, true)
+			func(_ context.Context, _ exporter.Settings, _ component.Config) (exporter.Metrics, error) {
 				metrics, err := consumer.NewMetrics(func(context.Context, pmetric.Metrics) error { return nil })
 				if err != nil {
 					return nil, err
 				}
-				return &wrappedMetricsExporter{Metrics: metrics}, nil
+				return &wrappedMetricsExporter{
+					Metrics:        metrics,
+					ExporterHelper: internalexporterhelper.NewExporterHelper(true),
+				}, nil
 			},
 			component.StabilityLevelAlpha,
 		),
