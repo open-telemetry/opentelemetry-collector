@@ -31,9 +31,9 @@ func TestCopyLocation(t *testing.T) {
 				}()
 
 				dest := NewLocation()
-				CopyLocation(dest, src)
+				CopyLocation(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyLocation(dest, dest)
+				CopyLocation(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyLocationSlice(t *testing.T) {
 	src := []Location{}
 	dest := []Location{}
 	// Test CopyTo empty
-	dest = CopyLocationSlice(dest, src)
+	dest = CopyLocationSlice(dest, src, nil)
 	assert.Equal(t, []Location{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestLocationSlice()
-	dest = CopyLocationSlice(dest, src)
+	dest = CopyLocationSlice(dest, src, nil)
 	assert.Equal(t, GenTestLocationSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyLocationSlice(dest, src)
+	dest = CopyLocationSlice(dest, src, nil)
 	assert.Equal(t, GenTestLocationSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyLocationSlice(dest, []Location{})
+	dest = CopyLocationSlice(dest, []Location{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyLocationSlice(dest, src)
+	dest = CopyLocationSlice(dest, src, nil)
 	assert.Equal(t, GenTestLocationSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyLocationPtrSlice(t *testing.T) {
 	src := []*Location{}
 	dest := []*Location{}
 	// Test CopyTo empty
-	dest = CopyLocationPtrSlice(dest, src)
+	dest = CopyLocationPtrSlice(dest, src, nil)
 	assert.Equal(t, []*Location{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestLocationPtrSlice()
-	dest = CopyLocationPtrSlice(dest, src)
+	dest = CopyLocationPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestLocationPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyLocationPtrSlice(dest, src)
+	dest = CopyLocationPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestLocationPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyLocationPtrSlice(dest, []*Location{})
+	dest = CopyLocationPtrSlice(dest, []*Location{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyLocationPtrSlice(dest, src)
+	dest = CopyLocationPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestLocationPtrSlice(), dest)
 }
 

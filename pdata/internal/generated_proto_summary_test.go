@@ -31,9 +31,9 @@ func TestCopySummary(t *testing.T) {
 				}()
 
 				dest := NewSummary()
-				CopySummary(dest, src)
+				CopySummary(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopySummary(dest, dest)
+				CopySummary(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopySummarySlice(t *testing.T) {
 	src := []Summary{}
 	dest := []Summary{}
 	// Test CopyTo empty
-	dest = CopySummarySlice(dest, src)
+	dest = CopySummarySlice(dest, src, nil)
 	assert.Equal(t, []Summary{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestSummarySlice()
-	dest = CopySummarySlice(dest, src)
+	dest = CopySummarySlice(dest, src, nil)
 	assert.Equal(t, GenTestSummarySlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopySummarySlice(dest, src)
+	dest = CopySummarySlice(dest, src, nil)
 	assert.Equal(t, GenTestSummarySlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopySummarySlice(dest, []Summary{})
+	dest = CopySummarySlice(dest, []Summary{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopySummarySlice(dest, src)
+	dest = CopySummarySlice(dest, src, nil)
 	assert.Equal(t, GenTestSummarySlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopySummaryPtrSlice(t *testing.T) {
 	src := []*Summary{}
 	dest := []*Summary{}
 	// Test CopyTo empty
-	dest = CopySummaryPtrSlice(dest, src)
+	dest = CopySummaryPtrSlice(dest, src, nil)
 	assert.Equal(t, []*Summary{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestSummaryPtrSlice()
-	dest = CopySummaryPtrSlice(dest, src)
+	dest = CopySummaryPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSummaryPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopySummaryPtrSlice(dest, src)
+	dest = CopySummaryPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSummaryPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopySummaryPtrSlice(dest, []*Summary{})
+	dest = CopySummaryPtrSlice(dest, []*Summary{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopySummaryPtrSlice(dest, src)
+	dest = CopySummaryPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSummaryPtrSlice(), dest)
 }
 

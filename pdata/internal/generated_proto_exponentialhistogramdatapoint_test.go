@@ -31,9 +31,9 @@ func TestCopyExponentialHistogramDataPoint(t *testing.T) {
 				}()
 
 				dest := NewExponentialHistogramDataPoint()
-				CopyExponentialHistogramDataPoint(dest, src)
+				CopyExponentialHistogramDataPoint(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyExponentialHistogramDataPoint(dest, dest)
+				CopyExponentialHistogramDataPoint(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyExponentialHistogramDataPointSlice(t *testing.T) {
 	src := []ExponentialHistogramDataPoint{}
 	dest := []ExponentialHistogramDataPoint{}
 	// Test CopyTo empty
-	dest = CopyExponentialHistogramDataPointSlice(dest, src)
+	dest = CopyExponentialHistogramDataPointSlice(dest, src, nil)
 	assert.Equal(t, []ExponentialHistogramDataPoint{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExponentialHistogramDataPointSlice()
-	dest = CopyExponentialHistogramDataPointSlice(dest, src)
+	dest = CopyExponentialHistogramDataPointSlice(dest, src, nil)
 	assert.Equal(t, GenTestExponentialHistogramDataPointSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExponentialHistogramDataPointSlice(dest, src)
+	dest = CopyExponentialHistogramDataPointSlice(dest, src, nil)
 	assert.Equal(t, GenTestExponentialHistogramDataPointSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExponentialHistogramDataPointSlice(dest, []ExponentialHistogramDataPoint{})
+	dest = CopyExponentialHistogramDataPointSlice(dest, []ExponentialHistogramDataPoint{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExponentialHistogramDataPointSlice(dest, src)
+	dest = CopyExponentialHistogramDataPointSlice(dest, src, nil)
 	assert.Equal(t, GenTestExponentialHistogramDataPointSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyExponentialHistogramDataPointPtrSlice(t *testing.T) {
 	src := []*ExponentialHistogramDataPoint{}
 	dest := []*ExponentialHistogramDataPoint{}
 	// Test CopyTo empty
-	dest = CopyExponentialHistogramDataPointPtrSlice(dest, src)
+	dest = CopyExponentialHistogramDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, []*ExponentialHistogramDataPoint{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExponentialHistogramDataPointPtrSlice()
-	dest = CopyExponentialHistogramDataPointPtrSlice(dest, src)
+	dest = CopyExponentialHistogramDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExponentialHistogramDataPointPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExponentialHistogramDataPointPtrSlice(dest, src)
+	dest = CopyExponentialHistogramDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExponentialHistogramDataPointPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExponentialHistogramDataPointPtrSlice(dest, []*ExponentialHistogramDataPoint{})
+	dest = CopyExponentialHistogramDataPointPtrSlice(dest, []*ExponentialHistogramDataPoint{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExponentialHistogramDataPointPtrSlice(dest, src)
+	dest = CopyExponentialHistogramDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExponentialHistogramDataPointPtrSlice(), dest)
 }
 

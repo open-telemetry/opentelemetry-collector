@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -22,19 +21,8 @@ type Line struct {
 	Column        int64
 }
 
-var (
-	protoPoolLine = sync.Pool{
-		New: func() any {
-			return &Line{}
-		},
-	}
-)
-
 func NewLine() *Line {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &Line{}
-	}
-	return protoPoolLine.Get().(*Line)
+	return Alloc[Line](nil)
 }
 
 func DeleteLine(orig *Line, nullable bool) {
@@ -48,12 +36,10 @@ func DeleteLine(orig *Line, nullable bool) {
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolLine.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyLine(dest, src *Line) *Line {
+func CopyLine(dest, src *Line, st *State) *Line {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -64,7 +50,7 @@ func CopyLine(dest, src *Line) *Line {
 	}
 
 	if dest == nil {
-		dest = NewLine()
+		dest = Alloc[Line](st)
 	}
 	dest.FunctionIndex = src.FunctionIndex
 	dest.Line = src.Line
@@ -73,10 +59,10 @@ func CopyLine(dest, src *Line) *Line {
 	return dest
 }
 
-func CopyLineSlice(dest, src []Line) []Line {
+func CopyLineSlice(dest, src []Line, st *State) []Line {
 	var newDest []Line
 	if cap(dest) < len(src) {
-		newDest = make([]Line, len(src))
+		newDest = AllocSlice[Line](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -86,20 +72,20 @@ func CopyLineSlice(dest, src []Line) []Line {
 		}
 	}
 	for i := range src {
-		CopyLine(&newDest[i], &src[i])
+		CopyLine(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyLinePtrSlice(dest, src []*Line) []*Line {
+func CopyLinePtrSlice(dest, src []*Line, st *State) []*Line {
 	var newDest []*Line
 	if cap(dest) < len(src) {
-		newDest = make([]*Line, len(src))
+		newDest = AllocSlice[*Line](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewLine()
+			newDest[i] = Alloc[Line](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -112,11 +98,11 @@ func CopyLinePtrSlice(dest, src []*Line) []*Line {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewLine()
+			newDest[i] = Alloc[Line](st)
 		}
 	}
 	for i := range src {
-		CopyLine(newDest[i], src[i])
+		CopyLine(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -145,13 +131,21 @@ func (orig *Line) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *Line) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *Line) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "functionIndex", "function_index":
+
 			orig.FunctionIndex = iter.ReadInt32()
 		case "line":
+
 			orig.Line = iter.ReadInt64()
 		case "column":
+
 			orig.Column = iter.ReadInt64()
 		default:
 			iter.HandleUnknownField(f)
@@ -198,6 +192,10 @@ func (orig *Line) MarshalProto(buf []byte) int {
 }
 
 func (orig *Line) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *Line) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -255,7 +253,7 @@ func (orig *Line) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestLine() *Line {
-	orig := NewLine()
+	orig := Alloc[Line](nil)
 	orig.FunctionIndex = int32(13)
 	orig.Line = int64(13)
 	orig.Column = int64(13)
@@ -264,11 +262,11 @@ func GenTestLine() *Line {
 
 func GenTestLinePtrSlice() []*Line {
 	orig := make([]*Line, 5)
-	orig[0] = NewLine()
+	orig[0] = Alloc[Line](nil)
 	orig[1] = GenTestLine()
-	orig[2] = NewLine()
+	orig[2] = Alloc[Line](nil)
 	orig[3] = GenTestLine()
-	orig[4] = NewLine()
+	orig[4] = Alloc[Line](nil)
 	return orig
 }
 

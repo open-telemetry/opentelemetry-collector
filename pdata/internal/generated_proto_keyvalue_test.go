@@ -31,9 +31,9 @@ func TestCopyKeyValue(t *testing.T) {
 				}()
 
 				dest := NewKeyValue()
-				CopyKeyValue(dest, src)
+				CopyKeyValue(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyKeyValue(dest, dest)
+				CopyKeyValue(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyKeyValueSlice(t *testing.T) {
 	src := []KeyValue{}
 	dest := []KeyValue{}
 	// Test CopyTo empty
-	dest = CopyKeyValueSlice(dest, src)
+	dest = CopyKeyValueSlice(dest, src, nil)
 	assert.Equal(t, []KeyValue{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestKeyValueSlice()
-	dest = CopyKeyValueSlice(dest, src)
+	dest = CopyKeyValueSlice(dest, src, nil)
 	assert.Equal(t, GenTestKeyValueSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyKeyValueSlice(dest, src)
+	dest = CopyKeyValueSlice(dest, src, nil)
 	assert.Equal(t, GenTestKeyValueSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyKeyValueSlice(dest, []KeyValue{})
+	dest = CopyKeyValueSlice(dest, []KeyValue{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyKeyValueSlice(dest, src)
+	dest = CopyKeyValueSlice(dest, src, nil)
 	assert.Equal(t, GenTestKeyValueSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyKeyValuePtrSlice(t *testing.T) {
 	src := []*KeyValue{}
 	dest := []*KeyValue{}
 	// Test CopyTo empty
-	dest = CopyKeyValuePtrSlice(dest, src)
+	dest = CopyKeyValuePtrSlice(dest, src, nil)
 	assert.Equal(t, []*KeyValue{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestKeyValuePtrSlice()
-	dest = CopyKeyValuePtrSlice(dest, src)
+	dest = CopyKeyValuePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestKeyValuePtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyKeyValuePtrSlice(dest, src)
+	dest = CopyKeyValuePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestKeyValuePtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyKeyValuePtrSlice(dest, []*KeyValue{})
+	dest = CopyKeyValuePtrSlice(dest, []*KeyValue{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyKeyValuePtrSlice(dest, src)
+	dest = CopyKeyValuePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestKeyValuePtrSlice(), dest)
 }
 

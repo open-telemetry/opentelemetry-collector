@@ -31,9 +31,9 @@ func TestCopySummaryDataPoint(t *testing.T) {
 				}()
 
 				dest := NewSummaryDataPoint()
-				CopySummaryDataPoint(dest, src)
+				CopySummaryDataPoint(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopySummaryDataPoint(dest, dest)
+				CopySummaryDataPoint(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopySummaryDataPointSlice(t *testing.T) {
 	src := []SummaryDataPoint{}
 	dest := []SummaryDataPoint{}
 	// Test CopyTo empty
-	dest = CopySummaryDataPointSlice(dest, src)
+	dest = CopySummaryDataPointSlice(dest, src, nil)
 	assert.Equal(t, []SummaryDataPoint{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestSummaryDataPointSlice()
-	dest = CopySummaryDataPointSlice(dest, src)
+	dest = CopySummaryDataPointSlice(dest, src, nil)
 	assert.Equal(t, GenTestSummaryDataPointSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopySummaryDataPointSlice(dest, src)
+	dest = CopySummaryDataPointSlice(dest, src, nil)
 	assert.Equal(t, GenTestSummaryDataPointSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopySummaryDataPointSlice(dest, []SummaryDataPoint{})
+	dest = CopySummaryDataPointSlice(dest, []SummaryDataPoint{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopySummaryDataPointSlice(dest, src)
+	dest = CopySummaryDataPointSlice(dest, src, nil)
 	assert.Equal(t, GenTestSummaryDataPointSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopySummaryDataPointPtrSlice(t *testing.T) {
 	src := []*SummaryDataPoint{}
 	dest := []*SummaryDataPoint{}
 	// Test CopyTo empty
-	dest = CopySummaryDataPointPtrSlice(dest, src)
+	dest = CopySummaryDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, []*SummaryDataPoint{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestSummaryDataPointPtrSlice()
-	dest = CopySummaryDataPointPtrSlice(dest, src)
+	dest = CopySummaryDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSummaryDataPointPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopySummaryDataPointPtrSlice(dest, src)
+	dest = CopySummaryDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSummaryDataPointPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopySummaryDataPointPtrSlice(dest, []*SummaryDataPoint{})
+	dest = CopySummaryDataPointPtrSlice(dest, []*SummaryDataPoint{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopySummaryDataPointPtrSlice(dest, src)
+	dest = CopySummaryDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSummaryDataPointPtrSlice(), dest)
 }
 

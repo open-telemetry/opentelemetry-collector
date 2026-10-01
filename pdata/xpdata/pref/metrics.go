@@ -28,6 +28,7 @@ func UnrefMetrics(md pmetric.Metrics) {
 	// Don't call DeleteExportLogsServiceRequest without the gate because we reset the data and that may still cause issues.
 	if pmetadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 		internal.DeleteExportMetricsServiceRequest(internal.GetMetricsOrig(internal.MetricsWrapper(md)), true)
+		internal.GetMetricsState(internal.MetricsWrapper(md)).DropArena()
 	}
 }
 

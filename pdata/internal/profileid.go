@@ -20,7 +20,7 @@ type ProfileID [profileIDSize]byte
 
 func DeleteProfileID(*ProfileID, bool) {}
 
-func CopyProfileID(dest, src *ProfileID) {
+func CopyProfileID(dest, src *ProfileID, _ *State) {
 	*dest = *src
 }
 
@@ -49,6 +49,10 @@ func (pid ProfileID) MarshalProto(buf []byte) int {
 
 // UnmarshalProto inflates this profile ID from binary representation. Called by Protobuf serialization.
 func (pid *ProfileID) UnmarshalProto(buf []byte) error {
+	return pid.UnmarshalProtoState(buf, nil)
+}
+
+func (pid *ProfileID) UnmarshalProtoState(buf []byte, _ *State) error {
 	if len(buf) == 0 {
 		*pid = [profileIDSize]byte{}
 		return nil
@@ -73,6 +77,10 @@ func (pid ProfileID) MarshalJSON(dest *json.Stream) {
 //
 //nolint:govet
 func (pid *ProfileID) UnmarshalJSON(iter *json.Iterator) {
+	pid.UnmarshalJSONState(iter, nil)
+}
+
+func (pid *ProfileID) UnmarshalJSONState(iter *json.Iterator, _ *State) {
 	*pid = [profileIDSize]byte{}
 	unmarshalJSON(pid[:], iter)
 }

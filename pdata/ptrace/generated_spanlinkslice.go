@@ -89,7 +89,7 @@ func (es SpanLinkSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*internal.SpanLink, len(*es.orig), newCap)
+	newOrig := internal.AllocSlice[*internal.SpanLink](es.state, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -98,7 +98,7 @@ func (es SpanLinkSlice) EnsureCapacity(newCap int) {
 // It returns the newly added SpanLink.
 func (es SpanLinkSlice) AppendEmpty() SpanLink {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewSpanLink())
+	*es.orig = internal.Append(es.state, *es.orig, internal.Alloc[internal.SpanLink](es.state))
 	return es.At(es.Len() - 1)
 }
 
@@ -111,11 +111,22 @@ func (es SpanLinkSlice) MoveAndAppendTo(dest SpanLinkSlice) {
 	if es.orig == dest.orig {
 		return
 	}
+	if es.state != dest.state {
+		for i := 0; i < es.Len(); i++ {
+			es.At(i).CopyTo(dest.AppendEmpty())
+		}
+		for i := range *es.orig {
+			internal.DeleteSpanLink((*es.orig)[i], true)
+
+		}
+		*es.orig = nil
+		return
+	}
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.orig = internal.AppendSeq(dest.state, *dest.orig, *es.orig)
 	}
 	*es.orig = nil
 }
@@ -151,7 +162,7 @@ func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopySpanLinkPtrSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopySpanLinkPtrSlice(*dest.orig, *es.orig, dest.state)
 }
 
 // Sort sorts the SpanLink elements within SpanLinkSlice given the

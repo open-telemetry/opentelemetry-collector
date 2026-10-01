@@ -29,7 +29,8 @@ func newLogs(orig *internal.ExportLogsServiceRequest, state *internal.State) Log
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewLogs() Logs {
-	return newLogs(internal.NewExportLogsServiceRequest(), internal.NewState())
+	st := internal.NewState()
+	return newLogs(internal.Alloc[internal.ExportLogsServiceRequest](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -39,6 +40,11 @@ func (ms Logs) MoveTo(dest Logs) {
 	dest.getState().AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.getOrig() == dest.getOrig() {
+		return
+	}
+	if ms.getState() != dest.getState() {
+		ms.CopyTo(dest)
+		internal.DeleteExportLogsServiceRequest(ms.getOrig(), false)
 		return
 	}
 	internal.DeleteExportLogsServiceRequest(dest.getOrig(), false)
@@ -53,7 +59,7 @@ func (ms Logs) ResourceLogs() ResourceLogsSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Logs) CopyTo(dest Logs) {
 	dest.getState().AssertMutable()
-	internal.CopyExportLogsServiceRequest(dest.getOrig(), ms.getOrig())
+	internal.CopyExportLogsServiceRequest(dest.getOrig(), ms.getOrig(), dest.getState())
 }
 
 func (ms Logs) getOrig() *internal.ExportLogsServiceRequest {

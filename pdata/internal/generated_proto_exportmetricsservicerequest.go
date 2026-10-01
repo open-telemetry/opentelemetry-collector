@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -21,19 +20,8 @@ type ExportMetricsServiceRequest struct {
 	ResourceMetrics []*ResourceMetrics
 }
 
-var (
-	protoPoolExportMetricsServiceRequest = sync.Pool{
-		New: func() any {
-			return &ExportMetricsServiceRequest{}
-		},
-	}
-)
-
 func NewExportMetricsServiceRequest() *ExportMetricsServiceRequest {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &ExportMetricsServiceRequest{}
-	}
-	return protoPoolExportMetricsServiceRequest.Get().(*ExportMetricsServiceRequest)
+	return Alloc[ExportMetricsServiceRequest](nil)
 }
 
 func DeleteExportMetricsServiceRequest(orig *ExportMetricsServiceRequest, nullable bool) {
@@ -49,12 +37,10 @@ func DeleteExportMetricsServiceRequest(orig *ExportMetricsServiceRequest, nullab
 		DeleteResourceMetrics(orig.ResourceMetrics[i], true)
 	}
 	orig.Reset()
-	if nullable {
-		protoPoolExportMetricsServiceRequest.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyExportMetricsServiceRequest(dest, src *ExportMetricsServiceRequest) *ExportMetricsServiceRequest {
+func CopyExportMetricsServiceRequest(dest, src *ExportMetricsServiceRequest, st *State) *ExportMetricsServiceRequest {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -65,17 +51,17 @@ func CopyExportMetricsServiceRequest(dest, src *ExportMetricsServiceRequest) *Ex
 	}
 
 	if dest == nil {
-		dest = NewExportMetricsServiceRequest()
+		dest = Alloc[ExportMetricsServiceRequest](st)
 	}
-	dest.ResourceMetrics = CopyResourceMetricsPtrSlice(dest.ResourceMetrics, src.ResourceMetrics)
+	dest.ResourceMetrics = CopyResourceMetricsPtrSlice(dest.ResourceMetrics, src.ResourceMetrics, st)
 
 	return dest
 }
 
-func CopyExportMetricsServiceRequestSlice(dest, src []ExportMetricsServiceRequest) []ExportMetricsServiceRequest {
+func CopyExportMetricsServiceRequestSlice(dest, src []ExportMetricsServiceRequest, st *State) []ExportMetricsServiceRequest {
 	var newDest []ExportMetricsServiceRequest
 	if cap(dest) < len(src) {
-		newDest = make([]ExportMetricsServiceRequest, len(src))
+		newDest = AllocSlice[ExportMetricsServiceRequest](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -85,20 +71,20 @@ func CopyExportMetricsServiceRequestSlice(dest, src []ExportMetricsServiceReques
 		}
 	}
 	for i := range src {
-		CopyExportMetricsServiceRequest(&newDest[i], &src[i])
+		CopyExportMetricsServiceRequest(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyExportMetricsServiceRequestPtrSlice(dest, src []*ExportMetricsServiceRequest) []*ExportMetricsServiceRequest {
+func CopyExportMetricsServiceRequestPtrSlice(dest, src []*ExportMetricsServiceRequest, st *State) []*ExportMetricsServiceRequest {
 	var newDest []*ExportMetricsServiceRequest
 	if cap(dest) < len(src) {
-		newDest = make([]*ExportMetricsServiceRequest, len(src))
+		newDest = AllocSlice[*ExportMetricsServiceRequest](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewExportMetricsServiceRequest()
+			newDest[i] = Alloc[ExportMetricsServiceRequest](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -111,11 +97,11 @@ func CopyExportMetricsServiceRequestPtrSlice(dest, src []*ExportMetricsServiceRe
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewExportMetricsServiceRequest()
+			newDest[i] = Alloc[ExportMetricsServiceRequest](st)
 		}
 	}
 	for i := range src {
-		CopyExportMetricsServiceRequest(newDest[i], src[i])
+		CopyExportMetricsServiceRequest(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -142,12 +128,17 @@ func (orig *ExportMetricsServiceRequest) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *ExportMetricsServiceRequest) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *ExportMetricsServiceRequest) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resourceMetrics", "resource_metrics":
 			for iter.ReadArray() {
-				orig.ResourceMetrics = append(orig.ResourceMetrics, NewResourceMetrics())
-				orig.ResourceMetrics[len(orig.ResourceMetrics)-1].UnmarshalJSON(iter)
+				orig.ResourceMetrics = Append(st, orig.ResourceMetrics, Alloc[ResourceMetrics](st))
+				orig.ResourceMetrics[len(orig.ResourceMetrics)-1].UnmarshalJSONState(iter, st)
 			}
 
 		default:
@@ -182,6 +173,10 @@ func (orig *ExportMetricsServiceRequest) MarshalProto(buf []byte) int {
 }
 
 func (orig *ExportMetricsServiceRequest) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *ExportMetricsServiceRequest) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -206,8 +201,8 @@ func (orig *ExportMetricsServiceRequest) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.ResourceMetrics = append(orig.ResourceMetrics, NewResourceMetrics())
-			err = orig.ResourceMetrics[len(orig.ResourceMetrics)-1].UnmarshalProto(buf[startPos:pos])
+			orig.ResourceMetrics = Append(st, orig.ResourceMetrics, Alloc[ResourceMetrics](st))
+			err = orig.ResourceMetrics[len(orig.ResourceMetrics)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -222,18 +217,18 @@ func (orig *ExportMetricsServiceRequest) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestExportMetricsServiceRequest() *ExportMetricsServiceRequest {
-	orig := NewExportMetricsServiceRequest()
+	orig := Alloc[ExportMetricsServiceRequest](nil)
 	orig.ResourceMetrics = []*ResourceMetrics{{}, GenTestResourceMetrics()}
 	return orig
 }
 
 func GenTestExportMetricsServiceRequestPtrSlice() []*ExportMetricsServiceRequest {
 	orig := make([]*ExportMetricsServiceRequest, 5)
-	orig[0] = NewExportMetricsServiceRequest()
+	orig[0] = Alloc[ExportMetricsServiceRequest](nil)
 	orig[1] = GenTestExportMetricsServiceRequest()
-	orig[2] = NewExportMetricsServiceRequest()
+	orig[2] = Alloc[ExportMetricsServiceRequest](nil)
 	orig[3] = GenTestExportMetricsServiceRequest()
-	orig[4] = NewExportMetricsServiceRequest()
+	orig[4] = Alloc[ExportMetricsServiceRequest](nil)
 	return orig
 }
 

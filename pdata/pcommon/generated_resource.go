@@ -28,7 +28,8 @@ func newResource(orig *internal.Resource, state *internal.State) Resource {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewResource() Resource {
-	return newResource(internal.NewResource(), internal.NewState())
+	st := internal.NewState()
+	return newResource(internal.Alloc[internal.Resource](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -38,6 +39,11 @@ func (ms Resource) MoveTo(dest Resource) {
 	dest.getState().AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.getOrig() == dest.getOrig() {
+		return
+	}
+	if ms.getState() != dest.getState() {
+		ms.CopyTo(dest)
+		internal.DeleteResource(ms.getOrig(), false)
 		return
 	}
 	internal.DeleteResource(dest.getOrig(), false)
@@ -63,7 +69,7 @@ func (ms Resource) SetDroppedAttributesCount(v uint32) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Resource) CopyTo(dest Resource) {
 	dest.getState().AssertMutable()
-	internal.CopyResource(dest.getOrig(), ms.getOrig())
+	internal.CopyResource(dest.getOrig(), ms.getOrig(), dest.getState())
 }
 
 func (ms Resource) getOrig() *internal.Resource {

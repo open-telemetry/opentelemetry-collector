@@ -28,6 +28,7 @@ func UnrefProfiles(pd pprofile.Profiles) {
 	// Don't call DeleteExportLogsServiceRequest without the gate because we reset the data and that may still cause issues.
 	if pmetadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 		internal.DeleteExportProfilesServiceRequest(internal.GetProfilesOrig(internal.ProfilesWrapper(pd)), true)
+		internal.GetProfilesState(internal.ProfilesWrapper(pd)).DropArena()
 	}
 }
 

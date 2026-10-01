@@ -31,9 +31,9 @@ func TestCopyProfile(t *testing.T) {
 				}()
 
 				dest := NewProfile()
-				CopyProfile(dest, src)
+				CopyProfile(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyProfile(dest, dest)
+				CopyProfile(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyProfileSlice(t *testing.T) {
 	src := []Profile{}
 	dest := []Profile{}
 	// Test CopyTo empty
-	dest = CopyProfileSlice(dest, src)
+	dest = CopyProfileSlice(dest, src, nil)
 	assert.Equal(t, []Profile{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestProfileSlice()
-	dest = CopyProfileSlice(dest, src)
+	dest = CopyProfileSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfileSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyProfileSlice(dest, src)
+	dest = CopyProfileSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfileSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyProfileSlice(dest, []Profile{})
+	dest = CopyProfileSlice(dest, []Profile{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyProfileSlice(dest, src)
+	dest = CopyProfileSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfileSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyProfilePtrSlice(t *testing.T) {
 	src := []*Profile{}
 	dest := []*Profile{}
 	// Test CopyTo empty
-	dest = CopyProfilePtrSlice(dest, src)
+	dest = CopyProfilePtrSlice(dest, src, nil)
 	assert.Equal(t, []*Profile{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestProfilePtrSlice()
-	dest = CopyProfilePtrSlice(dest, src)
+	dest = CopyProfilePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfilePtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyProfilePtrSlice(dest, src)
+	dest = CopyProfilePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfilePtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyProfilePtrSlice(dest, []*Profile{})
+	dest = CopyProfilePtrSlice(dest, []*Profile{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyProfilePtrSlice(dest, src)
+	dest = CopyProfilePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfilePtrSlice(), dest)
 }
 

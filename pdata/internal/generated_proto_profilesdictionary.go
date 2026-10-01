@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -26,19 +25,8 @@ type ProfilesDictionary struct {
 	StackTable     []*Stack
 }
 
-var (
-	protoPoolProfilesDictionary = sync.Pool{
-		New: func() any {
-			return &ProfilesDictionary{}
-		},
-	}
-)
-
 func NewProfilesDictionary() *ProfilesDictionary {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &ProfilesDictionary{}
-	}
-	return protoPoolProfilesDictionary.Get().(*ProfilesDictionary)
+	return Alloc[ProfilesDictionary](nil)
 }
 
 func DeleteProfilesDictionary(orig *ProfilesDictionary, nullable bool) {
@@ -70,12 +58,10 @@ func DeleteProfilesDictionary(orig *ProfilesDictionary, nullable bool) {
 		DeleteStack(orig.StackTable[i], true)
 	}
 	orig.Reset()
-	if nullable {
-		protoPoolProfilesDictionary.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyProfilesDictionary(dest, src *ProfilesDictionary) *ProfilesDictionary {
+func CopyProfilesDictionary(dest, src *ProfilesDictionary, st *State) *ProfilesDictionary {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -86,29 +72,32 @@ func CopyProfilesDictionary(dest, src *ProfilesDictionary) *ProfilesDictionary {
 	}
 
 	if dest == nil {
-		dest = NewProfilesDictionary()
+		dest = Alloc[ProfilesDictionary](st)
 	}
-	dest.MappingTable = CopyMappingPtrSlice(dest.MappingTable, src.MappingTable)
+	dest.MappingTable = CopyMappingPtrSlice(dest.MappingTable, src.MappingTable, st)
 
-	dest.LocationTable = CopyLocationPtrSlice(dest.LocationTable, src.LocationTable)
+	dest.LocationTable = CopyLocationPtrSlice(dest.LocationTable, src.LocationTable, st)
 
-	dest.FunctionTable = CopyFunctionPtrSlice(dest.FunctionTable, src.FunctionTable)
+	dest.FunctionTable = CopyFunctionPtrSlice(dest.FunctionTable, src.FunctionTable, st)
 
-	dest.LinkTable = CopyLinkPtrSlice(dest.LinkTable, src.LinkTable)
+	dest.LinkTable = CopyLinkPtrSlice(dest.LinkTable, src.LinkTable, st)
 
-	dest.StringTable = append(dest.StringTable[:0], src.StringTable...)
+	dest.StringTable = dest.StringTable[:0]
+	for _, v := range src.StringTable {
+		dest.StringTable = Append(st, dest.StringTable, CopyString(st, v))
+	}
 
-	dest.AttributeTable = CopyKeyValueAndUnitPtrSlice(dest.AttributeTable, src.AttributeTable)
+	dest.AttributeTable = CopyKeyValueAndUnitPtrSlice(dest.AttributeTable, src.AttributeTable, st)
 
-	dest.StackTable = CopyStackPtrSlice(dest.StackTable, src.StackTable)
+	dest.StackTable = CopyStackPtrSlice(dest.StackTable, src.StackTable, st)
 
 	return dest
 }
 
-func CopyProfilesDictionarySlice(dest, src []ProfilesDictionary) []ProfilesDictionary {
+func CopyProfilesDictionarySlice(dest, src []ProfilesDictionary, st *State) []ProfilesDictionary {
 	var newDest []ProfilesDictionary
 	if cap(dest) < len(src) {
-		newDest = make([]ProfilesDictionary, len(src))
+		newDest = AllocSlice[ProfilesDictionary](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -118,20 +107,20 @@ func CopyProfilesDictionarySlice(dest, src []ProfilesDictionary) []ProfilesDicti
 		}
 	}
 	for i := range src {
-		CopyProfilesDictionary(&newDest[i], &src[i])
+		CopyProfilesDictionary(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyProfilesDictionaryPtrSlice(dest, src []*ProfilesDictionary) []*ProfilesDictionary {
+func CopyProfilesDictionaryPtrSlice(dest, src []*ProfilesDictionary, st *State) []*ProfilesDictionary {
 	var newDest []*ProfilesDictionary
 	if cap(dest) < len(src) {
-		newDest = make([]*ProfilesDictionary, len(src))
+		newDest = AllocSlice[*ProfilesDictionary](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewProfilesDictionary()
+			newDest[i] = Alloc[ProfilesDictionary](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -144,11 +133,11 @@ func CopyProfilesDictionaryPtrSlice(dest, src []*ProfilesDictionary) []*Profiles
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewProfilesDictionary()
+			newDest[i] = Alloc[ProfilesDictionary](st)
 		}
 	}
 	for i := range src {
-		CopyProfilesDictionary(newDest[i], src[i])
+		CopyProfilesDictionary(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -236,47 +225,52 @@ func (orig *ProfilesDictionary) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *ProfilesDictionary) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *ProfilesDictionary) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "mappingTable", "mapping_table":
 			for iter.ReadArray() {
-				orig.MappingTable = append(orig.MappingTable, NewMapping())
-				orig.MappingTable[len(orig.MappingTable)-1].UnmarshalJSON(iter)
+				orig.MappingTable = Append(st, orig.MappingTable, Alloc[Mapping](st))
+				orig.MappingTable[len(orig.MappingTable)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "locationTable", "location_table":
 			for iter.ReadArray() {
-				orig.LocationTable = append(orig.LocationTable, NewLocation())
-				orig.LocationTable[len(orig.LocationTable)-1].UnmarshalJSON(iter)
+				orig.LocationTable = Append(st, orig.LocationTable, Alloc[Location](st))
+				orig.LocationTable[len(orig.LocationTable)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "functionTable", "function_table":
 			for iter.ReadArray() {
-				orig.FunctionTable = append(orig.FunctionTable, NewFunction())
-				orig.FunctionTable[len(orig.FunctionTable)-1].UnmarshalJSON(iter)
+				orig.FunctionTable = Append(st, orig.FunctionTable, Alloc[Function](st))
+				orig.FunctionTable[len(orig.FunctionTable)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "linkTable", "link_table":
 			for iter.ReadArray() {
-				orig.LinkTable = append(orig.LinkTable, NewLink())
-				orig.LinkTable[len(orig.LinkTable)-1].UnmarshalJSON(iter)
+				orig.LinkTable = Append(st, orig.LinkTable, Alloc[Link](st))
+				orig.LinkTable[len(orig.LinkTable)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "stringTable", "string_table":
 			for iter.ReadArray() {
-				orig.StringTable = append(orig.StringTable, iter.ReadString())
+				orig.StringTable = Append(st, orig.StringTable, CopyString(st, iter.ReadString()))
 			}
 
 		case "attributeTable", "attribute_table":
 			for iter.ReadArray() {
-				orig.AttributeTable = append(orig.AttributeTable, NewKeyValueAndUnit())
-				orig.AttributeTable[len(orig.AttributeTable)-1].UnmarshalJSON(iter)
+				orig.AttributeTable = Append(st, orig.AttributeTable, Alloc[KeyValueAndUnit](st))
+				orig.AttributeTable[len(orig.AttributeTable)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "stackTable", "stack_table":
 			for iter.ReadArray() {
-				orig.StackTable = append(orig.StackTable, NewStack())
-				orig.StackTable[len(orig.StackTable)-1].UnmarshalJSON(iter)
+				orig.StackTable = Append(st, orig.StackTable, Alloc[Stack](st))
+				orig.StackTable[len(orig.StackTable)-1].UnmarshalJSONState(iter, st)
 			}
 
 		default:
@@ -378,6 +372,10 @@ func (orig *ProfilesDictionary) MarshalProto(buf []byte) int {
 }
 
 func (orig *ProfilesDictionary) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *ProfilesDictionary) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -402,8 +400,8 @@ func (orig *ProfilesDictionary) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.MappingTable = append(orig.MappingTable, NewMapping())
-			err = orig.MappingTable[len(orig.MappingTable)-1].UnmarshalProto(buf[startPos:pos])
+			orig.MappingTable = Append(st, orig.MappingTable, Alloc[Mapping](st))
+			err = orig.MappingTable[len(orig.MappingTable)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -418,8 +416,8 @@ func (orig *ProfilesDictionary) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.LocationTable = append(orig.LocationTable, NewLocation())
-			err = orig.LocationTable[len(orig.LocationTable)-1].UnmarshalProto(buf[startPos:pos])
+			orig.LocationTable = Append(st, orig.LocationTable, Alloc[Location](st))
+			err = orig.LocationTable[len(orig.LocationTable)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -434,8 +432,8 @@ func (orig *ProfilesDictionary) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.FunctionTable = append(orig.FunctionTable, NewFunction())
-			err = orig.FunctionTable[len(orig.FunctionTable)-1].UnmarshalProto(buf[startPos:pos])
+			orig.FunctionTable = Append(st, orig.FunctionTable, Alloc[Function](st))
+			err = orig.FunctionTable[len(orig.FunctionTable)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -450,8 +448,8 @@ func (orig *ProfilesDictionary) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.LinkTable = append(orig.LinkTable, NewLink())
-			err = orig.LinkTable[len(orig.LinkTable)-1].UnmarshalProto(buf[startPos:pos])
+			orig.LinkTable = Append(st, orig.LinkTable, Alloc[Link](st))
+			err = orig.LinkTable[len(orig.LinkTable)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -466,7 +464,7 @@ func (orig *ProfilesDictionary) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.StringTable = append(orig.StringTable, string(buf[startPos:pos]))
+			orig.StringTable = Append(st, orig.StringTable, BorrowString(st, buf, startPos, pos))
 
 		case 6:
 			if wireType != proto.WireTypeLen {
@@ -478,8 +476,8 @@ func (orig *ProfilesDictionary) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.AttributeTable = append(orig.AttributeTable, NewKeyValueAndUnit())
-			err = orig.AttributeTable[len(orig.AttributeTable)-1].UnmarshalProto(buf[startPos:pos])
+			orig.AttributeTable = Append(st, orig.AttributeTable, Alloc[KeyValueAndUnit](st))
+			err = orig.AttributeTable[len(orig.AttributeTable)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -494,8 +492,8 @@ func (orig *ProfilesDictionary) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.StackTable = append(orig.StackTable, NewStack())
-			err = orig.StackTable[len(orig.StackTable)-1].UnmarshalProto(buf[startPos:pos])
+			orig.StackTable = Append(st, orig.StackTable, Alloc[Stack](st))
+			err = orig.StackTable[len(orig.StackTable)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -510,7 +508,7 @@ func (orig *ProfilesDictionary) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestProfilesDictionary() *ProfilesDictionary {
-	orig := NewProfilesDictionary()
+	orig := Alloc[ProfilesDictionary](nil)
 	orig.MappingTable = []*Mapping{{}, GenTestMapping()}
 	orig.LocationTable = []*Location{{}, GenTestLocation()}
 	orig.FunctionTable = []*Function{{}, GenTestFunction()}
@@ -523,11 +521,11 @@ func GenTestProfilesDictionary() *ProfilesDictionary {
 
 func GenTestProfilesDictionaryPtrSlice() []*ProfilesDictionary {
 	orig := make([]*ProfilesDictionary, 5)
-	orig[0] = NewProfilesDictionary()
+	orig[0] = Alloc[ProfilesDictionary](nil)
 	orig[1] = GenTestProfilesDictionary()
-	orig[2] = NewProfilesDictionary()
+	orig[2] = Alloc[ProfilesDictionary](nil)
 	orig[3] = GenTestProfilesDictionary()
-	orig[4] = NewProfilesDictionary()
+	orig[4] = Alloc[ProfilesDictionary](nil)
 	return orig
 }
 

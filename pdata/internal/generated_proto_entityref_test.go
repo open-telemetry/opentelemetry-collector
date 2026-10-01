@@ -31,9 +31,9 @@ func TestCopyEntityRef(t *testing.T) {
 				}()
 
 				dest := NewEntityRef()
-				CopyEntityRef(dest, src)
+				CopyEntityRef(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyEntityRef(dest, dest)
+				CopyEntityRef(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyEntityRefSlice(t *testing.T) {
 	src := []EntityRef{}
 	dest := []EntityRef{}
 	// Test CopyTo empty
-	dest = CopyEntityRefSlice(dest, src)
+	dest = CopyEntityRefSlice(dest, src, nil)
 	assert.Equal(t, []EntityRef{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestEntityRefSlice()
-	dest = CopyEntityRefSlice(dest, src)
+	dest = CopyEntityRefSlice(dest, src, nil)
 	assert.Equal(t, GenTestEntityRefSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyEntityRefSlice(dest, src)
+	dest = CopyEntityRefSlice(dest, src, nil)
 	assert.Equal(t, GenTestEntityRefSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyEntityRefSlice(dest, []EntityRef{})
+	dest = CopyEntityRefSlice(dest, []EntityRef{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyEntityRefSlice(dest, src)
+	dest = CopyEntityRefSlice(dest, src, nil)
 	assert.Equal(t, GenTestEntityRefSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyEntityRefPtrSlice(t *testing.T) {
 	src := []*EntityRef{}
 	dest := []*EntityRef{}
 	// Test CopyTo empty
-	dest = CopyEntityRefPtrSlice(dest, src)
+	dest = CopyEntityRefPtrSlice(dest, src, nil)
 	assert.Equal(t, []*EntityRef{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestEntityRefPtrSlice()
-	dest = CopyEntityRefPtrSlice(dest, src)
+	dest = CopyEntityRefPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestEntityRefPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyEntityRefPtrSlice(dest, src)
+	dest = CopyEntityRefPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestEntityRefPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyEntityRefPtrSlice(dest, []*EntityRef{})
+	dest = CopyEntityRefPtrSlice(dest, []*EntityRef{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyEntityRefPtrSlice(dest, src)
+	dest = CopyEntityRefPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestEntityRefPtrSlice(), dest)
 }
 

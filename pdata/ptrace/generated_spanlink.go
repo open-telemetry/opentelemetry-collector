@@ -34,7 +34,8 @@ func newSpanLink(orig *internal.SpanLink, state *internal.State) SpanLink {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSpanLink() SpanLink {
-	return newSpanLink(internal.NewSpanLink(), internal.NewState())
+	st := internal.NewState()
+	return newSpanLink(internal.Alloc[internal.SpanLink](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -44,6 +45,11 @@ func (ms SpanLink) MoveTo(dest SpanLink) {
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if ms.state != dest.state {
+		ms.CopyTo(dest)
+		internal.DeleteSpanLink(ms.orig, false)
 		return
 	}
 	internal.DeleteSpanLink(dest.orig, false)
@@ -107,5 +113,5 @@ func (ms SpanLink) SetFlags(v uint32) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms SpanLink) CopyTo(dest SpanLink) {
 	dest.state.AssertMutable()
-	internal.CopySpanLink(dest.orig, ms.orig)
+	internal.CopySpanLink(dest.orig, ms.orig, dest.state)
 }

@@ -31,9 +31,9 @@ func TestCopyHistogram(t *testing.T) {
 				}()
 
 				dest := NewHistogram()
-				CopyHistogram(dest, src)
+				CopyHistogram(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyHistogram(dest, dest)
+				CopyHistogram(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyHistogramSlice(t *testing.T) {
 	src := []Histogram{}
 	dest := []Histogram{}
 	// Test CopyTo empty
-	dest = CopyHistogramSlice(dest, src)
+	dest = CopyHistogramSlice(dest, src, nil)
 	assert.Equal(t, []Histogram{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestHistogramSlice()
-	dest = CopyHistogramSlice(dest, src)
+	dest = CopyHistogramSlice(dest, src, nil)
 	assert.Equal(t, GenTestHistogramSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyHistogramSlice(dest, src)
+	dest = CopyHistogramSlice(dest, src, nil)
 	assert.Equal(t, GenTestHistogramSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyHistogramSlice(dest, []Histogram{})
+	dest = CopyHistogramSlice(dest, []Histogram{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyHistogramSlice(dest, src)
+	dest = CopyHistogramSlice(dest, src, nil)
 	assert.Equal(t, GenTestHistogramSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyHistogramPtrSlice(t *testing.T) {
 	src := []*Histogram{}
 	dest := []*Histogram{}
 	// Test CopyTo empty
-	dest = CopyHistogramPtrSlice(dest, src)
+	dest = CopyHistogramPtrSlice(dest, src, nil)
 	assert.Equal(t, []*Histogram{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestHistogramPtrSlice()
-	dest = CopyHistogramPtrSlice(dest, src)
+	dest = CopyHistogramPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestHistogramPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyHistogramPtrSlice(dest, src)
+	dest = CopyHistogramPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestHistogramPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyHistogramPtrSlice(dest, []*Histogram{})
+	dest = CopyHistogramPtrSlice(dest, []*Histogram{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyHistogramPtrSlice(dest, src)
+	dest = CopyHistogramPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestHistogramPtrSlice(), dest)
 }
 

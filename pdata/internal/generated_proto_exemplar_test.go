@@ -31,9 +31,9 @@ func TestCopyExemplar(t *testing.T) {
 				}()
 
 				dest := NewExemplar()
-				CopyExemplar(dest, src)
+				CopyExemplar(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyExemplar(dest, dest)
+				CopyExemplar(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyExemplarSlice(t *testing.T) {
 	src := []Exemplar{}
 	dest := []Exemplar{}
 	// Test CopyTo empty
-	dest = CopyExemplarSlice(dest, src)
+	dest = CopyExemplarSlice(dest, src, nil)
 	assert.Equal(t, []Exemplar{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExemplarSlice()
-	dest = CopyExemplarSlice(dest, src)
+	dest = CopyExemplarSlice(dest, src, nil)
 	assert.Equal(t, GenTestExemplarSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExemplarSlice(dest, src)
+	dest = CopyExemplarSlice(dest, src, nil)
 	assert.Equal(t, GenTestExemplarSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExemplarSlice(dest, []Exemplar{})
+	dest = CopyExemplarSlice(dest, []Exemplar{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExemplarSlice(dest, src)
+	dest = CopyExemplarSlice(dest, src, nil)
 	assert.Equal(t, GenTestExemplarSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyExemplarPtrSlice(t *testing.T) {
 	src := []*Exemplar{}
 	dest := []*Exemplar{}
 	// Test CopyTo empty
-	dest = CopyExemplarPtrSlice(dest, src)
+	dest = CopyExemplarPtrSlice(dest, src, nil)
 	assert.Equal(t, []*Exemplar{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExemplarPtrSlice()
-	dest = CopyExemplarPtrSlice(dest, src)
+	dest = CopyExemplarPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExemplarPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExemplarPtrSlice(dest, src)
+	dest = CopyExemplarPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExemplarPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExemplarPtrSlice(dest, []*Exemplar{})
+	dest = CopyExemplarPtrSlice(dest, []*Exemplar{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExemplarPtrSlice(dest, src)
+	dest = CopyExemplarPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExemplarPtrSlice(), dest)
 }
 

@@ -31,7 +31,8 @@ func newSum(orig *internal.Sum, state *internal.State) Sum {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSum() Sum {
-	return newSum(internal.NewSum(), internal.NewState())
+	st := internal.NewState()
+	return newSum(internal.Alloc[internal.Sum](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -41,6 +42,11 @@ func (ms Sum) MoveTo(dest Sum) {
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if ms.state != dest.state {
+		ms.CopyTo(dest)
+		internal.DeleteSum(ms.orig, false)
 		return
 	}
 	internal.DeleteSum(dest.orig, false)
@@ -77,5 +83,5 @@ func (ms Sum) SetIsMonotonic(v bool) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Sum) CopyTo(dest Sum) {
 	dest.state.AssertMutable()
-	internal.CopySum(dest.orig, ms.orig)
+	internal.CopySum(dest.orig, ms.orig, dest.state)
 }

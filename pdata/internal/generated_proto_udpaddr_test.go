@@ -31,9 +31,9 @@ func TestCopyUDPAddr(t *testing.T) {
 				}()
 
 				dest := NewUDPAddr()
-				CopyUDPAddr(dest, src)
+				CopyUDPAddr(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyUDPAddr(dest, dest)
+				CopyUDPAddr(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyUDPAddrSlice(t *testing.T) {
 	src := []UDPAddr{}
 	dest := []UDPAddr{}
 	// Test CopyTo empty
-	dest = CopyUDPAddrSlice(dest, src)
+	dest = CopyUDPAddrSlice(dest, src, nil)
 	assert.Equal(t, []UDPAddr{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestUDPAddrSlice()
-	dest = CopyUDPAddrSlice(dest, src)
+	dest = CopyUDPAddrSlice(dest, src, nil)
 	assert.Equal(t, GenTestUDPAddrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyUDPAddrSlice(dest, src)
+	dest = CopyUDPAddrSlice(dest, src, nil)
 	assert.Equal(t, GenTestUDPAddrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyUDPAddrSlice(dest, []UDPAddr{})
+	dest = CopyUDPAddrSlice(dest, []UDPAddr{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyUDPAddrSlice(dest, src)
+	dest = CopyUDPAddrSlice(dest, src, nil)
 	assert.Equal(t, GenTestUDPAddrSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyUDPAddrPtrSlice(t *testing.T) {
 	src := []*UDPAddr{}
 	dest := []*UDPAddr{}
 	// Test CopyTo empty
-	dest = CopyUDPAddrPtrSlice(dest, src)
+	dest = CopyUDPAddrPtrSlice(dest, src, nil)
 	assert.Equal(t, []*UDPAddr{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestUDPAddrPtrSlice()
-	dest = CopyUDPAddrPtrSlice(dest, src)
+	dest = CopyUDPAddrPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestUDPAddrPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyUDPAddrPtrSlice(dest, src)
+	dest = CopyUDPAddrPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestUDPAddrPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyUDPAddrPtrSlice(dest, []*UDPAddr{})
+	dest = CopyUDPAddrPtrSlice(dest, []*UDPAddr{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyUDPAddrPtrSlice(dest, src)
+	dest = CopyUDPAddrPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestUDPAddrPtrSlice(), dest)
 }
 

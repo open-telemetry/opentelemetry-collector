@@ -31,7 +31,8 @@ func newSummaryDataPointValueAtQuantile(orig *internal.SummaryDataPointValueAtQu
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSummaryDataPointValueAtQuantile() SummaryDataPointValueAtQuantile {
-	return newSummaryDataPointValueAtQuantile(internal.NewSummaryDataPointValueAtQuantile(), internal.NewState())
+	st := internal.NewState()
+	return newSummaryDataPointValueAtQuantile(internal.Alloc[internal.SummaryDataPointValueAtQuantile](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -41,6 +42,11 @@ func (ms SummaryDataPointValueAtQuantile) MoveTo(dest SummaryDataPointValueAtQua
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if ms.state != dest.state {
+		ms.CopyTo(dest)
+		internal.DeleteSummaryDataPointValueAtQuantile(ms.orig, false)
 		return
 	}
 	internal.DeleteSummaryDataPointValueAtQuantile(dest.orig, false)
@@ -72,5 +78,5 @@ func (ms SummaryDataPointValueAtQuantile) SetValue(v float64) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms SummaryDataPointValueAtQuantile) CopyTo(dest SummaryDataPointValueAtQuantile) {
 	dest.state.AssertMutable()
-	internal.CopySummaryDataPointValueAtQuantile(dest.orig, ms.orig)
+	internal.CopySummaryDataPointValueAtQuantile(dest.orig, ms.orig, dest.state)
 }

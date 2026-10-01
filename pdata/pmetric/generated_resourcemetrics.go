@@ -32,7 +32,8 @@ func newResourceMetrics(orig *internal.ResourceMetrics, state *internal.State) R
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewResourceMetrics() ResourceMetrics {
-	return newResourceMetrics(internal.NewResourceMetrics(), internal.NewState())
+	st := internal.NewState()
+	return newResourceMetrics(internal.Alloc[internal.ResourceMetrics](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -42,6 +43,11 @@ func (ms ResourceMetrics) MoveTo(dest ResourceMetrics) {
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if ms.state != dest.state {
+		ms.CopyTo(dest)
+		internal.DeleteResourceMetrics(ms.orig, false)
 		return
 	}
 	internal.DeleteResourceMetrics(dest.orig, false)
@@ -66,11 +72,11 @@ func (ms ResourceMetrics) SchemaUrl() string {
 // SetSchemaUrl replaces the schemaurl associated with this ResourceMetrics.
 func (ms ResourceMetrics) SetSchemaUrl(v string) {
 	ms.state.AssertMutable()
-	ms.orig.SchemaUrl = v
+	ms.orig.SchemaUrl = internal.CopyString(ms.state, v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ResourceMetrics) CopyTo(dest ResourceMetrics) {
 	dest.state.AssertMutable()
-	internal.CopyResourceMetrics(dest.orig, ms.orig)
+	internal.CopyResourceMetrics(dest.orig, ms.orig, dest.state)
 }

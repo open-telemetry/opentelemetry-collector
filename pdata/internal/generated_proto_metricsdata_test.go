@@ -31,9 +31,9 @@ func TestCopyMetricsData(t *testing.T) {
 				}()
 
 				dest := NewMetricsData()
-				CopyMetricsData(dest, src)
+				CopyMetricsData(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyMetricsData(dest, dest)
+				CopyMetricsData(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyMetricsDataSlice(t *testing.T) {
 	src := []MetricsData{}
 	dest := []MetricsData{}
 	// Test CopyTo empty
-	dest = CopyMetricsDataSlice(dest, src)
+	dest = CopyMetricsDataSlice(dest, src, nil)
 	assert.Equal(t, []MetricsData{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestMetricsDataSlice()
-	dest = CopyMetricsDataSlice(dest, src)
+	dest = CopyMetricsDataSlice(dest, src, nil)
 	assert.Equal(t, GenTestMetricsDataSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyMetricsDataSlice(dest, src)
+	dest = CopyMetricsDataSlice(dest, src, nil)
 	assert.Equal(t, GenTestMetricsDataSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyMetricsDataSlice(dest, []MetricsData{})
+	dest = CopyMetricsDataSlice(dest, []MetricsData{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyMetricsDataSlice(dest, src)
+	dest = CopyMetricsDataSlice(dest, src, nil)
 	assert.Equal(t, GenTestMetricsDataSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyMetricsDataPtrSlice(t *testing.T) {
 	src := []*MetricsData{}
 	dest := []*MetricsData{}
 	// Test CopyTo empty
-	dest = CopyMetricsDataPtrSlice(dest, src)
+	dest = CopyMetricsDataPtrSlice(dest, src, nil)
 	assert.Equal(t, []*MetricsData{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestMetricsDataPtrSlice()
-	dest = CopyMetricsDataPtrSlice(dest, src)
+	dest = CopyMetricsDataPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestMetricsDataPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyMetricsDataPtrSlice(dest, src)
+	dest = CopyMetricsDataPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestMetricsDataPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyMetricsDataPtrSlice(dest, []*MetricsData{})
+	dest = CopyMetricsDataPtrSlice(dest, []*MetricsData{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyMetricsDataPtrSlice(dest, src)
+	dest = CopyMetricsDataPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestMetricsDataPtrSlice(), dest)
 }
 

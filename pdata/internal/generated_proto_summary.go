@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -20,19 +19,8 @@ type Summary struct {
 	DataPoints []*SummaryDataPoint
 }
 
-var (
-	protoPoolSummary = sync.Pool{
-		New: func() any {
-			return &Summary{}
-		},
-	}
-)
-
 func NewSummary() *Summary {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &Summary{}
-	}
-	return protoPoolSummary.Get().(*Summary)
+	return Alloc[Summary](nil)
 }
 
 func DeleteSummary(orig *Summary, nullable bool) {
@@ -48,12 +36,10 @@ func DeleteSummary(orig *Summary, nullable bool) {
 		DeleteSummaryDataPoint(orig.DataPoints[i], true)
 	}
 	orig.Reset()
-	if nullable {
-		protoPoolSummary.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopySummary(dest, src *Summary) *Summary {
+func CopySummary(dest, src *Summary, st *State) *Summary {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -64,17 +50,17 @@ func CopySummary(dest, src *Summary) *Summary {
 	}
 
 	if dest == nil {
-		dest = NewSummary()
+		dest = Alloc[Summary](st)
 	}
-	dest.DataPoints = CopySummaryDataPointPtrSlice(dest.DataPoints, src.DataPoints)
+	dest.DataPoints = CopySummaryDataPointPtrSlice(dest.DataPoints, src.DataPoints, st)
 
 	return dest
 }
 
-func CopySummarySlice(dest, src []Summary) []Summary {
+func CopySummarySlice(dest, src []Summary, st *State) []Summary {
 	var newDest []Summary
 	if cap(dest) < len(src) {
-		newDest = make([]Summary, len(src))
+		newDest = AllocSlice[Summary](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -84,20 +70,20 @@ func CopySummarySlice(dest, src []Summary) []Summary {
 		}
 	}
 	for i := range src {
-		CopySummary(&newDest[i], &src[i])
+		CopySummary(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopySummaryPtrSlice(dest, src []*Summary) []*Summary {
+func CopySummaryPtrSlice(dest, src []*Summary, st *State) []*Summary {
 	var newDest []*Summary
 	if cap(dest) < len(src) {
-		newDest = make([]*Summary, len(src))
+		newDest = AllocSlice[*Summary](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewSummary()
+			newDest[i] = Alloc[Summary](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -110,11 +96,11 @@ func CopySummaryPtrSlice(dest, src []*Summary) []*Summary {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewSummary()
+			newDest[i] = Alloc[Summary](st)
 		}
 	}
 	for i := range src {
-		CopySummary(newDest[i], src[i])
+		CopySummary(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -141,12 +127,17 @@ func (orig *Summary) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *Summary) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *Summary) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "dataPoints", "data_points":
 			for iter.ReadArray() {
-				orig.DataPoints = append(orig.DataPoints, NewSummaryDataPoint())
-				orig.DataPoints[len(orig.DataPoints)-1].UnmarshalJSON(iter)
+				orig.DataPoints = Append(st, orig.DataPoints, Alloc[SummaryDataPoint](st))
+				orig.DataPoints[len(orig.DataPoints)-1].UnmarshalJSONState(iter, st)
 			}
 
 		default:
@@ -181,6 +172,10 @@ func (orig *Summary) MarshalProto(buf []byte) int {
 }
 
 func (orig *Summary) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *Summary) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -205,8 +200,8 @@ func (orig *Summary) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.DataPoints = append(orig.DataPoints, NewSummaryDataPoint())
-			err = orig.DataPoints[len(orig.DataPoints)-1].UnmarshalProto(buf[startPos:pos])
+			orig.DataPoints = Append(st, orig.DataPoints, Alloc[SummaryDataPoint](st))
+			err = orig.DataPoints[len(orig.DataPoints)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -221,18 +216,18 @@ func (orig *Summary) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestSummary() *Summary {
-	orig := NewSummary()
+	orig := Alloc[Summary](nil)
 	orig.DataPoints = []*SummaryDataPoint{{}, GenTestSummaryDataPoint()}
 	return orig
 }
 
 func GenTestSummaryPtrSlice() []*Summary {
 	orig := make([]*Summary, 5)
-	orig[0] = NewSummary()
+	orig[0] = Alloc[Summary](nil)
 	orig[1] = GenTestSummary()
-	orig[2] = NewSummary()
+	orig[2] = Alloc[Summary](nil)
 	orig[3] = GenTestSummary()
-	orig[4] = NewSummary()
+	orig[4] = Alloc[Summary](nil)
 	return orig
 }
 

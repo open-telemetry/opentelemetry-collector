@@ -9,7 +9,6 @@ package internal
 import (
 	"encoding/binary"
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -24,19 +23,8 @@ type SpanContext struct {
 	Remote     bool
 }
 
-var (
-	protoPoolSpanContext = sync.Pool{
-		New: func() any {
-			return &SpanContext{}
-		},
-	}
-)
-
 func NewSpanContext() *SpanContext {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &SpanContext{}
-	}
-	return protoPoolSpanContext.Get().(*SpanContext)
+	return Alloc[SpanContext](nil)
 }
 
 func DeleteSpanContext(orig *SpanContext, nullable bool) {
@@ -52,12 +40,10 @@ func DeleteSpanContext(orig *SpanContext, nullable bool) {
 	DeleteSpanID(&orig.SpanID, false)
 
 	orig.Reset()
-	if nullable {
-		protoPoolSpanContext.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopySpanContext(dest, src *SpanContext) *SpanContext {
+func CopySpanContext(dest, src *SpanContext, st *State) *SpanContext {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -68,23 +54,24 @@ func CopySpanContext(dest, src *SpanContext) *SpanContext {
 	}
 
 	if dest == nil {
-		dest = NewSpanContext()
+		dest = Alloc[SpanContext](st)
 	}
-	CopyTraceID(&dest.TraceID, &src.TraceID)
+	CopyTraceID(&dest.TraceID, &src.TraceID, st)
 
-	CopySpanID(&dest.SpanID, &src.SpanID)
+	CopySpanID(&dest.SpanID, &src.SpanID, st)
 
 	dest.TraceFlags = src.TraceFlags
-	dest.TraceState = src.TraceState
+	dest.TraceState = CopyString(st, src.TraceState)
+
 	dest.Remote = src.Remote
 
 	return dest
 }
 
-func CopySpanContextSlice(dest, src []SpanContext) []SpanContext {
+func CopySpanContextSlice(dest, src []SpanContext, st *State) []SpanContext {
 	var newDest []SpanContext
 	if cap(dest) < len(src) {
-		newDest = make([]SpanContext, len(src))
+		newDest = AllocSlice[SpanContext](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -94,20 +81,20 @@ func CopySpanContextSlice(dest, src []SpanContext) []SpanContext {
 		}
 	}
 	for i := range src {
-		CopySpanContext(&newDest[i], &src[i])
+		CopySpanContext(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopySpanContextPtrSlice(dest, src []*SpanContext) []*SpanContext {
+func CopySpanContextPtrSlice(dest, src []*SpanContext, st *State) []*SpanContext {
 	var newDest []*SpanContext
 	if cap(dest) < len(src) {
-		newDest = make([]*SpanContext, len(src))
+		newDest = AllocSlice[*SpanContext](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewSpanContext()
+			newDest[i] = Alloc[SpanContext](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -120,11 +107,11 @@ func CopySpanContextPtrSlice(dest, src []*SpanContext) []*SpanContext {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewSpanContext()
+			newDest[i] = Alloc[SpanContext](st)
 		}
 	}
 	for i := range src {
-		CopySpanContext(newDest[i], src[i])
+		CopySpanContext(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -161,19 +148,27 @@ func (orig *SpanContext) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *SpanContext) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *SpanContext) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "traceID", "trace_id":
 
-			orig.TraceID.UnmarshalJSON(iter)
+			orig.TraceID.UnmarshalJSONState(iter, st)
 		case "spanID", "span_id":
 
-			orig.SpanID.UnmarshalJSON(iter)
+			orig.SpanID.UnmarshalJSONState(iter, st)
 		case "traceFlags", "trace_flags":
+
 			orig.TraceFlags = iter.ReadUint32()
 		case "traceState", "trace_state":
-			orig.TraceState = iter.ReadString()
+
+			orig.TraceState = CopyString(st, iter.ReadString())
 		case "remote":
+
 			orig.Remote = iter.ReadBool()
 		default:
 			iter.HandleUnknownField(f)
@@ -247,6 +242,10 @@ func (orig *SpanContext) MarshalProto(buf []byte) int {
 }
 
 func (orig *SpanContext) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *SpanContext) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -272,7 +271,7 @@ func (orig *SpanContext) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.TraceID.UnmarshalProto(buf[startPos:pos])
+			err = orig.TraceID.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -288,7 +287,7 @@ func (orig *SpanContext) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.SpanID.UnmarshalProto(buf[startPos:pos])
+			err = orig.SpanID.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -315,7 +314,7 @@ func (orig *SpanContext) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.TraceState = string(buf[startPos:pos])
+			orig.TraceState = BorrowString(st, buf, startPos, pos)
 
 		case 5:
 			if wireType != proto.WireTypeVarint {
@@ -338,7 +337,7 @@ func (orig *SpanContext) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestSpanContext() *SpanContext {
-	orig := NewSpanContext()
+	orig := Alloc[SpanContext](nil)
 	orig.TraceID = *GenTestTraceID()
 	orig.SpanID = *GenTestSpanID()
 	orig.TraceFlags = uint32(13)
@@ -349,11 +348,11 @@ func GenTestSpanContext() *SpanContext {
 
 func GenTestSpanContextPtrSlice() []*SpanContext {
 	orig := make([]*SpanContext, 5)
-	orig[0] = NewSpanContext()
+	orig[0] = Alloc[SpanContext](nil)
 	orig[1] = GenTestSpanContext()
-	orig[2] = NewSpanContext()
+	orig[2] = Alloc[SpanContext](nil)
 	orig[3] = GenTestSpanContext()
-	orig[4] = NewSpanContext()
+	orig[4] = Alloc[SpanContext](nil)
 	return orig
 }
 

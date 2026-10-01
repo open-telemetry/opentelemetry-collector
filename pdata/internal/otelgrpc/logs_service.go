@@ -57,8 +57,9 @@ func RegisterLogsServiceServer(s *grpc.Server, srv LogsServiceServer) {
 //
 //nolint:revive
 func logsServiceExportHandler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
-	in := internal.NewExportLogsServiceRequest()
-	if err := dec(in); err != nil {
+	st := internal.NewState()
+	in := internal.Alloc[internal.ExportLogsServiceRequest](st)
+	if err := decodeExportRequest(st, in, in, dec); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {

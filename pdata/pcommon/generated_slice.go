@@ -85,7 +85,7 @@ func (es Slice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]internal.AnyValue, len(*es.getOrig()), newCap)
+	newOrig := internal.AllocSlice[internal.AnyValue](es.getState(), len(*es.getOrig()), newCap)
 	copy(newOrig, *es.getOrig())
 	*es.getOrig() = newOrig
 }
@@ -94,7 +94,7 @@ func (es Slice) EnsureCapacity(newCap int) {
 // It returns the newly added Value.
 func (es Slice) AppendEmpty() Value {
 	es.getState().AssertMutable()
-	*es.getOrig() = append(*es.getOrig(), internal.AnyValue{})
+	*es.getOrig() = internal.Append(es.getState(), *es.getOrig(), internal.AnyValue{})
 	return es.At(es.Len() - 1)
 }
 
@@ -107,11 +107,21 @@ func (es Slice) MoveAndAppendTo(dest Slice) {
 	if es.getOrig() == dest.getOrig() {
 		return
 	}
+	if es.getState() != dest.getState() {
+		for i := 0; i < es.Len(); i++ {
+			es.At(i).CopyTo(dest.AppendEmpty())
+		}
+		for i := range *es.getOrig() {
+			internal.DeleteAnyValue(&(*es.getOrig())[i], false)
+		}
+		*es.getOrig() = nil
+		return
+	}
 	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.getOrig() = *es.getOrig()
 	} else {
-		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
+		*dest.getOrig() = internal.AppendSeq(dest.getState(), *dest.getOrig(), *es.getOrig())
 	}
 	*es.getOrig() = nil
 }
@@ -144,7 +154,7 @@ func (es Slice) CopyTo(dest Slice) {
 	if es.getOrig() == dest.getOrig() {
 		return
 	}
-	*dest.getOrig() = internal.CopyAnyValueSlice(*dest.getOrig(), *es.getOrig())
+	*dest.getOrig() = internal.CopyAnyValueSlice(*dest.getOrig(), *es.getOrig(), dest.getState())
 }
 
 func (ms Slice) getOrig() *[]internal.AnyValue {

@@ -9,7 +9,6 @@ package internal
 import (
 	"encoding/binary"
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -22,19 +21,8 @@ type LogsRequest struct {
 	FormatVersion  uint32
 }
 
-var (
-	protoPoolLogsRequest = sync.Pool{
-		New: func() any {
-			return &LogsRequest{}
-		},
-	}
-)
-
 func NewLogsRequest() *LogsRequest {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &LogsRequest{}
-	}
-	return protoPoolLogsRequest.Get().(*LogsRequest)
+	return Alloc[LogsRequest](nil)
 }
 
 func DeleteLogsRequest(orig *LogsRequest, nullable bool) {
@@ -50,12 +38,10 @@ func DeleteLogsRequest(orig *LogsRequest, nullable bool) {
 	DeleteLogsData(&orig.LogsData, false)
 
 	orig.Reset()
-	if nullable {
-		protoPoolLogsRequest.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyLogsRequest(dest, src *LogsRequest) *LogsRequest {
+func CopyLogsRequest(dest, src *LogsRequest, st *State) *LogsRequest {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -66,21 +52,21 @@ func CopyLogsRequest(dest, src *LogsRequest) *LogsRequest {
 	}
 
 	if dest == nil {
-		dest = NewLogsRequest()
+		dest = Alloc[LogsRequest](st)
 	}
-	dest.RequestContext = CopyRequestContext(dest.RequestContext, src.RequestContext)
+	dest.RequestContext = CopyRequestContext(dest.RequestContext, src.RequestContext, st)
 
-	CopyLogsData(&dest.LogsData, &src.LogsData)
+	CopyLogsData(&dest.LogsData, &src.LogsData, st)
 
 	dest.FormatVersion = src.FormatVersion
 
 	return dest
 }
 
-func CopyLogsRequestSlice(dest, src []LogsRequest) []LogsRequest {
+func CopyLogsRequestSlice(dest, src []LogsRequest, st *State) []LogsRequest {
 	var newDest []LogsRequest
 	if cap(dest) < len(src) {
-		newDest = make([]LogsRequest, len(src))
+		newDest = AllocSlice[LogsRequest](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -90,20 +76,20 @@ func CopyLogsRequestSlice(dest, src []LogsRequest) []LogsRequest {
 		}
 	}
 	for i := range src {
-		CopyLogsRequest(&newDest[i], &src[i])
+		CopyLogsRequest(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyLogsRequestPtrSlice(dest, src []*LogsRequest) []*LogsRequest {
+func CopyLogsRequestPtrSlice(dest, src []*LogsRequest, st *State) []*LogsRequest {
 	var newDest []*LogsRequest
 	if cap(dest) < len(src) {
-		newDest = make([]*LogsRequest, len(src))
+		newDest = AllocSlice[*LogsRequest](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewLogsRequest()
+			newDest[i] = Alloc[LogsRequest](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -116,11 +102,11 @@ func CopyLogsRequestPtrSlice(dest, src []*LogsRequest) []*LogsRequest {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewLogsRequest()
+			newDest[i] = Alloc[LogsRequest](st)
 		}
 	}
 	for i := range src {
-		CopyLogsRequest(newDest[i], src[i])
+		CopyLogsRequest(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -147,15 +133,21 @@ func (orig *LogsRequest) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *LogsRequest) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *LogsRequest) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "requestContext", "request_context":
-			orig.RequestContext = NewRequestContext()
-			orig.RequestContext.UnmarshalJSON(iter)
+			orig.RequestContext = Alloc[RequestContext](st)
+			orig.RequestContext.UnmarshalJSONState(iter, st)
 		case "logsData", "logs_data":
 
-			orig.LogsData.UnmarshalJSON(iter)
+			orig.LogsData.UnmarshalJSONState(iter, st)
 		case "formatVersion", "format_version":
+
 			orig.FormatVersion = iter.ReadUint32()
 		default:
 			iter.HandleUnknownField(f)
@@ -206,6 +198,10 @@ func (orig *LogsRequest) MarshalProto(buf []byte) int {
 }
 
 func (orig *LogsRequest) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *LogsRequest) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -231,8 +227,8 @@ func (orig *LogsRequest) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			orig.RequestContext = NewRequestContext()
-			err = orig.RequestContext.UnmarshalProto(buf[startPos:pos])
+			orig.RequestContext = Alloc[RequestContext](st)
+			err = orig.RequestContext.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -248,7 +244,7 @@ func (orig *LogsRequest) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.LogsData.UnmarshalProto(buf[startPos:pos])
+			err = orig.LogsData.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -275,7 +271,7 @@ func (orig *LogsRequest) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestLogsRequest() *LogsRequest {
-	orig := NewLogsRequest()
+	orig := Alloc[LogsRequest](nil)
 	orig.RequestContext = GenTestRequestContext()
 	orig.LogsData = *GenTestLogsData()
 	orig.FormatVersion = uint32(13)
@@ -284,11 +280,11 @@ func GenTestLogsRequest() *LogsRequest {
 
 func GenTestLogsRequestPtrSlice() []*LogsRequest {
 	orig := make([]*LogsRequest, 5)
-	orig[0] = NewLogsRequest()
+	orig[0] = Alloc[LogsRequest](nil)
 	orig[1] = GenTestLogsRequest()
-	orig[2] = NewLogsRequest()
+	orig[2] = Alloc[LogsRequest](nil)
 	orig[3] = GenTestLogsRequest()
-	orig[4] = NewLogsRequest()
+	orig[4] = Alloc[LogsRequest](nil)
 	return orig
 }
 

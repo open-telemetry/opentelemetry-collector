@@ -86,7 +86,7 @@ func (es EntityRefSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*internal.EntityRef, len(*es.getOrig()), newCap)
+	newOrig := internal.AllocSlice[*internal.EntityRef](es.getState(), len(*es.getOrig()), newCap)
 	copy(newOrig, *es.getOrig())
 	*es.getOrig() = newOrig
 }
@@ -95,7 +95,7 @@ func (es EntityRefSlice) EnsureCapacity(newCap int) {
 // It returns the newly added EntityRef.
 func (es EntityRefSlice) AppendEmpty() EntityRef {
 	es.getState().AssertMutable()
-	*es.getOrig() = append(*es.getOrig(), internal.NewEntityRef())
+	*es.getOrig() = internal.Append(es.getState(), *es.getOrig(), internal.Alloc[internal.EntityRef](es.getState()))
 	return es.At(es.Len() - 1)
 }
 
@@ -108,11 +108,22 @@ func (es EntityRefSlice) MoveAndAppendTo(dest EntityRefSlice) {
 	if es.getOrig() == dest.getOrig() {
 		return
 	}
+	if es.getState() != dest.getState() {
+		for i := 0; i < es.Len(); i++ {
+			es.At(i).CopyTo(dest.AppendEmpty())
+		}
+		for i := range *es.getOrig() {
+			internal.DeleteEntityRef((*es.getOrig())[i], true)
+
+		}
+		*es.getOrig() = nil
+		return
+	}
 	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.getOrig() = *es.getOrig()
 	} else {
-		*dest.getOrig() = append(*dest.getOrig(), *es.getOrig()...)
+		*dest.getOrig() = internal.AppendSeq(dest.getState(), *dest.getOrig(), *es.getOrig())
 	}
 	*es.getOrig() = nil
 }
@@ -148,7 +159,7 @@ func (es EntityRefSlice) CopyTo(dest EntityRefSlice) {
 	if es.getOrig() == dest.getOrig() {
 		return
 	}
-	*dest.getOrig() = internal.CopyEntityRefPtrSlice(*dest.getOrig(), *es.getOrig())
+	*dest.getOrig() = internal.CopyEntityRefPtrSlice(*dest.getOrig(), *es.getOrig(), dest.getState())
 }
 
 // Sort sorts the EntityRef elements within EntityRefSlice given the

@@ -31,9 +31,9 @@ func TestCopySpan(t *testing.T) {
 				}()
 
 				dest := NewSpan()
-				CopySpan(dest, src)
+				CopySpan(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopySpan(dest, dest)
+				CopySpan(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopySpanSlice(t *testing.T) {
 	src := []Span{}
 	dest := []Span{}
 	// Test CopyTo empty
-	dest = CopySpanSlice(dest, src)
+	dest = CopySpanSlice(dest, src, nil)
 	assert.Equal(t, []Span{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestSpanSlice()
-	dest = CopySpanSlice(dest, src)
+	dest = CopySpanSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopySpanSlice(dest, src)
+	dest = CopySpanSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopySpanSlice(dest, []Span{})
+	dest = CopySpanSlice(dest, []Span{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopySpanSlice(dest, src)
+	dest = CopySpanSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopySpanPtrSlice(t *testing.T) {
 	src := []*Span{}
 	dest := []*Span{}
 	// Test CopyTo empty
-	dest = CopySpanPtrSlice(dest, src)
+	dest = CopySpanPtrSlice(dest, src, nil)
 	assert.Equal(t, []*Span{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestSpanPtrSlice()
-	dest = CopySpanPtrSlice(dest, src)
+	dest = CopySpanPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopySpanPtrSlice(dest, src)
+	dest = CopySpanPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopySpanPtrSlice(dest, []*Span{})
+	dest = CopySpanPtrSlice(dest, []*Span{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopySpanPtrSlice(dest, src)
+	dest = CopySpanPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanPtrSlice(), dest)
 }
 

@@ -31,9 +31,9 @@ func TestCopyFunction(t *testing.T) {
 				}()
 
 				dest := NewFunction()
-				CopyFunction(dest, src)
+				CopyFunction(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyFunction(dest, dest)
+				CopyFunction(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyFunctionSlice(t *testing.T) {
 	src := []Function{}
 	dest := []Function{}
 	// Test CopyTo empty
-	dest = CopyFunctionSlice(dest, src)
+	dest = CopyFunctionSlice(dest, src, nil)
 	assert.Equal(t, []Function{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestFunctionSlice()
-	dest = CopyFunctionSlice(dest, src)
+	dest = CopyFunctionSlice(dest, src, nil)
 	assert.Equal(t, GenTestFunctionSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyFunctionSlice(dest, src)
+	dest = CopyFunctionSlice(dest, src, nil)
 	assert.Equal(t, GenTestFunctionSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyFunctionSlice(dest, []Function{})
+	dest = CopyFunctionSlice(dest, []Function{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyFunctionSlice(dest, src)
+	dest = CopyFunctionSlice(dest, src, nil)
 	assert.Equal(t, GenTestFunctionSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyFunctionPtrSlice(t *testing.T) {
 	src := []*Function{}
 	dest := []*Function{}
 	// Test CopyTo empty
-	dest = CopyFunctionPtrSlice(dest, src)
+	dest = CopyFunctionPtrSlice(dest, src, nil)
 	assert.Equal(t, []*Function{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestFunctionPtrSlice()
-	dest = CopyFunctionPtrSlice(dest, src)
+	dest = CopyFunctionPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestFunctionPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyFunctionPtrSlice(dest, src)
+	dest = CopyFunctionPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestFunctionPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyFunctionPtrSlice(dest, []*Function{})
+	dest = CopyFunctionPtrSlice(dest, []*Function{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyFunctionPtrSlice(dest, src)
+	dest = CopyFunctionPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestFunctionPtrSlice(), dest)
 }
 

@@ -9,7 +9,6 @@ package internal
 import (
 	"encoding/binary"
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -32,19 +31,8 @@ type LogRecord struct {
 	EventName              string
 }
 
-var (
-	protoPoolLogRecord = sync.Pool{
-		New: func() any {
-			return &LogRecord{}
-		},
-	}
-)
-
 func NewLogRecord() *LogRecord {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &LogRecord{}
-	}
-	return protoPoolLogRecord.Get().(*LogRecord)
+	return Alloc[LogRecord](nil)
 }
 
 func DeleteLogRecord(orig *LogRecord, nullable bool) {
@@ -66,12 +54,10 @@ func DeleteLogRecord(orig *LogRecord, nullable bool) {
 	DeleteSpanID(&orig.SpanId, false)
 
 	orig.Reset()
-	if nullable {
-		protoPoolLogRecord.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyLogRecord(dest, src *LogRecord) *LogRecord {
+func CopyLogRecord(dest, src *LogRecord, st *State) *LogRecord {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -82,31 +68,32 @@ func CopyLogRecord(dest, src *LogRecord) *LogRecord {
 	}
 
 	if dest == nil {
-		dest = NewLogRecord()
+		dest = Alloc[LogRecord](st)
 	}
 	dest.TimeUnixNano = src.TimeUnixNano
 	dest.ObservedTimeUnixNano = src.ObservedTimeUnixNano
 	dest.SeverityNumber = src.SeverityNumber
-	dest.SeverityText = src.SeverityText
-	CopyAnyValue(&dest.Body, &src.Body)
+	dest.SeverityText = CopyString(st, src.SeverityText)
 
-	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes)
+	CopyAnyValue(&dest.Body, &src.Body, st)
+
+	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes, st)
 
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
 	dest.Flags = src.Flags
-	CopyTraceID(&dest.TraceId, &src.TraceId)
+	CopyTraceID(&dest.TraceId, &src.TraceId, st)
 
-	CopySpanID(&dest.SpanId, &src.SpanId)
+	CopySpanID(&dest.SpanId, &src.SpanId, st)
 
-	dest.EventName = src.EventName
+	dest.EventName = CopyString(st, src.EventName)
 
 	return dest
 }
 
-func CopyLogRecordSlice(dest, src []LogRecord) []LogRecord {
+func CopyLogRecordSlice(dest, src []LogRecord, st *State) []LogRecord {
 	var newDest []LogRecord
 	if cap(dest) < len(src) {
-		newDest = make([]LogRecord, len(src))
+		newDest = AllocSlice[LogRecord](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -116,20 +103,20 @@ func CopyLogRecordSlice(dest, src []LogRecord) []LogRecord {
 		}
 	}
 	for i := range src {
-		CopyLogRecord(&newDest[i], &src[i])
+		CopyLogRecord(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyLogRecordPtrSlice(dest, src []*LogRecord) []*LogRecord {
+func CopyLogRecordPtrSlice(dest, src []*LogRecord, st *State) []*LogRecord {
 	var newDest []*LogRecord
 	if cap(dest) < len(src) {
-		newDest = make([]*LogRecord, len(src))
+		newDest = AllocSlice[*LogRecord](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewLogRecord()
+			newDest[i] = Alloc[LogRecord](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -142,11 +129,11 @@ func CopyLogRecordPtrSlice(dest, src []*LogRecord) []*LogRecord {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewLogRecord()
+			newDest[i] = Alloc[LogRecord](st)
 		}
 	}
 	for i := range src {
-		CopyLogRecord(newDest[i], src[i])
+		CopyLogRecord(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -212,37 +199,48 @@ func (orig *LogRecord) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *LogRecord) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *LogRecord) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "timeUnixNano", "time_unix_nano":
+
 			orig.TimeUnixNano = iter.ReadUint64()
 		case "observedTimeUnixNano", "observed_time_unix_nano":
+
 			orig.ObservedTimeUnixNano = iter.ReadUint64()
 		case "severityNumber", "severity_number":
 			orig.SeverityNumber = SeverityNumber(iter.ReadEnumValue(SeverityNumber_value))
 		case "severityText", "severity_text":
-			orig.SeverityText = iter.ReadString()
+
+			orig.SeverityText = CopyString(st, iter.ReadString())
 		case "body":
 
-			orig.Body.UnmarshalJSON(iter)
+			orig.Body.UnmarshalJSONState(iter, st)
 		case "attributes":
 			for iter.ReadArray() {
-				orig.Attributes = append(orig.Attributes, KeyValue{})
-				orig.Attributes[len(orig.Attributes)-1].UnmarshalJSON(iter)
+				orig.Attributes = Append(st, orig.Attributes, KeyValue{})
+				orig.Attributes[len(orig.Attributes)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "droppedAttributesCount", "dropped_attributes_count":
+
 			orig.DroppedAttributesCount = iter.ReadUint32()
 		case "flags":
+
 			orig.Flags = iter.ReadUint32()
 		case "traceId", "trace_id":
 
-			orig.TraceId.UnmarshalJSON(iter)
+			orig.TraceId.UnmarshalJSONState(iter, st)
 		case "spanId", "span_id":
 
-			orig.SpanId.UnmarshalJSON(iter)
+			orig.SpanId.UnmarshalJSONState(iter, st)
 		case "eventName", "event_name":
-			orig.EventName = iter.ReadString()
+
+			orig.EventName = CopyString(st, iter.ReadString())
 		default:
 			iter.HandleUnknownField(f)
 		}
@@ -368,6 +366,10 @@ func (orig *LogRecord) MarshalProto(buf []byte) int {
 }
 
 func (orig *LogRecord) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *LogRecord) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -427,7 +429,7 @@ func (orig *LogRecord) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.SeverityText = string(buf[startPos:pos])
+			orig.SeverityText = BorrowString(st, buf, startPos, pos)
 
 		case 5:
 			if wireType != proto.WireTypeLen {
@@ -440,7 +442,7 @@ func (orig *LogRecord) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Body.UnmarshalProto(buf[startPos:pos])
+			err = orig.Body.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -455,8 +457,8 @@ func (orig *LogRecord) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = append(orig.Attributes, KeyValue{})
-			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProto(buf[startPos:pos])
+			orig.Attributes = Append(st, orig.Attributes, KeyValue{})
+			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -495,7 +497,7 @@ func (orig *LogRecord) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.TraceId.UnmarshalProto(buf[startPos:pos])
+			err = orig.TraceId.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -511,7 +513,7 @@ func (orig *LogRecord) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.SpanId.UnmarshalProto(buf[startPos:pos])
+			err = orig.SpanId.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -526,7 +528,7 @@ func (orig *LogRecord) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.EventName = string(buf[startPos:pos])
+			orig.EventName = BorrowString(st, buf, startPos, pos)
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
 			if err != nil {
@@ -538,7 +540,7 @@ func (orig *LogRecord) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestLogRecord() *LogRecord {
-	orig := NewLogRecord()
+	orig := Alloc[LogRecord](nil)
 	orig.TimeUnixNano = uint64(13)
 	orig.ObservedTimeUnixNano = uint64(13)
 	orig.SeverityNumber = SeverityNumber(13)
@@ -555,11 +557,11 @@ func GenTestLogRecord() *LogRecord {
 
 func GenTestLogRecordPtrSlice() []*LogRecord {
 	orig := make([]*LogRecord, 5)
-	orig[0] = NewLogRecord()
+	orig[0] = Alloc[LogRecord](nil)
 	orig[1] = GenTestLogRecord()
-	orig[2] = NewLogRecord()
+	orig[2] = Alloc[LogRecord](nil)
 	orig[3] = GenTestLogRecord()
-	orig[4] = NewLogRecord()
+	orig[4] = Alloc[LogRecord](nil)
 	return orig
 }
 

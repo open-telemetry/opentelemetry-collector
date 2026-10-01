@@ -31,9 +31,9 @@ func TestCopyResourceSpans(t *testing.T) {
 				}()
 
 				dest := NewResourceSpans()
-				CopyResourceSpans(dest, src)
+				CopyResourceSpans(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyResourceSpans(dest, dest)
+				CopyResourceSpans(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyResourceSpansSlice(t *testing.T) {
 	src := []ResourceSpans{}
 	dest := []ResourceSpans{}
 	// Test CopyTo empty
-	dest = CopyResourceSpansSlice(dest, src)
+	dest = CopyResourceSpansSlice(dest, src, nil)
 	assert.Equal(t, []ResourceSpans{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestResourceSpansSlice()
-	dest = CopyResourceSpansSlice(dest, src)
+	dest = CopyResourceSpansSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceSpansSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyResourceSpansSlice(dest, src)
+	dest = CopyResourceSpansSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceSpansSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyResourceSpansSlice(dest, []ResourceSpans{})
+	dest = CopyResourceSpansSlice(dest, []ResourceSpans{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyResourceSpansSlice(dest, src)
+	dest = CopyResourceSpansSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceSpansSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyResourceSpansPtrSlice(t *testing.T) {
 	src := []*ResourceSpans{}
 	dest := []*ResourceSpans{}
 	// Test CopyTo empty
-	dest = CopyResourceSpansPtrSlice(dest, src)
+	dest = CopyResourceSpansPtrSlice(dest, src, nil)
 	assert.Equal(t, []*ResourceSpans{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestResourceSpansPtrSlice()
-	dest = CopyResourceSpansPtrSlice(dest, src)
+	dest = CopyResourceSpansPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceSpansPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyResourceSpansPtrSlice(dest, src)
+	dest = CopyResourceSpansPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceSpansPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyResourceSpansPtrSlice(dest, []*ResourceSpans{})
+	dest = CopyResourceSpansPtrSlice(dest, []*ResourceSpans{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyResourceSpansPtrSlice(dest, src)
+	dest = CopyResourceSpansPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceSpansPtrSlice(), dest)
 }
 

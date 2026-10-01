@@ -32,7 +32,8 @@ func newProfile(orig *internal.Profile, state *internal.State) Profile {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewProfile() Profile {
-	return newProfile(internal.NewProfile(), internal.NewState())
+	st := internal.NewState()
+	return newProfile(internal.Alloc[internal.Profile](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -42,6 +43,11 @@ func (ms Profile) MoveTo(dest Profile) {
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if ms.state != dest.state {
+		ms.CopyTo(dest)
+		internal.DeleteProfile(ms.orig, false)
 		return
 	}
 	internal.DeleteProfile(dest.orig, false)
@@ -126,7 +132,7 @@ func (ms Profile) OriginalPayloadFormat() string {
 // SetOriginalPayloadFormat replaces the originalpayloadformat associated with this Profile.
 func (ms Profile) SetOriginalPayloadFormat(v string) {
 	ms.state.AssertMutable()
-	ms.orig.OriginalPayloadFormat = v
+	ms.orig.OriginalPayloadFormat = internal.CopyString(ms.state, v)
 }
 
 // OriginalPayload returns the OriginalPayload associated with this Profile.
@@ -142,5 +148,5 @@ func (ms Profile) AttributeIndices() pcommon.Int32Slice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Profile) CopyTo(dest Profile) {
 	dest.state.AssertMutable()
-	internal.CopyProfile(dest.orig, ms.orig)
+	internal.CopyProfile(dest.orig, ms.orig, dest.state)
 }

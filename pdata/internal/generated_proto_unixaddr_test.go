@@ -31,9 +31,9 @@ func TestCopyUnixAddr(t *testing.T) {
 				}()
 
 				dest := NewUnixAddr()
-				CopyUnixAddr(dest, src)
+				CopyUnixAddr(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyUnixAddr(dest, dest)
+				CopyUnixAddr(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyUnixAddrSlice(t *testing.T) {
 	src := []UnixAddr{}
 	dest := []UnixAddr{}
 	// Test CopyTo empty
-	dest = CopyUnixAddrSlice(dest, src)
+	dest = CopyUnixAddrSlice(dest, src, nil)
 	assert.Equal(t, []UnixAddr{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestUnixAddrSlice()
-	dest = CopyUnixAddrSlice(dest, src)
+	dest = CopyUnixAddrSlice(dest, src, nil)
 	assert.Equal(t, GenTestUnixAddrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyUnixAddrSlice(dest, src)
+	dest = CopyUnixAddrSlice(dest, src, nil)
 	assert.Equal(t, GenTestUnixAddrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyUnixAddrSlice(dest, []UnixAddr{})
+	dest = CopyUnixAddrSlice(dest, []UnixAddr{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyUnixAddrSlice(dest, src)
+	dest = CopyUnixAddrSlice(dest, src, nil)
 	assert.Equal(t, GenTestUnixAddrSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyUnixAddrPtrSlice(t *testing.T) {
 	src := []*UnixAddr{}
 	dest := []*UnixAddr{}
 	// Test CopyTo empty
-	dest = CopyUnixAddrPtrSlice(dest, src)
+	dest = CopyUnixAddrPtrSlice(dest, src, nil)
 	assert.Equal(t, []*UnixAddr{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestUnixAddrPtrSlice()
-	dest = CopyUnixAddrPtrSlice(dest, src)
+	dest = CopyUnixAddrPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestUnixAddrPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyUnixAddrPtrSlice(dest, src)
+	dest = CopyUnixAddrPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestUnixAddrPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyUnixAddrPtrSlice(dest, []*UnixAddr{})
+	dest = CopyUnixAddrPtrSlice(dest, []*UnixAddr{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyUnixAddrPtrSlice(dest, src)
+	dest = CopyUnixAddrPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestUnixAddrPtrSlice(), dest)
 }
 

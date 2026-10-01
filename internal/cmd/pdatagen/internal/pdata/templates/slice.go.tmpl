@@ -94,7 +94,7 @@ func (es {{ .structName }}) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]{{ if .elementNullable }}*{{ end }}internal.{{ .elementOriginName }}, len(*es.{{ .origAccessor }}), newCap)
+	newOrig := internal.AllocSlice[{{ if .elementNullable }}*{{ end }}internal.{{ .elementOriginName }}](es.{{ .stateAccessor }}, len(*es.{{ .origAccessor }}), newCap)
 	copy(newOrig, *es.{{ .origAccessor }})
 	*es.{{ .origAccessor }} = newOrig
 }
@@ -103,7 +103,7 @@ func (es {{ .structName }}) EnsureCapacity(newCap int) {
 // It returns the newly added {{ .elementName }}.
 func (es {{ .structName }}) AppendEmpty() {{ .elementName }} {
 	es.{{ .stateAccessor }}.AssertMutable()
-	*es.{{ .origAccessor }} = append(*es.{{ .origAccessor }}, {{- if .elementNullable }}internal.New{{ .elementOriginName }}(){{ else }}internal.{{ .elementOriginName }}{}{{ end }})
+	*es.{{ .origAccessor }} = internal.Append(es.{{ .stateAccessor }}, *es.{{ .origAccessor }}, {{- if .elementNullable }}internal.Alloc[internal.{{ .elementOriginName }}](es.{{ .stateAccessor }}){{ else }}internal.{{ .elementOriginName }}{}{{ end }})
 	return es.At(es.Len() - 1)
 }
 
@@ -116,11 +116,25 @@ func (es {{ .structName }}) MoveAndAppendTo(dest {{ .structName }}) {
 	if es.{{ .origAccessor }} == dest.{{ .origAccessor }} {
 		return
 	}
+	if es.{{ .stateAccessor }} != dest.{{ .stateAccessor }} {
+		for i := 0; i < es.Len(); i++ {
+			es.At(i).CopyTo(dest.AppendEmpty())
+		}
+		for i := range *es.{{ .origAccessor }} {
+			{{ if .elementNullable -}}
+			internal.Delete{{ .elementOriginName }}((*es.{{ .origAccessor }})[i], true)
+			{{ else -}}
+			internal.Delete{{ .elementOriginName }}(&(*es.{{ .origAccessor }})[i], false)
+			{{- end }}
+		}
+		*es.{{ .origAccessor }} = nil
+		return
+	}
 	if *dest.{{ .origAccessor }} == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.{{ .origAccessor }} = *es.{{ .origAccessor }}
 	} else {
-		*dest.{{ .origAccessor }} = append(*dest.{{ .origAccessor }}, *es.{{ .origAccessor }}...)
+		*dest.{{ .origAccessor }} = internal.AppendSeq(dest.{{ .stateAccessor }}, *dest.{{ .origAccessor }}, *es.{{ .origAccessor }})
 	}
 	*es.{{ .origAccessor }} = nil
 }
@@ -163,7 +177,7 @@ func (es {{ .structName }}) CopyTo(dest {{ .structName }}) {
 	if es.{{ .origAccessor }} == dest.{{ .origAccessor }} {
 		return
 	}
-	*dest.{{ .origAccessor }} = internal.Copy{{ .elementOriginName }}{{ if .elementNullable }}Ptr{{ end }}Slice(*dest.{{ .origAccessor }}, *es.{{ .origAccessor }})
+	*dest.{{ .origAccessor }} = internal.Copy{{ .elementOriginName }}{{ if .elementNullable }}Ptr{{ end }}Slice(*dest.{{ .origAccessor }}, *es.{{ .origAccessor }}, dest.{{ .stateAccessor }})
 }
 
 {{ if .elementNullable -}}

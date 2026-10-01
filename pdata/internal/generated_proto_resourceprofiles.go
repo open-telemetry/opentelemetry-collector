@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -22,19 +21,8 @@ type ResourceProfiles struct {
 	SchemaUrl     string
 }
 
-var (
-	protoPoolResourceProfiles = sync.Pool{
-		New: func() any {
-			return &ResourceProfiles{}
-		},
-	}
-)
-
 func NewResourceProfiles() *ResourceProfiles {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &ResourceProfiles{}
-	}
-	return protoPoolResourceProfiles.Get().(*ResourceProfiles)
+	return Alloc[ResourceProfiles](nil)
 }
 
 func DeleteResourceProfiles(orig *ResourceProfiles, nullable bool) {
@@ -52,12 +40,10 @@ func DeleteResourceProfiles(orig *ResourceProfiles, nullable bool) {
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolResourceProfiles.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyResourceProfiles(dest, src *ResourceProfiles) *ResourceProfiles {
+func CopyResourceProfiles(dest, src *ResourceProfiles, st *State) *ResourceProfiles {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -68,21 +54,21 @@ func CopyResourceProfiles(dest, src *ResourceProfiles) *ResourceProfiles {
 	}
 
 	if dest == nil {
-		dest = NewResourceProfiles()
+		dest = Alloc[ResourceProfiles](st)
 	}
-	CopyResource(&dest.Resource, &src.Resource)
+	CopyResource(&dest.Resource, &src.Resource, st)
 
-	dest.ScopeProfiles = CopyScopeProfilesPtrSlice(dest.ScopeProfiles, src.ScopeProfiles)
+	dest.ScopeProfiles = CopyScopeProfilesPtrSlice(dest.ScopeProfiles, src.ScopeProfiles, st)
 
-	dest.SchemaUrl = src.SchemaUrl
+	dest.SchemaUrl = CopyString(st, src.SchemaUrl)
 
 	return dest
 }
 
-func CopyResourceProfilesSlice(dest, src []ResourceProfiles) []ResourceProfiles {
+func CopyResourceProfilesSlice(dest, src []ResourceProfiles, st *State) []ResourceProfiles {
 	var newDest []ResourceProfiles
 	if cap(dest) < len(src) {
-		newDest = make([]ResourceProfiles, len(src))
+		newDest = AllocSlice[ResourceProfiles](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -92,20 +78,20 @@ func CopyResourceProfilesSlice(dest, src []ResourceProfiles) []ResourceProfiles 
 		}
 	}
 	for i := range src {
-		CopyResourceProfiles(&newDest[i], &src[i])
+		CopyResourceProfiles(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyResourceProfilesPtrSlice(dest, src []*ResourceProfiles) []*ResourceProfiles {
+func CopyResourceProfilesPtrSlice(dest, src []*ResourceProfiles, st *State) []*ResourceProfiles {
 	var newDest []*ResourceProfiles
 	if cap(dest) < len(src) {
-		newDest = make([]*ResourceProfiles, len(src))
+		newDest = AllocSlice[*ResourceProfiles](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewResourceProfiles()
+			newDest[i] = Alloc[ResourceProfiles](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -118,11 +104,11 @@ func CopyResourceProfilesPtrSlice(dest, src []*ResourceProfiles) []*ResourceProf
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewResourceProfiles()
+			newDest[i] = Alloc[ResourceProfiles](st)
 		}
 	}
 	for i := range src {
-		CopyResourceProfiles(newDest[i], src[i])
+		CopyResourceProfiles(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -155,19 +141,25 @@ func (orig *ResourceProfiles) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *ResourceProfiles) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *ResourceProfiles) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resource":
 
-			orig.Resource.UnmarshalJSON(iter)
+			orig.Resource.UnmarshalJSONState(iter, st)
 		case "scopeProfiles", "scope_profiles":
 			for iter.ReadArray() {
-				orig.ScopeProfiles = append(orig.ScopeProfiles, NewScopeProfiles())
-				orig.ScopeProfiles[len(orig.ScopeProfiles)-1].UnmarshalJSON(iter)
+				orig.ScopeProfiles = Append(st, orig.ScopeProfiles, Alloc[ScopeProfiles](st))
+				orig.ScopeProfiles[len(orig.ScopeProfiles)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "schemaUrl", "schema_url":
-			orig.SchemaUrl = iter.ReadString()
+
+			orig.SchemaUrl = CopyString(st, iter.ReadString())
 		default:
 			iter.HandleUnknownField(f)
 		}
@@ -221,6 +213,10 @@ func (orig *ResourceProfiles) MarshalProto(buf []byte) int {
 }
 
 func (orig *ResourceProfiles) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *ResourceProfiles) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -246,7 +242,7 @@ func (orig *ResourceProfiles) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Resource.UnmarshalProto(buf[startPos:pos])
+			err = orig.Resource.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -261,8 +257,8 @@ func (orig *ResourceProfiles) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.ScopeProfiles = append(orig.ScopeProfiles, NewScopeProfiles())
-			err = orig.ScopeProfiles[len(orig.ScopeProfiles)-1].UnmarshalProto(buf[startPos:pos])
+			orig.ScopeProfiles = Append(st, orig.ScopeProfiles, Alloc[ScopeProfiles](st))
+			err = orig.ScopeProfiles[len(orig.ScopeProfiles)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -277,7 +273,7 @@ func (orig *ResourceProfiles) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.SchemaUrl = string(buf[startPos:pos])
+			orig.SchemaUrl = BorrowString(st, buf, startPos, pos)
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
 			if err != nil {
@@ -289,7 +285,7 @@ func (orig *ResourceProfiles) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestResourceProfiles() *ResourceProfiles {
-	orig := NewResourceProfiles()
+	orig := Alloc[ResourceProfiles](nil)
 	orig.Resource = *GenTestResource()
 	orig.ScopeProfiles = []*ScopeProfiles{{}, GenTestScopeProfiles()}
 	orig.SchemaUrl = "test_schemaurl"
@@ -298,11 +294,11 @@ func GenTestResourceProfiles() *ResourceProfiles {
 
 func GenTestResourceProfilesPtrSlice() []*ResourceProfiles {
 	orig := make([]*ResourceProfiles, 5)
-	orig[0] = NewResourceProfiles()
+	orig[0] = Alloc[ResourceProfiles](nil)
 	orig[1] = GenTestResourceProfiles()
-	orig[2] = NewResourceProfiles()
+	orig[2] = Alloc[ResourceProfiles](nil)
 	orig[3] = GenTestResourceProfiles()
-	orig[4] = NewResourceProfiles()
+	orig[4] = Alloc[ResourceProfiles](nil)
 	return orig
 }
 

@@ -33,7 +33,8 @@ func newSpanEvent(orig *internal.SpanEvent, state *internal.State) SpanEvent {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSpanEvent() SpanEvent {
-	return newSpanEvent(internal.NewSpanEvent(), internal.NewState())
+	st := internal.NewState()
+	return newSpanEvent(internal.Alloc[internal.SpanEvent](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -43,6 +44,11 @@ func (ms SpanEvent) MoveTo(dest SpanEvent) {
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if ms.state != dest.state {
+		ms.CopyTo(dest)
+		internal.DeleteSpanEvent(ms.orig, false)
 		return
 	}
 	internal.DeleteSpanEvent(dest.orig, false)
@@ -68,7 +74,7 @@ func (ms SpanEvent) Name() string {
 // SetName replaces the name associated with this SpanEvent.
 func (ms SpanEvent) SetName(v string) {
 	ms.state.AssertMutable()
-	ms.orig.Name = v
+	ms.orig.Name = internal.CopyString(ms.state, v)
 }
 
 // Attributes returns the Attributes associated with this SpanEvent.
@@ -90,5 +96,5 @@ func (ms SpanEvent) SetDroppedAttributesCount(v uint32) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms SpanEvent) CopyTo(dest SpanEvent) {
 	dest.state.AssertMutable()
-	internal.CopySpanEvent(dest.orig, ms.orig)
+	internal.CopySpanEvent(dest.orig, ms.orig, dest.state)
 }

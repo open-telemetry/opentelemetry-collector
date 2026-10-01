@@ -31,9 +31,9 @@ func TestCopyHistogramDataPoint(t *testing.T) {
 				}()
 
 				dest := NewHistogramDataPoint()
-				CopyHistogramDataPoint(dest, src)
+				CopyHistogramDataPoint(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyHistogramDataPoint(dest, dest)
+				CopyHistogramDataPoint(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyHistogramDataPointSlice(t *testing.T) {
 	src := []HistogramDataPoint{}
 	dest := []HistogramDataPoint{}
 	// Test CopyTo empty
-	dest = CopyHistogramDataPointSlice(dest, src)
+	dest = CopyHistogramDataPointSlice(dest, src, nil)
 	assert.Equal(t, []HistogramDataPoint{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestHistogramDataPointSlice()
-	dest = CopyHistogramDataPointSlice(dest, src)
+	dest = CopyHistogramDataPointSlice(dest, src, nil)
 	assert.Equal(t, GenTestHistogramDataPointSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyHistogramDataPointSlice(dest, src)
+	dest = CopyHistogramDataPointSlice(dest, src, nil)
 	assert.Equal(t, GenTestHistogramDataPointSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyHistogramDataPointSlice(dest, []HistogramDataPoint{})
+	dest = CopyHistogramDataPointSlice(dest, []HistogramDataPoint{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyHistogramDataPointSlice(dest, src)
+	dest = CopyHistogramDataPointSlice(dest, src, nil)
 	assert.Equal(t, GenTestHistogramDataPointSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyHistogramDataPointPtrSlice(t *testing.T) {
 	src := []*HistogramDataPoint{}
 	dest := []*HistogramDataPoint{}
 	// Test CopyTo empty
-	dest = CopyHistogramDataPointPtrSlice(dest, src)
+	dest = CopyHistogramDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, []*HistogramDataPoint{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestHistogramDataPointPtrSlice()
-	dest = CopyHistogramDataPointPtrSlice(dest, src)
+	dest = CopyHistogramDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestHistogramDataPointPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyHistogramDataPointPtrSlice(dest, src)
+	dest = CopyHistogramDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestHistogramDataPointPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyHistogramDataPointPtrSlice(dest, []*HistogramDataPoint{})
+	dest = CopyHistogramDataPointPtrSlice(dest, []*HistogramDataPoint{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyHistogramDataPointPtrSlice(dest, src)
+	dest = CopyHistogramDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestHistogramDataPointPtrSlice(), dest)
 }
 

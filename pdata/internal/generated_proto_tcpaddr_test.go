@@ -31,9 +31,9 @@ func TestCopyTCPAddr(t *testing.T) {
 				}()
 
 				dest := NewTCPAddr()
-				CopyTCPAddr(dest, src)
+				CopyTCPAddr(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyTCPAddr(dest, dest)
+				CopyTCPAddr(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyTCPAddrSlice(t *testing.T) {
 	src := []TCPAddr{}
 	dest := []TCPAddr{}
 	// Test CopyTo empty
-	dest = CopyTCPAddrSlice(dest, src)
+	dest = CopyTCPAddrSlice(dest, src, nil)
 	assert.Equal(t, []TCPAddr{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestTCPAddrSlice()
-	dest = CopyTCPAddrSlice(dest, src)
+	dest = CopyTCPAddrSlice(dest, src, nil)
 	assert.Equal(t, GenTestTCPAddrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyTCPAddrSlice(dest, src)
+	dest = CopyTCPAddrSlice(dest, src, nil)
 	assert.Equal(t, GenTestTCPAddrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyTCPAddrSlice(dest, []TCPAddr{})
+	dest = CopyTCPAddrSlice(dest, []TCPAddr{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyTCPAddrSlice(dest, src)
+	dest = CopyTCPAddrSlice(dest, src, nil)
 	assert.Equal(t, GenTestTCPAddrSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyTCPAddrPtrSlice(t *testing.T) {
 	src := []*TCPAddr{}
 	dest := []*TCPAddr{}
 	// Test CopyTo empty
-	dest = CopyTCPAddrPtrSlice(dest, src)
+	dest = CopyTCPAddrPtrSlice(dest, src, nil)
 	assert.Equal(t, []*TCPAddr{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestTCPAddrPtrSlice()
-	dest = CopyTCPAddrPtrSlice(dest, src)
+	dest = CopyTCPAddrPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestTCPAddrPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyTCPAddrPtrSlice(dest, src)
+	dest = CopyTCPAddrPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestTCPAddrPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyTCPAddrPtrSlice(dest, []*TCPAddr{})
+	dest = CopyTCPAddrPtrSlice(dest, []*TCPAddr{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyTCPAddrPtrSlice(dest, src)
+	dest = CopyTCPAddrPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestTCPAddrPtrSlice(), dest)
 }
 

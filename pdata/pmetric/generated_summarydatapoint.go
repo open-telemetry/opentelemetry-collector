@@ -32,7 +32,8 @@ func newSummaryDataPoint(orig *internal.SummaryDataPoint, state *internal.State)
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSummaryDataPoint() SummaryDataPoint {
-	return newSummaryDataPoint(internal.NewSummaryDataPoint(), internal.NewState())
+	st := internal.NewState()
+	return newSummaryDataPoint(internal.Alloc[internal.SummaryDataPoint](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -42,6 +43,11 @@ func (ms SummaryDataPoint) MoveTo(dest SummaryDataPoint) {
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if ms.state != dest.state {
+		ms.CopyTo(dest)
+		internal.DeleteSummaryDataPoint(ms.orig, false)
 		return
 	}
 	internal.DeleteSummaryDataPoint(dest.orig, false)
@@ -116,5 +122,5 @@ func (ms SummaryDataPoint) SetFlags(v DataPointFlags) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
 	dest.state.AssertMutable()
-	internal.CopySummaryDataPoint(dest.orig, ms.orig)
+	internal.CopySummaryDataPoint(dest.orig, ms.orig, dest.state)
 }

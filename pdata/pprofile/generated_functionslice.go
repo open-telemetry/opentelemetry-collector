@@ -89,7 +89,7 @@ func (es FunctionSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*internal.Function, len(*es.orig), newCap)
+	newOrig := internal.AllocSlice[*internal.Function](es.state, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -98,7 +98,7 @@ func (es FunctionSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Function.
 func (es FunctionSlice) AppendEmpty() Function {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewFunction())
+	*es.orig = internal.Append(es.state, *es.orig, internal.Alloc[internal.Function](es.state))
 	return es.At(es.Len() - 1)
 }
 
@@ -111,11 +111,22 @@ func (es FunctionSlice) MoveAndAppendTo(dest FunctionSlice) {
 	if es.orig == dest.orig {
 		return
 	}
+	if es.state != dest.state {
+		for i := 0; i < es.Len(); i++ {
+			es.At(i).CopyTo(dest.AppendEmpty())
+		}
+		for i := range *es.orig {
+			internal.DeleteFunction((*es.orig)[i], true)
+
+		}
+		*es.orig = nil
+		return
+	}
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.orig = internal.AppendSeq(dest.state, *dest.orig, *es.orig)
 	}
 	*es.orig = nil
 }
@@ -151,7 +162,7 @@ func (es FunctionSlice) CopyTo(dest FunctionSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyFunctionPtrSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyFunctionPtrSlice(*dest.orig, *es.orig, dest.state)
 }
 
 // Sort sorts the Function elements within FunctionSlice given the

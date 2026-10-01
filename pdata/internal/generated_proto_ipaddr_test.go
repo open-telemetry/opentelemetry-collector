@@ -31,9 +31,9 @@ func TestCopyIPAddr(t *testing.T) {
 				}()
 
 				dest := NewIPAddr()
-				CopyIPAddr(dest, src)
+				CopyIPAddr(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyIPAddr(dest, dest)
+				CopyIPAddr(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyIPAddrSlice(t *testing.T) {
 	src := []IPAddr{}
 	dest := []IPAddr{}
 	// Test CopyTo empty
-	dest = CopyIPAddrSlice(dest, src)
+	dest = CopyIPAddrSlice(dest, src, nil)
 	assert.Equal(t, []IPAddr{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestIPAddrSlice()
-	dest = CopyIPAddrSlice(dest, src)
+	dest = CopyIPAddrSlice(dest, src, nil)
 	assert.Equal(t, GenTestIPAddrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyIPAddrSlice(dest, src)
+	dest = CopyIPAddrSlice(dest, src, nil)
 	assert.Equal(t, GenTestIPAddrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyIPAddrSlice(dest, []IPAddr{})
+	dest = CopyIPAddrSlice(dest, []IPAddr{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyIPAddrSlice(dest, src)
+	dest = CopyIPAddrSlice(dest, src, nil)
 	assert.Equal(t, GenTestIPAddrSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyIPAddrPtrSlice(t *testing.T) {
 	src := []*IPAddr{}
 	dest := []*IPAddr{}
 	// Test CopyTo empty
-	dest = CopyIPAddrPtrSlice(dest, src)
+	dest = CopyIPAddrPtrSlice(dest, src, nil)
 	assert.Equal(t, []*IPAddr{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestIPAddrPtrSlice()
-	dest = CopyIPAddrPtrSlice(dest, src)
+	dest = CopyIPAddrPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestIPAddrPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyIPAddrPtrSlice(dest, src)
+	dest = CopyIPAddrPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestIPAddrPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyIPAddrPtrSlice(dest, []*IPAddr{})
+	dest = CopyIPAddrPtrSlice(dest, []*IPAddr{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyIPAddrPtrSlice(dest, src)
+	dest = CopyIPAddrPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestIPAddrPtrSlice(), dest)
 }
 

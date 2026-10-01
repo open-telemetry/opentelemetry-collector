@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -22,19 +21,8 @@ type ScopeProfiles struct {
 	SchemaUrl string
 }
 
-var (
-	protoPoolScopeProfiles = sync.Pool{
-		New: func() any {
-			return &ScopeProfiles{}
-		},
-	}
-)
-
 func NewScopeProfiles() *ScopeProfiles {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &ScopeProfiles{}
-	}
-	return protoPoolScopeProfiles.Get().(*ScopeProfiles)
+	return Alloc[ScopeProfiles](nil)
 }
 
 func DeleteScopeProfiles(orig *ScopeProfiles, nullable bool) {
@@ -52,12 +40,10 @@ func DeleteScopeProfiles(orig *ScopeProfiles, nullable bool) {
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolScopeProfiles.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyScopeProfiles(dest, src *ScopeProfiles) *ScopeProfiles {
+func CopyScopeProfiles(dest, src *ScopeProfiles, st *State) *ScopeProfiles {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -68,21 +54,21 @@ func CopyScopeProfiles(dest, src *ScopeProfiles) *ScopeProfiles {
 	}
 
 	if dest == nil {
-		dest = NewScopeProfiles()
+		dest = Alloc[ScopeProfiles](st)
 	}
-	CopyInstrumentationScope(&dest.Scope, &src.Scope)
+	CopyInstrumentationScope(&dest.Scope, &src.Scope, st)
 
-	dest.Profiles = CopyProfilePtrSlice(dest.Profiles, src.Profiles)
+	dest.Profiles = CopyProfilePtrSlice(dest.Profiles, src.Profiles, st)
 
-	dest.SchemaUrl = src.SchemaUrl
+	dest.SchemaUrl = CopyString(st, src.SchemaUrl)
 
 	return dest
 }
 
-func CopyScopeProfilesSlice(dest, src []ScopeProfiles) []ScopeProfiles {
+func CopyScopeProfilesSlice(dest, src []ScopeProfiles, st *State) []ScopeProfiles {
 	var newDest []ScopeProfiles
 	if cap(dest) < len(src) {
-		newDest = make([]ScopeProfiles, len(src))
+		newDest = AllocSlice[ScopeProfiles](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -92,20 +78,20 @@ func CopyScopeProfilesSlice(dest, src []ScopeProfiles) []ScopeProfiles {
 		}
 	}
 	for i := range src {
-		CopyScopeProfiles(&newDest[i], &src[i])
+		CopyScopeProfiles(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyScopeProfilesPtrSlice(dest, src []*ScopeProfiles) []*ScopeProfiles {
+func CopyScopeProfilesPtrSlice(dest, src []*ScopeProfiles, st *State) []*ScopeProfiles {
 	var newDest []*ScopeProfiles
 	if cap(dest) < len(src) {
-		newDest = make([]*ScopeProfiles, len(src))
+		newDest = AllocSlice[*ScopeProfiles](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewScopeProfiles()
+			newDest[i] = Alloc[ScopeProfiles](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -118,11 +104,11 @@ func CopyScopeProfilesPtrSlice(dest, src []*ScopeProfiles) []*ScopeProfiles {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewScopeProfiles()
+			newDest[i] = Alloc[ScopeProfiles](st)
 		}
 	}
 	for i := range src {
-		CopyScopeProfiles(newDest[i], src[i])
+		CopyScopeProfiles(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -155,19 +141,25 @@ func (orig *ScopeProfiles) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *ScopeProfiles) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *ScopeProfiles) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "scope":
 
-			orig.Scope.UnmarshalJSON(iter)
+			orig.Scope.UnmarshalJSONState(iter, st)
 		case "profiles":
 			for iter.ReadArray() {
-				orig.Profiles = append(orig.Profiles, NewProfile())
-				orig.Profiles[len(orig.Profiles)-1].UnmarshalJSON(iter)
+				orig.Profiles = Append(st, orig.Profiles, Alloc[Profile](st))
+				orig.Profiles[len(orig.Profiles)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "schemaUrl", "schema_url":
-			orig.SchemaUrl = iter.ReadString()
+
+			orig.SchemaUrl = CopyString(st, iter.ReadString())
 		default:
 			iter.HandleUnknownField(f)
 		}
@@ -221,6 +213,10 @@ func (orig *ScopeProfiles) MarshalProto(buf []byte) int {
 }
 
 func (orig *ScopeProfiles) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *ScopeProfiles) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -246,7 +242,7 @@ func (orig *ScopeProfiles) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Scope.UnmarshalProto(buf[startPos:pos])
+			err = orig.Scope.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -261,8 +257,8 @@ func (orig *ScopeProfiles) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Profiles = append(orig.Profiles, NewProfile())
-			err = orig.Profiles[len(orig.Profiles)-1].UnmarshalProto(buf[startPos:pos])
+			orig.Profiles = Append(st, orig.Profiles, Alloc[Profile](st))
+			err = orig.Profiles[len(orig.Profiles)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -277,7 +273,7 @@ func (orig *ScopeProfiles) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.SchemaUrl = string(buf[startPos:pos])
+			orig.SchemaUrl = BorrowString(st, buf, startPos, pos)
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
 			if err != nil {
@@ -289,7 +285,7 @@ func (orig *ScopeProfiles) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestScopeProfiles() *ScopeProfiles {
-	orig := NewScopeProfiles()
+	orig := Alloc[ScopeProfiles](nil)
 	orig.Scope = *GenTestInstrumentationScope()
 	orig.Profiles = []*Profile{{}, GenTestProfile()}
 	orig.SchemaUrl = "test_schemaurl"
@@ -298,11 +294,11 @@ func GenTestScopeProfiles() *ScopeProfiles {
 
 func GenTestScopeProfilesPtrSlice() []*ScopeProfiles {
 	orig := make([]*ScopeProfiles, 5)
-	orig[0] = NewScopeProfiles()
+	orig[0] = Alloc[ScopeProfiles](nil)
 	orig[1] = GenTestScopeProfiles()
-	orig[2] = NewScopeProfiles()
+	orig[2] = Alloc[ScopeProfiles](nil)
 	orig[3] = GenTestScopeProfiles()
-	orig[4] = NewScopeProfiles()
+	orig[4] = Alloc[ScopeProfiles](nil)
 	return orig
 }
 

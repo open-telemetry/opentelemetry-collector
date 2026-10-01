@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -20,19 +19,8 @@ type ExportProfilesServiceResponse struct {
 	PartialSuccess ExportProfilesPartialSuccess
 }
 
-var (
-	protoPoolExportProfilesServiceResponse = sync.Pool{
-		New: func() any {
-			return &ExportProfilesServiceResponse{}
-		},
-	}
-)
-
 func NewExportProfilesServiceResponse() *ExportProfilesServiceResponse {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &ExportProfilesServiceResponse{}
-	}
-	return protoPoolExportProfilesServiceResponse.Get().(*ExportProfilesServiceResponse)
+	return Alloc[ExportProfilesServiceResponse](nil)
 }
 
 func DeleteExportProfilesServiceResponse(orig *ExportProfilesServiceResponse, nullable bool) {
@@ -46,12 +34,10 @@ func DeleteExportProfilesServiceResponse(orig *ExportProfilesServiceResponse, nu
 	}
 	DeleteExportProfilesPartialSuccess(&orig.PartialSuccess, false)
 	orig.Reset()
-	if nullable {
-		protoPoolExportProfilesServiceResponse.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyExportProfilesServiceResponse(dest, src *ExportProfilesServiceResponse) *ExportProfilesServiceResponse {
+func CopyExportProfilesServiceResponse(dest, src *ExportProfilesServiceResponse, st *State) *ExportProfilesServiceResponse {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -62,17 +48,17 @@ func CopyExportProfilesServiceResponse(dest, src *ExportProfilesServiceResponse)
 	}
 
 	if dest == nil {
-		dest = NewExportProfilesServiceResponse()
+		dest = Alloc[ExportProfilesServiceResponse](st)
 	}
-	CopyExportProfilesPartialSuccess(&dest.PartialSuccess, &src.PartialSuccess)
+	CopyExportProfilesPartialSuccess(&dest.PartialSuccess, &src.PartialSuccess, st)
 
 	return dest
 }
 
-func CopyExportProfilesServiceResponseSlice(dest, src []ExportProfilesServiceResponse) []ExportProfilesServiceResponse {
+func CopyExportProfilesServiceResponseSlice(dest, src []ExportProfilesServiceResponse, st *State) []ExportProfilesServiceResponse {
 	var newDest []ExportProfilesServiceResponse
 	if cap(dest) < len(src) {
-		newDest = make([]ExportProfilesServiceResponse, len(src))
+		newDest = AllocSlice[ExportProfilesServiceResponse](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -82,20 +68,20 @@ func CopyExportProfilesServiceResponseSlice(dest, src []ExportProfilesServiceRes
 		}
 	}
 	for i := range src {
-		CopyExportProfilesServiceResponse(&newDest[i], &src[i])
+		CopyExportProfilesServiceResponse(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyExportProfilesServiceResponsePtrSlice(dest, src []*ExportProfilesServiceResponse) []*ExportProfilesServiceResponse {
+func CopyExportProfilesServiceResponsePtrSlice(dest, src []*ExportProfilesServiceResponse, st *State) []*ExportProfilesServiceResponse {
 	var newDest []*ExportProfilesServiceResponse
 	if cap(dest) < len(src) {
-		newDest = make([]*ExportProfilesServiceResponse, len(src))
+		newDest = AllocSlice[*ExportProfilesServiceResponse](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewExportProfilesServiceResponse()
+			newDest[i] = Alloc[ExportProfilesServiceResponse](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -108,11 +94,11 @@ func CopyExportProfilesServiceResponsePtrSlice(dest, src []*ExportProfilesServic
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewExportProfilesServiceResponse()
+			newDest[i] = Alloc[ExportProfilesServiceResponse](st)
 		}
 	}
 	for i := range src {
-		CopyExportProfilesServiceResponse(newDest[i], src[i])
+		CopyExportProfilesServiceResponse(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -131,11 +117,16 @@ func (orig *ExportProfilesServiceResponse) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *ExportProfilesServiceResponse) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *ExportProfilesServiceResponse) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "partialSuccess", "partial_success":
 
-			orig.PartialSuccess.UnmarshalJSON(iter)
+			orig.PartialSuccess.UnmarshalJSONState(iter, st)
 		default:
 			iter.HandleUnknownField(f)
 		}
@@ -165,6 +156,10 @@ func (orig *ExportProfilesServiceResponse) MarshalProto(buf []byte) int {
 }
 
 func (orig *ExportProfilesServiceResponse) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *ExportProfilesServiceResponse) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -190,7 +185,7 @@ func (orig *ExportProfilesServiceResponse) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.PartialSuccess.UnmarshalProto(buf[startPos:pos])
+			err = orig.PartialSuccess.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -205,18 +200,18 @@ func (orig *ExportProfilesServiceResponse) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestExportProfilesServiceResponse() *ExportProfilesServiceResponse {
-	orig := NewExportProfilesServiceResponse()
+	orig := Alloc[ExportProfilesServiceResponse](nil)
 	orig.PartialSuccess = *GenTestExportProfilesPartialSuccess()
 	return orig
 }
 
 func GenTestExportProfilesServiceResponsePtrSlice() []*ExportProfilesServiceResponse {
 	orig := make([]*ExportProfilesServiceResponse, 5)
-	orig[0] = NewExportProfilesServiceResponse()
+	orig[0] = Alloc[ExportProfilesServiceResponse](nil)
 	orig[1] = GenTestExportProfilesServiceResponse()
-	orig[2] = NewExportProfilesServiceResponse()
+	orig[2] = Alloc[ExportProfilesServiceResponse](nil)
 	orig[3] = GenTestExportProfilesServiceResponse()
-	orig[4] = NewExportProfilesServiceResponse()
+	orig[4] = Alloc[ExportProfilesServiceResponse](nil)
 	return orig
 }
 

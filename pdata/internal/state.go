@@ -10,6 +10,7 @@ import (
 type State struct {
 	refs  atomic.Int32
 	state uint32
+	arena *Arena
 }
 
 const (
@@ -23,7 +24,44 @@ func NewState() *State {
 		state: defaultState,
 	}
 	st.refs.Store(1)
+	if useProtoArena() {
+		st.arena = newArena()
+	}
 	return st
+}
+
+// RetainWire keeps the protobuf input buffer alive so string/[]byte fields may alias it.
+func (st *State) RetainWire(buf []byte) {
+	if st == nil || st.arena == nil {
+		return
+	}
+	st.arena.retainWire(buf)
+}
+
+// CloneAndRetainWire copies buf and retains the copy when an arena is attached.
+func (st *State) CloneAndRetainWire(buf []byte) []byte {
+	if st == nil || st.arena == nil {
+		return buf
+	}
+	owned := append([]byte(nil), buf...)
+	st.arena.retainWire(owned)
+	return owned
+}
+
+// ResetArena rewinds bump pointers so the next request can reuse existing slabs.
+func (st *State) ResetArena() {
+	if st == nil || st.arena == nil {
+		return
+	}
+	st.arena.reset()
+}
+
+// DropArena releases arena slabs and the retained wire buffer.
+func (st *State) DropArena() {
+	if st == nil {
+		return
+	}
+	st.arena = nil
 }
 
 func (st *State) MarkReadOnly() {

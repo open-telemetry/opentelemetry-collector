@@ -31,9 +31,9 @@ func TestCopyNumberDataPoint(t *testing.T) {
 				}()
 
 				dest := NewNumberDataPoint()
-				CopyNumberDataPoint(dest, src)
+				CopyNumberDataPoint(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyNumberDataPoint(dest, dest)
+				CopyNumberDataPoint(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyNumberDataPointSlice(t *testing.T) {
 	src := []NumberDataPoint{}
 	dest := []NumberDataPoint{}
 	// Test CopyTo empty
-	dest = CopyNumberDataPointSlice(dest, src)
+	dest = CopyNumberDataPointSlice(dest, src, nil)
 	assert.Equal(t, []NumberDataPoint{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestNumberDataPointSlice()
-	dest = CopyNumberDataPointSlice(dest, src)
+	dest = CopyNumberDataPointSlice(dest, src, nil)
 	assert.Equal(t, GenTestNumberDataPointSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyNumberDataPointSlice(dest, src)
+	dest = CopyNumberDataPointSlice(dest, src, nil)
 	assert.Equal(t, GenTestNumberDataPointSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyNumberDataPointSlice(dest, []NumberDataPoint{})
+	dest = CopyNumberDataPointSlice(dest, []NumberDataPoint{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyNumberDataPointSlice(dest, src)
+	dest = CopyNumberDataPointSlice(dest, src, nil)
 	assert.Equal(t, GenTestNumberDataPointSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyNumberDataPointPtrSlice(t *testing.T) {
 	src := []*NumberDataPoint{}
 	dest := []*NumberDataPoint{}
 	// Test CopyTo empty
-	dest = CopyNumberDataPointPtrSlice(dest, src)
+	dest = CopyNumberDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, []*NumberDataPoint{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestNumberDataPointPtrSlice()
-	dest = CopyNumberDataPointPtrSlice(dest, src)
+	dest = CopyNumberDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestNumberDataPointPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyNumberDataPointPtrSlice(dest, src)
+	dest = CopyNumberDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestNumberDataPointPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyNumberDataPointPtrSlice(dest, []*NumberDataPoint{})
+	dest = CopyNumberDataPointPtrSlice(dest, []*NumberDataPoint{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyNumberDataPointPtrSlice(dest, src)
+	dest = CopyNumberDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestNumberDataPointPtrSlice(), dest)
 }
 

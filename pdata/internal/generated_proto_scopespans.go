@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -22,19 +21,8 @@ type ScopeSpans struct {
 	SchemaUrl string
 }
 
-var (
-	protoPoolScopeSpans = sync.Pool{
-		New: func() any {
-			return &ScopeSpans{}
-		},
-	}
-)
-
 func NewScopeSpans() *ScopeSpans {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &ScopeSpans{}
-	}
-	return protoPoolScopeSpans.Get().(*ScopeSpans)
+	return Alloc[ScopeSpans](nil)
 }
 
 func DeleteScopeSpans(orig *ScopeSpans, nullable bool) {
@@ -52,12 +40,10 @@ func DeleteScopeSpans(orig *ScopeSpans, nullable bool) {
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolScopeSpans.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyScopeSpans(dest, src *ScopeSpans) *ScopeSpans {
+func CopyScopeSpans(dest, src *ScopeSpans, st *State) *ScopeSpans {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -68,21 +54,21 @@ func CopyScopeSpans(dest, src *ScopeSpans) *ScopeSpans {
 	}
 
 	if dest == nil {
-		dest = NewScopeSpans()
+		dest = Alloc[ScopeSpans](st)
 	}
-	CopyInstrumentationScope(&dest.Scope, &src.Scope)
+	CopyInstrumentationScope(&dest.Scope, &src.Scope, st)
 
-	dest.Spans = CopySpanPtrSlice(dest.Spans, src.Spans)
+	dest.Spans = CopySpanPtrSlice(dest.Spans, src.Spans, st)
 
-	dest.SchemaUrl = src.SchemaUrl
+	dest.SchemaUrl = CopyString(st, src.SchemaUrl)
 
 	return dest
 }
 
-func CopyScopeSpansSlice(dest, src []ScopeSpans) []ScopeSpans {
+func CopyScopeSpansSlice(dest, src []ScopeSpans, st *State) []ScopeSpans {
 	var newDest []ScopeSpans
 	if cap(dest) < len(src) {
-		newDest = make([]ScopeSpans, len(src))
+		newDest = AllocSlice[ScopeSpans](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -92,20 +78,20 @@ func CopyScopeSpansSlice(dest, src []ScopeSpans) []ScopeSpans {
 		}
 	}
 	for i := range src {
-		CopyScopeSpans(&newDest[i], &src[i])
+		CopyScopeSpans(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyScopeSpansPtrSlice(dest, src []*ScopeSpans) []*ScopeSpans {
+func CopyScopeSpansPtrSlice(dest, src []*ScopeSpans, st *State) []*ScopeSpans {
 	var newDest []*ScopeSpans
 	if cap(dest) < len(src) {
-		newDest = make([]*ScopeSpans, len(src))
+		newDest = AllocSlice[*ScopeSpans](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewScopeSpans()
+			newDest[i] = Alloc[ScopeSpans](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -118,11 +104,11 @@ func CopyScopeSpansPtrSlice(dest, src []*ScopeSpans) []*ScopeSpans {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewScopeSpans()
+			newDest[i] = Alloc[ScopeSpans](st)
 		}
 	}
 	for i := range src {
-		CopyScopeSpans(newDest[i], src[i])
+		CopyScopeSpans(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -155,19 +141,25 @@ func (orig *ScopeSpans) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *ScopeSpans) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *ScopeSpans) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "scope":
 
-			orig.Scope.UnmarshalJSON(iter)
+			orig.Scope.UnmarshalJSONState(iter, st)
 		case "spans":
 			for iter.ReadArray() {
-				orig.Spans = append(orig.Spans, NewSpan())
-				orig.Spans[len(orig.Spans)-1].UnmarshalJSON(iter)
+				orig.Spans = Append(st, orig.Spans, Alloc[Span](st))
+				orig.Spans[len(orig.Spans)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "schemaUrl", "schema_url":
-			orig.SchemaUrl = iter.ReadString()
+
+			orig.SchemaUrl = CopyString(st, iter.ReadString())
 		default:
 			iter.HandleUnknownField(f)
 		}
@@ -221,6 +213,10 @@ func (orig *ScopeSpans) MarshalProto(buf []byte) int {
 }
 
 func (orig *ScopeSpans) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *ScopeSpans) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -246,7 +242,7 @@ func (orig *ScopeSpans) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Scope.UnmarshalProto(buf[startPos:pos])
+			err = orig.Scope.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -261,8 +257,8 @@ func (orig *ScopeSpans) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Spans = append(orig.Spans, NewSpan())
-			err = orig.Spans[len(orig.Spans)-1].UnmarshalProto(buf[startPos:pos])
+			orig.Spans = Append(st, orig.Spans, Alloc[Span](st))
+			err = orig.Spans[len(orig.Spans)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -277,7 +273,7 @@ func (orig *ScopeSpans) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.SchemaUrl = string(buf[startPos:pos])
+			orig.SchemaUrl = BorrowString(st, buf, startPos, pos)
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
 			if err != nil {
@@ -289,7 +285,7 @@ func (orig *ScopeSpans) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestScopeSpans() *ScopeSpans {
-	orig := NewScopeSpans()
+	orig := Alloc[ScopeSpans](nil)
 	orig.Scope = *GenTestInstrumentationScope()
 	orig.Spans = []*Span{{}, GenTestSpan()}
 	orig.SchemaUrl = "test_schemaurl"
@@ -298,11 +294,11 @@ func GenTestScopeSpans() *ScopeSpans {
 
 func GenTestScopeSpansPtrSlice() []*ScopeSpans {
 	orig := make([]*ScopeSpans, 5)
-	orig[0] = NewScopeSpans()
+	orig[0] = Alloc[ScopeSpans](nil)
 	orig[1] = GenTestScopeSpans()
-	orig[2] = NewScopeSpans()
+	orig[2] = Alloc[ScopeSpans](nil)
 	orig[3] = GenTestScopeSpans()
-	orig[4] = NewScopeSpans()
+	orig[4] = Alloc[ScopeSpans](nil)
 	return orig
 }
 

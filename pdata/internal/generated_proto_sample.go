@@ -9,7 +9,6 @@ package internal
 import (
 	"encoding/binary"
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -25,19 +24,8 @@ type Sample struct {
 	TimestampsUnixNano []uint64
 }
 
-var (
-	protoPoolSample = sync.Pool{
-		New: func() any {
-			return &Sample{}
-		},
-	}
-)
-
 func NewSample() *Sample {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &Sample{}
-	}
-	return protoPoolSample.Get().(*Sample)
+	return Alloc[Sample](nil)
 }
 
 func DeleteSample(orig *Sample, nullable bool) {
@@ -51,12 +39,10 @@ func DeleteSample(orig *Sample, nullable bool) {
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolSample.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopySample(dest, src *Sample) *Sample {
+func CopySample(dest, src *Sample, st *State) *Sample {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -67,23 +53,23 @@ func CopySample(dest, src *Sample) *Sample {
 	}
 
 	if dest == nil {
-		dest = NewSample()
+		dest = Alloc[Sample](st)
 	}
 	dest.StackIndex = src.StackIndex
-	dest.AttributeIndices = append(dest.AttributeIndices[:0], src.AttributeIndices...)
+	dest.AttributeIndices = CopySlice(st, dest.AttributeIndices, src.AttributeIndices)
 
 	dest.LinkIndex = src.LinkIndex
-	dest.Values = append(dest.Values[:0], src.Values...)
+	dest.Values = CopySlice(st, dest.Values, src.Values)
 
-	dest.TimestampsUnixNano = append(dest.TimestampsUnixNano[:0], src.TimestampsUnixNano...)
+	dest.TimestampsUnixNano = CopySlice(st, dest.TimestampsUnixNano, src.TimestampsUnixNano)
 
 	return dest
 }
 
-func CopySampleSlice(dest, src []Sample) []Sample {
+func CopySampleSlice(dest, src []Sample, st *State) []Sample {
 	var newDest []Sample
 	if cap(dest) < len(src) {
-		newDest = make([]Sample, len(src))
+		newDest = AllocSlice[Sample](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -93,20 +79,20 @@ func CopySampleSlice(dest, src []Sample) []Sample {
 		}
 	}
 	for i := range src {
-		CopySample(&newDest[i], &src[i])
+		CopySample(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopySamplePtrSlice(dest, src []*Sample) []*Sample {
+func CopySamplePtrSlice(dest, src []*Sample, st *State) []*Sample {
 	var newDest []*Sample
 	if cap(dest) < len(src) {
-		newDest = make([]*Sample, len(src))
+		newDest = AllocSlice[*Sample](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewSample()
+			newDest[i] = Alloc[Sample](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -119,11 +105,11 @@ func CopySamplePtrSlice(dest, src []*Sample) []*Sample {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewSample()
+			newDest[i] = Alloc[Sample](st)
 		}
 	}
 	for i := range src {
-		CopySample(newDest[i], src[i])
+		CopySample(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -181,25 +167,32 @@ func (orig *Sample) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *Sample) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *Sample) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "stackIndex", "stack_index":
+
 			orig.StackIndex = iter.ReadInt32()
 		case "attributeIndices", "attribute_indices":
 			for iter.ReadArray() {
-				orig.AttributeIndices = append(orig.AttributeIndices, iter.ReadInt32())
+				orig.AttributeIndices = Append(st, orig.AttributeIndices, iter.ReadInt32())
 			}
 
 		case "linkIndex", "link_index":
+
 			orig.LinkIndex = iter.ReadInt32()
 		case "values":
 			for iter.ReadArray() {
-				orig.Values = append(orig.Values, iter.ReadInt64())
+				orig.Values = Append(st, orig.Values, iter.ReadInt64())
 			}
 
 		case "timestampsUnixNano", "timestamps_unix_nano":
 			for iter.ReadArray() {
-				orig.TimestampsUnixNano = append(orig.TimestampsUnixNano, iter.ReadUint64())
+				orig.TimestampsUnixNano = Append(st, orig.TimestampsUnixNano, iter.ReadUint64())
 			}
 
 		default:
@@ -290,6 +283,10 @@ func (orig *Sample) MarshalProto(buf []byte) int {
 }
 
 func (orig *Sample) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *Sample) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -329,7 +326,7 @@ func (orig *Sample) UnmarshalProto(buf []byte) error {
 					if err != nil {
 						return err
 					}
-					orig.AttributeIndices = append(orig.AttributeIndices, int32(num))
+					orig.AttributeIndices = Append(st, orig.AttributeIndices, int32(num))
 				}
 				if startPos != pos {
 					return fmt.Errorf("proto: invalid field len = %d for field AttributeIndices", pos-startPos)
@@ -340,7 +337,7 @@ func (orig *Sample) UnmarshalProto(buf []byte) error {
 				if err != nil {
 					return err
 				}
-				orig.AttributeIndices = append(orig.AttributeIndices, int32(num))
+				orig.AttributeIndices = Append(st, orig.AttributeIndices, int32(num))
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field AttributeIndices", wireType)
 			}
@@ -370,7 +367,7 @@ func (orig *Sample) UnmarshalProto(buf []byte) error {
 					if err != nil {
 						return err
 					}
-					orig.Values = append(orig.Values, int64(num))
+					orig.Values = Append(st, orig.Values, int64(num))
 				}
 				if startPos != pos {
 					return fmt.Errorf("proto: invalid field len = %d for field Values", pos-startPos)
@@ -381,7 +378,7 @@ func (orig *Sample) UnmarshalProto(buf []byte) error {
 				if err != nil {
 					return err
 				}
-				orig.Values = append(orig.Values, int64(num))
+				orig.Values = Append(st, orig.Values, int64(num))
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field Values", wireType)
 			}
@@ -395,7 +392,7 @@ func (orig *Sample) UnmarshalProto(buf []byte) error {
 				}
 				startPos := pos - length
 				size := length / 8
-				orig.TimestampsUnixNano = make([]uint64, size)
+				orig.TimestampsUnixNano = AllocSlice[uint64](st, size, size)
 				var num uint64
 				for i := 0; i < size; i++ {
 					num, startPos, err = proto.ConsumeI64(buf[:pos], startPos)
@@ -413,7 +410,7 @@ func (orig *Sample) UnmarshalProto(buf []byte) error {
 				if err != nil {
 					return err
 				}
-				orig.TimestampsUnixNano = append(orig.TimestampsUnixNano, uint64(num))
+				orig.TimestampsUnixNano = Append(st, orig.TimestampsUnixNano, uint64(num))
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field TimestampsUnixNano", wireType)
 			}
@@ -428,7 +425,7 @@ func (orig *Sample) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestSample() *Sample {
-	orig := NewSample()
+	orig := Alloc[Sample](nil)
 	orig.StackIndex = int32(13)
 	orig.AttributeIndices = []int32{int32(0), int32(13)}
 	orig.LinkIndex = int32(13)
@@ -439,11 +436,11 @@ func GenTestSample() *Sample {
 
 func GenTestSamplePtrSlice() []*Sample {
 	orig := make([]*Sample, 5)
-	orig[0] = NewSample()
+	orig[0] = Alloc[Sample](nil)
 	orig[1] = GenTestSample()
-	orig[2] = NewSample()
+	orig[2] = Alloc[Sample](nil)
 	orig[3] = GenTestSample()
-	orig[4] = NewSample()
+	orig[4] = Alloc[Sample](nil)
 	return orig
 }
 

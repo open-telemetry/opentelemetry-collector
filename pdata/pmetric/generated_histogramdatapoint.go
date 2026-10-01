@@ -32,7 +32,8 @@ func newHistogramDataPoint(orig *internal.HistogramDataPoint, state *internal.St
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewHistogramDataPoint() HistogramDataPoint {
-	return newHistogramDataPoint(internal.NewHistogramDataPoint(), internal.NewState())
+	st := internal.NewState()
+	return newHistogramDataPoint(internal.Alloc[internal.HistogramDataPoint](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -42,6 +43,11 @@ func (ms HistogramDataPoint) MoveTo(dest HistogramDataPoint) {
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if ms.state != dest.state {
+		ms.CopyTo(dest)
+		internal.DeleteHistogramDataPoint(ms.orig, false)
 		return
 	}
 	internal.DeleteHistogramDataPoint(dest.orig, false)
@@ -184,5 +190,5 @@ func (ms HistogramDataPoint) RemoveMax() {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 	dest.state.AssertMutable()
-	internal.CopyHistogramDataPoint(dest.orig, ms.orig)
+	internal.CopyHistogramDataPoint(dest.orig, ms.orig, dest.state)
 }

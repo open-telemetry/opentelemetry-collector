@@ -31,7 +31,8 @@ func newGauge(orig *internal.Gauge, state *internal.State) Gauge {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewGauge() Gauge {
-	return newGauge(internal.NewGauge(), internal.NewState())
+	st := internal.NewState()
+	return newGauge(internal.Alloc[internal.Gauge](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -41,6 +42,11 @@ func (ms Gauge) MoveTo(dest Gauge) {
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if ms.state != dest.state {
+		ms.CopyTo(dest)
+		internal.DeleteGauge(ms.orig, false)
 		return
 	}
 	internal.DeleteGauge(dest.orig, false)
@@ -55,5 +61,5 @@ func (ms Gauge) DataPoints() NumberDataPointSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Gauge) CopyTo(dest Gauge) {
 	dest.state.AssertMutable()
-	internal.CopyGauge(dest.orig, ms.orig)
+	internal.CopyGauge(dest.orig, ms.orig, dest.state)
 }

@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -23,19 +22,8 @@ type ResourceLogs struct {
 	DeprecatedScopeLogs []*ScopeLogs
 }
 
-var (
-	protoPoolResourceLogs = sync.Pool{
-		New: func() any {
-			return &ResourceLogs{}
-		},
-	}
-)
-
 func NewResourceLogs() *ResourceLogs {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &ResourceLogs{}
-	}
-	return protoPoolResourceLogs.Get().(*ResourceLogs)
+	return Alloc[ResourceLogs](nil)
 }
 
 func DeleteResourceLogs(orig *ResourceLogs, nullable bool) {
@@ -56,12 +44,10 @@ func DeleteResourceLogs(orig *ResourceLogs, nullable bool) {
 		DeleteScopeLogs(orig.DeprecatedScopeLogs[i], true)
 	}
 	orig.Reset()
-	if nullable {
-		protoPoolResourceLogs.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyResourceLogs(dest, src *ResourceLogs) *ResourceLogs {
+func CopyResourceLogs(dest, src *ResourceLogs, st *State) *ResourceLogs {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -72,22 +58,23 @@ func CopyResourceLogs(dest, src *ResourceLogs) *ResourceLogs {
 	}
 
 	if dest == nil {
-		dest = NewResourceLogs()
+		dest = Alloc[ResourceLogs](st)
 	}
-	CopyResource(&dest.Resource, &src.Resource)
+	CopyResource(&dest.Resource, &src.Resource, st)
 
-	dest.ScopeLogs = CopyScopeLogsPtrSlice(dest.ScopeLogs, src.ScopeLogs)
+	dest.ScopeLogs = CopyScopeLogsPtrSlice(dest.ScopeLogs, src.ScopeLogs, st)
 
-	dest.SchemaUrl = src.SchemaUrl
-	dest.DeprecatedScopeLogs = CopyScopeLogsPtrSlice(dest.DeprecatedScopeLogs, src.DeprecatedScopeLogs)
+	dest.SchemaUrl = CopyString(st, src.SchemaUrl)
+
+	dest.DeprecatedScopeLogs = CopyScopeLogsPtrSlice(dest.DeprecatedScopeLogs, src.DeprecatedScopeLogs, st)
 
 	return dest
 }
 
-func CopyResourceLogsSlice(dest, src []ResourceLogs) []ResourceLogs {
+func CopyResourceLogsSlice(dest, src []ResourceLogs, st *State) []ResourceLogs {
 	var newDest []ResourceLogs
 	if cap(dest) < len(src) {
-		newDest = make([]ResourceLogs, len(src))
+		newDest = AllocSlice[ResourceLogs](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -97,20 +84,20 @@ func CopyResourceLogsSlice(dest, src []ResourceLogs) []ResourceLogs {
 		}
 	}
 	for i := range src {
-		CopyResourceLogs(&newDest[i], &src[i])
+		CopyResourceLogs(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyResourceLogsPtrSlice(dest, src []*ResourceLogs) []*ResourceLogs {
+func CopyResourceLogsPtrSlice(dest, src []*ResourceLogs, st *State) []*ResourceLogs {
 	var newDest []*ResourceLogs
 	if cap(dest) < len(src) {
-		newDest = make([]*ResourceLogs, len(src))
+		newDest = AllocSlice[*ResourceLogs](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewResourceLogs()
+			newDest[i] = Alloc[ResourceLogs](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -123,11 +110,11 @@ func CopyResourceLogsPtrSlice(dest, src []*ResourceLogs) []*ResourceLogs {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewResourceLogs()
+			newDest[i] = Alloc[ResourceLogs](st)
 		}
 	}
 	for i := range src {
-		CopyResourceLogs(newDest[i], src[i])
+		CopyResourceLogs(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -170,23 +157,29 @@ func (orig *ResourceLogs) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *ResourceLogs) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *ResourceLogs) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resource":
 
-			orig.Resource.UnmarshalJSON(iter)
+			orig.Resource.UnmarshalJSONState(iter, st)
 		case "scopeLogs", "scope_logs":
 			for iter.ReadArray() {
-				orig.ScopeLogs = append(orig.ScopeLogs, NewScopeLogs())
-				orig.ScopeLogs[len(orig.ScopeLogs)-1].UnmarshalJSON(iter)
+				orig.ScopeLogs = Append(st, orig.ScopeLogs, Alloc[ScopeLogs](st))
+				orig.ScopeLogs[len(orig.ScopeLogs)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "schemaUrl", "schema_url":
-			orig.SchemaUrl = iter.ReadString()
+
+			orig.SchemaUrl = CopyString(st, iter.ReadString())
 		case "deprecatedScopeLogs", "deprecated_scope_logs":
 			for iter.ReadArray() {
-				orig.DeprecatedScopeLogs = append(orig.DeprecatedScopeLogs, NewScopeLogs())
-				orig.DeprecatedScopeLogs[len(orig.DeprecatedScopeLogs)-1].UnmarshalJSON(iter)
+				orig.DeprecatedScopeLogs = Append(st, orig.DeprecatedScopeLogs, Alloc[ScopeLogs](st))
+				orig.DeprecatedScopeLogs[len(orig.DeprecatedScopeLogs)-1].UnmarshalJSONState(iter, st)
 			}
 
 		default:
@@ -255,6 +248,10 @@ func (orig *ResourceLogs) MarshalProto(buf []byte) int {
 }
 
 func (orig *ResourceLogs) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *ResourceLogs) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -280,7 +277,7 @@ func (orig *ResourceLogs) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Resource.UnmarshalProto(buf[startPos:pos])
+			err = orig.Resource.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -295,8 +292,8 @@ func (orig *ResourceLogs) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.ScopeLogs = append(orig.ScopeLogs, NewScopeLogs())
-			err = orig.ScopeLogs[len(orig.ScopeLogs)-1].UnmarshalProto(buf[startPos:pos])
+			orig.ScopeLogs = Append(st, orig.ScopeLogs, Alloc[ScopeLogs](st))
+			err = orig.ScopeLogs[len(orig.ScopeLogs)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -311,7 +308,7 @@ func (orig *ResourceLogs) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.SchemaUrl = string(buf[startPos:pos])
+			orig.SchemaUrl = BorrowString(st, buf, startPos, pos)
 
 		case 1000:
 			if wireType != proto.WireTypeLen {
@@ -323,8 +320,8 @@ func (orig *ResourceLogs) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.DeprecatedScopeLogs = append(orig.DeprecatedScopeLogs, NewScopeLogs())
-			err = orig.DeprecatedScopeLogs[len(orig.DeprecatedScopeLogs)-1].UnmarshalProto(buf[startPos:pos])
+			orig.DeprecatedScopeLogs = Append(st, orig.DeprecatedScopeLogs, Alloc[ScopeLogs](st))
+			err = orig.DeprecatedScopeLogs[len(orig.DeprecatedScopeLogs)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -339,7 +336,7 @@ func (orig *ResourceLogs) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestResourceLogs() *ResourceLogs {
-	orig := NewResourceLogs()
+	orig := Alloc[ResourceLogs](nil)
 	orig.Resource = *GenTestResource()
 	orig.ScopeLogs = []*ScopeLogs{{}, GenTestScopeLogs()}
 	orig.SchemaUrl = "test_schemaurl"
@@ -349,11 +346,11 @@ func GenTestResourceLogs() *ResourceLogs {
 
 func GenTestResourceLogsPtrSlice() []*ResourceLogs {
 	orig := make([]*ResourceLogs, 5)
-	orig[0] = NewResourceLogs()
+	orig[0] = Alloc[ResourceLogs](nil)
 	orig[1] = GenTestResourceLogs()
-	orig[2] = NewResourceLogs()
+	orig[2] = Alloc[ResourceLogs](nil)
 	orig[3] = GenTestResourceLogs()
-	orig[4] = NewResourceLogs()
+	orig[4] = Alloc[ResourceLogs](nil)
 	return orig
 }
 

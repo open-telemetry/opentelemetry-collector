@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -23,19 +22,8 @@ type InstrumentationScope struct {
 	DroppedAttributesCount uint32
 }
 
-var (
-	protoPoolInstrumentationScope = sync.Pool{
-		New: func() any {
-			return &InstrumentationScope{}
-		},
-	}
-)
-
 func NewInstrumentationScope() *InstrumentationScope {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &InstrumentationScope{}
-	}
-	return protoPoolInstrumentationScope.Get().(*InstrumentationScope)
+	return Alloc[InstrumentationScope](nil)
 }
 
 func DeleteInstrumentationScope(orig *InstrumentationScope, nullable bool) {
@@ -53,12 +41,10 @@ func DeleteInstrumentationScope(orig *InstrumentationScope, nullable bool) {
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolInstrumentationScope.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyInstrumentationScope(dest, src *InstrumentationScope) *InstrumentationScope {
+func CopyInstrumentationScope(dest, src *InstrumentationScope, st *State) *InstrumentationScope {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -69,21 +55,23 @@ func CopyInstrumentationScope(dest, src *InstrumentationScope) *InstrumentationS
 	}
 
 	if dest == nil {
-		dest = NewInstrumentationScope()
+		dest = Alloc[InstrumentationScope](st)
 	}
-	dest.Name = src.Name
-	dest.Version = src.Version
-	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes)
+	dest.Name = CopyString(st, src.Name)
+
+	dest.Version = CopyString(st, src.Version)
+
+	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes, st)
 
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
 
 	return dest
 }
 
-func CopyInstrumentationScopeSlice(dest, src []InstrumentationScope) []InstrumentationScope {
+func CopyInstrumentationScopeSlice(dest, src []InstrumentationScope, st *State) []InstrumentationScope {
 	var newDest []InstrumentationScope
 	if cap(dest) < len(src) {
-		newDest = make([]InstrumentationScope, len(src))
+		newDest = AllocSlice[InstrumentationScope](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -93,20 +81,20 @@ func CopyInstrumentationScopeSlice(dest, src []InstrumentationScope) []Instrumen
 		}
 	}
 	for i := range src {
-		CopyInstrumentationScope(&newDest[i], &src[i])
+		CopyInstrumentationScope(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyInstrumentationScopePtrSlice(dest, src []*InstrumentationScope) []*InstrumentationScope {
+func CopyInstrumentationScopePtrSlice(dest, src []*InstrumentationScope, st *State) []*InstrumentationScope {
 	var newDest []*InstrumentationScope
 	if cap(dest) < len(src) {
-		newDest = make([]*InstrumentationScope, len(src))
+		newDest = AllocSlice[*InstrumentationScope](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewInstrumentationScope()
+			newDest[i] = Alloc[InstrumentationScope](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -119,11 +107,11 @@ func CopyInstrumentationScopePtrSlice(dest, src []*InstrumentationScope) []*Inst
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewInstrumentationScope()
+			newDest[i] = Alloc[InstrumentationScope](st)
 		}
 	}
 	for i := range src {
-		CopyInstrumentationScope(newDest[i], src[i])
+		CopyInstrumentationScope(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -162,19 +150,27 @@ func (orig *InstrumentationScope) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *InstrumentationScope) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *InstrumentationScope) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "name":
-			orig.Name = iter.ReadString()
+
+			orig.Name = CopyString(st, iter.ReadString())
 		case "version":
-			orig.Version = iter.ReadString()
+
+			orig.Version = CopyString(st, iter.ReadString())
 		case "attributes":
 			for iter.ReadArray() {
-				orig.Attributes = append(orig.Attributes, KeyValue{})
-				orig.Attributes[len(orig.Attributes)-1].UnmarshalJSON(iter)
+				orig.Attributes = Append(st, orig.Attributes, KeyValue{})
+				orig.Attributes[len(orig.Attributes)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "droppedAttributesCount", "dropped_attributes_count":
+
 			orig.DroppedAttributesCount = iter.ReadUint32()
 		default:
 			iter.HandleUnknownField(f)
@@ -242,6 +238,10 @@ func (orig *InstrumentationScope) MarshalProto(buf []byte) int {
 }
 
 func (orig *InstrumentationScope) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *InstrumentationScope) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -266,7 +266,7 @@ func (orig *InstrumentationScope) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Name = string(buf[startPos:pos])
+			orig.Name = BorrowString(st, buf, startPos, pos)
 
 		case 2:
 			if wireType != proto.WireTypeLen {
@@ -278,7 +278,7 @@ func (orig *InstrumentationScope) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Version = string(buf[startPos:pos])
+			orig.Version = BorrowString(st, buf, startPos, pos)
 
 		case 3:
 			if wireType != proto.WireTypeLen {
@@ -290,8 +290,8 @@ func (orig *InstrumentationScope) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = append(orig.Attributes, KeyValue{})
-			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProto(buf[startPos:pos])
+			orig.Attributes = Append(st, orig.Attributes, KeyValue{})
+			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -317,7 +317,7 @@ func (orig *InstrumentationScope) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestInstrumentationScope() *InstrumentationScope {
-	orig := NewInstrumentationScope()
+	orig := Alloc[InstrumentationScope](nil)
 	orig.Name = "test_name"
 	orig.Version = "test_version"
 	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
@@ -327,11 +327,11 @@ func GenTestInstrumentationScope() *InstrumentationScope {
 
 func GenTestInstrumentationScopePtrSlice() []*InstrumentationScope {
 	orig := make([]*InstrumentationScope, 5)
-	orig[0] = NewInstrumentationScope()
+	orig[0] = Alloc[InstrumentationScope](nil)
 	orig[1] = GenTestInstrumentationScope()
-	orig[2] = NewInstrumentationScope()
+	orig[2] = Alloc[InstrumentationScope](nil)
 	orig[3] = GenTestInstrumentationScope()
-	orig[4] = NewInstrumentationScope()
+	orig[4] = Alloc[InstrumentationScope](nil)
 	return orig
 }
 

@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -22,19 +21,8 @@ type EntityRef struct {
 	DescriptionKeys []string
 }
 
-var (
-	protoPoolEntityRef = sync.Pool{
-		New: func() any {
-			return &EntityRef{}
-		},
-	}
-)
-
 func NewEntityRef() *EntityRef {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &EntityRef{}
-	}
-	return protoPoolEntityRef.Get().(*EntityRef)
+	return Alloc[EntityRef](nil)
 }
 
 func DeleteEntityRef(orig *EntityRef, nullable bool) {
@@ -48,12 +36,10 @@ func DeleteEntityRef(orig *EntityRef, nullable bool) {
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolEntityRef.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyEntityRef(dest, src *EntityRef) *EntityRef {
+func CopyEntityRef(dest, src *EntityRef, st *State) *EntityRef {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -64,21 +50,29 @@ func CopyEntityRef(dest, src *EntityRef) *EntityRef {
 	}
 
 	if dest == nil {
-		dest = NewEntityRef()
+		dest = Alloc[EntityRef](st)
 	}
-	dest.SchemaUrl = src.SchemaUrl
-	dest.Type = src.Type
-	dest.IdKeys = append(dest.IdKeys[:0], src.IdKeys...)
+	dest.SchemaUrl = CopyString(st, src.SchemaUrl)
 
-	dest.DescriptionKeys = append(dest.DescriptionKeys[:0], src.DescriptionKeys...)
+	dest.Type = CopyString(st, src.Type)
+
+	dest.IdKeys = dest.IdKeys[:0]
+	for _, v := range src.IdKeys {
+		dest.IdKeys = Append(st, dest.IdKeys, CopyString(st, v))
+	}
+
+	dest.DescriptionKeys = dest.DescriptionKeys[:0]
+	for _, v := range src.DescriptionKeys {
+		dest.DescriptionKeys = Append(st, dest.DescriptionKeys, CopyString(st, v))
+	}
 
 	return dest
 }
 
-func CopyEntityRefSlice(dest, src []EntityRef) []EntityRef {
+func CopyEntityRefSlice(dest, src []EntityRef, st *State) []EntityRef {
 	var newDest []EntityRef
 	if cap(dest) < len(src) {
-		newDest = make([]EntityRef, len(src))
+		newDest = AllocSlice[EntityRef](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -88,20 +82,20 @@ func CopyEntityRefSlice(dest, src []EntityRef) []EntityRef {
 		}
 	}
 	for i := range src {
-		CopyEntityRef(&newDest[i], &src[i])
+		CopyEntityRef(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyEntityRefPtrSlice(dest, src []*EntityRef) []*EntityRef {
+func CopyEntityRefPtrSlice(dest, src []*EntityRef, st *State) []*EntityRef {
 	var newDest []*EntityRef
 	if cap(dest) < len(src) {
-		newDest = make([]*EntityRef, len(src))
+		newDest = AllocSlice[*EntityRef](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewEntityRef()
+			newDest[i] = Alloc[EntityRef](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -114,11 +108,11 @@ func CopyEntityRefPtrSlice(dest, src []*EntityRef) []*EntityRef {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewEntityRef()
+			newDest[i] = Alloc[EntityRef](st)
 		}
 	}
 	for i := range src {
-		CopyEntityRef(newDest[i], src[i])
+		CopyEntityRef(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -165,20 +159,27 @@ func (orig *EntityRef) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *EntityRef) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *EntityRef) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "schemaUrl", "schema_url":
-			orig.SchemaUrl = iter.ReadString()
+
+			orig.SchemaUrl = CopyString(st, iter.ReadString())
 		case "type":
-			orig.Type = iter.ReadString()
+
+			orig.Type = CopyString(st, iter.ReadString())
 		case "idKeys", "id_keys":
 			for iter.ReadArray() {
-				orig.IdKeys = append(orig.IdKeys, iter.ReadString())
+				orig.IdKeys = Append(st, orig.IdKeys, CopyString(st, iter.ReadString()))
 			}
 
 		case "descriptionKeys", "description_keys":
 			for iter.ReadArray() {
-				orig.DescriptionKeys = append(orig.DescriptionKeys, iter.ReadString())
+				orig.DescriptionKeys = Append(st, orig.DescriptionKeys, CopyString(st, iter.ReadString()))
 			}
 
 		default:
@@ -252,6 +253,10 @@ func (orig *EntityRef) MarshalProto(buf []byte) int {
 }
 
 func (orig *EntityRef) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *EntityRef) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -276,7 +281,7 @@ func (orig *EntityRef) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.SchemaUrl = string(buf[startPos:pos])
+			orig.SchemaUrl = BorrowString(st, buf, startPos, pos)
 
 		case 2:
 			if wireType != proto.WireTypeLen {
@@ -288,7 +293,7 @@ func (orig *EntityRef) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Type = string(buf[startPos:pos])
+			orig.Type = BorrowString(st, buf, startPos, pos)
 
 		case 3:
 			if wireType != proto.WireTypeLen {
@@ -300,7 +305,7 @@ func (orig *EntityRef) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.IdKeys = append(orig.IdKeys, string(buf[startPos:pos]))
+			orig.IdKeys = Append(st, orig.IdKeys, BorrowString(st, buf, startPos, pos))
 
 		case 4:
 			if wireType != proto.WireTypeLen {
@@ -312,7 +317,7 @@ func (orig *EntityRef) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.DescriptionKeys = append(orig.DescriptionKeys, string(buf[startPos:pos]))
+			orig.DescriptionKeys = Append(st, orig.DescriptionKeys, BorrowString(st, buf, startPos, pos))
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
 			if err != nil {
@@ -324,7 +329,7 @@ func (orig *EntityRef) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestEntityRef() *EntityRef {
-	orig := NewEntityRef()
+	orig := Alloc[EntityRef](nil)
 	orig.SchemaUrl = "test_schemaurl"
 	orig.Type = "test_type"
 	orig.IdKeys = []string{"", "test_idkeys"}
@@ -334,11 +339,11 @@ func GenTestEntityRef() *EntityRef {
 
 func GenTestEntityRefPtrSlice() []*EntityRef {
 	orig := make([]*EntityRef, 5)
-	orig[0] = NewEntityRef()
+	orig[0] = Alloc[EntityRef](nil)
 	orig[1] = GenTestEntityRef()
-	orig[2] = NewEntityRef()
+	orig[2] = Alloc[EntityRef](nil)
 	orig[3] = GenTestEntityRef()
-	orig[4] = NewEntityRef()
+	orig[4] = Alloc[EntityRef](nil)
 	return orig
 }
 

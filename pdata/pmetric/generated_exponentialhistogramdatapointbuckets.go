@@ -32,7 +32,8 @@ func newExponentialHistogramDataPointBuckets(orig *internal.ExponentialHistogram
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExponentialHistogramDataPointBuckets() ExponentialHistogramDataPointBuckets {
-	return newExponentialHistogramDataPointBuckets(internal.NewExponentialHistogramDataPointBuckets(), internal.NewState())
+	st := internal.NewState()
+	return newExponentialHistogramDataPointBuckets(internal.Alloc[internal.ExponentialHistogramDataPointBuckets](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -42,6 +43,11 @@ func (ms ExponentialHistogramDataPointBuckets) MoveTo(dest ExponentialHistogramD
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if ms.state != dest.state {
+		ms.CopyTo(dest)
+		internal.DeleteExponentialHistogramDataPointBuckets(ms.orig, false)
 		return
 	}
 	internal.DeleteExponentialHistogramDataPointBuckets(dest.orig, false)
@@ -67,5 +73,5 @@ func (ms ExponentialHistogramDataPointBuckets) BucketCounts() pcommon.UInt64Slic
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExponentialHistogramDataPointBuckets) CopyTo(dest ExponentialHistogramDataPointBuckets) {
 	dest.state.AssertMutable()
-	internal.CopyExponentialHistogramDataPointBuckets(dest.orig, ms.orig)
+	internal.CopyExponentialHistogramDataPointBuckets(dest.orig, ms.orig, dest.state)
 }

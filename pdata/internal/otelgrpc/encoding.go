@@ -4,8 +4,12 @@
 package otelgrpc // import "go.opentelemetry.io/collector/pdata/internal/otelgrpc"
 
 import (
+	"sync"
+
 	"google.golang.org/grpc/encoding"
 	"google.golang.org/grpc/mem"
+
+	"go.opentelemetry.io/collector/pdata/internal"
 )
 
 var (
@@ -74,4 +78,41 @@ func (c *codecV2) Unmarshal(data mem.BufferSlice, v any) (err error) {
 
 func (c *codecV2) Name() string {
 	return Name
+}
+
+type protoStatefulUnmarshaler interface {
+	UnmarshalProtoState([]byte, *internal.State) error
+}
+
+type statefulDecoder struct {
+	msg protoStatefulUnmarshaler
+	st  *internal.State
+}
+
+func (s *statefulDecoder) SizeProto() int { return 0 }
+
+func (s *statefulDecoder) MarshalProto([]byte) int { return 0 }
+
+func (s *statefulDecoder) UnmarshalProto(buf []byte) error {
+	owned := s.st.CloneAndRetainWire(buf)
+	return s.msg.UnmarshalProtoState(owned, s.st)
+}
+
+var grpcRequestStates sync.Map
+
+func decodeExportRequest(st *internal.State, msg protoStatefulUnmarshaler, orig any, dec func(any) error) error {
+	grpcRequestStates.Store(orig, st)
+	if err := dec(&statefulDecoder{msg: msg, st: st}); err != nil {
+		grpcRequestStates.Delete(orig)
+		return err
+	}
+	return nil
+}
+
+// TakeGRPCState returns the State bound to a gRPC-decoded export request, or a new State.
+func TakeGRPCState(orig any) *internal.State {
+	if v, ok := grpcRequestStates.LoadAndDelete(orig); ok {
+		return v.(*internal.State)
+	}
+	return internal.NewState()
 }

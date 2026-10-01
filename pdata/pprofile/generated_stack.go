@@ -32,7 +32,8 @@ func newStack(orig *internal.Stack, state *internal.State) Stack {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewStack() Stack {
-	return newStack(internal.NewStack(), internal.NewState())
+	st := internal.NewState()
+	return newStack(internal.Alloc[internal.Stack](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -42,6 +43,11 @@ func (ms Stack) MoveTo(dest Stack) {
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if ms.state != dest.state {
+		ms.CopyTo(dest)
+		internal.DeleteStack(ms.orig, false)
 		return
 	}
 	internal.DeleteStack(dest.orig, false)
@@ -56,5 +62,5 @@ func (ms Stack) LocationIndices() pcommon.Int32Slice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Stack) CopyTo(dest Stack) {
 	dest.state.AssertMutable()
-	internal.CopyStack(dest.orig, ms.orig)
+	internal.CopyStack(dest.orig, ms.orig, dest.state)
 }

@@ -31,9 +31,9 @@ func TestCopySum(t *testing.T) {
 				}()
 
 				dest := NewSum()
-				CopySum(dest, src)
+				CopySum(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopySum(dest, dest)
+				CopySum(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopySumSlice(t *testing.T) {
 	src := []Sum{}
 	dest := []Sum{}
 	// Test CopyTo empty
-	dest = CopySumSlice(dest, src)
+	dest = CopySumSlice(dest, src, nil)
 	assert.Equal(t, []Sum{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestSumSlice()
-	dest = CopySumSlice(dest, src)
+	dest = CopySumSlice(dest, src, nil)
 	assert.Equal(t, GenTestSumSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopySumSlice(dest, src)
+	dest = CopySumSlice(dest, src, nil)
 	assert.Equal(t, GenTestSumSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopySumSlice(dest, []Sum{})
+	dest = CopySumSlice(dest, []Sum{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopySumSlice(dest, src)
+	dest = CopySumSlice(dest, src, nil)
 	assert.Equal(t, GenTestSumSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopySumPtrSlice(t *testing.T) {
 	src := []*Sum{}
 	dest := []*Sum{}
 	// Test CopyTo empty
-	dest = CopySumPtrSlice(dest, src)
+	dest = CopySumPtrSlice(dest, src, nil)
 	assert.Equal(t, []*Sum{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestSumPtrSlice()
-	dest = CopySumPtrSlice(dest, src)
+	dest = CopySumPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSumPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopySumPtrSlice(dest, src)
+	dest = CopySumPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSumPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopySumPtrSlice(dest, []*Sum{})
+	dest = CopySumPtrSlice(dest, []*Sum{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopySumPtrSlice(dest, src)
+	dest = CopySumPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSumPtrSlice(), dest)
 }
 

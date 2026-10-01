@@ -89,7 +89,7 @@ func (es LinkSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*internal.Link, len(*es.orig), newCap)
+	newOrig := internal.AllocSlice[*internal.Link](es.state, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -98,7 +98,7 @@ func (es LinkSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Link.
 func (es LinkSlice) AppendEmpty() Link {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewLink())
+	*es.orig = internal.Append(es.state, *es.orig, internal.Alloc[internal.Link](es.state))
 	return es.At(es.Len() - 1)
 }
 
@@ -111,11 +111,22 @@ func (es LinkSlice) MoveAndAppendTo(dest LinkSlice) {
 	if es.orig == dest.orig {
 		return
 	}
+	if es.state != dest.state {
+		for i := 0; i < es.Len(); i++ {
+			es.At(i).CopyTo(dest.AppendEmpty())
+		}
+		for i := range *es.orig {
+			internal.DeleteLink((*es.orig)[i], true)
+
+		}
+		*es.orig = nil
+		return
+	}
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.orig = internal.AppendSeq(dest.state, *dest.orig, *es.orig)
 	}
 	*es.orig = nil
 }
@@ -151,7 +162,7 @@ func (es LinkSlice) CopyTo(dest LinkSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyLinkPtrSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyLinkPtrSlice(*dest.orig, *es.orig, dest.state)
 }
 
 // Sort sorts the Link elements within LinkSlice given the

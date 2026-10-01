@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -21,19 +20,8 @@ type ExponentialHistogramDataPointBuckets struct {
 	BucketCounts []uint64
 }
 
-var (
-	protoPoolExponentialHistogramDataPointBuckets = sync.Pool{
-		New: func() any {
-			return &ExponentialHistogramDataPointBuckets{}
-		},
-	}
-)
-
 func NewExponentialHistogramDataPointBuckets() *ExponentialHistogramDataPointBuckets {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &ExponentialHistogramDataPointBuckets{}
-	}
-	return protoPoolExponentialHistogramDataPointBuckets.Get().(*ExponentialHistogramDataPointBuckets)
+	return Alloc[ExponentialHistogramDataPointBuckets](nil)
 }
 
 func DeleteExponentialHistogramDataPointBuckets(orig *ExponentialHistogramDataPointBuckets, nullable bool) {
@@ -47,12 +35,10 @@ func DeleteExponentialHistogramDataPointBuckets(orig *ExponentialHistogramDataPo
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolExponentialHistogramDataPointBuckets.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyExponentialHistogramDataPointBuckets(dest, src *ExponentialHistogramDataPointBuckets) *ExponentialHistogramDataPointBuckets {
+func CopyExponentialHistogramDataPointBuckets(dest, src *ExponentialHistogramDataPointBuckets, st *State) *ExponentialHistogramDataPointBuckets {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -63,18 +49,18 @@ func CopyExponentialHistogramDataPointBuckets(dest, src *ExponentialHistogramDat
 	}
 
 	if dest == nil {
-		dest = NewExponentialHistogramDataPointBuckets()
+		dest = Alloc[ExponentialHistogramDataPointBuckets](st)
 	}
 	dest.Offset = src.Offset
-	dest.BucketCounts = append(dest.BucketCounts[:0], src.BucketCounts...)
+	dest.BucketCounts = CopySlice(st, dest.BucketCounts, src.BucketCounts)
 
 	return dest
 }
 
-func CopyExponentialHistogramDataPointBucketsSlice(dest, src []ExponentialHistogramDataPointBuckets) []ExponentialHistogramDataPointBuckets {
+func CopyExponentialHistogramDataPointBucketsSlice(dest, src []ExponentialHistogramDataPointBuckets, st *State) []ExponentialHistogramDataPointBuckets {
 	var newDest []ExponentialHistogramDataPointBuckets
 	if cap(dest) < len(src) {
-		newDest = make([]ExponentialHistogramDataPointBuckets, len(src))
+		newDest = AllocSlice[ExponentialHistogramDataPointBuckets](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -84,20 +70,20 @@ func CopyExponentialHistogramDataPointBucketsSlice(dest, src []ExponentialHistog
 		}
 	}
 	for i := range src {
-		CopyExponentialHistogramDataPointBuckets(&newDest[i], &src[i])
+		CopyExponentialHistogramDataPointBuckets(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyExponentialHistogramDataPointBucketsPtrSlice(dest, src []*ExponentialHistogramDataPointBuckets) []*ExponentialHistogramDataPointBuckets {
+func CopyExponentialHistogramDataPointBucketsPtrSlice(dest, src []*ExponentialHistogramDataPointBuckets, st *State) []*ExponentialHistogramDataPointBuckets {
 	var newDest []*ExponentialHistogramDataPointBuckets
 	if cap(dest) < len(src) {
-		newDest = make([]*ExponentialHistogramDataPointBuckets, len(src))
+		newDest = AllocSlice[*ExponentialHistogramDataPointBuckets](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewExponentialHistogramDataPointBuckets()
+			newDest[i] = Alloc[ExponentialHistogramDataPointBuckets](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -110,11 +96,11 @@ func CopyExponentialHistogramDataPointBucketsPtrSlice(dest, src []*ExponentialHi
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewExponentialHistogramDataPointBuckets()
+			newDest[i] = Alloc[ExponentialHistogramDataPointBuckets](st)
 		}
 	}
 	for i := range src {
-		CopyExponentialHistogramDataPointBuckets(newDest[i], src[i])
+		CopyExponentialHistogramDataPointBuckets(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -146,13 +132,19 @@ func (orig *ExponentialHistogramDataPointBuckets) MarshalJSON(dest *json.Stream)
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *ExponentialHistogramDataPointBuckets) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *ExponentialHistogramDataPointBuckets) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "offset":
+
 			orig.Offset = iter.ReadInt32()
 		case "bucketCounts", "bucket_counts":
 			for iter.ReadArray() {
-				orig.BucketCounts = append(orig.BucketCounts, iter.ReadUint64())
+				orig.BucketCounts = Append(st, orig.BucketCounts, iter.ReadUint64())
 			}
 
 		default:
@@ -202,6 +194,10 @@ func (orig *ExponentialHistogramDataPointBuckets) MarshalProto(buf []byte) int {
 }
 
 func (orig *ExponentialHistogramDataPointBuckets) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *ExponentialHistogramDataPointBuckets) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -241,7 +237,7 @@ func (orig *ExponentialHistogramDataPointBuckets) UnmarshalProto(buf []byte) err
 					if err != nil {
 						return err
 					}
-					orig.BucketCounts = append(orig.BucketCounts, uint64(num))
+					orig.BucketCounts = Append(st, orig.BucketCounts, uint64(num))
 				}
 				if startPos != pos {
 					return fmt.Errorf("proto: invalid field len = %d for field BucketCounts", pos-startPos)
@@ -252,7 +248,7 @@ func (orig *ExponentialHistogramDataPointBuckets) UnmarshalProto(buf []byte) err
 				if err != nil {
 					return err
 				}
-				orig.BucketCounts = append(orig.BucketCounts, uint64(num))
+				orig.BucketCounts = Append(st, orig.BucketCounts, uint64(num))
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field BucketCounts", wireType)
 			}
@@ -267,7 +263,7 @@ func (orig *ExponentialHistogramDataPointBuckets) UnmarshalProto(buf []byte) err
 }
 
 func GenTestExponentialHistogramDataPointBuckets() *ExponentialHistogramDataPointBuckets {
-	orig := NewExponentialHistogramDataPointBuckets()
+	orig := Alloc[ExponentialHistogramDataPointBuckets](nil)
 	orig.Offset = int32(13)
 	orig.BucketCounts = []uint64{uint64(0), uint64(13)}
 	return orig
@@ -275,11 +271,11 @@ func GenTestExponentialHistogramDataPointBuckets() *ExponentialHistogramDataPoin
 
 func GenTestExponentialHistogramDataPointBucketsPtrSlice() []*ExponentialHistogramDataPointBuckets {
 	orig := make([]*ExponentialHistogramDataPointBuckets, 5)
-	orig[0] = NewExponentialHistogramDataPointBuckets()
+	orig[0] = Alloc[ExponentialHistogramDataPointBuckets](nil)
 	orig[1] = GenTestExponentialHistogramDataPointBuckets()
-	orig[2] = NewExponentialHistogramDataPointBuckets()
+	orig[2] = Alloc[ExponentialHistogramDataPointBuckets](nil)
 	orig[3] = GenTestExponentialHistogramDataPointBuckets()
-	orig[4] = NewExponentialHistogramDataPointBuckets()
+	orig[4] = Alloc[ExponentialHistogramDataPointBuckets](nil)
 	return orig
 }
 
