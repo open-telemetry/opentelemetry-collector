@@ -260,6 +260,11 @@ structs. APIs intended to evolve should favor constructors or option
 structs and document how values are constructed. If callers rely on
 unkeyed literals, adding a field is a breaking change.
 
+For that reason, Config structs are typically using an anonymous unexported
+field to enforce keyed struct initialization.
+This is enforced by the [checkapi tool](https://github.com/open-telemetry/opentelemetry-go-build-tools/blob/main/checkapi/README.md?plain=1#L31)
+ as [part of the CI](https://github.com/open-telemetry/opentelemetry-collector/blob/main/.checkapi.yaml).
+
 When adding a field to a public struct:
 
 - Its zero value MUST be meaningful and preserve the behavior of code

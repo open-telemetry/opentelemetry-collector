@@ -3,6 +3,6 @@
 change_type: enhancement
 component: pkg/component
 note: Document compatibility guidelines for adding fields to public structs in the component interface RFC.
-issues: [16068]
+issues: [16069]
 subtext:
 change_logs: [api]
