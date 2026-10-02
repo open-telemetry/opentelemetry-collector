@@ -9,7 +9,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 
 	"google.golang.org/grpc"
 
@@ -90,7 +89,7 @@ func (m Config) GetGRPCServerOptions(ctx context.Context, extensions map[compone
 // extensionmiddleware.Dialer from the map of extensions, and
 // returns the DialContext function. If a middleware is not found, an
 // error is returned. This should only be used by HTTP and gRPC clients.
-func (m Config) GetDialer(ctx context.Context, extensions map[component.ID]component.Component) (func(ctx context.Context, network, address string) (net.Conn, error), error) {
+func (m Config) GetDialer(ctx context.Context, extensions map[component.ID]component.Component) (extensionmiddleware.DialContextFunc, error) {
 	if ext, found := extensions[m.ID]; found {
 		if dialer, ok := ext.(extensionmiddleware.Dialer); ok {
 			return dialer.GetDialContext(ctx)
