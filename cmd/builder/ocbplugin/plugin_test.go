@@ -103,7 +103,7 @@ func TestRunPlugin_LifecycleActions(t *testing.T) {
 			m := &mockPlugin{minVersion: "0.150.0"}
 			input := "action: " + tt.action + "\nocb_version: v0.151.0\nconfig:\n  key: foo\n"
 			inputFile := filepath.Join(t.TempDir(), "input.yaml")
-			require.NoError(t, os.WriteFile(inputFile, []byte(input), 0600))
+			require.NoError(t, os.WriteFile(inputFile, []byte(input), 0o600))
 			err := runPlugin(m, inputFile)
 			require.NoError(t, err)
 			tt.validate(t, m)
@@ -115,7 +115,7 @@ func TestRunPlugin_UnsupportedVersion(t *testing.T) {
 	m := &mockPlugin{minVersion: "0.151.0"}
 	input := "action: pre-build\nocb_version: v0.150.0\nconfig:\n  key: foo\n"
 	inputFile := filepath.Join(t.TempDir(), "input.yaml")
-	require.NoError(t, os.WriteFile(inputFile, []byte(input), 0600))
+	require.NoError(t, os.WriteFile(inputFile, []byte(input), 0o600))
 	err := runPlugin(m, inputFile)
 	require.Error(t, err)
 	assert.ErrorIs(t, err, ErrUnsupportedOCBVersion)
@@ -126,7 +126,7 @@ func TestRunPlugin_ActionError(t *testing.T) {
 	m := &mockPlugin{preBuildErr: expectedErr}
 	input := "action: pre-build\nconfig:\n  key: foo\n"
 	inputFile := filepath.Join(t.TempDir(), "input.yaml")
-	require.NoError(t, os.WriteFile(inputFile, []byte(input), 0600))
+	require.NoError(t, os.WriteFile(inputFile, []byte(input), 0o600))
 	err := runPlugin(m, inputFile)
 	require.Error(t, err)
 	assert.ErrorIs(t, err, expectedErr)
@@ -136,10 +136,9 @@ func TestRunPlugin_UnknownAction(t *testing.T) {
 	m := &mockPlugin{}
 	input := "action: invalid-action\n"
 	inputFile := filepath.Join(t.TempDir(), "input.yaml")
-	require.NoError(t, os.WriteFile(inputFile, []byte(input), 0600))
+	require.NoError(t, os.WriteFile(inputFile, []byte(input), 0o600))
 	err := runPlugin(m, inputFile)
-	require.Error(t, err)
-	assert.ErrorIs(t, err, ErrUnknownAction)
+	require.ErrorIs(t, err, ErrUnknownAction)
 	assert.Contains(t, err.Error(), "invalid-action")
 }
 
@@ -147,7 +146,7 @@ func TestRunPlugin_InvalidYAML(t *testing.T) {
 	m := &mockPlugin{}
 	input := ": invalid: yaml: ["
 	inputFile := filepath.Join(t.TempDir(), "input.yaml")
-	require.NoError(t, os.WriteFile(inputFile, []byte(input), 0600))
+	require.NoError(t, os.WriteFile(inputFile, []byte(input), 0o600))
 	err := runPlugin(m, inputFile)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "error decoding plugin input")
@@ -167,6 +166,8 @@ func buildDummyPlugin(t *testing.T) string {
 		binName += ".exe"
 	}
 	binPath := filepath.Join(t.TempDir(), binName)
+	// This is testing code so the nosec is fine here.
+	//nolint:gosec // #nosec G204
 	cmd := exec.Command("go", "build", "-o", binPath, "../testdata/dummyplugin")
 	out, err := cmd.CombinedOutput()
 	require.NoErrorf(t, err, "failed to build dummyplugin: %s", string(out))
@@ -249,7 +250,7 @@ func TestRunPlugin_Subprocess(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			inputFile := filepath.Join(t.TempDir(), "input.yaml")
 			if tt.input != "" {
-				require.NoError(t, os.WriteFile(inputFile, []byte(tt.input), 0600))
+				require.NoError(t, os.WriteFile(inputFile, []byte(tt.input), 0o600))
 			}
 
 			stdout, stderr, err := runDummyPluginSubprocess(binPath, inputFile)
