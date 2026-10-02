@@ -106,9 +106,9 @@ type ServerConfig struct {
 	Keepalive configoptional.Optional[KeepaliveServerConfig] `mapstructure:"keepalive,omitempty"`
 
 	// Deprecated: [v0.160.0] use Keepalive.IdleTimeout instead.
-	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
+	IdleTimeout time.Duration `mapstructure:"idle_timeout,omitempty"`
 	// Deprecated: [v0.160.0] set 'keepalive::enabled' to false to disable keep-alives.
-	KeepAlivesEnabled bool `mapstructure:"keep_alives_enabled"`
+	KeepAlivesEnabled bool `mapstructure:"keep_alives_enabled,omitempty"`
 
 	// deprecationWarnings records use of deprecated fields observed while
 	// unmarshaling; ToServer logs them, as no logger is available here.
