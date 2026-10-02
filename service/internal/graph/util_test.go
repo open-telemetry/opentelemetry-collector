@@ -21,6 +21,11 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/xpdata/pref"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/processor"
@@ -316,4 +321,137 @@ func setObsConsumerGateForTest(t *testing.T, enabled bool) {
 	t.Cleanup(func() {
 		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.TelemetryNewPipelineTelemetryFeatureGate.ID(), initial))
 	})
+}
+
+func setProtoPoolingGateForTest(t *testing.T, enabled bool) {
+	initial := pref.UseProtoPooling.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(pref.UseProtoPooling.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(pref.UseProtoPooling.ID(), initial))
+	})
+}
+
+// recordingExporter records the number of items of every request at the time it is consumed.
+// It does not keep a reference to the data, so any data released too early is observed as empty.
+type recordingExporter struct {
+	component.StartFunc
+	component.ShutdownFunc
+	counts []int
+}
+
+func (e *recordingExporter) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
+	e.counts = append(e.counts, td.SpanCount())
+	return nil
+}
+
+func (e *recordingExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+	e.counts = append(e.counts, md.MetricCount())
+	return nil
+}
+
+func (e *recordingExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
+	e.counts = append(e.counts, ld.LogRecordCount())
+	return nil
+}
+
+func (e *recordingExporter) ConsumeProfiles(_ context.Context, pd pprofile.Profiles) error {
+	e.counts = append(e.counts, pd.SampleCount())
+	return nil
+}
+
+func (e *recordingExporter) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
+func newRecordingExporterFactory() exporter.Factory {
+	return xexporter.NewFactory(component.MustNewType("recorder"),
+		func() component.Config { return &struct{}{} },
+		xexporter.WithTraces(func(context.Context, exporter.Settings, component.Config) (exporter.Traces, error) {
+			return &recordingExporter{}, nil
+		}, component.StabilityLevelDevelopment),
+		xexporter.WithMetrics(func(context.Context, exporter.Settings, component.Config) (exporter.Metrics, error) {
+			return &recordingExporter{}, nil
+		}, component.StabilityLevelDevelopment),
+		xexporter.WithLogs(func(context.Context, exporter.Settings, component.Config) (exporter.Logs, error) {
+			return &recordingExporter{}, nil
+		}, component.StabilityLevelDevelopment),
+		xexporter.WithProfiles(func(context.Context, exporter.Settings, component.Config) (xexporter.Profiles, error) {
+			return &recordingExporter{}, nil
+		}, component.StabilityLevelDevelopment),
+	)
+}
+
+// copyComponent sends a copy of the incoming data to the next consumer,
+// the same way components that build new data (e.g. batching) do.
+type copyComponent struct {
+	component.StartFunc
+	component.ShutdownFunc
+	traces   consumer.Traces
+	metrics  consumer.Metrics
+	logs     consumer.Logs
+	profiles xconsumer.Profiles
+}
+
+func (c *copyComponent) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	out := ptrace.NewTraces()
+	td.CopyTo(out)
+	return c.traces.ConsumeTraces(ctx, out)
+}
+
+func (c *copyComponent) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	out := pmetric.NewMetrics()
+	md.CopyTo(out)
+	return c.metrics.ConsumeMetrics(ctx, out)
+}
+
+func (c *copyComponent) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	out := plog.NewLogs()
+	ld.CopyTo(out)
+	return c.logs.ConsumeLogs(ctx, out)
+}
+
+func (c *copyComponent) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) error {
+	out := pprofile.NewProfiles()
+	pd.CopyTo(out)
+	return c.profiles.ConsumeProfiles(ctx, out)
+}
+
+func (c *copyComponent) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
+func newCopyProcessorFactory() processor.Factory {
+	return xprocessor.NewFactory(component.MustNewType("copy"),
+		func() component.Config { return &struct{}{} },
+		xprocessor.WithTraces(func(_ context.Context, _ processor.Settings, _ component.Config, next consumer.Traces) (processor.Traces, error) {
+			return &copyComponent{traces: next}, nil
+		}, component.StabilityLevelDevelopment),
+		xprocessor.WithMetrics(func(_ context.Context, _ processor.Settings, _ component.Config, next consumer.Metrics) (processor.Metrics, error) {
+			return &copyComponent{metrics: next}, nil
+		}, component.StabilityLevelDevelopment),
+		xprocessor.WithLogs(func(_ context.Context, _ processor.Settings, _ component.Config, next consumer.Logs) (processor.Logs, error) {
+			return &copyComponent{logs: next}, nil
+		}, component.StabilityLevelDevelopment),
+		xprocessor.WithProfiles(func(_ context.Context, _ processor.Settings, _ component.Config, next xconsumer.Profiles) (xprocessor.Profiles, error) {
+			return &copyComponent{profiles: next}, nil
+		}, component.StabilityLevelDevelopment),
+	)
+}
+
+func newCopyConnectorFactory() connector.Factory {
+	return xconnector.NewFactory(component.MustNewType("copy"),
+		func() component.Config { return &struct{}{} },
+		xconnector.WithTracesToTraces(func(_ context.Context, _ connector.Settings, _ component.Config, next consumer.Traces) (connector.Traces, error) {
+			return &copyComponent{traces: next}, nil
+		}, component.StabilityLevelDevelopment),
+		xconnector.WithMetricsToMetrics(func(_ context.Context, _ connector.Settings, _ component.Config, next consumer.Metrics) (connector.Metrics, error) {
+			return &copyComponent{metrics: next}, nil
+		}, component.StabilityLevelDevelopment),
+		xconnector.WithLogsToLogs(func(_ context.Context, _ connector.Settings, _ component.Config, next consumer.Logs) (connector.Logs, error) {
+			return &copyComponent{logs: next}, nil
+		}, component.StabilityLevelDevelopment),
+		xconnector.WithProfilesToProfiles(func(_ context.Context, _ connector.Settings, _ component.Config, next xconsumer.Profiles) (xconnector.Profiles, error) {
+			return &copyComponent{profiles: next}, nil
+		}, component.StabilityLevelDevelopment),
+	)
 }
