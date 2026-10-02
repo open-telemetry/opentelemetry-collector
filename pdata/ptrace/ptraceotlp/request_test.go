@@ -126,4 +126,22 @@ func TestRejectInvalidUTF8(t *testing.T) {
 		assert.Equal(t, 1, NewExportRequestFromTraces(td).RejectInvalidUTF8())
 		assert.Equal(t, 1, td.SpanCount())
 	})
+
+	t.Run("empty containers are kept", func(t *testing.T) {
+		td := ptrace.NewTraces()
+		td.ResourceSpans().AppendEmpty()
+		td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+
+		assert.Equal(t, 0, NewExportRequestFromTraces(td).RejectInvalidUTF8())
+		assert.Equal(t, 2, td.ResourceSpans().Len())
+		assert.Equal(t, 1, td.ResourceSpans().At(1).ScopeSpans().Len())
+	})
+
+	t.Run("emptied containers are dropped", func(t *testing.T) {
+		td := ptrace.NewTraces()
+		td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName(string([]byte{0xff}))
+
+		assert.Equal(t, 1, NewExportRequestFromTraces(td).RejectInvalidUTF8())
+		assert.Equal(t, 0, td.ResourceSpans().Len())
+	})
 }

@@ -88,10 +88,16 @@ func (ms ExportRequest) RejectInvalidUTF8() int {
 			rejected += countResourceLogs(rl)
 			return true
 		}
+		if rl.ScopeLogs().Len() == 0 {
+			return false
+		}
 		rl.ScopeLogs().RemoveIf(func(sl plog.ScopeLogs) bool {
 			if !internal.ValidateUTF8(sl.Scope()) {
 				rejected += sl.LogRecords().Len()
 				return true
+			}
+			if sl.LogRecords().Len() == 0 {
+				return false
 			}
 			sl.LogRecords().RemoveIf(func(lr plog.LogRecord) bool {
 				invalid := !internal.ValidateUTF8(lr)

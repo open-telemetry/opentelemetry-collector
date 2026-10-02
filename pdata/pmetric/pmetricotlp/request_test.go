@@ -160,22 +160,36 @@ func TestRejectInvalidUTF8(t *testing.T) {
 				metric.SetEmptySummary().DataPoints().AppendEmpty().Attributes().PutStr("bad", string([]byte{0xff}))
 			},
 		},
-		{
-			name:  "unknown metric type",
-			build: func(pmetric.Metric) {},
-		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			md := pmetric.NewMetrics()
-			metric := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-			tc.build(metric)
+			sm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+			tc.build(sm.Metrics().AppendEmpty())
 
-			expected := 1
-			if tc.name == "unknown metric type" {
-				expected = 0
-			}
-			assert.Equal(t, expected, NewExportRequestFromMetrics(md).RejectInvalidUTF8())
+			assert.Equal(t, 1, NewExportRequestFromMetrics(md).RejectInvalidUTF8())
 			assert.Equal(t, 0, md.DataPointCount())
+			// The metric lost its only data point, so it is dropped together with its empty parents.
+			assert.Equal(t, 0, md.ResourceMetrics().Len())
 		})
 	}
+
+	t.Run("valid metric without data points is kept", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		sm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		sm.Metrics().AppendEmpty().SetName("no-data-points")
+		sm.Metrics().AppendEmpty().SetEmptyGauge()
+
+		assert.Equal(t, 0, NewExportRequestFromMetrics(md).RejectInvalidUTF8())
+		assert.Equal(t, 2, sm.Metrics().Len())
+	})
+
+	t.Run("empty containers are kept", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		md.ResourceMetrics().AppendEmpty()
+		md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+
+		assert.Equal(t, 0, NewExportRequestFromMetrics(md).RejectInvalidUTF8())
+		assert.Equal(t, 2, md.ResourceMetrics().Len())
+		assert.Equal(t, 1, md.ResourceMetrics().At(1).ScopeMetrics().Len())
+	})
 }

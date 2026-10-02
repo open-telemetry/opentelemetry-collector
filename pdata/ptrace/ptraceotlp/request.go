@@ -88,10 +88,16 @@ func (ms ExportRequest) RejectInvalidUTF8() int {
 			rejected += countResourceSpans(rs)
 			return true
 		}
+		if rs.ScopeSpans().Len() == 0 {
+			return false
+		}
 		rs.ScopeSpans().RemoveIf(func(ss ptrace.ScopeSpans) bool {
 			if !internal.ValidateUTF8(ss.Scope()) {
 				rejected += ss.Spans().Len()
 				return true
+			}
+			if ss.Spans().Len() == 0 {
+				return false
 			}
 			ss.Spans().RemoveIf(func(span ptrace.Span) bool {
 				invalid := !internal.ValidateUTF8(span)

@@ -88,15 +88,24 @@ func (ms ExportRequest) RejectInvalidUTF8() int {
 			rejected += countResourceDataPoints(rm)
 			return true
 		}
+		if rm.ScopeMetrics().Len() == 0 {
+			return false
+		}
 		rm.ScopeMetrics().RemoveIf(func(sm pmetric.ScopeMetrics) bool {
 			if !internal.ValidateUTF8(sm.Scope()) {
 				rejected += countScopeDataPoints(sm)
 				return true
 			}
+			if sm.Metrics().Len() == 0 {
+				return false
+			}
 			sm.Metrics().RemoveIf(func(metric pmetric.Metric) bool {
 				if !internal.ValidateUTF8(metric.Name()) || !internal.ValidateUTF8(metric.Description()) || !internal.ValidateUTF8(metric.Unit()) {
 					rejected += countMetricDataPoints(metric)
 					return true
+				}
+				if countMetricDataPoints(metric) == 0 {
+					return false
 				}
 				rejected += rejectMetricDataPoints(metric)
 				return countMetricDataPoints(metric) == 0

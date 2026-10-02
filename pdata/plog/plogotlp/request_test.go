@@ -127,4 +127,22 @@ func TestRejectInvalidUTF8(t *testing.T) {
 		assert.Equal(t, 1, NewExportRequestFromLogs(ld).RejectInvalidUTF8())
 		assert.Equal(t, 1, ld.LogRecordCount())
 	})
+
+	t.Run("empty containers are kept", func(t *testing.T) {
+		ld := plog.NewLogs()
+		ld.ResourceLogs().AppendEmpty()
+		ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
+
+		assert.Equal(t, 0, NewExportRequestFromLogs(ld).RejectInvalidUTF8())
+		assert.Equal(t, 2, ld.ResourceLogs().Len())
+		assert.Equal(t, 1, ld.ResourceLogs().At(1).ScopeLogs().Len())
+	})
+
+	t.Run("emptied containers are dropped", func(t *testing.T) {
+		ld := plog.NewLogs()
+		ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr(string([]byte{0xff}))
+
+		assert.Equal(t, 1, NewExportRequestFromLogs(ld).RejectInvalidUTF8())
+		assert.Equal(t, 0, ld.ResourceLogs().Len())
+	})
 }
