@@ -14,7 +14,22 @@ import (
 )
 
 // NewMetrics creates an exporter.Metrics that records observability metrics and wraps every request with a Span.
+//
+// Deprecated: [v0.159.0] Use NewMetricsWithConfig instead. In a future release NewMetrics will change to drop the cfg parameter.
+//
+//go:fix inline
 func NewMetrics(
+	ctx context.Context,
+	set exporter.Settings,
+	cfg component.Config,
+	pusher consumer.ConsumeMetricsFunc,
+	options ...Option,
+) (exporter.Metrics, error) {
+	return NewMetricsWithConfig(ctx, set, cfg, pusher, options...)
+}
+
+// NewMetricsWithConfig creates an exporter.Metrics that records observability metrics and wraps every request with a Span.
+func NewMetricsWithConfig(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
