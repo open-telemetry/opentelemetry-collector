@@ -20,7 +20,6 @@ ALL_MODULES := $(shell find . -mindepth 2 \
 				-type f \
 				-name "go.mod" \
 				-not -path "./internal/tools/*" \
-				-not -path "." \
 				-exec dirname {} \; | sort )
 
 CMD?=
@@ -150,8 +149,7 @@ misspell-correction:
 run: otelcorecol
 	./bin/otelcorecol_$(GOOS)_$(GOARCH) --config ${RUN_CONFIG} ${RUN_ARGS}
 
-# Append root module to all modules
-GOMODULES = $(ALL_MODULES) $(PWD)
+GOMODULES = $(ALL_MODULES)
 
 # Define a delegation target for each module
 .PHONY: $(GOMODULES)
