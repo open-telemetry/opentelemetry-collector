@@ -40,9 +40,31 @@ func applyMask(raw, redacted any) any {
 			}
 		}
 	case []any:
-		if rawSlice, ok := raw.([]any); ok {
-			for i := 0; i < min(len(rawSlice), len(redVal)); i++ {
-				rawSlice[i] = applyMask(rawSlice[i], redVal[i])
+		switch rawVal := raw.(type) {
+		case []any:
+			for i := 0; i < min(len(rawVal), len(redVal)); i++ {
+				rawVal[i] = applyMask(rawVal[i], redVal[i])
+			}
+		case map[string]any:
+			// configopaque.MapList accepts a map as input but marshals as a list
+			// of name/value pairs. Match those pairs back to the raw map by name.
+			for _, redItem := range redVal {
+				redMap, ok := redItem.(map[string]any)
+				if !ok {
+					continue
+				}
+				name, ok := redMap["name"].(string)
+				if !ok {
+					continue
+				}
+				redMapVal, ok := redMap["value"]
+				if !ok {
+					continue
+				}
+				rawMapVal, ok := rawVal[name]
+				if ok {
+					rawVal[name] = applyMask(rawMapVal, redMapVal)
+				}
 			}
 		}
 	case string:
