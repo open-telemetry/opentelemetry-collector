@@ -79,6 +79,69 @@ func NewQueueBatch(
 	return &QueueBatch{queue: q, batcher: b}, nil
 }
 
+// NewAsyncQueueBatch builds the normal bounded queue without batching and
+// dispatches requests through an asynchronous completion callback.
+func NewAsyncQueueBatch(
+	set AllSettings[request.Request],
+	cfg Config,
+	next sender.SendFunc[request.Request],
+) (*QueueBatch, error) {
+	if next == nil {
+		return nil, errors.New("async queue batch: nil send function")
+	}
+	if cfg.StorageID != nil {
+		return nil, errors.New("ordered stream persistent queues are not supported")
+	}
+	if cfg.Batch.HasValue() {
+		return nil, errors.New("async queue batch: batching is not supported for ordered stream requests")
+	}
+
+	// Keep one FIFO queue reader. Ordered stream scheduling owns the configured
+	// cross-partition write concurrency after the reader has staged each item.
+	cfg.NumConsumers = 1
+	q, err := queue.NewQueue(queue.Settings[request.Request]{
+		SizerType:         cfg.Sizer,
+		Capacity:          cfg.QueueSize,
+		NumConsumers:      cfg.NumConsumers,
+		WaitForCompletion: true,
+		WaitForResult:     cfg.WaitForResult,
+		BlockOnOverflow:   cfg.BlockOnOverflow,
+		Signal:            set.Signal,
+		StorageID:         cfg.StorageID,
+		ReferenceCounter:  set.ReferenceCounter,
+		Encoding:          set.Encoding,
+		ID:                set.ID,
+		Telemetry:         set.Telemetry,
+	}, func(ctx context.Context, req request.Request, done queue.Done) {
+		deferred, ok := req.(request.DeferredQueueCompletion)
+		if !ok {
+			done.OnDone(errors.New("async queue requires a deferred-completion request"))
+			return
+		}
+		if !deferred.SetQueueCompletion(done.OnDone) {
+			done.OnDone(errors.New("async queue request completion is already registered"))
+			return
+		}
+		// Stage requests synchronously on the FIFO reader. The coordinator
+		// starts partition writes asynchronously; launching next in a goroutine
+		// here would let later queue items race ahead of this request.
+		if err := next(ctx, req); err != nil {
+			done.OnDone(err)
+		}
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &QueueBatch{queue: q, batcher: &asyncBatcher{}}, nil
+}
+
+type asyncBatcher struct {
+	component.StartFunc
+	component.ShutdownFunc
+}
+
+func (*asyncBatcher) Consume(context.Context, request.Request, queue.Done) {}
+
 // Start is invoked during service startup.
 func (qs *QueueBatch) Start(ctx context.Context, host component.Host) error {
 	if err := qs.batcher.Start(ctx, host); err != nil {

@@ -3,6 +3,9 @@
 This package provides reusable implementations of common capabilities for exporters.
 Currently, this includes queuing, batching, timeouts, and retries.
 
+The experimental `xexporterhelper.NewLogsRequests` constructor also supports
+[ordered streams with deferred completion](ordered-streams.md).
+
 ## Configuration
 
 The following configuration options can be modified:

@@ -63,3 +63,25 @@ func NewQueueSender(
 
 	return queuebatch.NewQueueBatch(qSet, qCfg, exportFunc)
 }
+
+// NewAsyncQueueSender builds the standard queue and runs the exporter sender
+// outside the queue reader. The queue's completion callback remains pending
+// until the sender returns, so async senders can release stream order after a
+// write while retaining queue ownership through ACK.
+func NewAsyncQueueSender(
+	qSet queuebatch.AllSettings[request.Request],
+	qCfg queuebatch.Config,
+	exportFailureMessage string,
+	next sender.Sender[request.Request],
+) (sender.Sender[request.Request], error) {
+	exportFunc := func(ctx context.Context, req request.Request) error {
+		itemsCount := req.ItemsCount()
+		if errSend := next.Send(ctx, req); errSend != nil {
+			qSet.Telemetry.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
+				zap.Error(errSend), zap.Int("dropped_items", itemsCount))
+			return errSend
+		}
+		return nil
+	}
+	return queuebatch.NewAsyncQueueBatch(qSet, qCfg, exportFunc)
+}

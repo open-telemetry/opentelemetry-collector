@@ -52,6 +52,8 @@ type BaseExporter struct {
 
 	queueBatchSettings queuebatch.Settings[request.Request]
 	queueCfg           configoptional.Optional[queuebatch.Config]
+	asyncQueue         bool
+	asyncShutdown      component.ShutdownFunc
 }
 
 func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sender.SendFunc[request.Request], options ...Option) (*BaseExporter, error) {
@@ -99,7 +101,14 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 			ID:        set.ID,
 			Telemetry: set.TelemetrySettings,
 		}
-		be.QueueSender, err = NewQueueSender(qSet, *be.queueCfg.Get(), be.ExportFailureMessage, be.firstSender)
+		if be.asyncQueue {
+			if be.queueCfg.Get().Batch.HasValue() {
+				return nil, errors.New("async queue does not support batching")
+			}
+			be.QueueSender, err = NewAsyncQueueSender(qSet, *be.queueCfg.Get(), be.ExportFailureMessage, be.firstSender)
+		} else {
+			be.QueueSender, err = NewQueueSender(qSet, *be.queueCfg.Get(), be.ExportFailureMessage, be.firstSender)
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -107,6 +116,17 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 	}
 
 	return be, nil
+}
+
+// WithAsyncQueue selects queue dispatch whose request remains owned until the
+// full sender chain returns, while queue readers can continue servicing later
+// requests. It is used by exporters that split write-phase release from final
+// ACK completion.
+func WithAsyncQueue() Option {
+	return func(o *BaseExporter) error {
+		o.asyncQueue = true
+		return nil
+	}
 }
 
 // Send sends the request using the first sender in the chain.
@@ -138,6 +158,9 @@ func (be *BaseExporter) Start(ctx context.Context, host component.Host) error {
 
 func (be *BaseExporter) Shutdown(ctx context.Context) error {
 	var err error
+	if be.asyncShutdown != nil {
+		err = multierr.Append(err, be.asyncShutdown.Shutdown(ctx))
+	}
 
 	// First shutdown the retry sender, so the queue sender can flush the queue without retries.
 	if be.RetrySender != nil {

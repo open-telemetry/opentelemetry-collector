@@ -44,8 +44,18 @@ type ErrorHandler interface {
 	OnError(error) Request
 }
 
+// DeferredQueueCompletion is implemented by requests whose downstream sender
+// has a completion event that occurs after Send returns. The queue keeps the
+// request owned until the supplied callback is invoked.
+type DeferredQueueCompletion interface {
+	SetQueueCompletion(func(error)) bool
+}
+
 type RequestConverterFunc[T any] func(context.Context, T) (Request, error)
 
 // RequestConsumeFunc processes the request. After the function returns, the request is no longer accessible,
 // and accessing it is considered undefined behavior.
 type RequestConsumeFunc = sender.SendFunc[Request]
+
+// QueueRequestCount lets an atomic envelope charge admission for every child.
+type QueueRequestCount interface{ QueueRequestsCount() int64 }
