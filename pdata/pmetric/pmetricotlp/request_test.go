@@ -93,3 +93,103 @@ func TestMetricsProtoWireCompatibility(t *testing.T) {
 	otlp.MigrateMetrics(md.orig.ResourceMetrics)
 	assert.Equal(t, md, md2)
 }
+
+func TestRejectInvalidUTF8(t *testing.T) {
+	t.Run("invalid resource", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("bad", string([]byte{0xff}))
+		rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+
+		assert.False(t, NewExportRequestFromMetrics(md).ValidateUTF8())
+		assert.Equal(t, 1, NewExportRequestFromMetrics(md).RejectInvalidUTF8())
+		assert.Equal(t, 0, md.DataPointCount())
+	})
+
+	t.Run("invalid scope", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		sm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		sm.Scope().SetName(string([]byte{0xff}))
+		sm.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+
+		assert.Equal(t, 1, NewExportRequestFromMetrics(md).RejectInvalidUTF8())
+		assert.Equal(t, 0, md.DataPointCount())
+	})
+
+	t.Run("invalid metric descriptor", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		metric := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetName(string([]byte{0xff}))
+		metric.SetEmptyGauge().DataPoints().AppendEmpty()
+
+		assert.Equal(t, 1, NewExportRequestFromMetrics(md).RejectInvalidUTF8())
+		assert.Equal(t, 0, md.DataPointCount())
+	})
+
+	for _, tc := range []struct {
+		name  string
+		build func(pmetric.Metric)
+	}{
+		{
+			name: "gauge datapoint",
+			build: func(metric pmetric.Metric) {
+				metric.SetEmptyGauge().DataPoints().AppendEmpty().Attributes().PutStr("bad", string([]byte{0xff}))
+			},
+		},
+		{
+			name: "sum datapoint",
+			build: func(metric pmetric.Metric) {
+				metric.SetEmptySum().DataPoints().AppendEmpty().Attributes().PutStr("bad", string([]byte{0xff}))
+			},
+		},
+		{
+			name: "histogram datapoint",
+			build: func(metric pmetric.Metric) {
+				metric.SetEmptyHistogram().DataPoints().AppendEmpty().Attributes().PutStr("bad", string([]byte{0xff}))
+			},
+		},
+		{
+			name: "exp histogram datapoint",
+			build: func(metric pmetric.Metric) {
+				metric.SetEmptyExponentialHistogram().DataPoints().AppendEmpty().Attributes().PutStr("bad", string([]byte{0xff}))
+			},
+		},
+		{
+			name: "summary datapoint",
+			build: func(metric pmetric.Metric) {
+				metric.SetEmptySummary().DataPoints().AppendEmpty().Attributes().PutStr("bad", string([]byte{0xff}))
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			md := pmetric.NewMetrics()
+			sm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+			tc.build(sm.Metrics().AppendEmpty())
+
+			assert.Equal(t, 1, NewExportRequestFromMetrics(md).RejectInvalidUTF8())
+			assert.Equal(t, 0, md.DataPointCount())
+			// The metric lost its only data point, so it is dropped together with its empty parents.
+			assert.Equal(t, 0, md.ResourceMetrics().Len())
+		})
+	}
+
+	t.Run("valid metric without data points is kept", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		sm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		sm.Metrics().AppendEmpty().SetName("no-data-points")
+		sm.Metrics().AppendEmpty().SetEmptyGauge()
+
+		assert.Equal(t, 0, NewExportRequestFromMetrics(md).RejectInvalidUTF8())
+		assert.Equal(t, 2, sm.Metrics().Len())
+	})
+
+	t.Run("empty containers are kept", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		md.ResourceMetrics().AppendEmpty()
+		md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+
+		assert.Equal(t, 0, NewExportRequestFromMetrics(md).RejectInvalidUTF8())
+		assert.Equal(t, 2, md.ResourceMetrics().Len())
+		assert.Equal(t, 1, md.ResourceMetrics().At(1).ScopeMetrics().Len())
+	})
+}
