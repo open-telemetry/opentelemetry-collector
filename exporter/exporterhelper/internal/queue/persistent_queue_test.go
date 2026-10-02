@@ -556,12 +556,12 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 		{
 			name:             "corrupted all items",
 			corruptAllData:   true,
-			desiredQueueSize: 3, // The replay item is dropped when its corrupted payload is read.
+			desiredQueueSize: 2, // - the dispatched item which was corrupted.
 		},
 		{
 			name:             "corrupted some items",
 			corruptSomeData:  true,
-			desiredQueueSize: 3, // The replay item is dropped when its corrupted payload is read.
+			desiredQueueSize: 2, // - the dispatched item which was corrupted.
 		},
 		{
 			name:               "corrupted metadata",
@@ -645,19 +645,14 @@ func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 	secondDone.OnDone(nil)
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{0})
 
-	// Reload the storage. The in-flight item 0 is replayed before ordinary
-	// queued items 2, 3, and 4 so partition order survives the restart.
+	// Reload the storage. Since items 0 was not finished, this should be re-enqueued at the end.
+	// The queue should be essentially {3,4,0,2}.
 	newPs := createTestPersistentQueueWithRequestsSizer(t, ext, 1000)
 	assert.Equal(t, int64(4), newPs.Size())
 	requireCurrentlyDispatchedItemsEqual(t, newPs, []uint64{})
-	assert.Equal(t, []uint64{0}, newPs.replayItems)
-	_, _, replayDone, found := newPs.Read(context.Background())
-	require.True(t, found)
-	require.EqualValues(t, 0, replayDone.(*indexDone).index)
-	replayDone.OnDone(nil)
 
 	// We should be able to pull all remaining items now
-	for range 3 {
+	for range 4 {
 		consume(newPs, func(_ context.Context, val intRequest) error {
 			assert.Equal(t, req, val)
 			return nil
@@ -667,8 +662,8 @@ func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 	// The queue should be now empty
 	requireCurrentlyDispatchedItemsEqual(t, newPs, []uint64{})
 	assert.Equal(t, int64(0), newPs.Size())
-	// Replay reuses the original item index rather than moving the item to the tail.
-	require.EqualValues(t, 5, newPs.metadata.WriteIndex)
+	// The writeIndex should be now set accordingly
+	require.EqualValues(t, 6, newPs.metadata.WriteIndex)
 
 	// There should be no items left in the storage
 	for i := uint64(0); i < newPs.metadata.WriteIndex; i++ {

@@ -20,6 +20,9 @@ type Settings[T any] struct {
 	Encoding         queue.Encoding[T]
 	Partitioner      Partitioner[T]
 	MergeCtx         func(context.Context, context.Context) context.Context
+	// ReplayInOrder controls persisted dequeue order on restart. In-flight
+	// items retain their original indices and precede newer queued work.
+	ReplayInOrder bool
 }
 
 // AllSettings defines settings for creating a QueueBatch.
@@ -63,6 +66,7 @@ func NewQueueBatch(
 		SizerType:        cfg.Sizer,
 		Capacity:         cfg.QueueSize,
 		NumConsumers:     cfg.NumConsumers,
+		ReplayInOrder:    set.ReplayInOrder,
 		WaitForResult:    cfg.WaitForResult,
 		BlockOnOverflow:  cfg.BlockOnOverflow,
 		Signal:           set.Signal,
@@ -102,6 +106,7 @@ func NewAsyncQueueBatch(
 		Capacity:          cfg.QueueSize,
 		NumConsumers:      cfg.NumConsumers,
 		WaitForCompletion: true,
+		ReplayInOrder:     true,
 		WaitForResult:     cfg.WaitForResult,
 		BlockOnOverflow:   cfg.BlockOnOverflow,
 		Signal:            set.Signal,
@@ -114,26 +119,21 @@ func NewAsyncQueueBatch(
 		if requestWithCheckpoint, ok := req.(request.QueueCheckpointStoreSetter); ok {
 			requestWithCheckpoint.SetQueueCheckpointStore(checkpointStore)
 		}
-		deferred := false
-		_, hasDeferredCompletion := req.(request.DeferredQueueCompletion)
-		if requestWithDeferredCompletion, ok := req.(request.DeferredQueueCompletion); ok {
-			deferred = requestWithDeferredCompletion.SetQueueCompletion(done.OnDone)
-		}
-		if hasDeferredCompletion {
-			// Stage deferred requests synchronously on the single queue reader.
-			// Ordered stream next only admits the group to its coordinator; that
-			// coordinator starts independent partition writes asynchronously.
-			// Launching next in a goroutine here lets later queue items race ahead
-			// and reverses same-partition streams.
-			err := next(ctx, req)
-			if !deferred || err != nil {
-				done.OnDone(err)
-			}
+		deferred, ok := req.(request.DeferredQueueCompletion)
+		if !ok {
+			done.OnDone(errors.New("async queue requires a deferred-completion request"))
 			return
 		}
-		// Preserve the existing asynchronous queue behavior for ordinary
-		// requests, whose next sender can block on export or retry.
-		go func() { done.OnDone(next(ctx, req)) }()
+		if !deferred.SetQueueCompletion(done.OnDone) {
+			done.OnDone(errors.New("async queue request completion is already registered"))
+			return
+		}
+		// Stage requests synchronously on the FIFO reader. The coordinator
+		// starts partition writes asynchronously; launching next in a goroutine
+		// here would let later queue items race ahead of this request.
+		if err := next(ctx, req); err != nil {
+			done.OnDone(err)
+		}
 	})
 	if err != nil {
 		return nil, err

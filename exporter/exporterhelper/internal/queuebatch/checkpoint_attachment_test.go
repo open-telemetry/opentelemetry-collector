@@ -19,7 +19,7 @@ import (
 )
 
 type checkpointAwareRequest struct {
-	requesttest.FakeRequest
+	deferredRequest
 	store request.QueueCheckpointStore
 }
 
@@ -41,12 +41,13 @@ func TestAsyncQueueAttachesCheckpointStoreOnlyWithPersistence(t *testing.T) {
 			if durable {
 				cfg.StorageID = &storageID
 			}
-			r := &checkpointAwareRequest{FakeRequest: requesttest.FakeRequest{Items: 1}}
+			r := &checkpointAwareRequest{deferredRequest: deferredRequest{FakeRequest: requesttest.FakeRequest{Items: 1}}}
 			set := newFakeRequestSettings()
 			set.Encoding = newFakeEncoding(r)
 			attached := make(chan request.QueueCheckpointStore, 1)
 			qb, err := NewAsyncQueueBatch(set, cfg, func(_ context.Context, req request.Request) error {
 				attached <- req.(*checkpointAwareRequest).store
+				req.(*checkpointAwareRequest).completion(nil)
 				return nil
 			})
 			require.NoError(t, err)

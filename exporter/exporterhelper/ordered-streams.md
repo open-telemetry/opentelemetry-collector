@@ -53,4 +53,8 @@ tail per open partition in the queue's storage namespace. Restart replays older
 dispatched requests before newly queued work. Checkpoint updates use a redo
 journal because storage batches need not be transactional. A storage failure
 fences recovery until restart. Memory queues retain recovery state in memory.
-Delivery is at least once; an ambiguous write can cause duplicates.
+Delivery is at least once; an ambiguous write can cause duplicates. This
+constructor enables ordered restart replay. Other exporters retain their
+existing recovery path by default and can opt into original-index replay with
+`xexporterhelper.QueueBatchSettings.ReplayInOrder`. That setting controls queue
+recovery order; the ordered constructor also schedules partition writes.

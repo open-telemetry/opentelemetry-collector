@@ -24,6 +24,7 @@ import (
 
 const (
 	zapKey           = "key"
+	zapErrorCount    = "errorCount"
 	zapNumberOfItems = "numberOfItems"
 
 	legacyReadIndexKey                = "ri"
@@ -94,6 +95,7 @@ type persistentQueue[T request.Request] struct {
 	startupErr      error
 
 	blockOnOverflow bool
+	replayInOrder   bool
 }
 
 // newPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
@@ -110,6 +112,7 @@ func newPersistentQueue[T request.Request](set Settings[T]) readableQueue[T] {
 		id:              set.ID,
 		signal:          set.Signal,
 		blockOnOverflow: set.BlockOnOverflow,
+		replayInOrder:   set.ReplayInOrder,
 	}
 	pq.hasMoreElements = sync.NewCond(&pq.mu)
 	pq.hasMoreSpace = newCond(&pq.mu)
@@ -165,11 +168,17 @@ func (pq *persistentQueue[T]) initClient(ctx context.Context, client storage.Cli
 	err := pq.loadQueueMetadata(ctx)
 	switch {
 	case err == nil:
+		previousRequests := pq.requestSize()
 		pq.enqueueNotDispatchedReqs(ctx, pq.metadata.CurrentlyDispatchedItems)
 		if pq.startupErr != nil {
 			return
 		}
 		pq.metadata.CurrentlyDispatchedItems = nil
+		if !pq.replayInOrder && pq.metadata.RequestsSize > 0 {
+			// The existing recovery path drops unreadable in-flight payloads.
+			// Keep their admission charge consistent with that behavior.
+			pq.metadata.RequestsSize -= previousRequests - pq.requestSize()
+		}
 		if pq.metadata.RequestsSize == 0 {
 			pq.metadata.RequestsSize = pq.requestSize()
 		}
@@ -233,6 +242,9 @@ func (pq *persistentQueue[T]) loadLegacyMetadata(ctx context.Context) {
 	}
 
 	pq.retrieveAndEnqueueNotDispatchedReqs(ctx)
+	if pq.startupErr != nil {
+		return
+	}
 	pq.metadata.RequestsSize = pq.requestSize()
 
 	// Save to a new format and clean up legacy keys
@@ -588,8 +600,8 @@ func (pq *persistentQueue[T]) onDone(index uint64, itemsSize, bytesSize, request
 	pq.hasMoreSpace.Signal()
 }
 
-// retrieveAndEnqueueNotDispatchedReqs schedules legacy in-flight items before
-// ordinary queued items without changing their original storage keys.
+// retrieveAndEnqueueNotDispatchedReqs recovers legacy in-flight items using
+// the configured replay order.
 func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Context) {
 	var dispatchedItems []uint64
 
@@ -608,9 +620,66 @@ func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Co
 	pq.enqueueNotDispatchedReqs(ctx, dispatchedItems)
 }
 
-// enqueueNotDispatchedReqs merges in-flight item indices into the persisted
-// front-replay list. Existing item bodies stay at their original indices.
 func (pq *persistentQueue[T]) enqueueNotDispatchedReqs(ctx context.Context, dispatchedItems []uint64) {
+	if pq.replayInOrder {
+		pq.replayNotDispatchedReqs(ctx, dispatchedItems)
+		return
+	}
+	if len(dispatchedItems) == 0 {
+		pq.logger.Debug("No items left for dispatch by consumers")
+		return
+	}
+
+	pq.logger.Info("Fetching items left for dispatch by consumers", zap.Int(zapNumberOfItems,
+		len(dispatchedItems)))
+	retrieveBatch := make([]*storage.Operation, len(dispatchedItems))
+	cleanupBatch := make([]*storage.Operation, len(dispatchedItems))
+	for i, it := range dispatchedItems {
+		key := getItemKey(it)
+		retrieveBatch[i] = storage.GetOperation(key)
+		cleanupBatch[i] = storage.DeleteOperation(key)
+	}
+	retrieveErr := pq.client.Batch(ctx, retrieveBatch...)
+	cleanupErr := pq.client.Batch(ctx, cleanupBatch...)
+
+	if cleanupErr != nil {
+		pq.logger.Debug("Failed cleaning items left by consumers", zap.Error(cleanupErr))
+	}
+
+	if retrieveErr != nil {
+		pq.logger.Warn("Failed retrieving items left by consumers", zap.Error(retrieveErr))
+		return
+	}
+
+	errCount := 0
+	for _, op := range retrieveBatch {
+		if op.Value == nil {
+			pq.logger.Warn("Failed retrieving item", zap.String(zapKey, op.Key), zap.Error(errValueNotSet))
+			continue
+		}
+		reqCtx, req, err := pq.encoding.Unmarshal(op.Value)
+		// If error happened or item is nil, it will be efficiently ignored
+		if err != nil {
+			pq.logger.Warn("Failed unmarshalling item", zap.String(zapKey, op.Key), zap.Error(err))
+			continue
+		}
+		if pq.putInternal(reqCtx, req) != nil { //nolint:contextcheck
+			errCount++
+		}
+	}
+
+	if errCount > 0 {
+		pq.logger.Error("Errors occurred while moving items for dispatching back to queue",
+			zap.Int(zapNumberOfItems, len(retrieveBatch)), zap.Int(zapErrorCount, errCount))
+	} else {
+		pq.logger.Info("Moved items for dispatching back to queue",
+			zap.Int(zapNumberOfItems, len(retrieveBatch)))
+	}
+}
+
+// replayNotDispatchedReqs merges in-flight item indices into the persisted
+// front-replay list. Existing item bodies stay at their original indices.
+func (pq *persistentQueue[T]) replayNotDispatchedReqs(ctx context.Context, dispatchedItems []uint64) {
 	stored, err := pq.client.Get(ctx, replayItemsKey)
 	if err != nil {
 		pq.startupErr = fmt.Errorf("load ordered queue replay: %w", err)

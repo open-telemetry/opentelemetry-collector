@@ -128,14 +128,5 @@ func NewLogsRequests(
 
 // Validate rejects unbounded or internally inconsistent stream limits.
 func (s OrderedStreamSettings) Validate() error {
-	if s.MaxStaged <= 0 || s.MaxActivePartitions <= 0 || s.MaxReleasedRequests <= 0 ||
-		s.MaxReleasedBytes <= 0 || s.MaxRecoveryTailBytes <= 0 || s.MaxGroupRequests <= 0 ||
-		s.MaxGroupItems <= 0 || s.MaxGroupBytes <= 0 || s.MaxPartitionKeyBytes <= 0 {
-		return errors.New("ordered stream limits must all be positive")
-	}
-	if s.MaxGroupRequests > s.MaxStaged || s.MaxGroupBytes > s.MaxReleasedBytes ||
-		s.MaxRecoveryTailBytes > s.MaxReleasedBytes || s.MaxPartitionKeyBytes > s.MaxGroupBytes {
-		return errors.New("ordered stream limits exceed their enclosing bounds")
-	}
-	return nil
+	return internal.OrderedLogsSettings(s).Validate()
 }

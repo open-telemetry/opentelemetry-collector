@@ -82,7 +82,9 @@ func TestReplayLoadFailurePreservesDispatchedOwnership(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, client.Set(ctx, metadataKey, body))
 	client.getKey = replayItemsKey
-	pq := newPersistentQueue[intRequest](newSettingsWithStorage(request.SizerTypeRequests, 10)).(*persistentQueue[intRequest])
+	set := newSettingsWithStorage(request.SizerTypeRequests, 10)
+	set.ReplayInOrder = true
+	pq := newPersistentQueue[intRequest](set).(*persistentQueue[intRequest])
 	pq.initClient(ctx, client)
 	require.ErrorIs(t, pq.startupErr, client.failure)
 	require.Equal(t, []uint64{0}, pq.metadata.CurrentlyDispatchedItems)

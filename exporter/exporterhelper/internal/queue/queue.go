@@ -77,6 +77,9 @@ type Settings[T request.Request] struct {
 	Encoding          Encoding[T]
 	ID                component.ID
 	Telemetry         component.TelemetrySettings
+	// ReplayInOrder retains original item indices and replays in-flight items
+	// before newer queued items on restart. Ordered streams opt into this.
+	ReplayInOrder bool
 }
 
 func NewQueue[T request.Request](set Settings[T], next ConsumeFunc[T]) (Queue[T], error) {

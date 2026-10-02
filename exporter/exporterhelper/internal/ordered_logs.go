@@ -90,7 +90,8 @@ type OrderedLogsSettings struct {
 	MaxPartitionKeyBytes int
 }
 
-func (s OrderedLogsSettings) validate() error {
+// Validate rejects unbounded or internally inconsistent stream limits.
+func (s OrderedLogsSettings) Validate() error {
 	if s.MaxStaged <= 0 || s.MaxActivePartitions <= 0 || s.MaxReleasedRequests <= 0 ||
 		s.MaxReleasedBytes <= 0 || s.MaxRecoveryTailBytes <= 0 || s.MaxGroupRequests <= 0 ||
 		s.MaxGroupItems <= 0 || s.MaxGroupBytes <= 0 || s.MaxPartitionKeyBytes <= 0 {
@@ -230,7 +231,7 @@ func (orderedLogsEncoding) Marshal(ctx context.Context, req request.Request) ([]
 }
 
 func (orderedLogsEncoding) Unmarshal(encoded []byte) (context.Context, request.Request, error) {
-	if len(encoded) < len(orderedLogsMagic)+4 || !bytes.Equal(encoded[:4], orderedLogsMagic[:4]) || (encoded[4] != 2 && encoded[4] != 3) {
+	if len(encoded) < len(orderedLogsMagic)+4 || !bytes.Equal(encoded[:len(orderedLogsMagic)], orderedLogsMagic) {
 		return nil, nil, errors.New("ordered logs encoding: invalid group header")
 	}
 	r := bytes.NewReader(encoded[len(orderedLogsMagic):])
@@ -256,13 +257,11 @@ func (orderedLogsEncoding) Unmarshal(encoded []byte) (context.Context, request.R
 		if _, err := io.ReadFull(r, queueID[:]); err != nil || queueID == ([16]byte{}) {
 			return nil, nil, errors.New("ordered logs encoding: invalid queue item ID")
 		}
-		if encoded[4] >= 3 {
-			retired, err := r.ReadByte()
-			if err != nil || retired > 1 {
-				return nil, nil, errors.New("ordered logs encoding: invalid child retirement flag")
-			}
-			g.retired[queueID] = retired == 1
+		retired, retirementErr := r.ReadByte()
+		if retirementErr != nil || retired > 1 {
+			return nil, nil, errors.New("ordered logs encoding: invalid child retirement flag")
 		}
+		g.retired[queueID] = retired == 1
 		var payloadLen uint32
 		if err := binary.Read(r, binary.BigEndian, &payloadLen); err != nil || uint64(payloadLen) > uint64(r.Len()) {
 			return nil, nil, errors.New("ordered logs encoding: invalid child payload length")
@@ -1177,7 +1176,7 @@ func NewLogsRequests(
 	if pusher == nil {
 		return nil, errNilConsumeRequest
 	}
-	if err := limits.validate(); err != nil {
+	if err := limits.Validate(); err != nil {
 		return nil, err
 	}
 	var coordinator *orderedLogsCoordinator

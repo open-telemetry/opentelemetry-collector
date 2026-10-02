@@ -529,4 +529,7 @@ func TestOrderedLogsGroupEncodingRoundTrip(t *testing.T) {
 	require.Equal(t, OrderedPositionEnd, decoded.children[0].Position)
 	require.Equal(t, group.children[0].QueueID, decoded.children[0].QueueID)
 	require.Equal(t, 1, decoded.ItemsCount())
+	encoded[4] = 2
+	_, _, err = (orderedLogsEncoding{}).Unmarshal(encoded)
+	require.ErrorContains(t, err, "invalid group header", "unreleased prototype formats are not an upstream compatibility contract")
 }
