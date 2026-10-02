@@ -55,6 +55,9 @@ If `sending_queue::sizer` is not set, `batch::sizer` defaults to `items`.
 
 Available `batch::sizer` options:
 
+- `requests`: number of incoming export calls. Each call counts as 1 regardless of its payload size.
+  `min_size` is the minimum number of incoming calls in a batch; `max_size` has no effect. Requests are merged
+  into one outgoing export call until the minimum is met or `flush_timeout` expires;
 - `items`: number of the smallest parts of each signal (spans, metric data points, log records);
 - `bytes`: the size of serialized data in bytes (the least performant option).
 
