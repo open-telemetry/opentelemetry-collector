@@ -58,7 +58,7 @@ func newMultiBatcher(
 
 	mb.partitions = cache
 
-	if err = errors.Join(
+	if err := errors.Join(
 		set.obsMetrics.RegisterInt(queuebatchtelemetry.MetricPartitionCacheSize, mb.getActivePartitionsCount),
 		set.obsMetrics.RegisterInt(queuebatchtelemetry.MetricPartitionCacheCapacity, func() int64 { return int64(cacheSize) }),
 	); err != nil {
