@@ -363,7 +363,7 @@ func (orig *Exemplar) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.FilteredAttributes = AppendCounted(st, orig.FilteredAttributes, KeyValue{}, buf, pos, 7)
+			orig.FilteredAttributes = AppendEstimated(st, orig.FilteredAttributes, KeyValue{}, len(buf)-pos, length+2)
 			err = orig.FilteredAttributes[len(orig.FilteredAttributes)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -450,7 +450,7 @@ func (orig *Exemplar) UnmarshalProtoState(buf []byte, st *State) error {
 
 func GenTestExemplar() *Exemplar {
 	orig := Alloc[Exemplar](nil)
-	orig.FilteredAttributes = []KeyValue{{}, *GenTestKeyValue()}
+	orig.FilteredAttributes = []KeyValue{KeyValue{}, *GenTestKeyValue()}
 	orig.TimeUnixNano = uint64(13)
 	orig.Value = &Exemplar_AsDouble{AsDouble: float64(3.1415926)}
 	orig.TraceId = *GenTestTraceID()

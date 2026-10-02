@@ -190,12 +190,12 @@ func TestMarshalAndUnmarshalProtoViaProtobufScopeSpans(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesScopeSpans() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":             {0x02},
-		"Scope/wrong_wire_type":     {0xc},
-		"Scope/missing_value":       {0xa},
-		"Spans/wrong_wire_type":     {0x14},
-		"Spans/missing_value":       {0x12},
-		"SchemaUrl/wrong_wire_type": {0x1c},
-		"SchemaUrl/missing_value":   {0x1a},
+		"Scope/wrong_wire_type":     []byte{0xc},
+		"Scope/missing_value":       []byte{0xa},
+		"Spans/wrong_wire_type":     []byte{0x14},
+		"Spans/missing_value":       []byte{0x12},
+		"SchemaUrl/wrong_wire_type": []byte{0x1c},
+		"SchemaUrl/missing_value":   []byte{0x1a},
 	}
 }
 
@@ -203,7 +203,7 @@ func genTestEncodingValuesScopeSpans() map[string]*ScopeSpans {
 	return map[string]*ScopeSpans{
 		"empty":          NewScopeSpans(),
 		"Scope/test":     {Scope: *GenTestInstrumentationScope()},
-		"Spans/test":     {Spans: []*Span{{}, GenTestSpan()}},
+		"Spans/test":     {Spans: []*Span{&Span{}, GenTestSpan()}},
 		"SchemaUrl/test": {SchemaUrl: "test_schemaurl"},
 	}
 }

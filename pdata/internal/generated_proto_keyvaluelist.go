@@ -200,7 +200,7 @@ func (orig *KeyValueList) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Values = AppendCounted(st, orig.Values, KeyValue{}, buf, pos, 1)
+			orig.Values = AppendEstimated(st, orig.Values, KeyValue{}, len(buf)-pos, length+2)
 			err = orig.Values[len(orig.Values)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -217,7 +217,7 @@ func (orig *KeyValueList) UnmarshalProtoState(buf []byte, st *State) error {
 
 func GenTestKeyValueList() *KeyValueList {
 	orig := Alloc[KeyValueList](nil)
-	orig.Values = []KeyValue{{}, *GenTestKeyValue()}
+	orig.Values = []KeyValue{KeyValue{}, *GenTestKeyValue()}
 	return orig
 }
 

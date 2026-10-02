@@ -45,7 +45,7 @@ func (ms Mapping) MoveTo(dest Mapping) {
 	if ms.orig == dest.orig {
 		return
 	}
-	if ms.state != dest.state {
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
 		ms.CopyTo(dest)
 		internal.DeleteMapping(ms.orig, false)
 		return

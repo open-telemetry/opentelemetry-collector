@@ -190,8 +190,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufStack(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesStack() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                   {0x02},
-		"LocationIndices/wrong_wire_type": {0xc},
-		"LocationIndices/missing_value":   {0xa},
+		"LocationIndices/wrong_wire_type": []byte{0xc},
+		"LocationIndices/missing_value":   []byte{0xa},
 	}
 }
 

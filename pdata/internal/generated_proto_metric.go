@@ -647,7 +647,7 @@ func (orig *Metric) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Metadata = AppendCounted(st, orig.Metadata, KeyValue{}, buf, pos, 12)
+			orig.Metadata = AppendEstimated(st, orig.Metadata, KeyValue{}, len(buf)-pos, length+2)
 			err = orig.Metadata[len(orig.Metadata)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -668,7 +668,7 @@ func GenTestMetric() *Metric {
 	orig.Description = "test_description"
 	orig.Unit = "test_unit"
 	orig.Data = &Metric_Gauge{Gauge: GenTestGauge()}
-	orig.Metadata = []KeyValue{{}, *GenTestKeyValue()}
+	orig.Metadata = []KeyValue{KeyValue{}, *GenTestKeyValue()}
 	return orig
 }
 

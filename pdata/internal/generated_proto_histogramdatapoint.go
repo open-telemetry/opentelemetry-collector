@@ -446,7 +446,7 @@ func (orig *HistogramDataPoint) UnmarshalProtoState(buf []byte, st *State) error
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = AppendCounted(st, orig.Attributes, KeyValue{}, buf, pos, 9)
+			orig.Attributes = AppendEstimated(st, orig.Attributes, KeyValue{}, len(buf)-pos, length+2)
 			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -526,7 +526,7 @@ func (orig *HistogramDataPoint) UnmarshalProtoState(buf []byte, st *State) error
 				if err != nil {
 					return err
 				}
-				orig.BucketCounts = AppendCounted(st, orig.BucketCounts, uint64(num), buf, pos, 6)
+				orig.BucketCounts = AppendEstimated(st, orig.BucketCounts, uint64(num), len(buf)-pos, 8+1)
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field BucketCounts", wireType)
 			}
@@ -558,7 +558,7 @@ func (orig *HistogramDataPoint) UnmarshalProtoState(buf []byte, st *State) error
 				if err != nil {
 					return err
 				}
-				orig.ExplicitBounds = AppendCounted(st, orig.ExplicitBounds, math.Float64frombits(num), buf, pos, 7)
+				orig.ExplicitBounds = AppendEstimated(st, orig.ExplicitBounds, math.Float64frombits(num), len(buf)-pos, 8+1)
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field ExplicitBounds", wireType)
 			}
@@ -573,7 +573,7 @@ func (orig *HistogramDataPoint) UnmarshalProtoState(buf []byte, st *State) error
 				return err
 			}
 			startPos := pos - length
-			orig.Exemplars = AppendCounted(st, orig.Exemplars, Exemplar{}, buf, pos, 8)
+			orig.Exemplars = AppendEstimated(st, orig.Exemplars, Exemplar{}, len(buf)-pos, length+2)
 			err = orig.Exemplars[len(orig.Exemplars)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -674,14 +674,14 @@ func (m *HistogramDataPoint) HasMax() bool {
 
 func GenTestHistogramDataPoint() *HistogramDataPoint {
 	orig := Alloc[HistogramDataPoint](nil)
-	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
+	orig.Attributes = []KeyValue{KeyValue{}, *GenTestKeyValue()}
 	orig.StartTimeUnixNano = uint64(13)
 	orig.TimeUnixNano = uint64(13)
 	orig.Count = uint64(13)
 	orig.SetSum(float64(3.1415926))
 	orig.BucketCounts = []uint64{uint64(0), uint64(13)}
 	orig.ExplicitBounds = []float64{float64(0), float64(3.1415926)}
-	orig.Exemplars = []Exemplar{{}, *GenTestExemplar()}
+	orig.Exemplars = []Exemplar{Exemplar{}, *GenTestExemplar()}
 	orig.Flags = uint32(13)
 	orig.SetMin(float64(3.1415926))
 	orig.SetMax(float64(3.1415926))

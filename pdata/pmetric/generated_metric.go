@@ -46,7 +46,7 @@ func (ms Metric) MoveTo(dest Metric) {
 	if ms.orig == dest.orig {
 		return
 	}
-	if ms.state != dest.state {
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
 		ms.CopyTo(dest)
 		internal.DeleteMetric(ms.orig, false)
 		return

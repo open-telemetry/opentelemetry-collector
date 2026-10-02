@@ -292,7 +292,7 @@ func (orig *ResourceMetrics) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.ScopeMetrics = AppendCounted(st, orig.ScopeMetrics, Alloc[ScopeMetrics](st), buf, pos, 2)
+			orig.ScopeMetrics = AppendEstimated(st, orig.ScopeMetrics, Alloc[ScopeMetrics](st), len(buf)-pos, length+2)
 			err = orig.ScopeMetrics[len(orig.ScopeMetrics)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -320,7 +320,7 @@ func (orig *ResourceMetrics) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.DeprecatedScopeMetrics = AppendCounted(st, orig.DeprecatedScopeMetrics, Alloc[ScopeMetrics](st), buf, pos, 1000)
+			orig.DeprecatedScopeMetrics = AppendEstimated(st, orig.DeprecatedScopeMetrics, Alloc[ScopeMetrics](st), len(buf)-pos, length+2)
 			err = orig.DeprecatedScopeMetrics[len(orig.DeprecatedScopeMetrics)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -338,9 +338,9 @@ func (orig *ResourceMetrics) UnmarshalProtoState(buf []byte, st *State) error {
 func GenTestResourceMetrics() *ResourceMetrics {
 	orig := Alloc[ResourceMetrics](nil)
 	orig.Resource = *GenTestResource()
-	orig.ScopeMetrics = []*ScopeMetrics{{}, GenTestScopeMetrics()}
+	orig.ScopeMetrics = []*ScopeMetrics{&ScopeMetrics{}, GenTestScopeMetrics()}
 	orig.SchemaUrl = "test_schemaurl"
-	orig.DeprecatedScopeMetrics = []*ScopeMetrics{{}, GenTestScopeMetrics()}
+	orig.DeprecatedScopeMetrics = []*ScopeMetrics{&ScopeMetrics{}, GenTestScopeMetrics()}
 	return orig
 }
 

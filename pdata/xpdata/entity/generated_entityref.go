@@ -40,7 +40,7 @@ func (ms EntityRef) MoveTo(dest EntityRef) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	if ms.getState() != dest.getState() {
+	if internal.MoveNeedsCopy(ms.getState(), dest.getState()) {
 		ms.CopyTo(dest)
 		internal.DeleteEntityRef(ms.getOrig(), false)
 		return

@@ -257,7 +257,7 @@ func (orig *ResourceProfiles) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.ScopeProfiles = AppendCounted(st, orig.ScopeProfiles, Alloc[ScopeProfiles](st), buf, pos, 2)
+			orig.ScopeProfiles = AppendEstimated(st, orig.ScopeProfiles, Alloc[ScopeProfiles](st), len(buf)-pos, length+2)
 			err = orig.ScopeProfiles[len(orig.ScopeProfiles)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -287,7 +287,7 @@ func (orig *ResourceProfiles) UnmarshalProtoState(buf []byte, st *State) error {
 func GenTestResourceProfiles() *ResourceProfiles {
 	orig := Alloc[ResourceProfiles](nil)
 	orig.Resource = *GenTestResource()
-	orig.ScopeProfiles = []*ScopeProfiles{{}, GenTestScopeProfiles()}
+	orig.ScopeProfiles = []*ScopeProfiles{&ScopeProfiles{}, GenTestScopeProfiles()}
 	orig.SchemaUrl = "test_schemaurl"
 	return orig
 }

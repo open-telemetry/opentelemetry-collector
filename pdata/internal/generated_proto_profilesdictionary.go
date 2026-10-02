@@ -400,7 +400,7 @@ func (orig *ProfilesDictionary) UnmarshalProtoState(buf []byte, st *State) error
 				return err
 			}
 			startPos := pos - length
-			orig.MappingTable = AppendCounted(st, orig.MappingTable, Alloc[Mapping](st), buf, pos, 1)
+			orig.MappingTable = AppendEstimated(st, orig.MappingTable, Alloc[Mapping](st), len(buf)-pos, length+2)
 			err = orig.MappingTable[len(orig.MappingTable)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -416,7 +416,7 @@ func (orig *ProfilesDictionary) UnmarshalProtoState(buf []byte, st *State) error
 				return err
 			}
 			startPos := pos - length
-			orig.LocationTable = AppendCounted(st, orig.LocationTable, Alloc[Location](st), buf, pos, 2)
+			orig.LocationTable = AppendEstimated(st, orig.LocationTable, Alloc[Location](st), len(buf)-pos, length+2)
 			err = orig.LocationTable[len(orig.LocationTable)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -432,7 +432,7 @@ func (orig *ProfilesDictionary) UnmarshalProtoState(buf []byte, st *State) error
 				return err
 			}
 			startPos := pos - length
-			orig.FunctionTable = AppendCounted(st, orig.FunctionTable, Alloc[Function](st), buf, pos, 3)
+			orig.FunctionTable = AppendEstimated(st, orig.FunctionTable, Alloc[Function](st), len(buf)-pos, length+2)
 			err = orig.FunctionTable[len(orig.FunctionTable)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -448,7 +448,7 @@ func (orig *ProfilesDictionary) UnmarshalProtoState(buf []byte, st *State) error
 				return err
 			}
 			startPos := pos - length
-			orig.LinkTable = AppendCounted(st, orig.LinkTable, Alloc[Link](st), buf, pos, 4)
+			orig.LinkTable = AppendEstimated(st, orig.LinkTable, Alloc[Link](st), len(buf)-pos, length+2)
 			err = orig.LinkTable[len(orig.LinkTable)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -464,7 +464,7 @@ func (orig *ProfilesDictionary) UnmarshalProtoState(buf []byte, st *State) error
 				return err
 			}
 			startPos := pos - length
-			orig.StringTable = AppendCounted(st, orig.StringTable, BorrowString(st, buf, startPos, pos), buf, pos, 5)
+			orig.StringTable = AppendEstimated(st, orig.StringTable, BorrowString(st, buf, startPos, pos), len(buf)-pos, length+2)
 
 		case 6:
 			if wireType != proto.WireTypeLen {
@@ -476,7 +476,7 @@ func (orig *ProfilesDictionary) UnmarshalProtoState(buf []byte, st *State) error
 				return err
 			}
 			startPos := pos - length
-			orig.AttributeTable = AppendCounted(st, orig.AttributeTable, Alloc[KeyValueAndUnit](st), buf, pos, 6)
+			orig.AttributeTable = AppendEstimated(st, orig.AttributeTable, Alloc[KeyValueAndUnit](st), len(buf)-pos, length+2)
 			err = orig.AttributeTable[len(orig.AttributeTable)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -492,7 +492,7 @@ func (orig *ProfilesDictionary) UnmarshalProtoState(buf []byte, st *State) error
 				return err
 			}
 			startPos := pos - length
-			orig.StackTable = AppendCounted(st, orig.StackTable, Alloc[Stack](st), buf, pos, 7)
+			orig.StackTable = AppendEstimated(st, orig.StackTable, Alloc[Stack](st), len(buf)-pos, length+2)
 			err = orig.StackTable[len(orig.StackTable)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -509,13 +509,13 @@ func (orig *ProfilesDictionary) UnmarshalProtoState(buf []byte, st *State) error
 
 func GenTestProfilesDictionary() *ProfilesDictionary {
 	orig := Alloc[ProfilesDictionary](nil)
-	orig.MappingTable = []*Mapping{{}, GenTestMapping()}
-	orig.LocationTable = []*Location{{}, GenTestLocation()}
-	orig.FunctionTable = []*Function{{}, GenTestFunction()}
-	orig.LinkTable = []*Link{{}, GenTestLink()}
+	orig.MappingTable = []*Mapping{&Mapping{}, GenTestMapping()}
+	orig.LocationTable = []*Location{&Location{}, GenTestLocation()}
+	orig.FunctionTable = []*Function{&Function{}, GenTestFunction()}
+	orig.LinkTable = []*Link{&Link{}, GenTestLink()}
 	orig.StringTable = []string{"", "test_stringtable"}
-	orig.AttributeTable = []*KeyValueAndUnit{{}, GenTestKeyValueAndUnit()}
-	orig.StackTable = []*Stack{{}, GenTestStack()}
+	orig.AttributeTable = []*KeyValueAndUnit{&KeyValueAndUnit{}, GenTestKeyValueAndUnit()}
+	orig.StackTable = []*Stack{&Stack{}, GenTestStack()}
 	return orig
 }
 

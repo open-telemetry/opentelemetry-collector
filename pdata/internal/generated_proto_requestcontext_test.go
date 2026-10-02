@@ -190,19 +190,19 @@ func TestMarshalAndUnmarshalProtoViaProtobufRequestContext(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesRequestContext() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                  {0x02},
-		"SpanContext/wrong_wire_type":    {0xc},
-		"SpanContext/missing_value":      {0xa},
-		"ClientMetadata/wrong_wire_type": {0x14},
-		"ClientMetadata/missing_value":   {0x12},
+		"SpanContext/wrong_wire_type":    []byte{0xc},
+		"SpanContext/missing_value":      []byte{0xa},
+		"ClientMetadata/wrong_wire_type": []byte{0x14},
+		"ClientMetadata/missing_value":   []byte{0x12},
 
-		"IP/wrong_wire_type":   {0x1c},
-		"IP/missing_value":     {0x1a},
-		"TCP/wrong_wire_type":  {0x24},
-		"TCP/missing_value":    {0x22},
-		"UDP/wrong_wire_type":  {0x2c},
-		"UDP/missing_value":    {0x2a},
-		"Unix/wrong_wire_type": {0x34},
-		"Unix/missing_value":   {0x32},
+		"IP/wrong_wire_type":   []byte{0x1c},
+		"IP/missing_value":     []byte{0x1a},
+		"TCP/wrong_wire_type":  []byte{0x24},
+		"TCP/missing_value":    []byte{0x22},
+		"UDP/wrong_wire_type":  []byte{0x2c},
+		"UDP/missing_value":    []byte{0x2a},
+		"Unix/wrong_wire_type": []byte{0x34},
+		"Unix/missing_value":   []byte{0x32},
 	}
 }
 
@@ -210,7 +210,7 @@ func genTestEncodingValuesRequestContext() map[string]*RequestContext {
 	return map[string]*RequestContext{
 		"empty":               NewRequestContext(),
 		"SpanContext/test":    {SpanContext: GenTestSpanContext()},
-		"ClientMetadata/test": {ClientMetadata: []KeyValue{{}, *GenTestKeyValue()}},
+		"ClientMetadata/test": {ClientMetadata: []KeyValue{KeyValue{}, *GenTestKeyValue()}},
 		"IP/default":          {ClientAddress: &RequestContext_IP{IP: &IPAddr{}}},
 		"IP/test":             {ClientAddress: &RequestContext_IP{IP: GenTestIPAddr()}}, "TCP/default": {ClientAddress: &RequestContext_TCP{TCP: &TCPAddr{}}},
 		"TCP/test": {ClientAddress: &RequestContext_TCP{TCP: GenTestTCPAddr()}}, "UDP/default": {ClientAddress: &RequestContext_UDP{UDP: &UDPAddr{}}},

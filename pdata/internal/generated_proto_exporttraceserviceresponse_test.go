@@ -190,8 +190,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportTraceServiceResponse(t *testin
 func genTestFailingUnmarshalProtoValuesExportTraceServiceResponse() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                  {0x02},
-		"PartialSuccess/wrong_wire_type": {0xc},
-		"PartialSuccess/missing_value":   {0xa},
+		"PartialSuccess/wrong_wire_type": []byte{0xc},
+		"PartialSuccess/missing_value":   []byte{0xa},
 	}
 }
 

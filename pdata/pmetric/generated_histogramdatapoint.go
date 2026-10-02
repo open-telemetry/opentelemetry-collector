@@ -45,7 +45,7 @@ func (ms HistogramDataPoint) MoveTo(dest HistogramDataPoint) {
 	if ms.orig == dest.orig {
 		return
 	}
-	if ms.state != dest.state {
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
 		ms.CopyTo(dest)
 		internal.DeleteHistogramDataPoint(ms.orig, false)
 		return

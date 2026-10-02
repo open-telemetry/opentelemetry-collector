@@ -45,7 +45,7 @@ func (ms NumberDataPoint) MoveTo(dest NumberDataPoint) {
 	if ms.orig == dest.orig {
 		return
 	}
-	if ms.state != dest.state {
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
 		ms.CopyTo(dest)
 		internal.DeleteNumberDataPoint(ms.orig, false)
 		return

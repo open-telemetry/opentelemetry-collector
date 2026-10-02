@@ -392,7 +392,7 @@ func (orig *NumberDataPoint) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = AppendCounted(st, orig.Attributes, KeyValue{}, buf, pos, 7)
+			orig.Attributes = AppendEstimated(st, orig.Attributes, KeyValue{}, len(buf)-pos, length+2)
 			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -458,7 +458,7 @@ func (orig *NumberDataPoint) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Exemplars = AppendCounted(st, orig.Exemplars, Exemplar{}, buf, pos, 5)
+			orig.Exemplars = AppendEstimated(st, orig.Exemplars, Exemplar{}, len(buf)-pos, length+2)
 			err = orig.Exemplars[len(orig.Exemplars)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -486,11 +486,11 @@ func (orig *NumberDataPoint) UnmarshalProtoState(buf []byte, st *State) error {
 
 func GenTestNumberDataPoint() *NumberDataPoint {
 	orig := Alloc[NumberDataPoint](nil)
-	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
+	orig.Attributes = []KeyValue{KeyValue{}, *GenTestKeyValue()}
 	orig.StartTimeUnixNano = uint64(13)
 	orig.TimeUnixNano = uint64(13)
 	orig.Value = &NumberDataPoint_AsDouble{AsDouble: float64(3.1415926)}
-	orig.Exemplars = []Exemplar{{}, *GenTestExemplar()}
+	orig.Exemplars = []Exemplar{Exemplar{}, *GenTestExemplar()}
 	orig.Flags = uint32(13)
 	return orig
 }

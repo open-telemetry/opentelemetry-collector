@@ -116,7 +116,7 @@ func (es {{ .structName }}) MoveAndAppendTo(dest {{ .structName }}) {
 	if es.{{ .origAccessor }} == dest.{{ .origAccessor }} {
 		return
 	}
-	if es.{{ .stateAccessor }} != dest.{{ .stateAccessor }} {
+	if internal.MoveNeedsCopy(es.{{ .stateAccessor }}, dest.{{ .stateAccessor }}) {
 		for i := 0; i < es.Len(); i++ {
 			es.At(i).CopyTo(dest.AppendEmpty())
 		}

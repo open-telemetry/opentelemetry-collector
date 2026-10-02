@@ -305,7 +305,7 @@ func (orig *EntityRef) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.IdKeys = AppendCounted(st, orig.IdKeys, BorrowString(st, buf, startPos, pos), buf, pos, 3)
+			orig.IdKeys = AppendEstimated(st, orig.IdKeys, BorrowString(st, buf, startPos, pos), len(buf)-pos, length+2)
 
 		case 4:
 			if wireType != proto.WireTypeLen {
@@ -317,7 +317,7 @@ func (orig *EntityRef) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.DescriptionKeys = AppendCounted(st, orig.DescriptionKeys, BorrowString(st, buf, startPos, pos), buf, pos, 4)
+			orig.DescriptionKeys = AppendEstimated(st, orig.DescriptionKeys, BorrowString(st, buf, startPos, pos), len(buf)-pos, length+2)
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
 			if err != nil {

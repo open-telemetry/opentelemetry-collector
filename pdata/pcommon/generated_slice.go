@@ -107,7 +107,7 @@ func (es Slice) MoveAndAppendTo(dest Slice) {
 	if es.getOrig() == dest.getOrig() {
 		return
 	}
-	if es.getState() != dest.getState() {
+	if internal.MoveNeedsCopy(es.getState(), dest.getState()) {
 		for i := 0; i < es.Len(); i++ {
 			es.At(i).CopyTo(dest.AppendEmpty())
 		}

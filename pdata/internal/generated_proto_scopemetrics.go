@@ -257,7 +257,7 @@ func (orig *ScopeMetrics) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Metrics = AppendCounted(st, orig.Metrics, Alloc[Metric](st), buf, pos, 2)
+			orig.Metrics = AppendEstimated(st, orig.Metrics, Alloc[Metric](st), len(buf)-pos, length+2)
 			err = orig.Metrics[len(orig.Metrics)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -287,7 +287,7 @@ func (orig *ScopeMetrics) UnmarshalProtoState(buf []byte, st *State) error {
 func GenTestScopeMetrics() *ScopeMetrics {
 	orig := Alloc[ScopeMetrics](nil)
 	orig.Scope = *GenTestInstrumentationScope()
-	orig.Metrics = []*Metric{{}, GenTestMetric()}
+	orig.Metrics = []*Metric{&Metric{}, GenTestMetric()}
 	orig.SchemaUrl = "test_schemaurl"
 	return orig
 }

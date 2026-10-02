@@ -44,7 +44,7 @@ func (ms Sum) MoveTo(dest Sum) {
 	if ms.orig == dest.orig {
 		return
 	}
-	if ms.state != dest.state {
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
 		ms.CopyTo(dest)
 		internal.DeleteSum(ms.orig, false)
 		return

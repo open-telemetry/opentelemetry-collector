@@ -190,16 +190,16 @@ func TestMarshalAndUnmarshalProtoViaProtobufSample(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesSample() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                      {0x02},
-		"StackIndex/wrong_wire_type":         {0xc},
-		"StackIndex/missing_value":           {0x8},
-		"AttributeIndices/wrong_wire_type":   {0x14},
-		"AttributeIndices/missing_value":     {0x12},
-		"LinkIndex/wrong_wire_type":          {0x1c},
-		"LinkIndex/missing_value":            {0x18},
-		"Values/wrong_wire_type":             {0x24},
-		"Values/missing_value":               {0x22},
-		"TimestampsUnixNano/wrong_wire_type": {0x2c},
-		"TimestampsUnixNano/missing_value":   {0x2a},
+		"StackIndex/wrong_wire_type":         []byte{0xc},
+		"StackIndex/missing_value":           []byte{0x8},
+		"AttributeIndices/wrong_wire_type":   []byte{0x14},
+		"AttributeIndices/missing_value":     []byte{0x12},
+		"LinkIndex/wrong_wire_type":          []byte{0x1c},
+		"LinkIndex/missing_value":            []byte{0x18},
+		"Values/wrong_wire_type":             []byte{0x24},
+		"Values/missing_value":               []byte{0x22},
+		"TimestampsUnixNano/wrong_wire_type": []byte{0x2c},
+		"TimestampsUnixNano/missing_value":   []byte{0x2a},
 	}
 }
 

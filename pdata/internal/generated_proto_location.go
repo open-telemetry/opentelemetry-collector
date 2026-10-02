@@ -295,7 +295,7 @@ func (orig *Location) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Lines = AppendCounted(st, orig.Lines, Alloc[Line](st), buf, pos, 3)
+			orig.Lines = AppendEstimated(st, orig.Lines, Alloc[Line](st), len(buf)-pos, length+2)
 			err = orig.Lines[len(orig.Lines)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -315,7 +315,7 @@ func (orig *Location) UnmarshalProtoState(buf []byte, st *State) error {
 					if err != nil {
 						return err
 					}
-					orig.AttributeIndices = AppendCounted(st, orig.AttributeIndices, int32(num), buf, pos, 4)
+					orig.AttributeIndices = AppendEstimated(st, orig.AttributeIndices, int32(num), pos-startPos, 1)
 				}
 				if startPos != pos {
 					return fmt.Errorf("proto: invalid field len = %d for field AttributeIndices", pos-startPos)
@@ -326,7 +326,7 @@ func (orig *Location) UnmarshalProtoState(buf []byte, st *State) error {
 				if err != nil {
 					return err
 				}
-				orig.AttributeIndices = AppendCounted(st, orig.AttributeIndices, int32(num), buf, pos, 4)
+				orig.AttributeIndices = AppendEstimated(st, orig.AttributeIndices, int32(num), len(buf)-pos, 2)
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field AttributeIndices", wireType)
 			}
@@ -344,7 +344,7 @@ func GenTestLocation() *Location {
 	orig := Alloc[Location](nil)
 	orig.MappingIndex = int32(13)
 	orig.Address = uint64(13)
-	orig.Lines = []*Line{{}, GenTestLine()}
+	orig.Lines = []*Line{&Line{}, GenTestLine()}
 	orig.AttributeIndices = []int32{int32(0), int32(13)}
 	return orig
 }

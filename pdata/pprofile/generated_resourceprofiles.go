@@ -45,7 +45,7 @@ func (ms ResourceProfiles) MoveTo(dest ResourceProfiles) {
 	if ms.orig == dest.orig {
 		return
 	}
-	if ms.state != dest.state {
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
 		ms.CopyTo(dest)
 		internal.DeleteResourceProfiles(ms.orig, false)
 		return

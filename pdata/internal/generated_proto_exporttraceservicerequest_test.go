@@ -190,14 +190,14 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportTraceServiceRequest(t *testing
 func genTestFailingUnmarshalProtoValuesExportTraceServiceRequest() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                 {0x02},
-		"ResourceSpans/wrong_wire_type": {0xc},
-		"ResourceSpans/missing_value":   {0xa},
+		"ResourceSpans/wrong_wire_type": []byte{0xc},
+		"ResourceSpans/missing_value":   []byte{0xa},
 	}
 }
 
 func genTestEncodingValuesExportTraceServiceRequest() map[string]*ExportTraceServiceRequest {
 	return map[string]*ExportTraceServiceRequest{
 		"empty":              NewExportTraceServiceRequest(),
-		"ResourceSpans/test": {ResourceSpans: []*ResourceSpans{{}, GenTestResourceSpans()}},
+		"ResourceSpans/test": {ResourceSpans: []*ResourceSpans{&ResourceSpans{}, GenTestResourceSpans()}},
 	}
 }

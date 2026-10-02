@@ -257,7 +257,7 @@ func (orig *ScopeLogs) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.LogRecords = AppendCounted(st, orig.LogRecords, Alloc[LogRecord](st), buf, pos, 2)
+			orig.LogRecords = AppendEstimated(st, orig.LogRecords, Alloc[LogRecord](st), len(buf)-pos, length+2)
 			err = orig.LogRecords[len(orig.LogRecords)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -287,7 +287,7 @@ func (orig *ScopeLogs) UnmarshalProtoState(buf []byte, st *State) error {
 func GenTestScopeLogs() *ScopeLogs {
 	orig := Alloc[ScopeLogs](nil)
 	orig.Scope = *GenTestInstrumentationScope()
-	orig.LogRecords = []*LogRecord{{}, GenTestLogRecord()}
+	orig.LogRecords = []*LogRecord{&LogRecord{}, GenTestLogRecord()}
 	orig.SchemaUrl = "test_schemaurl"
 	return orig
 }

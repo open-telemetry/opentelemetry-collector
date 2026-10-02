@@ -8,7 +8,6 @@ import (
 	"unsafe"
 
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
-	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 // State defines an ownership state of pmetric.Metrics, plog.Logs, ptrace.Traces or pprofile.Profiles.
@@ -99,6 +98,14 @@ func (st *State) allocBytes(n int) []byte {
 	return b
 }
 
+// MoveNeedsCopy reports whether moving data owned by src into dest has to copy it. Data carved
+// out of an arena must be copied, because src returns that arena to the pool once it is dropped
+// and the next request writes over it. Anything else is ordinary heap data kept alive by the
+// garbage collector for as long as dest refers to it, so dest can take the pointers as they are.
+func MoveNeedsCopy(src, dest *State) bool {
+	return src != dest && src != nil && len(src.arenas) > 0
+}
+
 // RetainWire keeps the protobuf input buffer alive so string/[]byte fields may alias it.
 func (st *State) RetainWire(buf []byte) {
 	if st == nil || len(st.arenas) == 0 {
@@ -152,24 +159,35 @@ func growCap(need int) int {
 	return n
 }
 
-// appendCountLimit is the largest remainder we scan to size a repeated field exactly.
-// A bigger message doubles capacity instead; walking a 10MB parent costs more than the copies.
-const appendCountLimit = 4096
+// appendEstimateShare is the reciprocal of the share of the parent's remaining bytes assumed
+// to belong to the field being appended; the rest are the parent's other fields. Assuming the
+// whole remainder holds more elements inflates the arena by a fifth on traces, where spans
+// carry events, links and a status alongside their attributes. A third costs no more arena
+// than counting the elements exactly.
+const appendEstimateShare = 3
 
-// AppendCounted appends v like Append. The first element of a repeated field is
-// sized to the number of remaining occurrences of fieldNum in buf[pos:], so later
-// elements fill that slice instead of growing and copying.
-func AppendCounted[T any](st *State, s []T, v T, buf []byte, pos int, fieldNum int32) []T {
+// appendEstimateBudget bounds the bytes one estimate may reserve, so that a field appearing
+// once near the start of a very large message cannot reserve room for the whole remainder.
+const appendEstimateBudget = 8 << 10
+
+// AppendEstimated appends v like Append. When s has no spare capacity, the new capacity is
+// estimated from remaining, the bytes left unparsed in the parent message, and elemBytes,
+// the encoded size of the element just parsed. Over-allocating from a bump allocator costs
+// one pointer increment, so guessing high is far cheaper than scanning the parent to count
+// the elements exactly. Doubling is the floor, which keeps the copies amortized when the
+// estimate falls short.
+func AppendEstimated[T any](st *State, s []T, v T, remaining, elemBytes int) []T {
 	if cap(s) > len(s) {
 		s = s[:len(s)+1]
 		s[len(s)-1] = v
 		return s
 	}
-	n := len(s) + 1
-	if len(s) == 0 && len(buf)-pos <= appendCountLimit {
-		n += proto.CountField(buf, pos, fieldNum)
-	} else {
-		n = growCap(n)
+	n := growCap(len(s) + 1)
+	if size := int(unsafe.Sizeof(v)); remaining > 0 && elemBytes > 0 && size > 0 {
+		est := len(s) + 1 + min(remaining/(elemBytes*appendEstimateShare)+1, appendEstimateBudget/size)
+		if est > n {
+			n = est
+		}
 	}
 	ns := AllocSlice[T](st, len(s)+1, n)
 	copy(ns, s)

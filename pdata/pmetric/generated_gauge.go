@@ -44,7 +44,7 @@ func (ms Gauge) MoveTo(dest Gauge) {
 	if ms.orig == dest.orig {
 		return
 	}
-	if ms.state != dest.state {
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
 		ms.CopyTo(dest)
 		internal.DeleteGauge(ms.orig, false)
 		return

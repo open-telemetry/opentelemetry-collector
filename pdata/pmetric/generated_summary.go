@@ -44,7 +44,7 @@ func (ms Summary) MoveTo(dest Summary) {
 	if ms.orig == dest.orig {
 		return
 	}
-	if ms.state != dest.state {
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
 		ms.CopyTo(dest)
 		internal.DeleteSummary(ms.orig, false)
 		return

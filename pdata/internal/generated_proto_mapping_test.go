@@ -190,16 +190,16 @@ func TestMarshalAndUnmarshalProtoViaProtobufMapping(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesMapping() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                    {0x02},
-		"MemoryStart/wrong_wire_type":      {0xc},
-		"MemoryStart/missing_value":        {0x8},
-		"MemoryLimit/wrong_wire_type":      {0x14},
-		"MemoryLimit/missing_value":        {0x10},
-		"FileOffset/wrong_wire_type":       {0x1c},
-		"FileOffset/missing_value":         {0x18},
-		"FilenameStrindex/wrong_wire_type": {0x24},
-		"FilenameStrindex/missing_value":   {0x20},
-		"AttributeIndices/wrong_wire_type": {0x2c},
-		"AttributeIndices/missing_value":   {0x2a},
+		"MemoryStart/wrong_wire_type":      []byte{0xc},
+		"MemoryStart/missing_value":        []byte{0x8},
+		"MemoryLimit/wrong_wire_type":      []byte{0x14},
+		"MemoryLimit/missing_value":        []byte{0x10},
+		"FileOffset/wrong_wire_type":       []byte{0x1c},
+		"FileOffset/missing_value":         []byte{0x18},
+		"FilenameStrindex/wrong_wire_type": []byte{0x24},
+		"FilenameStrindex/missing_value":   []byte{0x20},
+		"AttributeIndices/wrong_wire_type": []byte{0x2c},
+		"AttributeIndices/missing_value":   []byte{0x2a},
 	}
 }
 

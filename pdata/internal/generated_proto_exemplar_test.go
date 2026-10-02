@@ -190,26 +190,26 @@ func TestMarshalAndUnmarshalProtoViaProtobufExemplar(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesExemplar() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                      {0x02},
-		"FilteredAttributes/wrong_wire_type": {0x3c},
-		"FilteredAttributes/missing_value":   {0x3a},
-		"TimeUnixNano/wrong_wire_type":       {0x14},
-		"TimeUnixNano/missing_value":         {0x11},
+		"FilteredAttributes/wrong_wire_type": []byte{0x3c},
+		"FilteredAttributes/missing_value":   []byte{0x3a},
+		"TimeUnixNano/wrong_wire_type":       []byte{0x14},
+		"TimeUnixNano/missing_value":         []byte{0x11},
 
-		"AsDouble/wrong_wire_type": {0x1c},
-		"AsDouble/missing_value":   {0x19},
-		"AsInt/wrong_wire_type":    {0x34},
-		"AsInt/missing_value":      {0x31},
-		"TraceId/wrong_wire_type":  {0x2c},
-		"TraceId/missing_value":    {0x2a},
-		"SpanId/wrong_wire_type":   {0x24},
-		"SpanId/missing_value":     {0x22},
+		"AsDouble/wrong_wire_type": []byte{0x1c},
+		"AsDouble/missing_value":   []byte{0x19},
+		"AsInt/wrong_wire_type":    []byte{0x34},
+		"AsInt/missing_value":      []byte{0x31},
+		"TraceId/wrong_wire_type":  []byte{0x2c},
+		"TraceId/missing_value":    []byte{0x2a},
+		"SpanId/wrong_wire_type":   []byte{0x24},
+		"SpanId/missing_value":     []byte{0x22},
 	}
 }
 
 func genTestEncodingValuesExemplar() map[string]*Exemplar {
 	return map[string]*Exemplar{
 		"empty":                   NewExemplar(),
-		"FilteredAttributes/test": {FilteredAttributes: []KeyValue{{}, *GenTestKeyValue()}},
+		"FilteredAttributes/test": {FilteredAttributes: []KeyValue{KeyValue{}, *GenTestKeyValue()}},
 		"TimeUnixNano/test":       {TimeUnixNano: uint64(13)},
 		"AsDouble/default":        {Value: &Exemplar_AsDouble{AsDouble: float64(0)}},
 		"AsDouble/test":           {Value: &Exemplar_AsDouble{AsDouble: float64(3.1415926)}}, "AsInt/default": {Value: &Exemplar_AsInt{AsInt: int64(0)}},

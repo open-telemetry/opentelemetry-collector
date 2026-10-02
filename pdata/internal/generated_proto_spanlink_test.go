@@ -190,18 +190,18 @@ func TestMarshalAndUnmarshalProtoViaProtobufSpanLink(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesSpanLink() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                          {0x02},
-		"TraceId/wrong_wire_type":                {0xc},
-		"TraceId/missing_value":                  {0xa},
-		"SpanId/wrong_wire_type":                 {0x14},
-		"SpanId/missing_value":                   {0x12},
-		"TraceState/wrong_wire_type":             {0x1c},
-		"TraceState/missing_value":               {0x1a},
-		"Attributes/wrong_wire_type":             {0x24},
-		"Attributes/missing_value":               {0x22},
-		"DroppedAttributesCount/wrong_wire_type": {0x2c},
-		"DroppedAttributesCount/missing_value":   {0x28},
-		"Flags/wrong_wire_type":                  {0x34},
-		"Flags/missing_value":                    {0x35},
+		"TraceId/wrong_wire_type":                []byte{0xc},
+		"TraceId/missing_value":                  []byte{0xa},
+		"SpanId/wrong_wire_type":                 []byte{0x14},
+		"SpanId/missing_value":                   []byte{0x12},
+		"TraceState/wrong_wire_type":             []byte{0x1c},
+		"TraceState/missing_value":               []byte{0x1a},
+		"Attributes/wrong_wire_type":             []byte{0x24},
+		"Attributes/missing_value":               []byte{0x22},
+		"DroppedAttributesCount/wrong_wire_type": []byte{0x2c},
+		"DroppedAttributesCount/missing_value":   []byte{0x28},
+		"Flags/wrong_wire_type":                  []byte{0x34},
+		"Flags/missing_value":                    []byte{0x35},
 	}
 }
 
@@ -211,7 +211,7 @@ func genTestEncodingValuesSpanLink() map[string]*SpanLink {
 		"TraceId/test":                {TraceId: *GenTestTraceID()},
 		"SpanId/test":                 {SpanId: *GenTestSpanID()},
 		"TraceState/test":             {TraceState: "test_tracestate"},
-		"Attributes/test":             {Attributes: []KeyValue{{}, *GenTestKeyValue()}},
+		"Attributes/test":             {Attributes: []KeyValue{KeyValue{}, *GenTestKeyValue()}},
 		"DroppedAttributesCount/test": {DroppedAttributesCount: uint32(13)},
 		"Flags/test":                  {Flags: uint32(13)},
 	}

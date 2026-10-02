@@ -111,7 +111,7 @@ func (es SpanEventSlice) MoveAndAppendTo(dest SpanEventSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	if es.state != dest.state {
+	if internal.MoveNeedsCopy(es.state, dest.state) {
 		for i := 0; i < es.Len(); i++ {
 			es.At(i).CopyTo(dest.AppendEmpty())
 		}

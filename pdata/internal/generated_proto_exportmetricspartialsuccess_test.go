@@ -190,10 +190,10 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportMetricsPartialSuccess(t *testi
 func genTestFailingUnmarshalProtoValuesExportMetricsPartialSuccess() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                      {0x02},
-		"RejectedDataPoints/wrong_wire_type": {0xc},
-		"RejectedDataPoints/missing_value":   {0x8},
-		"ErrorMessage/wrong_wire_type":       {0x14},
-		"ErrorMessage/missing_value":         {0x12},
+		"RejectedDataPoints/wrong_wire_type": []byte{0xc},
+		"RejectedDataPoints/missing_value":   []byte{0x8},
+		"ErrorMessage/wrong_wire_type":       []byte{0x14},
+		"ErrorMessage/missing_value":         []byte{0x12},
 	}
 }
 

@@ -346,7 +346,7 @@ func (orig *SpanLink) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = AppendCounted(st, orig.Attributes, KeyValue{}, buf, pos, 4)
+			orig.Attributes = AppendEstimated(st, orig.Attributes, KeyValue{}, len(buf)-pos, length+2)
 			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -389,7 +389,7 @@ func GenTestSpanLink() *SpanLink {
 	orig.TraceId = *GenTestTraceID()
 	orig.SpanId = *GenTestSpanID()
 	orig.TraceState = "test_tracestate"
-	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
+	orig.Attributes = []KeyValue{KeyValue{}, *GenTestKeyValue()}
 	orig.DroppedAttributesCount = uint32(13)
 	orig.Flags = uint32(13)
 	return orig

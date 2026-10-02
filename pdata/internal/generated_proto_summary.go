@@ -200,7 +200,7 @@ func (orig *Summary) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.DataPoints = AppendCounted(st, orig.DataPoints, Alloc[SummaryDataPoint](st), buf, pos, 1)
+			orig.DataPoints = AppendEstimated(st, orig.DataPoints, Alloc[SummaryDataPoint](st), len(buf)-pos, length+2)
 			err = orig.DataPoints[len(orig.DataPoints)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -217,7 +217,7 @@ func (orig *Summary) UnmarshalProtoState(buf []byte, st *State) error {
 
 func GenTestSummary() *Summary {
 	orig := Alloc[Summary](nil)
-	orig.DataPoints = []*SummaryDataPoint{{}, GenTestSummaryDataPoint()}
+	orig.DataPoints = []*SummaryDataPoint{&SummaryDataPoint{}, GenTestSummaryDataPoint()}
 	return orig
 }
 

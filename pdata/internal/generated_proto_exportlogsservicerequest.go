@@ -201,7 +201,7 @@ func (orig *ExportLogsServiceRequest) UnmarshalProtoState(buf []byte, st *State)
 				return err
 			}
 			startPos := pos - length
-			orig.ResourceLogs = AppendCounted(st, orig.ResourceLogs, Alloc[ResourceLogs](st), buf, pos, 1)
+			orig.ResourceLogs = AppendEstimated(st, orig.ResourceLogs, Alloc[ResourceLogs](st), len(buf)-pos, length+2)
 			err = orig.ResourceLogs[len(orig.ResourceLogs)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -218,7 +218,7 @@ func (orig *ExportLogsServiceRequest) UnmarshalProtoState(buf []byte, st *State)
 
 func GenTestExportLogsServiceRequest() *ExportLogsServiceRequest {
 	orig := Alloc[ExportLogsServiceRequest](nil)
-	orig.ResourceLogs = []*ResourceLogs{{}, GenTestResourceLogs()}
+	orig.ResourceLogs = []*ResourceLogs{&ResourceLogs{}, GenTestResourceLogs()}
 	return orig
 }
 

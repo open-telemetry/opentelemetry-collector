@@ -200,7 +200,7 @@ func (orig *ArrayValue) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Values = AppendCounted(st, orig.Values, AnyValue{}, buf, pos, 1)
+			orig.Values = AppendEstimated(st, orig.Values, AnyValue{}, len(buf)-pos, length+2)
 			err = orig.Values[len(orig.Values)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -217,7 +217,7 @@ func (orig *ArrayValue) UnmarshalProtoState(buf []byte, st *State) error {
 
 func GenTestArrayValue() *ArrayValue {
 	orig := Alloc[ArrayValue](nil)
-	orig.Values = []AnyValue{{}, *GenTestAnyValue()}
+	orig.Values = []AnyValue{AnyValue{}, *GenTestAnyValue()}
 	return orig
 }
 

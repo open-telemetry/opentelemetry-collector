@@ -190,10 +190,10 @@ func TestMarshalAndUnmarshalProtoViaProtobufExponentialHistogramDataPointBuckets
 func genTestFailingUnmarshalProtoValuesExponentialHistogramDataPointBuckets() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                {0x02},
-		"Offset/wrong_wire_type":       {0xc},
-		"Offset/missing_value":         {0x8},
-		"BucketCounts/wrong_wire_type": {0x14},
-		"BucketCounts/missing_value":   {0x12},
+		"Offset/wrong_wire_type":       []byte{0xc},
+		"Offset/missing_value":         []byte{0x8},
+		"BucketCounts/wrong_wire_type": []byte{0x14},
+		"BucketCounts/missing_value":   []byte{0x12},
 	}
 }
 

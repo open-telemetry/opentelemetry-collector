@@ -190,10 +190,10 @@ func TestMarshalAndUnmarshalProtoViaProtobufIPAddr(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesIPAddr() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":        {0x02},
-		"IP/wrong_wire_type":   {0xc},
-		"IP/missing_value":     {0xa},
-		"Zone/wrong_wire_type": {0x14},
-		"Zone/missing_value":   {0x12},
+		"IP/wrong_wire_type":   []byte{0xc},
+		"IP/missing_value":     []byte{0xa},
+		"Zone/wrong_wire_type": []byte{0x14},
+		"Zone/missing_value":   []byte{0x12},
 	}
 }
 

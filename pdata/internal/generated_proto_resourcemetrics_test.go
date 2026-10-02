@@ -190,14 +190,14 @@ func TestMarshalAndUnmarshalProtoViaProtobufResourceMetrics(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesResourceMetrics() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                          {0x02},
-		"Resource/wrong_wire_type":               {0xc},
-		"Resource/missing_value":                 {0xa},
-		"ScopeMetrics/wrong_wire_type":           {0x14},
-		"ScopeMetrics/missing_value":             {0x12},
-		"SchemaUrl/wrong_wire_type":              {0x1c},
-		"SchemaUrl/missing_value":                {0x1a},
-		"DeprecatedScopeMetrics/wrong_wire_type": {0xc4, 0x3e},
-		"DeprecatedScopeMetrics/missing_value":   {0xc2, 0x3e},
+		"Resource/wrong_wire_type":               []byte{0xc},
+		"Resource/missing_value":                 []byte{0xa},
+		"ScopeMetrics/wrong_wire_type":           []byte{0x14},
+		"ScopeMetrics/missing_value":             []byte{0x12},
+		"SchemaUrl/wrong_wire_type":              []byte{0x1c},
+		"SchemaUrl/missing_value":                []byte{0x1a},
+		"DeprecatedScopeMetrics/wrong_wire_type": []byte{0xc4, 0x3e},
+		"DeprecatedScopeMetrics/missing_value":   []byte{0xc2, 0x3e},
 	}
 }
 
@@ -205,8 +205,8 @@ func genTestEncodingValuesResourceMetrics() map[string]*ResourceMetrics {
 	return map[string]*ResourceMetrics{
 		"empty":                       NewResourceMetrics(),
 		"Resource/test":               {Resource: *GenTestResource()},
-		"ScopeMetrics/test":           {ScopeMetrics: []*ScopeMetrics{{}, GenTestScopeMetrics()}},
+		"ScopeMetrics/test":           {ScopeMetrics: []*ScopeMetrics{&ScopeMetrics{}, GenTestScopeMetrics()}},
 		"SchemaUrl/test":              {SchemaUrl: "test_schemaurl"},
-		"DeprecatedScopeMetrics/test": {DeprecatedScopeMetrics: []*ScopeMetrics{{}, GenTestScopeMetrics()}},
+		"DeprecatedScopeMetrics/test": {DeprecatedScopeMetrics: []*ScopeMetrics{&ScopeMetrics{}, GenTestScopeMetrics()}},
 	}
 }

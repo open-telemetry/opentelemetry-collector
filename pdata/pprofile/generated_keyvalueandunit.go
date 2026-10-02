@@ -47,7 +47,7 @@ func (ms KeyValueAndUnit) MoveTo(dest KeyValueAndUnit) {
 	if ms.orig == dest.orig {
 		return
 	}
-	if ms.state != dest.state {
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
 		ms.CopyTo(dest)
 		internal.DeleteKeyValueAndUnit(ms.orig, false)
 		return

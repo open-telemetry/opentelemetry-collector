@@ -111,15 +111,30 @@ func TestPayloadChunksAndAppend(t *testing.T) {
 	assert.Equal(t, []int{1, 2}, nums)
 	assert.GreaterOrEqual(t, cap(nums), 2)
 
-	// Three occurrences of field 1. The first append sizes the slice to 3.
-	buf := []byte{0x08, 0x01, 0x08, 0x01, 0x08, 0x01}
-	var counted []int
-	counted = AppendCounted(st, counted, 1, buf, 2, 1)
-	assert.Equal(t, 3, cap(counted))
-	counted = AppendCounted(st, counted, 2, buf, 4, 1)
-	counted = AppendCounted(st, counted, 3, buf, len(buf), 1)
-	assert.Equal(t, []int{1, 2, 3}, counted)
-	assert.Equal(t, 3, cap(counted))
+	// Sixty bytes left at two bytes per element predicts ten more than doubling would give,
+	// so the appends that follow reuse that capacity instead of reallocating.
+	var est []int
+	est = AppendEstimated(st, est, 1, 60, 2)
+	first := cap(est)
+	assert.GreaterOrEqual(t, first, 60/(2*appendEstimateShare))
+	for i := 2; i <= 10; i++ {
+		est = AppendEstimated(st, est, i, 60-2*i, 2)
+	}
+	assert.Equal(t, []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, est)
+	assert.Equal(t, first, cap(est))
+
+	// The estimate is capped, so one element early in a huge message cannot reserve the rest of it.
+	var capped []byte
+	capped = AppendEstimated(st, capped, 1, 1<<30, 1)
+	assert.LessOrEqual(t, cap(capped), appendEstimateBudget+len(capped))
+
+	// A useless estimate still grows by doubling.
+	var grown []int
+	for i := range 5 {
+		grown = AppendEstimated(st, grown, i, 0, 0)
+	}
+	assert.Equal(t, []int{0, 1, 2, 3, 4}, grown)
+	assert.GreaterOrEqual(t, cap(grown), 5)
 }
 
 func TestBorrowStringAndCopyOnWriteBytes(t *testing.T) {

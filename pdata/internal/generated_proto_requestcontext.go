@@ -443,7 +443,7 @@ func (orig *RequestContext) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.ClientMetadata = AppendCounted(st, orig.ClientMetadata, KeyValue{}, buf, pos, 2)
+			orig.ClientMetadata = AppendEstimated(st, orig.ClientMetadata, KeyValue{}, len(buf)-pos, length+2)
 			err = orig.ClientMetadata[len(orig.ClientMetadata)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -534,7 +534,7 @@ func (orig *RequestContext) UnmarshalProtoState(buf []byte, st *State) error {
 func GenTestRequestContext() *RequestContext {
 	orig := Alloc[RequestContext](nil)
 	orig.SpanContext = GenTestSpanContext()
-	orig.ClientMetadata = []KeyValue{{}, *GenTestKeyValue()}
+	orig.ClientMetadata = []KeyValue{KeyValue{}, *GenTestKeyValue()}
 	orig.ClientAddress = &RequestContext_IP{IP: GenTestIPAddr()}
 	return orig
 }

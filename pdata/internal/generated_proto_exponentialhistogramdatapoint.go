@@ -470,7 +470,7 @@ func (orig *ExponentialHistogramDataPoint) UnmarshalProtoState(buf []byte, st *S
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = AppendCounted(st, orig.Attributes, KeyValue{}, buf, pos, 1)
+			orig.Attributes = AppendEstimated(st, orig.Attributes, KeyValue{}, len(buf)-pos, length+2)
 			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -599,7 +599,7 @@ func (orig *ExponentialHistogramDataPoint) UnmarshalProtoState(buf []byte, st *S
 				return err
 			}
 			startPos := pos - length
-			orig.Exemplars = AppendCounted(st, orig.Exemplars, Exemplar{}, buf, pos, 11)
+			orig.Exemplars = AppendEstimated(st, orig.Exemplars, Exemplar{}, len(buf)-pos, length+2)
 			err = orig.Exemplars[len(orig.Exemplars)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -700,7 +700,7 @@ func (m *ExponentialHistogramDataPoint) HasMax() bool {
 
 func GenTestExponentialHistogramDataPoint() *ExponentialHistogramDataPoint {
 	orig := Alloc[ExponentialHistogramDataPoint](nil)
-	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
+	orig.Attributes = []KeyValue{KeyValue{}, *GenTestKeyValue()}
 	orig.StartTimeUnixNano = uint64(13)
 	orig.TimeUnixNano = uint64(13)
 	orig.Count = uint64(13)
@@ -710,7 +710,7 @@ func GenTestExponentialHistogramDataPoint() *ExponentialHistogramDataPoint {
 	orig.Positive = *GenTestExponentialHistogramDataPointBuckets()
 	orig.Negative = *GenTestExponentialHistogramDataPointBuckets()
 	orig.Flags = uint32(13)
-	orig.Exemplars = []Exemplar{{}, *GenTestExemplar()}
+	orig.Exemplars = []Exemplar{Exemplar{}, *GenTestExemplar()}
 	orig.SetMin(float64(3.1415926))
 	orig.SetMax(float64(3.1415926))
 	orig.ZeroThreshold = float64(3.1415926)

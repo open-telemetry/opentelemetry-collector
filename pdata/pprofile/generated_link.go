@@ -45,7 +45,7 @@ func (ms Link) MoveTo(dest Link) {
 	if ms.orig == dest.orig {
 		return
 	}
-	if ms.state != dest.state {
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
 		ms.CopyTo(dest)
 		internal.DeleteLink(ms.orig, false)
 		return

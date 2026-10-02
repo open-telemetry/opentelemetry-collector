@@ -190,14 +190,14 @@ func TestMarshalAndUnmarshalProtoViaProtobufLocation(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesLocation() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                    {0x02},
-		"MappingIndex/wrong_wire_type":     {0xc},
-		"MappingIndex/missing_value":       {0x8},
-		"Address/wrong_wire_type":          {0x14},
-		"Address/missing_value":            {0x10},
-		"Lines/wrong_wire_type":            {0x1c},
-		"Lines/missing_value":              {0x1a},
-		"AttributeIndices/wrong_wire_type": {0x24},
-		"AttributeIndices/missing_value":   {0x22},
+		"MappingIndex/wrong_wire_type":     []byte{0xc},
+		"MappingIndex/missing_value":       []byte{0x8},
+		"Address/wrong_wire_type":          []byte{0x14},
+		"Address/missing_value":            []byte{0x10},
+		"Lines/wrong_wire_type":            []byte{0x1c},
+		"Lines/missing_value":              []byte{0x1a},
+		"AttributeIndices/wrong_wire_type": []byte{0x24},
+		"AttributeIndices/missing_value":   []byte{0x22},
 	}
 }
 
@@ -206,7 +206,7 @@ func genTestEncodingValuesLocation() map[string]*Location {
 		"empty":                 NewLocation(),
 		"MappingIndex/test":     {MappingIndex: int32(13)},
 		"Address/test":          {Address: uint64(13)},
-		"Lines/test":            {Lines: []*Line{{}, GenTestLine()}},
+		"Lines/test":            {Lines: []*Line{&Line{}, GenTestLine()}},
 		"AttributeIndices/test": {AttributeIndices: []int32{int32(0), int32(13)}},
 	}
 }

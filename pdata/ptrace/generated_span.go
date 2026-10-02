@@ -46,7 +46,7 @@ func (ms Span) MoveTo(dest Span) {
 	if ms.orig == dest.orig {
 		return
 	}
-	if ms.state != dest.state {
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
 		ms.CopyTo(dest)
 		internal.DeleteSpan(ms.orig, false)
 		return

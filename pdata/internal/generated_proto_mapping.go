@@ -321,7 +321,7 @@ func (orig *Mapping) UnmarshalProtoState(buf []byte, st *State) error {
 					if err != nil {
 						return err
 					}
-					orig.AttributeIndices = AppendCounted(st, orig.AttributeIndices, int32(num), buf, pos, 5)
+					orig.AttributeIndices = AppendEstimated(st, orig.AttributeIndices, int32(num), pos-startPos, 1)
 				}
 				if startPos != pos {
 					return fmt.Errorf("proto: invalid field len = %d for field AttributeIndices", pos-startPos)
@@ -332,7 +332,7 @@ func (orig *Mapping) UnmarshalProtoState(buf []byte, st *State) error {
 				if err != nil {
 					return err
 				}
-				orig.AttributeIndices = AppendCounted(st, orig.AttributeIndices, int32(num), buf, pos, 5)
+				orig.AttributeIndices = AppendEstimated(st, orig.AttributeIndices, int32(num), len(buf)-pos, 2)
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field AttributeIndices", wireType)
 			}

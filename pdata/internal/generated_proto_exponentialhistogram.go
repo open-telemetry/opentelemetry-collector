@@ -220,7 +220,7 @@ func (orig *ExponentialHistogram) UnmarshalProtoState(buf []byte, st *State) err
 				return err
 			}
 			startPos := pos - length
-			orig.DataPoints = AppendCounted(st, orig.DataPoints, Alloc[ExponentialHistogramDataPoint](st), buf, pos, 1)
+			orig.DataPoints = AppendEstimated(st, orig.DataPoints, Alloc[ExponentialHistogramDataPoint](st), len(buf)-pos, length+2)
 			err = orig.DataPoints[len(orig.DataPoints)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -248,7 +248,7 @@ func (orig *ExponentialHistogram) UnmarshalProtoState(buf []byte, st *State) err
 
 func GenTestExponentialHistogram() *ExponentialHistogram {
 	orig := Alloc[ExponentialHistogram](nil)
-	orig.DataPoints = []*ExponentialHistogramDataPoint{{}, GenTestExponentialHistogramDataPoint()}
+	orig.DataPoints = []*ExponentialHistogramDataPoint{&ExponentialHistogramDataPoint{}, GenTestExponentialHistogramDataPoint()}
 	orig.AggregationTemporality = AggregationTemporality(13)
 	return orig
 }

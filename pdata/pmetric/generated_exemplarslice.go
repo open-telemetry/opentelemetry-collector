@@ -110,7 +110,7 @@ func (es ExemplarSlice) MoveAndAppendTo(dest ExemplarSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	if es.state != dest.state {
+	if internal.MoveNeedsCopy(es.state, dest.state) {
 		for i := 0; i < es.Len(); i++ {
 			es.At(i).CopyTo(dest.AppendEmpty())
 		}

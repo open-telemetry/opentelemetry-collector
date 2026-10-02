@@ -190,14 +190,14 @@ func TestMarshalAndUnmarshalProtoViaProtobufGauge(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesGauge() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":              {0x02},
-		"DataPoints/wrong_wire_type": {0xc},
-		"DataPoints/missing_value":   {0xa},
+		"DataPoints/wrong_wire_type": []byte{0xc},
+		"DataPoints/missing_value":   []byte{0xa},
 	}
 }
 
 func genTestEncodingValuesGauge() map[string]*Gauge {
 	return map[string]*Gauge{
 		"empty":           NewGauge(),
-		"DataPoints/test": {DataPoints: []*NumberDataPoint{{}, GenTestNumberDataPoint()}},
+		"DataPoints/test": {DataPoints: []*NumberDataPoint{&NumberDataPoint{}, GenTestNumberDataPoint()}},
 	}
 }

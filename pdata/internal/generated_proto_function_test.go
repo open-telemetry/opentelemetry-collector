@@ -190,14 +190,14 @@ func TestMarshalAndUnmarshalProtoViaProtobufFunction(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesFunction() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                      {0x02},
-		"NameStrindex/wrong_wire_type":       {0xc},
-		"NameStrindex/missing_value":         {0x8},
-		"SystemNameStrindex/wrong_wire_type": {0x14},
-		"SystemNameStrindex/missing_value":   {0x10},
-		"FilenameStrindex/wrong_wire_type":   {0x1c},
-		"FilenameStrindex/missing_value":     {0x18},
-		"StartLine/wrong_wire_type":          {0x24},
-		"StartLine/missing_value":            {0x20},
+		"NameStrindex/wrong_wire_type":       []byte{0xc},
+		"NameStrindex/missing_value":         []byte{0x8},
+		"SystemNameStrindex/wrong_wire_type": []byte{0x14},
+		"SystemNameStrindex/missing_value":   []byte{0x10},
+		"FilenameStrindex/wrong_wire_type":   []byte{0x1c},
+		"FilenameStrindex/missing_value":     []byte{0x18},
+		"StartLine/wrong_wire_type":          []byte{0x24},
+		"StartLine/missing_value":            []byte{0x20},
 	}
 }
 

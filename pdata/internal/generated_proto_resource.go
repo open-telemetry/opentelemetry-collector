@@ -251,7 +251,7 @@ func (orig *Resource) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = AppendCounted(st, orig.Attributes, KeyValue{}, buf, pos, 1)
+			orig.Attributes = AppendEstimated(st, orig.Attributes, KeyValue{}, len(buf)-pos, length+2)
 			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -278,7 +278,7 @@ func (orig *Resource) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.EntityRefs = AppendCounted(st, orig.EntityRefs, Alloc[EntityRef](st), buf, pos, 3)
+			orig.EntityRefs = AppendEstimated(st, orig.EntityRefs, Alloc[EntityRef](st), len(buf)-pos, length+2)
 			err = orig.EntityRefs[len(orig.EntityRefs)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -295,9 +295,9 @@ func (orig *Resource) UnmarshalProtoState(buf []byte, st *State) error {
 
 func GenTestResource() *Resource {
 	orig := Alloc[Resource](nil)
-	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
+	orig.Attributes = []KeyValue{KeyValue{}, *GenTestKeyValue()}
 	orig.DroppedAttributesCount = uint32(13)
-	orig.EntityRefs = []*EntityRef{{}, GenTestEntityRef()}
+	orig.EntityRefs = []*EntityRef{&EntityRef{}, GenTestEntityRef()}
 	return orig
 }
 

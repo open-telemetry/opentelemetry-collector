@@ -219,7 +219,7 @@ func (orig *ProfilesData) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.ResourceProfiles = AppendCounted(st, orig.ResourceProfiles, Alloc[ResourceProfiles](st), buf, pos, 1)
+			orig.ResourceProfiles = AppendEstimated(st, orig.ResourceProfiles, Alloc[ResourceProfiles](st), len(buf)-pos, length+2)
 			err = orig.ResourceProfiles[len(orig.ResourceProfiles)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -252,7 +252,7 @@ func (orig *ProfilesData) UnmarshalProtoState(buf []byte, st *State) error {
 
 func GenTestProfilesData() *ProfilesData {
 	orig := Alloc[ProfilesData](nil)
-	orig.ResourceProfiles = []*ResourceProfiles{{}, GenTestResourceProfiles()}
+	orig.ResourceProfiles = []*ResourceProfiles{&ResourceProfiles{}, GenTestResourceProfiles()}
 	orig.Dictionary = *GenTestProfilesDictionary()
 	return orig
 }

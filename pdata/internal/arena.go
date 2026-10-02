@@ -65,7 +65,10 @@ func arenaAlloc[T any](a *Arena) (*T, error) {
 	return out, nil
 }
 
-// arenaAllocSlice returns a zeroed []T with the given length and capacity carved from a, or errArenaFull.
+// arenaAllocSlice returns a []T with the given length and capacity carved from a, or errArenaFull.
+// Only the live prefix is zeroed. Spare capacity keeps whatever the pooled buffer held, which is
+// safe because every append writes a whole element before anything reads it, and the buffer is a
+// []byte that the collector never scans for pointers.
 func arenaAllocSlice[T any](a *Arena, length, capacity int) ([]T, error) {
 	var zero T
 	p, err := a.alloc(int(unsafe.Sizeof(zero))*capacity, int(unsafe.Alignof(zero)))
@@ -73,7 +76,7 @@ func arenaAllocSlice[T any](a *Arena, length, capacity int) ([]T, error) {
 		return nil, err
 	}
 	s := unsafe.Slice((*T)(p), capacity)
-	clear(s)
+	clear(s[:length])
 	return s[:length:capacity], nil
 }
 

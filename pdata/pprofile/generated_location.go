@@ -45,7 +45,7 @@ func (ms Location) MoveTo(dest Location) {
 	if ms.orig == dest.orig {
 		return
 	}
-	if ms.state != dest.state {
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
 		ms.CopyTo(dest)
 		internal.DeleteLocation(ms.orig, false)
 		return

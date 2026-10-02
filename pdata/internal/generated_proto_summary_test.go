@@ -190,14 +190,14 @@ func TestMarshalAndUnmarshalProtoViaProtobufSummary(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesSummary() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":              {0x02},
-		"DataPoints/wrong_wire_type": {0xc},
-		"DataPoints/missing_value":   {0xa},
+		"DataPoints/wrong_wire_type": []byte{0xc},
+		"DataPoints/missing_value":   []byte{0xa},
 	}
 }
 
 func genTestEncodingValuesSummary() map[string]*Summary {
 	return map[string]*Summary{
 		"empty":           NewSummary(),
-		"DataPoints/test": {DataPoints: []*SummaryDataPoint{{}, GenTestSummaryDataPoint()}},
+		"DataPoints/test": {DataPoints: []*SummaryDataPoint{&SummaryDataPoint{}, GenTestSummaryDataPoint()}},
 	}
 }

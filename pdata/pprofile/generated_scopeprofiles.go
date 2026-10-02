@@ -45,7 +45,7 @@ func (ms ScopeProfiles) MoveTo(dest ScopeProfiles) {
 	if ms.orig == dest.orig {
 		return
 	}
-	if ms.state != dest.state {
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
 		ms.CopyTo(dest)
 		internal.DeleteScopeProfiles(ms.orig, false)
 		return

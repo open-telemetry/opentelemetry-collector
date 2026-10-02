@@ -257,7 +257,7 @@ func (orig *ScopeSpans) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Spans = AppendCounted(st, orig.Spans, Alloc[Span](st), buf, pos, 2)
+			orig.Spans = AppendEstimated(st, orig.Spans, Alloc[Span](st), len(buf)-pos, length+2)
 			err = orig.Spans[len(orig.Spans)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -287,7 +287,7 @@ func (orig *ScopeSpans) UnmarshalProtoState(buf []byte, st *State) error {
 func GenTestScopeSpans() *ScopeSpans {
 	orig := Alloc[ScopeSpans](nil)
 	orig.Scope = *GenTestInstrumentationScope()
-	orig.Spans = []*Span{{}, GenTestSpan()}
+	orig.Spans = []*Span{&Span{}, GenTestSpan()}
 	orig.SchemaUrl = "test_schemaurl"
 	return orig
 }

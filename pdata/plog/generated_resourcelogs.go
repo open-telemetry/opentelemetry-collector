@@ -45,7 +45,7 @@ func (ms ResourceLogs) MoveTo(dest ResourceLogs) {
 	if ms.orig == dest.orig {
 		return
 	}
-	if ms.state != dest.state {
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
 		ms.CopyTo(dest)
 		internal.DeleteResourceLogs(ms.orig, false)
 		return

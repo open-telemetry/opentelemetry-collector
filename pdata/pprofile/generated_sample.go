@@ -45,7 +45,7 @@ func (ms Sample) MoveTo(dest Sample) {
 	if ms.orig == dest.orig {
 		return
 	}
-	if ms.state != dest.state {
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
 		ms.CopyTo(dest)
 		internal.DeleteSample(ms.orig, false)
 		return

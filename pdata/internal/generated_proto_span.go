@@ -636,7 +636,7 @@ func (orig *Span) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = AppendCounted(st, orig.Attributes, KeyValue{}, buf, pos, 9)
+			orig.Attributes = AppendEstimated(st, orig.Attributes, KeyValue{}, len(buf)-pos, length+2)
 			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -663,7 +663,7 @@ func (orig *Span) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Events = AppendCounted(st, orig.Events, Alloc[SpanEvent](st), buf, pos, 11)
+			orig.Events = AppendEstimated(st, orig.Events, Alloc[SpanEvent](st), len(buf)-pos, length+2)
 			err = orig.Events[len(orig.Events)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -690,7 +690,7 @@ func (orig *Span) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Links = AppendCounted(st, orig.Links, Alloc[SpanLink](st), buf, pos, 13)
+			orig.Links = AppendEstimated(st, orig.Links, Alloc[SpanLink](st), len(buf)-pos, length+2)
 			err = orig.Links[len(orig.Links)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -743,11 +743,11 @@ func GenTestSpan() *Span {
 	orig.Kind = SpanKind(13)
 	orig.StartTimeUnixNano = uint64(13)
 	orig.EndTimeUnixNano = uint64(13)
-	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
+	orig.Attributes = []KeyValue{KeyValue{}, *GenTestKeyValue()}
 	orig.DroppedAttributesCount = uint32(13)
-	orig.Events = []*SpanEvent{{}, GenTestSpanEvent()}
+	orig.Events = []*SpanEvent{&SpanEvent{}, GenTestSpanEvent()}
 	orig.DroppedEventsCount = uint32(13)
-	orig.Links = []*SpanLink{{}, GenTestSpanLink()}
+	orig.Links = []*SpanLink{&SpanLink{}, GenTestSpanLink()}
 	orig.DroppedLinksCount = uint32(13)
 	orig.Status = *GenTestStatus()
 	return orig

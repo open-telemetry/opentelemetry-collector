@@ -45,7 +45,7 @@ func (ms ScopeMetrics) MoveTo(dest ScopeMetrics) {
 	if ms.orig == dest.orig {
 		return
 	}
-	if ms.state != dest.state {
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
 		ms.CopyTo(dest)
 		internal.DeleteScopeMetrics(ms.orig, false)
 		return

@@ -41,7 +41,7 @@ func (ms InstrumentationScope) MoveTo(dest InstrumentationScope) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	if ms.getState() != dest.getState() {
+	if internal.MoveNeedsCopy(ms.getState(), dest.getState()) {
 		ms.CopyTo(dest)
 		internal.DeleteInstrumentationScope(ms.getOrig(), false)
 		return

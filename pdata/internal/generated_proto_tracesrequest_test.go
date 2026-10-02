@@ -190,12 +190,12 @@ func TestMarshalAndUnmarshalProtoViaProtobufTracesRequest(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesTracesRequest() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                  {0x02},
-		"RequestContext/wrong_wire_type": {0x14},
-		"RequestContext/missing_value":   {0x12},
-		"TracesData/wrong_wire_type":     {0x1c},
-		"TracesData/missing_value":       {0x1a},
-		"FormatVersion/wrong_wire_type":  {0xc},
-		"FormatVersion/missing_value":    {0xd},
+		"RequestContext/wrong_wire_type": []byte{0x14},
+		"RequestContext/missing_value":   []byte{0x12},
+		"TracesData/wrong_wire_type":     []byte{0x1c},
+		"TracesData/missing_value":       []byte{0x1a},
+		"FormatVersion/wrong_wire_type":  []byte{0xc},
+		"FormatVersion/missing_value":    []byte{0xd},
 	}
 }
 

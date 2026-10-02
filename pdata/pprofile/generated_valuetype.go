@@ -44,7 +44,7 @@ func (ms ValueType) MoveTo(dest ValueType) {
 	if ms.orig == dest.orig {
 		return
 	}
-	if ms.state != dest.state {
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
 		ms.CopyTo(dest)
 		internal.DeleteValueType(ms.orig, false)
 		return

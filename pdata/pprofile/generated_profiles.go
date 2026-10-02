@@ -42,7 +42,7 @@ func (ms Profiles) MoveTo(dest Profiles) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	if ms.getState() != dest.getState() {
+	if internal.MoveNeedsCopy(ms.getState(), dest.getState()) {
 		ms.CopyTo(dest)
 		internal.DeleteExportProfilesServiceRequest(ms.getOrig(), false)
 		return

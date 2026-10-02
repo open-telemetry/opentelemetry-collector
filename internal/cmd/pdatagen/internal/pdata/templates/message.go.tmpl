@@ -54,7 +54,7 @@ func (ms {{ .structName }}) MoveTo(dest {{ .structName }}) {
 	if ms.{{ .origAccessor }} == dest.{{ .origAccessor }} {
 		return
 	}
-	if ms.{{ .stateAccessor }} != dest.{{ .stateAccessor }} {
+	if internal.MoveNeedsCopy(ms.{{ .stateAccessor }}, dest.{{ .stateAccessor }}) {
 		ms.CopyTo(dest)
 		internal.Delete{{ .originName }}(ms.{{ .origAccessor }}, false)
 		return

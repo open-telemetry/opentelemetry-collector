@@ -42,7 +42,7 @@ func (ms Metrics) MoveTo(dest Metrics) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	if ms.getState() != dest.getState() {
+	if internal.MoveNeedsCopy(ms.getState(), dest.getState()) {
 		ms.CopyTo(dest)
 		internal.DeleteExportMetricsServiceRequest(ms.getOrig(), false)
 		return

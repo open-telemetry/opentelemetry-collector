@@ -292,7 +292,7 @@ func (orig *ResourceSpans) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.ScopeSpans = AppendCounted(st, orig.ScopeSpans, Alloc[ScopeSpans](st), buf, pos, 2)
+			orig.ScopeSpans = AppendEstimated(st, orig.ScopeSpans, Alloc[ScopeSpans](st), len(buf)-pos, length+2)
 			err = orig.ScopeSpans[len(orig.ScopeSpans)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -320,7 +320,7 @@ func (orig *ResourceSpans) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.DeprecatedScopeSpans = AppendCounted(st, orig.DeprecatedScopeSpans, Alloc[ScopeSpans](st), buf, pos, 1000)
+			orig.DeprecatedScopeSpans = AppendEstimated(st, orig.DeprecatedScopeSpans, Alloc[ScopeSpans](st), len(buf)-pos, length+2)
 			err = orig.DeprecatedScopeSpans[len(orig.DeprecatedScopeSpans)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -338,9 +338,9 @@ func (orig *ResourceSpans) UnmarshalProtoState(buf []byte, st *State) error {
 func GenTestResourceSpans() *ResourceSpans {
 	orig := Alloc[ResourceSpans](nil)
 	orig.Resource = *GenTestResource()
-	orig.ScopeSpans = []*ScopeSpans{{}, GenTestScopeSpans()}
+	orig.ScopeSpans = []*ScopeSpans{&ScopeSpans{}, GenTestScopeSpans()}
 	orig.SchemaUrl = "test_schemaurl"
-	orig.DeprecatedScopeSpans = []*ScopeSpans{{}, GenTestScopeSpans()}
+	orig.DeprecatedScopeSpans = []*ScopeSpans{&ScopeSpans{}, GenTestScopeSpans()}
 	return orig
 }
 

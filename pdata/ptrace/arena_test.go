@@ -33,6 +33,25 @@ func TestMoveAndAppendToCopiesAcrossStates(t *testing.T) {
 	assert.Equal(t, "src", dest.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
 }
 
+func TestMoveAndAppendToStealsWithoutArena(t *testing.T) {
+	prev := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prev))
+	})
+
+	src := NewTraces()
+	src.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("src")
+	moved := src.ResourceSpans().At(0).orig
+	dest := NewTraces()
+	src.ResourceSpans().MoveAndAppendTo(dest.ResourceSpans())
+	assert.Equal(t, 0, src.ResourceSpans().Len())
+	require.Equal(t, 1, dest.ResourceSpans().Len())
+
+	// Without an arena the data is plain heap data, so dest takes it rather than copying it.
+	assert.Same(t, moved, dest.ResourceSpans().At(0).orig)
+}
+
 func TestUnmarshalProtoBorrowsWireBuffer(t *testing.T) {
 	prev := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), true))

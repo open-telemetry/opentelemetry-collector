@@ -42,7 +42,7 @@ func (ms Traces) MoveTo(dest Traces) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	if ms.getState() != dest.getState() {
+	if internal.MoveNeedsCopy(ms.getState(), dest.getState()) {
 		ms.CopyTo(dest)
 		internal.DeleteExportTraceServiceRequest(ms.getOrig(), false)
 		return
