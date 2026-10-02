@@ -18,7 +18,6 @@ var pprofileotlp = &Package{
 			`"iter"`,
 			`"math"`,
 			`"sort"`,
-			`"sync"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 		},

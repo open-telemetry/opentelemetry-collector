@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/internal/tools
 
-go 1.26.0
+go 1.27
 
 tool (
 	actionlint.kjanat.dev/cmd/actionlint

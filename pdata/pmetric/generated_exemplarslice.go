@@ -88,7 +88,7 @@ func (es ExemplarSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]internal.Exemplar, len(*es.orig), newCap)
+	newOrig := internal.AllocSlice[internal.Exemplar](es.state, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -97,7 +97,7 @@ func (es ExemplarSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Exemplar.
 func (es ExemplarSlice) AppendEmpty() Exemplar {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.Exemplar{})
+	*es.orig = internal.Append(es.state, *es.orig, internal.Exemplar{})
 	return es.At(es.Len() - 1)
 }
 
@@ -110,11 +110,21 @@ func (es ExemplarSlice) MoveAndAppendTo(dest ExemplarSlice) {
 	if es.orig == dest.orig {
 		return
 	}
+	if internal.MoveNeedsCopy(es.state, dest.state) {
+		for i := 0; i < es.Len(); i++ {
+			es.At(i).CopyTo(dest.AppendEmpty())
+		}
+		for i := range *es.orig {
+			internal.DeleteExemplar(&(*es.orig)[i], false)
+		}
+		*es.orig = nil
+		return
+	}
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.orig = internal.AppendSeq(dest.state, *dest.orig, *es.orig)
 	}
 	*es.orig = nil
 }
@@ -147,5 +157,5 @@ func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyExemplarSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyExemplarSlice(*dest.orig, *es.orig, dest.state)
 }

@@ -10,7 +10,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -33,19 +32,8 @@ type HistogramDataPoint struct {
 	metadata          [1]uint64
 }
 
-var (
-	protoPoolHistogramDataPoint = sync.Pool{
-		New: func() any {
-			return &HistogramDataPoint{}
-		},
-	}
-)
-
 func NewHistogramDataPoint() *HistogramDataPoint {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &HistogramDataPoint{}
-	}
-	return protoPoolHistogramDataPoint.Get().(*HistogramDataPoint)
+	return Alloc[HistogramDataPoint](nil)
 }
 
 func DeleteHistogramDataPoint(orig *HistogramDataPoint, nullable bool) {
@@ -66,12 +54,10 @@ func DeleteHistogramDataPoint(orig *HistogramDataPoint, nullable bool) {
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolHistogramDataPoint.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyHistogramDataPoint(dest, src *HistogramDataPoint) *HistogramDataPoint {
+func CopyHistogramDataPoint(dest, src *HistogramDataPoint, st *State) *HistogramDataPoint {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -82,9 +68,9 @@ func CopyHistogramDataPoint(dest, src *HistogramDataPoint) *HistogramDataPoint {
 	}
 
 	if dest == nil {
-		dest = NewHistogramDataPoint()
+		dest = Alloc[HistogramDataPoint](st)
 	}
-	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes)
+	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes, st)
 
 	dest.StartTimeUnixNano = src.StartTimeUnixNano
 	dest.TimeUnixNano = src.TimeUnixNano
@@ -95,11 +81,11 @@ func CopyHistogramDataPoint(dest, src *HistogramDataPoint) *HistogramDataPoint {
 		dest.RemoveSum()
 	}
 
-	dest.BucketCounts = append(dest.BucketCounts[:0], src.BucketCounts...)
+	dest.BucketCounts = CopySlice(st, dest.BucketCounts, src.BucketCounts)
 
-	dest.ExplicitBounds = append(dest.ExplicitBounds[:0], src.ExplicitBounds...)
+	dest.ExplicitBounds = CopySlice(st, dest.ExplicitBounds, src.ExplicitBounds)
 
-	dest.Exemplars = CopyExemplarSlice(dest.Exemplars, src.Exemplars)
+	dest.Exemplars = CopyExemplarSlice(dest.Exemplars, src.Exemplars, st)
 
 	dest.Flags = src.Flags
 	if src.HasMin() {
@@ -117,10 +103,10 @@ func CopyHistogramDataPoint(dest, src *HistogramDataPoint) *HistogramDataPoint {
 	return dest
 }
 
-func CopyHistogramDataPointSlice(dest, src []HistogramDataPoint) []HistogramDataPoint {
+func CopyHistogramDataPointSlice(dest, src []HistogramDataPoint, st *State) []HistogramDataPoint {
 	var newDest []HistogramDataPoint
 	if cap(dest) < len(src) {
-		newDest = make([]HistogramDataPoint, len(src))
+		newDest = AllocSlice[HistogramDataPoint](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -130,20 +116,20 @@ func CopyHistogramDataPointSlice(dest, src []HistogramDataPoint) []HistogramData
 		}
 	}
 	for i := range src {
-		CopyHistogramDataPoint(&newDest[i], &src[i])
+		CopyHistogramDataPoint(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyHistogramDataPointPtrSlice(dest, src []*HistogramDataPoint) []*HistogramDataPoint {
+func CopyHistogramDataPointPtrSlice(dest, src []*HistogramDataPoint, st *State) []*HistogramDataPoint {
 	var newDest []*HistogramDataPoint
 	if cap(dest) < len(src) {
-		newDest = make([]*HistogramDataPoint, len(src))
+		newDest = AllocSlice[*HistogramDataPoint](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewHistogramDataPoint()
+			newDest[i] = Alloc[HistogramDataPoint](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -156,11 +142,11 @@ func CopyHistogramDataPointPtrSlice(dest, src []*HistogramDataPoint) []*Histogra
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewHistogramDataPoint()
+			newDest[i] = Alloc[HistogramDataPoint](st)
 		}
 	}
 	for i := range src {
-		CopyHistogramDataPoint(newDest[i], src[i])
+		CopyHistogramDataPoint(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -247,40 +233,49 @@ func (orig *HistogramDataPoint) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *HistogramDataPoint) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *HistogramDataPoint) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "attributes":
 			for iter.ReadArray() {
-				orig.Attributes = append(orig.Attributes, KeyValue{})
-				orig.Attributes[len(orig.Attributes)-1].UnmarshalJSON(iter)
+				orig.Attributes = Append(st, orig.Attributes, KeyValue{})
+				orig.Attributes[len(orig.Attributes)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "startTimeUnixNano", "start_time_unix_nano":
+
 			orig.StartTimeUnixNano = iter.ReadUint64()
 		case "timeUnixNano", "time_unix_nano":
+
 			orig.TimeUnixNano = iter.ReadUint64()
 		case "count":
+
 			orig.Count = iter.ReadUint64()
 		case "sum":
 			orig.SetSum(iter.ReadFloat64())
 
 		case "bucketCounts", "bucket_counts":
 			for iter.ReadArray() {
-				orig.BucketCounts = append(orig.BucketCounts, iter.ReadUint64())
+				orig.BucketCounts = Append(st, orig.BucketCounts, iter.ReadUint64())
 			}
 
 		case "explicitBounds", "explicit_bounds":
 			for iter.ReadArray() {
-				orig.ExplicitBounds = append(orig.ExplicitBounds, iter.ReadFloat64())
+				orig.ExplicitBounds = Append(st, orig.ExplicitBounds, iter.ReadFloat64())
 			}
 
 		case "exemplars":
 			for iter.ReadArray() {
-				orig.Exemplars = append(orig.Exemplars, Exemplar{})
-				orig.Exemplars[len(orig.Exemplars)-1].UnmarshalJSON(iter)
+				orig.Exemplars = Append(st, orig.Exemplars, Exemplar{})
+				orig.Exemplars[len(orig.Exemplars)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "flags":
+
 			orig.Flags = iter.ReadUint32()
 		case "min":
 			orig.SetMin(iter.ReadFloat64())
@@ -423,6 +418,10 @@ func (orig *HistogramDataPoint) MarshalProto(buf []byte) int {
 }
 
 func (orig *HistogramDataPoint) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *HistogramDataPoint) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -447,8 +446,8 @@ func (orig *HistogramDataPoint) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = append(orig.Attributes, KeyValue{})
-			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProto(buf[startPos:pos])
+			orig.Attributes = AppendEstimated(st, orig.Attributes, KeyValue{}, len(buf)-pos, length+2)
+			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -509,7 +508,7 @@ func (orig *HistogramDataPoint) UnmarshalProto(buf []byte) error {
 				}
 				startPos := pos - length
 				size := length / 8
-				orig.BucketCounts = make([]uint64, size)
+				orig.BucketCounts = AllocSlice[uint64](st, size, size)
 				var num uint64
 				for i := 0; i < size; i++ {
 					num, startPos, err = proto.ConsumeI64(buf[:pos], startPos)
@@ -527,7 +526,7 @@ func (orig *HistogramDataPoint) UnmarshalProto(buf []byte) error {
 				if err != nil {
 					return err
 				}
-				orig.BucketCounts = append(orig.BucketCounts, uint64(num))
+				orig.BucketCounts = AppendEstimated(st, orig.BucketCounts, uint64(num), len(buf)-pos, 8+1)
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field BucketCounts", wireType)
 			}
@@ -541,7 +540,7 @@ func (orig *HistogramDataPoint) UnmarshalProto(buf []byte) error {
 				}
 				startPos := pos - length
 				size := length / 8
-				orig.ExplicitBounds = make([]float64, size)
+				orig.ExplicitBounds = AllocSlice[float64](st, size, size)
 				var num uint64
 				for i := 0; i < size; i++ {
 					num, startPos, err = proto.ConsumeI64(buf[:pos], startPos)
@@ -559,7 +558,7 @@ func (orig *HistogramDataPoint) UnmarshalProto(buf []byte) error {
 				if err != nil {
 					return err
 				}
-				orig.ExplicitBounds = append(orig.ExplicitBounds, math.Float64frombits(num))
+				orig.ExplicitBounds = AppendEstimated(st, orig.ExplicitBounds, math.Float64frombits(num), len(buf)-pos, 8+1)
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field ExplicitBounds", wireType)
 			}
@@ -574,8 +573,8 @@ func (orig *HistogramDataPoint) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Exemplars = append(orig.Exemplars, Exemplar{})
-			err = orig.Exemplars[len(orig.Exemplars)-1].UnmarshalProto(buf[startPos:pos])
+			orig.Exemplars = AppendEstimated(st, orig.Exemplars, Exemplar{}, len(buf)-pos, length+2)
+			err = orig.Exemplars[len(orig.Exemplars)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -674,15 +673,15 @@ func (m *HistogramDataPoint) HasMax() bool {
 }
 
 func GenTestHistogramDataPoint() *HistogramDataPoint {
-	orig := NewHistogramDataPoint()
-	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
+	orig := Alloc[HistogramDataPoint](nil)
+	orig.Attributes = []KeyValue{KeyValue{}, *GenTestKeyValue()}
 	orig.StartTimeUnixNano = uint64(13)
 	orig.TimeUnixNano = uint64(13)
 	orig.Count = uint64(13)
 	orig.SetSum(float64(3.1415926))
 	orig.BucketCounts = []uint64{uint64(0), uint64(13)}
 	orig.ExplicitBounds = []float64{float64(0), float64(3.1415926)}
-	orig.Exemplars = []Exemplar{{}, *GenTestExemplar()}
+	orig.Exemplars = []Exemplar{Exemplar{}, *GenTestExemplar()}
 	orig.Flags = uint32(13)
 	orig.SetMin(float64(3.1415926))
 	orig.SetMax(float64(3.1415926))
@@ -691,11 +690,11 @@ func GenTestHistogramDataPoint() *HistogramDataPoint {
 
 func GenTestHistogramDataPointPtrSlice() []*HistogramDataPoint {
 	orig := make([]*HistogramDataPoint, 5)
-	orig[0] = NewHistogramDataPoint()
+	orig[0] = Alloc[HistogramDataPoint](nil)
 	orig[1] = GenTestHistogramDataPoint()
-	orig[2] = NewHistogramDataPoint()
+	orig[2] = Alloc[HistogramDataPoint](nil)
 	orig[3] = GenTestHistogramDataPoint()
-	orig[4] = NewHistogramDataPoint()
+	orig[4] = Alloc[HistogramDataPoint](nil)
 	return orig
 }
 

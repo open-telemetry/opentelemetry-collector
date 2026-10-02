@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -22,19 +21,8 @@ type Sum struct {
 	IsMonotonic            bool
 }
 
-var (
-	protoPoolSum = sync.Pool{
-		New: func() any {
-			return &Sum{}
-		},
-	}
-)
-
 func NewSum() *Sum {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &Sum{}
-	}
-	return protoPoolSum.Get().(*Sum)
+	return Alloc[Sum](nil)
 }
 
 func DeleteSum(orig *Sum, nullable bool) {
@@ -51,12 +39,10 @@ func DeleteSum(orig *Sum, nullable bool) {
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolSum.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopySum(dest, src *Sum) *Sum {
+func CopySum(dest, src *Sum, st *State) *Sum {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -67,9 +53,9 @@ func CopySum(dest, src *Sum) *Sum {
 	}
 
 	if dest == nil {
-		dest = NewSum()
+		dest = Alloc[Sum](st)
 	}
-	dest.DataPoints = CopyNumberDataPointPtrSlice(dest.DataPoints, src.DataPoints)
+	dest.DataPoints = CopyNumberDataPointPtrSlice(dest.DataPoints, src.DataPoints, st)
 
 	dest.AggregationTemporality = src.AggregationTemporality
 	dest.IsMonotonic = src.IsMonotonic
@@ -77,10 +63,10 @@ func CopySum(dest, src *Sum) *Sum {
 	return dest
 }
 
-func CopySumSlice(dest, src []Sum) []Sum {
+func CopySumSlice(dest, src []Sum, st *State) []Sum {
 	var newDest []Sum
 	if cap(dest) < len(src) {
-		newDest = make([]Sum, len(src))
+		newDest = AllocSlice[Sum](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -90,20 +76,20 @@ func CopySumSlice(dest, src []Sum) []Sum {
 		}
 	}
 	for i := range src {
-		CopySum(&newDest[i], &src[i])
+		CopySum(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopySumPtrSlice(dest, src []*Sum) []*Sum {
+func CopySumPtrSlice(dest, src []*Sum, st *State) []*Sum {
 	var newDest []*Sum
 	if cap(dest) < len(src) {
-		newDest = make([]*Sum, len(src))
+		newDest = AllocSlice[*Sum](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewSum()
+			newDest[i] = Alloc[Sum](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -116,11 +102,11 @@ func CopySumPtrSlice(dest, src []*Sum) []*Sum {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewSum()
+			newDest[i] = Alloc[Sum](st)
 		}
 	}
 	for i := range src {
-		CopySum(newDest[i], src[i])
+		CopySum(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -156,17 +142,23 @@ func (orig *Sum) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *Sum) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *Sum) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "dataPoints", "data_points":
 			for iter.ReadArray() {
-				orig.DataPoints = append(orig.DataPoints, NewNumberDataPoint())
-				orig.DataPoints[len(orig.DataPoints)-1].UnmarshalJSON(iter)
+				orig.DataPoints = Append(st, orig.DataPoints, Alloc[NumberDataPoint](st))
+				orig.DataPoints[len(orig.DataPoints)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "aggregationTemporality", "aggregation_temporality":
 			orig.AggregationTemporality = AggregationTemporality(iter.ReadEnumValue(AggregationTemporality_value))
 		case "isMonotonic", "is_monotonic":
+
 			orig.IsMonotonic = iter.ReadBool()
 		default:
 			iter.HandleUnknownField(f)
@@ -221,6 +213,10 @@ func (orig *Sum) MarshalProto(buf []byte) int {
 }
 
 func (orig *Sum) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *Sum) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -245,8 +241,8 @@ func (orig *Sum) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.DataPoints = append(orig.DataPoints, NewNumberDataPoint())
-			err = orig.DataPoints[len(orig.DataPoints)-1].UnmarshalProto(buf[startPos:pos])
+			orig.DataPoints = AppendEstimated(st, orig.DataPoints, Alloc[NumberDataPoint](st), len(buf)-pos, length+2)
+			err = orig.DataPoints[len(orig.DataPoints)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -283,8 +279,8 @@ func (orig *Sum) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestSum() *Sum {
-	orig := NewSum()
-	orig.DataPoints = []*NumberDataPoint{{}, GenTestNumberDataPoint()}
+	orig := Alloc[Sum](nil)
+	orig.DataPoints = []*NumberDataPoint{&NumberDataPoint{}, GenTestNumberDataPoint()}
 	orig.AggregationTemporality = AggregationTemporality(13)
 	orig.IsMonotonic = true
 	return orig
@@ -292,11 +288,11 @@ func GenTestSum() *Sum {
 
 func GenTestSumPtrSlice() []*Sum {
 	orig := make([]*Sum, 5)
-	orig[0] = NewSum()
+	orig[0] = Alloc[Sum](nil)
 	orig[1] = GenTestSum()
-	orig[2] = NewSum()
+	orig[2] = Alloc[Sum](nil)
 	orig[3] = GenTestSum()
-	orig[4] = NewSum()
+	orig[4] = Alloc[Sum](nil)
 	return orig
 }
 

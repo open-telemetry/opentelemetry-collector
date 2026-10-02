@@ -13,7 +13,7 @@ status:
 
 feature_gates:
   - id: pdata.useProtoPooling
-    description: 'When enabled, enable using local memory pools for underlying data that the pdata messages are pushed to.'
+    description: 'When enabled, allocate pdata proto graphs from a request-scoped typed arena and borrow string/bytes from the protobuf wire buffer.'
     stage: alpha
     from_version: 'v0.133.0'
     reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/issues/13631'

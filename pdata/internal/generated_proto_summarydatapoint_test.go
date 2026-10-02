@@ -31,9 +31,9 @@ func TestCopySummaryDataPoint(t *testing.T) {
 				}()
 
 				dest := NewSummaryDataPoint()
-				CopySummaryDataPoint(dest, src)
+				CopySummaryDataPoint(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopySummaryDataPoint(dest, dest)
+				CopySummaryDataPoint(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopySummaryDataPointSlice(t *testing.T) {
 	src := []SummaryDataPoint{}
 	dest := []SummaryDataPoint{}
 	// Test CopyTo empty
-	dest = CopySummaryDataPointSlice(dest, src)
+	dest = CopySummaryDataPointSlice(dest, src, nil)
 	assert.Equal(t, []SummaryDataPoint{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestSummaryDataPointSlice()
-	dest = CopySummaryDataPointSlice(dest, src)
+	dest = CopySummaryDataPointSlice(dest, src, nil)
 	assert.Equal(t, GenTestSummaryDataPointSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopySummaryDataPointSlice(dest, src)
+	dest = CopySummaryDataPointSlice(dest, src, nil)
 	assert.Equal(t, GenTestSummaryDataPointSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopySummaryDataPointSlice(dest, []SummaryDataPoint{})
+	dest = CopySummaryDataPointSlice(dest, []SummaryDataPoint{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopySummaryDataPointSlice(dest, src)
+	dest = CopySummaryDataPointSlice(dest, src, nil)
 	assert.Equal(t, GenTestSummaryDataPointSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopySummaryDataPointPtrSlice(t *testing.T) {
 	src := []*SummaryDataPoint{}
 	dest := []*SummaryDataPoint{}
 	// Test CopyTo empty
-	dest = CopySummaryDataPointPtrSlice(dest, src)
+	dest = CopySummaryDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, []*SummaryDataPoint{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestSummaryDataPointPtrSlice()
-	dest = CopySummaryDataPointPtrSlice(dest, src)
+	dest = CopySummaryDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSummaryDataPointPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopySummaryDataPointPtrSlice(dest, src)
+	dest = CopySummaryDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSummaryDataPointPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopySummaryDataPointPtrSlice(dest, []*SummaryDataPoint{})
+	dest = CopySummaryDataPointPtrSlice(dest, []*SummaryDataPoint{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopySummaryDataPointPtrSlice(dest, src)
+	dest = CopySummaryDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSummaryDataPointPtrSlice(), dest)
 }
 
@@ -190,32 +190,32 @@ func TestMarshalAndUnmarshalProtoViaProtobufSummaryDataPoint(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesSummaryDataPoint() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                     {0x02},
-		"Attributes/wrong_wire_type":        {0x3c},
-		"Attributes/missing_value":          {0x3a},
-		"StartTimeUnixNano/wrong_wire_type": {0x14},
-		"StartTimeUnixNano/missing_value":   {0x11},
-		"TimeUnixNano/wrong_wire_type":      {0x1c},
-		"TimeUnixNano/missing_value":        {0x19},
-		"Count/wrong_wire_type":             {0x24},
-		"Count/missing_value":               {0x21},
-		"Sum/wrong_wire_type":               {0x2c},
-		"Sum/missing_value":                 {0x29},
-		"QuantileValues/wrong_wire_type":    {0x34},
-		"QuantileValues/missing_value":      {0x32},
-		"Flags/wrong_wire_type":             {0x44},
-		"Flags/missing_value":               {0x40},
+		"Attributes/wrong_wire_type":        []byte{0x3c},
+		"Attributes/missing_value":          []byte{0x3a},
+		"StartTimeUnixNano/wrong_wire_type": []byte{0x14},
+		"StartTimeUnixNano/missing_value":   []byte{0x11},
+		"TimeUnixNano/wrong_wire_type":      []byte{0x1c},
+		"TimeUnixNano/missing_value":        []byte{0x19},
+		"Count/wrong_wire_type":             []byte{0x24},
+		"Count/missing_value":               []byte{0x21},
+		"Sum/wrong_wire_type":               []byte{0x2c},
+		"Sum/missing_value":                 []byte{0x29},
+		"QuantileValues/wrong_wire_type":    []byte{0x34},
+		"QuantileValues/missing_value":      []byte{0x32},
+		"Flags/wrong_wire_type":             []byte{0x44},
+		"Flags/missing_value":               []byte{0x40},
 	}
 }
 
 func genTestEncodingValuesSummaryDataPoint() map[string]*SummaryDataPoint {
 	return map[string]*SummaryDataPoint{
 		"empty":                  NewSummaryDataPoint(),
-		"Attributes/test":        {Attributes: []KeyValue{{}, *GenTestKeyValue()}},
+		"Attributes/test":        {Attributes: []KeyValue{KeyValue{}, *GenTestKeyValue()}},
 		"StartTimeUnixNano/test": {StartTimeUnixNano: uint64(13)},
 		"TimeUnixNano/test":      {TimeUnixNano: uint64(13)},
 		"Count/test":             {Count: uint64(13)},
 		"Sum/test":               {Sum: float64(3.1415926)},
-		"QuantileValues/test":    {QuantileValues: []*SummaryDataPointValueAtQuantile{{}, GenTestSummaryDataPointValueAtQuantile()}},
+		"QuantileValues/test":    {QuantileValues: []*SummaryDataPointValueAtQuantile{&SummaryDataPointValueAtQuantile{}, GenTestSummaryDataPointValueAtQuantile()}},
 		"Flags/test":             {Flags: uint32(13)},
 	}
 }

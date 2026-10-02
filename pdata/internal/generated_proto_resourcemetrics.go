@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -23,19 +22,8 @@ type ResourceMetrics struct {
 	DeprecatedScopeMetrics []*ScopeMetrics
 }
 
-var (
-	protoPoolResourceMetrics = sync.Pool{
-		New: func() any {
-			return &ResourceMetrics{}
-		},
-	}
-)
-
 func NewResourceMetrics() *ResourceMetrics {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &ResourceMetrics{}
-	}
-	return protoPoolResourceMetrics.Get().(*ResourceMetrics)
+	return Alloc[ResourceMetrics](nil)
 }
 
 func DeleteResourceMetrics(orig *ResourceMetrics, nullable bool) {
@@ -56,12 +44,10 @@ func DeleteResourceMetrics(orig *ResourceMetrics, nullable bool) {
 		DeleteScopeMetrics(orig.DeprecatedScopeMetrics[i], true)
 	}
 	orig.Reset()
-	if nullable {
-		protoPoolResourceMetrics.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyResourceMetrics(dest, src *ResourceMetrics) *ResourceMetrics {
+func CopyResourceMetrics(dest, src *ResourceMetrics, st *State) *ResourceMetrics {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -72,22 +58,23 @@ func CopyResourceMetrics(dest, src *ResourceMetrics) *ResourceMetrics {
 	}
 
 	if dest == nil {
-		dest = NewResourceMetrics()
+		dest = Alloc[ResourceMetrics](st)
 	}
-	CopyResource(&dest.Resource, &src.Resource)
+	CopyResource(&dest.Resource, &src.Resource, st)
 
-	dest.ScopeMetrics = CopyScopeMetricsPtrSlice(dest.ScopeMetrics, src.ScopeMetrics)
+	dest.ScopeMetrics = CopyScopeMetricsPtrSlice(dest.ScopeMetrics, src.ScopeMetrics, st)
 
-	dest.SchemaUrl = src.SchemaUrl
-	dest.DeprecatedScopeMetrics = CopyScopeMetricsPtrSlice(dest.DeprecatedScopeMetrics, src.DeprecatedScopeMetrics)
+	dest.SchemaUrl = CopyString(st, src.SchemaUrl)
+
+	dest.DeprecatedScopeMetrics = CopyScopeMetricsPtrSlice(dest.DeprecatedScopeMetrics, src.DeprecatedScopeMetrics, st)
 
 	return dest
 }
 
-func CopyResourceMetricsSlice(dest, src []ResourceMetrics) []ResourceMetrics {
+func CopyResourceMetricsSlice(dest, src []ResourceMetrics, st *State) []ResourceMetrics {
 	var newDest []ResourceMetrics
 	if cap(dest) < len(src) {
-		newDest = make([]ResourceMetrics, len(src))
+		newDest = AllocSlice[ResourceMetrics](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -97,20 +84,20 @@ func CopyResourceMetricsSlice(dest, src []ResourceMetrics) []ResourceMetrics {
 		}
 	}
 	for i := range src {
-		CopyResourceMetrics(&newDest[i], &src[i])
+		CopyResourceMetrics(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyResourceMetricsPtrSlice(dest, src []*ResourceMetrics) []*ResourceMetrics {
+func CopyResourceMetricsPtrSlice(dest, src []*ResourceMetrics, st *State) []*ResourceMetrics {
 	var newDest []*ResourceMetrics
 	if cap(dest) < len(src) {
-		newDest = make([]*ResourceMetrics, len(src))
+		newDest = AllocSlice[*ResourceMetrics](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewResourceMetrics()
+			newDest[i] = Alloc[ResourceMetrics](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -123,11 +110,11 @@ func CopyResourceMetricsPtrSlice(dest, src []*ResourceMetrics) []*ResourceMetric
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewResourceMetrics()
+			newDest[i] = Alloc[ResourceMetrics](st)
 		}
 	}
 	for i := range src {
-		CopyResourceMetrics(newDest[i], src[i])
+		CopyResourceMetrics(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -170,23 +157,29 @@ func (orig *ResourceMetrics) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *ResourceMetrics) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *ResourceMetrics) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resource":
 
-			orig.Resource.UnmarshalJSON(iter)
+			orig.Resource.UnmarshalJSONState(iter, st)
 		case "scopeMetrics", "scope_metrics":
 			for iter.ReadArray() {
-				orig.ScopeMetrics = append(orig.ScopeMetrics, NewScopeMetrics())
-				orig.ScopeMetrics[len(orig.ScopeMetrics)-1].UnmarshalJSON(iter)
+				orig.ScopeMetrics = Append(st, orig.ScopeMetrics, Alloc[ScopeMetrics](st))
+				orig.ScopeMetrics[len(orig.ScopeMetrics)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "schemaUrl", "schema_url":
-			orig.SchemaUrl = iter.ReadString()
+
+			orig.SchemaUrl = CopyString(st, iter.ReadString())
 		case "deprecatedScopeMetrics", "deprecated_scope_metrics":
 			for iter.ReadArray() {
-				orig.DeprecatedScopeMetrics = append(orig.DeprecatedScopeMetrics, NewScopeMetrics())
-				orig.DeprecatedScopeMetrics[len(orig.DeprecatedScopeMetrics)-1].UnmarshalJSON(iter)
+				orig.DeprecatedScopeMetrics = Append(st, orig.DeprecatedScopeMetrics, Alloc[ScopeMetrics](st))
+				orig.DeprecatedScopeMetrics[len(orig.DeprecatedScopeMetrics)-1].UnmarshalJSONState(iter, st)
 			}
 
 		default:
@@ -255,6 +248,10 @@ func (orig *ResourceMetrics) MarshalProto(buf []byte) int {
 }
 
 func (orig *ResourceMetrics) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *ResourceMetrics) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -280,7 +277,7 @@ func (orig *ResourceMetrics) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Resource.UnmarshalProto(buf[startPos:pos])
+			err = orig.Resource.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -295,8 +292,8 @@ func (orig *ResourceMetrics) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.ScopeMetrics = append(orig.ScopeMetrics, NewScopeMetrics())
-			err = orig.ScopeMetrics[len(orig.ScopeMetrics)-1].UnmarshalProto(buf[startPos:pos])
+			orig.ScopeMetrics = AppendEstimated(st, orig.ScopeMetrics, Alloc[ScopeMetrics](st), len(buf)-pos, length+2)
+			err = orig.ScopeMetrics[len(orig.ScopeMetrics)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -311,7 +308,7 @@ func (orig *ResourceMetrics) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.SchemaUrl = string(buf[startPos:pos])
+			orig.SchemaUrl = BorrowString(st, buf, startPos, pos)
 
 		case 1000:
 			if wireType != proto.WireTypeLen {
@@ -323,8 +320,8 @@ func (orig *ResourceMetrics) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.DeprecatedScopeMetrics = append(orig.DeprecatedScopeMetrics, NewScopeMetrics())
-			err = orig.DeprecatedScopeMetrics[len(orig.DeprecatedScopeMetrics)-1].UnmarshalProto(buf[startPos:pos])
+			orig.DeprecatedScopeMetrics = AppendEstimated(st, orig.DeprecatedScopeMetrics, Alloc[ScopeMetrics](st), len(buf)-pos, length+2)
+			err = orig.DeprecatedScopeMetrics[len(orig.DeprecatedScopeMetrics)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -339,21 +336,21 @@ func (orig *ResourceMetrics) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestResourceMetrics() *ResourceMetrics {
-	orig := NewResourceMetrics()
+	orig := Alloc[ResourceMetrics](nil)
 	orig.Resource = *GenTestResource()
-	orig.ScopeMetrics = []*ScopeMetrics{{}, GenTestScopeMetrics()}
+	orig.ScopeMetrics = []*ScopeMetrics{&ScopeMetrics{}, GenTestScopeMetrics()}
 	orig.SchemaUrl = "test_schemaurl"
-	orig.DeprecatedScopeMetrics = []*ScopeMetrics{{}, GenTestScopeMetrics()}
+	orig.DeprecatedScopeMetrics = []*ScopeMetrics{&ScopeMetrics{}, GenTestScopeMetrics()}
 	return orig
 }
 
 func GenTestResourceMetricsPtrSlice() []*ResourceMetrics {
 	orig := make([]*ResourceMetrics, 5)
-	orig[0] = NewResourceMetrics()
+	orig[0] = Alloc[ResourceMetrics](nil)
 	orig[1] = GenTestResourceMetrics()
-	orig[2] = NewResourceMetrics()
+	orig[2] = Alloc[ResourceMetrics](nil)
 	orig[3] = GenTestResourceMetrics()
-	orig[4] = NewResourceMetrics()
+	orig[4] = Alloc[ResourceMetrics](nil)
 	return orig
 }
 

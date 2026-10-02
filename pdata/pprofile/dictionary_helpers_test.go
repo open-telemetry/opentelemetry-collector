@@ -293,7 +293,7 @@ func TestConvertAnyValueToReferenceWithPooling(t *testing.T) {
 		},
 	}
 
-	convertAnyValueToReference(getStringIndex, anyVal)
+	convertAnyValueToReference(getStringIndex, anyVal, nil)
 
 	refVal, ok := anyVal.Value.(*internal.AnyValue_StringValueStrindex)
 	assert.True(t, ok)
@@ -319,7 +319,7 @@ func TestConvertAnyValueToReferenceEmptyString(t *testing.T) {
 		},
 	}
 
-	convertAnyValueToReference(getStringIndex, anyVal)
+	convertAnyValueToReference(getStringIndex, anyVal, nil)
 
 	// Empty string should remain as StringValue, not converted to ref
 	_, ok := anyVal.Value.(*internal.AnyValue_StringValue)
@@ -360,7 +360,7 @@ func TestConvertAnyValueToReferenceNestedKvList(t *testing.T) {
 		},
 	}
 
-	convertAnyValueToReference(getStringIndex, anyVal)
+	convertAnyValueToReference(getStringIndex, anyVal, nil)
 
 	// Verify nested key was converted
 	assert.NotEqual(t, int32(0), kvList.Values[0].KeyStrindex)
@@ -400,7 +400,7 @@ func TestConvertAnyValueToReferenceNestedArray(t *testing.T) {
 		},
 	}
 
-	convertAnyValueToReference(getStringIndex, anyVal)
+	convertAnyValueToReference(getStringIndex, anyVal, nil)
 
 	// Verify array item was converted
 	_, ok := arrVal.Values[0].Value.(*internal.AnyValue_StringValueStrindex)
@@ -427,7 +427,7 @@ func TestConvertMapToReferencesEmptyKey(t *testing.T) {
 		return 1
 	}
 
-	convertKeyValueToReferences(getStringIndex, mapKeyValues(attrs))
+	convertKeyValueToReferences(getStringIndex, mapKeyValues(attrs), nil)
 
 	// Empty key should not have KeyStrindex set
 	kv := &(*mapOrig)[0]
@@ -455,7 +455,7 @@ func TestConvertMapToReferencesExistingKeyRef(t *testing.T) {
 		return 99
 	}
 
-	convertKeyValueToReferences(getStringIndex, mapKeyValues(attrs))
+	convertKeyValueToReferences(getStringIndex, mapKeyValues(attrs), nil)
 
 	// Key is set, so KeyStrindex must be updated to the new index
 	kv := &(*mapOrig)[0]
@@ -506,7 +506,7 @@ func TestConvertMapToReferencesClearsKey(t *testing.T) {
 		return 2
 	}
 
-	convertKeyValueToReferences(getStringIndex, mapKeyValues(attrs))
+	convertKeyValueToReferences(getStringIndex, mapKeyValues(attrs), nil)
 
 	kv := &(*mapOrig)[0]
 	// key_ref should be set
@@ -547,7 +547,7 @@ func TestConvertAnyValueToReferenceNestedKvListClearsKey(t *testing.T) {
 		},
 	}
 
-	convertAnyValueToReference(getStringIndex, anyVal)
+	convertAnyValueToReference(getStringIndex, anyVal, nil)
 
 	// key_ref should be set
 	assert.NotEqual(t, int32(0), kvList.Values[0].KeyStrindex)
@@ -567,7 +567,7 @@ func TestConvertAnyValueToReferenceNonStringTypes(t *testing.T) {
 		},
 	}
 
-	convertAnyValueToReference(getStringIndex, anyVal)
+	convertAnyValueToReference(getStringIndex, anyVal, nil)
 
 	// Should remain as BoolValue
 	boolVal, ok := anyVal.Value.(*internal.AnyValue_BoolValue)

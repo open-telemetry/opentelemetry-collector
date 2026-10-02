@@ -31,9 +31,9 @@ func TestCopyExportMetricsServiceResponse(t *testing.T) {
 				}()
 
 				dest := NewExportMetricsServiceResponse()
-				CopyExportMetricsServiceResponse(dest, src)
+				CopyExportMetricsServiceResponse(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyExportMetricsServiceResponse(dest, dest)
+				CopyExportMetricsServiceResponse(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyExportMetricsServiceResponseSlice(t *testing.T) {
 	src := []ExportMetricsServiceResponse{}
 	dest := []ExportMetricsServiceResponse{}
 	// Test CopyTo empty
-	dest = CopyExportMetricsServiceResponseSlice(dest, src)
+	dest = CopyExportMetricsServiceResponseSlice(dest, src, nil)
 	assert.Equal(t, []ExportMetricsServiceResponse{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExportMetricsServiceResponseSlice()
-	dest = CopyExportMetricsServiceResponseSlice(dest, src)
+	dest = CopyExportMetricsServiceResponseSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportMetricsServiceResponseSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExportMetricsServiceResponseSlice(dest, src)
+	dest = CopyExportMetricsServiceResponseSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportMetricsServiceResponseSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExportMetricsServiceResponseSlice(dest, []ExportMetricsServiceResponse{})
+	dest = CopyExportMetricsServiceResponseSlice(dest, []ExportMetricsServiceResponse{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExportMetricsServiceResponseSlice(dest, src)
+	dest = CopyExportMetricsServiceResponseSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportMetricsServiceResponseSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyExportMetricsServiceResponsePtrSlice(t *testing.T) {
 	src := []*ExportMetricsServiceResponse{}
 	dest := []*ExportMetricsServiceResponse{}
 	// Test CopyTo empty
-	dest = CopyExportMetricsServiceResponsePtrSlice(dest, src)
+	dest = CopyExportMetricsServiceResponsePtrSlice(dest, src, nil)
 	assert.Equal(t, []*ExportMetricsServiceResponse{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExportMetricsServiceResponsePtrSlice()
-	dest = CopyExportMetricsServiceResponsePtrSlice(dest, src)
+	dest = CopyExportMetricsServiceResponsePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportMetricsServiceResponsePtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExportMetricsServiceResponsePtrSlice(dest, src)
+	dest = CopyExportMetricsServiceResponsePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportMetricsServiceResponsePtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExportMetricsServiceResponsePtrSlice(dest, []*ExportMetricsServiceResponse{})
+	dest = CopyExportMetricsServiceResponsePtrSlice(dest, []*ExportMetricsServiceResponse{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExportMetricsServiceResponsePtrSlice(dest, src)
+	dest = CopyExportMetricsServiceResponsePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportMetricsServiceResponsePtrSlice(), dest)
 }
 
@@ -190,8 +190,8 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportMetricsServiceResponse(t *test
 func genTestFailingUnmarshalProtoValuesExportMetricsServiceResponse() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                  {0x02},
-		"PartialSuccess/wrong_wire_type": {0xc},
-		"PartialSuccess/missing_value":   {0xa},
+		"PartialSuccess/wrong_wire_type": []byte{0xc},
+		"PartialSuccess/missing_value":   []byte{0xa},
 	}
 }
 

@@ -34,7 +34,8 @@ type ProtoUnmarshaler struct{}
 
 func (d *ProtoUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
 	td := NewTraces()
-	err := td.getOrig().UnmarshalProto(buf)
+	td.getState().RetainWire(buf)
+	err := td.getOrig().UnmarshalProtoState(buf, td.getState())
 	if err != nil {
 		return Traces{}, err
 	}

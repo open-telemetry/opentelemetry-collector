@@ -29,7 +29,8 @@ func newProfiles(orig *internal.ExportProfilesServiceRequest, state *internal.St
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewProfiles() Profiles {
-	return newProfiles(internal.NewExportProfilesServiceRequest(), internal.NewState())
+	st := internal.NewState()
+	return newProfiles(internal.Alloc[internal.ExportProfilesServiceRequest](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -39,6 +40,11 @@ func (ms Profiles) MoveTo(dest Profiles) {
 	dest.getState().AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.getOrig() == dest.getOrig() {
+		return
+	}
+	if internal.MoveNeedsCopy(ms.getState(), dest.getState()) {
+		ms.CopyTo(dest)
+		internal.DeleteExportProfilesServiceRequest(ms.getOrig(), false)
 		return
 	}
 	internal.DeleteExportProfilesServiceRequest(dest.getOrig(), false)
@@ -58,7 +64,7 @@ func (ms Profiles) Dictionary() ProfilesDictionary {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Profiles) CopyTo(dest Profiles) {
 	dest.getState().AssertMutable()
-	internal.CopyExportProfilesServiceRequest(dest.getOrig(), ms.getOrig())
+	internal.CopyExportProfilesServiceRequest(dest.getOrig(), ms.getOrig(), dest.getState())
 }
 
 func (ms Profiles) getOrig() *internal.ExportProfilesServiceRequest {

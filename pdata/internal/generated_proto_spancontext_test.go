@@ -31,9 +31,9 @@ func TestCopySpanContext(t *testing.T) {
 				}()
 
 				dest := NewSpanContext()
-				CopySpanContext(dest, src)
+				CopySpanContext(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopySpanContext(dest, dest)
+				CopySpanContext(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopySpanContextSlice(t *testing.T) {
 	src := []SpanContext{}
 	dest := []SpanContext{}
 	// Test CopyTo empty
-	dest = CopySpanContextSlice(dest, src)
+	dest = CopySpanContextSlice(dest, src, nil)
 	assert.Equal(t, []SpanContext{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestSpanContextSlice()
-	dest = CopySpanContextSlice(dest, src)
+	dest = CopySpanContextSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanContextSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopySpanContextSlice(dest, src)
+	dest = CopySpanContextSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanContextSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopySpanContextSlice(dest, []SpanContext{})
+	dest = CopySpanContextSlice(dest, []SpanContext{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopySpanContextSlice(dest, src)
+	dest = CopySpanContextSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanContextSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopySpanContextPtrSlice(t *testing.T) {
 	src := []*SpanContext{}
 	dest := []*SpanContext{}
 	// Test CopyTo empty
-	dest = CopySpanContextPtrSlice(dest, src)
+	dest = CopySpanContextPtrSlice(dest, src, nil)
 	assert.Equal(t, []*SpanContext{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestSpanContextPtrSlice()
-	dest = CopySpanContextPtrSlice(dest, src)
+	dest = CopySpanContextPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanContextPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopySpanContextPtrSlice(dest, src)
+	dest = CopySpanContextPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanContextPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopySpanContextPtrSlice(dest, []*SpanContext{})
+	dest = CopySpanContextPtrSlice(dest, []*SpanContext{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopySpanContextPtrSlice(dest, src)
+	dest = CopySpanContextPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanContextPtrSlice(), dest)
 }
 
@@ -190,16 +190,16 @@ func TestMarshalAndUnmarshalProtoViaProtobufSpanContext(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesSpanContext() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":              {0x02},
-		"TraceID/wrong_wire_type":    {0xc},
-		"TraceID/missing_value":      {0xa},
-		"SpanID/wrong_wire_type":     {0x14},
-		"SpanID/missing_value":       {0x12},
-		"TraceFlags/wrong_wire_type": {0x1c},
-		"TraceFlags/missing_value":   {0x1d},
-		"TraceState/wrong_wire_type": {0x24},
-		"TraceState/missing_value":   {0x22},
-		"Remote/wrong_wire_type":     {0x2c},
-		"Remote/missing_value":       {0x28},
+		"TraceID/wrong_wire_type":    []byte{0xc},
+		"TraceID/missing_value":      []byte{0xa},
+		"SpanID/wrong_wire_type":     []byte{0x14},
+		"SpanID/missing_value":       []byte{0x12},
+		"TraceFlags/wrong_wire_type": []byte{0x1c},
+		"TraceFlags/missing_value":   []byte{0x1d},
+		"TraceState/wrong_wire_type": []byte{0x24},
+		"TraceState/missing_value":   []byte{0x22},
+		"Remote/wrong_wire_type":     []byte{0x2c},
+		"Remote/missing_value":       []byte{0x28},
 	}
 }
 

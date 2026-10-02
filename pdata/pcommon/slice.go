@@ -26,7 +26,7 @@ func (es Slice) FromRaw(rawSlice []any) error {
 		return nil
 	}
 	var errs error
-	origs := make([]internal.AnyValue, len(rawSlice))
+	origs := internal.AllocSlice[internal.AnyValue](es.getState(), len(rawSlice), len(rawSlice))
 	for ix, iv := range rawSlice {
 		errs = multierr.Append(errs, newValue(&origs[ix], es.getState()).FromRaw(iv))
 	}

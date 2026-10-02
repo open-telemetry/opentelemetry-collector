@@ -31,9 +31,9 @@ func TestCopyResource(t *testing.T) {
 				}()
 
 				dest := NewResource()
-				CopyResource(dest, src)
+				CopyResource(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyResource(dest, dest)
+				CopyResource(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyResourceSlice(t *testing.T) {
 	src := []Resource{}
 	dest := []Resource{}
 	// Test CopyTo empty
-	dest = CopyResourceSlice(dest, src)
+	dest = CopyResourceSlice(dest, src, nil)
 	assert.Equal(t, []Resource{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestResourceSlice()
-	dest = CopyResourceSlice(dest, src)
+	dest = CopyResourceSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyResourceSlice(dest, src)
+	dest = CopyResourceSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyResourceSlice(dest, []Resource{})
+	dest = CopyResourceSlice(dest, []Resource{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyResourceSlice(dest, src)
+	dest = CopyResourceSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyResourcePtrSlice(t *testing.T) {
 	src := []*Resource{}
 	dest := []*Resource{}
 	// Test CopyTo empty
-	dest = CopyResourcePtrSlice(dest, src)
+	dest = CopyResourcePtrSlice(dest, src, nil)
 	assert.Equal(t, []*Resource{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestResourcePtrSlice()
-	dest = CopyResourcePtrSlice(dest, src)
+	dest = CopyResourcePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourcePtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyResourcePtrSlice(dest, src)
+	dest = CopyResourcePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourcePtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyResourcePtrSlice(dest, []*Resource{})
+	dest = CopyResourcePtrSlice(dest, []*Resource{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyResourcePtrSlice(dest, src)
+	dest = CopyResourcePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourcePtrSlice(), dest)
 }
 
@@ -190,20 +190,20 @@ func TestMarshalAndUnmarshalProtoViaProtobufResource(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesResource() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                          {0x02},
-		"Attributes/wrong_wire_type":             {0xc},
-		"Attributes/missing_value":               {0xa},
-		"DroppedAttributesCount/wrong_wire_type": {0x14},
-		"DroppedAttributesCount/missing_value":   {0x10},
-		"EntityRefs/wrong_wire_type":             {0x1c},
-		"EntityRefs/missing_value":               {0x1a},
+		"Attributes/wrong_wire_type":             []byte{0xc},
+		"Attributes/missing_value":               []byte{0xa},
+		"DroppedAttributesCount/wrong_wire_type": []byte{0x14},
+		"DroppedAttributesCount/missing_value":   []byte{0x10},
+		"EntityRefs/wrong_wire_type":             []byte{0x1c},
+		"EntityRefs/missing_value":               []byte{0x1a},
 	}
 }
 
 func genTestEncodingValuesResource() map[string]*Resource {
 	return map[string]*Resource{
 		"empty":                       NewResource(),
-		"Attributes/test":             {Attributes: []KeyValue{{}, *GenTestKeyValue()}},
+		"Attributes/test":             {Attributes: []KeyValue{KeyValue{}, *GenTestKeyValue()}},
 		"DroppedAttributesCount/test": {DroppedAttributesCount: uint32(13)},
-		"EntityRefs/test":             {EntityRefs: []*EntityRef{{}, GenTestEntityRef()}},
+		"EntityRefs/test":             {EntityRefs: []*EntityRef{&EntityRef{}, GenTestEntityRef()}},
 	}
 }
