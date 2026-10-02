@@ -1,13 +1,14 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ocbplugin
+package ocbplugin // import "go.opentelemetry.io/collector/cmd/builder/ocbplugin"
 
 import (
 	"errors"
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"go.yaml.in/yaml/v3"
@@ -41,15 +42,17 @@ func RunPlugin(impl OCBPlugin) {
 }
 
 func runPlugin(impl OCBPlugin, inputPath string) error {
-	inputBytes, err := os.ReadFile(inputPath)
+	inputBytes, err := os.ReadFile(filepath.Clean(inputPath))
 	if err != nil {
 		return fmt.Errorf("error reading plugin input: %w", err)
 	}
 	var input inputData
-	if err := yaml.Unmarshal(inputBytes, &input); err != nil {
+	err = yaml.Unmarshal(inputBytes, &input)
+	if err != nil {
 		return fmt.Errorf("error decoding plugin input: %w", err)
 	}
-	if err := checkSupportedVersion(impl, input.OCBVersion); err != nil {
+	err = checkSupportedVersion(impl, input.OCBVersion)
+	if err != nil {
 		return err
 	}
 	switch input.Action {
