@@ -33,32 +33,6 @@ func TestAllocUsesArenaWhenGateEnabled(t *testing.T) {
 	assert.Empty(t, st.arenas)
 }
 
-func TestArenaResetReusesSlots(t *testing.T) {
-	prev := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), true))
-	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prev))
-	})
-
-	st := NewState()
-	first := Alloc[struct{ n int }](st)
-	first.n = 7
-	second := Alloc[struct{ n int }](st)
-	require.NotSame(t, first, second)
-
-	st.ResetArena()
-	again := Alloc[struct{ n int }](st)
-	assert.Same(t, first, again)
-	assert.Equal(t, 0, again.n)
-
-	slice1 := AllocSlice[int](st, 2, 8)
-	slice1[0] = 9
-	st.ResetArena()
-	slice2 := AllocSlice[int](st, 2, 8)
-	assert.Equal(t, []int{0, 0}, slice2)
-	assert.Equal(t, 8, cap(slice2))
-}
-
 func TestDropArenaPoolsSlabs(t *testing.T) {
 	prev := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), true))

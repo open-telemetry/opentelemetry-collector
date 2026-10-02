@@ -15,7 +15,6 @@ import (
 	goproto "google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -116,70 +115,45 @@ func BenchmarkMetricsFromProto10MB(b *testing.B) {
 		md, err := (&ProtoUnmarshaler{}).UnmarshalMetrics(buf)
 		require.NoError(b, err)
 		return func() { md.getState().DropArena() }
-	}, func() (func([]byte), func()) {
-		md := NewMetrics()
-		return func(buf []byte) {
-			internal.DeleteExportMetricsServiceRequest(md.getOrig(), false)
-			md.getState().ResetArena()
-			md.getState().RetainWire(buf)
-			require.NoError(b, md.getOrig().UnmarshalProtoState(buf, md.getState()))
-		}, func() { md.getState().DropArena() }
 	})
 }
 
 const protoSize10MB = 10 << 20
 
-func benchmarkFromProto10MB(b *testing.B, gen func(n int) []byte, unmarshalNew func([]byte) func(), newReuse func() (into func([]byte), release func())) {
+func benchmarkFromProto10MB(b *testing.B, gen func(n int) []byte, unmarshalNew func([]byte) func()) {
 	for _, pooling := range []bool{false, true} {
-		for _, reuse := range []bool{false, true} {
-			b.Run(fmt.Sprintf("pooling=%v/reuse=%v", pooling, reuse), func(b *testing.B) {
-				prev := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
-				require.NoError(b, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), pooling))
-				b.Cleanup(func() {
-					require.NoError(b, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prev))
-				})
-
-				buf := protoBufAtLeast(b, protoSize10MB, gen)
-				var mBefore, mAfter runtime.MemStats
-				runtime.GC()
-				runtime.ReadMemStats(&mBefore)
-				if reuse {
-					into, release := newReuse()
-					into(buf)
-					runtime.ReadMemStats(&mAfter)
-					logHeapDelta(b, buf, pooling, reuse, mBefore, mAfter)
-					b.SetBytes(int64(len(buf)))
-					b.ReportAllocs()
-					b.ResetTimer()
-					for b.Loop() {
-						into(buf)
-					}
-					b.StopTimer()
-					release()
-					return
-				}
-				release := unmarshalNew(buf)
-				runtime.ReadMemStats(&mAfter)
-				logHeapDelta(b, buf, pooling, reuse, mBefore, mAfter)
-				release()
-
-				b.SetBytes(int64(len(buf)))
-				b.ReportAllocs()
-				b.ResetTimer()
-				for b.Loop() {
-					unmarshalNew(buf)()
-				}
+		b.Run(fmt.Sprintf("pooling=%v", pooling), func(b *testing.B) {
+			prev := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
+			require.NoError(b, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), pooling))
+			b.Cleanup(func() {
+				require.NoError(b, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prev))
 			})
-		}
+
+			buf := protoBufAtLeast(b, protoSize10MB, gen)
+			var mBefore, mAfter runtime.MemStats
+			runtime.GC()
+			runtime.ReadMemStats(&mBefore)
+			release := unmarshalNew(buf)
+			runtime.ReadMemStats(&mAfter)
+			logHeapDelta(b, buf, pooling, mBefore, mAfter)
+			release()
+
+			b.SetBytes(int64(len(buf)))
+			b.ReportAllocs()
+			b.ResetTimer()
+			for b.Loop() {
+				unmarshalNew(buf)()
+			}
+		})
 	}
 }
 
-func logHeapDelta(b *testing.B, buf []byte, pooling, reuse bool, mBefore, mAfter runtime.MemStats) {
+func logHeapDelta(b *testing.B, buf []byte, pooling bool, mBefore, mAfter runtime.MemStats) {
 	heapDelta := uint64(0)
 	if mAfter.HeapAlloc > mBefore.HeapAlloc {
 		heapDelta = mAfter.HeapAlloc - mBefore.HeapAlloc
 	}
-	b.Logf("wire_bytes=%d pooling=%v reuse=%v heapdeltaB=%d totalallocB=%d", len(buf), pooling, reuse, heapDelta, mAfter.TotalAlloc-mBefore.TotalAlloc)
+	b.Logf("wire_bytes=%d pooling=%v heapdeltaB=%d totalallocB=%d", len(buf), pooling, heapDelta, mAfter.TotalAlloc-mBefore.TotalAlloc)
 }
 
 func protoBufAtLeast(b *testing.B, target int, gen func(n int) []byte) []byte {

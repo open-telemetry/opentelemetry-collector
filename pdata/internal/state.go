@@ -124,21 +124,6 @@ func (st *State) CloneAndRetainWire(buf []byte) []byte {
 	return owned
 }
 
-// ResetArena keeps the first arena for the next request and returns the rest to the pool.
-func (st *State) ResetArena() {
-	if st == nil {
-		return
-	}
-	if len(st.arenas) > 0 {
-		for _, a := range st.arenas[1:] {
-			a.Release()
-		}
-		st.arenas[0].Reset()
-		st.arenas = st.arenas[:1]
-	}
-	st.wire = nil
-}
-
 // DropArena returns every arena on st to the pool.
 func (st *State) DropArena() {
 	if st == nil {
