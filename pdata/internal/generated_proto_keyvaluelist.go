@@ -200,7 +200,7 @@ func (orig *KeyValueList) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Values = Append(st, orig.Values, KeyValue{})
+			orig.Values = AppendCounted(st, orig.Values, KeyValue{}, buf, pos, 1)
 			err = orig.Values[len(orig.Values)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err

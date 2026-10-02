@@ -363,7 +363,7 @@ func (orig *Exemplar) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.FilteredAttributes = Append(st, orig.FilteredAttributes, KeyValue{})
+			orig.FilteredAttributes = AppendCounted(st, orig.FilteredAttributes, KeyValue{}, buf, pos, 7)
 			err = orig.FilteredAttributes[len(orig.FilteredAttributes)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err

@@ -237,7 +237,7 @@ func (orig *ExponentialHistogramDataPointBuckets) UnmarshalProtoState(buf []byte
 					if err != nil {
 						return err
 					}
-					orig.BucketCounts = Append(st, orig.BucketCounts, uint64(num))
+					orig.BucketCounts = AppendCounted(st, orig.BucketCounts, uint64(num), buf, pos, 2)
 				}
 				if startPos != pos {
 					return fmt.Errorf("proto: invalid field len = %d for field BucketCounts", pos-startPos)
@@ -248,7 +248,7 @@ func (orig *ExponentialHistogramDataPointBuckets) UnmarshalProtoState(buf []byte
 				if err != nil {
 					return err
 				}
-				orig.BucketCounts = Append(st, orig.BucketCounts, uint64(num))
+				orig.BucketCounts = AppendCounted(st, orig.BucketCounts, uint64(num), buf, pos, 2)
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field BucketCounts", wireType)
 			}

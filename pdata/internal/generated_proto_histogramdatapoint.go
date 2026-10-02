@@ -446,7 +446,7 @@ func (orig *HistogramDataPoint) UnmarshalProtoState(buf []byte, st *State) error
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = Append(st, orig.Attributes, KeyValue{})
+			orig.Attributes = AppendCounted(st, orig.Attributes, KeyValue{}, buf, pos, 9)
 			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -526,7 +526,7 @@ func (orig *HistogramDataPoint) UnmarshalProtoState(buf []byte, st *State) error
 				if err != nil {
 					return err
 				}
-				orig.BucketCounts = Append(st, orig.BucketCounts, uint64(num))
+				orig.BucketCounts = AppendCounted(st, orig.BucketCounts, uint64(num), buf, pos, 6)
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field BucketCounts", wireType)
 			}
@@ -558,7 +558,7 @@ func (orig *HistogramDataPoint) UnmarshalProtoState(buf []byte, st *State) error
 				if err != nil {
 					return err
 				}
-				orig.ExplicitBounds = Append(st, orig.ExplicitBounds, math.Float64frombits(num))
+				orig.ExplicitBounds = AppendCounted(st, orig.ExplicitBounds, math.Float64frombits(num), buf, pos, 7)
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field ExplicitBounds", wireType)
 			}
@@ -573,7 +573,7 @@ func (orig *HistogramDataPoint) UnmarshalProtoState(buf []byte, st *State) error
 				return err
 			}
 			startPos := pos - length
-			orig.Exemplars = Append(st, orig.Exemplars, Exemplar{})
+			orig.Exemplars = AppendCounted(st, orig.Exemplars, Exemplar{}, buf, pos, 8)
 			err = orig.Exemplars[len(orig.Exemplars)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err

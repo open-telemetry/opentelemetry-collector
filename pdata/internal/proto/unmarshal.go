@@ -109,6 +109,27 @@ func ConsumeI32(buf []byte, pos int) (uint32, int, error) {
 	return binary.LittleEndian.Uint32(buf[pos-4:]), pos, nil
 }
 
+// CountField reports how many times fieldNum occurs in buf[pos:].
+// A tag or value that cannot be parsed stops the scan and returns the count so far.
+func CountField(buf []byte, pos int, fieldNum int32) int {
+	n := 0
+	for pos < len(buf) {
+		num, wireType, next, err := ConsumeTag(buf, pos)
+		if err != nil {
+			return n
+		}
+		pos = next
+		if num == fieldNum {
+			n++
+		}
+		pos, err = ConsumeUnknown(buf, pos, wireType)
+		if err != nil {
+			return n
+		}
+	}
+	return n
+}
+
 // ConsumeTag parses buf starting at pos as a varint-encoded tag, reporting the new position.
 func ConsumeTag(buf []byte, pos int) (int32, WireType, int, error) {
 	tag, pos, err := ConsumeVarint(buf, pos)

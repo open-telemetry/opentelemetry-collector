@@ -257,7 +257,7 @@ func (orig *ResourceProfiles) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.ScopeProfiles = Append(st, orig.ScopeProfiles, Alloc[ScopeProfiles](st))
+			orig.ScopeProfiles = AppendCounted(st, orig.ScopeProfiles, Alloc[ScopeProfiles](st), buf, pos, 2)
 			err = orig.ScopeProfiles[len(orig.ScopeProfiles)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err

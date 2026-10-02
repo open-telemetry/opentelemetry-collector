@@ -251,7 +251,7 @@ func (orig *Resource) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = Append(st, orig.Attributes, KeyValue{})
+			orig.Attributes = AppendCounted(st, orig.Attributes, KeyValue{}, buf, pos, 1)
 			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -278,7 +278,7 @@ func (orig *Resource) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.EntityRefs = Append(st, orig.EntityRefs, Alloc[EntityRef](st))
+			orig.EntityRefs = AppendCounted(st, orig.EntityRefs, Alloc[EntityRef](st), buf, pos, 3)
 			err = orig.EntityRefs[len(orig.EntityRefs)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err

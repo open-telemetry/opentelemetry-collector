@@ -21,7 +21,7 @@ func TestAllocUsesArenaWhenGateEnabled(t *testing.T) {
 	})
 
 	st := NewState()
-	require.NotNil(t, st.arena)
+	require.NotEmpty(t, st.arenas)
 	a := Alloc[struct{ n int }](st)
 	b := Alloc[struct{ n int }](st)
 	assert.NotNil(t, a)
@@ -29,7 +29,7 @@ func TestAllocUsesArenaWhenGateEnabled(t *testing.T) {
 	assert.NotSame(t, a, b)
 
 	st.DropArena()
-	assert.Nil(t, st.arena)
+	assert.Empty(t, st.arenas)
 }
 
 func TestArenaResetReusesSlots(t *testing.T) {
@@ -70,21 +70,18 @@ func TestDropArenaPoolsSlabs(t *testing.T) {
 	first := Alloc[poolSlot](st)
 	first.n = 11
 	require.NotNil(t, CopyString(st, "payload"))
-	payload := st.arena.payload[0]
-	require.Len(t, payload, 1<<16)
+	raw := st.arenas[0].buf
 	st.RetainWire([]byte("wire"))
-	held := st.arena
 	st.DropArena()
-	assert.Nil(t, st.arena)
+	assert.Empty(t, st.arenas)
 
 	next := NewState()
-	require.NotSame(t, held, next.arena)
-	assert.Nil(t, next.arena.wire)
+	assert.Nil(t, next.wire)
 	again := Alloc[poolSlot](next)
 	assert.Same(t, first, again)
 	assert.Equal(t, 0, again.n)
-	require.NotEmpty(t, CopyString(next, "next"))
-	assert.Equal(t, &payload[0], &next.arena.payload[0][0])
+	require.Len(t, next.arenas, 1)
+	assert.Equal(t, &raw[0], &next.arenas[0].buf[0])
 
 	next.DropArena()
 }
@@ -99,13 +96,24 @@ func TestPayloadChunksAndAppend(t *testing.T) {
 	st := NewState()
 	s := CopyString(st, "hello")
 	assert.Equal(t, "hello", s)
-	require.NotEmpty(t, st.arena.payload)
+	require.Len(t, st.arenas, 1)
+	require.Len(t, st.arenas[0].buf, chunkSize)
 
 	var nums []int
 	nums = Append(st, nums, 1)
 	nums = Append(st, nums, 2)
 	assert.Equal(t, []int{1, 2}, nums)
 	assert.GreaterOrEqual(t, cap(nums), 2)
+
+	// Three occurrences of field 1. The first append sizes the slice to 3.
+	buf := []byte{0x08, 0x01, 0x08, 0x01, 0x08, 0x01}
+	var counted []int
+	counted = AppendCounted(st, counted, 1, buf, 2, 1)
+	assert.Equal(t, 3, cap(counted))
+	counted = AppendCounted(st, counted, 2, buf, 4, 1)
+	counted = AppendCounted(st, counted, 3, buf, len(buf), 1)
+	assert.Equal(t, []int{1, 2, 3}, counted)
+	assert.Equal(t, 3, cap(counted))
 }
 
 func TestBorrowStringAndCopyOnWriteBytes(t *testing.T) {
@@ -145,4 +153,21 @@ func TestCopyStringAcrossArenas(t *testing.T) {
 	assert.Equal(t, "abc", cloned)
 	buf[0] = 'x'
 	assert.Equal(t, "abc", cloned)
+}
+
+func TestRequestTakesAnotherArenaWhenBufferIsFull(t *testing.T) {
+	prev := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prev))
+	})
+
+	st := NewState()
+	_ = AllocSlice[byte](st, chunkSize, chunkSize)
+	require.Len(t, st.arenas, 1)
+	next := Alloc[byte](st)
+	require.NotNil(t, next)
+	require.Len(t, st.arenas, 2)
+	assert.NotSame(t, &st.arenas[0].buf[0], &st.arenas[1].buf[0])
+	st.DropArena()
 }

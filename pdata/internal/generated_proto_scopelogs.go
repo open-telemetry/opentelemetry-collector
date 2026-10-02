@@ -257,7 +257,7 @@ func (orig *ScopeLogs) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.LogRecords = Append(st, orig.LogRecords, Alloc[LogRecord](st))
+			orig.LogRecords = AppendCounted(st, orig.LogRecords, Alloc[LogRecord](st), buf, pos, 2)
 			err = orig.LogRecords[len(orig.LogRecords)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err

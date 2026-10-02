@@ -4,240 +4,97 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
 import (
-	"reflect"
 	"sync"
 	"unsafe"
 
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
-const (
-	// payloadChunkSize is the size of each pooled byte slab used for strings and bytes.
-	// Values that do not fit get a dedicated chunk and are not pooled.
-	payloadChunkSize = 1 << 16
-	// graphChunkBytes is the size of each pooled typed slab (messages and slice backings).
-	graphChunkBytes = 1 << 20
-)
+// chunkSize is the single raw buffer owned by an arena.
+const chunkSize = 1 << 20
 
-// Arena is a request-scoped allocator owned by State.
-//
-// Its storage is borrowed from two slab pools:
-//   - payload: 2^16 []byte chunks for strings and bytes
-//   - graph: 2^20 typed chunks for pointerful proto structs and slice backings
-//
-// Drop returns those chunks to the pools. The arena itself is not reused.
-// The protobuf wire buffer is retained separately and cleared on reset or drop.
+// Arena is one raw buffer and a bump offset. Every type is carved from buf.
+// A request that does not fit takes another Arena on its State.
 type Arena struct {
-	wire []byte
-
-	payload      [][]byte
-	payloadChunk int
-	payloadOff   int
-
-	slabs    map[reflect.Type]any
-	resets   []func()
-	releases []func()
-
-	// heapRefs roots any Go heap object that could not be placed in a chunk.
-	heapRefs []any
+	buf []byte
+	off int
 }
 
-func newArena() *Arena {
-	return &Arena{slabs: make(map[reflect.Type]any)}
+// arenaPool reuses arenas, including their raw buffers, across requests.
+var arenaPool = sync.Pool{
+	New: func() any {
+		return &Arena{}
+	},
 }
 
-// payloadPool holds 2^16 byte slabs. Graph slabs are pooled per element type.
-var (
-	payloadPool = sync.Pool{
-		New: func() any {
-			return make([]byte, payloadChunkSize)
-		},
+func getArena() *Arena {
+	a := arenaPool.Get().(*Arena)
+	a.off = 0
+	if len(a.buf) < chunkSize {
+		a.buf = make([]byte, chunkSize)
 	}
-	blockPools sync.Map // reflect.Type -> *sync.Pool
-)
-
-func getPayload() []byte {
-	return payloadPool.Get().([]byte)[:payloadChunkSize]
+	return a
 }
 
-func blockPool[T any]() *sync.Pool {
-	rt := reflect.TypeFor[T]()
-	if p, ok := blockPools.Load(rt); ok {
-		return p.(*sync.Pool)
+var bumpZero byte
+
+func (a *Arena) tryBump(size, align int) (unsafe.Pointer, bool) {
+	if len(a.buf) == 0 || size <= 0 {
+		return nil, false
 	}
-	n := graphLen[T]()
-	p := &sync.Pool{New: func() any {
-		return make([]T, n)
-	}}
-	actual, _ := blockPools.LoadOrStore(rt, p)
-	return actual.(*sync.Pool)
-}
-
-func getBlock[T any]() []T {
-	return blockPool[T]().Get().([]T)
-}
-
-func putBlock[T any](b []T) {
-	if len(b) != graphLen[T]() {
-		return
+	if align <= 0 {
+		align = 1
 	}
-	clear(b)
-	blockPool[T]().Put(b)
+	off := (a.off + align - 1) &^ (align - 1)
+	if off+size > len(a.buf) {
+		return nil, false
+	}
+	a.off = off + size
+	return unsafe.Pointer(unsafe.SliceData(a.buf[off : off+size])), true
 }
 
-func (a *Arena) reset() {
-	a.wire = nil
-	a.payloadChunk = 0
-	a.payloadOff = 0
-	a.heapRefs = a.heapRefs[:0]
-	for _, r := range a.resets {
-		r()
+func (st *State) bump(size, align int) unsafe.Pointer {
+	if size <= 0 {
+		return unsafe.Pointer(&bumpZero)
 	}
-}
-
-// release returns this arena's slabs to the pools. The arena is left empty.
-// Graph slabs are returned first: clearing them can trigger GC, which drops
-// anything already sitting in a sync.Pool.
-func (a *Arena) release() {
-	a.wire = nil
-	a.heapRefs = nil
-	rel := a.releases
-	a.releases = nil
-	a.resets = nil
-	a.slabs = nil
-	for _, r := range rel {
-		r()
-	}
-	for _, c := range a.payload {
-		if len(c) == payloadChunkSize {
-			clear(c)
-			payloadPool.Put(c)
-		}
-	}
-	a.payload = nil
-	a.payloadChunk = 0
-	a.payloadOff = 0
-}
-
-func (a *Arena) retainWire(buf []byte) {
-	a.wire = buf
-}
-
-func (a *Arena) allocPayload(n int) []byte {
-	if n == 0 {
-		return nil
-	}
-	if n >= payloadChunkSize {
-		b := make([]byte, n)
-		a.payload = append(a.payload, b)
-		return b
+	if align <= 0 {
+		align = 1
 	}
 	for {
-		if a.payloadChunk < len(a.payload) {
-			cur := a.payload[a.payloadChunk]
-			if a.payloadOff+n <= len(cur) {
-				sl := cur[a.payloadOff : a.payloadOff+n]
-				a.payloadOff += n
-				return sl
+		if st.ai < len(st.arenas) {
+			if p, ok := st.arenas[st.ai].tryBump(size, align); ok {
+				return p
 			}
-			a.payloadChunk++
-			a.payloadOff = 0
+			st.ai++
 			continue
 		}
-		a.payload = append(a.payload, getPayload())
-		a.payloadChunk = len(a.payload) - 1
-		a.payloadOff = 0
+		a := getArena()
+		if size+align > len(a.buf) {
+			a.buf = make([]byte, size+align)
+			a.off = 0
+		}
+		st.arenas = append(st.arenas, a)
+		st.ai = len(st.arenas) - 1
 	}
 }
 
-type typedSlab[T any] struct {
-	blocks [][]T
-	b, i   int
-}
-
-// Alloc returns a zero T from st's graph arena, or a heap allocation when no arena is attached.
+// Alloc returns a zero T carved from st's raw buffer, or a heap allocation when no arena is attached.
 func Alloc[T any](st *State) *T {
-	if st == nil || st.arena == nil {
+	if st == nil || len(st.arenas) == 0 {
 		return new(T)
 	}
-	return alloc[T](st.arena)
+	return alloc[T](st)
 }
 
-func alloc[T any](a *Arena) *T {
-	rt := reflect.TypeFor[*T]()
-	s, ok := a.slabs[rt].(*typedSlab[T])
-	if !ok {
-		s = &typedSlab[T]{}
-		a.slabs[rt] = s
-		a.resets = append(a.resets, s.reset)
-		a.releases = append(a.releases, s.release)
-	}
-	return s.next()
-}
-
-func (s *typedSlab[T]) next() *T {
-	if len(s.blocks) == 0 {
-		s.grow()
-	}
-	if s.i >= len(s.blocks[s.b]) {
-		if s.b+1 < len(s.blocks) {
-			s.b++
-			s.i = 0
-		} else {
-			s.grow()
-		}
-	}
-	p := &s.blocks[s.b][s.i]
+func alloc[T any](st *State) *T {
 	var zero T
-	*p = zero
-	s.i++
-	return p
-}
-
-func (s *typedSlab[T]) grow() {
-	s.blocks = append(s.blocks, getBlock[T]())
-	s.b = len(s.blocks) - 1
-	s.i = 0
-}
-
-func (s *typedSlab[T]) reset() {
-	for bi, block := range s.blocks {
-		if bi < s.b {
-			clear(block)
-			continue
-		}
-		if bi == s.b {
-			clear(block[:min(len(block), s.i)])
-			continue
-		}
-		clear(block)
-	}
-	s.b, s.i = 0, 0
-}
-
-func (s *typedSlab[T]) release() {
-	for _, block := range s.blocks {
-		putBlock(block)
-	}
-	s.blocks = nil
-	s.b, s.i = 0, 0
-}
-
-func graphLen[T any]() int {
-	sz := int(unsafe.Sizeof(*new(T)))
-	if sz < 1 {
-		sz = 1
-	}
-	n := graphChunkBytes / sz
-	if n < 1 {
-		return 1
-	}
-	return n
-}
-
-type sliceSlab[T any] struct {
-	blocks [][]T
-	b, off int
+	size := int(unsafe.Sizeof(zero))
+	align := int(unsafe.Alignof(zero))
+	p := st.bump(size, align)
+	out := (*T)(p)
+	*out = zero
+	return out
 }
 
 // AllocSlice returns a slice backed by st's graph arena when present.
@@ -248,75 +105,23 @@ func AllocSlice[T any](st *State, length, capacity int) []T {
 	if capacity == 0 {
 		return nil
 	}
-	if st == nil || st.arena == nil {
+	if st == nil || len(st.arenas) == 0 {
 		return make([]T, length, capacity)
 	}
-	return allocSlice[T](st.arena, length, capacity)
+	return allocSlice[T](st, length, capacity)
 }
 
-func allocSlice[T any](a *Arena, length, capacity int) []T {
-	rt := reflect.TypeFor[[]T]()
-	s, ok := a.slabs[rt].(*sliceSlab[T])
-	if !ok {
-		s = &sliceSlab[T]{}
-		a.slabs[rt] = s
-		a.resets = append(a.resets, s.reset)
-		a.releases = append(a.releases, s.release)
-	}
-	return s.next(length, capacity)
-}
-
-func (s *sliceSlab[T]) next(length, capacity int) []T {
-	if capacity > graphLen[T]() {
+func allocSlice[T any](st *State, length, capacity int) []T {
+	var zero T
+	elem := int(unsafe.Sizeof(zero))
+	align := int(unsafe.Alignof(zero))
+	if elem == 0 {
 		return make([]T, length, capacity)
 	}
-	for {
-		cur := s.cur()
-		if s.off+capacity <= len(cur) {
-			sl := cur[s.off : s.off+length : s.off+capacity]
-			clear(sl)
-			s.off += capacity
-			return sl
-		}
-		if s.b+1 < len(s.blocks) {
-			s.b++
-			s.off = 0
-			continue
-		}
-		s.blocks = append(s.blocks, getBlock[T]())
-		s.b = len(s.blocks) - 1
-		s.off = 0
-	}
-}
-
-func (s *sliceSlab[T]) cur() []T {
-	if len(s.blocks) == 0 {
-		return nil
-	}
-	return s.blocks[s.b]
-}
-
-func (s *sliceSlab[T]) reset() {
-	for bi, block := range s.blocks {
-		if bi < s.b {
-			clear(block)
-			continue
-		}
-		if bi == s.b {
-			clear(block[:min(len(block), s.off)])
-			continue
-		}
-		clear(block)
-	}
-	s.b, s.off = 0, 0
-}
-
-func (s *sliceSlab[T]) release() {
-	for _, block := range s.blocks {
-		putBlock(block)
-	}
-	s.blocks = nil
-	s.b, s.off = 0, 0
+	p := st.bump(elem*capacity, align)
+	s := unsafe.Slice((*T)(p), capacity)
+	clear(s)
+	return s[:length:capacity]
 }
 
 func growCap(need int) int {
@@ -325,6 +130,31 @@ func growCap(need int) int {
 		n *= 2
 	}
 	return n
+}
+
+// appendCountLimit is the largest remainder we scan to size a repeated field exactly.
+// A bigger message doubles capacity instead; walking a 10MB parent costs more than the copies.
+const appendCountLimit = 4096
+
+// AppendCounted appends v like Append. The first element of a repeated field is
+// sized to the number of remaining occurrences of fieldNum in buf[pos:], so later
+// elements fill that slice instead of growing and copying.
+func AppendCounted[T any](st *State, s []T, v T, buf []byte, pos int, fieldNum int32) []T {
+	if cap(s) > len(s) {
+		s = s[:len(s)+1]
+		s[len(s)-1] = v
+		return s
+	}
+	n := len(s) + 1
+	if len(s) == 0 && len(buf)-pos <= appendCountLimit {
+		n += proto.CountField(buf, pos, fieldNum)
+	} else {
+		n = growCap(n)
+	}
+	ns := AllocSlice[T](st, len(s)+1, n)
+	copy(ns, s)
+	ns[len(s)] = v
+	return ns
 }
 
 // Append appends v to s using graph-arena backing when an arena is attached.
@@ -383,29 +213,29 @@ func CopySlice[T any](st *State, dst, src []T) []T {
 
 // KeepRef roots a Go heap object on the arena until reset/drop.
 func KeepRef(st *State, v any) {
-	if st == nil || st.arena == nil || v == nil {
+	if st == nil || len(st.arenas) == 0 || v == nil {
 		return
 	}
-	st.arena.heapRefs = append(st.arena.heapRefs, v)
+	st.heapRefs = append(st.heapRefs, v)
 }
 
-// BorrowString returns a string pointing into buf when the arena retains the wire buffer.
+// BorrowString returns a string pointing into buf when the state retains the wire buffer.
 func BorrowString(st *State, buf []byte, start, end int) string {
 	if start == end {
 		return ""
 	}
-	if st == nil || st.arena == nil || st.arena.wire == nil {
+	if st == nil || len(st.arenas) == 0 || st.wire == nil {
 		return internPayloadString(st, buf[start:end])
 	}
 	return unsafe.String(&buf[start], end-start)
 }
 
-// BorrowBytes returns a []byte pointing into buf when the arena retains the wire buffer.
+// BorrowBytes returns a []byte pointing into buf when the state retains the wire buffer.
 func BorrowBytes(st *State, buf []byte, start, end int) []byte {
 	if start == end {
 		return nil
 	}
-	if st == nil || st.arena == nil || st.arena.wire == nil {
+	if st == nil || len(st.arenas) == 0 || st.wire == nil {
 		return internPayloadBytes(st, buf[start:end])
 	}
 	return buf[start:end]
@@ -415,10 +245,10 @@ func internPayloadString(st *State, src []byte) string {
 	if len(src) == 0 {
 		return ""
 	}
-	if st == nil || st.arena == nil {
+	if st == nil || len(st.arenas) == 0 {
 		return string(src)
 	}
-	dst := st.arena.allocPayload(len(src))
+	dst := st.allocPayload(len(src))
 	copy(dst, src)
 	return unsafe.String(&dst[0], len(dst))
 }
@@ -427,27 +257,35 @@ func internPayloadBytes(st *State, src []byte) []byte {
 	if len(src) == 0 {
 		return nil
 	}
-	if st == nil || st.arena == nil {
+	if st == nil || len(st.arenas) == 0 {
 		nb := make([]byte, len(src))
 		copy(nb, src)
 		return nb
 	}
-	dst := st.arena.allocPayload(len(src))
+	dst := st.allocPayload(len(src))
 	copy(dst, src)
 	return dst
 }
 
+func (st *State) allocPayload(n int) []byte {
+	if n == 0 {
+		return nil
+	}
+	p := st.bump(n, 1)
+	return unsafe.Slice((*byte)(p), n)
+}
+
 func (st *State) aliasesArenaBytes(b []byte) bool {
-	if st == nil || st.arena == nil || len(b) == 0 {
+	if st == nil || len(st.arenas) == 0 || len(b) == 0 {
 		return false
 	}
 	p := uintptr(unsafe.Pointer(unsafe.SliceData(b)))
 	n := len(b)
-	if len(st.arena.wire) > 0 && aliasesPtr(st.arena.wire, p, n) {
+	if len(st.wire) > 0 && aliasesPtr(st.wire, p, n) {
 		return true
 	}
-	for _, chunk := range st.arena.payload {
-		if aliasesPtr(chunk, p, n) {
+	for _, a := range st.arenas {
+		if aliasesPtr(a.buf, p, n) {
 			return true
 		}
 	}
@@ -455,16 +293,16 @@ func (st *State) aliasesArenaBytes(b []byte) bool {
 }
 
 func (st *State) aliasesArenaString(s string) bool {
-	if st == nil || st.arena == nil || s == "" {
+	if st == nil || len(st.arenas) == 0 || s == "" {
 		return false
 	}
 	p := uintptr(unsafe.Pointer(unsafe.StringData(s)))
 	n := len(s)
-	if len(st.arena.wire) > 0 && aliasesPtr(st.arena.wire, p, n) {
+	if len(st.wire) > 0 && aliasesPtr(st.wire, p, n) {
 		return true
 	}
-	for _, chunk := range st.arena.payload {
-		if aliasesPtr(chunk, p, n) {
+	for _, a := range st.arenas {
+		if aliasesPtr(a.buf, p, n) {
 			return true
 		}
 	}
@@ -521,10 +359,10 @@ func (st *State) CopyOnWriteBytes(b *[]byte) {
 }
 
 func (st *State) aliasesWire(b []byte) bool {
-	if st == nil || st.arena == nil || len(st.arena.wire) == 0 || len(b) == 0 {
+	if st == nil || len(st.wire) == 0 || len(b) == 0 {
 		return false
 	}
-	return aliasesPtr(st.arena.wire, uintptr(unsafe.Pointer(unsafe.SliceData(b))), len(b))
+	return aliasesPtr(st.wire, uintptr(unsafe.Pointer(unsafe.SliceData(b))), len(b))
 }
 
 func useProtoArena() bool {

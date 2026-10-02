@@ -636,7 +636,7 @@ func (orig *Span) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = Append(st, orig.Attributes, KeyValue{})
+			orig.Attributes = AppendCounted(st, orig.Attributes, KeyValue{}, buf, pos, 9)
 			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -663,7 +663,7 @@ func (orig *Span) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Events = Append(st, orig.Events, Alloc[SpanEvent](st))
+			orig.Events = AppendCounted(st, orig.Events, Alloc[SpanEvent](st), buf, pos, 11)
 			err = orig.Events[len(orig.Events)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -690,7 +690,7 @@ func (orig *Span) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Links = Append(st, orig.Links, Alloc[SpanLink](st))
+			orig.Links = AppendCounted(st, orig.Links, Alloc[SpanLink](st), buf, pos, 13)
 			err = orig.Links[len(orig.Links)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err

@@ -202,7 +202,7 @@ func (orig *LogsData) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.ResourceLogs = Append(st, orig.ResourceLogs, Alloc[ResourceLogs](st))
+			orig.ResourceLogs = AppendCounted(st, orig.ResourceLogs, Alloc[ResourceLogs](st), buf, pos, 1)
 			err = orig.ResourceLogs[len(orig.ResourceLogs)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err

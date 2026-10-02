@@ -426,7 +426,7 @@ func (orig *Profile) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Samples = Append(st, orig.Samples, Alloc[Sample](st))
+			orig.Samples = AppendCounted(st, orig.Samples, Alloc[Sample](st), buf, pos, 2)
 			err = orig.Samples[len(orig.Samples)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -547,7 +547,7 @@ func (orig *Profile) UnmarshalProtoState(buf []byte, st *State) error {
 					if err != nil {
 						return err
 					}
-					orig.AttributeIndices = Append(st, orig.AttributeIndices, int32(num))
+					orig.AttributeIndices = AppendCounted(st, orig.AttributeIndices, int32(num), buf, pos, 11)
 				}
 				if startPos != pos {
 					return fmt.Errorf("proto: invalid field len = %d for field AttributeIndices", pos-startPos)
@@ -558,7 +558,7 @@ func (orig *Profile) UnmarshalProtoState(buf []byte, st *State) error {
 				if err != nil {
 					return err
 				}
-				orig.AttributeIndices = Append(st, orig.AttributeIndices, int32(num))
+				orig.AttributeIndices = AppendCounted(st, orig.AttributeIndices, int32(num), buf, pos, 11)
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field AttributeIndices", wireType)
 			}

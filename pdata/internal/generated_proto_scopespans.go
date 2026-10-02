@@ -257,7 +257,7 @@ func (orig *ScopeSpans) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Spans = Append(st, orig.Spans, Alloc[Span](st))
+			orig.Spans = AppendCounted(st, orig.Spans, Alloc[Span](st), buf, pos, 2)
 			err = orig.Spans[len(orig.Spans)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err

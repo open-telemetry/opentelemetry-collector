@@ -10,7 +10,11 @@ import (
 type State struct {
 	refs  atomic.Int32
 	state uint32
-	arena *Arena
+
+	arenas   []*Arena
+	ai       int
+	wire     []byte
+	heapRefs []any
 }
 
 const (
@@ -25,45 +29,55 @@ func NewState() *State {
 	}
 	st.refs.Store(1)
 	if useProtoArena() {
-		st.arena = newArena()
+		st.arenas = []*Arena{getArena()}
 	}
 	return st
 }
 
 // RetainWire keeps the protobuf input buffer alive so string/[]byte fields may alias it.
 func (st *State) RetainWire(buf []byte) {
-	if st == nil || st.arena == nil {
+	if st == nil || len(st.arenas) == 0 {
 		return
 	}
-	st.arena.retainWire(buf)
+	st.wire = buf
 }
 
-// CloneAndRetainWire copies buf and retains the copy when an arena is attached.
+// CloneAndRetainWire copies buf and retains the copy when arenas are attached.
 func (st *State) CloneAndRetainWire(buf []byte) []byte {
-	if st == nil || st.arena == nil {
+	if st == nil || len(st.arenas) == 0 {
 		return buf
 	}
 	owned := append([]byte(nil), buf...)
-	st.arena.retainWire(owned)
+	st.wire = owned
 	return owned
 }
 
-// ResetArena rewinds bump pointers so the next request can reuse existing slabs.
+// ResetArena rewinds every arena on st so the next request starts at the first buffer.
 func (st *State) ResetArena() {
-	if st == nil || st.arena == nil {
+	if st == nil {
 		return
 	}
-	st.arena.reset()
+	for _, a := range st.arenas {
+		a.off = 0
+	}
+	st.ai = 0
+	st.wire = nil
+	st.heapRefs = st.heapRefs[:0]
 }
 
-// DropArena detaches the arena from st and returns its 2^16 and 2^20 slabs to the pools.
+// DropArena returns every arena on st to the pool.
 func (st *State) DropArena() {
-	if st == nil || st.arena == nil {
+	if st == nil {
 		return
 	}
-	a := st.arena
-	st.arena = nil
-	a.release()
+	for _, a := range st.arenas {
+		a.off = 0
+		arenaPool.Put(a)
+	}
+	st.arenas = nil
+	st.ai = 0
+	st.wire = nil
+	st.heapRefs = nil
 }
 
 func (st *State) MarkReadOnly() {

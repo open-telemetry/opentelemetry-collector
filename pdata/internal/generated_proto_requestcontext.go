@@ -443,7 +443,7 @@ func (orig *RequestContext) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.ClientMetadata = Append(st, orig.ClientMetadata, KeyValue{})
+			orig.ClientMetadata = AppendCounted(st, orig.ClientMetadata, KeyValue{}, buf, pos, 2)
 			err = orig.ClientMetadata[len(orig.ClientMetadata)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err

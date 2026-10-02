@@ -457,7 +457,7 @@ func (orig *LogRecord) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = Append(st, orig.Attributes, KeyValue{})
+			orig.Attributes = AppendCounted(st, orig.Attributes, KeyValue{}, buf, pos, 6)
 			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err

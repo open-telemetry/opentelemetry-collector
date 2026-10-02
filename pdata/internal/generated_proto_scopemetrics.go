@@ -257,7 +257,7 @@ func (orig *ScopeMetrics) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Metrics = Append(st, orig.Metrics, Alloc[Metric](st))
+			orig.Metrics = AppendCounted(st, orig.Metrics, Alloc[Metric](st), buf, pos, 2)
 			err = orig.Metrics[len(orig.Metrics)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err

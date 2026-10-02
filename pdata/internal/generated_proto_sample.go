@@ -326,7 +326,7 @@ func (orig *Sample) UnmarshalProtoState(buf []byte, st *State) error {
 					if err != nil {
 						return err
 					}
-					orig.AttributeIndices = Append(st, orig.AttributeIndices, int32(num))
+					orig.AttributeIndices = AppendCounted(st, orig.AttributeIndices, int32(num), buf, pos, 2)
 				}
 				if startPos != pos {
 					return fmt.Errorf("proto: invalid field len = %d for field AttributeIndices", pos-startPos)
@@ -337,7 +337,7 @@ func (orig *Sample) UnmarshalProtoState(buf []byte, st *State) error {
 				if err != nil {
 					return err
 				}
-				orig.AttributeIndices = Append(st, orig.AttributeIndices, int32(num))
+				orig.AttributeIndices = AppendCounted(st, orig.AttributeIndices, int32(num), buf, pos, 2)
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field AttributeIndices", wireType)
 			}
@@ -367,7 +367,7 @@ func (orig *Sample) UnmarshalProtoState(buf []byte, st *State) error {
 					if err != nil {
 						return err
 					}
-					orig.Values = Append(st, orig.Values, int64(num))
+					orig.Values = AppendCounted(st, orig.Values, int64(num), buf, pos, 4)
 				}
 				if startPos != pos {
 					return fmt.Errorf("proto: invalid field len = %d for field Values", pos-startPos)
@@ -378,7 +378,7 @@ func (orig *Sample) UnmarshalProtoState(buf []byte, st *State) error {
 				if err != nil {
 					return err
 				}
-				orig.Values = Append(st, orig.Values, int64(num))
+				orig.Values = AppendCounted(st, orig.Values, int64(num), buf, pos, 4)
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field Values", wireType)
 			}
@@ -410,7 +410,7 @@ func (orig *Sample) UnmarshalProtoState(buf []byte, st *State) error {
 				if err != nil {
 					return err
 				}
-				orig.TimestampsUnixNano = Append(st, orig.TimestampsUnixNano, uint64(num))
+				orig.TimestampsUnixNano = AppendCounted(st, orig.TimestampsUnixNano, uint64(num), buf, pos, 5)
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field TimestampsUnixNano", wireType)
 			}

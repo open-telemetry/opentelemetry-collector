@@ -647,7 +647,7 @@ func (orig *Metric) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Metadata = Append(st, orig.Metadata, KeyValue{})
+			orig.Metadata = AppendCounted(st, orig.Metadata, KeyValue{}, buf, pos, 12)
 			err = orig.Metadata[len(orig.Metadata)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err

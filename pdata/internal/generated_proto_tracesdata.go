@@ -202,7 +202,7 @@ func (orig *TracesData) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.ResourceSpans = Append(st, orig.ResourceSpans, Alloc[ResourceSpans](st))
+			orig.ResourceSpans = AppendCounted(st, orig.ResourceSpans, Alloc[ResourceSpans](st), buf, pos, 1)
 			err = orig.ResourceSpans[len(orig.ResourceSpans)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err

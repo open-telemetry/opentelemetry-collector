@@ -400,7 +400,7 @@ func (orig *ProfilesDictionary) UnmarshalProtoState(buf []byte, st *State) error
 				return err
 			}
 			startPos := pos - length
-			orig.MappingTable = Append(st, orig.MappingTable, Alloc[Mapping](st))
+			orig.MappingTable = AppendCounted(st, orig.MappingTable, Alloc[Mapping](st), buf, pos, 1)
 			err = orig.MappingTable[len(orig.MappingTable)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -416,7 +416,7 @@ func (orig *ProfilesDictionary) UnmarshalProtoState(buf []byte, st *State) error
 				return err
 			}
 			startPos := pos - length
-			orig.LocationTable = Append(st, orig.LocationTable, Alloc[Location](st))
+			orig.LocationTable = AppendCounted(st, orig.LocationTable, Alloc[Location](st), buf, pos, 2)
 			err = orig.LocationTable[len(orig.LocationTable)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -432,7 +432,7 @@ func (orig *ProfilesDictionary) UnmarshalProtoState(buf []byte, st *State) error
 				return err
 			}
 			startPos := pos - length
-			orig.FunctionTable = Append(st, orig.FunctionTable, Alloc[Function](st))
+			orig.FunctionTable = AppendCounted(st, orig.FunctionTable, Alloc[Function](st), buf, pos, 3)
 			err = orig.FunctionTable[len(orig.FunctionTable)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -448,7 +448,7 @@ func (orig *ProfilesDictionary) UnmarshalProtoState(buf []byte, st *State) error
 				return err
 			}
 			startPos := pos - length
-			orig.LinkTable = Append(st, orig.LinkTable, Alloc[Link](st))
+			orig.LinkTable = AppendCounted(st, orig.LinkTable, Alloc[Link](st), buf, pos, 4)
 			err = orig.LinkTable[len(orig.LinkTable)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -464,7 +464,7 @@ func (orig *ProfilesDictionary) UnmarshalProtoState(buf []byte, st *State) error
 				return err
 			}
 			startPos := pos - length
-			orig.StringTable = Append(st, orig.StringTable, BorrowString(st, buf, startPos, pos))
+			orig.StringTable = AppendCounted(st, orig.StringTable, BorrowString(st, buf, startPos, pos), buf, pos, 5)
 
 		case 6:
 			if wireType != proto.WireTypeLen {
@@ -476,7 +476,7 @@ func (orig *ProfilesDictionary) UnmarshalProtoState(buf []byte, st *State) error
 				return err
 			}
 			startPos := pos - length
-			orig.AttributeTable = Append(st, orig.AttributeTable, Alloc[KeyValueAndUnit](st))
+			orig.AttributeTable = AppendCounted(st, orig.AttributeTable, Alloc[KeyValueAndUnit](st), buf, pos, 6)
 			err = orig.AttributeTable[len(orig.AttributeTable)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -492,7 +492,7 @@ func (orig *ProfilesDictionary) UnmarshalProtoState(buf []byte, st *State) error
 				return err
 			}
 			startPos := pos - length
-			orig.StackTable = Append(st, orig.StackTable, Alloc[Stack](st))
+			orig.StackTable = AppendCounted(st, orig.StackTable, Alloc[Stack](st), buf, pos, 7)
 			err = orig.StackTable[len(orig.StackTable)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err

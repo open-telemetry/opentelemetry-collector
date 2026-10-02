@@ -392,7 +392,7 @@ func (orig *NumberDataPoint) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = Append(st, orig.Attributes, KeyValue{})
+			orig.Attributes = AppendCounted(st, orig.Attributes, KeyValue{}, buf, pos, 7)
 			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -458,7 +458,7 @@ func (orig *NumberDataPoint) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Exemplars = Append(st, orig.Exemplars, Exemplar{})
+			orig.Exemplars = AppendCounted(st, orig.Exemplars, Exemplar{}, buf, pos, 5)
 			err = orig.Exemplars[len(orig.Exemplars)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err

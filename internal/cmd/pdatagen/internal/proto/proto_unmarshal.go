@@ -38,7 +38,7 @@ const unmarshalProtoFloat = `{{ if .repeated -}}
 			if err != nil {
 				return err
 			}
-			orig.{{ .fieldName }} = Append(st, orig.{{ .fieldName }}, math.Float{{ .bitSize }}frombits(num))
+			orig.{{ .fieldName }} = AppendCounted(st, orig.{{ .fieldName }}, math.Float{{ .bitSize }}frombits(num), buf, pos, {{ .protoFieldID }})
 		default:
 			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
 		}
@@ -91,7 +91,7 @@ const unmarshalProtoFixed = `{{ if .repeated -}}
 			if err != nil {
 				return err
 			}
-			orig.{{ .fieldName }} = Append(st, orig.{{ .fieldName }}, {{ .goType }}(num))
+			orig.{{ .fieldName }} = AppendCounted(st, orig.{{ .fieldName }}, {{ .goType }}(num), buf, pos, {{ .protoFieldID }})
 		default:
 			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
 		}
@@ -131,7 +131,7 @@ const unmarshalProtoBool = `{{ if .repeated -}}
 				if err != nil {
 					return err
 				}
-				orig.{{ .fieldName }} = Append(st, orig.{{ .fieldName }}, num != 0)
+				orig.{{ .fieldName }} = AppendCounted(st, orig.{{ .fieldName }}, num != 0, buf, pos, {{ .protoFieldID }})
 			}
 			if startPos != pos {
 				return fmt.Errorf("proto: invalid field len = %d for field {{ .fieldName }}", pos - startPos)
@@ -142,7 +142,7 @@ const unmarshalProtoBool = `{{ if .repeated -}}
 			if err != nil {
 				return err
 			}
-			orig.{{ .fieldName }} = Append(st, orig.{{ .fieldName }}, num != 0)
+			orig.{{ .fieldName }} = AppendCounted(st, orig.{{ .fieldName }}, num != 0, buf, pos, {{ .protoFieldID }})
 		default:
 			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
 		}
@@ -182,7 +182,7 @@ const unmarshalProtoVarint = `{{ if .repeated -}}
 				if err != nil {
 					return err
 				}
-				orig.{{ .fieldName }} = Append(st, orig.{{ .fieldName }}, {{ .goType }}(num))
+				orig.{{ .fieldName }} = AppendCounted(st, orig.{{ .fieldName }}, {{ .goType }}(num), buf, pos, {{ .protoFieldID }})
 			}
 			if startPos != pos {
 				return fmt.Errorf("proto: invalid field len = %d for field {{ .fieldName }}", pos - startPos)
@@ -193,7 +193,7 @@ const unmarshalProtoVarint = `{{ if .repeated -}}
 			if err != nil {
 				return err
 			}
-			orig.{{ .fieldName }} = Append(st, orig.{{ .fieldName }}, {{ .goType }}(num))
+			orig.{{ .fieldName }} = AppendCounted(st, orig.{{ .fieldName }}, {{ .goType }}(num), buf, pos, {{ .protoFieldID }})
 		default:
 			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
 		}
@@ -233,7 +233,7 @@ const unmarshalProtoString = `
 		ov.{{ .fieldName }} = BorrowString(st, buf, startPos, pos)
 		orig.{{ .oneOfGroup }} = ov
 {{- else if .repeated -}}
-		orig.{{ .fieldName }} = Append(st, orig.{{ .fieldName }}, BorrowString(st, buf, startPos, pos))
+		orig.{{ .fieldName }} = AppendCounted(st, orig.{{ .fieldName }}, BorrowString(st, buf, startPos, pos), buf, pos, {{ .protoFieldID }})
 {{- else -}}
 		orig.{{ .fieldName }} = BorrowString(st, buf, startPos, pos)
 {{- end }}`
@@ -254,7 +254,7 @@ const unmarshalProtoBytes = `
 		ov.{{ .fieldName }} = BorrowBytes(st, buf, startPos, pos)
 		orig.{{ .oneOfGroup }} = ov
 {{- else if .repeated -}}
-		orig.{{ .fieldName }} = Append(st, orig.{{ .fieldName }}, BorrowBytes(st, buf, startPos, pos))
+		orig.{{ .fieldName }} = AppendCounted(st, orig.{{ .fieldName }}, BorrowBytes(st, buf, startPos, pos), buf, pos, {{ .protoFieldID }})
 {{- else -}}
 		orig.{{ .fieldName }} = BorrowBytes(st, buf, startPos, pos)
 {{- end }}`
@@ -279,7 +279,7 @@ const unmarshalProtoMessage = `
 		}
 		orig.{{ .oneOfGroup }} = ov
 {{- else if .repeated -}}
-		orig.{{ .fieldName }} = Append(st, orig.{{ .fieldName }}, {{ if .nullable }}Alloc[{{ .messageName }}](st){{ else }}{{ .defaultValue }}{{ end }})
+		orig.{{ .fieldName }} = AppendCounted(st, orig.{{ .fieldName }}, {{ if .nullable }}Alloc[{{ .messageName }}](st){{ else }}{{ .defaultValue }}{{ end }}, buf, pos, {{ .protoFieldID }})
 		err = orig.{{ .fieldName }}[len(orig.{{ .fieldName }})-1].UnmarshalProtoState(buf[startPos:pos], st)
 		if err != nil {
 			return err
@@ -310,7 +310,7 @@ const unmarshalProtoSignedVarint = `{{ if .repeated -}}
 				if err != nil {
 					return err
 				}
-				orig.{{ .fieldName }} = Append(st, orig.{{ .fieldName }}, int{{ .bitSize }}(uint{{ .bitSize }}(num >> 1) ^ uint{{ .bitSize }}(int{{ .bitSize }}((num&1)<<{{ sub .bitSize 1 }})>>{{ sub .bitSize 1 }})))
+				orig.{{ .fieldName }} = AppendCounted(st, orig.{{ .fieldName }}, int{{ .bitSize }}(uint{{ .bitSize }}(num >> 1) ^ uint{{ .bitSize }}(int{{ .bitSize }}((num&1)<<{{ sub .bitSize 1 }})>>{{ sub .bitSize 1 }})), buf, pos, {{ .protoFieldID }})
 			}
 			if startPos != pos {
 				return fmt.Errorf("proto: invalid field len = %d for field {{ .fieldName }}", pos - startPos)
@@ -321,7 +321,7 @@ const unmarshalProtoSignedVarint = `{{ if .repeated -}}
 			if err != nil {
 				return err
 			}
-			orig.{{ .fieldName }} = Append(st, orig.{{ .fieldName }}, int{{ .bitSize }}(uint{{ .bitSize }}(num >> 1) ^ uint{{ .bitSize }}(int{{ .bitSize }}((num&1)<<{{ sub .bitSize 1 }})>>{{ sub .bitSize 1 }})))
+			orig.{{ .fieldName }} = AppendCounted(st, orig.{{ .fieldName }}, int{{ .bitSize }}(uint{{ .bitSize }}(num >> 1) ^ uint{{ .bitSize }}(int{{ .bitSize }}((num&1)<<{{ sub .bitSize 1 }})>>{{ sub .bitSize 1 }})), buf, pos, {{ .protoFieldID }})
 		default:
 			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
 		}

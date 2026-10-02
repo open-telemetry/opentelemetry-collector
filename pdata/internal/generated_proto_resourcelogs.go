@@ -292,7 +292,7 @@ func (orig *ResourceLogs) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.ScopeLogs = Append(st, orig.ScopeLogs, Alloc[ScopeLogs](st))
+			orig.ScopeLogs = AppendCounted(st, orig.ScopeLogs, Alloc[ScopeLogs](st), buf, pos, 2)
 			err = orig.ScopeLogs[len(orig.ScopeLogs)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
@@ -320,7 +320,7 @@ func (orig *ResourceLogs) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.DeprecatedScopeLogs = Append(st, orig.DeprecatedScopeLogs, Alloc[ScopeLogs](st))
+			orig.DeprecatedScopeLogs = AppendCounted(st, orig.DeprecatedScopeLogs, Alloc[ScopeLogs](st), buf, pos, 1000)
 			err = orig.DeprecatedScopeLogs[len(orig.DeprecatedScopeLogs)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err

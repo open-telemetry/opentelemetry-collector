@@ -200,7 +200,7 @@ func (orig *Summary) UnmarshalProtoState(buf []byte, st *State) error {
 				return err
 			}
 			startPos := pos - length
-			orig.DataPoints = Append(st, orig.DataPoints, Alloc[SummaryDataPoint](st))
+			orig.DataPoints = AppendCounted(st, orig.DataPoints, Alloc[SummaryDataPoint](st), buf, pos, 1)
 			err = orig.DataPoints[len(orig.DataPoints)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err

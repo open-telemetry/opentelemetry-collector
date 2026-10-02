@@ -210,7 +210,7 @@ func (orig *Stack) UnmarshalProtoState(buf []byte, st *State) error {
 					if err != nil {
 						return err
 					}
-					orig.LocationIndices = Append(st, orig.LocationIndices, int32(num))
+					orig.LocationIndices = AppendCounted(st, orig.LocationIndices, int32(num), buf, pos, 1)
 				}
 				if startPos != pos {
 					return fmt.Errorf("proto: invalid field len = %d for field LocationIndices", pos-startPos)
@@ -221,7 +221,7 @@ func (orig *Stack) UnmarshalProtoState(buf []byte, st *State) error {
 				if err != nil {
 					return err
 				}
-				orig.LocationIndices = Append(st, orig.LocationIndices, int32(num))
+				orig.LocationIndices = AppendCounted(st, orig.LocationIndices, int32(num), buf, pos, 1)
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field LocationIndices", wireType)
 			}
