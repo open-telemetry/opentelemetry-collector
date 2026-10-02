@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/internal/statusutil
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/stretchr/testify v1.12.1
