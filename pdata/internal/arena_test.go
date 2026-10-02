@@ -58,6 +58,37 @@ func TestArenaResetReusesSlots(t *testing.T) {
 	assert.Equal(t, 8, cap(slice2))
 }
 
+func TestDropArenaPoolsSlabs(t *testing.T) {
+	prev := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prev))
+	})
+
+	type poolSlot struct{ n int }
+	st := NewState()
+	first := Alloc[poolSlot](st)
+	first.n = 11
+	require.NotNil(t, CopyString(st, "payload"))
+	payload := st.arena.payload[0]
+	require.Len(t, payload, 1<<16)
+	st.RetainWire([]byte("wire"))
+	held := st.arena
+	st.DropArena()
+	assert.Nil(t, st.arena)
+
+	next := NewState()
+	require.NotSame(t, held, next.arena)
+	assert.Nil(t, next.arena.wire)
+	again := Alloc[poolSlot](next)
+	assert.Same(t, first, again)
+	assert.Equal(t, 0, again.n)
+	require.NotEmpty(t, CopyString(next, "next"))
+	assert.Equal(t, &payload[0], &next.arena.payload[0][0])
+
+	next.DropArena()
+}
+
 func TestPayloadChunksAndAppend(t *testing.T) {
 	prev := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), true))

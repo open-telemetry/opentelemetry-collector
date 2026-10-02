@@ -56,12 +56,14 @@ func (st *State) ResetArena() {
 	st.arena.reset()
 }
 
-// DropArena releases arena slabs and the retained wire buffer.
+// DropArena detaches the arena from st and returns its 2^16 and 2^20 slabs to the pools.
 func (st *State) DropArena() {
-	if st == nil {
+	if st == nil || st.arena == nil {
 		return
 	}
+	a := st.arena
 	st.arena = nil
+	a.release()
 }
 
 func (st *State) MarkReadOnly() {

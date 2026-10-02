@@ -5,27 +5,28 @@ package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
 import (
 	"reflect"
+	"sync"
 	"unsafe"
 
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
 )
 
 const (
-	// payloadChunkSize is the default size of byte chunks used for wire-adjacent
-	// payload (SetName / CopyString / new []byte). Large values get a dedicated chunk.
-	payloadChunkSize = 16 << 10
-	// graphChunkBytes is the target size of each typed graph block (messages, slice backings).
-	graphChunkBytes = 2 << 20
+	// payloadChunkSize is the size of each pooled byte slab used for strings and bytes.
+	// Values that do not fit get a dedicated chunk and are not pooled.
+	payloadChunkSize = 1 << 16
+	// graphChunkBytes is the size of each pooled typed slab (messages and slice backings).
+	graphChunkBytes = 1 << 20
 )
 
 // Arena is a request-scoped allocator owned by State.
 //
-// Two regions:
-//   - payload: 16KB (or larger) []byte chunks for strings/bytes
-//   - graph: typed 2MB-class slabs for pointerful proto structs and slice backings
+// Its storage is borrowed from two slab pools:
+//   - payload: 2^16 []byte chunks for strings and bytes
+//   - graph: 2^20 typed chunks for pointerful proto structs and slice backings
 //
-// The protobuf wire buffer is retained separately and released with the arena.
-// Go GC owns *Arena; dropping the State arena releases every chunk together.
+// Drop returns those chunks to the pools. The arena itself is not reused.
+// The protobuf wire buffer is retained separately and cleared on reset or drop.
 type Arena struct {
 	wire []byte
 
@@ -33,8 +34,9 @@ type Arena struct {
 	payloadChunk int
 	payloadOff   int
 
-	slabs  map[reflect.Type]any
-	resets []func()
+	slabs    map[reflect.Type]any
+	resets   []func()
+	releases []func()
 
 	// heapRefs roots any Go heap object that could not be placed in a chunk.
 	heapRefs []any
@@ -42,6 +44,45 @@ type Arena struct {
 
 func newArena() *Arena {
 	return &Arena{slabs: make(map[reflect.Type]any)}
+}
+
+// payloadPool holds 2^16 byte slabs. Graph slabs are pooled per element type.
+var (
+	payloadPool = sync.Pool{
+		New: func() any {
+			return make([]byte, payloadChunkSize)
+		},
+	}
+	blockPools sync.Map // reflect.Type -> *sync.Pool
+)
+
+func getPayload() []byte {
+	return payloadPool.Get().([]byte)[:payloadChunkSize]
+}
+
+func blockPool[T any]() *sync.Pool {
+	rt := reflect.TypeFor[T]()
+	if p, ok := blockPools.Load(rt); ok {
+		return p.(*sync.Pool)
+	}
+	n := graphLen[T]()
+	p := &sync.Pool{New: func() any {
+		return make([]T, n)
+	}}
+	actual, _ := blockPools.LoadOrStore(rt, p)
+	return actual.(*sync.Pool)
+}
+
+func getBlock[T any]() []T {
+	return blockPool[T]().Get().([]T)
+}
+
+func putBlock[T any](b []T) {
+	if len(b) != graphLen[T]() {
+		return
+	}
+	clear(b)
+	blockPool[T]().Put(b)
 }
 
 func (a *Arena) reset() {
@@ -52,6 +93,30 @@ func (a *Arena) reset() {
 	for _, r := range a.resets {
 		r()
 	}
+}
+
+// release returns this arena's slabs to the pools. The arena is left empty.
+// Graph slabs are returned first: clearing them can trigger GC, which drops
+// anything already sitting in a sync.Pool.
+func (a *Arena) release() {
+	a.wire = nil
+	a.heapRefs = nil
+	rel := a.releases
+	a.releases = nil
+	a.resets = nil
+	a.slabs = nil
+	for _, r := range rel {
+		r()
+	}
+	for _, c := range a.payload {
+		if len(c) == payloadChunkSize {
+			clear(c)
+			payloadPool.Put(c)
+		}
+	}
+	a.payload = nil
+	a.payloadChunk = 0
+	a.payloadOff = 0
 }
 
 func (a *Arena) retainWire(buf []byte) {
@@ -79,7 +144,7 @@ func (a *Arena) allocPayload(n int) []byte {
 			a.payloadOff = 0
 			continue
 		}
-		a.payload = append(a.payload, make([]byte, payloadChunkSize))
+		a.payload = append(a.payload, getPayload())
 		a.payloadChunk = len(a.payload) - 1
 		a.payloadOff = 0
 	}
@@ -105,6 +170,7 @@ func alloc[T any](a *Arena) *T {
 		s = &typedSlab[T]{}
 		a.slabs[rt] = s
 		a.resets = append(a.resets, s.reset)
+		a.releases = append(a.releases, s.release)
 	}
 	return s.next()
 }
@@ -129,15 +195,7 @@ func (s *typedSlab[T]) next() *T {
 }
 
 func (s *typedSlab[T]) grow() {
-	maxN := graphLen[T]()
-	n := 32
-	if len(s.blocks) > 0 {
-		n = min(len(s.blocks[len(s.blocks)-1])*2, maxN)
-		if n <= len(s.blocks[len(s.blocks)-1]) {
-			n = maxN
-		}
-	}
-	s.blocks = append(s.blocks, make([]T, n))
+	s.blocks = append(s.blocks, getBlock[T]())
 	s.b = len(s.blocks) - 1
 	s.i = 0
 }
@@ -157,14 +215,22 @@ func (s *typedSlab[T]) reset() {
 	s.b, s.i = 0, 0
 }
 
+func (s *typedSlab[T]) release() {
+	for _, block := range s.blocks {
+		putBlock(block)
+	}
+	s.blocks = nil
+	s.b, s.i = 0, 0
+}
+
 func graphLen[T any]() int {
 	sz := int(unsafe.Sizeof(*new(T)))
 	if sz < 1 {
 		sz = 1
 	}
 	n := graphChunkBytes / sz
-	if n < 32 {
-		return 32
+	if n < 1 {
+		return 1
 	}
 	return n
 }
@@ -195,11 +261,15 @@ func allocSlice[T any](a *Arena, length, capacity int) []T {
 		s = &sliceSlab[T]{}
 		a.slabs[rt] = s
 		a.resets = append(a.resets, s.reset)
+		a.releases = append(a.releases, s.release)
 	}
 	return s.next(length, capacity)
 }
 
 func (s *sliceSlab[T]) next(length, capacity int) []T {
+	if capacity > graphLen[T]() {
+		return make([]T, length, capacity)
+	}
 	for {
 		cur := s.cur()
 		if s.off+capacity <= len(cur) {
@@ -213,11 +283,7 @@ func (s *sliceSlab[T]) next(length, capacity int) []T {
 			s.off = 0
 			continue
 		}
-		n := max(capacity, 16)
-		if len(cur) > 0 {
-			n = min(max(n, len(cur)*2), max(capacity, graphLen[T]()))
-		}
-		s.blocks = append(s.blocks, make([]T, n))
+		s.blocks = append(s.blocks, getBlock[T]())
 		s.b = len(s.blocks) - 1
 		s.off = 0
 	}
@@ -242,6 +308,14 @@ func (s *sliceSlab[T]) reset() {
 		}
 		clear(block)
 	}
+	s.b, s.off = 0, 0
+}
+
+func (s *sliceSlab[T]) release() {
+	for _, block := range s.blocks {
+		putBlock(block)
+	}
+	s.blocks = nil
 	s.b, s.off = 0, 0
 }
 
