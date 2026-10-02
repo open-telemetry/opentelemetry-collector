@@ -70,10 +70,13 @@ func NewSizer(sizerType SizerType) Sizer {
 	}
 }
 
-// RequestsSizer is a Sizer implementation that returns the size of a queue element as one request.
+// RequestsSizer charges one request, or every child of an atomic request envelope.
 type RequestsSizer struct{}
 
-func (rs RequestsSizer) Sizeof(Request) int64 {
+func (rs RequestsSizer) Sizeof(req Request) int64 {
+	if counted, ok := req.(QueueRequestCount); ok {
+		return counted.QueueRequestsCount()
+	}
 	return 1
 }
 

@@ -65,22 +65,23 @@ type Queue[T any] interface {
 
 // Settings define internal parameters for a new Queue creation.
 type Settings[T request.Request] struct {
-	SizerType        request.SizerType
-	Capacity         int64
-	NumConsumers     int
-	WaitForResult    bool
-	BlockOnOverflow  bool
-	Signal           pipeline.Signal
-	StorageID        *component.ID
-	ReferenceCounter ReferenceCounter[T]
-	Encoding         Encoding[T]
-	ID               component.ID
-	Telemetry        component.TelemetrySettings
+	SizerType         request.SizerType
+	Capacity          int64
+	NumConsumers      int
+	WaitForCompletion bool
+	WaitForResult     bool
+	BlockOnOverflow   bool
+	Signal            pipeline.Signal
+	StorageID         *component.ID
+	ReferenceCounter  ReferenceCounter[T]
+	Encoding          Encoding[T]
+	ID                component.ID
+	Telemetry         component.TelemetrySettings
 }
 
 func NewQueue[T request.Request](set Settings[T], next ConsumeFunc[T]) (Queue[T], error) {
 	q := newBaseQueue(set)
-	oq, err := newObsQueue(set, newAsyncQueue(q, set.NumConsumers, next, set.ReferenceCounter))
+	oq, err := newObsQueue(set, newAsyncQueue(q, set.NumConsumers, next, set.ReferenceCounter, set.WaitForCompletion))
 	if err != nil {
 		return nil, err
 	}

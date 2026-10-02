@@ -76,6 +76,45 @@ func TestQueueBatchStopWhileWaiting(t *testing.T) {
 	require.Zero(t, qb.queue.Size())
 }
 
+func TestAsyncQueueBatchReleasesConsumerBeforeFinalCompletion(t *testing.T) {
+	cfg := newTestConfig()
+	cfg.NumConsumers = 1
+	cfg.Batch = configoptional.Optional[BatchConfig]{}
+	dispatchedItems := make(chan request.Request, 2)
+	complete := make(chan struct{}, 2)
+	qb, err := NewAsyncQueueBatch(newFakeRequestSettings(), cfg, func(_ context.Context, req request.Request) error {
+		dispatchedItems <- req
+		<-complete
+		return nil
+	})
+	require.NoError(t, err)
+	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 1}))
+	require.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 1}))
+
+	receive := func() request.Request {
+		t.Helper()
+		select {
+		case item := <-dispatchedItems:
+			return item
+		case <-time.After(time.Second):
+			t.Fatal("queue did not dispatch the next request while prior completion was pending")
+			return nil
+		}
+	}
+	first := receive()
+	second := receive()
+	assert.NotNil(t, first)
+	assert.NotNil(t, second)
+	assert.EqualValues(t, 2, qb.queue.Size(), "both items retain queue ownership until final completion")
+
+	complete <- struct{}{}
+	assert.Eventually(t, func() bool { return qb.queue.Size() == 1 }, time.Second, time.Millisecond)
+	complete <- struct{}{}
+	require.NoError(t, qb.Shutdown(context.Background()))
+	assert.Zero(t, qb.queue.Size())
+}
+
 func TestQueueBatchDoNotPreserveCancellation(t *testing.T) {
 	sink := requesttest.NewSink()
 	cfg := newTestConfig()

@@ -34,6 +34,41 @@ func TestAsyncMemoryQueue(t *testing.T) {
 	assert.EqualValues(t, 10, consumed.Load())
 }
 
+func TestAsyncMemoryQueueRetainsRequestUntilCompletion(t *testing.T) {
+	set := newSettings(request.SizerTypeItems, 10)
+	rc := set.ReferenceCounter.(*fakeReferenceCounter)
+	doneCh := make(chan Done, 1)
+	ac := newAsyncQueue(newMemoryQueue[intRequest](set), 1,
+		func(_ context.Context, _ intRequest, done Done) {
+			doneCh <- done
+		}, set.ReferenceCounter, true)
+	require.NoError(t, ac.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, ac.Offer(context.Background(), 1))
+
+	var done Done
+	select {
+	case done = <-doneCh:
+	case <-time.After(time.Second):
+		t.Fatal("queue consumer did not dispatch the item")
+	}
+
+	rc.mu.Lock()
+	refCount := rc.ref
+	rc.mu.Unlock()
+	require.EqualValues(t, 1, refCount, "request must stay referenced while async completion is pending")
+	require.EqualValues(t, 1, ac.Size(), "queue ownership must remain until async completion")
+
+	done.OnDone(nil)
+	done.OnDone(nil) // duplicate completion must not double-unref or corrupt queue state
+
+	rc.mu.Lock()
+	refCount = rc.ref
+	rc.mu.Unlock()
+	require.Zero(t, refCount)
+	require.Zero(t, ac.Size())
+	require.NoError(t, ac.Shutdown(context.Background()))
+}
+
 func TestAsyncMemoryQueueBlocking(t *testing.T) {
 	consumed := &atomic.Int64{}
 	set := newSettings(request.SizerTypeItems, 100)

@@ -5,9 +5,10 @@ package opentelemetry.collector.exporter.exporterhelper.internal.queue;
 option go_package = "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue";
 
 // PersistentMetadata holds all persistent metadata for the queue.
-// The items and bytes sizes are recorded explicitly,
-// the requests size can be calculated as (write_index - read_index + len(currently_dispatched_items)).
+// Admission sizes include atomic envelopes charged for each child request.
 message PersistentMetadata{
+  // Current request admission charge, including all children of an envelope.
+  sfixed64 requests_size = 6;
   // Current total items size of the queue.
   sfixed64 items_size = 1;
 

@@ -79,6 +79,81 @@ func NewQueueBatch(
 	return &QueueBatch{queue: q, batcher: b}, nil
 }
 
+// NewAsyncQueueBatch builds the normal bounded queue without batching and
+// dispatches requests through an asynchronous completion callback.
+func NewAsyncQueueBatch(
+	set AllSettings[request.Request],
+	cfg Config,
+	next sender.SendFunc[request.Request],
+) (*QueueBatch, error) {
+	if next == nil {
+		return nil, errors.New("async queue batch: nil send function")
+	}
+	if cfg.Batch.HasValue() {
+		return nil, errors.New("async queue batch: batching is not supported for ordered stream requests")
+	}
+
+	// Keep one FIFO queue reader. Ordered stream scheduling owns the configured
+	// cross-partition write concurrency after the reader has staged each item.
+	cfg.NumConsumers = 1
+	var checkpointStore request.QueueCheckpointStore
+	q, err := queue.NewQueue(queue.Settings[request.Request]{
+		SizerType:         cfg.Sizer,
+		Capacity:          cfg.QueueSize,
+		NumConsumers:      cfg.NumConsumers,
+		WaitForCompletion: true,
+		WaitForResult:     cfg.WaitForResult,
+		BlockOnOverflow:   cfg.BlockOnOverflow,
+		Signal:            set.Signal,
+		StorageID:         cfg.StorageID,
+		ReferenceCounter:  set.ReferenceCounter,
+		Encoding:          set.Encoding,
+		ID:                set.ID,
+		Telemetry:         set.Telemetry,
+	}, func(ctx context.Context, req request.Request, done queue.Done) {
+		if requestWithCheckpoint, ok := req.(request.QueueCheckpointStoreSetter); ok {
+			requestWithCheckpoint.SetQueueCheckpointStore(checkpointStore)
+		}
+		deferred := false
+		_, hasDeferredCompletion := req.(request.DeferredQueueCompletion)
+		if requestWithDeferredCompletion, ok := req.(request.DeferredQueueCompletion); ok {
+			deferred = requestWithDeferredCompletion.SetQueueCompletion(done.OnDone)
+		}
+		if hasDeferredCompletion {
+			// Stage deferred requests synchronously on the single queue reader.
+			// Ordered stream next only admits the group to its coordinator; that
+			// coordinator starts independent partition writes asynchronously.
+			// Launching next in a goroutine here lets later queue items race ahead
+			// and reverses same-partition streams.
+			err := next(ctx, req)
+			if !deferred || err != nil {
+				done.OnDone(err)
+			}
+			return
+		}
+		// Preserve the existing asynchronous queue behavior for ordinary
+		// requests, whose next sender can block on export or retry.
+		go func() { done.OnDone(next(ctx, req)) }()
+	})
+	if err != nil {
+		return nil, err
+	}
+	// Queue wrappers expose checkpoint methods even around a memory queue.
+	// Only attach a store when persistence was configured; otherwise each ACK
+	// serializes every open partition's tails for a save that is a no-op.
+	if cfg.StorageID != nil {
+		checkpointStore, _ = q.(request.QueueCheckpointStore)
+	}
+	return &QueueBatch{queue: q, batcher: &asyncBatcher{}}, nil
+}
+
+type asyncBatcher struct {
+	component.StartFunc
+	component.ShutdownFunc
+}
+
+func (*asyncBatcher) Consume(context.Context, request.Request, queue.Done) {}
+
 // Start is invoked during service startup.
 func (qs *QueueBatch) Start(ctx context.Context, host component.Host) error {
 	if err := qs.batcher.Start(ctx, host); err != nil {

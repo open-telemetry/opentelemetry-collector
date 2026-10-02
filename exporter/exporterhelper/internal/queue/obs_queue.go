@@ -5,6 +5,7 @@ package queue // import "go.opentelemetry.io/collector/exporter/exporterhelper/i
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -92,6 +93,22 @@ func (or *obsQueue[T]) Shutdown(ctx context.Context) error {
 	return or.Queue.Shutdown(ctx)
 }
 
+func (or *obsQueue[T]) LoadCheckpoint(ctx context.Context, key string) ([]byte, bool, error) {
+	store, ok := or.Queue.(request.QueueCheckpointStore)
+	if !ok {
+		return nil, false, nil
+	}
+	return store.LoadCheckpoint(ctx, key)
+}
+
+func (or *obsQueue[T]) SaveCheckpoint(ctx context.Context, key string, value []byte) error {
+	store, ok := or.Queue.(request.QueueCheckpointStore)
+	if !ok {
+		return nil
+	}
+	return store.SaveCheckpoint(ctx, key, value)
+}
+
 func (or *obsQueue[T]) Offer(ctx context.Context, req T) error {
 	// Have to read the number of items before sending the request since the request can
 	// be modified by the downstream components like the batcher.
@@ -111,4 +128,21 @@ func (or *obsQueue[T]) Offer(ctx context.Context, req T) error {
 		or.enqueueFailedInst.Add(ctx, int64(numItems), or.metricAttr)
 	}
 	return err
+}
+
+func (or *obsQueue[T]) SaveCheckpointAndItems(ctx context.Context, key string, value []byte, updates []request.QueueItemUpdate) error {
+	if store, ok := or.Queue.(request.QueueCheckpointTransaction); ok {
+		return store.SaveCheckpointAndItems(ctx, key, value, updates)
+	}
+	if len(updates) > 0 {
+		return errors.New("queue cannot atomically checkpoint item progress")
+	}
+	return or.SaveCheckpoint(ctx, key, value)
+}
+
+func (or *obsQueue[T]) LoadQueueItem(ctx context.Context, token uint64) ([]byte, error) {
+	if reader, ok := or.Queue.(request.QueueItemReader); ok {
+		return reader.LoadQueueItem(ctx, token)
+	}
+	return nil, errors.New("queue cannot refresh a durable item")
 }
