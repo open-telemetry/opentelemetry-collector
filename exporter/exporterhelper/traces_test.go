@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sendertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/storagetest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	queuebatchtelemetry "go.opentelemetry.io/collector/internal/telemetry/queuebatch"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
@@ -77,6 +78,24 @@ func TestTraces_Default(t *testing.T) {
 	assert.NoError(t, te.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, te.ConsumeTraces(context.Background(), td))
 	assert.NoError(t, te.Shutdown(context.Background()))
+}
+
+func TestTraces_WithObsMetrics(t *testing.T) {
+	shutdowns := 0
+	te, err := NewTraces(
+		context.Background(),
+		exportertest.NewNopSettings(exportertest.NopType),
+		&fakeTracesConfig,
+		newTraceDataPusher(nil),
+		WithObsMetrics(queuebatchtelemetry.ObsMetrics{
+			ShutdownFunc: func() { shutdowns++ },
+		}),
+	)
+	require.NoError(t, err)
+
+	require.NoError(t, te.Shutdown(context.Background()))
+	require.NoError(t, te.Shutdown(context.Background()))
+	require.Equal(t, 1, shutdowns)
 }
 
 func TestTraces_WithCapabilities(t *testing.T) {
