@@ -1,0 +1,10 @@
+change_type: enhancement
+component: pkg/pprofile
+note: Implement Profiles development-version metadata in the OTLP receiver and exporters.
+issues: [16009]
+subtext: |
+  The receiver rejects malformed, repeated, or unsupported versions before decoding.
+  OTLP exporters send the version associated with their compiled-in Profiles schema.
+  The version is not configurable, and existing clients without metadata identify
+  the initial development version.
+change_logs: [user, api]

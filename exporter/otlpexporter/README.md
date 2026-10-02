@@ -56,6 +56,17 @@ exporters:
     compression: none
 ```
 
+## Profiles Development Version
+
+The Profiles exporter sends exactly one `otlp-profiles-development-version`
+metadata value, using
+[`pprofileotlp.DevelopmentVersion`](../../pdata/pprofile/pprofileotlp/version.go)
+to identify its compiled-in schema. Any configured value for this metadata key
+is overridden. The exporter does not forward incoming version metadata or
+negotiate a different version.
+See the [receiver documentation](../../receiver/otlpreceiver/README.md#profiles-development-version)
+for the proposed protocol and compatibility considerations.
+
 ## Advanced Configuration
 
 Several helper files are leveraged to provide additional capabilities automatically:

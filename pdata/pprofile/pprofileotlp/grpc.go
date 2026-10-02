@@ -8,6 +8,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/pdata/internal"
@@ -40,6 +41,14 @@ type grpcClient struct {
 
 // Export implements the Client interface.
 func (c *grpcClient) Export(ctx context.Context, request ExportRequest, opts ...grpc.CallOption) (ExportResponse, error) {
+	// FromOutgoingContext returns a copy. Replace any supplied version rather
+	// than appending: the metadata must identify the schema we actually encode.
+	md, _ := metadata.FromOutgoingContext(ctx)
+	if md == nil {
+		md = metadata.MD{}
+	}
+	md.Set(DevelopmentVersionHeader, DevelopmentVersion)
+	ctx = metadata.NewOutgoingContext(ctx, md)
 	rsp, err := c.rawClient.Export(ctx, request.orig, opts...)
 	if err != nil {
 		return ExportResponse{}, err

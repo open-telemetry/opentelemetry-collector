@@ -41,6 +41,27 @@ The following settings are configurable:
   [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks)
   to understand how to set the endpoint in different environments.
 
+## Profiles Development Version
+
+This implements the development-version mechanism proposed in
+[opentelemetry-proto#857](https://github.com/open-telemetry/opentelemetry-proto/pull/857).
+The Profiles receiver supports only the development version corresponding to
+its compiled-in schema, exposed as
+[`pprofileotlp.DevelopmentVersion`](../../pdata/pprofile/pprofileotlp/version.go).
+It is not configurable.
+
+Missing version metadata identifies the initial development version. Malformed,
+repeated, or unsupported `otlp-profiles-development-version` gRPC metadata or
+`OTLP-Profiles-Development-Version` HTTP headers are rejected before decoding,
+with gRPC `INVALID_ARGUMENT` or HTTP `400 Bad Request` respectively.
+
+The Collector decodes and processes incoming data, then serializes new export
+requests. Its OTLP exporters set the version for their own schema; the incoming
+version metadata does not need to be preserved through the pipeline. There is
+no version negotiation or conversion between development versions. When a
+future build adopts a new development version, senders and receivers must use
+compatible schemas; a newer receiver will not automatically accept older versions.
+
 ## Advanced Configuration
 
 Several helper files are leveraged to provide additional capabilities automatically:
