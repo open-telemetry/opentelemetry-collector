@@ -23,6 +23,7 @@ var (
 	errNotHTTPClient      = errors.New("requested extension is not an HTTP client middleware")
 	errNotGRPCClient      = errors.New("requested extension is not a gRPC client middleware")
 	errNotDialer          = errors.New("requested extension is not a dialer")
+	errNotListener        = errors.New("requested extension is not a listener")
 )
 
 // GetHTTPClientRoundTripper attempts to select the appropriate
@@ -97,5 +98,23 @@ func (m Config) GetDialer(ctx context.Context, extensions map[component.ID]compo
 		return nil, errNotDialer
 	}
 
+	return nil, fmt.Errorf("failed to resolve middleware %q: %w", m.ID, errMiddlewareNotFound)
+}
+
+// GetListener resolves a listener extension and returns its listen function.
+func (m Config) GetListener(ctx context.Context, extensions map[component.ID]component.Component) (extensionmiddleware.ListenContextFunc, error) {
+	if ext, found := extensions[m.ID]; found {
+		if listener, ok := ext.(extensionmiddleware.Listener); ok {
+			listen, err := listener.GetListenContext(ctx)
+			if err != nil {
+				return nil, err
+			}
+			if listen == nil {
+				return nil, errors.New("listener extension returned a nil listen function")
+			}
+			return listen, nil
+		}
+		return nil, errNotListener
+	}
 	return nil, fmt.Errorf("failed to resolve middleware %q: %w", m.ID, errMiddlewareNotFound)
 }

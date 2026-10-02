@@ -146,6 +146,10 @@ exported_configs:
         description: Anchor for all the settings related to keepalive.
         optional: true
         $ref: keepalive_server_config
+      listener:
+        description: Selects a middleware extension that creates the network listener.
+        optional: true
+        $ref: /config/configmiddleware.config
       max_concurrent_streams:
         description: |
           Sets the limit on the number of concurrent streams to each ServerTransport. 

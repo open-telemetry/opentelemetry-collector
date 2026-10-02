@@ -6,6 +6,7 @@ package extensionmiddleware
 import (
 	"context"
 	"errors"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,6 +14,28 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 )
+
+func TestGetListenerFunc(t *testing.T) {
+	ctx := context.Background()
+	var empty GetListenerFunc
+	listen, err := empty.GetListenContext(ctx)
+	require.NoError(t, err)
+	require.Nil(t, listen)
+
+	expected := func(context.Context, string, string) (net.Listener, error) { return nil, nil }
+	listen, err = GetListenerFunc(func(context.Context) (ListenContextFunc, error) {
+		return expected, nil
+	}).GetListenContext(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, listen)
+
+	wantErr := errors.New("listener failure")
+	listen, err = GetListenerFunc(func(context.Context) (ListenContextFunc, error) {
+		return nil, wantErr
+	}).GetListenContext(ctx)
+	require.ErrorIs(t, err, wantErr)
+	require.Nil(t, listen)
+}
 
 func TestGetHTTPHandlerFunc(t *testing.T) {
 	testctx := context.Background()

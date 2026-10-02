@@ -390,6 +390,16 @@
           "description": "Anchor for all the settings related to keepalive.",
           "default": {}
         },
+        "listener": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Specifies the name of the extension to use."
+            }
+          },
+          "description": "Selects a middleware extension that creates the network listener."
+        },
         "max_concurrent_streams": {
           "type": "integer",
           "description": "Sets the limit on the number of concurrent streams to each ServerTransport. \nIt has effect only for streaming RPCs.\n"

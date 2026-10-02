@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 )
 
 const defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
@@ -51,6 +52,9 @@ type ServerConfig struct {
 
 	// Auth for this receiver
 	Auth configoptional.Optional[AuthConfig] `mapstructure:"auth,omitempty"`
+
+	// Listener selects an extension that creates the network listener.
+	Listener configoptional.Optional[configmiddleware.Config] `mapstructure:"listener,omitempty"`
 
 	// MaxRequestBodySize sets the maximum request body size in bytes. Default: 20MiB.
 	MaxRequestBodySize int64 `mapstructure:"max_request_body_size,omitempty"`
@@ -250,17 +254,36 @@ type AuthConfig struct {
 	_ struct{}
 }
 
-// ToListener creates a net.Listener.
-func (sc *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
-	listener, err := sc.NetAddr.Listen(ctx)
+// ToListener creates a net.Listener. Pass the host extensions when Listener is configured.
+func (sc *ServerConfig) ToListener(ctx context.Context, extensions ...map[component.ID]component.Component) (net.Listener, error) {
+	var listener net.Listener
+	var err error
+	if sc.Listener.HasValue() {
+		var available map[component.ID]component.Component
+		if len(extensions) > 0 {
+			available = extensions[0]
+		}
+		var listen extensionmiddleware.ListenContextFunc
+		listen, err = sc.Listener.Get().GetListener(ctx, available)
+		if err != nil {
+			return nil, err
+		}
+		listener, err = listen(ctx, string(sc.NetAddr.Transport), sc.NetAddr.Endpoint)
+	} else {
+		listener, err = sc.NetAddr.Listen(ctx)
+	}
 	if err != nil {
 		return nil, err
+	}
+	if listener == nil {
+		return nil, errors.New("listener extension returned a nil listener")
 	}
 
 	if sc.TLS.HasValue() {
 		var tlsCfg *tls.Config
 		tlsCfg, err = sc.TLS.Get().LoadTLSConfig(ctx)
 		if err != nil {
+			_ = listener.Close()
 			return nil, err
 		}
 		tlsCfg.NextProtos = []string{http2.NextProtoTLS, "http/1.1"}

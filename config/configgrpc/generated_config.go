@@ -195,6 +195,9 @@ type ServerConfig struct {
 	// Keepalive anchor for all the settings related to keepalive.
 	Keepalive configoptional.Optional[KeepaliveServerConfig] `mapstructure:"keepalive,omitempty"`
 
+	// Listener selects a middleware extension that creates the network listener.
+	Listener configoptional.Optional[configmiddleware.Config] `mapstructure:"listener,omitempty"`
+
 	// MaxConcurrentStreams sets the limit on the number of concurrent streams to each ServerTransport.
 	// It has effect only for streaming RPCs.
 	MaxConcurrentStreams uint32 `mapstructure:"max_concurrent_streams,omitempty"`
@@ -247,6 +250,7 @@ func NewDefaultServerConfig() ServerConfig {
 		NetAddr:   addrConfig,
 		Auth:      configoptional.None[configauth.Config](),
 		Keepalive: configoptional.Some(NewDefaultKeepaliveServerConfig()),
+		Listener:  configoptional.None[configmiddleware.Config](),
 		TLS:       configoptional.None[configtls.ServerConfig](),
 	}
 }

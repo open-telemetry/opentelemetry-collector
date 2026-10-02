@@ -5,6 +5,7 @@ package configmiddleware
 
 import (
 	"context"
+	"errors"
 	"net"
 	"testing"
 
@@ -317,4 +318,36 @@ func TestConfig_GetDialer(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConfig_GetListener(t *testing.T) {
+	ctx := context.Background()
+	config := Config{ID: testID}
+
+	_, err := config.GetListener(ctx, nil)
+	require.ErrorIs(t, err, errMiddlewareNotFound)
+
+	_, err = config.GetListener(ctx, map[component.ID]component.Component{testID: mockWrongType{}})
+	require.ErrorIs(t, err, errNotListener)
+
+	wantErr := errors.New("listener failure")
+	listener := func(fn extensionmiddleware.GetListenerFunc) map[component.ID]component.Component {
+		return map[component.ID]component.Component{testID: struct {
+			extension.Extension
+			extensionmiddleware.GetListenerFunc
+		}{extensionmiddlewaretest.NewNop(), fn}}
+	}
+	_, err = config.GetListener(ctx, listener(func(context.Context) (extensionmiddleware.ListenContextFunc, error) {
+		return nil, wantErr
+	}))
+	require.ErrorIs(t, err, wantErr)
+
+	_, err = config.GetListener(ctx, listener(nil))
+	require.ErrorContains(t, err, "nil listen function")
+
+	listen, err := config.GetListener(ctx, listener(func(context.Context) (extensionmiddleware.ListenContextFunc, error) {
+		return func(context.Context, string, string) (net.Listener, error) { return nil, nil }, nil
+	}))
+	require.NoError(t, err)
+	require.NotNil(t, listen)
 }

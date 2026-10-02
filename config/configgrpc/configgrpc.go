@@ -34,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/zstd"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 )
 
 // DefaultBalancerName is the name of the default load balancer.
@@ -329,6 +330,31 @@ func WithGrpcServerOption(opt grpc.ServerOption) ToServerOption {
 	return grpcServerOptionWrapper{opt: opt}
 }
 func (grpcServerOptionWrapper) isToServerOption() {}
+
+// ToListener creates a net.Listener for the gRPC server.
+// Pass the host extensions when Listener is configured.
+func (sc *ServerConfig) ToListener(ctx context.Context, extensions ...map[component.ID]component.Component) (net.Listener, error) {
+	if !sc.Listener.HasValue() {
+		return sc.NetAddr.Listen(ctx)
+	}
+	var available map[component.ID]component.Component
+	if len(extensions) > 0 {
+		available = extensions[0]
+	}
+	var listen extensionmiddleware.ListenContextFunc
+	listen, err := sc.Listener.Get().GetListener(ctx, available)
+	if err != nil {
+		return nil, err
+	}
+	listener, err := listen(ctx, string(sc.NetAddr.Transport), sc.NetAddr.Endpoint)
+	if err != nil {
+		return nil, err
+	}
+	if listener == nil {
+		return nil, errors.New("listener extension returned a nil listener")
+	}
+	return listener, nil
+}
 
 // ToServer returns a [grpc.Server] for the configuration.
 //

@@ -1,0 +1,6 @@
+change_type: enhancement
+component: pkg/config/configmiddleware
+note: allow listener middleware extensions to create HTTP and gRPC server listeners
+issues: [16029]
+subtext:
+change_logs: []
