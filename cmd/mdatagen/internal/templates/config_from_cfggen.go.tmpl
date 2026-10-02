@@ -24,11 +24,12 @@ import (
             {{ $prop.GoStruct.FieldName | publicVar }} {{ $prop.Ref | publicType }} `mapstructure:",squash"`
         {{- end }}
     {{ end }}
+    {{- $parent := .data }}
     {{- range $propName, $prop := .data.Properties | namedProps }}
         {{- if $prop.Description }}
             {{ printf "%s %s" ($prop.GoStruct.FieldName | publicVar) ($prop.Description | uncapitalize) | goComment }}
         {{- end }}
-        {{ $prop.GoStruct.FieldName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}{{ if shouldOmitEmpty . $propName $prop }},omitempty{{ end }}"`
+        {{ $prop.GoStruct.FieldName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}{{ if shouldOmitEmpty $parent $propName $prop }},omitempty{{ end }}"`
     {{ end }}
 
     {{- if .data.GoStruct.PrivateFields }}
