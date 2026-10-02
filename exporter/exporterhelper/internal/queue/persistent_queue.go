@@ -91,6 +91,13 @@ type persistentQueue[T request.Request] struct {
 	stopped         bool
 
 	blockOnOverflow bool
+
+	// fastTrack enables in-memory handoff to idle consumers, bypassing disk I/O.
+	fastTrack bool
+	// idleConsumers tracks how many consumer goroutines are waiting on hasMoreElements.
+	idleConsumers int
+	// fastTrackItems is an in-memory side-channel for fast-tracked requests.
+	fastTrackItems *linkedQueue[T]
 }
 
 // newPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
@@ -107,9 +114,13 @@ func newPersistentQueue[T request.Request](set Settings[T]) readableQueue[T] {
 		id:              set.ID,
 		signal:          set.Signal,
 		blockOnOverflow: set.BlockOnOverflow,
+		fastTrack:       set.FastTrack,
 	}
 	pq.hasMoreElements = sync.NewCond(&pq.mu)
 	pq.hasMoreSpace = newCond(&pq.mu)
+	if pq.fastTrack {
+		pq.fastTrackItems = &linkedQueue[T]{}
+	}
 	return pq
 }
 
@@ -271,22 +282,50 @@ func (pq *persistentQueue[T]) unrefClient(ctx context.Context) error {
 // It returns ErrQueueIsFull if no space is currently available.
 func (pq *persistentQueue[T]) Offer(ctx context.Context, req T) error {
 	pq.mu.Lock()
-	defer pq.mu.Unlock()
 
 	size := pq.activeSizer.Sizeof(req)
 	for pq.internalSize()+size > pq.capacity {
 		if !pq.blockOnOverflow {
+			pq.mu.Unlock()
 			return ErrQueueIsFull
 		}
 		if err := pq.hasMoreSpace.Wait(ctx); err != nil {
+			pq.mu.Unlock()
 			return err
 		}
 	}
 
-	pq.metadata.ItemsSize += pq.itemsSizer.Sizeof(req)
-	pq.metadata.BytesSize += pq.bytesSizer.Sizeof(req)
+	itemsSize := pq.itemsSizer.Sizeof(req)
+	bytesSize := pq.bytesSizer.Sizeof(req)
+	pq.metadata.ItemsSize += itemsSize
+	pq.metadata.BytesSize += bytesSize
 
-	return pq.putInternal(ctx, req)
+	// Fast track: if a consumer is idle, hand off in-memory to skip disk I/O.
+	if pq.fastTrack && pq.idleConsumers > 0 {
+		done := newFastTrackDone()
+		pq.fastTrackItems.push(ctx, req, done)
+		pq.hasMoreElements.Signal()
+		pq.mu.Unlock()
+		// Block until consumer finishes (wait-for-result semantics for durability).
+		// issue: https://github.com/open-telemetry/opentelemetry-collector/issues/13355
+		doneErr := <-done.ch
+		pq.mu.Lock()
+		pq.metadata.BytesSize -= bytesSize
+		if pq.metadata.BytesSize < 0 {
+			pq.metadata.BytesSize = 0
+		}
+		pq.metadata.ItemsSize -= itemsSize
+		if pq.metadata.ItemsSize < 0 {
+			pq.metadata.ItemsSize = 0
+		}
+		pq.hasMoreSpace.Signal()
+		pq.mu.Unlock()
+		return doneErr
+	}
+
+	err := pq.putInternal(ctx, req)
+	pq.mu.Unlock()
+	return err
 }
 
 // putInternal adds the request to the storage without updating items/bytes sizes.
@@ -328,6 +367,12 @@ func (pq *persistentQueue[T]) Read(ctx context.Context) (context.Context, T, Don
 			return context.Background(), req, nil, false
 		}
 
+		// just check the fast-track items first
+		if pq.fastTrackItems != nil && pq.fastTrackItems.hasElements() {
+			reqCtx, req, done := pq.fastTrackItems.pop()
+			return reqCtx, req, done, true
+		}
+
 		// Read until either a successful retrieved element or no more elements in the storage.
 		for pq.metadata.ReadIndex != pq.metadata.WriteIndex {
 			index, req, reqCtx, consumed := pq.getNextItem(ctx)
@@ -347,7 +392,9 @@ func (pq *persistentQueue[T]) Read(ctx context.Context) (context.Context, T, Don
 
 		// TODO: Need to change the Queue interface to return an error to allow distinguish between shutdown and context canceled.
 		//  Until then use the sync.Cond.
+		pq.idleConsumers++
 		pq.hasMoreElements.Wait()
+		pq.idleConsumers--
 	}
 }
 
@@ -624,4 +671,20 @@ func (id *indexDone) reset(index uint64, itemsSize, bytesSize int64, queue inter
 
 func (id *indexDone) OnDone(err error) {
 	id.queue.onDone(id.index, id.itemsSize, id.bytesSize, err)
+}
+
+// fastTrackDone is the Done callback for fast-tracked requests that bypassed disk I/O.
+// issue: https://github.com/open-telemetry/opentelemetry-collector/issues/13355
+type fastTrackDone struct {
+	ch chan error
+}
+
+func newFastTrackDone() *fastTrackDone {
+	return &fastTrackDone{
+		ch: make(chan error, 1),
+	}
+}
+
+func (fd *fastTrackDone) OnDone(err error) {
+	fd.ch <- err
 }
