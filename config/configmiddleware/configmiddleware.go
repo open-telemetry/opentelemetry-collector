@@ -22,6 +22,8 @@ var (
 	errNotGRPCServer      = errors.New("requested extension is not a gRPC server middleware")
 	errNotHTTPClient      = errors.New("requested extension is not an HTTP client middleware")
 	errNotGRPCClient      = errors.New("requested extension is not a gRPC client middleware")
+	errNotDialer          = errors.New("requested extension is not a dialer")
+	errNotListener        = errors.New("requested extension is not a listener")
 )
 
 // GetHTTPClientRoundTripper attempts to select the appropriate
@@ -81,5 +83,38 @@ func (m Config) GetGRPCServerOptions(ctx context.Context, extensions map[compone
 		return nil, errNotGRPCServer
 	}
 
+	return nil, fmt.Errorf("failed to resolve middleware %q: %w", m.ID, errMiddlewareNotFound)
+}
+
+// GetDialer attempts to select the appropriate
+// extensionmiddleware.Dialer from the map of extensions, and
+// returns the DialContext function. If a middleware is not found, an
+// error is returned. This should only be used by HTTP and gRPC clients.
+func (m Config) GetDialer(ctx context.Context, extensions map[component.ID]component.Component) (extensionmiddleware.DialContextFunc, error) {
+	if ext, found := extensions[m.ID]; found {
+		if dialer, ok := ext.(extensionmiddleware.Dialer); ok {
+			return dialer.GetDialContext(ctx)
+		}
+		return nil, errNotDialer
+	}
+
+	return nil, fmt.Errorf("failed to resolve middleware %q: %w", m.ID, errMiddlewareNotFound)
+}
+
+// GetListener resolves a listener extension and returns its listen function.
+func (m Config) GetListener(ctx context.Context, extensions map[component.ID]component.Component) (extensionmiddleware.ListenContextFunc, error) {
+	if ext, found := extensions[m.ID]; found {
+		if listener, ok := ext.(extensionmiddleware.Listener); ok {
+			listen, err := listener.GetListenContext(ctx)
+			if err != nil {
+				return nil, err
+			}
+			if listen == nil {
+				return nil, errors.New("listener extension returned a nil listen function")
+			}
+			return listen, nil
+		}
+		return nil, errNotListener
+	}
 	return nil, fmt.Errorf("failed to resolve middleware %q: %w", m.ID, errMiddlewareNotFound)
 }
