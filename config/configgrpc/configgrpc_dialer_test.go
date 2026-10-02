@@ -23,13 +23,13 @@ import (
 	"go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest"
 )
 
-func newTestDialerExtension(dial func(ctx context.Context, network, address string) (net.Conn, error)) component.Component {
+func newTestDialerExtension(dial extensionmiddleware.DialContextFunc) component.Component {
 	return struct {
 		extension.Extension
 		extensionmiddleware.GetDialerFunc
 	}{
 		Extension: extensionmiddlewaretest.NewNop(),
-		GetDialerFunc: func(context.Context) (func(ctx context.Context, network, address string) (net.Conn, error), error) {
+		GetDialerFunc: func(context.Context) (extensionmiddleware.DialContextFunc, error) {
 			return dial, nil
 		},
 	}
@@ -87,7 +87,7 @@ func TestToClientConnCustomDialerErrors(t *testing.T) {
 					extensionmiddleware.GetDialerFunc
 				}{
 					Extension: extensionmiddlewaretest.NewNop(),
-					GetDialerFunc: func(context.Context) (func(ctx context.Context, network, address string) (net.Conn, error), error) {
+					GetDialerFunc: func(context.Context) (extensionmiddleware.DialContextFunc, error) {
 						return nil, errors.New("dialer error")
 					},
 				},
