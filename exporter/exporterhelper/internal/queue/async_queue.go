@@ -5,13 +5,11 @@ package queue // import "go.opentelemetry.io/collector/exporter/exporterhelper/i
 
 import (
 	"context"
-	"errors"
 	"sync"
 
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
 type asyncQueue[T any] struct {
@@ -80,32 +78,6 @@ func (qc *asyncQueue[T]) Offer(ctx context.Context, req T) error {
 	return nil
 }
 
-func (qc *asyncQueue[T]) LoadCheckpoint(ctx context.Context, key string) ([]byte, bool, error) {
-	store, ok := qc.readableQueue.(request.QueueCheckpointStore)
-	if !ok {
-		return nil, false, nil
-	}
-	return store.LoadCheckpoint(ctx, key)
-}
-
-func (qc *asyncQueue[T]) SaveCheckpoint(ctx context.Context, key string, value []byte) error {
-	store, ok := qc.readableQueue.(request.QueueCheckpointStore)
-	if !ok {
-		return nil
-	}
-	return store.SaveCheckpoint(ctx, key, value)
-}
-
-func (qc *asyncQueue[T]) SaveCheckpointAndItems(ctx context.Context, key string, value []byte, updates []request.QueueItemUpdate) error {
-	if store, ok := qc.readableQueue.(request.QueueCheckpointTransaction); ok {
-		return store.SaveCheckpointAndItems(ctx, key, value, updates)
-	}
-	if len(updates) > 0 {
-		return errors.New("queue cannot atomically checkpoint item progress")
-	}
-	return qc.SaveCheckpoint(ctx, key, value)
-}
-
 // Shutdown ensures that queue and all consumers are stopped.
 func (qc *asyncQueue[T]) Shutdown(ctx context.Context) error {
 	err := qc.readableQueue.Shutdown(ctx)
@@ -136,11 +108,4 @@ func (d *asyncDone[T]) OnDone(err error) {
 		}
 		d.Done.OnDone(err)
 	})
-}
-
-func (qc *asyncQueue[T]) LoadQueueItem(ctx context.Context, token uint64) ([]byte, error) {
-	if reader, ok := qc.readableQueue.(request.QueueItemReader); ok {
-		return reader.LoadQueueItem(ctx, token)
-	}
-	return nil, errors.New("queue cannot refresh a durable item")
 }

@@ -51,20 +51,6 @@ type DeferredQueueCompletion interface {
 	SetQueueCompletion(func(error)) bool
 }
 
-// QueueCheckpointStore exposes small exporter-owned checkpoints through the
-// configured persistent queue's storage namespace. Memory queues do not
-// provide this interface.
-type QueueCheckpointStore interface {
-	LoadCheckpoint(context.Context, string) ([]byte, bool, error)
-	SaveCheckpoint(context.Context, string, []byte) error
-}
-
-// QueueCheckpointStoreSetter is implemented by requests that need a durable
-// checkpoint alongside their persistent queue entries.
-type QueueCheckpointStoreSetter interface {
-	SetQueueCheckpointStore(QueueCheckpointStore)
-}
-
 type RequestConverterFunc[T any] func(context.Context, T) (Request, error)
 
 // RequestConsumeFunc processes the request. After the function returns, the request is no longer accessible,
@@ -73,23 +59,3 @@ type RequestConsumeFunc = sender.SendFunc[Request]
 
 // QueueRequestCount lets an atomic envelope charge admission for every child.
 type QueueRequestCount interface{ QueueRequestsCount() int64 }
-
-// QueueItemTokenSetter associates a request with its durable queue entry.
-type QueueItemTokenSetter interface{ SetQueueItemToken(uint64) }
-
-// QueueItemUpdate replaces a queue envelope without changing its admission charge.
-type QueueItemUpdate struct {
-	Token uint64
-	Value []byte
-}
-
-// QueueCheckpointTransaction persists child retirement and recovery state together.
-// The queue must atomically publish all updates or leave all previous values intact.
-type QueueCheckpointTransaction interface {
-	SaveCheckpointAndItems(context.Context, string, []byte, []QueueItemUpdate) error
-}
-
-// QueueItemReader refreshes a request decoded before checkpoint recovery ran.
-type QueueItemReader interface {
-	LoadQueueItem(context.Context, uint64) ([]byte, error)
-}

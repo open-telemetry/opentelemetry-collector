@@ -61,10 +61,10 @@ type Completion interface {
 
 // OrderedStreamSettings bounds the in-memory coordinator state used by an
 // ordered stream exporter. These limits are independent of the helper queue's
-// admission and persistence capacity.
+// admission capacity.
 type OrderedStreamSettings struct {
 	// MaxConcurrentWrites bounds concurrently dispatched partitions. The helper
-	// reads its persistent queue with one worker to preserve queue insertion
+	// reads its queue with one worker to preserve queue insertion
 	// order, then uses this limit for independent partition writes.
 	MaxConcurrentWrites  int
 	MaxStaged            int

@@ -8,7 +8,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"strconv"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -27,37 +26,6 @@ type orderedDispatchResult struct {
 }
 
 var orderedTestQueueID atomic.Uint64
-
-type orderedTestCheckpointStore struct {
-	mu       sync.Mutex
-	data     map[string][]byte
-	loadErr  error
-	failSave int
-}
-
-func (s *orderedTestCheckpointStore) LoadCheckpoint(_ context.Context, key string) ([]byte, bool, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.loadErr != nil {
-		return nil, false, s.loadErr
-	}
-	value, ok := s.data[key]
-	return append([]byte(nil), value...), ok, nil
-}
-
-func (s *orderedTestCheckpointStore) SaveCheckpoint(_ context.Context, key string, value []byte) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.failSave > 0 {
-		s.failSave--
-		return errors.New("temporary checkpoint storage failure")
-	}
-	if s.data == nil {
-		s.data = make(map[string][]byte)
-	}
-	s.data[key] = append([]byte(nil), value...)
-	return nil
-}
 
 func orderedTestLogs() plog.Logs {
 	ld := plog.NewLogs()
@@ -315,149 +283,7 @@ func TestOrderedCoordinatorBoundsAggregateRecoveryTails(t *testing.T) {
 	}
 }
 
-func TestOrderedCoordinatorKeepsQueueItemUntilTailCheckpointIsDurable(t *testing.T) {
-	dispatched := make(chan orderedDispatchResult, 1)
-	coordinator := newOrderedLogsCoordinator(orderedTestSettings(), func(_ context.Context, dispatch OrderedLogsDispatch, completion OrderedLogsCompletion) error {
-		dispatched <- orderedDispatchResult{dispatch: dispatch, completion: completion}
-		return nil
-	}, configretry.BackOffConfig{}, 0, 1, nil)
-	t.Cleanup(coordinator.shutdown)
-	store := &orderedTestCheckpointStore{failSave: 1}
-	group := orderedTestGroup("channel-durable-tail", OrderedPositionContinue)
-	group.SetQueueCheckpointStore(store)
-	done := make(chan error, 1)
-	require.True(t, group.SetQueueCompletion(func(err error) { done <- err }))
-	require.NoError(t, coordinator.add(context.Background(), group))
-	dispatch := receiveOrderedDispatch(t, dispatched)
-	dispatch.completion.Release()
-	dispatch.completion.Succeed()
-	select {
-	case err := <-done:
-		t.Fatalf("queue item retired before its recovery-tail checkpoint was durable: %v", err)
-	case <-time.After(50 * time.Millisecond):
-	}
-	select {
-	case err := <-done:
-		require.NoError(t, err)
-	case <-time.After(2 * time.Second):
-		t.Fatal("queue item did not retire after checkpoint storage recovered")
-	}
-	store.mu.Lock()
-	checkpoint := store.data[orderedLogsCheckpointKey]
-	store.mu.Unlock()
-	require.NotEmpty(t, checkpoint)
-}
-
-func TestOrderedCoordinatorDoesNotReplayCheckpointedQueueItemTwice(t *testing.T) {
-	dispatched := make(chan orderedDispatchResult, 2)
-	store := &orderedTestCheckpointStore{data: make(map[string][]byte)}
-	tail := orderedTestGroup("channel-duplicate-tail", OrderedPositionContinue)
-	encoded, err := (orderedLogsEncoding{}).Marshal(context.Background(), tail)
-	require.NoError(t, err)
-	store.data[orderedLogsCheckpointKey] = encoded
-
-	coordinator := newOrderedLogsCoordinator(orderedTestSettings(), func(_ context.Context, dispatch OrderedLogsDispatch, completion OrderedLogsCompletion) error {
-		dispatched <- orderedDispatchResult{dispatch: dispatch, completion: completion}
-		return nil
-	}, configretry.BackOffConfig{}, 0, 1, nil)
-	t.Cleanup(coordinator.shutdown)
-	queuedDuplicate := orderedTestGroup("channel-duplicate-tail", OrderedPositionContinue)
-	queuedDuplicate.children[0].QueueID = tail.children[0].QueueID
-	queuedDuplicateDone := make(chan error, 1)
-	queuedDuplicate.SetQueueCheckpointStore(store)
-	require.True(t, queuedDuplicate.SetQueueCompletion(func(err error) { queuedDuplicateDone <- err }))
-	require.NoError(t, coordinator.add(context.Background(), queuedDuplicate))
-
-	recovery := receiveOrderedDispatch(t, dispatched)
-	require.True(t, recovery.dispatch.Recovery)
-	recovery.completion.Release()
-	recovery.completion.Succeed()
-	require.NoError(t, <-queuedDuplicateDone)
-	select {
-	case duplicate := <-dispatched:
-		t.Fatalf("checkpointed tail was also dispatched as ordinary queue work: %+v", duplicate.dispatch)
-	case <-time.After(20 * time.Millisecond):
-	}
-}
-
-func TestOrderedCoordinatorClearsPersistentTailAfterEnd(t *testing.T) {
-	dispatched := make(chan orderedDispatchResult, 2)
-	store := &orderedTestCheckpointStore{data: make(map[string][]byte)}
-	coordinator := newOrderedLogsCoordinator(orderedTestSettings(), func(_ context.Context, dispatch OrderedLogsDispatch, completion OrderedLogsCompletion) error {
-		dispatched <- orderedDispatchResult{dispatch: dispatch, completion: completion}
-		return nil
-	}, configretry.BackOffConfig{}, 0, 1, nil)
-	t.Cleanup(coordinator.shutdown)
-
-	continuation := orderedTestGroup("channel-end", OrderedPositionContinue)
-	continuation.SetQueueCheckpointStore(store)
-	continuationDone := make(chan error, 1)
-	require.True(t, continuation.SetQueueCompletion(func(err error) { continuationDone <- err }))
-	require.NoError(t, coordinator.add(context.Background(), continuation))
-	continued := receiveOrderedDispatch(t, dispatched)
-	continued.completion.Release()
-	continued.completion.Succeed()
-	require.NoError(t, <-continuationDone)
-	store.mu.Lock()
-	checkpointWithTail := append([]byte(nil), store.data[orderedLogsCheckpointKey]...)
-	store.mu.Unlock()
-	_, decoded, err := (orderedLogsEncoding{}).Unmarshal(checkpointWithTail)
-	require.NoError(t, err)
-	require.Len(t, decoded.(*orderedLogsGroup).children, 1)
-
-	end := orderedTestGroup("channel-end", OrderedPositionEnd)
-	end.SetQueueCheckpointStore(store)
-	endDone := make(chan error, 1)
-	require.True(t, end.SetQueueCompletion(func(err error) { endDone <- err }))
-	require.NoError(t, coordinator.add(context.Background(), end))
-	ended := receiveOrderedDispatch(t, dispatched)
-	ended.completion.Release()
-	ended.completion.Succeed()
-	require.NoError(t, <-endDone)
-	store.mu.Lock()
-	checkpointWithoutTail := append([]byte(nil), store.data[orderedLogsCheckpointKey]...)
-	store.mu.Unlock()
-	_, decoded, err = (orderedLogsEncoding{}).Unmarshal(checkpointWithoutTail)
-	require.NoError(t, err)
-	require.Empty(t, decoded.(*orderedLogsGroup).children)
-}
-
-func TestOrderedCoordinatorShutdownCancelsRestoredRecoveryPrelude(t *testing.T) {
-	store := &orderedTestCheckpointStore{data: make(map[string][]byte)}
-	tail := orderedTestGroup("channel-shutdown-prelude", OrderedPositionContinue)
-	encoded, err := (orderedLogsEncoding{}).Marshal(context.Background(), tail)
-	require.NoError(t, err)
-	store.data[orderedLogsCheckpointKey] = encoded
-	started := make(chan struct{})
-	canceled := make(chan struct{})
-	coordinator := newOrderedLogsCoordinator(orderedTestSettings(), func(ctx context.Context, dispatch OrderedLogsDispatch, _ OrderedLogsCompletion) error {
-		if dispatch.Recovery {
-			close(started)
-			<-ctx.Done()
-			close(canceled)
-		}
-		return ctx.Err()
-	}, configretry.BackOffConfig{}, 0, 1, nil)
-	queued := orderedTestGroup("channel-shutdown-prelude", OrderedPositionContinue)
-	queued.SetQueueCheckpointStore(store)
-	done := make(chan error, 1)
-	require.True(t, queued.SetQueueCompletion(func(err error) { done <- err }))
-	require.NoError(t, coordinator.add(context.Background(), queued))
-	select {
-	case <-started:
-	case <-time.After(time.Second):
-		t.Fatal("restored recovery prelude was not dispatched")
-	}
-	coordinator.shutdown()
-	select {
-	case <-canceled:
-	case <-time.After(time.Second):
-		t.Fatal("shutdown did not cancel the recovery prelude context")
-	}
-	require.True(t, experr.IsShutdownErr(<-done))
-}
-
-func TestOrderedCoordinatorShutdownUsesPersistentQueueRecoveryError(t *testing.T) {
+func TestOrderedCoordinatorShutdownReportsShutdownError(t *testing.T) {
 	dispatched := make(chan orderedDispatchResult, 1)
 	coordinator := newOrderedLogsCoordinator(orderedTestSettings(), func(_ context.Context, dispatch OrderedLogsDispatch, completion OrderedLogsCompletion) error {
 		dispatched <- orderedDispatchResult{dispatch: dispatch, completion: completion}
@@ -472,22 +298,6 @@ func TestOrderedCoordinatorShutdownUsesPersistentQueueRecoveryError(t *testing.T
 	shutdownErr := <-done
 	require.Error(t, shutdownErr)
 	require.True(t, experr.IsShutdownErr(shutdownErr))
-}
-
-func TestOrderedCoordinatorPreservesQueueItemWhenCheckpointLoadFails(t *testing.T) {
-	coordinator := newOrderedLogsCoordinator(orderedTestSettings(), func(context.Context, OrderedLogsDispatch, OrderedLogsCompletion) error {
-		t.Fatal("request must not dispatch without restored checkpoint state")
-		return nil
-	}, configretry.BackOffConfig{}, 0, 1, nil)
-	t.Cleanup(coordinator.shutdown)
-	group := orderedTestGroup("channel-checkpoint-read", OrderedPositionContinue)
-	group.SetQueueCheckpointStore(&orderedTestCheckpointStore{loadErr: errors.New("checkpoint storage unavailable")})
-	done := make(chan error, 1)
-	require.True(t, group.SetQueueCompletion(func(err error) { done <- err }))
-	err := coordinator.add(context.Background(), group)
-	require.Error(t, err)
-	require.True(t, experr.IsShutdownErr(err), "persistent queue must retain the request for a later recovery attempt")
-	require.Zero(t, coordinator.staged)
 }
 
 func TestOrderedCoordinatorHonorsConfiguredWriteConcurrency(t *testing.T) {
@@ -515,21 +325,4 @@ func TestOrderedCoordinatorHonorsConfiguredWriteConcurrency(t *testing.T) {
 	firstDispatch.completion.Succeed()
 	secondDispatch.completion.Release()
 	secondDispatch.completion.Succeed()
-}
-
-func TestOrderedLogsGroupEncodingRoundTrip(t *testing.T) {
-	group := orderedTestGroup("channel-with-binary-\x00-key", OrderedPositionEnd)
-	encoded, err := (orderedLogsEncoding{}).Marshal(context.Background(), group)
-	require.NoError(t, err)
-	_, decodedRequest, err := (orderedLogsEncoding{}).Unmarshal(encoded)
-	require.NoError(t, err)
-	decoded := decodedRequest.(*orderedLogsGroup)
-	require.Len(t, decoded.children, 1)
-	require.Equal(t, group.children[0].PartitionKey, decoded.children[0].PartitionKey)
-	require.Equal(t, OrderedPositionEnd, decoded.children[0].Position)
-	require.Equal(t, group.children[0].QueueID, decoded.children[0].QueueID)
-	require.Equal(t, 1, decoded.ItemsCount())
-	encoded[4] = 2
-	_, _, err = (orderedLogsEncoding{}).Unmarshal(encoded)
-	require.ErrorContains(t, err, "invalid group header", "unreleased prototype formats are not an upstream compatibility contract")
 }

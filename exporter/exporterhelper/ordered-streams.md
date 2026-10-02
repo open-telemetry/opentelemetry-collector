@@ -2,7 +2,7 @@
 
 `xexporterhelper.NewLogsRequests` is an experimental logs exporter constructor for
 protocols whose ordered write phase finishes before their acknowledgement arrives.
-The helper owns queue admission, retries, persistence, and request retirement.
+The helper owns queue admission, retries, and request retirement.
 
 ## Conversion and admission
 
@@ -48,13 +48,9 @@ The remaining settings bound staged requests, active partitions, released
 requests and bytes, recovery-tail bytes, conversion envelopes, and partition-key
 length. These limits must be positive and satisfy `Validate`.
 
-With persistent storage, the helper records child retirement and one recovery
-tail per open partition in the queue's storage namespace. Restart replays older
-dispatched requests before newly queued work. Checkpoint updates use a redo
-journal because storage batches need not be transactional. A storage failure
-fences recovery until restart. Memory queues retain recovery state in memory.
-Delivery is at least once; an ambiguous write can cause duplicates. This
-constructor enables ordered restart replay. Other exporters retain their
-existing recovery path by default and can opt into original-index replay with
-`xexporterhelper.QueueBatchSettings.ReplayInOrder`. That setting controls queue
-recovery order; the ordered constructor also schedules partition writes.
+This constructor currently supports memory queues and rejects a configured
+`storage` extension. Open partitions retain one recovery request in memory for
+live retries. This state does not survive a restart. Existing exporterhelper
+constructors continue to support persistent queues.
+
+Delivery is at least once; an ambiguous write can cause duplicates.

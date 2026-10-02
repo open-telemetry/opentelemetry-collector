@@ -3,8 +3,8 @@ component: pkg/xexporterhelper
 note: Add an experimental logs request constructor with ordered partition writes and deferred queue retirement.
 issues: [15475]
 subtext: |
-  xexporterhelper.NewLogsRequests supports atomic child admission, independent
-  write release and acknowledgement completion, and persistent recovery tails.
-  Other exporters can opt into original-index restart replay through
-  xexporterhelper.QueueBatchSettings.ReplayInOrder.
+  xexporterhelper.NewLogsRequests supports atomic child admission and independent
+  write release and acknowledgement completion using memory queues. Open streams
+  retain bounded recovery state for live retries. Persistent storage is not yet
+  supported by this constructor.
 change_logs: [api]
