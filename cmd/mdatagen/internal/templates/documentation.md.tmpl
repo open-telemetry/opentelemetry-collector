@@ -34,11 +34,18 @@ Emitted Name: `{{ $metricName.EmittedName }}`
 
 #### Migration
 
-- Target Metric: `{{ $metric.Migration.To }}`
-- Disable Old Gate: `{{ $metric.Migration.ThroughGates.DisableOld }}`
-- Enable New Gate: `{{ $metric.Migration.ThroughGates.EnableNew }}`
+**Metric Migration:** `{{ $metric.Migration.To }}`
 
-When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+| Enable New Gate | Disable Old Gate | Emitted Metric(s) |
+| --- | --- | --- |
+| disabled | disabled | `{{ $metricName }}` only |
+| enabled | disabled | `{{ $metricName }}` and `{{ $metric.Migration.To }}` |
+| enabled | enabled | `{{ $metric.Migration.To }}` only |
+| disabled | enabled | Migrated metrics: none (v0 suppressed, v1 gated off — warnings logged) |
+
+Gate definitions:
+- Enable New Gate: `{{ $metric.Migration.ThroughGates.EnableNew }}`
+- Disable Old Gate: `{{ $metric.Migration.ThroughGates.DisableOld }}`
 
 {{- end }}
 
