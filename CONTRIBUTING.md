@@ -41,7 +41,7 @@ in the coding guidelines for more information on how to perform changes affectin
 The [`docs/rfcs`](./docs/rfcs) area of the repository includes a number of internal design documents
 covering important sub-projects, internal redesign, and coding guidelines. For example,
 
-- [Component interface patterns](./docs/rfcs/component-interfaces.md)
+- [Component interface and struct guidelines](./docs/rfcs/component-interfaces-and-structs.md)
 - [Automatic component-level telemetry](./docs/rfcs/component-universal-telemetry.md)
 - [Environment variables in configuration](./docs/rfcs/env-vars.md)
 - [Optional configuration type](./docs/rfcs/optional-config-type.md)
